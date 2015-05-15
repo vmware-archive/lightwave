@@ -1,0 +1,9 @@
+import platform
+Import('VMCATestEnv')
+client_libs =['ssl','crypto','z','curl', 'pthread', 'rt', 'nsl', 
+			'dl', 'lwioclient', 'curl', 'gssapi_krb5','schannel',
+			'dcerpc','vmcaclnt','vmcacommon', 'lwadvapi','vmcabtn','vmcapkcs']
+
+VMCATestEnv.Program(target = 'testRpcCall', source ='testRpcCall.cpp' , LIBS= client_libs)
+#VMCATestEnv.Program(target = 'testCreateCRL', source ='testCRLCreate.cpp' , LIBS= client_libs)
+#VMCATestEnv.Program(target = 'testCAKeyCreate', source ='testCAKeyCreate.cpp' , LIBS= client_libs)

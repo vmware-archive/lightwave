@@ -1,0 +1,405 @@
+/*
+ * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+
+
+
+#ifndef VMDIR_H_
+#define VMDIR_H_
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <ldap.h>
+
+#include "vmdirtypes.h"
+
+#ifndef TRUE
+#define TRUE  1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
+// Internal error code indicating that a Notice of Disconnection SHOULD be sent, and connection MUST be terminated.
+#define LDAP_NOTICE_OF_DISCONNECT    (-1)
+
+#define SUPPORTED_LDAP_VERSION          "3"
+
+#define DEFAULT_LDAP_PORT_NUM           389
+#define DEFAULT_LDAP_PORT_STR           "389"
+#define DEFAULT_LDAPS_PORT_NUM          636
+#define DEFAULT_LDAPS_PORT_STR          "636"
+
+#define LEGACY_DEFAULT_LDAP_PORT_NUM       11711
+#define LEGACY_DEFAULT_LDAP_PORT_STR       "11711"
+#define LEGACY_DEFAULT_LDAPS_PORT_NUM      11712
+#define LEGACY_DEFAULT_LDAPS_PORT_STR      "11712"
+
+// Fixed DNs
+#define DSE_ROOT_DN                             ""
+#define PERSISTED_DSE_ROOT_DN                   "cn=DSE Root"
+#define PERSISTED_DSE_ROOT_NAMING_ATTR_VALUE    "DSE Root"
+#define SCHEMA_NAMING_CONTEXT_DN                "cn=schemacontext"
+#define SCHEMA_NAMING_CONTEXT_DN_LEN            sizeof(SCHEMA_NAMING_CONTEXT_DN)-1
+#define SUB_SCHEMA_SUB_ENTRY_DN                 "cn=aggregate,cn=schemacontext"
+#define CFG_ROOT_DN                             "cn=config"
+#define CFG_ROOT_DN_LEN                         sizeof(CFG_ROOT_DN)-1
+#define CFG_INDEX_ENTRY_DN                      "cn=indices,cn=config"
+#define CFG_INDEX_ORGANIZATION_DN               "cn=organization,cn=config"
+#define SERVER_STATUS_DN                        "cn=serverstatus"
+
+#define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Domain Controllers"
+#define VMDIR_COMPUTERS_RDN_VAL                 "Computers"
+#define VMDIR_MSAS_RDN_VAL                      "Managed Service Accounts"
+#define VMDIR_CONFIGURATION_CONTAINER_NAME      "Configuration"
+#define VMDIR_CA_CONTAINER_NAME                 "Certificate-Authorities"
+
+#define FSP_CONTAINER_RDN_ATTR                  "cn"
+#define FSP_CONTAINER_RDN_ATTR_VALUE            "ForeignSecurityPrincipals"
+
+#define RDN_VALUE_ESC_CHAR             '\\'
+#define RDN_SEPARATOR_CHAR             ','
+#define SID_SEPARATOR_CHAR             '-'
+#define RDN_TYPE_VAL_SEPARATOR         '='
+
+#define PASSWD_SCHEME_VMDIRD        "vmdird-digest"
+#define PASSWD_SCHEME_DEFAULT       "DEFAULT-vmdird-v1"
+#define PASSWD_SCHEME_SSO_V1_1      "SSO-V1-1"
+#define PASSWD_SCHEME_SSO_V1_2      "SSO-V1-2"
+
+#define DSE_ROOT_ENTRY_ID              1
+#define SCHEMA_NAMING_CONTEXT_ID       2
+#define SUB_SCEHMA_SUB_ENTRY_ID        3
+#define CFG_ROOT_ENTRY_ID              4
+#define CFG_INDEX_ENTRY_ID             5
+#define CFG_ORGANIZATION_ENTRY_ID      6
+#define DEL_ENTRY_CONTAINER_ENTRY_ID   7
+#define DEFAULT_ADMINISTRATOR_ENTRY_ID 8
+
+// Schema related constants.
+
+// Attributes
+#define ATTR_CN                             "cn"
+#define ATTR_CN_LEN                         sizeof(ATTR_CN)-1
+#define ATTR_SN                             "sn"
+#define ATTR_SN_LEN                         sizeof(ATTR_SN)-1
+#define ATTR_GIVEN_NAME                     "givenName"
+#define ATTR_GIVEN_NAME_LEN                 sizeof(ATTR_GIVEN_NAME)-1
+#define ATTR_DN                             "entryDN"
+#define ATTR_DN_LEN                         sizeof(ATTR_DN)-1
+#define ATTR_EID                            "entryid"
+#define ATTR_EID_LEN                        sizeof(ATTR_EID)-1
+#define ATTR_OBJECT_CLASS                   "objectclass"
+#define ATTR_OBJECT_CLASS_LEN               sizeof(ATTR_OBJECT_CLASS)-1
+#define ATTR_PARENT_ID                      "parentid" /* Not really an attribute, just identifies the index */
+#define ATTR_PARENT_ID_LEN                  sizeof(ATTR_PARENT_ID)-1
+#define ATTR_SUB_SCHEMA_SUB_ENTRY           "subschemaSubentry"
+#define ATTR_SUPPORTED_LDAP_VERSION         "supportedLDAPVersion"
+#define ATTR_USER_PASSWORD                  "userPassword"
+#define ATTR_PASSWORD_SCHEME                "passwordHashScheme"
+#define ATTR_OLD_USER_PASSWORD              "oldUserPassword"
+#define ATTR_OLD_USER_PASSWORD_LEN          sizeof(ATTR_OLD_USER_PASSWORD)-1
+#define ATTR_PWD_LAST_SET                   "pwdLastSet"
+#define ATTR_PWD_LAST_SET_LEN               sizeof(ATTR_PWD_LAST_SET)-1
+#define ATTR_MEMBER                         "member"
+#define ATTR_MEMBER_LEN                     sizeof(ATTR_MEMBER)-1
+#define ATTR_MEMBEROF                       "memberOf"
+#define ATTR_MEMBEROF_LEN                   sizeof(ATTR_MEMBEROF)-1
+#define ATTR_USN_CREATED                    "uSNCreated"
+#define ATTR_USN_CREATED_LEN                sizeof(ATTR_USN_CREATED)-1
+#define ATTR_USN_CHANGED                    "uSNChanged"
+#define ATTR_USN_CHANGED_LEN                sizeof(ATTR_USN_CHANGED)-1
+#define ATTR_ATTR_META_DATA                 "attributeMetaData"
+#define ATTR_ATTR_META_DATA_LEN             sizeof(ATTR_ATTR_META_DATA)-1
+#define ATTR_IS_DELETED                     "isDeleted"
+#define ATTR_IS_DELETED_LEN                 sizeof(ATTR_IS_DELETED)-1
+#define ATTR_OBJECT_GUID                    "objectGUID"
+#define ATTR_OBJECT_GUID_LEN                sizeof(ATTR_OBJECT_GUID)-1
+#define ATTR_LAST_KNOWN_DN                  "lastKnownDn"
+#define ATTR_LAST_KNOWN_DN_LEN              sizeof(ATTR_LAST_KNOWN_DN)-1
+#define ATTR_NAMING_CONTEXTS                "namingContexts"
+#define ATTR_ROOT_DOMAIN_NAMING_CONTEXT     "rootDomainNamingContext"
+#define ATTR_DEFAULT_NAMING_CONTEXT         "defaultNamingContext"
+#define ATTR_CONFIG_NAMING_CONTEXT          "configurationNamingContext"
+#define ATTR_SCHEMA_NAMING_CONTEXT          "schemaNamingContext"
+#define ATTR_SERVER_ID                      "serverId"
+#define ATTR_SERVER_GUID                    "vmwServerGUID"
+#define ATTR_LDU_GUID                       "vmwLDUGuid"
+#define ATTR_MACHINE_GUID                   "vmwMachineGuid"
+#define ATTR_DEFAULT_ADMIN_DN               "vmwAdministratorDN"
+#define ATTR_SERVER_NAME                    "serverName"
+#define ATTR_SERVER_NAME_LEN                sizeof(ATTR_SERVER_NAME)-1
+#define ATTR_DEL_OBJS_CONTAINER             "deletedObjectsContainer"
+#define ATTR_SUPPORTED_CONTROL              "supportedControl"
+#define ATTR_SUPPORTED_SASL_MECHANISMS      "supportedSASLMechanisms"
+#define ATTR_LABELED_URI                    "labeledURI"
+#define ATTR_USER_CERTIFICATE               "userCertificate"
+#define ATTR_USER_CERTIFICATE_LEN           sizeof(ATTR_USER_CERTIFICATE)-1
+#define ATTR_LAST_LOCAL_USN_PROCESSED       "lastLocalUsnProcessed"
+#define ATTR_LAST_LOCAL_USN_PROCESSED_LEN    sizeof(ATTR_LAST_LOCAL_USN_PROCESSED)-1
+#define ATTR_REPL_INTERVAL                  "replInterval"
+#define ATTR_UP_TO_DATE_VECTOR              "upToDateVector"
+#define ATTR_UP_TO_DATE_VECTOR_LEN          sizeof(ATTR_UP_TO_DATE_VECTOR)-1
+#define ATTR_REPL_PAGE_SIZE                 "replPageSize"
+#define ATTR_MODIFYTIMESTAMP                "modifyTimeStamp"
+#define ATTR_MODIFYTIMESTAMP_LEN            sizeof(ATTR_MODIFYTIMESTAMP)-1
+#define ATTR_CREATETIMESTAMP                "createTimeStamp"
+#define ATTR_CREATETIMESTAMP_LEN            sizeof(ATTR_CREATETIMESTAMP)-1
+#define ATTR_ENABLED                        "enabled"
+#define ATTR_ENABLED_LEN                    sizeof(ATTR_ENABLED)-1
+#define ATTR_USER_ACCOUNT_CONTROL           "userAccountControl"
+#define ATTR_USER_ACCOUNT_CONTROL_LEN       sizeof(ATTR_USER_ACCOUNT_CONTROL)-1
+#define ATTR_OBJECT_SID                     "objectSid"
+#define ATTR_OBJECT_SID_LEN                 sizeof(ATTR_OBJECT_SID)-1
+#define ATTR_FSP_OBJECTID                   "externalObjectId"
+#define ATTR_FSP_OBJECTID_LEN               sizeof(ATTR_FSP_OBJECTID)-1
+#define ATTR_EID_SEQUENCE_NUMBER            "vmwEntryIdSequenceNumber"
+#define ATTR_USN_SEQUENCE_NUMBER            "vmwUSNSequenceNumber"
+#define ATTR_DOMAIN_COMPONENT               "dc"
+#define ATTR_DOMAIN_COMPONENT_LEN           sizeof(ATTR_DOMAIN_COMPONENT)-1
+#define ATTR_ORGANIZATION                   "o"
+#define ATTR_SERVER_RUNTIME_STATUS          "vmwServerRunTimeStatus"
+#define ATTR_SITE_ID                        "vmwCisSiteId"
+#define ATTR_DISPLAY_NAME                   "displayName"
+#define ATTR_KRB_PRINCIPAL_NAME             "krbPrincipalName"
+#define ATTR_KRB_PRINCIPAL_NAME_LEN         sizeof(ATTR_KRB_PRINCIPAL_NAME)-1
+#define ATTR_KRB_PRINCIPAL_KEY              "krbPrincipalKey"
+#define ATTR_KRB_PRINCIPAL_KEY_LEN          sizeof(ATTR_KRB_PRINCIPAL_KEY)-1
+#define ATTR_KRB_UPN                        "userPrincipalName"
+#define ATTR_KRB_UPN_LEN                    sizeof(ATTR_KRB_UPN)-1
+#define ATTR_KRB_SPN                        "servicePrincipalName"
+#define ATTR_KRB_SPN_LEN                    sizeof(ATTR_KRB_SPN)-1
+#define ATTR_KRB_MASTER_KEY                 "krbMKey"
+#define ATTR_KRB_MASTER_KEY_LEN             sizeof(ATTR_KRB_MASTER_KEY)-1
+#define ATTR_GROUPTYPE                      "groupType"
+#define ATTR_GROUPTYPE_LEN                  sizeof(ATTR_GROUPTYPE)-1
+#define ATTR_NAME                           "name"
+#define ATTR_NAME_LEN                       sizeof(ATTR_NAME)-1
+#define ATTR_SAM_ACCOUNT_NAME               "sAMAccountName"
+#define ATTR_SAM_ACCOUNT_LEN                 sizeof(ATTR_SAM_ACCOUNT_NAME)-1
+#define ATTR_ENABLED                        "enabled"
+#define ATTR_ENABLED_LEN                    sizeof(ATTR_ENABLED)-1
+#define ATTR_CREATORS_NAME                  "creatorsName"
+#define ATTR_CREATORS_NAME_LEN              sizeof(ATTR_CREATORS_NAME)-1
+#define ATTR_MODIFIERS_NAME                 "modifiersName"
+#define ATTR_MODIFIERS_NAME_LEN             sizeof(ATTR_MODIFIERS_NAME)-1
+#define ATTR_SITE_NAME                      "msDS-SiteName"
+#define ATTR_SITE_NAME_LEN                  sizeof(ATTR_SITE_NAME)-1
+#define ATTR_VMW_STS_PASSWORD               "vmwSTSPassword"
+#define ATTR_VMW_STS_PASSWORD_LEN           sizeof(ATTR_VMW_STS_PASSWORD)-1
+#define ATTR_VMW_STS_TENANT_KEY             "vmwSTSTenantKey"
+#define ATTR_VMW_STS_TENANT_KEY_LEN         sizeof(ATTR_VMW_STS_TENANT_KEY)-1
+#define ATTR_SRP_SECRET                     "vmwSRPSecret"
+#define ATTR_SRP_SECRET_LEN                 sizeof(ATTR_SRP_SECRET)-1
+#define ATTR_SITE_GUID                      "siteGUID"
+#define ATTR_SITE_GUID_LEN                  sizeof(ATTR_SITE_GUID)-1
+
+#define ATTR_VMW_OBJECT_SECURITY_DESCRIPTOR   "vmwSecurityDescriptor"
+#define ATTR_VMW_ORGANIZATION_GUID            "vmwOrganizationGuid"
+
+#define ATTR_OBJECT_SECURITY_DESCRIPTOR       "nTSecurityDescriptor"
+#define ATTR_OBJECT_SECURITY_DESCRIPTOR_LEN   sizeof(ATTR_OBJECT_SECURITY_DESCRIPTOR)-1
+#define ATTR_ORG_LIST_DESC                    "vmwAttrOrganizationList"
+#define VDIR_ATTRIBUTE_SEQUENCE_RID           "vmwRidSequenceNumber"
+
+// password and lockout policy attribute
+#define PASSWD_LOCKOUT_POLICY_DEFAULT_CN    "password and lockout policy"
+#define ATTR_PASS_AUTO_UNLOCK_SEC           "vmwPasswordChangeAutoUnlockIntervalSec"
+#define ATTR_PASS_FAIL_ATTEMPT_SEC          "vmwPasswordChangeFailedAttemptIntervalSec"
+#define ATTR_PASS_MAX_FAIL_ATTEMPT          "vmwPasswordChangeMaxFailedAttempts"
+#define ATTR_PASS_MAX_SAME_ADJ_CHAR         "vmwPasswordMaxIdenticalAdjacentChars"
+#define ATTR_PASS_MIN_SP_CHAR               "vmwPasswordMinSpecialCharCount"
+#define ATTR_PASS_MIN_MUN_CHAR              "vmwPasswordMinNumericCount"
+#define ATTR_PASS_MIN_UPPER_CHAR            "vmwPasswordMinUpperCaseCount"
+#define ATTR_PASS_MIN_LOWER_CHAR            "vmwPasswordMinLowerCaseCount"
+#define ATTR_PASS_MIN_ALPHA_CHAR            "vmwPasswordMinAlphabeticCount"
+#define ATTR_PASS_MIN_SIZE                  "vmwPasswordMinLength"
+#define ATTR_PASS_MAX_SIZE                  "vmwPasswordMaxLength"
+#define ATTR_PASS_EXP_IN_DAY                "vmwPasswordLifetimeDays"
+#define ATTR_PASS_RECYCLE_CNT               "vmwPasswordProhibitedPreviousCount"
+#define ATTR_PASS_SPECIAL_CHARS             "vmwPasswordSpecialChars"
+// Attributes related to support for "functional levels" in vmdir
+#define ATTR_DOMAIN_FUNCTIONAL_LEVEL        "vmwDomainFunctionalLevel"
+#define ATTR_FOREST_FUNCTIONAL_LEVEL        "vmwForestFunctionalLevel"
+#define ATTR_SERVER_VERSION                 "vmwServerVersion"
+#define ATTR_PSC_VERSION                    "vmwPlatformServicesControllerVersion"
+
+#define ATTR_OU                             "ou"
+#define ATTR_DC_ACCOUNT_DN                  "vmwDCAccountDN"
+#define ATTR_DC_ACCOUNT_DN_LEN              sizeof(ATTR_DC_ACCOUNT_DN)-1
+#define ATTR_DC_ACCOUNT_UPN                 "vmwDCAccountUPN"
+#define ATTR_DC_ACCOUNT_UPN_LEN             sizeof(ATTR_DC_ACCOUNT_UPN)-1
+#define DEFAULT_USER_CONTAINER_RDN          "cn=users"
+
+#define ATTR_MAX_SERVER_ID                  "vmwMaxServerId"
+#define ATTR_MAX_SERVER_ID_LEN              sizeof(ATTR_MAX_SERVER_ID)-1
+
+// ADSI support related attribute
+#define ATTR_ALLOWD_CHILD_CLASSES_EFFECTIVE     "allowedChildClassesEffective"
+#define ATTR_ALLOWD_CHILD_CLASSES_EFFECTIVE_LEN sizeof(ATTR_ALLOWD_CHILD_CLASSES_EFFECTIVE)-1
+
+#define ATTR_PASSWORD_NEVER_EXPIRES         "vmwPasswordNeverExpires"
+#define ATTR_PASSWORD_NEVER_EXPIRES_LEN     sizeof(ATTR_PASSWORD_NEVER_EXPIRES)-1
+
+#define ATTR_HIGHEST_COMMITTED_USN          "highestCommittedUSN"
+#define ATTR_HIGHEST_COMMITTED_USN_LEN      sizeof(ATTR_HIGHEST_COMMITTED_USN)-1
+
+#define ATTR_INVOCATION_ID                  "invocationId"
+#define ATTR_INVOCATION_ID_LEN              sizeof(ATTR_INVOCATION_ID)-1
+
+#define ATTR_ACL_STRING                     "vmwAclString"
+#define ATTR_ACL_STRING_LEN                 sizeof(ATTR_ACL_STRING)-1
+
+
+// Object classes
+#define OC_TOP                              "top"
+#define OC_TOP_LEN                          sizeof(OC_TOP)-1
+#define OC_DSE_ROOT                         "vmwDseRoot"
+#define OC_SUB_SCHEMA                       "subschema"
+#define OC_SUB_SCHEMA_LEN                   sizeof(OC_SUB_SCHEMA)-1
+#define OC_DIR_SERVER                       "vmwDirServer"
+#define OC_PKI_CA                           "pkiCA"
+#define OC_REPLICATION_AGREEMENT            "vmwReplicationAgreement"
+#define OC_REPLICATION_AGREEMENT_LEN        sizeof(OC_REPLICATION_AGREEMENT)-1
+
+#define OC_DC_OBJECT                     "dcObject"
+#define OC_DC_OBJECT_LEN                 sizeof(OC_DC_OBJECT)-1
+#define OC_DOMAIN                        "domain"
+#define OC_DOMAIN_LEN                    sizeof(OC_DOMAIN)-1
+#define OC_DOMAIN_DNS                    "domainDNS"
+#define OC_DOMAIN_DNS_LEN                sizeof(OC_DOMAIN_DNS)-1
+#define OC_BUILTIN_DOMAIN                "builtinDomain"
+#define OC_BUILTIN_DOMAIN_LEN            sizeof(OC_BUILTIN_DOMAIN)-1
+
+#define OC_ORGANIZATION_OBJECT           "organization"
+#define OC_FOREIGN_SECURITY_PRINCIPAL    "foreignSecurityPrincipal"
+
+#define OC_VMW_POLICY                    "vmwPolicy"
+#define OC_VMW_PASSWORD_POLICY           "vmwPasswordPolicy"
+#define OC_VMW_LOCKOUT_POLICY            "vmwLockoutPolicy"
+#define OC_VMW_SERVICEPRINCIPAL          "vmwServicePrincipal"
+
+#define OC_VMW_CONTAINER                 "vmwContainer"
+
+#define OC_CONTAINER                     "container"
+#define OC_SERVER_STATUS                 "vmwDirServerStatus"
+
+#define OC_KRB_PRINCIPAL_AUX            "krbPrincipalAux"
+#define OC_KRB_PRINCIPAL_AUX_LEN        sizeof(OC_KRB_PRINCIPAL_AUX)-1
+
+#define OC_ORGANIZATIONAL_UNIT           "organizationalUnit"
+#define OC_PERSON                        "person"
+#define OC_ORGANIZATIONAL_PERSON         "organizationalPerson"
+#define OC_USER                          "user"
+#define OC_USER_LEN                      sizeof(OC_USER)-1
+#define OC_COMPUTER                      "computer"
+#define OC_MANAGED_SERVICE_ACCOUNT       "msDS-ManagedServiceAccount"
+#define OC_GROUP                         "group"
+#define OC_GROUP_LEN                     sizeo(OC_GROUP)-1
+
+#define CM_COMPONENTMANAGER             "ComponentManager"
+#define CM_SITE                         "CMSites"
+#define CM_LDUS                         "Ldus"
+#define SSO_SERVICES                    "Services"
+
+#define VMDIR_SITES_RDN_VAL             "Sites"
+
+#define CM_DISPLAYNAME_SITE             "<Default Site>"
+#define CM_DISPLAYNAME_LDU              "<Default Group>"
+#define CM_OBJECTCLASS_SITE             "vmwCisSite"
+#define CM_OBJECTCLASS_LDU              "vmwCisLdu"
+
+#define VMDIR_REPL_AGRS_CONTAINER_NAME  "Replication Agreements"
+#define VMDIR_SERVERS_CONTAINER_NAME    "Servers"
+#define VMDIR_SERVICES_CONTAINER_NAME   "Services"
+#define VMDIR_DC_GROUP_NAME             "DCAdmins"
+#define VMDIR_DCCLIENT_GROUP_NAME       "DCClients"
+#define VMDIR_CERT_GROUP_NAME           "CAAdmins"
+#define VMDIR_BUILTIN_CONTAINER_NAME    "Builtin"
+
+#define VDIR_DOMAIN_FUNCTIONAL_LEVEL    "1"
+#define VDIR_FOREST_FUNCTIONAL_LEVEL    "1"
+#define VDIR_SERVER_VERSION             "1.0"
+#define VDIR_PSC_VERSION                "6.0.0"
+
+#define SASL_MECH                       "GSSAPI SRP"
+
+#define VDIR_LDAP_BOOLEN_SYNTAX_TRUE_STR    "TRUE"
+
+// User Account Control Flags
+#define USER_ACCOUNT_CONTROL_DISABLE_FLAG              0x00000002
+#define USER_ACCOUNT_CONTROL_LOCKOUT_FLAG              0x00000010
+#define USER_ACCOUNT_CONTROL_PASSWORD_EXPIRE_FLAG      0x00800000
+
+// Group type  (only support global scope now)
+#define GROUPTYPE_GLOBAL_SCOPE          "2"
+
+// Supported LDAP Request controls
+#define VDIR_LDAP_CONTROL_SHOW_DELETED_OBJECTS    "1.2.840.113556.1.4.417" // value same as defined by AD
+#define VDIR_LDAP_CONTROL_SHOW_MASTER_KEY         "9999.9990.9900.9000.1" //shouldn't be published
+// #define LDAP_CONTROL_SYNC       LDAP_SYNC_OID ".1" defined in ldap.h
+
+// Logging stuff
+#define MAX_LOG_MESSAGE_LEN    4096
+
+#ifndef _WIN32
+#define VMDIR_NCALRPC_END_POINT "vmdirsvc"
+#else
+// note: keep in sync with /vmdir/main/idl/vmdir.idl
+#define VMDIR_NCALRPC_END_POINT "VMWareDirectoryService"
+#endif
+
+#define VMDIR_RPC_TCP_END_POINT "2012"
+#define VMDIR_MAX_SERVER_ID     255
+
+#define NSECS_PER_SEC       1000000000
+#define NSECS_PER_MSEC      1000000
+#define MSECS_PER_SEC       1000
+
+/* Defines related to GSS_SRP authentication */
+#ifndef GSS_SRP_MECH_OID
+#define GSS_SRP_MECH_OID_LENGTH 9
+#define GSS_SRP_MECH_OID "\x2a\x86\x48\x86\xf7\x12\x01\x02\x0a"
+#endif
+
+#ifndef GSS_SRP_PASSWORD_OID
+#define GSS_SRP_PASSWORD_OID "\x2b\x06\x01\x04\x01\x81\xd6\x29\x03\x01"
+#define GSS_SRP_PASSWORD_LEN 10
+#endif
+
+/* Defines related to GSS_NTLM authentication */
+#ifndef GSS_NTLM_MECH_OID
+#define GSS_NTLM_MECH_OID_LENGTH 10
+#define GSS_NTLM_MECH_OID "\x2b\x06\x01\x04\x01\x82\x37\x02\x02\x0a"
+#endif
+
+#ifndef GSS_NTLM_PASSWORD_OID
+#define GSS_NTLM_PASSWORD_OID "\x2b\x06\x01\x04\x01\x81\xd6\x29\x03\x01"
+#define GSS_NTLM_PASSWORD_LEN 10
+#endif
+
+#ifndef SPNEGO_OID
+#define SPNEGO_OID_LENGTH 6
+#define SPNEGO_OID "\x2b\x06\x01\x05\x05\x02"
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* VMDIR_H_ */

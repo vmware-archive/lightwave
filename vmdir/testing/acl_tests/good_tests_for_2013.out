@@ -1,0 +1,486 @@
++ host=localhost
++ port=389
++ getopts h:p: opt
++ echo 'Create host domain: vsphere.local'
+Create host domain: vsphere.local
++ /usr/lib/vmware-vmdir/bin/vdcpromo -u Administrator -w vmware -d vsphere.local
+Initializing Directory server instance ... 
+Wait for local instance LDAP service 
+Directory host instance created successfully
++ echo
+
++ echo 'Create tenant domain: coke.com'
+Create tenant domain: coke.com
++ /usr/lib/vmware-vmdir/bin/vdcpromo -u Administrator -w vmware -d coke.com -t
+Directory tenant instance created successfully
++ echo
+
++ echo 'Create tenant domain: pepsi.com'
+Create tenant domain: pepsi.com
++ /usr/lib/vmware-vmdir/bin/vdcpromo -u Administrator -w vmware -d pepsi.com -t
+Directory tenant instance created successfully
++ echo
+
++ echo 'Creating objects as ** System ** Administrator'
+Creating objects as ** System ** Administrator
++ echo
+
++ /opt/likewise/bin/ldapadd -c -h localhost -p 389 -x -D cn=Administrator,cn=users,dc=vsphere,dc=local -w vmware
+adding new entry "cn=John-1,cn=Users,dc=vsphere,dc=local"
+
+adding new entry "cn=John-2,cn=Users,dc=vsphere,dc=local"
+
+adding new entry "cn=John-1,cn=Users,dc=coke,dc=com"
+
+adding new entry "cn=John-2,cn=Users,dc=coke,dc=com"
+
+adding new entry "cn=John-1,cn=Users,dc=pepsi,dc=com"
+
+adding new entry "cn=John-2,cn=Users,dc=pepsi,dc=com"
+
++ echo
+
++ echo 'Creating objects as ** Coke ** Administrator'
+Creating objects as ** Coke ** Administrator
++ echo
+
++ /opt/likewise/bin/ldapadd -c -h localhost -p 389 -x -D cn=Administrator,cn=users,dc=coke,dc=com -w vmware
+ldap_add: Insufficient access (50)
+ldap_add: Insufficient access (50)
+adding new entry "cn=John-3,cn=Users,dc=vsphere,dc=local"
+
+adding new entry "cn=John-3,cn=Users,dc=coke,dc=com"
+
+adding new entry "cn=John-3,cn=Users,dc=pepsi,dc=com"
+
++ echo
+
++ echo 'Creating objects as ** Pepsi ** Administrator'
+Creating objects as ** Pepsi ** Administrator
++ echo
+
++ /opt/likewise/bin/ldapadd -c -h localhost -p 389 -x -D cn=Administrator,cn=users,dc=pepsi,dc=com -w vmware
+ldap_add: Insufficient access (50)
+ldap_add: Insufficient access (50)
+adding new entry "cn=John-3,cn=Users,dc=vsphere,dc=local"
+
+adding new entry "cn=John-3,cn=Users,dc=coke,dc=com"
+
+adding new entry "cn=John-3,cn=Users,dc=pepsi,dc=com"
+
++ echo
+
++ echo 'Creating objects as ** Vsphere ** Administrator'
+Creating objects as ** Vsphere ** Administrator
++ echo
+
++ /opt/likewise/bin/ldapadd -c -h localhost -p 389 -x -D cn=Administrator,cn=users,dc=vsphere,dc=local -w vmware
+ldap_add: Already exists (68)
+	additional info: BEEntryAdd (9706)((MDB_KEYEXIST: Key/data pair already exists)(cn=john-3,cn=users,dc=coke,dc=com))
+ldap_add: Already exists (68)
+	additional info: BEEntryAdd (9706)((MDB_KEYEXIST: Key/data pair already exists)(cn=john-3,cn=users,dc=pepsi,dc=com))
+adding new entry "cn=John-3,cn=Users,dc=vsphere,dc=local"
+
+adding new entry "cn=John-3,cn=Users,dc=coke,dc=com"
+
+adding new entry "cn=John-3,cn=Users,dc=pepsi,dc=com"
+
++ echo
+
++ echo 'Creating objects as ** cn=John-1,cn=Users,dc=vsphere,dc=local **'
+Creating objects as ** cn=John-1,cn=Users,dc=vsphere,dc=local **
++ echo
+
++ /opt/likewise/bin/ldapadd -c -h localhost -p 389 -x -D cn=John-1,cn=Users,dc=vsphere,dc=local -w Pasword@1
+ldap_add: Insufficient access (50)
+ldap_add: Insufficient access (50)
+ldap_add: Insufficient access (50)
+adding new entry "cn=John-4,cn=Users,dc=vsphere,dc=local"
+
+adding new entry "cn=John-4,cn=Users,dc=coke,dc=com"
+
+adding new entry "cn=John-4,cn=Users,dc=pepsi,dc=com"
+
++ echo
+
++ echo 'Creating objects as ** cn=John-1,cn=Users,dc=coke,dc=com **'
+Creating objects as ** cn=John-1,cn=Users,dc=coke,dc=com **
++ echo
+
++ /opt/likewise/bin/ldapadd -c -h localhost -p 389 -x -D cn=John-1,cn=Users,dc=coke,dc=com -w Pasword@1
+ldap_add: Insufficient access (50)
+ldap_add: Insufficient access (50)
+ldap_add: Insufficient access (50)
+adding new entry "cn=John-4,cn=Users,dc=vsphere,dc=local"
+
+adding new entry "cn=John-4,cn=Users,dc=coke,dc=com"
+
+adding new entry "cn=John-4,cn=Users,dc=pepsi,dc=com"
+
++ echo
+
++ echo 'Creating objects as ** cn=John-1,cn=Users,dc=pepsi,dc=com **'
+Creating objects as ** cn=John-1,cn=Users,dc=pepsi,dc=com **
++ echo
+
++ /opt/likewise/bin/ldapadd -c -h localhost -p 389 -x -D cn=John-1,cn=Users,dc=pepsi,dc=com -w Pasword@1
+ldap_add: Insufficient access (50)
+ldap_add: Insufficient access (50)
+ldap_add: Insufficient access (50)
+adding new entry "cn=John-4,cn=Users,dc=vsphere,dc=local"
+
+adding new entry "cn=John-4,cn=Users,dc=coke,dc=com"
+
+adding new entry "cn=John-4,cn=Users,dc=pepsi,dc=com"
+
++ echo
+
++ echo 'Modifying objects as ** System ** Administrator'
+Modifying objects as ** System ** Administrator
++ echo
+
++ /opt/likewise/bin/ldapadd -c -h localhost -p 389 -x -D cn=Administrator,cn=users,dc=vsphere,dc=local -w vmware
+modifying entry "cn=John-1,cn=Users,dc=vsphere,dc=local"
+
+modifying entry "cn=John-1,cn=Users,dc=coke,dc=com"
+
+modifying entry "cn=John-1,cn=Users,dc=pepsi,dc=com"
+
++ echo
+
++ echo 'Modifying objects as ** Coke ** Administrator'
+Modifying objects as ** Coke ** Administrator
++ echo
+
++ /opt/likewise/bin/ldapadd -c -h localhost -p 389 -x -D cn=Administrator,cn=users,dc=Coke,dc=com -w vmware
+ldap_modify: Insufficient access (50)
+	additional info: CoreLogicModifyEntry failed. (9207)
+ldap_modify: Insufficient access (50)
+	additional info: CoreLogicModifyEntry failed. (9207)
+modifying entry "cn=John-1,cn=Users,dc=vsphere,dc=local"
+
+modifying entry "cn=John-1,cn=Users,dc=coke,dc=com"
+
+modifying entry "cn=John-1,cn=Users,dc=pepsi,dc=com"
+
++ echo
+
++ echo 'Modifying objects as ** Pepsi ** Administrator'
+Modifying objects as ** Pepsi ** Administrator
++ echo
+
++ /opt/likewise/bin/ldapadd -c -h localhost -p 389 -x -D cn=Administrator,cn=users,dc=pepsi,dc=com -w vmware
+ldap_modify: Insufficient access (50)
+	additional info: CoreLogicModifyEntry failed. (9207)
+ldap_modify: Insufficient access (50)
+	additional info: CoreLogicModifyEntry failed. (9207)
+modifying entry "cn=John-1,cn=Users,dc=vsphere,dc=local"
+
+modifying entry "cn=John-1,cn=Users,dc=coke,dc=com"
+
+modifying entry "cn=John-1,cn=Users,dc=pepsi,dc=com"
+
++ echo
+
++ echo 'Modifying objects as ** cn=John-1,cn=Users,dc=vsphere,dc=local **'
+Modifying objects as ** cn=John-1,cn=Users,dc=vsphere,dc=local **
++ echo
+
++ /opt/likewise/bin/ldapadd -c -h localhost -p 389 -x -D cn=John-1,cn=Users,dc=vsphere,dc=local -w Pasword@1
+ldap_modify: Insufficient access (50)
+	additional info: CoreLogicModifyEntry failed. (9207)
+ldap_modify: Insufficient access (50)
+	additional info: CoreLogicModifyEntry failed. (9207)
+modifying entry "cn=John-1,cn=Users,dc=vsphere,dc=local"
+
+modifying entry "cn=John-1,cn=Users,dc=coke,dc=com"
+
+modifying entry "cn=John-1,cn=Users,dc=pepsi,dc=com"
+
++ echo
+
++ echo 'Deleteing objects as ** Pepsi ** Administrator'
+Deleteing objects as ** Pepsi ** Administrator
++ echo
+
++ /opt/likewise/bin/ldapadd -c -h localhost -p 389 -x -D cn=Administrator,cn=users,dc=pepsi,dc=com -w vmware
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+deleting entry "cn=John-1,cn=Users,dc=vsphere,dc=local"
+
+deleting entry "cn=John-2,cn=Users,dc=vsphere,dc=local"
+
+deleting entry "cn=John-3,cn=Users,dc=vsphere,dc=local"
+
+deleting entry "cn=John-1,cn=Users,dc=coke,dc=com"
+
+deleting entry "cn=John-2,cn=Users,dc=coke,dc=com"
+
+deleting entry "cn=John-3,cn=Users,dc=coke,dc=com"
+
+deleting entry "cn=John-1,cn=Users,dc=pepsi,dc=com"
+
+deleting entry "cn=John-2,cn=Users,dc=pepsi,dc=com"
+
+deleting entry "cn=John-3,cn=Users,dc=pepsi,dc=com"
+
++ echo
+
++ echo 'Deleteing objects as ** Coke ** Administrator'
+Deleteing objects as ** Coke ** Administrator
++ echo
+
++ /opt/likewise/bin/ldapadd -c -h localhost -p 389 -x -D cn=Administrator,cn=users,dc=coke,dc=com -w vmware
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: No such object (32)
+	additional info: (9703)((MDB_NOTFOUND: No matching key/data pair found)(cn=john-1,cn=users,dc=pepsi,dc=com))
+ldap_delete: No such object (32)
+	additional info: (9703)((MDB_NOTFOUND: No matching key/data pair found)(cn=john-2,cn=users,dc=pepsi,dc=com))
+ldap_delete: No such object (32)
+	additional info: (9703)((MDB_NOTFOUND: No matching key/data pair found)(cn=john-3,cn=users,dc=pepsi,dc=com))
+deleting entry "cn=John-1,cn=Users,dc=vsphere,dc=local"
+
+deleting entry "cn=John-2,cn=Users,dc=vsphere,dc=local"
+
+deleting entry "cn=John-3,cn=Users,dc=vsphere,dc=local"
+
+deleting entry "cn=John-1,cn=Users,dc=coke,dc=com"
+
+deleting entry "cn=John-2,cn=Users,dc=coke,dc=com"
+
+deleting entry "cn=John-3,cn=Users,dc=coke,dc=com"
+
+deleting entry "cn=John-1,cn=Users,dc=pepsi,dc=com"
+
+deleting entry "cn=John-2,cn=Users,dc=pepsi,dc=com"
+
+deleting entry "cn=John-3,cn=Users,dc=pepsi,dc=com"
+
++ echo
+
++ echo 'Deleteing objects as ** System ** Administrator'
+Deleteing objects as ** System ** Administrator
++ echo
+
++ /opt/likewise/bin/ldapadd -c -h localhost -p 389 -x -D cn=Administrator,cn=users,dc=vsphere,dc=local -w vmware
+ldap_delete: No such object (32)
+	additional info: (9703)((MDB_NOTFOUND: No matching key/data pair found)(cn=john-1,cn=users,dc=coke,dc=com))
+ldap_delete: No such object (32)
+	additional info: (9703)((MDB_NOTFOUND: No matching key/data pair found)(cn=john-2,cn=users,dc=coke,dc=com))
+ldap_delete: No such object (32)
+	additional info: (9703)((MDB_NOTFOUND: No matching key/data pair found)(cn=john-3,cn=users,dc=coke,dc=com))
+ldap_delete: No such object (32)
+	additional info: (9703)((MDB_NOTFOUND: No matching key/data pair found)(cn=john-1,cn=users,dc=pepsi,dc=com))
+ldap_delete: No such object (32)
+	additional info: (9703)((MDB_NOTFOUND: No matching key/data pair found)(cn=john-2,cn=users,dc=pepsi,dc=com))
+ldap_delete: No such object (32)
+	additional info: (9703)((MDB_NOTFOUND: No matching key/data pair found)(cn=john-3,cn=users,dc=pepsi,dc=com))
+deleting entry "cn=John-1,cn=Users,dc=vsphere,dc=local"
+
+deleting entry "cn=John-2,cn=Users,dc=vsphere,dc=local"
+
+deleting entry "cn=John-3,cn=Users,dc=vsphere,dc=local"
+
+deleting entry "cn=John-1,cn=Users,dc=coke,dc=com"
+
+deleting entry "cn=John-2,cn=Users,dc=coke,dc=com"
+
+deleting entry "cn=John-3,cn=Users,dc=coke,dc=com"
+
+deleting entry "cn=John-1,cn=Users,dc=pepsi,dc=com"
+
+deleting entry "cn=John-2,cn=Users,dc=pepsi,dc=com"
+
+deleting entry "cn=John-3,cn=Users,dc=pepsi,dc=com"
+
++ echo
+
++ echo 'Search for Admins as ** system administrator ** ...'
+Search for Admins as ** system administrator ** ...
++ echo
+
++ /opt/likewise/bin/ldapsearch -h localhost -p 389 -x -D cn=Administrator,cn=Users,dc=vsphere,dc=local -w vmware -b '' -s subtree 'cn=Admin*' dn
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: cn=Admin*
+# requesting: dn 
+#
+
+# Administrator, Users, vsphere.local
+dn: cn=Administrator,cn=Users,dc=vsphere,dc=local
+
+# Administrator, Users, coke.com
+dn: cn=Administrator,cn=Users,dc=coke,dc=com
+
+# Administrator, Users, pepsi.com
+dn: cn=Administrator,cn=Users,dc=pepsi,dc=com
+
+# Administrators, Builtin, vsphere.local
+dn: cn=Administrators,cn=Builtin,dc=vsphere,dc=local
+
+# Administrators, Builtin, coke.com
+dn: cn=Administrators,cn=Builtin,dc=coke,dc=com
+
+# Administrators, Builtin, pepsi.com
+dn: cn=Administrators,cn=Builtin,dc=pepsi,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 7
+# numEntries: 6
++ echo
+
++ echo 'Search for Admins as ** coke administrator ** ...'
+Search for Admins as ** coke administrator ** ...
++ echo
+
++ /opt/likewise/bin/ldapsearch -h localhost -p 389 -x -D cn=Administrator,cn=Users,dc=coke,dc=com -w vmware -b '' -s subtree 'cn=Admin*' dn
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: cn=Admin*
+# requesting: dn 
+#
+
+# Administrator, Users, coke.com
+dn: cn=Administrator,cn=Users,dc=coke,dc=com
+
+# Administrators, Builtin, coke.com
+dn: cn=Administrators,cn=Builtin,dc=coke,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 3
+# numEntries: 2
++ echo
+
++ echo 'Search for Admins as ** pepsi administrator ** ...'
+Search for Admins as ** pepsi administrator ** ...
++ echo
+
++ /opt/likewise/bin/ldapsearch -h localhost -p 389 -x -D cn=Administrator,cn=Users,dc=pepsi,dc=com -w vmware -b '' -s subtree 'cn=Admin*' dn
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: cn=Admin*
+# requesting: dn 
+#
+
+# Administrator, Users, pepsi.com
+dn: cn=Administrator,cn=Users,dc=pepsi,dc=com
+
+# Administrators, Builtin, pepsi.com
+dn: cn=Administrators,cn=Builtin,dc=pepsi,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 3
+# numEntries: 2
++ echo
+
++ echo 'Search for Admins as ** John-1,pepsi ** ...'
+Search for Admins as ** John-1,pepsi ** ...
++ echo
+
++ /opt/likewise/bin/ldapsearch -h localhost -p 389 -x -D cn=John-1,cn=Users,dc=pepsi,dc=com -w vmware -b '' -s subtree 'cn=Admin*' dn
+ldap_bind: No such object (32)
+	additional info: (9703)((MDB_NOTFOUND: No matching key/data pair found)(cn=john-1,cn=users,dc=pepsi,dc=com))
++ echo
+
++ echo 'Search for Admins as ** Anonymous ** ...'
+Search for Admins as ** Anonymous ** ...
++ echo
+
++ /opt/likewise/bin/ldapsearch -h localhost -p 389 -x -b '' -s subtree 'cn=Admin*' dn
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: cn=Admin*
+# requesting: dn 
+#
+
+# search result
+search: 2
+result: 50 Insufficient access
+text: Not bind/authenticate yet
+
+# numResponses: 1
++ echo
+
++ echo '** Anoymous ** DSE Root entry search ...'
+** Anoymous ** DSE Root entry search ...
++ /opt/likewise/bin/ldapsearch -h localhost -p 389 -x -b '' -s base 'objectclass=*'
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope baseObject
+# filter: objectclass=*
+# requesting: ALL
+#
+
+# DSE Root
+dn: cn=DSE Root
+objectClass: top
+objectClass: vmwDseRoot
+cn: DSE Root
+supportedLDAPVersion: 3
+supportedControl: 1.3.6.1.4.1.4203.1.9.1.1
+supportedControl: 1.3.6.1.4.1.4203.1.9.1.2
+supportedControl: 1.3.6.1.4.1.4203.1.9.1.3
+supportedControl: 1.2.840.113556.1.4.417
+supportedControl: 1.2.840.113556.1.4.319
+vmwServerVersion: 1.0
+supportedSASLMechanisms: GSSAPI SRP
+uSNCreated: 106
+entryDN: cn=DSE Root
+createTimeStamp: 20131023210224.0Z
+objectGUID: af62ecf0-fafe-4d69-9bc6-fb0067a960c8
+modifyTimeStamp: 20131023210243.0Z
+uSNChanged: 107
+msDS-SiteName: Default-First-Site
+deletedObjectsContainer: cn=Deleted Objects,dc=vsphere,dc=local
+vmwDCAccountUPN: sj-sles-dev-machine-1.bellevue.vmware.com@VSPHERE.LOCAL
+vmwDCAccountDN: cn=sj-sles-dev-machine-1.bellevue.vmware.com,ou=Domain Control
+ lers,dc=vsphere,dc=local
+vmwAdministratorDN: cn=Administrator,cn=Users,dc=vsphere,dc=local
+serverName: cn=sj-sles-dev-machine-1.bellevue.vmware.com,cn=Servers,cn=Default
+ -First-Site,cn=Sites,cn=Configuration,dc=vsphere,dc=local
+namingContexts: dc=vsphere,dc=local
+subSchemaSubEntry: cn=aggregate,cn=schemacontext
+schemaNamingContext: cn=schemacontext
+configurationNamingContext: cn=Configuration,dc=vsphere,dc=local
+defaultNamingContext: dc=vsphere,dc=local
+rootDomainNamingContext: dc=vsphere,dc=local
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1

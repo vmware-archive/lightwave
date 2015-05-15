@@ -1,0 +1,9 @@
+//file: vmca.acf
+
+[
+	explicit_handle
+]
+
+interface vmca
+{
+}

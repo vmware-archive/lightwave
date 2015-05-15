@@ -1,0 +1,26 @@
+# Map any Linux path separators "/" to Windows path separators "\"
+#
+DCERPC_WIN32_TOP = $(GOBUILD_PLATFORM_SDK_WINDOWS_ROOT:/=\)
+
+DCEIDL = $(DCERPC_WIN32_TOP)\$(ConfigurationName)\bin\dceidl.exe
+DCE_INCLUDE = -I$(DCERPC_WIN32_TOP)\$(ConfigurationName)\include
+PUBLIC_INCLUDE = -I..\include\public
+
+OUTDIR_DEBUG = ..\x64\Debug
+OUTDIR_RELEASE = ..\x64\Release
+
+all: $(OUTDIR_DEBUG)\vmevent_h.h $(OUTDIR_RELEASE)\vmevent_h.h 
+
+$(OUTDIR_DEBUG)\vmevent_h.h $(OUTDIR_DEBUG)\vmevent_s.c $(OUTDIR_DEBUG)\vmevent_c.c: vmevent.idl
+	-mkdir ..\x64
+	-mkdir $(OUTDIR_DEBUG)
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 -D_WIN32 $(DCE_INCLUDE) $(PUBLIC_INCLUDE) -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_DEBUG)\vmevent_c.c -sstub $(OUTDIR_DEBUG)\vmevent_s.c -header $(OUTDIR_DEBUG)\vmevent_h.h vmevent.idl 2>&1
+
+$(OUTDIR_RELEASE)\vmevent_h.h $(OUTDIR_RELEASE)\vmevent_s.c $(OUTDIR_RELEASE)\vmevent_c.c: vmevent.idl
+	-mkdir ..\x64
+	-mkdir $(OUTDIR_RELEASE)
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 -D_WIN32 $(DCE_INCLUDE) $(PUBLIC_INCLUDE) -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_RELEASE)\vmevent_c.c -sstub $(OUTDIR_RELEASE)\vmevent_s.c -header $(OUTDIR_RELEASE)\vmevent_h.h vmevent.idl 2>&1
+
+clean:
+	-del /f $(OUTDIR_DEBUG)\vmevent_c.c $(OUTDIR_DEBUG)\vmevent_s.c $(OUTDIR_DEBUG)\vmevent_h.h
+	-del /f $(OUTDIR_RELEASE)\vmevent_c.c $(OUTDIR_RELEASE)\vmevent_s.c $(OUTDIR_RELEASE)\vmevent_h.h

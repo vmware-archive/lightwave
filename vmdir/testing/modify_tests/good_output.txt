@@ -1,0 +1,295 @@
+#########################################################
+Create telephonenumber equality index
+#########################################################
+
+modifying entry "cn=indices,cn=config"
+
+# extended LDIF
+#
+# LDAPv3
+# base <cn=indices,cn=config> with scope baseObject
+# filter: objectclass=*
+# requesting: ALL
+#
+
+# indices, config
+dn: cn=indices,cn=config
+vmwAttrIndexDesc: cn eq sub
+vmwAttrIndexDesc: objectclass eq
+vmwAttrIndexDesc: dn eq sub unique
+vmwAttrIndexDesc: parentid eq
+vmwAttrIndexDesc: member eq
+vmwAttrIndexDesc: uSNChanged eq unique
+vmwAttrIndexDesc: attributeMetaData eq unique
+vmwAttrIndexDesc: vmwObjectSid eq unique
+vmwAttrIndexDesc: telephonenumber eq
+objectClass: vmwDirCfg
+cn: indices
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Add an attribute value (cn: david) to an existing indexed attribute.
+#########################################################
+
+modifying entry "cn=John-2,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <dc=com> with scope subtree
+# filter: cn=david
+# requesting: dn cn 
+#
+
+# John-2, eng, vmware.com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+cn: John-2
+cn: david
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Delete an attribute value (cn: david) for an indexed attribute.
+#########################################################
+
+modifying entry "cn=John-2,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <dc=com> with scope subtree
+# filter: cn=david
+# requesting: ALL
+#
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 1
+# extended LDIF
+#
+# LDAPv3
+# base <dc=com> with scope subtree
+# filter: cn=John-2
+# requesting: dn cn 
+#
+
+# John-2, eng, vmware.com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+cn: John-2
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Delete a non-indexed attribute (st)
+#########################################################
+
+modifying entry "cn=John-2,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <dc=com> with scope subtree
+# filter: cn=John-2
+# requesting: dn st 
+#
+
+# John-2, eng, vmware.com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Add a non-indexed attribute (st)
+#########################################################
+
+modifying entry "cn=John-2,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <dc=com> with scope subtree
+# filter: cn=John-2
+# requesting: st 
+#
+
+# John-2, eng, vmware.com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+st: washington
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Multiple Add mods (cn:david, st:california) should fail due to attribute st is a single value attribute
+#########################################################
+
+ldap_modify: Operations error (1)
+	additional info: Schema check failed - (2003)().
+modifying entry "cn=John-2,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <dc=com> with scope subtree
+# filter: cn=John-2
+# requesting: st 
+#
+
+# John-2, eng, vmware.com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+st: washington
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Multiple Delete mods (cn:david, st:california)
+#########################################################
+
+ldap_modify: No such attribute (16)
+	additional info: ApplyModsToEntryStruct failed - (16)(Attribute value being deleted does not exist.)
+modifying entry "cn=John-2,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <dc=com> with scope subtree
+# filter: cn=John-2
+# requesting: st 
+#
+
+# John-2, eng, vmware.com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+st: washington
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Try to delete a MUST attribute (cn)
+#########################################################
+
+ldap_modify: Operations error (1)
+	additional info: Schema check failed - (2003)().
+modifying entry "cn=John-2,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <dc=com> with scope subtree
+# filter: cn=John-2
+# requesting: dn cn 
+#
+
+# John-2, eng, vmware.com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+cn: John-2
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Delete telephonenumber attribute by replacing it with no values
+#########################################################
+
+modifying entry "cn=John-2,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <dc=com> with scope subtree
+# filter: cn=John-2
+# requesting: dn telephonenumber 
+#
+
+# John-2, eng, vmware.com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Add telephonenumber attribute by replacing it with values
+#########################################################
+
+modifying entry "cn=John-2,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <dc=com> with scope subtree
+# filter: cn=John-2
+# requesting: dn telephonenumber 
+#
+
+# John-2, eng, vmware.com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+telephoneNumber: 425-123-456-2
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+Replace telephonenumber attribute values
+#########################################################
+
+ldap_modify: Operations error (1)
+	additional info: Schema check failed - (2003)().
+modifying entry "cn=John-2,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <dc=com> with scope subtree
+# filter: telephonenumber=0987654321-2
+# requesting: ALL
+#
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 1

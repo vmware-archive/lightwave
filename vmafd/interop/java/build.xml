@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+       Copyright 2011 VMware, Inc. All rights reserved. VMware confidential.
+-->
+<project name="vmaf-dist" default="build">
+   <property file="product.properties" />
+   <property name="MAINSRCROOT" value="${basedir}/../../.." />
+   <property name="buildRoot" location="${MAINSRCROOT}/build" />
+   <import file="${MAINSRCROOT}/ant/presets.xml" />
+   <import file="${MAINSRCROOT}/ant/libraries.xml" />
+
+   <property name="PUBLISH_DIR" location="${buildRoot}/publish" />
+   <property name="build.publish" location="${PUBLISH_DIR}" />
+   <property name="deploy.prefix" value="/usr/lib/vmware-vmafd" />
+   <property name="deploy.prefix.support" value="/usr/lib/vmware-vmafd" />
+
+   <target name="module.gobuild-components" depends="import-helper-tasks">
+      <gobuild-auto-components />
+   </target>
+
+   <target name="module.af-client" >
+      <echo message="Publish Path: ${build.publish}" />
+      <make-module dir="vmaf" />
+   </target>
+
+   <target name="module.vks" >
+      <echo message="Publish Path: ${build.publish}" />
+      <make-module dir="vks" />
+   </target>
+
+   <target name="build" depends="module.af-client, module.vks" />
+
+   <target name="clean" depends="import-helper-tasks">
+       <delete dir="${buildRoot}/${PRODUCT_NAME}" />
+   </target>
+
+</project>

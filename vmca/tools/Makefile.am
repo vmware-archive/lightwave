@@ -1,0 +1,2 @@
+SUBDIRS = \
+    certificate-manager

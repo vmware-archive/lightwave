@@ -1,0 +1,66 @@
+#!/usr/local/bin/scons
+
+import os
+
+def CreatePathRelativeToRoot(rootdir, PathToAppend):
+	return os.path.normpath(os.path.join(rootdir, PathToAppend))  
+
+rootdir = os.getcwd()
+
+bindir =  CreatePathRelativeToRoot(rootdir,'obj') 
+publicsdir = CreatePathRelativeToRoot(rootdir,'public')
+
+incdirs = []
+incdirs.append('/opt/likewise/include/')
+
+incdirs.append(CreatePathRelativeToRoot(rootdir,'include'))
+incdirs.append(CreatePathRelativeToRoot(rootdir,'idl'))
+incdirs.append(CreatePathRelativeToRoot(rootdir,'pkcs'))
+
+libdirs = ['/opt/likewise/lib']
+libdirs.append('/usr/loca/lib')
+libdirs.append(CreatePathRelativeToRoot(rootdir,'public/lib'))
+
+
+VMCAEnv = Environment(  ROOTDIR     = rootdir,
+                        BINDIR      = bindir,
+                        CPPPATH     = [incdirs],
+                        LIBPATH     = [libdirs],
+                        PUBLICDIR   = publicsdir)
+
+
+VMCAEnv['CCFLAGS'] = '-ggdb'
+#VMCAEnv['LINKFLAGS'] = 
+#VMCAEnv['CC'] = 'clang'
+Export('VMCAEnv')             
+
+VMCAEnv.SConscript('./include/sconscript', 		variant_dir = CreatePathRelativeToRoot(bindir,'include'), 	duplicate = 1)     
+VMCAEnv.SConscript('./idl/sconscript', 			variant_dir = CreatePathRelativeToRoot(bindir,'idl'), 		duplicate = 1)     
+VMCAEnv.SConscript('./common/sconscript', 		variant_dir = CreatePathRelativeToRoot(bindir,'common'), 	duplicate = 1)
+VMCAEnv.SConscript('./pkcs/sconscript', 		variant_dir = CreatePathRelativeToRoot(bindir,'pkcs'), 		duplicate = 1)     
+VMCAEnv.SConscript('./client/sconscript', 		variant_dir = CreatePathRelativeToRoot(bindir,'client'), 	duplicate = 0)   
+VMCAEnv.SConscript('./service/sconscript',		variant_dir = CreatePathRelativeToRoot(bindir,'service'), 	duplicate = 0)    
+
+#####################################################################
+#  Compile Test Code, with only paths likewise and our lib  		# 
+#####################################################################
+
+
+testdirs = []
+testdirs.append('/opt/likewise/include/')
+testdirs.append(CreatePathRelativeToRoot(publicsdir,'inc'))
+
+
+testlibdirs = ['/opt/likewise/lib']
+testlibdirs.append(CreatePathRelativeToRoot(publicsdir,'lib'))
+
+
+VMCATestEnv = Environment(	ROOTDIR     = rootdir,
+                        	BINDIR      = bindir,
+                        	CPPPATH     = testdirs,
+                        	LIBPATH     = testlibdirs,
+                        	PUBLICDIR   = publicsdir)
+
+VMCATestEnv['CCFLAGS'] = '-ggdb'
+Export('VMCATestEnv')
+VMCAEnv.SConscript('./test/sconscript', 	variant_dir = CreatePathRelativeToRoot(bindir,'test'), 		duplicate = 0)     

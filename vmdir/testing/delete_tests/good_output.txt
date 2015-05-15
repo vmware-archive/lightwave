@@ -1,0 +1,665 @@
+# extended LDIF
+#
+# LDAPv3
+# base <ou=eng,dc=vmware,dc=com> with scope subtree
+# filter: cn=*
+# requesting: dn 
+#
+
+# John-1, eng, vmware.com
+dn: cn=John-1,ou=eng,dc=vmware,dc=com
+dn: cn=John-1,ou=eng,dc=vmware,dc=com
+
+# John-2, eng, vmware.com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+
+# John-3, eng, vmware.com
+dn: cn=John-3,ou=eng,dc=vmware,dc=com
+dn: cn=John-3,ou=eng,dc=vmware,dc=com
+
+# John-4, eng, vmware.com
+dn: cn=John-4,ou=eng,dc=vmware,dc=com
+dn: cn=John-4,ou=eng,dc=vmware,dc=com
+
+# John-5, eng, vmware.com
+dn: cn=John-5,ou=eng,dc=vmware,dc=com
+dn: cn=John-5,ou=eng,dc=vmware,dc=com
+
+# John-6, eng, vmware.com
+dn: cn=John-6,ou=eng,dc=vmware,dc=com
+dn: cn=John-6,ou=eng,dc=vmware,dc=com
+
+# John-7, eng, vmware.com
+dn: cn=John-7,ou=eng,dc=vmware,dc=com
+dn: cn=John-7,ou=eng,dc=vmware,dc=com
+
+# John-8, eng, vmware.com
+dn: cn=John-8,ou=eng,dc=vmware,dc=com
+dn: cn=John-8,ou=eng,dc=vmware,dc=com
+
+# John-9, eng, vmware.com
+dn: cn=John-9,ou=eng,dc=vmware,dc=com
+dn: cn=John-9,ou=eng,dc=vmware,dc=com
+
+# John-10, eng, vmware.com
+dn: cn=John-10,ou=eng,dc=vmware,dc=com
+dn: cn=John-10,ou=eng,dc=vmware,dc=com
+
+# John-11, eng, vmware.com
+dn: cn=John-11,ou=eng,dc=vmware,dc=com
+dn: cn=John-11,ou=eng,dc=vmware,dc=com
+
+# John-12, eng, vmware.com
+dn: cn=John-12,ou=eng,dc=vmware,dc=com
+dn: cn=John-12,ou=eng,dc=vmware,dc=com
+
+# John-13, eng, vmware.com
+dn: cn=John-13,ou=eng,dc=vmware,dc=com
+dn: cn=John-13,ou=eng,dc=vmware,dc=com
+
+# John-14, eng, vmware.com
+dn: cn=John-14,ou=eng,dc=vmware,dc=com
+dn: cn=John-14,ou=eng,dc=vmware,dc=com
+
+# John-15, eng, vmware.com
+dn: cn=John-15,ou=eng,dc=vmware,dc=com
+dn: cn=John-15,ou=eng,dc=vmware,dc=com
+
+# John-16, eng, vmware.com
+dn: cn=John-16,ou=eng,dc=vmware,dc=com
+dn: cn=John-16,ou=eng,dc=vmware,dc=com
+
+# John-17, eng, vmware.com
+dn: cn=John-17,ou=eng,dc=vmware,dc=com
+dn: cn=John-17,ou=eng,dc=vmware,dc=com
+
+# John-18, eng, vmware.com
+dn: cn=John-18,ou=eng,dc=vmware,dc=com
+dn: cn=John-18,ou=eng,dc=vmware,dc=com
+
+# John-19, eng, vmware.com
+dn: cn=John-19,ou=eng,dc=vmware,dc=com
+dn: cn=John-19,ou=eng,dc=vmware,dc=com
+
+# John-20, eng, vmware.com
+dn: cn=John-20,ou=eng,dc=vmware,dc=com
+dn: cn=John-20,ou=eng,dc=vmware,dc=com
+
+# John-21, eng, vmware.com
+dn: cn=John-21,ou=eng,dc=vmware,dc=com
+dn: cn=John-21,ou=eng,dc=vmware,dc=com
+
+# John-22, eng, vmware.com
+dn: cn=John-22,ou=eng,dc=vmware,dc=com
+dn: cn=John-22,ou=eng,dc=vmware,dc=com
+
+# John-23, eng, vmware.com
+dn: cn=John-23,ou=eng,dc=vmware,dc=com
+dn: cn=John-23,ou=eng,dc=vmware,dc=com
+
+# John-24, eng, vmware.com
+dn: cn=John-24,ou=eng,dc=vmware,dc=com
+dn: cn=John-24,ou=eng,dc=vmware,dc=com
+
+# John-25, eng, vmware.com
+dn: cn=John-25,ou=eng,dc=vmware,dc=com
+dn: cn=John-25,ou=eng,dc=vmware,dc=com
+
+# John-26, eng, vmware.com
+dn: cn=John-26,ou=eng,dc=vmware,dc=com
+dn: cn=John-26,ou=eng,dc=vmware,dc=com
+
+# John-27, eng, vmware.com
+dn: cn=John-27,ou=eng,dc=vmware,dc=com
+dn: cn=John-27,ou=eng,dc=vmware,dc=com
+
+# John-28, eng, vmware.com
+dn: cn=John-28,ou=eng,dc=vmware,dc=com
+dn: cn=John-28,ou=eng,dc=vmware,dc=com
+
+# John-29, eng, vmware.com
+dn: cn=John-29,ou=eng,dc=vmware,dc=com
+dn: cn=John-29,ou=eng,dc=vmware,dc=com
+
+# John-30, eng, vmware.com
+dn: cn=John-30,ou=eng,dc=vmware,dc=com
+dn: cn=John-30,ou=eng,dc=vmware,dc=com
+
+# John-31, eng, vmware.com
+dn: cn=John-31,ou=eng,dc=vmware,dc=com
+dn: cn=John-31,ou=eng,dc=vmware,dc=com
+
+# John-32, eng, vmware.com
+dn: cn=John-32,ou=eng,dc=vmware,dc=com
+dn: cn=John-32,ou=eng,dc=vmware,dc=com
+
+# John-33, eng, vmware.com
+dn: cn=John-33,ou=eng,dc=vmware,dc=com
+dn: cn=John-33,ou=eng,dc=vmware,dc=com
+
+# John-34, eng, vmware.com
+dn: cn=John-34,ou=eng,dc=vmware,dc=com
+dn: cn=John-34,ou=eng,dc=vmware,dc=com
+
+# John-35, eng, vmware.com
+dn: cn=John-35,ou=eng,dc=vmware,dc=com
+dn: cn=John-35,ou=eng,dc=vmware,dc=com
+
+# John-36, eng, vmware.com
+dn: cn=John-36,ou=eng,dc=vmware,dc=com
+dn: cn=John-36,ou=eng,dc=vmware,dc=com
+
+# John-37, eng, vmware.com
+dn: cn=John-37,ou=eng,dc=vmware,dc=com
+dn: cn=John-37,ou=eng,dc=vmware,dc=com
+
+# John-38, eng, vmware.com
+dn: cn=John-38,ou=eng,dc=vmware,dc=com
+dn: cn=John-38,ou=eng,dc=vmware,dc=com
+
+# John-39, eng, vmware.com
+dn: cn=John-39,ou=eng,dc=vmware,dc=com
+dn: cn=John-39,ou=eng,dc=vmware,dc=com
+
+# John-40, eng, vmware.com
+dn: cn=John-40,ou=eng,dc=vmware,dc=com
+dn: cn=John-40,ou=eng,dc=vmware,dc=com
+
+# John-41, eng, vmware.com
+dn: cn=John-41,ou=eng,dc=vmware,dc=com
+dn: cn=John-41,ou=eng,dc=vmware,dc=com
+
+# John-42, eng, vmware.com
+dn: cn=John-42,ou=eng,dc=vmware,dc=com
+dn: cn=John-42,ou=eng,dc=vmware,dc=com
+
+# John-43, eng, vmware.com
+dn: cn=John-43,ou=eng,dc=vmware,dc=com
+dn: cn=John-43,ou=eng,dc=vmware,dc=com
+
+# John-44, eng, vmware.com
+dn: cn=John-44,ou=eng,dc=vmware,dc=com
+dn: cn=John-44,ou=eng,dc=vmware,dc=com
+
+# John-45, eng, vmware.com
+dn: cn=John-45,ou=eng,dc=vmware,dc=com
+dn: cn=John-45,ou=eng,dc=vmware,dc=com
+
+# John-46, eng, vmware.com
+dn: cn=John-46,ou=eng,dc=vmware,dc=com
+dn: cn=John-46,ou=eng,dc=vmware,dc=com
+
+# John-47, eng, vmware.com
+dn: cn=John-47,ou=eng,dc=vmware,dc=com
+dn: cn=John-47,ou=eng,dc=vmware,dc=com
+
+# John-48, eng, vmware.com
+dn: cn=John-48,ou=eng,dc=vmware,dc=com
+dn: cn=John-48,ou=eng,dc=vmware,dc=com
+
+# John-49, eng, vmware.com
+dn: cn=John-49,ou=eng,dc=vmware,dc=com
+dn: cn=John-49,ou=eng,dc=vmware,dc=com
+
+# John-50, eng, vmware.com
+dn: cn=John-50,ou=eng,dc=vmware,dc=com
+dn: cn=John-50,ou=eng,dc=vmware,dc=com
+
+# John-51, eng, vmware.com
+dn: cn=John-51,ou=eng,dc=vmware,dc=com
+dn: cn=John-51,ou=eng,dc=vmware,dc=com
+
+# John-52, eng, vmware.com
+dn: cn=John-52,ou=eng,dc=vmware,dc=com
+dn: cn=John-52,ou=eng,dc=vmware,dc=com
+
+# John-53, eng, vmware.com
+dn: cn=John-53,ou=eng,dc=vmware,dc=com
+dn: cn=John-53,ou=eng,dc=vmware,dc=com
+
+# John-54, eng, vmware.com
+dn: cn=John-54,ou=eng,dc=vmware,dc=com
+dn: cn=John-54,ou=eng,dc=vmware,dc=com
+
+# John-55, eng, vmware.com
+dn: cn=John-55,ou=eng,dc=vmware,dc=com
+dn: cn=John-55,ou=eng,dc=vmware,dc=com
+
+# John-56, eng, vmware.com
+dn: cn=John-56,ou=eng,dc=vmware,dc=com
+dn: cn=John-56,ou=eng,dc=vmware,dc=com
+
+# John-57, eng, vmware.com
+dn: cn=John-57,ou=eng,dc=vmware,dc=com
+dn: cn=John-57,ou=eng,dc=vmware,dc=com
+
+# John-58, eng, vmware.com
+dn: cn=John-58,ou=eng,dc=vmware,dc=com
+dn: cn=John-58,ou=eng,dc=vmware,dc=com
+
+# John-59, eng, vmware.com
+dn: cn=John-59,ou=eng,dc=vmware,dc=com
+dn: cn=John-59,ou=eng,dc=vmware,dc=com
+
+# John-60, eng, vmware.com
+dn: cn=John-60,ou=eng,dc=vmware,dc=com
+dn: cn=John-60,ou=eng,dc=vmware,dc=com
+
+# John-61, eng, vmware.com
+dn: cn=John-61,ou=eng,dc=vmware,dc=com
+dn: cn=John-61,ou=eng,dc=vmware,dc=com
+
+# John-62, eng, vmware.com
+dn: cn=John-62,ou=eng,dc=vmware,dc=com
+dn: cn=John-62,ou=eng,dc=vmware,dc=com
+
+# John-63, eng, vmware.com
+dn: cn=John-63,ou=eng,dc=vmware,dc=com
+dn: cn=John-63,ou=eng,dc=vmware,dc=com
+
+# John-64, eng, vmware.com
+dn: cn=John-64,ou=eng,dc=vmware,dc=com
+dn: cn=John-64,ou=eng,dc=vmware,dc=com
+
+# John-65, eng, vmware.com
+dn: cn=John-65,ou=eng,dc=vmware,dc=com
+dn: cn=John-65,ou=eng,dc=vmware,dc=com
+
+# John-66, eng, vmware.com
+dn: cn=John-66,ou=eng,dc=vmware,dc=com
+dn: cn=John-66,ou=eng,dc=vmware,dc=com
+
+# John-67, eng, vmware.com
+dn: cn=John-67,ou=eng,dc=vmware,dc=com
+dn: cn=John-67,ou=eng,dc=vmware,dc=com
+
+# John-68, eng, vmware.com
+dn: cn=John-68,ou=eng,dc=vmware,dc=com
+dn: cn=John-68,ou=eng,dc=vmware,dc=com
+
+# John-69, eng, vmware.com
+dn: cn=John-69,ou=eng,dc=vmware,dc=com
+dn: cn=John-69,ou=eng,dc=vmware,dc=com
+
+# John-70, eng, vmware.com
+dn: cn=John-70,ou=eng,dc=vmware,dc=com
+dn: cn=John-70,ou=eng,dc=vmware,dc=com
+
+# John-71, eng, vmware.com
+dn: cn=John-71,ou=eng,dc=vmware,dc=com
+dn: cn=John-71,ou=eng,dc=vmware,dc=com
+
+# John-72, eng, vmware.com
+dn: cn=John-72,ou=eng,dc=vmware,dc=com
+dn: cn=John-72,ou=eng,dc=vmware,dc=com
+
+# John-73, eng, vmware.com
+dn: cn=John-73,ou=eng,dc=vmware,dc=com
+dn: cn=John-73,ou=eng,dc=vmware,dc=com
+
+# John-74, eng, vmware.com
+dn: cn=John-74,ou=eng,dc=vmware,dc=com
+dn: cn=John-74,ou=eng,dc=vmware,dc=com
+
+# John-75, eng, vmware.com
+dn: cn=John-75,ou=eng,dc=vmware,dc=com
+dn: cn=John-75,ou=eng,dc=vmware,dc=com
+
+# John-76, eng, vmware.com
+dn: cn=John-76,ou=eng,dc=vmware,dc=com
+dn: cn=John-76,ou=eng,dc=vmware,dc=com
+
+# John-77, eng, vmware.com
+dn: cn=John-77,ou=eng,dc=vmware,dc=com
+dn: cn=John-77,ou=eng,dc=vmware,dc=com
+
+# John-78, eng, vmware.com
+dn: cn=John-78,ou=eng,dc=vmware,dc=com
+dn: cn=John-78,ou=eng,dc=vmware,dc=com
+
+# John-79, eng, vmware.com
+dn: cn=John-79,ou=eng,dc=vmware,dc=com
+dn: cn=John-79,ou=eng,dc=vmware,dc=com
+
+# John-80, eng, vmware.com
+dn: cn=John-80,ou=eng,dc=vmware,dc=com
+dn: cn=John-80,ou=eng,dc=vmware,dc=com
+
+# John-81, eng, vmware.com
+dn: cn=John-81,ou=eng,dc=vmware,dc=com
+dn: cn=John-81,ou=eng,dc=vmware,dc=com
+
+# John-82, eng, vmware.com
+dn: cn=John-82,ou=eng,dc=vmware,dc=com
+dn: cn=John-82,ou=eng,dc=vmware,dc=com
+
+# John-83, eng, vmware.com
+dn: cn=John-83,ou=eng,dc=vmware,dc=com
+dn: cn=John-83,ou=eng,dc=vmware,dc=com
+
+# John-84, eng, vmware.com
+dn: cn=John-84,ou=eng,dc=vmware,dc=com
+dn: cn=John-84,ou=eng,dc=vmware,dc=com
+
+# John-85, eng, vmware.com
+dn: cn=John-85,ou=eng,dc=vmware,dc=com
+dn: cn=John-85,ou=eng,dc=vmware,dc=com
+
+# John-86, eng, vmware.com
+dn: cn=John-86,ou=eng,dc=vmware,dc=com
+dn: cn=John-86,ou=eng,dc=vmware,dc=com
+
+# John-87, eng, vmware.com
+dn: cn=John-87,ou=eng,dc=vmware,dc=com
+dn: cn=John-87,ou=eng,dc=vmware,dc=com
+
+# John-88, eng, vmware.com
+dn: cn=John-88,ou=eng,dc=vmware,dc=com
+dn: cn=John-88,ou=eng,dc=vmware,dc=com
+
+# John-89, eng, vmware.com
+dn: cn=John-89,ou=eng,dc=vmware,dc=com
+dn: cn=John-89,ou=eng,dc=vmware,dc=com
+
+# John-90, eng, vmware.com
+dn: cn=John-90,ou=eng,dc=vmware,dc=com
+dn: cn=John-90,ou=eng,dc=vmware,dc=com
+
+# John-91, eng, vmware.com
+dn: cn=John-91,ou=eng,dc=vmware,dc=com
+dn: cn=John-91,ou=eng,dc=vmware,dc=com
+
+# John-92, eng, vmware.com
+dn: cn=John-92,ou=eng,dc=vmware,dc=com
+dn: cn=John-92,ou=eng,dc=vmware,dc=com
+
+# John-93, eng, vmware.com
+dn: cn=John-93,ou=eng,dc=vmware,dc=com
+dn: cn=John-93,ou=eng,dc=vmware,dc=com
+
+# John-94, eng, vmware.com
+dn: cn=John-94,ou=eng,dc=vmware,dc=com
+dn: cn=John-94,ou=eng,dc=vmware,dc=com
+
+# John-95, eng, vmware.com
+dn: cn=John-95,ou=eng,dc=vmware,dc=com
+dn: cn=John-95,ou=eng,dc=vmware,dc=com
+
+# John-96, eng, vmware.com
+dn: cn=John-96,ou=eng,dc=vmware,dc=com
+dn: cn=John-96,ou=eng,dc=vmware,dc=com
+
+# John-97, eng, vmware.com
+dn: cn=John-97,ou=eng,dc=vmware,dc=com
+dn: cn=John-97,ou=eng,dc=vmware,dc=com
+
+# John-98, eng, vmware.com
+dn: cn=John-98,ou=eng,dc=vmware,dc=com
+dn: cn=John-98,ou=eng,dc=vmware,dc=com
+
+# John-99, eng, vmware.com
+dn: cn=John-99,ou=eng,dc=vmware,dc=com
+dn: cn=John-99,ou=eng,dc=vmware,dc=com
+
+# John-100, eng, vmware.com
+dn: cn=John-100,ou=eng,dc=vmware,dc=com
+dn: cn=John-100,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 101
+# numEntries: 100
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: cn=John-50
+# requesting: dn 
+#
+
+# John-50, eng, vmware.com
+dn: cn=John-50,ou=eng,dc=vmware,dc=com
+dn: cn=John-50,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+ldap_delete: Operation not allowed on non-leaf (66)
+	additional info: Delete of a non-leaf node is not allowed.
+deleting entry "ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-1,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-2,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-3,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-4,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-5,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-6,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-7,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-8,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-9,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-10,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-11,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-12,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-13,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-14,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-15,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-16,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-17,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-18,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-19,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-20,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-21,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-22,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-23,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-24,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-25,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-26,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-27,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-28,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-29,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-30,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-31,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-32,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-33,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-34,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-35,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-36,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-37,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-38,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-39,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-40,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-41,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-42,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-43,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-44,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-45,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-46,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-47,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-48,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-49,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-50,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-51,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-52,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-53,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-54,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-55,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-56,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-57,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-58,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-59,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-60,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-61,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-62,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-63,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-64,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-65,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-66,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-67,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-68,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-69,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-70,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-71,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-72,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-73,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-74,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-75,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-76,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-77,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-78,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-79,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-80,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-81,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-82,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-83,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-84,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-85,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-86,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-87,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-88,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-89,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-90,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-91,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-92,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-93,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-94,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-95,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-96,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-97,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-98,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-99,ou=eng,dc=vmware,dc=com"
+
+deleting entry "cn=John-100,ou=eng,dc=vmware,dc=com"
+
+deleting entry "ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope subtree
+# filter: cn=John-50
+# requesting: dn 
+#
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 1
+# extended LDIF
+#
+# LDAPv3
+# base <ou=eng,dc=vmware,dc=com> with scope subtree
+# filter: cn=*
+# requesting: dn 
+#
+
+# search result
+search: 2
+result: 32 No such object
+text: InternalSearch: beDnToEntryId failed, Base DN does not exist.
+
+# numResponses: 1

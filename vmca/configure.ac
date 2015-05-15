@@ -1,0 +1,541 @@
+AC_PREREQ(2.59)
+
+AC_INIT([vmca], [1.0.0], [support@vmware.com])
+AC_CANONICAL_SYSTEM
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
+AC_CONFIG_HEADERS([include/config.h])
+AC_CONFIG_MACRO_DIR([m4])
+m4_pattern_allow([AM_PROG_AR])
+AM_PROG_AR
+
+#AC_PROG_CC
+AC_PROG_CXX(g++)
+AC_PROG_LIBTOOL
+
+dnl Check supported operating systems
+dnl
+
+case "${host_os}:${host_cpu}" in
+
+    linux*:x86_64)
+	;;
+    *)
+        AC_ERROR("Unsupported operating system - ${host_os}:${host_cpu}")
+        ;;
+esac
+
+CXXFLAGS="$CXXFLAGS -frtti"
+CPPFLAGS="$CPPFLAGS -D_REENTRANT -D_GNU_SOURCE -fPIC "
+
+AM_CPPFLAGS="$AM_CPPFLAGS -I${top_srcdir}/include"
+AM_CFLAGS="$AM_CFLAGS -Wall -Werror -fno-strict-aliasing"
+
+AC_SUBST(AM_CXXFLAGS)
+AC_SUBST(AM_CPPFLAGS)
+AC_SUBST(AM_CFLAGS)
+
+AC_ARG_ENABLE([debug],
+    [AC_HELP_STRING([--enable-debug], [enable debugging (default: disabled)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            AM_CFLAGS="$AM_CFLAGS -g -O0"
+            AM_CPPFLAGS="$AM_CPPFLAGS -DDEBUG -DVMCA_DEBUG"
+        fi
+    ])
+
+
+AC_ARG_ENABLE([gcov],
+    [AC_HELP_STRING([--enable-gcov], [enable code coverage (default: disabled)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            AM_CFLAGS="$AM_CFLAGS -g -O0 -fprofile-arcs -ftestcoverage"
+            AM_CPPFLAGS="$AM_CPPFLAGS -DDEBUG -DVMCA_DEBUG"
+        fi
+    ])
+
+# openssl component
+
+AC_ARG_WITH([ssl],
+    [AC_HELP_STRING([--with-ssl=<dir>], [use SSL binaries rooted at prefix <dir> ])],
+    [
+        OPENSSL_BASE_PATH="$withval"
+        OPENSSL_INCLUDES="-I$withval/include"
+        OPENSSL_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64"
+    ])
+
+AC_ARG_WITH([ssl-includes],
+    [AC_HELP_STRING([--with-ssl-includes=<dir>], [use SSL headers located in prefix <dir> ])],
+    [
+        OPENSSL_INCLUDES="-I$withval"
+    ])
+
+AC_ARG_WITH([ssl-libs],
+    [AC_HELP_STRING([--with-ssl-libs=<dir>], [use SSL libraries located in prefix <dir> ])],
+    [
+        OPENSSL_LDFLAGS="-L$withval"
+    ])
+
+AC_SUBST(OPENSSL_BASE_PATH)
+AC_SUBST(OPENSSL_INCLUDES)
+AC_SUBST(OPENSSL_LDFLAGS)
+
+# vmdir component
+
+AC_ARG_WITH([vmdir],
+    [AC_HELP_STRING([--with-vmdir=<dir>], [use directory-server binaries rooted at prefix <dir> ])],
+    [
+        VMDIR_BASE_PATH="$withval"
+        VMDIR_INCLUDES="-I$withval/include"
+        VMDIR_LDFLAGS="-L$withval/lib -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+    ])
+
+AC_ARG_WITH([vmdir-includes],
+    [AC_HELP_STRING([--with-vmdir-includes=<dir>], [use directory-server headers located in prefix <dir> ])],
+    [
+        VMDIR_INCLUDES="-I$withval"
+    ])
+
+AC_ARG_WITH([vmdir-libs],
+    [AC_HELP_STRING([--with-vmdir-libs=<dir>], [use directory-server libraries located in prefix <dir> ])],
+    [
+        VMDIR_LDFLAGS="-L$withval"
+    ])
+
+AC_SUBST(VMDIR_BASE_PATH)
+AC_SUBST(VMDIR_INCLUDES)
+AC_SUBST(VMDIR_LDFLAGS)
+
+
+# vmafd component
+
+AC_ARG_WITH([afd],
+    [AC_HELP_STRING([--with-afd=<dir>], [use afd-server binaries rooted at prefix <dir> ])],
+    [
+        VMAFD_BASE_PATH="$withval"
+        VMAFD_INCLUDES="-I$withval/include"
+        VMAFD_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+    ])
+
+AC_ARG_WITH([afd-includes],
+    [AC_HELP_STRING([--with-afd-includes=<dir>], [use afd-server headers located in prefix <dir> ])],
+    [
+        VMAFD_INCLUDES="-I$withval"
+    ])
+
+AC_ARG_WITH([afd-libs],
+    [AC_HELP_STRING([--with-afd-libs=<dir>], [use afd-server libraries located in prefix <dir> ])],
+    [
+        VMAFD_LDFLAGS="-L$withval"
+    ])
+
+saved_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $VMAFD_INCLUDES $DCERPC_INCLUDES"
+AC_CHECK_HEADERS(vmafdclient.h)
+CPPFLAGS="$saved_CPPFLAGS"
+
+VMAFD_LIBS="-lvmafdclient"
+AC_SUBST(VMAFD_BASE_PATH)
+AC_SUBST(VMAFD_INCLUDES)
+AC_SUBST(VMAFD_LDFLAGS)
+
+
+# Likewise components
+
+AC_ARG_WITH([likewise],
+    [AC_HELP_STRING([--with-likewise=<dir>], [use likewise binaries rooted at prefix <dir> ])],
+    [
+        LW_BASE_PATH="$withval"
+        LW_INCLUDES="-I$withval/include"
+        LW_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/likewise/lib64 -Wl,-rpath-link,/opt/likewise/lib64"
+    ])
+
+AC_ARG_WITH([likewise-includes],
+    [AC_HELP_STRING([--with-likewise-includes=<dir>], [use likewise headers located in prefix <dir> ])],
+    [
+        LW_INCLUDES="-I$withval"
+    ])
+
+AC_ARG_WITH([likewise-libs],
+    [AC_HELP_STRING([--with-likewise-libs=<dir>], [use likewise libraries located in prefix <dir> ])],
+    [
+        LW_LDFLAGS="-L$withval"
+    ])
+
+AC_SUBST(LW_BASE_PATH)
+AC_SUBST(LW_INCLUDES)
+AC_SUBST(LW_LDFLAGS)
+
+DCERPC_PATH=$LW_BASE_PATH/bin
+DCERPC_INCLUDES=$LW_INCLUDES
+DCERPC_LDFLAGS=$LW_LDFLAGS
+
+AC_ARG_WITH([dcerpc],
+    [AC_HELP_STRING([--with-dcerpc=<dir>], [use DCERPC binaries rooted at prefix <dir> ])],
+    [
+        DCERPC_PATH="$withval/bin"
+        DCERPC_INCLUDES="-I$withval/include"
+        DCERPC_LDFLAGS="-L$withval/lib64"
+    ])
+
+AC_ARG_WITH([dcerpc-includes],
+    [AC_HELP_STRING([--with-dcerpc-includes=<dir>], [use DCERPC headers located in prefix <dir> ])],
+    [
+        DCERPC_INCLUDES="-I$withval"
+    ])
+
+AC_ARG_WITH([dcerpc-libs],
+    [AC_HELP_STRING([--with-dcerpc-libs=<dir>], [use DCERPC libraries located in prefix <dir> ])],
+    [
+        DCERPC_LDFLAGS="-L$withval"
+    ])
+
+AC_SUBST(DCERPC_PATH)
+AC_SUBST(DCERPC_INCLUDES)
+AC_SUBST(DCERPC_LDFLAGS)
+
+for i in $CPPFLAGS ${DCERPC_INCLUDES} ${LW_INCLUDES}; do
+    j=`echo $i | grep '^-I'`
+    if test x != x"$j"
+    then
+        IDLFLAGS="$IDLFLAGS $j"
+    fi
+done
+
+AC_SUBST(IDLFLAGS)
+
+saved_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $LW_INCLUDES $OPENSSL_INCLUDES"
+AC_CHECK_HEADERS(lw/base.h lw/types.h uuid/uuid.h)
+AC_CHECK_HEADERS(openssl/crypto.h openssl/ssl.h openssl/err.h)
+CPPFLAGS="$saved_CPPFLAGS"
+
+# POPT components
+
+AC_ARG_WITH([popt],
+    [AC_HELP_STRING([--with-popt=<dir>], [use POPT binaries rooted at prefix <dir> ])],
+    [
+        POPT_BASE_PATH="$withval"
+        POPT_INCLUDES="-I$withval/include"
+        POPT_LDFLAGS="-L$withval/lib"
+    ])
+
+AC_ARG_WITH([popt-includes],
+    [AC_HELP_STRING([--with-popt-includes=<dir>], [use POPT headers located in prefix <dir> ])],
+    [
+        POPT_INCLUDES="-I$withval"
+    ])
+
+AC_ARG_WITH([popt-libs],
+    [AC_HELP_STRING([--with-popt-libs=<dir>], [use POPT libraries located in prefix <dir> ])],
+    [
+        POPT_LDFLAGS="-L$withval"
+    ])
+
+AC_SUBST(POPT_BASE_PATH)
+AC_SUBST(POPT_INCLUDES)
+AC_SUBST(POPT_LDFLAGS)
+
+saved_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $POPT_INCLUDES"
+AC_CHECK_HEADERS(popt.h)
+CPPFLAGS="$saved_CPPFLAGS"
+
+# SQLITE components
+
+AC_ARG_WITH([sqlite],
+    [AC_HELP_STRING([--with-sqlite=<dir>], [use SQLITE binaries rooted at prefix <dir> ])],
+    [
+        SQLITE_BASE_PATH="$withval"
+        SQLITE_INCLUDES="-I$withval/include"
+        SQLITE_LDFLAGS="-L$withval/lib"
+    ])
+
+AC_ARG_WITH([sqlite-includes],
+    [AC_HELP_STRING([--with-sqlite-includes=<dir>], [use SQLITE headers located in prefix <dir> ])],
+    [
+        SQLITE_INCLUDES="-I$withval"
+    ])
+
+AC_ARG_WITH([sqlite-libs],
+    [AC_HELP_STRING([--with-sqlite-libs=<dir>], [use SQLITE libraries located in prefix <dir> ])],
+    [
+        SQLITE_LDFLAGS="-L$withval"
+    ])
+
+AC_SUBST(SQLITE_BASE_PATH)
+AC_SUBST(SQLITE_INCLUDES)
+AC_SUBST(SQLITE_LDFLAGS)
+
+saved_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $SQLITE_INCLUDES"
+AC_CHECK_HEADERS(sqlite3.h)
+CPPFLAGS="$saved_CPPFLAGS"
+
+# BOOST components
+
+AC_ARG_WITH([boost],
+    [AC_HELP_STRING([--with-boost=<dir>], [use BOOST binaries rooted at prefix <dir> ])],
+    [
+        BOOST_BASE_PATH="$withval"
+        BOOST_INCLUDES="-I$withval/include"
+        BOOST_LDFLAGS="-L$withval/lib"
+    ])
+
+AC_ARG_WITH([boost-includes],
+    [AC_HELP_STRING([--with-boost-includes=<dir>], [use BOOST headers located in prefix <dir> ])],
+    [
+        BOOST_INCLUDES="-I$withval"
+    ])
+
+AC_ARG_WITH([boost-libs],
+    [AC_HELP_STRING([--with-boost-libs=<dir>], [use BOOST libraries located in prefix <dir> ])],
+    [
+        BOOST_LDFLAGS="-L$withval"
+    ])
+
+AC_SUBST(BOOST_BASE_PATH)
+AC_SUBST(BOOST_INCLUDES)
+AC_SUBST(BOOST_LDFLAGS)
+
+saved_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $BOOST_INCLUDES"
+AC_LANG_PUSH([C++])
+AC_CHECK_HEADERS(boost/asio.hpp)
+AC_LANG_POP([C++])
+CPPFLAGS="$saved_CPPFLAGS"
+
+# Python components
+
+AC_ARG_WITH([python],
+    [AC_HELP_STRING([--with-python=<dir>], [use Python binaries rooted at prefix <dir> ])],
+    [
+        PYTHON_BASE_PATH="$withval"
+        PYTHON_INCLUDES="-I$withval/include/python2.7"
+        PYTHON_LDFLAGS="-L$withval/lib"
+    ])
+
+AC_ARG_WITH([python-includes],
+    [AC_HELP_STRING([--with-python-includes=<dir>], [use Python headers located in prefix <dir> ])],
+    [
+        PYTHON_INCLUDES="-I$withval"
+    ])
+
+AC_ARG_WITH([python-libs],
+    [AC_HELP_STRING([--with-python-libs=<dir>], [use Python libraries located in prefix <dir> ])],
+    [
+        PYTHON_LDFLAGS="-L$withval"
+    ])
+
+AC_SUBST(PYTHON_BASE_PATH)
+AC_SUBST(PYTHON_INCLUDES)
+AC_SUBST(PYTHON_LDFLAGS)
+
+saved_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $PYTHON_INCLUDES"
+AC_CHECK_HEADERS(python.h)
+CPPFLAGS="$saved_CPPFLAGS"
+
+AC_HEADER_STDC
+AC_CHECK_HEADERS(pthread.h errno.h sys/types.h stdio.h string.h strings.h)
+AC_CHECK_HEADERS(unistd.h time.h inttypes.h sys/socket.h netdb.h syslog.h)
+AC_CHECK_HEADERS(stdlib.h locale.h stddef.h stdarg.h assert.h signal.h)
+AC_CHECK_HEADERS(ctype.h netinet/in.h termios.h term.h)
+
+AC_C_CONST
+AC_TYPE_SIZE_T
+
+AC_FUNC_VPRINTF
+AC_CHECK_FUNCS(strerror)
+
+AC_CHECK_LIB([dl], [dlopen], [DL_LIBS="-ldl"])
+AC_CHECK_LIB([pthread], [pthread_self], [PTHREAD_LIBS="-lpthread"])
+AC_CHECK_LIB([popt], [poptGetArg], [POPT_LIBS="-lpopt"], [], [$POPT_LDFLAGS])
+
+AC_LANG_PUSH([C++])
+echo $BOOST_BASE_PATH
+echo $BOOST_LDFLAGS
+
+AC_CHECK_LIB(
+        [boost_unit_test_framework],
+        [main],
+        [BOOST_LIBS="-lboost_thread -lboost_system -lboost_filesystem -lboost_program_options"],
+        [],
+        [$BOOST_LDFLAGS])
+AC_LANG_POP([C++])
+
+AC_CHECK_LIB([sqlite3], [sqlite3_open], [SQLITE_LIBS="-lsqlite3"], [], [$SQLITE_LDFLAGS])
+AC_CHECK_LIB([python2.7 ],  [PyArg_Parse], [PYTHON_LIBS="-lpython2.7"], [], [$PYTHON_LDFLAGS])
+
+AC_LANG_PUSH([C++])
+saved_LIBS="$LIBS"
+LOG4CPP_LIBS="-llog4cpp"
+AC_LANG_PUSH([C++])
+saved_LIBS="$LIBS"
+LOG4CPP_LIBS="-static -llog4cpp"
+
+
+
+AC_CHECK_LIB(
+    [gssapi_krb5],
+    [gss_accept_sec_context],
+    [GSSAPI_LIBS="-lgssapi_krb5 -lkrb5 -lk5crypto -lkrb5support -lcom_err"],
+    [],
+    [$LW_LDFLAGS -lgssapi_krb5 -lkrb5 -lk5crypto -lkrb5support -lcom_err])
+AC_CHECK_LIB(
+    [uuid],
+    [uuid_generate],
+    [UUID_LIBS="-luuid"],
+    [],
+    [$LW_LDFLAGS])
+AC_CHECK_LIB(
+    [lwbase],
+    [LwRtlMemoryAllocate],
+    [LWBASE_LIBS="-llwbase -llwbase_nothr"],
+    [],
+    [$LW_LDFLAGS -llwbase_nothr])
+AC_CHECK_LIB(
+    [lwmsg],
+    [lwmsg_connection_new],
+    [LWMSG_LIBS="-llwmsg -llwmsg_nothr"],
+    [],
+    [$LW_LDFLAGS -llwmsg_nothr $LWBASE_LIBS])
+AC_CHECK_LIB(
+    [regclient],
+    [LwRegOpenKeyExW],
+    [LWREG_LIBS="-lregclient -lregcommon"],
+    [],
+    [$LW_LDFLAGS -lregcommon $LWMSG_LIBS $LWBASE_LIBS])
+AC_CHECK_LIB(
+    [rsutils],
+    [RegUtilSetValue],
+    [LWRSUTILS_LIBS="-lrsutils"],
+    [],
+    [$LW_LDFLAGS -lrsutils $LWREG_LIBS $LWMSG_LIBS $LWBASE_LIBS])
+AC_CHECK_LIB(
+    [ssl],
+    [crypto],
+    [MD5_Init],
+    [CRYPTO_LIBS="-lcrypto -lssl"],
+    [],
+    [$OPENSSL_LDFLAGS])
+AC_CHECK_LIB(
+    [schannel],
+    [schn_init_creds],
+    [SCHANNEL_LIBS="-lschannel"],
+    [],
+    [$LW_LDFLAGS $LWBASE_LIBS $OPENSSL_LDFLAGS $CRYPTO_LIBS])
+AC_CHECK_LIB(
+    [lwioclient],
+    [LwNtCreateFile],
+    [LWIO_LIBS="-llwioclient -llwioshareinfo -llwiocommon"],
+    [],
+    [$LW_LDFLAGS -llwioshareinfo -llwiocommon
+     $LWREG_LIBS $LWMSG_LIBS $LWBASE_LIBS $GSSAPI_LIBS
+    ])
+AC_CHECK_LIB(
+    [dcerpc],
+    [rpc__init],
+    [DCERPC_LIBS="-ldcerpc"],
+    [],
+    [$DCERPC_LDFLAGS $OPENSSL_LDFLAGS $GSSAPI_LIBS $SCHANNEL_LIBS $CRYPTO_LIBS $LWIO_LIBS
+     $LWREG_LIBS $LWMSG_LIBS $LWBASE_LIBS
+    ])
+AC_CHECK_LIB(
+              [lber],
+              [ber_scanf],
+              [LBER_LIBS="-llber"],
+              [],
+              [$LW_LDFLAGS -llber])
+
+#AC_CHECK_LIB(
+#              [gssapi_krb5],
+#              [gss_accept_sec_context],
+#              [GSSAPI_LIBS="-lgssapi_krb5 -lkrb5 -lk5crypto -lkrb5support -lcom_err"],
+#              [],
+#              [$LW_LDFLAGS -lgssapi_krb5 -lkrb5 -lk5crypto -lkrb5support -lcom_err])
+
+AC_CHECK_LIB(
+              [ldap_r],
+              [ldap_add_ext],
+              [LDAP_LIBS="-lldap_r -llber -lsasl2"],
+              [],
+              [$LW_LDFLAGS -llber -lsasl2 $GSSAPI_LIBS $OPENSSL_LDFLAGS $CRYPTO_LIBS])
+
+
+
+AC_SUBST(BOOST_LIBS)
+AC_SUBST(DL_LIBS)
+AC_SUBST(PTHREAD_LIBS)
+AC_SUBST(POPT_LIBS)
+AC_SUBST(SQLITE_LIBS)
+AC_SUBST(GSSAPI_LIBS)
+AC_SUBST(UUID_LIBS)
+AC_SUBST(LWBASE_LIBS)
+AC_SUBST(LWMSG_LIBS)
+AC_SUBST(LWREG_LIBS)
+AC_SUBST(LWRSUTILS_LIBS)
+AC_SUBST(CRYPTO_LIBS)
+AC_SUBST(SCHANNEL_LIBS)
+AC_SUBST(LWIO_LIBS)
+AC_SUBST(DCERPC_LIBS)
+AC_SUBST(UUID_LIBS)
+AC_SUBST(LDAP_LIBS)
+AC_SUBST(LBER_LIBS)
+AC_SUBST(PYTHON_LIBS)
+AC_SUBST(VMAFD_LIBS)
+
+
+
+AC_PATH_PROG([IDL], [dceidl], [no], [$PATH:$DCERPC_PATH])
+
+AS_AC_EXPAND(VMCA_BIN_DIR, $prefix)
+AC_SUBST(VMCA_BIN_DIR)
+
+AS_AC_EXPAND(VMCA_SBIN_DIR, ["${sbindir}"])
+AC_SUBST(VMCA_SBIN_DIR)
+
+if test x"$localstatedir" = x"/var"; then
+    vmcadbdir="$localstatedir/lib/vmca"
+else
+    vmcadbdir="$localstatedir"
+fi
+AC_SUBST(vmcadbdir)
+AS_AC_EXPAND(VMCA_DB_DIR, $vmcadbdir)
+AC_SUBST(VMCA_DB_DIR)
+AC_DEFINE_UNQUOTED(VMCA_DB_DIR, "$VMCA_DB_DIR", [Database directory])
+
+if test x"$IDL" = x"no"; then
+    AC_MSG_ERROR([DCERPC IDL compiler not found])
+fi
+
+vmcaconfdir="$datadir/config"
+AC_SUBST(vmcaconfdir)
+AS_AC_EXPAND(VMCA_CONFIG_DIR, $vmcaconfdir)
+AC_SUBST(VMCA_CONFIG_DIR)
+AC_DEFINE_UNQUOTED(VMCA_CONFIG_DIR, "$VMCA_CONFIG_DIR", [Config directory])
+
+vmcatoolsdir=$prefix/bin
+AC_SUBST(vmcatoolsdir)
+
+vmcapyutilsdir=$prefix/site-packages/cis
+AC_SUBST(vmcapyutilsdir)
+
+AC_CONFIG_FILES([Makefile
+                 include/Makefile
+                 include/public/Makefile
+                 config/Makefile
+                 config/vmca.reg
+                 common/Makefile
+                 service/Makefile
+                 client/Makefile
+                 vmcadb/Makefile
+                 certool/Makefile
+                 test/Makefile
+                 tools/Makefile
+                 tools/certificate-manager/Makefile
+                 python/Makefile
+                ])
+AC_OUTPUT
+

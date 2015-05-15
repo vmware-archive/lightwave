@@ -1,0 +1,153 @@
+//file VMCA.idl
+//Version history 1.0 to 2.0 - change in VMCA_FILE_BUFFER to container
+[
+    uuid(7a98c250-6808-11cf-b73b-00aa00b677a7),
+    version(3.0),
+    pointer_default(unique)
+]
+interface vmca
+{
+#ifndef _WIN32
+#include <lw/types.h>
+#else
+    typedef unsigned short wchar16_t;
+    //	typedef char * PSTR;
+#endif
+
+    cpp_quote("#ifndef _VMCA_CERTIFICATE_ENTRY_DEFINED_")
+    cpp_quote("#define _VMCA_CERTIFICATE_ENTRY_DEFINED_")
+
+#define MAX_CERT_SIZE 64 * 1024
+    typedef char CERTTYPE[MAX_CERT_SIZE];
+#define FILE_CHUNK 64 * 1024
+
+    cpp_quote("#endif")
+
+    cpp_quote("#ifndef _VMCA_CERTIFICATE_CONTAINER_DEFINED_")
+    cpp_quote("#define _VMCA_CERTIFICATE_CONTAINER_DEFINED_")
+
+    typedef struct _VMCA_CERTIFICATE_CONTAINER
+    {
+        unsigned32 dwCount;
+        [size_is(dwCount)] unsigned char* pCert;
+    } VMCA_CERTIFICATE_CONTAINER, *PVMCA_CERTIFICATE_CONTAINER;
+
+    typedef struct _VMCA_CERTIFICATE_ARRAY
+    {
+        unsigned32 dwCount;
+        [size_is(dwCount)] PVMCA_CERTIFICATE_CONTAINER certificates;
+    } VMCA_CERTIFICATE_ARRAY, *PVMCA_CERTIFICATE_ARRAY;
+
+    typedef struct _VCMA_FILE_BUF
+    {
+        unsigned32 dwCount;
+        [size_is(dwCount)] unsigned char* buffer;
+    }VMCA_FILE_BUFFER, *PVMCA_FILE_BUFFER;
+
+    typedef enum {
+        CERTIFICATE_ACTIVE  = 0,
+        CERTIFICATE_REVOKED = 1,
+        CERTIFIFCATE_EXPIRED  = 2,
+        CERTIFICATE_ALL   = 4
+    }CERTIFICATE_STATUS;
+
+    cpp_quote("#endif")
+
+    unsigned32
+    RpcVMCAGetServerVersion(
+        [out] unsigned32 *dwCertLength,
+        [out] VMCA_CERTIFICATE_CONTAINER **pServerVersion
+        );
+
+    unsigned32
+    RpcVMCAInitEnumCertificatesHandle(
+        [out] unsigned32 * pdwHandle
+        );
+
+    unsigned32
+    RpcVMCAEnumCertificates(
+        [in] CERTIFICATE_STATUS dwStatus,
+        [in] unsigned32 dwStartIndex,
+        [in] unsigned32 dwNumCertificates,
+        [out] PVMCA_CERTIFICATE_ARRAY *ppCertContainer
+        );
+
+    unsigned32
+    RpcVMCAGetCertificateCount(
+        [in] CERTIFICATE_STATUS dwStatus,
+        [out] unsigned32 *dwTotalCount
+        );
+
+    unsigned32
+    RpcVMCAAddRootCertificate(
+        [in, string, unique] char *pszRootCertificate,
+        [in, string, unique] wchar16_t *pszPassPhrase,
+        [in, string, unique] char *pszPrivateKey,
+        [in] unsigned32 dwOverWrite,
+        [in, string, unique] wchar16_t *pszPassword
+        );
+
+    unsigned32
+    RpcVMCAGetRootCACertificate(
+        [out] unsigned32 *dwCertLength,
+        [out] VMCA_CERTIFICATE_CONTAINER ** ppCertContainer
+        );
+
+    unsigned32
+    RpcVMCAGetSignedCertificate(
+        [in, string] char *pszPEMEncodedCSRRequest,
+        [in] unsigned32 dwtmNotBefore,
+        [in] unsigned32 dwtmNotAfter,
+        [in, string, unique] wchar16_t *pszPassword,
+        [out] unsigned32 *dwCertLength,
+        [out] VMCA_CERTIFICATE_CONTAINER ** ppCertContainer
+        );
+
+    unsigned32
+    RpcVMCARevokeCertificate(
+        [in, string, unique] char *pszPEMEncodedCertificate,
+        [in, string, unique] wchar16_t *pszPassword
+        );
+
+    unsigned32
+    RpcVMCAVerifyCertificate(
+        [in, string, unique] char *pszPEMEncodedCertificate,
+        [out] unsigned32 *dwStatus
+        );
+
+    unsigned32
+    RpcVMCAFindCertificates(
+        [in] unsigned32 dwSearchQueryLength,
+        [in, size_is(dwSearchQueryLength)] wchar16_t *pszSearchQuery,
+        [out, ref] unsigned32 *dwCertificateCount,
+        [out] VMCA_CERTIFICATE_CONTAINER ** ppCertContainer
+        );
+
+    unsigned32
+    RpcVMCAGetCRL(
+        [in, string, unique]char *pszClientCachedCRLID,
+        [in] unsigned32 dwFileOffset,
+        [in] unsigned32  dwSize,
+        [out] VMCA_FILE_BUFFER ** ppCRLData
+        );
+
+    unsigned32
+    RpcVMCAReGenCRL(
+        );
+
+    unsigned32
+    RpcVMCAPublishRootCerts(
+        );
+
+    unsigned32
+    VMCARpcRevokeCertificate (
+        [in, string, unique] wchar16_t *pszServerName,
+        [in, string, unique] char *pszPEMEncodedCertificate,
+        [in] unsigned32 dwcrlReason,
+        [in, string, unique] wchar16_t *pszPassword
+        );
+
+    unsigned32
+    VMCARpcReGenCRL (
+        );
+}

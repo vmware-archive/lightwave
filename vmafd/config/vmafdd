@@ -1,0 +1,14 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides: vmafd
+# Required-Start: $network $remote_fs
+# Required-Stop: $network $remote_fs
+# Default-Start: 3 5
+# Default-Stop: 0 1 2 6
+# Description: Start and Stop vmafd
+### END INIT INFO
+
+PREFIX="/opt/likewise"
+SERVICE_NAME="vmafd"
+
+. /opt/likewise/bin/init-lwsm.sh

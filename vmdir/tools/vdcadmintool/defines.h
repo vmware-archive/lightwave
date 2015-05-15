@@ -1,0 +1,6 @@
+#ifndef _VDCADMINTOOL_DEFINES_H_
+#define _VDCADMINTOOL_DEFINES_H_
+
+#define SIZE_256    256
+
+#endif

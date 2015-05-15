@@ -1,0 +1,31 @@
+# Map any Linux path separators "/" to Windows path separators "\"
+#
+DCERPC_WIN32_TOP = $(GOBUILD_PLATFORM_SDK_WINDOWS_ROOT:/=\)
+ConfigurationName=$(CONFIGURATIONNAME)
+
+DCEIDL = $(DCERPC_WIN32_TOP)\$(ConfigurationName)\bin\dceidl.exe
+DCE_INCLUDE = -I$(DCERPC_WIN32_TOP)\$(ConfigurationName)\include -I..\include\public
+
+OUTDIR_DEBUG = ..\x64\Debug
+OUTDIR_RELEASE = ..\x64\Release
+
+all: release debug
+
+release: $(OUTDIR_RELEASE)\vmafd_h.h
+
+debug: $(OUTDIR_DEBUG)\vmafd_h.h
+
+#
+# vmafd.idl debug/release stub generation
+#
+$(OUTDIR_DEBUG)\vmafd_h.h $(OUTDIR_DEBUG)\vmafd_s.c $(OUTDIR_DEBUG)\vmafd_c.c: vmafd.idl
+	-mkdir $(OUTDIR_DEBUG)
+	$(DCEIDL) $(DCE_INCLUDE) -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_DEBUG)\vmafd_c.c -sstub $(OUTDIR_DEBUG)\vmafd_s.c -header $(OUTDIR_DEBUG)\vmafd_h.h vmafd.idl 2>&1
+
+$(OUTDIR_RELEASE)\vmafd_h.h $(OUTDIR_RELEASE)\vmafd_s.c $(OUTDIR_RELEASE)\vmafd_c.c: vmafd.idl
+	-mkdir $(OUTDIR_RELEASE)
+	$(DCEIDL) $(DCE_INCLUDE) -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_RELEASE)\vmafd_c.c -sstub $(OUTDIR_RELEASE)\vmafd_s.c -header $(OUTDIR_RELEASE)\vmafd_h.h vmafd.idl 2>&1
+
+clean:
+	-del /f $(OUTDIR_DEBUG)\vmafd_c.c $(OUTDIR_DEBUG)\vmafd_s.c $(OUTDIR_DEBUG)\vmafd_h.h
+	-del /f $(OUTDIR_RELEASE)\vmafd_c.c $(OUTDIR_RELEASE)\vmafd_s.c $(OUTDIR_RELEASE)\vmafd_h.h

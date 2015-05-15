@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2011 VMware, Inc. All rights reserved. VMware confidential.
+-->
+<project name="vmware-endpoint-certificate-store" default="build" basedir=".">
+
+   <property name="target-sets" value="main" />
+
+   <property name="vmware-endpoint-certificate-store.title"
+             value="VMware Endpoint Certificate Store" />
+   <property name="vmware-endpoint-certificate-store.version"
+             value="1.0.0.${BUILD_NUMBER}" />
+   <property name="vmware-endpoint-certificate-store.vendor"
+             value="VMWare, Inc." />
+
+   <property file="../product.properties" />
+   <property name="MAINSRCROOT" value="${basedir}/../../../.."/>
+   <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}"/>
+
+   <import file="${MAINSRCROOT}/ant/presets.xml" />
+   <import file="${MAINSRCROOT}/ant/defaults.xml" />
+
+   <path id="classpath.main">
+   </path>
+
+   <import file="${MAINSRCROOT}/ant/buildcycle-template.xml" />
+
+</project>

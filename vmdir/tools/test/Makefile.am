@@ -1,0 +1,4 @@
+SUBDIRS = \
+    dequetest \
+    vmdirclienttest
+

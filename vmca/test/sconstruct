@@ -1,0 +1,39 @@
+#!/usr/local/bin/scons
+
+import os
+
+#####################################################################
+#  Compile Test Code, with only paths likewise and our lib  		# 
+#####################################################################
+
+
+testdirs = []
+testdirs.append('/build/toolchain/lin64/boost-1.42.0/include')
+testdirs.append('/home/aengineer/workspaces/lotus/main/vmca/gobuild/compcache/vmware-likewise-linux-x64/ob-680210/linux64/include')
+testdirs.append('/home/aengineer/workspaces/lotus/main/vmca/build/stage/rpmtmp/usr/lib/vmware-vmca/include')
+
+
+testlibdirs.append('/build/toolchain/lin64/boost-1.42.0/lib')
+testlibdirs.append('/home/aengineer/workspaces/lotus/main/vmca/gobuild/compcache/vmware-likewise-linux-x64/ob-680210/linux64/lib')
+testlibdirs.append('/home/aengineer/workspaces/lotus/main/vmca/build/stage/rpmtmp/usr/lib/vmware-vmca/lib64')
+
+
+
+testlibdirs.append(CreatePathRelativeToRoot(publicsdir,'lib'))
+
+
+VMCATestEnv = Environment(	ROOTDIR     = rootdir,
+                        	BINDIR      = bindir,
+                        	CPPPATH     = testdirs,
+                        	LIBPATH     = testlibdirs,
+                        	PUBLICDIR   = publicsdir)
+
+VMCATestEnv['CCFLAGS'] = '-ggdb'
+client_libs =['ssl','crypto','z','curl', 'pthread', 'rt', 'nsl', 
+			'dl', 'lwioclient', 'curl', 'gssapi_krb5','schannel',
+			'dcerpc','vmcaclnt','vmcacommon', 'lwadvapi','vmcabtn','vmcapkcs']
+
+
+
+
+

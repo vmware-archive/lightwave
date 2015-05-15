@@ -1,0 +1,45 @@
+[HKEY_THIS_MACHINE\Services]
+
+[HKEY_THIS_MACHINE\Services\vmca]
+"Description" = {
+    default = "VMware Certificate Service"
+    doc = ""
+}
+"Path" = {
+    default = "@VMCA_SBIN_DIR@/vmcad"
+    doc = ""
+}
+"Arguments" = {
+    default = "@VMCA_SBIN_DIR@/vmcad -s"
+    doc = ""
+}
+"Environment" = {
+    default = ""
+    doc = ""
+}
+"Dependencies" = {
+    default = "lwreg dcerpc"
+    doc = ""
+}
+"Type" = {
+    default = dword:00000001
+    doc = ""
+}
+"Autostart" = {
+    default = dword:00000001
+    doc = ""
+}
+
+
+[HKEY_THIS_MACHINE\Services\vmca\Parameters]
+
+"RootCert" = {
+    default = "@VMCA_DB_DIR@/root.cer"
+    doc = "The Root CA Cert"
+}
+
+"RootPrivateKey" = {
+    default = "@VMCA_DB_DIR@/privatekey.pem"
+    doc = "The Private Key to be used for the RootCert"
+
+}

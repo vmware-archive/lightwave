@@ -1,0 +1,55 @@
+# Map any Linux path separators "/" to Windows path separators "\"
+#
+DCERPC_WIN32_TOP = $(GOBUILD_PLATFORM_SDK_WINDOWS_ROOT:/=\)
+ConfigurationName=$(CONFIGURATIONNAME)
+
+DCEIDL = $(DCERPC_WIN32_TOP)\$(ConfigurationName)\bin\dceidl.exe
+DCE_INCLUDE = -I$(DCERPC_WIN32_TOP)\$(ConfigurationName)\include
+
+OUTDIR_DEBUG = ..\vmdird\x64\Debug
+OUTDIR_RELEASE = ..\vmdird\x64\Release
+
+all: $(OUTDIR_DEBUG)\vmdir_h.h $(OUTDIR_RELEASE)\vmdir_h.h \
+      $(OUTDIR_DEBUG)\vmdirftp_h.h $(OUTDIR_RELEASE)\vmdirftp_h.h \
+      $(OUTDIR_DEBUG)\srp_verifier_h.h $(OUTDIR_RELEASE)\srp_verifier_h.h
+
+#
+# vmdir.idl debug/release stub generation
+#
+$(OUTDIR_DEBUG)\vmdir_h.h $(OUTDIR_DEBUG)\vmdir_s.c $(OUTDIR_DEBUG)\vmdir_c.c: vmdir.idl
+	-mkdir $(OUTDIR_DEBUG)
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_DEBUG)\vmdir_c.c -sstub $(OUTDIR_DEBUG)\vmdir_s.c -header $(OUTDIR_DEBUG)\vmdir_h.h vmdir.idl 2>&1
+
+$(OUTDIR_RELEASE)\vmdir_h.h $(OUTDIR_RELEASE)\vmdir_s.c $(OUTDIR_RELEASE)\vmdir_c.c: vmdir.idl
+	-mkdir $(OUTDIR_RELEASE)
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_RELEASE)\vmdir_c.c -sstub $(OUTDIR_RELEASE)\vmdir_s.c -header $(OUTDIR_RELEASE)\vmdir_h.h vmdir.idl 2>&1
+
+#
+# vmdirftp.idl debug/release stub generation
+#
+$(OUTDIR_DEBUG)\vmdirftp_h.h $(OUTDIR_DEBUG)\vmdirftp_s.c $(OUTDIR_DEBUG)\vmdirftp_c.c: vmdirftp.idl
+	-mkdir $(OUTDIR_DEBUG)
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_DEBUG)\vmdirftp_c.c -sstub $(OUTDIR_DEBUG)\vmdirftp_s.c -header $(OUTDIR_DEBUG)\vmdirftp_h.h vmdirftp.idl 2>&1
+
+$(OUTDIR_RELEASE)\vmdirftp_h.h $(OUTDIR_RELEASE)\vmdirftp_s.c $(OUTDIR_RELEASE)\vmdirftp_c.c: vmdirftp.idl
+	-mkdir $(OUTDIR_RELEASE)
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_RELEASE)\vmdirftp_c.c -sstub $(OUTDIR_RELEASE)\vmdirftp_s.c -header $(OUTDIR_RELEASE)\vmdirftp_h.h vmdirftp.idl 2>&1
+
+#
+# srp_verifier.idl debug/release stub generation
+#
+$(OUTDIR_DEBUG)\srp_verifier_h.h $(OUTDIR_DEBUG)\srp_verifier_s.c $(OUTDIR_DEBUG)\srp_verifier_c.c: srp_verifier.idl
+	-mkdir $(OUTDIR_DEBUG)
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_DEBUG)\srp_verifier_c.c -sstub $(OUTDIR_DEBUG)\srp_verifier_s.c -header $(OUTDIR_DEBUG)\srp_verifier_h.h srp_verifier.idl 2>&1
+
+$(OUTDIR_RELEASE)\srp_verifier_h.h $(OUTDIR_RELEASE)\srp_verifier_s.c $(OUTDIR_RELEASE)\srp_verifier_c.c: srp_verifier.idl
+	-mkdir $(OUTDIR_RELEASE)
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_RELEASE)\srp_verifier_c.c -sstub $(OUTDIR_RELEASE)\srp_verifier_s.c -header $(OUTDIR_RELEASE)\srp_verifier_h.h srp_verifier.idl 2>&1
+
+clean:
+	-del /f $(OUTDIR_DEBUG)\vmdir_c.c $(OUTDIR_DEBUG)\vmdir_s.c $(OUTDIR_DEBUG)\vmdir_h.h
+	-del /f $(OUTDIR_RELEASE)\vmdir_c.c $(OUTDIR_RELEASE)\vmdir_s.c $(OUTDIR_RELEASE)\vmdir_h.h
+	-del /f $(OUTDIR_DEBUG)\vmdirftp_c.c $(OUTDIR_DEBUG)\vmdirftp_s.c $(OUTDIR_DEBUG)\vmdirftp_h.h
+	-del /f $(OUTDIR_RELEASE)\vmdirftp_c.c $(OUTDIR_RELEASE)\vmdirftp_s.c $(OUTDIR_RELEASE)\vmdirftp_h.h
+	-del /f $(OUTDIR_DEBUG)\srp_verifier_c.c $(OUTDIR_DEBUG)\srp_verifier_s.c $(OUTDIR_DEBUG)\srp_verifier_h.h
+	-del /f $(OUTDIR_RELEASE)\srp_verifier_c.c $(OUTDIR_RELEASE)\srp_verifier_s.c $(OUTDIR_RELEASE)\srp_verifier_h.h

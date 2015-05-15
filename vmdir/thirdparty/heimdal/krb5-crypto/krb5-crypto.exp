@@ -1,0 +1,12 @@
+krb5_heim_crypto_destroy
+krb5_heim_crypto_init
+krb5_heim_data_copy
+krb5_heim_encrypt
+krb5_heim_free_keyblock_contents
+krb5_heim_generate_random_block
+krb5_heim_generate_random_keyblock
+krb5_heim_free_context
+krb5_heim_init_context
+krb5_heim_string_to_key
+krb5_heim_data_free
+krb5_heim_decrypt

@@ -1,0 +1,262 @@
+##################################################################################
+ACL TEST ON ADD as 'ADMIN': Add new entry under ou=eng,dc=vmware,dc=com as 'admin'
+##################################################################################
+
+adding new entry "cn=John-add,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <dc=com> with scope subtree
+# filter: (cn=john-add)
+# requesting: dn 
+#
+
+# John-add, eng, vmware.com
+dn: cn=John-add,ou=eng,dc=vmware,dc=com
+dn: cn=John-add,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#####################################################################################
+ACL TEST ON DELETE as 'ADMIN': Delete entry under ou=eng,dc=vmware,dc=com as 'admin'
+#####################################################################################
+
+deleting entry "cn=John-add,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <dc=com> with scope subtree
+# filter: (cn=john-add)
+# requesting: dn 
+#
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 1
+Add the entry back to do DELETE test
+
+adding new entry "cn=John-add,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <dc=com> with scope subtree
+# filter: (cn=john-add)
+# requesting: dn 
+#
+
+# John-add, eng, vmware.com
+dn: cn=John-add,ou=eng,dc=vmware,dc=com
+dn: cn=John-add,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#####################################################################################
+ACL TEST ON DELETE as 'John-1': Delete entry under ou=eng,dc=vmware,dc=com as 'John-1'
+#####################################################################################
+
+ldap_delete: Compare False (5)
+	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+deleting entry "cn=John-add,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <dc=com> with scope subtree
+# filter: (cn=john-add)
+# requesting: dn 
+#
+
+# John-add, eng, vmware.com
+dn: cn=John-add,ou=eng,dc=vmware,dc=com
+dn: cn=John-add,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#####################################################################################
+ACL TEST ON DELETE as 'Admin': Delete entry under ou=eng,dc=vmware,dc=com as 'Admin'
+#####################################################################################
+
+deleting entry "cn=John-add,ou=eng,dc=vmware,dc=com"
+
+###################################################################################
+ACL TEST ON ADD as 'John-1': Add new entry under ou=eng,dc=vmware,dc=com as 'John-1'
+###################################################################################
+
+ldap_add: Compare False (5)
+	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+adding new entry "cn=John-add,ou=eng,dc=vmware,dc=com"
+
+###########################################################################
+ACL TEST ON SYSTEM ENTRIES: Create telephonenumber equality index as 'admin'
+###########################################################################
+
+modifying entry "cn=indices,cn=config"
+
+###########################################################################
+ACL TEST ON SYSTEM ENTRIES: Create telephonenumber equality index as 'John-1'
+###########################################################################
+
+ldap_modify: Compare False (5)
+	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+modifying entry "cn=indices,cn=config"
+
+# extended LDIF
+#
+# LDAPv3
+# base <cn=indices,cn=config> with scope baseObject
+# filter: objectclass=*
+# requesting: vmwAttrIndexDesc 
+#
+
+# indices, config
+dn: cn=indices,cn=config
+vmwAttrIndexDesc: cn eq sub
+vmwAttrIndexDesc: objectclass eq
+vmwAttrIndexDesc: dn eq sub unique
+vmwAttrIndexDesc: parentid eq
+vmwAttrIndexDesc: member eq
+vmwAttrIndexDesc: uSNChanged eq unique
+vmwAttrIndexDesc: attributeMetaData eq unique
+vmwAttrIndexDesc: vmwObjectSid eq unique
+vmwAttrIndexDesc: telephonenumber eq
+vmwAttrIndexDesc: telexNumber eq
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+######################################################################
+Add an attribute value (displayName: david) to an existing indexed attribute.
+######################################################################
+
+Bind as admin to modify John-2
+modifying entry "cn=John-2,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <cn=John-2,ou=eng,dc=vmware,dc=com> with scope baseObject
+# filter: objectclass=*
+# requesting: displayName 
+#
+
+# John-2, eng, vmware.com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+displayName: wfu
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+Bind as John-2 to modify John-2
+modifying entry "cn=John-2,ou=eng,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <cn=John-2,ou=eng,dc=vmware,dc=com> with scope baseObject
+# filter: objectclass=*
+# requesting: displayName 
+#
+
+# John-2, eng, vmware.com
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+Bind as John-1 to modify John-2
+ldap_modify: Compare False (5)
+	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+modifying entry "cn=John-2,ou=eng,dc=vmware,dc=com"
+
+
+Bind Anonymously to search for 'cn=schemacontext'
+Anonymous search on 'cn=schemacontext' subtree should be allowed
+# extended LDIF
+#
+# LDAPv3
+# base <cn=schemacontext> with scope subtree
+# filter: (objectClass=*)
+# requesting: dn 
+#
+
+# schemacontext
+dn: cn=schemacontext
+dn: cn=schemacontext
+
+# aggregate, schemacontext
+dn: cn=aggregate,cn=schemacontext
+dn: cn=aggregate,cn=schemacontext
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 3
+# numEntries: 2
+
+Bind as John-1 to search for 'cn=schemacontext'
+A normal user should also have access right to 'cn=schemacontext' search
+# extended LDIF
+#
+# LDAPv3
+# base <cn=schemacontext> with scope subtree
+# filter: (objectClass=*)
+# requesting: dn 
+#
+
+# schemacontext
+dn: cn=schemacontext
+dn: cn=schemacontext
+
+# aggregate, schemacontext
+dn: cn=aggregate,cn=schemacontext
+dn: cn=aggregate,cn=schemacontext
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 3
+# numEntries: 2
+
+Bind as John-1 to search for 'dc=vmware,dc=com'
+A normal user should not have access right to 'dc=vmware,dc=com' (admin/admins have)
+# extended LDIF
+#
+# LDAPv3
+# base <dc=vmware,dc=com> with scope baseObject
+# filter: (objectClass=*)
+# requesting: dn 
+#
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 1
