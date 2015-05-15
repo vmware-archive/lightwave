@@ -16,9 +16,35 @@ PACKAGES=\
     $(LIGHTWAVE_STAGE_DIR)/$(VMCA_SERVER_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/$(VMCA_CLIENT_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/$(VMCA_CLIENT_DEVEL_RPM) \
-    $(LIGHTWAVE_STAGE_DIR)/$(CFG_RPM)
+    $(LIGHTWAVE_STAGE_DIR)/$(CFG_RPM) \
+    $(LIGHTWAVE_STAGE_DIR)/$(LW_SERVER_RPM) \
+    $(LIGHTWAVE_STAGE_DIR)/$(LW_CLIENTS_RPM)
 
 all: $(PACKAGES)
+
+$(LIGHTWAVE_STAGE_DIR)/$(LW_SERVER_RPM): $(LW_SERVER_PKGDIR)/$(LW_SERVER_RPM)
+	$(CP) -f $< $@
+
+$(LW_SERVER_PKGDIR)/$(LW_SERVER_RPM):
+	@cd $(SRCROOT)/lw-server && make
+
+lw-server-clean:
+	@cd $(SRCROOT)/lw-server && make clean
+	@if [ -d $(LIGHTWAVE_STAGE_DIR) ]; then \
+	    cd $(LIGHTWAVE_STAGE_DIR) && $(RM) -f $(LW_SERVER_RPM); \
+	fi
+
+$(LIGHTWAVE_STAGE_DIR)/$(LW_CLIENTS_RPM): $(LW_CLIENTS_PKGDIR)/$(LW_CLIENTS_RPM)
+	$(CP) -f $< $@
+
+$(LW_CLIENTS_PKGDIR)/$(LW_CLIENTS_RPM):
+	@cd $(SRCROOT)/lw-clients && make
+
+lw-clients-clean:
+	@cd $(SRCROOT)/lw-clients && make clean
+	@if [ -d $(LIGHTWAVE_STAGE_DIR) ]; then \
+	    cd $(LIGHTWAVE_STAGE_DIR) && $(RM) -f $(LW_CLIENTS_RPM); \
+	fi
 
 vmdir-client-install: $(LIGHTWAVE_STAGE_DIR)/$(VMDIR_CLIENT_RPM) $(LIGHTWAVE_STAGE_DIR)/$(VMDIR_CLIENT_DEVEL_RPM)
 	$(RPM) -Uvh --force $(LIGHTWAVE_STAGE_DIR)/$(VMDIR_CLIENT_RPM) $(LIGHTWAVE_STAGE_DIR)/$(VMDIR_CLIENT_DEVEL_RPM)
@@ -107,7 +133,7 @@ config-clean:
 	    cd $(LIGHTWAVE_STAGE_DIR) && $(RM) -f $(CFG_RPM); \
 	fi
 
-clean: config-clean vmca-clean vmafd-clean vmdir-clean
+clean: config-clean vmca-clean vmafd-clean vmdir-clean lw-server-clean lw-clients-clean
 	@if [ -d $(LIGHTWAVE_STAGE_DIR) ]; then \
 	    $(RMDIR) $(LIGHTWAVE_STAGE_DIR); \
 	fi
