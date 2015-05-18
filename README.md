@@ -11,10 +11,30 @@ VMware Lightwave consists of the following primary components.
 
 ##Prerequisites
 Lightwave uses several existing open source packages. These include
-1. OpenLDAP - OpenLDAP is used for the LDAP server protocol head and the OpenLDAP Lightning MDB embedded database is used as the underlying LDAP store
-2. Heimdal Kerberos - The Heimdal Kerberos stack is used as the Kerberos protocol head.
-3. DCE/RPC  - DCE/RPC is used as the control infrastructure for configuration of the Lightwave LDAP directory service
-4. Likewise Open - The Likewise Open stack is used for its service control infrastructure, its registry infrastructure and its NT Security Descriptor support. Likewise Open also provides a easy mechanism to provide ssh support for Lightwave clients
+
+1. OpenLDAP
+
+   ```
+   OpenLDAP is used for the LDAP server protocol head and the OpenLDAP Lightning MDB embedded database is used as the underlying LDAP store
+   ```
+
+2. Heimdal Kerberos
+
+   ```
+   The Heimdal Kerberos stack is used as the Kerberos protocol head.
+   ```
+
+3. DCE/RPC
+
+   ```
+   DCE/RPC is used as the control infrastructure for configuration of the Lightwave LDAP directory service
+   ```
+
+4. Likewise Open
+
+   ```
+   The Likewise Open stack is used for its service control infrastructure, its registry infrastructure and its NT Security Descriptor support. Likewise Open also provides a easy mechanism to provide ssh support for Lightwave clients
+   ```
 
 The first three packages are co-located within the Lightwave project. The Likewise Open project is a separate project and needs to be built from a separate git repository.  A binary RPM is also available, please see instructions below to add the repository.
 
