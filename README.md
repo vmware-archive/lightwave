@@ -1,6 +1,6 @@
 # VMware Lightwave
 
-VMware Lightwave is a software stack geared towards providing identity services including authentication and authorization for traditional infrastructure, applications and containers.
+VMware Lightwave is a software stack geared towards providing identity services including authentication and authorization for large-scale distributed infrastructure, applications and containers.
 
 VMware Lightwave consists of the following primary components.
 
