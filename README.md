@@ -60,6 +60,7 @@ Note : After configuring the following YUM repositories, please disable the phot
 
 Create the file "/etc/yum.repos.d/lightwave.repo" with the following contents.
 
+```
 [lightwave]
 name=VMware Lightwave 1.0(x86_64)
 baseurl=https://dl.bintray.com/vmware/lightwave
@@ -67,11 +68,13 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY
 gpgcheck=0
 enabled=1
 skip_if_unavailable=True
+```
 
 ### Photon Extras YUM repository
 
 Create the file "/etc/yum.repos.d/photon-extras.repo" with the following contents.
 
+```
 [photon-extras]
 name=VMware Photon Extras 1.0(x86_64)
 baseurl=https://dl.bintray.com/vmware/photon_extras
@@ -79,6 +82,7 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY
 gpgcheck=0
 enabled=1
 skip_if_unavailable=True
+```
 
 ### Setting up a Lightwave Domain Controller
 You must first install the following packages on your Photon instance
