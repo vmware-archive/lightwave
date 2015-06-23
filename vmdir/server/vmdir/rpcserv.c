@@ -609,9 +609,16 @@ _RpcVmDirCreateUserInternal(
     )
 {
     DWORD dwError = 0;
+    DWORD i = 0;
+    DWORD j = 0;
     PSTR pszUserName = NULL;
     PSTR pszPassword = NULL;
     PSTR pszUPNName  = NULL;
+    CHAR pszHostName[VMDIR_MAX_HOSTNAME_LEN] = {0};
+    PSTR pszDomainName = NULL;   /* This is an alias, do not free */
+    PSTR pszDnUsers = NULL;
+    PSTR pszDnDomain = NULL;
+    PSTR pszDnUpn = NULL;
 
     if ( IsNullOrEmptyString(pwszUserName)
      ||  IsNullOrEmptyString(pwszUPNName)
