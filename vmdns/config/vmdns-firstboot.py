@@ -1,0 +1,3 @@
+#
+# placeholder for firstboot script
+#

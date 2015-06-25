@@ -1,0 +1,69 @@
+#
+# VMware Directory Server Makefile
+#
+
+#
+# This Makefile is used for both gobuild and local builds
+#
+
+SRCROOT=../..
+MAKEROOT=$(SRCROOT)/support/make
+include $(MAKEROOT)/makedefs.mk
+
+CUSTOM = true
+TARGET = custom
+
+PREFIX=/usr/lib/vmware-vmdns
+LIBDIR=$(PREFIX)/lib64
+
+PKGDIR=$(CURDIR)/stage
+RPMPKG=vmware-dns-client
+RPMSPEC=vmware-dns-client.spec
+
+CLEANMORE = \
+    .configured   \
+    *.spec        \
+    config        \
+    config.log    \
+    config.status \
+    client        \
+    common        \
+    include       \
+    libtool       \
+    Makefile      \
+    obj64         \
+    server        \
+    stage         \
+    thirdparty    \
+    tools
+
+include $(MAKEROOT)/makeimpl.mk
+
+CPP := $(CPREPROC)
+
+PATH := $(TCBIN_PATH):$${PATH}
+
+export PATH AS AR NM CPP CC CXX LD RANLIB CFLAGS CPPFLAGS LDFLAGS \
+       BUILDLOG_DIR BUPREFIX AUTOCONFINC AUTOMAKE_PATH AUTOCONF_PATH
+ 
+.PHONY: vmdns_package vmdns_stage vmdns_build vmdns_publish
+
+.NOTPARALLEL: vmdns_package vmdns_stage vmdns_build vmdns_publish
+
+target: package
+
+package: vmdns_package
+
+vmdns_package:
+	PATH=$(TCBIN_PATH):$${PATH} \
+	$(MAKE) -f $(MAKEFILENAME) package
+
+copyfiles:
+	PATH=$(TCBIN_PATH):$${PATH} \
+	$(MAKE) -f $(MAKEFILENAME) DESTDIR=$(PKGDIR)/rpmtmp $(INSTALL_TARGET) && \
+	$(MKDIR) -p $(PKGDIR)/rpmtmp/$(LIBDIR) && \
+	$(CHMOD) u+w $(PKGDIR)/rpmtmp$(LIBDIR)/* \
+
+$(RPMSPEC): package/rpm/$(RPMSPEC)
+	$(RM) -f $@
+	$(CP) $< $@

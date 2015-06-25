@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+
+  <?define VmDnsBuiltDir=$(sys.SOURCEFILEDIR)..\..\$(var.Platform)\$(var.Configuration) ?>
+  <?define PthreadDir=$(env.GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(var.Configuration)\bin ?>
+  <?define VMwarednsServiceName=VMWareDomainNameService ?>
+
+    <Module Id="vmware_dns_msm" Language="0" Version="1.0.0.0">
+        <Package Id="9362700C-60FC-4084-9257-5F25D25FA586" Description="VMware DNS Client Merge Module" Manufacturer="VMware" Platform="$(var.Platform)" InstallScope="perMachine" InstallerVersion="300" Languages="1033" />
+
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFiles64Folder">
+                <Directory Id="VMwareRoot" Name="VMware" >
+                    <Directory Id="AppCisRoot" Name="cis">
+                        <Directory Id="INSTALLLOCATION" Name="vmdnsd"></Directory>
+                    </Directory>
+                </Directory>
+            </Directory>
+            <Directory Id="CommonAppDataFolder">
+                <Directory Id="VMwareAppDataRoot" Name="VMware">
+                    <Directory Id="CisRoot" Name="cis">
+                        <Directory Id="ConfigRoot" Name="cfg">
+                            <Directory Id="Vmdnsd_Config" Name="vmdnsd"></Directory>
+                        </Directory>
+                        <Directory Id="DataRoot" Name ="data">
+                            <Directory Id="Vmdnsd_Data" Name="vmdnsd"></Directory>
+                        </Directory>
+                        <Directory Id="LogsRoot" Name ="logs">
+                            <Directory Id="Vmdnsd_Logs" Name="vmdnsd"></Directory>
+                        </Directory>
+                    </Directory>
+                </Directory>
+            </Directory>
+        </Directory>
+
+        <DirectoryRef Id="INSTALLLOCATION">
+            <!-- vmdns dlls/exes -->
+            <Component Id="vmdns_libvmdnsclient_comp" Guid="B8D4923A-DC15-4C99-9007-8784E1547CC9" Win64="yes" >
+                <File Id="vmdns_libvmdnsclient_file" KeyPath="no" Source="$(var.VmDnsBuiltDir)\libvmdnsclient.dll" Vital="yes" Name="libvmdnsclient.dll" />
+            </Component>
+
+            <Component Id="vmdns_pthreadVC2_comp" Guid="03B55A1D-713C-41A2-A94D-08CFDB541CAE" Win64="yes" >
+                <File Id="vmdns_pthreadVC2_file" KeyPath="no" Source="$(var.PthreadDir)\pthreadVC2.dll" Vital="yes" Name="pthreadVC2.dll" />
+            </Component>
+
+            <Component Id="vmdns_vmdns_cli_comp" Guid="8D96FE51-E8B4-431C-B0D6-7E516171E9C0" Win64="yes" >
+                <File Id="vmdns_vmdns_cli_file" KeyPath="no" Source="$(var.VmDnsBuiltDir)\vmdns-cli.exe" Vital="yes" Name="vmdns-cli.exe" />
+            </Component>
+
+        </DirectoryRef>
+
+        <DirectoryRef Id="Vmdnsd_Config">
+            <Component Id="Vmdnsd_ConfigFolder" Guid="F6FE4276-3FD8-11E2-A1B7-000C29B1C8FE" Win64="yes" >
+                <CreateFolder />
+            </Component>
+        </DirectoryRef>
+
+        <DirectoryRef Id="Vmdnsd_Data">
+            <Component Id="Vmdnsd_DataFolder" Guid="DD043EE4-0E0B-48CE-A372-1B325E186426" Win64="yes" >
+                <CreateFolder />
+            </Component>
+        </DirectoryRef>
+
+        <DirectoryRef Id="Vmdnsd_Logs">
+            <Component Id="Vmdnsd_LogsFolder" Guid="C087B1C3-BC8E-4F41-915E-60CB49A34950" Win64="yes" >
+                <CreateFolder />
+            </Component>
+        </DirectoryRef>
+
+    </Module>
+</Wix>

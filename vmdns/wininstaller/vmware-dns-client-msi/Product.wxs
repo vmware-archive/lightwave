@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="843166CC-81CE-479C-A78D-73C13B2E0788" Name="VMware DNS Client"  Language="1033" Version="1.0.0.0" Manufacturer="VMware" UpgradeCode="585437A4-B24D-11E4-9A1F-000C29A10AA7">
+    <Package Platform="$(var.Platform)" InstallScope="perMachine" InstallerVersion="400" Compressed="yes" />
+
+    <Media Id="1" Cabinet="media1.cab" EmbedCab="yes" />
+
+    <!-- Add/Remove programs icon. -->
+    <Icon Id="add_remove_programs_icon" SourceFile="$(sys.SOURCEFILEDIR)Install.ico" />
+    <Property Id="ARPPRODUCTICON" Value="add_remove_programs_icon" />
+
+    <!-- Launch Conditions -->
+    <Condition Message="This application is only supported on Windows Server 2008 64 bit, or higher.">
+      <![CDATA[Installed OR (VersionNT64) OR (WindowsBuild >= 6001)]]>
+    </Condition>
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="WMwareRoot" Name="VMware" >
+          <Directory Id="INSTALLLOCATION" Name="VMware DNS Client" >
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <DirectoryRef Id="INSTALLLOCATION">
+      <?ifndef Debug ?>
+      <Merge Id="vcrt120_merge_module" DiskId="1" Language="0" SourceFile="$(env.CommonProgramFiles)\Merge Modules\Microsoft_VC120_CRT_x64.msm" />
+      <?else ?>
+      <Merge Id="vcrt120_merge_module" DiskId="1" Language="0" SourceFile="$(env.CommonProgramFiles)\Merge Modules\Microsoft_VC110_DebugCRT_x64.msm" />
+      <?endif?>
+      <!-- VmDns MSM -->
+      <Merge Id="vmware_dns_client_msm" DiskId="1" Language="0" SourceFile="$(var.SolutionDir)vmware-dns-client-msm\$(var.Platform)\$(var.Configuration)\vmware-dns-client.msm" >
+      </Merge>
+
+    </DirectoryRef> 
+
+    <Feature Id="ProductFeature" Title="vmware_dns_client_msi" Level="1">
+
+        <MergeRef Id="vmware_dns_client_msm"/>
+        <MergeRef Id="vcrt120_merge_module"/>
+
+        <!-- Note: The following ComponentGroupRef is required to pull in generated authoring from project references. -->
+        <ComponentGroupRef Id="Product.Generated" />
+    </Feature>
+
+    <!-- Install dir UI -->
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLLOCATION" />
+    <!-- custom license text -->
+    <WixVariable Id="WixUILicenseRtf" Value="$(sys.SOURCEFILEDIR)LicenseAgreement.rtf" />
+    <!-- WixUIBannerBmp Top banner 493 × 58 -->
+    <WixVariable Id="WixUIBannerBmp" Value="$(sys.SOURCEFILEDIR)topbanner.bmp" />
+    <!-- Background bitmap used on the welcome and completion dialogs 493 × 312 -->
+    <WixVariable Id="WixUIDialogBmp" Value="$(sys.SOURCEFILEDIR)dialogbgrnd.bmp" />
+
+    <UIRef Id="WixUI_InstallDir" />
+    
+  </Product>
+</Wix>
