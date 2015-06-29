@@ -152,7 +152,7 @@ VmDnsStringCompareA(
     BOOLEAN bIsCaseSensitive
     )
 {
-    if (!pszStr1 && pszStr2)
+    if (!pszStr1 && !pszStr2)
     {
         return 0;
     }

@@ -4,15 +4,53 @@
 
 #include "includes.h"
 
-#define LOCKREAD_ZONE_LIST() VMDNS_LOCKREAD(gpDNSDriverGlobals->pZoneList->pLock)
-#define UNLOCKREAD_ZONE_LIST() VMDNS_UNLOCKREAD(gpDNSDriverGlobals->pZoneList->pLock)
-#define LOCKWRITE_ZONE_LIST() VMDNS_LOCKWRITE(gpDNSDriverGlobals->pZoneList->pLock)
-#define UNLOCKWRITE_ZONE_LIST() VMDNS_UNLOCKWRITE(gpDNSDriverGlobals->pZoneList->pLock)
+#define LOCKREAD_ZONE_LIST(bLocked) \
+{ \
+    VMDNS_LOCKREAD(gpDNSDriverGlobals->pZoneList->pLock); \
+    bLocked = TRUE; \
+}
 
-#define LOCKREAD_ZONE() VMDNS_LOCKREAD(pZone->pLock)
-#define UNLOCKREAD_ZONE() VMDNS_UNLOCKREAD(pZone->pLock)
-#define LOCKWRITE_ZONE() VMDNS_LOCKWRITE(pZone->pLock)
-#define UNLOCKWRITE_ZONE() VMDNS_UNLOCKWRITE(pZone->pLock)
+#define UNLOCKREAD_ZONE_LIST(bLocked) \
+if (bLocked) \
+{ \
+    VMDNS_UNLOCKREAD(gpDNSDriverGlobals->pZoneList->pLock); \
+}
+
+#define LOCKWRITE_ZONE_LIST(bLocked) \
+{ \
+    VMDNS_LOCKWRITE(gpDNSDriverGlobals->pZoneList->pLock); \
+    bLocked = TRUE; \
+}
+
+#define UNLOCKWRITE_ZONE_LIST(bLocked) \
+if (bLocked) \
+{ \
+    VMDNS_UNLOCKWRITE(gpDNSDriverGlobals->pZoneList->pLock); \
+}
+
+#define LOCKREAD_ZONE(bLocked) \
+{ \
+    VMDNS_LOCKREAD(pZone->pLock); \
+    bLocked = TRUE; \
+}
+
+#define UNLOCKREAD_ZONE(bLocked) \
+if (bLocked) \
+{ \
+    VMDNS_UNLOCKREAD(pZone->pLock); \
+}
+
+#define LOCKWRITE_ZONE(bLocked) \
+{ \
+    VMDNS_LOCKWRITE(pZone->pLock); \
+    bLocked = TRUE; \
+}
+
+#define UNLOCKWRITE_ZONE(bLocked) \
+if (bLocked) \
+{ \
+    VMDNS_UNLOCKWRITE(pZone->pLock); \
+}
 
 static
 DWORD
@@ -122,10 +160,11 @@ VmDnsZoneCreate(
     PVMDNS_RECORD         pSoaRecord = NULL;
     PVMDNS_RECORD_ARRAY   pRecordArray = NULL;
     PVMDNS_NAME_ENTRY     pSoaNameEntry = NULL;
-
-    LOCKWRITE_ZONE_LIST();
+    BOOL                  bZoneListLocked = FALSE;
 
     BAIL_ON_VMDNS_INVALID_POINTER(pZoneInfo, dwError);
+
+    LOCKWRITE_ZONE_LIST(bZoneListLocked);
 
     dwError = VmDnsZoneFindByName(pZoneInfo->pszName, &pExistingZone);
     pExistingZone = NULL;
@@ -190,7 +229,7 @@ VmDnsZoneCreate(
 
     VMDNS_LOG_DEBUG("Created zone: %s", pZoneInfo->pszName);
 cleanup:
-    UNLOCKWRITE_ZONE_LIST();
+    UNLOCKWRITE_ZONE_LIST(bZoneListLocked);
     VMDNS_FREE_RECORD(pSoaRecord);
     return dwError;
 
@@ -235,6 +274,9 @@ VmDnsZoneList(
     PVMDNS_ZONE_INFO_ARRAY  pZoneArray = NULL;
     ULONG                   count = 0;
     DWORD                   idx = 0;
+    BOOL                    bZoneListLocked = FALSE;
+
+    BAIL_ON_VMDNS_INVALID_POINTER(ppZoneArray, dwError);
 
     if (VmDnsGetState() != VMDNS_READY)
     {
@@ -242,9 +284,7 @@ VmDnsZoneList(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    LOCKREAD_ZONE_LIST();
-
-    BAIL_ON_VMDNS_INVALID_POINTER(ppZoneArray, dwError);
+    LOCKREAD_ZONE_LIST(bZoneListLocked);
 
     pEntry = gpDNSDriverGlobals->pZoneList->Zones.Next;
     while (pEntry)
@@ -286,7 +326,7 @@ VmDnsZoneList(
     VMDNS_LOG_DEBUG("Listing zone returned %u zones.", idx);
 
 cleanup:
-    UNLOCKREAD_ZONE_LIST();
+    UNLOCKREAD_ZONE_LIST(bZoneListLocked);
     return dwError;
 
 error:
@@ -304,10 +344,11 @@ VmDnsZoneUpdate(
     DWORD       dwError = 0;
     PVMDNS_ZONE pZone = NULL;
     BOOL        bZoneLocked = FALSE;
+    BOOL        bZoneListLocked = FALSE;
 
     BAIL_ON_VMDNS_INVALID_POINTER(pZoneInfo, dwError);
 
-    LOCKREAD_ZONE_LIST();
+    LOCKREAD_ZONE_LIST(bZoneListLocked);
 
     dwError = VmDnsZoneFindByName(pZoneInfo->pszName, &pZone);
     if (dwError == ERROR_NOT_FOUND)
@@ -317,19 +358,15 @@ VmDnsZoneUpdate(
     }
     else
     {
-        LOCKWRITE_ZONE();
-        bZoneLocked = TRUE;
+        LOCKWRITE_ZONE(bZoneLocked);
 
         dwError = VmDnsUpdateExistingZone(pZoneInfo, pZone, bDirSync);
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
 cleanup:
-    if (bZoneLocked)
-    {
-        UNLOCKWRITE_ZONE();
-    }
-    UNLOCKREAD_ZONE_LIST();
+    UNLOCKWRITE_ZONE(bZoneLocked);
+    UNLOCKREAD_ZONE_LIST(bZoneListLocked);
     return dwError;
 
 error:
@@ -342,14 +379,15 @@ VmDnsZoneDelete(
     PCSTR                       pszZone
     )
 {
-    DWORD dwError = ERROR_NOT_FOUND;
-    PVMDNS_ZONE_ENTRY pZoneEntry = NULL;
-    PSINGLE_LIST_ENTRY pEntry = NULL;
-    PSINGLE_LIST_ENTRY pEntryTemp = NULL;
-
-    LOCKWRITE_ZONE_LIST();
+    DWORD               dwError = ERROR_NOT_FOUND;
+    PVMDNS_ZONE_ENTRY   pZoneEntry = NULL;
+    PSINGLE_LIST_ENTRY  pEntry = NULL;
+    PSINGLE_LIST_ENTRY  pEntryTemp = NULL;
+    BOOL                bZoneListLocked = FALSE;
 
     BAIL_ON_VMDNS_INVALID_POINTER(pszZone, dwError);
+
+    LOCKWRITE_ZONE_LIST(bZoneListLocked);
 
     pEntry = &gpDNSDriverGlobals->pZoneList->Zones;
     while (pEntry->Next)
@@ -373,7 +411,7 @@ VmDnsZoneDelete(
     VMDNS_LOG_DEBUG("Successfully deleted zone %s.", pszZone);
 
 cleanup:
-    UNLOCKWRITE_ZONE_LIST();
+    UNLOCKWRITE_ZONE_LIST(bZoneListLocked);
     return dwError;
 
 error:
@@ -392,21 +430,21 @@ VmDnsZoneAddRecord(
     BOOL                        bDirSync
     )
 {
-    DWORD                   dwError = 0;
-    PVMDNS_ZONE             pZone = NULL;
-    PVMDNS_NAME_ENTRY       pNameEntry = NULL;
-    BOOL                    bZoneLocked = FALSE;
-
-    LOCKREAD_ZONE_LIST();
+    DWORD               dwError = 0;
+    PVMDNS_ZONE         pZone = NULL;
+    PVMDNS_NAME_ENTRY   pNameEntry = NULL;
+    BOOL                bZoneLocked = FALSE;
+    BOOL                bZoneListLocked = FALSE;
 
     BAIL_ON_VMDNS_INVALID_POINTER(pszZone, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(pRecord, dwError);
 
+    LOCKREAD_ZONE_LIST(bZoneListLocked);
+
     dwError = VmDnsZoneFindByName(pszZone, &pZone);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    LOCKWRITE_ZONE();
-    bZoneLocked = TRUE;
+    LOCKWRITE_ZONE(bZoneLocked);
 
     dwError = VmDnsZoneFindRecord(pZone, pRecord);
     if (dwError != ERROR_NOT_FOUND)
@@ -436,11 +474,8 @@ VmDnsZoneAddRecord(
                     pRecord->dwType,
                     pszZone);
 cleanup:
-    if (bZoneLocked)
-    {
-        UNLOCKWRITE_ZONE();
-    }
-    UNLOCKREAD_ZONE_LIST();
+    UNLOCKWRITE_ZONE(bZoneLocked);
+    UNLOCKREAD_ZONE_LIST(bZoneListLocked);
     return dwError;
 
 error:
@@ -461,30 +496,26 @@ VmDnsZoneDeleteRecord(
     BOOL                        bDirSync
     )
 {
-    DWORD                   dwError = 0;
-    PVMDNS_ZONE             pZone = NULL;
-    PVMDNS_NAME_ENTRY       pNameEntry = NULL;
-    BOOL                    bZoneLocked = FALSE;
-
-    LOCKREAD_ZONE_LIST();
+    DWORD               dwError = 0;
+    PVMDNS_ZONE         pZone = NULL;
+    PVMDNS_NAME_ENTRY   pNameEntry = NULL;
+    BOOL                bZoneLocked = FALSE;
+    BOOL                bZoneListLocked = FALSE;
 
     BAIL_ON_VMDNS_INVALID_POINTER(pszZone, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(pRecord, dwError);
 
+    LOCKREAD_ZONE_LIST(bZoneListLocked);
+
     dwError = VmDnsZoneFindByName(pszZone, &pZone);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    LOCKWRITE_ZONE();
-    bZoneLocked = TRUE;
+    LOCKWRITE_ZONE(bZoneLocked);
 
     dwError = VmDnsZoneFindRecord(pZone, pRecord);
     if (dwError != ERROR_NOT_FOUND)
     {
         BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
-    if (dwError != ERROR_NOT_FOUND)
-    {
         dwError = VmDnsZoneFindNameEntry(pZone,
                                         pRecord->pszName,
                                         &pNameEntry);
@@ -495,11 +526,8 @@ VmDnsZoneDeleteRecord(
     }
 
 cleanup:
-    if (bZoneLocked)
-    {
-        UNLOCKWRITE_ZONE();
-    }
-    UNLOCKREAD_ZONE_LIST();
+    UNLOCKWRITE_ZONE(bZoneLocked);
+    UNLOCKREAD_ZONE_LIST(bZoneListLocked);
     return dwError;
 
 error:
@@ -515,10 +543,11 @@ VmDnsZoneFindAndDeleteRecords(
     BOOL                        bDirSync
     )
 {
-    DWORD                   dwError = 0;
-    PVMDNS_ZONE             pZone = NULL;
-    PVMDNS_NAME_ENTRY       pNameEntry = NULL;
-    BOOL                    bZoneLocked = FALSE;
+    DWORD               dwError = 0;
+    PVMDNS_ZONE         pZone = NULL;
+    PVMDNS_NAME_ENTRY   pNameEntry = NULL;
+    BOOL                bZoneLocked = FALSE;
+    BOOL                bZoneListLocked = FALSE;
 
     if (VmDnsGetState() != VMDNS_READY)
     {
@@ -526,16 +555,15 @@ VmDnsZoneFindAndDeleteRecords(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    LOCKREAD_ZONE_LIST();
-
     BAIL_ON_VMDNS_INVALID_POINTER(pszZone, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(pszName, dwError);
+
+    LOCKREAD_ZONE_LIST(bZoneListLocked);
 
     dwError = VmDnsZoneFindByName(pszZone, &pZone);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    LOCKWRITE_ZONE();
-    bZoneLocked = TRUE;
+    LOCKWRITE_ZONE(bZoneLocked);
 
     dwError = VmDnsZoneFindNameEntry(pZone, pszName, &pNameEntry);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -546,11 +574,8 @@ VmDnsZoneFindAndDeleteRecords(
     VMDNS_LOG_DEBUG("Deleted record(s) %s from zone %s", pszName, pszZone);
 
 cleanup:
-    if (bZoneLocked)
-    {
-        UNLOCKWRITE_ZONE();
-    }
-    UNLOCKREAD_ZONE_LIST();
+    UNLOCKWRITE_ZONE(bZoneLocked);
+    UNLOCKREAD_ZONE_LIST(bZoneListLocked);
     VmDnsDeleteNameEntry(pNameEntry, bDirSync);
     return dwError;
 
@@ -568,11 +593,12 @@ VmDnsZoneQuery(
     PVMDNS_RECORD_ARRAY*    ppRecords
     )
 {
-    DWORD                   dwError = 0;
-    PVMDNS_ZONE             pZone = NULL;
-    PVMDNS_RECORD_ARRAY     pRecords = NULL;
-    PVMDNS_NAME_ENTRY       pNameEntry = NULL;
-    BOOL                    bZoneLocked = FALSE;
+    DWORD               dwError = 0;
+    PVMDNS_ZONE         pZone = NULL;
+    PVMDNS_RECORD_ARRAY pRecords = NULL;
+    PVMDNS_NAME_ENTRY   pNameEntry = NULL;
+    BOOL                bZoneLocked = FALSE;
+    BOOL                bZoneListLocked = FALSE;
 
     if (VmDnsGetState() != VMDNS_READY)
     {
@@ -580,17 +606,16 @@ VmDnsZoneQuery(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    LOCKREAD_ZONE_LIST();
-
     BAIL_ON_VMDNS_INVALID_POINTER(pszZone, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(pszName, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(ppRecords, dwError);
 
+    LOCKREAD_ZONE_LIST(bZoneListLocked);
+
     dwError = VmDnsZoneFindByName(pszZone, &pZone);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    LOCKREAD_ZONE();
-    bZoneLocked = TRUE;
+    LOCKREAD_ZONE(bZoneLocked);
 
     dwError = VmDnsZoneFindNameEntry(pZone, pszName, &pNameEntry);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -604,11 +629,8 @@ VmDnsZoneQuery(
                     (*ppRecords)->dwCount, pszZone);
 
 cleanup:
-    if (bZoneLocked)
-    {
-        UNLOCKREAD_ZONE();
-    }
-    UNLOCKREAD_ZONE_LIST();
+    UNLOCKREAD_ZONE(bZoneLocked);
+    UNLOCKREAD_ZONE_LIST(bZoneListLocked);
     return dwError;
 
 error:
@@ -635,6 +657,7 @@ VmDnsZoneListRecord(
     PVMDNS_RECORD_ARRAY     pAllRecords = NULL;
     VMDNS_HASHTABLE_ITER    iter = VMDNS_HASHTABLE_ITER_INIT;
     BOOL                    bZoneLocked = FALSE;
+    BOOL                    bZoneListLocked = FALSE;
 
     if (VmDnsGetState() != VMDNS_READY)
     {
@@ -642,16 +665,15 @@ VmDnsZoneListRecord(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    LOCKREAD_ZONE_LIST();
-
     BAIL_ON_VMDNS_INVALID_POINTER(pszZone, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(ppRecords, dwError);
+
+    LOCKREAD_ZONE_LIST(bZoneListLocked);
 
     dwError = VmDnsZoneFindByName(pszZone, &pZone);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    LOCKREAD_ZONE();
-    bZoneLocked = TRUE;
+    LOCKREAD_ZONE(bZoneLocked);
 
     pNameEntries = pZone->pNameEntries;
 
@@ -687,11 +709,8 @@ VmDnsZoneListRecord(
                     (*ppRecords)->dwCount, pszZone);
 
 cleanup:
-    if (bZoneLocked)
-    {
-        UNLOCKREAD_ZONE();
-    }
-    UNLOCKREAD_ZONE_LIST();
+    UNLOCKREAD_ZONE(bZoneLocked);
+    UNLOCKREAD_ZONE_LIST(bZoneListLocked);
     return dwError;
 
 error:
@@ -710,11 +729,12 @@ VmDnsZoneFindByName(
     DWORD               dwError = ERROR_NOT_FOUND;
     PSINGLE_LIST_ENTRY  pEntry = NULL;
     PVMDNS_ZONE_ENTRY   pZoneEntry = NULL;
-
-    LOCKREAD_ZONE_LIST();
+    BOOL                bZoneListLocked = FALSE;
 
     BAIL_ON_VMDNS_INVALID_POINTER(pszZone, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(ppZone, dwError);
+
+    LOCKREAD_ZONE_LIST(bZoneListLocked);
 
     pEntry = gpDNSDriverGlobals->pZoneList->Zones.Next;
     while (pEntry)
@@ -731,7 +751,7 @@ VmDnsZoneFindByName(
     }
 
 cleanup:
-    UNLOCKREAD_ZONE_LIST();
+    UNLOCKREAD_ZONE_LIST(bZoneListLocked);
     return dwError;
 
 error:
@@ -746,13 +766,14 @@ VmDnsZoneGetSoa(
     PVMDNS_RECORD*  ppSoa
     )
 {
-    DWORD                   dwError = 0;
-    PVMDNS_NAME_ENTRY       pNameEntry = NULL;
-
-    LOCKREAD_ZONE();
+    DWORD               dwError = 0;
+    PVMDNS_NAME_ENTRY   pNameEntry = NULL;
+    BOOL                bZoneLocked = FALSE;
 
     BAIL_ON_VMDNS_INVALID_POINTER(pZone, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(ppSoa, dwError);
+
+    LOCKREAD_ZONE(bZoneLocked);
 
     dwError = VmDnsZoneFindNameEntry(pZone, VMDNS_SOA_RECORD_NAME, &pNameEntry);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -761,7 +782,7 @@ VmDnsZoneGetSoa(
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
-    UNLOCKREAD_ZONE();
+    UNLOCKREAD_ZONE(bZoneLocked);
     return dwError;
 
 error:
@@ -823,7 +844,7 @@ VmDnsFreeNameEntryNode(
     if (pNode)
     {
         pNameEntry = (PVMDNS_NAME_ENTRY)pNode->pData;
-        VmDnsDeleteNameEntry(pNameEntry, !!pUserData);
+        VmDnsDeleteNameEntry(pNameEntry, pUserData != NULL);
         VmDnsFreeMemory(pNode);
     }
 }
@@ -1084,9 +1105,10 @@ VmDnsZoneListCleanup(
 {
     PSINGLE_LIST_ENTRY pEntry = NULL;
     PVMDNS_ZONE_ENTRY  pZoneEntry = NULL;
+    BOOL               bZoneListLocked = FALSE;
     if (pZoneList)
     {
-        LOCKWRITE_ZONE_LIST();
+        LOCKWRITE_ZONE_LIST(bZoneListLocked);
         pEntry = pZoneList->Zones.Next;
         while (pEntry)
         {
@@ -1097,7 +1119,7 @@ VmDnsZoneListCleanup(
         }
         pZoneList->Zones.Next = NULL;
 
-        UNLOCKWRITE_ZONE_LIST();
+        UNLOCKWRITE_ZONE_LIST(bZoneListLocked);
         VMDNS_FREE_RWLOCK(pZoneList->pLock);
         VMDNS_SAFE_FREE_MEMORY(pZoneList);
     }
