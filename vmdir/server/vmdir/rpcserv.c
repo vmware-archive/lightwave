@@ -609,9 +609,16 @@ _RpcVmDirCreateUserInternal(
     )
 {
     DWORD dwError = 0;
+    DWORD i = 0;
+    DWORD j = 0;
     PSTR pszUserName = NULL;
     PSTR pszPassword = NULL;
     PSTR pszUPNName  = NULL;
+    CHAR pszHostName[VMDIR_MAX_HOSTNAME_LEN] = {0};
+    PSTR pszDomainName = NULL;   /* This is an alias, do not free */
+    PSTR pszDnUsers = NULL;
+    PSTR pszDnDomain = NULL;
+    PSTR pszDnUpn = NULL;
 
     if ( IsNullOrEmptyString(pwszUserName)
      ||  IsNullOrEmptyString(pwszUPNName)
@@ -652,17 +659,56 @@ _RpcVmDirCreateUserInternal(
                     );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    /* vdcpromo sets this key. */
+    dwError = VmDirGetRegKeyValue(VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                                  VMDIR_REG_KEY_DC_ACCOUNT,
+                                  pszHostName,
+                                  sizeof(pszHostName)-1);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    /* Skip over the host name part of the FQDN */
+    for (i=0; pszHostName[i] && pszHostName[i] != '.'; i++)
+        ;
+
+    /* Remainder is domain name. Convert to lower case */
+    if (pszHostName[i])
+    {
+        i++;
+        for (j=i; pszHostName[j]; j++)
+        {
+            VMDIR_ASCII_UPPER_TO_LOWER(pszHostName[j]);
+        }
+        pszDomainName = &pszHostName[i];
+    }
+    else
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirFQDNToDN(pszDomainName, &pszDnDomain);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvCreateDN("users", pszDnDomain, &pszDnUsers);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvCreateDN(pszUPNName, pszDnUsers, &pszDnUpn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirCreateAccount(
                 pszUPNName,
                 pszUserName,
                 pszPassword,
-                NULL
+                pszDnUpn
                 );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "_RpcVmDirCreateUserInternal (%s)", VDIR_SAFE_STRING(pszUPNName) );
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszDnUsers);
+    VMDIR_SAFE_FREE_MEMORY(pszDnDomain);
+    VMDIR_SAFE_FREE_MEMORY(pszDnUpn);
     VMDIR_SAFE_FREE_MEMORY(pszUserName);
     VMDIR_SAFE_FREE_MEMORY(pszPassword);
     VMDIR_SAFE_FREE_MEMORY(pszUPNName);

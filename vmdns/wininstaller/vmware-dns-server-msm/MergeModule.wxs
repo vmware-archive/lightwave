@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+
+  <?define VmDnsBuiltDir=$(sys.SOURCEFILEDIR)..\..\$(var.Platform)\$(var.Configuration) ?>
+  <?define PthreadDir=$(env.GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(var.Configuration)\bin ?>
+  <?define VMwarednsServiceName=VMwareDomainNameService ?>
+
+    <Module Id="vmware_dns_msm" Language="0" Version="1.0.0.0">
+        <Package Id="58542B42-B24D-11E4-9A1F-000C29A10AA7" Description="VMware dns Service Merge Module" Manufacturer="VMware" Platform="$(var.Platform)" InstallScope="perMachine" InstallerVersion="300" Languages="1033" />
+
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFiles64Folder">
+                <Directory Id="VMwareRoot" Name="VMware" >
+                    <Directory Id="AppCisRoot" Name="cis">
+                        <Directory Id="firstbootDir" Name="firstboot"></Directory>
+                        <Directory Id="INSTALLLOCATION" Name="vmdnsd"></Directory>
+                    </Directory>
+                </Directory>
+            </Directory>
+            <Directory Id="CommonAppDataFolder">
+                <Directory Id="VMwareAppDataRoot" Name="VMware">
+                    <Directory Id="CisRoot" Name="cis">
+                        <Directory Id="ConfigRoot" Name="cfg">
+                            <Directory Id="Vmdnsd_Config" Name="vmdnsd"></Directory>
+                        </Directory>
+                        <Directory Id="DataRoot" Name ="data">
+                            <Directory Id="Vmdnsd_Data" Name="vmdnsd"></Directory>
+                        </Directory>
+                        <Directory Id="LogsRoot" Name ="logs">
+                            <Directory Id="Vmdnsd_Logs" Name="vmdnsd"></Directory>
+                        </Directory>
+                    </Directory>
+                </Directory>
+            </Directory>
+        </Directory>
+
+        <DirectoryRef Id="INSTALLLOCATION">
+            <!-- vmdns dlls/exes -->
+            <Component Id="vmdns_libvmdnsclient_comp" Guid="57DF501E-CACD-11E1-8F66-406C8F032822" Win64="yes" >
+                <File Id="vmdns_libvmdnsclient_file" KeyPath="no" Source="$(var.VmDnsBuiltDir)\libvmdnsclient.dll" Vital="yes" Name="libvmdnsclient.dll" />
+            </Component>
+
+            <Component Id="vmdns_pthreadVC2_comp" Guid="180D675C-E972-11E1-9C1A-000C294915DD" Win64="yes" >
+                <File Id="vmdns_pthreadVC2_file" KeyPath="no" Source="$(var.PthreadDir)\pthreadVC2.dll" Vital="yes" Name="pthreadVC2.dll" />
+            </Component>
+
+            <Component Id="vmdns_vmdns_cli_comp" Guid="9876DD6F-6A3C-4F03-ACD3-5B498FF6E766" Win64="yes" >
+                <File Id="vmdns_vmdns_cli_file" KeyPath="no" Source="$(var.VmDnsBuiltDir)\vmdns-cli.exe" Vital="yes" Name="vmdns-cli.exe" />
+            </Component>
+
+              <!-- VmDns NT Service -->
+            <Component Id="vmdns_service_comp" Guid="57DF5187-CACD-11E1-8C3D-406C8F032822" Win64="yes">
+                <File Id="vmdns_service_file" KeyPath="yes" Source="$(var.VmDnsBuiltDir)\vmdnsd.exe" Vital="yes" Name="vmdnsd.exe" />
+                <ServiceInstall Id="vmware_dns_service_svc" Name="$(var.VMwarednsServiceName)" Interactive="no" Start="demand" Type="ownProcess" Vital="yes" ErrorControl="normal" DisplayName="VMware dns Service" Description="VMware dns Service" >
+                    <util:ServiceConfig FirstFailureActionType="restart" SecondFailureActionType="restart" ThirdFailureActionType="none" ResetPeriodInDays="1" RestartServiceDelayInSeconds="10" />
+                    <ServiceDependency Id="VMWareDirectoryService" Group="no"/>
+                </ServiceInstall>
+                <ServiceControl Id="vmdns_service_svcctrl"  Name="$(var.VMwarednsServiceName)" Stop="uninstall" Remove ="uninstall" Wait="yes" />
+            </Component>
+
+            <Component Id="Vmdnsd_Registry" Guid="57DF5297-CACD-11E1-9533-406C8F032822" Win64="yes">
+                <RegistryKey Root="HKLM"
+                             Key="SOFTWARE\VMware, Inc.\VMware dns Services"
+                             Action="createAndRemoveOnUninstall"
+                             Id="Vmdnsd_Install">
+                    <RegistryValue Type="string" Name="InstallPath" Value="C:\Program Files\VMware\cis\vmdnsd" Action="write" Id="Vmdnsd_InstallPath_Value"/>
+                </RegistryKey>
+                <RegistryKey Root="HKLM"
+                             Key="SYSTEM\CurrentControlSet\Services\VMwareDomainNameService\Parameters"
+                             Action="createAndRemoveOnUninstall"
+                             Id="Vmdnsd_Parameters">
+                    <RegistryValue Type="integer" Name="ExampleInteger" Value="42"/>
+                    <RegistryValue Type="string" Name="ExampleString" Value="hello"/>
+                </RegistryKey>
+            </Component>
+
+        </DirectoryRef>
+
+        <DirectoryRef Id="firstbootDir">
+            <Component Id="vmdns_first_boot_script" Guid="54770B86-3B24-11E2-B147-000C29B1C8FE" Win64="yes" >
+                <File Id="vmdns_first_boot_script_file" KeyPath="no" Source="$(var.VmDnsBuiltDir)\..\..\config\vmdns-firstboot.py" Vital="yes" Name="vmdns-firstboot.py" />
+            </Component>
+        </DirectoryRef>
+
+        <DirectoryRef Id="Vmdnsd_Config">
+            <Component Id="Vmdnsd_ConfigFolder" Guid="F6FE4276-3FD8-11E2-A1B7-000C29B1C8FE" Win64="yes" >
+                <CreateFolder />
+            </Component>
+        </DirectoryRef>
+
+        <DirectoryRef Id="Vmdnsd_Data">
+            <Component Id="Vmdnsd_DataFolder" Guid="53DFFC1E-3B24-11E2-B147-000C29B1C8FE" Win64="yes" >
+                <CreateFolder />
+            </Component>
+        </DirectoryRef>
+
+        <DirectoryRef Id="Vmdnsd_Logs">
+            <Component Id="Vmdnsd_LogsFolder" Guid="52E3A374-3B24-11E2-B147-000C29B1C8FE" Win64="yes" >
+                <CreateFolder />
+            </Component>
+        </DirectoryRef>
+
+    </Module>
+</Wix>

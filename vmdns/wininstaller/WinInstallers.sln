@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "vmware-dns-client-msi", "vmware-dns-client-msi\vmware-dns-client-msi.wixproj", "{482B0229-26E8-4DA5-9E1B-BDB9BCD4554A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E57C9AB8-722A-47A1-A358-982C068DA48B} = {E57C9AB8-722A-47A1-A358-982C068DA48B}
+	EndProjectSection
+EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "vmware-dns-client-msm", "vmware-dns-client-msm\vmware-dns-client-msm.wixproj", "{E57C9AB8-722A-47A1-A358-982C068DA48B}"
+EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "vmware-dns-server-msi", "vmware-dns-server-msi\vmware-dns-server-msi.wixproj", "{58543128-B24D-11E4-9A1F-000C29A10AA7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{585423E0-B24D-11E4-9A1F-000C29A10AA7} = {585423E0-B24D-11E4-9A1F-000C29A10AA7}
+	EndProjectSection
+EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "vmware-dns-server-msm", "vmware-dns-server-msm\vmware-dns-server-msm.wixproj", "{585423E0-B24D-11E4-9A1F-000C29A10AA7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{482B0229-26E8-4DA5-9E1B-BDB9BCD4554A}.Debug|x64.ActiveCfg = Debug|x64
+		{482B0229-26E8-4DA5-9E1B-BDB9BCD4554A}.Debug|x64.Build.0 = Debug|x64
+		{482B0229-26E8-4DA5-9E1B-BDB9BCD4554A}.Release|x64.ActiveCfg = Release|x64
+		{482B0229-26E8-4DA5-9E1B-BDB9BCD4554A}.Release|x64.Build.0 = Release|x64
+		{E57C9AB8-722A-47A1-A358-982C068DA48B}.Debug|x64.ActiveCfg = Debug|x64
+		{E57C9AB8-722A-47A1-A358-982C068DA48B}.Debug|x64.Build.0 = Debug|x64
+		{E57C9AB8-722A-47A1-A358-982C068DA48B}.Release|x64.ActiveCfg = Release|x64
+		{E57C9AB8-722A-47A1-A358-982C068DA48B}.Release|x64.Build.0 = Release|x64
+		{58543128-B24D-11E4-9A1F-000C29A10AA7}.Debug|x64.ActiveCfg = Debug|x64
+		{58543128-B24D-11E4-9A1F-000C29A10AA7}.Debug|x64.Build.0 = Debug|x64
+		{58543128-B24D-11E4-9A1F-000C29A10AA7}.Release|x64.ActiveCfg = Release|x64
+		{58543128-B24D-11E4-9A1F-000C29A10AA7}.Release|x64.Build.0 = Release|x64
+		{585423E0-B24D-11E4-9A1F-000C29A10AA7}.Debug|x64.ActiveCfg = Debug|x64
+		{585423E0-B24D-11E4-9A1F-000C29A10AA7}.Debug|x64.Build.0 = Debug|x64
+		{585423E0-B24D-11E4-9A1F-000C29A10AA7}.Release|x64.ActiveCfg = Release|x64
+		{585423E0-B24D-11E4-9A1F-000C29A10AA7}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#
+# Expects $BUPREFIX to be defined in environment
+#
+
+if [ x${BUPREFIX}x == xx ]; then
+   echo Environment variable \$BUPREFIX not defined!
+   exit 1
+fi
+
+export AR=${BUPREFIX}ar
+
+if [ ${AR} == ar ]; then
+    echo Cannot call myself!
+    exit 2
+fi
+
+$AR $@
+

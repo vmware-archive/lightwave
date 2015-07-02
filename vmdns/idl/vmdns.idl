@@ -1,0 +1,117 @@
+/*
+* Copyright (C) 2011 VMware, Inc. All rights reserved.
+*
+* Module   : vmdns.idl
+*
+* Abstract :
+*
+*            VMware dns Service
+*
+*            Interface Definition
+*
+*            Core API
+*
+* Authors  : Sriram Nambakam (snambakam@vmware.com)
+*
+*/
+[
+    uuid (A153ADDE-F707-4aff-BEC8-34C52643282D),
+    version(1.0),
+    pointer_default(unique)
+]
+
+interface vmdns
+{
+#ifdef _WIN32
+#include <win\wintypes.idl>
+#endif
+
+#include <vmdnstypes.h>
+
+    UINT32
+    VmDnsRpcInitialize(
+        [in] handle_t           hBinding,
+        [in] PVMDNS_INIT_INFO   pInitInfo
+        );
+
+    UINT32
+    VmDnsRpcUninitialize(
+        [in] handle_t           hBinding,
+        [in] PVMDNS_INIT_INFO   pInitInfo
+        );
+
+    UINT32
+    VmDnsRpcCreateZone(
+        [in] handle_t               hBinding,
+        [in] PVMDNS_ZONE_INFO       pZoneInfo
+        );
+
+    UINT32
+    VmDnsRpcUpdateZone(
+        [in] handle_t               hBinding,
+        [in] PVMDNS_ZONE_INFO       pZoneInfo
+        );
+
+    UINT32
+    VmDnsRpcDeleteZone(
+        [in] handle_t               hBinding,
+        [in] PDNS_STRING            pszZone
+        );
+
+    UINT32
+    VmDnsRpcAddRecord(
+        [in] handle_t               hBinding,
+        [in] PDNS_STRING            pszZone,
+        [in] PVMDNS_RECORD          pRecord
+        );
+
+    UINT32
+    VmDnsRpcDeleteRecord(
+        [in] handle_t               hBinding,
+        [in] PDNS_STRING            pszZone,
+        [in] PVMDNS_RECORD          pRecord
+        );
+
+    UINT32
+    VmDnsRpcQueryRecords(
+        [in] handle_t               hBinding,
+        [in] PDNS_STRING            pszZone,
+        [in] PDNS_STRING            pszName,
+        [in] VMDNS_RR_TYPE          dwType,
+        [in] DWORD                  dwOptions,
+        [out] PVMDNS_RECORD_ARRAY * ppRecordArray
+        );
+
+    UINT32
+    VmDnsRpcListZones(
+        [in] handle_t               hBinding,
+        [out] PVMDNS_ZONE_INFO_ARRAY * ppZoneArray
+        );
+
+    UINT32
+    VmDnsRpcListRecords(
+        [in] handle_t               hBinding,
+        [in] PDNS_STRING            pszZone,
+        [out] PVMDNS_RECORD_ARRAY * ppRecordArray
+        );
+
+    UINT32
+    VmDnsRpcAddForwarder(
+        [in]                        handle_t hBinding,
+        [in] PDNS_STRING            pszForwarder
+        );
+
+    UINT32
+    VmDnsRpcDeleteForwarder(
+        [in]                        handle_t hBinding,
+        [in] PDNS_STRING            pszForwarder
+        );
+
+    UINT32
+    VmDnsRpcGetForwarders(
+        [in]                        handle_t hBinding,
+        [out]                       PVMDNS_FORWARDERS* ppDnsForwarders
+        );
+
+    }
+

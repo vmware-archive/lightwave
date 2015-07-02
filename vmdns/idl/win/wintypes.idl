@@ -1,0 +1,19 @@
+cpp_quote("#ifdef _DCE_IDL_")
+typedef long                INT, *PINT, *LPINT;
+typedef long                LONG, *PLONG, *LPLONG;
+typedef hyper               LONGLONG, INT64;
+typedef unsigned32          DWORD, *PWORD, *LPWORD;
+typedef long                BOOL, *PBOOL, *LPBOOL;
+typedef unsigned8           BYTE, *PBYTE, *LPBYTE;
+typedef unsigned16          WORD;
+typedef char                INT8, *PINT8;
+typedef short               INT16, *PINT16;
+typedef long                INT32, *PINT32;
+typedef void                VOID, *PVOID;
+typedef unsigned8           UCHAR, *PUCHAR;
+typedef unsigned8           UINT8, *PUINT8;
+typedef unsigned16          UINT16, *PUINT16;
+typedef unsigned32          UINT32, *PUINT32;
+typedef char                *PSTR;
+typedef unsigned16          *PWSTR;
+cpp_quote("#endif")

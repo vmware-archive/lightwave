@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#
+# Expects $AUTOCONF_PATH to be defined in environment
+#
+
+if [ x${AUTOCONF_PATH}x == xx ]; then
+   echo Environment variable \$AUTOCONF_PATH not defined!
+   exit 1
+fi
+
+BIN=${AUTOCONF_PATH}/autoconf
+
+if [ ${BIN} == autoconf ]; then
+    echo Cannot call myself!
+    exit 2
+fi
+
+$BIN $AUTOCONFINC $@
+

@@ -1,0 +1,37 @@
+[HKEY_THIS_MACHINE\Services]
+
+[HKEY_THIS_MACHINE\Services\vmdns]
+"Description" = {
+    default = "VMware dns Service"
+    doc = ""
+}
+"Path" = {
+    default = "/usr/lib/vmware-vmdns/sbin/vmdnsd"
+    doc = ""
+}
+"Arguments" = {
+    default = "/usr/lib/vmware-vmdns/sbin/vmdnsd"
+    doc = ""
+}
+"Environment" = {
+    default = ""
+    doc = ""
+}
+"Dependencies" = {
+    default = "lsass dcerpc vmdir"
+    doc = ""
+}
+"Type" = {
+    default = dword:00000001
+    doc = ""
+}
+"Autostart" = {
+    default = dword:00000001
+    doc = ""
+}
+
+[HKEY_THIS_MACHINE\Services\vmdns\Parameters]
+"VmdnsPort" = {
+    default = dword:00000000
+    doc     = ""
+}
