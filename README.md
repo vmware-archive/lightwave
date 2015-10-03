@@ -1,5 +1,6 @@
 ![Lightwave](https://storage.googleapis.com/project-lightwave/vmw-logo-lightwave.svg "VMware Lightwave")
 
+[ ![Download](https://api.bintray.com/packages/vmware/lightwave/packages/images/download.svg) ](https://bintray.com/vmware/lightwave/packages/_latestVersion)
 VMware Lightwave: Security for Container Ecosystem
 ==================================================
 
