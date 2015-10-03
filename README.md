@@ -1,84 +1,24 @@
-# VMware Lightwave
+![Lightwave](https://storage.googleapis.com/project-lightwave/vmw-logo-lightwave.svg "VMware Lightwave")
 
-VMware Lightwave is a software stack geared towards providing identity services including authentication and authorization for large-scale distributed infrastructure, applications and containers.
+VMware Lightwave: Security for Container Ecosystem
+==================================================
 
-VMware Lightwave consists of the following primary components.
+Project Lightwave is an open source project comprised of enterprise-grade, identity and access management services targeting critical security, governance, and compliance challenges for Cloud-Native Apps within the enterprise.
 
-1. VMware Directory Service (vmdir)
-2. VMware Certificate Authority (vmca)
-3. VMware Authentication Framework Daemon/Service (vmafd)
-4. VMware Secure Token Service (vmware-sts)
+Through integration with [Project Photon](https://github.com/vmware/photon), Project Lightwave can provide security and governance for container workloads. Project Lightwave can also serve a variety of use cases such as single sign-on, authentication, authorization and certificate authority, as well as certificate key management services across the entire infrastructure and application stack.
 
-##Prerequisites
-Lightwave uses several existing open source packages. These include
+Project Lightwave is based on production quality code and an enterprise-grade architecture that is multi-tenant, scalable, and highly available multi master replication topology.
 
-1. OpenLDAP
+Project Lightwave is made up of the following key identity infrastructure elements:
 
-   <pre-wrap>
-   OpenLDAP is used for the LDAP server protocol head and the OpenLDAP Lightning MDB embedded database is used as the underlying LDAP store
-   </pre-wrap>
+- **Lightwave Directory Service**: standards based, multi-tenant, multi-master, highly scalable LDAP v3 directory service enables an enterprise’s infrastructure to be used by the most-demanding applications as well as by multiple teams.
+- **Lightwave Certificate Authority**: directory integrated certificate authority helps to simplify certificate-based operations and key management across the infrastructure.
+- **Lightwave Certificate Store**: endpoint certificate store to store certificate credentials.
+- **Lightwave Authentication Services**: cloud authentication services with support for Kerberos, OAuth 2.0/OpenID Connect, SAML and WSTrust enable interoperability with other standards-based technologies in the data center.
 
-2. Heimdal Kerberos
+## Quickstart
 
-   <pre-wrap>
-   The Heimdal Kerberos stack is used as the Kerberos protocol head.
-   </pre-wrap>
-
-3. DCE/RPC
-
-   <pre-wrap>
-   DCE/RPC is used as the control infrastructure for configuration of the Lightwave LDAP directory service
-   </pre-wrap>
-
-4. Likewise Open
-
-   <pre-wrap>
-   The Likewise Open stack is used for its service control infrastructure, its registry infrastructure and its NT Security Descriptor support. Likewise Open also provides a easy mechanism to provide ssh support for Lightwave clients
-   </pre-wrap>
-
-The first three packages are co-located within the Lightwave project. The Likewise Open project is a separate project and needs to be built from a separate git repository.  A binary RPM is also available, please see instructions below to add the repository.
-
-##Source code
-
-```
-git clone ssh://git@github.com/vmware/lightwave.git
-```
-
-##Build
-
-These build instructions are to build Lightwave on VMware's Photon Linux distribution.
- 1. Clone lightwave git repository onto your Photon (Full) installation.
- 2. Ensure likewise-open-devel-6.2.*.x86_64.rpm is installed on your Photon system.
- 3. Run *make* in [workspace root]
- 4. As part of a successful build, the following RPMs should be created in the [workspace root]/stage folder
-     1. vmware-directory-6.0.0-0.x86_64.rpm
-     2. vmware-directory-client-6.0.0-0.x86_64.rpm
-     3. vmware-directory-client-devel-6.0.0-0.x86_64.rpm
-     4. vmware-afd-6.0.0-0.x86_64.rpm
-     5. vmware-afd-client-2.0.0-0.x86_64.rpm
-     6. vmware-afd-client-devel-2.0.0-0.x86_64.rpm
-     7. vmware-ca-6.0.0-0.x86_64.rpm
-     8. vmware-ca-client-6.0.0-0.x86_64.rpm
-     9. vmware-ca-client-devel-6.0.0-0.x86_64.rpm
-     10. vmware-ic-config-1.0.0-0.x86_64.rpm
-     11. vmware-lightwave-server-6.0.0-0.x86_64.rpm
-     12. vmware-lightwave-clients-6.0.0-0.x86_64.rpm
-
-##Deployment
-
-A Lightwave platform comprises of Lightwave Domain Controllers and Lightwave Domain Clients.
-
-## Pre-built lightwave binaries
-
-Pre-built binaries for Lightwave are available through the following YUM repositories that can be configured on your Photon deployment.
-
-After the following YUM repositories have been configured, it should be possible to install the Lightwave Domain Controller and Lightwave Clients using "tdnf install vmware-lightwave-server" and "tdnf install vmware-lightwave-clients" respectively.
-
-Note : After configuring the following YUM repositories, please disable the photon-iso.repo; this is achieved by setting "enabled=0" in /etc/yum.repos.d/photon-iso.repo.
-
-### Lightwave YUM repository
-
-Create the file "/etc/yum.repos.d/lightwave.repo" with the following contents.
+On a running Photon VM, create the file `/etc/yum.repos.d/lightwave.repo` with the following content:
 
 ```
 [lightwave]
@@ -90,69 +30,6 @@ enabled=1
 skip_if_unavailable=True
 ```
 
-### Photon Extras YUM repository
+Then install the Lightwave Domain Controller using `tdnf install vmware-lightwave-server`.
 
-Create the file "/etc/yum.repos.d/photon-extras.repo" with the following contents.
-
-```
-[photon-extras]
-name=VMware Photon Extras 1.0(x86_64)
-baseurl=https://dl.bintray.com/vmware/photon_extras
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY
-gpgcheck=0
-enabled=1
-skip_if_unavailable=True
-```
-
-### Setting up a Lightwave Domain Controller
-You must first install the following packages on your Photon instance
-
-1. vmware-directory-client-6.0.0-0.x86_64.rpm
-2. vmware-directory-6.0.0-0.x86_64.rpm
-3. vmware-afd-client-6.0.0-0.x86_64.rpm
-4. vmware-afd-6.0.0-0.x86_64.rpm
-5. vmware-ca-client-6.0.0-0.x86_64.rpm
-6. vmware-ca-6.0.0-0.x86_64.rpm
-7. vmware-ic-config-1.0.0-0.x86_64.rpm
-
-Alternately, you can install the vmware-lightwave-server-6.0.0-0.x86_64.rpm which is a meta RPM with dependencies on all the above RPMs.
-
-If using the YUM repositories for the pre-built binaries, install the Lightwave Domain Controller using "tdnf install vmware-lightwave-server".
-
-#### Instantiating a domain controller
-
-##### Standalone mode (this is the first replica in a new domain)
-
-```
-/opt/vmware/bin/ic-promote
-```
-
-##### Partner mode (this is a new replica  in an existing domain)
-
-```
-/opt/vmware/bin/ic-promote --partner <hostname or ip-address of partner instance>
-```
-
-Notes:
-
-1. The password specified for the domain administrator must be at least 8 characters, include an upper case letter, a lower case letter, a digit and a special character.
-2. Make sure to assign a static ip address or a dhcp-address with a reservation to the system before promoting it to be a domain controller.
-
-### Setting up a Lightwave Domain Client
-
-The following packages are required to join the Photon system to the Lightwave Domain.
-
-1. vmware-directory-client-6.0.0-0.x86_64.rpm
-2. vmware-afd-client-6.0.0-0.x86_64.rpm
-3. vmware-afd-6.0.0-0.x86_64.rpm
-4. vmware-ca-client-6.0.0-0.x86_64.rpm
-5. vmware-ic-config-1.0.0-0.x86_64.rpm
-
-Alternately, you can install the vmware-lightwave-clients-6.0.0-0.x86_64.rpm which is a meta RPM with dependencies on all the above RPMs.
-
-If using the YUM repositories for the pre-built binaries, install the Lightwave Domain Client using "tdnf install vmware-lightwave-clients".
-
-#### Joining a system to a Lightwave domain
-```
-/opt/vmware/bin/ic-join --domain-controller <hostname or ip-address of domain controller>
-```
+For up-to-date documentation, see the [Docs](docs/) folder.
