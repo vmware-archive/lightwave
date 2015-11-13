@@ -3,7 +3,6 @@
 #include <cstdlib>
 #include <fstream>
 #include <pkcs_types.h>
-#include <pkcs_botan.h>
 #include <pkcs_csr.h>
 
 using namespace std;

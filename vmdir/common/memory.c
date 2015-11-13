@@ -258,32 +258,39 @@ error:
 }
 
 DWORD
-VmDirAllocateStringA(
-    PCSTR   pszString,
-    PSTR*   ppszString
+VmDirAllocateStringOfLenA(
+    PCSTR   pszSource,
+    DWORD   dwLength,
+    PSTR*   ppszDestination
     )
 {
     DWORD  dwError = 0;
     PSTR   pszNewString = NULL;
-    size_t dwLen = 0;
 
-    if (!pszString || !ppszString)
+    if (!pszSource || !ppszDestination)
     {
-        if (ppszString) { *ppszString = NULL; }
+        if (ppszDestination) { *ppszDestination = NULL; }
         return 0;
     }
 
-    dwLen = VmDirStringLenA(pszString);
-    // + 1 for \'0'
-    dwError = VmDirAllocateMemory(dwLen + 1, (PVOID*)&pszNewString);
+    //
+    // Check if the user is trying to copy more than is available.
+    //
+    if (strlen(pszSource) < dwLength)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(dwLength + 1, (PVOID*)&pszNewString);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 #ifndef _WIN32
-    memcpy(pszNewString, pszString, dwLen);
+    memcpy(pszNewString, pszSource, dwLength);
 #else
-    memcpy_s(pszNewString, (dwLen + 1), pszString, dwLen);
+    memcpy_s(pszNewString, dwLength + 1, pszSource, dwLength);
 #endif
-    *ppszString = pszNewString;
+    *ppszDestination = pszNewString;
 
 cleanup:
 
@@ -296,14 +303,27 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirAllocateStringA(
+    PCSTR   pszString,
+    PSTR*   ppszString
+    )
+{
+    if (!pszString || !ppszString)
+    {
+        if (ppszString) { *ppszString = NULL; }
+        return 0;
+    }
+
+    return VmDirAllocateStringOfLenA(pszString, VmDirStringLenA(pszString), ppszString);
+}
+
 VOID
 VmDirFreeStringA(
     PSTR pszString
     )
 {
     VMDIR_SAFE_FREE_MEMORY(pszString);
-
-    return;
 }
 
 /*
@@ -349,6 +369,75 @@ VmDirFreeStringArrayW(
     }
 }
 
+/*
+ * Return the nTh token from pszTarget that separated by pszDelimiter.
+ * dwIdx starts with 1.
+ * if token length is 0, an empty string is returned.
+ *
+ * return VMDIR_ERROR_NOT_FOUND if token not exists.
+ */
+DWORD
+VmDirStringGetTokenByIdx(
+    PCSTR   pszTarget,      // target string to find token
+    PCSTR   pszDelimiter,   // delimiter
+    DWORD   dwIdx,          // must be >= 1
+    PSTR*   ppszResult
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCnt = 0;
+    DWORD   dwDelLen = 0;
+    DWORD   dwTokLen = 0;
+    PCSTR   pszCurrent = NULL;  // begin ptr to search
+    PCSTR   pszNext = NULL;     // next token found
+    PCSTR   pszToken = NULL;    // the nTh token
+    PSTR    pszLocalResult = NULL;
+
+    if ( pszTarget == NULL || pszDelimiter == NULL || ppszResult == NULL || dwIdx < 1)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwDelLen = VmDirStringLenA( pszDelimiter );
+    if ( dwDelLen < 1 )
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    for ( dwCnt = 0, pszToken = pszNext = pszCurrent = pszTarget;
+          dwCnt < dwIdx;
+          dwCnt++
+        )
+    {
+        pszNext = VmDirStringStrA ( pszCurrent, pszDelimiter );
+        if ( pszNext == NULL )
+        {
+            dwError = VMDIR_ERROR_NOT_FOUND;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        dwTokLen = pszNext - pszCurrent;
+
+        pszToken = pszCurrent;
+        pszCurrent = pszNext + dwDelLen;
+    }
+
+    dwError = VmDirAllocateStringOfLenA( pszToken, dwTokLen, &pszLocalResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppszResult = pszLocalResult;
+    pszLocalResult = NULL;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY( pszLocalResult );
+
+    goto cleanup;
+}
 
 
 /*

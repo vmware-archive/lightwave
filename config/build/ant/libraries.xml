@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="internal-library-sets">
+   <property environment="env" />
+
+   <!-- - - - - - Ant Task Libraries - - - - - -->
+
+   <property name="libs.ant-contrib-home"
+             location="/opt/ant-contrib" />
+
+   <fileset id="jar-set.LOG4J2" dir="${MAINSRCROOT}/build/depends">
+        <include name="log4j-1.2-api-2.0.2.jar"/>
+        <include name="log4j-api-2.2.jar"/>
+        <include name="log4j-core-2.2.jar"/>
+        <include name="log4j-slf4j-impl-2.2.jar"/>
+        <include name="slf4j-api-1.7.10.jar"/>
+        <include name="jcl-over-slf4j-1.7.10.jar"/>
+  </fileset>
+
+  <fileset id="jar-set.apache-commons-lang" dir="${MAINSRCROOT}/build/depends">
+        <include name="commons-lang-2.5.jar"/>
+   </fileset>
+
+
+   <fileset id="jar-set.jna" dir="${MAINSRCROOT}/build/depends">
+        <include name="jna.jar"/>
+        <include name="platform.jar"/>
+   </fileset>
+
+   <fileset id="jar-set.commons-codec" dir="${MAINSRCROOT}/build/depends">
+        <include name="commons-codec-1.4.jar" />
+   </fileset>
+
+</project>

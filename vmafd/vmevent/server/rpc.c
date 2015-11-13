@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : rpc.c
+ *
+ * Abstract :
+ *
+ */
 #include "stdafx.h"
 
 #define END_POINT_BUF_LEN 128
@@ -368,4 +376,3 @@ error:
 
     goto cleanup;
 }
-

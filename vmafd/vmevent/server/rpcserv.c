@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : rpcserv.c
+ *
+ * Abstract :
+ *
+ */
 #include "stdafx.h"
 
 #ifdef _WIN32
@@ -115,7 +123,6 @@ error:
 DWORD
 RpcEventLogAdd(
     handle_t IDL_handle,
-    RP_PWSTR pszServerName,
     unsigned int eventID,
     unsigned int eventType,
     RP_PWSTR pszMessage
@@ -132,7 +139,6 @@ RpcEventLogAdd(
        BAIL_ON_VMEVENT_ERROR(dwError);
     }
     dwError = EventLogServerAddEvent(
-                 pszServerName,
                  eventID,
                  eventType,
                  pszMessage);
@@ -145,7 +151,6 @@ error:
 DWORD
 RpcEventLogInitEnumHandle(
     handle_t IDL_handle,
-    RP_PWSTR pszServerName,
     unsigned int * pdwHandle
     )
 {
@@ -161,7 +166,6 @@ RpcEventLogInitEnumHandle(
     }
 
     dwError = EventLogServerInitEnumEventsHandle(
-                    pszServerName,
                     pdwHandle
                     );
     BAIL_ON_VMEVENT_ERROR(dwError);
@@ -174,7 +178,6 @@ error:
 DWORD
 RpcEventLogEnumEvents(
     handle_t IDL_handle,
-    RP_PWSTR pszServerName,
     unsigned int dwHandle,
     unsigned int dwStartIndex,
     unsigned int dwNumPackages,
@@ -195,7 +198,6 @@ RpcEventLogEnumEvents(
     }
 
     dwError = EventLogServerEnumEvents(
-                    pszServerName,
                     dwHandle,
                     dwStartIndex,
                     dwNumPackages,

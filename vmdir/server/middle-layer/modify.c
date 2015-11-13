@@ -23,11 +23,12 @@ AddAttrToEntryStruct(
    VDIR_ATTRIBUTE * attr);
 
 static
-void
+DWORD
 AddAttrValsToEntryStruct(
    VDIR_ENTRY *     e,
    VDIR_ATTRIBUTE * eAttr,
-   VDIR_ATTRIBUTE * modAttr);
+   VDIR_ATTRIBUTE * modAttr,
+   PSTR*            ppszErrMsg);
 
 static
 int
@@ -145,6 +146,12 @@ error:
     VmDirLog( LDAP_DEBUG_ANY, "CoreLogicModifyEntry failed, DN = %s, (%u)(%s)",
                                VDIR_SAFE_STRING( modReq->dn.lberbv.bv_val ),
                                retVal, VDIR_SAFE_STRING(pszLocalErrMsg) );
+
+    if ( pOperation->ldapResult.pszErrMsg == NULL )
+    {
+        pOperation->ldapResult.pszErrMsg = pszLocalErrMsg;
+        pszLocalErrMsg = NULL;
+    }
 
     goto cleanup;
 }
@@ -604,7 +611,8 @@ VmDirApplyModsToEntryStruct(
                     retVal = CheckIfAnAttrValAlreadyExists(pSchemaCtx, attr, &(currMod->attr), &pszLocalErrorMsg);
                     BAIL_ON_VMDIR_ERROR( retVal );
 
-                    AddAttrValsToEntryStruct( pEntry, attr, &(currMod->attr) );
+                    retVal = AddAttrValsToEntryStruct( pEntry, attr, &(currMod->attr), &pszLocalErrorMsg );
+                    BAIL_ON_VMDIR_ERROR(retVal);
                 }
                 prevMod = currMod;
                 currMod = currMod->next;
@@ -959,6 +967,18 @@ _VmDirExternalModsSanityCheck(
                                             "attribute (%s) can not be modified",
                                             VDIR_SAFE_STRING(pLocalMod->attr.pATDesc->pszName));
         }
+
+        // ADD or REPLACE principal name, validate its syntax.
+        if ( pLocalMod->operation == MOD_OP_ADD ||
+             pLocalMod->operation == MOD_OP_REPLACE )
+        {
+            if ( VmDirStringCompareA(pLocalMod->attr.type.lberbv_val, ATTR_KRB_UPN, FALSE) == 0 ||
+                 VmDirStringCompareA(pLocalMod->attr.type.lberbv_val, ATTR_KRB_SPN, FALSE) == 0 )
+            {
+                retVal = VmDirValidatePrincipalName( &(pLocalMod->attr), &pszLocalErrMsg);
+                BAIL_ON_VMDIR_ERROR(retVal);
+            }
+        }
     }
 
 cleanup:
@@ -981,31 +1001,54 @@ error:
  */
 
 static
-void
+DWORD
 AddAttrValsToEntryStruct(
    VDIR_ENTRY *     e,
    VDIR_ATTRIBUTE * eAttr,    // Entry attribute to be updated with new attribute values
-   VDIR_ATTRIBUTE * modAttr   // Modify attribute containing new attribute values
+   VDIR_ATTRIBUTE * modAttr,  // Modify attribute containing new attribute values
+   PSTR*            ppszErrMsg
    )
 {
     unsigned int     i = 0;
     unsigned int     j = 0;
-    DWORD dwError = ERROR_SUCCESS;
+    DWORD   dwError = ERROR_SUCCESS;
+    PSTR    pszErrMsg = NULL;
 
     assert( e->allocType == ENTRY_STORAGE_FORMAT_NORMAL );
+
+    if ( (size_t)eAttr->numVals + (size_t)modAttr->numVals > UINT16_MAX)
+    {
+        dwError = VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszErrMsg),
+                                      "Too many %s attribute values, max %u allowed.",
+                                      VDIR_SAFE_STRING(eAttr->type.lberbv_val), UINT16_MAX);
+    }
 
     dwError = VmDirReallocateMemoryWithInit( eAttr->vals, (PVOID*)(&(eAttr->vals)),
                                              (eAttr->numVals + modAttr->numVals + 1) * sizeof( VDIR_BERVALUE ),
                                              (eAttr->numVals + 1) * sizeof( VDIR_BERVALUE ) );
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     for (i = 0, j = eAttr->numVals; i < modAttr->numVals; i++, j++)
     {
-        VmDirBervalContentDup( &modAttr->vals[i], &eAttr->vals[j] );
+        dwError = VmDirBervalContentDup( &modAttr->vals[i], &eAttr->vals[j] );
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
     memset( &(eAttr->vals[j]), 0, sizeof(VDIR_BERVALUE) ); // set last BerValue.lberbv.bv_val to NULL;
     eAttr->numVals += modAttr->numVals;
 
-    return;
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszErrMsg);
+    return dwError;
+
+error:
+    if (ppszErrMsg)
+    {
+        *ppszErrMsg = pszErrMsg;
+        pszErrMsg = NULL;
+    }
+
+    goto cleanup;
 }
 
 /*

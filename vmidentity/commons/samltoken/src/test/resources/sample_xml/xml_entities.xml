@@ -1,0 +1,13 @@
+<!DOCTYPE iaminnocent [
+  <!ENTITY string_substition "something completely different">
+  <!ENTITY evil SYSTEM "file:///c:/mydtd.dtd">
+]>
+<test>
+   <standard_entities>
+      This is a message with &gt;standard&lt; entities.
+    </standard_entities>
+   <external_entities>
+      This is a message with &string_substition; references.
+      Here comes evil [&evil;] &lt;--evil was here.
+    </external_entities>
+</test>

@@ -48,7 +48,37 @@ VmDirCleanupData(
     VOID
     )
 {
+#ifndef _WIN32
+
     return VmDirRun(VMDIR_CLEANUP_DATA);
+
+#else
+
+    DWORD dwError = 0;
+    PSTR  pszPath[MAX_PATH+1] = {0};
+    PSTR  pszCmd = NULL;
+
+    dwError = VmDirGetRegKeyValue( VMDIR_CONFIG_SOFTWARE_KEY_PATH,
+                                        VMDIR_REG_KEY_DATA_PATH,
+                                        (PSTR)pszPath,
+                                        MAX_PATH );
+    BAIL_ON_VMDIR_ERROR( dwError );
+
+    dwError = VmDirAllocateStringAVsnprintf( &pszCmd, "del /q \"%s\"", pszPath );
+    BAIL_ON_VMDIR_ERROR(dwError)
+
+    dwError = VmDirRun( pszCmd );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszCmd);
+
+    return dwError;
+
+error:
+    goto cleanup;
+
+#endif
 }
 
 DWORD
@@ -59,6 +89,7 @@ VmDirResetVmdir(
 
     dwError = VmDirStopService();
     BAIL_ON_VMDIR_ERROR(dwError);
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VMWare Directory Service stopped." );
 
     //Test for bug#1034595. On Windows, vmdird may fail to stop. Wait 2 seconds here.
     //Remove it if it's not useful
@@ -66,9 +97,11 @@ VmDirResetVmdir(
 
     dwError = VmDirCleanupData();
     BAIL_ON_VMDIR_ERROR(dwError);
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VMWare Directory Service database removed." );
 
     dwError = VmDirStartService();
     BAIL_ON_VMDIR_ERROR(dwError);
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VMWare Directory Service ready for re-promotion." );
 
 error:
     return dwError;

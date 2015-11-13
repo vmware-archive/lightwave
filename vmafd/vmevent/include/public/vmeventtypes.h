@@ -12,8 +12,6 @@
  * under the License.
  */
 
-
-
 /*
  * Module Name: VMEVENT
  *
@@ -33,9 +31,9 @@ extern "C" {
 #endif
 
 #ifndef _WIN32
-#define VMEVENT_NCALRPC_END_POINT "vmeventsvc"
+#define VMEVENT_NCALRPC_END_POINT "vmafdsvc"
 #else
-#define VMEVENT_NCALRPC_END_POINT "VMWareEventService"
+#define VMEVENT_NCALRPC_END_POINT "VMWareAfdService"
 #endif
 
 #define VMEVENT_RPC_TCP_END_POINT "2020"

@@ -362,8 +362,8 @@ VmDirMDBGetCandidates(
             char *    normVal    = BERVAL_NORM_VAL(pFilter->filtComp.ava.value);
             ber_len_t normValLen = BERVAL_NORM_LEN(pFilter->filtComp.ava.value);
 
-            VMDIR_LOG_VERBOSE( LDAP_DEBUG_BACKEND, (pFilter->choice == LDAP_FILTER_EQUALITY) ? "LDAP_FILTER_EQUALITY" :
-                                                                                     "LDAP_FILTER_GE" );
+            VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, (pFilter->choice == LDAP_FILTER_EQUALITY) ?
+                                                    "LDAP_FILTER_EQUALITY" :"LDAP_FILTER_GE" );
 
             dwError = VmDirAllocateMemory( normValLen + 1, (PVOID *)&pszkeyData );
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -377,6 +377,14 @@ VmDirMDBGetCandidates(
             key.mv_size = normValLen + 1;
 
             dwError = MdbScanIndex( pTxn, &(pFilter->filtComp.ava.type), &key, pFilter);
+            if ( pFilter->candidates )
+            {
+                VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), bad filter (%d)",
+                                   VDIR_SAFE_STRING(pFilter->filtComp.ava.type.lberbv.bv_val),
+                                   pFilter->candidates->size,
+                                   (pFilter->iMaxIndexScan && pFilter->candidates->size > pFilter->iMaxIndexScan) ? 1:0 );
+            }
+
             BAIL_ON_VMDIR_ERROR(dwError);
             break;
         }
@@ -385,7 +393,7 @@ VmDirMDBGetCandidates(
             char *    normVal = NULL;
             ber_len_t normValLen = 0;
 
-            VMDIR_LOG_VERBOSE( LDAP_DEBUG_BACKEND, "LDAP_FILTER_SUBSTRINGS" );
+            VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "LDAP_FILTER_SUBSTRINGS" );
 
             // SJ-TBD: It can be both and INITIAL and FINAL instead of one or the other.
             if (pFilter->filtComp.subStrings.initial.lberbv.bv_len != 0)
@@ -424,12 +432,23 @@ VmDirMDBGetCandidates(
 
                 key.mv_size = normValLen + 1;
             }
-            else
+            else if (pFilter->filtComp.subStrings.anySize > 0)
+            {
+                // "any" indexing has not being implemented yet, and bypass index lookup
+                break;
+            } else
             {
                 assert( FALSE );
             }
 
             dwError = MdbScanIndex( pTxn, &(pFilter->filtComp.subStrings.type), &key, pFilter);
+            if ( pFilter->candidates )
+            {
+                VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), bad filter (%d)",
+                                   VDIR_SAFE_STRING(pFilter->filtComp.subStrings.type.lberbv.bv_val),
+                                   pFilter->candidates->size,
+                                   (pFilter->iMaxIndexScan && pFilter->candidates->size > pFilter->iMaxIndexScan) ? 1:0 );
+            }
             BAIL_ON_VMDIR_ERROR(dwError);
             break;
         }
@@ -439,7 +458,7 @@ VmDirMDBGetCandidates(
             VDIR_BERVALUE   parentIdAttr = { {ATTR_PARENT_ID_LEN, ATTR_PARENT_ID}, 0, 0, NULL };
             unsigned char   parentEIdBytes[sizeof( VDIR_DB_SEQ_T )] = {0};
 
-            VMDIR_LOG_VERBOSE( LDAP_DEBUG_BACKEND, "LDAP_FILTER_ONE_LEVEL_SRCH" );
+            VMDIR_LOG_INFO( LDAP_DEBUG_FILTER, "LDAP_FILTER_ONE_LEVEL_SRCH" );
 
             dwError = VmDirMDBDNToEntryId( pBECtx, &(pFilter->filtComp.parentDn), &parentId );
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -448,6 +467,13 @@ VmDirMDBGetCandidates(
             MDBEntryIdToDBT(parentId, &key);
 
             dwError = MdbScanIndex( pTxn, &(parentIdAttr), &key, pFilter);
+            if ( pFilter->candidates )
+            {
+                VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), bad filter (%d)",
+                                   VDIR_SAFE_STRING(parentIdAttr.lberbv.bv_val),
+                                   pFilter->candidates->size,
+                                   (pFilter->iMaxIndexScan && pFilter->candidates->size > pFilter->iMaxIndexScan) ? 1:0 );
+            }
             BAIL_ON_VMDIR_ERROR(dwError);
             break;
         }
@@ -1070,9 +1096,13 @@ MdbScanIndex(
         goto cleanup;
     }
 
+    if ( pFilter->candidates )
+    {
+        DeleteCandidates( &(pFilter->candidates) );
+    }
     pFilter->candidates = NewCandidates(BE_CANDIDATES_START_ALLOC_SIZE, TRUE);
     if (! pFilter->candidates)
-    { //TODO, add this check to TC/BDB
+    {
         dwError = ERROR_BACKEND_ERROR;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
@@ -1144,6 +1174,16 @@ MdbScanIndex(
             MDBDBTToEntryId( &value, &eId);
             dwError = VmDirAddToCandidates( pFilter->candidates, eId);
             BAIL_ON_VMDIR_ERROR(dwError);
+
+            if ( pFilter->iMaxIndexScan > 0 &&
+                 pFilter->candidates->size > pFilter->iMaxIndexScan
+               )
+            {
+                // Exceed max scan size, treats as data not found. BuildCandidateList logic will retry w/o limit.
+                // Do not delete candidates here as BuildCandidateList uses it to determine bad filter scenario.
+                dwError = MDB_NOTFOUND;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
 
             eId = 0;
             cursorFlags = bIsExactMatch ? MDB_NEXT_DUP : MDB_NEXT;

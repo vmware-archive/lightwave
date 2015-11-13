@@ -459,6 +459,26 @@ VmDirIpcSetSRPSecret(
     PDWORD pdwResponseSize
     );
 
+// superlogging.h
+DWORD
+VmDirInitializeSuperLogging(
+    PVMSUPERLOGGING *ppLogger
+    );
+
+DWORD
+VmDirLoadEventLogLibrary(
+    PFEVENTLOG_ADD *ppfEventLogAdd
+    );
+
+// partnerschema.c
+DWORD
+VmDirCopyPartnerSchema(
+    PCSTR pszFQDomainName,
+    PCSTR pszUsername,
+    PCSTR pszPassword,
+    PCSTR pszReplURI
+    );
+
 #ifdef __cplusplus
 }
 #endif

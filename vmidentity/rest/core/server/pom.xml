@@ -1,0 +1,159 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.vmware.identity.rest.core</groupId>
+    <artifactId>vmware-identity-rest-core</artifactId>
+    <version>6.0.2</version>
+  </parent>
+
+  <artifactId>vmware-identity-rest-core-server</artifactId>
+  <packaging>jar</packaging>
+  <name>vmware-identity-rest-core-server</name>
+
+  <build>
+    <finalName>vmware-identity-rest-core-server</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>2.5.1</version>
+        <inherited>true</inherited>
+        <configuration>
+          <source>${java.version}</source>
+          <target>${java.version}</target>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.6</version>
+        <configuration>
+          <outputDirectory>${outputDirectory}</outputDirectory>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.glassfish.jersey.containers</groupId>
+      <artifactId>jersey-container-servlet-core</artifactId>
+      <version>${jersey.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>${javax.servlet.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.glassfish.jersey.media</groupId>
+      <artifactId>jersey-media-json-jackson</artifactId>
+      <version>${jersey.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>${commons.codec.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.nimbusds</groupId>
+      <artifactId>nimbus-jose-jwt</artifactId>
+      <version>${nimbusds.version}</version>
+    </dependency>
+
+    <!-- Logger Dependencies -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+      <version>${log4j.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
+      <version>${log4j.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+
+    <!-- VMware Dependencies -->
+    <dependency>
+      <groupId>com.vmware.identity</groupId>
+      <artifactId>vmware-identity-diagnostics</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.vmware.identity</groupId>
+      <artifactId>samltoken</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.vmware.identity</groupId>
+      <artifactId>vmware-identity-idm-client</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.vmware.identity</groupId>
+      <artifactId>vmware-identity-idm-interface</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+
+    <!-- Module Dependencies -->
+    <dependency>
+      <groupId>com.vmware.identity.rest.core</groupId>
+      <artifactId>vmware-identity-rest-core-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- Test dependencies -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.easymock</groupId>
+      <artifactId>easymock</artifactId>
+      <version>${easymock.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.vmware.identity.rest.core</groupId>
+      <artifactId>vmware-identity-rest-core-common</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <properties>
+    <outputDirectory>${basedir}/../../../build/vmware-sts/packages/</outputDirectory>
+  </properties>
+</project>

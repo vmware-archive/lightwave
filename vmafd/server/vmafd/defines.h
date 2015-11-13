@@ -22,11 +22,7 @@
 #define VMAFD_KEYTAB_PATH     "C:\\ProgramData\\VMware\\cis\\cfg\\vmafdd\\krb5.keytab"
 #define VMAFD_TRUSTED_ROOT_DOWNLOAD_PATH     "%VMWARE_CFG_DIR%\\vmware-vpx\\docRoot\\certs"
 #else
-#define VMAFD_CONFIG_BASE_DIR VMAFD_CONFIG_DIR
-#define VMAFD_LOG_FILE        "/var/log/vmware/vmafd/vmafdd.log"
-#define VMAFD_KRB5_CONF       "/etc/krb5.conf"
-#define VMAFD_KEYTAB_PATH     VMAFD_CONFIG_DIR "/krb5.keytab"
-#define VMAFD_TRUSTED_ROOT_DOWNLOAD_PATH     "/etc/vmware-vpx/docRoot/certs"
+#include "vmafd-server-defines.h"
 #endif
 #define VMAFD_MAX_OLD_LOGS    5
 #define VMAFD_MAX_LOG_SIZE    1000
@@ -37,13 +33,14 @@
 #define VMAFD_OPTION_LOG_FILE_NAME 'L'
 #define VMAFD_OPTION_ENABLE_SYSLOG 's'
 #define VMAFD_OPTIONS_VALID "f:l:L:p:s"
-#define VMAFD_CERT_DB VMAFD_DB_DIR "/vecs/afd.db"
+#define VMAFD_CERT_DB VMAFD_DB_DIR "/afd.db"
+#define VMAFD_OLD_CERT_DB VMAFD_DB_DIR "/vecs/afd.db"
 
-#define VMAFD_MAX_CONFIG_VALUE_LENGTH   2048
 
 #define VMAFD_ADDR_INFO_NEXT( ifa ) ifa->ifa_next
 #define VMAFD_ADDR_INFO_FLAGS( ifa ) ifa->ifa_flags
 #define VMAFD_ADDR_INFO_ADDR( ifa ) ifa->ifa_addr
+#define VMAFD_ERRNO VmAfdGetWin32ErrorCode(errno)
 
 #else // #ifndef _WIN32
 #define VMAFD_OPTION_LOGGING_LEVEL       "-l"
@@ -74,13 +71,10 @@
          }                                         \
     }
 
-#define VMAFD_MAX_CONFIG_VALUE_LENGTH   2048
-
 #define VMAFD_ADDR_INFO_NEXT( ai ) ai->ai_next
 #define VMAFD_ADDR_INFO_FLAGS( ai ) ai->ai_flags
 #define VMAFD_ADDR_INFO_ADDR( ai ) ai->ai_addr
-
-#define tcp_close( s )	(shutdown( s, SD_BOTH ), closesocket( s ))
+#define VMAFD_ERRNO GetLastError()
 
 #endif
 
@@ -104,6 +98,7 @@
 
 #define DEFAULT_VECS_CERT_SEC       60 // default value at which certs are pulled down by VECS, in Seconds
 #define VECS_STOREHASH_MAP_SIZE     64
+#define VMAFD_FILE_COPY_BUFSZ       1024
 
 /*
  * Table to define and initialize VMAFD configuration data.
@@ -205,6 +200,8 @@
 #define VMAFD_RPC_FLAG_REQUIRE_AUTH_TCPIP    0x08
 #define VMAFD_RPC_FLAG_REQUIRE_AUTHZ         0x10
 
+#define VMAFD_HEARTBEAT_TABLE_COUNT          16
+
 #define VMAFD_LOCK_MUTEX_EXCLUSIVE(pmutex, bLocked) \
 if (! (bLocked) ) \
 { \
@@ -225,3 +222,15 @@ if (bLocked) \
   pthread_rwlock_unlock (pmutex); \
   (bLocked) = FALSE; \
 }
+
+#define IPV4_LINKLOCAL_PREFIX_BYTE_1 0xA9
+#define IPV4_LINKLOCAL_PREFIX_BYTE_2 0xFE
+#define IPV6_LINKLOCAL_PREFIX_BYTE_1 0xFE
+#define IPV6_LINKLOCAL_PREFIX_BYTE_2 0x80
+
+#define IS_IPV4_LINKLOCAL(a) \
+    (((a)[0] == IPV4_LINKLOCAL_PREFIX_BYTE_1) && ((a)[1] == IPV4_LINKLOCAL_PREFIX_BYTE_2))
+#define IS_IPV6_LINKLOCAL(a) \
+    (((a)[0] == IPV6_LINKLOCAL_PREFIX_BYTE_1) && (((a)[1] & 0xC0)== IPV6_LINKLOCAL_PREFIX_BYTE_2))
+
+#define VMDNS_DEFAULT_LDAP_PORT 389

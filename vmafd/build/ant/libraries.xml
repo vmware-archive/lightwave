@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="internal-library-sets">
+   <property environment="env" />
+
+   <!-- - - - - - Ant Task Libraries - - - - - -->
+
+   <property name="libs.ant-contrib-home"
+             location="/opt/ant-contrib" />
+
+   <fileset id="jar-set.apache-commons-lang" dir="${MAINSRCROOT}/build/depends">
+        <include name="commons-lang-2.5.jar"/>
+   </fileset>
+
+   <fileset id="jar-set.apache-commons-logging" dir="${MAINSRCROOT}/build/depends">
+        <include name="commons-logging-1.1.1.jar"/>
+   </fileset>
+
+   <fileset id="jar-set.jna" dir="${MAINSRCROOT}/build/depends">
+        <include name="jna.jar"/>
+        <include name="platform.jar"/>
+   </fileset>
+
+   <fileset id="jar-set.junit" dir="${MAINSRCROOT}/build/depends">
+      <include name="junit-4.4.jar" />
+   </fileset>
+
+</project>

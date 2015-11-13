@@ -1,22 +1,26 @@
-#if 0
-typedef struct _KEY_VALUE
-{
-    int keyType;
-    int kvno;
-    int keyLen;
-    unsigned char *keyValue;
-} KEY_VALUE, *PKEY_VALUE;
-#endif
+/*
+ * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
 
-struct _KEY_ENTRY
-{
-    char *princName;
-    int numKeys;
-    PVMKDC_KEY *keys;
-//    PKEY_VALUE *keys;
-};
 
-typedef struct _KEY_ENTRY KEY_ENTRY, *PKEY_ENTRY;
 
-void tokenizeLine(char *line, PKEY_ENTRY *ppRetKeyEntry);
-void keyEntryFree(PKEY_ENTRY pKeyEntry);
+DWORD tokenizeLine(
+    char *line,
+    char **ppRetPrincName,
+    PVMKDC_KEYSET *ppRetKeySet);
+
+DWORD VmKdcGetUpnKeysMitDb(
+    char *upn,
+    char *dumpFile,
+    char **ppRetPrincName,
+    PVMKDC_KEYSET *ppRetKeySet);

@@ -1,4 +1,11 @@
-
+/*
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : memory.c
+ *
+ * Abstract :
+ *
+ */
 #include "includes.h"
 
 DWORD
@@ -112,7 +119,7 @@ EventLogConvertUnicodetoAnsiString(
     if (!pszUnicodeString || !ppszAnsiString) {
         if (ppszAnsiString) { *ppszAnsiString = NULL; }
         return 0;
-    } 
+    }
 #ifndef _WIN32
     // caller owns ppszAnsiString and should free via  RepoFreeStringA(*ppszAnsiString)
     return LwWc16sToMbs(pszUnicodeString, ppszAnsiString);

@@ -42,7 +42,6 @@ EventLogCloneEventEntryContentsFromDbEventEntry(
 
 DWORD
 EventLogServerInitEnumEventsHandle(
-    RP_PWSTR pszServerName,
     PDWORD pdwHandle
     )
 {
@@ -55,7 +54,6 @@ EventLogServerInitEnumEventsHandle(
 
 DWORD
 EventLogServerAddEvent(
-   RP_PWSTR pszServerName,
    DWORD eventID,
    DWORD eventType,
    RP_PWSTR pszMessage
@@ -88,7 +86,6 @@ error:
 
 DWORD
 EventLogServerEnumEvents(
-    RP_PWSTR pszServerName,
     DWORD    dwHandle,
     DWORD    dwStartIndex,
     DWORD    dwNumPackages,

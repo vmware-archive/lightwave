@@ -21,7 +21,9 @@
 #define VMDIR_OPTION_PASSWORD           'W'
 #define VMDIR_OPTION_PASSWORD_FILE      'x'
 #define VMDIR_OPTION_ACLONLY            'a'
-#define VMDIR_OPTIONS_VALID             "H:D:W:x:a"
+#define VMDIR_OPTION_PNIDFIX_DCACCOUNT  'd'
+#define VMDIR_OPTION_PNIDFIX_SAMACCOUNT 's'
+#define VMDIR_OPTIONS_VALID             "H:D:W:x:d:s:a"
 
 #else
 
@@ -29,6 +31,8 @@
 #define VMDIR_OPTION_ADMIN_UPN          "-D"
 #define VMDIR_OPTION_PASSWORD           "-W"
 #define VMDIR_OPTION_PASSWORD_FILE      "-x"
+#define VMDIR_OPTION_PNIDFIX_DCACCOUNT  "-d"
+#define VMDIR_OPTION_PNIDFIX_SAMACCOUNT "-s"
 #define VMDIR_OPTION_ACLONLY            "-a"
 
 #endif

@@ -69,7 +69,7 @@ VmAfdGetRegArgs(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfSrvGetDCName(&pwszDCName);
+    dwError = VmAfSrvGetAffinitizedDC(&pwszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvGetMachineAccountInfo(

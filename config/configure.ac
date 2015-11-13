@@ -41,6 +41,44 @@ AC_ARG_ENABLE([debug],
         fi
     ])
 
+# Ant component
+
+AC_ARG_WITH([ant],
+    [AC_HELP_STRING([--with-ant=<dir>], [use Ant binaries rooted at prefix <dir> ])],
+    [
+        ANT_HOME="$withval"
+        ANT_CLASSPATH=$ANT_HOME/lib/ant.jar:$ANT_HOME/lib/ant-launcher.jar
+    ])
+
+AC_PATH_PROG([ANT], [ant], [no], [$PATH:$JAVA_HOME/bin:$ANT_HOME/bin])
+
+if test x"$ANT" = x"no"; then
+    AC_MSG_ERROR([ANT compiler not found])
+fi
+
+AC_SUBST(ANT_HOME)
+AC_SUBST(ANT_CLASSPATH)
+
+# Java component
+
+AC_ARG_WITH([java],
+    [AC_HELP_STRING([--with-java=<dir>], [use Java binaries rooted at prefix <dir> ])],
+    [
+        JAVA_HOME="$withval"
+        JAVA=$JAVA_HOME/bin/java
+        TOOLS_CLASSPATH=$JAVA_HOME/lib/tools.jar
+    ])
+
+AC_PATH_PROG([JAVAC], [javac], [no], [$PATH:$JAVA_HOME/bin])
+
+if test x"$JAVAC" = x"no"; then
+    AC_MSG_ERROR([JAVAC compiler not found])
+fi
+
+AC_SUBST(JAVA_HOME)
+AC_SUBST(JAVA)
+AC_SUBST(TOOLS_CLASSPATH)
+
 # Likewise components
 
 AC_ARG_WITH([likewise],
@@ -199,6 +237,17 @@ CPPFLAGS="$CPPFLAGS $VMCA_INCLUDES $LW_INCLUDES"
 AC_CHECK_HEADERS(vmca.h)
 CPPFLAGS="$saved_CPPFLAGS"
 
+# vmsts component
+
+AC_ARG_WITH([sts],
+    [AC_HELP_STRING([--with-sts=<dir>], [use VMware STS Client binaries rooted at prefix <dir> ])],
+    [
+        VMSTS_HOME="$withval"
+        VMSTS_CLASSPATH=$VMSTS_HOME/jars
+    ])
+
+AC_SUBST(VMSTS_HOME)
+AC_SUBST(VMSTS_CLASSPATH)
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS(pthread.h errno.h sys/types.h sys/stat.h stdio.h string.h strings.h)
@@ -374,11 +423,18 @@ AC_SUBST(VMCA_LIBS)
 pscsetupbindir=$prefix/bin
 AC_SUBST(pscsetupbindir)
 
+pscsetupjarsdir=$prefix/jars
+AC_SUBST(pscsetupjarsdir)
+
 AC_CONFIG_FILES([Makefile
+                 jdepends/Makefile
                  cfgutils/Makefile
+                 pscsetup/Makefile
                  tools/Makefile
                  tools/ic-promote/Makefile
                  tools/ic-join/Makefile
+                 scripts/Makefile
+                 scripts/configure-lightwave-server
                 ])
 AC_OUTPUT
 

@@ -120,11 +120,13 @@ VmDirGetServersInfoOnSite(
                         VMDIR_MAX_DN_LEN,
                         pszServerDN
                         );
+        ldap_memfree(pszServerDN);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     *ppInternalServerInfo = pInternalServerInfo;
     *pdwInfoCount = dwInfoCount;
+
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszSearchBaseDN);
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
@@ -394,6 +396,7 @@ VmDirGetUsnFromPartners(
             if (dwError != 0)
             {
                 //Cannot connect/bind to the partner - treat is as non-partner (i.e. best-effort approach)
+                dwError = 0;
                 continue;
             }
             //Get LastLocalUsnProcessed
@@ -401,14 +404,20 @@ VmDirGetUsnFromPartners(
                               pPartnerRaDn, &usn);
             if (dwError != 0)
             {
+                dwError = 0;
                 continue;
             }
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirGetUsnFromPartners: USN from partner %s: %lu", pPartnerHost, usn);
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirGetUsnFromPartners: USN from partner %s: %lu", pPartnerHost, usn);
             if (usn > highestUsn)
             {
                 highestUsn = usn;
             }
         }
+    }
+    if (highestUsn == 0)
+    {
+        dwError = ERROR_NOT_FOUND;
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
     *pUsn = highestUsn;
 

@@ -161,6 +161,7 @@ VmwDeploySetupServerPrimary(
     PCSTR ppszServices[]=
     {
         VMW_DCERPC_SVC_NAME,
+        VMW_VMDNS_SVC_NAME,
         VMW_VMAFD_SVC_NAME,
         VMW_DIR_SVC_NAME,
         VMW_VMCA_SVC_NAME
@@ -210,6 +211,7 @@ VmwDeploySetupServerPartner(
     PCSTR ppszServices[]=
     {
         VMW_DCERPC_SVC_NAME,
+        VMW_VMDNS_SVC_NAME,
         VMW_VMAFD_SVC_NAME,
         VMW_DIR_SVC_NAME,
         VMW_VMCA_SVC_NAME
@@ -277,7 +279,7 @@ VmwDeploySetupServerCommon(
     dwError = VmAfdSetDomainNameA(pszHostname, pParams->pszDomainName);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
-    pszDCName = pParams->pszHostname;
+    pszDCName = pParams->pszServer ? pParams->pszServer : pParams->pszHostname;
 
     VMW_DEPLOY_LOG_VERBOSE(
             "Setting Domain Controller Name to [%s]",

@@ -59,7 +59,6 @@
 #include "ldap-int.h"
 #define LDAP_UNICODE 0
 
-#include "banned.h"
 #include <vmdir.h>
 #include <vmdirdefines.h>
 #include <vmdirerrorcode.h>
@@ -68,5 +67,7 @@
 #include <vmdirclient.h>
 #include "defines.h"
 #include "prototypes.h"
+
+#include "banned.h"
 
 #endif

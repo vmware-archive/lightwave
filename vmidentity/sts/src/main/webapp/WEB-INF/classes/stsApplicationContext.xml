@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+/*
+ *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License.  You may obtain a copy
+ *  of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, without
+ *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ *  License for the specific language governing permissions and limitations
+ *  under the License.
+ */
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+   <bean name="tenantServices"
+      class="com.vmware.identity.sts.idm.impl.IdmTenantServicesImpl">
+      <constructor-arg value="localhost" />
+   </bean>
+
+   <bean id="authenticatorFactory"
+      class="com.vmware.identity.sts.auth.impl.CompositeAuthenticatorFactory">
+      <constructor-arg ref="tenantServices" />
+   </bean>
+
+   <bean id="perfDataSink"
+      class="com.vmware.identity.performanceSupport.PerfDataSink">
+         <constructor-arg index="0"><value>100</value></constructor-arg>
+         <constructor-arg index="1"><value>5</value></constructor-arg>
+   </bean>
+
+   <bean id="authenticatorFactoryPerformanceWrapper"
+      class="com.vmware.identity.sts.auth.impl.CompositeAuthenticatorFactoryPerformanceWrapper">
+      <constructor-arg ref="authenticatorFactory" />
+      <constructor-arg ref="perfDataSink" />
+   </bean>
+
+   <import resource="classpath:saml-authority.xml" />
+
+   <bean id="samlAuthorityFactoryPerformanceWrapper"
+      class="com.vmware.identity.saml.SamlAuthorityFactoryPerformanceWrapper">
+      <constructor-arg ref="samlAuthorityFactory" />
+      <constructor-arg ref="perfDataSink" />
+   </bean>
+
+   <bean id="stsFactory" class="com.vmware.identity.sts.impl.STSFactoryImpl">
+      <constructor-arg ref="authenticatorFactoryPerformanceWrapper" />
+      <constructor-arg ref="samlAuthorityFactoryPerformanceWrapper" />
+      <constructor-arg ref="tenantServices" />
+   </bean>
+
+   <!-- enhanced for PerformanceDecorator -->
+   <bean id="multiTenantStsDecorated"
+      class="com.vmware.identity.sts.impl.MultiTenantSTSImpl">
+      <constructor-arg ref="stsFactory" />
+   </bean>
+
+   <bean id="multiTenantSts"
+      class="com.vmware.identity.sts.impl.MultiTenantSTSImplPerformanceDecorator">
+      <constructor-arg ref="multiTenantStsDecorated" />
+      <constructor-arg ref="perfDataSink" />
+   </bean>
+
+</beans>

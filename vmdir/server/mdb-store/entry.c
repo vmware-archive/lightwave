@@ -178,6 +178,7 @@ error:
 
 /*
  * Get the next available USN number.
+ * Note that USN fetched from the backend database is the next USN to be consumed.
  */
 DWORD
 VmDirMDBGetNextUSN(
@@ -217,6 +218,10 @@ VmDirMDBGetNextUSN(
     assert( value.mv_size == sizeof(USN) );
     localUSN = *((USN*)value.mv_data);
 
+    if (gVmdirServerGlobals.initialNextUSN == (USN)0)
+    {
+        gVmdirServerGlobals.initialNextUSN = localUSN;
+    }
     *((USN*)&USNValueBytes[0]) = localUSN + 1;
     value.mv_size = sizeof(USN);
     value.mv_data = &USNValueBytes[0];

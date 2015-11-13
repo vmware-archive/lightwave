@@ -258,13 +258,16 @@ VmDirInit(
 {
     DWORD   dwError = 0;
     BOOLEAN bWriteInvocationId = FALSE;
-    VMDIR_RUNMODE runMode = VMDIR_RUNMODE_NORMAL;
     BOOLEAN bWaitTimeOut = FALSE;
+    VMDIR_RUNMODE runMode = VmDirdGetRunMode();
 
     dwError = InitializeGlobalVars();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = InitializeServerStatusGlobals();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSuperLoggingInit(&gVmdirGlobals.pLogger);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 #ifndef _WIN32
@@ -320,7 +323,6 @@ VmDirInit(
         BAIL_ON_VMDIR_ERROR( dwError );
     }
 
-    runMode = VmDirdGetRunMode();
     if ( runMode == VMDIR_RUNMODE_NORMAL )
     {
         dwError = VmDirReplicationLibInit();
@@ -460,6 +462,14 @@ _VmDirRestoreInstance(VOID)
     BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
             "_VmDirRestoreInstance: fail to get hosts from topology: %d", dwError );
 
+    if ( dwInfoCount == 1 )
+    {
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Single node deployment topology, skip restore procedure.");
+        printf("Single node deployment topology, skip restore procedure.\n");
+
+        goto cleanup;
+    }
+
     /*
      *  Try those servers one by one until one of the hosts can be reached and be used
      *  to query up-to-date servers topology, and then follow those servers if they
@@ -519,6 +529,10 @@ _VmDirRestoreInstance(VOID)
     BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
             "_VmDirRestoreInstance: pfnBEGetNextUSN failed with error code: %d, error message: %s", dwError,
             VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg) );
+
+    //gVmdirServerGlobals.initialNextUSN was set by the first pfnBEGetNextUSN call.
+    //It's value less 1 is the one that has been consumed by the server to be restored.
+    nextUsn = gVmdirServerGlobals.initialNextUSN - 1;
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRestoreInstance: highest USN observed from partners %lu, local USN: %lu",
                    restoredUsn, nextUsn);
@@ -613,6 +627,8 @@ InitializeServerStatusGlobals(
     )
 {
     DWORD   dwError = 0;
+
+    gVmdirGlobals.iServerStartupTime = VmDirGetTimeInMilliSec();
 
     dwError = VmDirInitOPStatisticGlobals();
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1233,6 +1249,11 @@ VmDirSchemaPatchViaFile(
     }
 
     dwError = VmDirInternalModifyEntry(&ldapOp);
+    if (ldapOp.ldapResult.vmdirErrCode == VMDIR_ERROR_SCHEMA_UPDATE_PASSTHROUGH)
+    {
+        dwError = 0; // noop, no db and cache upgrade needed.
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Schema is up-to-date, no patch action needed." );
+    }
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>>>>>>>>> Schema patch succeeded <<<<<<<<<<");
@@ -1494,8 +1515,6 @@ InitializeResouceLimit(
     if ( setrlimit(RLIMIT_AS, &VMLimit)     // virtual memory
          ||
          setrlimit(RLIMIT_CORE, &VMLimit)   // core file size
-         ||
-         setrlimit(RLIMIT_NPROC, &VMLimit)  // thread
        )
     {
         dwError = ERROR_INVALID_CONFIGURATION;

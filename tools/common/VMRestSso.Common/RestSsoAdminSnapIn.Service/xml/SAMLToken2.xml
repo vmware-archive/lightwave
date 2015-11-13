@@ -1,0 +1,66 @@
+﻿<saml2:Assertion ID="_b30076b7-4156-410a-87c5-9360aa9eac34" IssueInstant="2012-08-02T09:48:38.507Z" Version="2.0" xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <saml2:Issuer Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">http://sts.example.com/service</saml2:Issuer>
+  <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+    <ds:SignedInfo>
+      <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+      <ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+      <ds:Reference URI="#_b30076b7-4156-410a-87c5-9360aa9eac34">
+        <ds:Transforms>
+          <ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+          <ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#">
+            <ec:InclusiveNamespaces PrefixList="xs xsi" xmlns:ec="http://www.w3.org/2001/10/xml-exc-c14n#"/>
+          </ds:Transform>
+        </ds:Transforms>
+        <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+        <ds:DigestValue>vJStmnHWmgcSJwICJddpbPUL/acOHVYolIOQ1EpWxrA=</ds:DigestValue>
+      </ds:Reference>
+    </ds:SignedInfo>
+    <ds:SignatureValue>
+      yBUBwBPHL7ffmf0rnvpWzmwboHV/gWuaRUyYjw9MD2i4VwFM/2AnfpyxOfVfdiNypEqiCXEPdOL6
+      cMJj9Qu2N0TAuc+Ec8CVINiv71EIbqqw5sq9CAYmtCA3VM0D7jCWM7Lt6o176v6N9X4N36v+tC0L
+      kM2svYYBabjGdJsWg5Pt8RwrFr0GvlLd4B/t2kVHvaOX0h7mPkTWByuAUheW3/tL94EM3qHHsIoY
+      77aJObFJn4SqDZGzADdwXVXt26hc7817J7NVf0NfJoDLEyu95VYayyTOh5DwFvdeBEyqA5tEDiv1
+      6Tp1/lsjhcYyNS+VmPiVIWZPmff+r3XUi9+9nA==
+    </ds:SignatureValue>
+    <ds:KeyInfo>
+      <ds:X509Data>
+        <ds:X509Certificate>
+          MIIDPDCCAiSgAwIBAgIES17AyTANBgkqhkiG9w0BAQsFADBgMQswCQYDVQQGEwJiZzEOMAwGA1UE
+          CBMFc29maWExDjAMBgNVBAcTBXNvZmlhMQ8wDQYDVQQKEwZ2bXdhcmUxDzANBgNVBAsTBnZtd2Fy
+          ZTEPMA0GA1UEAxMGdm13YXJlMB4XDTEwMDEyNjEwMTUzN1oXDTE0MTIzMTEwMTUzN1owYDELMAkG
+          A1UEBhMCYmcxDjAMBgNVBAgTBXNvZmlhMQ4wDAYDVQQHEwVzb2ZpYTEPMA0GA1UEChMGdm13YXJl
+          MQ8wDQYDVQQLEwZ2bXdhcmUxDzANBgNVBAMTBnZtd2FyZTCCASIwDQYJKoZIhvcNAQEBBQADggEP
+          ADCCAQoCggEBAM3uoJMjO+cH3zlMg0SInvpRUcuV2BgpaDKoJvvw6yDjactGsievZOkDOTKJnk+q
+          WyKC0xJTW3LUfnHAbWPASlN/P55XaAhjsNOPMshDHlIRE4MpCiXgaOv7mei2ZlmxxaIqG/74pktO
+          AEsYjhZmzG4ssC2z4BBMO/QGQJB2qZEc+le48/rvcq8jAH94PzdSHhR84yQq4KI0ZuFX+nkn1A5c
+          X8HCTBWLhLw5qZsZgGAHVNpKAw57YESCYiTAg7EXFFJth9cAAs61FuGsFOkAu+zFMLctT7BNTedm
+          cCb9nJZuEYDbEEGEupWZpXO58ETkb4USGC+nvIMgZSK8zV5TvPsCAwEAATANBgkqhkiG9w0BAQsF
+          AAOCAQEARP8FpJEtplSv/MKKJfQqrGNoouLz/BXhhz3gYrUDlUIvCpFEILyfwsqzZwNcMOlLXpQz
+          x09yBFaP+9s9WQCN8Mmb+ZNVIf1Nx5AxV45cbW/kGgnQW8bJmIpehJkcv3EXlQ+tKsp7nF/cs/Jl
+          OnG1SW3CnxR3Va5ADetQ3OC1IDYGVgEUkwU9xdtSsm1QRD1W+38ZnZbWwmPR5vnpw37BrlvWUh5g
+          jNv5l/sd1A4mdbFhWZXJuXFy2u+5JuIkrOsdNAY7tnD3Lw8XNdmmLckcnpnOzcSU3xi9jGGH2Iy0
+          PQz/yjmtl6rhcbd/t4Wr3kYlv2Zj/EmRwQxm5WEQolNqQA==
+        </ds:X509Certificate>
+      </ds:X509Data>
+    </ds:KeyInfo>
+  </ds:Signature>
+  <saml2:Subject>
+    <saml2:NameID Format="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress">AdminEmail@example.com</saml2:NameID>
+    <saml2:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer">
+      <saml2:SubjectConfirmationData InResponseTo="inResponseTo" NotOnOrAfter="2032-08-02T09:48:38.194Z" Recipient="recipient"/>
+    </saml2:SubjectConfirmation>
+  </saml2:Subject>
+  <saml2:Conditions NotBefore="2012-08-02T09:48:38.194Z" NotOnOrAfter="2032-08-02T09:48:38.194Z">
+    <saml2:ProxyRestriction Count="0"/>
+  </saml2:Conditions>
+  <saml2:AuthnStatement AuthnInstant="2012-08-02T09:49:38.194Z">
+    <saml2:AuthnContext>
+      <saml2:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:PreviousSession</saml2:AuthnContextClassRef>
+    </saml2:AuthnContext>
+  </saml2:AuthnStatement>
+  <saml2:AttributeStatement>
+    <saml2:Attribute FriendlyName="emailaddress" Name="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
+      <saml2:AttributeValue xsi:type="xs:string">AdminEmail@example.com</saml2:AttributeValue>
+    </saml2:Attribute>
+  </saml2:AttributeStatement>
+</saml2:Assertion>

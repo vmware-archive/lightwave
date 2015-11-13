@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<xs:schema
+    targetNamespace="http://www.rsa.com/names/2009/12/std-ext/WS-Trust1.4/advice"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:tns="http://www.rsa.com/names/2009/12/std-ext/WS-Trust1.4/advice"
+    elementFormDefault="qualified" attributeFormDefault="unqualified"
+>
+
+  <xs:element name="AdviceSet" type="tns:AdviceSetType"/>
+  <xs:complexType name="AdviceSetType">
+    <xs:sequence>
+      <xs:element name="Advice" type="tns:AdviceType" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+
+  <xs:element name="Advice" type="tns:AdviceType"/>
+  <xs:complexType name="AdviceType">
+    <xs:sequence>
+      <xs:element name="Attribute" type="tns:AttributeType" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="AdviceSource" type="xs:anyURI" use="required" />
+  </xs:complexType>
+
+  <xs:complexType name="AttributeType">
+    <xs:sequence>
+      <xs:element ref="tns:AttributeValue" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="Name" type="xs:anyURI" use="required"/>
+    <xs:attribute name="FriendlyName" type="xs:string" use="optional"/>
+</xs:complexType>
+
+<xs:element name="AttributeValue" type="xs:anyType"/>
+
+</xs:schema>

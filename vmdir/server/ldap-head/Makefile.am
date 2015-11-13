@@ -23,6 +23,7 @@ libldap_head_la_SOURCES = \
     opstatistic.c   \
     result.c        \
     search.c        \
+    vecs.c          \
     unbind.c
 
 libldap_head_la_CPPFLAGS = \
@@ -33,7 +34,6 @@ libldap_head_la_CPPFLAGS = \
     -I$(top_srcdir)/thirdparty/openldap/libraries/libldap \
     -I$(top_srcdir)/server/include \
     @OPENSSL_INCLUDES@ \
-    @BDB_INCLUDES@ \
     @LW_INCLUDES@
 
 libldap_head_la_LDFLAGS = \

@@ -32,9 +32,17 @@
 #include <lwrpcrt/lwrpcrt.h>
 #endif
 
+#include <lw/types.h>
+#include <lw/hash.h>
+#include <lw/security-api.h>
+
+#include <vmsuperlogging.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#define REPL_THREAD_SCHED_PRIORITY 10
 
 /*
  * Plugin logic has four hook points per LDAP operation -
@@ -79,7 +87,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
 
     VDIR_BERVALUE        invocationId;
     VDIR_BERVALUE        bvDefaultAdminDN;
-    unsigned char        serverId;
+    int                  serverId;
     VDIR_BERVALUE        systemDomainDN;
     VDIR_BERVALUE        delObjsContainerDN;
     VDIR_BERVALUE        bvDCGroupDN;
@@ -94,6 +102,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
     PSTR                 pszSiteName;
     BOOLEAN              isIPV4AddressPresent;
     BOOLEAN              isIPV6AddressPresent;
+    USN                  initialNextUSN; // used for server restore only
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;
@@ -127,6 +136,7 @@ typedef struct _VMDIR_GLOBALS
 
     BOOLEAN                         bAllowInsecureAuth;
     BOOLEAN                         bAllowAdminLockout;
+    BOOLEAN                         bDisableVECSIntegration;
 
     PDWORD                          pdwLdapListenPorts;
     DWORD                           dwLdapListenPorts;
@@ -162,9 +172,10 @@ typedef struct _VMDIR_GLOBALS
     // To synchronize first replication cycle done state and vdcpromo exit criteria.
     PVMDIR_MUTEX                    replCycleDoneMutex;
     PVMDIR_COND                     replCycleDoneCondition;
+    DWORD                           dwReplCycleCounter;
 
     // Upper limit (local USNs only < this number) on updates that can be replicated out "safely".
-    USN                             limitLocalUsnToBeReplicated;
+    USN                             limitLocalUsnToBeSupplied;
 
     // Operation threads shutdown synchronize counter, synchronize value 0
     PVMDIR_SYNCHRONIZE_COUNTER      pOperationThrSyncCounter;
@@ -179,6 +190,10 @@ typedef struct _VMDIR_GLOBALS
 
     PVMDIR_MUTEX                    pFlowCtrlMutex;
     DWORD                           dwMaxFlowCtrlThr;
+    PVMSUPERLOGGING                 pLogger;
+    UINT64                          iServerStartupTime;
+    // Limit the index scan to hunt for good filter
+    DWORD                           dwMaxIndexScan;
 } VMDIR_GLOBALS, *PVMDIR_GLOBALSS;
 
 extern VMDIR_GLOBALS gVmdirGlobals;
@@ -299,8 +314,23 @@ VmDirdGetReplNow(
     VOID
     );
 
+VOID
+VmDirdSetLimitLocalUsnToBeSupplied(
+    USN usn
+    );
+
+USN
+VmDirdGetLimitLocalUsnToBeSupplied(
+    VOID
+    );
+
 DWORD
 VmDirServerStatusEntry(
+    PVDIR_ENTRY*    ppEntry
+    );
+
+DWORD
+VmDirReplicationStatusEntry(
     PVDIR_ENTRY*    ppEntry
     );
 

@@ -8,6 +8,8 @@ extern "C" {
 #ifndef _WIN32
 
 #include <vmcasys.h>
+#include <vmafdclient.h>
+#include <vmafdtypes.h>
 
 #include <lw/types.h>
 #include <lw/base.h>
@@ -64,6 +66,9 @@ extern "C" {
 #include <assert.h>
 #include <winsock2.h>
 #include "banned.h"
+#include <vmafdclient.h>
+#include <vmafdtypes.h>
+
 
 //#include <openssl/ssl.h>
 #include <openssl/err.h>

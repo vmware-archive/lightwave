@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SyntaxDefinitions>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.3" Name="Attribute Type Description" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.6" Name="Bit String" Type="BitString"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.7" Name="Boolean" Type="System.Boolean"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.11" Name="Country String" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.14" Name="Delivery Method" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.15" Name="Directory String" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.16" Name="DIT Content Rule Description" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.17" Name="DIT Structure Rule Description" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.12" Name="DN" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.21" Name="Enhanced Guide" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.22" Name="Facsimile Telephone Number" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.23" Name="Fax" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.24" Name="Generalized Time" Type="System.DateTime"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.25" Name="Guide" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.26" Name="IA5 String" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.27" Name="INTEGER" Type="System.Int32"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.28" Name="JPEG" Type="System.Byte[]"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.54" Name="LDAP Syntax Description" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.30" Name="Matching Rule Description" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.31" Name="Matching Rule Use Description" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.34" Name="Name And Optional UID" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.35" Name="Name Form Description" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.36" Name="Numeric String" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.37" Name="Object Class Description" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.40" Name="Octet String" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.38" Name="OID" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.39" Name="Other Mailbox" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.41" Name="Postal Address" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.44" Name="Printable String" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.58" Name="Substring Assertion" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.50" Name="Telephone Number" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.51" Name="Teletex Terminal Identifier" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.52" Name="Telex Number" Type="System.String"/>
+  <Syntax Value="1.3.6.1.4.1.1466.115.121.1.53" Name="UTC Time" Type="System.DateTime"/>
+  <!--MS 3.1.1.3.1.1.1 subSchema-->
+  <Syntax Value="OctetString" Name="Object(Replica-Link)" Type="System.String"/>
+  <Syntax Value="1.2.840.113556.1.4.905" Name="String(Teletex)" Type="System.String"/>
+  <Syntax Value="1.2.840.113556.1.4.906" Name="LargeInteger" Type="System.String"/>
+  <Syntax Value="1.2.840.113556.1.4.907" Name="String(NT-Sec-Desc)" Type="System.String"/>
+  
+</SyntaxDefinitions>

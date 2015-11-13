@@ -96,6 +96,9 @@ main(
     dwError = VmAfdInitPassRefreshThread(&gVmafdGlobals.pPassRefreshThr);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    dwError = CdcInitDCCacheThread(&gVmafdGlobals.pDCCacheThr);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
     VmAfdLog(VMAFD_DEBUG_ANY, "vmafdd: started!" );
 
     /*

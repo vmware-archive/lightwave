@@ -12,7 +12,6 @@ AC_PROG_CC
 AC_PROG_LIBTOOL
 AC_PROG_CXX
 
-
 dnl Check supported operating systems
 dnl
 
@@ -40,6 +39,17 @@ AC_ARG_ENABLE([debug],
         then
             AM_CFLAGS="$AM_CFLAGS -g -O0"
             AM_CPPFLAGS="$AM_CPPFLAGS -DDEBUG -DLDAP_DEBUG"
+        fi
+    ])
+
+# vmdir-provider notify only build
+
+AC_ARG_ENABLE([notify-vmdir-provider],
+    [AC_HELP_STRING([--enable-notify-vmdir-provider], [enable vmdir provider notification (default: no)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            AC_DEFINE_UNQUOTED(NOTIFY_VMDIR_PROVIDER, "1", [Notify VMDir Provider of Join/Leave])
         fi
     ])
 
@@ -171,11 +181,12 @@ AC_SUBST(OPENSSL_LDFLAGS)
 # Java
 
 AC_ARG_WITH([jdk],
-    [AC_HELP_STRING([--with-jdk=<dir>], [use java binaries rooted at prefix <dir> ])],
+    [AC_HELP_STRING([--with-jdk=<dir>], [use jdk binaries rooted at prefix <dir> ])],
     [
-        JDK_BASE_PATH="$withval"
+        JAVA_HOME="$withval"
         JDK_INCLUDES="-I$withval/include -I$withval/include/linux"
         JDK_LDFLAGS="-L$withval/lib"
+        TOOLS_CLASSPATH=$JAVA_HOME/lib/tools.jar
     ])
 
 AC_ARG_WITH([jdk-includes],
@@ -190,20 +201,82 @@ AC_ARG_WITH([jdk-libs],
         JDK_LDFLAGS="-L$withval"
     ])
 
-AC_SUBST(JDK_BASE_PATH)
+AC_SUBST(JAVA_HOME)
 AC_SUBST(JDK_INCLUDES)
 AC_SUBST(JDK_LDFLAGS)
+AC_SUBST(TOOLS_CLASSPATH)
 
-JDK_PATH=$JDK_BASE_PATH/bin
+JDK_PATH=$JAVA_HOME/bin
 AC_SUBST(JDK_PATH)
+
+JAVA=$JAVA_HOME/bin/java
+AC_SUBST(JAVA)
+
+JRE_EXT=$JAVA_HOME/jre/lib/ext
+AC_SUBST(JRE_EXT)
 
 AC_PATH_PROG([JAVAH], [javah], [no], [$PATH:$JDK_PATH])
 
 if test x"$JAVAH" = x"no"; then
-    AC_MSG_WARN([JAVAH compiler not found])
+    AC_MSG_ERROR([JAVAH compiler not found])
 fi
 
+# ESX Platform
+ 
+DCERPC_DEPENDENCY="lsass dcerpc"
+AC_SUBST(DCERPC_DEPENDENCY)
+AC_ARG_ENABLE([esx],
+    [AC_HELP_STRING([--enable-esx], [enable acl check on modify (default: enabled)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            AC_DEFINE_UNQUOTED(PLATFORM_VMWARE_ESX, "1", [ Built to run on VMware ESXi ])
+            DCERPC_DEPENDENCY="lsass"
+        else
+            DCERPC_DEPENDENCY="lsass dcerpc"
+        fi
+    ])
+
+# Ant component
+
+AC_ARG_WITH([ant],
+    [AC_HELP_STRING([--with-ant=<dir>], [use Ant binaries rooted at prefix <dir> ])],
+    [
+        ANT_HOME="$withval"
+        ANT_CLASSPATH=$ANT_HOME/lib/ant.jar:$ANT_HOME/lib/ant-launcher.jar
+    ])
+
+AC_PATH_PROG([ANT], [ant], [no], [$PATH:$JAVA_HOME/bin:$ANT_HOME/bin])
+
+if test x"$ANT" = x"no"; then
+    AC_MSG_ERROR([ANT compiler not found])
+fi
+
+AC_SUBST(ANT_HOME)
+AC_SUBST(ANT_CLASSPATH)
+
 # Likewise components
+
+KRB5_DEFAULT_ENABLED="no"
+AC_ARG_ENABLE([krb5-default],
+    [AC_HELP_STRING([--enable-krb5-default], [enable default krb5.conf/krb5.keytab (default: disabled)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            AC_DEFINE_UNQUOTED(USE_DEFAULT_KRB5_PATHS, "1", [ Use /etc/krb5.conf /etc/krb5.keytab ])
+            KRB5_DEFAULT_ENABLED="yes"
+        fi
+    ])
+
+LIKEWISE_LIB_PATH="/opt/likewise/lib64"
+AC_SUBST(LIKEWISE_LIB_PATH)
+LIKEWISE_LIBDIR="/opt/likewise/lib64"
+AC_SUBST(LIKEWISE_LIBDIR)
+AC_ARG_WITH([likewise-libdir],
+    [AC_HELP_STRING([--with-likewise-libdir=<dir>], [use LIKEWISE libraries (at install) in this location])],
+    [
+        LIKEWISE_LIBDIR="$withval"
+    ])
 
 AC_ARG_WITH([likewise],
     [AC_HELP_STRING([--with-likewise=<dir>], [use likewise binaries rooted at prefix <dir> ])],
@@ -223,6 +296,12 @@ AC_ARG_WITH([likewise-libs],
     [AC_HELP_STRING([--with-likewise-libs=<dir>], [use likewise libraries located in prefix <dir> ])],
     [
         LW_LDFLAGS="-L$withval"
+    ])
+
+AC_ARG_WITH([likewise-rpath],
+    [AC_HELP_STRING([--with-likewise-rpath=<dir>], [use likewise libraries located at <dir> at runtime])],
+    [
+        LW_LDFLAGS="-L$LW_BASE_PATH/lib64 -Wl,-rpath,$withval -Wl,-rpath-link,$LW_BASE_PATH/lib64"
     ])
 
 AC_SUBST(LW_BASE_PATH)
@@ -280,7 +359,7 @@ AC_ARG_WITH([vmdir],
     [
         VMDIR_BASE_PATH="$withval"
         VMDIR_INCLUDES="-I$withval/include"
-        VMDIR_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/usr/lib/vmware-vmdir/lib64 -Wl,-rpath-link,/usr/lib/vmware-vmdir/lib64"
+        VMDIR_LDFLAGS="-L$VMDIR_BASE_PATH/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,$VMDIR_BASE_PATH/lib64"
     ])
 
 AC_ARG_WITH([vmdir-includes],
@@ -295,6 +374,12 @@ AC_ARG_WITH([vmdir-libs],
         VMDIR_LDFLAGS="-L$withval"
     ])
 
+AC_ARG_WITH([vmdir-rpath],
+    [AC_HELP_STRING([--with-vmdir-rpath=<dir>], [use VMDIR runtime libraries located at <dir> ])],
+    [
+        VMDIR_LDFLAGS="-L$VMDIR_BASE_PATH/lib64 -Wl,-rpath,$withval -Wl,-rpath-link,$VMDIR_BASE_PATH/lib64"
+    ])
+
 AC_SUBST(VMDIR_BASE_PATH)
 AC_SUBST(VMDIR_INCLUDES)
 AC_SUBST(VMDIR_LDFLAGS)
@@ -304,6 +389,36 @@ CPPFLAGS="$CPPFLAGS $VMDIR_INCLUDES $DCERPC_INCLUDES"
 AC_CHECK_HEADERS(vmdirclient.h)
 CPPFLAGS="$saved_CPPFLAGS"
 
+# VMDNS component
+
+AC_ARG_WITH([vmdns],
+    [AC_HELP_STRING([--with-vmdns=<dir>], [use VMDNS binaries rooted at prefix <dir> ])],
+    [
+        VMDNS_BASE_PATH="$withval"
+        VMDNS_INCLUDES="-I$withval/include"
+        VMDNS_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/usr/lib/vmware-vmdns/lib64 -Wl,-rpath-link,/usr/lib/vmware-vmdns/lib64"
+    ])
+
+AC_ARG_WITH([vmdns-includes],
+    [AC_HELP_STRING([--with-vmdns-includes=<dir>], [use VMDNS headers located in prefix <dir> ])],
+    [
+        VMDNS_INCLUDES="-I$withval"
+    ])
+
+AC_ARG_WITH([vmdns-libs],
+    [AC_HELP_STRING([--with-vmdns-libs=<dir>], [use VMDNS libraries located in prefix <dir> ])],
+    [
+        VMDNS_LDFLAGS="-L$withval"
+    ])
+
+AC_SUBST(VMDNS_BASE_PATH)
+AC_SUBST(VMDNS_INCLUDES)
+AC_SUBST(VMDNS_LDFLAGS)
+
+saved_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $VMDNS_INCLUDES $DCERPC_INCLUDES"
+AC_CHECK_HEADERS(vmdns.h)
+CPPFLAGS="$saved_CPPFLAGS"
 
 
 AC_HEADER_STDC
@@ -395,6 +510,14 @@ AC_CHECK_LIB(
     [$LW_LDFLAGS $LWREG_LIBS $LWMSG_LIBS $LWBASE_LIBS $GSSAPI_LIBS
     $UUID_LIBS $LDAP_LIBS $OPENSSL_LDFLAGS $CRYPTO_LIBS -llwadvapi_nothr])
 AC_CHECK_LIB(
+    [lwsm],
+    [LwSmStartService],
+    [LWSM_LIBS="-llwsm -llwsmcommon"],
+    [],
+    [$LW_LDFLAGS $LWMSG_LIBS $LWADVAPI_LIBS $LWBASE_LIBS $GSSAPI_LIBS $UUID_LIBS $LDAP_LIBS $OPENSSL_LDFLAGS $CRYPTO_LIBS -llwsmcommon]
+    )
+
+AC_CHECK_LIB(
     [domainjoin],
     [DJJoinDomain],
     [DOMAINJOIN_LIBS="-ldomainjoin -lcentutils -leventlog -leventlogutils -llsaclient -llsacommon -llwnetclientapi -llwnetcommon -llwsm -llwsmcommon"],
@@ -406,6 +529,13 @@ AC_CHECK_LIB(
     [VMDIR_LIBS="-lvmdirclient"],
     [],
     [$VMDIR_LDFLAGS -lvmdirclient $LW_LDFLAGS $DCERPC_LIBS $SCHANNEL_LIBS $LWMSG_LIBS $LWRSUTILS_LIBS $LWREG_LIBS $LWIO_LIBS $LWBASE_LIBS $LDAP_LIBS $PTHREAD_LIBS $UUID_LIBS $LWBASE_LIBS $GSSAPI_LIBS $OPENSSL_LDFLAGS $CRYPTO_LIBS])
+AC_CHECK_LIB(
+    [vmdnsclient],
+    [VmDnsOpenServerA],
+    [VMDNS_LIBS="-lvmdnsclient"],
+    [],
+    [$VMDNS_LDFLAGS -lvmdnsclient $LW_LDFLAGS $DCERPC_LIBS $SCHANNEL_LIBS $LWMSG_LIBS $LWRSUTILS_LIBS $LWREG_LIBS $LWIO_LIBS $LWBASE_LIBS $LDAP_LIBS $PTHREAD_LIBS $UUID_LIBS $LWBASE_LIBS $GSSAPI_LIBS $OPENSSL_LDFLAGS $CRYPTO_LIBS])
+
 
 AC_CHECK_LIB([shadow], [getspnam], [SHADOW_LIBS="-lshadow"])
 AC_CHECK_LIB([crypt], [crypt_r], [CRYPT_LIBS="-lcrypt"])
@@ -440,8 +570,10 @@ AC_SUBST(BOOST_LIBS)
 AC_SUBST(PYTHON_LIBS)
 AC_SUBST(SQLITE_LIBS)
 AC_SUBST(LWADVAPI_LIBS)
+AC_SUBST(LWSM_LIBS)
 AC_SUBST(LDAP_LIBS)
 AC_SUBST(VMDIR_LIBS)
+AC_SUBST(VMDNS_LIBS)
 
 AC_PATH_PROG([IDL], [dceidl], [no], [$PATH:$DCERPC_PATH])
 
@@ -470,6 +602,25 @@ AS_AC_EXPAND(VMAFD_CONFIG_DIR, $vmafdconfdir)
 AC_SUBST(VMAFD_CONFIG_DIR)
 AC_DEFINE_UNQUOTED(VMAFD_CONFIG_DIR, "$VMAFD_CONFIG_DIR", [Config afd])
 
+if test x"$KRB5_DEFAULT_ENABLED" = x"yes"; then
+VMAFD_KEYTAB_CONFIG_DIR="/etc"
+VMAFD_KRB5CONF_FILENAME="krb5.conf"
+VMAFD_KRB5CONF_FILEPATH="/etc/${VMAFD_KRB5CONF_FILENAME}"
+else
+VMAFD_KEYTAB_CONFIG_DIR="$VMAFD_CONFIG_DIR"
+VMAFD_KRB5CONF_FILENAME="krb5.lotus.conf"
+VMAFD_KRB5CONF_FILEPATH="/etc/${VMAFD_KRB5CONF_FILENAME}"
+fi
+AC_DEFINE_UNQUOTED(VMAFD_KEYTAB_CONFIG_DIR, "$VMAFD_KEYTAB_CONFIG_DIR", [Config afd])
+AC_SUBST(VMAFD_KEYTAB_CONFIG_DIR)
+AC_SUBST(VMAFD_KRB5CONF_FILENAME)
+AC_SUBST(VMAFD_KRB5CONF_FILEPATH)
+
+databasedir=$localstatedir
+AC_SUBST(databasedir)
+AS_AC_EXPAND(VMAFD_DB_DIR, $databasedir)
+AC_DEFINE_UNQUOTED(VMAFD_DB_DIR, "$VMAFD_DB_DIR", [DB path for vmafd])
+
 initddir=$sysconfdir/init.d
 AC_SUBST(initddir)
 
@@ -478,6 +629,12 @@ AC_SUBST(pymodulesdir)
 
 javaetcdir=/etc/vmware/java
 AC_SUBST(javaetcdir)
+
+vmafdjarsdir="$prefix/jars"
+AC_SUBST(vmafdjarsdir)
+
+jreextdir=$JRE_EXT
+AC_SUBST(jreextdir)
 
 AC_CONFIG_FILES([Makefile
                  include/Makefile
@@ -494,20 +651,22 @@ AC_CONFIG_FILES([Makefile
                  vmevent/server/Makefile
                  vmevent/client/Makefile
                  vmevent/test/Makefile
-                 vmauthsvc/Makefile
-                 vmauthsvc/common/Makefile
-                 vmauthsvc/server/Makefile
-                 vmauthsvc/client/Makefile
                  server/Makefile
                  server/db/Makefile
-		 server/vmafd/Makefile
+                 server/vmafd/Makefile
+                 server/vmafd/vmafd-server-defines.h
                  client/Makefile
+                 jdepends/Makefile
                  tools/Makefile
                  tools/dir-cli/Makefile
+                 tools/cdc-cli/Makefile
                  tools/cli/Makefile
+                 tools/domainjoin/Makefile
                  tools/vdcpromo/Makefile
                  tools/vecs-cli/Makefile
                  interop/Makefile
+                 interop/cdcjni/Makefile
+                 interop/java/Makefile
                  interop/jni/Makefile
                  interop/python/Makefile
 		 test/Makefile

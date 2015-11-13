@@ -1,0 +1,114 @@
+/* **********************************************************************
+ * Copyright 2014 VMware, Inc.  All rights reserved.
+ * *********************************************************************/
+
+package com.vmware.pscsetup;
+
+import java.io.Console;
+
+import com.vmware.pscsetup.interop.DomainControllerNativeException;
+
+public class PlatformServicesControllerDeploy {
+
+    private static PlatformServicesController psc = new PlatformServicesController();
+
+	public static void main(String[] args) {
+
+		DomainControllerStandaloneParams params = build(args);
+
+		if (params.getPassword() == null || params.getPassword().isEmpty()) {
+			Console cons = System.console();
+			char[] passwd;
+			if (cons != null
+					&& (passwd = cons.readPassword("Password:")) != null) {
+				params.setPassword(new String(passwd));
+			}
+		}
+
+		if (params instanceof DomainControllerPartnerParams) {
+			try {
+				psc.setPlatformInstallObserver(new PlatformInstallObserverDefault());
+				psc.setupInstancePartner((DomainControllerPartnerParams) params);
+			} catch (DomainControllerNativeException e) {
+				System.err.println("Errorcode: " + e.getErrorCode());
+				e.printStackTrace(System.err);
+			}
+		} else {
+			try {
+				psc.setPlatformInstallObserver(new PlatformInstallObserverDefault());
+				psc.setupInstanceStandalone(params);
+			} catch (DomainControllerNativeException e) {
+				System.err.printf("Errorcode: " + e.getErrorCode());
+				e.printStackTrace(System.err);
+			}
+		}
+    }
+
+    private static DomainControllerStandaloneParams build(String[] args) {
+	DomainControllerStandaloneParams params = new DomainControllerStandaloneParams();
+	ParseMode mode = ParseMode.PARSE_MODE_OPEN;
+
+	if (args.length < 2 || !args[0].equals("--mode"))
+	    throw new IllegalArgumentException(
+		    "Parameter --mode is required first (--mode standalone or --mode partner)");
+
+	DirectorySetupMode setupMode = Enum.valueOf(DirectorySetupMode.class,
+		args[1].toUpperCase());
+	if (setupMode == DirectorySetupMode.STANDALONE)
+	    params = new DomainControllerStandaloneParams();
+	else if (setupMode == DirectorySetupMode.PARTNER)
+	    params = new DomainControllerPartnerParams();
+
+	for (String arg : args) {
+            switch (mode) {
+            case PARSE_MODE_OPEN:
+                if (arg.equals("--hostname")) {
+                    mode = ParseMode.PARSE_MODE_HOSTNAME;
+                } else if (arg.equals("--password")) {
+                    mode = ParseMode.PARSE_MODE_PASSWORD;
+                } else if (arg.equals("--domain")) {
+                    mode = ParseMode.PARSE_MODE_DOMAIN;
+                } else if (arg.equals("--server")) {
+                    mode = ParseMode.PARSE_MODE_SERVER;
+                } else if (arg.equals("--site")) {
+                    mode = ParseMode.PARSE_MODE_SITE;
+                } else if (arg.equals("--runDmc")) {
+                    mode = ParseMode.PARSE_MODE_RUN_DMC;
+                }
+                break;
+            case PARSE_MODE_HOSTNAME:
+                params.setHostname(arg);
+                mode = ParseMode.PARSE_MODE_OPEN;
+                break;
+            case PARSE_MODE_PASSWORD:
+                params.setPassword(arg);
+                mode = ParseMode.PARSE_MODE_OPEN;
+                break;
+            case PARSE_MODE_DOMAIN:
+                params.setDomainName(arg);
+                mode = ParseMode.PARSE_MODE_OPEN;
+                break;
+            case PARSE_MODE_SITE:
+                params.setSite(arg);
+                mode = ParseMode.PARSE_MODE_OPEN;
+                break;
+            case PARSE_MODE_RUN_DMC:
+                psc.setRunDmc(Boolean.parseBoolean(arg));
+                mode = ParseMode.PARSE_MODE_RUN_DMC;
+                break;
+            case PARSE_MODE_SERVER:
+                if (setupMode == DirectorySetupMode.PARTNER)
+                    ((DomainControllerPartnerParams) params).setServer(arg);
+                mode = ParseMode.PARSE_MODE_OPEN;
+                break;
+            default:
+                break;
+            }
+	}
+	return params;
+    }
+
+    enum ParseMode {
+	PARSE_MODE_OPEN, PARSE_MODE_MODE, PARSE_MODE_HOSTNAME, PARSE_MODE_DOMAIN, PARSE_MODE_PASSWORD, PARSE_MODE_SITE, PARSE_MODE_RUN_DMC, PARSE_MODE_SERVER,
+    }
+}

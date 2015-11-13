@@ -24,6 +24,8 @@ extern "C" {
 #include "vmafdtypes.h"
 #include "vecsclient.h"
 
+typedef struct _VMAFD_HB_HANDLE* PVMAFD_HB_HANDLE;
+
 DWORD
 VmAfdOpenServerA(
     PCSTR pszServerName,
@@ -134,6 +136,18 @@ VmAfdSetLDUW(
     );
 
 DWORD
+VmAfdGetRHTTPProxyPortA(
+    PCSTR   pszServerName, /* IN    OPTIONAL */
+    UINT32* pdwPort        /* IN    OPTIONAL */
+    );
+
+DWORD
+VmAfdGetRHTTPProxyPortW(
+    PCWSTR  pwszServerName, /* IN    OPTIONAL */
+    UINT32* pdwPort         /* IN    OPTIONAL */
+    );
+
+DWORD
 VmAfdSetRHTTPProxyPortA(
     PCSTR  pwszServerName, /* IN    OPTIONAL */
     UINT32 dwPort          /* IN             */
@@ -194,6 +208,18 @@ VmAfdGetDCNameW(
     );
 
 DWORD
+VmAfdGetDCNameExA(
+    PCSTR pszServerName, /* IN     OPTIONAL */
+    PSTR* ppszDCName     /*    OUT          */
+    );
+
+DWORD
+VmAfdGetDCNameExW(
+    PCWSTR pwszServerName, /* IN     OPTIONAL */
+    PWSTR* ppwszDCName     /*    OUT          */
+    );
+
+DWORD
 VmAfdSetDCNameA(
     PCSTR pszServerName,    /* IN     OPTIONAL */
     PCSTR pszDCName         /* IN              */
@@ -229,6 +255,18 @@ DWORD
 VmAfdGetSiteGUIDW(
     PCWSTR pszServerName,  /* IN     OPTIONAL */
     PWSTR* ppszSiteGUID    /*    OUT          */
+    );
+
+DWORD
+VmAfdGetSiteNameA(
+    PCSTR  pszServerName,  /* IN     OPTIONAL */
+    PSTR*  ppszSiteName    /*    OUT          */
+    );
+
+DWORD
+VmAfdGetSiteNameW(
+    PCWSTR pszServerName,  /* IN     OPTIONAL */
+    PWSTR* ppszSiteName    /*    OUT          */
     );
 
 DWORD
@@ -307,6 +345,26 @@ VmAfdJoinVmDirW(
     PCWSTR pwszMachineName,    /* IN              */
     PCWSTR pwszDomainName,     /* IN              */
     PCWSTR pwszOrgUnit         /* IN     OPTIONAL */
+    );
+
+DWORD
+VmAfdJoinVmDir2A(
+    PCSTR            pszDomainName,  /* IN              */
+    PCSTR            pszUserName,    /* IN              */
+    PCSTR            pszPassword,    /* IN              */
+    PCSTR            pszMachineName, /* IN     OPTIONAL */
+    PCSTR            pszOrgUnit,     /* IN     OPTIONAL */
+    VMAFD_JOIN_FLAGS dwFlags         /* IN              */
+    );
+
+DWORD
+VmAfdJoinVmDir2W(
+    PCWSTR           pwszDomainName,  /* IN            */
+    PCWSTR           pwszUserName,    /* IN            */
+    PCWSTR           pwszPassword,    /* IN            */
+    PCWSTR           pwszMachineName, /* IN   OPTIONAL */
+    PCWSTR           pwszOrgUnit,     /* IN   OPTIONAL */
+    VMAFD_JOIN_FLAGS dwFlags          /* IN            */
     );
 
 DWORD
@@ -414,6 +472,19 @@ VmAfdTriggerRootCertsRefresh(
     PCSTR pszPassword
     );
 
+
+DWORD
+VmAfdGetPNIDForUrlA(
+    PCSTR pszServerName,
+    PSTR* ppszPNIDUrl
+    );
+
+DWORD
+VmAfdGetPNIDForUrlW(
+    PCWSTR pwszServerName,
+    PWSTR* ppwszPNIDUrl
+    );
+
 DWORD
 VmAfdGetPNIDA(
     PCSTR pszServerName,
@@ -462,6 +533,69 @@ VmAfdGetCAPathW(
     PWSTR* ppwszPath
     );
 
+DWORD
+VmAfdStartHeartbeatA(
+    PCSTR  pszServiceName,
+    DWORD  dwServicePort,
+    PVMAFD_HB_HANDLE *ppHandle
+    );
+
+DWORD
+VmAfdStartHeartbeatW(
+    PCWSTR pwszServiceName,
+    DWORD  dwServicePort,
+    PVMAFD_HB_HANDLE *ppHandle
+    );
+
+DWORD
+VmAfdGetHeartbeatStatusA(
+    PVMAFD_SERVER       pServer,
+    PVMAFD_HB_STATUS_A* ppHeartbeatStatus
+    );
+
+DWORD
+VmAfdGetHeartbeatStatusW(
+    PVMAFD_SERVER       pServer,
+    PVMAFD_HB_STATUS_W* ppHeartbeatStatus
+    );
+
+VOID
+VmAfdStopHeartbeat(
+    PVMAFD_HB_HANDLE pHandle
+    );
+
+VOID
+VmAfdFreeHeartbeatStatusA(
+    PVMAFD_HB_STATUS_A pHeartbeatStatus
+    );
+
+VOID
+VmAfdFreeHeartbeatStatusW(
+    PVMAFD_HB_STATUS_W pHeartbeatStatus
+    );
+
+DWORD
+VmAfdRefreshSiteName(
+    );
+
+DWORD
+VmAfdGetErrorMsgByCode(
+    DWORD dwErrorCode,
+    PSTR *pszErrMsg
+    );
+
+DWORD
+VmAfdConfigureDNSA(
+    PCSTR pszUserName,
+    PCSTR pszPassword
+    );
+
+DWORD
+VmAfdConfigureDNSW(
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword
+    );
+
 #ifdef UNICODE
 
 #define VmAfdOpenServer                 VmAfdOpenServerW
@@ -473,6 +607,7 @@ VmAfdGetCAPathW(
 #define VmAfdSetDomainState             VmAfdSetDomainStateW
 #define VmAfdGetLDU                     VmAfdGetLDUW
 #define VmAfdSetLDU                     VmAfdSetLDUW
+#define VmAfdGetRHTTPProxyPort          VmAfdGetRHTTPProxyPortW
 #define VmAfdSetRHTTPProxyPort          VmAfdSetRHTTPProxyPortW
 #define VmAfdSetDCPort                  VmAfdSetDCPortW
 #define VmAfdGetCMLocation              VmAfdGetCMLocationW
@@ -487,10 +622,13 @@ VmAfdGetCAPathW(
 #define VmAfdJoinAD                     VmAfdJoinADW
 #define VmAfdLeaveAD                    VmAfdLeaveADW
 #define VmAfdQueryAD                    VmAfdQueryADW
+#define VmAfdGetPNIDForUrl              VmAfdGetPNIDForUrlW
 #define VmAfdGetPNID                    VmAfdGetPNIDW
 #define VmAfdSetPNID                    VmAfdSetPNIDW
 #define VmAfdSetCAPath                  VmAfdSetCAPathW
 #define VmAfdGetCAPath                  VmAfdGetCAPathW
+#define VmAfdGetDCNameEx                VmAfdGetDCNameExW
+#define VmAfdConfigureDNS               VmAfdConfigureDNSW
 
 #else
 
@@ -503,6 +641,7 @@ VmAfdGetCAPathW(
 #define VmAfdSetDomainState             VmAfdSetDomainStateA
 #define VmAfdGetLDU                     VmAfdGetLDUA
 #define VmAfdSetLDU                     VmAfdSetLDUA
+#define VmAfdGetRHTTPProxyPort          VmAfdGetRHTTPProxyPortA
 #define VmAfdSetRHTTPProxyPort          VmAfdSetRHTTPProxyPortA
 #define VmAfdSetDCPort                  VmAfdSetDCPortA
 #define VmAfdGetCMLocation              VmAfdGetCMLocationA
@@ -517,10 +656,13 @@ VmAfdGetCAPathW(
 #define VmAfdJoinAD                     VmAfdJoinADA
 #define VmAfdLeaveAD                    VmAfdLeaveADA
 #define VmAfdQueryAD                    VmAfdQueryADA
+#define VmAfdGetPNIDForUrl              VmAfdGetPNIDForUrlA
 #define VmAfdGetPNID                    VmAfdGetPNIDA
 #define VmAfdSetPNID                    VmAfdSetPNIDA
 #define VmAfdSetCAPath                  VmAfdSetCAPathA
 #define VmAfdGetCAPath                  VmAfdGetCAPathA
+#define VmAfdGetDCNameEx                VmAfdGetDCNameExA
+#define VmAfdConfigureDNS               VmAfdConfigureDNSA
 
 #endif
 

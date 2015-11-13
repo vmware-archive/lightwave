@@ -102,6 +102,13 @@ VmDirParseEntry(
             BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
                                             "Attribute type has no values");
         }
+        else if ( size > UINT16_MAX )
+        {   // currently, we only support 65535 attribute values due to encode/decode format constraint.
+            pResult->errCode = retVal = LDAP_PROTOCOL_ERROR;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                            "Too many %s attribute values, max %u allowed.",
+                                            VDIR_SAFE_STRING(pAttr->type.lberbv_val), UINT16_MAX);
+        }
         else
         {    // copy pBervArray content into pAttr->vals
             int iCnt = 0;

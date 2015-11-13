@@ -61,6 +61,21 @@ VmAfConfigCreateKey(
     );
 
 DWORD
+VmAfConfigDeleteKey(
+    PVMAF_CFG_CONNECTION pConnection,
+    PVMAF_CFG_KEY        pKey,
+    PCSTR                pszSubKey
+    );
+
+DWORD
+VmAfConfigEnumKeys(
+    PVMAF_CFG_CONNECTION pConnection,
+    PVMAF_CFG_KEY        pKey,
+    PSTR                 **ppszKeyNames,
+    PDWORD               pdwKeyNameCount
+    );
+
+DWORD
 VmAfConfigReadStringValue(
     PVMAF_CFG_KEY        pKey,
     PCSTR                pszSubkey,

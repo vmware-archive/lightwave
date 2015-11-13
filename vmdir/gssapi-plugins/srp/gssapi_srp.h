@@ -19,7 +19,6 @@
 
 
 /*
- * Copyright (C) 2014, VMware Inc. All rights reserved.
  *
  * Module: gssapi_srp.h
  * Abstract:
@@ -83,6 +82,7 @@ GSS_DLLIMP extern const gss_OID_desc * const GSS_KRB5_NT_PRINCIPAL_NAME;
 
 /* SRP Mechs */
 extern const gss_OID_desc * const gss_mech_srp_oid;
+extern const gss_OID_desc * const gss_mech_gssapi_srp_oid;
 extern const gss_OID_desc * const gss_nt_srp_name_oid;
 extern const gss_OID_desc * const gss_srp_password_oid;
 
@@ -90,18 +90,24 @@ extern const gss_OID_desc * const gss_srp_password_oid;
 extern const gss_OID_set_desc * const gss_mech_set_srp;
 
 
-#if 1 /* debug; remove me */
-void srp_print_hex(const unsigned char *buf, int buf_len, const char *msg);
-#endif
+/* "Made up" SRP mech OID */
+#define GSS_SRP_MECH_OID_ST               (gss_mech_srp_oid->elements)
+#define GSS_SRP_MECH_OID_LEN_ST           (gss_mech_srp_oid->length)
 
-#define GSS_SRP_MECH_OID               (gss_mech_srp_oid->elements)
-#define GSS_SRP_MECH_OID_LEN           (gss_mech_srp_oid->length)
+/* Officially allocated GSSAPI_SRP mech OID */
+#define GSSAPI_SRP_MECH_OID_ST            (gss_mech_gssapi_srp_oid->elements)
+#define GSSAPI_SRP_MECH_OID_LEN_ST        (gss_mech_gssapi_srp_oid->length)
 
-#define GSS_SRP_NT_GENERAL_NAME        gss_nt_srp_name_oid
-#define GSS_SRP_NT_GENERAL_NAME_LEN    10
+#define GSS_SRP_NT_GENERAL_NAME_ST        gss_nt_srp_name_oid
+#define GSS_SRP_NT_GENERAL_NAME_LEN_ST    10
 
-#define GSS_SRP_PASSWORD_OID           (gss_srp_password_oid->elements)
-#define GSS_SRP_PASSWORD_LEN           (gss_srp_password_oid->length)
+/* "Made up" password OID; stolen from Likewise NTLM */
+#define GSS_CRED_OPT_PW_ST              (gss_srp_password_oid->elements)
+#define GSS_CRED_OPT_PW_LEN_ST          (gss_srp_password_oid->length)
+
+/* Officially allocated GSSAPI_SRP set cred option OID */
+#define GSSAPI_SRP_CRED_OPT_PW_ST         (gss_srp_cred_opt_pw_oid->elements)
+#define GSSAPI_SRP_CRED_OPT_PW_LEN_ST     (gss_srp_cred_opt_pw_oid->length)
 
 #if 0
 #define gss_srp_nt_principal           gss_nt_srp_principal

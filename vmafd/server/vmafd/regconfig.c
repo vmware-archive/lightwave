@@ -40,6 +40,8 @@ VmAfdSrvUpdateConfig(
     VMAFD_CONFIG_ENTRY initTable[] = VMAFD_CONFIG_INIT_TABLE_INITIALIZER;
     DWORD dwNumEntries = sizeof(initTable)/sizeof(initTable[0]);
     DWORD iEntry = 0;
+    PSTR pszKrb5Config = NULL;
+    PSTR pszKrb5Keytab = NULL;
 
     dwError = VmAfdRegGetConfig(
                 VMAFD_CONFIG_PARAMETER_KEY_PATH,
@@ -115,6 +117,32 @@ VmAfdSrvUpdateConfig(
         }
     }
 
+#ifdef USE_DEFAULT_KRB5_PATHS
+    /*
+     * Force use of MIT Kerberos default file locations
+     */
+    dwError = VmAfdAllocateStringA(VMAFD_KRB5_CONF,
+                                   &pszKrb5Config);
+    BAIL_ON_VMAFD_ERROR(dwError);
+    dwError = VmAfdAllocateStringA(VMAFD_KEYTAB_PATH,
+                                   &pszKrb5Keytab);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (pGlobals->pszKrb5Config)
+    {
+        VMAFD_SAFE_FREE_STRINGA(pGlobals->pszKrb5Config);
+    }
+    if (pGlobals->pszKrb5Keytab)
+    {
+        VMAFD_SAFE_FREE_STRINGA(pGlobals->pszKrb5Keytab);
+    }
+
+    pGlobals->pszKrb5Config = pszKrb5Config;
+    pGlobals->pszKrb5Keytab = pszKrb5Keytab;
+    pszKrb5Config = NULL;
+    pszKrb5Keytab = NULL;
+#endif
+
 cleanup:
 
     VmAfdRegConfigTableFreeContents(initTable, dwNumEntries);
@@ -122,6 +150,8 @@ cleanup:
     return dwError;
 
 error:
+    VMAFD_SAFE_FREE_STRINGA(pszKrb5Config);
+    VMAFD_SAFE_FREE_STRINGA(pszKrb5Keytab);
 
     goto cleanup;
 }

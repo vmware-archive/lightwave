@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<md:EntityDescriptor entityID="https://jstewart-vcd.eng.vmware.com:8443/cloud/org/Test/saml/metadata/alias/vcd" xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"><md:SPSSODescriptor AuthnRequestsSigned="true" WantAssertionsSigned="true" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"><md:KeyDescriptor use="signing"><ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:X509Data><ds:X509Certificate>MIIB3TCCAUagAwIBAgIEbw45QDANBgkqhkiG9w0BAQUFADAzMTEwLwYDVQQDEyh2Q2xvdWQgRGly
+ZWN0b3Igb3JnYW5pemF0aW9uIENlcnRpZmljYXRlMB4XDTEyMDIyOTIxMjAzOVoXDTEzMDIyODIx
+MjAzOVowMzExMC8GA1UEAxModkNsb3VkIERpcmVjdG9yIG9yZ2FuaXphdGlvbiBDZXJ0aWZpY2F0
+ZTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAhMvFhAT1jmwPxL5T4+lHzFUVxJMq8br2PTqZ
+UYSbmX2g+jV+mIs0jeWpeidZAItySL9paaJGYAj17ETofg//e1BU2adJx/kQYKZQXEssxDp1/4ID
+UaUQvLdEX2g08KlaohZthpMF3ebbRPWV1HEksSe8sWrbcGderf95MhtevhUCAwEAATANBgkqhkiG
+9w0BAQUFAAOBgQBcVfAOKv2gW/suFfv8a3kzyfQztU1/ZmY5YQzk4YHk0rbmkwMDbqTRnZiktJmw
+6Hks9Axr9aGSJ3mG1Kx0BfCNdRan6OiMDYUqnr261gLhAOjDDR2g4onqSkVtfohIqD3AhMqOfwYV
+qvRBWd5wn4fwq1jbcDAFWU/uFycRF030eQ==</ds:X509Certificate></ds:X509Data></ds:KeyInfo></md:KeyDescriptor><md:KeyDescriptor use="encryption"><ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:X509Data><ds:X509Certificate>MIIB3TCCAUagAwIBAgIEbw45QDANBgkqhkiG9w0BAQUFADAzMTEwLwYDVQQDEyh2Q2xvdWQgRGly
+ZWN0b3Igb3JnYW5pemF0aW9uIENlcnRpZmljYXRlMB4XDTEyMDIyOTIxMjAzOVoXDTEzMDIyODIx
+MjAzOVowMzExMC8GA1UEAxModkNsb3VkIERpcmVjdG9yIG9yZ2FuaXphdGlvbiBDZXJ0aWZpY2F0
+ZTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAhMvFhAT1jmwPxL5T4+lHzFUVxJMq8br2PTqZ
+UYSbmX2g+jV+mIs0jeWpeidZAItySL9paaJGYAj17ETofg//e1BU2adJx/kQYKZQXEssxDp1/4ID
+UaUQvLdEX2g08KlaohZthpMF3ebbRPWV1HEksSe8sWrbcGderf95MhtevhUCAwEAATANBgkqhkiG
+9w0BAQUFAAOBgQBcVfAOKv2gW/suFfv8a3kzyfQztU1/ZmY5YQzk4YHk0rbmkwMDbqTRnZiktJmw
+6Hks9Axr9aGSJ3mG1Kx0BfCNdRan6OiMDYUqnr261gLhAOjDDR2g4onqSkVtfohIqD3AhMqOfwYV
+qvRBWd5wn4fwq1jbcDAFWU/uFycRF030eQ==</ds:X509Certificate></ds:X509Data></ds:KeyInfo></md:KeyDescriptor><md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://jstewart-vcd.eng.vmware.com:8443/cloud/org/Test/saml/SingleLogout/alias/vcd"/><md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://jstewart-vcd.eng.vmware.com:8443/cloud/org/Test/saml/SingleLogout/alias/vcd"/><md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" Location="https://jstewart-vcd.eng.vmware.com:8443/cloud/org/Test/saml/SingleLogout/alias/vcd"/><md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat><md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</md:NameIDFormat><md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</md:NameIDFormat><md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified</md:NameIDFormat><md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName</md:NameIDFormat><md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://jstewart-vcd.eng.vmware.com:8443/cloud/org/Test/saml/SSO/alias/vcd" index="0" isDefault="true"/><md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:profiles:holder-of-key:SSO:browser" Location="https://jstewart-vcd.eng.vmware.com:8443/cloud/org/Test/saml/HoKSSO/alias/vcd" hoksso:ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" index="1" xmlns:hoksso="urn:oasis:names:tc:SAML:2.0:profiles:holder-of-key:SSO:browser"/></md:SPSSODescriptor>
+<md:Organization>
+<md:OrganizationName xml:lang="en">jstewart-vcd.eng.vmware.com</md:OrganizationName>
+<md:OrganizationDisplayName xml:lang="en">jstewart-vcd at vmware</md:OrganizationDisplayName>
+<md:OrganizationURL xml:lang="en">http://www.jstewart-vcd.eng.vmware.com/</md:OrganizationURL>
+</md:Organization>
+</md:EntityDescriptor>

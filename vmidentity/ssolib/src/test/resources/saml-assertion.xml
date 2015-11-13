@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+	Version="2.0" IssueInstant="2012-06-25T12:00:00Z">
+	<saml:Issuer>
+		http://localhost:8080/websso/SAML2/SSO/VMware
+	</saml:Issuer>
+	<saml:Subject>
+		<saml:NameID Format="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent">
+			j.doe@example.com
+		</saml:NameID>
+	</saml:Subject>
+	<saml:Conditions NotBefore="2012-05-31T12:00:00Z">
+	<!-- turn on this may trigger UNEXPECTed expiration failure in future. So be careful, use it temporarily
+		NotOnOrAfter="2012-06-31T12:00:00Z"   define this as attribute of Conditions element-->
+	</saml:Conditions>
+	<saml:AuthnStatement AuthnInstant="2012-06-25T12:00:00Z" 
+		SessionIndex="67775277772">
+		<saml:AuthnContext>
+			<saml:AuthnContextClassRef>
+				urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport
+			</saml:AuthnContextClassRef>
+		</saml:AuthnContext>
+	</saml:AuthnStatement>
+</saml:Assertion>

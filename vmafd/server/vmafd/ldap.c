@@ -1,16 +1,12 @@
+/*
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : ldap.c
+ *
+ * Abstract :
+ *
+ */
 #include "includes.h"
-
-//TODO: Should remove this function after it is included in vmdirclient.h
-#ifdef __cplusplus
-extern "C"
-#endif
-DWORD
-VmDirSafeLDAPBind(
-    LDAP**      ppLd,
-    PCSTR       pszHost,
-    PCSTR       pszUPN,         // opt, if exists, will try SRP mech
-    PCSTR       pszPassword     // opt, if exists, will try SRP mech
-    );
 
 static
 int
@@ -29,13 +25,6 @@ VmAfdCopyQueryResultAttributeString(
     BOOL         bOptional,
     PSTR*        ppszOut
 );
-
-static
-DWORD
-VmAfdGetDefaultDomainName(
-    LDAP* pLotus,
-    PSTR* ppDomainName
-    );
 
 DWORD
 VmAfdGetDSERootAttribute(
@@ -129,8 +118,8 @@ DWORD
 VmAfdLDAPConnect(
     PSTR   pszHostName,
     DWORD  dwPort,
-    PSTR   pszUpn,
-    PSTR   pszPassword,
+    PCSTR   pszUpn,
+    PCSTR   pszPassword,
     LDAP** ppLotus
     )
 {
@@ -547,7 +536,6 @@ error:
     goto cleanup;
 }
 
-static
 DWORD
 VmAfdGetDefaultDomainName(
     LDAP* pLotus,

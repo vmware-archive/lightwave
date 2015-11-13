@@ -1,0 +1,4 @@
+attributetype ( 1.2.840.113556.1.4.8
+        NAME 'userAccountControl'
+        DESC 'userAccountControl  desc'
+        SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 )

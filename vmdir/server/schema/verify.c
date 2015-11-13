@@ -509,8 +509,8 @@ _VmDirSchemaOCCompatibleCheck(
                      mustATCompLevel == VDIR_SCHEMA_NOT_COMPATIBLE
                      ||
                      mayATCompLevel == VDIR_SCHEMA_NOT_COMPATIBLE
-//                     ||
-//                     auxOCCompLevel == VDIR_SCHEMA_NOT_COMPATIBLE
+                     ||
+                     auxOCCompLevel == VDIR_SCHEMA_NOT_COMPATIBLE
                      // ignore bCollective
                      // ignore bNoUserModifiable
                      // ignore pszOid

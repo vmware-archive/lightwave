@@ -11,12 +11,13 @@ libvecsdb_la_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 libvecsdb_la_SOURCES = \
-    certificate.c  \
+    cdcdbutil.c   \
 		authdbutil.c   \
     database.c     \
     dbcontext.c    \
     globals.c      \
     libmain.c		\
+    regdbutil.c  \
 	vecsdbutil.c
 
 libvecsdb_la_LIBADD = \

@@ -84,6 +84,19 @@ _VmDirSchemaEntryToInstance(
     PVDIR_SCHEMA_INSTANCE*  ppSchema
     );
 
+static
+DWORD
+_VmDirNormaliseNameField(
+    PSTR       pszSource ,
+    size_t      dwLen
+    );
+
+static
+VOID
+_VmDirSchemaNormalizeAttrValue(
+    PVDIR_ATTRIBUTE pAttr
+    );
+
 /*
  * This function is only for testing purpose.
  * It call load and verify to validate schema definition integrity.
@@ -775,10 +788,14 @@ schemaReadFile(
     static PSTR pszENTRYDNTag = "ENTRYDN:";
     static PSTR pszSyntaxTag = "ldapSyntaxes:";
     static PSTR pszMatchingRuleTag = "matchingRules:";
+    static PSTR pszName = "NAME ";
 
     DWORD dwError = 0;
     USHORT dwSize = 0;
     DWORD dwCnt = 100;
+    size_t iOldLen = 0 ;
+    size_t iNewLen = 0 ;
+
     PSTR*    ppszDescs = NULL;
     PSTR    pszTmp = NULL;
 
@@ -860,8 +877,15 @@ schemaReadFile(
             char* pszNonSpace = pbuf+1;
             while (*pszNonSpace == ' ') { pszNonSpace++; }
             {
-                size_t iOldLen = VmDirStringLenA(ppszDescs[dwSize-1]);
-                size_t iNewLen = VmDirStringLenA(pszNonSpace-1);
+
+                // Normalising NAME field for everything attributeTypes,objectClasses,ditContentRules , i.e Removing multiple spaces
+                if (VmDirStringNCompareA(pszNonSpace, pszName, VmDirStringLenA(pszName), TRUE) == 0)
+                 {
+                     _VmDirNormaliseNameField (pszNonSpace, VmDirStringLenA(pszNonSpace));
+                 }
+
+                iOldLen = VmDirStringLenA(ppszDescs[dwSize-1]);
+                iNewLen = VmDirStringLenA(pszNonSpace-1);
 
                 dwError = VmDirReallocateMemoryWithInit(
                         ppszDescs[dwSize-1],
@@ -962,6 +986,7 @@ schemaInitFillAttrFromFile(
             pEntry,
             pAttr);
     BAIL_ON_VMDIR_ERROR(dwError);
+    pAttr = NULL;
 
 cleanup:
 
@@ -1018,6 +1043,7 @@ schemaInitFillAttrFromCache(
             pEntry,
             pAttr);
     BAIL_ON_VMDIR_ERROR(dwError);
+    pAttr = NULL;
 
 cleanup:
 
@@ -1089,6 +1115,20 @@ error:
     goto cleanup;
 }
 
+static
+VOID
+_VmDirSchemaNormalizeAttrValue(
+    PVDIR_ATTRIBUTE pAttr
+    )
+{
+    size_t  idx = 0;
+
+    for (idx=0; idx < pAttr->numVals; idx++)
+    {   // remove heading/trailing spaces and compact multiple spaces
+        VmdDirSchemaParseNormalizeElement( pAttr->vals[idx].lberbv_val);
+    }
+}
+
 /*
  * merge current and patch schema
  * 1. if new schema defined in patch, copy them over to current schema
@@ -1113,6 +1153,7 @@ VmDirSchemaPatchMerge(
 
     pAttr = VmDirEntryFindAttribute( VDIR_ATTRIBUTE_ATTRIBUTE_TYPES, pCurrentEntry );
     assert( pAttr );
+    _VmDirSchemaNormalizeAttrValue( pAttr );
     for (usCnt = 0; usCnt < pPatchSchema->ats.usNumATs; usCnt++)
     {
         PVDIR_SCHEMA_AT_DESC    pATDesc = NULL;
@@ -1140,6 +1181,7 @@ VmDirSchemaPatchMerge(
 
     pAttr = VmDirEntryFindAttribute( VDIR_ATTRIBUTE_OBJECT_CLASSES, pCurrentEntry );
     assert( pAttr );
+    _VmDirSchemaNormalizeAttrValue( pAttr );
     for (usCnt = 0; usCnt < pPatchSchema->ocs.usNumOCs; usCnt++)
     {
         PVDIR_SCHEMA_OC_DESC    pOCDesc = NULL;
@@ -1167,6 +1209,8 @@ VmDirSchemaPatchMerge(
     }
 
     pAttr = VmDirEntryFindAttribute( VDIR_ATTRIBUTE_DIT_CONTENTRULES, pCurrentEntry );
+    assert ( pAttr );
+    _VmDirSchemaNormalizeAttrValue( pAttr );
     for (usCnt = 0; pAttr && usCnt < pPatchSchema->contentRules.usNumContents; usCnt++)
     {
         PVDIR_SCHEMA_CR_DESC    pCRDesc = NULL;
@@ -1326,4 +1370,46 @@ error:
     *ppSchema = NULL;
 
     goto cleanup;
+}
+
+static
+DWORD
+_VmDirNormaliseNameField(
+    PSTR    pszSource ,
+    size_t      dwLen
+    )
+{
+
+    DWORD    i        = 0;
+    DWORD    j        = 0;
+    DWORD    dwError  = 0;
+    DWORD    dwState  = 0;
+
+    for (i=0 ; i<dwLen ;i++ )
+    {
+        if (pszSource[i] == ' ')
+        {
+            if (dwState == 0 )
+            {
+                pszSource[j++] = pszSource[i];
+                dwState = 1;
+            }
+            else
+            {
+               // Do Nothing , Ignore Extra Spaces ..
+            }
+        }
+        else
+        {
+            pszSource[j++] = pszSource[i];
+            dwState = 0;
+        }
+    }
+
+    pszSource[j++] = '\0' ;
+    VMDIR_LOG_DEBUG( VMDIR_LOG_MASK_ALL, "Formatted NAME string is  - %s",
+            VDIR_SAFE_STRING(pszSource) );
+
+    return dwError ;
+
 }

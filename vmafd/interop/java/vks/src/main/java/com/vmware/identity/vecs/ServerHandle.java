@@ -15,7 +15,7 @@
 package com.vmware.identity.vecs;
 
 class ServerHandle implements AutoCloseable {
-   private final PointerRef _handle;
+   private PointerRef _handle;
    ServerHandle(PointerRef handle) {
       _handle = handle;
    }
@@ -38,7 +38,11 @@ class ServerHandle implements AutoCloseable {
    }
 
    protected void dispose() {
-      VecsStoreFactory.closeServer(_handle);
+     if (_handle != null)
+     {
+        VecsStoreFactory.closeServer(_handle);
+        _handle = null;
+     }
    }
 
 }

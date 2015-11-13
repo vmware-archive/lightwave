@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration monitorInterval="30">
+
+   <!-- Appenders -->
+   <Appenders>
+		<Console name="console" target="SYSTEM_OUT" class="org.apache.log4j.ConsoleAppender">
+            <PatternLayout pattern="%-5p: %c - %m%n"/>
+        </Console>
+
+        <RollingFile name="fileAppender" fileName="sts_tests.log" filePattern="sts_tests-%i.log" append="true">
+            <PatternLayout pattern="%d %-5p  [%c{1}] %m %n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="50 MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+        </RollingFile>
+   </Appenders>
+
+	<Loggers>
+	   <logger name="com.vmware.identity.sts">
+	      <level value="trace"/>
+	      <appender-ref ref="console"/>
+	   </logger>
+
+	   <!-- 3rdparty Loggers -->
+	   <logger name="org.opensaml">
+	      <level value="info"/>
+	   </logger>
+       <logger name="org.springframework">
+	      <level value="info"/>
+	   </logger>
+
+	   <Root level="error">
+	      <AppenderRef ref="fileAppender"/>
+	   </Root>
+	</Loggers>
+</Configuration>

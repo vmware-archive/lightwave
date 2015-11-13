@@ -53,6 +53,7 @@ VmDirBackendConfig(
     PVDIR_BACKEND_USN_LIST  pUSNList = NULL;
 
     gVdirBEGlobals.pszBERootDN = "";
+    gVdirBEGlobals.usnFirstNext = USN_SEQ_INITIAL_VALUE;
     gVdirBEGlobals.pBE = NULL;
 
 #ifdef HAVE_DB_H
@@ -63,7 +64,7 @@ VmDirBackendConfig(
     gVdirBEGlobals.pBE = VmDirTCBEInterface();
 #endif
 
-#ifdef HAVE_MDB_STORE
+#ifdef HAVE_LMDB_H
     gVdirBEGlobals.pBE = VmDirMDBBEInterface();
 #endif
 
@@ -177,11 +178,23 @@ VmDirBackendInitUSNList(
     dwError = pBE->pfnBEGetNextUSN(&beCtx, &tmpUSN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    gVdirBEGlobals.usnFirstNext = tmpUSN;
+
 error:
 
     VmDirBackendCtxContentFree(&beCtx);
 
     return dwError;
+}
+
+VOID
+VmDirBackendGetFirstNextUSN(
+    USN *pUSN
+    )
+{
+    assert(pUSN != NULL);
+
+    *pUSN = gVdirBEGlobals.usnFirstNext;
 }
 
 /*
@@ -206,7 +219,7 @@ VmDirBackendSetMaxOutstandingUSN(
 
     VMDIR_UNLOCK_MUTEX(bInLock, pBECtx->pBE->pBEUSNList->pMutex);
 
-    VmDirLog( LDAP_DEBUG_TRACE, "set max outstanding USN (%u)", maxOutstandingUSN);
+    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "set max outstanding USN (%u)", maxOutstandingUSN);
 
     return;
 }
@@ -259,7 +272,7 @@ VmDirBackendAddOutstandingUSN(
 
             if (iNewSize > BE_OUTSTANDING_USN_LIST_SIZE * 4)
             {   // we should not get here normally.  log message if we did.
-                VmDirLog( LDAP_DEBUG_ANY, "Outstanding USN list size (%ld)", iNewSize);
+                VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Outstanding USN list size (%ld)", iNewSize);
             }
         }
 
@@ -270,7 +283,7 @@ VmDirBackendAddOutstandingUSN(
 
         VMDIR_UNLOCK_MUTEX(bInLock, pUSNList->pMutex);
 
-        VmDirLog( LDAP_DEBUG_TRACE, "add outstanding USN (%u).",  pBECtx->wTxnUSN);
+        VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "add outstanding USN (%u).",  pBECtx->wTxnUSN);
     }
 
 cleanup:
@@ -338,13 +351,13 @@ VmDirBackendRemoveOutstandingUSN(
 
         VMDIR_UNLOCK_MUTEX(bInLock, pUSNList->pMutex);
 
-        VmDirLog( LDAP_DEBUG_TRACE, "rm outstanding USN (%u)(%u)(%u)(%u)",
+        VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "rm outstanding USN (%u)(%u)(%u)(%u)",
                   pBECtx->wTxnUSN, minPendingUSN, iPendingCnt, localMaxOutstandingUSN);
     }
 
     if (! bFoundTarget)
     {
-        VmDirLog( LDAP_DEBUG_ANY, "Remove outstanding USN (%ld) not found", pBECtx->wTxnUSN);
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Remove outstanding USN (%ld) not found", pBECtx->wTxnUSN);
     }
 
     // Do NOT reset pBECtx->wTxnUSN here because we could be retry loop.

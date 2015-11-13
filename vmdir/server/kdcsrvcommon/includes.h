@@ -14,6 +14,11 @@
 #include <assert.h>
 #include <stddef.h>
 
+#define LW_STRICT_NAMESPACE
+#include <lw/types.h>
+#include <lw/hash.h>
+#include <lw/security-types.h>
+
 #endif
 
 #include <vmkdc.h>

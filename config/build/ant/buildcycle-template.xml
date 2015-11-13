@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="internal-buildcycle">
+
+   <import file="presets.xml" />
+
+   <target name="after-clean" />
+   <target name="clean" depends="import-helper-tasks">
+      <delete dir="${build.project}" />
+
+      <antcall inheritrefs="true" target="after-clean" />
+   </target>
+
+   <!-- == == == == == == Initialize == == == == == == -->
+
+   <target name="after-init" />
+   <target name="init" depends="import-helper-tasks">
+
+      <var name="valid-targetsets"
+           value="main,test,webapp" />
+
+      <!-- Which target sets to build? -->
+      <for list="${target-sets}" param="target-set" trim="true">
+      <sequential>
+         <var name="is-targetset-valid" value="false" />
+         <for list="${valid-targetsets}" param="valid-targetset" trim="true">
+            <sequential>
+            <if>
+               <equals arg1="@{target-set}" arg2="@{valid-targetset}" />
+               <then><var name="is-targetset-valid" value="true" /></then>
+            </if>
+            </sequential>
+         </for>
+
+         <if>
+            <istrue value="${is-targetset-valid}" />
+            <then><property name="target-set.@{target-set}" value="true" /></then>
+            <else>
+               <fail message="Uknown target set: '@{target-set}'" />
+            </else>
+         </if>
+      </sequential>
+      </for>
+
+      <!-- Create the output directories -->
+      <mkdir dir="${build.classes.main}" />
+      <mkdir dir="${build.endorsed}" />
+      <mkdir dir="${build.packing.webapp}" />
+      <mkdir dir="${build.reports}" />
+      <mkdir dir="${build.packages}" />
+      <mkdir dir="${build.dist}" />
+      <mkdir dir="${build.publish}" />
+      <mkdir dir="${build.instrumented.dir}" />
+
+      <antcall target="after-init" />
+   </target>
+
+   <!-- == == == == == == Target set: main == == == == == == -->
+
+   <target name="after-compile" />
+   <target name="compile" if="target-set.main">
+
+      <copy todir="${build.endorsed}" flatten="true">
+	 <path refid="java-endorsed" />
+      </copy>
+
+      <compile-dependency-helper srcdir="${src.main.java}"
+         destdir="${build.classes.main}" classpathref="classpath.main">
+
+         <include name="${arg.javac.main-include-pattern}" />
+         <exclude name="${arg.javac.main-exclude-pattern}" />
+      </compile-dependency-helper>
+
+      <call-javac
+         classpathref="classpath.main"
+         srcdir="${src.main.java}"
+         destdir="${build.classes.main}"
+         includes="${arg.javac.main-include-pattern}"
+         excludes="${arg.javac.main-exclude-pattern}"
+         includeantruntime="false" />
+
+      <antcall target="after-compile" />
+   </target>
+
+   <target name="after-process-resources" />
+   <target name="process-resources" depends="compile" if="target-set.main">
+      <if>
+         <available type="dir" file="${src.main.resources}" />
+         <then>
+            <copy todir="${build.classes.main}">
+               <fileset dir="${src.main.resources}" >
+                  <selector refid="src.main.internal-resources" />
+               </fileset>
+            </copy>
+         </then>
+      </if>
+
+      <if>
+         <istrue value="${put-sources-in-main}" />
+         <then>
+            <copy todir="${build.classes.main}">
+               <fileset dir="${src.main.java}" />
+            </copy>
+         </then>
+      </if>
+
+      <antcall target="after-process-resources" />
+   </target>
+
+   <target name="create-build-info-file" if="target-set.main">
+      <property name="markerfile" location="${build.classes.main}/build.properties" />
+      <echo level="debug"> Build info for  ${build.dist.bundle} may be found at ${markerfile}</echo>
+      <if>
+         <available type="file" file="${markerfile}" />
+         <else>
+            <echo file="${markerfile}" append="yes" message="official-build-number=${BUILD_NUMBER}" />
+            <echo file="${markerfile}" append="yes" message="${line.separator}"/>
+            <echo file="${markerfile}" append="yes" message="branch=${BRANCH_NAME}" />
+            <echo file="${markerfile}" append="yes" message="${line.separator}"/>
+            <echo file="${markerfile}" append="yes" message="changeset=${CHANGE_NUMBER}" />
+            <echo file="${markerfile}" append="yes" message="${line.separator}"/>
+            <echo file="${markerfile}" append="yes" message="build-type=${OBJDIR}" />
+            <echo file="${markerfile}" append="yes" message="${line.separator}"/>
+            <echo file="${markerfile}" append="yes" message="release-type=${RELTYPE}" />
+            <echo file="${markerfile}" append="yes" message="${line.separator}"/>
+            <echo file="${markerfile}" append="yes" message="product-name=${PRODUCT_NAME}" />
+            <echo file="${markerfile}" append="yes" message="${line.separator}"/>
+            <echo file="${markerfile}" append="yes" message="product-build-number=${PRODUCT_BUILD_NUMBER}" />
+            <echo file="${markerfile}" append="yes" message="${line.separator}"/>
+         </else>
+      </if>
+   </target>
+
+   <target name="after-package" />
+   <target name="package" depends="compile,create-build-info-file" if="target-set.main">
+      <if>
+         <isset property="src.main.resources.manifest_mf" />
+         <then>
+            <jar destfile="${build.packages.main}" basedir="${build.classes.main}"
+                 manifest="${src.main.resources.manifest_mf}" />
+         </then>
+         <else>
+            <jar destfile="${build.packages.main}" basedir="${build.classes.main}" />
+         </else>
+      </if>
+
+      <antcall target="after-package" />
+   </target>
+
+   <target name="after-package-sources" />
+   <target name="package-sources" depends="package" if="target-set.main">
+      <jar destfile="${build.packages.sources}" basedir="${src.main.java}" />
+
+      <antcall target="after-package-sources" />
+   </target>
+
+   <!-- == == == == == == Build == == == == == == -->
+   <target name="build"
+         depends="init,compile,process-resources,package" />
+
+   <target name="rebuild" depends="clean,build" />
+
+</project>

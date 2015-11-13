@@ -1,6 +1,8 @@
 lib_LTLIBRARIES = libgssapi_ntlm.la
 
 libgssapi_ntlm_la_CPPFLAGS = \
+   -D_MIT_KRB5_1_11 \
+   -D_MIT_KRB5_1_12 \
    -I$(top_srcdir)/gssapi-plugins/ntlm \
    -I$(top_srcdir)/include \
    -I$(top_srcdir)/include/public \

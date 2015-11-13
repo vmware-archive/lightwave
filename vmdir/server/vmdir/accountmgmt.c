@@ -103,6 +103,8 @@ VmDirCreateAccountEx(
     PSTR  pszAccountDN = NULL;
     PSTR  pszDomain    = NULL;
     PSTR  pszDomainDN  = NULL;
+    PSTR  pszUpperDomain = NULL;
+    DWORD i = 0;
 
     dwError = VmDirSrvValidateUserCreateParams(pCreateParams);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -140,12 +142,31 @@ VmDirCreateAccountEx(
 
     if (IsNullOrEmptyString(pCreateParamsA->pszUPN))
     {
-        dwError = VmDirAllocateStringPrintf(
-                        &pszUPN,
-                        "%s@%s",
-                        pCreateParamsA->pszAccount,
-                        pszDomain);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (VmDirStringChrA(pCreateParamsA->pszAccount, '@') == NULL)
+        {
+            dwError = VmDirAllocateStringPrintf(
+                            &pszUpperDomain,
+                            "%s",
+                            pszDomain);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            for (i=0; pszUpperDomain[i]; i++)
+            {
+                VMDIR_ASCII_LOWER_TO_UPPER(pszUpperDomain[i]);
+            }
+
+            dwError = VmDirAllocateStringPrintf(
+                            &pszUPN,
+                            "%s@%s",
+                            pCreateParamsA->pszAccount,
+                            pszUpperDomain);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else
+        {
+            dwError = VmDirAllocateStringA(pCreateParamsA->pszAccount, &pszUPN);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
 
         pszUPN_local = pszUPN;
     }
@@ -200,6 +221,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszDomain);
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
     VMDIR_SAFE_FREE_MEMORY(pszAccountDN);
+    VMDIR_SAFE_FREE_MEMORY(pszUpperDomain);
 
     if (pCreateParamsA)
     {

@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Default attribute values for the build.
+ -->
+<project name="internal-property-defaults">
+
+   <import file="libraries.xml" />
+
+   <!-- - - - - - compiler arguments - - - - - -->
+
+   <!--
+     Each "arg.javac.something" property shall be passed as it is to the
+     "something" property of the javac task.
+   -->
+   <property name="arg.javac.deprecation" value="true" />
+   <property name="arg.javac.debug" value="true" />
+   <property name="arg.javac.fork" value="false" />
+   <property name="arg.javac.failonerror" value="true" />
+   <property name="arg.javac.optimize" value="false" />
+   <property name="arg.javac.source-version" value="1.7" /> <!-- corresponds to "source" -->
+   <property name="arg.javac.target-version" value="1.7" /> <!-- corresponds to "target" -->
+
+   <!--
+     Include/Exclude patterns for the compile and compile-tests targets.
+   -->
+   <property name="arg.javac.main-include-pattern" value="**/*.java" />
+   <property name="arg.javac.main-exclude-pattern" value="" />
+
+   <property name="arg.javac.test-include-pattern" value="**/*.java" />
+   <property name="arg.javac.test-exclude-pattern" value="" />
+
+   <selector id="src.main.internal-resources"
+             description="Specifies which resources must go in the package.">
+      <filename name="**/*" />
+   </selector>
+
+
+   <!-- - - - - - - - - junit arguments - - - - - - - -->
+
+   <!--
+     Each "arg.junit.something" property shall be passed as it is to the
+     "something" property of the junit task.
+   -->
+   <property name="arg.junit.fork" value="true" /> <!-- if this variable is set to false then assertions should be enabled differently, not with assertions subelement of junit task -->
+   <property name="arg.junit.showoutput" value="false" />
+   <property name="arg.junit.haltonfailure" value="true" />
+   <property name="arg.junit.maxmemory" value="128m" />
+   <property name="arg.junit.printsummary" value="withOutAndErr" />
+   <property name="arg.junit.forked-jvm-args-line" value="-javaagent:${buildRoot}/../depends/aspectjweaver-1.6.9.jar" />
+
+   <!-- - - - - - source file and directories - - - - - -->
+
+   <property name="srcRoot" location="${basedir}" />
+
+   <property name="src.main.java" location="${srcRoot}/src/main/java" />
+   <property name="src.main.scripts" location="${srcRoot}/src/main/scripts" />
+   <property name="src.main.resources" location="${srcRoot}/src/main/resources" />
+   <property name="src.main.webapp" location="${srcRoot}/src/main/webapp" />
+
+   <property name="src.test.java" location="${srcRoot}/src/test/java" />
+   <property name="src.test.resources" location="${srcRoot}/src/test/resources" />
+
+   <property name="src.conf.web_xml" location="${src.main.webapp}/WEB-INF/web.xml" />
+   <property name="src.conf.findbugs-filter" location="${srcRoot}/findbugs-excludes.xml" />
+   <property name="src.conf.pmd-rulesets" value="rulesets/internal/all-java.xml" />
+
+
+   <!-- - - - - - build directories - - - - - -->
+
+   <!-- map from GoBuild-style (all uppercase) to local style names -->
+   <property name="BUILD_ROOT" location="../../build/${PRODUCT_NAME}" />
+   <property name="buildRoot" location="${BUILD_ROOT}" />
+
+   <property name="PUBLISH_DIR" location="${buildRoot}/publish" />
+   <property name="build.dist"  location="${buildRoot}/dist" />
+   <property name="build.publish" location="${PUBLISH_DIR}" />
+
+   <property name="COMPONENT_DIST_DIR" location="${build.dist}" />
+
+   <property name="build.project" location="${buildRoot}/${ant.project.name}" />
+
+   <property name="build.classes.main" location="${build.project}/classes" />
+   <property name="build.endorsed" location="${build.project}/endorsed" />
+   <property name="build.classes.test" location="${build.project}/test-classes" />
+   <property name="build.packing.webapp" location="${build.project}/webapp" />
+   <property name="build.packing.webapp-manifest_mf"
+      location="${build.packing.webapp}/META-INF/manifest.mf" />
+
+   <property name="build.test-logs" location="${build.project}/test-logs" />
+   <property name="build.total-test-logs" location="${buildRoot}/test-logs" />
+
+   <property name="build.reports" location="${build.project}/analysis-reports" />
+   <property name="test.reports" location="${build.project}/test-reports" />
+
+   <property name="build.instrumented.dir" location="${build.project}/instrumented" />
+   <property name="coverage.xml.dir" location="${test.reports}/XML Coverage" />
+   <property name="coverage.summaryxml.dir" location="${test.reports}/Summary XML Coverage" />
+   <property name="coverage.html.dir" location="${test.reports}/HTML Coverage" />
+
+   <property name="build.reports.findbugs_xml"
+	   location="${build.reports}/findbugs-report.xml" />
+   <property name="build.reports.findbugs_html"
+         location="${build.reports}/findbugs-report.html" />
+
+   <!-- available FindBugs templates: plain, default, fancy -->
+   <property name="build.reports.findbugs-template" value="plain" />
+
+   <property name="build.reports.pmd_html" location="${build.reports}/pmd-report.html" />
+   <property name="build.reports.pmd_xml" location="${build.reports}/pmd-report.xml" />
+   <property name="build.reports.pmd_html-template" value="corley-pmd-report.xslt" /> <!-- corley or wz -->
+
+   <property name="build.reports.pmd.cpd_xml" value="${build.reports}/pmd-cpd-report.xml"/>
+   <property name="build.reports.pmd.cpd_html-template" value="cpdhtml.xslt"/>
+
+   <!-- All (intermediate) packages go here -->
+   <property name="build.packages" location="${buildRoot}/packages" />
+
+   <!-- - - - - - - - - - default deliverables names - - - - - - - - - - -->
+   <property name="build.packages.main"
+         location="${build.packages}/${ant.project.name}.jar" />
+
+   <property name="build.dist.bundle"
+         location="${build.dist}/${ant.project.name}.jar" />
+
+   <property name="build.packages.test"
+         location="${build.packages}/${ant.project.name}-tests.jar" />
+
+   <property name="build.packages.sources"
+         location="${build.packages}/${ant.project.name}-src.jar" />
+
+   <property name="build.packages.webapp"
+         location="${build.packages}/${ant.project.name}.war" />
+
+
+   <!-- - - - - Miscellaneous parameters for controlling the build - - - - -->
+
+   <property name="BUILD_NUMBER" value="dev" />
+   <property name="buildNumber" value="${BUILD_NUMBER}" />
+   <!-- by default: set to dummy value in lieu of gobuild support -->
+   <property name="VERSION_MAJOR" value="0" />
+   <property name="VERSION_MINOR" value="0" />
+   <property name="VERSION_MAINT" value="0" />
+
+   <property name="bundle.version" value="0.0.1.${buildNumber}"/>
+
+   <!-- by default: do not run unit tests -->
+   <property name="skipTests" value="true" />
+
+   <!-- by default: abort the build on failed unit test -->
+   <property name="haltOnTestFail" value="true" />
+
+   <!-- by default: do no run static analysis tools -->
+   <property name="skipAnalysis" value="true"/>
+
+   <!-- See "init" in buildcycle-template.xml for the list of valid target sets -->
+   <property name="target-sets" value="main,test" />
+
+   <!-- - - - - - - - SSO client jars default locations - - - - - - - - -->
+
+   <property name="jars.wstClient"
+             location="${build.packages}/wstClient.jar" />
+   <property name="jars.samltoken"
+             location="${build.packages}/samltoken.jar" />
+
+   <!-- - - - - - Default classpaths for various stages/targets - - - - - - -->
+
+   <path id="java-endorsed" />
+
+   <path id="classpath.test">
+      <path refid="classpath.main" />
+      <pathelement location="${build.packages.main}" />
+      <fileset refid="jar-set.junit" />
+   </path>
+
+   <path id="classpath.run-tests">
+      <pathelement location="${build.instrumented.dir}" />
+      <pathelement location="${build.classes.test}" />
+      <path refid="classpath.test" />
+      <path refid="classpath.main" />
+   </path>
+
+   <path id="classpath.webapp-libs">
+      <pathelement location="${build.packages.main}" />
+      <path refid="classpath.main" />
+   </path>
+
+   <property name="classpath.pmd.resources.xslt"
+	     location="${libs.pmd-home}/etc/xslt" />
+
+   <fileset id="classpath.main.plus.test.without.generated.classes" dir="${srcRoot}/src">
+      <include name="main/java/com/**/*.java"/>
+      <include name="test/java/**/*.java"/>
+   </fileset>
+
+   <property name="pmd.minPrio" value="3" />
+   <property name="pmd.failOnRuleViolation" value="false" />
+   <property name="checkstyle.maxErrors" value="0" />
+   <property name="checkstyle.failOnRuleViolation" value="false" />
+
+   <!-- - - - - - - the default set of unit tests to execute - - - - - - - -->
+   <fileset id="unit-test-classes" dir="${build.classes.test}">
+      <include name="**/*Test.class"/>
+      <exclude name="**/*$*.class"/>
+   </fileset>
+</project>

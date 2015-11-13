@@ -45,9 +45,6 @@ extern "C" {
 
 #endif
 
-#define VMKDC_MIN(a, b) ((a) < (b) ? (a) : (b))
-#define VMKDC_MAX(a, b) ((a) > (b) ? (a) : (b))
-
 #ifndef _WIN32
 #define VMKDC_SF_INIT( fieldName, fieldValue ) fieldName = fieldValue
 #else
@@ -96,43 +93,6 @@ extern "C" {
 #define VMKDC_SAFE_STRING(str) ((str) ? (str) : "")
 #endif
 
-#ifndef VMKDC_SAFE_SPACE_STRING
-#define VMKDC_SAFE_SPACE_STRING(str) ((str) ? (str) : " ")
-#endif
-
-#define VMKDC_OFFSET_TO_POINTER(Pointer, Offset) \
-    ((char*)(Pointer) + Offset)
-
-#define VMKDC_FIELD_OFFSET(Type, Field) offsetof(Type, Field)
-
-#define VMKDC_FIELD_SIZE(Type, Field) \
-    (sizeof(((Type*)(0))->Field))
-
-#define VMKDC_STRUCT_FROM_FIELD(Pointer, Type, Field) \
-    ((Type*)VMKDC_OFFSET_TO_POINTER(Pointer, -((ssize_t)VMKDC_FIELD_OFFSET(Type, Field))))
-
-#define VMKDC_SID_REVISION 1
-#define VMKDC_SID_MAX_SUB_AUTHORITIES 15
-
-#define VMKDC_SID_MIN_SIZE \
-    (VMKDC_FIELD_OFFSET(SID, SubAuthority))
-
-#define _VMKDC_SID_GET_SIZE_REQUIRED(SubAuthorityCount) \
-    (VMKDC_SID_MIN_SIZE + (VMKDC_FIELD_SIZE(SID, SubAuthority[0]) * (SubAuthorityCount)))
-
-#define VMKDC_SID_MAX_SIZE \
-    _VMKDC_SID_GET_SIZE_REQUIRED(VMKDC_SID_MAX_SUB_AUTHORITIES)
-
-#define VMKDC_ACL_HEADER_SIZE 8
-// TODO-Perhaps this should be rounded to nearest ULONG size
-#define VMKDC_ACL_MAX_SIZE ((USHORT)-1)
-
-#define VMKDC_SECURITY_DESCRIPTOR_ABSOLUTE_MIN_SIZE (5 * sizeof(PVOID))
-#define VMKDC_SECURITY_DESCRIPTOR_RELATIVE_MIN_SIZE (5 * sizeof(ULONG))
-// Maximum for a revision 1 security descriptor
-#define VMKDC_SECURITY_DESCRIPTOR_RELATIVE_MAX_SIZE \
-    (VMKDC_SECURITY_DESCRIPTOR_RELATIVE_MIN_SIZE + 2 * VMKDC_SID_MAX_SIZE + 2 * VMKDC_ACL_MAX_SIZE)
-
 #ifndef VMKDC_DEBUG_ANY
 #define VMKDC_DEBUG_ANY (-1)
 #endif
@@ -148,21 +108,6 @@ extern "C" {
 #ifndef VMKDC_DEBUG_TRACE
 #define VMKDC_DEBUG_TRACE (1)
 #endif
-
-#define VMKDC_ASCII_LOWER(c)    ( (c) >= 'a' && (c) <= 'z' )
-#define VMKDC_ASCII_UPPER(c)    ( (c) >= 'A' && (c) <= 'Z' )
-#define VMKDC_ASCII_DIGIT(c)    ( (c) >= '0' && (c) <= '9' )
-#define VMKDC_PASSWD_SP_CHAR(c) ( (c) == '@' ||   \
-                                  (c) == '#' ||   \
-                                  (c) == '$' ||   \
-                                  (c) == '%' ||   \
-                                  (c) == '^' ||   \
-                                  (c) == '&' ||   \
-                                  (c) == '*' )
-
-#define VMKDC_MAX_HOSTNAME_LEN         100
-#define VMKDC_MAX_LDAP_URI_LEN         256 /* e.g. ldap://192.168.122.65 */
-#define VMKDC_DEFAULT_REPL_LAST_USN_PROCESSED       "0"
 
 #ifdef _WIN32
 

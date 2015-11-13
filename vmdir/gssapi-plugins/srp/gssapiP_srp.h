@@ -14,7 +14,6 @@
 
 
 /*
- * Copyright (C) 2014, VMware Inc. All rights reserved.
  *
  * Module: gssapiP_srp.h
  * Abstract:
@@ -93,27 +92,13 @@ typedef	enum {NO_TOKEN_SEND, INIT_TOKEN_SEND, CONT_TOKEN_SEND,
 
 /* SRP message tags. This range provides 62 usable values */
 typedef enum {
-    SRP_AUTH_INIT = 0x61, 
+    SRP_AUTH_INIT = 0x61,
     SRP_AUTH_SALT_RESP,
     SRP_AUTH_CLIENT_VALIDATE,
     SRP_AUTH_SERVER_VALIDATE,
     SRP_AUTH_COMPLETE,
     SRP_AUTH_FAILED,
 } srp_auth_state;
-
-/*
- * The Mech OID:
- * The OID of the proposed standard SRP mechanism is:
- *      iso(1) member-body(2) US(840) mit(113554) infosys(1) gssapi(2)
- *      srp(10) = 1.2.840.113554.1.2.10
- */
-
-#define	SRP_OID_LENGTH 9
-#define	SRP_OID "\x2a\x86\x48\x86\xf7\x12\x01\x02\x0a"
-
-/* 1.3.6.1.4.1.27433.3.1 */
-#define GSS_CRED_OPT_PW     "\x2b\x06\x01\x04\x01\x81\xd6\x29\x03\x01"
-#define GSS_CRED_OPT_PW_LEN 10
 
 typedef void *srp_token_t;
 
@@ -134,18 +119,14 @@ typedef struct _srp_gss_cred_id_rec {
     gss_OID srp_mech_oid;
 
     /*
-     * This is really a UPN (name@DOMAIN.COM); Leverage k5 
-     * import/export name to get a UPN string. "I" value where the 
+     * This is really a UPN (name@DOMAIN.COM); Leverage k5
+     * import/export name to get a UPN string. "I" value where the
      * SRP salt/validator parameters are stored in vmdir.
      */
-    gss_name_t name; 
+    gss_name_t name;
 
     /* Set with gssspi_set_cred_option(..., gss_cred_opt_password_oid_desc, ...) */
     gss_buffer_t password;
-
-#if 1
-/* More stuff as needed here */
-#endif
 } srp_gss_cred_id_rec, *srp_gss_cred_id_t;
 
 /* Structure for context handle */
@@ -195,6 +176,11 @@ typedef struct {
  * declarations of internal name mechanism functions
  */
 
+/*
+ * Would like to use official SRP mech OID. However, this will break backward
+ * compatibility with existing SRP plugin. Continue to use the "made up" MIT
+ * SRP mech OID for now.
+ */
 OM_uint32 srp_gss_acquire_cred
 (
 	OM_uint32 *,		/* minor_status */
@@ -206,6 +192,8 @@ OM_uint32 srp_gss_acquire_cred
 	gss_OID_set *,		/* actual_mechs */
 	OM_uint32 *		/* time_rec */
 );
+
+
 
 OM_uint32 srp_gss_release_cred
 (
@@ -247,6 +235,7 @@ OM_uint32 srp_gss_accept_sec_context
 	/* CSTYLED */
 	gss_cred_id_t *		/* delegated_cred_handle */
 );
+
 #endif /* LEAN_CLIENT */
 
 OM_uint32 srp_gss_compare_name

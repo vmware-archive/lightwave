@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectTypeGuids>{A3F8F2AB-B479-4A4A-A458-A89E7DC349F1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>{F9F43273-6CF1-41A3-AEC5-B9DB5C666E26}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>VMRestSsoSnapIn</RootNamespace>
+    <MonoMacResourcePrefix>Resources</MonoMacResourcePrefix>
+    <AssemblyName>Lightwave SSO</AssemblyName>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\x64\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <UseRefCounting>true</UseRefCounting>
+    <UseSGen>true</UseSGen>
+    <IncludeMonoRuntime>false</IncludeMonoRuntime>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <CodeSigningKey>Mac Developer</CodeSigningKey>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <CreatePackage>true</CreatePackage>
+    <XamMacArch>i386</XamMacArch>
+    <PackageSigningKey>Developer ID Installer</PackageSigningKey>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\x64\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <UseRefCounting>true</UseRefCounting>
+    <UseSGen>true</UseSGen>
+    <IncludeMonoRuntime>true</IncludeMonoRuntime>
+    <CreatePackage>true</CreatePackage>
+    <CodeSigningKey>Developer ID Application</CodeSigningKey>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <XamMacArch>x86_64</XamMacArch>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Xamarin.Mac">
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+    <Folder Include="Views\" />
+    <Folder Include="SnapIn\" />
+    <Folder Include="Nodes\" />
+    <Folder Include="HttpTransport\" />
+    <Folder Include="Helpers\" />
+    <Folder Include="DataSources\" />
+    <Folder Include="Utilities\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="SnapIn\Constants.cs" />
+    <Compile Include="SnapIn\SsoAdminSnapInException.cs" />
+    <Compile Include="SnapIn\AuthTokenManager.cs" />
+    <Compile Include="SnapIn\Bootstrapper.cs" />
+    <Compile Include="SnapIn\SnapInContext.cs" />
+    <Compile Include="Views\AddExistingTenant.cs" />
+    <Compile Include="Views\AddExistingTenant.designer.cs" />
+    <Compile Include="Views\AddExistingTenantController.cs" />
+    <Compile Include="Views\AddExternalIdentitySource.cs" />
+    <Compile Include="Views\AddExternalIdentitySource.designer.cs" />
+    <Compile Include="Views\AddExternalIdentitySourceController.cs" />
+    <Compile Include="Views\AddGroup.cs" />
+    <Compile Include="Views\AddGroup.designer.cs" />
+    <Compile Include="Views\AddGroupController.cs" />
+    <Compile Include="Views\AddNewServer.cs" />
+    <Compile Include="Views\AddNewServer.designer.cs" />
+    <Compile Include="Views\AddNewServerController.cs" />
+    <Compile Include="Views\AddNewTenant.cs" />
+    <Compile Include="Views\AddNewTenant.designer.cs" />
+    <Compile Include="Views\AddNewTenantController.cs" />
+    <Compile Include="Views\AddRelyingParty.cs" />
+    <Compile Include="Views\AddRelyingParty.designer.cs" />
+    <Compile Include="Views\AddRelyingPartyController.cs" />
+    <Compile Include="Views\AddSolutionUser.cs" />
+    <Compile Include="Views\AddSolutionUser.designer.cs" />
+    <Compile Include="Views\AddSolutionUserController.cs" />
+    <Compile Include="Views\AddUser.cs" />
+    <Compile Include="Views\AddUser.designer.cs" />
+    <Compile Include="Views\AddUserController.cs" />
+    <Compile Include="Views\JoinActiveDirectory.cs" />
+    <Compile Include="Views\JoinActiveDirectory.designer.cs" />
+    <Compile Include="Views\JoinActiveDirectoryController.cs" />
+    <Compile Include="Views\LeaveActiveDirectory.cs" />
+    <Compile Include="Views\LeaveActiveDirectory.designer.cs" />
+    <Compile Include="Views\LeaveActiveDirectoryController.cs" />
+    <Compile Include="Views\Login.cs" />
+    <Compile Include="Views\Login.designer.cs" />
+    <Compile Include="Views\LoginController.cs" />
+    <Compile Include="Views\ShowAllGroups.cs" />
+    <Compile Include="Views\ShowAllGroups.designer.cs" />
+    <Compile Include="Views\ShowAllGroupsController.cs" />
+    <Compile Include="Views\ShowComputers.cs" />
+    <Compile Include="Views\ShowComputers.designer.cs" />
+    <Compile Include="Views\ShowComputersController.cs" />
+    <Compile Include="Views\TokenWizard.cs" />
+    <Compile Include="Views\TokenWizard.designer.cs" />
+    <Compile Include="Views\TokenWizardController.cs" />
+    <Compile Include="Views\TreeView.cs" />
+    <Compile Include="Nodes\ExternalDomainNode.cs" />
+    <Compile Include="Nodes\ExternalDomainsNode.cs" />
+    <Compile Include="Nodes\GroupsNode.cs" />
+    <Compile Include="Nodes\IdentityProvidersNode.cs" />
+    <Compile Include="Nodes\IdentitySourceNode.cs" />
+    <Compile Include="Nodes\IdentitySourcesNode.cs" />
+    <Compile Include="Nodes\RelyingPartyNode.cs" />
+    <Compile Include="Nodes\ScopeNode.cs" />
+    <Compile Include="Nodes\ServerCertificatesNode.cs" />
+    <Compile Include="Nodes\ServerNode.cs" />
+    <Compile Include="Nodes\SolutionUsersNode.cs" />
+    <Compile Include="Nodes\TenantNode.cs" />
+    <Compile Include="Nodes\TrustedCertificateNode.cs" />
+    <Compile Include="Nodes\UsersAndGroupsNode.cs" />
+    <Compile Include="Nodes\UsersNode.cs" />
+    <Compile Include="HttpTransport\SsoHTTPHeader.cs" />
+    <Compile Include="HttpTransport\SsoHTTPTransport.cs" />
+    <Compile Include="HttpTransport\SsoHTTPTransportCollection.cs" />
+    <Compile Include="HttpTransport\SsoHTTPTransportCollectionManager.cs" />
+    <Compile Include="HttpTransport\SsoHTTPTransportCollectionPropertyDescriptor.cs" />
+    <Compile Include="Helpers\ColumnOptions.cs" />
+    <Compile Include="Helpers\ListViewHelper.cs" />
+    <Compile Include="DataSources\ComputersDataSource.cs" />
+    <Compile Include="DataSources\GroupsDataSource.cs" />
+    <Compile Include="DataSources\IdentityProvidersDataSource.cs" />
+    <Compile Include="DataSources\NodesDefaultDataSource.cs" />
+    <Compile Include="DataSources\OutlineViewDataSource.cs" />
+    <Compile Include="DataSources\RelyingPartyDataSource.cs" />
+    <Compile Include="DataSources\SolutionUsersDataSource.cs" />
+    <Compile Include="DataSources\TrustedCertificatesDataSource.cs" />
+    <Compile Include="DataSources\UsersDataSource.cs" />
+    <Compile Include="AppDelegate.cs" />
+    <Compile Include="AppDelegate.designer.cs" />
+    <Compile Include="Main.cs" />
+    <Compile Include="MainWindow.cs" />
+    <Compile Include="MainWindow.designer.cs" />
+    <Compile Include="MainWindowController.cs" />
+    <Compile Include="MainWindowController.designer.cs" />
+    <Compile Include="Welcome.cs" />
+    <Compile Include="Welcome.designer.cs">
+      <DependentUpon>Welcome.cs</DependentUpon>
+    </Compile>
+    <Compile Include="WelcomeController.cs" />
+    <Compile Include="WelcomeController.designer.cs">
+      <DependentUpon>WelcomeController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\UserDetailsView.cs" />
+    <Compile Include="Views\UserDetailsViewController.cs" />
+    <Compile Include="Views\UserDetailsView.designer.cs">
+      <DependentUpon>UserDetailsView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\UserDetailsViewController.designer.cs">
+      <DependentUpon>UserDetailsViewController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SolutionUserDetailsView.cs" />
+    <Compile Include="Views\SolutionUserDetailsViewController.cs" />
+    <Compile Include="Views\SolutionUserDetailsView.designer.cs">
+      <DependentUpon>SolutionUserDetailsView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SolutionUserDetailsViewController.designer.cs">
+      <DependentUpon>SolutionUserDetailsViewController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\DefaultView.cs" />
+    <Compile Include="Views\DefaultViewController.cs" />
+    <Compile Include="Views\DefaultView.designer.cs">
+      <DependentUpon>DefaultView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\DefaultViewController.designer.cs">
+      <DependentUpon>DefaultViewController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\GroupDetailsView.cs" />
+    <Compile Include="Views\GroupDetailsViewController.cs" />
+    <Compile Include="Views\GroupDetailsView.designer.cs">
+      <DependentUpon>GroupDetailsView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\GroupDetailsViewController.designer.cs">
+      <DependentUpon>GroupDetailsViewController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DataSources\GroupMembershipDataSource.cs" />
+    <Compile Include="Nodes\OidcClientNode.cs" />
+    <Compile Include="DataSources\OidcClientDataSource.cs" />
+    <Compile Include="Views\AddNewOidcClient.cs" />
+    <Compile Include="Views\AddNewOidcClient.designer.cs">
+      <DependentUpon>AddNewOidcClient.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AddNewOidcClientController.cs" />
+    <Compile Include="Views\AddNewOidcClientController.designer.cs">
+      <DependentUpon>AddNewOidcClientController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DataSources\SignatureAlgorithmDataSource.cs" />
+    <Compile Include="DataSources\AssertionConsumerServiceDataSource.cs" />
+    <Compile Include="DataSources\AttributeConsumerServiceDataSource.cs" />
+    <Compile Include="DataSources\ServiceEndpointDataSource.cs" />
+    <Compile Include="Views\AddNewSignatureAlgorithm.cs" />
+    <Compile Include="Views\AddNewSignatureAlgorithm.designer.cs">
+      <DependentUpon>AddNewSignatureAlgorithm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AddNewSignatureAlgorithmController.cs" />
+    <Compile Include="Views\AddNewSignatureAlgorithmController.designer.cs">
+      <DependentUpon>AddNewSignatureAlgorithmController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AddNewAssertionConsumerService.cs" />
+    <Compile Include="Views\AddNewAssertionConsumerService.designer.cs">
+      <DependentUpon>AddNewAssertionConsumerService.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AddNewAssertionConsumerServiceController.cs" />
+    <Compile Include="Views\AddNewAssertionConsumerServiceController.designer.cs">
+      <DependentUpon>AddNewAssertionConsumerServiceController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AddNewAttributeConsumerService.cs" />
+    <Compile Include="Views\AddNewAttributeConsumerService.designer.cs">
+      <DependentUpon>AddNewAttributeConsumerService.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AddNewAttributeConsumerServiceController.cs" />
+    <Compile Include="Views\AddNewAttributeConsumerServiceController.designer.cs">
+      <DependentUpon>AddNewAttributeConsumerServiceController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AddNewServiceEndpoint.cs" />
+    <Compile Include="Views\AddNewServiceEndpoint.designer.cs">
+      <DependentUpon>AddNewServiceEndpoint.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AddNewServiceEndpointController.cs" />
+    <Compile Include="Views\AddNewServiceEndpointController.designer.cs">
+      <DependentUpon>AddNewServiceEndpointController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DataSources\AttributeDataSource.cs" />
+    <Compile Include="DataSources\DefaultDataSource.cs" />
+    <Compile Include="Views\CertificateDetailsView.cs" />
+    <Compile Include="Views\CertificateDetailsViewController.cs" />
+    <Compile Include="Views\CertificateDetailsView.designer.cs">
+      <DependentUpon>CertificateDetailsView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\CertificateDetailsViewController.designer.cs">
+      <DependentUpon>CertificateDetailsViewController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\RelyingPartyDetailsView.cs" />
+    <Compile Include="Views\RelyingPartyDetailsViewController.cs" />
+    <Compile Include="Views\RelyingPartyDetailsView.designer.cs">
+      <DependentUpon>RelyingPartyDetailsView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\RelyingPartyDetailsViewController.designer.cs">
+      <DependentUpon>RelyingPartyDetailsViewController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\OidcClientDetailsView.cs" />
+    <Compile Include="Views\OidcClientDetailsViewController.cs" />
+    <Compile Include="Views\OidcClientDetailsView.designer.cs">
+      <DependentUpon>OidcClientDetailsView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\OidcClientDetailsViewController.designer.cs">
+      <DependentUpon>OidcClientDetailsViewController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DataSources\CrumbDataSource.cs" />
+    <Compile Include="Views\ShowTenantConfiguration.cs" />
+    <Compile Include="Views\ShowTenantConfiguration.designer.cs">
+      <DependentUpon>ShowTenantConfiguration.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ShowTenantConfigurationController.cs" />
+    <Compile Include="Views\ShowTenantConfigurationController.designer.cs">
+      <DependentUpon>ShowTenantConfigurationController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Helpers\ActionHelper.cs" />
+    <Compile Include="Views\SplitViewMMC.cs" />
+    <Compile Include="Views\SplitViewMMC.designer.cs" />
+    <Compile Include="Views\SplitViewMMCController.cs" />
+    <Compile Include="Utilities\CertificateService.cs" />
+    <Compile Include="Utilities\OutlineViewNavigationController.cs" />
+    <Compile Include="Utilities\VMIdentityConstants.cs" />
+    <Compile Include="Views\ActivatableToolBarItem.cs" />
+    <Compile Include="Utilities\UIErrorHelper.cs" />
+    <Compile Include="Views\AddNewExternalIdentityProvider.cs" />
+    <Compile Include="Views\AddNewExternalIdentityProvider.designer.cs">
+      <DependentUpon>AddNewExternalIdentityProvider.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AddNewExternalIdentityProviderController.cs" />
+    <Compile Include="Views\AddNewExternalIdentityProviderController.designer.cs">
+      <DependentUpon>AddNewExternalIdentityProviderController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ShowHttpTransport.cs" />
+    <Compile Include="Views\ShowHttpTransport.designer.cs">
+      <DependentUpon>ShowHttpTransport.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ShowHttpTransportController.cs" />
+    <Compile Include="Views\ShowHttpTransportController.designer.cs">
+      <DependentUpon>ShowHttpTransportController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ExternalDomainAdvancedSettings.cs" />
+    <Compile Include="Views\ExternalDomainAdvancedSettings.designer.cs">
+      <DependentUpon>ExternalDomainAdvancedSettings.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ExternalDomainAdvancedSettingsController.cs" />
+    <Compile Include="Views\ExternalDomainAdvancedSettingsController.designer.cs">
+      <DependentUpon>ExternalDomainAdvancedSettingsController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ExtenalIdpDetailsView.cs" />
+    <Compile Include="Views\ExtenalIdpDetailsViewController.cs" />
+    <Compile Include="Views\ExtenalIdpDetailsView.designer.cs">
+      <DependentUpon>ExtenalIdpDetailsView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ExtenalIdpDetailsViewController.designer.cs">
+      <DependentUpon>ExtenalIdpDetailsViewController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DataSources\DictionaryDataSource.cs" />
+    <Compile Include="DataSources\HttpTransportDataSource.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterfaceDefinition Include="Views\AddExistingTenant.xib" />
+    <InterfaceDefinition Include="Views\AddExternalIdentitySource.xib" />
+    <InterfaceDefinition Include="Views\AddGroup.xib" />
+    <InterfaceDefinition Include="Views\AddNewServer.xib" />
+    <InterfaceDefinition Include="Views\AddNewTenant.xib" />
+    <InterfaceDefinition Include="Views\AddRelyingParty.xib" />
+    <InterfaceDefinition Include="Views\AddSolutionUser.xib" />
+    <InterfaceDefinition Include="Views\AddUser.xib" />
+    <InterfaceDefinition Include="Views\JoinActiveDirectory.xib" />
+    <InterfaceDefinition Include="Views\LeaveActiveDirectory.xib" />
+    <InterfaceDefinition Include="Views\Login.xib" />
+    <InterfaceDefinition Include="Views\ShowAllGroups.xib" />
+    <InterfaceDefinition Include="Views\ShowComputers.xib" />
+    <InterfaceDefinition Include="Views\TokenWizard.xib" />
+    <InterfaceDefinition Include="MainMenu.xib" />
+    <InterfaceDefinition Include="MainWindow.xib" />
+    <InterfaceDefinition Include="Welcome.xib" />
+    <InterfaceDefinition Include="Views\UserDetailsView.xib" />
+    <InterfaceDefinition Include="Views\SolutionUserDetailsView.xib" />
+    <InterfaceDefinition Include="Views\DefaultView.xib" />
+    <InterfaceDefinition Include="Views\GroupDetailsView.xib" />
+    <InterfaceDefinition Include="Views\AddNewOidcClient.xib" />
+    <InterfaceDefinition Include="Views\AddNewSignatureAlgorithm.xib" />
+    <InterfaceDefinition Include="Views\AddNewAssertionConsumerService.xib" />
+    <InterfaceDefinition Include="Views\AddNewAttributeConsumerService.xib" />
+    <InterfaceDefinition Include="Views\AddNewServiceEndpoint.xib" />
+    <InterfaceDefinition Include="Views\CertificateDetailsView.xib" />
+    <InterfaceDefinition Include="Views\RelyingPartyDetailsView.xib" />
+    <InterfaceDefinition Include="Views\OidcClientDetailsView.xib" />
+    <InterfaceDefinition Include="Views\ShowTenantConfiguration.xib" />
+    <InterfaceDefinition Include="Views\SplitViewMMC.xib" />
+    <InterfaceDefinition Include="Views\AddNewExternalIdentityProvider.xib" />
+    <InterfaceDefinition Include="Views\ShowHttpTransport.xib" />
+    <InterfaceDefinition Include="Views\ExternalDomainAdvancedSettings.xib" />
+    <InterfaceDefinition Include="Views\ExtenalIdpDetailsView.xib" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
+  <ItemGroup>
+    <BundleResource Include="Resources\certificate.png" />
+    <BundleResource Include="Resources\config.png" />
+    <BundleResource Include="Resources\vmlogo.png" />
+    <BundleResource Include="Resources\Welcome.png" />
+    <BundleResource Include="Resources\lightwave.png" />
+    <BundleResource Include="Resources\BulletBlackIcon.png" />
+    <BundleResource Include="Resources\connect_32x32.png" />
+    <BundleResource Include="Resources\disconnect_64x.png" />
+    <BundleResource Include="Resources\info32x.png" />
+    <BundleResource Include="Resources\Privateentity_16x16.png" />
+    <BundleResource Include="Resources\SecretKeys16.png" />
+    <BundleResource Include="Resources\TrustedCerts.png" />
+    <BundleResource Include="Resources\VMwareicon.png" />
+    <BundleResource Include="Resources\object.png" />
+    <BundleResource Include="Resources\Add_Group_64.png" />
+    <BundleResource Include="Resources\Add_Object_64.png" />
+    <BundleResource Include="Resources\Add_User_64.png" />
+    <BundleResource Include="Resources\Delete_Object_64.png" />
+    <BundleResource Include="Resources\Disconnect_64.png" />
+    <BundleResource Include="Resources\Edit_Properties_64.png" />
+    <BundleResource Include="Resources\View_Schema_64.png" />
+    <BundleResource Include="Resources\directory-service-16.png" />
+    <BundleResource Include="Resources\os.png" />
+    <BundleResource Include="Resources\provider.png" />
+    <BundleResource Include="Resources\system.png" />
+    <BundleResource Include="Resources\tenant.png" />
+    <BundleResource Include="Resources\connect.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Info.plist" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="SSO.icns" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\common\VMRestSso.Common\RestSsoAdminSnapIn.Core\RestSsoAdminSnapIn.Core.csproj">
+      <Project>{B64D4A16-C162-4FCD-943A-AEB556769D3C}</Project>
+      <Name>RestSsoAdminSnapIn.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMRestSso.Common\RestSsoAdminSnapIn.Data\RestSsoAdminSnapIn.Data.csproj">
+      <Project>{36F56669-93E2-4647-8230-31B5E02F5BEA}</Project>
+      <Name>RestSsoAdminSnapIn.Data</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMRestSso.Common\RestSsoAdminSnapIn.Dto\RestSsoAdminSnapIn.Dto.csproj">
+      <Project>{F826B9EF-3AE2-4186-8D57-BCE8A72EA0B4}</Project>
+      <Name>RestSsoAdminSnapIn.Dto</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMRestSso.Common\RestSsoAdminSnapIn.Service\RestSsoAdminSnapIn.Service.csproj">
+      <Project>{CDA5E15B-2F8D-4FE4-86C5-36B614A2E069}</Project>
+      <Name>RestSsoAdminSnapIn.Service</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

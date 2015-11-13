@@ -1,0 +1,12 @@
+LIBRARY	"idm"
+EXPORTS
+IDMGetComputerName
+IDMAuthenticateUser
+IDMCreateAuthContext
+IDMAuthenticate2
+IDMGetUserInformationFromAuthContext
+IDMFreeAuthContext
+IDMFreeUserInfo
+IDMAllocateMemory
+IDMFreeMemory
+IDMDestroySidCache

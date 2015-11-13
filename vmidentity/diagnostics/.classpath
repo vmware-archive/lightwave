@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/main/java"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="var" path="TCROOT/noarch/junit-4.4/junit-4.4.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/easymock-3.0/easymock-3.0.jar" sourcepath="/TCROOT/noarch/easymock-3.0/easymock-3.0-sources.jar"/>
+	<classpathentry kind="var" path="GOBUILD_AUTHENTICATION_FRAMEWORK_ROOT"/>
+	<classpathentry kind="lib" path="lib/log4j-api-2.2.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-core-2.2.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

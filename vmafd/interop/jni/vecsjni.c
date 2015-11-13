@@ -1000,7 +1000,7 @@ JniSetDword(
     }
 
     jVal = (jint)dwValue;
-    (*env)->SetLongField(env, jObj, fid, jVal);
+    (*env)->SetIntField(env, jObj, fid, jVal);
 
 cleanup:
     return dwError;

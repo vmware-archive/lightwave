@@ -76,6 +76,14 @@ ParseArgsSetLDU(
 
 static
 DWORD
+ParseArgsGetRHTTPProxyPort(
+    int                 argc,
+    char*               argv[],
+    PVM_AFD_CLI_CONTEXT pContext
+    );
+
+static
+DWORD
 ParseArgsSetRHTTPProxyPort(
     int                 argc,
     char*               argv[],
@@ -141,6 +149,14 @@ ParseArgsSetPNID(
 static
 DWORD
 ParseArgsGetSiteGUID(
+    int                 argc,
+    char*               argv[],
+    PVM_AFD_CLI_CONTEXT pContext
+    );
+
+static
+DWORD
+ParseArgsGetSiteName(
     int                 argc,
     char*               argv[],
     PVM_AFD_CLI_CONTEXT pContext
@@ -260,6 +276,14 @@ ParseArgsQueryAD(
     );
 
 static
+DWORD
+ParseArgsGetHbStatus(
+    int                 argc,
+    char*               argv[],
+    PVM_AFD_CLI_CONTEXT pContext
+    );
+
+static
 void
 ShowUsage(
     VOID
@@ -326,6 +350,9 @@ int _tmain(int argc, _TCHAR* targv[])
 #else
     setlocale(LC_ALL, "");
 #endif
+
+    dwError = VmAfCfgInit();
+    BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = ParseArgs(argc, argv, &pContext);
     if (dwError == ERROR_INVALID_PARAMETER ||
@@ -395,6 +422,10 @@ error:
         case ERROR_ACCESS_DENIED:
             retCode = 25;
             pszErrorMsg = "Authorization failed.\nVerify account has proper administrative privileges.";
+            break;
+        case ERROR_FILE_NOT_FOUND:
+            retCode = 26;
+            pszErrorMsg = "Object/Configuration not found.\nVerify configuration value has been set.";
             break;
         default:
             retCode = 1;
@@ -512,6 +543,15 @@ ParseArgs(
                         dwArgsLeft > 0 ? &argv[iArg] : NULL,
                         pContext);
     }
+    else if (!strcmp(pszArg, "get-rhttpproxy-port"))
+    {
+        pContext->action = VM_AFD_ACTION_GET_RHTTPPROXY_PORT;
+
+        dwError = ParseArgsGetRHTTPProxyPort(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL,
+                        pContext);
+    }
     else if (!strcmp(pszArg, "set-rhttpproxy-port"))
     {
         pContext->action = VM_AFD_ACTION_SET_RHTTPPROXY_PORT;
@@ -575,6 +615,15 @@ ParseArgs(
                         dwArgsLeft > 0 ? &argv[iArg] : NULL,
                         pContext);
     }
+    else if (!strcmp(pszArg, "get-pnid-url"))
+    {
+        pContext->action = VM_AFD_ACTION_GET_PNID_URL;
+
+        dwError = ParseArgsGetPNID(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL,
+                        pContext);
+    }
     else if (!strcmp(pszArg, "set-pnid"))
     {
         pContext->action = VM_AFD_ACTION_SET_PNID;
@@ -592,6 +641,19 @@ ParseArgs(
                         dwArgsLeft,
                         dwArgsLeft > 0 ? &argv[iArg] : NULL,
                         pContext);
+    }
+    else if (!strcmp(pszArg, "get-site-name"))
+    {
+        pContext->action = VM_AFD_ACTION_GET_SITE_NAME;
+
+        dwError = ParseArgsGetSiteName(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL,
+                        pContext);
+    }
+    else if (!strcmp(pszArg, "refresh-site-name"))
+    {
+        pContext->action = VM_AFD_ACTION_REFRESH_SITE_NAME;
     }
     else if (!strcmp(pszArg, "get-machine-id"))
     {
@@ -718,6 +780,15 @@ ParseArgs(
                         dwArgsLeft,
                         dwArgsLeft > 0 ? &argv[iArg] : NULL,
                         pContext);
+    }
+    else if (!strcmp(pszArg, "get-heartbeat-status"))
+    {
+        pContext->action = VM_AFD_ACTION_GET_HEARTBEAT_STATUS;
+
+        dwError = ParseArgsGetHbStatus(
+                                  dwArgsLeft,
+                                  dwArgsLeft > 0 ? &argv[iArg] : NULL,
+                                  pContext);
     }
     else
     {
@@ -1395,6 +1466,82 @@ error:
 
 static
 DWORD
+ParseArgsGetRHTTPProxyPort(
+    int                 argc,
+    char*               argv[],
+    PVM_AFD_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+    typedef enum
+    {
+        PARSE_MODE_GET_STATUS_OPEN = 0,
+        PARSE_MODE_GET_STATUS_SERVER_NAME,
+    } PARSE_MODE_GET_STATUS;
+    PARSE_MODE_GET_STATUS parseMode = PARSE_MODE_GET_STATUS_OPEN;
+    DWORD iArg = 0;
+
+    if (!argc)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    for (iArg = 0; iArg < argc; iArg++)
+    {
+        PSTR pszArg = argv[iArg];
+
+        switch (parseMode)
+        {
+            case PARSE_MODE_GET_STATUS_OPEN:
+                if (!strcmp(pszArg, "--server-name"))
+                {
+                    parseMode = PARSE_MODE_GET_STATUS_SERVER_NAME;
+                }
+                else
+                {
+                    dwError = ERROR_LOCAL_OPTION_UNKNOWN;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+                break;
+
+            case PARSE_MODE_GET_STATUS_SERVER_NAME:
+
+                if (pContext->pszServerName)
+                {
+                    dwError = ERROR_LOCAL_OPTION_INVALID;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszServerName);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_GET_STATUS_OPEN;
+
+                break;
+
+            default:
+
+                dwError = ERROR_LOCAL_OPTION_INVALID;
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                break;
+        }
+    }
+
+    if (!pContext->pszServerName)
+    {
+        dwError = ERROR_LOCAL_OPTION_INVALID;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+error:
+
+    return dwError;
+}
+
+static
+DWORD
 ParseArgsSetRHTTPProxyPort(
     int                 argc,
     char*               argv[],
@@ -1820,6 +1967,75 @@ error:
     return dwError;
 }
 
+static
+DWORD
+ParseArgsGetSiteName(
+    int                 argc,
+    char*               argv[],
+    PVM_AFD_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+    typedef enum
+    {
+        PARSE_MODE_GET_SITE_NAME_OPEN = 0,
+        PARSE_MODE_GET_SITE_NAME_SERVER_NAME,
+    } PARSE_MODE_GET_SITE_NAME;
+    PARSE_MODE_GET_SITE_NAME parseMode = PARSE_MODE_GET_SITE_NAME_OPEN;
+    DWORD iArg = 0;
+
+    for (iArg = 0; iArg < argc; iArg++)
+    {
+        PSTR pszArg = argv[iArg];
+
+        switch (parseMode)
+        {
+            case PARSE_MODE_GET_SITE_NAME_OPEN:
+                if (!strcmp(pszArg, "--server-name"))
+                {
+                    parseMode = PARSE_MODE_GET_SITE_NAME_SERVER_NAME;
+                }
+                else
+                {
+                    dwError = ERROR_LOCAL_OPTION_UNKNOWN;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+                break;
+
+            case PARSE_MODE_GET_SITE_NAME_SERVER_NAME:
+
+                if (pContext->pszServerName)
+                {
+                    dwError = ERROR_LOCAL_OPTION_INVALID;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszServerName);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_GET_SITE_NAME_OPEN;
+
+                break;
+
+            default:
+
+                dwError = ERROR_INTERNAL_ERROR;
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                break;
+        }
+    }
+
+    if (!pContext->pszServerName)
+    {
+        dwError = VmAfdAllocateStringA("localhost", &pContext->pszServerName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+error:
+
+    return dwError;
+}
 
 static
 DWORD
@@ -2184,7 +2400,6 @@ ParseArgsDemoteVmDir(
     typedef enum
     {
         PARSE_MODE_DEMOTE_VM_DIR_OPEN = 0,
-        PARSE_MODE_DEMOTE_VM_DIR_SERVER_NAME,
         PARSE_MODE_DEMOTE_VM_DIR_USER_NAME,
         PARSE_MODE_DEMOTE_VM_DIR_PASSWORD,
     } PARSE_MODE_DEMOTE_VM_DIR;
@@ -2204,38 +2419,19 @@ ParseArgsDemoteVmDir(
         switch (parseMode)
         {
             case PARSE_MODE_DEMOTE_VM_DIR_OPEN:
-                if (!strcmp(pszArg, "--server-name"))
+		if (!strcmp(pszArg, "--user-name"))
                 {
-                    parseMode = PARSE_MODE_DEMOTE_VM_DIR_SERVER_NAME;
-                }
-                else if (!strcmp(pszArg, "--user-name"))
-                {
-                    parseMode = PARSE_MODE_DEMOTE_VM_DIR_PASSWORD;
+                    parseMode = PARSE_MODE_DEMOTE_VM_DIR_USER_NAME;
                 }
                 else if (!strcmp(pszArg, "--password"))
                 {
-                    parseMode = PARSE_MODE_DEMOTE_VM_DIR_USER_NAME;
+                    parseMode = PARSE_MODE_DEMOTE_VM_DIR_PASSWORD;
                 }
                 else
                 {
                     dwError = ERROR_LOCAL_OPTION_UNKNOWN;
                     BAIL_ON_VMAFD_ERROR(dwError);
                 }
-                break;
-
-            case PARSE_MODE_DEMOTE_VM_DIR_SERVER_NAME:
-
-                if (pContext->pszServerName)
-                {
-                    dwError = ERROR_LOCAL_OPTION_INVALID;
-                    BAIL_ON_VMAFD_ERROR(dwError);
-                }
-
-                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszServerName);
-                BAIL_ON_VMAFD_ERROR(dwError);
-
-                parseMode = PARSE_MODE_DEMOTE_VM_DIR_OPEN;
-
                 break;
 
             case PARSE_MODE_DEMOTE_VM_DIR_USER_NAME:
@@ -2277,9 +2473,8 @@ ParseArgsDemoteVmDir(
         }
     }
 
-    if (!pContext->pszServerName ||
-        !pContext->pszUserName ||
-        !pContext->pszPassword)
+    if (!pContext->pszUserName ||
+	!pContext->pszPassword)
     {
         dwError = ERROR_LOCAL_OPTION_INVALID;
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -3216,6 +3411,110 @@ ParseArgsSetMachineSSLCertificates(
 }
 
 static
+DWORD
+ParseArgsGetHbStatus(
+    int                 argc,
+    char*               argv[],
+    PVM_AFD_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+    typedef enum
+    {
+        PARSE_MODE_QUERY_OPEN = 0,
+        PARSE_MODE_QUERY_SERVER_NAME,
+        PARSE_MODE_QUERY_USER_NAME,
+        PARSE_MODE_QUERY_PASSWORD,
+    } PARSE_MODE_QUERY_AD;
+    PARSE_MODE_QUERY_AD parseMode = PARSE_MODE_QUERY_OPEN;
+    DWORD iArg = 0;
+
+    for (iArg = 0; iArg < argc; iArg++)
+    {
+        PSTR pszArg = argv[iArg];
+
+        switch (parseMode)
+        {
+            case PARSE_MODE_QUERY_OPEN:
+                if (!strcmp(pszArg, "--server-name"))
+                {
+                    parseMode = PARSE_MODE_QUERY_SERVER_NAME;
+                }
+                else if (!strcmp(pszArg, "--user-name"))
+                {
+                    parseMode = PARSE_MODE_QUERY_USER_NAME;
+                }
+                else if (!strcmp(pszArg, "--password"))
+                {
+                    parseMode = PARSE_MODE_QUERY_PASSWORD;
+                }
+               else
+                {
+                    dwError = ERROR_LOCAL_OPTION_UNKNOWN;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+                break;
+
+            case PARSE_MODE_QUERY_SERVER_NAME:
+
+                if (pContext->pszServerName)
+                {
+                    dwError = ERROR_LOCAL_OPTION_INVALID;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszServerName);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_QUERY_OPEN;
+
+                break;
+
+            case PARSE_MODE_QUERY_USER_NAME:
+
+                if (pContext->pszUserName)
+                {
+                    dwError = ERROR_LOCAL_OPTION_INVALID;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszUserName);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_QUERY_OPEN;
+
+                break;
+
+            case PARSE_MODE_QUERY_PASSWORD:
+
+                if (pContext->pszPassword)
+                {
+                    dwError = ERROR_LOCAL_OPTION_INVALID;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszPassword);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_QUERY_OPEN;
+
+                break;
+
+            default:
+
+                dwError = ERROR_INTERNAL_ERROR;
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                break;
+        }
+    }
+
+error:
+
+    return dwError;
+}
+
+static
 void
 ShowUsage(
     VOID
@@ -3233,14 +3532,17 @@ ShowUsage(
         "\tget-ldu --server-name <server name>\n"
         "\tset-ldu --server-name <server name> --ldu <ldu>\n"
         "\tset-rhttpproxy-port --server-name <server name> --rhttpproxy-port <port>\n"
+        "\tget-rhttpproxy-port --server-name <server name>\n"
         "\tset-dc-port --server-name <server name> --dc-port <port>\n"
         "\tget-cm-location --server-name <server name>\n"
         "\tget-ls-location --server-name <server name>\n"
         "\tget-dc-name --server-name <server name>\n"
         "\tset-dc-name --server-name <server name> --dc-name <dc name>\n"
+        "\tget-pnid-url --server-name <server name>\n"
         "\tget-pnid --server-name <server name>\n"
         "\tset-pnid --server-name <server name> --pnid <pnid>\n"
         "\tget-site-guid --server-name <server name>\n"
+        "\tget-site-name --server-name <server name>\n"
         "\tget-machine-id --server-name <server name>\n"
         "\tset-machine-id --server-name <server name> --id <GUID>\n"
         "\tadd-password-entry --server-name <server name>\n"
@@ -3249,7 +3551,7 @@ ShowUsage(
         "\tget-machine-ssl-certificate --server-name <server name>\n"
         "\tset-machine-ssl-certificate --server-name <server name> --ssl-certification <ssl certificate>\n"
         "\tpromote-vmdir --server-name <server name> --domain-name <domain name> --user-name <user-name> --password <password> --site-name <site-name> --partner-name <partner name>\n"
-        "\tdemote-vmdir --server-name <server name> --user-name <user-name> --password <password>\n"
+        "\tdemote-vmdir --user-name <user-name> --password <password>\n"
         "\tjoin-vmdir --server-name <server name> --user-name <user-name> [--password <password>|--password-file <password-file>] --machine-name <machine name> --domain-name <domain name>\n"
         "\tleave-vmdir [--server-name <server name>] [--user-name <user-name> --password <password>]\n"
         "\tjoin-ad --server-name <server name> --user-name <user-name> --password <password> --machine-name <machine name> --domain-name <domain name>\n"

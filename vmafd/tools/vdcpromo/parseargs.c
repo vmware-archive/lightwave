@@ -37,7 +37,8 @@ VmAfdParseArgs(
     PSTR* ppszSiteName,
     PSTR* ppszReplHostName,
     PSTR* ppszLotusServerName,
-    PSTR* ppszPwdFile
+    PSTR* ppszPwdFile,
+    DNS_INIT_FLAG* pDnsInitFlag
 )
 {
     DWORD   dwError = ERROR_SUCCESS;
@@ -48,6 +49,7 @@ VmAfdParseArgs(
     PSTR    pszReplHostName = NULL;
     PSTR    pszLotusServerName = NULL;
     PSTR    pszPwdFile = NULL;
+    DNS_INIT_FLAG dnsInitFlag = FALSE;
 
 #ifndef _WIN32
     int opt=0;
@@ -62,7 +64,8 @@ VmAfdParseArgs(
         ppszReplHostName == NULL    ||
         ppszLotusServerName == NULL ||
         ppszSiteName == NULL        ||
-        ppszPwdFile == NULL
+        ppszPwdFile == NULL         ||
+        pDnsInitFlag == NULL
        )
     {
         dwError = ERROR_INVALID_PARAMETER;
@@ -74,6 +77,10 @@ VmAfdParseArgs(
     {
         switch ( opt )
         {
+            case VMAFD_OPTION_INIT_DNS:
+                dnsInitFlag = DNS_INIT;
+                break;
+
             case VMAFD_OPTION_DOMAIN:
                 pszDomain = optarg;
                 break;
@@ -113,6 +120,10 @@ VmAfdParseArgs(
     {
         if( VmAfdIsCmdLineOption( argv[i] ) != FALSE )
         {
+            if ( VmAfdStringCompareA(VMAFD_OPTION_INIT_DNS, argv[i], TRUE ) == 0 )
+            {
+                dnsInitFlag = DNS_INIT;
+            }
             if ( VmAfdStringCompareA(VMAFD_OPTION_DOMAIN, argv[i], TRUE ) == 0 )
             {
                 VmAfdGetCmdLineOption( argc, argv, &i, &pszDomain );
@@ -164,6 +175,7 @@ VmAfdParseArgs(
     *ppszReplHostName = pszReplHostName;
     *ppszLotusServerName = pszLotusServerName;
     *ppszPwdFile = pszPwdFile;
+    *pDnsInitFlag = dnsInitFlag;
 
 cleanup:
     return dwError;
@@ -182,6 +194,8 @@ ShowUsage(
       "       [-d <domain name, e.g. vsphere.local>]\n"
       "       [-h <optional preferred lotus server name, can be FQDN or IP format.>]\n"
       "       [-H <replication partner host>\n"
+      "       [-n]\n"
       "Note : Specify -d for first Ldu\n"
-      "       Specify -H for subsequent Ldus\n");
+      "       Specify -H for subsequent Ldus\n"
+      "       Specify -n to initialize local DNS of an already promoted DC.");
 }

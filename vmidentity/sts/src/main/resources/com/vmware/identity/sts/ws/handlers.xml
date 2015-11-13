@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<jws:handler-chains xmlns:jws="http://java.sun.com/xml/ns/javaee">
+   <jws:handler-chain>
+      <!-- fourth handler invoked in inbound case -->
+      <jws:handler>
+         <jws:handler-class>com.vmware.identity.sts.ws.handlers.XMLSignatureValidator</jws:handler-class>
+      </jws:handler>
+      <!-- third handler invoked in inbound case -->
+      <jws:handler>
+         <jws:handler-class>com.vmware.identity.sts.ws.handlers.SOAPHeadersExtractor</jws:handler-class>
+      </jws:handler>
+      <!-- second handler invoked in inbound case -->
+      <jws:handler>
+         <jws:handler-class>com.vmware.identity.sts.ws.handlers.SoapMsgMetricsCollector</jws:handler-class>
+      </jws:handler>
+      <!-- first handler invoked in inbound case -->
+      <jws:handler>
+         <jws:handler-class>com.vmware.identity.sts.ws.handlers.LogContextHandler</jws:handler-class>
+      </jws:handler>
+   </jws:handler-chain>
+</jws:handler-chains>

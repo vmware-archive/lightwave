@@ -50,7 +50,8 @@ VecsCliAddEntryA(
     PCSTR pszPassword,
     PCSTR pszAlias,
     PCSTR pszCertFilePath,
-    PCSTR pszKeyFilePath
+    PCSTR pszKeyFilePath,
+    PCSTR pszKeyPassword
     );
 
 DWORD
@@ -70,7 +71,8 @@ VecsCliGetKeyA(
     PCSTR pszPassword,
     PCSTR pszAlias,
     PCSTR pszOutputFilePath,
-    DWORD dwFormatAsText
+    DWORD dwFormatAsText,
+    PCSTR pszKeyPassword
     );
 
 DWORD

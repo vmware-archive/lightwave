@@ -55,7 +55,9 @@
 #include <middlelayer.h>
 #include <replication.h>
 
+#include <structs.h>
 #include <prototypes.h>
+
 #define VDIR_SAFE_UNBIND_EXT_S(pLd)             \
     do {                                        \
         if (pLd) {                              \
@@ -93,9 +95,12 @@
 // SUNG kdcmerge should revmove this if not mantain our own cread cache
 #include <krb5/krb5.h>
 
-#undef LBERLIB_ONLY
+#define LW_STRICT_NAMESPACE
+#include <lw/types.h>
+#include <lw/hash.h>
+#include <lw/security-types.h>
 
-#include "banned.h"
+#undef LBERLIB_ONLY
 
 #include <vmdir.h>
 #include <vmdirtypes.h>
@@ -113,7 +118,9 @@
 #include <middlelayer.h>
 #include <replication.h>
 
+#include <structs.h>
 #include "prototypes.h"
+#include "banned.h"
 #define VDIR_SAFE_UNBIND_EXT_S(pLd)             \
     do {                                        \
         if (pLd) {                              \

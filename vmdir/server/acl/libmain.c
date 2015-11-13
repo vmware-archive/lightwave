@@ -110,7 +110,7 @@ VmDirVmAclShutdown(
 }
 
 static
-PCVOID
+LW_PCVOID
 _DomainSIDGenStateGetKey(
     PLW_HASHTABLE_NODE   pNode,
     PVOID                   pUnused
@@ -124,7 +124,7 @@ _DomainSIDGenStateGetKey(
 static
 ULONG
 _LwRtlHashDigestPstr(
-    PCVOID pKey,
+    LW_PCVOID pKey,
     PVOID pUnused
     )
 {
@@ -154,8 +154,8 @@ _LwRtlHashDigestPstr(
 static
 BOOLEAN
 _LwRtlHashEqualPstr(
-    PCVOID pKey1,
-    PCVOID pKey2,
+    LW_PCVOID pKey1,
+    LW_PCVOID pKey2,
     PVOID pUnused
     )
 {
@@ -194,14 +194,14 @@ VmDirInitSidGenState(
 {
     DWORD dwError = 0;
 
-    dwError = LwNtStatusToWin32Error(
-                LwRtlCreateHashTable(
+    dwError = LwRtlCreateHashTable(
                     &pGsidGenState->pHashtable,
                     _DomainSIDGenStateGetKey,
                     _LwRtlHashDigestPstr,
                     _LwRtlHashEqualPstr,
                     NULL,
-                    VMDIR_DOMAIN_SID_GEN_HASH_TABLE_SIZE));
+                    VMDIR_DOMAIN_SID_GEN_HASH_TABLE_SIZE);
+    dwError = LwNtStatusToWin32Error(dwError);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 	VmDirAllocateMutex( &pGsidGenState->mutex );

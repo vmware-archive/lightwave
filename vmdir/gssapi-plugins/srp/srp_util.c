@@ -97,7 +97,7 @@ int srp_debug_printf(char *fmt, ...)
     va_list print_args;
     int ret_len = 0;
     char *ptr = NULL;
-    char debug_string[512] = {0};
+    char debug_string[4*1024] = {0};
 
     if (!srp_getenv_debug())
     {

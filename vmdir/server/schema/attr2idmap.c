@@ -343,6 +343,7 @@ schemaAttrIdMapAdd(
                 pEntry,
                 pNewAttr);
     BAIL_ON_VMDIR_ERROR(dwError);
+    pNewAttr = NULL;
 
 cleanup:
 

@@ -33,7 +33,6 @@ libsrvcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/server/include \
     @OPENSSL_INCLUDES@ \
     @DCERPC_INCLUDES@ \
-    @BDB_INCLUDES@ \
     @LW_INCLUDES@
 
 libsrvcommon_la_LDFLAGS = \

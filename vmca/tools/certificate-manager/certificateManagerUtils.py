@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2015 VMware, Inc.  All rights reserved. -- VMware Confidential
+# Copyright 2015 VMware, Inc.  All rights reserved. --
 
 """
 Utility functions to support certificate-manager

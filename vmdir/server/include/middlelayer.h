@@ -153,7 +153,8 @@ VmDirSimpleEqualFilterInternalSearch(
 DWORD
 VmDirIsDirectMemberOf(
     PSTR                pszBindDN,
-    PSTR                pszGroupDN,
+    UINT32              getAccessInfo,
+    UINT32              *accessRoleBitmap,
     PBOOLEAN            pbIsMemberOf
     );
 

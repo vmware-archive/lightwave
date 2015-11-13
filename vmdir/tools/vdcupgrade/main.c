@@ -27,7 +27,6 @@
 
 #include "includes.h"
 
-#define VMDIR_MAX_PWD_LEN 127
 static
 DWORD
 AddComputersContainer(
@@ -98,8 +97,66 @@ _UpdatePSCVersion(
     LDAP* pLd
     );
 
+static
 int
-main(
+VmDirMain(
+    int argc,
+    char* argv[]
+    );
+
+static
+DWORD
+ReplaceSamAccountOnDn(
+    LDAP* pLd,
+    PCSTR pszAccountDn,
+    PCSTR pszNewSamAccount
+    );
+
+#ifdef _WIN32
+
+int wmain(int argc, wchar_t* argv[])
+{
+    DWORD dwError = 0;
+    PSTR* ppszArgs = NULL;
+    int   iArg = 0;
+
+    dwError = VmDirAllocateMemory(sizeof(PSTR) * argc, (PVOID*)&ppszArgs);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (; iArg < argc; iArg++)
+    {
+        dwError = VmDirAllocateStringAFromW(argv[iArg], &ppszArgs[iArg]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirMain(argc, ppszArgs);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+error:
+
+    if (ppszArgs)
+    {
+        for (iArg = 0; iArg < argc; iArg++)
+        {
+            VMDIR_SAFE_FREE_MEMORY(ppszArgs[iArg]);
+        }
+        VmDirFreeMemory(ppszArgs);
+    }
+
+    return dwError;
+}
+#else
+
+int main(int argc, char* argv[])
+{
+    return VmDirMain(argc, argv);
+}
+
+#endif
+
+static
+int
+VmDirMain(
     int argc,
     char* argv[]
     )
@@ -109,6 +166,8 @@ main(
     PSTR    pszAdminUPN = NULL;
     PSTR    pszPassword = NULL;
     PSTR    pszPasswordFile = NULL;
+    PSTR    pszPnidFixAccountDn = NULL;
+    PSTR    pszPnidFixSamAccount = NULL;
     PSTR    pszErrorMessage = NULL;
     LDAP*   pLd = NULL;
     CHAR    pszPasswordBuf[VMDIR_MAX_PWD_LEN + 1];
@@ -124,7 +183,9 @@ main(
                         &pszAdminUPN,
                         &pszPassword,
                         &pszPasswordFile,
-                        &bAclOnly);
+                        &bAclOnly,
+                        &pszPnidFixAccountDn,
+                        &pszPnidFixSamAccount);
     if (dwError != ERROR_SUCCESS)
     {
         ShowUsage();
@@ -170,6 +231,12 @@ main(
 
         dwError = UpdateDCAccountSRPSecret( pLd );
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (pszPnidFixAccountDn && pszPnidFixSamAccount)
+        {
+            dwError = ReplaceSamAccountOnDn(pLd, pszPnidFixAccountDn, pszPnidFixSamAccount);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
     }
 
 cleanup:
@@ -181,8 +248,9 @@ cleanup:
     memset(pszPasswordBuf, 0, sizeof(pszPasswordBuf));
     VMDIR_SAFE_FREE_STRINGA(pszPassword);
     VMDIR_SAFE_FREE_STRINGA(pszPasswordFile);
+    VMDIR_SAFE_FREE_STRINGA(pszPnidFixAccountDn);
+    VMDIR_SAFE_FREE_STRINGA(pszPnidFixSamAccount);
     VMDIR_SAFE_FREE_MEMORY(pszErrorMessage);
-
     VdcLdapUnbind(pLd);
     pLd = NULL;
 
@@ -922,5 +990,46 @@ cleanup:
 error:
     printf("UpdateEntriesACL got error %d - vdcupgrade proceeds, and please upgrade ACL manually.\n", dwError);
     dwError = 0;
+    goto cleanup;
+}
+
+static
+DWORD
+ReplaceSamAccountOnDn(
+    LDAP* pLd,
+    PCSTR pszAccountDn,
+    PCSTR pszNewSamAccount
+    )
+{
+    DWORD dwError = 0;
+    PSTR  ppszVals [] = { (PSTR) pszNewSamAccount, NULL };
+
+    if (!pLd || !pszAccountDn || !pszNewSamAccount)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VdcLdapReplaceAttributeValues(
+                pLd,
+                pszAccountDn,
+                ATTR_SAM_ACCOUNT_NAME,
+                (PCSTR*) ppszVals);
+
+    if (dwError)
+    {
+        printf("Failed to update samaccount to %s for %s, error (%d)\n", pszNewSamAccount, pszAccountDn, dwError);
+    }
+    else
+    {
+        printf("Updated samaccount to %s for %s.\n", pszNewSamAccount, pszAccountDn);
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
     goto cleanup;
 }

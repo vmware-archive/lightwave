@@ -54,7 +54,7 @@ static
 DWORD
 VmDirIsBindDnMemberOfSystemDomainAdmins(
     PVDIR_BACKEND_CTX   pBECtx,
-    PSTR                pszBindedDn,
+    PVDIR_ACCESS_INFO   pAccessInfo,
     PBOOLEAN            pbIsMemberOfAdmins
     );
 
@@ -99,31 +99,19 @@ VmDirIsSpecialAllowedSearchEntry(
 static
 BOOLEAN
 _VmDirDCClientGroupAccessCheck(
-    PCSTR               pszBindDN,
     PVDIR_OPERATION     pOperation,
     ACCESS_MASK         accessDesired
     )
 {
     DWORD           dwError = 0;
-    BOOLEAN         bIsDCClient = FALSE;
     BOOLEAN         bIsAllowAccess = FALSE;
     PVDIR_BERVALUE  pBervDN = NULL;
 
-    if ( gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val )
-    {
-        dwError = VmDirIsDirectMemberOf( (PSTR)pszBindDN,
-                                         gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val,
-                                         &bIsDCClient);
+    if ( (accessDesired & -1) == VMDIR_RIGHT_DS_READ_PROP )
+    {  // grant read only request
+        bIsAllowAccess = TRUE;
+        goto cleanup;
     }
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if ( bIsDCClient )
-    {
-        if ( (accessDesired & -1) == VMDIR_RIGHT_DS_READ_PROP )
-        {  // grant read only request
-            bIsAllowAccess = TRUE;
-            goto cleanup;
-        }
 
         if ( pOperation->reqCode == LDAP_REQ_ADD )
         {
@@ -143,10 +131,9 @@ _VmDirDCClientGroupAccessCheck(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
-        // for all other access request, target DN must be under service container
-        dwError = VmDirIsAncestorDN( &(gVmdirServerGlobals.bvServicesRootDN), pBervDN, &bIsAllowAccess);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    // for all other access request, target DN must be under service container
+    dwError = VmDirIsAncestorDN( &(gVmdirServerGlobals.bvServicesRootDN), pBervDN, &bIsAllowAccess);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
 
@@ -154,8 +141,8 @@ cleanup:
 
 error:
 
-    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "%s failed Bind DN (%s) Access (%lu), error (%d)",
-                       __FUNCTION__, pszBindDN, accessDesired, dwError);
+    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "%s failed Access (%lu), error (%d)",
+                       __FUNCTION__, accessDesired, dwError);
 
     goto cleanup;
 }
@@ -172,6 +159,7 @@ VmDirSrvAccessCheck(
     ACCESS_MASK samGranted = 0;
     BOOLEAN     bIsAdminRole = FALSE;
     PSTR        pszAdminsGroupSid = NULL;
+    BOOLEAN     bIsDCClient = FALSE;
 
     assert( pOperation );
 
@@ -197,8 +185,7 @@ VmDirSrvAccessCheck(
     BAIL_ON_INVALID_ACCESSINFO(pAccessInfo, dwError);
 
     // Checks for System Admins group membership
-
-    dwError = VmDirIsBindDnMemberOfSystemDomainAdmins(pOperation->pBECtx, pAccessInfo->pszBindedDn, &bIsAdminRole);
+    dwError = VmDirIsBindDnMemberOfSystemDomainAdmins(pOperation->pBECtx, pAccessInfo, &bIsAdminRole);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (bIsAdminRole)
@@ -209,7 +196,9 @@ VmDirSrvAccessCheck(
     // per PROD2013 requirements, member of domaincontrollergroup gets system admin rights.
     if ( gVmdirServerGlobals.bvDCGroupDN.lberbv_val )
     {
-        dwError = VmDirIsDirectMemberOf( pAccessInfo->pszBindedDn, gVmdirServerGlobals.bvDCGroupDN.lberbv_val,
+        dwError = VmDirIsDirectMemberOf( pAccessInfo->pszBindedDn,
+                                         VDIR_ACCESS_DCGROUP_MEMBER_INFO,
+                                         &pAccessInfo->accessRoleBitmap,
                                          &bIsAdminRole);
         BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -219,12 +208,18 @@ VmDirSrvAccessCheck(
         }
     }
 
-    if ( gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val
-         &&
-         _VmDirDCClientGroupAccessCheck( pAccessInfo->pszBindedDn, pOperation, accessDesired ) == TRUE
-       )
+    if ( gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val )
     {
-        goto cleanup; // Access Allowed
+        dwError = VmDirIsDirectMemberOf( pAccessInfo->pszBindedDn,
+                                         VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_INFO,
+                                         &pAccessInfo->accessRoleBitmap,
+                                         &bIsDCClient);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if(bIsDCClient && _VmDirDCClientGroupAccessCheck( pOperation, accessDesired ))
+        {
+            goto cleanup; // Access Allowed
+        }
     }
 
     // Check Access Token in connection
@@ -1001,24 +996,18 @@ VmDirSrvAccessCheckIsAdminRole(
 {
     DWORD   dwError = ERROR_SUCCESS;
     BOOLEAN bIsAdminRole = FALSE;
-    PSTR    pszBindDomainSid = NULL;
-    PSTR    pszBuildInAdminsGroupDN = NULL;
 
     if (pOperation->opType != VDIR_OPERATION_TYPE_EXTERNAL)
     {
-        bIsAdminRole = TRUE;
+        *pbIsAdminRole = TRUE;
+        goto cleanup;
     }
-    else
+
+    if ( pOperation->conn->bIsAnonymousBind ) // anonymous bind
     {
-        if ( pAccessInfo != NULL )
-        {
-            if ( pOperation->conn->bIsAnonymousBind ) // anonymous bind
-            {
-                bIsAdminRole = FALSE;
-            }
-            else
-            {
-                BAIL_ON_INVALID_ACCESSINFO(pAccessInfo, dwError);
+       *pbIsAdminRole = FALSE;
+       goto cleanup;
+    }
 
                 if (IsNullOrEmptyString(pszNormTargetDN))
                 {
@@ -1026,30 +1015,36 @@ VmDirSrvAccessCheckIsAdminRole(
                     BAIL_ON_VMDIR_ERROR(dwError);
                 }
 
-                //Check whether bindedDN is member of build-in administrators group
-                dwError = VmDirIsBindDnMemberOfSystemDomainAdmins(pOperation->pBECtx,
-                                                            pAccessInfo->pszBindedDn,
-                                                            &bIsAdminRole);
-                BAIL_ON_VMDIR_ERROR(dwError);
+    BAIL_ON_INVALID_ACCESSINFO(pAccessInfo, dwError);
 
-                // per PROD2013 requirements, member of domaincontrollergroup gets system admin rights.
-                if ( !bIsAdminRole && gVmdirServerGlobals.bvDCGroupDN.lberbv_val )
-                {
-                    dwError = VmDirIsDirectMemberOf( pAccessInfo->pszBindedDn,
-                                                     gVmdirServerGlobals.bvDCGroupDN.lberbv_val,
-                                                     &bIsAdminRole);
-                    BAIL_ON_VMDIR_ERROR(dwError);
-                }
-            }
-        }
+    //Check whether bindedDN is member of build-in administrators group
+    dwError = VmDirIsBindDnMemberOfSystemDomainAdmins(pOperation->pBECtx,
+                                                pAccessInfo,
+                                                &bIsAdminRole);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (bIsAdminRole)
+    {
+        *pbIsAdminRole = TRUE;
+        goto cleanup;
     }
+
+    // per PROD2013 requirements, member of domaincontrollergroup gets system admin rights.
+    if (gVmdirServerGlobals.bvDCGroupDN.lberbv_val == NULL)
+    {
+        *pbIsAdminRole = FALSE;
+        goto cleanup;
+    }
+
+    dwError = VmDirIsDirectMemberOf( pAccessInfo->pszBindedDn,
+                                     VDIR_ACCESS_DCGROUP_MEMBER_INFO,
+                                     &pAccessInfo->accessRoleBitmap,
+                                     &bIsAdminRole);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     *pbIsAdminRole = bIsAdminRole;
 
 cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pszBindDomainSid);
-    VMDIR_SAFE_FREE_MEMORY(pszBuildInAdminsGroupDN);
 
     return dwError;
 
@@ -1103,7 +1098,7 @@ static
 DWORD
 VmDirIsBindDnMemberOfSystemDomainAdmins(
     PVDIR_BACKEND_CTX   pBECtx,
-    PSTR                pszBindedDn,
+    PVDIR_ACCESS_INFO   pAccessInfo,
     PBOOLEAN            pbIsMemberOfAdmins
     )
 {
@@ -1113,7 +1108,15 @@ VmDirIsBindDnMemberOfSystemDomainAdmins(
     BOOLEAN             bIsMemberOfAdmins = FALSE;
     PSTR                pszAdminsGroupSid = NULL;
     PVDIR_BACKEND_CTX   pSearchOpBECtx = NULL;
+    PSTR                pszBindedDn = NULL;
 
+    if (pAccessInfo->accessRoleBitmap & VDIR_ACCESS_ADMIN_MEMBER_VALID_INFO)
+    {
+        *pbIsMemberOfAdmins = (pAccessInfo->accessRoleBitmap & VDIR_ACCESS_IS_ADMIN_MEMBER) != 0;
+        goto cleanup;
+    }
+
+    pszBindedDn = pAccessInfo->pszBindedDn;
     dwError = VmDirInitStackOperation( &SearchOp,
                                        VDIR_OPERATION_TYPE_INTERNAL,
                                        LDAP_REQ_SEARCH,
@@ -1152,12 +1155,22 @@ VmDirIsBindDnMemberOfSystemDomainAdmins(
 
     SearchOp.request.searchReq.filter = pSearchFilter;
 
+    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
+          "VmDirIsBindDnMemberOfSystemDomainAdmins: internal search for dn %s", pszBindedDn);
+
     dwError = VmDirInternalSearch(&SearchOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (SearchOp.internalSearchEntryArray.iSize > 0)
     {
         bIsMemberOfAdmins = TRUE;
+    }
+
+    pAccessInfo->accessRoleBitmap |= VDIR_ACCESS_ADMIN_MEMBER_VALID_INFO;
+    if (bIsMemberOfAdmins)
+    {
+        // Set VDIR_ACCESS_IS_ADMIN_MEMBER bit
+        pAccessInfo->accessRoleBitmap |= VDIR_ACCESS_IS_ADMIN_MEMBER;
     }
 
     *pbIsMemberOfAdmins = bIsMemberOfAdmins;

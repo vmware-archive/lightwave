@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+OASIS takes no position regarding the validity or scope of any intellectual property or other rights that might be claimed to pertain to the implementation or use of the technology described in this document or the extent to which any license under such rights might or might not be available; neither does it represent that it has made any effort to identify any such rights. Information on OASIS's procedures with respect to rights in OASIS specifications can be found at the OASIS website. Copies of claims of rights made available for publication and any assurances of licenses to be made available, or the result of an attempt made to obtain a general license or permission for the use of such proprietary rights by implementors or users of this specification, can be obtained from the OASIS Executive Director.
+OASIS invites any interested party to bring to its attention any copyrights, patents or patent applications, or other proprietary rights which may cover technology that may be required to implement this specification. Please address the information to the OASIS Executive Director.
+Copyright Â© OASIS Open 2002-2006. All Rights Reserved.
+This document and translations of it may be copied and furnished to others, and derivative works that comment on or otherwise explain it or assist in its implementation may be prepared, copied, published and distributed, in whole or in part, without restriction of any kind, provided that the above copyright notice and this paragraph are included on all such copies and derivative works. However, this document itself does not be modified in any way, such as by removing the copyright notice or references to OASIS, except as needed for the purpose of developing OASIS specifications, in which case the procedures for copyrights defined in the OASIS Intellectual Property Rights document must be followed, or as required to translate it into languages other than English.
+The limited permissions granted above are perpetual and will not be revoked by OASIS or its successors or assigns.
+This document and the information contained herein is provided on an AS IS basis and OASIS DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+-->
+<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema'
+xmlns:wsse='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd'
+xmlns:wsu='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd'
+xmlns:wsa='http://www.w3.org/2005/08/addressing'
+xmlns:wst='http://docs.oasis-open.org/ws-sx/ws-trust/200512'
+xmlns:wst14='http://docs.oasis-open.org/ws-sx/ws-trust/200802'
+xmlns:rsa='http://www.rsa.com/names/2009/12/std-ext/WS-Trust1.4/advice'
+targetNamespace='http://docs.oasis-open.org/ws-sx/ws-trust/200512'
+elementFormDefault='qualified' >
+
+  <xs:import namespace='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd'
+			 schemaLocation='oasis-200401-wss-wssecurity-secext-1.0.xsd' />
+  <xs:import namespace='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd'
+			 schemaLocation='oasis-200401-wss-wssecurity-utility-1.0.xsd' />
+  <xs:import namespace='http://www.w3.org/2005/08/addressing'
+			 schemaLocation='ws-addr.xsd' />
+  <xs:import namespace='http://www.rsa.com/names/2009/12/std-ext/WS-Trust1.4/advice'
+			 schemaLocation='rsa-advice.xsd' />
+  <xs:import namespace='http://docs.oasis-open.org/ws-sx/ws-trust/200802'
+			 schemaLocation='vmware-ws-trust-1.4.xsd' />
+
+  <!-- WS-Trust Section 3.1 -->
+  <xs:element name='RequestSecurityToken' type='wst:RequestSecurityTokenType' />
+  <xs:complexType name='RequestSecurityTokenType' >
+    <xs:annotation>
+      <xs:documentation>
+        Actual content model is non-deterministic, hence wildcard. The following shows intended content model:
+
+        &lt;xs:element ref='wst:TokenType' minOccurs='0' />
+        &lt;xs:element ref='wst:RequestType' />
+        &lt;xs:element ref='wst:Claims' minOccurs='0' />
+        &lt;xs:element ref='wst:Entropy' minOccurs='0' />
+        &lt;xs:element ref='wst:Lifetime' minOccurs='0' />
+        &lt;xs:element ref='wst:AllowPostdating' minOccurs='0' />
+        &lt;xs:element ref='wst:Renewing' minOccurs='0' />
+        &lt;xs:element ref='wst:OnBehalfOf' minOccurs='0' />
+        &lt;xs:element ref='wst:Issuer' minOccurs='0' />
+        &lt;xs:element ref='wst:AuthenticationType' minOccurs='0' />
+        &lt;xs:element ref='wst:KeyType' minOccurs='0' />
+        &lt;xs:element ref='wst:KeySize' minOccurs='0' />
+        &lt;xs:element ref='wst:SignatureAlgorithm' minOccurs='0' />
+        &lt;xs:element ref='wst:Encryption' minOccurs='0' />
+        &lt;xs:element ref='wst:EncryptionAlgorithm' minOccurs='0' />
+        &lt;xs:element ref='wst:CanonicalizationAlgorithm' minOccurs='0' />
+        &lt;xs:element ref='wst:ProofEncryption' minOccurs='0' />
+        &lt;xs:element ref='wst:UseKey' minOccurs='0' />
+        &lt;xs:element ref='wst:SignWith' minOccurs='0' />
+        &lt;xs:element ref='wst:EncryptWith' minOccurs='0' />
+        &lt;xs:element ref='wst:DelegateTo' minOccurs='0' />
+        &lt;xs:element ref='wst:Forwardable' minOccurs='0' />
+        &lt;xs:element ref='wst:Delegatable' minOccurs='0' />
+        &lt;xs:any namespace='##other' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element ref='wst:TokenType' minOccurs='0' />
+      <xs:element ref='wst:RequestType' />
+      <xs:element ref='wst:Lifetime' minOccurs='0' />
+      <xs:element ref='wst:ValidateTarget' minOccurs='0' />
+      <xs:element ref='wst:RenewTarget' minOccurs='0' />
+      <xs:element ref='wst:Renewing' minOccurs='0' />
+      <xs:element ref='wst:DelegateTo' minOccurs='0' />
+      <xs:element ref='wst:Delegatable' minOccurs='0' />
+      <xs:element ref='wst14:ActAs' minOccurs='0' />
+      <xs:element ref='wst:UseKey' minOccurs='0' />
+      <xs:element ref='wst:KeyType' minOccurs='0' />
+      <xs:element ref='wst:SignatureAlgorithm' minOccurs='0' />
+      <xs:element ref='wst:BinaryExchange' minOccurs='0' />
+      <xs:element ref='wst:Participants' minOccurs='0' />
+	  <xs:element ref='rsa:AdviceSet' minOccurs='0' />
+    </xs:sequence>
+    <xs:attribute name='Context' type='xs:anyURI' use='optional' />
+  </xs:complexType>
+
+  <xs:element name='TokenType' type='xs:anyURI' />
+
+  <xs:element name='RequestType' type='wst:RequestTypeOpenEnum' />
+
+  <xs:simpleType name='RequestTypeOpenEnum' >
+    <xs:union memberTypes='wst:RequestTypeEnum xs:anyURI' />
+  </xs:simpleType>
+
+  <xs:simpleType name='RequestTypeEnum' >
+    <xs:restriction base='xs:anyURI' >
+      <xs:enumeration value='http://docs.oasis-open.org/ws-sx/ws-trust/200512/Issue' />
+      <xs:enumeration value='http://docs.oasis-open.org/ws-sx/ws-trust/200512/Renew' />
+      <xs:enumeration value='http://docs.oasis-open.org/ws-sx/ws-trust/200512/Cancel' />
+      <xs:enumeration value='http://docs.oasis-open.org/ws-sx/ws-trust/200512/STSCancel' />
+      <xs:enumeration value='http://docs.oasis-open.org/ws-sx/ws-trust/200512/Validate' />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- WS-Trust Section 3.2 -->
+  <xs:element name='RequestSecurityTokenResponse' type='wst:RequestSecurityTokenResponseType' />
+  <xs:complexType name='RequestSecurityTokenResponseType' >
+    <xs:annotation>
+      <xs:documentation>
+        Actual content model is non-deterministic, hence wildcard. The following shows intended content model:
+
+        &lt;xs:element ref='wst:TokenType' minOccurs='0' />
+        &lt;xs:element ref='wst:RequestType' />
+        &lt;xs:element ref='wst:RequestedSecurityToken'  minOccurs='0' />
+        &lt;xs:element ref='wst:RequestedAttachedReference' minOccurs='0' />
+        &lt;xs:element ref='wst:RequestedUnattachedReference' minOccurs='0' />
+        &lt;xs:element ref='wst:RequestedProofToken' minOccurs='0' />
+        &lt;xs:element ref='wst:Entropy' minOccurs='0' />
+        &lt;xs:element ref='wst:Lifetime' minOccurs='0' />
+        &lt;xs:element ref='wst:Status' minOccurs='0' />
+        &lt;xs:element ref='wst:AllowPostdating' minOccurs='0' />
+        &lt;xs:element ref='wst:Renewing' minOccurs='0' />
+        &lt;xs:element ref='wst:OnBehalfOf' minOccurs='0' />
+        &lt;xs:element ref='wst:Issuer' minOccurs='0' />
+        &lt;xs:element ref='wst:AuthenticationType' minOccurs='0' />
+        &lt;xs:element ref='wst:Authenticator' minOccurs='0' />
+        &lt;xs:element ref='wst:KeyType' minOccurs='0' />
+        &lt;xs:element ref='wst:KeySize' minOccurs='0' />
+        &lt;xs:element ref='wst:SignatureAlgorithm' minOccurs='0' />
+        &lt;xs:element ref='wst:Encryption' minOccurs='0' />
+        &lt;xs:element ref='wst:EncryptionAlgorithm' minOccurs='0' />
+        &lt;xs:element ref='wst:CanonicalizationAlgorithm' minOccurs='0' />
+        &lt;xs:element ref='wst:ProofEncryption' minOccurs='0' />
+        &lt;xs:element ref='wst:UseKey' minOccurs='0' />
+        &lt;xs:element ref='wst:SignWith' minOccurs='0' />
+        &lt;xs:element ref='wst:EncryptWith' minOccurs='0' />
+        &lt;xs:element ref='wst:DelegateTo' minOccurs='0' />
+        &lt;xs:element ref='wst:Forwardable' minOccurs='0' />
+        &lt;xs:element ref='wst:Delegatable' minOccurs='0' />
+        &lt;xs:any namespace='##other' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:choice>
+        <xs:sequence>
+          <xs:element ref='wst:RequestedSecurityToken' />
+          <xs:element ref='wst:Lifetime' />
+        </xs:sequence>
+        <xs:element ref='wst:Status' />
+      </xs:choice>
+      <xs:element ref='wst:BinaryExchange' minOccurs='0' />
+      <xs:element ref='wst:TokenType' />
+      <xs:element ref='wst:Renewing' minOccurs='0' />
+      <xs:element ref='wst:KeyType' minOccurs='0' />
+      <xs:element ref='wst:Delegatable' minOccurs='0' />
+      <xs:element ref='wst:SignatureAlgorithm' minOccurs='0' />
+	  <xs:element ref='rsa:AdviceSet' minOccurs='0' />
+    </xs:sequence>
+    <xs:attribute name='Context' type='xs:anyURI' use='optional' />
+  </xs:complexType>
+
+
+
+  <xs:element name='RequestedSecurityToken' type='wst:RequestedSecurityTokenType' />
+  <xs:complexType name='RequestedSecurityTokenType' >
+    <xs:sequence>
+      <xs:any namespace='##any' processContents='skip' />
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- WS-Trust Section 3.3 -->
+
+  <!-- WS-Trust Section 4.1 -->
+
+  <xs:element name='Lifetime' type='wst:LifetimeType' />
+  <xs:complexType name='LifetimeType' >
+    <xs:sequence>
+      <xs:element ref='wsu:Created' />
+      <xs:element ref='wsu:Expires' />
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- WS-Trust Section 4.2 -->
+
+  <xs:element name='RequestSecurityTokenResponseCollection' type='wst:RequestSecurityTokenResponseCollectionType' />
+  <xs:complexType name='RequestSecurityTokenResponseCollectionType' >
+    <xs:annotation>
+      <xs:documentation>
+        The &lt;wst:RequestSecurityTokenResponseCollection> element (RSTRC) MUST be used to return a security token or 
+        response to a security token request on the final response.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element ref='wst:RequestSecurityTokenResponse' />
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- WS-Trust Section 4.3 -->
+
+  <!-- WS-Trust Section 6.4 -->
+
+  <!-- WS-Trust Section 5 -->
+  <xs:element name='RenewTarget' type='wst:RenewTargetType' />
+  <xs:complexType name='RenewTargetType' >
+    <xs:sequence>
+      <xs:any namespace='##other' minOccurs='1' maxOccurs='1' />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name='AllowPostdating' type='wst:AllowPostdatingType' />
+  <xs:complexType name='AllowPostdatingType' />
+
+  <xs:element name='Renewing' type='wst:RenewingType' />
+  <xs:complexType name='RenewingType' >
+    <xs:attribute name='Allow' type='xs:boolean' use='optional' />
+    <xs:attribute name='OK' type='xs:boolean' use='optional' />
+  </xs:complexType>
+
+  <!-- WS-Trust Section 6 -->
+
+  <!-- WS-Trust Section 7 -->
+  <xs:element name='ValidateTarget' type='wst:ValidateTargetType' />
+  <xs:complexType name='ValidateTargetType' >
+    <xs:sequence>
+      <xs:any namespace='##other' minOccurs='1' maxOccurs='1' processContents='skip' />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name='Status' type='wst:StatusType' />
+  <xs:complexType name='StatusType' >
+    <xs:sequence>
+      <xs:element name='Code' type='wst:StatusCodeOpenEnum' />
+      <xs:element name='Reason' type='xs:string' minOccurs='0' />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:simpleType name='StatusCodeEnum' >
+    <xs:restriction base='xs:anyURI' >
+      <xs:enumeration value='http://docs.oasis-open.org/ws-sx/ws-trust/200512/status/valid' />
+      <xs:enumeration value='http://docs.oasis-open.org/ws-sx/ws-trust/200512/status/invalid' />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name='StatusCodeOpenEnum' >
+    <xs:union memberTypes='wst:StatusCodeEnum xs:anyURI' />
+  </xs:simpleType>
+
+  <!-- WS-Trust Section 8.2 -->
+
+  <!-- WS-Trust Section 8.3 -->
+  <xs:element name='BinaryExchange' type='wst:BinaryExchangeType' />
+  <xs:complexType name='BinaryExchangeType' >
+    <xs:simpleContent>
+      <xs:extension base='xs:string' >
+        <xs:attribute name='ValueType' type='xs:anyURI' use='required' />
+        <xs:attribute name='EncodingType' type='xs:anyURI' use='required' />
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <!-- WS-Trust Section 8.4 -->
+
+  <!-- WS-Trust Section 8.9 -->
+
+  <!-- WS-Trust Section 9.1 -->
+
+  <!-- WS-Trust Section 9.2 -->
+
+  <xs:element name='KeyType' type='wst:KeyTypeOpenEnum' />
+
+  <xs:simpleType name='KeyTypeEnum' >
+    <xs:restriction base='xs:anyURI' >
+      <xs:enumeration value='http://docs.oasis-open.org/ws-sx/ws-trust/200512/PublicKey' />
+      <xs:enumeration value='http://docs.oasis-open.org/ws-sx/ws-trust/200512/SymmetricKey' />
+      <xs:enumeration value='http://docs.oasis-open.org/wssx/wstrust/200512/Bearer' />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name='KeyTypeOpenEnum' >
+    <xs:union memberTypes='wst:KeyTypeEnum xs:anyURI' />
+  </xs:simpleType>
+
+  <xs:element name='SignatureAlgorithm' type='xs:anyURI' />
+
+  <xs:element name='UseKey' type='wst:UseKeyType' />
+  <xs:complexType name='UseKeyType' >
+    <xs:attribute name='Sig' type='xs:anyURI' use='optional' />
+  </xs:complexType>
+
+  <!-- WS-Trust Section 9.3 -->
+  <xs:element name='DelegateTo' type='wst:DelegateToType' />
+
+  <xs:complexType name='DelegateToType' >
+    <xs:sequence>
+      <xs:any namespace='##any' processContents='lax' />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name='Delegatable' type='xs:boolean' />
+
+  <!-- WS-Trust Section 9.5 -->
+  <xs:element name='Participants' type='wst:ParticipantsType' />
+  <xs:complexType name='ParticipantsType' >
+    <xs:sequence>
+      <xs:element name='Primary' type='wst:ParticipantType' minOccurs='0' />
+      <xs:element name='Participant' type='wst:ParticipantType' minOccurs='0' maxOccurs='unbounded' />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name='ParticipantType' >
+    <xs:sequence>
+      <xs:element ref='wsa:EndpointReference' />
+    </xs:sequence>
+  </xs:complexType>
+
+</xs:schema>

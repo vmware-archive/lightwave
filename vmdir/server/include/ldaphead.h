@@ -63,11 +63,6 @@ VmDirFreeAccessInfo(
     );
 
 // controls.c
-int
-CreateSyncRequestControl(
-    VMDIR_REPLICATION_AGREEMENT * replAgr,
-    LDAPControl*                 syncReqCtrl);
-
 void
 DeleteControls(
    VDIR_LDAP_CONTROL ** controls);
@@ -81,6 +76,12 @@ int
 ParseSyncStateControlVal(
     BerValue *  controlValue,
     int *       entryState);
+
+int
+ParseAndFreeSyncStateControl(
+    LDAPControl ***pCtrls,
+    int *piEntryState
+    );
 
 int
 WriteSyncDoneControl(
@@ -123,10 +124,6 @@ int
 AppendDNFilter(
 	VDIR_OPERATION *    op);
 
-int
-AppendUSNChangedFilter(
-    VDIR_OPERATION *    op);
-
 VDIR_FILTER_COMPUTE_RESULT
 CheckIfEntryPassesFilter(
     VDIR_OPERATION * op,
@@ -138,10 +135,11 @@ DeleteFilter(
    VDIR_FILTER * f
    );
 
-void
+DWORD
 FilterToStrFilter(
-   VDIR_FILTER *   f,
-   VDIR_BERVALUE * strFilter );
+   PVDIR_FILTER f,
+   PVDIR_BERVALUE strFilter
+   );
 
 int
 ParseFilter(
@@ -247,12 +245,16 @@ VmDirOPStatisticGetAvgTime(
 
 uint64_t
 VmDirOPStatisticGetCount(
-    PVMDIR_OPERATION_STATISTIC   pStatistic
+    ber_tag_t opTag
     );
 
 PSTR
 VmDirOPStatistic(
     ber_tag_t      opTag
     );
+
+PCSTR
+VmDirGetOperationStringFromTag(
+    ber_tag_t opTag);
 
 #endif /* LH_H_ */

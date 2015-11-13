@@ -1,0 +1,19 @@
+/*
+ * Copyright (C) 2015 VMware, Inc. All rights reserved.
+ *
+ * Module   : defines.h
+ *
+ * Abstract :
+ *
+ *            VMware afd Service
+ *
+ *            afd main
+ *
+ *            Defines that come from configure
+ */
+
+
+#define VMAFD_LOG_FILE        "/var/log/vmware/vmafd/vmafdd.log"
+#define VMAFD_KRB5_CONF       "@VMAFD_KRB5CONF_FILEPATH@"
+#define VMAFD_KEYTAB_PATH     "@VMAFD_KEYTAB_CONFIG_DIR@/krb5.keytab"
+#define VMAFD_TRUSTED_ROOT_DOWNLOAD_PATH     "/etc/vmware-vpx/docRoot/certs"

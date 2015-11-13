@@ -29,8 +29,6 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 
 #include <dce/uuid.h>
 #include <dce/dcethread.h>
-#include <lw/security-api.h>
-
 
 #include <ldap.h>
 #include <openssl/ssl.h>
@@ -116,6 +114,56 @@ typedef enum _VMDIR_FIRST_REPL_CYCLE_MODE
     FIRST_REPL_CYCLE_MODE_USE_COPIED_DB,
     FIRST_REPL_CYCLE_MODE_OBJECT_BY_OBJECT,
 } VMDIR_FIRST_REPL_CYCLE_MODE;
+
+typedef struct _VMDIR_CIRCULAR_BUFFER
+{
+    //
+    // Maximum number of entries.
+    //
+    DWORD dwCapacity;
+
+    //
+    // The spot where we will write the next entry.
+    //
+    DWORD dwHead;
+
+    //
+    // Current number of entries.
+    //
+    DWORD dwSize;
+
+    //
+    // Size of individual elements in the buffer.
+    //
+    DWORD dwElementSize;
+
+    //
+    // Actual objects.
+    //
+    PBYTE CircularBuffer;
+
+    //
+    // Lock for making our operations thread-safe.
+    //
+    PVMDIR_MUTEX mutex;
+} VMDIR_CIRCULAR_BUFFER, *PVMDIR_CIRCULAR_BUFFER;
+
+typedef const VMDIR_CIRCULAR_BUFFER* PCVMDIR_CIRCULAR_BUFFER;
+typedef BOOLEAN (*CIRCULAR_BUFFER_SELECT_CALLBACK)(PVOID pElement, PVOID pContext);
+
+typedef struct
+{
+    PCSTR *pStringList;
+    DWORD dwCount; // Current count.
+    DWORD dwSize; // Max number of strings we can store currently.
+} VMDIR_STRING_LIST, *PVMDIR_STRING_LIST;
+
+#ifdef _WIN32
+typedef HINSTANCE   VMDIR_LIB_HANDLE;
+#else
+#include <dlfcn.h>
+typedef VOID*       VMDIR_LIB_HANDLE;
+#endif
 
 ULONG
 VmDirRpcAllocateMemory(
@@ -245,6 +293,13 @@ ULONG
 VmDirAllocateStringA(
     PCSTR pszSrc,
     PSTR* ppszDst
+    );
+
+DWORD
+VmDirAllocateStringOfLenA(
+    PCSTR   pszSource,
+    DWORD   dwLength,
+    PSTR*   ppszDestination
     );
 
 ULONG
@@ -413,6 +468,19 @@ VmDirStringNPrintFA(
     ...
 );
 
+DWORD
+VmDirStringGetTokenByIdx(
+    PCSTR   pszTarget,      // target string to find token
+    PCSTR   pszDelimiter,   // delimiter
+    DWORD   dwIdx,          // must be >= 1
+    PSTR*   ppszResult
+    );
+
+VOID
+VmdDirSchemaParseNormalizeElement(
+    PSTR        pszElement
+    );
+
 #ifdef _WIN32
 
 DWORD
@@ -546,9 +614,57 @@ VmKdcGenerateRandomPassword(
     DWORD pwLen,
     PSTR *ppRandPwd);
 
-#ifdef _WIN32
+// cmd line args parsing helpers
 
-//cmd line args parsing helpers
+typedef VOID (*USAGE_FUNCTION)(PVOID pContext);
+typedef DWORD (*POST_VALIDATION_CALLBACK)(PVOID pContext);
+typedef DWORD (*COMMAND_PARAMETER_CALLBACK_NO_PARAM)(PVOID pContext);
+typedef DWORD (*COMMAND_PARAMETER_CALLBACK_STRING_PARAM)(PVOID pContext, PCSTR Parameter);
+typedef DWORD (*COMMAND_PARAMETER_CALLBACK_INTEGER_PARAM)(PVOID pContext, DWORD Parameter);
+
+typedef enum
+{
+    CL_NO_PARAMETER,
+    CL_STRING_PARAMETER,
+    CL_INTEGER_PARAMETER
+} VMDIR_COMMAND_LINE_PARAMETER_TYPE;
+
+typedef struct
+{
+    char Switch; // e.g., 's', for "-s".
+    const char *LongSwitch; // e.g., "silent", for "--silent".
+    VMDIR_COMMAND_LINE_PARAMETER_TYPE Type; // If this flag takes a parameter (and, if so, what kind).
+    PVOID Callback; // The function we call when this flag is seen.
+} VMDIR_COMMAND_LINE_OPTION, *PVMDIR_COMMAND_LINE_OPTION;
+
+typedef struct
+{
+    //
+    // We call this if the app should print its usage to the command line (i.e., the
+    // user gave incorrect parameters to the command).
+    //
+    USAGE_FUNCTION ShowUsage;
+
+    //
+    // This is called after all parameters have been parsed and allows for the client
+    // to do cross-parameter validation.
+    //
+    POST_VALIDATION_CALLBACK ValidationRoutine;
+
+    //
+    // The command line options that this client supports.
+    //
+    VMDIR_COMMAND_LINE_OPTION Options[];
+} VMDIR_COMMAND_LINE_OPTIONS, *PVMDIR_COMMAND_LINE_OPTIONS;
+
+DWORD
+VmDirParseArguments(
+    PVMDIR_COMMAND_LINE_OPTIONS Options,
+    PVOID pvContext,
+    int argc,
+    PSTR *argv
+    );
+
 BOOLEAN
 VmDirIsCmdLineOption(
     PSTR pArg
@@ -578,6 +694,8 @@ VmDirGetCmdLineInt64Option(
     int64_t* pValue
 );
 
+#ifdef _WIN32
+
 DWORD
 VmDirAllocateArgsAFromArgsW(
     int argc,
@@ -599,7 +717,9 @@ VmDirGetEnvironmentVariable(
 );
 
 DWORD
-VmDirMDBGetHomeDir(_TCHAR *lpHomeDirBuffer);
+VmDirMDBGetHomeDir(
+    _TCHAR *lpHomeDirBuffer
+    );
 #endif
 
 
@@ -641,27 +761,43 @@ typedef enum
 
 } VMDIR_SYNC_MECHANISM;
 
-#ifdef _WIN32
+#define VMDIR_NAME                          "vmdir"
+#define VMAFD_NAME                          "vmafd"
+
+#ifndef _WIN32
+#ifndef VMDIR_CONFIG_SASL2_LIB_PATH
+#define VMDIR_CONFIG_SASL2_LIB_PATH        "/opt/likewise/lib64/sasl2"
+#endif
+#else
 #define VDMIR_CONFIG_SASL2_KEY_PATH         "SOFTWARE\\Carnegie Mellon\\Project Cyrus\\SASL Library"
 #endif
 
 #ifndef _WIN32
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH     "Services\\Vmdir"
+#define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "Services\\Vmdir\\Parameters"
+#define VMDIR_LINUX_DB_PATH                 VMDIR_DB_DIR "/"
 #else
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH     "SYSTEM\\CurrentControlSet\\services\\VMWareDirectoryService"
+#define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "SYSTEM\\CurrentControlSet\\services\\VMWareDirectoryService\\Parameters"
 #define VMDIR_CONFIG_SOFTWARE_KEY_PATH      "SOFTWARE\\VMware, Inc.\\VMware Directory Services"
+#define WIN_SYSTEM32_PATH                   "c:\\windows\\system32"
 #endif
 
 #ifndef _WIN32
+#define VMAFD_CONFIG_KEY_ROOT               "Services\\Vmafd"
 #define VMAFD_CONFIG_PARAMETER_KEY_PATH     "Services\\Vmafd\\Parameters"
+#define VMAFD_REG_KEY_PATH                  "Path"
 #else
 #define VMAFD_CONFIG_PARAMETER_KEY_PATH     "SYSTEM\\CurrentControlSet\\Services\\VMwareAfdService\\Parameters"
+#define VMAFD_CONFIG_SOFTWARE_KEY_PATH      "SOFTWARE\\VMware, Inc.\\VMware Afd Services"
 #endif
 
 #define VMDIR_REG_KEY_SITE_GUID             "SiteGuid"
 #define VMDIR_REG_KEY_LDU_GUID              "LduGuid"
 #define VMDIR_REG_KEY_KEYTAB_FILE           "KeytabPath"
 
+#define VMAFD_REG_KEY_DOMAIN_NAME           "DomainName"
+#define VMAFD_REG_KEY_DC_NAME               "DCName"
 #define VMDIR_REG_KEY_DC_ACCOUNT            "dcAccount"
 #define VMDIR_REG_KEY_DC_ACCOUNT_DN         "dcAccountDN"
 #define VMDIR_REG_KEY_DC_ACCOUNT_PWD        "dcAccountPassword"
@@ -670,9 +806,11 @@ typedef enum
 #define VMDIR_REG_KEY_CONFIG_PATH           "ConfigPath"
 #define VMDIR_REG_KEY_DATA_PATH             "DataPath"
 #define VMDIR_REG_KEY_LOG_PATH              "LogsPath"
+#define VMDIR_REG_KEY_INSTALL_PATH          "InstallPath"
 #define VMDIR_REG_KEY_MAXIMUM_OLD_LOGS      "MaximumOldLogs"
 #define VMDIR_REG_KEY_MAXIMUM_LOG_SIZE      "MaximumLogSize"
 #define VMDIR_REG_KEY_MAXIMUM_DB_SIZE_MB    "MaximumDbSizeMb"
+#define VMDIR_REG_KEY_DISABLE_VECS_INTEGRATION    "DisableVECSIntegration"
 
 #define VMAFD_REG_KEY_KRB5_CONF             "Krb5Conf"
 
@@ -916,6 +1054,15 @@ VmDirGetHostName(
 );
 
 DWORD
+VmDirGetNetworkInfoFromSocket(
+    ber_socket_t fd,
+    PSTR pszAddress,
+    DWORD dwAddressLen,
+    PDWORD pdwPort,
+    BOOLEAN bPeerInfo
+    );
+
+DWORD
 VmDirAllocateStringFromSocket(
     int fd,
     BOOLEAN bLocalIsServer,
@@ -939,6 +1086,11 @@ dequeCreate(
 
 VOID
 dequeFree(
+    PDEQUE pDeque
+    );
+
+PDEQUE_NODE
+dequeHeadNode(
     PDEQUE pDeque
     );
 
@@ -1010,6 +1162,11 @@ VmDirRegReadDCAccount(
     );
 
 DWORD
+VmDirRegReadDCAccountDn(
+    PSTR* ppszDCAccount
+    );
+
+DWORD
 VmDirRegReadKrb5Conf(
     PSTR* ppszKrb5Conf
     );
@@ -1032,7 +1189,15 @@ DWORD
 VmDirGetRegKeyValueDword(
     PCSTR   pszConfigParamKeyPath,
     PCSTR   pszKey,
-    PDWORD  pdwValue
+    PDWORD  pdwValue,
+    DWORD   dwDefaultValue
+    );
+
+DWORD
+VmDirSetRegKeyValueDword(
+    PCSTR pszConfigParamKeyPath,
+    PCSTR pszKey,
+    DWORD dwValue
     );
 
 DWORD
@@ -1040,6 +1205,27 @@ VmDirGetRegKeyValueQword(
     PCSTR   pszConfigParamKeyPath,
     PCSTR   pszKey,
     PINT64  pi64Value
+    );
+
+DWORD
+VmDirLoadLibrary(
+    PCSTR           pszLibPath,
+    VMDIR_LIB_HANDLE* ppLibHandle
+    );
+
+VOID
+VmDirCloseLibrary(
+    VMDIR_LIB_HANDLE  pLibHandle
+    );
+
+#ifdef _WIN32
+FARPROC WINAPI
+#else
+VOID*
+#endif
+VmDirGetLibSym(
+    VMDIR_LIB_HANDLE  pLibHandle,
+    PCSTR           pszFunctionName
     );
 
 DWORD
@@ -1153,16 +1339,6 @@ VmDirReadString(
     PSTR szString,
     int len,
     BOOLEAN bHideString
-    );
-
-DWORD
-VmDirOpensslClientInit(
-    VOID
-    );
-
-VOID
-VmDirOpensslClientShutdown(
-    VOID
     );
 
 DWORD
@@ -1283,6 +1459,18 @@ VmDirFreeUserCreateParamsA(
 VOID
 VmDirFreeUserCreateParamsW(
     PVMDIR_USER_CREATE_PARAMS_W pCreateParams
+    );
+
+DWORD
+VmDirLdapURI2Host(
+    PCSTR   pszURI,
+    PSTR*   ppszHost
+    );
+
+DWORD
+VmDirUPNToUserName(
+    PCSTR pszUPN,
+    PSTR* ppszSrcUserName
     );
 
 //IPC
@@ -1513,6 +1701,222 @@ VmDirAllocateNameFromContext (
 DWORD
 VmDirGetMaxDbSizeMb(
     PDWORD pMaxDbSizeMb
+    );
+
+// why PSTR? pass in a buffer but no length?
+DWORD
+VmDirGetLocalLduGuid(
+    PSTR pszLduGuid
+    );
+
+// why PSTR? pass in a buffer but no length?
+DWORD
+VmDirGetLocalSiteGuid(
+    PSTR pszSiteGuid
+    );
+
+// following functions are in libvmdirclient but should not be published in vmdirclient.h
+DWORD
+VmDirGetUsnFromPartners(
+    PCSTR pszHostName,
+    USN   *pUsn
+    );
+
+VOID
+VmDirRpcFreeSuperLogEntryLdapOperationArray(
+    PVMDIR_SUPERLOG_ENTRY_LDAPOPERATION_ARRAY pRpcEntries
+    );
+
+// Utility functions for Schema Comparison
+DWORD
+VmDirGetSchemaEntry (
+    LDAP**  ppLd ,
+    PSTR    pszHostName ,
+    PSTR    pszUPN ,
+    PSTR    pszPasswordBuf ,
+    PSTR    pszAtrrs[],
+    LDAPMessage**  ppEntry ,
+    LDAPMessage**  ppResult
+    );
+
+DWORD
+VmDirGetSchemaAttributeValue (
+    LDAP*        pLd   ,
+    LDAPMessage* pEntry ,
+    PSTR         pszAttributeName ,
+    DWORD        dwAttibuteIndex ,
+    PSTR*        pszAttributeValues[] ,
+    DWORD*       dwValueCount,
+    BOOLEAN      bNormalizeValue
+    );
+
+DWORD
+VmDirCompareSchemaValues (
+    PSTR*   pszBaseAttributeValues[] ,
+    PSTR*   pszPartnerAttributeValues[] ,
+    DWORD   dwIndex,
+    DWORD   dwBaseValueCount ,
+    DWORD   dwPartnerValueCount ,
+    PVMDIR_SCHEMA_DIFF  pSchemaDiff ,
+    DWORD   dwHostNumber
+    );
+
+DWORD
+VmDirExtractSchemaValues (
+    PSTR       pszCurrentHost ,
+    PSTR       pszUPN ,
+    PSTR       pszPassWord,
+    PSTR       pszAttributes[],
+    DWORD      dwAttributeCount,
+    PSTR*      pszAttributeValues[] ,
+    DWORD      dwPartnerValueCount[],
+    BOOLEAN    bNormalizeValue
+    );
+
+
+DWORD
+VmDirCheckSchemaAttrVersion (
+    PSTR*   pszBaseAttributeValues[],
+    PSTR*   pszPartnerAttributeValues[],
+    DWORD   dwIndex ,
+    DWORD   dwValueCount,
+    PVMDIR_SCHEMA_DIFF  pSchemaDiff,
+    DWORD   dwCurrentDiffCount
+    );
+
+DWORD
+VmDirCnFromRdn (
+    PSTR  pszURI ,
+    PSTR* ppszHostName
+    );
+
+DWORD
+VmDirGetSubstringBeforeToken(
+    PCSTR  pszMetaDataValue ,
+    PSTR*  ppszMetaDataType ,
+    CHAR   delimiter
+);
+
+DWORD
+VmDirNormalizeHostName(
+    PSTR   pszHostName,
+    PSTR*  ppszNormalisedName
+);
+
+VOID
+VmDirSchemaDiffFree (
+    PVMDIR_SCHEMA_DIFF  pSchemaDiff,
+    DWORD  dwSchemaDiffSize
+);
+
+VOID
+VmDirSchemaAttributesFree (
+    PSTR**  pszAttributeValues,
+    DWORD   dwValueCount[],
+    DWORD   dwNumAttributes
+);
+
+DWORD
+VmDirSynchSchemaAttrMetadataVersion(
+    PSTR   pszBaseHostName ,
+    PSTR   pszUPN ,
+    PSTR   pszPassword ,
+    PSTR   pszAttributeName
+);
+
+DWORD
+VmDirFindMostUpdatedNodeWithAttribute(
+    PVMDIR_SERVER_INFO pServerInfo,
+    DWORD  dwNumServer,
+    PSTR   pszAttributeName,
+    PSTR   pszUPN,
+    PSTR   pszPassword,
+    PSTR*  ppszHostName
+);
+
+DWORD
+VmDirGetMetaDataVersionForAttribute(
+    PSTR     pszHostName,
+    PSTR     pszUPN,
+    PSTR     pszPassword,
+    PSTR     pszAttributeName,
+    DWORD*   pdwVersion
+);
+
+DWORD
+VmDirCircularBufferCreate(
+    DWORD dwCapacity,
+    DWORD dwElementSize,
+    PVMDIR_CIRCULAR_BUFFER *ppCircularBuffer
+    );
+
+VOID VmDirCircularBufferFree(
+    PVMDIR_CIRCULAR_BUFFER pCircularBuffer
+    );
+
+DWORD
+VmDirCircularBufferReset(
+    PVMDIR_CIRCULAR_BUFFER pCircularBuffer
+    );
+
+DWORD
+VmDirCircularBufferGetSize(
+    PVMDIR_CIRCULAR_BUFFER pCircularBuffer,
+    PDWORD pSize
+    );
+
+DWORD
+VmDirCircularBufferGetCapacity(
+    PVMDIR_CIRCULAR_BUFFER pCircularBuffer,
+    PDWORD pdwCapacity
+    );
+
+DWORD
+VmDirCircularBufferSetCapacity(
+    PVMDIR_CIRCULAR_BUFFER pCircularBuffer,
+    DWORD dwCapacity
+    );
+
+PVOID
+VmDirCircularBufferGetNextEntry(
+    PVMDIR_CIRCULAR_BUFFER pCircularBuffer
+    );
+
+DWORD
+VmDirCircularBufferSelectElements(
+    PVMDIR_CIRCULAR_BUFFER pCircularBuffer,
+    DWORD dwCount,
+    CIRCULAR_BUFFER_SELECT_CALLBACK Callback,
+    PVOID pContext
+    );
+
+DWORD
+VmDirStringListInitialize(
+    PVMDIR_STRING_LIST *ppStringList,
+    DWORD dwInitialCount
+    );
+
+VOID
+VmDirStringListFree(
+    PVMDIR_STRING_LIST pStringList
+    );
+
+DWORD
+VmDirStringListAdd(
+    PVMDIR_STRING_LIST pStringList,
+    PCSTR pszString
+    );
+
+DWORD
+VmDirStringListRemove(
+    PVMDIR_STRING_LIST pStringList,
+    PCSTR pszString
+    );
+
+BOOLEAN
+VmDirStringListContains(
+    PVMDIR_STRING_LIST pStringList,
+    PCSTR pszString
     );
 
 #ifdef __cplusplus

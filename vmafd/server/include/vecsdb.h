@@ -293,32 +293,6 @@ VecsDbVerifyCertificate(
     );
 
 DWORD
-VecsInsertCertificate(
-    PVECS_DB_CERTIFICATE_ENTRY pEntry
-    );
-
-DWORD
-VecsEnumCertificates(
-    unsigned int dwStartIndex,
-    unsigned int dwNumCertificates,
-    CERTIFICATE_STORE_TYPE dwStatus,
-    PVMAFD_CERT_ARRAY* ppCertArray
-);
-
-
-DWORD
-VecsGetCertificatebyAlias(
-    PCWSTR pwszAlias,
-    PDWORD pdwCount,
-    PVMAFD_CERT_CONTAINER* pContainer
-);
-
-
-DWORD
-VecsDeleteCertificateByAlias(PCWSTR pwszAlias);
-
-
-DWORD
 VecsDbQueryCertificateByAlias(
     PVECS_DB_CONTEXT            pDbContext,
     PVECS_DB_CERTIFICATE_ENTRY* ppCertEntryArray,

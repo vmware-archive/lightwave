@@ -65,6 +65,7 @@
 
 #include	<krb5.h>
 #include "srp_util.h"
+#include "includes.h"
 #include "gssapi_alloc.h"
 
 
@@ -86,7 +87,8 @@ static gss_buffer_desc make_err_msg(char *);
 
 /* SRP oid structure */
 static const gss_OID_desc srp_gss_oid_array[] = {
-    {SRP_OID_LENGTH, SRP_OID},
+    {GSS_SRP_MECH_OID_LENGTH, GSS_SRP_MECH_OID},
+    {GSSAPI_SRP_MECH_OID_LENGTH, GSSAPI_SRP_MECH_OID},
 
     /* 2.1.1. Kerberos Principal Name Form:  (rfc 1964)
      * This name form shall be represented by the Object Identifier {iso(1)
@@ -95,13 +97,18 @@ static const gss_OID_desc srp_gss_oid_array[] = {
      * is "GSS_KRB5_NT_PRINCIPAL_NAME". */
     {10, "\052\206\110\206\367\022\001\002\002\001"},
 
-    /* 1.3.6.1.4.1.27433.3.1 */
-    {10, "\x2b\x06\x01\x04\x01\x81\xd6\x29\x03\x01"},
+    /* 1.3.6.1.4.1.27433.3.1: NTLM OID, stolen from NTLM*/
+    {GSS_CRED_OPT_PW_LEN, GSS_CRED_OPT_PW},
+
+    /* 1.3.6.1.4.1.6876.11711.2.1.1.1: SRP cred option pwd OID */
+    {GSSAPI_SRP_CRED_OPT_PW_LEN, GSSAPI_SRP_CRED_OPT_PW},
 };
 
 const gss_OID_desc * const gss_mech_srp_oid           = srp_gss_oid_array+0;
-const gss_OID_desc * const gss_nt_srp_name_oid        = srp_gss_oid_array+1;
-const gss_OID_desc * const gss_srp_password_oid       = srp_gss_oid_array+2;
+const gss_OID_desc * const gss_mech_gssapi_srp_oid    = srp_gss_oid_array+1;
+const gss_OID_desc * const gss_nt_srp_name_oid        = srp_gss_oid_array+2;
+const gss_OID_desc * const gss_srp_password_oid       = srp_gss_oid_array+3;
+const gss_OID_desc * const gss_srp_cred_opt_pw_oid    = srp_gss_oid_array+4;
 /*const gss_OID_desc * const GSS_KRB5_NT_PRINCIPAL_NAME = srp_gss_oid_array+1; */
 
 int gss_srpint_lib_init(void)
@@ -525,10 +532,14 @@ srp_gssspi_set_cred_option(OM_uint32 *minor_status,
 #else
     srp_cred = (srp_gss_cred_id_t) cred_handle;
 #endif
-    if (desired_object->length == GSS_SRP_PASSWORD_LEN &&
-        memcmp(desired_object->elements,
-               GSS_SRP_PASSWORD_OID,
-               GSS_SRP_PASSWORD_LEN) == 0)
+    if ((desired_object->length == GSS_CRED_OPT_PW_LEN_ST ||
+         desired_object->length == GSSAPI_SRP_CRED_OPT_PW_LEN_ST) &&
+        (memcmp(desired_object->elements,
+                GSS_CRED_OPT_PW_ST,
+                GSS_CRED_OPT_PW_LEN_ST) == 0 ||
+         memcmp(desired_object->elements,
+                GSSAPI_SRP_CRED_OPT_PW_ST,
+                GSSAPI_SRP_CRED_OPT_PW_LEN_ST) == 0))
     {
         value_buf = gssalloc_calloc(1, sizeof(gss_buffer_desc));
         if (!value_buf)
@@ -544,6 +555,10 @@ srp_gssspi_set_cred_option(OM_uint32 *minor_status,
         memcpy(value_buf->value, value->value, value->length);
         value_buf->length = value->length;
         srp_cred->password = value_buf;
+    }
+    else
+    {
+        ret = GSS_S_UNAVAILABLE;
     }
 
     return (ret);
@@ -783,6 +798,20 @@ srp_gss_internal_release_oid(
 
     if (oid && *oid)
     {
+    /*
+     * This function only knows how to release internal OIDs. It will
+     * return GSS_S_CONTINUE_NEEDED for any OIDs it does not recognize.
+     */
+        if (*oid == GSS_C_NT_USER_NAME)
+        {
+            /*
+             * Don't free statically allocated OIDs.
+             * This is similar to the check performed in
+             * krb5/src/lib/gssapi/krb5/rel_oid.c:
+             *   krb5_gss_internal_release_oid()
+             */
+            return major_status;
+        }
         tmpOid = (gss_OID) *oid;
         if (tmpOid->elements)
         {
@@ -838,118 +867,3 @@ make_err_msg(char *name)
 
 	return (buffer);
 }
-
-/*
- * The Mech OID:
- *      iso(1) member-body(2) US(840) mit(113554) infosys(1) gssapi(2) srp(10)
- *        = 1.2.840.113554.1.2.10
- */
-static struct _GSS_MECH_PLUGIN_CONFIG srp_mechanism =
-{
-	{SRP_OID_LENGTH, SRP_OID},
-	NULL,
-	srp_gss_acquire_cred,
-	srp_gss_release_cred,
-	srp_gss_init_sec_context,
-#ifndef LEAN_CLIENT
-	srp_gss_accept_sec_context,
-#else
-	NULL,
-#endif  /* LEAN_CLIENT */
-	NULL,				/* gss_process_context_token */
-	srp_gss_delete_sec_context,	/* gss_delete_sec_context */
-	srp_gss_context_time,	/* gss_context_time */
-	srp_gss_get_mic,		/* gss_get_mic */
-	srp_gss_verify_mic,		/* gss_verify_mic */
-	srp_gss_wrap,		/* gss_wrap */
-	srp_gss_unwrap,		/* gss_unwrap */
-	srp_gss_display_status,
-	NULL,				/* gss_indicate_mechs */
-	srp_gss_compare_name,
-	srp_gss_display_name,
-	srp_gss_import_name,
-	srp_gss_release_name,
-	srp_gss_inquire_cred,	/* gss_inquire_cred */
-	NULL,				/* gss_add_cred */
-#ifndef LEAN_CLIENT
-	srp_gss_export_sec_context,		/* gss_export_sec_context */
-	srp_gss_import_sec_context,		/* gss_import_sec_context */
-#else
-	NULL,				/* gss_export_sec_context */
-	NULL,				/* gss_import_sec_context */
-#endif /* LEAN_CLIENT */
-	NULL,				/* gss_inquire_cred_by_mech */
-	srp_gss_inquire_names_for_mech,
-	srp_gss_inquire_context,	/* gss_inquire_context */
-        srp_gss_internal_release_oid,
-	srp_gss_wrap_size_limit,	/* gss_wrap_size_limit */
-#ifdef _MIT_KRB5_1_11
-	NULL,				/* gss_localname */
-	NULL,				/* gssspi_authorize_localname */
-#endif
-	NULL,				/* gss_export_name */
-
-#ifdef _MIT_KRB5_1_11
-	NULL,				/* gss_duplicate_name */
-#endif
-
-	NULL,				/* gss_store_cred */
-	srp_gss_inquire_sec_context_by_oid, /* gss_inquire_sec_context_by_oid */
-	srp_gss_inquire_cred_by_oid,	/* gss_inquire_cred_by_oid */
-	srp_gss_set_sec_context_option, /* gss_set_sec_context_option */
-	srp_gssspi_set_cred_option,	/* gssspi_set_cred_option */
-	NULL,				/* gssspi_mech_invoke */
-	srp_gss_wrap_aead,
-	srp_gss_unwrap_aead,
-	srp_gss_wrap_iov,
-	srp_gss_unwrap_iov,
-	srp_gss_wrap_iov_length,
-	srp_gss_complete_auth_token,
-	srp_gss_acquire_cred_impersonate_name,
-	NULL,				/* gss_add_cred_impersonate_name */
-	srp_gss_display_name_ext,
-	srp_gss_inquire_name,
-	srp_gss_get_name_attribute,
-	srp_gss_set_name_attribute,
-	srp_gss_delete_name_attribute,
-	srp_gss_export_name_composite,
-	srp_gss_map_name_to_any,
-	srp_gss_release_any_name_mapping,
-#ifdef _MIT_KRB5_1_11
-	NULL,				/* gss_pseudo_random */
-	NULL,				/* gss_set_neg_mechs */
-	NULL,				/* gss_inquire_saslname_for_mech */
-	NULL,				/* gss_inquire_mech_for_saslname */
-	NULL,				/* gss_inquire_attrs_for_mech */
-	NULL,				/* gss_acquire_cred_from */
-	NULL,				/* gss_store_cred_into */
-	NULL,				/* gssspi_acquire_cred_with_password */
-	NULL,				/* gss_export_cred */
-	NULL,				/* gss_import_cred */
-	NULL,				/* gssspi_import_sec_context_by_mech */
-	NULL,				/* gssspi_import_name_by_mech */
-	NULL,				/* gssspi_import_cred_by_mech */
-#endif
-};
-
-#ifdef _GSS_STATIC_LINK
-#include "mglueP.h"
-
-static int gss_srpmechglue_init(void)
-{
-	struct gss_mech_config mech_srp;
-
-	memset(&mech_srp, 0, sizeof(mech_srp));
-	mech_srp.mech = &srp_mechanism;
-	mech_srp.mechNameStr = "srp";
-	mech_srp.mech_type = (const gss_OID_desc * const) gss_mech_srp;
-
-	return gssint_register_mechinfo(&mech_srp);
-}
-#else
-GSS_MECH_PLUGIN_CONFIG gss_mech_initialize(void)
-{
-	return (&srp_mechanism);
-}
-
-#endif /* _GSS_STATIC_LINK */

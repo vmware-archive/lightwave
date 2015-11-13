@@ -79,6 +79,12 @@ typedef [context_handle] void *vecs_entry_enum_handle_t;
         );
 
     UINT32
+    VmAfdRpcGetRHTTPProxyPort(
+        [in] handle_t hBinding,
+        [in,out] UINT32* pdwPort
+        );
+
+    UINT32
     VmAfdRpcSetRHTTPProxyPort(
         [in] handle_t hBinding,
         [in] UINT32   dwPort
@@ -310,4 +316,9 @@ typedef [context_handle] void *vecs_entry_enum_handle_t;
     [in] wstring_t pszAlias
     );
 
+    UINT32
+    VmAfdRpcGetHeartbeatStatus(
+    [in] handle_t hBinding,
+    [out] PVMAFD_HB_STATUS_W *ppHeartbeatStatus
+    );
 }

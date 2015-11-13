@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema
+  targetNamespace="http://www.rsa.com/names/2010/04/std-prof/SAML2.0"
+  xmlns:tns="http://www.rsa.com/names/2010/04/std-prof/SAML2.0"
+  xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  elementFormDefault="qualified" attributeFormDefault="unqualified"
+>
+
+  <xs:annotation>
+    <xs:documentation>
+      Additional types used to restrict the standard SAML 2.0 schema
+      to conform to the profile used by the RSA Identity and Access
+      Tookit V1.0
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:simpleType name="NameIDFormats">
+    <xs:annotation>
+      <xs:documentation>
+        Table 1: The permitted values for the Format attribute of the
+        NameID element.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:anyURI">
+      <xs:enumeration value="urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName"/>
+      <xs:enumeration value="http://schemas.xmlsoap.org/claims/UPN"/>
+      <xs:enumeration value="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"/>
+      <xs:enumeration value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"/>
+      <xs:enumeration value="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"/>
+      <xs:enumeration value="urn:oasis:names:tc:SAML:2.0:nameid-format:entity"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="AttributeNameFormats">
+    <xs:annotation>
+      <xs:documentation>
+      The permitted values for the NameFormat attribute of the Attribute
+      element.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:anyURI">
+      <xs:enumeration value="urn:oasis:names:tc:SAML:2.0:attrname-format:uri" />
+      <xs:enumeration value="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified" />
+      <xs:enumeration value="urn:oasis:names:tc:SAML:2.0:attrname-format:unspecified" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="UUID">
+    <xs:restriction base="xs:ID">
+      <xs:pattern value="_([0-9a-fA-F]){8}-([0-9a-fA-F]){4}-([0-9a-fA-F]){4}-([0-9a-fA-F]){4}-([0-9a-fA-F]){12}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="UTCTime">
+    <xs:restriction base="xs:dateTime">
+      <xs:pattern value="\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d*)?Z"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+
+  <xs:simpleType name="SubjectConfirmationMethods">
+    <xs:annotation>
+      <xs:documentation>
+        Table 2: The permitted values for the Method attribute of the
+        SubjectConfirmation element.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:anyURI">
+      <xs:enumeration value="urn:oasis:names:tc:SAML:2.0:cm:bearer"/>
+      <xs:enumeration value="urn:oasis:names:tc:SAML:2.0:cm:holder-of-key"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+
+  <xs:simpleType name="AuthnContextClassRefs">
+    <xs:annotation>
+      <xs:documentation>
+        Table 3: The permitted values for the AuthnContextClassRef
+        attribute of the AuthnContext element.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:anyURI">
+      <xs:enumeration value="urn:oasis:names:tc:SAML:2.0:ac:classes:Kerberos"/>
+      <xs:enumeration value="urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"/>
+      <xs:enumeration value="urn:oasis:names:tc:SAML:2.0:ac:classes:XMLDSig"/>
+      <xs:enumeration value="urn:federation:authentication:windows"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="AttributeNames">
+    <xs:annotation>
+      <xs:documentation>
+        Table 4: The permitted values for the Name attribute of the
+        Attribute element.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="http://rsa.com/schemas/attr-names/2009/01/GroupIdentity"/>
+      <xs:enumeration value="http://vmware.com/schemas/attr-names/2011/07/isSolution"/>
+      <xs:enumeration value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname"/>
+      <xs:enumeration value="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname"/>
+    </xs:restriction>
+  </xs:simpleType>
+ </xs:schema>

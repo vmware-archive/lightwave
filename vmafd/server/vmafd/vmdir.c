@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -24,6 +24,31 @@ VmAfSrvDirOpenConnection(
     PCWSTR pwszAccount,
     PCWSTR pwszPassword,
     PVMDIR_CONNECTION*ppConnection
+    );
+
+static
+DWORD
+VmAfSrvGetSiteNameForDC(
+    PWSTR pwszDCName,
+    PWSTR* ppwszSiteName
+    );
+
+#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
+static
+DWORD
+VmAfSrvSignalVmdirProvider(
+    VOID
+    );
+#endif
+
+static
+DWORD
+VmAfSrvSetDNSRecords(
+    PCSTR pszDCAddress,
+    PCSTR pszDomain,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszMachineName
     );
 
 static
@@ -62,8 +87,13 @@ _CreateKrbConfig(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
+#ifdef USE_DEFAULT_KRB5_PATHS
+    dwError = VmAfdBackupCopyKrbConfig(pKrbConfig);
+    BAIL_ON_VMAFD_ERROR(dwError);
+#else
     dwError = VmAfdBackupKrbConfig(pKrbConfig);
     BAIL_ON_VMAFD_ERROR(dwError);
+#endif
 
     dwError = VmAfdWriteKrbConfig(pKrbConfig);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -84,7 +114,7 @@ error:
 
 DWORD
 VmAfSrvGetSiteGUID(
-    PWSTR*   ppwszGUID        /*    OUT          */
+    PWSTR*   ppwszSiteGUID   /*    OUT          */
     )
 {
     DWORD dwError = 0;
@@ -93,11 +123,11 @@ VmAfSrvGetSiteGUID(
     PWSTR pwszPassword = NULL;
     PWSTR pwszAccountDN = NULL;
     PWSTR pwszDomain = NULL;
-    PSTR  pszGUID = NULL;
-    PWSTR pwszGUID = NULL;
+    PSTR  pszSiteGUID = NULL;
+    PWSTR pwszSiteGUID = NULL;
     PVMDIR_CONNECTION pConnection = NULL;
 
-    BAIL_ON_VMAFD_INVALID_POINTER(ppwszGUID, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(ppwszSiteGUID, dwError);
 
     dwError = VmAfSrvGetDCName(&pwszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -120,14 +150,14 @@ VmAfSrvGetSiteGUID(
                     &pConnection);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmDirGetSiteGuid(pConnection, &pszGUID);
+    dwError = VmDirGetSiteGuid(pConnection, &pszSiteGUID);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdAllocateStringWFromA(pszGUID, &pwszGUID);
+    dwError = VmAfdAllocateStringWFromA(pszSiteGUID, &pwszSiteGUID);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    *ppwszGUID = pwszGUID;
-                
+    *ppwszSiteGUID = pwszSiteGUID;
+
 cleanup:
 
     if (pConnection)
@@ -135,9 +165,9 @@ cleanup:
         VmDirConnectionClose(pConnection);
     }
 
-    if (pszGUID)
+    if (pszSiteGUID)
     {
-        VmDirFreeMemory(pszGUID);
+        VmDirFreeMemory(pszSiteGUID);
     }
 
     VMAFD_SAFE_FREE_MEMORY(pwszDCName);
@@ -152,12 +182,12 @@ error:
 
     VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
 
-    if (ppwszGUID)
+    if (ppwszSiteGUID)
     {
-        *ppwszGUID = NULL;
+        *ppwszSiteGUID = NULL;
     }
 
-    VMAFD_SAFE_FREE_MEMORY(pwszGUID);
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteGUID);
 
     goto cleanup;
 }
@@ -178,6 +208,8 @@ VmAfSrvPromoteVmDir(
     PSTR pszUserName = NULL;
     PSTR pszPassword = NULL;
     PSTR pszSiteName = NULL;
+    PWSTR pwszDCSiteName = NULL;
+    PWSTR pwszPNID = NULL;
     PSTR pszPartnerHostName = NULL;
     PSTR pszDefaultRealm = NULL;
     PWSTR pwszCurDomainName = NULL;
@@ -297,6 +329,49 @@ VmAfSrvPromoteVmDir(
     dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_CONTROLLER);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    if (IsNullOrEmptyString(pwszSiteName))
+    {
+        dwError = VmAfSrvGetSiteNameForDC(pwszLotusServerName, &pwszDCSiteName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfSrvSetSiteName(
+                    IsNullOrEmptyString(pwszSiteName)?
+                    pwszDCSiteName:
+                    pwszSiteName
+                    );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvGetPNID(&pwszPNID);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvConfigureDNSW(
+                      pwszPNID,
+                      pwszDomainName,
+                      pwszUserName,
+                      pwszPassword);
+    if (dwError)
+    {
+        VmAfdLog(
+            VMAFD_DEBUG_ANY,
+            "%s failed to initialize dns. Error(%u)",
+            __FUNCTION__,
+            dwError);
+        dwError = 0;
+    }
+    else
+    {
+        VmAfdLog(
+            VMAFD_DEBUG_ANY,
+            "%s successfully initialized dns.",
+            __FUNCTION__);
+    }
+
+#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
+    dwError = VmAfSrvSignalVmdirProvider();
+    BAIL_ON_VMAFD_ERROR(dwError);
+#endif
+
 cleanup:
 
     VMAFD_SAFE_FREE_STRINGA(pszLotusServerName);
@@ -304,9 +379,11 @@ cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszUserName);
     VMAFD_SAFE_FREE_STRINGA(pszPassword);
     VMAFD_SAFE_FREE_STRINGA(pszSiteName);
+    VMAFD_SAFE_FREE_MEMORY(pwszDCSiteName);
     VMAFD_SAFE_FREE_STRINGA(pszPartnerHostName);
     VMAFD_SAFE_FREE_STRINGA(pszDefaultRealm);
     VMAFD_SAFE_FREE_MEMORY(pwszCurDomainName);
+    VMAFD_SAFE_FREE_MEMORY(pwszPNID);
 
     return dwError;
 
@@ -319,18 +396,19 @@ error:
 
 DWORD
 VmAfSrvDemoteVmDir(
-    PWSTR    pwszServerName,    /* IN              */
+    PWSTR    pwszServerName,    /* IN     OPTIONAL */
     PWSTR    pwszUserName,      /* IN              */
     PWSTR    pwszPassword       /* IN              */
     )
 {
     DWORD dwError = 0;
-    PSTR pszServerName = NULL;
+    PWSTR pwszServerNameLocal = pwszServerName;
+    PWSTR pwszServerName1 = NULL;
     PSTR pszUserName = NULL;
     PSTR pszPassword = NULL;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
+    PWSTR pwszDomainName = NULL;
 
-    BAIL_ON_VMAFD_INVALID_POINTER(pwszServerName, dwError);
     BAIL_ON_VMAFD_INVALID_POINTER(pwszUserName, dwError);
     BAIL_ON_VMAFD_INVALID_POINTER(pwszPassword, dwError);
 
@@ -343,8 +421,12 @@ VmAfSrvDemoteVmDir(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfdAllocateStringAFromW(pwszServerName, &pszServerName);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    if (!pwszServerNameLocal)
+    {
+	dwError = VmAfdAllocateStringWFromA("localhost", &pwszServerName1);
+        BAIL_ON_VMAFD_ERROR(dwError);
+	pwszServerNameLocal = pwszServerName1;
+    }
 
     dwError = VmAfdAllocateStringAFromW(pwszUserName, &pszUserName);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -352,17 +434,49 @@ VmAfSrvDemoteVmDir(
     dwError = VmAfdAllocateStringAFromW(pwszPassword, &pszPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    dwError = VmAfSrvGetDomainName(&pwszDomainName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvUnconfigureDNSW(
+			pwszServerNameLocal,
+			pwszDomainName,
+			pwszUserName,
+			pwszPassword);
+
+    if (dwError)
+    {
+	VmAfdLog(
+	    VMAFD_DEBUG_ANY,
+	    "%s failed to uninitialize dns. Error(%u)",
+	    __FUNCTION__,
+	    dwError);
+	dwError = 0;
+    }
+    else
+    {
+	VmAfdLog(
+	    VMAFD_DEBUG_ANY,
+	    "%s successfully uninitialized dns.",
+	    __FUNCTION__);
+    }
+
     dwError = VmDirDemote(pszUserName, pszPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
+    dwError = VmAfSrvSignalVmdirProvider();
+    BAIL_ON_VMAFD_ERROR(dwError);
+#endif
+
     /* TODO: remove KrbConfig entries */
 
 cleanup:
 
-    VMAFD_SAFE_FREE_STRINGA(pszServerName);
+    VMAFD_SAFE_FREE_STRINGW(pwszDomainName);
+    VMAFD_SAFE_FREE_STRINGW(pwszServerName1);
     VMAFD_SAFE_FREE_STRINGA(pszUserName);
     VMAFD_SAFE_FREE_STRINGA(pszPassword);
 
@@ -393,6 +507,7 @@ VmAfSrvJoinVmDir(
     PSTR pszDomainName = NULL;
     PSTR pszOrgUnit = NULL;
     PSTR pszDefaultRealm = NULL;
+    PWSTR pwszSiteName = NULL;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
 
     BAIL_ON_VMAFD_INVALID_POINTER(pwszServerName, dwError);
@@ -458,6 +573,12 @@ VmAfSrvJoinVmDir(
     dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_CLIENT);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    dwError = VmAfSrvGetSiteNameForDC(pwszServerName, &pwszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvSetSiteName(pwszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvJoinVmDir: joined Vmdir.");
 
 cleanup:
@@ -469,6 +590,7 @@ cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszMachineName);
     VMAFD_SAFE_FREE_STRINGA(pszOrgUnit);
     VMAFD_SAFE_FREE_STRINGA(pszDefaultRealm);
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
 
     return dwError;
 
@@ -476,6 +598,233 @@ error:
 
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvJoinVmDir: Failed to join Vmdir. Error(%u)",
                               dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfSrvJoinVmDir2(
+    PWSTR            pwszDomainName,     /* IN            */
+    PWSTR            pwszUserName,       /* IN            */
+    PWSTR            pwszPassword,       /* IN            */
+    PWSTR            pwszMachineName,    /* IN   OPTIONAL */
+    PWSTR            pwszOrgUnit,        /* IN   OPTIONAL */
+    VMAFD_JOIN_FLAGS dwFlags             /* IN            */
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszUserName = NULL;
+    PSTR pszPassword = NULL;
+    PSTR pszMachineName = NULL;
+    PSTR pszDomainName = NULL;
+    PSTR pszOrgUnit = NULL;
+    PSTR pszDefaultRealm = NULL;
+    PSTR pszHostname = NULL;
+    PSTR pszCanonicalHostname = NULL;
+    PSTR pszDCHostname = NULL;
+    PSTR pszDCAddress = NULL;
+    PSTR pszDCAddressIPV6 = NULL;
+    PWSTR pwszDCHostname = NULL;
+    PWSTR pwszSiteName = NULL;
+    VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(pwszUserName, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(pwszPassword, dwError);
+
+    if (IsNullOrEmptyString(pwszDomainName))
+    {
+        dwError = ERROR_INVALID_DOMAINNAME;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else
+    {
+        SIZE_T len = 0;
+
+        dwError = VmAfdGetStringLengthW(pwszDomainName, &len);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        if (len > 255)
+        {
+            dwError = ERROR_INVALID_DOMAINNAME;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+    }
+
+    dwError = VmAfSrvGetDomainState(&domainState);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (domainState != VMAFD_DOMAIN_STATE_NONE)
+    {
+        dwError = ERROR_CANNOT_JOIN_VMDIR;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdGetHostName(&pszHostname);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (!VmAfdStringCompareA(pszHostname, "localhost", TRUE) ||
+        !VmAfdStringCompareA(pszHostname, "localhost.localdom", TRUE) ||
+        strlen(pszHostname) > 63)
+    {
+        dwError = ERROR_INVALID_COMPUTERNAME;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringAFromW(pwszDomainName, &pszDomainName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszUserName, &pszUserName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszPassword, &pszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdGetDomainController(
+                    pszDomainName,
+                    pszUserName,
+                    pszPassword,
+                    &pszDCHostname,
+                    &pszDCAddress);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (pwszMachineName)
+    {
+        dwError = VmAfdAllocateStringAFromW(pwszMachineName, &pszMachineName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmAfdGetCanonicalHostName(pszHostname, &pszCanonicalHostname);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdAllocateStringA(pszCanonicalHostname, &pszMachineName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (pwszOrgUnit)
+    {
+        dwError = VmAfdAllocateStringAFromW(pwszOrgUnit, &pszOrgUnit);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringA(pszDomainName, &pszDefaultRealm);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdUpperCaseStringA(pszDefaultRealm);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmDirClientJoin(
+                      pszDCHostname,
+                      pszUserName,
+                      pszPassword,
+                      pszMachineName,
+                      pszOrgUnit);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (VmAfdCheckIfIPV6AddressA(pszDCAddress))
+    {
+        dwError = VmAfdAllocateStringPrintf(
+                        &pszDCAddressIPV6,
+                        "[%s]",
+                        pszDCAddress);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = _CreateKrbConfig(
+                      pszDefaultRealm,
+                      gVmafdGlobals.pszKrb5Config,
+                      gVmafdGlobals.pszKrb5Keytab,
+                      pszDCAddressIPV6 ? pszDCAddressIPV6 : pszDCAddress,
+                      NULL);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvSetDomainName(pwszDomainName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszDCHostname, &pwszDCHostname);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvGetSiteNameForDC(pwszDCHostname, &pwszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvSetDCName(pwszDCHostname);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvSetSiteName(pwszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvSetDNSRecords(
+                      pszDCAddress,
+                      pszDomainName,
+                      pszUserName,
+                      pszPassword,
+                      pszMachineName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+#ifndef _WIN32
+    if (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_ENABLE_NSSWITCH))
+    {
+        VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvJoinVmDir2: configuring NSSWITCH.");
+
+        dwError = DJConfigureNSSwitch();
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    if (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_ENABLE_PAM))
+    {
+        VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvJoinVmDir2: configuring PAM.");
+
+        dwError = DJConfigurePAM();
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    if (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_ENABLE_SSH))
+    {
+        VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvJoinVmDir2: configuring SSH.");
+
+        dwError = DJConfigureSSH();
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+#endif
+
+    dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_CLIENT);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
+    dwError = VmAfSrvSignalVmdirProvider();
+    BAIL_ON_VMAFD_ERROR(dwError);
+#endif
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvJoinVmDir2: joined Vmdir.");
+
+cleanup:
+
+    VMAFD_SAFE_FREE_STRINGA(pszUserName);
+    VMAFD_SAFE_FREE_STRINGA(pszPassword);
+    VMAFD_SAFE_FREE_STRINGA(pszDomainName);
+    VMAFD_SAFE_FREE_STRINGA(pszMachineName);
+    VMAFD_SAFE_FREE_STRINGA(pszOrgUnit);
+    VMAFD_SAFE_FREE_STRINGA(pszDefaultRealm);
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
+    VMAFD_SAFE_FREE_MEMORY(pszHostname);
+    VMAFD_SAFE_FREE_MEMORY(pszCanonicalHostname);
+    VMAFD_SAFE_FREE_MEMORY(pszDCAddress);
+    VMAFD_SAFE_FREE_MEMORY(pszDCHostname);
+    VMAFD_SAFE_FREE_MEMORY(pwszDCHostname);
+    VMAFD_SAFE_FREE_MEMORY(pszDCAddressIPV6);
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvJoinVmDir2: Failed to join Vmdir. Error(%u)",
+                              dwError);
+
+    if (dwError == VMDIR_ERROR_SERVER_DOWN)
+    {
+        VmAfdLog(VMAFD_DEBUG_ERROR, "Failed to reach domain controller at [%s]",
+                 VMAFD_SAFE_STRING(pszDCAddress));
+
+        dwError = ERROR_HOST_DOWN;
+    }
 
     goto cleanup;
 }
@@ -498,14 +847,14 @@ VmAfSrvLeaveVmDir(
 
     if (domainState != VMAFD_DOMAIN_STATE_CLIENT)
     {
-        dwError = ERROR_CANNOT_LEAVE_VMDIR;
+        dwError = ERROR_NOT_JOINED;
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfSrvGetDCName(&pwszServerName);
+    dwError = VmAfSrvGetAffinitizedDC(&pwszServerName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    VmAfdAllocateStringAFromW(pwszServerName, &pszServerName);
+    dwError = VmAfdAllocateStringAFromW(pwszServerName, &pszServerName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     if (pwszUserName)
@@ -527,9 +876,29 @@ VmAfSrvLeaveVmDir(
     dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
+    dwError = VmAfSrvSignalVmdirProvider();
+    BAIL_ON_VMAFD_ERROR(dwError);
+#endif
+
     /*
      * TODO: remove krb5.conf entries, machine account, etc.
      */
+
+#ifndef _WIN32
+    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvLeaveVmDir: unconfiguring NSSWITCH.");
+
+    dwError = DJUnconfigureNSSwitch();
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvLeaveVmDir: unconfiguring PAM.");
+
+    dwError = DJUnconfigurePAM();
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = DJUnconfigureSSH();
+    BAIL_ON_VMAFD_ERROR(dwError);
+#endif
 
 cleanup:
 
@@ -590,7 +959,7 @@ VmAfSrvDirGetMachineId(
 
     BAIL_ON_VMAFD_INVALID_POINTER(ppwszGUID, dwError);
 
-    dwError = VmAfSrvGetDCName(&pwszDCName);
+    dwError = VmAfSrvGetAffinitizedDC(&pwszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvGetMachineAccountInfo(
@@ -698,7 +1067,7 @@ VmAfSrvDirSetMachineId(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfSrvGetDCName(&pwszDCName);
+    dwError = VmAfSrvGetAffinitizedDC(&pwszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvGetMachineAccountInfo(
@@ -796,7 +1165,7 @@ VmAfSrvDirGetMemberships(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfSrvGetDCName(&pwszDCName);
+    dwError = VmAfSrvGetAffinitizedDC(&pwszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvGetMachineAccountInfo(
@@ -883,6 +1252,38 @@ VmAfSrvDirIsMember(
     return bRetVal;
 }
 
+DWORD
+VmAfSrvRefreshSiteName(
+    VOID
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszDCName = NULL;
+    PWSTR pwszSiteName = NULL;
+
+    dwError = VmAfSrvGetDCName(&pwszDCName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvGetSiteNameForDC(
+                               pwszDCName,
+                               &pwszSiteName
+                               );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvSetSiteName(pwszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszDCName);
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
+
+    return dwError;
+error:
+
+    goto cleanup;
+}
+
 static
 DWORD
 VmAfSrvDirOpenConnection(
@@ -954,3 +1355,187 @@ error:
 
     goto cleanup;
 }
+
+static
+DWORD
+VmAfSrvGetSiteNameForDC(
+    PWSTR pwszDCName,
+    PWSTR* ppwszSiteName
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszAccount = NULL;
+    PWSTR pwszPassword = NULL;
+    PWSTR pwszAccountDN = NULL;
+    PWSTR pwszDomain = NULL;
+    PSTR  pszSiteName = NULL;
+    PWSTR pwszSiteName = NULL;
+    PVMDIR_CONNECTION pConnection = NULL;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(ppwszSiteName, dwError);
+
+    if (IsNullOrEmptyString(pwszDCName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfSrvGetMachineAccountInfo(
+                    &pwszAccount,
+                    &pwszPassword,
+                    &pwszAccountDN,
+                    NULL);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvGetDomainName(&pwszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvDirOpenConnection(
+                    pwszDCName,
+                    pwszDomain,
+                    pwszAccount,
+                    pwszPassword,
+                    &pConnection);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmDirGetSiteName(pConnection, &pszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszSiteName, &pwszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppwszSiteName = pwszSiteName;
+
+cleanup:
+
+    if (pConnection)
+    {
+        VmDirConnectionClose(pConnection);
+    }
+
+    if (pszSiteName)
+    {
+        VmDirFreeMemory(pszSiteName);
+    }
+
+    VMAFD_SAFE_FREE_MEMORY(pwszDomain);
+    VMAFD_SAFE_FREE_MEMORY(pwszAccount);
+    VMAFD_SAFE_FREE_MEMORY(pwszPassword);
+    VMAFD_SAFE_FREE_MEMORY(pwszAccountDN);
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
+    if (ppwszSiteName)
+    {
+        *ppwszSiteName = NULL;
+    }
+
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmAfSrvSetDNSRecords(
+    PCSTR pszDCAddress,
+    PCSTR pszDomain,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszMachineName)
+{
+    DWORD dwError = 0;
+    DWORD dwFlags = 0;
+    PVMDNS_SERVER_CONTEXT pServerContext = NULL;
+    VMDNS_RECORD record = {0};
+    VMDNS_IP4_ADDRESS* pV4Addresses = NULL;
+    DWORD dwNumV4Address = 0;
+    VMDNS_IP6_ADDRESS* pV6Addresses = NULL;
+    DWORD dwNumV6Address = 0;
+    size_t i = 0;
+
+    dwError = VmDnsOpenServerA(
+                    pszDCAddress,
+                    pszUserName,
+                    pszDomain,
+                    pszPassword,
+                    dwFlags,
+                    NULL,
+                    &pServerContext);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvGetIPAddressesWrap(
+                          &pV4Addresses,
+                          &dwNumV4Address,
+                          &pV6Addresses,
+                          &dwNumV6Address);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    record.iClass = VMDNS_CLASS_IN;
+    record.pszName = (PSTR)pszMachineName;
+    record.dwType = VMDNS_RR_TYPE_A;
+    record.dwTtl = 3600;
+
+    for (i = 0; i < dwNumV4Address; i++)
+    {
+        record.Data.A.IpAddress = pV4Addresses[i];
+
+        dwError = VmDnsAddRecordA(
+                        pServerContext,
+                        (PSTR)pszDomain,
+                        &record);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pV4Addresses);
+    VMAFD_SAFE_FREE_MEMORY(pV6Addresses);
+
+    if (pServerContext)
+    {
+        VmDnsCloseServer(pServerContext);
+    }
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
+static
+DWORD
+VmAfSrvSignalVmdirProvider(
+    VOID
+    )
+{
+    DWORD dwError = 0;
+    HANDLE hLsaConnection = (HANDLE)NULL;
+
+    dwError = LsaOpenServer(&hLsaConnection);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = LsaVmdirSignal(
+                    hLsaConnection,
+                    LSA_VMDIR_SIGNAL_RELOAD_CONFIG);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    if (hLsaConnection != (HANDLE)NULL)
+    {
+        LsaCloseServer(hLsaConnection);
+    }
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+#endif

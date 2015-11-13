@@ -1,3 +1,19 @@
+/*
+ * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+
+
 #include "includes.h"
 static
 DWORD
@@ -1463,6 +1479,368 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmAfdMarshalHeartbeatStatusArrLength (
+                             PVMAFD_HB_INFO_W pInfoArray,
+                             DWORD dwCount,
+                             PDWORD pdwSizeRequired
+                             )
+{
+    DWORD dwError = 0;
+    DWORD dwIndex = 0;
+    DWORD dwSizeRequired = 0;
+
+    if (!pdwSizeRequired)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    dwSizeRequired = sizeof (UINT32) + sizeof (UINT32);
+    //For Size and Number of Elements
+
+    for (;pInfoArray && dwIndex < dwCount; dwIndex++)
+    {
+        size_t stringLength = 0;
+        PVMAFD_HB_INFO_W pCursor = &pInfoArray[dwIndex];
+
+        if (pInfoArray)
+        {
+            dwSizeRequired += sizeof (UINT32) + sizeof (size_t);
+
+            if (pCursor->pszServiceName)
+            {
+                dwError = VmAfdGetStringLengthW (
+                                                  pCursor->pszServiceName,
+                                                  &stringLength
+                                                );
+                BAIL_ON_VMAFD_ERROR (dwError);
+
+                dwSizeRequired += stringLength*sizeof (WCHAR);
+                stringLength = 0;
+            }
+
+            dwSizeRequired += sizeof (UINT32) + sizeof (UINT32);
+            //For storing type of dwPort and the actual dwPort
+
+            dwSizeRequired += sizeof (UINT32) + sizeof (UINT32);
+            //For storing type of dwLastPing and the actual dwLastPing
+
+            dwSizeRequired += sizeof (UINT32) + sizeof (UINT32);
+            //For storing type of bIsAlive and the actual bIsAlive
+
+        }
+    }
+
+    *pdwSizeRequired = dwSizeRequired;
+
+cleanup:
+    return dwError;
+
+error:
+    if (pdwSizeRequired)
+    {
+        *pdwSizeRequired = 0;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdMarshalHeartbeatStatusArray (
+                        PVMAFD_HB_INFO_W pInfoArray,
+                        DWORD dwCount,
+                        DWORD dwBlobSize,
+                        PBYTE pMarshalledBlob
+                       )
+{
+    DWORD dwError = 0;
+    DWORD dwSizeRemainining = dwBlobSize;
+    PBYTE pCursor = NULL;
+    PBYTE pCursorStart = NULL;
+    DWORD dwIndex = 0;
+    DWORD dwIsAlive = 0;
+
+    if (!pMarshalledBlob)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    if (dwBlobSize < (sizeof (UINT32) + sizeof (UINT32)))
+    {
+        dwError = ERROR_NOT_ENOUGH_MEMORY;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    dwError = VmAfdAllocateMemory (
+                                    dwBlobSize,
+                                    (PVOID *)&pCursor
+                                  );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    pCursorStart = pCursor;
+
+    dwError = VmAfdCheckMemory (
+                                sizeof (UINT32),
+                                &dwSizeRemainining
+                               );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    dwError = VmAfdCopyMemory(
+                              pCursor,
+                              sizeof(UINT32),
+                              &dwBlobSize,
+                              sizeof(dwBlobSize)
+                             );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    pCursor += sizeof (UINT32);
+
+    if (pInfoArray)
+    {
+        dwError = VmAfdCheckMemory (
+                                      sizeof (UINT32),
+                                      &dwSizeRemainining
+                                   );
+        BAIL_ON_VMAFD_ERROR (dwError);
+
+        dwError = VmAfdCopyMemory(
+                                  pCursor,
+                                  sizeof(UINT32),
+                                  &dwCount,
+                                  sizeof(UINT32)
+                                 );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pCursor += sizeof (UINT32);
+
+        for (; dwIndex < dwCount; dwIndex++)
+        {
+            PVMAFD_HB_INFO_W pInfoCursor = &pInfoArray[dwIndex];
+            DWORD dwBytesToMove = 0;
+
+            if (!pInfoCursor)
+            {
+                dwError = ERROR_INVALID_PARAMETER;
+                BAIL_ON_VMAFD_ERROR (dwError);
+            }
+
+
+            dwError = VmAfdMarshalStringW (
+                                           pInfoCursor->pszServiceName,
+                                           pCursor,
+                                           dwSizeRemainining,
+                                           &dwBytesToMove
+                                          );
+            BAIL_ON_VMAFD_ERROR (dwError);
+
+            pCursor += dwBytesToMove;
+            dwSizeRemainining -= dwBytesToMove;
+            dwBytesToMove = 0;
+
+            dwError = VmAfdMarshalUINT32 (
+                                           pInfoCursor->dwPort,
+                                           pCursor,
+                                           dwSizeRemainining,
+                                           &dwBytesToMove
+                                         );
+            BAIL_ON_VMAFD_ERROR (dwError);
+
+            pCursor += dwBytesToMove;
+            dwSizeRemainining -= dwBytesToMove;
+            dwBytesToMove = 0;
+
+            dwError = VmAfdMarshalUINT32 (
+                                           pInfoCursor->dwLastHeartbeat,
+                                           pCursor,
+                                           dwSizeRemainining,
+                                           &dwBytesToMove
+                                         );
+            BAIL_ON_VMAFD_ERROR (dwError);
+
+            pCursor += dwBytesToMove;
+            dwSizeRemainining -= dwBytesToMove;
+            dwBytesToMove = 0;
+
+            dwIsAlive = pInfoCursor->bIsAlive?1:0;
+
+            dwError = VmAfdMarshalUINT32 (
+                                           dwIsAlive,
+                                           pCursor,
+                                           dwSizeRemainining,
+                                           &dwBytesToMove
+                                         );
+            BAIL_ON_VMAFD_ERROR (dwError);
+
+            pCursor += dwBytesToMove;
+            dwSizeRemainining -= dwBytesToMove;
+            dwBytesToMove = 0;
+        }
+    }
+
+    memcpy (
+            pMarshalledBlob,
+            pCursorStart,
+            dwBlobSize
+           );
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY (pCursorStart);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmAfdUnMarshalHeartbeatStatusArray (
+                           DWORD dwBlobSize,
+                           PBYTE pMarshalledBlob,
+                           PDWORD pdwCount,
+                           PVMAFD_HB_INFO_W *ppInfoArray
+                         )
+{
+    DWORD dwError = 0;
+    DWORD dwSizeRemainining = dwBlobSize;
+    DWORD dwIndex = 0;
+    PVMAFD_HB_INFO_W pInfoArray = NULL;
+    PBYTE pCursor = pMarshalledBlob;
+    DWORD dwBlobSizeRead = 0;
+    PWSTR pTempString = NULL;
+    DWORD dwCount = 0;
+    DWORD dwIsAlive = 0;
+
+    if (
+        !pMarshalledBlob ||
+        !ppInfoArray
+       )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    if (dwBlobSize < sizeof (UINT32) + sizeof (UINT32))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    dwError = VmAfdCheckMemory (
+                                sizeof (UINT32),
+                                &dwSizeRemainining
+                               );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    dwBlobSizeRead = *((PUINT32)pCursor);
+    pCursor += sizeof (UINT32);
+
+    if (dwBlobSizeRead != dwBlobSize)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    dwError = VmAfdCheckMemory (
+                                  sizeof (UINT32),
+                                  &dwSizeRemainining
+                               );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    dwCount = *((PUINT32)pCursor);
+    pCursor += sizeof (UINT32);
+
+
+    if (dwCount)
+    {
+        dwError = VmAfdAllocateMemory (
+                                    dwCount*sizeof (VMAFD_HB_INFO_W),
+                                    (PVOID *)&pInfoArray
+                                  );
+        BAIL_ON_VMAFD_ERROR (dwError);
+
+        for (; dwIndex < dwCount; dwIndex++)
+        {
+            DWORD dwBytesToMove = 0;
+
+
+            dwError = VmAfdUnMarshalString (
+                                            pCursor,
+                                            dwSizeRemainining,
+                                            &pInfoArray[dwIndex].pszServiceName,
+                                            &dwBytesToMove
+                                            );
+            BAIL_ON_VMAFD_ERROR (dwError);
+
+            pCursor += dwBytesToMove;
+            dwSizeRemainining -= dwBytesToMove;
+            dwBytesToMove = 0;
+
+
+            dwError = VmAfdUnMarshalUINT32 (
+                                            pCursor,
+                                            dwSizeRemainining,
+                                            &pInfoArray[dwIndex].dwPort,
+                                            &dwBytesToMove
+                                            );
+            BAIL_ON_VMAFD_ERROR (dwError);
+
+            pCursor += dwBytesToMove;
+            dwSizeRemainining -= dwBytesToMove;
+            dwBytesToMove = 0;
+
+            dwError = VmAfdUnMarshalUINT32 (
+                                            pCursor,
+                                            dwSizeRemainining,
+                                            &pInfoArray[dwIndex].dwLastHeartbeat,
+                                            &dwBytesToMove
+                                            );
+            BAIL_ON_VMAFD_ERROR (dwError);
+
+            pCursor += dwBytesToMove;
+            dwSizeRemainining -= dwBytesToMove;
+            dwBytesToMove = 0;
+
+            dwError = VmAfdUnMarshalUINT32 (
+                                            pCursor,
+                                            dwSizeRemainining,
+                                            &dwIsAlive,
+                                            &dwBytesToMove
+                                            );
+            BAIL_ON_VMAFD_ERROR (dwError);
+
+            pCursor += dwBytesToMove;
+            dwSizeRemainining -= dwBytesToMove;
+            dwBytesToMove = 0;
+
+            pInfoArray[dwIndex].bIsAlive = dwIsAlive? TRUE: FALSE;
+         }
+    }
+
+    *ppInfoArray = pInfoArray;
+    *pdwCount = dwCount;
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY (pTempString);
+
+    return dwError;
+
+error:
+    if (ppInfoArray)
+    {
+        *ppInfoArray = NULL;
+    }
+
+    if (pInfoArray)
+    {
+        VmAfdFreeHbInfoArrayW(pInfoArray, dwCount);
+    }
+
+    goto cleanup;
+}
+
+
 
 static
 DWORD
@@ -1471,20 +1849,22 @@ VmAfdCheckMemory(
     PDWORD pdwResponseSize
     )
 {
-        DWORD dwError = 0;
-        if (pdwResponseSize == NULL){
-                dwError = ERROR_INVALID_PARAMETER;
-                BAIL_ON_VMAFD_ERROR (dwError);
-        }
-        *pdwResponseSize = *pdwResponseSize - size;
-        if (*pdwResponseSize < 0){
-                dwError = ERROR_NOT_ENOUGH_MEMORY;
-                BAIL_ON_VMAFD_ERROR (dwError);
-        }
+    int sResponseSize = 0;
+    DWORD dwError = 0;
+    if (pdwResponseSize == NULL){
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    sResponseSize = *pdwResponseSize - size;
+    if (sResponseSize < 0){
+        dwError = ERROR_NOT_ENOUGH_MEMORY;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+    *pdwResponseSize = sResponseSize;
 cleanup:
-        return dwError;
+    return dwError;
 error:
-        goto cleanup;
+    goto cleanup;
 }
 
 static

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2015 VMware, Inc. All rights reserved. VMware confidential.
+-->
+<project name="admin-interfaces" default="build" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+
+   <property name="target-sets" value="main,test,osgi-bundle" />
+   <property file="../product.properties" />
+   <property name="MAINSRCROOT" value="${basedir}/.." />
+   <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
+
+   <import file="${MAINSRCROOT}/build/ant/presets.xml" />
+   <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
+   
+   <property name="src.conf.bundle-manifest-template"
+      location="${srcRoot}/conf/osgi/ssoClientTemplate.mf" />
+   <property name="build.packages.samltoken"
+             value="${build.packages}/samltoken.jar" />
+   <property name="lightwave-repo-url" value="http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave/" />
+   <property name="lightwave-server-id" value="lightwave" />
+   <property name="jar" value="${buildRoot}/packages/admin-interfaces.jar" />
+
+   <path id="maven-ant-tasks.classpath" path="${ant.home}/lib/maven-ant-tasks-2.1.3.jar" />
+    <typedef resource="org/apache/maven/artifact/ant/antlib.xml"
+             uri="antlib:org.apache.maven.artifact.ant"
+             classpathref="maven-ant-tasks.classpath" />
+   <property name="manifest_mf" value="MANIFEST.MF" />
+   <property name="src.main.resources.manifest_mf" value="src/main/resources/${manifest_mf}" 
+      description="Instructs the 'package' task to use this manifest file" />
+
+   <path id="classpath.main">
+      <pathelement location="${jars.samltoken}" />
+      <pathelement location="${jars.wstClient}" />
+      <pathelement location="${build.packages.samltoken}"/>
+      <fileset refid="jar-set.LOG4J2" />
+      <fileset refid="jar-set.commons-codec" />
+   </path>
+
+   <artifact:pom id="pom-admin-interfaces" groupId="com.vmware.identity" artifactId="admin-interfaces" version="6.0.2" name="VMwareIdentity-STS-admin-interfaces" >
+    <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />
+    <dependency groupId="org.apache.logging.log4j" artifactId="log4j-1.2-api" version="2.0.2" />
+    <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />
+    <dependency groupId="org.apache.logging.log4j" artifactId="log4j-slf4j-impl" version="2.2" />
+    <dependency groupId="org.slf4j" artifactId="slf4j-api" version="1.7.10" />
+    <dependency groupId="org.slf4j" artifactId="jcl-over-slf4j" version="1.7.10" />
+    <dependency groupId="commons-codec" artifactId="commons-codec" version="1.4" />
+    <dependency groupId="com.vmware.identity" artifactId="samltoken" version="6.0.2" />
+    <dependency groupId="com.vmware.identity" artifactId="wstclient" version="6.0.2" />
+   </artifact:pom>
+
+   <artifact:writepom pomRefId="pom-admin-interfaces" file="pom.xml"/>
+
+   <target name="deploy" depends="build" description="Deploy admin-interfaces-VERSION.jar to artifact instance">
+     <artifact:mvn>
+       <arg value="org.apache.maven.plugins:maven-deploy-plugin:2.6:deploy-file" />
+       <arg value="-Durl=${lightwave-repo-url}" />
+       <arg value="-DrepositoryId=${lightwave-server-id}" />
+       <arg value="-DpomFile=pom.xml" />
+       <arg value="-Dfile=${jar}" />
+       <arg value="-Pgpg" />
+     </artifact:mvn>
+   </target>
+
+  <!-- <target name="after-compile">
+      <mkdir dir="${build.dist.javadocs-admin-interfaces}" />
+      <javadoc packagenames="com.vmware.vim.sso.*, com.vmware.vim.idp.*"
+               sourcepath="${src.main.java}"
+               destdir="${build.dist.javadocs-admin-interfaces}"
+               failonerror="yes"
+               access="protected"
+               windowtitle="admin-interfaces API">
+        <classpath refid="classpath.main" />
+      </javadoc>
+      <zip destfile="${build.dist}/admin-interfaces-javadocs.zip">
+           <zipfileset dir="${build.dist.javadocs-admin-interfaces}/" prefix="admin-interface-javadocs"/>
+      </zip>
+      <delete dir="${build.dist.javadocs-admin-interfaces}"/>
+   </target> -->
+ 
+   <import file="${MAINSRCROOT}/build/ant/buildcycle-template.xml" />
+
+</project>

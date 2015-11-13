@@ -836,7 +836,7 @@ VmKdcBuildTgsRep(
     PVMKDC_ENCTGSREPPART pEncTgsRepPart = NULL;
 
     /*
-     * Initializate an AS-REP-PART structure
+     * Initializate an TGS-REP-PART structure
      */
     dwError = VmKdcMakeEncTgsRepPart(pSessionKey,
                                      last_req,

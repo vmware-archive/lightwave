@@ -667,6 +667,7 @@ _VmDirAddPrepareObjectSD(
                     pEntry,
                     pObjectSdAttr);
     BAIL_ON_VMDIR_ERROR(dwError);
+    pObjectSdAttr = NULL;
 
     dwError = _VmDirGenerateAttrMetaData(pEntry, ATTR_OBJECT_SECURITY_DESCRIPTOR);
     BAIL_ON_VMDIR_ERROR(dwError);

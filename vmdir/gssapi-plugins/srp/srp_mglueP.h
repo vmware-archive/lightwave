@@ -649,6 +649,38 @@ typedef struct _GSS_MECH_PLUGIN_CONFIG {
 	    gss_buffer_t,		/* token */
 	    gss_cred_id_t *		/* cred_handle */
 	/* */);
+
+#ifdef _MIT_KRB5_1_12
+        /* get_mic_iov extensions, added in 1.12 */
+
+        OM_uint32       (KRB5_CALLCONV *gss_get_mic_iov)
+        (
+            OM_uint32 *,                /* minor_status */
+            gss_ctx_id_t,               /* context_handle */
+            gss_qop_t,                  /* qop_req */
+            gss_iov_buffer_desc *,      /* iov */
+            int                         /* iov_count */
+        );
+
+        OM_uint32       (KRB5_CALLCONV *gss_verify_mic_iov)
+        (
+            OM_uint32 *,                /* minor_status */
+            gss_ctx_id_t,               /* context_handle */
+            gss_qop_t *,                /* qop_state */
+            gss_iov_buffer_desc *,      /* iov */
+            int                         /* iov_count */
+        );
+
+        OM_uint32       (KRB5_CALLCONV *gss_get_mic_iov_length)
+        (
+            OM_uint32 *,                /* minor_status */
+            gss_ctx_id_t,               /* context_handle */
+            gss_qop_t,                  /* qop_req */
+            gss_iov_buffer_desc *,      /* iov */
+            int                         /* iov_count */
+        );
+#endif
+
 #endif
 
 

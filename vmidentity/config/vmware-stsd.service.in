@@ -1,0 +1,11 @@
+[Unit]
+Description=VMware Secure Token Service
+After=syslog.target network.target
+Requires=vmware-idmd.service
+
+[Service]
+Type=forking
+ExecStart=/opt/vmware/sbin/vmware-stsd.sh start
+
+[Install]
+WantedBy=multi-user.target

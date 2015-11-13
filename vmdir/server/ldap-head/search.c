@@ -18,10 +18,131 @@
 
 static
 DWORD
-VmDirLogSearchRequest(
-    SearchReq*  pSReq,
+_VmDirLogSearchAttributes(
+    PVDIR_OPERATION pOperation,
     ber_len_t   iNumAttr
-    );
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszAttributes = NULL;
+    size_t  currLen = 0;
+    size_t  msgSize = 0;
+    int     iCnt = 0;
+    SearchReq *pSReq = &(pOperation->request.searchReq);
+
+    if (iNumAttr > 0)
+    {
+        for (iCnt = 0, msgSize = 0; iCnt<iNumAttr; iCnt++)
+        {
+            msgSize += pSReq->attrs[iCnt].lberbv.bv_len + 2 /* for a ',' and ' ' */;
+        }
+
+        dwError = VmDirAllocateMemory(msgSize + 1, (PVOID *)&pszAttributes);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        for (iCnt = 0, currLen = 0; iCnt<iNumAttr; iCnt++)
+        {
+            VmDirStringNPrintFA(
+                    pszAttributes + currLen,
+                    msgSize + 1 - currLen,
+                    msgSize - currLen,
+                    "%s, ",
+                    pSReq->attrs[iCnt].lberbv.bv_val);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            currLen += pSReq->attrs[iCnt].lberbv.bv_len + 2;
+        }
+        pszAttributes[currLen - 2] = '\0';
+
+        dwError = VmDirAllocateStringA(
+                VDIR_SAFE_STRING(pszAttributes),
+                &pOperation->conn->SuperLogRec.opInfo.searchInfo.pszAttributes);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (VmDirLogGetMask() & LDAP_DEBUG_ARGS)
+        {
+            VMDIR_LOG_VERBOSE(LDAP_DEBUG_ARGS, "    Required attributes: %s", pszAttributes);
+        }
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszAttributes);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+            "_VmDirLogSearchAttributes: dwError: %lu, msgSize: %lu, iNumAttr: %lu",
+            dwError, msgSize, iNumAttr);
+    for (iCnt = 0; iCnt<iNumAttr; iCnt++)
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                "    attr[%d] len: %lu, val: \"%.*s\"",
+                iCnt, pSReq->attrs[iCnt].lberbv.bv_len, 256,
+                VDIR_SAFE_STRING(pSReq->attrs[iCnt].lberbv.bv_val));
+    }
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirLogSearchParameters(
+    PVDIR_OPERATION pOperation
+    )
+{
+    DWORD dwError = 0;
+    PVDIR_CONNECTION pConn = pOperation->conn;
+    SearchReq sr = pOperation->request.searchReq;
+    VDIR_BERVALUE strFilter = VDIR_BERVALUE_INIT;
+    static PCSTR pcszScopeStr[] = { "BASE", "ONE", "SUB" };
+
+    dwError = FilterToStrFilter(sr.filter, &strFilter);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(
+            VDIR_SAFE_STRING(strFilter.lberbv.bv_val),
+            &pConn->SuperLogRec.pszOperationParameters);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(
+            VDIR_SAFE_STRING(pOperation->reqDn.lberbv.bv_val),
+            &pConn->SuperLogRec.opInfo.searchInfo.pszBaseDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(
+            VDIR_SAFE_STRING(pOperation->pszFilters),
+            &pConn->SuperLogRec.opInfo.searchInfo.pszIndexResults);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (sr.scope < 0 || sr.scope > 2)
+    {
+        VMDIR_LOG_ERROR( LDAP_DEBUG_ARGS, "_VmDirLogSearchParameters: Unknown search scope (%d)", sr.scope );
+        dwError = ERROR_INVALID_PARAMETER;
+    }
+    else
+    {
+        dwError = VmDirAllocateStringA(
+                pcszScopeStr[sr.scope],
+                &pConn->SuperLogRec.opInfo.searchInfo.pszScope);
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pConn->SuperLogRec.opInfo.searchInfo.dwReturned = pOperation->dwSentEntries;
+    if (pOperation->request.searchReq.filter->candidates)
+    {
+        pConn->SuperLogRec.opInfo.searchInfo.dwScanned = sr.filter->candidates->size;
+    }
+
+    if (VmDirLogGetLevel() >= VMDIR_LOG_VERBOSE && VmDirLogGetMask() & LDAP_DEBUG_ARGS)
+    {
+        VMDIR_LOG_VERBOSE(LDAP_DEBUG_ARGS, "    Filter: %s", pConn->SuperLogRec.pszOperationParameters);
+    }
+
+cleanup:
+    VmDirFreeBervalContent(&strFilter);
+    return dwError;
+
+error:
+    goto cleanup;
+}
 
 /* PerformSearch: Parse the search request on the wire, and call middle-layer Search functionality.
  *
@@ -108,15 +229,6 @@ VmDirPerformSearch(
    retVal = ParseFilter( pOperation, &sr->filter, pResult );
    BAIL_ON_VMDIR_ERROR(retVal);
 
-   // Log String filter, if desired.
-   if (VmDirLogGetLevel() >= VMDIR_LOG_VERBOSE && VmDirLogGetMask() & LDAP_DEBUG_ARGS)
-   {
-      VDIR_BERVALUE strFilter = VDIR_BERVALUE_INIT;
-      FilterToStrFilter( sr->filter, &strFilter );
-      VMDIR_LOG_VERBOSE( LDAP_DEBUG_ARGS, "    Filter: %s", strFilter.lberbv.bv_val );
-      VmDirFreeBervalContent(&strFilter);
-   }
-
    // Parse attributes. 'M' => attribute names point within (in-place) the ber.
    size = sizeof( BerValue ); // Size of the structure is passed-in, and number of attributes are returned back in
                               // the same parameter.
@@ -145,22 +257,19 @@ VmDirPerformSearch(
        }
    }
 
-   // Log list of the required attributes, if desired.
-   if (( VmDirLogGetMask() & LDAP_DEBUG_ARGS) && size > 0)
-   {
-       if (VmDirLogSearchRequest(sr, size) != 0)
-       {
-           pResult->errCode = retVal = LDAP_OPERATIONS_ERROR;
-           BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg), "Error while logging search request");
-       }
-   }
+   // Log list of the required attributes
+   retVal = _VmDirLogSearchAttributes(pOperation, size);
+   BAIL_ON_VMDIR_ERROR(retVal);
 
    // Parse LDAP controls present (if any) in the request.
    retVal = ParseRequestControls(pOperation, pResult);  // ldapResult.errCode set inside
    BAIL_ON_VMDIR_ERROR( retVal );
 
-   retVal = pResult->errCode = VmDirMLSearch( pOperation );
+   retVal = pResult->errCode = VmDirMLSearch(pOperation);
    bResultAlreadySent = TRUE;
+   BAIL_ON_VMDIR_ERROR(retVal);
+
+   retVal = _VmDirLogSearchParameters(pOperation);
    BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:
@@ -199,56 +308,4 @@ VmDirFreeSearchRequest(
    return;
 }
 
-DWORD
-VmDirLogSearchRequest(
-    SearchReq*  pSReq,
-    ber_len_t   iNumAttr
-    )
-{
-    DWORD   dwError = 0;
-    PSTR    pszLogMsg = NULL;
-    size_t  currLen = 0;
-    size_t  msgSize = 0;
-    int     iCnt = 0;
 
-    assert(pSReq);
-
-    for ( iCnt = 0, msgSize = 0; iCnt<iNumAttr; iCnt++ )
-    {
-       msgSize += pSReq->attrs[iCnt].lberbv.bv_len + 2 /* for a ',' and ' ' */;
-    }
-
-    dwError = VmDirAllocateMemory( msgSize + 1, (PVOID *)&pszLogMsg );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for ( iCnt = 0, currLen = 0; iCnt<iNumAttr; iCnt++ )
-    {
-       VmDirStringNPrintFA( pszLogMsg + currLen, (msgSize + 1 - currLen), msgSize, "%s, ", pSReq->attrs[iCnt].lberbv.bv_val);
-       currLen += pSReq->attrs[iCnt].lberbv.bv_len + 2;
-    }
-    pszLogMsg[currLen - 2] = '\0';
-
-    VMDIR_LOG_VERBOSE( LDAP_DEBUG_ARGS, "    Required attributes: %s", pszLogMsg );
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY( pszLogMsg );
-
-    return dwError;
-
-error:
-
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-        "VmDirLogSearchRequest: dwError: %lu, msgSize: %lu, iNumAttr: %lu",
-        dwError, msgSize, iNumAttr);
-
-    for ( iCnt = 0; iCnt<iNumAttr; iCnt++ )
-    {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-            "    attr[%d] len: %lu, val: \"%.*s\"",
-            iCnt, pSReq->attrs[iCnt].lberbv.bv_len, 256,
-            VDIR_SAFE_STRING(pSReq->attrs[iCnt].lberbv.bv_val));
-    }
-
-    goto cleanup;
-}

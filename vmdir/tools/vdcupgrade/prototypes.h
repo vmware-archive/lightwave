@@ -20,11 +20,13 @@ DWORD
 VmDirParseArgs(
     int     argc,
     char*   argv[],
-    PSTR*   ppszLdapURI,
-    PSTR*   ppszUserDN,
+    PSTR*   ppszServerName,
+    PSTR*   ppszAdminUPN,
     PSTR*   ppszPassword,
     PSTR*   ppszPasswordFile,
-    PBOOLEAN pbAclOnly
+    PBOOLEAN pbAclOnly,
+    PSTR*   ppszPnidFixDcAccountName,
+    PSTR*   ppszPnidFixNewSamAccount
     );
 
 VOID

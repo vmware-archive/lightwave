@@ -2,7 +2,6 @@
 #include <net/if.h>
 #include <ifaddrs.h>
 #include <arpa/inet.h>
-
 #include <config.h>
 #include <ldap.h>
 #include <sasl/sasl.h>
@@ -14,6 +13,12 @@
 #include <vmdirsys.h>
 #include <sys/types.h>
 #include <pwd.h>
+
+#ifdef __MACH__
+#include <sys/un.h>
+#include <sys/ucred.h>
+#endif
+
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>
@@ -50,8 +55,6 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
-#include "banned.h"
-
 #include <sasl/sasl.h>
 
 #include <openssl/crypto.h>
@@ -59,7 +62,6 @@
 #include <openssl/err.h>
 #include <dce/rpc.h>
 
-#include <lw/security-api.h>
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>
@@ -71,5 +73,6 @@
 #include "structs.h"
 #include "prototypes.h"
 #include "defines.h"
+#include "banned.h"
 
 #endif

@@ -27,9 +27,14 @@ CLEAN_OBJECTS = \
     config.log \
     config.status \
     include \
+    depends \
+    jdepends \
     libtool \
+    pscsetup \
     rpmbuild \
+    scripts \
     tools \
+    vmware-config \
     $(SRCROOT)/aclocal.m4 \
     $(SRCROOT)/ar-lib \
     $(SRCROOT)/autom4te.cache \
@@ -58,6 +63,11 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_bindir /opt/vmware/bin" \
               --define "_lib64dir /opt/vmware/lib64" \
               --define "_likewise_open_prefix /opt/likewise" \
+              --define "_vmdir_prefix /opt/vmware" \
+              --define "_vmafd_prefix /opt/vmware" \
+              --define "_vmca_prefix /opt/vmware" \
+              --define "_vmsts_prefix /opt/vmware" \
+              --define "_javahome /opt/OpenJDK-1.8.0.51-bin" \
               --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
               SPECS/$(PKG_SPEC)
 

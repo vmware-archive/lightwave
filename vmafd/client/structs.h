@@ -12,11 +12,22 @@
  * under the License.
  */
 
-
+/*
+ * This is the structure which completes the incomplete type
+ * in include/public/vmafdtypes.h.
+ */
+struct _VMAFD_SERVER
+{
+    LONG refCount;
+    PSTR pszServerName;
+    PSTR pszUserName;
+    rpc_binding_handle_t hBinding;
+};
 
 typedef struct _VECS_STORE_
 {
     LONG  refCount;
+    struct _VMAFD_SERVER *pServer;
     handle_t hBinding;
     BOOLEAN bOwnBinding;
     vecs_store_handle_t pStoreHandle;
@@ -33,13 +44,10 @@ typedef struct _VECS_ENUM_CONTEXT
 
 } VECS_ENUM_CONTEXT;
 
-/*
- * This is the structure which completes the incomplete type
- * in include/public/vmafdtypes.h.
- */
-struct _VMAFD_SERVER
+typedef struct _VMAFD_HB_HANDLE
 {
-    PSTR pszServerName;
-    PSTR pszUserName;
-    rpc_binding_handle_t hBinding;
-};
+    pthread_t  threadHandle;
+    pthread_t* pThreadHandle;
+    PWSTR      pszServiceName;
+    DWORD      dwPort;
+} VMAFD_HB_HANDLE;

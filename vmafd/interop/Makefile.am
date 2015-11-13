@@ -1,3 +1,7 @@
 SUBDIRS = \
-    jni \
+    java \
+    jni  \
+    cdcjni
+
+SKIP_DIRS = \
     python

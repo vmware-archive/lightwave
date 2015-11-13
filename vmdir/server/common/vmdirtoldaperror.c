@@ -64,6 +64,7 @@ VmDirToLDAPError(
                 break;
 
             case VMDIR_ERROR_INVALID_SYNTAX:
+            case VMDIR_ERROR_BAD_ATTRIBUTE_DATA:
                 dwError = LDAP_INVALID_SYNTAX;
                 break;
 

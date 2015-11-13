@@ -1,3 +1,19 @@
+/*
+ * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+
+
 #include "includes.h"
 
 static VMAFD_SSL_GLOBALS gVmAfdSSLGlobals = {0};
@@ -70,6 +86,9 @@ VmAfdOpenSSLInit(VOID)
         CRYPTO_set_locking_callback (VmAfdOpenSSLLockingCallback);
 
     }
+
+    ERR_load_crypto_strings();
+    OpenSSL_add_all_algorithms();
 
 cleanup:
     return dwError;
@@ -271,6 +290,74 @@ error:
     goto cleanup;
 }
 
+DWORD
+VecsPEMToEVPKey (
+      PCSTR pszKey,
+      PCSTR pszPassword,
+      EVP_PKEY **ppKey
+      )
+{
+
+    DWORD dwError = 0;
+    EVP_PKEY *pKey = NULL;
+    BIO *pBioMemBuff = NULL;
+
+    if (IsNullOrEmptyString (pszKey) ||
+        !ppKey
+       )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    pBioMemBuff = BIO_new_mem_buf((PVOID)pszKey, -1);
+
+    if (!pBioMemBuff)
+    {
+        dwError = ERROR_NOT_ENOUGH_MEMORY;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    pKey = PEM_read_bio_PrivateKey (pBioMemBuff, NULL, 0,(void *) pszPassword);
+
+    if (!pKey)
+    {
+        if (pszPassword)
+        {
+            /*XXX: Making an educative guess that passwword is wrong*/
+            dwError = ERROR_WRONG_PASSWORD;
+        }
+        else
+        {
+            dwError = ERROR_BAD_FORMAT;
+        }
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    *ppKey = pKey;
+
+cleanup:
+    if (pBioMemBuff)
+    {
+      BIO_free (pBioMemBuff);
+    }
+
+    return dwError;
+
+error:
+
+    if (ppKey)
+    {
+        *ppKey = NULL;
+    }
+
+    if (pKey)
+    {
+      EVP_PKEY_free (pKey);
+    }
+
+    goto cleanup;
+}
 
 DWORD
 VecsPEMToX509Crl(
@@ -1286,6 +1373,7 @@ error :
 DWORD
 VecsKeyToPEM(
     RSA* pKey,
+    PSTR pszPassword,
     PSTR* ppszKey
     )
 {
@@ -1324,15 +1412,16 @@ VecsKeyToPEM(
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
+
     if (!PEM_write_bio_PrivateKey(
-                          pBioMem,
-                          pPKCS8Key,
-                          NULL,
-                          NULL,
-                          0,
-                          NULL,
-                          NULL
-                          )
+                      pBioMem,
+                      pPKCS8Key,
+                      IsNullOrEmptyString(pszPassword)? NULL:EVP_des_ede3_cbc(),
+                      NULL,
+                      0,
+                      NULL,
+                      pszPassword
+                      )
        )
     {
         dwError = ERROR_BAD_FORMAT;
@@ -1360,6 +1449,76 @@ cleanup:
     if (pPKCS8Key)
     {
         EVP_PKEY_free (pPKCS8Key);
+    }
+
+    return dwError;
+error :
+     if (ppszKey)
+     {
+        *ppszKey = NULL;
+     }
+     VMAFD_SAFE_FREE_MEMORY (pszBuffer);
+     goto cleanup;
+}
+
+DWORD
+VecsEVPKeyToPEM(
+    EVP_PKEY* pKey,
+    PSTR* ppszKey
+    )
+{
+    PSTR pszBuffer = NULL;
+    BUF_MEM *pBuffMem = NULL;
+    BIO* pBioMem = NULL;
+    DWORD dwError = 0;
+
+    if ( !pKey ||
+         !ppszKey
+       )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    pBioMem = BIO_new(BIO_s_mem());
+    if ( pBioMem == NULL)
+    {
+        dwError = ERROR_NOT_ENOUGH_MEMORY;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    if (!PEM_write_bio_PrivateKey(
+                          pBioMem,
+                          pKey,
+                          NULL,
+                          NULL,
+                          0,
+                          NULL,
+                          NULL
+                          )
+      )
+    {
+        dwError = ERROR_BAD_FORMAT;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    BIO_get_mem_ptr(pBioMem, &pBuffMem);
+
+    dwError = VmAfdAllocateMemory(
+                    (DWORD)pBuffMem->length + 1,
+                    (PVOID*)&pszBuffer
+                    );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    memcpy(pszBuffer, pBuffMem->data, pBuffMem->length - 1);
+
+    pszBuffer[pBuffMem->length-1] = '\n';
+
+    *ppszKey = pszBuffer;
+
+cleanup:
+    if (pBioMem != NULL) {
+        BIO_free(pBioMem);
     }
 
     return dwError;
@@ -1507,6 +1666,7 @@ error:
 DWORD
 VecsValidateAndFormatKey(
     PCWSTR pszKey,
+    PCWSTR pszPassword,
     PWSTR *ppszPEMKey
     )
 {
@@ -1515,6 +1675,7 @@ VecsValidateAndFormatKey(
     PSTR pszPEMKey = NULL;
     PWSTR pwszPEMKey = NULL;
     PSTR paszKey = NULL;
+    PSTR paszPassword = NULL;
     RSA *rsaKey = NULL;
 
     if (IsNullOrEmptyString(pszKey) ||
@@ -1530,6 +1691,15 @@ VecsValidateAndFormatKey(
                                         &paszKey
                                        );
     BAIL_ON_VMAFD_ERROR (dwError);
+    if (!IsNullOrEmptyString(pszPassword))
+    {
+        dwError = VmAfdAllocateStringAFromW(
+                                        pszPassword,
+                                        &paszPassword
+                                        );
+        BAIL_ON_VMAFD_ERROR (dwError);
+
+    }
 
     dwError = VecsPEMToRSA (
                          paszKey,
@@ -1539,6 +1709,7 @@ VecsValidateAndFormatKey(
 
     dwError = VecsKeyToPEM(
                          rsaKey,
+                         paszPassword,
                          &pszPEMKey
                          );
     BAIL_ON_VMAFD_ERROR (dwError);
@@ -1570,6 +1741,166 @@ error:
     VMAFD_SAFE_FREE_MEMORY (pwszPEMKey);
 
     goto cleanup;
+}
+
+DWORD
+VecsDecryptAndFormatKey(
+    PCWSTR pszKey,
+    PCWSTR pszPassword,
+    PWSTR *ppszPEMKey
+    )
+{
+
+    DWORD dwError = 0;
+    PSTR pszPEMKey = NULL;
+    PWSTR pwszPEMKey = NULL;
+    PSTR paszKey = NULL;
+    PSTR paszPassword = NULL;
+    EVP_PKEY *pPKCS8Key = NULL;
+
+    if (IsNullOrEmptyString(pszKey) ||
+        !ppszPEMKey
+       )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    dwError = VmAfdAllocateStringAFromW(
+                                        pszKey,
+                                        &paszKey
+                                       );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    if (!IsNullOrEmptyString(pszPassword))
+    {
+        dwError = VmAfdAllocateStringAFromW(
+                                        pszPassword,
+                                        &paszPassword
+                                        );
+        BAIL_ON_VMAFD_ERROR (dwError);
+
+    }
+
+    dwError = VecsPEMToEVPKey(
+                         paszKey,
+                         paszPassword,
+                         &pPKCS8Key
+                         );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    dwError = VecsEVPKeyToPEM(
+                         pPKCS8Key,
+                         &pszPEMKey
+                         );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    dwError = VmAfdAllocateStringWFromA (
+                                          pszPEMKey,
+                                          &pwszPEMKey
+                                        );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    *ppszPEMKey = pwszPEMKey;
+
+cleanup:
+    if (pPKCS8Key)
+    {
+      EVP_PKEY_free (pPKCS8Key);
+    }
+
+    VMAFD_SAFE_FREE_MEMORY (paszKey);
+    VMAFD_SAFE_FREE_MEMORY (paszPassword);
+    VMAFD_SAFE_FREE_MEMORY (pszPEMKey);
+
+    return dwError;
+
+error:
+    if (ppszPEMKey)
+    {
+        *ppszPEMKey = NULL;
+    }
+
+    VMAFD_SAFE_FREE_MEMORY (pwszPEMKey);
+
+    goto cleanup;
+
+}
+
+DWORD
+VecsValidateCertKeyPair(
+    PCWSTR pszCertificate,
+    PCWSTR pszPrivateKey
+    )
+{
+
+    DWORD dwError = 0;
+    PSTR paszKey = NULL;
+    PSTR paszCert = NULL;
+    EVP_PKEY *pPKCS8Key = NULL;
+    X509 *pCert = NULL;
+
+    if (IsNullOrEmptyString(pszCertificate) ||
+        !pszPrivateKey
+       )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    dwError = VmAfdAllocateStringAFromW(
+                                        pszPrivateKey,
+                                        &paszKey
+                                       );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    dwError = VecsPEMToEVPKey(
+                         paszKey,
+                         NULL,
+                         &pPKCS8Key
+                         );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    dwError = VmAfdAllocateStringAFromW(
+                                        pszCertificate,
+                                        &paszCert
+                                       );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    dwError = VecsPEMToX509(paszCert, &pCert);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = X509_check_private_key(pCert, pPKCS8Key);
+    if (dwError == 1)
+    {
+        dwError = ERROR_SUCCESS;
+    }
+    else
+    {
+        dwError = VECS_PRIVATE_KEY_MISMATCH;
+    }
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+
+cleanup:
+    if (pPKCS8Key)
+    {
+      EVP_PKEY_free (pPKCS8Key);
+    }
+    if(pCert)
+    {
+        X509_free(pCert);
+    }
+
+    VMAFD_SAFE_FREE_MEMORY (paszKey);
+    VMAFD_SAFE_FREE_MEMORY (paszCert);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+
 }
 
 static

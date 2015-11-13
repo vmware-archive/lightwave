@@ -1,0 +1,19 @@
+% Manifest name: vmidentity
+% Manifest group: VirtualAppliance
+% Manifest default: Enabled
+
+# identity server logs
+copy IGNORE_MISSING $VMWARE_LOG_DIR/vmware/sso/*
+copy IGNORE_MISSING $VMWARE_LOG_DIR/sso/*
+copy IGNORE_MISSING $VMWARE_LOG_DIR/vmware-identity/*
+copy IGNORE_MISSING $VMWARE_RUNTIME_DATA_DIR/VMwareSTSService/logs/*
+copy IGNORE_MISSING $VMWARE_LOG_DIR/vmware/sso/utils/*
+
+# Lookup Service Registration Information
+run TIMEOUT=30,IGNORE_ERROR,IGNORE_MISSING,RELOCATE=commands/lstool.txt /usr/bin/python /usr/lib/vmidentity/tools/scripts/lstool.py list --url "http://localhost:7080/lookupservice/sdk"
+
+# Get identity source information
+run TIMEOUT=30,IGNORE_ERROR,IGNORE_MISSING,RELOCATE=commands/sso-config.txt /opt/vmware/bin/sso-config.sh get_identity_sources $VMWARE_LOG_DIR
+
+# Export Registry entries to support bundle
+run TIMEOUT=30,IGNORE_ERROR,IGNORE_MISSING /opt/likewise/bin/lwregshell ls HKEY_THIS_MACHINE\\Software\\VMWare\\Identity\\Configuration

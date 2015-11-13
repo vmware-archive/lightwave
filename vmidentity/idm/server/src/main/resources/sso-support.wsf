@@ -1,0 +1,593 @@
+<job id="main">
+    <runtime>
+        <description>This script collects VMware Single Sign-On Service config and log data to help VMware customer support diagnose your problem.
+      </description>
+        <named name="?" helpstring="Displays this help" type="simple" required="false" />
+        <named name="n" helpstring="For auto-rotated log files, limit to the most recent N files of each log. Default is 100 for vpxd logs, 50 for all other." type="string" required="false" />
+        <named name="o" helpstring="Override the system generated support bundle file name" type="string" required="false" />
+        <named name="s" helpstring="Absolute path of directory under which the log data will be saved. Default is the user's desktop. If specified, ensure the directory permissions secure the log data." type="string" required="false" />
+    </runtime>
+    <script language="VBScript">
+'
+' main()
+'
+Option Explicit
+
+' Magic namespace constants
+Const HKLM = &H80000002
+Const DESKTOP = &H10&
+Const APPDATA = &H1A&
+Const COMMON_APPDATA = &H23&
+Const WINDOWS = &H24&
+Const SYSTEM32 = &H25&
+Const PROGRAM_FILES = &H26&
+Private Const LOCAL_APPDATA = &H1C&
+
+' __VERSION__ is replaced by the product version hyphen build number at build time.
+'
+Private Const SsoSupportVersion = "__VERSION__"
+
+' use this only with cscript
+Dim scriptEngine
+
+' Setting the locale to en-US. This is required for sso-support to function
+' in machines with other regional settings
+SetLocale(1033)
+
+scriptEngine = LCase(wscript.fullName)
+if 0 = InStr(scriptEngine, "cscript") then
+   WScript.Echo "You must run this script using the cscript engine. Try " _
+                & "running " & vbCrLf & vbCrLf & "       " & "cscript " _
+                & wscript.scriptName
+   wscript.quit 1
+end if
+
+Dim workdir, fso, wshell, savedir, datadir, appshell, instance, _
+    prodName, LogFile, ScriptFullName, cmdOptions, arg, _
+    VersionFile, LogMsg, ZipFile, ZipCmd, CommonAppData, _
+    LogCreateFilter, installpath, companyName, prodInfra, _
+    PerFolderFileCount, IsNFlagSet, tmpdir, _
+	companyNameIdentity, prodNameIdentity, prodNameVmca, _
+    prodNameVmdir, prodNameVmidentity, prodNameVmkdc, _
+    prodConf, installpathVmidentity, _
+	datapathVmidentity, datapathVmkdc, _
+    logspathVmidentity,logspathVmdir,logspathVmkdc, logspathTcRuntime, _
+    configpathVmdir, configpathVmkdc, configpathVmidentity
+
+InitEnv
+GatherSsoLogs
+GatherInstallerLogs
+GatherSystemConfig
+TermCollection
+
+'
+' Terminate SSO Support bundle collection
+'
+
+Sub TermCollection
+   Log "All done at " & Now, False
+   logMsg = "Support information for " & prodName & " was gathered under " _
+         & workdir & "."
+   zipFile=""
+   DeleteSensitiveData
+   if Len(zipCmd) <> 0 then
+      zipFile = ZipIt(savedir, instance)
+      if Len(zipFile) <> 0 then
+         logMsg = logMsg & " Zipped as " & savedir & "\" & zipFile & "."
+         wscript.stdout.writeline "Zipped as: " & savedir & "\" & zipFile & "."
+      else
+         wscript.stderr.writeline "Error creating zip archive using " & zipCmd _
+                               & ". The bundle files can be found in " & workdir & "."
+      end if
+   else
+      Log "The support data has been gathered under " & workdir & ".", True
+   end if
+End Sub
+
+'
+' Initialize SSO Support Bundle collection Environment
+'
+
+Sub InitEnv
+
+   set wshell = wscript.CreateObject("WScript.Shell")
+   set fso = CreateObject("Scripting.FileSystemObject")
+   set appshell = CreateObject("Shell.Application")
+   ScriptFullName = WScript.ScriptFullName
+   CommonAppData=appshell.Namespace(COMMON_APPDATA).Self.Path
+   for each arg in WScript.Arguments
+      cmdOptions = cmdOptions & " " & arg
+   next
+   LogFile = Null
+   LogCreateFilter=0
+
+   companyName="VMware, Inc."
+   companyNameIdentity="VMware"
+
+   prodName="SSOServer"
+   prodNameIdentity="Identity"
+   prodNameVmca="VMware Certificate Services"
+   prodNameVmdir="VMware Directory Services"
+   prodNameVmidentity="VMware Identity Services"
+   prodNameVmkdc="VMware Kdc Services"
+
+   prodInfra = "VMware Infrastructure"
+   prodConf = "Configuration"
+
+   installpathVmidentity = wshell.RegRead("HKLM\SOFTWARE\" & companyName & _
+                "\" & prodNameVmidentity & "\InstallPath")
+
+   datapathVmidentity = wshell.RegRead("HKLM\SOFTWARE\" & companyName & _
+                "\" & prodNameVmidentity & "\DataPath")
+   datapathVmkdc = wshell.RegRead("HKLM\SOFTWARE\" & companyName & _
+                "\" & prodNameVmkdc & "\DataPath")
+   logspathVmidentity = wshell.RegRead("HKLM\SOFTWARE\" & companyName & _
+                "\" & prodNameVmidentity & "\LogsPath")
+   logspathVmdir = wshell.RegRead("HKLM\SOFTWARE\" & companyName & _
+                "\" & prodNameVmdir & "\LogsPath")
+   logspathVmkdc = wshell.RegRead("HKLM\SOFTWARE\" & companyName & _
+                "\" & prodNameVmkdc & "\LogsPath")
+   logspathTcRuntime = CommonAppData & "\VMware\CIS"
+   configpathVmidentity = wshell.RegRead("HKLM\SOFTWARE\" & companyName & _
+                "\" & prodNameVmidentity & "\ConfigPath")
+   configpathVmdir = wshell.RegRead("HKLM\SOFTWARE\" & companyName & _
+                "\" & prodNameVmdir & "\ConfigPath")
+   configpathVmkdc = wshell.RegRead("HKLM\SOFTWARE\" & companyName & _
+                "\" & prodNameVmkdc & "\ConfigPath")
+
+   datapathVmidentity = TrimTrailingSlash(datapathVmidentity)
+   datapathVmkdc = TrimTrailingSlash(datapathVmkdc)
+   logspathVmdir = TrimTrailingSlash(logspathVmdir)
+   logspathVmkdc = TrimTrailingSlash(logspathVmkdc)
+   logspathVmidentity = TrimTrailingSlash(logspathVmidentity)
+   configpathVmidentity = TrimTrailingSlash(configpathVmidentity)
+   configpathVmkdc = TrimTrailingSlash(configpathVmkdc)
+   configpathVmdir = TrimTrailingSlash(configpathVmdir)
+
+
+   If Err.Number <> 0 Then
+      Log "Error getting SSO install path from registry" & Err.Description, True
+      installpath = "C:\Program Files\VMware\CIS\vmware-sso"
+   End If
+   On Error Resume Next
+
+   tmpdir = wshell.Environment("Process").Item("Temp")
+   savedir=appshell.Namespace(DESKTOP).Self.Path
+
+   if not fso.FolderExists(savedir) then
+      savedir=tmpdir
+   end if
+
+   ParseArguments
+
+   if not fso.FolderExists(savedir) then
+      wscript.stderr.WriteLine "Staging directory (" & savedir & ") doesn't exist."
+      wscript.quit 1
+   end if
+   savedir = fso.GetAbsolutePathName(savedir)
+   workdir = savedir & "\" & instance
+   if fso.FolderExists(workdir) then
+      fso.DeleteFolder(workdir)
+   end if
+   wscript.stdout.WriteLine "Creating folder " & instance & " in " & savedir & ".."
+   fso.CreateFolder(workdir)
+   Log prodName & " Support v" & SsoSupportVersion & ". Log started for " & instance & ".", True
+   Log "Command: " & ScriptFullName & cmdOptions, False
+   Set VersionFile = fso.CreateTextFile(workdir & "\sso-support-ver.txt", True)
+   VersionFile.Write SsoSupportVersion
+   VersionFile.Close
+End Sub
+
+
+Function TrimTrailingSlash(s)
+  If Right(s, 1) = "\" Then
+    TrimTrailingSlash = Left(s, Len(s) - 1)
+  Else
+    TrimTrailingSlash = s
+  End If
+End Function
+
+Sub DeleteSensitiveData
+  Dim KeyFiles
+  Dim p12Files
+  Dim KeyTabFiles
+  Dim wnewshell
+  Dim Return
+
+  KeyFiles = Quote(workdir & "\*.key")
+  p12Files = Quote(workdir & "\*.p12")
+  KeyTabFiles = Quote(workdir & "\*.keytab")
+
+  Wscript.echo "removing sensitive data from the support Bundle"
+  Set wnewshell = Wscript.CreateObject("Wscript.Shell")
+
+  Wscript.echo "Running : " & "cmd /c del /s " & KeyFiles
+  Return = wnewshell.Run ("cmd /c del /s " & KeyFiles , 1, true)
+
+  Wscript.echo "Running : " & "cmd /c del /s " & p12Files
+  Return = wnewshell.Run ("cmd /c del /s " & p12Files, 1, true)
+
+  Wscript.echo "Running : " & "cmd /c del /s " & KeyTabFiles
+  Return = wnewshell.Run ("cmd /c del /s " & KeyTabFiles, 1, true)
+
+  set wnewshell = nothing
+End Sub
+
+Sub GatherServiceDetails(ServiceName, dir)
+   Dim FileName
+   FileName = Quote(dir & "\service-details-" & ServiceName & ".txt")
+   RunCmd "%comspec% /c sc qc " & Quote(ServiceName), FileName
+   RunCmd "%comspec% /c sc queryex " & Quote(ServiceName), FileName
+   RunCmd "%comspec% /c sc qfailure " & Quote(ServiceName), FileName
+End Sub
+
+
+Sub GatherSystemConfig
+   Dim System32Path, FirewallConfigFile, configdir
+   configdir = workdir & "\OsDetails"
+   If Not fso.FolderExists(configdir) Then
+      fso.CreateFolder(configdir)
+   End If
+   GatherServiceDetails "ssotomcat", configdir
+   Log "Gathering system information..", True
+
+   RunCmd "%comspec% /c ver", Quote(configdir) & "\ver.txt"
+   RunCmd "%comspec% /c set", Quote(configdir) & "\set.txt"
+   RunCmd "%comspec% /c " & "ipconfig /all", Quote(configdir) & "\ipconfig-all.txt"
+   RunCmd "%comspec% /c " & "netstat -an",   Quote(configdir) & "\netstat-an.txt"
+   RunCmd "%comspec% /c " & "netstat -aens", Quote(configdir) & "\netstat-aens.txt"
+   RunCmd "%comspec% /c " & "route print",   Quote(configdir) & "\route-print.txt"
+   RunCmd "%comspec% /c " & "arp -a",        Quote(configdir) & "\arp-a.txt"
+   RunCmd "%comspec% /c " & "net start",     Quote(configdir) & "\net-start.txt"
+   RunCmd "%comspec% /c " & "systeminfo",    Quote(configdir) & "\systeminfo.txt"
+   RunCmd "%comspec% /c " & "tasklist /V",   Quote(configdir) & "\tasklist-v.txt"
+   RunCmd "%comspec% /c " & "tasklist /SVC", Quote(configdir) & "\tasklist-svc.txt"
+   RunCmd "%comspec% /c " & "netsh diag show test /v", Quote(configdir) & "\netsh-diag-show-test-v.txt"
+
+   FirewallConfigFile = Quote(configdir) & "\firewall.txt"
+   RunCmd "%comspec% /c " & "netsh firewall show state", FirewallConfigFile
+   RunCmd "%comspec% /c " & "netsh firewall show service", FirewallConfigFile
+   RunCmd "%comspec% /c " & "netsh firewall show config", FirewallConfigFile
+   RunCmd "%comspec% /c " & "netsh firewall show currentprofile", FirewallConfigFile
+   RunCmd "%comspec% /c " & "netsh firewall show opmode", FirewallConfigFile
+   RunCmd "%comspec% /c " & "netsh firewall show allowedprogram", FirewallConfigFile
+   RunCmd "%comspec% /c " & "netsh firewall show portopening", FirewallConfigFile
+   On Error Resume Next
+   System32Path = appshell.Namespace(SYSTEM32).Self.Path
+   fso.CopyFile System32Path & "\drivers\etc\hosts", configdir & "\etc-hosts.txt"
+   fso.CopyFile System32Path & "\drivers\etc\lmhosts", configdir & "\etc-lmhosts.txt"
+End Sub
+
+
+Sub ParseArguments
+   With WScript.Arguments.Named
+      if .exists("n") then
+         PerFolderFileCount = Int(.item("n"))
+         IsNFlagSet = True
+      else
+         PerFolderFileCount = 50
+         IsNFlagSet = False
+      end if
+      if .exists("o") then
+         instance=.item("o")
+      else
+         instance = "ssosupport-" & Month(Date) & "-" & Day(Date) & "-" _
+                     & Year(Date) & "-" & Hour(Now) & "-" & Minute(Now)
+      end if
+      if .exists("s") then
+         savedir=.item("s")
+      end if
+      if .exists("t") then
+         LogCreateFilter=Int(.item("t"))
+      end if
+      if .exists("z") then
+         zipCmd=.item("z")
+         if Len(zipCmd) = 0 then
+            zipCmd=installpathVmidentity & "\vm-support\zip.exe"
+         end if
+         if not fso.FileExists(zipCmd) then
+            wscript.stderr.WriteLine "Zip utility (" & zipCmd & ") doesn't exist."
+            wscript.quit 1
+         end if
+         zipCmd = fso.GetAbsolutePathName(zipCmd)
+      end if
+      if .exists("p") then
+         LDAPPort = .item("p")
+      end if
+   end with
+End Sub
+
+
+'
+' Gather Installer Logs
+'
+
+Sub GatherInstallerLogs
+   Dim InstallLogFolder
+   InstallLogFolder  =  workdir & "\Single Sign-On Service\" & "logs\"
+   on error resume next
+
+   If Not fso.FolderExists(InstallLogFolder) Then
+      fso.CreateFolder(InstallLogFolder)
+   End If
+
+   on error resume next 'since they may not exist
+   fso.CopyFile tmpdir & "\vim-jre-msi.log", InstallLogFolder
+   fso.CopyFile tmpdir & "\vim-kfw-msi.log", InstallLogFolder
+   fso.CopyFile tmpdir & "\vim-openssl-msi.log", InstallLogFolder
+   fso.CopyFile tmpdir & "\vim-python-msi.log", InstallLogFolder
+   fso.CopyFile tmpdir & "\vim-sso-msi.log", InstallLogFolder
+   fso.CopyFile tmpdir & "\vim-tcserver-msi.log", InstallLogFolder
+   fso.CopyFile tmpdir & "\vminst.err", InstallLogFolder
+   fso.CopyFile tmpdir & "\vminst.log", InstallLogFolder
+   fso.CopyFile tmpdir & "\exported_sso.properties", InstallLogFolder
+   fso.CopyFile tmpdir & "\upgrade_compatibility.properties", InstallLogFolder
+   fso.CopyFile tmpdir & "\..\vminst.log", InstallLogFolder & "vminst2.log"
+   fso.CopyFile tmpdir & "\..\vminst.err", InstallLogFolder & "vminst2.err"
+End Sub
+
+'
+' If you provide a destPath whose last char is "\" then expect a new folder created
+' inside  it.
+' e.g CopyFolder("c:\hoho", "d:\here") will create d:\here\hoho
+' which will be a copy of c:\hoho
+'
+Sub CopyFolder(srcPath, destPath)
+   'Log "CopyFolder from " & srcPath & " to " & destPath & "", True
+   If fso.FolderExists(srcPath) Then
+      EnsureFolderExists destPath
+      fso.CopyFolder srcPath, destPath
+   End If
+End Sub
+
+Sub EnsureFolderExists(strPath)
+   strPath = Trim(strPath)
+   If strPath <> "" Then
+      If Not fso.FolderExists(strPath) Then
+         If Not fso.FolderExists(fso.GetParentFolderName(strPath)) Then
+            Call EnsureFolderExists(fso.GetParentFolderName(strPath))
+         End If
+         fso.CreateFolder (strPath)
+      End If
+   End If
+End Sub
+
+'
+' Gather Single Sign-On Service Logs
+'
+
+Sub GatherSsoLogs
+   Dim SsoConfSrcDir, SsoConfTargetDir, SsoLogTgtDir, _
+       SsoLogSrcDir, SsoBaseDir, SsoUtilLogTargetDir, _
+       LookupInstallLog, SsoUtilsLogSrcDir, SsoLog4jTargetDir, SsoLog4jSrcDir
+
+   on error resume next
+   Log "Gathering Single Sign-On Service information..", True
+
+   SsoLogTgtDir = workdir & "\Single Sign-On Service"
+
+   EnsureFolderExists SsoLogTgtDir & "\cfg\vmdird"
+   fso.CopyFile configpathVmdir & "\vmdirschema.ldif", SsoLogTgtDir & "\cfg\vmdird\"
+   CopyFolder configpathVmidentity, SsoLogTgtDir & "\cfg\vmware-sso"
+   CopyFolder configpathVmkdc, SsoLogTgtDir & "\cfg\vmkdcd"
+
+   CopyFolder logspathVmidentity, SsoLogTgtDir & "\logs\vmware-sso"
+   CopyFolder logspathVmkdc, SsoLogTgtDir & "\logs\vmkdcd"
+   CopyFolder logspathVmdir, SsoLogTgtDir & "\logs\vmdird"
+
+   CopyFolder datapathVmidentity, SsoLogTgtDir & "\data\vmware-sso"
+   CopyFolder datapathVmkdc, SsoLogTgtDir & "\data\vmkdcd"
+
+   SsoLogSrcDir = logspathTcRuntime
+
+   CopyFolder SsoLogSrcDir & "\runtime\VMwareSTS\conf", _
+              SsoLogTgtDir & "\runtime\VMwareSTS\conf"
+   CopyFolder SsoLogSrcDir & "\runtime\VMwareSTS\logs", _
+              SsoLogTgtDir & "\runtime\VMwareSTS\logs"
+   CopyFolder SsoLogSrcDir & "\runtime\VMwareSTS\webapps\lookupservice\WEB-INF\classes", _
+              SsoLogTgtDir & "\runtime\VMwareSTS\webapps\lookupservice\WEB-INF\classes"
+   CopyFolder SsoLogSrcDir & "\runtime\VMwareSTS\webapps\sso-adminserver\WEB-INF\classes", _
+              SsoLogTgtDir & "\runtime\VMwareSTS\webapps\sso-adminserver\WEB-INF\classes"
+   CopyFolder SsoLogSrcDir & "\runtime\VMwareSTS\webapps\sts\WEB-INF\classes", _
+              SsoLogTgtDir & "\runtime\VMwareSTS\webapps\sts\WEB-INF\classes"
+
+End Sub
+
+
+' Appends all files under the relative path to the zipFile specified
+' The files retain their relative locations in the zip file
+'
+
+Function Zip(location, relpath, zipFile)
+   Dim file, sf, folderobj, fileList, zipExec
+   Set folderobj = fso.GetFolder(location & "\" & relpath)
+   Zip = 0
+   For Each sf in folderobj.SubFolders
+      Zip = Zip + Zip(location, relpath & "\" & sf.name, zipFile)
+   Next
+   fileList = ""
+   For Each file in folderobj.Files
+      fileList = fileList & Quote(relpath & "\" & file.name) & " "
+   Next
+   ' add all files in dir to zipfile
+   Set zipExec = wshell.Exec(zipCmd & " -a " & zipFile & " " & fileList)
+   do while zipExec.Status = 0
+      wscript.stdout.write "."
+      wscript.sleep 2000 ' sleep for 2 seconds before checking again
+   loop
+   wscript.stdout.write "."
+   if zipExec.ExitCode <> 0 then
+      do until zipExec.stdout.AtEndOfStream
+         wscript.stderr.WriteLine "minizip: " & zipExec.stdout.ReadLine
+      loop
+      Zip = 1
+   end if
+End Function
+
+Function ZipIt(tdir, folder)
+   Dim filelist, zipFile, oldcwd
+   RunCmd "%comspec% /c tree /F /A " & Quote(workdir), Quote(workdir) & "\tree-sso-support.txt"
+   Log "Creating zip archive..", True
+   LogFile.Close
+   zipFile = folder & ".zip"
+   oldcwd = wshell.CurrentDirectory
+   wshell.CurrentDirectory = tdir & "\"
+   on error resume next
+   wshell.Run Quote(zipCmd) & " -r -m " & Quote(zipFile) & " " & Quote(folder), 0, True
+   if err.Number <> 0 Then
+      wscript.stdout.writeline "Error zipping support bundle: " _
+         & Err.Description
+   End If
+   If fso.FileExists(zipFile) then
+      fso.DeleteFolder(tdir & "\" & folder)
+   else
+      zipFile = ""
+   End If
+   on error goto 0
+   wshell.CurrentDirectory = oldcwd & "\"
+   ZipIt = zipFile
+End Function
+
+Sub Log(msg, EchoToScreen)
+   If IsNull(LogFile) Then
+      wscript.stdout.writeline "Created " & workdir & "\sso-support.log"
+      Set LogFile = fso.CreateTextFile(workdir & "\sso-support.log", True)
+   End If
+   LogFile.WriteLine Now & ": " & msg
+   If EchoToScreen = True Then
+      wscript.stdout.WriteLine msg
+   End If
+End Sub
+
+'
+' Copies 100 latest files matching the name pattern to the destination dir
+'
+' name: must be a regular expression, not a filename pattern
+'
+' Lots of gyrations in vbscript to do this simple thing!
+' We first extract all the files matching the name using fso & regexp objects.
+' Then we create a disconnected ado recordset, sort it on mtime, loop through
+' it copying the latest n files using fso
+'
+Sub StageFiles(srcdir, name, destdir, filecount, timefilter)
+   dim query1, query2, files, filerecs, file, regexp, srcDirObj, count
+
+   If Not fso.FolderExists(srcdir) then
+      Log "*** Directory " & srcdir & " does not exist. Skipping..", True
+      Exit Sub
+   End If
+   Set srcDirObj = fso.GetFolder(srcdir)
+   Set files = srcDirObj.Files
+
+   if files.Count = 0 then
+      Log "*** Nothing found in " & srcdir &". Skipping..", True
+      Exit Sub
+   end if
+
+   Set filerecs = CreateObject("ador.recordset")
+   filerecs.fields.append "path", 200, 1024 ' string field of 1024 max chars
+   filerecs.fields.append "mtime", 64	    ' filetime field
+   filerecs.open
+
+   set regexp = new RegExp
+   regexp.pattern = name
+   regexp.ignorecase = true
+   regexp.global = false
+   for each file in files
+      if regexp.test(file.name) then
+         if LogCreateFilter <> 0 and timefilter = true then
+            if DateDiff("n", file.DateLastModified, Current_Time) < LogCreateFilter then
+               filerecs.addnew
+               filerecs("path") = file.Path
+               filerecs("mtime") = file.DateLastModified
+               filerecs.update
+            end if
+         else
+            filerecs.addnew
+            filerecs("path") = file.Path
+            filerecs("mtime") = file.DateLastModified
+            filerecs.update
+         end if
+      end if
+   next
+
+   ' If no files match, skip
+
+   if filerecs.eof and filerecs.bof then
+      Exit Sub
+   end if
+
+   destdir = fso.BuildPath(destdir, "\")
+   if Not fso.FolderExists(destdir) then
+      fso.CreateFolder(destdir)
+   end if
+
+   filerecs.sort = "mtime"
+
+   filerecs.movelast
+   count = 0
+   on error resume next
+   do until filerecs.BOF or count >= filecount
+      fso.CopyFile filerecs.fields.item("path"), destdir
+      count = count + 1
+      filerecs.moveprevious
+   loop
+   on error goto 0
+End Sub
+
+' Convert and quote a string
+Function Quote(strin)
+    Dim siz, i, s
+    siz = Len(strin)
+    For i=1 to siz
+        s = s & Chr(Asc(Mid(strin, i, 1)))
+    Next
+    Quote = Chr(34) & s & Chr(34)
+End Function
+
+' Run a command and save the output to a file
+Function RunCmd(cmd, outfile)
+   Dim f1, run, output, FileName
+   run = Null
+   Log "~~~ Command: " & cmd & " > " & outfile, False
+   on error resume next
+   set run = wshell.Run(cmd & " >> " & outfile & " 2>&1", 0, true)
+   on error goto 0
+
+   if run <> 0 then
+      Log "*** Command returned with errors:", False
+      output = output & run.stdout.readall
+      Log "***   " & output, False
+      output = run.stderr.readall
+      Log "***   " & output, False
+      RunCmd = False
+   else
+      RunCmd = True
+   End If
+End Function
+
+'
+' Redact XML Node Attribute
+'
+
+Sub RedactXmlNodeAttribute(FileName, SearchPath, AttributeName, RedactString)
+   Dim xmlFile, ctr, password
+   'Dim xnodelist As IXMLDOMNodeList
+   Dim xnodelist
+   On error resume next
+   Set xmlFile = CreateObject("Msxml2.DOMDocument.6.0")
+   xmlFile.Load FileName
+   if xmlFile.parseError.errorCode <> 0 Then
+      Log "Error parsing " & FileName & " : " & xmlFile.parseError.reason
+   end if
+   Set xnodelist = xmlFile.SelectNodes(SearchPath)
+   for ctr = 1 to xnodelist.length
+      Set password = xnodelist.item(ctr-1).getAttributeNode(AttributeName)
+      password.Text = RedactString
+   Next
+   xmlFile.Save FileName
+End Sub
+
+
+</script>
+</job>

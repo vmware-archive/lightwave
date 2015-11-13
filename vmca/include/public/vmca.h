@@ -1311,24 +1311,6 @@ VMCAGetCSRFromCertificate(
 
 // VMCAPublishRootCerts publishes the root certificate to
 // the Lotus directory service.
-
-/* Defines related to GSS_SRP authentication */
-#ifndef GSS_SRP_MECH_OID
-#define GSS_SRP_MECH_OID_LENGTH 9
-#define GSS_SRP_MECH_OID "\x2a\x86\x48\x86\xf7\x12\x01\x02\x0a"
-#endif
-
-#ifndef GSS_SRP_PASSWORD_OID
-#define GSS_SRP_PASSWORD_OID "\x2b\x06\x01\x04\x01\x81\xd6\x29\x03\x01"
-#define GSS_SRP_PASSWORD_LEN 10
-#endif
-
-#ifndef SPNEGO_OID
-#define SPNEGO_OID_LENGTH 6
-#define SPNEGO_OID "\x2b\x06\x01\x05\x05\x02"
-#endif
-
-
 #ifdef UNICODE
 #define VMCA_PKCS_10_REQ_DATA               VMCA_PKCS_10_REQ_DATAW
 #define PVMCA_PKCS_10_REQ_DATA              PVMCA_PKCS_10_REQ_DATAW

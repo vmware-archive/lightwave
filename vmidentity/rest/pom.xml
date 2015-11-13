@@ -1,0 +1,52 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.vmware.identity.rest</groupId>
+  <artifactId>vmware-identity-rest</artifactId>
+  <version>6.0.2</version>
+  <packaging>pom</packaging>
+
+  <name>vmware-identity-rest</name>
+
+  <distributionManagement>
+    <repository>
+       <id>lightwave</id>
+       <name>lightwave</name>
+       <url>http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave</url>
+    </repository>
+  </distributionManagement>
+
+  <modules>
+    <module>core</module>
+
+    <module>afd</module>
+    <module>idm</module>
+  </modules>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <java.version>1.7</java.version>
+    <jersey.version>2.12</jersey.version>
+    <javax.servlet.version>3.1.0</javax.servlet.version>
+    <vmware.version>6.0.2</vmware.version>
+
+    <javax.ws.rs.version>2.0.1</javax.ws.rs.version>
+    <jackson.version>2.3.2</jackson.version>
+    <log4j.version>2.2</log4j.version>
+    <slf4j.version>1.7.2</slf4j.version>
+    <commons.codec.version>1.9</commons.codec.version>
+    <commons.io.version>2.4</commons.io.version>
+    <commons.lang.version>2.6</commons.lang.version>
+    <commons.logging.version>1.1.1</commons.logging.version>
+    <commons.validator.version>1.4.0</commons.validator.version>
+    <nimbusds.version>3.3</nimbusds.version>
+    <httpclient.version>4.5</httpclient.version>
+
+    <junit.version>4.12</junit.version>
+    <easymock.version>3.2</easymock.version>
+    <reflections.version>0.9.10</reflections.version>
+  </properties>
+
+</project>

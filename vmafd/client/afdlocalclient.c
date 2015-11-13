@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -103,6 +103,8 @@ cleanup:
     return dwError;
 
 error:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszDomain);
 
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalGetDomainName failed. Error(%u)", dwError);
 
@@ -243,6 +245,7 @@ cleanup:
 
 error:
 
+    VMAFD_SAFE_FREE_MEMORY(pwszLDU);
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalGetLDU failed. Error(%u)", dwError);
 
     goto cleanup;
@@ -296,6 +299,56 @@ error:
 }
 
 DWORD
+VmAfdLocalGetRHTTPProxyPort(
+    PDWORD pdwPort
+    )
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMAFD_IPC_GET_RHTTPPROXY_PORT;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    VMW_TYPE_SPEC output_spec[] = GET_RHTTPPROXY_PORT_OUTPUT_PARAMS;
+
+    if (!pdwPort)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    dwError = VecsLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    NULL,
+                    output_spec);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *pdwPort = *(output_spec[1].data.pUint32);
+
+cleanup:
+
+    VmAfdFreeTypeSpecContent (output_spec, noOfArgsOut);
+
+    return dwError;
+
+error:
+
+    if (pdwPort)
+    {
+        *pdwPort = 0;
+    }
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalGetRHTTPProxyPort failed. Error(%u)", dwError);
+
+    goto cleanup;
+}
+
+DWORD
 VmAfdLocalSetRHTTPProxyPort(
     DWORD dwPort
 )
@@ -307,7 +360,7 @@ VmAfdLocalSetRHTTPProxyPort(
     VMW_TYPE_SPEC input_spec[] = SET_RHTTPPROXY_PORT_INPUT_PARAMS;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
 
-    if (dwPort < 0 || dwPort > 65535)
+    if (dwPort > 65535)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMAFD_ERROR (dwError);
@@ -354,7 +407,7 @@ VmAfdLocalSetDCPort(
     VMW_TYPE_SPEC input_spec[] = SET_DC_PORT_INPUT_PARAMS;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
 
-    if (dwPort < 0 || dwPort > 65535)
+    if (dwPort > 65535)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMAFD_ERROR (dwError);
@@ -435,6 +488,8 @@ cleanup:
 
 error:
 
+    VMAFD_SAFE_FREE_MEMORY(pwszCMLocation);
+
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalGetCMLocation failed. Error(%u)", dwError);
 
     goto cleanup;
@@ -486,6 +541,8 @@ cleanup:
 
 error:
 
+    VMAFD_SAFE_FREE_MEMORY(pwszLSLocation);
+
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalGetLSLocation failed. Error(%u)", dwError);
 
     goto cleanup;
@@ -536,6 +593,8 @@ cleanup:
     return dwError;
 
 error:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszDCName);
 
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalGetDCName failed. Error(%u)", dwError);
 
@@ -650,6 +709,9 @@ cleanup:
 
 error:
 
+    VMAFD_SAFE_FREE_MEMORY(pwszAccount);
+    VMAFD_SAFE_FREE_MEMORY(pwszPassword);
+
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalGetMachineAccountInfo failed. Error(%u)", dwError);
 
     goto cleanup;
@@ -701,7 +763,62 @@ cleanup:
 
 error:
 
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteGUID);
+
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalGetSiteGUID failed. Error(%u)", dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdLocalGetSiteName(
+    PWSTR* ppwszSiteName
+)
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMAFD_IPC_GET_SITE_NAME;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    PWSTR pwszSiteName = NULL;
+    VMW_TYPE_SPEC output_spec[] = GET_SITE_NAME_OUTPUT_PARAMS;
+
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    dwError = VecsLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    NULL,
+                    output_spec);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (IsNullOrEmptyString(output_spec[1].data.pWString))
+    {
+        dwError = ERROR_NO_DATA;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringW(
+                output_spec[1].data.pWString,
+                &pwszSiteName
+                );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    *ppwszSiteName = pwszSiteName;
+
+cleanup:
+
+    VmAfdFreeTypeSpecContent(output_spec, noOfArgsOut);
+    return dwError;
+
+error:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalGetSiteName failed. Error(%u)", dwError);
 
     goto cleanup;
 }
@@ -751,6 +868,8 @@ cleanup:
     return dwError;
 
 error:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszMachineID);
 
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalGetMachineID failed. Error(%u)", dwError);
 
@@ -944,6 +1063,58 @@ cleanup:
 error:
 
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalJoinVmDir failed. Error(%u)", dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdLocalJoinVmDir2(
+    PCWSTR           pwszDomainName,
+    PCWSTR           pwszUserName,
+    PCWSTR           pwszPassword,
+    PCWSTR           pwszMachineName,
+    PCWSTR           pwszOrgUnit,
+    VMAFD_JOIN_FLAGS dwFlags
+    )
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMAFD_IPC_JOIN_VMDIR_2;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    DWORD idx = 0;
+    VMW_TYPE_SPEC input_spec[] = JOIN_VMDIR_2_INPUT_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+
+    noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    input_spec[idx++].data.pWString = (PWSTR) pwszDomainName;
+    input_spec[idx++].data.pWString = (PWSTR) pwszUserName;
+    input_spec[idx++].data.pWString = (PWSTR) pwszPassword;
+    input_spec[idx++].data.pWString = (PWSTR) pwszMachineName;
+    input_spec[idx++].data.pWString = (PWSTR) pwszOrgUnit;
+    input_spec[idx++].data.pUint32  = (PDWORD)&dwFlags;
+
+    dwError = VecsLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    input_spec,
+                    output_spec);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VmAfdFreeTypeSpecContent(output_spec, noOfArgsOut);
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalJoinVmDir2 failed. Error(%u)", dwError);
 
     goto cleanup;
 }
@@ -1173,6 +1344,11 @@ cleanup:
 
 error:
 
+    VMAFD_SAFE_FREE_MEMORY(pwszComputer);
+    VMAFD_SAFE_FREE_MEMORY(pwszDomain);
+    VMAFD_SAFE_FREE_MEMORY(pwszDistinguishedName);
+    VMAFD_SAFE_FREE_MEMORY(pwszNetbiosName);
+
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalQueryAD failed. Error(%u)", dwError);
 
     goto cleanup;
@@ -1263,6 +1439,8 @@ cleanup:
     return dwError;
 
 error:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszPNID);
 
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalGetPNID failed. Error(%u)", dwError);
 
@@ -1362,6 +1540,8 @@ cleanup:
 
 error:
 
+    VMAFD_SAFE_FREE_MEMORY(pwszCAPath);
+
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalGetCAPath failed. Error(%u)", dwError);
 
     goto cleanup;
@@ -1446,6 +1626,206 @@ cleanup:
 error:
 
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalTriggerRootCertsRefresh failed. Error(%u)", dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdLocalPostHeartbeat(
+    PCWSTR pwszServiceName,
+    DWORD  dwPort
+)
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMAFD_IPC_POST_HEARTBEAT;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    VMW_TYPE_SPEC input_spec[] = POST_HEARTBEAT_INPUT_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+
+    if (IsNullOrEmptyString(pwszServiceName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    input_spec[0].data.pWString = (PWSTR) pwszServiceName;
+    input_spec[1].data.pUint32 = &dwPort;
+
+    dwError = VecsLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    input_spec,
+                    output_spec);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VmAfdFreeTypeSpecContent (output_spec, noOfArgsOut);
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalPostHeartbeat failed. Error(%u)", dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdLocalGetHeartbeatStatus(
+    PVMAFD_HB_STATUS_W* ppHeartbeatStatus
+)
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMAFD_IPC_GET_HEARBEAT_STATUS;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    PVMAFD_HB_STATUS_W pHeartbeatStatus = NULL;
+    VMW_TYPE_SPEC output_spec[] = GET_HEARTBEAT_STATUS_OUTPUT_PARAMS;
+
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    dwError = VecsLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    NULL,
+                    output_spec);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateMemory(
+                        sizeof(VMAFD_HB_STATUS_W),
+                        (PVOID *)&pHeartbeatStatus
+                        );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    pHeartbeatStatus->bIsAlive = *(output_spec[1].data.pUint32);
+
+    dwError = VmAfdUnMarshalHeartbeatStatusArray(
+                        *output_spec[3].data.pUint32,
+                        output_spec[2].data.pByte,
+                        &pHeartbeatStatus->dwCount,
+                        &pHeartbeatStatus->pHeartbeatInfoArr
+                        );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    *ppHeartbeatStatus = pHeartbeatStatus;
+
+cleanup:
+
+    VmAfdFreeTypeSpecContent(output_spec, noOfArgsOut);
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalGetHeartbeatStatus failed. Error(%u)", dwError);
+    if (ppHeartbeatStatus)
+    {
+        *ppHeartbeatStatus = NULL;
+    }
+
+    if (pHeartbeatStatus)
+    {
+        VmAfdFreeHbStatusW(pHeartbeatStatus);
+    }
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdLocalRefreshSiteName()
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMAFD_IPC_REFRESH_SITE_NAME;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    dwError = VecsLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    NULL,
+                    output_spec);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VmAfdFreeTypeSpecContent(output_spec, noOfArgsOut);
+    return dwError;
+
+error:
+
+    VmAfdLog(
+        VMAFD_DEBUG_ANY,
+        "VmAfdLocalRefreshSiteName failed. Error(%u)",
+        dwError
+        );
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdLocalConfigureDNSW(
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword
+    )
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMAFD_IPC_CONFIGURE_DNS;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    VMW_TYPE_SPEC input_spec[] = DNS_CONFIG_INPUT_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+
+    BAIL_ON_VMAFD_EMPTY_STRING(pwszUserName, dwError);
+    BAIL_ON_VMAFD_EMPTY_STRING(pwszPassword, dwError);
+
+    noOfArgsIn = sizeof (input_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    input_spec[0].data.pWString = (PWSTR) pwszUserName;
+    input_spec[1].data.pWString = (PWSTR) pwszPassword;
+
+    dwError = VecsLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    input_spec,
+                    output_spec);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VmAfdFreeTypeSpecContent(output_spec, noOfArgsOut);
+    return dwError;
+
+error:
+
+    VmAfdLog(
+        VMAFD_DEBUG_ANY,
+        "VmAfdLocalConfigureDNSW failed. Error(%u)",
+        dwError
+        );
 
     goto cleanup;
 }

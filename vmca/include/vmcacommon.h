@@ -1130,6 +1130,11 @@ VMCAUpdateAuthorityKeyIdentifier(
     );
 
 DWORD
+VMCAGetInstallDirectory(PSTR *ppszInstallDir);
+// VMCAGetInstallDirectory returns the Installation Directory of VMCA
+
+
+DWORD
 VMCAGetDataDirectory(PSTR *ppszDataDir);
 // VMCAGetDataDirectory returns the Data Directory of VMCA
 

@@ -32,6 +32,7 @@ typedef char* PSTR;
 #include <time.h>
 #include <vmafdclient.h>
 #include <vecsclient.h>
+#include <cdcclient.h>
 #include <exception>
 #include <iostream>
 #include <Python.h>
@@ -110,6 +111,8 @@ struct client {
 
     std::string GetSiteGUID();
 
+    std::string GetSiteName();
+
     std::string GetMachineID();
 
     void SetMachineID(std::string id);
@@ -173,6 +176,18 @@ struct client {
 
     void DeleteCertStore(
              std::string StoreName);
+
+    //cdc python bindings
+    void EnableClientAffinity();
+
+    void DisableClientAffinity();
+
+    std::string GetAffinitizedDC(
+             std::string DomainName);
+
+    bpl::list EnumDCEntries();
+
+    std::string GetCdcState();
 
     // members
     std::string ServerName;

@@ -24,7 +24,7 @@ InitializeResourceLimit(
 
 static
 DWORD
-VecsDbGetDbPath(
+VmAfdGetDbPath(
     PSTR *ppszDbPath
     );
 
@@ -138,7 +138,7 @@ InitializeResourceLimit(
     DWORD           dwError = 0;
     BAIL_ON_VMAFD_ERROR(dwError);
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(PLATFORM_VMWARE_ESX)
     struct rlimit   VMLimit = {0};
 
     // unlimited virtual memory
@@ -233,7 +233,7 @@ cleanup:
 #ifdef _WIN32
 static
 DWORD
-VecsDbGetDbPath(
+VmAfdGetDbPath(
                 PSTR *ppszDbPath
                )
 {
@@ -281,16 +281,68 @@ error:
 
     goto cleanup;
 }
+
 #else
+static
+VOID
+VmAfdMoveOldDbFile(
+                   VOID
+                  )
+{
+    DWORD dwError = 0;
+    PSTR pszDbPath = NULL;
+    PSTR pszDbOldPath = NULL;
+    BOOLEAN bOldFileExists = FALSE;
+    BOOLEAN bNewFieExists = FALSE;
+
+    dwError = VmAfdAllocateStringA(
+                                    VMAFD_CERT_DB,
+                                    &pszDbPath
+                                  );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    dwError = VmAfdAllocateStringA(
+                                   VMAFD_OLD_CERT_DB,
+                                   &pszDbOldPath
+                                   );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdFileExists(pszDbOldPath,&bOldFileExists);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdFileExists(pszDbPath, &bNewFieExists);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (bOldFileExists && !bNewFieExists)
+    {
+        dwError = VmAfdCopyFile(pszDbOldPath, pszDbPath);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdDeleteFile(pszDbOldPath);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+cleanup:
+
+    VMAFD_SAFE_FREE_STRINGA(pszDbOldPath);
+    VMAFD_SAFE_FREE_STRINGA(pszDbPath);
+    return;
+
+error:
+
+    goto cleanup;
+}
 
 static
 DWORD
-VecsDbGetDbPath(
+VmAfdGetDbPath(
                 PSTR *ppszDbPath
                )
 {
     DWORD dwError = 0;
     PSTR pszDbPath = NULL;
+
+    VmAfdMoveOldDbFile();
 
     dwError = VmAfdAllocateStringA(
                                     VMAFD_CERT_DB,
@@ -313,7 +365,6 @@ error:
 
     goto cleanup;
 }
-
 #endif
 
 
@@ -325,17 +376,20 @@ InitializeDatabase(
 {
     DWORD dwError = 0 ;
 
-    PSTR pszVecsDbPath = NULL;
+    PSTR pszDbPath = NULL;
 
-    dwError = VecsDbGetDbPath(&pszVecsDbPath);
+    dwError = VmAfdGetDbPath(&pszDbPath);
     BAIL_ON_VMAFD_ERROR (dwError);
 
-    dwError = VecsDbInitialize(pszVecsDbPath);
+    dwError = VecsDbInitialize(pszDbPath);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = CdcDbInitialize(pszDbPath);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 error :
 
-    VMAFD_SAFE_FREE_STRINGA (pszVecsDbPath);
+    VMAFD_SAFE_FREE_STRINGA (pszDbPath);
     return dwError;
 }
 

@@ -16,7 +16,6 @@
 
 #include "includes.h"
 #include <vmca.h>
-#include <pkcs_botan.h>
 
 #ifdef _WIN32
 #ifndef snprintf
@@ -191,6 +190,20 @@ error :
 #endif //_WIN32
 	return dwError;
 }
+
+DWORD
+VMCAGetInstallDirectory(PSTR *ppszInstallDir)
+{
+	#define INSTALL_PATH "InstallPath"
+	DWORD dwError = 0;
+#ifndef _WIN32
+	dwError = VMCAAllocateStringA(VMCA_INSTALL_DIR, ppszInstallDir);
+#else
+	dwError = VMCAGetRegKeyString(INSTALL_PATH, ppszInstallDir);
+#endif
+	return dwError;
+}
+
 
 DWORD
 VMCAGetDataDirectory(PSTR *ppszDataDir)

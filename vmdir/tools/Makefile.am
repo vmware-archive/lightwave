@@ -1,5 +1,6 @@
 SUBDIRS = \
     test \
+    vdcaclmgr \
     vdcadmintool \
     vdcpromo \
     vdcpass \
@@ -9,4 +10,7 @@ SUBDIRS = \
     vmkdc_admin \
     vdcsrp \
     vdcupgrade \
-    vdcleavefed
+    vdcleavefed \
+    vdcresetMachineActCred \
+    vdcmetric \
+    vdcschemaadmin

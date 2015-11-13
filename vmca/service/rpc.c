@@ -122,6 +122,10 @@ VMCAListenRpcServer(
     )
 {
     DWORD dwError = 0;
+    PVMAFD_HB_HANDLE pHandle = NULL;
+
+    dwError = VMCAHeartbeatInit(&pHandle);
+    BAIL_ON_VMCA_ERROR(dwError);
 
     DCETHREAD_TRY
     {
@@ -145,6 +149,10 @@ VMCAListenRpcServer(
 
 cleanup:
 
+    if (pHandle)
+    {
+        VMCAStopHeartbeat(pHandle);
+    }
     VMCA_LOG_INFO ("VMCAListenRpcServer is exiting\n");
 #ifndef _WIN32
     raise(SIGTERM);

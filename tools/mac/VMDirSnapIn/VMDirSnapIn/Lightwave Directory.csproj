@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectTypeGuids>{A3F8F2AB-B479-4A4A-A458-A89E7DC349F1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>{84EAD6E2-414C-4753-A512-6FA7B00474C0}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>VMDirSnapIn</RootNamespace>
+    <MonoMacResourcePrefix>Resources</MonoMacResourcePrefix>
+    <AssemblyName>Lightwave Directory</AssemblyName>
+    <UseXamMacFullFramework>true</UseXamMacFullFramework>
+    <ReleaseVersion>0.2</ReleaseVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\x64\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <UseRefCounting>false</UseRefCounting>
+    <UseSGen>false</UseSGen>
+    <IncludeMonoRuntime>true</IncludeMonoRuntime>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <CreatePackage>false</CreatePackage>
+    <CodeSigningKey>Mac Developer</CodeSigningKey>
+    <PackageSigningKey>Developer ID Installer</PackageSigningKey>
+    <XamMacArch>x86_64</XamMacArch>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\x64\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <UseRefCounting>false</UseRefCounting>
+    <UseSGen>false</UseSGen>
+    <IncludeMonoRuntime>true</IncludeMonoRuntime>
+    <CreatePackage>false</CreatePackage>
+    <CodeSigningKey>Developer ID Application</CodeSigningKey>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <PackageSigningKey>Developer ID Installer</PackageSigningKey>
+    <XamMacArch>x86_64</XamMacArch>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AppStore|AnyCPU' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\x64\AppStore</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <UseRefCounting>false</UseRefCounting>
+    <UseSGen>false</UseSGen>
+    <IncludeMonoRuntime>false</IncludeMonoRuntime>
+    <CreatePackage>false</CreatePackage>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <EnablePackageSigning>false</EnablePackageSigning>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="Xamarin.Mac" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+    <Folder Include="Nodes\" />
+    <Folder Include="UI\" />
+    <Folder Include="DataSource\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Main.cs" />
+    <Compile Include="Nodes\ChildScopeNode.cs" />
+    <Compile Include="Nodes\ScopeNode.cs" />
+    <Compile Include="VMDirSnapInEnvironment.cs" />
+    <Compile Include="DataSource\OutlineViewDataSource.cs" />
+    <Compile Include="UI\AppDelegate.cs" />
+    <Compile Include="UI\AppDelegate.designer.cs">
+      <DependentUpon>AppDelegate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\MainWindow.cs" />
+    <Compile Include="UI\MainWindow.designer.cs">
+      <DependentUpon>MainWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\MainWindowController.cs" />
+    <Compile Include="UI\OutlineView.cs" />
+    <Compile Include="UI\ConnectToLdapWindow.cs" />
+    <Compile Include="UI\ConnectToLdapWindow.designer.cs" />
+    <Compile Include="UI\ConnectToLdapWindowController.cs" />
+    <Compile Include="Nodes\DirectoryNode.cs" />
+    <Compile Include="UI\SchemaBrowserWindow.cs" />
+    <Compile Include="UI\SchemaBrowserWindow.designer.cs" />
+    <Compile Include="UI\SchemaBrowserWindowController.cs" />
+    <Compile Include="DataSource\SchemaAttributesTableViewDataSource.cs" />
+    <Compile Include="DataSource\GenericListViewDataSource.cs" />
+    <Compile Include="UI\CreateObjectWindow.cs" />
+    <Compile Include="UI\CreateObjectWindow.designer.cs" />
+    <Compile Include="UI\CreateObjectWindowController.cs" />
+    <Compile Include="UI\SelectObjectClassWindow.cs" />
+    <Compile Include="UI\SelectObjectClassWindow.designer.cs" />
+    <Compile Include="UI\SelectObjectClassWindowController.cs" />
+    <Compile Include="DataSource\PropertiesTableViewDataSource.cs" />
+    <Compile Include="UI\LdapPropertiesWindow.cs" />
+    <Compile Include="UI\LdapPropertiesWindow.designer.cs" />
+    <Compile Include="UI\LdapPropertiesWindowController.cs" />
+    <Compile Include="UI\ManagePropertiesWindow.cs" />
+    <Compile Include="UI\ManagePropertiesWindow.designer.cs" />
+    <Compile Include="UI\ManagePropertiesWindowController.cs" />
+    <Compile Include="DataSource\GenericTableViewDataSource.cs" />
+    <Compile Include="Nodes\VMDirServerInfo.cs" />
+    <Compile Include="UI\WelcomeScreen.cs" />
+    <Compile Include="UI\WelcomeScreen.designer.cs">
+      <DependentUpon>WelcomeScreen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\WelcomeScreenController.cs" />
+    <Compile Include="UI\WelcomeScreenController.designer.cs">
+      <DependentUpon>WelcomeScreenController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DataSource\CreateObjectTableViewDataSource.cs" />
+    <Compile Include="DataSource\NodesListView.cs" />
+    <Compile Include="UI\VMDirTableView.cs" />
+    <Compile Include="UI\ResetPasswordWindow.cs" />
+    <Compile Include="UI\ResetPasswordWindow.designer.cs" />
+    <Compile Include="UI\ResetPasswordWindowController.cs" />
+    <Compile Include="UI\ResetPasswordWindowController.designer.cs" />
+    <Compile Include="UI\AddNewGroup.cs" />
+    <Compile Include="UI\AddNewGroup.designer.cs" />
+    <Compile Include="UI\AddNewGroupController.cs" />
+    <Compile Include="UI\AddNewGroupController.designer.cs" />
+    <Compile Include="UI\AddNewUser.cs" />
+    <Compile Include="UI\AddNewUser.designer.cs" />
+    <Compile Include="UI\AddNewUserController.cs" />
+    <Compile Include="UI\AddNewUserController.designer.cs" />
+    <Compile Include="UI\AddGroupByCNWindow.cs" />
+    <Compile Include="UI\AddGroupByCNWindow.designer.cs" />
+    <Compile Include="UI\AddGroupByCNWindowController.cs" />
+    <Compile Include="UI\AddGroupByCNWindowController.designer.cs" />
+    <Compile Include="UI\SuperLoggingBrowserWindow.cs" />
+    <Compile Include="UI\SuperLoggingBrowserWindow.designer.cs" />
+    <Compile Include="UI\SuperLoggingBrowserWindowController.cs" />
+    <Compile Include="UI\SuperLoggingBrowserWindowController.designer.cs" />
+    <Compile Include="DataSource\SuperLoggingTableViewDataSource.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterfaceDefinition Include="UI\MainMenu.xib" />
+    <InterfaceDefinition Include="UI\MainWindow.xib" />
+    <InterfaceDefinition Include="UI\ConnectToLdapWindow.xib" />
+    <InterfaceDefinition Include="UI\SchemaBrowserWindow.xib" />
+    <InterfaceDefinition Include="UI\CreateObjectWindow.xib" />
+    <InterfaceDefinition Include="UI\SelectObjectClassWindow.xib" />
+    <InterfaceDefinition Include="UI\LdapPropertiesWindow.xib" />
+    <InterfaceDefinition Include="UI\ManagePropertiesWindow.xib" />
+    <InterfaceDefinition Include="UI\WelcomeScreen.xib" />
+    <InterfaceDefinition Include="UI\ResetPasswordWindow.xib" />
+    <InterfaceDefinition Include="UI\AddNewGroup.xib" />
+    <InterfaceDefinition Include="UI\AddNewUser.xib" />
+    <InterfaceDefinition Include="UI\AddGroupByCNWindow.xib" />
+    <InterfaceDefinition Include="UI\SuperLoggingBrowserWindow.xib" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Info.plist" />
+    <None Include="UI\Info.plist" />
+  </ItemGroup>
+  <ProjectExtensions>
+    <MonoDevelop>
+      <Properties>
+        <Policies>
+          <DotNetNamingPolicy DirectoryNamespaceAssociation="Hierarchical" ResourceNamePolicy="FileFormatDefault" />
+        </Policies>
+      </Properties>
+    </MonoDevelop>
+  </ProjectExtensions>
+  <ItemGroup>
+    <BundleResource Include="Resources\VMwareicon.png" />
+    <BundleResource Include="Resources\BulletBlackIcon.png" />
+    <BundleResource Include="Resources\lightwave.png" />
+    <BundleResource Include="Resources\Add_Group_64.png" />
+    <BundleResource Include="Resources\Add_Object_64.png" />
+    <BundleResource Include="Resources\Add_User_64.png" />
+    <BundleResource Include="Resources\Disconnect_64.png" />
+    <BundleResource Include="Resources\Edit_Properties_64.png" />
+    <BundleResource Include="Resources\View_Schema_64.png" />
+    <BundleResource Include="Resources\delete.png" />
+    <BundleResource Include="Resources\directory-service-256.icns" />
+    <BundleResource Include="Resources\directoryObject.png" />
+    <BundleResource Include="Resources\object.png" />
+    <BundleResource Include="Resources\home.png" />
+    <BundleResource Include="Resources\connect.png" />
+    <BundleResource Include="Resources\disconnect_64x.png" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\common\VMDir.Common\VMDir.Common.csproj">
+      <Project>{76109B16-B0AE-47EB-8545-EB135EB92E2A}</Project>
+      <Name>VMDir.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\vmdir\interop\csharp\VmDirInterop\VmDirInterop\VmDirInterop.csproj">
+      <Project>{CA2F370A-7C11-4173-8BDF-9FD143896E01}</Project>
+      <Name>VmDirInterop</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
+      <Project>{CD959E2E-5B9C-4329-B085-352844CFDCDD}</Project>
+      <Name>VMIdentity.CommonUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\VmIdentity.UI.Common\VmIdentity.UI.Common.csproj">
+      <Project>{35037B87-3B35-40FA-A9D3-7974DCDDABB5}</Project>
+      <Name>VmIdentity.UI.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

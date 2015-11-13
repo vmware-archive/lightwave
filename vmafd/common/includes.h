@@ -1,8 +1,22 @@
+/*
+ * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+
+
 #ifndef _WIN32
 #include <config.h>
 #include <vmafdsys.h>
-#include <net/if.h>
-#include <ifaddrs.h>
 #include <arpa/inet.h>
 #include <openssl/bio.h>
 #include <openssl/err.h>
@@ -10,6 +24,7 @@
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <pwd.h>
 #include <vmafd.h>
 #include <vmafdtypes.h>
@@ -17,6 +32,12 @@
 #include <vmafderrorcode.h>
 #include <vecs_error.h>
 #include <vmafdcommon.h>
+
+#ifdef __MACH__
+#include <sys/un.h>
+#include <sys/ucred.h>
+#endif
+
 #include "structs.h"
 #include "prototypes.h"
 #include "defines.h"
@@ -30,6 +51,7 @@
 
 #include <windows.h>
 #include <wincrypt.h>
+#include <ws2tcpip.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,6 +61,7 @@
 #include <process.h>
 #include <pthread.h>
 #include <direct.h>
+#include <in6addr.h>
 #include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/x509.h>
@@ -63,8 +86,6 @@
 #endif
 
 #include <ldap.h>
-#include <vmdirclient.h>
-#include <vmdirerrors.h>
 #include <dce/rpc.h>
 
 

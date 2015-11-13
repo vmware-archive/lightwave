@@ -6,8 +6,15 @@ SUBDIRS = \
     kdccommon \
     common \
     client \
+    gssapi-plugins
+
+if ENABLE_SERVER
+
+SUBDIRS += \
+   kdccommon \
     server \
     tools \
     config \
-    gssapi-plugins \
     testing
+
+endif

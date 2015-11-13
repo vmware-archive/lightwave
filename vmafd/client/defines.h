@@ -12,16 +12,7 @@
  * under the License.
  */
 
-
-
-#ifndef _WIN32
-
-#define VMAFD_ALIGN_BYTES(marker) \
-            ((marker) % sizeof(size_t) ? \
-                    sizeof(size_t) - ((marker) % sizeof(size_t)) : 0)
-
-#else
-
+#ifdef _WIN32
 /*
 MSDN: gethostname
 The maximum length, in bytes, of the string returned in the buffer
@@ -55,15 +46,20 @@ the buffer size will always be adequate.
     } \
 }
 
-/* Defines related to GSS_SRP authentication */
-#ifndef VMAFD_GSS_SRP_MECH_OID
-#define VMAFD_GSS_SRP_MECH_OID_LENGTH 9
-#define VMAFD_GSS_SRP_MECH_OID "\x2a\x86\x48\x86\xf7\x12\x01\x02\x0a"
+/*
+ * 1.3.6.1.4.1.6876.11711.2.1.1.1
+ *
+ * {iso(1) identified-organization(3) dod(6) internet(1) private(4)
+ *   enterprise(1) 6876 vmwSecurity(11711) vmwAuthentication(2) vmwGSSAPI(1)
+ *   vmwSRP(1) vmwSrpCredOptPwd(1)}
+ * Official registered GSSAPI_SRP password cred option OID
+ */
+#ifndef GSSAPI_SRP_CRED_OPT_PW
+#define GSSAPI_SRP_CRED_OPT_PW  \
+    "\x2b\x06\x01\x04\x01\xb5\x5c\xdb\x3f\x02\x01\x01\x01"
 #endif
-
-#ifndef VMAFD_GSS_SRP_PASSWORD_OID
-#define VMAFD_GSS_SRP_PASSWORD_OID "\x2b\x06\x01\x04\x01\x81\xd6\x29\x03\x01"
-#define VMAFD_GSS_SRP_PASSWORD_LEN 10
+#ifndef GSSAPI_SRP_CRED_OPT_PW_LEN
+#define GSSAPI_SRP_CRED_OPT_PW_LEN  13
 #endif
 
 #ifndef VMAFD_SPNEGO_OID

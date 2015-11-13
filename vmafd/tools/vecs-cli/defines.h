@@ -1,6 +1,10 @@
 /*
-
- * Copyright (c) VMware Inc.  All rights Reserved.
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : defines.h
+ *
+ * Abstract :
+ *
  */
 
 typedef enum

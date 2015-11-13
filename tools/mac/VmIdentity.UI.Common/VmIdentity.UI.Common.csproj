@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectTypeGuids>{A3F8F2AB-B479-4A4A-A458-A89E7DC349F1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>{35037B87-3B35-40FA-A9D3-7974DCDDABB5}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>VmIdentity.UI.Common</RootNamespace>
+    <MonoMacResourcePrefix>Resources</MonoMacResourcePrefix>
+    <AssemblyName>VmIdentity.UI.Common</AssemblyName>
+    <UseXamMacFullFramework>true</UseXamMacFullFramework>
+    <ReleaseVersion>0.2</ReleaseVersion>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\x64\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <UseRefCounting>false</UseRefCounting>
+    <UseSGen>false</UseSGen>
+    <IncludeMonoRuntime>false</IncludeMonoRuntime>
+    <CreatePackage>false</CreatePackage>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <EnablePackageSigning>false</EnablePackageSigning>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\x64\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <UseRefCounting>false</UseRefCounting>
+    <UseSGen>false</UseSGen>
+    <IncludeMonoRuntime>false</IncludeMonoRuntime>
+    <CreatePackage>false</CreatePackage>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <EnablePackageSigning>false</EnablePackageSigning>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Xamarin.Mac" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+    <Folder Include="UI\" />
+    <Folder Include="Utilities\" />
+    <Folder Include="Interfaces\" />
+    <Folder Include="UI\MainWindow\" />
+    <Folder Include="UI\WelcomeScreenWindow\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="UI\LoginWindow.cs" />
+    <Compile Include="UI\LoginWindow.designer.cs">
+      <DependentUpon>LoginWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\LoginWindowController.cs" />
+    <Compile Include="UI\SplitViewMMC.cs" />
+    <Compile Include="UI\SplitViewMMC.designer.cs">
+      <DependentUpon>SplitViewMMC.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Utilities\CertificateService.cs" />
+    <Compile Include="UI\ConfirmationDialog.cs" />
+    <Compile Include="UI\ConfirmationDialogController.cs" />
+    <Compile Include="UI\ConfirmationDialog.designer.cs">
+      <DependentUpon>ConfirmationDialog.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ProgressWindow.cs" />
+    <Compile Include="UI\ProgressWindowController.cs" />
+    <Compile Include="UI\ProgressWindow.designer.cs">
+      <DependentUpon>ProgressWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Utilities\VMIdentityConstants.cs" />
+    <Compile Include="UI\ActivatableToolBarItem.cs" />
+    <Compile Include="UI\SplitViewMMCController.cs" />
+    <Compile Include="Utilities\OutlineViewNavigationController.cs" />
+    <Compile Include="UI\GenericTextViewWindow.cs" />
+    <Compile Include="UI\GenericTextViewWindow.designer.cs">
+      <DependentUpon>GenericTextViewWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\GenericTextViewWindowController.cs" />
+    <Compile Include="UI\GenericTextViewWindowController.designer.cs">
+      <DependentUpon>GenericTextViewWindowController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Utilities\ErrorHelper.cs" />
+    <Compile Include="Utilities\UIHelper.cs" />
+    <Compile Include="Interfaces\IMainWindowControllerFactory.cs" />
+    <Compile Include="UI\WelcomeScreenWindow\WelcomeScreenCommon.cs" />
+    <Compile Include="UI\WelcomeScreenWindow\WelcomeScreenCommon.designer.cs" />
+    <Compile Include="UI\WelcomeScreenWindow\WelcomeScreenCommonController.cs" />
+    <Compile Include="UI\WelcomeScreenWindow\WelcomeScreenCommonController.designer.cs" />
+    <Compile Include="UI\MainWindow\MainWindowCommon.cs" />
+    <Compile Include="UI\MainWindow\MainWindowCommon.designer.cs" />
+    <Compile Include="UI\MainWindow\MainWindowCommonController.cs" />
+    <Compile Include="UI\MainWindow\MainWindowCommonController.designer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterfaceDefinition Include="UI\LoginWindow.xib" />
+    <InterfaceDefinition Include="UI\SplitViewMMC.xib" />
+    <InterfaceDefinition Include="UI\ConfirmationDialog.xib" />
+    <InterfaceDefinition Include="UI\ProgressWindow.xib" />
+    <InterfaceDefinition Include="UI\GenericTextViewWindow.xib" />
+    <InterfaceDefinition Include="UI\WelcomeScreenWindow\WelcomeScreenCommon.xib" />
+    <InterfaceDefinition Include="UI\MainWindow\MainWindowCommon.xib" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
+  <ItemGroup>
+    <BundleResource Include="Resources\BulletBlackIcon.png" />
+    <BundleResource Include="Resources\lightwave.png" />
+  </ItemGroup>
+</Project>

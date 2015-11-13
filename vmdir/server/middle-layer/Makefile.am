@@ -37,7 +37,6 @@ libmiddle_layer_la_CPPFLAGS = \
     -I$(top_srcdir)/thirdparty/openldap/libraries/libldap \
     -I$(top_srcdir)/server/include \
     @OPENSSL_INCLUDES@ \
-    @BDB_INCLUDES@ \
     @LW_INCLUDES@
 
 libmiddle_layer_la_LDFLAGS = \

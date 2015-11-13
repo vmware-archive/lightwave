@@ -1,0 +1,164 @@
+#! /bin/sh
+
+#
+# Copyright (c) VMware Inc.  All rights Reserved.
+# For support, contact: support@vmware.com
+#
+
+### BEGIN INIT INFO
+# Provides: vmware-sts-idmd
+# Required-Start: $network $remote_fs
+# Required-Stop: $network $remote_fs
+# Default-Start: 3 5
+# Default-Stop: 0 1 2 6
+# Description: Start and Stop vmware-sts-idmd
+### END INIT INFO
+
+JAVA_HOME=/usr/java/jre-vmware
+
+JSVC_NAME=jsvc
+JSVC_BIN=/opt/vmware/bin/jsvc
+
+#Ensure on cloudvm environment variables such as VMWARE_PYTHON_PATH are available.
+env_vars_file=/etc/profile.d/VMware-visl-integration.sh
+if [ -f $env_vars_file ]; then
+    . $env_vars_file
+    echo "ensure environment variables are set"
+fi
+
+DEFAULT_MAX_RAM=256m
+DEFAULT_MAX_PERM=96m
+CLOUDVM_RAM_SIZE=/usr/sbin/cloudvm-ram-size
+
+PREFIX=/opt/vmware
+LIBDIR=$PREFIX/lib64
+CLASSPATH=$LIBDIR/commons-lang-2.5.jar:$LIBDIR/commons-logging-1.1.1.jar:$LIBDIR/log4j-api-2.2.jar:$LIBDIR/log4j-core-2.2.jar:$LIBDIR/jna.jar:$LIBDIR/commons-daemon-1.0.8.jar:$LIBDIR/bcpkix-jdk15on-147.jar:$LIBDIR/bcprov-jdk15on-147.jar:$LIBDIR/vmware-identity-platform.jar:$LIBDIR/vmware-identity-idm-interface.jar:$LIBDIR/vmware-identity-idm-server.jar:$LIBDIR/vmware-identity-diagnostics.jar:$LIBDIR/bcprov-jdk16-145.jar:$LIBDIR/authentication-framework.jar:$LIBDIR/httpclient-4.3.3.jar:$LIBDIR
+DAEMON_CLASS=com.vmware.identity.idm.server.IdmServer
+PIDFILE=/var/run/vmware-sts-idmd.pid
+SERVICE_NAME=vmware-sts-idmd
+SERVICE_LOG_DIR=/var/log/vmware/sso
+
+# Provide empty definitions; these will be overridden on SUSE
+# when rc.status script is run
+rc_status()
+{
+    return $?
+}
+
+#set result if specified, otherwise set to failed
+rc_failed()
+{
+    if [ "$1" != "" ]; then
+       return $1
+    else
+       return 1
+    fi
+}
+
+rc_exit()
+{
+    return $?
+}
+
+STATUS=0
+PLATFORM=""
+if [ -f /etc/init.d/functions ]; then
+    . /etc/init.d/functions
+    PLATFORM="REDHAT"
+elif [ -f /etc/rc.status ]; then
+    . /etc/rc.status
+    rc_reset
+    PLATFORM="SUSE"
+else
+    PLATFORM="UNKNOWN"
+fi
+
+check_status()
+{
+   if [ "$PLATFORM" = 'SUSE' ]; then
+      checkproc -p $PIDFILE $JSVC_BIN
+   else
+      status -p "$PIDFILE" -l $JSVC $JSVC_BIN
+   fi
+}
+
+case "$1" in
+    start)
+        echo -n "Starting VMware STS IDM Server ..."
+
+        DEBUG_OPTS=
+        if [ $# -gt 1 ] && [ "$2" = "debug" ]; then
+           DEBUG_OPTS="-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
+        fi
+
+        JVM_MEM_ARGS=`$CLOUDVM_RAM_SIZE -J $SERVICE_NAME`
+
+        if [[ "${JVM_MEM_ARGS}" != *-Xmx* ]]; then
+            JVM_MEM_ARGS="$JVM_MEM_ARGS -Xmx$DEFAULT_MAX_RAM"
+        fi
+
+        if [[ "${JVM_MEM_ARGS}" != *-XX:MaxPermSize* ]]; then
+            JVM_MEM_ARGS="$JVM_MEM_ARGS -XX:MaxPermSize=$DEFAULT_MAX_PERM"
+        fi
+
+        export LC_ALL=en_US.UTF-8
+        if [ ! -d "$SERVICE_LOG_DIR" ]; then
+            mkdir -p $SERVICE_LOG_DIR
+        fi
+
+        $JSVC_BIN -procname $SERVICE_NAME \
+                  -server \
+                   $JVM_MEM_ARGS \
+                  -XX:ErrorFile=$SERVICE_LOG_DIR/hs_err_idm_pid%p.log \
+                  -XX:HeapDumpPath=$SERVICE_LOG_DIR \
+                  -home $JAVA_HOME \
+                  -pidfile $PIDFILE \
+                  -errfile /var/log/vmware/sso/vmware-sts-idmd.err \
+                  -cp $CLASSPATH \
+                  -Djava.rmi.server.codebase="file:///$LIBDIR/vmware-identity-idm-interface.jar file:///$LIBDIR/vmware-identity-idm-server.jar" \
+                  -Djava.security.policy=$PREFIX/share/config/server.policy \
+                  -Dvmware.log.dir=/var/log/vmware/sso \
+                  -Dlog4j.configuration=file://$PREFIX/share/config/log4j2.xml \
+                  $DEBUG_OPTS \
+                  $DAEMON_CLASS
+        rc_status -v
+        ;;
+    stop)
+        echo -n "Stopping VMware STS IDM Server ..."
+        if check_status ; then
+            $JSVC_BIN -procname $SERVICE_NAME \
+                      -stop \
+                      -home $JAVA_HOME \
+                      -pidfile $PIDFILE \
+                      $DAEMON_CLASS
+        else
+            # If service is not running, stop is implicitly successful
+            rc_failed 0
+        fi
+        rc_status -v
+        ;;
+    restart)
+        $0 stop
+        $0 start
+        rc_status -v
+        ;;
+    condrestart|try-restart)
+        if check_status ; then
+            $0 restart
+        else
+            # If service is not running, condrestart is implicitly successful
+            echo -n "VMware STS IDM server was not running"
+            rc_failed 0
+        fi
+        rc_status -v
+        ;;
+    status)
+        echo -n "Checking for VMware STS IDM Server ..."
+        check_status
+        rc_status -v
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|try-restart|status}"
+        exit 1
+esac
+rc_exit

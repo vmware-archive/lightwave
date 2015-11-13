@@ -80,10 +80,13 @@
 #include <lber_pvt.h>
 #include <lber-int.h>
 
-#include "banned.h"
-
 #include <sasl/sasl.h>
 #include <sasl/saslutil.h>
+
+#define LW_STRICT_NAMESPACE
+#include <lw/types.h>
+#include <lw/hash.h>
+#include <lw/security-types.h>
 
 #include <vmdir.h>
 #include <vmdirtypes.h>
@@ -111,5 +114,6 @@
 #include "ml.h"
 #include "externs.h"
 
+#include "banned.h"
 
 #endif

@@ -26,7 +26,8 @@ VmAfdParseArgs(
     PSTR* ppszSiteName,
     PSTR* ppszReplHostName,
     PSTR* ppszLotusServerName,
-    PSTR* ppszPwdFile
+    PSTR* ppszPwdFile,
+    DNS_INIT_FLAG* pDnsInitFlag
 );
 
 VOID

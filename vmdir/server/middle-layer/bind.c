@@ -327,7 +327,7 @@ _VmDirBindHandleFailedPassword(
     {   // handle password fail event but ignore error
         VdirPasswordFailEvent(
                 pOperation,
-                BERVAL_NORM_VAL(pOperation->reqDn),
+                BERVAL_NORM_VAL(pEntry->dn),
                 pEntry);
         // ignore error
     }

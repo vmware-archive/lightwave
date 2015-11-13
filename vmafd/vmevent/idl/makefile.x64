@@ -1,6 +1,6 @@
 # Map any Linux path separators "/" to Windows path separators "\"
 #
-DCERPC_WIN32_TOP = $(GOBUILD_PLATFORM_SDK_WINDOWS_ROOT:/=\)
+DCERPC_WIN32_TOP = $(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT:/=\)
 
 DCEIDL = $(DCERPC_WIN32_TOP)\$(ConfigurationName)\bin\dceidl.exe
 DCE_INCLUDE = -I$(DCERPC_WIN32_TOP)\$(ConfigurationName)\include

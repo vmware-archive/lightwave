@@ -97,24 +97,3 @@ error:
     goto cleanup;
 }
 
-/*
- * Public API
- */
-DWORD
-VmDirGetLocalLduGuid(
-    PSTR pszLduGuid
-    )
-{
-    return VmDirGetRegGuid(VMDIR_REG_KEY_LDU_GUID, pszLduGuid);
-}
-
-/*
- * Public API
- */
-DWORD
-VmDirGetLocalSiteGuid(
-    PSTR pszSiteGuid
-    )
-{
-    return VmDirGetRegGuid(VMDIR_REG_KEY_SITE_GUID, pszSiteGuid);
-}

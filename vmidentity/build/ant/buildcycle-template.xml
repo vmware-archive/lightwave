@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="internal-buildcycle">
+
+   <import file="presets.xml" />
+
+   <target name="after-clean" />
+   <target name="clean" depends="import-helper-tasks">
+      <delete dir="${build.project}" />
+
+      <antcall inheritrefs="true" target="after-clean" />
+   </target>
+
+   <!-- == == == == == == Initialize == == == == == == -->
+
+   <target name="after-init" />
+   <target name="init" depends="import-helper-tasks">
+
+      <var name="valid-targetsets"
+           value="main,test,osgi-bundle,webapp" />
+
+      <!-- Which target sets to build? -->
+      <for list="${target-sets}" param="target-set" trim="true">
+      <sequential>
+         <var name="is-targetset-valid" value="false" />
+         <for list="${valid-targetsets}" param="valid-targetset" trim="true">
+            <sequential>
+            <if>
+               <equals arg1="@{target-set}" arg2="@{valid-targetset}" />
+               <then><var name="is-targetset-valid" value="true" /></then>
+            </if>
+            </sequential>
+         </for>
+
+         <if>
+            <istrue value="${is-targetset-valid}" />
+            <then><property name="target-set.@{target-set}" value="true" /></then>
+            <else>
+               <fail message="Uknown target set: '@{target-set}'" />
+            </else>
+         </if>
+      </sequential>
+      </for>
+
+      <condition property="target-set.run-unit-tests">
+         <and>
+            <istrue value="${target-set.test}" />
+            <not><istrue value="${skipTests}" /></not>
+         </and>
+      </condition>
+
+      <!-- Create the output directories -->
+      <mkdir dir="${build.classes.main}" />
+      <mkdir dir="${build.endorsed}" />
+      <mkdir dir="${build.packing.webapp}" />
+      <mkdir dir="${build.reports}" />
+      <mkdir dir="${build.packages}" />
+      <mkdir dir="${build.dist}" />
+      <mkdir dir="${build.publish}" />
+      <mkdir dir="${build.instrumented.dir}" />
+      <mkdir dir="${build.classes.test}" />
+
+     <!-- Total or per-module report -->
+      <condition
+         property="build.resolved-test-logs"
+         value="${build.total-test-logs}"
+         else="${build.test-logs}">
+
+         <istrue value="${totalReport}" />
+      </condition>
+
+      <mkdir dir="${build.resolved-test-logs}" />
+
+      <antcall target="after-init" />
+   </target>
+
+   <!-- == == == == == == Target set: main == == == == == == -->
+
+   <target name="after-compile" />
+   <target name="compile" if="target-set.main">
+
+      <copy todir="${build.endorsed}" flatten="true">
+	 <path refid="java-endorsed" />
+      </copy>
+
+      <compile-dependency-helper srcdir="${src.main.java}"
+         destdir="${build.classes.main}" classpathref="classpath.main">
+
+         <include name="${arg.javac.main-include-pattern}" />
+         <exclude name="${arg.javac.main-exclude-pattern}" />
+      </compile-dependency-helper>
+
+      <call-javac
+         classpathref="classpath.main"
+         srcdir="${src.main.java}"
+         destdir="${build.classes.main}"
+         includes="${arg.javac.main-include-pattern}"
+         excludes="${arg.javac.main-exclude-pattern}"
+         includeantruntime="false" />
+
+      <antcall target="after-compile" />
+   </target>
+
+   <target name="after-process-resources" />
+   <target name="process-resources" depends="compile" if="target-set.main">
+      <if>
+         <available type="dir" file="${src.main.resources}" />
+         <then>
+            <copy todir="${build.classes.main}">
+               <fileset dir="${src.main.resources}" >
+                  <selector refid="src.main.internal-resources" />
+               </fileset>
+            </copy>
+         </then>
+      </if>
+
+      <if>
+         <istrue value="${put-sources-in-main}" />
+         <then>
+            <copy todir="${build.classes.main}">
+               <fileset dir="${src.main.java}" />
+            </copy>
+         </then>
+      </if>
+
+      <antcall target="after-process-resources" />
+   </target>
+
+   <target name="create-build-info-file" if="target-set.main">
+      <property name="markerfile" location="${build.classes.main}/build.properties" />
+      <echo level="debug"> Build info for  ${build.dist.bundle} may be found at ${markerfile}</echo>
+      <if>
+         <available type="file" file="${markerfile}" />
+         <else>
+            <echo file="${markerfile}" append="yes" message="official-build-number=${BUILD_NUMBER}" />
+            <echo file="${markerfile}" append="yes" message="${line.separator}"/>
+            <echo file="${markerfile}" append="yes" message="branch=${BRANCH_NAME}" />
+            <echo file="${markerfile}" append="yes" message="${line.separator}"/>
+            <echo file="${markerfile}" append="yes" message="changeset=${CHANGE_NUMBER}" />
+            <echo file="${markerfile}" append="yes" message="${line.separator}"/>
+            <echo file="${markerfile}" append="yes" message="build-type=${OBJDIR}" />
+            <echo file="${markerfile}" append="yes" message="${line.separator}"/>
+            <echo file="${markerfile}" append="yes" message="release-type=${RELTYPE}" />
+            <echo file="${markerfile}" append="yes" message="${line.separator}"/>
+            <echo file="${markerfile}" append="yes" message="product-name=${PRODUCT_NAME}" />
+            <echo file="${markerfile}" append="yes" message="${line.separator}"/>
+            <echo file="${markerfile}" append="yes" message="product-build-number=${PRODUCT_BUILD_NUMBER}" />
+            <echo file="${markerfile}" append="yes" message="${line.separator}"/>
+         </else>
+      </if>
+   </target>
+
+   <target name="after-package" />
+   <target name="package" depends="compile,create-build-info-file" if="target-set.main">
+      <if>
+         <isset property="src.main.resources.manifest_mf" />
+         <then>
+            <jar destfile="${build.packages.main}" basedir="${build.classes.main}"
+                 manifest="${src.main.resources.manifest_mf}" />
+         </then>
+         <else>
+            <jar destfile="${build.packages.main}" basedir="${build.classes.main}" />
+         </else>
+      </if>
+
+      <antcall target="after-package" />
+   </target>
+
+
+   <target name="after-package-sources" />
+   <target name="package-sources" depends="package" if="target-set.main">
+      <jar destfile="${build.packages.sources}" basedir="${src.main.java}" />
+
+      <antcall target="after-package-sources" />
+   </target>
+  
+   <!-- == == == == == == Target set: osgi-bundle == == == == == == -->
+
+   <target name="after-osgi-bundle" />
+   <target name="osgi-bundle" depends="package-sources" if="target-set.osgi-bundle">
+      <fail unless="src.conf.bundle-manifest-template"
+        message="Bundle manifest location 'src.conf.bundle-manifest-template' not set"/>
+
+      <bundlor-helper
+         inputPath="${build.packages.main}"
+         outputPath="${build.dist.bundle}"
+         manifestTemplatePath="${src.conf.bundle-manifest-template}" />
+
+      <antcall target="after-osgi-bundle" inheritrefs="${withClover}" />
+   </target>
+
+   <!-- == == == == == == Target set: webapp == == == == == == -->
+
+   <target name="after-process-webapp-resources" />
+   <target name="process-webapp-resources" depends="package"
+      if="target-set.webapp">
+
+      <mkdir dir="${build.packing.webapp}/META-INF" />
+      <mkdir dir="${build.packing.webapp}/WEB-INF/lib" />
+
+      <if>
+         <available type="dir" file="${src.main.webapp}" />
+         <then>
+            <copy todir="${build.packing.webapp}">
+               <fileset dir="${src.main.webapp}">
+                  <exclude name="WEB-INF/web.xml" />
+               </fileset>
+            </copy>
+         </then>
+      </if>
+
+      <copy todir="${build.packing.webapp}/WEB-INF/lib" flatten="true">
+         <resources refid="classpath.webapp-libs" />
+      </copy>
+
+      <antcall target="after-process-webapp-resources" />
+   </target>
+
+
+   <target name="generate-webapp-manifest" depends="process-webapp-resources"
+      if="target-set.webapp">
+
+      <manifest file="${build.packing.webapp-manifest_mf}" />
+      <!-- TODO: {Specification,Implementation}-{Title,Version,Vendor} -->
+   </target>
+   
+    <!-- == == == == == ==Target : test == == == == == == -->
+   <target name="test">
+      <!-- force unit test execution -->
+      <antcall target="build">
+         <param name="skipTests" value="false" />
+      </antcall>
+   </target>
+
+  <!-- == == == == == == ==  Target set : test == == == == == === == -->
+  <target name="generate-test-sources" />
+  <target name="after-compile-tests" />
+  <target name="compile-tests" depends="package-webapp" if="target-set.test">
+
+      <antcall target="generate-test-sources" inheritrefs="${withClover}" />
+      <echo message= "Compiling test classes files to :  ${build.classes.test}" />
+
+      <compile-dependency-helper srcdir="${src.test.java}"
+         destdir="${build.classes.test}" classpathref="classpath.test">
+
+         <include name="${arg.javac.test-include-pattern}" />
+         <exclude name="${arg.javac.test-exclude-pattern}" />
+      </compile-dependency-helper>
+
+      <call-javac
+         classpathref="classpath.test"
+         srcdir="${src.test.java}"
+         destdir="${build.classes.test}"
+         includes="${arg.javac.test-include-pattern}"
+         excludes="${arg.javac.test-exclude-pattern}" />
+      
+      <echo message="Tests compiled successfully" />
+
+      <antcall target="after-compile-tests" inheritrefs="${withClover}" />
+   </target>
+
+   <target name="after-process-test-resources" />
+   <target name="process-test-resources" depends="compile-tests" if="target-set.test">
+      <if>
+         <available type="dir" file="${src.test.resources}" />
+         <then>
+            <copy todir="${build.classes.test}">
+               <fileset dir="${src.test.resources}" />
+            </copy>
+         </then>
+      </if>
+
+      <if>
+         <istrue value="${put-sources-in-main}" />
+         <then>
+            <copy todir="${build.classes.test}">
+               <fileset dir="${src.test.java}" />
+            </copy>
+         </then>
+      </if>
+      <antcall target="after-process-test-resources" inheritrefs="${withClover}" />
+   </target>
+
+   <target name="after-package-tests" />
+   <target name="package-tests" depends="process-test-resources" if="target-set.test">
+      	<jar destfile="${build.packages.test}" basedir="${build.classes.test}" />
+      	<antcall target="after-package-tests" inheritrefs="${withClover}" />
+   </target>
+
+   <target name="after-execute-tests" />
+   <target name="execute-tests" depends="package-tests" if="target-set.run-unit-tests">
+        <echo message="Running unit tests now .." />
+         <if>
+	    <not><equals arg1="${runlist}" arg2="$${runlist}" /></not>
+            <then>
+
+              <!-- load runlist.txt from filesystem somewhere .... -Drunlist=runlist.txt -->
+	      <!-- runlist should be in format on each line : testClassName testMethod1,testMethod2,..-->
+	      <loadfile property="file.list" srcFile="${runlist}" />
+	      <echo message="${file.list}" />
+
+	      <for list="${file.list}" param="fileName" delimiter="${line.separator}">
+	          <sequential>
+		     <var name="test.name" unset="true" />
+	             <var name="test.methods" unset="true" />
+		     <propertyregex
+			property="test.name"
+	                input="@{fileName}"
+	                regexp="(.+) (.+)"
+			select="\1"/>
+	             <propertyregex
+			property="test.methods"
+	                input="@{fileName}"
+			regexp="(.+) (.+)"
+			select="\2"/>
+
+		     <echo message="Test class: ${test.name}" />
+		     <echo message="Test methodss: ${test.methods}" />
+
+		     <junit-test test="${test.name}" methods="${test.methods}"/>
+
+		  </sequential>
+	      </for>
+            </then>
+            <else>
+              <echo message="Running unit tests now..." />
+              <junit-test />
+            </else>
+         </if>
+
+         <antcall target="after-execute-tests" />
+   </target>
+
+   <target name="create-tests-report" depends="execute-tests" if="target-set.run-unit-tests">
+      <if>
+         <isfalse value="${totalReport}" />
+         <then>
+            <testreport-helper />
+         </then>
+      </if>
+   </target>
+
+   <target name="after-package-webapp" />
+   <target name="package-webapp" depends="generate-webapp-manifest"
+      if="target-set.webapp">
+
+      <war
+         destfile="${build.packages.webapp}"
+         basedir="${build.packing.webapp}"
+         manifest="${build.packing.webapp-manifest_mf}"
+         webxml="${src.conf.web_xml}" />
+
+      <antcall target="after-package-webapp" />
+   </target>
+
+   <!-- == == == == == == Build == == == == == == -->
+   <target name="build"
+         depends="init,
+                  compile,
+                  process-resources,
+                  package,
+                  process-webapp-resources,
+                  generate-webapp-manifest, 
+                  package-webapp,
+                  compile-tests,
+		  process-test-resources,
+		  package-tests,
+		  execute-tests,
+                  create-tests-report" />
+
+   <target name="rebuild" depends="clean,build" />
+
+</project>

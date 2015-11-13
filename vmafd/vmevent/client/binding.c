@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : binding.c
+ *
+ * Abstract :
+ *
+ */
 #include "stdafx.h"
 
 static

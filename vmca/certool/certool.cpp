@@ -385,7 +385,7 @@ AddGeneralOptions(po::options_description& desc)
      "certool --help config - shows help for the parameters of the config file \n"
     )
     ("server",po::value<std::string>(&argServerName)->default_value("localhost"),
-     "The name of the Vmware Certficate Server.")
+     "The name of the VMware Certficate Server.")
     ("srp-upn", po::value<std::string>(&argSrpUpn),
      "SRP logon UPN authentication identity.")
     ("srp-pwd", po::value<std::string>(&argSrpPwd),

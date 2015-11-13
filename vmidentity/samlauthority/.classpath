@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/test/resources"/>
+	<classpathentry kind="src" path="src/test/java"/>
+	<classpathentry kind="src" path="src/main/java"/>
+	<classpathentry kind="src" path="src/main/resources"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/bcprov-jdk15-1.46.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/commons-codec-1.3.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/commons-collections-3.2.1.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/commons-httpclient-3.1.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/commons-lang-2.6.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/esapi-2.0.1.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/jcip-annotations-1.0.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/joda-time-1.6.2.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/not-yet-commons-ssl-0.3.9.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/opensaml-2.5.2.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/openws-1.4.3.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/servlet-api-2.5.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/spring-core-2.0.8.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/spring-mock-2.0.8.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/velocity-1.5.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/xmlsec-1.4.5.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/lib/xmltooling-1.3.3.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/opensaml-2.5.2/opensaml-2.5.2.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/junit-4.4/junit-4.4.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/easymock-3.0/easymock-3.0.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/objenesis-1.2/objenesis-1.2.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/cglib-2.2/cglib-2.2.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/asm-3.3/lib/asm-3.3.jar"/>
+	<classpathentry kind="var" path="IDENTITY_SERVER_BUILD/dist/samltoken.jar" sourcepath="/SAMLTOKEN"/>
+    <classpathentry kind="lib" path="/diagnostics/lib/log4j-api-2.2.jar"/>
+    <classpathentry kind="lib" path="/diagnostics/lib/log4j-core-2.2.jar"/>
+    <classpathentry kind="lib" path="/diagnostics/lib/jcl-over-slf4j-1.7.10.jar"/>
+    <classpathentry kind="lib" path="/diagnostics/lib/log4j-slf4j-impl-2.2.jar"/>
+    <classpathentry kind="lib" path="/diagnostics/lib/slf4j-api-1.7.10.jar"/>
+    <classpathentry kind="lib" path="/diagnostics/lib/log4j-1.2-api-2.0.2.jar"/>
+    <classpathentry combineaccessrules="false" kind="src" path="/diagnostics"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/idm"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

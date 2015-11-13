@@ -1,3 +1,19 @@
+/*
+ * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+
+
 #include "includes.h"
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -182,7 +198,7 @@ VmAfdReadDataImpl(
 	)
 {
 	DWORD dwError = 0;
-	DWORD dwBytesRead = 0;
+	ssize_t dwBytesRead = 0;
 	PBYTE pResponse = NULL;
         PBYTE pResponseCursor = NULL;
         DWORD dwBytesSent = 0;
@@ -218,7 +234,7 @@ VmAfdReadDataImpl(
                         dwBytesRead = read(pConnection->fd,pResponseCursor,dwBytesToRead);
                 }while (dwBytesRead == -1 && errno == EINTR);
 
-                if (dwBytesRead < 0)
+                if (dwBytesRead == -1)
                 {
                         dwError = LwErrnoToWin32Error(errno);
                         BAIL_ON_VMAFD_ERROR (dwError);
@@ -258,7 +274,7 @@ VmAfdWriteDataImpl(
 )
 {
 	DWORD dwError = 0;
-	DWORD dwBytesWritten = 0;
+	ssize_t dwBytesWritten = 0;
         DWORD dwTotalBytesWritten = 0;
         PBYTE pRequestCursor = pRequest;
         DWORD dwActualRequestSize = dwRequestSize;
@@ -286,7 +302,7 @@ VmAfdWriteDataImpl(
                     dwBytesWritten = write(pConnection->fd,pRequestCursor,dwBytesToWrite);
                 }while (dwBytesWritten == -1 && errno == EINTR);
 
-                if (dwBytesWritten < 0)
+                if (dwBytesWritten == -1)
                 {
                         dwError = LwErrnoToWin32Error(errno);
                         BAIL_ON_VMAFD_ERROR(dwError);

@@ -1364,7 +1364,11 @@ VMCACopyTempCRLtoCRL()
 
     if ((pIn = fopen(pszTmpFile, "rb")) == NULL)
     {
-        dwError = LwErrnoToWin32Error(errno);
+#ifndef _WIN32
+                dwError = LwErrnoToWin32Error(errno);
+#else
+                dwError = GetLastError();
+#endif
 
         VMCA_LOG_ERROR("Failed to open file [%s] for reading", pszTmpFile);
 
@@ -1372,7 +1376,11 @@ VMCACopyTempCRLtoCRL()
     }
     if ((pOut = fopen(pszCRLFile, "wb")) == NULL)
     {
-        dwError = LwErrnoToWin32Error(errno);
+#ifndef _WIN32
+                dwError = LwErrnoToWin32Error(errno);
+#else
+                dwError = GetLastError();
+#endif
 
         VMCA_LOG_ERROR("Failed to open file [%s] for writing", pszCRLFile);
 

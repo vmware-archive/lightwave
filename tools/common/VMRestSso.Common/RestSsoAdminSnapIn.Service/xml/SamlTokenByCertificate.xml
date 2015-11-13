@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+  <soapenv:Header>
+    <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+      <wsu:Timestamp wsu:Id="Timestamp5257ab43-882c-4937-3835-6763e9a2d700" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+        <wsu:Created>{0}</wsu:Created>
+        <wsu:Expires>{1}</wsu:Expires>
+      </wsu:Timestamp>
+      <wsse:BinarySecurityToken EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary" ValueType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3" wsu:Id="holderOfKeyCertificate" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">{2}</wsse:BinarySecurityToken>
+    </wsse:Security>
+  </soapenv:Header>
+  <soapenv:Body wsu:Id="Body52be6364-045f-1550-625d-b20b0390691e" xmlns:wst="http://docs.oasis-open.org/ws-sx/ws-trust/200512" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+    <wst:RequestSecurityToken xmlns:wst="http://docs.oasis-open.org/ws-sx/ws-trust/200512">
+      <wst:TokenType>urn:oasis:names:tc:SAML:2.0:assertion</wst:TokenType>
+      <wst:RequestType>http://docs.oasis-open.org/ws-sx/ws-trust/200512/Issue</wst:RequestType>
+      <wst:KeyType>http://docs.oasis-open.org/ws-sx/ws-trust/200512/PublicKey</wst:KeyType>
+      <wst:Lifetime xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+        <wsu:Created>{3}</wsu:Created>
+        <wsu:Expires>{4}</wsu:Expires>
+      </wst:Lifetime>
+      <wst:Renewing Allow="false" OK="false"/>
+      <wst:Delegatable>false</wst:Delegatable>
+      <wst:UseKey Sig="holderOfKeyProofSignature"/>
+    </wst:RequestSecurityToken>
+  </soapenv:Body>
+</soapenv:Envelope>

@@ -24,6 +24,7 @@
 #include "srp_util.h"
 #include <lber.h>
 
+#include <vmdirdefines.h>
 #include "includes.h"
 #include "srprpc.h"
 #include <client/structs.h>
@@ -144,18 +145,22 @@ srp_gss_validate_oid_header(
     len--, ptr++;
     token_len++;
 
-    if (len < oid_len || len < (int) GSS_SRP_MECH_OID_LEN)
+    if (len < oid_len ||
+        (len < (int) GSS_SRP_MECH_OID_LEN_ST) ||
+        (len < (int) GSSAPI_SRP_MECH_OID_LEN_ST))
     {
         maj = GSS_S_CALL_BAD_STRUCTURE;
         goto error;
     }
 
-    if (memcmp(ptr, SRP_OID, GSS_SRP_MECH_OID_LEN) != 0)
+    if ((oid_len != GSS_SRP_MECH_OID_LEN_ST && oid_len != GSSAPI_SRP_MECH_OID_LEN_ST) ||
+        (memcmp(ptr, GSS_SRP_MECH_OID_ST, oid_len) != 0 &&
+         memcmp(ptr, GSSAPI_SRP_MECH_OID_ST, oid_len) != 0))
     {
         maj = GSS_S_BAD_MECH;
         goto error;
     }
-    token_len += GSS_SRP_MECH_OID_LEN;
+    token_len += oid_len;
 
     if (token_len != enc_token_len)
     {
@@ -460,8 +465,7 @@ _srp_gss_auth_init(
     ber_salt.bv_val = (unsigned char *) srp_salt;
     ber_salt.bv_len = srp_decode_salt_len;
     /*
-     * TBD: B is computed: (kv + g**b) % N
-     * char *srp_v = NULL;
+     * B is computed: (kv + g**b) % N
      */
     ber_B.bv_val = (void *) srp_bytes_B;
     ber_B.bv_len = srp_bytes_B_len;
@@ -636,7 +640,7 @@ _srp_gss_validate_client(
     if (berror == -1)
     {
         maj = GSS_S_FAILURE;
-        min = EINVAL; /* TBD: Adam, return a real error code here */
+        min = GSS_S_DEFECTIVE_TOKEN;
         goto error;
     }
 
@@ -816,7 +820,6 @@ error:
     return maj;
 }
 
-/*ARGSUSED*/
 OM_uint32
 srp_gss_accept_sec_context(
                 OM_uint32 *minor_status,
@@ -844,9 +847,6 @@ srp_gss_accept_sec_context(
     srp_gss_ctx_id_t srp_context_handle = NULL;
     krb5_error_code krb5_err = 0;
     gss_cred_id_t srp_cred_handle = NULL;
-    gss_OID_set_desc desired_mech;
-    gss_OID_desc mech_srp_desc = {SRP_OID_LENGTH, (void *) SRP_OID};
-    gss_OID mech_srp = &mech_srp_desc;
 
     if (minor_status == NULL ||
         output_token == GSS_C_NO_BUFFER ||
@@ -902,18 +902,11 @@ srp_gss_accept_sec_context(
             min = krb5_err;
             goto error;
         }
-#if 1
-        /*
-         * Hard code desired mech OID to SRP
-         */
-        desired_mech.elements = (gss_OID) mech_srp;
-        desired_mech.count = 1;
-
         maj = srp_gss_acquire_cred(
                   &min,
                   GSS_C_NO_NAME,
                   0,
-                  &desired_mech,
+                  NULL,
                   GSS_C_ACCEPT,
                   &srp_cred_handle,
                   NULL,
@@ -923,15 +916,6 @@ srp_gss_accept_sec_context(
             goto error;
         }
         srp_cred = (srp_gss_cred_id_t) srp_cred_handle;
-
-#else
-        if (!verifier_cred_handle || !context_handle)
-        {
-            maj = GSS_S_FAILURE;
-            goto error;
-        }
-        srp_cred = (srp_gss_cred_id_t) verifier_cred_handle;
-#endif
         srp_context_handle->magic_num = SRP_MAGIC_ID;
 
         maj = srp_gss_duplicate_oid(&min,
@@ -969,13 +953,11 @@ srp_gss_accept_sec_context(
     /* Verify state machine is consistent with expected state */
     state = SRP_AUTH_STATE_VALUE(ptr[0]);
 
-#if 0 /* TBD: FIXME, need spengo to fix this */
     if (state != srp_context_handle->state)
     {
         maj = GSS_S_FAILURE;
         goto error;
     }
-#endif
 
     switch(state)
     {
@@ -988,9 +970,12 @@ srp_gss_accept_sec_context(
                                  output_token);
         if (maj)
         {
+            if (maj == GSS_S_CONTINUE_NEEDED)
+            {
+                srp_context_handle->state = SRP_AUTH_CLIENT_VALIDATE;
+            }
             goto error;
         }
-        srp_context_handle->state = SRP_AUTH_CLIENT_VALIDATE;
         break;
 
       case SRP_AUTH_CLIENT_VALIDATE:

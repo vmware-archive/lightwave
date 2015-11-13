@@ -754,3 +754,145 @@ VmAfdFreeMutexesArray(
       VMAFD_SAFE_FREE_MEMORY(pMutexes);
     }
 }
+
+VOID
+VmAfdFreeDomainControllerInfoA(
+    PCDC_DC_INFO_A pDomainControllerInfoA
+    )
+{
+    if (pDomainControllerInfoA)
+    {
+        VMAFD_SAFE_FREE_MEMORY(pDomainControllerInfoA->pszDCName);
+        VMAFD_SAFE_FREE_MEMORY(pDomainControllerInfoA->pszDCAddress);
+        VMAFD_SAFE_FREE_MEMORY(pDomainControllerInfoA->pszDomainName);
+        VMAFD_SAFE_FREE_MEMORY(pDomainControllerInfoA->pszDcSiteName);
+
+        VMAFD_SAFE_FREE_MEMORY(pDomainControllerInfoA);
+    }
+}
+
+VOID
+VmAfdFreeDomainControllerInfoW(
+    PCDC_DC_INFO_W pDomainControllerInfoW
+    )
+{
+    if (pDomainControllerInfoW)
+    {
+        VMAFD_SAFE_FREE_MEMORY(pDomainControllerInfoW->pszDCName);
+        VMAFD_SAFE_FREE_MEMORY(pDomainControllerInfoW->pszDCAddress);
+        VMAFD_SAFE_FREE_MEMORY(pDomainControllerInfoW->pszDomainName);
+        VMAFD_SAFE_FREE_MEMORY(pDomainControllerInfoW->pszDcSiteName);
+
+        VMAFD_SAFE_FREE_MEMORY(pDomainControllerInfoW);
+    }
+}
+
+VOID
+VmAfdFreeCdcDbEntryArrayW(
+    PCDC_DB_ENTRY_W pCdcDbEntry,
+    DWORD dwCount
+    )
+{
+    DWORD dwIndex = 0;
+
+    if (pCdcDbEntry)
+    {
+        for (;dwIndex<dwCount;++dwIndex)
+        {
+            VMAFD_SAFE_FREE_MEMORY(pCdcDbEntry->pszDCName);
+            VMAFD_SAFE_FREE_MEMORY(pCdcDbEntry->pszSiteName);
+            VMAFD_SAFE_FREE_MEMORY(pCdcDbEntry->pszDomainName);
+        }
+        VMAFD_SAFE_FREE_MEMORY(pCdcDbEntry);
+    }
+}
+
+VOID
+VmAfdFreeHbInfoA(
+    PVMAFD_HB_INFO_A pHbInfoA
+    )
+{
+    if (pHbInfoA)
+    {
+       VMAFD_SAFE_FREE_STRINGA(pHbInfoA->pszServiceName);
+       VMAFD_SAFE_FREE_MEMORY(pHbInfoA);
+    }
+}
+
+VOID
+VmAfdFreeHbInfoArrayA(
+    PVMAFD_HB_INFO_A pHbInfoArr,
+    DWORD dwCount
+    )
+{
+    DWORD dwIndex = 0;
+    if (pHbInfoArr)
+    {
+       for (; dwIndex < dwCount; ++dwIndex)
+        {
+            VMAFD_SAFE_FREE_MEMORY(pHbInfoArr[dwIndex].pszServiceName);
+        }
+       VMAFD_SAFE_FREE_MEMORY(pHbInfoArr);
+    }
+}
+
+VOID
+VmAfdFreeHbStatusA(
+    PVMAFD_HB_STATUS_A pHbStatusA
+    )
+{
+    if (pHbStatusA)
+    {
+        VmAfdFreeHbInfoArrayA(
+                    pHbStatusA->pHeartbeatInfoArr,
+                    pHbStatusA->dwCount
+                    );
+        VMAFD_SAFE_FREE_MEMORY(pHbStatusA);
+    }
+}
+
+VOID
+VmAfdFreeHbInfoW(
+    PVMAFD_HB_INFO_W pHbInfoW
+    )
+{
+    if (pHbInfoW)
+    {
+       VMAFD_SAFE_FREE_MEMORY(pHbInfoW->pszServiceName);
+       VMAFD_SAFE_FREE_MEMORY(pHbInfoW);
+    }
+}
+
+VOID
+VmAfdFreeHbInfoArrayW(
+    PVMAFD_HB_INFO_W pHbInfoArr,
+    DWORD dwCount
+    )
+{
+    DWORD dwIndex = 0;
+    if (pHbInfoArr)
+    {
+       for (; dwIndex < dwCount; ++dwIndex)
+        {
+            VMAFD_SAFE_FREE_MEMORY(pHbInfoArr[dwIndex].pszServiceName);
+        }
+       VMAFD_SAFE_FREE_MEMORY(pHbInfoArr);
+    }
+}
+
+
+VOID
+VmAfdFreeHbStatusW(
+    PVMAFD_HB_STATUS_W pHbStatusW
+    )
+{
+    if (pHbStatusW)
+    {
+        VmAfdFreeHbInfoArrayW(
+                  pHbStatusW->pHeartbeatInfoArr,
+                  pHbStatusW->dwCount
+                  );
+        VMAFD_SAFE_FREE_MEMORY(pHbStatusW);
+    }
+}
+

@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : includes.h
+ *
+ * Abstract :
+ *
+ */
 #ifndef _WIN32
 
 #include <config.h>
@@ -27,6 +35,7 @@
 
 #include <vmafdcommon.h>
 #include <vmafdclient.h>
+#include <vmafcfg.h>
 
 #include <vmafderrorcode.h>
 #include <vmdirerrors.h>

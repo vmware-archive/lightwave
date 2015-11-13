@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?><test>
+<data id="body">Data</data>
+<Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/><SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><Reference URI="#body"><Transforms><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><DigestValue>rfZnmDrAKzYGbzHi70EtaL+pZ8QmXy+/PJ/Npw02Sf4=</DigestValue></Reference></SignedInfo><SignatureValue>a5EtlvxuWHHGTAXpkWcImVUO94hYAGJf1W8odfV8sVZfXPAqV73Z+VWTg+wEWJZ0u6bzz7+epA0M
+1nfVbDXt2g==</SignatureValue></Signature></test>

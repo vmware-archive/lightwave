@@ -1,4 +1,8 @@
 SUBDIRS = \
-    dequetest \
+    circularbuffer  \
+    dequetest       \
+    parseargs       \
+    registry        \
+    string          \
     vmdirclienttest
 

@@ -16,7 +16,10 @@
 
 #include "includes.h"
 
-#ifndef _WIN32
+#ifdef _WIN32
+/* proper use of memcpy is safe; banned.h "hit list" */
+#pragma warning(disable : 4995)
+#endif
 
 ULONG
 VmDirRpcAllocateStringW(
@@ -64,5 +67,3 @@ error:
 
     goto cleanup;
 }
-
-#endif //#ifndef _WIN32

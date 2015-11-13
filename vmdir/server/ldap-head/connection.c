@@ -86,13 +86,27 @@ _VmDirFlowCtrlThrEnter(
 
 static
 VOID
+_VmDirCollectBindSuperLog(
+    PVDIR_CONNECTION    pConn,
+    PVDIR_OPERATION     pOp
+    );
+
+static
+VOID
+_VmDirScrubSuperLogContent(
+    ber_tag_t opTag,
+    PVDIR_SUPERLOG_RECORD   pSuperLogRec
+    );
+
+static
+VOID
 _VmDirFlowCtrlThrExit(
     VOID
     );
 
 void
 VmDirDeleteConnection(
-    VDIR_CONNECTION **  conn
+    VDIR_CONNECTION **conn
     )
 {
    if (conn && *conn)
@@ -102,19 +116,17 @@ VmDirDeleteConnection(
             VmDirSASLSessionClose((*conn)->pSaslInfo);
             VMDIR_SAFE_FREE_MEMORY((*conn)->pSaslInfo);
 
-            VMDIR_LOG_VERBOSE( LDAP_DEBUG_ARGS, "Close socket (%s) bIsLdaps (%d)", VDIR_SAFE_STRING((*conn)->pszSocketInfo), (*conn)->bIsLdaps);
+            VMDIR_LOG_VERBOSE( LDAP_DEBUG_ARGS, "Close socket (%s) bIsLdaps (%d)", (*conn)->szClientIP, (*conn)->bIsLdaps);
             // clean and free sockbuf (io descriptor and socket ...etc.)
             ber_sockbuf_free((*conn)->sb);
         }
 
         VmDirFreeAccessInfo(&((*conn)->AccessInfo));
+        _VmDirScrubSuperLogContent(LDAP_REQ_UNBIND, &( (*conn)->SuperLogRec) );
 
-        VMDIR_SAFE_FREE_MEMORY((*conn)->pszSocketInfo);
         VMDIR_SAFE_FREE_MEMORY(*conn);
         *conn = NULL;
    }
-
-   return;
 }
 
 DWORD
@@ -239,6 +251,7 @@ VmDirFreeAccessInfo(
     {
         VmDirReleaseAccessToken(&pAccessInfo->pAccessToken);
     }
+    pAccessInfo->accessRoleBitmap = 0;
 
     VMDIR_SAFE_FREE_MEMORY(pAccessInfo->pszNormBindedDn);
     VMDIR_SAFE_FREE_MEMORY(pAccessInfo->pszBindedDn);
@@ -249,73 +262,66 @@ static
 int
 NewConnection(
     ber_socket_t    sfd,
-    VDIR_CONNECTION **conn,
+    VDIR_CONNECTION **ppConnection,
     Sockbuf_IO      *pSockbuf_IO
     )
 {
     int       retVal = LDAP_SUCCESS;
     ber_len_t max = SOCK_BUF_MAX_INCOMING;
+    PVDIR_CONNECTION pConn;
     PSTR      pszLocalErrMsg = NULL;
-    PSTR      pszSocketInfo = NULL;
 
-    VmDirAllocateStringFromSocket((int)sfd, TRUE, &pszSocketInfo);
-
-    VMDIR_LOG_DEBUG(VMDIR_LOG_MASK_ALL, "New connection (%s)", VDIR_SAFE_STRING(pszSocketInfo));
-
-    if (VmDirAllocateMemory( sizeof(VDIR_CONNECTION), (PVOID *)conn ) != 0)
+    if (VmDirAllocateMemory(sizeof(VDIR_CONNECTION), (PVOID *)&pConn) != 0)
     {
        retVal = LDAP_OPERATIONS_ERROR;
-       BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                                     "NewConnection (%s): VmDirAllocateMemory() call failed", VDIR_SAFE_STRING(pszSocketInfo));
+       BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "NewConnection: VmDirAllocateMemory call failed");
     }
 
-    (*conn)->bIsAnonymousBind = TRUE;  // default to anonymous bind
+    pConn->bIsAnonymousBind = TRUE;  // default to anonymous bind
+    pConn->sd = sfd;
 
-    (*conn)->sd = sfd;
+    retVal = VmDirGetNetworkInfoFromSocket(pConn->sd, pConn->szClientIP, sizeof(pConn->szClientIP), &pConn->dwClientPort, true);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
-    if (((*conn)->sb = ber_sockbuf_alloc( )) == NULL)
+    retVal = VmDirGetNetworkInfoFromSocket(pConn->sd, pConn->szServerIP, sizeof(pConn->szServerIP), &pConn->dwServerPort, false);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    VMDIR_LOG_DEBUG(VMDIR_LOG_MASK_ALL, "New connection (%s)", pConn->szClientIP);
+
+    if ((pConn->sb = ber_sockbuf_alloc()) == NULL)
     {
        retVal = LDAP_OPERATIONS_ERROR;
-       BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                                     "NewConection (%s): ber_sockbuf_alloc() call failed with errno: %d", VDIR_SAFE_STRING(pszSocketInfo), errno);
-
+       BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "New Connection (%s): ber_sockbuf_alloc() call failed with errno: %d", pConn->szClientIP, errno);
     }
 
-    if (ber_sockbuf_ctrl( (*conn)->sb, LBER_SB_OPT_SET_MAX_INCOMING, &max ) < 0)
+    if (ber_sockbuf_ctrl(pConn->sb, LBER_SB_OPT_SET_MAX_INCOMING, &max) < 0)
     {
        retVal = LDAP_OPERATIONS_ERROR;
-       BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                                     "NewConection (%s): ber_sockbuf_ctrl() failed while setting MAX_INCOMING", VDIR_SAFE_STRING(pszSocketInfo));
+       BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "NewConnection (%s): ber_sockbuf_ctrl() failed while setting MAX_INCOMING", pConn->szClientIP);
     }
 
-    if (ber_sockbuf_add_io( (*conn)->sb, pSockbuf_IO, LBER_SBIOD_LEVEL_PROVIDER, (void *)&sfd ) != 0)
+    if (ber_sockbuf_add_io(pConn->sb, pSockbuf_IO, LBER_SBIOD_LEVEL_PROVIDER, (void *)&sfd) != 0)
     {
        retVal = LDAP_OPERATIONS_ERROR;
-       BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                       "NewConection (%s): ber_sockbuf_add_io() failed while setting LEVEL_PROVIDER", VDIR_SAFE_STRING(pszSocketInfo));
+       BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "NewConnection (%s): ber_sockbuf_addd_io() failed while setting LEVEL_PROVIDER", pConn->szClientIP);
     }
 
     //This is to disable NONBLOCK mode (when NULL passed in)
-    if( ber_sockbuf_ctrl( (*conn)->sb, LBER_SB_OPT_SET_NONBLOCK, NULL ) < 0 )
+    if (ber_sockbuf_ctrl(pConn->sb, LBER_SB_OPT_SET_NONBLOCK, NULL) < 0)
     {
         retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                                      "NewConection (%s): ber_sockbuf_alloc() failed while setting NONBLOCK", VDIR_SAFE_STRING(pszSocketInfo));
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "NewConnection (%s): ber_sockbuf_ctrl failed while setting NONBLOCK", pConn->szClientIP);
     }
 
-    (*conn)->pszSocketInfo = pszSocketInfo;
-    pszSocketInfo = NULL;
-
+    *ppConnection = pConn;
 cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pszSocketInfo);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
 
     return retVal;
 
 error:
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, VDIR_SAFE_STRING(pszLocalErrMsg));
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "NewConnection failing with error %d", retVal);
 
     goto cleanup;
 }
@@ -559,12 +565,8 @@ ProcessAConnection(
    ber_int_t      msgid = -1;
    PVDIR_OPERATION pOperation = NULL;
    int            reTries = 0;
-   uint64_t       iOPStartTimeInMSec = 0;
-   uint64_t       iOPEndTimeInMSec = 0;
-   PVMDIR_OPERATION_STATISTIC   pOPStatistic = NULL;
    BOOLEAN                      bDownOpThrCount = FALSE;
    PVDIR_CONNECTION_CTX pConnCtx = NULL;
-
 
    // increment operation thread counter
    retVal = VmDirSyncCounterIncrement(gVmdirGlobals.pOperationThrSyncCounter);
@@ -626,7 +628,7 @@ ProcessAConnection(
             {
                 VMDIR_LOG_INFO( LDAP_DEBUG_CONNS,
                     "%s: disconnecting peer (%s), idle > %d seconds",
-                    __func__, VDIR_SAFE_STRING(pConn->pszSocketInfo), gVmdirGlobals.dwLdapRecvTimeoutSec);
+                    __func__, pConn->szClientIP, gVmdirGlobals.dwLdapRecvTimeoutSec);
                 retVal = LDAP_NOTICE_OF_DISCONNECT;
                 BAIL_ON_VMDIR_ERROR( retVal );
             }
@@ -636,7 +638,7 @@ ProcessAConnection(
             if (reTries > 0 && reTries % 5 == 0)
             {
                 VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "%s: ber_get_next() failed with errno = %d, peer (%s), re-trying (%d)",
-                                   __func__, errno , VDIR_SAFE_STRING(pConn->pszSocketInfo), reTries);
+                                   __func__, errno , pConn->szClientIP, reTries);
             }
             VmDirSleep(200);
             reTries++;
@@ -646,11 +648,11 @@ ProcessAConnection(
          if (errno == 0)
          {
              VMDIR_LOG_INFO( LDAP_DEBUG_CONNS, "%s: ber_get_next() peer (%s) disconnected",
-                 __func__, VDIR_SAFE_STRING(pConn->pszSocketInfo));
+                 __func__, pConn->szClientIP);
          } else
          {
              VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: ber_get_next() call failed with errno = %d peer (%s)",
-                  __func__, errno, VDIR_SAFE_STRING(pConn->pszSocketInfo));
+                  __func__, errno, pConn->szClientIP);
          }
          retVal = LDAP_NOTICE_OF_DISCONNECT;
          BAIL_ON_VMDIR_ERROR( retVal );
@@ -681,39 +683,40 @@ ProcessAConnection(
       }
       BAIL_ON_VMDIR_ERROR( retVal );
 
-      pOPStatistic = NULL;
-      iOPStartTimeInMSec = VmDirGetTimeInMilliSec();
+      //
+      // If this is a multi-stage operation don't overwrite the start time if it's already set.
+      //
+      pConn->SuperLogRec.iStartTime = pConn->SuperLogRec.iStartTime ? pConn->SuperLogRec.iStartTime : VmDirGetTimeInMilliSec();
 
       switch (tag)
       {
          case LDAP_REQ_BIND:
             retVal = VmDirPerformBind(pOperation);
-            pOPStatistic = &gVmdirOPStatisticGlobals.opBind;
+            if (retVal != LDAP_SASL_BIND_IN_PROGRESS)
+            {
+                _VmDirCollectBindSuperLog(pConn, pOperation); // ignore error
+            }
+
             break;
 
          case LDAP_REQ_ADD:
             retVal = VmDirPerformAdd(pOperation);
-            pOPStatistic = &gVmdirOPStatisticGlobals.opAdd;
             break;
 
          case LDAP_REQ_SEARCH:
             retVal = VmDirPerformSearch(pOperation);
-            pOPStatistic = &gVmdirOPStatisticGlobals.opSearch;
             break;
 
          case LDAP_REQ_UNBIND:
             retVal = VmDirPerformUnbind(pOperation);
-            pOPStatistic = &gVmdirOPStatisticGlobals.opUnbind;
             break;
 
          case LDAP_REQ_MODIFY:
              retVal = VmDirPerformModify(pOperation);
-             pOPStatistic = &gVmdirOPStatisticGlobals.opModify;
              break;
 
          case LDAP_REQ_DELETE:
              retVal = VmDirPerformDelete(pOperation);
-             pOPStatistic = &gVmdirOPStatisticGlobals.opDelete;
              break;
 
          case LDAP_REQ_MODDN:
@@ -733,10 +736,14 @@ ProcessAConnection(
             break;
       }
 
-      if (pOPStatistic != NULL)
+      pConn->SuperLogRec.iEndTime = VmDirGetTimeInMilliSec();
+      VmDirOPStatisticUpdate(tag, pConn->SuperLogRec.iEndTime - pConn->SuperLogRec.iStartTime);
+
+      if (tag != LDAP_REQ_BIND)
       {
-          iOPEndTimeInMSec = VmDirGetTimeInMilliSec();
-          VmDirOPStatisticUpdate(pOPStatistic, iOPEndTimeInMSec - iOPStartTimeInMSec);
+         VmDirLogOperation(gVmdirGlobals.pLogger, tag, pConn, pOperation->ldapResult.errCode);
+
+         _VmDirScrubSuperLogContent(tag, &pConn->SuperLogRec);
       }
 
       VmDirFreeOperation(pOperation);
@@ -964,6 +971,7 @@ vmdirConnAccept(
         BAIL_ON_VMDIR_ERROR(retVal);
 
         pConnCtx->sockFd  = newsockfd;
+        newsockfd = -1;
         pConnCtx->pSockbuf_IO = pSockbuf_IO;
 
         retVal = VmDirCreateThread(&threadId, TRUE, ProcessAConnection, (PVOID)pConnCtx);
@@ -972,6 +980,7 @@ vmdirConnAccept(
             VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: VmDirCreateThread() (port) failed with errno: %d",
                              __func__, dwPort, errno );
 
+            tcp_close(pConnCtx->sockFd);
             _VmDirFlowCtrlThrExit();
             VMDIR_SAFE_FREE_MEMORY(pConnCtx);
             continue;
@@ -994,6 +1003,10 @@ cleanup:
     if (ip6_fd >= 0)
     {
         tcp_close(ip6_fd);
+    }
+    if (newsockfd >= 0)
+    {
+        tcp_close(newsockfd);
     }
 #ifndef _WIN32
     raise(SIGTERM);
@@ -1161,3 +1174,71 @@ _VmDirFlowCtrlThrExit(
     return;
 }
 
+
+//
+// Some information in the logging record is per-connection and some is per-operation.
+// This routine sanitizes the structure appropriately depending upon where in the
+// process we are.
+//
+static
+void
+_VmDirScrubSuperLogContent(
+    ber_tag_t opTag,
+    PVDIR_SUPERLOG_RECORD pSuperLogRec)
+{
+    if (opTag == LDAP_REQ_UNBIND)
+    {
+        if ( pSuperLogRec )
+        {
+            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->pszBindID);
+            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->pszOperationParameters);
+
+            memset( pSuperLogRec, 0, sizeof(VDIR_SUPERLOG_RECORD) );
+        }
+    }
+    else
+    {
+        if (opTag == LDAP_REQ_SEARCH)
+        {
+            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszAttributes);
+            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszBaseDN);
+            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszScope);
+            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszIndexResults);
+        }
+        pSuperLogRec->iStartTime = pSuperLogRec->iEndTime = 0;
+        VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->pszOperationParameters);
+    }
+}
+
+static
+VOID
+_VmDirCollectBindSuperLog(
+    PVDIR_CONNECTION    pConn,
+    PVDIR_OPERATION     pOp
+    )
+{
+    DWORD   dwError = 0;
+
+    pConn->SuperLogRec.iEndTime = VmDirGetTimeInMilliSec();
+
+    if (pOp->reqDn.lberbv.bv_val) // TODO, for failed SASL bind scenario, we need DN/UPN a well.
+    {
+        dwError = VmDirAllocateStringA(pOp->reqDn.lberbv.bv_val, &(pConn->SuperLogRec.pszBindID));
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    VmDirLogOperation(gVmdirGlobals.pLogger, LDAP_REQ_BIND, pConn, pOp->ldapResult.errCode);
+
+    //
+    // Flush times once we log.
+    //
+    pConn->SuperLogRec.iStartTime = pConn->SuperLogRec.iEndTime = 0;
+
+cleanup:
+    return;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error code %d", __FUNCTION__, dwError);
+
+    goto cleanup;
+}

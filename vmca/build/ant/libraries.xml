@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="internal-library-sets">
+   <property environment="env" />
+
+   <!-- - - - - - Ant Task Libraries - - - - - -->
+
+   <property name="libs.ant-contrib-home"
+             location="/opt/ant-contrib" />
+
+   <fileset id="jar-set.jna" dir="${MAINSRCROOT}/build/depends">
+        <include name="jna.jar"/>
+        <include name="platform.jar"/>
+   </fileset>
+
+   <fileset id="jar-set.commons-codec" dir="${MAINSRCROOT}/build/depends">
+        <include name="commons-codec-1.4.jar" />
+   </fileset>
+
+   <fileset id="jar-set.junit" dir="${MAINSRCROOT}/build/depends">
+      <include name="junit-4.4.jar" />
+   </fileset>
+
+</project>

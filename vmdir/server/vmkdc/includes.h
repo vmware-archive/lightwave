@@ -55,6 +55,12 @@
 #include <Winreg.h>
 #include <assert.h>
 #include <Ws2tcpip.h>
+
+#define LW_STRICT_NAMESPACE
+#include <lw/types.h>
+#include <lw/hash.h>
+#include <lw/security-types.h>
+
 #endif
 
 //SUNG vmkdc merge,

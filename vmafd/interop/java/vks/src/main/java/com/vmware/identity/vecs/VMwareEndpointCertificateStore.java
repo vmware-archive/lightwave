@@ -77,6 +77,7 @@ public class VMwareEndpointCertificateStore {
       }
 
       _serverHandle = serverHandle;
+      _storeHandle = null;
       _storeName = storeName;
       _serverName = serverName;
       _userName = userName;
@@ -104,6 +105,7 @@ public class VMwareEndpointCertificateStore {
           int error = VecsAdapter.VecsCloseCertStore(_storeHandle);;
           BAIL_ON_ERROR(error, "Closing store '%s' failed. [Server: %s, User: %s]",
                 _storeName, _serverName, _userName);
+          _storeHandle = null;
       }
    }
 
@@ -364,7 +366,7 @@ public class VMwareEndpointCertificateStore {
     * @return Number of entries
     */
    public Enumeration<VecsEntry> enumerateEntries(VecsEntryInfoLevel infoLevel) {
-      return new VecsEntryEnumeration(_storeHandle, _serverName, _userName, _storeName, infoLevel);
+      return new VecsEntryEnumeration(this, _storeHandle, _serverName, _userName, _storeName, infoLevel);
    }
 
    /**
@@ -429,17 +431,22 @@ public class VMwareEndpointCertificateStore {
    }
 
    private static class VecsEntryEnumeration implements Enumeration<VecsEntry> {
+      private final VMwareEndpointCertificateStore _certStore;
       private final String _storeName;
       private final String _serverName;
       private final String _userName;
       private final PointerRef _storeHandle;
       private final VecsEntryInfoLevel _infoLevel;
-      private final PointerRef _pEnumContext;
+      private PointerRef _pEnumContext;
       private static final int ENUM_SIZE = 256;
       private final List<VecsEntryNative> _enumBuffer = new ArrayList<VecsEntryNative>();
 
-      public VecsEntryEnumeration(PointerRef storeHandle, String serverName, String userName, String storeName,
-            VecsEntryInfoLevel infoLevel) {
+      public VecsEntryEnumeration(VMwareEndpointCertificateStore certStore,
+                                  PointerRef storeHandle,
+                                  String serverName,
+                                  String userName, String storeName,
+                                  VecsEntryInfoLevel infoLevel) {
+         _certStore = certStore;
          _storeHandle = storeHandle;
          _storeName = storeName;
          _serverName = serverName;
@@ -521,9 +528,10 @@ public class VMwareEndpointCertificateStore {
       }
 
       private void endEnumEntries() {
-         if (!PointerRef.isNull(_pEnumContext)) {
+         if (_pEnumContext != null && !PointerRef.isNull(_pEnumContext)) {
             int error = VecsAdapter.VecsEndEnumEntries(_pEnumContext);
             BAIL_ON_ERROR(error, "End Enum on store '%s' failed. [Server: %s, User: %s]", _storeName, _serverName, _userName);
+            _pEnumContext = null;
          }
       }
    }

@@ -40,6 +40,8 @@
 #include <vmafdcommon.h>
 #include <vmafdclient.h>
 #include <vmafcfg.h>
+#include <ifaddrs.h>
+#include <net/if.h>
 #include "defines.h"
 #include "prototypes.h"
 
@@ -55,6 +57,7 @@
 #include <stdint.h>
 #include <tchar.h>
 #include <winsock2.h>
+#include <ws2tcpip.h>
 
 #include "banned.h"
 
@@ -70,5 +73,4 @@
 #include <vmafcfg.h>
 #include "defines.h"
 #include "prototypes.h"
-
 #endif

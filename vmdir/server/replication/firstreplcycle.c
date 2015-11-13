@@ -72,7 +72,7 @@ VmDirFirstReplicationCycle(
     if ( gFirstReplCycleMode != FIRST_REPL_CYCLE_MODE_COPY_DB && gFirstReplCycleMode != FIRST_REPL_CYCLE_MODE_USE_COPIED_DB )
     {
         retVal = LDAP_SUCCESS;
-        VmDirLog( LDAP_DEBUG_ANY,
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                   "VmDirFirstReplicationCycle: Not a special first replication cycle mode, nothing is to be done." );
         goto cleanup;
     }
@@ -100,7 +100,7 @@ cleanup:
 
 error:
     retVal = LDAP_OPERATIONS_ERROR;
-    VmDirLog( LDAP_DEBUG_ANY, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg) );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg) );
     goto cleanup;
 }
 
@@ -130,12 +130,12 @@ _VmDirGetRemoteDBUsingRPC(
     BAIL_ON_VMDIR_ERROR ( retVal );
 #endif
 
-    VmDirLog( LDAP_DEBUG_ANY, "_VmDirGetRemoteDBUsingRPC: Connecting to the replication partner (%s) ...", pszHostname );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirGetRemoteDBUsingRPC: Connecting to the replication partner (%s) ...", pszHostname );
 
     retVal = VmDirReadDCAccountPassword(&pszDcAccountPwd);
     BAIL_ON_VMDIR_ERROR( retVal );
 
-    retVal = VmDirCacheKrb5Creds(gVmdirServerGlobals.dcAccountUPN.lberbv_val, pszDcAccountPwd);
+    retVal = VmDirCacheKrb5Creds(gVmdirServerGlobals.dcAccountUPN.lberbv_val, pszDcAccountPwd, NULL);
 
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
                 "_VmDirGetRemoteDBUsingRPC: VmDirCacheKrb5Creds() call failed with error: %d", retVal );
@@ -157,7 +157,7 @@ _VmDirGetRemoteDBUsingRPC(
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
             "_VmDirGetRemoteDBUsingRPC: VmDirStringPrintFA() call failed with error: %d", retVal );
 
-    VmDirLog( LDAP_DEBUG_ANY, "_VmDirGetRemoteDBUsingRPC: receiving the DB file ... : %s", dbRemoteFilename );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirGetRemoteDBUsingRPC: receiving the DB file ... : %s", dbRemoteFilename );
 
     retVal = _VmDirGetRemoteDBFileUsingRPC( hBinding, dbRemoteFilename );
 
@@ -170,7 +170,7 @@ _VmDirGetRemoteDBUsingRPC(
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
             "_VmDirGetRemoteDBUsingRPC: VmDirStringPrintFA() call failed with error: %d", retVal );
 
-    VmDirLog( LDAP_DEBUG_ANY, "_VmDirGetRemoteDBUsingRPC: receiving the DB file ... : %s", dbRemoteFilename );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirGetRemoteDBUsingRPC: receiving the DB file ... : %s", dbRemoteFilename );
 
     retVal = _VmDirGetRemoteDBFileUsingRPC( hBinding, dbRemoteFilename );
 
@@ -183,7 +183,7 @@ cleanup:
         DWORD       localRetVal = 0;
         if ((localRetVal = VmDirSetState( hBinding, VMDIRD_STATE_NORMAL )) != 0)
         {
-            VmDirLog( LDAP_DEBUG_ANY, "_VmDirGetRemoteDBUsingRPC: VmDirSetState() call failed with error: %d", localRetVal );
+            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirGetRemoteDBUsingRPC: VmDirSetState() call failed with error: %d", localRetVal );
         }
 
         retVal = (retVal != 0) ? retVal : localRetVal;
@@ -196,7 +196,7 @@ cleanup:
 
 error:
     retVal = LDAP_OPERATIONS_ERROR;
-    VmDirLog( LDAP_DEBUG_ANY, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg) );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg) );
     goto cleanup;
 }
 
@@ -260,7 +260,7 @@ _VmDirGetRemoteDBFileUsingRPC(
         }
         if (dwCount < VMDIR_DB_READ_BLOCK_SIZE)
         {
-            VmDirLog( LDAP_DEBUG_ANY, "DONE copying the file %s \n", dbLocalFilename);
+            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "DONE copying the file %s \n", dbLocalFilename);
             break;
         }
     }
@@ -271,7 +271,7 @@ cleanup:
         DWORD       localRetVal = 0;
         if ((localRetVal = VmDirCloseDBFile( hBinding, pRemoteFile )) != 0)
         {
-            VmDirLog( LDAP_DEBUG_ANY, "_VmDirGetRemoteDBFileUsingRPC: RpcVmDirCloseDBFile() call failed with error: %d",
+            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirGetRemoteDBFileUsingRPC: RpcVmDirCloseDBFile() call failed with error: %d",
                       localRetVal );
         }
         retVal = (retVal != 0) ? retVal : localRetVal;
@@ -286,7 +286,7 @@ cleanup:
 
 error:
     retVal = LDAP_OPERATIONS_ERROR;
-    VmDirLog( LDAP_DEBUG_ANY, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg) );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg) );
     goto cleanup;
 }
 
@@ -380,7 +380,7 @@ cleanup:
 
 error:
     retVal = LDAP_OPERATIONS_ERROR;
-    VmDirLog( LDAP_DEBUG_ANY, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg) );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg) );
     goto cleanup;
 }
 
@@ -446,7 +446,7 @@ _VmDirWrapUpFirstReplicationCycle(
 
     if ((retVal = beCtx.pBE->pfnBEGetNextUSN( &beCtx, &localUsn )) != 0)
     {
-        VmDirLog( LDAP_DEBUG_ANY, "_VmDirWrapUpFirstReplicationCycle: pfnBEGetNextUSN failed with error code: %d, "
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirWrapUpFirstReplicationCycle: pfnBEGetNextUSN failed with error code: %d, "
                   "error message: %s", retVal, VDIR_SAFE_STRING(beCtx.pszBEErrorMsg) );
         BAIL_ON_VMDIR_ERROR( retVal );
     }
@@ -456,7 +456,7 @@ _VmDirWrapUpFirstReplicationCycle(
     if ((retVal = VmDirStringNPrintFA( partnerlocalUsnStr, sizeof(partnerlocalUsnStr), sizeof(partnerlocalUsnStr) - 1,
                                        "%ld", partnerLocalUsn)) != 0)
     {
-        VmDirLog( LDAP_DEBUG_ANY, "_VmDirWrapUpFirstReplicationCycle: VmDirStringNPrintFA failed with error code: %d",
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirWrapUpFirstReplicationCycle: VmDirStringNPrintFA failed with error code: %d",
                   retVal );
         BAIL_ON_VMDIR_ERROR( retVal );
     }
@@ -485,13 +485,13 @@ _VmDirWrapUpFirstReplicationCycle(
 
     if ((retVal = VmDirReplUpdateCookies( pSchemaCtx, &(syncDoneCtrlVal), pReplAgr )) != LDAP_SUCCESS)
     {
-        VmDirLog( LDAP_DEBUG_ANY, "vdirReplicationThrFun: UpdateCookies failed. Error: %d", retVal );
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: UpdateCookies failed. Error: %d", retVal );
         BAIL_ON_VMDIR_ERROR( retVal );
     }
 
     if ((retVal = _VmDirPatchDSERoot(pSchemaCtx)) != LDAP_SUCCESS)
     {
-        VmDirLog( LDAP_DEBUG_ANY, "vdirReplicationThrFun: _VmDirPatchDSERoot failed. Error: %d", retVal );
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: _VmDirPatchDSERoot failed. Error: %d", retVal );
         BAIL_ON_VMDIR_ERROR( retVal );
     }
 
@@ -516,7 +516,7 @@ _VmDirPatchDSERoot(
     VDIR_OPERATION           op = {0};
     VDIR_BERVALUE            bvDSERootDN = VDIR_BERVALUE_INIT;
 
-    VmDirLog( LDAP_DEBUG_TRACE, "_VmDirPatchDSERoot: Begin" );
+    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "_VmDirPatchDSERoot: Begin" );
 
     bvDSERootDN.lberbv.bv_val = PERSISTED_DSE_ROOT_DN;
     bvDSERootDN.lberbv.bv_len = VmDirStringLenA( bvDSERootDN.lberbv.bv_val );
@@ -538,7 +538,7 @@ _VmDirPatchDSERoot(
 
     if (VmDirBervalContentDup( &op.reqDn, &op.request.modifyReq.dn ) != 0)
     {
-        VmDirLog( LDAP_DEBUG_ANY, "_VmDirPatchDSERoot: BervalContentDup failed." );
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirPatchDSERoot: BervalContentDup failed." );
         BAIL_ON_VMDIR_ERROR( retVal );
     }
 
@@ -567,7 +567,7 @@ _VmDirPatchDSERoot(
         // If VmDirInternall call failed, reset retVal to LDAP level error space (for B/C)
         retVal = op.ldapResult.errCode;
 
-        VmDirLog( LDAP_DEBUG_ANY, "_VmDirPatchDSERoot: InternalModifyEntry failed. "
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirPatchDSERoot: InternalModifyEntry failed. "
                   "Error code: %d, Error string: %s", retVal, VDIR_SAFE_STRING( op.ldapResult.pszErrMsg ) );
         BAIL_ON_VMDIR_ERROR( retVal );
     }
@@ -575,7 +575,7 @@ _VmDirPatchDSERoot(
 cleanup:
     VmDirFreeOperationContent(&op);
 
-    VmDirLog( LDAP_DEBUG_TRACE, "_VmDirPatchDSERoot: End" );
+    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "_VmDirPatchDSERoot: End" );
     return retVal;
 
 error:

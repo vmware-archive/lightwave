@@ -48,6 +48,12 @@ _VmDirIsSearchForServerStatus(
     PVDIR_OPERATION     pOp
     );
 
+static
+BOOLEAN
+_VmDirIsSearchForReplicationStatus(
+    PVDIR_OPERATION     pOp
+    );
+
 /*
  * Return TRUE if search request require special handling.
  * If TRUE, the request will be served within this function.
@@ -145,6 +151,16 @@ VmDirHandleSpecialSearch(
         dwError = VmDirSendSearchEntry( pOp, pEntry );
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pLdapResult->pszErrMsg),
                                       "Server Status Entry send failed.");
+    }
+    else if (_VmDirIsSearchForReplicationStatus(pOp))
+    {
+        dwError = VmDirReplicationStatusEntry(&pEntry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pLdapResult->pszErrMsg),
+                                      "Replication Status Entry search failed.");
+
+        dwError = VmDirSendSearchEntry( pOp, pEntry );
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pLdapResult->pszErrMsg),
+                                      "Replication Status Entry send failed.");
     }
     else
     {
@@ -432,6 +448,49 @@ _VmDirIsSearchForServerStatus(
         (
          pOp->reqDn.lberbv.bv_val != NULL                                               &&
          VmDirStringCompareA(pOp->reqDn.lberbv.bv_val, SERVER_STATUS_DN, FALSE) == 0
+        )
+        &&
+        (
+         pFilter->choice == LDAP_FILTER_PRESENT                                         &&
+         pFilter->filtComp.present.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN               &&
+         pFilter->filtComp.present.lberbv.bv_val != NULL                                &&
+         VmDirStringNCompareA( ATTR_OBJECT_CLASS, pFilter->filtComp.present.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0
+        )
+        )
+    {
+        bRetVal = TRUE;
+    }
+
+    return bRetVal;
+
+}
+
+/*
+ * For replication runtime status
+ * The search pattern is :
+ * BASE:    cn=replicationstatus
+ * SCOPE:   BASE
+ * FILTER:  (objectclass=*)
+ */
+static
+BOOLEAN
+_VmDirIsSearchForReplicationStatus(
+    PVDIR_OPERATION     pOp
+    )
+{
+    BOOLEAN         bRetVal = FALSE;
+    SearchReq*      pSearchReq = &(pOp->request.searchReq);
+    PVDIR_FILTER    pFilter = pSearchReq ? pSearchReq->filter: NULL;
+
+    if (pSearchReq != NULL
+        &&
+        pFilter != NULL
+        &&
+        pSearchReq->scope == LDAP_SCOPE_BASE
+        &&
+        (
+         pOp->reqDn.lberbv.bv_val != NULL                                               &&
+         VmDirStringCompareA(pOp->reqDn.lberbv.bv_val, REPLICATION_STATUS_DN, FALSE) == 0
         )
         &&
         (

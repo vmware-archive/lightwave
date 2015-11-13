@@ -211,6 +211,143 @@ error:
 }
 
 DWORD
+VmAfPosixCfgDeleteKey(
+    PVMAF_CFG_CONNECTION pConnection,
+    PVMAF_CFG_KEY        pKey,
+    PCSTR                pszSubKey
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = RegDeleteKeyA(
+                        pConnection->hConnection,
+                        (pKey ? pKey->hKey : NULL),
+                        pszSubKey
+                        );
+    BAIL_ON_VMAF_POSIX_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
+}
+
+DWORD
+VmAfPosixCfgEnumKeys(
+    PVMAF_CFG_CONNECTION pConnection,
+    PVMAF_CFG_KEY        pKey,
+    PSTR                 **pppszKeyNames,
+    PDWORD               pdwKeyNameCount
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwIndex = 0;
+    DWORD dwCount = 0;
+    PSTR  pszKeyName = NULL;
+    PSTR  *ppszKeyNames = NULL;
+    DWORD dwKeyNameSize = 0;
+
+    while(1)
+    {
+        dwKeyNameSize = VMAF_REG_KEY_NAME_MAX_LENGTH;
+        dwError = VmAfdAllocateMemory(
+                                 dwKeyNameSize,
+                                 (PVOID *)&pszKeyName
+                                 );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = RegEnumKeyExA(
+                      pConnection->hConnection,
+                      (pKey ? pKey->hKey : NULL),
+                      dwCount,
+                      pszKeyName,
+                      &dwKeyNameSize,
+                      NULL,
+                      NULL,
+                      NULL,
+                      NULL
+                      );
+        if (dwError == LWREG_ERROR_NO_MORE_KEYS_OR_VALUES ||
+            !dwKeyNameSize
+           )
+        {
+            dwError = 0;
+            break;
+        }
+        BAIL_ON_VMAFD_ERROR(dwError);
+        dwCount++;
+        VMAFD_SAFE_FREE_MEMORY(pszKeyName);
+    }
+
+    if (dwCount)
+    {
+
+        dwError = VmAfdAllocateMemory(
+                            sizeof(PSTR)*dwCount,
+                            (PVOID *)&ppszKeyNames
+                            );
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    for (; dwIndex < dwCount; ++dwIndex)
+    {
+        dwKeyNameSize = VMAF_REG_KEY_NAME_MAX_LENGTH;
+        dwError = VmAfdAllocateMemory(
+                                dwKeyNameSize,
+                                (PVOID *)&pszKeyName
+                                );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError  = RegEnumKeyExA(
+                      pConnection->hConnection,
+                      (pKey ? pKey->hKey : NULL),
+                      dwIndex,
+                      pszKeyName,
+                      &dwKeyNameSize,
+                      NULL,
+                      NULL,
+                      NULL,
+                      NULL
+                      );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdAllocateStringA(
+                                pszKeyName,
+                                &ppszKeyNames[dwIndex]
+                                );
+        BAIL_ON_VMAFD_ERROR(dwError);
+        VMAFD_SAFE_FREE_MEMORY(pszKeyName);
+    }
+
+    *pppszKeyNames = ppszKeyNames;
+    *pdwKeyNameCount = dwCount;
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pszKeyName);
+    return dwError;
+
+error:
+
+    if (pppszKeyNames)
+    {
+        *pppszKeyNames = NULL;
+    }
+    if (pdwKeyNameCount)
+    {
+        *pdwKeyNameCount = 0;
+    }
+    if (ppszKeyNames)
+    {
+        VmAfdFreeStringArrayA(ppszKeyNames);
+    }
+    goto cleanup;
+}
+
+
+DWORD
 VmAfPosixCfgReadStringValue(
     PVMAF_CFG_KEY        pKey,
     PCSTR               pszSubkey,

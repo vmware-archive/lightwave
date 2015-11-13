@@ -1,0 +1,133 @@
+#!/bin/bash
+
+VMWARE_HOME=@VMSTS_PREFIX_DIR@
+INSTANCE_NAME=vmware-sts
+VMWARE_INSTANCE=$VMWARE_HOME/$INSTANCE_NAME
+VMWARE_STS_CONFIG=$VMWARE_HOME/config
+
+JAVA_HOME=@JAVA_HOME@
+JSVC_HOME=/opt/commons-daemon-1.0.15
+JSVC_NAME=jsvc
+JSVC_BIN=$JSVC_HOME/bin/$JSVC_NAME
+DEFAULT_MAX_RAM=256m
+
+PREFIX=/opt/vmware
+JARDIR=$PREFIX/jars
+CLASSPATH=$JAVA_HOME/jre/lib/ext/vmware-endpoint-certificate-store.jar:$JSVC_HOME/commons-daemon-1.0.15.jar:"$JARDIR/*.jar":$JARDIR/vmware-identity-idm-interface.jar:$JARDIR/vmware-identity-diagnostics.jar:$JARDIR/vmware-identity-idm-server.jar:$JARDIR/vmware-identity-platform.jar
+DAEMON_CLASS=org.apache.catalina.startup.Bootstrap
+
+# Start tomcat runtime instance
+if [ ! -d $VMWARE_INSTANCE ]; then
+    echo "Creating VMware STS Tomcat instance at $VMWARE_INSTANCE"
+    $VMWARE_HOME/sbin/vmware-sts-tc-setup.sh
+fi
+
+# JAVA Security Properties
+JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
+
+# STS Instance 
+SERVICE_NAME=vmware-sts-stsd
+
+STSD_LOG_DIR="/var/log/vmware/sso"
+STSD_SERVICE_PID="$STSD_LOG_DIR/tcserver.pid"
+STSD_INITD_ERR_LOG="$STSD_LOG_DIR/utils/$SERVICE_NAME.err"
+
+# Tomcat Catalina settings
+
+CATALINA_HOME=/opt/apache-tomcat-7.0.63
+CATALINA_BASE="$VMWARE_HOME/$INSTANCE_NAME"
+
+ShowUsage()
+{
+    echo "Usage: vmware-sts-stsd.sh { start | stop }"
+}
+
+perform_pre_startup_actions()
+{
+   echo "[start] Performing pre-startup actions."
+   /usr/lib/vmware-sso/bin/sso_servicecfg pre-startup &>/dev/null
+
+     . "$CATALINA_BASE/bin/setenv.sh"
+
+   echo "[start] Pre-startup complete."
+}
+
+StartService()
+{
+   # Set up catalina based env variables
+   perform_pre_startup_actions
+
+   # Start tomcat server
+   $JSVC_BIN -procname $SERVICE_NAME \
+            -home $JAVA_HOME \
+            -server \
+            -pidfile $STSD_SERVICE_PID \
+            -errfile $STSD_INITD_ERR_LOG \
+            -Djava.security.properties=$JAVA_SEC_PROP \
+            -Djava.util.logging.config.file=$CATALINA_BASE/conf/logging.properties \
+            -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager \
+            $JAVA_OPTS \
+            $CATALINA_OPTS \
+            -Djava.endorsed.dirs="$CATALINA_HOME/endorsed" \
+            -classpath "$CATALINA_HOME/bin/bootstrap.jar:$CATALINA_HOME/bin/tomcat-juli.jar" \
+            -Dcatalina.base=$CATALINA_BASE \
+            -Dcatalina.home=$CATALINA_HOME \
+            -Dvmware.log.dir=$STSD_LOG_DIR \
+            -Dorg.apache.catalina.connector.CoyoteAdapter.ALLOW_BACKSLASH=true \
+            -Djava.io.tmpdir="$CATALINA_BASE/temp" \
+            $DAEMON_CLASS start
+
+    rc=$?
+    if [ $rc -ne 0 ]; then
+        echo "Failed to start STS service. Error code : $rc"
+    else 
+	echo "STS(Secure Tokebn service) started successfully!"
+    fi
+      
+    return $rc
+}
+
+
+StopService()
+{
+    $JSVC_BIN -procname $SERVICE_NAME \
+              -stop \
+              -home $JAVA_HOME \
+              -pidfile $STSD_SERVICE_PID \
+              $DAEMON_CLASS
+    rc=$?
+    if [ $rc -ne 0 ]; then
+        echo "Failed to stop STS service. Error code : $rc"
+    fi
+
+    return $rc
+}
+
+
+## main
+
+if [ $# -lt 1 ]; then
+    ShowUsage
+    exit 1
+fi
+
+rc=0
+
+case "$1" in
+    start)
+        StartService
+        rc=$?
+        ;;
+    stop)
+ StopService
+        rc=$?
+        ;;
+    *)
+        echo "Error: Unsupported action : $1"
+        ShowUsage
+        rc=1
+        ;;
+esac
+
+exit $rc
+

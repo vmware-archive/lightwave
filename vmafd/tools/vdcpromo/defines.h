@@ -22,9 +22,10 @@
 #define VMAFD_OPTION_SITE_NAME       's'
 #define VMAFD_OPTION_REPL_HOST_NAME  'H'
 #define VMDIR_OPTION_LOTUS_SERVER_NAME  'h'
+#define VMAFD_OPTION_INIT_DNS        'n'
 #define VMAFD_OPTION_FIRST_REPL_MODE 'R'
 #define VMAFD_OPTION_PWD_FILE        'x'
-#define VMAFD_OPTIONS_VALID "td:w:u:H:h:R:s:x:"
+#define VMAFD_OPTIONS_VALID "td:w:u:H:h:nR:s:x:"
 
 #else
 
@@ -35,6 +36,7 @@
 #define VMAFD_OPTION_TENANT          "-t"
 #define VMAFD_OPTION_REPL_HOST_NAME  "-H"
 #define VMDIR_OPTION_LOTUS_SERVER_NAME  "-h"
+#define VMAFD_OPTION_INIT_DNS        "-n"
 #define VMAFD_OPTION_FIRST_REPL_MODE "-R"
 #define VMAFD_OPTION_PWD_FILE        "-x"
 
@@ -49,4 +51,22 @@
 #define ERROR_LOCAL_PASSWORDFILE_CANNOT_OPEN        (ERROR_LOCAL_BASE + 3)
 #define ERROR_LOCAL_PASSWORDFILE_CANNOT_READ        (ERROR_LOCAL_BASE + 4)
 #define ERROR_LOCAL_PASSWORD_EMPTY                  (ERROR_LOCAL_BASE + 5)
+#define ERROR_LOCAL_OPTION_VALUE_INVALID            (ERROR_LOCAL_BASE + 6)
+
+#ifndef _WIN32
+#define VMAFD_LOG_PATH "/var/log/vmware/vmafd/"
+#else
+#define VMAFD_SOFTWARE_KEY_PATH "SOFTWARE\\VMware, Inc.\\VMware Afd Services"
+#define VMAFD_LOGPATH_KEY_VALUE "LogsPath"
+
+extern FILE gVmAfdLogFile;
+
+#endif
+
+typedef enum _DNS_INIT_FLAG
+{
+    DNS_NONE,
+    DNS_INIT,
+    DNS_UNINIT
+} DNS_INIT_FLAG;
 

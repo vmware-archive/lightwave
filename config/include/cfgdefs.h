@@ -31,6 +31,7 @@
 #define VMW_DIR_SVC_NAME   "vmdir"
 #define VMW_VMCA_SVC_NAME  "vmca"
 #define VMW_VMAFD_SVC_NAME "vmafd"
+#define VMW_VMDNS_SVC_NAME "vmdns"
 #define VMW_DCERPC_SVC_NAME "dcerpc"
 
 #define VMCA_RPC_TCP_END_POINT "2014"

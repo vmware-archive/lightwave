@@ -1,6 +1,7 @@
 #pragma once
 
 #define VMDIR_IPC_PACKET_SIZE 64*1024
+#define VMDIR_MAX_SCHEMACHECK_ATTR_COUNT 4
 
 #ifndef _WIN32
 //#define SOCKET_FILE_PATH "/var/lib/vmware/ipc/vmdir_socket"

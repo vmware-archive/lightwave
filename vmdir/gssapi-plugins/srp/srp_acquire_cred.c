@@ -37,6 +37,22 @@ srp_gss_acquire_cred(
     OM_uint32 minor = 0;
     srp_gss_cred_id_t srp_cred = NULL;
     gss_name_t gss_krb5_name_buf = NULL;
+#if 1
+    /*
+     * To preserve backward compatibility with the shipped SRP plugin,
+     * which uses GSS_SRP_MECH_OID_ST (1.2.840.113554.1.2.10), this function
+     * must return this OID. Support for both GSS_SRP_MECH_OID_ST and
+     * the oid-info registered SRP OID (1.3.6.1.4.1.6876.11711.2.1.1).
+     * However, there is no way to use the registed SRP OID and retain
+     * backward compatibility.
+     */
+    int gssapi_srp_mech_oid_len = GSS_SRP_MECH_OID_LEN_ST;
+    unsigned char *srp_mech_oid = GSS_SRP_MECH_OID_ST;
+#else
+    /* Official "SRP OID"; can't use as breaks backward compatibility */
+    int gssapi_srp_mech_oid_len = GSSAPI_SRP_MECH_OID_LEN_ST;
+    unsigned char *srp_mech_oid = GSSAPI_SRP_MECH_OID_ST;
+#endif
 
     /* Allocate the cred structure */
     srp_cred = (srp_gss_cred_id_t) gssalloc_malloc(sizeof(*srp_cred));
@@ -57,15 +73,16 @@ srp_gss_acquire_cred(
         goto error;
     }
     memset(srp_cred->srp_mech_oid, 0, sizeof(*srp_cred->srp_mech_oid));
-    srp_cred->srp_mech_oid->elements = (void *) gssalloc_malloc(GSS_SRP_MECH_OID_LEN);
+    srp_cred->srp_mech_oid->elements = (void *) gssalloc_malloc(gssapi_srp_mech_oid_len);
     if (!srp_cred->srp_mech_oid->elements)
     {
         minor = ENOMEM;
         major = GSS_S_FAILURE;
         goto error;
     }
-    srp_cred->srp_mech_oid->length = GSS_SRP_MECH_OID_LEN;
-    memcpy(srp_cred->srp_mech_oid->elements, SRP_OID, GSS_SRP_MECH_OID_LEN);
+
+    srp_cred->srp_mech_oid->length = gssapi_srp_mech_oid_len;
+    memcpy(srp_cred->srp_mech_oid->elements, srp_mech_oid, gssapi_srp_mech_oid_len);
 
     if (desired_name)
     {

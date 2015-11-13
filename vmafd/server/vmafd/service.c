@@ -39,6 +39,9 @@ VmAfdRpcServerInit(
     int iCnt = 0;
     BOOLEAN bRPCReady = FALSE;
 
+    dwError = EventLogInitialize();
+    BAIL_ON_VMAFD_ERROR(dwError);
+
     dwError = VmAfdRegisterRpcServer();
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -119,6 +122,9 @@ VmAfdRegisterRpcServer(
     dwError = VmAfdRpcServerRegisterIf(pInterfaceSpec);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    dwError = EventLogRegisterRpcServerIf();
+    BAIL_ON_VMAFD_ERROR(dwError);
+
     VmAfdLog(VMAFD_DEBUG_TRACE,
         "VMware afd Service registered successfully.");
 
@@ -129,6 +135,11 @@ VmAfdRegisterRpcServer(
     BAIL_ON_VMAFD_ERROR(dwError);
 
     VmAfdLog(VMAFD_DEBUG_TRACE, "VMware afd Service bound successfully.");
+
+#if !defined(_WIN32) && !defined(PLATFORM_VMWARE_ESX)
+    dwError = EventLogEpRegister(pServerBinding);
+    BAIL_ON_VMAFD_ERROR(dwError);
+#endif
 
     dwError = VmAfdRpcServerRegisterAuthInfo();
     BAIL_ON_VMAFD_ERROR(dwError);

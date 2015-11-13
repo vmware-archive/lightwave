@@ -70,6 +70,12 @@ DirCliGetCrlAuthKeyIdHexString(
     PSTR*       ppszAid
     );
 
+static
+DWORD
+DirCliGetDCName(
+    PSTR*      ppszDCName
+    );
+
 DWORD
 DirCliCreateServiceA(
     PCSTR pszServiceName,
@@ -114,7 +120,7 @@ DirCliCreateServiceA(
         pszPasswordLocal = pszPassword1;
     }
 
-    dwError = VmAfdGetDCNameA(NULL, &pszDCName);
+    dwError = DirCliGetDCName(&pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = DirCliLdapConnect(
@@ -276,7 +282,7 @@ DirCliUpdateServiceA(
         pszPasswordLocal = pszPassword1;
     }
 
-    dwError = VmAfdGetDCNameA(NULL, &pszDCName);
+    dwError = DirCliGetDCName(&pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = DirCliLdapConnect(
@@ -371,7 +377,7 @@ DirCliListServiceA(
         pszPasswordLocal = pszPassword1;
     }
 
-    dwError = VmAfdGetDCNameA(NULL, &pszDCName);
+    dwError = DirCliGetDCName(&pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = DirCliLdapConnect(
@@ -469,7 +475,7 @@ DirCliDeleteServiceA(
         pszPasswordLocal = pszPassword1;
     }
 
-    dwError = VmAfdGetDCNameA(NULL, &pszDCName);
+    dwError = DirCliGetDCName(&pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = DirCliLdapConnect(
@@ -539,7 +545,7 @@ DirCliCreateGroupA(
         pszPasswordLocal = pszPassword1;
     }
 
-    dwError = VmAfdGetDCNameA(NULL, &pszDCName);
+    dwError = DirCliGetDCName(&pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = DirCliLdapConnect(
@@ -612,7 +618,7 @@ DirCliAddGroupMemberA(
         pszPasswordLocal = pszPassword1;
     }
 
-    dwError = VmAfdGetDCNameA(NULL, &pszDCName);
+    dwError = DirCliGetDCName(&pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = DirCliLdapConnect(
@@ -695,7 +701,7 @@ DirCliRemoveGroupMemberA(
         pszPasswordLocal = pszPassword1;
     }
 
-    dwError = VmAfdGetDCNameA(NULL, &pszDCName);
+    dwError = DirCliGetDCName(&pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = DirCliLdapConnect(
@@ -776,7 +782,7 @@ DirCliListGroupA(
         pszPasswordLocal = pszPassword1;
     }
 
-    dwError = VmAfdGetDCNameA(NULL, &pszDCName);
+    dwError = DirCliGetDCName(&pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = DirCliLdapConnect(
@@ -1139,7 +1145,8 @@ DirCliPublishCrlA(
     {
         if (IsNullOrEmptyString(pszCrlAuthorityKeyId))
         {
-            BAIL_ON_VMAFD_ERROR(ERROR_INVALID_PARAMETER);
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMAFD_ERROR(dwError);
         }
 
         dwError = VmAfdAllocateStringAVsnprintf(
@@ -1479,7 +1486,7 @@ DirCliGeneratePassword(
         pszPasswordLocal = pszPassword1;
     }
 
-    dwError = VmAfdGetDCNameA(NULL, &pszDC);
+    dwError = DirCliGetDCName(&pszDC);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdAllocateStringPrintf(
@@ -1814,7 +1821,7 @@ DirCliCreateUserA(
         pszUserPasswordLocal = pszUserPassword1;
     }
 
-    dwError = VmAfdGetDCNameA(NULL, &pszDC);
+    dwError = DirCliGetDCName(&pszDC);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmDirOpenServerA(
@@ -2039,7 +2046,8 @@ DirCliFindByNameUserA(
         }
 
         if (pUserInfo->info.pUserInfo_2->pszPwdLastSet &&
-            pUserInfo->info.pUserInfo_2->pszPwdExpTime)
+            pUserInfo->info.pUserInfo_2->pszPwdExpTime &&
+            pUserInfo->info.pUserInfo_2->bIsPwdNeverExpired == FALSE )
         {
             dwError = DirCliUserGetCurrentPwdExpTime(
                     pUserInfo,
@@ -2472,7 +2480,7 @@ DirCliInitLdapConnection(
         pszPasswordLocal = pszPassword1;
     }
 
-    dwError = VmAfdGetDCNameA(NULL, &pszDCName);
+    dwError = DirCliGetDCName(&pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = DirCliLdapConnect(
@@ -2646,3 +2654,300 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+DirCliGetDCName(
+    PSTR*      ppszDCName
+    )
+{
+    DWORD dwError = 0;
+    PCDC_DC_INFO_A pDCInfo = NULL;
+    PVMAFD_SERVER pServer = NULL;
+    PSTR pszDCName = NULL;
+
+    if (!ppszDCName)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdOpenServerA(NULL, NULL, NULL, &pServer);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = CdcGetDCNameA(
+                        pServer,
+                        NULL,
+                        NULL,
+                        NULL,
+                        0,
+                        &pDCInfo
+                        );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringA(
+                            pDCInfo->pszDCName,
+                            &pszDCName
+                            );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppszDCName = pszDCName;
+
+cleanup:
+
+    if (pServer)
+    {
+        VmAfdCloseServer(pServer);
+    }
+    if (pDCInfo)
+    {
+        CdcFreeDomainControllerInfoA(pDCInfo);
+    }
+    return dwError;
+error:
+
+    if (ppszDCName)
+    {
+        *ppszDCName = NULL;
+    }
+    VMAFD_SAFE_FREE_STRINGA(pszDCName);
+    goto cleanup;
+}
+
+DWORD
+DirCliGetFuncLvl(
+    PCSTR     pszHostName,
+    PCSTR     pszLogin,
+    PCSTR     pszPassword,
+    PCSTR     pszDomainName,
+    PDWORD    pdwFuncLvl
+    )
+{
+    DWORD     dwError = 0;
+    DWORD     dwFuncLvl = 0;
+    PSTR      pszDomain = NULL;
+    PSTR      pszPassword1 = NULL;
+    PSTR      pszUser = NULL;
+    PSTR      pszDCName = NULL;
+    PCSTR     pszDCNameLocal = pszHostName;
+    PCSTR     pszDomainLocal = pszDomainName;
+    PCSTR     pszPasswordLocal = pszPassword;
+    PCSTR     pszLoginLocal = pszLogin ? pszLogin : DIR_LOGIN_DEFAULT;
+
+    if ( !pdwFuncLvl)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = DirCliParsePrincipal(pszLoginLocal, &pszUser, &pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if(!pszDomainName)
+    {
+	pszDomainLocal = pszDomain;
+    }
+
+    if (!pszPassword)
+    {
+	dwError = DirCliReadPassword(pszUser, pszDomainLocal,
+				     NULL, &pszPassword1);
+	BAIL_ON_VMAFD_ERROR(dwError);
+        pszPasswordLocal = pszPassword1;
+    }
+
+    if(!pszHostName)
+    {
+	dwError = DirCliGetDCName(&pszDCName);
+	BAIL_ON_VMAFD_ERROR(dwError);
+
+	pszDCNameLocal = pszDCName;
+    }
+
+    dwError = VmDirGetDomainFunctionalLevel( pszDCNameLocal,
+				     pszUser,
+				     pszPasswordLocal,
+				     pszDomainLocal,
+				     &dwFuncLvl );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *pdwFuncLvl = dwFuncLvl;
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pszUser);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword1);
+    VMAFD_SAFE_FREE_MEMORY(pszDomain);
+    VMAFD_SAFE_FREE_MEMORY(pszDCName);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+
+DWORD
+DirCliSetFuncLvl(
+    PCSTR      pszHostName,
+    PCSTR      pszLogin,
+    PCSTR      pszPassword,
+    PCSTR      pszDomainName,
+    PDWORD     pdwFuncLvl
+    )
+{
+
+    DWORD      dwError = 0;
+    DWORD      dwFuncLvl = 1;
+    PCSTR      pszDomainLocal = pszDomainName;
+    PSTR       pszDomain = NULL;
+    PSTR       pszPassword1 = NULL;
+    PSTR       pszUser = NULL;
+    PSTR       pszDCName = NULL;
+    PCSTR      pszDCNameLocal = pszHostName;
+    PCSTR      pszPasswordLocal = pszPassword;
+    PCSTR      pszLoginLocal = pszLogin ? pszLogin : DIR_LOGIN_DEFAULT;
+    BOOLEAN    bUseDefault = FALSE;
+
+    if ( !pdwFuncLvl )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (*pdwFuncLvl == 0)
+    {
+	bUseDefault = TRUE;
+    }
+    else
+    {
+	dwFuncLvl = *pdwFuncLvl;
+    }
+
+    dwError = DirCliParsePrincipal(pszLoginLocal, &pszUser, &pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (!pszDomainName)
+    {
+	pszDomainLocal = pszDomain;
+    }
+
+    if (!pszPassword)
+    {
+	dwError = DirCliReadPassword(pszUser, pszDomainLocal,
+				     NULL, &pszPassword1);
+	BAIL_ON_VMAFD_ERROR(dwError);
+        pszPasswordLocal = pszPassword1;
+    }
+
+    if (!pszHostName)
+    {
+	dwError = DirCliGetDCName(&pszDCName);
+	BAIL_ON_VMAFD_ERROR(dwError);
+
+	pszDCNameLocal = pszDCName;
+    }
+
+    dwError = VmDirSetDomainFunctionalLevel(
+		pszDCNameLocal,
+		pszUser,
+		pszPasswordLocal,
+		pszDomainLocal,
+		&dwFuncLvl,
+		bUseDefault);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (bUseDefault)
+    {
+	*pdwFuncLvl = dwFuncLvl;
+    }
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pszUser);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword1);
+    VMAFD_SAFE_FREE_MEMORY(pszDomain);
+    VMAFD_SAFE_FREE_MEMORY(pszDCName);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+DirCliGetDCNodesVersion(
+    PCSTR      pszHostName,
+    PCSTR      pszLogin,
+    PCSTR      pszPassword,
+    PCSTR      pszDomainName,
+    PVMDIR_DC_VERSION_INFO *ppDCVerInfo
+    )
+{
+    DWORD      dwError = 0;
+    PSTR       pszDomain = NULL;
+    PSTR       pszPassword1 = NULL;
+    PSTR       pszUser = NULL;
+    PSTR       pszDCName = NULL;
+    PCSTR      pszDCNameLocal = pszHostName;
+    PCSTR      pszDomainLocal = pszDomainName;
+    PCSTR      pszPasswordLocal = pszPassword;
+    PCSTR      pszLoginLocal = pszLogin ? pszLogin : DIR_LOGIN_DEFAULT;
+    PVMDIR_DC_VERSION_INFO pDCVerInfo = NULL;
+
+    if ( !ppDCVerInfo )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = DirCliParsePrincipal(pszLoginLocal, &pszUser, &pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if(!pszDomainName)
+    {
+	pszDomainLocal = pszDomain;
+    }
+
+    if (!pszPassword)
+    {
+	dwError = DirCliReadPassword(pszUser, pszDomainLocal,
+				     NULL, &pszPassword1);
+	BAIL_ON_VMAFD_ERROR(dwError);
+        pszPasswordLocal = pszPassword1;
+    }
+
+    if(!pszHostName)
+    {
+	dwError = DirCliGetDCName(&pszDCName);
+	BAIL_ON_VMAFD_ERROR(dwError);
+
+	pszDCNameLocal = pszDCName;
+    }
+
+    dwError =VmDirGetDCNodesVersion (
+		pszDCNameLocal,
+		pszUser,
+		pszPasswordLocal,
+		pszDomainLocal,
+		&pDCVerInfo);
+
+    if (dwError == VMDIR_ERROR_INCOMPLETE_MAX_DFL)
+    {
+	dwError = 0;
+    }
+
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppDCVerInfo = pDCVerInfo;
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pszUser);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword1);
+    VMAFD_SAFE_FREE_MEMORY(pszDomain);
+    VMAFD_SAFE_FREE_MEMORY(pszDCName);
+
+    return dwError;
+
+error:
+    VmDirFreeDCVersionInfo(pDCVerInfo);
+
+    goto cleanup;
+}

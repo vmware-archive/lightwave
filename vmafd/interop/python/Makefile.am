@@ -2,6 +2,7 @@ pymodules_LTLIBRARIES = vmafd.la
 
 pymodules_SCRIPTS = \
     __init__.py \
+    cdcclient.py \
     vmkeystore.py
 
 vmafd_la_SOURCES = \

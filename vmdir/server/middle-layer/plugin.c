@@ -120,6 +120,11 @@
 {                                                          \
     {                                                      \
     VMDIR_SF_INIT(.bCallAlways, FALSE),                    \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginGenericPreAdd), \
+    VMDIR_SF_INIT(.pNext, NULL )                           \
+    },                                                     \
+    {                                                      \
+    VMDIR_SF_INIT(.bCallAlways, FALSE),                    \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginPasswordHashPreAdd), \
     VMDIR_SF_INIT(.pNext, NULL )                           \
     },                                                     \
@@ -249,6 +254,13 @@ _VmDirPluginLockoutCachePostModifyCommit(
 static
 DWORD
 _VmDirpluginPasswordPostModifyCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult);
+
+static
+DWORD
+_VmDirPluginGenericPreAdd(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,
     DWORD            dwPriorResult);
@@ -680,6 +692,51 @@ _VmDirPluginIndicesEntryPreModify(
     return dwRtn;
 }
 
+/*
+ * Generic place to validate attribute values for LDAP_ADD operation.
+ * pEntry now contains ONLY values coming from the wire.
+ * i.e. before any internal logic to add/modify pEntry.
+ *
+ * 1. enforce UPN format - has '@'
+ * 2. enforce SPN format - has '@'
+ */
+static
+DWORD
+_VmDirPluginGenericPreAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    )
+{
+    DWORD            dwError = 0;
+    PVDIR_ATTRIBUTE  pAttrUPN   = VmDirFindAttrByName(pEntry, ATTR_KRB_UPN);
+    PVDIR_ATTRIBUTE  pAttrSPN   = VmDirFindAttrByName(pEntry, ATTR_KRB_SPN);
+    PSTR             pszLocalErrMsg = NULL;
+
+    if ( pAttrUPN )
+    {
+        dwError = VmDirValidatePrincipalName( pAttrUPN, &pszLocalErrMsg );
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if ( pAttrSPN )
+    {
+        dwError = VmDirValidatePrincipalName( pAttrSPN, &pszLocalErrMsg );
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
+
+    return dwError;
+
+error:
+
+    VMDIR_APPEND_ERROR_MSG(pOperation->ldapResult.pszErrMsg, pszLocalErrMsg);
+
+    goto cleanup;
+}
+
 static
 DWORD
 _VmDirPluginPasswordHashPreAdd(
@@ -847,6 +904,7 @@ _VmDirPluginGenerateSidPreAdd(
                 pEntry,
                 pObjectSidAttr);
     BAIL_ON_VMDIR_ERROR(dwError);
+    pObjectSidAttr = NULL;
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszObjectSid);
@@ -1566,7 +1624,7 @@ _VmDirpluginPasswordPostModifyCommit(
                 "Password Modification Failed (%s). "
                 "Bind DN: \"%s\". "
                 "Modified DN: \"%s\"",
-                VDIR_SAFE_STRING(pOperation->conn->pszSocketInfo),
+                pOperation->conn->szClientIP,
                 VDIR_SAFE_STRING(pOperation->conn->AccessInfo.pszNormBindedDn),
                 VDIR_SAFE_STRING(pOperation->request.modifyReq.dn.lberbv_val));
         }
@@ -1587,7 +1645,7 @@ _VmDirpluginPasswordPostModifyCommit(
                 "Password Modification Successful (%s). "
                 "Bind DN: \"%s\". "
                 "Modified DN: \"%s\"",
-                VDIR_SAFE_STRING(pOperation->conn->pszSocketInfo),
+                pOperation->conn->szClientIP,
                 VDIR_SAFE_STRING(pOperation->conn->AccessInfo.pszNormBindedDn),
                 VDIR_SAFE_STRING(pOperation->request.modifyReq.dn.lberbv_val));
         }

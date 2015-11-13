@@ -360,7 +360,7 @@ error:
                      error_code, pszClientName);
         }
     }
-    else
+    else if (dwError)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
                  "VmKdcProcessAsRequest failed, error code: (%u)",
@@ -586,7 +586,6 @@ VmKdcProcessTgsReq(
         }
     }
 
-    VMKDC_FLAG_SET(flags, VMKDC_TF_INITIAL);
     VMKDC_FLAG_SET(flags, VMKDC_TF_PRE_AUTHENT);
     if (VMKDC_FLAG_ISSET(tgsRequest->req_body.kdc_options, VMKDC_KO_RENEWABLE))
     {
@@ -715,7 +714,7 @@ error:
                      error_code, pszServerName);
         }
     }
-    else
+    else if (dwError)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
                  "VmKdcProcessTgsRequest failed, error code: (%u)",

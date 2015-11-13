@@ -5,8 +5,9 @@ SUBDIRS = \
     common  \
     vmafcfg \
     vmevent \
-    vmauthsvc \
     client  \
     server  \
     config  \
-    tools
+    jdepends \
+    tools   \
+    interop

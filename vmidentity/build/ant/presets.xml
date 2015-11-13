@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="internal-compiler-presets" >
+
+   <import file="libraries.xml" />
+
+   <target name="import-helper-tasks" unless="flow.helper-tasks-defined">
+      <taskdef resource="net/sf/antcontrib/antcontrib.properties">
+         <classpath>
+            <pathelement
+               location="${libs.ant-contrib-home}/ant-contrib-1.0b3.jar"/>
+         </classpath>
+      </taskdef>
+
+      <taskdef resource="net/sf/antcontrib/antlib.xml">
+         <classpath location="${libs.ant-contrib-home}/ant-contrib-1.0b3.jar" />
+      </taskdef>
+
+      <property name="flow.helper-tasks-defined" value="true" />
+   </target>
+
+   <macrodef name="find-file-by-age">
+      <attribute name="age" default="youngest" />
+      <attribute name="property-dirname" />
+      <attribute name="property-basename" />
+      <element name="from" implicit="true" />
+
+      <sequential>
+         <var name="tmp-build.find-latest-file-name" unset="true" />
+         <timestampselector
+            property="tmp-build.find-latest-file-name"
+            count="1"
+            age="@{age}">
+
+            <path>
+               <from />
+            </path>
+         </timestampselector>
+
+         <dirname
+            file="${tmp-build.find-latest-file-name}"
+            property="@{property-dirname}"/>
+         <basename
+            file="${tmp-build.find-latest-file-name}"
+            property="@{property-basename}"/>
+      </sequential>
+   </macrodef>
+
+   <macrodef name="if-outofdate">
+      <attribute name="property" default="" />
+      <element name="sourcefiles" />
+      <element name="targetfiles" />
+      <element name="do" optional="true" />
+
+      <sequential>
+         <var name="tmp-build.outofdate-src-latest-basename" unset="true" />
+         <var name="tmp-build.outofdate-src-latest-dirname" unset="true" />
+         <find-file-by-age
+            property-basename="tmp-build.outofdate-src-latest-basename"
+            property-dirname="tmp-build.outofdate-src-latest-dirname">
+
+            <sourcefiles />
+         </find-file-by-age>
+
+         <var name="tmp-build.outofdate-dst-eldest-basename" unset="true" />
+         <var name="tmp-build.outofdate-dst-eldest-dirname" unset="true" />
+         <find-file-by-age
+            age="eldest"
+            property-basename="tmp-build.outofdate-dst-eldest-basename"
+            property-dirname="tmp-build.outofdate-dst-eldest-dirname">
+
+            <targetfiles />
+         </find-file-by-age>
+
+         <fileset id="tmp-build.outofdate-in-src"
+            dir="${tmp-build.outofdate-src-latest-dirname}"
+            includes="${tmp-build.outofdate-src-latest-basename}">
+
+            <depend targetdir="${tmp-build.outofdate-dst-eldest-dirname}">
+               <mapper
+                  type="merge"
+                  to="${tmp-build.outofdate-dst-eldest-basename}" />
+            </depend>
+         </fileset>
+
+         <if>
+            <not><equals arg1="${toString:tmp-build.outofdate-in-src}" arg2="" /></not>
+            <then>
+               <if>
+                  <not><equals arg1="@{property}" arg2="" /></not>
+                  <then><property name="@{property}" value="true" /></then>
+               </if>
+
+               <do />
+            </then>
+         </if>
+      </sequential>
+   </macrodef>
+
+   <presetdef name="call-javac">
+      <!-- TODO: add the rest of the javac arguments -->
+
+      <!--
+      Setting a specific compiler breaks Clover!
+      Consequently we also can't set compiler specific settings.
+      -->
+      <javac
+         deprecation="${arg.javac.deprecation}"
+         debug="${arg.javac.debug}"
+         optimize="${arg.javac.optimize}"
+         fork="${arg.javac.fork}"
+         failonerror="${arg.javac.failonerror}"
+         source="${arg.javac.source-version}"
+         target="${arg.javac.target-version}"
+
+         includes="**/*.java">
+         <compilerarg value="-Djava.endorsed.dirs=${build.endorsed}" />
+      </javac>
+   </presetdef>
+
+   <macrodef name="compile-dependency-helper">
+      <attribute name="srcdir" />
+      <attribute name="destdir" />
+      <attribute name="classpathref" />
+      <element name="source-includes" implicit="true" optional="true" />
+      <sequential>
+         <if-outofdate>
+            <sourcefiles>
+               <fileset dir="@{srcdir}">
+                  <source-includes />
+               </fileset>
+               <path refid="@{classpathref}" />
+            </sourcefiles>
+
+            <targetfiles>
+               <fileset dir="@{destdir}" />
+            </targetfiles>
+
+            <do>
+               <delete>
+                  <fileset dir="@{destdir}" />
+               </delete>
+            </do>
+         </if-outofdate>
+      </sequential>
+   </macrodef>
+
+ <macrodef name="junit-wrapper">
+      <attribute name="classpathref" default="classpath.run-tests" />
+      <element name="junit-options" implicit="true" optional="true" />
+
+      <sequential>
+         <junit
+            dir="${build.classes.test}"
+            fork="${arg.junit.fork}"
+            showoutput="${arg.junit.showoutput}"
+            haltonfailure="${arg.junit.haltonfailure}"
+            maxmemory="${arg.junit.maxmemory}"
+            printsummary="${arg.junit.printsummary}"
+
+            failureproperty="tmp-build.unittests-have-failed">
+
+            <classpath refid="@{classpathref}" />
+
+            <formatter type="xml" />
+            <formatter type="plain" />
+	    <sysproperty key="net.sourceforge.cobertura.datafile"
+                file="${build.cobertura.instrumented.file}" />
+
+            <jvmarg line="${arg.junit.forked-jvm-args-line}" />
+            <junit-options />
+	    <assertions>
+	      <enable/>
+	    </assertions> 
+         </junit>
+      </sequential>
+   </macrodef>
+
+   <macrodef name="junit-test">
+      <attribute name="logdir" default="${build.resolved-test-logs}" />
+      <attribute name="classpathref" default="classpath.run-tests" />
+      <attribute name="test" default="" />
+      <attribute name="methods" default="*" />
+      <element name="junit-options" implicit="true" optional="true" />
+
+      <sequential>
+         <if>
+            <not><equals arg1="@{test}" arg2=""/></not>
+            <then>
+               <!-- single test case; only execute if no runTest requested -->
+               <if>
+                  <not><isset property="runTest" /></not>
+                  <then>
+		    <if>
+		      <equals arg1="@{methods}" arg2="*"/>
+		      <then>
+			<junit-wrapper classpathref="@{classpathref}">
+			  <test todir="@{logdir}" name="@{test}"/>
+			  <junit-options />
+			</junit-wrapper>
+		      </then>
+		      <else>
+			<junit-wrapper classpathref="@{classpathref}">
+			  <test todir="@{logdir}" name="@{test}" methods="@{methods}"/>
+			  <junit-options />
+			</junit-wrapper>
+		      </else>
+		    </if>
+                  </then>
+               </if>
+            </then>
+
+            <!-- "runTest" is set forcing us to execute just this test -->
+            <elseif><isset property="runTest" />
+            <then>
+               <var name="tmp-build.requested-run-test" unset="true" />
+               <propertyregex
+                  property="tmp-build.requested-run-test"
+                  input="${runTest}"
+                  regexp="\." replace="/" defaultValue="${runTest}"/>
+
+               <junit-wrapper classpathref="@{classpathref}">
+                  <batchtest todir="@{logdir}">
+                     <fileset dir="${build.classes.test}">
+                        <filename name="**/${tmp-build.requested-run-test}.class" />
+                     </fileset>
+                  </batchtest>
+
+                  <junit-options />
+               </junit-wrapper>
+            </then>
+            </elseif>
+
+            <!-- standard behaviour: execute all unit-test-classes -->
+            <else>
+               <junit-wrapper classpathref="@{classpathref}">
+                  <batchtest todir="@{logdir}">
+                     <fileset refid="unit-test-classes" />
+                  </batchtest>
+
+                  <junit-options />
+               </junit-wrapper>
+            </else>
+         </if>
+      </sequential>
+   </macrodef>
+
+   <macrodef name="testreport-helper">
+      <attribute name="logdir" default="${build.resolved-test-logs}" />
+      <attribute name="failmessage"
+         default="One or more tests have failed. Aborting the build." />
+      <sequential>
+         <if>
+            <istrue value="${withClover}" />
+            <then>
+               <!-- Clover reports both coverage and test results -->
+               <clover-report initstring="@{logdir}/clover/db">
+                  <current outfile="@{logdir}">
+                     <format type="html" filter="log, iflog" />
+                  </current>
+               </clover-report>
+            </then>
+            <else>
+               <!-- JUnit reports only test results -->
+               <junitreport todir="@{logdir}">
+                  <fileset dir="@{logdir}">
+                     <include name="TEST-*.xml" />
+                  </fileset>
+                  <report format="frames" todir="@{logdir}" />
+               </junitreport>
+
+               <if>
+		  <isfalse value="${skipAnalysis}" />
+		  <then>
+		    <!-- <cobertura-check branchrate="34" totallinerate="100" /> -->
+		    <!-- failonerror -->
+		    <cobertura-report srcdir="${src.main.java}" destdir="${coverage.xml.dir}" format="xml" datafile="${build.cobertura.instrumented.file}" />
+		    <cobertura-report srcdir="${src.main.java}" destdir="${coverage.summaryxml.dir}" format="summaryXml" datafile="${build.cobertura.instrumented.file}" />
+		    <cobertura-report destdir="${coverage.html.dir}" datafile="${build.cobertura.instrumented.file}">
+			<fileset dir="${src.main.java}">
+			  <include name="**/*.java"/>
+			</fileset>
+		    </cobertura-report>
+		  </then>
+		</if>
+            </else>
+         </if>
+
+         <var name="tmp-build.must-halt" unset="true" />
+         <condition property="tmp-build.must-halt">
+            <and>
+               <isset property="tmp-build.unittests-have-failed" />
+               <istrue value="${haltOnTestFail}" />
+            </and>
+         </condition>
+
+         <fail if="tmp-build.must-halt" message="@{failmessage}" />
+      </sequential>
+   </macrodef>
+
+   <presetdef name="make-module">
+      <ant antfile="build.xml" target="build"
+         inheritall="false" inheritrefs="false">
+
+         <propertyset negate="true">
+            <propertyref name="srcRoot" />
+            <propertyref prefix="src" />
+            <propertyref prefix="build"/>
+         </propertyset>
+      </ant>
+   </presetdef>
+
+</project>
+

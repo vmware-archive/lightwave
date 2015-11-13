@@ -670,6 +670,29 @@ error:
     return result;
 }
 
+std::string client::GetSiteName()
+{
+    PSTR pszSiteName = NULL;
+    DWORD dwError = 0;
+    std::string result;
+
+    dwError = VmAfdGetSiteNameA(
+                  ServerName.c_str(),
+                  &pszSiteName);
+
+    BAIL_ON_ERROR(dwError);
+
+    result.assign(pszSiteName);
+
+error:
+    if (pszSiteName != NULL)
+    {
+        VmAfdFreeString(pszSiteName);
+    }
+    THROW_IF_NEEDED(dwError);
+    return result;
+}
+
 std::string client::GetMachineID()
 {
     PSTR pszMachineID = NULL;
@@ -1036,6 +1059,204 @@ void client::DeleteCertStore(
 
 cleanup:
     return;
+
+error:
+    THROW_IF_NEEDED(dwError);
+    goto cleanup;
+}
+
+void client::EnableClientAffinity()
+{
+    DWORD dwError = 0;
+
+    //This code would eventually move out of here
+    //when other APIs become remotable
+
+    PVMAFD_SERVER pServer = NULL;
+
+    dwError = VmAfdOpenServerA(NULL,NULL,NULL,&pServer);
+    BAIL_ON_ERROR(dwError);
+
+    dwError = CdcEnableClientAffinity(pServer);
+    BAIL_ON_ERROR(dwError);
+
+cleanup:
+    if (pServer)
+    {
+        VmAfdCloseServer(pServer);
+    }
+    return;
+
+error:
+    THROW_IF_NEEDED(dwError);
+    goto cleanup;
+}
+
+void client::DisableClientAffinity()
+{
+    DWORD dwError = 0;
+
+    //This code would eventually move out of here
+    //when other APIs become remotable
+
+    PVMAFD_SERVER pServer = NULL;
+
+    dwError = VmAfdOpenServerA(NULL,NULL,NULL,&pServer);
+    BAIL_ON_ERROR(dwError);
+
+    dwError = CdcDisableClientAffinity(pServer);
+    BAIL_ON_ERROR(dwError);
+
+cleanup:
+    if (pServer)
+    {
+        VmAfdCloseServer(pServer);
+    }
+
+    return;
+
+error:
+    THROW_IF_NEEDED(dwError);
+    goto cleanup;
+}
+
+std::string client::GetAffinitizedDC(std::string DomainName)
+{
+    PSTR pszAffinitizedDC = NULL;
+    DWORD dwError = 0;
+    std::string result;
+    PCDC_DC_INFO_A pDomainControllerInfo = NULL;
+    //This code would eventually move out of here
+    //when other APIs become remotable
+    PVMAFD_SERVER pServer = NULL;
+
+    dwError = VmAfdOpenServerA(NULL,NULL,NULL,&pServer);
+    BAIL_ON_ERROR(dwError);
+
+    dwError = CdcGetDCNameA(
+                         pServer,
+                         (PSTR)DomainName.c_str(),
+                         NULL,
+                         NULL,
+                         0,
+                         &pDomainControllerInfo);
+    BAIL_ON_ERROR(dwError);
+
+    result.assign(pDomainControllerInfo->pszDCName);
+
+cleanup:
+    if (pServer)
+    {
+        VmAfdCloseServer(pServer);
+    }
+
+    if (pDomainControllerInfo)
+    {
+        CdcFreeDomainControllerInfoA(pDomainControllerInfo);
+    }
+
+    return result;
+
+error:
+    THROW_IF_NEEDED(dwError);
+    goto cleanup;
+}
+
+bpl::list client::EnumDCEntries()
+{
+    DWORD dwError = 0;
+    bpl::list result;
+    DWORD dwCount = 0;
+    DWORD dwIndex = 0;
+    PSTR pszDCEntry = NULL;
+    PSTR *ppszDCEntries = NULL;
+    //This code would eventually move out of here
+    //when other APIs become remotable
+    PVMAFD_SERVER pServer = NULL;
+
+    dwError = VmAfdOpenServerA(NULL,NULL,NULL,&pServer);
+    BAIL_ON_ERROR(dwError);
+
+    dwError = CdcEnumDCEntriesA(
+                            pServer,
+                            &ppszDCEntries,
+                            &dwCount);
+    if (dwError == 0 && dwCount > 0)
+    {
+        for (dwIndex=0; dwIndex<dwCount; dwIndex++)
+        {
+            if (ppszDCEntries[dwIndex])
+            {
+                std::string st(ppszDCEntries[dwIndex]);
+                result.append(st);
+            }
+        }
+    }
+    BAIL_ON_ERROR(dwError);
+
+cleanup:
+    if (pServer)
+    {
+        VmAfdCloseServer(pServer);
+    }
+
+    if (ppszDCEntries)
+    {
+        CdcFreeStringArrayA(ppszDCEntries, dwCount);
+    }
+
+    return result;
+
+error:
+    THROW_IF_NEEDED(dwError);
+    goto cleanup;
+}
+
+std::string client::GetCdcState()
+{
+    CDC_DC_STATE cdcState = CDC_DC_STATE_UNDEFINED;
+    DWORD dwError = 0;
+    std::string result;
+    //This code would eventually move out of here
+    //when other APIs become remotable
+    PVMAFD_SERVER pServer = NULL;
+
+    dwError = VmAfdOpenServerA(NULL,NULL,NULL,&pServer);
+    BAIL_ON_ERROR(dwError);
+
+
+    dwError = CdcGetCurrentState(pServer, &cdcState);
+    BAIL_ON_ERROR(dwError);
+
+    switch (cdcState)
+    {
+      case CDC_DC_STATE_NO_DC_LIST:
+        result.assign("NO_DC_LIST");
+        break;
+      case CDC_DC_STATE_SITE_AFFINITIZED:
+        result.assign("SITE_AFFINITIZED");
+        break;
+      case CDC_DC_STATE_OFF_SITE:
+        result.assign("OFF_SITE");
+        break;
+      case CDC_DC_STATE_NO_DCS_ALIVE:
+        result.assign("NO_DCS_ALIVE");
+        break;
+      case CDC_DC_STATE_DISABLED:
+        result.assign("DISABLED");
+        break;
+      default:
+        result.assign("UNKNOWN");
+        break;
+    }
+
+cleanup:
+    if (pServer)
+    {
+        VmAfdCloseServer(pServer);
+    }
+
+    return result;
 
 error:
     THROW_IF_NEEDED(dwError);

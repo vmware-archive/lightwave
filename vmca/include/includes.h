@@ -17,7 +17,6 @@
 #include <vmcatypes.h>
 #include <vmca.h>
 #include <vmcacommon.h>
-#include <pkcs_botan.h>
 #include <ldap.h>
 
 #include "structs.h"
@@ -48,7 +47,6 @@
 #include <vmcatypes.h>
 #include <vmca.h>
 #include <vmcacommon.h>
-#include <pkcs_botan.h>
 
 #include "structs.h"
 #include "externs.h"

@@ -146,6 +146,9 @@ void *vecs_crl_handle_t;
 #define READ_STORE 0x40000000
 #define WRITE_STORE 0x80000000
 
+//CDC_GET_DCNAME_FLAG
+#define CDC_FORCE_REFRESH 0x00000001
+
 #ifndef VMAFD_STATUS_DEFINED
 #define VMAFD_STATUS_DEFINED 1
 
@@ -157,6 +160,7 @@ typedef enum {
     CERT_ENTRY_TYPE_SECRET_KEY,
     CERT_ENTRY_TYPE_TRUSTED_CERT,
     CERT_ENTRY_TYPE_REVOKED_CERT_LIST,
+    CERT_ENTRY_TYPE_ENCRYPTED_PRIVATE_KEY
 } CERT_ENTRY_TYPE;
 
 typedef enum {
@@ -196,9 +200,9 @@ typedef enum
 
 #endif /* VMAFD_DOMAIN_STATE_DEFINED */
 
+
 #ifndef VMAFD_CRL_DATA_DEFINED
 #define VMAFD_CRL_DATA_DEFINED 1
-#define FILE_CHUNK 64 * 1024
 
 typedef struct _VMAFD_CRL_DATA
 {
@@ -375,6 +379,122 @@ typedef enum
 
 #endif /* CRL_OPEN_MODE_DEFINED */
 
+
+#ifndef CDC_ADDRESS_TYPE_DEFINED
+#define CDC_ADDRESS_TYPE_DEFINED 1
+
+typedef enum
+{
+    CDC_ADDRESS_TYPE_UNDEFINED = 0,
+    CDC_ADDRESS_TYPE_INET,
+    CDC_ADDRESS_TYPE_NETBIOS
+} CDC_ADDRESS_TYPE;
+
+#endif
+
+#ifndef CDC_DC_INFO_A_DEFINED
+#define CDC_DC_INFO_A_DEFINED    1
+
+typedef char* GUID_A;
+//TODO: Later change this to actual GUID struct?
+
+typedef struct _CDC_DC_INFO_A
+{
+    char*             pszDCName;
+    char*             pszDCAddress;
+    CDC_ADDRESS_TYPE  DcAddressType;
+    char*             pszDomainName;
+    char*             pszDcSiteName;
+}CDC_DC_INFO_A, *PCDC_DC_INFO_A;
+
+#endif
+
+#ifndef CDC_DC_INFO_W_DEFINED
+#define CDC_DC_INFO_W_DEFINED    1
+
+typedef wstring_t GUID_W;
+//TODO: Later change this to actual GUID struct?
+
+typedef struct _CDC_DC_INFO_W
+{
+    wstring_t            pszDCName;
+    wstring_t            pszDCAddress;
+    CDC_ADDRESS_TYPE     DcAddressType;
+    wstring_t            pszDomainName;
+    wstring_t            pszDcSiteName;
+}CDC_DC_INFO_W, *PCDC_DC_INFO_W;
+
+#endif
+
+#ifndef CDC_DC_STATE_DEFINED
+#define CDC_DC_STATE_DEFINED    1
+
+typedef enum {
+    CDC_DC_STATE_UNDEFINED =0,
+    CDC_DC_STATE_NO_DC_LIST,
+    CDC_DC_STATE_SITE_AFFINITIZED,
+    CDC_DC_STATE_OFF_SITE,
+    CDC_DC_STATE_NO_DCS_ALIVE,
+    CDC_DC_STATE_DISABLED
+} CDC_DC_STATE, *PCDC_DC_STATE;
+
+#endif
+
+typedef UINT32 VMAFD_JOIN_FLAGS;
+
+#define VMAFD_JOIN_FLAGS_ENABLE_NSSWITCH 0x0001
+#define VMAFD_JOIN_FLAGS_ENABLE_PAM      0x0002
+#define VMAFD_JOIN_FLAGS_ENABLE_SSH      0x0004
+
+#ifndef VMAFD_HB_INFO_A_DEFINED
+#define VMAFD_HB_INFO_A_DEFINED 1
+
+typedef struct _VMAFD_HB_INFO_A
+{
+    char*  pszServiceName;
+    UINT32 dwPort;
+    UINT32 dwLastHeartbeat;
+    UINT32  bIsAlive;
+} VMAFD_HB_INFO_A, *PVMAFD_HB_INFO_A;
+
+#endif
+
+#ifndef VMAFD_HB_STATUS_A_DEFINED
+#define VMAFD_HB_STATUS_A_DEFINED 1
+
+typedef struct _VMAFD_HB_STATUS_A
+{
+    UINT32             bIsAlive;
+    UINT32             dwCount;
+    PVMAFD_HB_INFO_A  pHeartbeatInfoArr;
+} VMAFD_HB_STATUS_A, *PVMAFD_HB_STATUS_A;
+
+#endif
+
+#ifndef VMAFD_HB_INFO_W_DEFINED
+#define VMAFD_HB_INFO_W_DEFINED 1
+
+typedef struct _VMAFD_HB_INFO_W
+{
+    wstring_t pszServiceName;
+    UINT32 dwPort;
+    UINT32 dwLastHeartbeat;
+    UINT32  bIsAlive;
+} VMAFD_HB_INFO_W, *PVMAFD_HB_INFO_W;
+
+#endif
+
+#ifndef VMAFD_HB_STATUS_W_DEFINED
+#define VMAFD_HB_STATUS_W_DEFINED 1
+
+typedef struct _VMAFD_HB_STATUS_W
+{
+    UINT32             bIsAlive;
+    UINT32             dwCount;
+    PVMAFD_HB_INFO_W   pHeartbeatInfoArr;
+} VMAFD_HB_STATUS_W, *PVMAFD_HB_STATUS_W;
+
+#endif
 
 #ifndef _DCE_IDL_
 #ifndef VMAFD_SERVER_DEFINED

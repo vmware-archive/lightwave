@@ -1,4 +1,4 @@
-lib_LTLIBRARIES = libsaslvmdirdb.la
+vmdirsasl_LTLIBRARIES = libsaslvmdirdb.la
 
 libsaslvmdirdb_la_CPPFLAGS = \
     -I$(top_srcdir)/include \

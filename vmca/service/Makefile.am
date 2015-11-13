@@ -27,11 +27,13 @@ vmcad_CPPFLAGS = \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @POPT_INCLUDES@ \
-    @OPENSSL_INCLUDES@
+    @OPENSSL_INCLUDES@ \
+    @VMAFD_INCLUDES@
 
 vmcad_LDADD = \
     $(top_builddir)/common/libcommon.la \
     $(top_builddir)/vmcadb/libvmcadb.la \
+    @VMAFD_LIBS@ \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
@@ -47,6 +49,7 @@ vmcad_LDADD = \
     @PTHREAD_LIBS@
 
 vmcad_LDFLAGS = \
+    @VMAFD_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@ \
     @POPT_LDFLAGS@

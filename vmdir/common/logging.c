@@ -332,8 +332,10 @@ _VmDirLog1(
     {
         logLevelTag = _logLevelToTag(iLevel);
 
-        clock_gettime(CLOCK_REALTIME, &tspec);
-        gmtime_r(&tspec.tv_sec, &mytm);
+#ifndef __MACH__
+	clock_gettime(CLOCK_REALTIME, &tspec);
+#endif
+	gmtime_r(&tspec.tv_sec, &mytm);
         snprintf(extraLogMessage, sizeof(extraLogMessage) - 1,
                 "%4d-%02d-%02dT%02d:%02d:%02d.%03ldZ:t@%lu:%-3.7s: ",
                  mytm.tm_year+1900,

@@ -138,6 +138,150 @@ error:
     return dwError;
 }
 
+static
+DWORD
+_VmAfdFileCopyBackup(
+    PSTR pszFileName,
+    PSTR pszBackupFileName)
+{
+    DWORD dwError = 0;
+    DWORD iRead = 0;
+    DWORD iWrite = 0;
+    FILE *pInFile = NULL;
+    FILE *pOutFile = NULL;
+    PSTR pszBuf = NULL;
+
+    dwError = _VmAfdCreateFile(pszBackupFileName,
+                               &pOutFile);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    pInFile = fopen(pszFileName, "r");
+    if (!pInFile)
+    {
+        dwError = VMAFD_ERRNO;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    /* Allocate a 1K buffer for copying file */
+    dwError = VmAfdAllocateMemory(sizeof(*pszBuf) * VMAFD_FILE_COPY_BUFSZ,
+                                  (PVOID*)&pszBuf);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    while (!feof(pInFile))
+    {
+        iRead = fread(pszBuf, sizeof(*pszBuf), VMAFD_FILE_COPY_BUFSZ, pInFile);
+        if (iRead == -1)
+        {
+            dwError = ERROR_READ_FAULT;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+        if (iRead > 0)
+        {
+            iWrite = fwrite(pszBuf, sizeof(*pszBuf), iRead, pOutFile);
+            if (iWrite == -1 || iWrite != iRead)
+            {
+                dwError = ERROR_WRITE_FAULT;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+        }
+    }
+
+error:
+    if (pInFile)
+    {
+        fclose(pInFile);
+    }
+    if (pOutFile)
+    {
+        fclose(pOutFile);
+    }
+    VMAFD_SAFE_FREE_MEMORY(pszBuf);
+
+    return dwError;
+}
+
+/*
+ * Make copy backup of the configuration file. Two files are created:
+ * 1) file.conf.orig
+ * 2) file.conf.bak
+ *
+ * 1) is a one-time original copy of the file.conf, and is never overwritten
+ * 2) is a copy of the current file.conf, which is changed each time
+ */
+
+DWORD
+VmAfdBackupCopyKrbConfig(
+    PVMAFD_KRB_CONFIG pKrbConfig)
+{
+    DWORD dwError = 0;
+    PSTR pszFileName = NULL;
+    PSTR pszBackupFileName = NULL;
+    PSTR pszBackupOrigFileName = NULL;
+    BOOLEAN bFound = FALSE;
+    BOOLEAN bBackupFound = FALSE;
+    BOOLEAN bBackupOrigFound = FALSE;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(pKrbConfig, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(pKrbConfig->pszFileName, dwError);
+
+    pszFileName = pKrbConfig->pszFileName;
+
+
+    dwError = VmAfdFileExists(pszFileName, &bFound);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (bFound)
+    {
+        dwError = VmAfdAllocateStringPrintf(
+                          &pszBackupOrigFileName,
+                          "%s.orig",
+                          pszFileName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdFileExists(pszBackupOrigFileName, &bBackupOrigFound);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        if (!bBackupOrigFound)
+        {
+            /*
+             * 1) Create an original copy of the krb5.conf file.
+             */
+            dwError = _VmAfdFileCopyBackup(pszFileName, pszBackupOrigFileName);
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
+        dwError = VmAfdAllocateStringPrintf(
+                          &pszBackupFileName,
+                          "%s.bak",
+                          pszFileName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdFileExists(pszBackupFileName, &bBackupFound);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        if (bBackupFound)
+        {
+            /*
+             * 2) Create a .bak backup copy file the current state of krb5.conf
+             */
+            remove(pszBackupFileName);
+        }
+        dwError = _VmAfdFileCopyBackup(pszFileName, pszBackupFileName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+cleanup:
+
+    VMAFD_SAFE_FREE_STRINGA(pszBackupFileName);
+    VMAFD_SAFE_FREE_STRINGA(pszBackupOrigFileName);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
 DWORD
 VmAfdBackupKrbConfig(
     PVMAFD_KRB_CONFIG pKrbConfig)
@@ -262,6 +406,156 @@ error:
     return dwError;
 }
 
+#ifdef USE_DEFAULT_KRB5_PATHS
+/*
+ * Merge vmdir Kerberos entries into the default krb5.conf file
+ */
+DWORD
+VmAfdWriteKrbConfig(
+    PVMAFD_KRB_CONFIG pKrbConfig)
+{
+    DWORD dwError = 0;
+    DWORD i = 0;
+    BOOLEAN bKrbConfFound = FALSE;
+    BOOLEAN bDefaultRealmFound = TRUE;
+    BOOLEAN bDefaultKeytabFound = TRUE;
+    FILE *pFile = NULL;
+    int retval = 0;
+    const char *section[4] = {0};
+    profile_t profile = {0};
+    PSTR pszRetString = NULL;
+    PSTR *ppszRetRealm = NULL;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(pKrbConfig, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(pKrbConfig->pszFileName, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(pKrbConfig->pszDefaultRealm, dwError);
+
+    retval = profile_init_path(pKrbConfig->pszFileName, &profile);
+    if (retval)
+    {
+        if (retval == ENOENT)
+        {
+            bKrbConfFound = FALSE;
+            dwError = _VmAfdCreateFile(pKrbConfig->pszFileName, &pFile);
+            BAIL_ON_VMAFD_ERROR(dwError);
+            fclose(pFile);
+            retval = profile_init_path(pKrbConfig->pszFileName, &profile);
+            if (retval)
+            {
+                dwError = ERROR_INVALID_PARAMETER;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+        }
+        else
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+    }
+    else
+    {
+        bKrbConfFound = TRUE;
+    }
+
+    if (!bKrbConfFound)
+    {
+        bDefaultRealmFound = FALSE;
+        bDefaultKeytabFound = FALSE;
+    }
+    else
+    {
+        /*
+         * Only add [libdefaults]/default_realm and default_keytab_name
+         * when these values do not already exist.
+         */
+        retval = profile_get_string(profile, "libdefaults", "default_realm", NULL, NULL, &pszRetString);
+        if (retval == 0 && (!pszRetString || !pszRetString[0]))
+        {
+            bDefaultRealmFound = FALSE;
+        }
+        retval = profile_get_string(profile, "libdefaults", "default_keytab_name", NULL, NULL, &pszRetString);
+        if (retval == 0 && (!pszRetString || !pszRetString[0]))
+        {
+            bDefaultKeytabFound = FALSE;
+        }
+
+    }
+
+    if (!bDefaultRealmFound)
+    {
+        section[0] = "libdefaults";
+        section[1] = "default_realm";
+        section[2] = NULL;
+        retval = profile_add_relation(profile,
+                                      section,
+                                      pKrbConfig->pszDefaultRealm);
+        if (retval)
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+    }
+
+    if (!bDefaultKeytabFound)
+    {
+        section[0] = "libdefaults";
+        section[1] = "default_keytab_name";
+        section[2] = NULL;
+        retval = profile_add_relation(profile,
+                                      section,
+                                      pKrbConfig->pszDefaultKeytabName);
+        if (retval)
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+    }
+
+    /*
+     * Following code writes an entry of the following format:
+     * [realms]
+     *     REALM.COM = {
+     *         kdc = value1
+     *         kdc = valueN
+     *     }
+     * First, remove any existing relation for the same REALM,
+     * in case this realm was previously joined. Rejoining must
+     * remove previous cruft, otherwise the wrong KDC will be referenced.
+     */
+    section[0] = "realms";
+    section[1] = pKrbConfig->pszDefaultRealm;
+    section[2] = "kdc";
+    section[3] = NULL;
+    profile_clear_relation(profile, section);
+
+    for (i=0; i<pKrbConfig->iNumKdcServers; i++)
+    {
+        retval = profile_add_relation(profile,
+                                      section,
+                                      pKrbConfig->pszKdcServer[i]);
+        if (retval)
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+    }
+
+error:
+    if (profile)
+    {
+        profile_flush(profile);
+        profile_release(profile);
+    }
+    if (ppszRetRealm)
+    {
+        profile_free_list(ppszRetRealm);
+    }
+
+    return dwError;
+}
+
+#else
+
 DWORD
 VmAfdWriteKrbConfig(
     PVMAFD_KRB_CONFIG pKrbConfig)
@@ -302,3 +596,5 @@ error:
 
     return dwError;
 }
+
+#endif

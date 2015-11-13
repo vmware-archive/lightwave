@@ -11,6 +11,7 @@ noinst_LTLIBRARIES = libcommon.la
 
 libcommon_la_SOURCES = \
     logging.c \
+    circularbuffer.c \
     memory.c  \
     marshalutil.c \
     networkutil.c \
@@ -18,6 +19,7 @@ libcommon_la_SOURCES = \
     opensslclient.c  \
     rpcmemory.c  \
     string.c  \
+    stringlist.c \
     threading.c  \
     synchronizing.c  \
     securityutil.c \
@@ -26,7 +28,9 @@ libcommon_la_SOURCES = \
     deque.c \
     tsstack.c \
     ldapbind.c \
-    krbutil.c
+    krbutil.c \
+    parsearguments.c \
+    superlogutil.c
 
 libcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/include \

@@ -65,6 +65,7 @@
 #include <vmkdcserver.h>
 #include <vmdirserver.h>
 #include <ldaphead.h>
+#include <vmevent.h>
 
 #include "defines.h"
 #include "structs.h"
@@ -72,6 +73,7 @@
 #include "vmdir_h.h"
 #include "vmdirftp_h.h"
 #include "srp_verifier_h.h"
+#include "vmdirsuperlog_h.h"
 #include "prototypes.h"
 
 #include "externs.h"
@@ -109,7 +111,10 @@
 #include <lber_pvt.h>
 #include <lber-int.h>
 
-#include "banned.h"
+#define LW_STRICT_NAMESPACE
+#include <lw/types.h>
+#include <lw/hash.h>
+#include <lw/security-types.h>
 
 #include <vmdir.h>
 #include <vmdirtypes.h>
@@ -130,6 +135,7 @@
 #include <vmkdcserver.h>
 #include <vmdirserver.h>
 #include <ldaphead.h>
+#include <vmevent.h>
 
 #include "defines.h"
 #include "structs.h"
@@ -137,9 +143,12 @@
 #include "vmdir_h.h"
 #include "vmdirftp_h.h"
 #include "srp_verifier_h.h"
+#include "vmdirsuperlog_h.h"
 #include "prototypes.h"
 
 #include "externs.h"
+
+#include "banned.h"
 
 #endif
 

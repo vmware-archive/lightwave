@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : authprototypes.h
+ *
+ * Abstract :
+ *
+ */
 #pragma once
 
 typedef enum{

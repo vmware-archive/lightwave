@@ -39,3 +39,55 @@ VMCAMapToDBStatus(CERTIFICATE_STATUS st)
 	}
      return VMCA_DB_CERTIFICATE_STATUS_ALL;
 }
+
+DWORD
+VMCAHeartbeatInit(
+    PVMAFD_HB_HANDLE *ppHandle
+    )
+{
+    DWORD dwError = 0;
+    PVMAFD_HB_HANDLE pHandle = NULL;
+
+    if (!ppHandle)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = VmAfdStartHeartbeatA(
+                                VMCA_EVENT_SOURCE,
+                                2014,
+                                &pHandle
+                                );
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    *ppHandle = pHandle;
+
+cleanup:
+
+    return dwError;
+error:
+
+    if (ppHandle)
+    {
+        *ppHandle = NULL;
+    }
+    if (pHandle)
+    {
+        VmAfdStopHeartbeat(pHandle);
+    }
+
+    goto cleanup;
+}
+
+VOID
+VMCAStopHeartbeat(
+    PVMAFD_HB_HANDLE pHandle
+    )
+{
+    if (pHandle)
+    {
+        VmAfdStopHeartbeat(pHandle);
+    }
+}
+

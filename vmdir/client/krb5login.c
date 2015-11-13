@@ -30,7 +30,7 @@ VmDirMapKrbError(
  * communicate with the VmDir
 */
 DWORD
-VmDirLoginUser(
+VmDirKrb5LoginUser(
     PCSTR pszUserName,
     PCSTR pszPassword,
     PCSTR pszKrb5ConfPath /* Optional */
@@ -141,7 +141,7 @@ error:
  * VmDirLogOut Clears the TGT Cache that was created for this user
 */
 DWORD
-VmDirLogOut(
+VmDirKrb5LogOut(
     VOID
     )
 {

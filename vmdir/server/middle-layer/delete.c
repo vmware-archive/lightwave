@@ -674,6 +674,7 @@ VmDirIsProtectedEntry(
     const CHAR szDCAdminsGroup[] =  "cn=DCAdmins,cn=Builtin";
     const CHAR szUsersGroup[] =     "cn=Users,cn=Builtin";
     const CHAR szAdministrator[] =  "cn=Administrator,cn=Users";
+    const CHAR szDCClientsGroup[] = "cn=DCClients,cn=Builtin";
 
     if (pEntry == NULL)
     {
@@ -715,6 +716,7 @@ VmDirIsProtectedEntry(
         !VmDirStringNCompareA(pszEntryDn, szCertGroup, sizeof(szCertGroup) - 1, FALSE) ||
         !VmDirStringNCompareA(pszEntryDn, szDCAdminsGroup, sizeof(szDCAdminsGroup) - 1, FALSE) ||
         !VmDirStringNCompareA(pszEntryDn, szUsersGroup, sizeof(szUsersGroup) - 1, FALSE) ||
+        !VmDirStringNCompareA(pszEntryDn, szDCClientsGroup, sizeof(szDCClientsGroup) - 1, FALSE) ||
         !VmDirStringNCompareA(pszEntryDn, szAdministrator, sizeof(szAdministrator) - 1, FALSE))
     {
         bResult = TRUE;

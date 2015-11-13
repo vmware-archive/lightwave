@@ -145,6 +145,12 @@ VecsMapEntryType(
 
             break;
 
+        case CERT_ENTRY_TYPE_ENCRYPTED_PRIVATE_KEY:
+
+            pszEntryType = "Encrypted Private Key";
+
+            break;
+
         default:
 
             pszEntryType = "Unknown";

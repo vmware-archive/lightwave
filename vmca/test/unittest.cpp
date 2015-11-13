@@ -15,7 +15,6 @@
 #include <boost/test/unit_test.hpp>
 #include <vmcaclient.h>
 #include <vmcacommon.h>
-#include <pkcs_botan.h>
 
 
 

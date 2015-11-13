@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : init.c
+ *
+ * Abstract :
+ *
+ */
 #include "includes.h"
 
 static
@@ -49,7 +57,7 @@ InitializeDatabase(
 #ifndef _WIN32
     PSTR pszDefaultEventLogDbPath = "/storage/db/vmware-vmafd/vmevent/vmevent.db";
 #else
-    PSTR pszDefaultEventLogDbPath = "C:\\ProgramData\\VMware\\cis\\data\\vmafdd\\vmevent\\vmevent.db";
+    PSTR pszDefaultEventLogDbPath = "C:\\ProgramData\\VMware\\CIS\\data\\vmafdd\\vmevent.db";
 #endif
 
     dwError = EventLogDbInitialize(pszDefaultEventLogDbPath);

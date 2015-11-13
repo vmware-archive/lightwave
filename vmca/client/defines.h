@@ -41,6 +41,29 @@
 #define VMCA_RPC_AUTHZN_NONE               RPC_C_AUTHZ_NONE
 #define VMCA_RPC_AUTHZN_NAME               RPC_C_AUTHZ_NAME
 
+#ifndef SPNEGO_OID
+#define SPNEGO_OID_LENGTH 6
+#define SPNEGO_OID "\x2b\x06\x01\x05\x05\x02"
+
+/*
+ * 1.3.6.1.4.1.6876.11711.2.1.1.1
+ *
+ * {iso(1) identified-organization(3) dod(6) internet(1) private(4)
+ *   enterprise(1) 6876 vmwSecurity(11711) vmwAuthentication(2) vmwGSSAPI(1)
+ *   vmwSRP(1) vmwSrpCredOptPwd(1)}
+ * Official registered GSSAPI_SRP password cred option OID
+ */
+#ifndef GSSAPI_SRP_CRED_OPT_PW
+#define GSSAPI_SRP_CRED_OPT_PW  \
+    "\x2b\x06\x01\x04\x01\xb5\x5c\xdb\x3f\x02\x01\x01\x01"
+#endif
+
+#ifndef GSSAPI_SRP_CRED_OPT_PW_LEN
+#define GSSAPI_SRP_CRED_OPT_PW_LEN  13
+#endif
+
+#endif
+
 #define VMCA_RPC_SAFE_FREE_MEMORY(pMemory) \
     if (pMemory) \
     { \

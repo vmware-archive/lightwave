@@ -19,7 +19,7 @@
 void VmAfdCloseFileCRLFileHandle(void **ctx);
 
 DWORD
-VmAfdRpcGetStatus(
+Srv_VmAfdRpcGetStatus(
     handle_t      hBinding, /* IN     */
     PVMAFD_STATUS pStatus   /* IN OUT */
     )
@@ -49,7 +49,7 @@ error:
 }
 
 DWORD
-VmAfdRpcGetDomainName(
+Srv_VmAfdRpcGetDomainName(
     rpc_binding_handle_t hBinding,          /* IN     */
     PWSTR*   ppwszDomain        /*    OUT */
     )
@@ -97,7 +97,7 @@ error:
 }
 
 DWORD
-VmAfdRpcSetDomainName(
+Srv_VmAfdRpcSetDomainName(
     rpc_binding_handle_t hBinding,         /* IN     */
     PWSTR    pwszDomain        /* IN     */
     )
@@ -133,7 +133,7 @@ error:
 }
 
 DWORD
-VmAfdRpcGetDomainState(
+Srv_VmAfdRpcGetDomainState(
     rpc_binding_handle_t hBinding,         /* IN     */
     PVMAFD_DOMAIN_STATE  pDomainState      /*    OUT */
     )
@@ -165,7 +165,7 @@ error:
 }
 
 DWORD
-VmAfdRpcGetLDU(
+Srv_VmAfdRpcGetLDU(
     rpc_binding_handle_t hBinding,      /* IN     */
     PWSTR*   ppwszLDU       /*    OUT */
     )
@@ -213,7 +213,42 @@ error:
 }
 
 DWORD
-VmAfdRpcSetRHTTPProxyPort(
+Srv_VmAfdRpcGetRHTTPProxyPort(
+    rpc_binding_handle_t hBinding,
+    PDWORD pdwPort
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwRpcFlags = VMAFD_RPC_FLAG_ALLOW_TCPIP
+                     | VMAFD_RPC_FLAG_REQUIRE_AUTH_TCPIP;
+    DWORD dwPort = 0;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(pdwPort, dwError);
+
+    dwError = VmAfdRpcServerCheckAccess(hBinding, dwRpcFlags);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvGetRHTTPProxyPort(&dwPort);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *pdwPort = dwPort;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    if (pdwPort)
+    {
+        *pdwPort = 0;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+Srv_VmAfdRpcSetRHTTPProxyPort(
     rpc_binding_handle_t hBinding,      /* IN     */
     DWORD dwPort                        /* IN     */
     )
@@ -241,7 +276,7 @@ error:
 }
 
 DWORD
-VmAfdRpcSetDCPort(
+Srv_VmAfdRpcSetDCPort(
     rpc_binding_handle_t hBinding,      /* IN     */
     DWORD dwPort                        /* IN     */
     )
@@ -269,7 +304,7 @@ error:
 }
 
 DWORD
-VmAfdRpcSetLDU(
+Srv_VmAfdRpcSetLDU(
     rpc_binding_handle_t hBinding,         /* IN     */
     PWSTR    pwszLDU           /* IN     */
     )
@@ -305,7 +340,7 @@ error:
 }
 
 DWORD
-VmAfdRpcGetCMLocation(
+Srv_VmAfdRpcGetCMLocation(
     rpc_binding_handle_t hBinding,        /* IN     */
     PWSTR*   ppwszCMLocation  /*    OUT */
     )
@@ -353,7 +388,7 @@ error:
 }
 
 DWORD
-VmAfdRpcGetLSLocation(
+Srv_VmAfdRpcGetLSLocation(
     rpc_binding_handle_t hBinding,        /* IN     */
     PWSTR*   ppwszLSLocation  /*    OUT */
     )
@@ -401,7 +436,7 @@ error:
 }
 
 DWORD
-VmAfdRpcGetDCName(
+Srv_VmAfdRpcGetDCName(
     rpc_binding_handle_t hBinding,      /* IN     */
     PWSTR*   ppwszDCName    /*    OUT */
     )
@@ -449,7 +484,7 @@ error:
 }
 
 DWORD
-VmAfdRpcSetDCName(
+Srv_VmAfdRpcSetDCName(
     rpc_binding_handle_t hBinding,      /* IN     */
     PWSTR    pwszDCName     /* IN     */
     )
@@ -485,7 +520,7 @@ error:
 }
 
 DWORD
-VmAfdRpcGetPNID(
+Srv_VmAfdRpcGetPNID(
     rpc_binding_handle_t hBinding,
     PWSTR* ppwszPNID
     )
@@ -533,7 +568,7 @@ error:
 }
 
 DWORD
-VmAfdRpcSetPNID(
+Srv_VmAfdRpcSetPNID(
     rpc_binding_handle_t hBinding,
     PWSTR pwszPNID
     )
@@ -569,7 +604,7 @@ error:
 }
 
 DWORD
-VmAfdRpcGetCAPath(
+Srv_VmAfdRpcGetCAPath(
     rpc_binding_handle_t hBinding,
     PWSTR* ppwszPath
     )
@@ -617,7 +652,7 @@ error:
 }
 
 DWORD
-VmAfdRpcSetCAPath(
+Srv_VmAfdRpcSetCAPath(
     rpc_binding_handle_t hBinding,
     PWSTR pwszPath
     )
@@ -653,7 +688,7 @@ error:
 }
 
 UINT32
-VmAfdRpcGetSiteGUID(
+Srv_VmAfdRpcGetSiteGUID(
     rpc_binding_handle_t hBinding, /* IN              */
     PWSTR*               ppwszGUID /*    OUT          */
     )
@@ -698,7 +733,7 @@ error:
 }
 
 UINT32
-VmAfdRpcGetMachineID(
+Srv_VmAfdRpcGetMachineID(
     rpc_binding_handle_t hBinding, /* IN              */
     PWSTR*               ppwszGUID /*    OUT          */
     )
@@ -743,7 +778,7 @@ error:
 }
 
 UINT32
-VmAfdRpcSetMachineID(
+Srv_VmAfdRpcSetMachineID(
     rpc_binding_handle_t hBinding, /* IN              */
     PWSTR                pwszGUID /*  IN              */
     )
@@ -769,7 +804,7 @@ error:
 }
 
 DWORD
-VmAfdRpcQueryAD(
+Srv_VmAfdRpcQueryAD(
     rpc_binding_handle_t hBinding,  /* IN              */
     PWSTR  *ppwszComputer,          /*    OUT          */
     PWSTR  *ppwszDomain,            /*    OUT          */
@@ -814,7 +849,7 @@ error:
 }
 
 DWORD
-VmAfdRpcForceReplication(
+Srv_VmAfdRpcForceReplication(
     rpc_binding_handle_t hBinding, /* IN              */
     PWSTR   pwszServerName         /* IN              */
     )
@@ -846,7 +881,7 @@ error:
 }
 
 DWORD
-VmAfdRpcTriggerRootCertsRefresh(
+Srv_VmAfdRpcTriggerRootCertsRefresh(
     handle_t hBinding
 )
 {
@@ -878,7 +913,7 @@ error:
  * Creates a certificate store
  */
 DWORD
-VecsRpcCreateCertStore(
+Srv_VecsRpcCreateCertStore(
      rpc_binding_handle_t hBinding,
      PWSTR pszStoreName,
      PWSTR pszPassword,
@@ -958,7 +993,7 @@ error:
 }
 
 DWORD
-VecsRpcOpenCertStore(
+Srv_VecsRpcOpenCertStore(
         rpc_binding_handle_t hBinding,
         PWSTR pszStoreName,
         PWSTR pszPassword,
@@ -1004,7 +1039,7 @@ error:
 }
 
 DWORD
-VecsRpcCloseCertStore(
+Srv_VecsRpcCloseCertStore(
         rpc_binding_handle_t hBinding,
         vecs_store_handle_t *ppStore
         )
@@ -1037,7 +1072,7 @@ error:
 }
 
 UINT32
-VecsRpcEnumCertStore(
+Srv_VecsRpcEnumCertStore(
     rpc_binding_handle_t hBinding,
     PVMAFD_CERT_STORE_ARRAY * ppCertStoreArray
     )
@@ -1097,7 +1132,7 @@ error:
 }
 
 UINT32
-VecsRpcDeleteCertStore(
+Srv_VecsRpcDeleteCertStore(
     rpc_binding_handle_t hBinding,
     PWSTR                pwszStoreName
     )
@@ -1125,7 +1160,7 @@ error:
 }
 
 UINT32
-VecsRpcBeginEnumCerts(
+Srv_VecsRpcBeginEnumCerts(
     rpc_binding_handle_t      hBinding,
     vecs_store_handle_t       pStore,
     UINT32                    dwMaxCount,
@@ -1183,7 +1218,7 @@ error:
 }
 
 UINT32
-VecsRpcEnumCerts(
+Srv_VecsRpcEnumCerts(
     rpc_binding_handle_t     hBinding,
     vecs_entry_enum_handle_t pEnumContext,
     PVMAFD_CERT_ARRAY*       ppCertContainer
@@ -1245,7 +1280,7 @@ error:
 }
 
 UINT32
-VecsRpcEndEnumCerts(
+Srv_VecsRpcEndEnumCerts(
     rpc_binding_handle_t      hBinding,
     vecs_entry_enum_handle_t* ppEnumContext
     )
@@ -1278,7 +1313,7 @@ error:
 }
 
 UINT32
-VecsRpcGetEntryCount(
+Srv_VecsRpcGetEntryCount(
     rpc_binding_handle_t hBinding,
     vecs_store_handle_t pStore,
     PDWORD pdwSize
@@ -1325,7 +1360,7 @@ error:
 }
 
 UINT32
-VecsRpcGetCertificateByAlias(
+Srv_VecsRpcGetCertificateByAlias(
     rpc_binding_handle_t hBinding,
     vecs_store_handle_t pStore,
     PWSTR pszAliasName,
@@ -1387,7 +1422,7 @@ error:
 }
 
 UINT32
-VecsRpcGetPrivateKeyByAlias(
+Srv_VecsRpcGetPrivateKeyByAlias(
     rpc_binding_handle_t hBinding,
     vecs_store_handle_t pStore,
     PWSTR pszAliasName,
@@ -1451,7 +1486,7 @@ error:
 }
 
 UINT32
-VecsRpcAddCertificate(
+Srv_VecsRpcAddCertificate(
     rpc_binding_handle_t hBinding,
     vecs_store_handle_t pStore,
     UINT32 entryType,
@@ -1510,7 +1545,7 @@ error:
 }
 
 UINT32
-VecsRpcGetEntryTypeByAlias(
+Srv_VecsRpcGetEntryTypeByAlias(
     rpc_binding_handle_t hBinding,
     vecs_store_handle_t pStore,
     PWSTR pszAliasName,
@@ -1564,7 +1599,7 @@ error:
 }
 
 UINT32
-VecsRpcGetEntryDateByAlias(
+Srv_VecsRpcGetEntryDateByAlias(
     rpc_binding_handle_t hBinding,
     vecs_store_handle_t pStore,
     PWSTR pszAliasName,
@@ -1613,7 +1648,7 @@ error:
 }
 
 UINT32
-VecsRpcGetEntryByAlias(
+Srv_VecsRpcGetEntryByAlias(
     rpc_binding_handle_t hBinding,
     vecs_store_handle_t pStore,
     PWSTR pszAliasName,
@@ -1681,7 +1716,7 @@ error:
 }
 
 UINT32
-VecsRpcDeleteCertificate(
+Srv_VecsRpcDeleteCertificate(
     rpc_binding_handle_t hBinding,
     vecs_store_handle_t pStore,
     PWSTR pszAliasName
@@ -1720,6 +1755,56 @@ cleanup:
 error:
     goto cleanup;
 }
+
+UINT32
+Srv_VmAfdRpcGetHeartbeatStatus(
+    rpc_binding_handle_t hBinding,
+    PVMAFD_HB_STATUS_W  *ppHeartbeatStatus
+    )
+{
+    DWORD dwError = 0;
+    PVMAFD_HB_STATUS_W pHeartbeatStatus = NULL;
+    PVMAFD_HB_STATUS_W pRpcHeartbeatStatus = NULL;
+
+    if (!ppHeartbeatStatus)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    dwError = VmAfSrvGetHeartbeatStatus(
+                                    &pHeartbeatStatus
+                                    );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    dwError = VmAfdRpcAllocateHeartbeatStatus(
+                                    pHeartbeatStatus,
+                                    &pRpcHeartbeatStatus
+                                    );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppHeartbeatStatus = pRpcHeartbeatStatus;
+
+cleanup:
+
+    if (pHeartbeatStatus)
+    {
+        VmAfdFreeHbStatusW(pHeartbeatStatus);
+    }
+    return dwError;
+error:
+
+    if (ppHeartbeatStatus)
+    {
+        *ppHeartbeatStatus = NULL;
+    }
+    if (pRpcHeartbeatStatus)
+    {
+        VmAfdRpcFreeHeartbeatStatus(pRpcHeartbeatStatus);
+    }
+    goto cleanup;
+}
+
 
 
 void

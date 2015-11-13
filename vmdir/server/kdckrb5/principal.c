@@ -261,6 +261,12 @@ VmKdcUnparsePrincipalName(
     ptr = VMKDC_GET_PTR_DATA(data);
     len = VMKDC_GET_LEN_DATA(data);
     strncpy(&principalName[index], ptr, len);
+
+    for (i=index; principalName[i]; i++)
+    {
+        VMDIR_ASCII_LOWER_TO_UPPER(principalName[i]);
+    }
+
 #if 0
     /*
      * On Win32, calls strncpy_s(), which doesn't work as expected

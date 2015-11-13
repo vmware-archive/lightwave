@@ -1,0 +1,383 @@
+dn: dc=vmware,dc=com
+objectclass: dcObject
+objectclass: organization
+o: vmware organization
+dc: vmware
+
+dn: dc=eng,dc=vmware,dc=com
+objectclass: dcObject
+objectclass: organization
+o: eng. Dept
+dc: eng
+
+dn: dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+objectclass: dcObject
+objectclass: organization
+o: openldap lab
+dc: ssolabs-openldap
+
+dn: cn=administrator,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: administrator
+uid: administrator
+sn: Smith
+objectClass: inetOrgPerson
+userPassword: 123
+givenName: John-0
+description: admin account
+
+dn: cn=John-1,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: John-1
+uid: John-1
+sn: Smith
+objectClass: inetOrgPerson
+telephoneNumber: 425-123-456-1
+facsimileTelephoneNumber: 425-456-123-1
+street: 20517 NE 1 th street
+st: washington
+l: redmond
+postalCode: 98052
+ou: Engineering
+title: engineer
+userAccountControl: 11
+userPassword: 1
+givenName: givenName-John-1
+#primaryGroupID: 1
+mail: John-1@vmware.com
+description: Employee of VMware
+
+dn: cn=John-2,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: John-2
+uid: John-2
+sn: Smith
+objectClass: inetOrgPerson
+telephoneNumber: 425-123-456-2
+facsimileTelephoneNumber: 425-456-123-2
+street: 20517 NE 2 th street
+st: washington
+l: redmond
+postalCode: 98052
+ou: Engineering
+title: engineer
+userAccountControl: 22
+userPassword: 2
+givenName: givenName-John-2
+#primaryGroupID: 2
+mail: John-2@vmware.com
+description: Employee of VMware
+
+dn: cn=John-3,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: John-3
+uid: John-3
+sn: Smith
+objectClass: inetOrgPerson
+telephoneNumber: 425-123-456-3
+facsimileTelephoneNumber: 425-456-123-3
+street: 20517 NE 3 th street
+st: washington
+l: redmond
+postalCode: 98052
+ou: Engineering
+title: engineer
+userAccountControl: 33
+userPassword: 3
+givenName: givenName-John-3
+#primaryGroupID: 2
+mail: John-3@vmware.com
+description: Employee of VMware
+
+dn: cn=John-4,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: John-4
+uid: John-4
+sn: Smith
+objectClass: inetOrgPerson
+telephoneNumber: 425-123-456-4
+facsimileTelephoneNumber: 425-456-123-4
+street: 20517 NE 4 th street
+st: washington
+l: redmond
+postalCode: 98052
+ou: Engineering
+title: engineer
+userAccountControl: 44
+userPassword: 4
+givenName: givenName-John-4
+#primaryGroupID: 2
+mail: John-4@vmware.com
+description: Employee of VMware
+
+dn: cn=John-5,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: John-5
+uid: John-5
+sn: Smith
+objectClass: inetOrgPerson
+telephoneNumber: 425-123-456-5
+facsimileTelephoneNumber: 425-456-123-5
+street: 20517 NE 5 th street
+st: washington
+l: redmond
+postalCode: 98052
+ou: Engineering
+title: engineer
+userAccountControl: 55
+userPassword: 5
+givenName: givenName-John-5
+#primaryGroupID: 2
+mail: John-5@vmware.com
+description: Employee of VMware
+
+dn: cn=John-6,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+#changetype: add
+cn: John-6
+uid: John-6
+sn: Smith
+objectClass: inetOrgPerson
+telephoneNumber: 425-123-456-6
+facsimileTelephoneNumber: 425-456-123-6
+street: 20517 NE 6 th street
+st: washington
+l: redmond
+postalCode: 98052
+ou: Engineering
+title: engineer
+userAccountControl: 66
+userPassword: 6
+givenName: givenName-John-6
+#primaryGroupID: 3
+mail: John-6@vmware.com
+description: Employee of VMware
+
+dn: cn=John-7,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: John-7
+uid: John-7
+sn: Smith
+objectClass: inetOrgPerson
+telephoneNumber: 425-123-456-7
+facsimileTelephoneNumber: 425-456-123-7
+street: 20517 NE 7 th street
+st: washington
+l: redmond
+postalCode: 98052
+ou: Engineering
+title: engineer
+userAccountControl: 77
+userPassword: 7
+givenName: givenName-John-7
+#primaryGroupID: 3
+mail: John-7@vmware.com
+description: Employee of VMware
+
+dn: cn=John-8,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: John-8
+uid: John-8
+sn: Smith
+objectClass: inetOrgPerson
+telephoneNumber: 425-123-456-8
+facsimileTelephoneNumber: 425-456-123-8
+street: 20517 NE 8 th street
+st: washington
+l: redmond
+postalCode: 98052
+ou: Engineering
+title: engineer
+userAccountControl: 88
+userPassword: 8
+givenName: givenName-John-8
+#primaryGroupID: 3
+mail: John-8@vmware.com
+description: Employee of VMware
+
+dn: cn=John-9,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: John-9
+uid: John-9
+sn: Smith
+objectClass: inetOrgPerson
+telephoneNumber: 425-123-456-9
+facsimileTelephoneNumber: 425-456-123-9
+street: 20517 NE 9 th street
+st: washington
+l: redmond
+postalCode: 98052
+ou: Engineering
+title: engineer
+userAccountControl: 99
+userPassword: 9
+givenName: givenName-John-9
+#primaryGroupID: 3
+mail: John-9@vmware.com
+description: Employee of VMware
+
+dn: cn=John-10,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: John-10
+uid: John-10
+sn: Smith
+objectClass: inetOrgPerson
+telephoneNumber: 425-123-456-10
+facsimileTelephoneNumber: 425-456-123-10
+street: 20517 NE 10 th street
+st: washington
+l: redmond
+postalCode: 98052
+ou: Engineering
+title: engineer
+userAccountControl: 100
+userPassword: 10
+givenName: givenName-John-10
+#primaryGroupID: 1
+mail: John-10@vmware.com
+description: Employee of VMware
+
+dn: cn=John-11,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: John-11
+uid: John-11
+sn: Smith
+objectClass: inetOrgPerson
+telephoneNumber: 425-123-456-11
+facsimileTelephoneNumber: 425-456-123-11
+street: 20517 NE 10 th street
+st: washington
+l: redmond
+postalCode: 98052
+ou: Engineering
+title: engineer
+userAccountControl: 101
+userPassword: 10
+givenName: givenName-John-11
+#primaryGroupID: 4
+mail: John-11@vmware.com
+description: Employee of VMware
+
+dn: cn=John-12,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: John-12
+uid: John-12
+sn: Smith
+objectClass: inetOrgPerson
+telephoneNumber: 425-123-456-12
+facsimileTelephoneNumber: 425-456-123-12
+street: 20517 NE 10 th street
+st: washington
+l: redmond
+postalCode: 98052
+ou: Engineering
+title: engineer
+userAccountControl: 102
+userPassword: 10
+givenName: givenName-John-12
+#primaryGroupID: 5
+mail: John-12@vmware.com
+description: Employee of VMware
+
+dn: cn=Group-1,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: Group-1
+uniqueMember: cn=John-1,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+uniqueMember: cn=John-2,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+description: desc-Group-1
+objectClass: groupOfUniqueNames
+
+dn: cn=Group-2,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: Group-2
+uniqueMember: cn=John-2,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+uniqueMember: cn=John-3,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+uniqueMember: cn=John-4,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+uniqueMember: cn=John-5,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+description: desc-Group-2
+objectClass: groupOfUniqueNames
+
+dn: cn=Group-3,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: Group-3
+uniqueMember: cn=John-6,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+uniqueMember: cn=John-7,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+uniqueMember: cn=John-8,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+uniqueMember: cn=John-9,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+description: desc-Group-3
+objectClass: groupOfUniqueNames
+
+dn: cn=Group-4,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: Group-4
+uniqueMember: cn=John-11,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+description: desc-Group-4
+objectClass: groupOfUniqueNames
+
+dn: cn=Group-5,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: Group-5
+uniqueMember: cn=John-12,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+description: desc-Group-5
+objectClass: groupOfUniqueNames
+
+dn: cn=Group-1,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+changetype: modify
+add: uniqueMember
+uniqueMember: cn=John-10,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+
+dn: cn=Group-2,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+changetype: modify
+add: uniqueMember
+uniqueMember: cn=Group-1,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+
+dn: cn=Group-2,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+changetype: modify
+add: uniqueMember
+uniqueMember: cn=John-10,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+
+dn: cn=Group-3,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+changetype: modify
+add: uniqueMember
+uniqueMember: cn=Group-1,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+
+dn: cn=Group-1,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+changetype: modify
+add: uniqueMember
+uniqueMember: cn=Group-4,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+
+###The following are users/groups created dedicated to FSP tests###
+dn: cn=fsptestuser1,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: fsptestuser1
+sn: FSP
+objectClass: inetOrgPerson
+telephoneNumber: 425-123-456-2
+facsimileTelephoneNumber: 425-456-123-2
+street: 20517 NE 2 th street
+st: washington
+l: redmond
+postalCode: 98052
+ou: Engineering
+title: engineer
+userAccountControl: 22
+userPassword: 2
+givenName: givenName-fsptestuser1
+#primaryGroupID: 2
+mail: fsptestuser1@vmware.com
+description: For FSP testing purpose
+
+dn: cn=fsptestuser2,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: fsptestuser2
+sn: FSP
+objectClass: inetOrgPerson
+telephoneNumber: 425-123-456-2
+facsimileTelephoneNumber: 425-456-123-2
+street: 20517 NE 2 th street
+st: washington
+l: redmond
+postalCode: 98052
+ou: Engineering
+title: engineer
+userAccountControl: 22
+userPassword: 2
+givenName: givenName-fsptestuser2
+#primaryGroupID: 2
+mail: fsptestuser2@vmware.com
+description: For FSP testing purpose
+
+
+dn: cn=fsptestgroup1,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: fsptestgroup1
+uniqueMember: cn=fsptestuser1,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+uniqueMember: cn=fsptestuser2,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+description: fsptestgroup1 For FSP test purpose
+objectClass: groupOfUniqueNames
+
+dn: cn=fsptestgroup2,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+cn: fsptestgroup2
+uniqueMember: cn=fsptestuser2,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com
+description: fsptestgroup2 For FSP test purpose
+objectClass: groupOfUniqueNames
+

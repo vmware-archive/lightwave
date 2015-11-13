@@ -57,6 +57,7 @@
 
 #define UNKNOWN_STRING "UNKNOWN"
 #define STORE_TABLE_LIMIT 1024
+#define CDC_SERVICE_NAME "cdc"
 
 #ifdef _WIN32
 #define VECS_DB_INIT( fieldName, fieldValue ) fieldValue

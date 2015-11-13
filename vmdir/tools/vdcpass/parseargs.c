@@ -85,7 +85,7 @@ VmDirParseArgs(
         }
     }
 
-    if (pszHostURI == NULL || pszLoginUserDN == NULL || pszLoginPassword == NULL || pszNewPassword ==NULL)
+    if (pszHostURI == NULL || pszLoginUserDN == NULL || pszNewPassword ==NULL)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);

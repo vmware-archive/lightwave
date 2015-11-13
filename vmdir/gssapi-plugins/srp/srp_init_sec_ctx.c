@@ -203,7 +203,7 @@ srp_print_hex(srp_bytes_A, srp_bytes_A_len, "_srp_gss_make_auth_init_output_toke
      *       describing string length to ASN.1 encoder.
      */
     berror = ber_printf(ber, "t{ii",
-                  (int) SRP_AUTH_INIT,
+                  (ber_tag_t) SRP_AUTH_INIT,
                   gss_srp_version_maj,
                   gss_srp_version_min);
     if (berror == -1)
@@ -215,9 +215,9 @@ srp_print_hex(srp_bytes_A, srp_bytes_A_len, "_srp_gss_make_auth_init_output_toke
 
     berror = ber_printf(ber, "oo}",
                   srp_auth_user,
-                  export_name_buf.length,
+                  (ber_len_t) export_name_buf.length,
                   srp_bytes_A,
-                  srp_bytes_A_len);
+                  (ber_len_t) srp_bytes_A_len);
     if (berror == -1)
     {
         major = GSS_S_FAILURE;
@@ -294,10 +294,10 @@ _srp_auth_salt_resp(
         goto error;
     }
 
-#if 1
-srp_print_hex(ber_salt->bv_val, (int) ber_salt->bv_len, "_srp_auth_salt_resp(init_sec_context): salt");
-srp_print_hex(ber_B->bv_val, (int) ber_B->bv_len, "_srp_auth_salt_resp(init_sec_context): bytes_B");
-#endif
+    srp_print_hex(ber_salt->bv_val, (int) ber_salt->bv_len,
+                  "_srp_auth_salt_resp(init_sec_context): salt");
+    srp_print_hex(ber_B->bv_val, (int) ber_B->bv_len,
+                  "_srp_auth_salt_resp(init_sec_context): bytes_B");
 
     /* Consistency check, this must match state */
     if ((int) ber_state != state)
@@ -327,12 +327,10 @@ srp_print_hex(ber_B->bv_val, (int) ber_B->bv_len, "_srp_auth_salt_resp(init_sec_
                srp_session_key,
                srp_session_key_len);
         srp_context_handle->srp_session_key_len = srp_session_key_len;
-#if 1
-/* TBD: Adam debuging only */
+
         srp_print_hex(srp_context_handle->srp_session_key,
                       srp_context_handle->srp_session_key_len,
                       "_srp_auth_salt_resp(init_sec_ctx) got session key");
-#endif
     }
 
 
@@ -358,16 +356,13 @@ srp_print_hex(ber_B->bv_val, (int) ber_B->bv_len, "_srp_auth_salt_resp(init_sec_
      * Note: Use octet string for upn_string; o is octet string, i is length
      *       describing string length to ASN.1 encoder.
      */
-
-#if 1 /* TBD: debug */
-srp_print_hex(srp_bytes_M, srp_bytes_M_len,
-              "_srp_auth_salt_resp(init_sec_ctx) sending bytes_M");
-#endif
+    srp_print_hex(srp_bytes_M, srp_bytes_M_len,
+                  "_srp_auth_salt_resp(init_sec_ctx) sending bytes_M");
 
     berror = ber_printf(ber, "t{o}",
-                  (int) SRP_AUTH_CLIENT_VALIDATE,
+                  (ber_tag_t) SRP_AUTH_CLIENT_VALIDATE,
                   srp_bytes_M,
-                  srp_bytes_M_len);
+                  (ber_len_t) srp_bytes_M_len);
 
     if (berror == -1)
     {
@@ -453,7 +448,7 @@ _srp_auth_server_validate(
     if (berror == -1)
     {
         major = GSS_S_FAILURE;
-        minor = EINVAL; /* TBD: Adam, return a real error code here */
+        minor = GSS_S_DEFECTIVE_TOKEN;
         goto error;
     }
 
@@ -562,7 +557,13 @@ srp_gss_init_sec_context(
         goto error;
     }
 
+
     srp_cred = (srp_gss_cred_id_t) claimant_cred_handle;
+    if (!srp_cred || !srp_cred->password || !srp_cred->srp_mech_oid)
+    {
+        major = GSS_S_UNAVAILABLE;
+        goto error;
+    }
     srp_mech_oid = srp_cred->srp_mech_oid;
 
     /* First call to init_sec_context; allocate new context */

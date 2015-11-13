@@ -181,8 +181,7 @@ VmDirFreeOperationContent(
 
             while ((pNode = LwRtlHashTableIterate(syncDoneCtrlVal->htUtdVector, &iter)))
             {
-                dwError = LwNtStatusToWin32Error(
-                               LwRtlHashTableRemove(syncDoneCtrlVal->htUtdVector, pNode));
+                dwError = LwRtlHashTableRemove(syncDoneCtrlVal->htUtdVector, pNode);
                 assert( dwError == 0 );
                 pUtdVectorEntry = LW_STRUCT_FROM_FIELD(pNode, UptoDateVectorEntry, Node);
                 VmDirFreeBervalContent( &pUtdVectorEntry->invocationId );
@@ -228,6 +227,7 @@ VmDirFreeOperationContent(
         VmDirFreeBervalContent( &(op->reqDn) );
         VMDIR_SAFE_FREE_MEMORY(op->ldapResult.pszErrMsg);
         VmDirBackendCtxFree(op->pBECtx);
+        VMDIR_SAFE_FREE_MEMORY(op->pszFilters);
 
         if ( op->opType == VDIR_OPERATION_TYPE_INTERNAL )
         {   // internal op owns dummy conn for ACL check

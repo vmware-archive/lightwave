@@ -374,6 +374,7 @@ VmDirEntryAddSingleValueAttribute(
                 pEntry,
                 pAttr);
     BAIL_ON_VMDIR_ERROR(dwError);
+    pAttr = NULL;
 
 cleanup:
 

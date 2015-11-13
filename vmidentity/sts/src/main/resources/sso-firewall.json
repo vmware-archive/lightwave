@@ -1,0 +1,14 @@
+{
+  "firewall": {
+    "enable": "true",
+    "rules": [
+      {
+        "direction": "inbound",
+        "protocol": "tcp",
+        "porttype": "dst",
+        "port": "7444",
+        "portoffset": 0
+      }
+    ]
+  }
+}

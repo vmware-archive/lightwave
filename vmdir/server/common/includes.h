@@ -28,6 +28,7 @@
 #include <vmdircommon.h>
 #include <srvcommon.h>
 
+#include <vmsuperlogging.h>
 #include <vmdirserver.h>
 #include <ldaphead.h>
 #include <schema.h>
@@ -35,7 +36,6 @@
 
 #include <backend.h>
 #include <middlelayer.h>
-
 
 #else
 
@@ -64,7 +64,10 @@
 #include <openssl/sha.h>
 #include <openssl/rand.h>
 
-#include "banned.h"
+#define LW_STRICT_NAMESPACE
+#include <lw/types.h>
+#include <lw/hash.h>
+#include <lw/security-types.h>
 
 #include <vmdir.h>
 #include <vmdirtypes.h>
@@ -82,8 +85,7 @@
 
 #include <backend.h>
 #include <middlelayer.h>
-
-#include "structs.h"
+#include "banned.h"
 
 #endif
 #include <csrp/srp.h>

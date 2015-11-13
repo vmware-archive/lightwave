@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xs:schema 
+  targetNamespace="http://www.rsa.com/names/2009/12/std-ext/SAML2.0"
+  xmlns:tns="http://www.rsa.com/names/2009/12/std-ext/SAML2.0"
+  xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  elementFormDefault="qualified" attributeFormDefault="unqualified" 
+>
+  <xs:import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="profiled-saml-schema-assertion-2.0.xsd"/> 
+
+  <xs:element name="RSAAdvice" type="tns:RSAAdviceType"/>
+  <xs:complexType name="RSAAdviceType">
+    <xs:sequence>
+      <xs:element ref="saml:Attribute" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="AdviceSource" type="xs:anyURI" use="required" />
+  </xs:complexType>
+
+
+  <xs:complexType name="RenewRestrictionType" >
+    <xs:complexContent>
+      <xs:extension base="saml:ConditionAbstractType">
+        <xs:sequence>
+        </xs:sequence>
+        <xs:attribute name="Count" type="xs:nonNegativeInteger" use="optional" default="0"/>
+        <xs:attribute name="Postdatable" type="xs:boolean" use="optional" default="false"/>
+        <xs:attribute name="RenewExpired" type="xs:boolean" use="optional" default="false"/>       
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+</xs:schema>

@@ -35,12 +35,6 @@ schemaParseParenthesisItems(
     PUSHORT      pusSize
     );
 
-static
-VOID
-_VmdDirSchemaParseNormalizeElement(
-    PSTR        pszElement
-    );
-
 VOID
 VmDirSchemaATDescContentFree(
     PVDIR_SCHEMA_AT_DESC pATDesc
@@ -262,7 +256,7 @@ VmDirSchemaParseStrToATDesc(
     dwError = VmDirAllocateStringA(pStr, &pBuf);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    _VmdDirSchemaParseNormalizeElement( pBuf );
+    VmdDirSchemaParseNormalizeElement( pBuf );
 
     pToken = VmDirStringTokA(pBuf, SCHEMA_GEN_TOKEN_SEP, &pRest);
     if (!pToken)
@@ -525,7 +519,7 @@ VmDirSchemaParseStrToOCDesc(
     dwError = VmDirAllocateStringA(pStr, &pBuf);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    _VmdDirSchemaParseNormalizeElement( pBuf );
+    VmdDirSchemaParseNormalizeElement( pBuf );
 
     pToken = VmDirStringTokA(pBuf, SCHEMA_GEN_TOKEN_SEP, &pRest);
     if (!pToken)
@@ -702,7 +696,7 @@ VmDirSchemaParseStrToContentDesc(
     dwError = VmDirAllocateStringA(pStr, &pBuf);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    _VmdDirSchemaParseNormalizeElement( pBuf );
+    VmdDirSchemaParseNormalizeElement( pBuf );
 
     pToken = VmDirStringTokA(pBuf, SCHEMA_GEN_TOKEN_SEP, &pRest);
     if (!pToken)
@@ -838,7 +832,7 @@ VmDirSchemaParseStrToStructureDesc(
     dwError = VmDirAllocateStringA(pStr, &pBuf);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    _VmdDirSchemaParseNormalizeElement( pBuf );
+    VmdDirSchemaParseNormalizeElement( pBuf );
 
     pToken = VmDirStringTokA(pBuf, SCHEMA_GEN_TOKEN_SEP, &pRest);
     if (!pToken)
@@ -962,7 +956,7 @@ VmDirSchemaParseStrToNameformDesc(
     dwError = VmDirAllocateStringA(pStr, &pBuf);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    _VmdDirSchemaParseNormalizeElement( pBuf );
+    VmdDirSchemaParseNormalizeElement( pBuf );
 
     pToken = VmDirStringTokA(pBuf, SCHEMA_GEN_TOKEN_SEP, &pRest);
     if (!pToken)
@@ -1150,50 +1144,4 @@ error:
     VMDIR_SAFE_FREE_MEMORY( ppszLocalList );
 
     goto cleanup;
-}
-
-/*
- * 1. remove leading/trailing spaces
- * 1. remove multiple spaces
- */
-static
-VOID
-_VmdDirSchemaParseNormalizeElement(
-    PSTR        pszElement
-    )
-{
-    size_t     iSize = 0;
-    size_t     iCnt = 0;
-    size_t     iLast = 0;
-
-    if ( pszElement )
-    {
-        iSize = VmDirStringLenA( pszElement );
-
-        for (iCnt = 0, iLast = 0; iCnt < iSize; iCnt++)
-        {
-            if ( pszElement[iCnt] == ' '
-                 &&
-                 (iCnt == 0 || pszElement[iCnt-1] == ' ')
-               )
-            {   // skip leading/trailing spaces and multiple spaces
-                continue;
-            }
-
-            pszElement[iLast] = pszElement[iCnt];
-            iLast++;
-        }
-
-        // handle last space if exists
-        if ( iLast > 0 && pszElement[ iLast - 1 ] == ' ' )
-        {
-            pszElement[ iLast - 1 ] = '\0';
-        }
-        else
-        {
-            pszElement[iLast] = '\0';
-        }
-    }
-
-    return;
 }

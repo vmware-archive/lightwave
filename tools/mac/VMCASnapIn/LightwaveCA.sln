@@ -1,0 +1,52 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VmIdentity.UI.Common", "..\VmIdentity.UI.Common\VmIdentity.UI.Common.csproj", "{35037B87-3B35-40FA-A9D3-7974DCDDABB5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMCA.Common", "..\..\common\VMCA.Common\VMCA.Common.csproj", "{4DB29D06-5154-4A8D-BBFB-FBCCE9E3D66F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMIdentity.CommonUtils", "..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj", "{CD959E2E-5B9C-4329-B085-352844CFDCDD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LightwaveCA", "LightwaveCA.csproj", "{EA214656-0B7B-4ADD-9FE7-C53C3D0423DE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMCA.Client", "..\..\common\VMCA.Client\VMCA.Client.csproj", "{24B08641-C034-4A2C-8F18-705F001CD43F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+		AppStore|Any CPU = AppStore|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{24B08641-C034-4A2C-8F18-705F001CD43F}.AppStore|Any CPU.ActiveCfg = Release|Any CPU
+		{24B08641-C034-4A2C-8F18-705F001CD43F}.AppStore|Any CPU.Build.0 = Release|Any CPU
+		{24B08641-C034-4A2C-8F18-705F001CD43F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24B08641-C034-4A2C-8F18-705F001CD43F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24B08641-C034-4A2C-8F18-705F001CD43F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24B08641-C034-4A2C-8F18-705F001CD43F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{35037B87-3B35-40FA-A9D3-7974DCDDABB5}.AppStore|Any CPU.ActiveCfg = Release|Any CPU
+		{35037B87-3B35-40FA-A9D3-7974DCDDABB5}.AppStore|Any CPU.Build.0 = Release|Any CPU
+		{35037B87-3B35-40FA-A9D3-7974DCDDABB5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{35037B87-3B35-40FA-A9D3-7974DCDDABB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{35037B87-3B35-40FA-A9D3-7974DCDDABB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{35037B87-3B35-40FA-A9D3-7974DCDDABB5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4DB29D06-5154-4A8D-BBFB-FBCCE9E3D66F}.AppStore|Any CPU.ActiveCfg = Release|Any CPU
+		{4DB29D06-5154-4A8D-BBFB-FBCCE9E3D66F}.AppStore|Any CPU.Build.0 = Release|Any CPU
+		{4DB29D06-5154-4A8D-BBFB-FBCCE9E3D66F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DB29D06-5154-4A8D-BBFB-FBCCE9E3D66F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DB29D06-5154-4A8D-BBFB-FBCCE9E3D66F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DB29D06-5154-4A8D-BBFB-FBCCE9E3D66F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.AppStore|Any CPU.ActiveCfg = Release|Any CPU
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.AppStore|Any CPU.Build.0 = Release|Any CPU
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EA214656-0B7B-4ADD-9FE7-C53C3D0423DE}.AppStore|Any CPU.ActiveCfg = AppStore|Any CPU
+		{EA214656-0B7B-4ADD-9FE7-C53C3D0423DE}.AppStore|Any CPU.Build.0 = AppStore|Any CPU
+		{EA214656-0B7B-4ADD-9FE7-C53C3D0423DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EA214656-0B7B-4ADD-9FE7-C53C3D0423DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EA214656-0B7B-4ADD-9FE7-C53C3D0423DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EA214656-0B7B-4ADD-9FE7-C53C3D0423DE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

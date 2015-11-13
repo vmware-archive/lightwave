@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<md:EntityDescriptor entityID="https://10.147.50.34:443/cloud/org/csp/saml/metadata/alias/vcd" xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata"><md:SPSSODescriptor AuthnRequestsSigned="true" WantAssertionsSigned="true" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"><md:KeyDescriptor use="signing"><ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:X509Data><ds:X509Certificate>MIIB3TCCAUagAwIBAgIEP5sdcDANBgkqhkiG9w0BAQUFADAzMTEwLwYDVQQDEyh2Q2xvdWQgRGly
+ZWN0b3Igb3JnYW5pemF0aW9uIENlcnRpZmljYXRlMB4XDTEyMDUxNjE4MzU0MloXDTEzMDUxNjE4
+MzU0MlowMzExMC8GA1UEAxModkNsb3VkIERpcmVjdG9yIG9yZ2FuaXphdGlvbiBDZXJ0aWZpY2F0
+ZTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAu6Gr8qUHKkUeHpp/QLsCxoLGwaxnpDYRphrM
+ZxQ1qdPD0r76ynPnn9beiP43XnkJRJydQ/QRkgnZLNIv5IvgPJbr/4QD0x7CwKnpULAmQDHLc+Nl
+X5gpzXu8OGLvGxUedYR+vsc+sWbaCG0SQO9tP48tp7+xiu8YbTZyuSq2E3sCAwEAATANBgkqhkiG
+9w0BAQUFAAOBgQATDnBwldnlQF43p5WF9AdgEBBFmxrOimDu6qQitteAgBDc0Zfq0CZDqlqEWcCR
+FSAB1cTAtN49LLkTO63PKkEWon+ozw2tNIwgpSsszUVuJilCNrhPUirGpRHkIejWw4Fl01cDrRvj
+xGVlHw9/Id4HCGFHLduK3vSODJvS5JdcZA==</ds:X509Certificate></ds:X509Data></ds:KeyInfo></md:KeyDescriptor><md:KeyDescriptor use="encryption"><ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:X509Data><ds:X509Certificate>MIIB3TCCAUagAwIBAgIEP5sdcDANBgkqhkiG9w0BAQUFADAzMTEwLwYDVQQDEyh2Q2xvdWQgRGly
+ZWN0b3Igb3JnYW5pemF0aW9uIENlcnRpZmljYXRlMB4XDTEyMDUxNjE4MzU0MloXDTEzMDUxNjE4
+MzU0MlowMzExMC8GA1UEAxModkNsb3VkIERpcmVjdG9yIG9yZ2FuaXphdGlvbiBDZXJ0aWZpY2F0
+ZTCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEAu6Gr8qUHKkUeHpp/QLsCxoLGwaxnpDYRphrM
+ZxQ1qdPD0r76ynPnn9beiP43XnkJRJydQ/QRkgnZLNIv5IvgPJbr/4QD0x7CwKnpULAmQDHLc+Nl
+X5gpzXu8OGLvGxUedYR+vsc+sWbaCG0SQO9tP48tp7+xiu8YbTZyuSq2E3sCAwEAATANBgkqhkiG
+9w0BAQUFAAOBgQATDnBwldnlQF43p5WF9AdgEBBFmxrOimDu6qQitteAgBDc0Zfq0CZDqlqEWcCR
+FSAB1cTAtN49LLkTO63PKkEWon+ozw2tNIwgpSsszUVuJilCNrhPUirGpRHkIejWw4Fl01cDrRvj
+xGVlHw9/Id4HCGFHLduK3vSODJvS5JdcZA==</ds:X509Certificate></ds:X509Data></ds:KeyInfo></md:KeyDescriptor><md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://10.147.50.34:443/cloud/org/csp/saml/SingleLogout/alias/vcd"/><md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://10.147.50.34:443/cloud/org/csp/saml/SingleLogout/alias/vcd"/><md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" Location="https://10.147.50.34:443/cloud/org/csp/saml/SingleLogout/alias/vcd"/><md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat><md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</md:NameIDFormat><md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</md:NameIDFormat><md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified</md:NameIDFormat><md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName</md:NameIDFormat><md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://10.147.50.34:443/cloud/org/csp/saml/SSO/alias/vcd" index="0" isDefault="true"/><md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:profiles:holder-of-key:SSO:browser" Location="https://10.147.50.34:443/cloud/org/csp/saml/HoKSSO/alias/vcd" hoksso:ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" index="1" xmlns:hoksso="urn:oasis:names:tc:SAML:2.0:profiles:holder-of-key:SSO:browser"/></md:SPSSODescriptor></md:EntityDescriptor>

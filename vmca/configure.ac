@@ -55,6 +55,44 @@ AC_ARG_ENABLE([gcov],
         fi
     ])
 
+# Java component
+
+AC_ARG_WITH([java],
+    [AC_HELP_STRING([--with-java=<dir>], [use Java binaries rooted at prefix <dir> ])],
+    [
+        JAVA_HOME="$withval"
+        JAVA=$JAVA_HOME/bin/java
+        TOOLS_CLASSPATH=$JAVA_HOME/lib/tools.jar
+    ])
+
+AC_PATH_PROG([JAVAC], [javac], [no], [$PATH:$JAVA_HOME/bin])
+
+if test x"$JAVAC" = x"no"; then
+    AC_MSG_ERROR([JAVAC compiler not found])
+fi
+
+AC_SUBST(JAVA_HOME)
+AC_SUBST(JAVA)
+AC_SUBST(TOOLS_CLASSPATH)
+
+# Ant component
+
+AC_ARG_WITH([ant],
+    [AC_HELP_STRING([--with-ant=<dir>], [use Ant binaries rooted at prefix <dir> ])],
+    [
+        ANT_HOME="$withval"
+        ANT_CLASSPATH=$ANT_HOME/lib/ant.jar:$ANT_HOME/lib/ant-launcher.jar
+    ])
+
+AC_PATH_PROG([ANT], [ant], [no], [$PATH:$JAVA_HOME/bin:$ANT_HOME/bin])
+
+if test x"$ANT" = x"no"; then
+    AC_MSG_ERROR([ANT compiler not found])
+fi
+
+AC_SUBST(ANT_HOME)
+AC_SUBST(ANT_CLASSPATH)
+
 # openssl component
 
 AC_ARG_WITH([ssl],
@@ -510,10 +548,15 @@ if test x"$IDL" = x"no"; then
     AC_MSG_ERROR([DCERPC IDL compiler not found])
 fi
 
+AS_AC_EXPAND(VMCA_INSTALL_DIR, $prefix)
+AC_DEFINE_UNQUOTED(VMCA_INSTALL_DIR, "$VMCA_INSTALL_DIR", [Install folder]")
+
 vmcaconfdir="$datadir/config"
 AC_SUBST(vmcaconfdir)
+
 AS_AC_EXPAND(VMCA_CONFIG_DIR, $vmcaconfdir)
 AC_SUBST(VMCA_CONFIG_DIR)
+
 AC_DEFINE_UNQUOTED(VMCA_CONFIG_DIR, "$VMCA_CONFIG_DIR", [Config directory])
 
 vmcatoolsdir=$prefix/bin
@@ -521,6 +564,9 @@ AC_SUBST(vmcatoolsdir)
 
 vmcapyutilsdir=$prefix/site-packages/cis
 AC_SUBST(vmcapyutilsdir)
+
+vmcajarsdir="$prefix/jars"
+AC_SUBST(vmcajarsdir)
 
 AC_CONFIG_FILES([Makefile
                  include/Makefile
@@ -536,6 +582,8 @@ AC_CONFIG_FILES([Makefile
                  tools/Makefile
                  tools/certificate-manager/Makefile
                  python/Makefile
+                 jdepends/Makefile
+                 java/Makefile
                 ])
 AC_OUTPUT
 

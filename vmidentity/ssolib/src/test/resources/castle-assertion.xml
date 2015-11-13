@@ -1,0 +1,33 @@
+<saml2:Assertion xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion" ID="_2737ee13-13ba-4582-a4ac-394a21aedc24" IssueInstant="2012-07-10T01:54:17.960Z" Version="2.0" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<saml2:Issuer Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">https://prmh-nimbus-vm-185-060.eng.vmware.com:7444/websso/SAML2/Metadata/csp</saml2:Issuer>
+<saml2:Subject><saml2:NameID Format="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"/>
+<saml2:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer">
+<saml2:SubjectConfirmationData InResponseTo="_d5d03596bf923cf70e36105b8be1261e" NotOnOrAfter="2012-07-10T01:55:17.959Z" Recipient="https://192.168.129.10:8443/cloud/org/default/saml/websso"/>
+</saml2:SubjectConfirmation>
+</saml2:Subject>
+<saml2:Conditions NotBefore="2012-07-10T01:54:17.959Z"><saml2:ProxyRestriction Count="0"/><saml2:AudienceRestriction>
+<saml2:Audience>https://192.168.129.10:8443/cloud/org/default/saml/metadata/alias/vcd</saml2:Audience>
+</saml2:AudienceRestriction></saml2:Conditions>
+<saml2:AuthnStatement AuthnInstant="2012-07-10T01:54:17.959Z" SessionIndex="_b5b546380eed968260fe81d0bf837d78">
+<saml2:AuthnContext>
+<saml2:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport</saml2:AuthnContextClassRef>
+</saml2:AuthnContext></saml2:AuthnStatement>
+<saml2:AttributeStatement>
+<saml2:Attribute FriendlyName="email" Name="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
+<saml2:AttributeValue xsi:type="xs:string"/>
+</saml2:Attribute><saml2:Attribute FriendlyName="Groups" Name="http://rsa.com/schemas/attr-names/2009/01/GroupIdentity" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
+<saml2:AttributeValue xsi:type="xs:string">localos\shellaccess</saml2:AttributeValue>
+<saml2:AttributeValue xsi:type="xs:string">localos\coredump</saml2:AttributeValue>
+<saml2:AttributeValue xsi:type="xs:string">localos\vami</saml2:AttributeValue>
+<saml2:AttributeValue xsi:type="xs:string">localos\root</saml2:AttributeValue>
+</saml2:Attribute><saml2:Attribute FriendlyName="Subject Type" Name="http://vmware.com/schemas/attr-names/2011/07/isSolution" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
+<saml2:AttributeValue xsi:type="xs:string">false</saml2:AttributeValue>
+</saml2:Attribute>
+<saml2:Attribute FriendlyName="givenName" Name="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
+<saml2:AttributeValue xsi:type="xs:string">root</saml2:AttributeValue>
+</saml2:Attribute>
+<saml2:Attribute FriendlyName="surname" Name="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri">
+<saml2:AttributeValue xsi:type="xs:string"/>
+</saml2:Attribute>
+</saml2:AttributeStatement>
+</saml2:Assertion>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><EntitiesDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:vmes="http://vmware.com/schemas/attr-names/2012/04/Extensions" Name="xyz" validUntil="2013-02-07T18:45:23Z">
+<Extensions>
+<vmes:ExportedOn>2013-02-06T18:45:23Z</vmes:ExportedOn>
+<vmes:ExportedBy>Exported by VMware Identity Server (c) 2012</vmes:ExportedBy>
+</Extensions>
+<EntityDescriptor entityID="https://192.168.103.133/websso/SAML2/Metadata/xyz">
+<SPSSODescriptor AuthnRequestsSigned="false" WantAssertionsSigned="true" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+<KeyDescriptor xmlns:ds="http://www.w3.org/2000/09/xmldsig#" use="signing">
+<ds:KeyInfo>
+<ds:X509Data>
+<ds:X509Certificate>MIIDMTCCAhkCCQCpraeAXt4HqDANBgkqhkiG9w0BAQUFADBaMQwwCgYDVQQDDANzdHMxDDAKBgNV
+BAsMA1ImRDEPMA0GA1UECgwGVk13YXJlMQ4wDAYDVQQHDAVTb2ZpYTEOMAwGA1UECAwFU29maWEx
+CzAJBgNVBAYTAkJHMB4XDTEyMDExMDEwMDYzN1oXDTIxMTAwOTEwMDYzN1owWzENMAsGA1UEAwwE
+c3RzMTEMMAoGA1UECwwDUiZEMQ8wDQYDVQQKDAZWTVdhcmUxDjAMBgNVBAcMBVNvZmlhMQ4wDAYD
+VQQIDAVTb2ZpYTELMAkGA1UEBhMCQkcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDE
+GyhRK1ygL5QibjTrVdpRvSHTaGhskOVLKK4xnoRub9TbI2j1zGgxa7T9oQ6R86Ofg/kvOm+Fzhb8
+Jt5shCUKzSweQ2bGa5yjt0kO/FbwE7oxOdV/3XuJbn7fd+xdwdpT+5pFKKjYgdKJmoV3FZEoiB+l
+if/IvX0f5pfJHPbUHIiKRIukzdSmg/sfyH4gczw8r67jC51jmD7djZPQ3ySlR59erXr/en3g5hWF
+3Szn0p/5EPSCfT6p1UFBDKW28AqD8tLXajN13tOUw1/guSTPmhJfn+nM+6oH2/bjHoPe1B/wGlEh
+uAPuuzHpyhxcJ1nMGWJhZPkIQmS0EwKousAPAgMBAAEwDQYJKoZIhvcNAQEFBQADggEBAJHLw/Hh
+lxx6KOIflq9W9goav/uGzEGtiKzfFGSZKV3oCcL597Csj669p/02INNg+AzZRo5i2Sjsa3QIuxWp
+pee3TmfOb6fKBVTO90UIQddHOeWNOZIGN1zfzpbIuetNfr9vICxhFZo3Y+7MH58mnXUQ4UU2WV3y
+m91fcJhyxuYx1lH+fPbbKuJGatOxO6Yj/DEcGcJ6ZuMG+lsgiM2EKy6jPbvnhw/hvv+jzasBmU9h
+gBk3tytSE4m0tIMupBVWA5f2JSVZOdJkJSZaYygpnkBYZPpmSQGKwmPcADb2QzpB40yCCK04WLzk
+aD6mx9REtLxX+CTzgqNn9Yy9YxIwdwY=</ds:X509Certificate>
+<ds:X509Certificate>MIIDKjCCAhICCQCNG2nlun0fGTANBgkqhkiG9w0BAQUFADBXMRIwEAYDVQQDDAlzb2x1dGlvbjEx
+CzAJBgNVBAsMAkRDMQ0wCwYDVQQKDARhY21lMQswCQYDVQQHDAJOWTELMAkGA1UECAwCTlkxCzAJ
+BgNVBAYTAlVTMB4XDTEyMDExMDA5NTg0NloXDTIwMDUxNzA5NTg0NlowVzESMBAGA1UEAwwJc29s
+dXRpb24xMQswCQYDVQQLDAJEQzENMAsGA1UECgwEYWNtZTELMAkGA1UEBwwCTlkxCzAJBgNVBAgM
+Ak5ZMQswCQYDVQQGEwJVUzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKCHvY1DrzYO
+XGFwboGaw1X6l10VbpSNcGSBxWiS55cxQCs2j/0CXdGdxD4Y+JVmzKuOl/5BzFI55rUG84zse92S
+d9xrBTuI2DHPseqDeGbw4MT4s07b7wQv4wm7fXZWO4zKpzjEoM/DIfvqTYE0D8bvt9QPQtava+OA
+iimh6kFSf/fwmKJq62IlZuXo0r0jHAEIA7wn7ahyc5g0KM7UufI6fxBcyjW6sOIA++hKNqDuFugI
+POTPcrJ2+xUqsCWScY5XRpj4YQz97s8HRyGMvDK4F1oXm52MlFaw4le8AbwQ/iXGOItHFomIKZoa
+9pNZBVMlU8caL+r/tQ3nxGqlKdMCAwEAATANBgkqhkiG9w0BAQUFAAOCAQEAVOwLPop9EyJbTBEQ
+rW1OvHaD/xQuVPdC19G9cAxhsw1BCEXBHcJFHti3zp1Wmv8dUtc2JoWOega1d5PrYZnRuA3JJate
+ZUvx6uzL8DMGFpCoJAc7DCq96zWyR2cKpzKXX0qFJLMeyKobLIkH9k9PxSJeAV0P9WJMWWlTtj4g
+FIY7vaf7JshV5eTUX2mQWXmgI0mYj96ytbKL+0PMD0siH7JBXdCRWQIgq3Qw2AJfNOrv+g7ecA9C
+QysaHlNDIQZquFbTiJtW2itj/RulYGcjMivCQD3m6pydLfluBOIrl0si5c2ww3OsG143SumeGKW+
+BPrcgVjqrQtl5TL8u5jKCA==</ds:X509Certificate>
+</ds:X509Data>
+</ds:KeyInfo>
+</KeyDescriptor>
+<SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://192.168.103.133/websso/SAML2/SP/SLO/xyz"/>
+<NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat>
+<NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</NameIDFormat>
+<AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://192.168.103.133/websso/SAML2/SP/ACS/xyz" index="0"/>
+<AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://192.168.103.133/websso/SAML2/SP/ACS/xyz" index="1"/>
+</SPSSODescriptor>
+</EntityDescriptor>
+</EntitiesDescriptor>

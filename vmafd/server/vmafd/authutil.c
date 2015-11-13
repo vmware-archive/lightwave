@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : authutil.c
+ *
+ * Abstract :
+ *
+ */
 #include "includes.h"
 
 static
@@ -271,62 +279,58 @@ VmAfdAccessCheckWithHandle (
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
-    if (!VmAfdIsRootSecurityContext(pConnectionContext))
+    /*
+     * We don't care about dwLogError errors because they are
+     * used solely for logging purpose. Even if some call fails,
+     * the function should not fail
+     */
+
+    dwLogError = VmAfdAllocateNameFromContext (
+                                                pConnectionContext->pSecurityContext,
+                                                &pszAccountName
+                                              );
+
+
+    dwLogError = VmAfdGetStoreFromHandle (
+                                          pStore,
+                                          pConnectionContext->pSecurityContext,
+                                          &pStoreInfo
+                                         );
+
+    if (
+        !IsNullOrEmptyString(pszAccountName) &&
+        pStoreInfo
+       )
     {
-
-        /*
-         * We don't care about dwLogError errors because they are
-         * used solely for logging purpose. Even if some call fails,
-         * the function should not fail
-         */
-
-        dwLogError = VmAfdAllocateNameFromContext (
-                                                    pConnectionContext->pSecurityContext,
-                                                    &pszAccountName
-                                                  );
-
-
-        dwLogError = VmAfdGetStoreFromHandle (
-                                              pStore,
-                                              pConnectionContext->pSecurityContext,
-                                              &pStoreInfo
-                                             );
-
-        if (
-            !IsNullOrEmptyString(pszAccountName) &&
-            pStoreInfo
-           )
+        PSTR paszAccountName = NULL;
+        dwLogError = VmAfdAllocateStringAFromW(
+                                                pszAccountName,
+                                                &paszAccountName
+                                              );
+        if (paszAccountName)
         {
-            PSTR paszAccountName = NULL;
-            dwLogError = VmAfdAllocateStringAFromW(
-                                                    pszAccountName,
-                                                    &paszAccountName
-                                                  );
-            if (paszAccountName)
-            {
-              switch (dwDesiredAccess)
-              {
-                case READ_STORE:
-                  VmAfdLog (VMAFD_DEBUG_ANY,
-                      "User %s requested READ operation on Store with ID: %d",
-                      paszAccountName,
-                      pStoreInfo->dwStoreId
-                      );
-                 break;
-                case WRITE_STORE:
-                  VmAfdLog (VMAFD_DEBUG_ANY,
-                      "User %s requested WRITE operation on  Store with ID:%d",
-                      paszAccountName,
-                      pStoreInfo->dwStoreId
-                      );
-                  break;
+          switch (dwDesiredAccess)
+          {
+            case READ_STORE:
+              VmAfdLog (VMAFD_DEBUG_DEBUG,
+                  "User %s requested READ operation on Store with ID: %d",
+                  paszAccountName,
+                  pStoreInfo->dwStoreId
+                  );
+             break;
+            case WRITE_STORE:
+              VmAfdLog (VMAFD_DEBUG_DEBUG,
+                  "User %s requested WRITE operation on  Store with ID:%d",
+                  paszAccountName,
+                  pStoreInfo->dwStoreId
+                  );
+              break;
 
-                default:
-                  break;
-              }
-            }
-            VMAFD_SAFE_FREE_MEMORY (paszAccountName);
+            default:
+              break;
+          }
         }
+        VMAFD_SAFE_FREE_MEMORY (paszAccountName);
     }
 
     dwError = VmAfdGetSecurityDescriptorFromHandle (
@@ -364,10 +368,6 @@ cleanup:
     return dwError;
 
 error:
-    VmAfdLog (VMAFD_DEBUG_ERROR,
-              "ERROR! Access Denied with  error : [%d]",
-              dwError
-             );
     goto cleanup;
 
 }

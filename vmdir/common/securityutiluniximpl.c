@@ -7,13 +7,21 @@ VmDirInitializeSecurityContextImpl(
     )
 {
     DWORD dwError = 0;
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext = NULL;
+#ifndef __MACH__
     struct ucred credentials = {0};
     int credLength = sizeof (struct ucred);
-    PVM_DIR_SECURITY_CONTEXT pSecurityContext = NULL;
+    int sockopt = SO_PEERCRED;
+#else
+    struct xucred credentials = {0};
+    int credLength = sizeof (struct xucred);
+    int sockopt = LOCAL_PEERCRED;
+#endif
+ 
     if ((getsockopt (
             pConnection->fd,
             SOL_SOCKET,
-            SO_PEERCRED,
+            sockopt,
             &credentials,
             &credLength)) < 0){
       dwError = LwErrnoToWin32Error (errno);
@@ -23,7 +31,13 @@ VmDirInitializeSecurityContextImpl(
                     sizeof (VM_DIR_SECURITY_CONTEXT),
                     (PVOID *)&pSecurityContext);
     BAIL_ON_VMDIR_ERROR (dwError);
+
+#ifndef __MACH__
     pSecurityContext->uid = credentials.uid;
+#else
+    pSecurityContext->uid = credentials.cr_uid;
+#endif
+
     *ppSecurityContext = pSecurityContext;
 cleanup:
     return dwError;

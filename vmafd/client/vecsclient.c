@@ -92,6 +92,7 @@ VecsFreeCertStore(
     PVECS_STORE pStore
     );
 
+
 /*
  * @brief Creates a certificate store.
  *
@@ -425,6 +426,8 @@ VecsCreateCertStoreHW(
     pStore->hBinding = pServer->hBinding;
     pStore->bOwnBinding = FALSE;
 
+    pStore->pServer = VmAfdAcquireServer(pServer);
+
     pStore->pStoreHandle = pStoreHandle;
 
     if (ppStore)
@@ -566,6 +569,8 @@ VecsOpenCertStoreHW(
 
     pStore->hBinding = pServer->hBinding;
     pStore->bOwnBinding = FALSE;
+
+    pStore->pServer = VmAfdAcquireServer(pServer);
 
     pStore->pStoreHandle = pStoreHandle;
 
@@ -981,7 +986,7 @@ VecsEnumCertStoreW(
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
-    if (IsNullOrEmptyString(pwszServerName) ||
+    if (IsNullOrEmptyString (pwszServerName) ||
         VmAfdIsLocalHostW(pwszServerName)
        )
     {
@@ -1336,6 +1341,7 @@ VecsAddEntryW(
        {
           dwError = VecsValidateAndFormatKey (
                                     pszPrivateKey,
+                                    NULL,
                                     &pszCanonicalKeyPEM
                                   );
           BAIL_ON_VMAFD_ERROR (dwError);
@@ -3815,6 +3821,10 @@ VecsReleaseCertStore(
 {
     if (pStore && InterlockedDecrement(&pStore->refCount) == 0)
     {
+        if (pStore->pServer)
+        {
+            VmAfdReleaseServer(pStore->pServer);
+        }
         VecsFreeCertStore(pStore);
     }
 }

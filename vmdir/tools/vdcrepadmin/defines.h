@@ -22,6 +22,7 @@
 #define VDCREPADMIN_FEATURE_SHOW_SERVER_ATTRIBUTE      "showservers"
 #define VDCREPADMIN_FEATURE_CREATE_AGREEMENT           "createagreement"
 #define VDCREPADMIN_FEATURE_REMOVE_AGREEMENT           "removeagreement"
+#define VDCREPADMIN_QUERY_IS_FIRST_CYCLE_DONE          "isfirstcycledone"
 
 #ifndef _WIN32
 

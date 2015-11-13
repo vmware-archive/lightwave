@@ -145,6 +145,7 @@ typedef struct _VMAFD_GLOBALS
 
     PVMAFD_THREAD                   pCertUpdateThr;
     PVMAFD_THREAD                   pPassRefreshThr;
+    PVMAFD_THREAD                   pDCCacheThr;
 
     // following fields are protected by mutex
     pthread_t                       thread;
@@ -232,3 +233,15 @@ typedef struct _VECS_SRV_ENUM_CONTEXT_WITH_HANDLE
 
 } VECS_SRV_ENUM_CONTEXT_HANDLE, *PVECS_SRV_ENUM_CONTEXT_HANDLE;
 
+typedef struct _VMAFD_HB_NODE
+{
+    PWSTR  pszServiceName;
+    DWORD  dwPort;
+    time_t tLastPing;
+} VMAFD_HB_NODE, *PVMAFD_HB_NODE;
+
+typedef struct _VMAFD_HB_TABLE
+{
+    DWORD dwNextAvailableIndex;
+    PVMAFD_HB_NODE pEntries[VMAFD_HEARTBEAT_TABLE_COUNT]; //TODO: Configurable
+} VMAFD_HB_TABLE, *PVMAFD_HB_TABLE;

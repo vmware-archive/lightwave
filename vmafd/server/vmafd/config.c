@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -69,8 +69,6 @@ VmAfSrvGetDomainName(
                                VMAFD_REG_KEY_DOMAIN_NAME,
                                &pwszDomain);
     BAIL_ON_VMAFD_ERROR(dwError);
-
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded", __FUNCTION__);
 
     *ppwszDomain = pwszDomain;
 
@@ -137,6 +135,60 @@ error:
 
     VmAfdLog(VMAFD_DEBUG_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
 
+    goto cleanup;
+}
+
+DWORD
+VmAfSrvSetSiteName(
+    PWSTR    pwszSiteName        /* IN     */
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = _ConfigSetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                               VMAFD_REG_KEY_SITE_NAME,
+                               pwszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded", __FUNCTION__);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfSrvGetSiteName(
+    PWSTR*   ppwszSiteName        /*    OUT */
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszSiteName = NULL;
+
+    dwError = _ConfigGetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                               VMAFD_REG_KEY_SITE_NAME,
+                               &pwszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded", __FUNCTION__);
+
+    *ppwszSiteName = pwszSiteName;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
     goto cleanup;
 }
 
@@ -466,15 +518,15 @@ VmAfSrvGetLSLocation(
     DWORD dwError = 0;
     PWSTR pwszLSLocation = NULL;
     PSTR pszLSLocation = NULL;
-    PWSTR pwszDCName = NULL;
+    PCDC_DC_INFO_W pAffinitizedDC = NULL;
     PSTR pszDCName = NULL;
     DWORD dwPort = 0;
 
-    dwError = VmAfSrvGetDCName(&pwszDCName);
+    dwError = CdcSrvGetDCName(NULL,&pAffinitizedDC);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdAllocateStringAFromW(
-                               pwszDCName,
+                               pAffinitizedDC->pszDCName,
                                &pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -502,8 +554,11 @@ VmAfSrvGetLSLocation(
 
 cleanup:
 
-    VMAFD_SAFE_FREE_MEMORY(pwszDCName);
-    VMAFD_SAFE_FREE_STRINGA(pszDCName);
+    VMAFD_SAFE_FREE_MEMORY(pszDCName);
+    if (pAffinitizedDC)
+    {
+        VmAfdFreeDomainControllerInfoW(pAffinitizedDC);
+    }
     VMAFD_SAFE_FREE_STRINGA(pszLSLocation);
 
     return dwError;
@@ -546,11 +601,58 @@ VmAfSrvSetDCName(
     PWSTR    pwszDCName     /* IN     */
     )
 {
-    DWORD dwError = 0;
-    PSTR pszDCName = NULL;
+    DWORD           dwError = 0;
+    PSTR            pszDCName = NULL;
+    PVMAFD_REG_ARG  pArgs = NULL;
+    LDAP*           pLDAP = NULL;
+    VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
 
     dwError = VmAfdAllocateStringAFromW(pwszDCName, &pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvGetDomainState(&domainState);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    switch (domainState)
+    {
+    case VMAFD_DOMAIN_STATE_NONE:
+        /* allow initial setting of DCName */
+        break;
+
+    case VMAFD_DOMAIN_STATE_CONTROLLER:
+        /* cannot change DC after promoted to controller */
+        dwError = ERROR_OPERATION_NOT_PERMITTED;
+        BAIL_ON_VMAFD_ERROR(dwError);
+        break;
+
+    case VMAFD_DOMAIN_STATE_CLIENT:
+        /*
+         * allow re-pointing if new DC is in the same Lotus federation.
+         * Verify this via machine account authentication to new DC.
+         */
+        dwError = VmAfdGetRegArgs( &pArgs );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdLDAPConnect(
+                        pszDCName,  // new DC
+                        0,          // use default LDAP port
+                        pArgs->pszAccountUPN,
+                        pArgs->pszPassword,
+                        &pLDAP);
+        if ( dwError != 0 )
+        {
+            VmAfdLog(VMAFD_DEBUG_ANY, "%s DCName=%s machine account LDAP Bind failed error (%u)",
+                                      __FUNCTION__, pszDCName, dwError);
+            dwError = ERROR_OPERATION_NOT_PERMITTED;
+        }
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        break;
+
+    default:
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     dwError = _ConfigSetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
                                VMAFD_REG_KEY_DC_NAME,
@@ -560,6 +662,16 @@ VmAfSrvSetDCName(
     VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded, DCName=%s", __FUNCTION__, pszDCName);
 
 cleanup:
+
+    if ( pArgs != NULL )
+    {
+        VmAfdFreeRegArgs( pArgs );
+    }
+
+    if ( pLDAP != NULL )
+    {
+        ldap_unbind_ext(pLDAP, NULL, NULL);
+    }
 
     VMAFD_SAFE_FREE_STRINGA(pszDCName);
 

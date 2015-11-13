@@ -14,28 +14,20 @@
              value="VMWare, Inc." />
 
    <property file="../product.properties" />
-   <property name="MAINSRCROOT" value="${basedir}/../../../.."/>
+   <property name="MAINSRCROOT" value="${basedir}/../../.." />
    <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}"/>
 
-   <import file="${MAINSRCROOT}/ant/presets.xml" />
-   <import file="${MAINSRCROOT}/ant/defaults.xml" />
+   <import file="${MAINSRCROOT}/build/ant/presets.xml" />
+   <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
 
    <path id="classpath.main">
 
-      <path refid="classpath.cobertura" />
-      <fileset dir="${tcRoot}/noarch/jna-3.2.7" >
-          <include name="jna.jar" />
-          <include name="platform.jar" />
-      </fileset>
-
-      <fileset refid="jar-set.commons-logging" />
-
-      <fileset dir="${tcRoot}/noarch/apache-commons-lang-2.5">
-           <include name="commons-lang-2.5.jar"/>
-      </fileset>
+      <fileset refid="jar-set.jna" />
+      <fileset refid="jar-set.apache-commons-logging" />
+      <fileset refid="jar-set.apache-commons-lang" />
     
    </path>
 
-   <import file="${MAINSRCROOT}/ant/buildcycle-template.xml" />
+   <import file="${MAINSRCROOT}/build/ant/buildcycle-template.xml" />
 
 </project>

@@ -58,6 +58,13 @@ extern int  vmafd_syslog_level;
         VmAfdLog(VMAFD_DEBUG_DEBUG, "Exiting %s", __FUNCTION__); \
     }while(0)
 
+#ifdef _WIN32
+typedef HINSTANCE   VMW_LIB_HANDLE;
+#else
+#include <dlfcn.h>
+typedef VOID*       VMW_LIB_HANDLE;
+#endif
+
 VOID
 VmAfdFreeTypeSpecContent(
     PVMW_TYPE_SPEC typeSpec,
@@ -135,6 +142,54 @@ VOID
 VmAfdFreeMutexesArray(
     pthread_mutex_t *pMutexes,
     DWORD dwNumMutexes
+    );
+
+VOID
+VmAfdFreeDomainControllerInfoA(
+    PCDC_DC_INFO_A pDomainControllerInfoA
+    );
+
+VOID
+VmAfdFreeDomainControllerInfoW(
+    PCDC_DC_INFO_W pDomainControllerInfoW
+    );
+
+VOID
+VmAfdFreeCdcDbEntryArrayW(
+    PCDC_DB_ENTRY_W pCdcDbEntry,
+    DWORD dwCount
+    );
+
+VOID
+VmAfdFreeHbInfoA(
+    PVMAFD_HB_INFO_A pHbInfoA
+    );
+
+VOID
+VmAfdFreeHbInfoArrayA(
+    PVMAFD_HB_INFO_A pHbInfoArr,
+    DWORD dwCount
+    );
+
+VOID
+VmAfdFreeHbStatusA(
+    PVMAFD_HB_STATUS_A pHbStatusA
+    );
+
+VOID
+VmAfdFreeHbInfoW(
+    PVMAFD_HB_INFO_W pHbInfoW
+    );
+
+VOID
+VmAfdFreeHbInfoArrayW(
+    PVMAFD_HB_INFO_W pHbInfoArr,
+    DWORD dwCount
+    );
+
+VOID
+VmAfdFreeHbStatusW(
+    PVMAFD_HB_STATUS_W pHbStatusW
     );
 
 DWORD
@@ -627,6 +682,33 @@ VmAfdUnMarshalPermissionArray (
                            PDWORD pdwCount,
                            PVECS_STORE_PERMISSION_W *ppPermArray
                          );
+
+
+DWORD
+VmAfdMarshalHeartbeatStatusArrLength (
+                             PVMAFD_HB_INFO_W pInfoArray,
+                             DWORD dwCount,
+                             PDWORD pdwSizeRequired
+                             );
+
+DWORD
+VmAfdMarshalHeartbeatStatusArray (
+                        PVMAFD_HB_INFO_W pInfoArray,
+                        DWORD dwCount,
+                        DWORD dwBlobSize,
+                        PBYTE pMarshalledBlob
+                        );
+
+DWORD
+VmAfdUnMarshalHeartbeatStatusArray (
+                           DWORD dwBlobSize,
+                           PBYTE pMarshalledBlob,
+                           PDWORD pdwCount,
+                           PVMAFD_HB_INFO_W *ppInfoArray
+                           );
+
+
+
 
 DWORD
 VmAfdInitializeConnectionContext(
@@ -1144,7 +1226,21 @@ VecsValidateAndFormatCrl(
 DWORD
 VecsValidateAndFormatKey(
     PCWSTR pszKey,
+    PCWSTR pszPassword,
     PWSTR *ppszPEMKey
+    );
+
+DWORD
+VecsDecryptAndFormatKey(
+    PCWSTR pszEncrypteKey,
+    PCWSTR pszPassword,
+    PWSTR *ppszDecryptedPEMKey
+    );
+
+DWORD
+VecsValidateCertKeyPair(
+    PCWSTR pszCertificate,
+    PCWSTR pszPrivateKey
     );
 
 VOID
@@ -1153,6 +1249,34 @@ VmAfdReadString(
     PSTR szString,
     int len,
     BOOLEAN bHideString
+    );
+
+//Changes input string
+DWORD
+VmAfdTrimFQDNTrailingDot(
+        PWSTR pwszInputFQDN
+        );
+
+// misc.c
+
+BOOLEAN
+VmAfdCheckIfIPV6AddressW(
+    PCWSTR pwszNetworkAddress
+    );
+
+BOOLEAN
+VmAfdCheckIfIPV6AddressA(
+    PCSTR pszNetworkAddress
+    );
+
+BOOLEAN
+VmAfdCheckIfIPV4AddressA(
+    PCSTR pszNetworkAddress
+    );
+
+BOOLEAN
+VmAfdCheckIfIPV4AddressW(
+    PCWSTR pwszNetworkAddress
     );
 
 #ifdef __cplusplus

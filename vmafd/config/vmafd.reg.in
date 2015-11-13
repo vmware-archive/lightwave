@@ -18,7 +18,7 @@
     doc = ""
 }
 "Dependencies" = {
-    default = "lwreg dcerpc"
+    default = "@DCERPC_DEPENDENCY@"
     doc = ""
 }
 "Type" = {
@@ -40,19 +40,32 @@
     doc     = "DomainState"
 }
 "Krb5Conf" = {
-    default = "/etc/krb5.lotus.conf"
+    default = "/etc/@VMAFD_KRB5CONF_FILENAME@"
     doc     = "Krb5 Configuration"
 }
 "KeytabPath" = {
-    default = "@VMAFD_CONFIG_DIR@/krb5.keytab"
+    default = "@VMAFD_KEYTAB_CONFIG_DIR@/krb5.keytab"
     doc     = "Keytab Path"
 }
 "CertificateSyncInterval" = {
     default = dword:0000003C
     doc     = "Root certificate update frequency"
 }
+"DcCacheSyncInterval" = {
+    default = dword:0000003C
+    doc     = "DC Cache update frequency"
+}
+"DcCacheHeartBeat" = {
+    default = dword:0000003C
+    doc     = "DC Cache heartbeat frequency"
+}
 "EnableDCERPC" = {
     default = dword:00000001
     doc     = "Enable or Disable DCE/RPC Server"
 }
+"EnableHA" = {
+    default = dword:00000000
+    doc     = "Enable or Disable DCE/RPC Server"
+}
+
 

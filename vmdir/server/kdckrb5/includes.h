@@ -40,6 +40,10 @@
 #include <stdint.h>
 #include <tchar.h>
 
+#define LW_STRICT_NAMESPACE
+#include <lw/types.h>
+#include <lw/hash.h>
+#include <lw/security-types.h>
 #endif
 
 /* Common include between Linux and Windows */

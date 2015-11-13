@@ -135,6 +135,204 @@ static  _TCHAR  RSA_SERVER_KEY[MAX_PATH];
 
 #endif
 
+static
+DWORD
+_VmDirInitSslCtxViaFile(
+    SSL_CTX* pSslCtx
+    )
+{
+    DWORD       dwError = 0;
+    int         iSslRet = 0;
+    PCSTR       pszCaller = NULL;
+    BOOLEAN     bFileExists = FALSE;
+
+#ifdef _WIN32
+    dwError = VmDirOpensslSetServerCertPath(RSA_SERVER_CERT);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirOpensslSetServerKeyPath(RSA_SERVER_KEY);
+    BAIL_ON_VMDIR_ERROR(dwError);
+#endif
+
+    dwError = VmDirFileExists( RSA_SERVER_CERT, &bFileExists);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (!bFileExists)
+    {
+        VmDirLog(LDAP_DEBUG_ANY,
+                 "Certificate [%s] does not exist",
+                 RSA_SERVER_CERT);
+        dwError = VMDIR_ERROR_INVALID_CONFIGURATION;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirFileExists( RSA_SERVER_KEY, &bFileExists);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (!bFileExists)
+    {
+        VmDirLog(LDAP_DEBUG_ANY,
+                 "Private key [%s] does not exist",
+                 RSA_SERVER_KEY);
+        dwError = VMDIR_ERROR_INVALID_CONFIGURATION;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // set server certificate
+    iSslRet = SSL_CTX_use_certificate_file(
+                pSslCtx,
+                RSA_SERVER_CERT,
+                SSL_FILETYPE_PEM);
+    if (iSslRet != 1)
+    {
+        VmDirLog( LDAP_DEBUG_ANY, "SSL_Ctx_use_certificate_file failed. "   \
+                                  "Certificate file (%s) "                  \
+                                  "error code (%d)",
+                                  RSA_SERVER_CERT, iSslRet );
+        dwError = VMDIR_ERROR_INVALID_CONFIGURATION;
+        BAIL_ON_OPENSSL_ERROR( TRUE, "SSL_CTX_use_certificate_file");
+    }
+
+    // set server private key
+    iSslRet = SSL_CTX_use_PrivateKey_file(
+                pSslCtx,
+                RSA_SERVER_KEY,
+                SSL_FILETYPE_PEM);
+    if (iSslRet != 1)
+    {
+        VmDirLog( LDAP_DEBUG_ANY, "SSL_CTX_use_PrivateKey_file failed. "    \
+                                  "Key file (%s) "                          \
+                                  "error code (%d)",
+                                  RSA_SERVER_KEY, iSslRet );
+        dwError = VMDIR_ERROR_INVALID_CONFIGURATION;
+        BAIL_ON_OPENSSL_ERROR( TRUE, "SSL_CTX_use_PrivateKey_file");
+    }
+
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+
+openssl_error:
+    _VmDirLogOpenSSLError( iSslRet, pszCaller);
+
+    goto error;
+}
+
+static
+DWORD
+_VmDirInitSslCtxViaVECS(
+    SSL_CTX* pSslCtx
+    )
+{
+    DWORD       dwError = 0;
+    int         iSslRet = 0;
+    PCSTR       pszCaller = NULL;
+    PSTR        pszCert = NULL;
+    PSTR        pszKey = NULL;
+    BIO*        pCertBIO = NULL;
+    BIO*        pKeyBIO = NULL;
+    X509*       pX509 = NULL;
+    EVP_PKEY*   pEVPKey = NULL;
+
+    dwError = VmDirGetVecsMachineCert( &pszCert, &pszKey );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pCertBIO = BIO_new_mem_buf( pszCert, -1 );
+    pKeyBIO  = BIO_new_mem_buf( pszKey, -1 );
+    if ( pCertBIO == NULL || pKeyBIO == NULL )
+    {
+        dwError = ERROR_NO_MEMORY;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if ( PEM_read_bio_X509( pCertBIO, &pX509, NULL, NULL ) == NULL )
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "PEM_read_bio_X509 failed.");
+        dwError = ERROR_INVALID_CONFIGURATION;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if ( PEM_read_bio_PrivateKey( pKeyBIO, &pEVPKey, NULL, NULL ) == NULL )
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "PEM_read_bio_PrivateKey failed.");
+        dwError = ERROR_INVALID_CONFIGURATION;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // set server certificate
+    iSslRet = SSL_CTX_use_certificate( pSslCtx, pX509 );
+    if (iSslRet != 1)
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SSL_CTX_use_certificate failed, error code (%d)", iSslRet );
+        dwError = ERROR_INVALID_CONFIGURATION;
+        BAIL_ON_OPENSSL_ERROR( TRUE, "SSL_CTX_use_certificate");
+    }
+
+    // set server private key
+    iSslRet = SSL_CTX_use_PrivateKey( pSslCtx, pEVPKey );
+    if (iSslRet != 1)
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SSL_CTX_use_PrivateKey failed, error code (%d)", iSslRet );
+        dwError = ERROR_INVALID_CONFIGURATION;
+        BAIL_ON_OPENSSL_ERROR( TRUE, "SSL_CTX_use_certificate");
+    }
+
+cleanup:
+
+    if (pCertBIO)
+    {
+        BIO_free(pCertBIO);
+    }
+    if (pKeyBIO)
+    {
+        BIO_free(pKeyBIO);
+    }
+    if (pX509)
+    {
+        X509_free(pX509);
+    }
+    if (pEVPKey)
+    {
+        EVP_PKEY_free(pEVPKey);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pszCert);
+    VMDIR_SAFE_FREE_MEMORY(pszKey);
+
+    return dwError;
+
+error:
+    goto cleanup;
+
+openssl_error:
+    _VmDirLogOpenSSLError( iSslRet, pszCaller);
+
+    goto error;
+}
+
+static
+DWORD
+_VmDirInitSslCtx(
+    SSL_CTX*    pSslCtx
+    )
+{
+    DWORD   dwError = 0;
+
+    if ( gVmdirGlobals.bDisableVECSIntegration == FALSE )
+    {
+        dwError = _VmDirInitSslCtxViaVECS( pSslCtx );
+    }
+
+    if ( gVmdirGlobals.bDisableVECSIntegration == TRUE || dwError!=0 )
+    {
+        dwError = _VmDirInitSslCtxViaFile( pSslCtx );
+    }
+
+    return dwError;
+}
+
 /*
  * Initialize openssl libraries and create a default SSL_CTX - gpVdirSslCtx
  */
@@ -197,42 +395,10 @@ VmDirOpensslInit(
     // let ssl layer handle possible retry
     SSL_CTX_set_mode(pSslCtx, SSL_MODE_AUTO_RETRY);
 
-#ifdef _WIN32
-    dwError = VmDirOpensslSetServerCertPath(RSA_SERVER_CERT);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirOpensslSetServerKeyPath(RSA_SERVER_KEY);
-    BAIL_ON_VMDIR_ERROR(dwError);
-#endif
-
-    // set server certificate
-    iSslRet = SSL_CTX_use_certificate_file(
-                pSslCtx,
-                RSA_SERVER_CERT,
-                SSL_FILETYPE_PEM);
-    if (iSslRet != 1)
+    dwError = _VmDirInitSslCtx( pSslCtx );
+    if (dwError)
     {
-        VmDirLog( LDAP_DEBUG_ANY, "SSL_Ctx_use_certificate_file failed. "   \
-                                  "Certificate file (%s) "                  \
-                                  "error code (%d)",
-                                  RSA_SERVER_CERT, iSslRet );
-        // soft fail if cert file loading failed - Lotus will not listen on LDAPs port.
-        dwError = 0;
-        goto error;
-    }
-
-    // set server private key
-    iSslRet = SSL_CTX_use_PrivateKey_file(
-                pSslCtx,
-                RSA_SERVER_KEY,
-                SSL_FILETYPE_PEM);
-    if (iSslRet != 1)
-    {
-        VmDirLog( LDAP_DEBUG_ANY, "SSL_CTX_use_PrivateKey_file failed. "    \
-                                  "Key file (%s) "                          \
-                                  "error code (%d)",
-                                  RSA_SERVER_KEY, iSslRet );
-        // soft fail if key file loading failed - Lotus will not listen on LDAPs port.
+        // soft fail - Lotus will not listen on LDAPs port.
         dwError = 0;
         goto error;
     }

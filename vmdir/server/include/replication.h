@@ -66,6 +66,11 @@ VmDirFreeReplicationAgreement(
 VOID
 VmDirRemoveDeletedRAsFromCache();
 
+DWORD
+VmDirGetReplCycleCounter(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif

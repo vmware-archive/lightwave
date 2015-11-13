@@ -1,6 +1,7 @@
 
 CLASSNAME = com.vmware.identity.vecs.VecsAdapter
-JARDIR=$(top_builddir)/../../build/authentication-framework/packages/vmware-endpoint-certificate-store.jar
+JARDIR=$(top_builddir)/authentication-framework/packages
+JAR=$(JARDIR)/vmware-endpoint-certificate-store.jar
 
 lib_LTLIBRARIES = libvecsjni.la
 
@@ -28,5 +29,7 @@ BUILT_SOURCES = vecsjni.h
 
 vecsjni.h:
 	@echo "Using classpath $(JARDIR)"
-	$(JAVAH) -o $@ -classpath $(JARDIR) $(CLASSNAME)
+	$(JAVAH) -o $@ -classpath $(JAR) $(CLASSNAME)
 
+jreext_DATA= \
+    @top_builddir@/authentication-framework/packages/vmware-endpoint-certificate-store.jar

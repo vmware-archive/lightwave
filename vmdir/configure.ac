@@ -17,11 +17,16 @@ dnl
 case "${host_os}:${host_cpu}" in
 
     linux*:x86_64)
-	;;
+        PLATFORM_LIB_PREFIX=lib64
+	    ;;
+    darwin*:x86_64)
+        PLATFORM_LIB_PREFIX=lib
+        ;;
     *)
         AC_ERROR("Unsupported operating system - ${host_os}:${host_cpu}")
         ;;
 esac
+
 
 CPPFLAGS="$CPPFLAGS -D_REENTRANT -D_GNU_SOURCE -fPIC"
 
@@ -109,88 +114,51 @@ AC_ARG_WITH([datastore],
         VMDIRD_DATASTORE="$withval"
     ])
 
-AM_CONDITIONAL([HAVE_TC_STORE], [test x"$VMDIRD_DATASTORE" = x"tokyocabinet"])
-AM_CONDITIONAL([HAVE_BDB_STORE], [test x"$VMDIRD_DATASTORE" = x"bdb"])
+# client only build
+
+ENABLE_SERVER=false
+AC_ARG_ENABLE([server],
+    [AC_HELP_STRING([--enable-server], [enable full build(default: no)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            ENABLE_SERVER=true
+        fi
+    ])
+
+AM_CONDITIONAL(ENABLE_SERVER, [$ENABLE_SERVER])
 AM_CONDITIONAL([HAVE_MDB_STORE], [test x"$VMDIRD_DATASTORE" = x"mdb"])
 
 # mdb component
 
-# bdb component
-
-AC_ARG_WITH([bdb],
-    [AC_HELP_STRING([--with-bdb=<dir>], [use BDB binaries rooted at prefix <dir> ])],
-    [
-        BDB_BASE_PATH="$withval"
-        BDB_INCLUDES="-I$withval/include"
-        BDB_LDFLAGS="-L$withval/lib -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
-    ])
-
-AC_ARG_WITH([bdb-includes],
-    [AC_HELP_STRING([--with-bdb-includes=<dir>], [use BDB headers located in prefix <dir> ])],
-    [
-        BDB_INCLUDES="-I$withval"
-    ])
-
-AC_ARG_WITH([bdb-libs],
-    [AC_HELP_STRING([--with-bdb-libs=<dir>], [use BDB libraries located in prefix <dir> ])],
-    [
-        BDB_LDFLAGS="-L$withval"
-    ])
-
-AC_SUBST(BDB_BASE_PATH)
-AC_SUBST(BDB_INCLUDES)
-AC_SUBST(BDB_LDFLAGS)
-
 saved_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS $BDB_INCLUDES"
-if test x"$VMDIRD_DATASTORE" = x"bdb"
+CPPFLAGS="$CPPFLAGS -I../thirdparty/openldap/libraries/mdb"
+if test x"$VMDIRD_DATASTORE" = x"mdb"
 then
-AC_CHECK_HEADERS(db.h)
-fi
-CPPFLAGS="$saved_CPPFLAGS"
-
-# tokyocabinet component
-
-AC_ARG_WITH([tokyocabinet],
-    [AC_HELP_STRING([--with-tokyocabinet=<dir>], [use Tokyocabinet binaries rooted at prefix <dir> ])],
-    [
-        TC_BASE_PATH="$withval"
-        TC_INCLUDES="-I$withval/include"
-        TC_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
-    ])
-
-AC_ARG_WITH([tokyocabinet-includes],
-    [AC_HELP_STRING([--with-tokyocabinet-includes=<dir>], [use Tokyocabinet headers located in prefix <dir> ])],
-    [
-        TC_INCLUDES="-I$withval/include"
-    ])
-
-AC_ARG_WITH([tokyocabinet-libs],
-    [AC_HELP_STRING([--with-tokyocabinet-libs=<dir>], [use Tokyocabinet libraries located in prefix <dir> ])],
-    [
-        TC_LDFLAGS="-L$withval"
-    ])
-
-AC_SUBST(TC_BASE_PATH)
-AC_SUBST(TC_INCLUDES)
-AC_SUBST(TC_LDFLAGS)
-
-saved_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS $TC_INCLUDES"
-if test x"$VMDIRD_DATASTORE" = x"tokyocabinet"
-then
-AC_CHECK_HEADERS(tcbdb.h)
+AC_CHECK_HEADERS(lmdb.h)
 fi
 CPPFLAGS="$saved_CPPFLAGS"
 
 # openssl component
+
+case "${host_os}:${host_cpu}" in
+    linux*:x86_64)
+    OPEN_SSL_DEFAULT_PATH=/opt/vmware/lib64
+	;;
+    darwin*:x86_64)
+    OPEN_SSL_DEFAULT_PATH=/opt/vmware/lib
+    ;;
+    *)
+    AC_ERROR("Unsupported operating system - ${host_os}:${host_cpu}")
+    ;;
+esac
 
 AC_ARG_WITH([ssl],
     [AC_HELP_STRING([--with-ssl=<dir>], [use SSL binaries rooted at prefix <dir> ])],
     [
         OPENSSL_BASE_PATH="$withval"
         OPENSSL_INCLUDES="-I$withval/include"
-        OPENSSL_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+        OPENSSL_LDFLAGS="-L$withval/$PLATFORM_LIB_PREFIX -Wl,-rpath,$OPEN_SSL_DEFAULT_PATH"
     ])
 
 AC_ARG_WITH([ssl-includes],
@@ -261,6 +229,17 @@ AC_SUBST(BZIP_BASE_PATH)
 AC_SUBST(BZIP_INCLUDES)
 AC_SUBST(BZIP_LDFLAGS)
 
+# vmevent component
+
+AC_ARG_WITH([vmevent],
+    [AC_HELP_STRING([--with-vmevent=<dir>], [use event-server binaries rooted at prefix <dir> ])],
+    [
+        VMEVENT_INCLUDES="-I$withval/include"
+    ])
+
+AC_CHECK_HEADERS(vmevent.h)
+AC_SUBST(VMEVENT_INCLUDES)
+
 # Cyrus SASL
 
 AC_ARG_WITH([sasl],
@@ -293,12 +272,25 @@ AC_DEFINE_UNQUOTED(VMDIR_CONFIG_SASL2_LIB_PATH, "$SASL_LIBPATH/sasl2", [SASL2 Li
 
 # Likewise components
 
+case "${host_os}:${host_cpu}" in
+
+    linux*:x86_64)
+    LIKEWISE_DEFAULT_PATH=/opt/likewise/lib64
+	;;
+    darwin*:x86_64)
+    LIKEWISE_DEFAULT_PATH=/opt/likewise/lib
+    ;;
+    *)
+    AC_ERROR("Unsupported operating system - ${host_os}:${host_cpu}")
+    ;;
+esac
+
 AC_ARG_WITH([likewise],
     [AC_HELP_STRING([--with-likewise=<dir>], [use likewise binaries rooted at prefix <dir> ])],
     [
         LW_BASE_PATH="$withval"
         LW_INCLUDES="-I$withval/include"
-        LW_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/likewise/lib64 -Wl,-rpath-link,/opt/likewise/lib64"
+        LW_LDFLAGS="-L$withval/$PLATFORM_LIB_PREFIX -Wl,-rpath,$LIKEWISE_DEFAULT_PATH"
     ])
 
 AC_ARG_WITH([likewise-includes],
@@ -311,6 +303,12 @@ AC_ARG_WITH([likewise-libs],
     [AC_HELP_STRING([--with-likewise-libs=<dir>], [use likewise libraries located in prefix <dir> ])],
     [
         LW_LDFLAGS="-L$withval"
+    ])
+
+AC_ARG_WITH([likewise-rpath],
+    [AC_HELP_STRING([--with-likewise-rpath=<dir>], [use likewise libraries located at <dir> at runtime])],
+    [
+        LW_LDFLAGS="-L$LW_BASE_PATH/$PLATFORM_LIB_PREFIX -Wl,-rpath,$withval"
     ])
 
 AC_SUBST(LW_BASE_PATH)
@@ -377,10 +375,9 @@ AC_CHECK_FUNCS(strerror)
 
 AC_CHECK_LIB([dl], [dlopen], [DL_LIBS="-ldl"])
 AC_CHECK_LIB([pthread], [pthread_self], [PTHREAD_LIBS="-lpthread"])
-AC_CHECK_LIB([db],[db_strerror],[BDB_LIBS="-ldb"],[],[$BDB_LDFLAGS])
+AC_CHECK_LIB([mdb],[mdb_strerror],[MDB_LIBS="-lmdb"],[],[])
 AC_CHECK_LIB([z],[inflate],[ZLIB_LIBS="-lz"],[],[$ZLIB_LDFLAGS])
 AC_CHECK_LIB([bz2],[BZ2_bzdopen],[BZIP_LIBS="-lbz2"],[],[$BZIP_LDFLAGS])
-AC_CHECK_LIB([tokyocabinet],[tcbdbnew],[TC_LIBS="-ltokyocabinet"],[],[$TC_LDFLAGS $ZLIB_LDFLAGS $BZIP_LDFLAGS $ZLIB_LIBS $BZIP_LIBS])
 AC_CHECK_LIB([uuid],[uuid_copy], [UUID_LIBS="-luuid"], [], [$LW_LDFLAGS -luuid])
 AC_CHECK_LIB(
     [crypto],
@@ -451,13 +448,16 @@ AC_CHECK_LIB(
     ])
 
 AC_CHECK_LIB([shadow], [getspnam], [SHADOW_LIBS="-lshadow"])
-AC_CHECK_LIB([crypt], [crypt_r], [CRYPT_LIBS="-lcrypt"])
+
+# Use -lxcrypt on SLES11, which contains advanced hash algorithms
+AC_CHECK_LIB([xcrypt], [crypt_r], [CRYPT_LIBS="-L/usr/lib64 -lxcrypt $DL_LIBS"], [CRYPT_LIBS="no"], [-L/usr/lib64 $DL_LIBS])
+if test x"$CRYPT_LIBS" = x"no"; then
+  AC_CHECK_LIB([crypt], [crypt_r], [CRYPT_LIBS="-lcrypt"],[CRYPT_LIBS=""])
+fi
 
 AC_SUBST(DL_LIBS)
 AC_SUBST(PTHREAD_LIBS)
-AC_SUBST(BDB_LIBS)
 AC_SUBST(MDB_LIBS)
-AC_SUBST(TC_LIBS)
 AC_SUBST(ZLIB_LIBS)
 AC_SUBST(BZIP_LIBS)
 AC_SUBST(GSSAPI_LIBS)
@@ -492,21 +492,26 @@ if test x"$IDL" = x"no"; then
     AC_MSG_ERROR([DCERPC IDL compiler not found])
 fi
 
-AS_AC_EXPAND(VMDIR_BIN_DIR, $prefix)
-AC_SUBST(VMDIR_BIN_DIR)
-
-AS_AC_EXPAND(VMDIR_SBIN_DIR, ["${sbindir}"])
+AS_AC_EXPAND(VMDIR_SBIN, ["${sbindir}"])
+VMDIR_SBIN_DIR=$VMDIR_SBIN
 AC_SUBST(VMDIR_SBIN_DIR)
 
-AS_AC_EXPAND(VMDIR_LIB_DIR, $libdir)
-AC_SUBST(VMDIR_LIB_DIR)
+vmdirlibdir=$prefix/lib64
+AC_SUBST(vmdirlibdir)
+AS_AC_EXPAND(VMDIR_LIB_DIR, $vmdirlibdir)
 AC_DEFINE_UNQUOTED(VMDIR_LIB_DIR, "$VMDIR_LIB_DIR", [Lib directory])
+
+vmdirsasldir=$vmdirlibdir/sasl2
+AC_SUBST(vmdirsasldir)
 
 vmdirconfdir="$datadir/config"
 AC_SUBST(vmdirconfdir)
 AS_AC_EXPAND(VMDIR_CONFIG_DIR, $vmdirconfdir)
-AC_SUBST(VMDIR_CONFIG_DIR)
 AC_DEFINE_UNQUOTED(VMDIR_CONFIG_DIR, "$VMDIR_CONFIG_DIR", [Config directory])
+
+AS_AC_EXPAND(VMDIR_PREFIX, ["${prefix}"])
+VMDIR_PREFIX_DIR=$VMDIR_PREFIX
+AC_SUBST(VMDIR_PREFIX_DIR)
 
 AC_CONFIG_FILES([Makefile
                  include/Makefile
@@ -518,6 +523,7 @@ AC_CONFIG_FILES([Makefile
                  server/kdcsrvcommon/Makefile
                  server/kdckrb5/Makefile
                  server/kdctools/Makefile
+                 server/vmkdc_mit_tools/Makefile
                  server/vmkdc/Makefile
                  server/common/Makefile
                  server/backend/Makefile
@@ -536,6 +542,7 @@ AC_CONFIG_FILES([Makefile
                  testing/query/Makefile
                  testing/kerberos/Makefile
                  tools/Makefile
+                 tools/vdcaclmgr/Makefile
                  tools/vdcadmintool/Makefile
                  tools/vdcpromo/Makefile
                  tools/vdcpass/Makefile
@@ -546,8 +553,15 @@ AC_CONFIG_FILES([Makefile
                  tools/vdcsrp/Makefile
                  tools/vdcupgrade/Makefile
                  tools/vdcleavefed/Makefile
+                 tools/vdcschemaadmin/Makefile
+                 tools/vdcresetMachineActCred/Makefile
+                 tools/vdcmetric/Makefile
                  tools/test/Makefile
+                 tools/test/circularbuffer/Makefile
                  tools/test/dequetest/Makefile
+                 tools/test/parseargs/Makefile
+                 tools/test/registry/Makefile
+                 tools/test/string/Makefile
                  tools/test/vmdirclienttest/Makefile
                  thirdparty/Makefile
                  thirdparty/openldap/Makefile
@@ -560,6 +574,7 @@ AC_CONFIG_FILES([Makefile
                  gssapi-plugins/Makefile
                  gssapi-plugins/ntlm/Makefile
                  gssapi-plugins/srp/Makefile
+                 gssapi-plugins/unix/Makefile
                  thirdparty/csrp/Makefile
                 ])
 AC_OUTPUT

@@ -12,11 +12,7 @@
  * under the License.
  */
 
-
-
 #include "includes.h"
-
-#define VMAFD_FQDN_SEPARATOR '.'
 
 static
 DWORD
@@ -1333,7 +1329,6 @@ VmAfdGetCanonicalHostName(
 {
     DWORD  dwError = 0;
     struct addrinfo* pHostInfo = NULL;
-    CHAR   szCanonicalHostname[NI_MAXHOST+1] = "";
     PSTR   pszCanonicalHostname = NULL;
     struct addrinfo hints = {0};
 
@@ -1349,20 +1344,10 @@ VmAfdGetCanonicalHostName(
                       &pHostInfo);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = getnameinfo(
-                      pHostInfo->ai_addr,
-                      (socklen_t)(pHostInfo->ai_addrlen),
-                      szCanonicalHostname,
-                      NI_MAXHOST,
-                      NULL,
-                      0,
-                      NI_NAMEREQD);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    if (!IsNullOrEmptyString(&szCanonicalHostname[0]))
+    if (!IsNullOrEmptyString(pHostInfo->ai_canonname))
     {
         dwError = VmAfdAllocateStringA(
-                    &szCanonicalHostname[0],
+                    pHostInfo->ai_canonname,
                     &pszCanonicalHostname);
     }
     else
@@ -1637,5 +1622,130 @@ cleanup:
 
 error:
     VMAFD_SAFE_FREE_MEMORY(pszDN);
+    goto cleanup;
+}
+
+BOOLEAN
+VmAfdCheckIfIPV6AddressW(
+    PCWSTR pwszNetworkAddress
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bResult = FALSE;
+    PSTR pszNetworkAddress = NULL;
+
+    if (!IsNullOrEmptyString(pwszNetworkAddress))
+    {
+        dwError = VmAfdAllocateStringAFromW(
+                        pwszNetworkAddress,
+                        &pszNetworkAddress);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        bResult = VmAfdCheckIfIPV6AddressA(pszNetworkAddress);
+    }
+
+error:
+
+    VMAFD_SAFE_FREE_MEMORY(pszNetworkAddress);
+
+    return bResult;
+}
+
+BOOLEAN
+VmAfdCheckIfIPV6AddressA(
+    PCSTR pszNetworkAddress
+    )
+{
+    BOOLEAN bResult = FALSE;
+
+    if (!IsNullOrEmptyString(pszNetworkAddress))
+    {
+        unsigned char buf[sizeof(struct in6_addr)];
+
+        bResult = (inet_pton(AF_INET6, pszNetworkAddress, &buf[0]) == 1);
+    }
+
+    return bResult;
+}
+
+BOOLEAN
+VmAfdCheckIfIPV4AddressW(
+    PCWSTR pwszNetworkAddress
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bResult = FALSE;
+    PSTR pszNetworkAddress = NULL;
+
+    if (!IsNullOrEmptyString(pwszNetworkAddress))
+    {
+        dwError = VmAfdAllocateStringAFromW(
+                        pwszNetworkAddress,
+                        &pszNetworkAddress);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        bResult = VmAfdCheckIfIPV4AddressA(pszNetworkAddress);
+    }
+
+error:
+
+    VMAFD_SAFE_FREE_MEMORY(pszNetworkAddress);
+
+    return bResult;
+}
+
+BOOLEAN
+VmAfdCheckIfIPV4AddressA(
+    PCSTR pszNetworkAddress
+    )
+{
+    BOOLEAN bResult = FALSE;
+
+    if (!IsNullOrEmptyString(pszNetworkAddress))
+    {
+        unsigned char buf[sizeof(struct in_addr)];
+
+        bResult = (inet_pton(AF_INET, pszNetworkAddress, &buf[0]) == 1);
+    }
+
+    return bResult;
+}
+
+DWORD
+VmAfdTrimFQDNTrailingDot(
+        PWSTR pwszInputFQDN
+        )
+{
+    DWORD  dwError = 0;
+    SIZE_T szFQDNLength = 0;
+
+    if (IsNullOrEmptyString(pwszInputFQDN))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdGetStringLengthW(
+                             pwszInputFQDN,
+                             &szFQDNLength
+                             );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (pwszInputFQDN[szFQDNLength-1] == '.')
+    {
+        if (szFQDNLength-1 == 0)
+        {
+            dwError = ERROR_INVALID_ADDRESS;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
+        pwszInputFQDN[szFQDNLength-1] = '\0';
+    }
+
+cleanup:
+
+    return dwError;
+error:
+
     goto cleanup;
 }

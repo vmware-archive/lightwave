@@ -45,14 +45,14 @@ interface vmdir
 #endif
 #endif
 
-#ifndef VMDIR_WSTRING_DEFINED
-#define VMDIR_WSTRING_DEFINED 1
+cpp_quote("#ifndef VMDIR_WSTRING_DEFINED")
+cpp_quote("#define VMDIR_WSTRING_DEFINED")
 typedef
 #ifdef _DCE_IDL_
 [ptr, string]
 #endif
 unsigned short *wstring;   /* wchar16_t */
-#endif /* VMDIR_WSTRING_DEFINED */
+cpp_quote("#endif")
 
 
 cpp_quote("#ifndef ENUM_VMDIR_LOG_LEVEL")

@@ -62,6 +62,7 @@ extern "C" {
 #define CFG_INDEX_ENTRY_DN                      "cn=indices,cn=config"
 #define CFG_INDEX_ORGANIZATION_DN               "cn=organization,cn=config"
 #define SERVER_STATUS_DN                        "cn=serverstatus"
+#define REPLICATION_STATUS_DN                   "cn=replicationstatus"
 
 #define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Domain Controllers"
 #define VMDIR_COMPUTERS_RDN_VAL                 "Computers"
@@ -81,6 +82,7 @@ extern "C" {
 #define PASSWD_SCHEME_DEFAULT       "DEFAULT-vmdird-v1"
 #define PASSWD_SCHEME_SSO_V1_1      "SSO-V1-1"
 #define PASSWD_SCHEME_SSO_V1_2      "SSO-V1-2"
+#define PASSWD_SCHEME_SHA1          "SHA1"
 
 #define DSE_ROOT_ENTRY_ID              1
 #define SCHEMA_NAMING_CONTEXT_ID       2
@@ -324,6 +326,21 @@ extern "C" {
 #define CM_OBJECTCLASS_SITE             "vmwCisSite"
 #define CM_OBJECTCLASS_LDU              "vmwCisLdu"
 
+// cn=replicationstatus sudo entry
+#define REPLICATION_STATUS_CN           "ReplicationStatus"
+#define REPL_STATUS_SERVER_NAME         "Server Name: "
+#define REPL_STATUS_SERVER_NAME_LEN     sizeof(REPL_STATUS_SERVER_NAME)-1
+#define REPL_STATUS_VISIBLE_USN         "USN: "
+#define REPL_STATUS_VISIBLE_USN_LEN     sizeof(REPL_STATUS_VISIBLE_USN)-1
+#define REPL_STATUS_CYCLE_COUNT         "Replication Cycle Count: "
+#define REPL_STATUS_CYCLE_COUNT_LEN     sizeof(REPL_STATUS_CYCLE_COUNT)-1
+#define REPL_STATUS_INVOCATION_ID       "InvocationID: "
+#define REPL_STATUS_INVOCATION_ID_LEN   sizeof(REPL_STATUS_INVOCATION_ID)-1
+#define REPL_STATUS_UTDVECTOR           "UtdVector: "
+#define REPL_STATUS_UTDVECTOR_LEN       sizeof(REPL_STATUS_UTDVECTOR)-1
+#define REPL_STATUS_PROCESSED_USN_VECTOR        "RAProcessedUSN Vector: "
+#define REPL_STATUS_PROCESSED_USN_VECTOR_LEN    sizeof(REPL_STATUS_PROCESSED_USN_VECTOR)-1
+
 #define VMDIR_REPL_AGRS_CONTAINER_NAME  "Replication Agreements"
 #define VMDIR_SERVERS_CONTAINER_NAME    "Servers"
 #define VMDIR_SERVICES_CONTAINER_NAME   "Services"
@@ -370,33 +387,6 @@ extern "C" {
 #define NSECS_PER_SEC       1000000000
 #define NSECS_PER_MSEC      1000000
 #define MSECS_PER_SEC       1000
-
-/* Defines related to GSS_SRP authentication */
-#ifndef GSS_SRP_MECH_OID
-#define GSS_SRP_MECH_OID_LENGTH 9
-#define GSS_SRP_MECH_OID "\x2a\x86\x48\x86\xf7\x12\x01\x02\x0a"
-#endif
-
-#ifndef GSS_SRP_PASSWORD_OID
-#define GSS_SRP_PASSWORD_OID "\x2b\x06\x01\x04\x01\x81\xd6\x29\x03\x01"
-#define GSS_SRP_PASSWORD_LEN 10
-#endif
-
-/* Defines related to GSS_NTLM authentication */
-#ifndef GSS_NTLM_MECH_OID
-#define GSS_NTLM_MECH_OID_LENGTH 10
-#define GSS_NTLM_MECH_OID "\x2b\x06\x01\x04\x01\x82\x37\x02\x02\x0a"
-#endif
-
-#ifndef GSS_NTLM_PASSWORD_OID
-#define GSS_NTLM_PASSWORD_OID "\x2b\x06\x01\x04\x01\x81\xd6\x29\x03\x01"
-#define GSS_NTLM_PASSWORD_LEN 10
-#endif
-
-#ifndef SPNEGO_OID
-#define SPNEGO_OID_LENGTH 6
-#define SPNEGO_OID "\x2b\x06\x01\x05\x05\x02"
-#endif
 
 #ifdef __cplusplus
 }

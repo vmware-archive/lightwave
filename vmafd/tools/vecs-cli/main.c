@@ -723,6 +723,7 @@ VecsCliExecEntryRequest(
     DWORD dwError = 0;
     PSTR  pszStoreName = NULL;
     PSTR  pszPassword = NULL;
+    PSTR  pszKeyPassword = NULL;
     PSTR  pszAlias = NULL;
     PSTR  pszCertFilePath = NULL;
     PSTR  pszKeyFilePath = NULL;
@@ -751,7 +752,8 @@ VecsCliExecEntryRequest(
         PARSE_SUB_MODE_CERT_PATH,
         PARSE_SUB_MODE_KEY_PATH,
         PARSE_SUB_MODE_SERVER,
-        PARSE_SUB_MODE_UPN
+        PARSE_SUB_MODE_UPN,
+        PARSE_SUB_MODE_PASSWORD
     } PARSE_SUB_MODE;
     PARSE_MODE mode = PARSE_MODE_OPEN;
     PARSE_SUB_MODE submode = PARSE_SUB_MODE_OPEN;
@@ -832,6 +834,10 @@ VecsCliExecEntryRequest(
                       {
                           submode = PARSE_SUB_MODE_UPN;
                       }
+                      else if (!strcmp(pszArg, "--password"))
+                      {
+                          submode = PARSE_SUB_MODE_PASSWORD;
+                      }
                       else
                       {
                           dwError = ERROR_INVALID_PARAMETER;
@@ -887,6 +893,14 @@ VecsCliExecEntryRequest(
                       if (!pszUPN)
                       {
                           pszUPN = pszArg;
+                      }
+                      submode = PARSE_SUB_MODE_OPEN;
+                      break;
+
+                    case PARSE_SUB_MODE_PASSWORD:
+                      if (!pszKeyPassword)
+                      {
+                          pszKeyPassword = pszArg;
                       }
                       submode = PARSE_SUB_MODE_OPEN;
                       break;
@@ -1007,6 +1021,10 @@ VecsCliExecEntryRequest(
                       {
                           submode = PARSE_SUB_MODE_UPN;
                       }
+                      else if (!strcmp(pszArg, "--password"))
+                      {
+                          submode = PARSE_SUB_MODE_PASSWORD;
+                      }
                       else
                       {
                           dwError = ERROR_INVALID_PARAMETER;
@@ -1054,6 +1072,14 @@ VecsCliExecEntryRequest(
 
                       submode = PARSE_SUB_MODE_OPEN;
 
+                      break;
+
+                    case PARSE_SUB_MODE_PASSWORD:
+                      if (!pszKeyPassword)
+                      {
+                          pszKeyPassword = pszArg;
+                      }
+                      submode = PARSE_SUB_MODE_OPEN;
                       break;
 
                     default:
@@ -1198,7 +1224,8 @@ VecsCliExecEntryRequest(
                               pszPassword,
                               pszAlias,
                               pszCertFilePath,
-                              pszKeyFilePath
+                              pszKeyFilePath,
+                              pszKeyPassword
                               );
             break;
 
@@ -1232,7 +1259,8 @@ VecsCliExecEntryRequest(
                               pszPassword,
                               pszAlias,
                               pszOutputFilePath,
-                              dwFormatAsText
+                              dwFormatAsText,
+                              pszKeyPassword
                               );
             break;
 
@@ -1448,6 +1476,7 @@ ShowUsage(
         "\t             --alias <alias>\n"
         "\t             --cert <file-path>\n"
         "\t            [--key  <file-path>]\n"
+        "\t            [--password  <password>]\n"
         "\t            [--text]\n"
         "\t            [--server <server-name>]\n"
         "\t            [--upn <user-name>]\n"
@@ -1460,6 +1489,7 @@ ShowUsage(
         "\t            [--upn <user-name>]\n"
         "\tentry getkey --store <store-name>\n"
         "\t             --alias <alias>\n"
+        "\t            [--password  <password>]\n"
         "\t            [--output <output-file-path>]\n"
         "\t            [--text]\n"
         "\t            [--server <server-name>]\n"

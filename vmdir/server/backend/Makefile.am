@@ -9,7 +9,6 @@
 
 noinst_LTLIBRARIES = libbackend.la
 
-
 libbackend_la_SOURCES = \
     backend.c           \
     globals.c           \
@@ -24,10 +23,6 @@ libbackend_la_CPPFLAGS = \
     -I$(top_srcdir)/server/include \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
-
-if HAVE_MDB_STORE
-libbackend_la_CPPFLAGS += -DHAVE_MDB_STORE
-endif
 
 libbackend_la_LDFLAGS = \
     -static

@@ -570,6 +570,18 @@ VMCALdapAccessCheck(
     VMCA_USER_TYPE userType
     );
 
+//utils.c
+
+DWORD
+VMCAHeartbeatInit(
+    PVMAFD_HB_HANDLE *ppHandle
+    );
+
+VOID
+VMCAStopHeartbeat(
+    PVMAFD_HB_HANDLE pHandle
+    );
+
 #ifdef __cplusplus
 }
 #endif

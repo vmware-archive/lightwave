@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+ xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+ xmlns:vmes="http://vmware.com/schemas/attr-names/2012/04/Extensions" entityID="xyz.com" validUntil="2053-05-21T00:10:05Z">
+<Extensions>
+<vmes:ExportedOn>2012-04-20T00:10:05Z</vmes:ExportedOn>
+<vmes:ExportedBy>Exported by VMware Identity Server (c) 2012</vmes:ExportedBy>
+</Extensions>
+<IDPSSODescriptor WantAuthnRequestsSigned="false"
+ protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"
+ vmes:isDefault="false"
+ vmes:clockTolerance="80000"
+ vmes:delegationCount="5"
+ vmes:renewCount="10"
+ vmes:maximumHokTokenLifeTime="50000"
+ vmes:maximumBearerTokenLifeTime="50000"
+ vmes:issuerName="xyz">
+ <Extensions>
+<vmes:LocalOsIdentityStore vmes:name="ssolab localOsDomain"/>
+<vmes:ActiveDirectoryIdentityStore vmes:friendlyName="SSOLABS_AD_Store"
+ vmes:name="SSOLABS.ENG.VMWARE.COM"
+ vmes:searchBaseDn="CN=Users,DC=SSOLABS,DC=ENG,DC=VMWARE,DC=COM"
+ vmes:searchTimeoutSeconds="0"
+ vmes:userName="lookup@ssolabs.eng.vmware.com"
+ vmes:spn="STS/sso2.ssolabs.eng.vmware.com"
+ vmes:userPassword="vmware123$">
+<vmes:KDC>ldap://dc-1.ssolabs.eng.vmware.com</vmes:KDC>
+<vmes:AttributeMap vmes:name="http://schemas.xmlsoap.org/claims/UPN" vmes:value="userPrincipalName"/>
+<vmes:AttributeMap vmes:name="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname" vmes:value="givenName"/>
+<vmes:AttributeMap vmes:name="http://vmware.com/schemas/attr-names/2011/07/isSolution" vmes:value="subjectType"/>
+<vmes:AttributeMap vmes:name="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" vmes:value="mail"/>
+<vmes:AttributeMap vmes:name="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname" vmes:value="sn"/>
+<vmes:AttributeMap vmes:name="http://rsa.com/schemas/attr-names/2009/01/GroupIdentity" vmes:value="memberof"/>
+</vmes:ActiveDirectoryIdentityStore>
+</Extensions>
+<KeyDescriptor xmlns:ds="http://www.w3.org/2000/09/xmldsig#" use="signing">
+<ds:KeyInfo>
+<ds:KeyValue>
+<ds:RSAKeyValue>
+<ds:Modulus>AMQbKFErXKAvlCJuNOtV2lG9IdNoaGyQ5UsorjGehG5v1NsjaPXMaDFrtP2hDpHzo5+D+S86b4XO
+Fvwm3myEJQrNLB5DZsZrnKO3SQ78VvATujE51X/de4luft937F3B2lP7mkUoqNiB0omahXcVkSiI
+H6WJ/8i9fR/ml8kc9tQciIpEi6TN1KaD+x/IfiBzPDyvruMLnWOYPt2Nk9DfJKVHn16tev96feDm
+FYXdLOfSn/kQ9IJ9PqnVQUEMpbbwCoPy0tdqM3Xe05TDX+C5JM+aEl+f6cz7qgfb9uMeg97UH/Aa
+USG4A+67MenKHFwnWcwZYmFk+QhCZLQTAqi6wA8=</ds:Modulus>
+<ds:Exponent>ALNYouaY4X0eBjv2zi7rtV5LukO9mMKxQQIbkjOO5U6at/Ax0iv5ZNDN0Bik0s5oI5we9iVbK+MT
+N7IjWgekUrwuJ8sFmVid0gNn/EjYPioR4JZkbf0icXietSlqY6DbSPDFibD2HnTjRcjSqHzgHIEU
+/NxH+MV9hpFGMkqbUqFoXSDTJucn/DsUchyyS3D/X/paEaFgc1IIDxMJO9v3aM8q6ZopS3Mypdw9
+UqyDVBESENsOj/Uh2nPJMhUJMND0hgP0GcdIn1BR6O2QReys1R0HOM/mm+r4OkhaGiFoLkCnWv+J
+5GNsc5Z5criWRX28i7/dSiaSwT0QbTPBCEAorQE=</ds:Exponent>
+</ds:RSAKeyValue>
+</ds:KeyValue>
+<ds:X509Data>
+<ds:X509Certificate>MIIDMTCCAhkCCQCpraeAXt4HqDANBgkqhkiG9w0BAQUFADBaMQwwCgYDVQQDDANzdHMxDDAKBgNV
+BAsMA1ImRDEPMA0GA1UECgwGVk13YXJlMQ4wDAYDVQQHDAVTb2ZpYTEOMAwGA1UECAwFU29maWEx
+CzAJBgNVBAYTAkJHMB4XDTEyMDExMDEwMDYzN1oXDTIxMTAwOTEwMDYzN1owWzENMAsGA1UEAwwE
+c3RzMTEMMAoGA1UECwwDUiZEMQ8wDQYDVQQKDAZWTVdhcmUxDjAMBgNVBAcMBVNvZmlhMQ4wDAYD
+VQQIDAVTb2ZpYTELMAkGA1UEBhMCQkcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDE
+GyhRK1ygL5QibjTrVdpRvSHTaGhskOVLKK4xnoRub9TbI2j1zGgxa7T9oQ6R86Ofg/kvOm+Fzhb8
+Jt5shCUKzSweQ2bGa5yjt0kO/FbwE7oxOdV/3XuJbn7fd+xdwdpT+5pFKKjYgdKJmoV3FZEoiB+l
+if/IvX0f5pfJHPbUHIiKRIukzdSmg/sfyH4gczw8r67jC51jmD7djZPQ3ySlR59erXr/en3g5hWF
+3Szn0p/5EPSCfT6p1UFBDKW28AqD8tLXajN13tOUw1/guSTPmhJfn+nM+6oH2/bjHoPe1B/wGlEh
+uAPuuzHpyhxcJ1nMGWJhZPkIQmS0EwKousAPAgMBAAEwDQYJKoZIhvcNAQEFBQADggEBAJHLw/Hh
+lxx6KOIflq9W9goav/uGzEGtiKzfFGSZKV3oCcL597Csj669p/02INNg+AzZRo5i2Sjsa3QIuxWp
+pee3TmfOb6fKBVTO90UIQddHOeWNOZIGN1zfzpbIuetNfr9vICxhFZo3Y+7MH58mnXUQ4UU2WV3y
+m91fcJhyxuYx1lH+fPbbKuJGatOxO6Yj/DEcGcJ6ZuMG+lsgiM2EKy6jPbvnhw/hvv+jzasBmU9h
+gBk3tytSE4m0tIMupBVWA5f2JSVZOdJkJSZaYygpnkBYZPpmSQGKwmPcADb2QzpB40yCCK04WLzk
+aD6mx9REtLxX+CTzgqNn9Yy9YxIwdwY=</ds:X509Certificate>
+<ds:X509Certificate>MIIDKjCCAhICCQCNG2nlun0fGTANBgkqhkiG9w0BAQUFADBXMRIwEAYDVQQDDAlzb2x1dGlvbjEx
+CzAJBgNVBAsMAkRDMQ0wCwYDVQQKDARhY21lMQswCQYDVQQHDAJOWTELMAkGA1UECAwCTlkxCzAJ
+BgNVBAYTAlVTMB4XDTEyMDExMDA5NTg0NloXDTIwMDUxNzA5NTg0NlowVzESMBAGA1UEAwwJc29s
+dXRpb24xMQswCQYDVQQLDAJEQzENMAsGA1UECgwEYWNtZTELMAkGA1UEBwwCTlkxCzAJBgNVBAgM
+Ak5ZMQswCQYDVQQGEwJVUzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKCHvY1DrzYO
+XGFwboGaw1X6l10VbpSNcGSBxWiS55cxQCs2j/0CXdGdxD4Y+JVmzKuOl/5BzFI55rUG84zse92S
+d9xrBTuI2DHPseqDeGbw4MT4s07b7wQv4wm7fXZWO4zKpzjEoM/DIfvqTYE0D8bvt9QPQtava+OA
+iimh6kFSf/fwmKJq62IlZuXo0r0jHAEIA7wn7ahyc5g0KM7UufI6fxBcyjW6sOIA++hKNqDuFugI
+POTPcrJ2+xUqsCWScY5XRpj4YQz97s8HRyGMvDK4F1oXm52MlFaw4le8AbwQ/iXGOItHFomIKZoa
+9pNZBVMlU8caL+r/tQ3nxGqlKdMCAwEAATANBgkqhkiG9w0BAQUFAAOCAQEAVOwLPop9EyJbTBEQ
+rW1OvHaD/xQuVPdC19G9cAxhsw1BCEXBHcJFHti3zp1Wmv8dUtc2JoWOega1d5PrYZnRuA3JJate
+ZUvx6uzL8DMGFpCoJAc7DCq96zWyR2cKpzKXX0qFJLMeyKobLIkH9k9PxSJeAV0P9WJMWWlTtj4g
+FIY7vaf7JshV5eTUX2mQWXmgI0mYj96ytbKL+0PMD0siH7JBXdCRWQIgq3Qw2AJfNOrv+g7ecA9C
+QysaHlNDIQZquFbTiJtW2itj/RulYGcjMivCQD3m6pydLfluBOIrl0si5c2ww3OsG143SumeGKW+
+BPrcgVjqrQtl5TL8u5jKCA==</ds:X509Certificate>
+</ds:X509Data>
+</ds:KeyInfo>
+</KeyDescriptor>
+<SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="www.xyz.com/slo/"/>
+<NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat>
+<NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</NameIDFormat>
+<SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="www.xyz.com/sso"/>
+<saml:Attribute FriendlyName="Groups" Name="http://rsa.com/schemas/attr-names/2009/01/GroupIdentity" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"/>
+<saml:Attribute FriendlyName="givenName" Name="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"/>
+<saml:Attribute FriendlyName="surname" Name="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"/>
+<saml:Attribute FriendlyName="Subject Type" Name="http://vmware.com/schemas/attr-names/2011/07/isSolution" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"/>
+<saml:Attribute FriendlyName="userPrincipalName" Name="http://schemas.xmlsoap.org/claims/UPN" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"/>
+<saml:Attribute FriendlyName="email" Name="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"/>
+</IDPSSODescriptor>
+<Organization>
+<OrganizationName xml:lang="en">xyz</OrganizationName>
+<OrganizationDisplayName xml:lang="en">xyz corp</OrganizationDisplayName>
+<OrganizationURL xml:lang="en">www.xyz.com</OrganizationURL>
+</Organization>
+</EntityDescriptor>

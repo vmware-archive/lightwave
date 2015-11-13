@@ -1,0 +1,48 @@
+[HKEY_THIS_MACHINE\Software]
+
+[HKEY_THIS_MACHINE\Software\VMware]
+
+[HKEY_THIS_MACHINE\Software\VMware\Identity]
+"Description" = {
+    default = "VMware Identity Service"
+    doc = ""
+}
+
+[HKEY_THIS_MACHINE\Software\VMware\Identity\Configuration]
+@security = O:SYG:S-1-22-2-0D:(A;;RCFAFRFWFXKAKRKWKXNW;;;WD)(A;;RCFAFRFWFXKAKRKWKXNW;;;S-1-22-2-0)(A;;RCSDWDWOFAFRFWFXKAKRKWKXNRNWNX;;;SY)
+
+"ConfigStoreType" = {
+    default = "vmware_directory"
+    doc     = "Type of store where the identity service configuration is stored"
+}
+
+"Multitenant" = {
+    default = dword:00000000
+    doc     = "Set to 1 if multi-tenant, 0 otherwise"
+}
+
+"SystemDomainSearchTimeout" = {
+    default = dword:00000000
+    doc     = "Search timeout on the system domain"
+}
+
+"SystemDomainAttributesMap" = {
+    default = sza:"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname:givenName" \
+                  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname:sn" \
+                  "http://rsa.com/schemas/attr-names/2009/01/GroupIdentity:memberOf" \
+                  "http://vmware.com/schemas/attr-names/2011/07/isSolution:subjectType" \
+                  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress:mail" \
+                  "http://schemas.xmlsoap.org/claims/UPN:userPrincipalName"
+    doc     = "Default list of attributes in token"
+}
+
+"StsLocalTcPort" = {
+    default = "7444"
+    doc     = "Port to use for sts when on same box (i.e. without reverse proxy)"
+}
+
+"StsTcPort" = {
+    default = "443"
+    doc     = "Port to use for sts"
+}
+

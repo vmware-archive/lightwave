@@ -28,6 +28,8 @@
 #ifndef _WIN32/* ============= LINUX ONLY ================ */
 #include <config.h>
 #include <vmafdsys.h>
+#include <net/if.h>
+#include <ifaddrs.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <fcntl.h>
@@ -37,6 +39,12 @@
 #include <reg/regutil.h>
 #include <djapi.h>
 #include <lwnet.h>
+#include <lwnet-utils.h>
+
+#if defined(NOTIFY_VMDIR_PROVIDER)
+#include <lsa/vmdir.h>
+#include <lsa/vmdir-types.h>
+#endif
 
 #include <vmafd.h>
 #include <vmafdtypes.h>
@@ -45,19 +53,27 @@
 #include <vmafdcommon.h>
 #include <vmafcfg.h>
 #include <vecsdb.h>
+#include <cdcdb.h>
 #include <securitystructs.h>
 #include <vecsauth.h>
 #include <authdb.h>
 #include <vmeventrpc.h>
 #include <vmauthsvcrpc.h>
 #include <wchar.h>
+#include <vmdns.h>
 #include <vmafdclient.h>
 #include <vmdirclient.h>
+#include <vmdirerrors.h>
+#include <vmdns.h> // comment out for now
 #include <dirent.h>
 #include <vecs_error.h>
 #include <linux/limits.h>
 #include <pthread.h>
 #include <time.h>
+#ifdef USE_DEFAULT_KRB5_PATHS
+#include <profile.h>
+#endif
+
 
 #else
 /* ========================= WIN32 ONLY ======================== */
@@ -84,6 +100,7 @@
 #include <openssl/x509.h>
 
 #include <winsock.h>
+#include <vmdns.h>
 #include <vmafd.h>
 #include <vmafdtypes.h>
 #include <vmafddefines.h>
@@ -94,10 +111,13 @@
 #include <vmauthsvcrpc.h>
 #include <securitystructs.h>
 #include <vecsdb.h>
+#include <cdcdb.h>
 #include <vecsauth.h>
 #include <authdb.h>
 #include <vmafdclient.h>
 #include <vmdirclient.h>
+#include <vmdirerrors.h>
+#include <vmdns.h> // comment out for now
 #include <vecs_error.h>
 
 #endif

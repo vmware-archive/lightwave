@@ -957,15 +957,18 @@ VmDirCheckMemory(
     )
 {
         DWORD dwError = 0;
+        int sResponseSize = 0;
         if (pdwResponseSize == NULL){
                 dwError = ERROR_INVALID_PARAMETER;
                 BAIL_ON_VMDIR_ERROR (dwError);
         }
-        *pdwResponseSize = *pdwResponseSize - size;
-        if (*pdwResponseSize < 0){
+        sResponseSize = *pdwResponseSize - size;
+        if (sResponseSize < 0){
                 dwError = ERROR_NOT_ENOUGH_MEMORY;
                 BAIL_ON_VMDIR_ERROR (dwError);
         }
+
+        *pdwResponseSize = (DWORD)sResponseSize;
 cleanup:
         return dwError;
 error:

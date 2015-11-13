@@ -7,4 +7,6 @@ SUBDIRS = \
     vmcadb  \
     service \
     client  \
-    certool
+    certool \
+    jdepends \
+    java

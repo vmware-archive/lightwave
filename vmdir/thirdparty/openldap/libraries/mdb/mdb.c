@@ -1158,7 +1158,7 @@ static int	mdb_page_split(MDB_cursor *mc, MDB_val *newkey, MDB_val *newdata,
 static int  mdb_env_read_header(MDB_env *env, MDB_meta *meta);
 static int  mdb_env_pick_meta(const MDB_env *env);
 static int  mdb_env_write_meta(MDB_txn *txn);
-#if (defined(_WIN32) && !(defined(HAVE_PTHREADS_WIN32))) || defined(MDB_USE_POSIX_SEM)
+#if (defined(_WIN32) && !(defined(HAVE_PTHREADS_WIN32)))
 # define mdb_env_close0(env, excl) mdb_env_close1(env)
 #endif
 static void mdb_env_close0(MDB_env *env, int excl);
@@ -8435,9 +8435,13 @@ int mdb_reader_list(MDB_env *env, MDB_msg_func *func, void *ctx)
 	for (i=0; i<rdrs; i++) {
 		if (mr[i].mr_pid) {
 			txnid_t	txnid = mr[i].mr_txnid;
-			sprintf(buf, txnid == (txnid_t)-1 ?
-				"%10d %"Z"x -\n" : "%10d %"Z"x %"Z"u\n",
-				(int)mr[i].mr_pid, mr[i].mr_tid, txnid);
+#ifndef _WIN32
+			sprintf(buf, "%10d %"Z"x %"Z"u\n",
+				(int)mr[i].mr_pid, (size_t)mr[i].mr_tid, (size_t)txnid);
+#else
+			sprintf(buf, "%10d %"Z"x %"Z"u\n",
+				(int)mr[i].mr_pid, (size_t)mr[i].mr_tid.p, (size_t)txnid);
+#endif
 			if (first) {
 				first = 0;
 				rc = func("    pid     thread     txnid\n", ctx);

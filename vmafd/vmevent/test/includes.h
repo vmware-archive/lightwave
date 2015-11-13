@@ -31,8 +31,6 @@
 
 #include <lwadvapi.h>
 
-#include <sqlite3.h>
-
 #include <vmevent.h>
 #include <vmeventtypes.h>
 #include <vmeventcommon.h>
@@ -68,12 +66,9 @@
 #include <openssl/x509.h>
 #include <vmevent.h>
 #include <vmeventtypes.h>
-#include <vmafddefines.h>
-#include <vmafderrorcode.h>
-#include <vmafdcommon.h>
+#include <vmeventcommon.h>
 
-#include "defines.h"
-#include "structs.h"
-#include "prototypes.h"
-#include "externs.h"
+#include <vmeventdb.h>
+#include <vmeventclient.h>
+
 #endif

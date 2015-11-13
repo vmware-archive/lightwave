@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Log4j2 Configuration for unit and integration tests -->
+
+<Configuration monitorInterval="30" packages="com.vmware">
+
+    <Appenders>
+        <RollingFile name="fileAppender"
+            fileName="target/failsafe-reports/vmware-rest-afd-test.log"
+            filePattern="vmware-rest-afd-test-%i.log" append="true">
+            <PatternLayout pattern="[%-5p][%d{ISO8601}] %C{1} - %m%n" />
+            <ThresholdFilter level="DEBUG" />
+            <Policies>
+                <SizeBasedTriggeringPolicy size="25 MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="5" />
+        </RollingFile>
+
+        <Console name="STDOUT" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%-5p][%d{ISO8601}] %C{1} - %m%n" />
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="com.vmware" level="debug" additivity="false">
+            <AppenderRef ref="fileAppender">
+            </AppenderRef>
+        </Logger>
+
+        <Root level="debug">
+            <AppenderRef ref="fileAppender" />
+        </Root>
+    </Loggers>
+</Configuration>

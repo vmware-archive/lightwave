@@ -37,6 +37,10 @@ typedef void *VMCISLIB_BIND_T;
 #include "ldap-int.h"
 #include "ldap.h"
 #include <tchar.h>
+
+#define LW_STRICT_NAMESPACE
+#include <lw/hash.h>
+
 #include "banned.h" // windows banned APIs
 #endif // #ifndef _WIN32
 
@@ -61,5 +65,6 @@ typedef void *VMCISLIB_BIND_T;
 #include "structs.h"
 #include "vmdir_h.h"
 #include "vmdirftp_h.h"
+#include "vmdirsuperlog_h.h"
 #include "prototypes.h"
 #include "externs.h"

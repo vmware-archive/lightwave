@@ -65,24 +65,10 @@ srp_gss_delete_sec_context(
         srp_ctx->srp_usr = NULL;
     }
 
-#ifdef _WIN32
-    /*
-     * Due to differences between GSSAPI 1.7 (likewise) vs 1.11.3 (windows kfw),
-     * the management of this memory is handled differently. As this is allocated
-     * in srp_gss_accept_sec_context(), this *should* be memory owned by the
-     * SRP plugin, and therefore our responsibility to free. GSSAPI 1.7
-     * disagrees, and frees this memory for us. Enabling this code on Linux
-     * causes double free, and heap corruption. This most likely is
-     * a bug in GSSAPI 1.7, as this behavior is not seen in 1.11.3.
-     *
-     * Note: This has been run through valgrind (linux) and Purify (win32) and
-     * no memory leaks or invalid accesses are reported for srp_ctx->mech.
-     */
     if (srp_ctx->mech)
     {
         gss_release_oid(&tmp_minor, &srp_ctx->mech);
     }
-#endif
 
     if (srp_ctx->krb5_ctx)
     {

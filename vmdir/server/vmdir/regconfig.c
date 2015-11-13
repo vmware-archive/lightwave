@@ -106,6 +106,13 @@ VmDirSrvUpdateConfig(
         {
             gVmdirGlobals.bAllowInsecureAuth = pEntry->dwValue ? TRUE : FALSE;
         }
+        if (!VmDirStringCompareA(
+                     pEntry->pszName,
+                     VMDIR_REG_KEY_DISABLE_VECS,
+                     TRUE))
+        {
+            gVmdirGlobals.bDisableVECSIntegration = pEntry->dwValue ? TRUE : FALSE;
+        }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
                     VMDIR_REG_KEY_LDAP_LISTEN_PORTS,
@@ -163,6 +170,13 @@ VmDirSrvUpdateConfig(
                     TRUE))
         {
             gVmdirGlobals.dwMaxFlowCtrlThr = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_MAX_INDEX_SCAN,
+                    TRUE))
+        {
+            gVmdirGlobals.dwMaxIndexScan = VMDIR_MAX(pEntry->dwValue, 512);
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,

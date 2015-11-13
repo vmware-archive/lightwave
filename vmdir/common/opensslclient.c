@@ -50,37 +50,6 @@ _VmDirOpenSSLClientCallback(
     );
 
 /*
- * Initialize openssl libraries
- */
-DWORD
-VmDirOpensslClientInit(
-    VOID
-    )
-{
-    DWORD       dwError = 0;
-
-    SSL_library_init(); // always return 1, ignore return.
-
-    // load error strings for ssl and crypto API
-    SSL_load_error_strings();
-
-    return dwError;
-}
-
-VOID
-VmDirOpensslClientShutdown(
-    VOID
-    )
-{
-    ERR_remove_state(0);
-    ERR_free_strings();
-    EVP_cleanup();
-    CRYPTO_cleanup_all_ex_data();
-
-    return;
-}
-
-/*
  *  1. acquire a SSL_CTX
  *  2. set server (peer) cert verification
  */

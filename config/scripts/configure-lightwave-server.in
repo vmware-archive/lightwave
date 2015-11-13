@@ -1,0 +1,205 @@
+#!/bin/bash
+
+#
+# Main
+#
+
+domain_state=`/opt/vmware/bin/vmafd-cli get-domain-state --server-name localhost`
+if [ "$domain_state" != "None" ]; then
+   echo "Lightwave is configured as $domain_state"
+   exit 0
+fi
+
+AWK=
+if [ -x /bin/awk ]; then
+    AWK=/bin/awk
+elif [ -x /usr/bin/awk ]; then
+    AWK=/usr/bin/awk
+fi
+
+if [ -z "$AWK" ]; then
+    echo "Error: A suitable version of [awk] could not be found"
+    exit 1
+fi
+
+# Default parameters
+LOTUS_DEPLOYMENT=standalone
+LOTUS_DOMAIN_DEFAULT=vsphere.local
+LOTUS_ADMIN_DEFAULT=Administrator
+LOTUS_ADMIN_PASSWORD_DEFAULT=
+LOTUS_PARTNER_HOSTNAME=
+LOTUS_SITE_NAME=Default-first-site
+LOTUS_HOSTNAME=
+USAGE="configure-lightwave-server --password <password> [--domain <domain-name>] [--server <partner-host-name>] [--site <site-name>] [--hostname <hostname | IP Address>] [--config-file <configuration file>]"
+export SUPPORT_RHTTP_PROXY=0
+
+# Read passed parameters.
+if [ $# -gt 0 ]; then
+
+   MODE="open"
+
+   for arg in "$@"
+   do
+        case "$MODE" in
+            "open")
+                case "$arg" in
+                    "--domain")
+                      MODE="domain"
+                      ;;
+                    "--password")
+                      MODE="password"
+                      ;;
+                    "--server")
+                      LOTUS_DEPLOYMENT=partner
+                      MODE="server"
+                      ;;
+                    "--site")
+                      MODE="site"
+                      ;;
+                    "--hostname")
+                      MODE="hostname"
+                      ;;
+                    "--config-file")
+                      MODE="config-file"
+                      ;;
+                    *)
+                      echo "Invalid parameter : $arg"
+                      echo $USAGE
+                      exit 1
+                      ;;
+                esac
+                ;;
+             "domain")
+                LOTUS_DOMAIN_DEFAULT=$arg
+                MODE=open
+                ;;
+             "password")
+                LOTUS_ADMIN_PASSWORD_DEFAULT=$arg
+                MODE=open
+                ;;
+             "server")
+                LOTUS_PARTNER_HOSTNAME=$arg
+                MODE=open
+                ;;
+             "site")
+                LOTUS_SITE_NAME=$arg
+                MODE=open
+                ;;
+             "hostname")
+                LOTUS_HOSTNAME=$arg
+                MODE=open
+                ;;
+             "config-file")
+                LOTUS_CONFIG_FILE=$arg
+                MODE=open
+                ;;
+             *)
+                echo "Invalid mode : $MODE"
+                echo $USAGE
+                exit 1
+                ;;
+        esac
+   done
+else
+   echo $USAGE
+   exit 1
+fi
+if [ -f "$LOTUS_CONFIG_FILE" ]; then
+    LOTUS_DEPLOYMENT=$(grep "^deployment=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_DOMAIN_DEFAULT=$(grep "^domain=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_ADMIN_DEFAULT=$(grep "^admin=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_ADMIN_PASSWORD_DEFAULT=$(grep "^password=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_PARTNER_HOSTNAME=$(grep "^replication-partner-hostname=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_SITE_NAME=$(grep "^site-name=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_HOSTNAME=$(grep "^hostname=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_FIRST_INSTANCE=$(grep "^first-instance=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+fi
+
+if [ -z "$LOTUS_HOSTNAME" ]; then
+    LOTUS_HOSTNAME=`hostname -f`
+fi
+
+# Make sure a partner is passed.
+case "$LOTUS_DEPLOYMENT" in
+
+    "standalone")
+        echo "Deploying in standalone mode..."
+        lotus_first_instance=true;
+        ;;
+    "partner")
+        echo "Deploying in replication partner mode..."
+        lotus_first_instance=false;
+
+        if [ "x$LOTUS_PARTNER_HOSTNAME" == "x" ]; then
+           echo "Error : A partner hostname must be specified"
+           echo $USAGE
+           exit 1
+        fi
+
+        replication-partner-hostname=$LOTUS_PARTNER_HOSTNAME
+
+        ;;
+    *)
+        echo "Invalid deployment type : $LOTUS_DEPLOYMENT"
+        echo $USAGE
+        exit 1
+        ;;
+esac
+
+# Stop all services as a precaution.
+if [ -x /etc/init.d/vmcad ]; then
+     /etc/init.d/vmcad stop
+fi
+
+if [ -x /etc/init.d/vmdird ]; then
+     /etc/init.d/vmdird stop
+fi
+
+if [ -x /etc/init.d/vmware-stsd ]; then
+     /etc/init.d/vmware-stsd stop
+fi
+
+if [ -x /etc/init.d/vmware-sts-idmd ]; then
+     /etc/init.d/vmware-sts-idmd stop
+fi
+if [ -x /etc/init.d/vmafd ]; then
+     /etc/init.d/vmafd stop
+fi
+
+if [ -x /etc/init.d/vmware-license ]; then
+     /etc/init.d/vmware-license stop
+fi
+
+
+# Setup vmafd, vmdir and SSO STS server.
+JAVA_HOME=@JAVA_HOME@
+CLASSPATH=$CLASSPATH:/opt/vmware/jars/*
+JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
+
+case "$LOTUS_DEPLOYMENT" in
+    "standalone")
+        $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -cp $CLASSPATH \
+           com.vmware.pscsetup.PlatformServicesControllerDeploy \
+           --mode "standalone" --domain $LOTUS_DOMAIN_DEFAULT --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
+           --site $LOTUS_SITE_NAME \
+           --hostname $LOTUS_HOSTNAME
+           ;;
+    "partner")
+        $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -cp $CLASSPATH \
+           com.vmware.pscsetup.PlatformServicesControllerDeploy \
+           --mode "partner" --domain $LOTUS_DOMAIN_DEFAULT --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
+           --site $LOTUS_SITE_NAME \
+           --server $LOTUS_PARTNER_HOSTNAME \
+           --hostname $LOTUS_HOSTNAME
+           ;;
+esac
+
+if [ $? -ne 0 ]; then
+     echo  "PSC Installation failed."
+     exit 1
+fi
+
+
+echo "Setup complete."
+exit 0
+

@@ -131,11 +131,7 @@ VmDirGenerateObjectSid(
     BOOLEAN                     bInLock = FALSE;
     // Do not free ref
     PVDIR_DOMAIN_SID_GEN_STATE  pSidGenState = NULL;
-//#ifndef _WIN32
     DWORD                       dwObjectRid = 0;
-//#else
-//    QWORD dwObjectRid = 0;
-//#endif
     PSTR                        pszObjectSid = NULL;
     PSTR                        pszObjectDN = NULL;
     PSTR                        pszDomainDn = NULL;
@@ -185,8 +181,9 @@ VmDirGenerateObjectSid(
         BAIL_ON_VMDIR_ERROR(dwError);
 
         VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,
-                           "allocate objectsid: (%s)(%lu)(%lu)",
+                           "allocate objectsid: (%s)(%lu)(%lu)(%lu)",
                            VDIR_SAFE_STRING(pSidGenState->pszDomainSid),
+                           gVmdirServerGlobals.serverId,
                            dwObjectRid,
                            pSidGenState->dwDomainRidSeqence);
 
@@ -216,15 +213,10 @@ VmDirGenerateObjectSid(
 
         dwError = VmDirAllocateStringPrintf(
                         &pszObjectSid,
-                        "%s-%lu",
+                        "%s-%lu-%lu",
                         pSidGenState->pszDomainSid,
-//TODO: pgu
-// Clean this up. ObjectRid should be 64 bit.
-#ifndef _WIN32
+                        gVmdirServerGlobals.serverId,
                         dwObjectRid
-#else
-                        (long long)dwObjectRid
-#endif
                         );
         BAIL_ON_VMDIR_ERROR(dwError);
     }
@@ -388,8 +380,7 @@ VmDirInternalRemoveOrgConfig(
     {
         goto cleanup;
     }
-    dwError = LwNtStatusToWin32Error(
-                 LwRtlHashTableRemove(gSidGenState.pHashtable, &pFoundState->Node));
+    dwError = LwRtlHashTableRemove(gSidGenState.pHashtable, &pFoundState->Node);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VmDirFreeOrgState(pFoundState);
@@ -738,7 +729,7 @@ VmDirGenerateObjectRid(
 
     dwRid++;
     *pdwRidSequence = dwRid;
-    *pdwObjectRid = VMDIR_RID_SEQUENCE_NUMBER(dwRid, ucServerId);
+    *pdwObjectRid = dwRid;
 
 error:
     if (dwError)
@@ -776,13 +767,12 @@ _VmDirSynchronizeRidSequence(
           dwCnt--
         )
     {
-        DWORD   dwObjectRid = VMDIR_RID_SEQUENCE_NUMBER( dwCnt, gVmdirServerGlobals.serverId);
-
         dwError = VmDirAllocateStringPrintf(
                         &pszObjectSid,
-                        "%s-%lu",
+                        "%s-%lu-%lu",
                         pDomainSidState->pszDomainSid,
-                        dwObjectRid);
+                        gVmdirServerGlobals.serverId,
+                        dwCnt);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirSimpleEqualFilterInternalSearch(
@@ -804,6 +794,8 @@ _VmDirSynchronizeRidSequence(
 
     if (dwCnt != pDomainSidState->dwDomainRidSeqence)
     {
+        // We may also get here if no entries have been added with new SID format: -serverId-RidSequence,
+        // but it is fine - no collision will occur anyway.
         VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
                            "RID recovery: domain (%s) rid out of sync (%d)->(%d)",
                            VDIR_SAFE_STRING(pDomainSidState->pszDomainDn),

@@ -501,6 +501,7 @@ typedef struct _VDIR_BACKEND_GLOBALS
     // NOTE: order of fields MUST stay in sync with struct initializer...
     PCSTR                           pszBERootDN;
     PVDIR_BACKEND_INTERFACE         pBE;
+    USN                             usnFirstNext;
 
 } VDIR_BACKEND_GLOBALS, *PVDIR_BACKEND_GLOBALS;
 
@@ -508,6 +509,11 @@ typedef struct _VDIR_BACKEND_GLOBALS
 DWORD
 VmDirBackendConfig(
     VOID);
+
+VOID
+VmDirBackendGetFirstNextUSN(
+    USN *pUSN
+    );
 
 PVDIR_BACKEND_INTERFACE
 VmDirBackendSelect(

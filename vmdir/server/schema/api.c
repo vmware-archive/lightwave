@@ -225,12 +225,12 @@ VmDirSchemaCtxIsBootStrap(
 
 /*
  * Before modify schema cache, make sure new schema is valid.
- * 1. schema of pEntry must be live one
+ * 1. schema of pSchemaEntry must be live one
  * 2. create new schema instance via pEntry
  * 3. check active and new schema compatibility
  *    NOT compatible - reject this operation
- *    Compatible but NO semantic chnage - update schema entry
- *    Compatible and has semantic chnage - update schema entry and cache
+ *    Compatible but NO semantic change - update schema entry
+ *    Compatible and has semantic change - update schema entry and cache
  * 4. make new instance pending in gVdirSchemaGlobals
  */
 DWORD
@@ -255,6 +255,7 @@ VmDirSchemaCacheModifyPrepare(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
     {
         PVDIR_MODIFICATION  pLocalMods = NULL;
         PCSTR               immutableList[] = VDIR_IMMUTABLE_SCHEMA_ELEMENT_INITIALIZER;
@@ -304,25 +305,33 @@ VmDirSchemaCacheModifyPrepare(
 
     if ( !bCompatible )
     {
-        dwError = LDAP_UNWILLING_TO_PERFORM;
+        dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "Schema NOT compatible (%d)", dwError);
     }
 
-    if ( !bNeedCachePatch )
-    {   // no semantic change, just update schema entry
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Prepare schema entry update");
-    }
-    else
-    {   // need schema entry and cache update
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Prepare schema entry and instance update (%p)", pNewInstance);
-    }
-
-    VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
     if ( bNeedCachePatch )
     {
+        // need schema entry and cache update
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Prepare schema entry and instance update (%p)", pNewInstance);
+
+        VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
         gVdirSchemaGlobals.bHasPendingChange = TRUE;
+        VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
     }
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
+    else
+    {
+        // no semantic change,
+        // 1. do not modify schema entry if coming from INTERNAL (schema patch -u route).
+        //    to avoid unecessary metadata version bump.
+        // 2. allow modify schema entry if coming from REPL (copypartnerschema).
+        // 3. allow modify schema entry if coming from external LDAP (force sync metadata version).
+        if ( pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL )
+        {
+            dwError = VMDIR_ERROR_SCHEMA_UPDATE_PASSTHROUGH;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "Schema pass through (%d)", dwError);
+        }
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Prepare schema entry update");
+    }
 
 
 cleanup:
@@ -941,6 +950,29 @@ cleanup:
 error:
 
     goto cleanup;
+}
+
+BOOLEAN
+VmDirIsLiveSchemaCtx(
+    PVDIR_SCHEMA_CTX        pCtx
+    )
+{
+    BOOLEAN                 bInLock = FALSE;
+    BOOLEAN                 bRtn = FALSE;
+    PVDIR_SCHEMA_INSTANCE   pLiveSchema = NULL;
+
+    if ( pCtx )
+    {
+        VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
+
+        pLiveSchema = gVdirSchemaGlobals.pSchema;
+
+        VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
+
+        bRtn = (pCtx->pSchema == pLiveSchema) ? TRUE:FALSE;
+    }
+
+    return bRtn;
 }
 
 /*

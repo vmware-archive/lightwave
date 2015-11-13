@@ -175,13 +175,24 @@ VmDirParseArgs(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+    else if ( VmDirStringCompareA(VDCREPADMIN_QUERY_IS_FIRST_CYCLE_DONE, pszFeatureSet, TRUE) == 0 )
+    {
+        if (
+               pszSrcHostName == NULL
+            || pszSrcPort     == NULL
+            || pszSrcUserName == NULL
+           )
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
     else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_PARTNERS, pszFeatureSet, TRUE) == 0 )
     {
         if (
                pszSrcHostName == NULL
             || pszSrcPort     == NULL
             || pszSrcUserName == NULL
-            || pszSrcPassword == NULL
            )
         {
             dwError = ERROR_INVALID_PARAMETER;
@@ -194,7 +205,6 @@ VmDirParseArgs(
                pszSrcHostName == NULL
             || pszSrcPort     == NULL
             || pszSrcUserName == NULL
-            || pszSrcPassword == NULL
            )
         {
             dwError = ERROR_INVALID_PARAMETER;
@@ -207,7 +217,6 @@ VmDirParseArgs(
                pszSrcHostName == NULL
             || pszSrcPort     == NULL
             || pszSrcUserName == NULL
-            || pszSrcPassword == NULL
             )
         {
             dwError = ERROR_INVALID_PARAMETER;
@@ -220,7 +229,6 @@ VmDirParseArgs(
                pszSrcHostName == NULL
             || pszSrcPort     == NULL
             || pszSrcUserName == NULL
-            || pszSrcPassword == NULL
             || pszTgtHostName == NULL
             || pszTgtPort     == NULL
            )
@@ -235,7 +243,6 @@ VmDirParseArgs(
                pszSrcHostName == NULL
             || pszSrcPort     == NULL
             || pszSrcUserName == NULL
-            || pszSrcPassword == NULL
             || pszTgtHostName == NULL
             || pszTgtPort     == NULL
            )
@@ -275,24 +282,27 @@ ShowUsage(
     printf(
         "Usage: vdcrepadmin -f showpartners\n"
         "                   -h <source_hostname> [-p <source_portnumber>]\n"
-        "                   -u <source_username> -w <source_password>\n"
+        "                   -u <source_username> [-w <source_password>]\n"
         "       vdcrepadmin -f showpartnerstatus\n"
         "                   -h <source_hostname> [-p <source_portnumber>]\n"
-        "                   -u <source_username> -w <source_password>\n"
+        "                   -u <source_username> [-w <source_password>]\n"
         "       vdcrepadmin -f showservers\n"
         "                   -h <source_hostname> [-p <source_portnumber>]\n"
-        "                   -u <source_username> -w <source_password>\n"
+        "                   -u <source_username> [-w <source_password>]\n"
         "       vdcrepadmin -f createagreement [-2]\n"
         "                   -h <source_hostname> [-p <source_portnumber>]\n"
-        "                   -u <source_username> -w <source_password>\n"
+        "                   -u <source_username> [-w <source_password>]\n"
         "                   -H <target_hostname> [-P <target_portnumber>]\n"
         "       Note: if create only one-way replication agreement (source->target),\n"
         "             the entry is created on the target.\n"
         "       vdcrepadmin -f removeagreement [-2]\n"
         "                   -h <source_hostname> [-p <source_portnumber>]\n"
-        "                   -u <source_username> -w <source_password>\n"
+        "                   -u <source_username> [-w <source_password>]\n"
         "                   -H <target_hostname> [-P <target_portnumber>]\n"
         "       Note: if remove only one-way replication agreement (source->target),\n"
         "             the entry is removed from the target.\n"
+        "       vdcrepadmin -f isfirstcycledone\n"
+        "                   -h <source_hostname> [-p <source_portnumber>]\n"
+        "                   -u <source_username> [-w <source_password>]\n"
       );
 }

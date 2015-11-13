@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration monitorInterval="30" packages="com.vmware.identity.diagnostics">
+
+<Appenders>
+    <!-- CONSOLE appender might be used for development purposes only! -->
+     <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n"/>
+     </Console>
+
+    <!-- LOGFILE is the default appender which includes all the logs -->
+
+    <RollingFile name="LOGFILE" fileName="${sys:catalina.base}/logs/vmware-identity-sts.log" filePattern="${sys:catalina.base}/logs/vmware-identity-sts-%i.log.gz" append="true">
+        <PatternLayout pattern="[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n"/>
+        <Policies>
+            <SizeBasedTriggeringPolicy size="100 MB" />
+	    </Policies>
+	    <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+
+	<RollingFile name="PERFLOG" fileName="${sys:catalina.base}/logs/vmware-identity-sts-perf.log" filePattern="${sys:catalina.base}/logs/vmware-identity-sts-perf-%i.log.gz" append="true">
+        <PatternLayout pattern="[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %x] %m%n"/>
+        <Policies>
+            <SizeBasedTriggeringPolicy size="50 MB" />
+	    </Policies>
+	    <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+
+    <!-- VMENVENTLOG is the vmevent log appender -->
+    <VMEventAppender name="VMEVENTLOG" category="VMEVENT_CATEGORY_STS">
+    </VMEventAppender>
+</Appenders>
+
+<Loggers>
+    <Logger additivity="false" name="com.vmware.identity.diagnostics" level="trace">
+        <AppenderRef ref="LOGFILE"/>
+    </Logger>
+    <Logger additivity="false" name="com.vmware.identity.idm" level="trace">
+        <AppenderRef ref="LOGFILE"/>
+    </Logger>
+    <Logger name="com.vmware.identity.perf" level="trace">
+        <AppenderRef ref="PERFLOG"/>
+    </Logger>
+    <Logger additivity="false" name="com.vmware.identity.performanceSupport.PerfDataSink" level="info">
+        <AppenderRef ref="PERFLOG"/>
+    </Logger>
+    <Logger additivity="false" name="com.vmware.identity.performanceSupport.PerformanceDecorator" level="info">
+        <AppenderRef ref="PERFLOG"/>
+    </Logger>
+    <Logger additivity="false" name="com.vmware.identity.saml" level="trace">
+        <AppenderRef ref="LOGFILE"/>
+    </Logger>
+    <Logger additivity="false" name="com.vmware.identity.sts" level="trace">
+        <AppenderRef ref="LOGFILE"/>
+    </Logger>
+    <Logger additivity="false" name="com.vmware.identity.sts.authz" level="trace">
+        <AppenderRef ref="LOGFILE"/>
+    </Logger>
+    <Logger additivity="true" name="com.vmware.identity.sts.ws.handlers.SoapMsgMetricsCollector" level="info">
+        <AppenderRef ref="PERFLOG"/>
+    </Logger>
+    <Logger additivity="false" name="com.vmware.identity.token" level="trace">
+        <AppenderRef ref="LOGFILE"/>
+    </Logger>
+    <Logger name="org.apache" level="warn">
+    </Logger>
+    <logger additivity="FALSE" name="vmevent.com.vmware.identity" level="info">
+        <AppenderRef ref="VMEVENTLOG"/>
+    </logger>
+    <Root level="error">
+        <AppenderRef ref="LOGFILE"/>
+    </Root>
+    </Loggers>
+</Configuration>

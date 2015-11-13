@@ -192,7 +192,7 @@ VmDirReadDataImpl(
 	)
 {
 	DWORD dwError = 0;
-	DWORD dwBytesRead = 0;
+	ssize_t dwBytesRead = 0;
 	PBYTE pResponse = NULL;
         PBYTE pResponseCursor = NULL;
         DWORD dwBytesSent = 0;
@@ -228,7 +228,7 @@ VmDirReadDataImpl(
                         dwBytesRead = read(pConnection->fd,pResponseCursor,dwBytesToRead);
                 }while (dwBytesRead == -1 && errno == EINTR);
 
-                if (dwBytesRead < 0)
+                if (dwBytesRead == -1)
                 {
                         dwError = LwErrnoToWin32Error(errno);
                         BAIL_ON_VMDIR_ERROR (dwError);
@@ -268,7 +268,7 @@ VmDirWriteDataImpl(
 )
 {
 	DWORD dwError = 0;
-	DWORD dwBytesWritten = 0;
+	ssize_t dwBytesWritten = 0;
         DWORD dwTotalBytesWritten = 0;
         PBYTE pRequestCursor = pRequest;
         DWORD dwActualRequestSize = dwRequestSize;
@@ -296,7 +296,7 @@ VmDirWriteDataImpl(
                     dwBytesWritten = write(pConnection->fd,pRequestCursor,dwBytesToWrite);
                 }while (dwBytesWritten == -1 && errno == EINTR);
 
-                if (dwBytesWritten < 0)
+                if (dwBytesWritten == -1)
                 {
                         dwError = LwErrnoToWin32Error(errno);
                         BAIL_ON_VMDIR_ERROR(dwError);

@@ -35,7 +35,9 @@ VmDirParseArgs(
     PSTR*   ppszAdminUPN,
     PSTR*   ppszPassword,
     PSTR*   ppszPasswordFile,
-    PBOOLEAN pbAclOnly
+    PBOOLEAN pbAclOnly,
+    PSTR*   ppszPnidFixDcAccountName,
+    PSTR*   ppszPnidFixNewSamAccount
     )
 {
     DWORD   dwError = ERROR_SUCCESS;
@@ -49,10 +51,14 @@ VmDirParseArgs(
     PSTR    pszAdminUPN = NULL;
     PSTR    pszPassword = NULL;
     PSTR    pszPasswordFile = NULL;
+    PSTR    pszPnidFixDcAccountName = NULL;
+    PSTR    pszPnidFixNewSamAccount = NULL;
     PSTR    pszServerNameAlloc = NULL;
     PSTR    pszAdminUPNAlloc = NULL;
     PSTR    pszPasswordAlloc = NULL;
     PSTR    pszPasswordFileAlloc = NULL;
+    PSTR    pszPnidFixDcAccountNameAlloc = NULL;
+    PSTR    pszPnidFixNewSamAccountAlloc = NULL;
     BOOLEAN bAclOnly = FALSE;
 
     if (ppszServerName == NULL ||
@@ -88,6 +94,12 @@ VmDirParseArgs(
             case VMDIR_OPTION_ACLONLY:
                 bAclOnly = TRUE;
                 break;
+            case VMDIR_OPTION_PNIDFIX_DCACCOUNT:
+                pszPnidFixDcAccountName = optarg;
+                break;
+            case VMDIR_OPTION_PNIDFIX_SAMACCOUNT:
+                pszPnidFixNewSamAccount = optarg;
+                break;
             default:
                 dwError = ERROR_INVALID_PARAMETER;
                 BAIL_ON_VMDIR_ERROR(dwError);
@@ -119,6 +131,14 @@ VmDirParseArgs(
             {
                 bAclOnly = TRUE;
             }
+            else if (VmDirStringCompareA(VMDIR_OPTION_PNIDFIX_DCACCOUNT, argv[i], TRUE) == 0)
+            {
+                VmDirGetCmdLineOption(argc, argv, &i, &pszPnidFixDcAccountName);
+            }
+            else if (VmDirStringCompareA(VMDIR_OPTION_PNIDFIX_SAMACCOUNT, argv[i], TRUE) == 0)
+            {
+                VmDirGetCmdLineOption(argc, argv, &i, &pszPnidFixNewSamAccount);
+            }
         }
         i++;
     }
@@ -140,11 +160,25 @@ VmDirParseArgs(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    if (pszPnidFixDcAccountName)
+    {
+        dwError = VmDirAllocateStringA(pszPnidFixDcAccountName, &pszPnidFixDcAccountNameAlloc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pszPnidFixNewSamAccount)
+    {
+        dwError = VmDirAllocateStringA(pszPnidFixNewSamAccount, &pszPnidFixNewSamAccountAlloc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     *ppszServerName = pszServerNameAlloc;
     *ppszAdminUPN = pszAdminUPNAlloc;
     *ppszPassword = pszPasswordAlloc;
     *ppszPasswordFile = pszPasswordFileAlloc;
     *pbAclOnly = bAclOnly;
+    *ppszPnidFixDcAccountName = pszPnidFixDcAccountNameAlloc;
+    *ppszPnidFixNewSamAccount = pszPnidFixNewSamAccountAlloc;
 
 cleanup:
     return dwError;
@@ -154,6 +188,8 @@ error:
     VMDIR_SAFE_FREE_STRINGA(pszAdminUPNAlloc);
     VMDIR_SAFE_FREE_STRINGA(pszPasswordAlloc);
     VMDIR_SAFE_FREE_STRINGA(pszPasswordFileAlloc);
+    VMDIR_SAFE_FREE_STRINGA(pszPnidFixDcAccountNameAlloc);
+    VMDIR_SAFE_FREE_STRINGA(pszPnidFixNewSamAccountAlloc);
     goto cleanup;
 }
 

@@ -1,5 +1,5 @@
 vmwincludedir=$(includedir)
-vmwinclude_HEADERS=vecsclient.h \
-                   vmafd.h \
+vmwinclude_HEADERS=vmafd.h \
                    vmafdtypes.h \
-                   vmafdclient.h
+                   vmafdclient.h \
+                   vecsclient.h

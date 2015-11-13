@@ -97,6 +97,7 @@ VmDirPerformModify(
          pResult->errCode = LDAP_PROTOCOL_ERROR;
          retVal = LDAP_NOTICE_OF_DISCONNECT;
          VmDirModificationFree( pMod );
+         pMod = NULL;
          BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg), "Decoding error while parsing an attribute");
       }
 
@@ -106,6 +107,13 @@ VmDirPerformModify(
                    pMod->attr.type.lberbv.bv_val );
          pResult->errCode = retVal = LDAP_PROTOCOL_ERROR;
          BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg), "An Add modification has no values");
+      }
+      else if ( size > UINT16_MAX )
+      {   // currently, we only support 65535 attribute values due to encode/decode format constraint.
+          pResult->errCode = retVal = LDAP_PROTOCOL_ERROR;
+          BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                          "Too many %s attribute values, max %u allowed.",
+                                          VDIR_SAFE_STRING(pMod->attr.type.lberbv_val), UINT16_MAX);
       }
 
       VMDIR_LOG_VERBOSE( LDAP_DEBUG_ARGS, "MOD TYPE: (%d)(%s)", pMod->operation, VDIR_SAFE_STRING(pMod->attr.type.lberbv.bv_val));

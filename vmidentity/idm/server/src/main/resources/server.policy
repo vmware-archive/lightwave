@@ -1,0 +1,8 @@
+grant codeBase "file:///home/snambakam/workspaces/lotus/main/vmidentity/idm/src/main/java/out/production/Main/"
+{
+    permission java.security.AllPermission;
+};
+grant 
+{
+    permission java.security.AllPermission;
+};

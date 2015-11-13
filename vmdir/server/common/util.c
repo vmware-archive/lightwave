@@ -193,7 +193,7 @@ VmDirQsortPEIDCmp(
     }
 }
 
-PCVOID
+void const *
 UtdVectorEntryGetKey(
     PLW_HASHTABLE_NODE  pNode,
     PVOID               pUnused
@@ -1052,6 +1052,57 @@ cleanup:
     return dwError;
 
 error:
+
+    goto cleanup;
+}
+
+DWORD
+VmDirHasSingleAttrValue(
+    PVDIR_ATTRIBUTE pAttr
+    )
+{
+    DWORD   dwError = 0;
+
+    if ( pAttr->numVals != 1 || pAttr->vals == NULL || pAttr->vals[0].lberbv_val == NULL )
+    {
+        dwError = VMDIR_ERROR_BAD_ATTRIBUTE_DATA;
+    }
+
+    return dwError;
+}
+
+DWORD
+VmDirValidatePrincipalName(
+    PVDIR_ATTRIBUTE pAttr,
+    PSTR*           ppErrMsg
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszLocalErrMsg = NULL;
+
+    dwError = VmDirHasSingleAttrValue( pAttr );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg, "Invalid %s value", pAttr->type.lberbv_val);
+
+    if ( VmDirStringChrA( pAttr->vals[0].lberbv_val,'@') == NULL )
+    {
+        dwError = VMDIR_ERROR_BAD_ATTRIBUTE_DATA;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
+                                      "Invalid %s value (%s), char '@' not found.",
+                                      pAttr->type.lberbv_val,
+                                      pAttr->vals[0].lberbv_val);
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+
+    return dwError;
+
+error:
+    if (ppErrMsg)
+    {
+        *ppErrMsg = pszLocalErrMsg;
+        pszLocalErrMsg = NULL;
+    }
 
     goto cleanup;
 }

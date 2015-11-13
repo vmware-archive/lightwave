@@ -32,8 +32,9 @@ _VdcSetReadOnlyState(
     VOID
     );
 
+static
 int
-main(
+VmDirMain(
     int argc,
     char* argv[]
     )
@@ -43,7 +44,7 @@ main(
     PSTR   pszServerName = NULL;
     PSTR   pszUserName = NULL;
     PSTR   pszPassword = NULL;
-    PSTR   pszPasswordBuf = NULL;
+    CHAR   pszPasswordBuf[VMDIR_MAX_PWD_LEN + 1] = {0};
     PSTR   pszErrorMessage = NULL;
 
 #ifndef _WIN32
@@ -72,17 +73,11 @@ main(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateMemory(VMDIR_MAX_PWD_LEN+1, (PVOID *)&pszPasswordBuf);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if(pszPassword == NULL)
+    if (pszPassword == NULL)
     {
-            // read passowrd from stdin
-            VmDirReadString("password: ", pszPasswordBuf, VMDIR_MAX_PWD_LEN, TRUE);
-    } else
-    {
-            dwError = VmDirStringCpyA(pszPasswordBuf, VMDIR_MAX_PWD_LEN, pszPassword);
-            BAIL_ON_VMDIR_ERROR(dwError);
+        // read passowrd from stdin
+        VmDirReadString("password: ", pszPasswordBuf, VMDIR_MAX_PWD_LEN, TRUE);
+        pszPassword = pszPasswordBuf;
     }
 
     if (pszServerName == NULL)
@@ -96,13 +91,14 @@ main(
          printf("vdcleavefd offline for server %s\n", pszServerName);
     }
 
-    dwError = VmDirLeaveFederation(pszServerName, pszUserName, pszPasswordBuf);
+    dwError = VmDirLeaveFederation(pszServerName, pszUserName, pszPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     printf(" Leave federation cleanup done\n");
 
 cleanup:
-    VMDIR_SECURE_FREE_STRINGA(pszPasswordBuf);
+
+    memset(pszPasswordBuf, 0, sizeof(pszPasswordBuf));
     VMDIR_SAFE_FREE_MEMORY(pszErrorMessage);
 
     VmDirLogTerminate();
@@ -115,6 +111,48 @@ error:
 
     goto cleanup;
 }
+
+#ifdef _WIN32
+
+int wmain(int argc, wchar_t* argv[])
+{
+    DWORD dwError = 0;
+    PSTR* ppszArgs = NULL;
+    int   iArg = 0;
+
+    dwError = VmDirAllocateMemory(sizeof(PSTR) * argc, (PVOID*)&ppszArgs);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (; iArg < argc; iArg++)
+    {
+        dwError = VmDirAllocateStringAFromW(argv[iArg], &ppszArgs[iArg]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirMain(argc, ppszArgs);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+error:
+
+    if (ppszArgs)
+    {
+        for (iArg = 0; iArg < argc; iArg++)
+        {
+            VMDIR_SAFE_FREE_MEMORY(ppszArgs[iArg]);
+        }
+        VmDirFreeMemory(ppszArgs);
+    }
+
+    return dwError;
+}
+#else
+
+int main(int argc, char* argv[])
+{
+    return VmDirMain(argc, argv);
+}
+
+#endif
 
 DWORD
 _VdcSetReadOnlyState(

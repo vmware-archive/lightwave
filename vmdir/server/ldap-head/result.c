@@ -143,7 +143,7 @@ VmDirSendLdapResult(
    ber_int_t        msgId = 0;
    ber_tag_t        resCode = 0;
    size_t           iNumSearchEntrySent = 0;
-   PCSTR            pszSocketInfo = "";
+   PCSTR            pszSocketInfo = NULL;
 
    (void) memset( (char *)&berbuf, '\0', sizeof( BerElementBuffer ));
 
@@ -157,9 +157,9 @@ VmDirSendLdapResult(
 
    ber_init2( ber, NULL, LBER_USE_DER );
 
-   if (op->conn && op->conn->pszSocketInfo)
+   if (op->conn)
    {
-      pszSocketInfo = op->conn->pszSocketInfo;
+      pszSocketInfo = op->conn->szClientIP;
    }
 
    if (op->ldapResult.errCode &&
@@ -167,6 +167,17 @@ VmDirSendLdapResult(
    {
        VMDIR_LOG_ERROR(
           VMDIR_LOG_MASK_ALL,
+          "VmDirSendLdapResult: Request (%d), Error (%d), Message (%s), (%u) socket (%s)",
+          op->reqCode,
+          op->ldapResult.errCode,
+          VDIR_SAFE_STRING(op->ldapResult.pszErrMsg),
+          iNumSearchEntrySent,
+          VDIR_SAFE_STRING(pszSocketInfo));
+   }
+   else if ( op->reqCode == LDAP_REQ_SEARCH )
+   {
+       VMDIR_LOG_INFO(
+          LDAP_DEBUG_ARGS,
           "VmDirSendLdapResult: Request (%d), Error (%d), Message (%s), (%u) socket (%s)",
           op->reqCode,
           op->ldapResult.errCode,
@@ -292,6 +303,7 @@ VmDirSendSearchEntry(
         {
             PVDIR_ATTRIBUTE                 pAttrUsnCreated = NULL;
             USN                             usnCreated = 0;
+            USN                             limitUsn = 0;
             VMDIR_REPLICATION_AGREEMENT *   replAgr = NULL;
 
             pAttr = VmDirEntryFindAttribute(ATTR_USN_CHANGED, pSrEntry);
@@ -299,13 +311,12 @@ VmDirSendSearchEntry(
             usnChanged = VmDirStringToLA( pAttr->vals[0].lberbv.bv_val, NULL, 10);
 
             // Check if usnChanged is beyond successful replication update state
-
-            if (gVmdirGlobals.limitLocalUsnToBeReplicated != 0 &&
-                usnChanged >= gVmdirGlobals.limitLocalUsnToBeReplicated)
+            limitUsn = VmDirdGetLimitLocalUsnToBeSupplied();
+            if (limitUsn != 0 && usnChanged >= limitUsn)
             {
-                VMDIR_LOG_INFO( LDAP_DEBUG_REPL, "SendSearchEntry: bug# 863244 RACE CONDITION encountered., "
-                          "usnChanged = %ld, limitLocalUsnToBeReplicated = %ld, skipping entry: %s", usnChanged,
-                          gVmdirGlobals.limitLocalUsnToBeReplicated, pSrEntry->dn.lberbv.bv_val );
+                VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "SendSearchEntry: bug# 863244 RACE CONDITION encountered., "
+                          "usnChanged = %ld, limitLocalUsnToBeSupplied = %ld, skipping entry: %s", usnChanged,
+                          limitUsn, pSrEntry->dn.lberbv.bv_val );
                 goto cleanup; // Don't send this entry
             }
 
@@ -480,7 +491,7 @@ VmDirSendSearchEntry(
 
         if (ber_printf( ber, "N}" ) == -1)
         {
-            VmDirLog( LDAP_DEBUG_ANY,
+            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                       "ber_printf (to terminate the entry and the complete search result entry message ...) failed" );;
             retVal = LDAP_OTHER;
             BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
@@ -556,7 +567,7 @@ IsAttrInReplScope(
     )
 {
     int                     retVal = LDAP_SUCCESS;
-    PLW_HASHTABLE_NODE   pNode = NULL;
+    PLW_HASHTABLE_NODE      pNode = NULL;
     char                    origInvocationId[VMDIR_GUID_STR_LEN];
     USN                     origUsn = VmDirStringToLA( VmDirStringRChrA( attrMetaData, ':' ) + 1, NULL, 10 );
     int                     rc = 0;
@@ -594,7 +605,8 @@ IsAttrInReplScope(
     }
     else
     {
-        rc = LwNtStatusToWin32Error(LwRtlHashTableFindKey( op->syncDoneCtrl->value.syncDoneCtrlVal.htUtdVector, &pNode, origInvocationId ));
+        rc = LwRtlHashTableFindKey( op->syncDoneCtrl->value.syncDoneCtrlVal.htUtdVector, &pNode, origInvocationId );
+        rc = LwNtStatusToWin32Error(rc);
         if (rc != 0 && rc != ERROR_NOT_FOUND)
         {
             VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "IsAttrInReplScope: LwRtlHashTableFindKey failed for origInvocationId: %s",
@@ -1057,7 +1069,7 @@ ber_tag_t
 GetResultTag(
    ber_tag_t tag )
 {
-   VmDirLog( LDAP_DEBUG_TRACE, "GetResultTag: Begin" );
+   VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "GetResultTag: Begin" );
 
    switch( tag )
    {
@@ -1092,7 +1104,7 @@ GetResultTag(
          break;
    }
 
-   VmDirLog( LDAP_DEBUG_TRACE, "GetResultTag: End" );
+   VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "GetResultTag: End" );
    return tag;
 }
 

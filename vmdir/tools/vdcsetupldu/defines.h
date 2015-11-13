@@ -35,5 +35,3 @@
 #define VMDIR_OPTION_PWD_FILE           "-x"
 
 #endif
-#define VMDIR_MAX_PWD_LEN     128
-

@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectTypeGuids>{A3F8F2AB-B479-4A4A-A458-A89E7DC349F1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>{AADFDC1F-81EA-4F66-B498-FD0E73CCD17F}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>LightwaveCertStore</RootNamespace>
+    <MonoMacResourcePrefix>Resources</MonoMacResourcePrefix>
+    <AssemblyName>Lightwave Certificate Store</AssemblyName>
+    <UseXamMacFullFramework>true</UseXamMacFullFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\x64\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <UseRefCounting>false</UseRefCounting>
+    <UseSGen>false</UseSGen>
+    <IncludeMonoRuntime>false</IncludeMonoRuntime>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <CreatePackage>false</CreatePackage>
+    <XamMacArch>x86_64</XamMacArch>
+    <CodeSigningKey>Mac Developer</CodeSigningKey>
+    <PackageSigningKey>Developer ID Installer</PackageSigningKey>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\x64\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <UseRefCounting>false</UseRefCounting>
+    <UseSGen>false</UseSGen>
+    <IncludeMonoRuntime>true</IncludeMonoRuntime>
+    <CreatePackage>false</CreatePackage>
+    <CodeSigningKey>Developer ID Application</CodeSigningKey>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <XamMacArch>x86_64</XamMacArch>
+    <PackageSigningKey>Developer ID Installer</PackageSigningKey>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AppStore|AnyCPU' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\x64\AppStore</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <UseRefCounting>false</UseRefCounting>
+    <UseSGen>false</UseSGen>
+    <IncludeMonoRuntime>false</IncludeMonoRuntime>
+    <CreatePackage>false</CreatePackage>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <EnablePackageSigning>false</EnablePackageSigning>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="Xamarin.Mac" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+    <Folder Include="UI\" />
+    <Folder Include="Nodes\" />
+    <Folder Include="DataSources\" />
+    <Folder Include="ListViews\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Main.cs" />
+    <Compile Include="UI\MainWindow.cs" />
+    <Compile Include="UI\MainWindow.designer.cs">
+      <DependentUpon>MainWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\MainWindowController.cs" />
+    <Compile Include="UI\AppDelegate.cs" />
+    <Compile Include="UI\AppDelegate.designer.cs">
+      <DependentUpon>AppDelegate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\AddCertificateWindow.cs" />
+    <Compile Include="UI\AddCertificateWindowController.cs" />
+    <Compile Include="UI\AddCertificateWindow.designer.cs">
+      <DependentUpon>AddCertificateWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\CreateCertificateStoreWindow.cs" />
+    <Compile Include="UI\CreateCertificateStoreWindowController.cs" />
+    <Compile Include="UI\CreateCertificateStoreWindow.designer.cs">
+      <DependentUpon>CreateCertificateStoreWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\AddSecretKeyWindow.cs" />
+    <Compile Include="UI\AddSecretKeyWindow.designer.cs">
+      <DependentUpon>AddSecretKeyWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\AddPrivateKeyWindow.cs" />
+    <Compile Include="UI\AddPrivateKeyWindowController.cs" />
+    <Compile Include="UI\AddPrivateKeyWindow.designer.cs">
+      <DependentUpon>AddPrivateKeyWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="VMCertStoreSnapInEnvironment.cs" />
+    <Compile Include="Nodes\ChildScopeNode.cs" />
+    <Compile Include="Nodes\ScopeNode.cs" />
+    <Compile Include="Nodes\VMCertStoreServerNode.cs" />
+    <Compile Include="Nodes\VecsStoresNode.cs" />
+    <Compile Include="Nodes\VecsStoreNode.cs" />
+    <Compile Include="Nodes\VecsPrivateKeysNode.cs" />
+    <Compile Include="Nodes\VecsSecretKeysNode.cs" />
+    <Compile Include="Nodes\VecsTrustedCertsNode.cs" />
+    <Compile Include="Nodes\VecsStoreEntriesNode.cs" />
+    <Compile Include="UI\OutlineView.cs" />
+    <Compile Include="DataSources\OutlineViewDataSource.cs" />
+    <Compile Include="ListViews\NodesListView.cs" />
+    <Compile Include="UI\AddSecretKeyWindowController.cs" />
+    <Compile Include="UI\VMCertStoreTableView.cs" />
+    <Compile Include="ListViews\CertificateDetailsListView.cs" />
+    <Compile Include="ListViews\SecretKeysListView.cs" />
+    <Compile Include="UI\WelcomeScreen.cs" />
+    <Compile Include="UI\WelcomeScreen.designer.cs" />
+    <Compile Include="UI\WelcomeScreenController.cs" />
+    <Compile Include="UI\WelcomeScreenController.designer.cs" />
+    <Compile Include="UI\ServerInfoPopover.cs" />
+    <Compile Include="UI\ServerInfoPopover.designer.cs" />
+    <Compile Include="UI\ServerInfoPopOverController.cs" />
+    <Compile Include="UI\ServerInfoPopOverController.designer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterfaceDefinition Include="UI\MainWindow.xib" />
+    <InterfaceDefinition Include="UI\MainMenu.xib" />
+    <InterfaceDefinition Include="UI\AddCertificateWindow.xib" />
+    <InterfaceDefinition Include="UI\CreateCertificateStoreWindow.xib" />
+    <InterfaceDefinition Include="UI\AddSecretKeyWindow.xib" />
+    <InterfaceDefinition Include="UI\AddPrivateKeyWindow.xib" />
+    <InterfaceDefinition Include="UI\WelcomeScreen.xib" />
+    <InterfaceDefinition Include="UI\ServerInfoPopOver.xib" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Info.plist" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
+  <ItemGroup>
+    <BundleResource Include="Resources\vmca.icns" />
+    <BundleResource Include="Resources\BulletBlackIcon.png" />
+    <BundleResource Include="Resources\VMwareicon.png" />
+    <BundleResource Include="Resources\lightwave.png" />
+    <BundleResource Include="Resources\SecretKeys16.png" />
+    <BundleResource Include="Resources\vecsStore_16x16.png" />
+    <BundleResource Include="Resources\Privateentity_16x16.png" />
+    <BundleResource Include="Resources\TrustedCerts.png" />
+    <BundleResource Include="Resources\disconnect_64x.png" />
+    <BundleResource Include="Resources\certificate-store.png" />
+    <BundleResource Include="Resources\object.png" />
+    <BundleResource Include="Resources\info32x.png" />
+    <BundleResource Include="Resources\connect_32x32.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\VmIdentity.UI.Common\VmIdentity.UI.Common.csproj">
+      <Project>{35037B87-3B35-40FA-A9D3-7974DCDDABB5}</Project>
+      <Name>VmIdentity.UI.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMCertStore.Common\VMCertStore.Common.csproj">
+      <Project>{106C16D6-B2BF-4373-B160-B8B983D56C60}</Project>
+      <Name>VMCertStore.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMCertStore.Client\VMCertStore.Client.csproj">
+      <Project>{24B08641-C034-4A2C-8F18-705F001CD43F}</Project>
+      <Name>VMCertStore.Client</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
+      <Project>{CD959E2E-5B9C-4329-B085-352844CFDCDD}</Project>
+      <Name>VMIdentity.CommonUtils</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

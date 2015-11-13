@@ -23,12 +23,14 @@ libvmdirclient_la_SOURCES = \
     rpc.c \
     setupldu.c \
     shell.c \
+    superlogutil.c \
     users.c \
     util.c \
     vmdir_cstub.c \
     vmdirftp_cstub.c \
     vmdirlocalclient.c \
-    srp_verifier_cstub.c
+    srp_verifier_cstub.c \
+    vmdirsuperlog_cstub.c
 
 libvmdirclient_la_LIBADD = \
     @top_builddir@/common/libcommon.la \
@@ -61,9 +63,12 @@ CLEANFILES = \
     vmdirftp_sstub.c \
     srp_verifier_h.h \
     srp_verifier_cstub.c \
-    srp_verifier_sstub.c
+    srp_verifier_sstub.c \
+    vmdirsuperlog_h.h \
+    vmdirsuperlog_cstub.c \
+    vmdirsuperlog_sstub.c
 
-BUILT_SOURCES = vmdir_h.h vmdirftp_h.h srp_verifier_h.h
+BUILT_SOURCES = vmdir_h.h vmdirftp_h.h srp_verifier_h.h vmdirsuperlog_h.h
 
 vmdir_h.h vmdir_cstub.c: $(idl_srcdir)/vmdir.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdir_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<
@@ -73,3 +78,6 @@ vmdirftp_h.h vmdirftp_cstub.c: $(idl_srcdir)/vmdirftp.idl
 
 srp_verifier_h.h srp_verifier_cstub.c: $(idl_srcdir)/srp_verifier.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header srp_verifier_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<
+
+vmdirsuperlog_h.h vmdirsuperlog_cstub.c: $(idl_srcdir)/vmdirsuperlog.idl
+	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirsuperlog_h.h -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/include/public $<

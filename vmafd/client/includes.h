@@ -14,6 +14,7 @@
 #include <vmafdcommon.h>
 #include <vmafdclient.h>
 #include <vecsclient.h>
+#include <cdcclient.h>
 #include <vecslocalclient.h>
 #include <vecs_error.h>
 
@@ -45,6 +46,7 @@
 #include <vmafdcommon.h>
 #include <vmafdclient.h>
 #include <vecsclient.h>
+#include <cdcclient.h>
 #include <vecslocalclient.h>
 #include <vecs_error.h>
 

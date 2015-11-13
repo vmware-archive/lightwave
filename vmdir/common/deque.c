@@ -46,6 +46,17 @@ dequeFree(
     VmDirFreeMemory(pDeque);
 }
 
+PDEQUE_NODE
+dequeHeadNode(
+    PDEQUE pDeque
+    )
+{
+    if (pDeque)
+        return pDeque->pHead;
+    else
+        return NULL;
+}
+
 PVOID
 dequeHead(
     PDEQUE pDeque

@@ -2004,7 +2004,14 @@ DirCliUserGetCurrentPwdExpTime(
     iExpireInSeconds = iExpireInDay * SECS_IN_DAY;
     time(&tNow);
 
-    if ((tNow - iPwdLastSet) < iExpireInSeconds)
+    if (iExpireInDay == 0)
+    {
+        dwError = VmAfdAllocateStringPrintf(
+                    &pszParsedPwdExpTime,
+                    "never");
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else if ((tNow - iPwdLastSet) < iExpireInSeconds)
     {
         iExpireTimeLeft = iPwdLastSet + iExpireInSeconds - tNow;
 
@@ -2051,7 +2058,21 @@ DirCliUserGetCurrentPwdExpTime(
     }
     else
     {
-        dwError = ERROR_NOT_SUPPORTED;
+        struct tm tmptime = {0};
+        time_t expiryTime = iPwdLastSet + iExpireInSeconds;
+        CHAR timeBuf[128] = "";
+
+#ifdef _WIN32
+        localtime_s(&tmptime, &expiryTime);
+#else
+        localtime_r(&expiryTime, &tmptime);
+#endif
+        strftime(timeBuf, sizeof(timeBuf), "%Y%m%d%H%M%S", &tmptime);
+
+        dwError = VmAfdAllocateStringPrintf(
+                    &pszParsedPwdExpTime,
+                    "password expired at %s",
+                    &timeBuf[0]);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 

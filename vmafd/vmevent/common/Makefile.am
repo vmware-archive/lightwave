@@ -28,7 +28,7 @@ libvmeventcommon_la_LIBADD = \
     @LWBASE_LIBS@ \
     @LWRSUTILS_LIBS@ \
     @LWMSG_LIBS@ \
-    @LWREG_LIBS@ 
+    @LWREG_LIBS@
 
 libvmeventcommon_la_LDFLAGS = \
     -static \

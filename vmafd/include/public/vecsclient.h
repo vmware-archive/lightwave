@@ -391,6 +391,8 @@ VecsGetEntryByAliasW(
 /*
  * @brief Gets a key from the store by alias
  *
+ * DEPRECATED. Use GetEntryByAliasA Function instead
+ *
  * @param[in] pStore Handle to the Certificate store
  * @param[in] pszAlias Alias of the entry
  * @param[in] pszPassword Password

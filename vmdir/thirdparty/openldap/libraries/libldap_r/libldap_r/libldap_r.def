@@ -113,6 +113,7 @@ EXPORTS
     ldap_turn_s
     ldap_create_page_control_value
     ldap_create_page_control
+    ldap_parse_page_control
     ldap_parse_pageresponse_control
     ldap_create_sort_keylist
     ldap_free_sort_keylist
@@ -169,3 +170,50 @@ EXPORTS
     ldap_pvt_thread_rdwr_rlock
     ldap_pvt_thread_rdwr_wlock
     ldap_pvt_thread_rdwr_destroy
+    ldap_abandon
+    ldap_add
+    ldap_add_s
+    ldap_attributetype2name
+    ldap_attributetype2str
+    ldap_attributetype_free
+    ldap_bind
+    ldap_bind_s
+    ldap_compare
+    ldap_compare_s
+    ldap_count_values
+    ldap_delete
+    ldap_delete_s
+    ldap_get_values
+    ldap_init
+    ldap_matchingrule2name
+    ldap_matchingrule2str
+    ldap_matchingrule_free
+    ldap_modrdn
+    ldap_modrdn2
+    ldap_modrdn2_s
+    ldap_modrdn_s
+    ldap_objectclass2name
+    ldap_objectclass2str
+    ldap_objectclass_free
+    ldap_open
+    ldap_perror
+    ldap_result2error
+    ldap_scherr2str
+    ldap_search
+    ldap_search_s
+    ldap_search_st
+    ldap_simple_bind
+    ldap_simple_bind_s
+    ldap_sort_entries
+    ldap_sort_strcasecmp
+    ldap_sort_values
+    ldap_str2attributetype
+    ldap_str2matchingrule
+    ldap_str2objectclass
+    ldap_str2syntax
+    ldap_syntax2name
+    ldap_syntax2str
+    ldap_syntax_free
+    ldap_unbind
+    ldap_unbind_s
+    ldap_value_free

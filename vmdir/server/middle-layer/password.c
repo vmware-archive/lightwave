@@ -61,6 +61,16 @@
     VMDIR_SF_INIT(.pHashFunc, hashFuncSHA256),          \
     VMDIR_SF_INIT(.pNext, NULL)                         \
     },                                                  \
+    {                                                   \
+    VMDIR_SF_INIT(.uId, 0x4),                           \
+    VMDIR_SF_INIT(.uDigestSizeInByte, 20),              \
+    VMDIR_SF_INIT(.uIteration, 1),                      \
+    VMDIR_SF_INIT(.uSaltSizeInByte, 0),                 \
+    VMDIR_SF_INIT(.bPreSalt, TRUE),                     \
+    VMDIR_SF_INIT(.pszName, PASSWD_SCHEME_SHA1),        \
+    VMDIR_SF_INIT(.pHashFunc, hashFuncSHA1),            \
+    VMDIR_SF_INIT(.pNext, NULL)                         \
+    },                                                  \
 }
 
 /*
@@ -82,6 +92,14 @@ hashFuncSHA256(
 static
 DWORD
 hashFuncSHA512(
+    PCSTR     pszPassword,      // in:password string
+    uint8_t   uPasswordLen,     // in:password string length
+    PSTR      pszOutBuf         // caller supply buffer
+    );
+
+static
+DWORD
+hashFuncSHA1(
     PCSTR     pszPassword,      // in:password string
     uint8_t   uPasswordLen,     // in:password string length
     PSTR      pszOutBuf         // caller supply buffer
@@ -182,15 +200,9 @@ VmDirPasswordSchemeInit(
 
         assert(pScheme->uDigestSizeInByte <= MAX_PASSWROD_DIGEST_LEN);
 
-        if (pNewScheme)
-        {
-            pScheme->pNext = pNewScheme;
-            pNewScheme = pScheme;
-        }
-        else
-        {
-            pNewScheme = pScheme;
-        }
+        // Add pScheme to front of list
+        pScheme->pNext = pNewScheme;
+        pNewScheme = pScheme;
     }
 
     // always make the first scheme VDIR_PASSWORD_SCHEME_INITIALIZER the default one
@@ -558,7 +570,7 @@ cleanup:
 
 error:
 
-    VmDirLog(LDAP_DEBUG_TRACE, "Verify supported scheme - (%s)", pszErrorContext);
+    VMDIR_LOG_DEBUG(LDAP_DEBUG_TRACE, "Verify supported scheme - (%s)", pszErrorContext);
 
     goto cleanup;
 }
@@ -619,7 +631,7 @@ cleanup:
 
 error:
 
-    VmDirLog( LDAP_DEBUG_TRACE, "VdirPasswordAddSchemeCode failed (%u)(%s)", dwError, VDIR_SAFE_STRING(pszLocalErrMsg) );
+    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "VdirPasswordAddSchemeCode failed (%u)(%s)", dwError, VDIR_SAFE_STRING(pszLocalErrMsg) );
 
     VMDIR_SAFE_FREE_MEMORY(pszDigest);
 
@@ -1225,6 +1237,21 @@ hashFuncSHA512(
 
     // TODO: error handling?
     SHA512(pszPassword, uPasswordLen, pszOutBuf);
+
+    return dwError;
+}
+
+static
+DWORD
+hashFuncSHA1(
+             PCSTR     pszPassword,      // in:password string
+             uint8_t   uPasswordLen,     // in:password string length
+             PSTR      pszOutBuf         // caller supply buffer
+             )
+{
+    DWORD       dwError = 0;
+
+    SHA1(pszPassword, uPasswordLen, pszOutBuf);
 
     return dwError;
 }

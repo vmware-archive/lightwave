@@ -1,0 +1,3 @@
+saml_token_invalid_12.xml - wrap the original token within a fake one
+saml_token_invalid_13.xml - alter the token to point to externally located original token
+

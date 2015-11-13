@@ -68,9 +68,6 @@ extern "C" {
     #define ssize_t SSIZE_T
 #endif
 
-#define VMAFD_MIN(a, b) ((a) < (b) ? (a) : (b))
-#define VMAFD_MAX(a, b) ((a) > (b) ? (a) : (b))
-
 #ifndef _WIN32
 #define VMAFD_SF_INIT( fieldName, fieldValue ) fieldName = fieldValue
 #else
@@ -138,18 +135,14 @@ extern "C" {
 #define BAIL_ON_VMAFD_ERROR(dwError) \
     if (dwError)                                                   \
     {                                                              \
-        VmAfdLog( VMAFD_DEBUG_TRACE,                               \
-         "%s failed. Error code [%d]. [%s,%d]",                    \
-            __FUNCTION__,dwError,__FILE__, __LINE__);              \
+        VmAfdLog( VMAFD_DEBUG_TRACE, "[%s,%d]",__FILE__, __LINE__); \
         goto error;                                                \
     }
 
 #define BAIL_ON_VMAFD_ERROR_IF(condition) \
     if (condition)                                                 \
     {                                                              \
-        VmAfdLog( VMAFD_DEBUG_TRACE,                               \
-         "%s failed. Error code [%d]. [%s,%d]",                    \
-            __FUNCTION__,dwError,__FILE__, __LINE__);              \
+        VmAfdLog( VMAFD_DEBUG_TRACE, "[%s,%d]",__FILE__, __LINE__); \
         goto error;                                                \
     }
 
@@ -158,6 +151,13 @@ extern "C" {
             errCode = ERROR_INVALID_PARAMETER;    \
             BAIL_ON_VMAFD_ERROR(errCode);          \
         }
+
+#define BAIL_ON_VMAFD_EMPTY_STRING(p, errCode) \
+        if (IsNullOrEmptyString(p)) {             \
+            errCode = ERROR_INVALID_PARAMETER;   \
+            BAIL_ON_VMAFD_ERROR(errCode);        \
+        }
+
 
 #define BAIL_ON_INVALID_ACCESSINFO(pAccessInfo, errCode)     \
         if (pAccessInfo == NULL || VmAfdIsFailedAccessInfo(pAccessInfo)) {  \
@@ -177,17 +177,6 @@ extern "C" {
 #ifndef VMAFD_SAFE_SPACE_STRING
 #define VMAFD_SAFE_SPACE_STRING(str) ((str) ? (str) : " ")
 #endif
-
-#define VMAFD_OFFSET_TO_POINTER(Pointer, Offset) \
-    ((char*)(Pointer) + Offset)
-
-#define VMAFD_FIELD_OFFSET(Type, Field) offsetof(Type, Field)
-
-#define VMAFD_FIELD_SIZE(Type, Field) \
-    (sizeof(((Type*)(0))->Field))
-
-#define VMAFD_STRUCT_FROM_FIELD(Pointer, Type, Field) \
-    ((Type*)VMAFD_OFFSET_TO_POINTER(Pointer, -((ssize_t)VMAFD_FIELD_OFFSET(Type, Field))))
 
 #ifndef VMAFD_DEBUG_ANY
 #define VMAFD_DEBUG_ANY (-1)
@@ -215,7 +204,7 @@ if ( VMAFD_ASCII_UPPER(c) )             \
     (c) = ((c) + 32);                   \
 }
 
-#define VMAFD_MAX_HOSTNAME_LEN         100
+#define IsFlagSet(mask, bits) (((mask) != 0) && (((mask) & (bits)) == (bits)))
 
 #ifdef _WIN32
 
@@ -288,6 +277,22 @@ if ( VMAFD_ASCII_UPPER(c) )             \
 #define VMAFD_IPC_GET_CA_PATH                45
 #define VMAFD_IPC_SET_CA_PATH                46
 #define VMAFD_IPC_TRIGGER_ROOT_CERTS_REFRESH 47
+#define VMAFD_IPC_GET_SITE_NAME              48
+#define VMAFD_IPC_GET_RHTTPPROXY_PORT        49
+#define VMAFD_IPC_JOIN_VMDIR_2               50
+#define VMAFD_IPC_REFRESH_SITE_NAME          51
+#define VMAFD_IPC_CONFIGURE_DNS              52
+
+#define CDC_IPC_ENABLE_CLIENT_AFFINITY       60
+#define CDC_IPC_DISABLE_CLIENT_AFFINITY      61
+#define CDC_IPC_GET_DC_NAME                  62
+#define CDC_IPC_GET_CDC_STATE                63
+#define CDC_IPC_FORCE_REFRESH_CACHE          64
+#define CDC_IPC_ENUM_DC_ENTRIES              65
+
+#define VMAFD_IPC_POST_HEARTBEAT             70
+#define VMAFD_IPC_GET_HEARBEAT_STATUS        71
+
 
 typedef enum
 {
@@ -318,6 +323,42 @@ typedef enum
 
 } VECS_ENCRYPTION_ALGORITHM, *PVECS_ENCRYPTION_ALGORITHM;
 
+//CDC
+
+#define DCCA_DEFAULT_SYNC_INTERVAL    10*60
+#define DCCA_DEFAULT_HEARTBEAT         1*60
+
+typedef enum
+{
+    CDC_DB_ENTRY_STATUS_UNDEFINED = 0,
+    CDC_DB_ENTRY_STATUS_NEW,
+    CDC_DB_ENTRY_STATUS_FULL_UPDATE,
+    CDC_DB_ENTRY_STATUS_UPDATE
+} CDC_DB_ENTRY_STATUS, *PCDC_DB_ENTRY_STATUS;
+
+typedef struct _CDC_DB_ENTRY_A
+{
+    PSTR pszDCName;
+    PSTR pszSiteName;
+    PSTR pszDomainName;
+    DWORD dwPingTime;
+    DWORD dwLastPing;
+    BOOL  bIsAlive;
+    CDC_DB_ENTRY_STATUS cdcEntryStatus;
+} CDC_DB_ENTRY_A, *PCDC_DB_ENTRY_A;
+
+typedef struct _CDC_DB_ENTRY_W
+{
+    PWSTR pszDCName;
+    PWSTR pszSiteName;
+    PWSTR pszDomainName;
+    DWORD dwPingTime;
+    DWORD dwLastPing;
+    BOOL  bIsAlive;
+    CDC_DB_ENTRY_STATUS cdcEntryStatus;
+} CDC_DB_ENTRY_W, *PCDC_DB_ENTRY_W;
+
+
 #ifndef _WIN32
 #define VMAFD_CONFIG_PARAMETER_KEY_PATH "Services\\vmafd\\Parameters"
 #define VMAFD_CONFIG_CREDS_KEY_PATH     "Services\\services\\Parameters\\Credentials"
@@ -329,14 +370,19 @@ typedef enum
 #endif
 
 #define VMAFD_REG_KEY_DOMAIN_NAME     "DomainName"
+#define VMAFD_REG_KEY_SITE_NAME       "SiteName"
 #define VMAFD_REG_KEY_DOMAIN_STATE    "DomainState"
 #define VMAFD_REG_KEY_LDU             "LDU"
 #define VMAFD_REG_KEY_RHTTPPROXY_PORT "RHTTPProxyPort"
 #define VMAFD_REG_KEY_DC_PORT         "DCPort"
 #define VMAFD_REG_KEY_DC_NAME         "DCName"
+#define VMAFD_REG_KEY_DC_NAME_NEW     "DCNameNew"
+#define VMAFD_REG_KEY_DC_ENTRIES      "DCEntries"
 #define VMAFD_REG_KEY_PNID            "PNID"
 #define VMAFD_REG_KEY_CA_PATH         "CAPath"
 #define VMAFD_REG_KEY_CERT_SEC        "CertificateSyncInterval"
+#define VMAFD_REG_KEY_DCCACHE_SYNC    "DcCacheSyncInterval"
+#define VMAFD_REG_KEY_DC_HEARTBEAT    "DcCacheHeartBeat"
 #define VMAFD_REG_KEY_RPC_CONFIG      "EnableDCERPC"
 #define VMAFD_REG_KEY_MACHINE_ID      "MachineID"
 
@@ -345,5 +391,10 @@ typedef enum
 #define VMAFD_REG_KEY_DC_PASSWORD     "dcAccountPassword"
 #define VMAFD_REG_KEY_DC_OLD_PASSWORD "dcAccountOldPassword"
 #define VMAFD_REG_KEY_MACHINE_GUID    "MachineGuid"
+
+#define VMAFD_REG_VALUE_HA_CONFIG     "EnableHA"
+#define VMAFD_REG_VALUE_SITE          "Site"
+#define VMAFD_REG_VALUE_LAST_PING     "LastPing"
+#define VMAFD_REG_VALUE_PING_TIME     "PingTime"
 
 #endif /* __VMAFDDEFINES_H__ */

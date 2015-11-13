@@ -48,7 +48,7 @@ LockoutRecFree(
     );
 
 static
-PCVOID
+LW_PCVOID
 LockoutRecGetKey(
     PLW_HASHTABLE_NODE  pNode,
     PVOID               pUnused
@@ -80,8 +80,9 @@ LockoutPolicyLoadFromEntry(
 static
 BOOLEAN
 _VmDirExemptUserFromLockoutPolicy(
-    ENTRYID     entryID,
-    PCSTR       pszNormDN
+    ENTRYID             entryID,
+    PCSTR               pszNormDN,
+    PVDIR_ACCESS_INFO   pAccessInfo
     );
 
 VOID
@@ -92,7 +93,7 @@ VdirLockoutCacheRemoveRec(
     DWORD                   dwError = 0;
     BOOLEAN                 bInLock = FALSE;
     PCSTR                   pszErrorContext = NULL;
-    PLW_HASHTABLE_NODE   pNode = NULL;
+    PLW_HASHTABLE_NODE      pNode = NULL;
     PVDIR_LOCKOUT_REC       pLockoutRec = NULL;
 
     assert(pszNormDN);
@@ -102,11 +103,11 @@ VdirLockoutCacheRemoveRec(
     if (gVdirLockoutCache.pHashTbl)
     {
         pszErrorContext = " lockout cache find key.";
-        dwError = LwNtStatusToWin32Error(
-                      LwRtlHashTableFindKey(
+        dwError = LwRtlHashTableFindKey(
                         gVdirLockoutCache.pHashTbl,
                         &pNode,
-                        (PVOID)pszNormDN));
+                        (PVOID)pszNormDN);
+        dwError = LwNtStatusToWin32Error(dwError);
         if (dwError == ERROR_NOT_FOUND)
         {
             dwError = 0;
@@ -116,7 +117,7 @@ VdirLockoutCacheRemoveRec(
         if (pNode)
         {
 
-            dwError = LwNtStatusToWin32Error(LwRtlHashTableRemove(gVdirLockoutCache.pHashTbl, pNode));
+            dwError = LwRtlHashTableRemove(gVdirLockoutCache.pHashTbl, pNode);
             assert(dwError == 0);
 
             pLockoutRec = (PVDIR_LOCKOUT_REC)LW_STRUCT_FROM_FIELD(pNode, VDIR_LOCKOUT_REC, Node);
@@ -182,7 +183,7 @@ VdirLoginBlocked(
     }
 
     // bypass lockout policy check for default Administrator and DC Account user
-    if ( _VmDirExemptUserFromLockoutPolicy( pEntry->eId, BERVAL_NORM_VAL(pEntry->dn) ) )
+    if ( _VmDirExemptUserFromLockoutPolicy( pEntry->eId, BERVAL_NORM_VAL(pEntry->dn), &pOperation->conn->AccessInfo) )
     {
         dwError = 0;
         goto cleanup;
@@ -337,7 +338,7 @@ VdirPasswordFailEvent(
     }
 
     // bypass lockout policy check for default Administrator and DC Account user
-    if ( pEntry && _VmDirExemptUserFromLockoutPolicy( pEntry->eId, pszNormDN ) )
+    if ( pEntry && _VmDirExemptUserFromLockoutPolicy( pEntry->eId, pszNormDN, &pOperation->conn->AccessInfo) )
     {
         goto cleanup;
     }
@@ -685,7 +686,7 @@ LockoutCacheRecGet(
     DWORD                   dwError = 0;
     BOOLEAN                 bInLock = FALSE;
     PCSTR                   pszErrorContext = NULL;
-    PLW_HASHTABLE_NODE   pNode = NULL;
+    PLW_HASHTABLE_NODE      pNode = NULL;
     PVDIR_LOCKOUT_REC       pLockoutRec = NULL;
 
     assert(pszNormDN && ppLockoutRec);
@@ -695,11 +696,11 @@ LockoutCacheRecGet(
     if (gVdirLockoutCache.pHashTbl)
     {
         pszErrorContext = "lockout cache lookup";
-        dwError = LwNtStatusToWin32Error(
-                      LwRtlHashTableFindKey(
+        dwError = LwRtlHashTableFindKey(
                         gVdirLockoutCache.pHashTbl,
                         &pNode,
-                        (PVOID)pszNormDN));
+                        (PVOID)pszNormDN);
+        dwError = LwNtStatusToWin32Error(dwError);
         if (dwError == ERROR_NOT_FOUND)
         {
             dwError = 0;
@@ -727,9 +728,9 @@ error:
 }
 
 static
-PCVOID
+LW_PCVOID
 LockoutRecGetKey(
-    PLW_HASHTABLE_NODE   pNode,
+    PLW_HASHTABLE_NODE      pNode,
     PVOID                   pUnused
     )
 {
@@ -761,14 +762,14 @@ LockoutCacheRecSet(
 
     if (! gVdirLockoutCache.pHashTbl)
     {
-        dwError = LwNtStatusToWin32Error(
-                    LwRtlCreateHashTable(
+        dwError = LwRtlCreateHashTable(
                         &gVdirLockoutCache.pHashTbl,
                         LockoutRecGetKey,
                         LwRtlHashDigestPstr,
                         LwRtlHashEqualPstr,
                         NULL,
-                        VMDIR_LOCKOUT_VECTOR_HASH_TABLE_SIZE));
+                        VMDIR_LOCKOUT_VECTOR_HASH_TABLE_SIZE);
+        dwError = LwNtStatusToWin32Error(dwError);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -1026,7 +1027,8 @@ static
 BOOLEAN
 _VmDirExemptUserFromLockoutPolicy(
     ENTRYID     entryID,
-    PCSTR       pszNormDN
+    PCSTR       pszNormDN,
+    PVDIR_ACCESS_INFO   pAccessInfo
     )
 {
     DWORD       dwError          = 0;
@@ -1040,7 +1042,8 @@ _VmDirExemptUserFromLockoutPolicy(
     {
         // exempt if direct member of DCGroup
         dwError = VmDirIsDirectMemberOf( (PSTR)pszNormDN,
-                                         gVmdirServerGlobals.bvDCGroupDN.lberbv_val,
+                                         VDIR_ACCESS_DCGROUP_MEMBER_INFO,
+                                         &pAccessInfo->accessRoleBitmap,
                                          &bExemptUser );
         BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -1048,7 +1051,8 @@ _VmDirExemptUserFromLockoutPolicy(
         {
             // exempt if direct member of DCClientGroup
             dwError = VmDirIsDirectMemberOf( (PSTR)pszNormDN,
-                                             gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val,
+                                             VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_INFO,
+                                             &pAccessInfo->accessRoleBitmap,
                                              &bExemptUser );
             BAIL_ON_VMDIR_ERROR(dwError);
         }

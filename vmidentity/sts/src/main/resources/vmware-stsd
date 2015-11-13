@@ -1,0 +1,502 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides: vmware-stsd
+# Required-Start: vmware-sts-idmd $network $remote_fs
+# Required-Stop: vmware-sts-idmd $network $remote_fs
+# Default-Start: 3 5
+# Default-Stop: 0 1 2 6
+# Short-Description: VMWare Security Token Service
+# Description: Start and Stop vmware-stsd.
+### END INIT INFO
+
+#The user account that will run the tcServer instance
+TOMCAT_USER=root
+#Ensure on cloudvm environment variables such as VMWARE_PYTHON_PATH are available.
+env_vars_file=/etc/profile.d/VMware-visl-integration.sh
+if [ -f $env_vars_file ]; then
+    . $env_vars_file
+    echo "ensure environment variables are set"
+fi
+
+# The installation location for the binaries
+TOMCAT_7_0_47_A="/opt/vmware/vfabric-tc-server-standard/tomcat-7.0.47.A.RELEASE"
+TOMCAT_7_0_25_B="/usr/local/tcserver/vfabric-tc-server-standard/tomcat-7.0.25.B.RELEASE"
+TOMCAT_CURRENT="/opt/vmware/vfabric-tc-server-standard/current"
+if [ -z "$VMWARE_TOMCAT" ]; then
+    if [ -d "$TOMCAT_7_0_47_A" ]; then
+        CATALINA_HOME="$TOMCAT_7_0_47_A"
+    elif [ -d "$TOMCAT_7_0_25_B" ]; then
+        CATALINA_HOME="$TOMCAT_7_0_25_B"
+    elif [ -d "$TOMCAT_CURRENT" ]; then
+        CATALINA_HOME="$TOMCAT_CURRENT"
+    else
+        echo "Error: Unsupported Tomcat release. Cannot define CATALINA_HOME"
+        exit 1
+    fi
+else
+    CATALINA_HOME="$VMWARE_TOMCAT"
+fi
+
+#INSTANCE_BASE - points to the base directory for your instances
+INSTANCE_BASE="/usr/lib/vmware-sso"
+
+#The name of the instance we want to stop/start
+INSTANCE_NAME=vmware-sts
+SERVICE_NAME=vmware-stsd
+DAEMON_CLASS=org.apache.catalina.startup.Bootstrap
+
+#JAVA_HOME must be visible
+JAVA_HOME=/usr/java/jre-vmware
+JSVC_BIN=/opt/vmware/bin/jsvc
+CATALINA_BASE="$INSTANCE_BASE/$INSTANCE_NAME"
+
+#The shell to use when SUing
+SUSHELL=/bin/bash
+
+SC_SUCCESS=0
+SC_FAILURE=1
+SC_NOT_RUNNING=7
+
+SC_STATUS_RUNNING=0
+SC_STATUS_DEAD_WITH_PID=1
+SC_STATUS_DEAD_WITH_LOCK=2
+SC_STATUS_NOT_RUNNING=3
+
+STSD_LOG_DIR="/var/log/vmware/sso"
+STSD_INITD_LOG="$STSD_LOG_DIR/utils/$SERVICE_NAME.log"
+STSD_INITD_ERR_LOG="$STSD_LOG_DIR/utils/$SERVICE_NAME.err"
+
+STSD_SERVICE_PID="$STSD_LOG_DIR/tcserver.pid"
+
+MAX_WAIT_START_LISTEN=120
+MAX_WAIT_TERM=60
+MAX_WAIT_KILL=30
+
+# The curl(1) status code for "Connection refused"
+CURL_SC_CONNECTION_REFUSED=7
+
+# The curl(1) status code for "Timeout"
+CURL_SC_TIMEOUT=28
+
+# Provide empty definitions; these will be overridden on SUSE
+# when rc.status script is run
+rc_status()
+{
+    return $?
+}
+
+#set result if specified, otherwise set to failed
+rc_failed()
+{
+    if [ "$1" != "" ]; then
+       return $1
+    else
+       return 1
+    fi
+}
+
+rc_exit()
+{
+    return $?
+}
+
+STATUS=0
+PLATFORM=""
+if [ -f /etc/init.d/functions ]; then
+    . /etc/init.d/functions
+    PLATFORM="REDHAT"
+elif [ -f /etc/rc.status ]; then
+    . /etc/rc.status
+    rc_reset
+    PLATFORM="SUSE"
+else
+    PLATFORM="UNKNOWN"
+fi
+
+# -----------------------------------------------------------------------------
+# Utilities for LOGGING
+# -----------------------------------------------------------------------------
+
+function do_log()
+{
+   #cleanup the double brackets, apparently only single bracket is needed
+   if [[ -z "$NO_LOG" ]]; then
+      local timestamp=$( date +"%F %T" )
+      local message="$timestamp $$: $*"
+
+      echo $message >> "$STSD_INITD_LOG"
+   fi
+}
+
+function log()
+{
+   do_log "[INFO]" "$@"
+}
+
+function log_w()
+{
+   do_log "[WARN]" "$@"
+}
+
+function log_e()
+{
+   do_log "[ERROR]" "$@"
+}
+
+function get_pproc()
+{
+   local this_ppid=$PPID
+   local msg="caller pid=$PPID"
+   local parent_exe=$(readlink /proc/${this_ppid}/exe)
+   if [[ $? -eq 0 ]] ; then
+      msg+=" (executable: $parent_exe)"
+   fi
+
+   echo $msg
+}
+
+function do_with_log()
+{
+   local action_name=$1
+   local action=$2
+   local status
+
+   mkdir -p $( dirname "$STSD_INITD_LOG" )
+
+   log BEGIN "$SERVICE_NAME $action_name ; $(get_pproc)"
+   eval $action
+   log END $SERVICE_NAME $action_name
+
+   rc_exit
+}
+
+# -----------------------------------------------------------------------------
+# Implementation of START
+# -----------------------------------------------------------------------------
+
+# abstract function start_service
+
+do_start()
+{
+   log Starting service.
+   if ! check_status ; then
+      # If service is not running, start it
+      echo -n "Starting $SERVICE_NAME"
+
+      if [ -f $STSD_SERVICE_PID ]; then
+          log_w 'Removing PID file at $STSD_SERVICE_PID'
+          /bin/rm -f $STSD_SERVICE_PID
+      fi
+
+      start_service
+   else
+      # Otherwise, report implicit success
+      log Already running.
+      echo -n Starting $SERVICE_NAME
+      rc_failed $SC_SUCCESS
+   fi
+
+   rc_status -v
+}
+
+perform_pre_startup_actions()
+{
+   log "[start] Performing pre-startup actions."
+   /usr/lib/vmware-sso/bin/sso_servicecfg pre-startup &>/dev/null
+
+   if [ -r "$CATALINA_BASE/bin/setenv.sh" ]; then
+     . "$CATALINA_BASE/bin/setenv.sh"
+   elif [ -$ "$CATALINA_HOME/bin/setenv.sh" ]; then
+     . "$CATALINA_HOME/bin/setenv.sh"
+   fi
+
+   log "[start] Pre-startup complete."
+}
+
+start_service()
+{
+  perform_pre_startup_actions
+
+  local retval
+
+  $JSVC_BIN -procname $SERVICE_NAME \
+            -home $JAVA_HOME \
+            -server \
+            -pidfile $STSD_SERVICE_PID \
+            -errfile $STSD_INITD_ERR_LOG \
+            -Djava.util.logging.config.file=$INSTANCE_BASE/conf/logging.properties \
+            -Djava.util.logging.manager=com.springsource.tcserver.serviceability.logging.TcServerLogManager \
+            $JAVA_OPTS \
+            $CATALINA_OPTS \
+            -Djava.endorsed.dirs="$CATALINA_HOME/endorsed" \
+            -classpath "$CATALINA_HOME/bin/bootstrap.jar:$CATALINA_HOME/bin/tomcat-juli.jar" \
+            -Dcatalina.base=$CATALINA_BASE \
+            -Dcatalina.home=$CATALINA_HOME \
+            -Dorg.apache.catalina.connector.CoyoteAdapter.ALLOW_BACKSLASH=true \
+            -Djava.io.tmpdir="$CATALINA_BASE/temp" \
+            $DAEMON_CLASS start
+
+
+  retval=$?
+  if [[ $retval -ne 0 ]] ; then
+    rc_failed $SC_FAILURE
+  else
+    rc_failed $SC_SUCCESS
+    wait_for_tomcat_listeners
+  fi
+}
+
+wait_for_tomcat_listeners()
+{
+   local service_port=$( awk 'BEGIN { FS="=" }; /bio-custom.http.port/ { print $2; }' \
+         "/usr/lib/vmware-sso/vmware-sts/conf/catalina.properties" )
+
+   local service_endpoint="http://localhost:${service_port}/"
+   local curl=/usr/bin/curl
+
+   log "Waiting for service container to initialize"
+
+   echo -n " "
+   local wait_start=$( date +%s )
+   while true ; do
+
+      local now=$( date +%s )
+      let elapsed=now-wait_start
+      if [[ $elapsed -gt $MAX_WAIT_START_LISTEN ]] ; then
+         echo
+         echo -n "   Service container did not start in $MAX_WAIT_START_LISTEN seconds. Assuming failure."
+
+         log_e Service container did not start within $MAX_WAIT_START_LISTEN seconds.
+         rc_failed $SC_NOT_RUNNING
+         rc_status -v
+         rc_exit
+      fi
+
+      local curl_status error_msg
+      echo -n .
+      error_msg=$( $curl --max-time 1 --silent --show-error "$service_endpoint" 2>&1 )
+      curl_status=$?
+
+      if [[ $curl_status == $SC_SUCCESS || $curl_status == $CURL_SC_TIMEOUT ]] ; then
+         log Service container started successfully.
+         rc_failed $SC_SUCCESS
+         break
+
+      elif [[ $curl_status == $CURL_SC_CONNECTION_REFUSED ]] ; then
+         sleep 1
+
+      else
+         log_e Unexpected failure starting service container: "${error_msg}".
+         echo -n "   Unexpected failure: ${error_msg}"
+         rc_failed $SC_FAILURE
+         rc_status -v
+         rc_exit
+      fi
+   done
+}
+
+
+# -----------------------------------------------------------------------------
+# Implementation of STATUS
+# -----------------------------------------------------------------------------
+
+checkpid()
+{
+    local pid=$1
+    local retval=0
+
+    log "[checkpid] checking process $pid"
+
+    # We are root so signal can be sent iff the process exists
+    kill -0 $pid >/dev/null 2>&1
+    if [[ $? -eq 0 ]] ; then
+       log "[checkpid] sending -0 signal returned success will also checkproc..."
+       if [ "$PLATFORM" = 'SUSE' ]; then
+          checkproc -p "$STSD_SERVICE_PID" "$JSVC_BIN"
+       else
+          status -p "$STSD_SERVICE_PID" -l jsvc "$JSVC_BIN"
+       fi
+
+       if [[ $? -eq 0 ]] ; then
+           log "[checkpid] checkproc returned success..."
+           log "Checking if $svcpid is the STS process"
+           if [ -f /proc/$svcpid/cmdline ]; then
+              grep -q 'catalina.base=/usr/lib/vmware-sso/vmware-sts' /proc/$svcpid/cmdline
+              if [ $? -ne 0 ]; then
+                 retval=1
+                 log "[checkpid] $svcpid does not belong to vmware-stsd"
+              fi
+           fi
+       else
+           retval=1
+           log "[checkpid] checkproc returned failure..."
+       fi
+    else
+       retval=1
+       log "[checkpid] sending -0 signal returned failure..."
+    fi
+
+    log "[checkpid] returns $retval"
+    return $retval
+}
+
+function check_status()
+{
+   log '[check_status]' $SERVICE_NAME
+   #cleanup the double brackets, apparently only single bracket is needed
+   if [[ -f "$STSD_SERVICE_PID" ]] ; then
+      local svcpid
+      read svcpid < "$STSD_SERVICE_PID"
+      if checkpid $svcpid ; then
+         log '[check_status]' $SERVICE_NAME is running
+         return $SC_STATUS_RUNNING
+      else
+         log_e '[check_status]' $SERVICE_NAME is DEAD
+         return $SC_STATUS_DEAD_WITH_PID
+      fi
+   else
+      log "[check_status] $SERVICE_NAME not running (PID file $STSD_SERVICE_PID does not exist)."
+      return $SC_STATUS_NOT_RUNNING
+   fi
+}
+
+function do_status()
+{
+   echo -n "Checking for service $SERVICE_NAME"
+   check_status
+   retval=$?
+   rc_failed $retval
+   rc_status -v
+}
+
+# -----------------------------------------------------------------------------
+# Implementation of STOP
+# -----------------------------------------------------------------------------
+
+function wait_for_proc()
+{
+   local pid=$1
+   local max_wait=$2
+   local wait_count=0
+
+   echo -n ' '
+
+   while [ $wait_count -lt $max_wait ] ; do
+      wait_count=$[ $wait_count + 1 ]
+      if checkpid $pid ; then
+         echo -n .
+         sleep 1
+      else
+         return 0
+      fi
+   done
+
+   # Timeout and the process is still alive
+   return 1
+}
+
+function stop_service()
+{
+  if check_status ; then
+    local retval
+    $JSVC_BIN -procname $SERVICE_NAME \
+              -home $JAVA_HOME \
+              -pidfile $STSD_SERVICE_PID \
+              -stop \
+              $DAEMON_CLASS
+
+    retval=$?
+    if [[ $retval -ne 0 ]]; then
+      log "Service did not stop successfully."
+      return $SC_FAILURE
+    else
+      rm -f "$STSD_SERVICE_PID"
+      log "Service stopped successfully."
+      return $SC_SUCCESS
+    fi
+  else
+    return $SC_SUCCESS
+  fi
+}
+
+function do_stop()
+{
+   log Stopping service.
+   echo -n Stopping $SERVICE_NAME
+   if ! check_status ; then
+      log Already stopped.
+      rc_failed $SC_SUCCESS
+
+   else
+      stop_service
+      retval=$?
+      if [ "$PLATFORM" = 'SUSE' ]; then
+         rc_check
+      elif [ "$PLATFORM" = 'REDHAT' ]; then
+         if [ $retval -eq 0 ]; then
+             success
+         fi
+      fi
+   fi
+
+   rc_status -v
+}
+
+
+# -----------------------------------------------------------------------------
+# Implementation of CONDRESTART
+# -----------------------------------------------------------------------------
+
+function do_condrestart()
+{
+   if check_status ; then
+      do_stop && do_start
+   else
+      echo "service not start, skip condrestart"
+      rc_failed $SC_SUCCESS
+      rc_status -v
+   fi
+}
+
+
+# -----------------------------------------------------------------------------
+# Main
+# -----------------------------------------------------------------------------
+
+case "$1" in
+   start)
+      do_with_log $1 do_start
+      ;;
+
+   start-noprep)
+      DO_NOPREP_START=true
+      do_with_log $1 do_start
+      ;;
+
+   stop)
+      do_with_log $1 do_stop
+      ;;
+
+   try-restart|condrestart)
+      do_with_log $1 do_condrestart
+      ;;
+
+   restart)
+      do_with_log $1 "do_stop && do_start"
+      ;;
+
+   reload|force-reload|probe)
+      log $SERVICE_NAME unsupported action: $1
+      exit 3
+      ;;
+
+   status)
+      do_with_log $1 do_status
+      ;;
+
+   *)
+      echo "Usage: $0 {start|stop|status|try-restart|restart}" >&2
+      exit 1
+      ;;
+esac

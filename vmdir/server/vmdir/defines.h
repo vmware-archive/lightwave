@@ -133,11 +133,24 @@
 #define VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC "LdapRecvTimeoutSec"
 #define VMDIR_REG_KEY_ALLOW_ADMIN_LOCKOUT   "AllowAdminLockout"
 #define VMDIR_REG_KEY_MAX_OP_THREADS        "MaxLdapOpThrs"
+#define VMDIR_REG_KEY_DISABLE_VECS          "DisableVECSIntegration"
+#define VMDIR_REG_KEY_MAX_INDEX_SCAN        "MaxIndexScan"
 
 #define VMDIR_CONFIG_INIT_TABLE_INITIALIZER                      \
 {                                                                \
     {                                                            \
         /*.pszName        = */ VMDIR_REG_KEY_ALLOW_INSECURE_AUTH,\
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_BOOLEAN,  \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 1,                                \
+        /*.dwDefault      = */ 0,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_DISABLE_VECS,       \
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_BOOLEAN,  \
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 0,                                \
@@ -209,6 +222,17 @@
         /*.dwMin          = */ 0,                                \
         /*.dwMax          = */ 4096,                             \
         /*.dwDefault      = */ 1024,                             \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_MAX_INDEX_SCAN,     \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 32,                               \
+        /*.dwMax          = */ 8192,                             \
+        /*.dwDefault      = */ 512,                              \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \

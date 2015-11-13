@@ -17,6 +17,67 @@
 #include "includes.h"
 
 
+PVMDIR_OPERATION_STATISTIC
+_VmDirGetStatisticFromTag(
+    ber_tag_t tag)
+{
+    switch (tag)
+    {
+        case LDAP_REQ_BIND:
+        return &gVmdirOPStatisticGlobals.opBind;
+
+        case LDAP_REQ_ADD:
+        return &gVmdirOPStatisticGlobals.opAdd;
+
+        case LDAP_REQ_SEARCH:
+        return &gVmdirOPStatisticGlobals.opSearch;
+
+        case LDAP_REQ_UNBIND:
+        return &gVmdirOPStatisticGlobals.opUnbind;
+
+        case LDAP_REQ_MODIFY:
+        return &gVmdirOPStatisticGlobals.opModify;
+
+        case LDAP_REQ_DELETE:
+        return &gVmdirOPStatisticGlobals.opDelete;
+
+        default:
+        return NULL;
+    }
+}
+
+PCSTR
+VmDirGetOperationStringFromTag(
+    ber_tag_t opTag)
+{
+    switch (opTag)
+    {
+        case LDAP_REQ_BIND:
+            return "BIND";
+
+        case LDAP_REQ_UNBIND:
+            return "UNBIND";
+
+        case LDAP_REQ_SEARCH:
+            return "SEARCH";
+
+        case LDAP_REQ_MODIFY:
+            return "MODIFY";
+
+        case LDAP_REQ_ADD:
+            return "ADD";
+
+        case LDAP_REQ_DELETE:
+            return "DELETE";
+
+        case LDAP_REQ_RENAME:
+            return "RENAME";
+
+        default:
+            return "UNKNOWN";
+    }
+}
+
 DWORD
 VmDirInitOPStatisticGlobals(
     VOID
@@ -53,17 +114,21 @@ error:
 
 //TODO, shutdown clean up op.pmutex
 
-DWORD
+VOID
 VmDirOPStatisticUpdate(
-    PVMDIR_OPERATION_STATISTIC   pStatistic,
-    uint64_t                    iThisTimeInMilliSec
+    ber_tag_t opTag,
+    uint64_t iThisTimeInMilliSec
     )
 {
-    DWORD       dwError = 0;
     BOOLEAN     bInLock = FALSE;
     uint64_t    iNewTotalTime = 0;
+    PVMDIR_OPERATION_STATISTIC pStatistic = NULL;
 
-    assert(pStatistic != NULL);
+    pStatistic = _VmDirGetStatisticFromTag(opTag);
+    if (pStatistic == NULL)
+    {
+        return;
+    }
 
     if (iThisTimeInMilliSec <=  0)
     {
@@ -88,8 +153,6 @@ VmDirOPStatisticUpdate(
     }
 
     VMDIR_UNLOCK_MUTEX(bInLock, pStatistic->pmutex);
-
-    return dwError;
 }
 
 uint16_t
@@ -118,13 +181,18 @@ VmDirOPStatisticGetAvgTime(
 
 uint64_t
 VmDirOPStatisticGetCount(
-    PVMDIR_OPERATION_STATISTIC   pStatistic
+    ber_tag_t opTag
     )
 {
     BOOLEAN     bInLock = FALSE;
     uint64_t    iCurrentCount = 0;
+    PVMDIR_OPERATION_STATISTIC pStatistic = NULL;
 
-    assert(pStatistic != NULL);
+    pStatistic = _VmDirGetStatisticFromTag(opTag);
+    if (pStatistic == NULL)
+    {
+        return 0;
+    }
 
     VMDIR_LOCK_MUTEX(bInLock, pStatistic->pmutex);
 
@@ -145,57 +213,18 @@ VmDirOPStatistic(
 {
     DWORD   dwError = 0;
     PSTR    pszStatistic = NULL;
-    PCSTR   pszOPName = NULL;
     PVMDIR_OPERATION_STATISTIC   pOPStatistic = NULL;
 
-    switch (opTag)
-    {
-       case LDAP_REQ_BIND:
-           pszOPName = "Bind";
-           pOPStatistic = &gVmdirOPStatisticGlobals.opBind;
-          break;
-
-       case LDAP_REQ_ADD:
-           pszOPName = "Add";
-           pOPStatistic = &gVmdirOPStatisticGlobals.opAdd;
-          break;
-
-       case LDAP_REQ_SEARCH:
-           pszOPName = "Search";
-           pOPStatistic = &gVmdirOPStatisticGlobals.opSearch;
-          break;
-
-       case LDAP_REQ_MODIFY:
-           pszOPName = "Modify";
-           pOPStatistic = &gVmdirOPStatisticGlobals.opModify;
-           break;
-
-       case LDAP_REQ_DELETE:
-           pszOPName = "Delete";
-           pOPStatistic = &gVmdirOPStatisticGlobals.opDelete;
-           break;
-
-       case LDAP_REQ_UNBIND:
-           pszOPName = "Unbind";
-           pOPStatistic = &gVmdirOPStatisticGlobals.opUnbind;
-           break;
-
-       case LDAP_REQ_MODDN:
-       case LDAP_REQ_COMPARE:
-       case LDAP_REQ_ABANDON:
-       case LDAP_REQ_EXTENDED:
-       default:
-
-          break;
-    }
-
+    pOPStatistic = _VmDirGetStatisticFromTag(opTag);
     if (pOPStatistic != NULL)
     {
+        PCSTR pszOPName = VmDirGetOperationStringFromTag(opTag);
+
         dwError = VmDirAllocateStringAVsnprintf(
                         &pszStatistic,
                         "LDAP %10s - count:(%ld), Avg response time in MS:(%ld)",
                         pszOPName,
-                        VmDirOPStatisticGetCount(pOPStatistic),
+                        VmDirOPStatisticGetCount(opTag),
                         VmDirOPStatisticGetAvgTime(pOPStatistic));
         BAIL_ON_VMDIR_ERROR(dwError);
     }

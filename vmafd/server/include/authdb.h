@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : authdb.h
+ *
+ * Abstract :
+ *
+ */
 #ifndef _AUTHDB_H__
 #define _AUTHDB_H__
 

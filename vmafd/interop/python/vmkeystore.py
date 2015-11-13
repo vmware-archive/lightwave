@@ -1,12 +1,12 @@
 #
-# Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+# Copyright 2012-2015 VMware, Inc.  All Rights Reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the “License”); you may not
+# Licensed under the Apache License, Version 2.0 (the "License"): you may not
 # use this file except in compliance with the License.  You may obtain a copy
 # of the License at http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an “AS IS” BASIS, without
+# distributed under the License is distributed on an "AS IS" BASIS, without
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for the specific language governing permissions and limitations
 # under the License.
@@ -94,18 +94,16 @@ class VmKeyStore:
             self._client.CloseCertStore(self._store_context)
         self._store_context = self._client.OpenCertStore(store_name, password)
 
-    def set_certificate_entry(self, alias, cert):
+    def set_certificate_entry(self, alias, cert, password=''):
         key = ''
         entry_type = 3
-        password = ''
         self._client.AddCert(self._store_context, entry_type, alias, cert, key, password, True)
 
     def set_entry(self, alias, entry, protParam):
         pass
 
-    def set_key_entry(self, alias, key, cert):
+    def set_key_entry(self, alias, key, cert, password=''):
         entry_type = 1
-        password = ''
         self._client.AddCert(self._store_context, entry_type, alias, cert, key, password, True)
 
     def size(self):

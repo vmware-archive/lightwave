@@ -1,0 +1,7 @@
+[photon-extras]
+name=VMware Photon Extras 1.0(x86_64)
+baseurl=https://dl.bintray.com/vmware/photon_extras
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY
+gpgcheck=0
+enabled=1
+skip_if_unavailable=True

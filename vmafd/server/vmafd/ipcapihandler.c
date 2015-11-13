@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : ipcapihandler.c
+ *
+ * Abstract :
+ *
+ */
 #include "includes.h"
 
 
@@ -266,6 +274,17 @@ VmAfdLocalAPIHandler(
                             );
             break;
 
+        case VMAFD_IPC_GET_RHTTPPROXY_PORT:
+
+            dwError = VmAfdIpcGetRHTTPProxyPort(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+            break;
+
         case VMAFD_IPC_SET_RHTTPPROXY_PORT:
 
             dwError = VmAfdIpcSetRHTTPProxyPort(
@@ -354,6 +373,17 @@ VmAfdLocalAPIHandler(
                             );
             break;
 
+        case VMAFD_IPC_GET_SITE_NAME:
+
+            dwError = VmAfdIpcGetSiteName(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+            break;
+
         case VMAFD_IPC_GET_MACHINE_ID:
 
             dwError = VmAfdIpcGetMachineID(
@@ -401,6 +431,17 @@ VmAfdLocalAPIHandler(
         case VMAFD_IPC_JOIN_VMDIR:
 
             dwError = VmAfdIpcJoinVmDir(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+            break;
+
+        case VMAFD_IPC_JOIN_VMDIR_2:
+
+            dwError = VmAfdIpcJoinVmDir2(
                             pConnectionContext,
                             pRequest,
                             dwRequestSize,
@@ -511,6 +552,111 @@ VmAfdLocalAPIHandler(
         case VMAFD_IPC_TRIGGER_ROOT_CERTS_REFRESH:
 
             dwError = VmAfdIpcTriggerRootCertsRefresh(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+            break;
+
+        case VMAFD_IPC_REFRESH_SITE_NAME:
+
+            dwError = VmAfdIpcRefreshSiteName(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+            break;
+
+        case VMAFD_IPC_CONFIGURE_DNS:
+
+            dwError = VmAfdIpcConfigureDNS(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+            break;
+
+        case CDC_IPC_GET_DC_NAME:
+            dwError = CdcIpcGetDCName(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+            break;
+
+        case CDC_IPC_GET_CDC_STATE:
+            dwError = CdcIpcGetCurrentState(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+
+            break;
+
+        case CDC_IPC_FORCE_REFRESH_CACHE:
+            dwError = CdcIpcForceRefreshCache(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+
+            break;
+
+        case CDC_IPC_ENUM_DC_ENTRIES:
+            dwError = CdcIpcEnumDCEntries(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+
+            break;
+       case CDC_IPC_ENABLE_CLIENT_AFFINITY:
+            dwError = CdcIpcEnableClientAffinity(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+
+            break;
+       case CDC_IPC_DISABLE_CLIENT_AFFINITY:
+            dwError = CdcIpcDisableClientAffinity(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+
+            break;
+
+       case VMAFD_IPC_POST_HEARTBEAT:
+            dwError = VmAfdIpcPostHeartbeatStatus(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+            break;
+
+       case VMAFD_IPC_GET_HEARBEAT_STATUS:
+            dwError = VmAfdIpcGetHeartbeatStatus(
                             pConnectionContext,
                             pRequest,
                             dwRequestSize,

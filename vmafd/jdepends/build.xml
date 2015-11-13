@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2011 VMware, Inc. All rights reserved. VMware confidential.
+-->
+<project name="vmware-vmafd-depends" default="build" basedir=".">
+
+   <property name="MAINSRCROOT" value="${basedir}/.." />
+   <property file="../product.properties" />
+   <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
+   <property name="depends" value="${MAINSRCROOT}/build/depends" />
+
+   <import file="${MAINSRCROOT}/build/ant/presets.xml" />
+   <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
+
+   <target name="build">
+
+ <!-- Download all necessary dependencies for VMAFD(Authentication Framework) from Nexus Maven Repo -->
+
+  <echo message="Downloading the JARs" />
+
+   <copy todir="${depends}" verbose="true" overwrite="false" flatten="true">
+       <resources>
+
+          <!-- CORE (COMPILE_TIME + RUN_TIME)DEPENDENCIES -->
+          <url url="http://build-squid.eng.vmware.com/nexus/content/repositories/central/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar" />
+          <url url="http://build-squid.eng.vmware.com/nexus/content/repositories/central/commons-lang/commons-lang/2.5/commons-lang-2.5.jar" />
+          <url url="http://build-squid.eng.vmware.com/nexus/content/repositories/central/net/java/dev/jna/jna/3.5.1/jna-3.5.1.jar" />
+          <url url="http://build-squid.eng.vmware.com/nexus/content/repositories/central/net/java/dev/jna/platform/3.5.1/platform-3.5.1.jar" />
+
+          <!-- TEST DEPENDENCIES -->
+           <url url="http://build-squid.eng.vmware.com/nexus/content/repositories/central/org/powermock/powermock-easymock-release-full/1.6.2/powermock-easymock-release-full-1.6.2-full.jar" />
+
+         </resources>
+     </copy>
+   
+     <move file="${depends}/jna-3.5.1.jar" tofile="${depends}/jna.jar" />
+     <move file="${depends}/platform-3.5.1.jar" tofile="${depends}/platform.jar" />    
+    
+   </target>
+
+   <target name="clean">
+        <delete dir="${buildRoot}" />
+   </target>
+
+</project>

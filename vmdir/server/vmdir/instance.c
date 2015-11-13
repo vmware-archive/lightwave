@@ -126,7 +126,8 @@ _VmDirSrvCreateBuiltInCertGroup(
     PCSTR            pszGroupName,
     PCSTR            pszDN,
     PCSTR            pszAdminDN,
-    PCSTR            pszDCGroupDN
+    PCSTR            pszDCGroupDN,
+    PCSTR            pszDCClientGroupDN
     );
 
 static
@@ -209,6 +210,17 @@ VmDirSrvSetupHostInstance(
     if (pszSiteName)
     {
         pszSiteContainerName = pszSiteName;
+    }
+
+    // If joining another node, copy schema from the partner first.
+    if (!IsNullOrEmptyString(pszReplURI))
+    {
+        dwError = VmDirCopyPartnerSchema(
+                pszFQDomainName,
+                pszUsername,
+                pszPassword,
+                pszReplURI);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     dwError = VmDirSchemaCtxAcquire( &pSchemaCtx );
@@ -396,6 +408,7 @@ VmDirSrvSetupHostInstance(
 
     gVmdirServerGlobals.bvDCGroupDN.lberbv_val = pszDCGroupDN;
     gVmdirServerGlobals.bvDCGroupDN.lberbv_len = VmDirStringLenA(pszDCGroupDN);
+    gVmdirServerGlobals.bvDCGroupDN.bOwnBvVal = TRUE;
     pszDCGroupDN = NULL;
     dwError = VmDirNormalizeDN( &(gVmdirServerGlobals.bvDCGroupDN), pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -410,6 +423,7 @@ VmDirSrvSetupHostInstance(
 
     gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val = pszDCClientGroupDN;
     gVmdirServerGlobals.bvDCClientGroupDN.lberbv_len = VmDirStringLenA(pszDCClientGroupDN);
+    gVmdirServerGlobals.bvDCClientGroupDN.bOwnBvVal = TRUE;
     pszDCClientGroupDN = NULL;
     dwError = VmDirNormalizeDN( &(gVmdirServerGlobals.bvDCClientGroupDN), pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -423,6 +437,7 @@ VmDirSrvSetupHostInstance(
 
     gVmdirServerGlobals.bvServicesRootDN.lberbv_val = pszServicesRootDN;
     gVmdirServerGlobals.bvServicesRootDN.lberbv_len = VmDirStringLenA(pszServicesRootDN);
+    gVmdirServerGlobals.bvServicesRootDN.bOwnBvVal = TRUE;
     pszServicesRootDN = NULL;
     dwError = VmDirNormalizeDN( &(gVmdirServerGlobals.bvServicesRootDN), pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -625,6 +640,7 @@ VmDirSrvSetupDomainInstance(
     PSTR pszDCGroupDN = NULL;
     PSTR pszDCClientGroupDN = NULL;
     PSTR pszCertGroupDN = NULL;
+    PSTR pszTenantRealmName = NULL;
 
     PSECURITY_DESCRIPTOR_RELATIVE pSecDescRel = NULL;
     ULONG                         ulSecDescRel = 0;
@@ -684,6 +700,19 @@ VmDirSrvSetupDomainInstance(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
+    else
+    {   // setup tenant scenario.
+        // Though we only support system domain kdc, we need UPN for SRP to function.
+        dwError = VmDirKrbRealmNameNormalize(pszFQDomainName, &pszTenantRealmName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirAllocateStringAVsnprintf(
+                        &pszAdminUserKrbUPN,
+                        "%s@%s",
+                        pszUsername,
+                        pszTenantRealmName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     // Create Admin user
 
@@ -715,10 +744,10 @@ VmDirSrvSetupDomainInstance(
                                         &pszBuiltInUsersGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (bSetupHost == FALSE             // create user group for tenant setup
-        ||
-        bFirstNodeBootstrap == TRUE     // create user group only for first host setup
-       )
+    //
+    // Create the user group for tenant setup or for first host setup.
+    //
+    if (bSetupHost == FALSE || bFirstNodeBootstrap == TRUE)
     {
         dwError = VmDirSrvCreateBuiltInUsersGroup( pSchemaCtx, pszBuiltInUsersGroupName,
                                                    pszBuiltInUsersGroupDN, pszUserDN,
@@ -737,10 +766,10 @@ VmDirSrvSetupDomainInstance(
                                         &pszAdminsGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (bSetupHost == FALSE             // create admin group for tenant setup
-        ||
-        bFirstNodeBootstrap == TRUE     // create admin group only for first host setup
-       )
+    //
+    // Create the admin group for tenant setup or for first host setup.
+    //
+    if (bSetupHost == FALSE || bFirstNodeBootstrap == TRUE)
     {
         dwError = VmDirSrvCreateBuiltInAdminGroup( pSchemaCtx, pszBuiltInAdministratorsGroupName,
                                                    pszBuiltInAdministratorsGroupDN, pszUserDN,
@@ -748,7 +777,10 @@ VmDirSrvSetupDomainInstance(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    // create DCadmins/DCClients/CERTAdmins group only for the very first host setup
+    //
+    // Create DCadmins/DCClients/CERTAdmins groups only for the very first
+    // host setup.
+    //
     if ( bSetupHost && bFirstNodeBootstrap )
     {
         // create DCAdmins Group
@@ -786,7 +818,8 @@ VmDirSrvSetupDomainInstance(
                                                    VMDIR_CERT_GROUP_NAME,
                                                    pszCertGroupDN,
                                                    pszUserDN,           // member: default administrator
-                                                   pszDCGroupDN);       // member: DCAdmins group
+                                                   pszDCGroupDN,        // member: DCAdmins group
+                                                   pszDCClientGroupDN); // member: DCClients group
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -833,10 +866,7 @@ VmDirSrvSetupDomainInstance(
     dwError = VmDirSetSecurityDescriptorForDn( pszFSPsContainerDN, SecInfo, pSecDescRel, ulSecDescRel);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (bSetupHost == FALSE
-        ||
-        bFirstNodeBootstrap == TRUE
-       )
+    if (bSetupHost == FALSE || bFirstNodeBootstrap == TRUE)
     {
         // Set SD for BuiltInUsers group
 
@@ -856,11 +886,14 @@ VmDirSrvSetupDomainInstance(
         dwError = VmDirSetSecurityDescriptorForDn( pszDCGroupDN, SecInfo, pSecDescRel, ulSecDescRel);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        // Set SD for BuiltIn DCClients group
+        dwError = VmDirSetSecurityDescriptorForDn(pszDCClientGroupDN, SecInfo, pSecDescRel, ulSecDescRel);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         // Set SD for BuiltIn Cert group
         dwError = VmDirSetSecurityDescriptorForDn( pszCertGroupDN, SecInfo, pSecDescRel, ulSecDescRel);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-
 
     // Create default password and lockout policy
     dwError = VmDirSrvCreateDN( PASSWD_LOCKOUT_POLICY_DEFAULT_CN, pszDomainDN, &pszDefaultPasswdLockoutPolicyDN );
@@ -885,6 +918,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszDCGroupDN);
     VMDIR_SAFE_FREE_MEMORY(pszDCClientGroupDN);
     VMDIR_SAFE_FREE_MEMORY(pszCertGroupDN);
+    VMDIR_SAFE_FREE_MEMORY(pszTenantRealmName);
 
     VMDIR_SAFE_FREE_MEMORY(pSecDescRel);
 
@@ -1276,7 +1310,8 @@ _VmDirSrvCreateBuiltInCertGroup(
     PCSTR            pszGroupName,
     PCSTR            pszDN,
     PCSTR            pszAdminDN,
-    PCSTR            pszDCGroupDN
+    PCSTR            pszDCGroupDN,
+    PCSTR            pszDCClientGroupDN
     )
 {
     DWORD dwError = 0;
@@ -1287,6 +1322,7 @@ _VmDirSrvCreateBuiltInCertGroup(
             ATTR_SAM_ACCOUNT_NAME,(PSTR)pszGroupName,
             ATTR_MEMBER,          (PSTR)pszAdminDN,
             ATTR_MEMBER,          (PSTR)pszDCGroupDN,
+            ATTR_MEMBER,          (PSTR)pszDCClientGroupDN,
             NULL
     };
 

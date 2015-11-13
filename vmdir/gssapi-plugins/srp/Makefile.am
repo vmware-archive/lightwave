@@ -2,6 +2,8 @@ lib_LTLIBRARIES = libgssapi_srp.la
 
 libgssapi_srp_la_CPPFLAGS = \
    -D_MIT_KRB5_1_11 \
+   -D_MIT_KRB5_1_12 \
+   -I. \
    -I$(top_srcdir)/gssapi-plugins/srp \
    -I$(top_srcdir)/include \
    -I$(top_srcdir) \
@@ -21,6 +23,7 @@ libgssapi_srp_la_SOURCES = \
 	srp_init_sec_ctx.c \
 	srp_del_sec_ctx.c \
 	srp_mech.c \
+	srp_mech_desc_srp10.c \
 	srp_wrap_iov.c \
 	srp_unwrap_iov.c \
 	srp_util.c \

@@ -63,6 +63,16 @@ VmAfdRpcGetErrorCode(
     dcethread_exc* pDceException
     );
 
+PVMAFD_SERVER
+VmAfdAcquireServer(
+    PVMAFD_SERVER pServer
+    );
+
+VOID
+VmAfdReleaseServer(
+    PVMAFD_SERVER pServer
+    );
+
 /* rpc.c */
 
 DWORD
@@ -160,6 +170,11 @@ VmAfdLocalSetLDU(
 );
 
 DWORD
+VmAfdLocalGetRHTTPProxyPort(
+    PDWORD pdwPort
+    );
+
+DWORD
 VmAfdLocalSetRHTTPProxyPort(
     DWORD dwPort
 );
@@ -201,6 +216,11 @@ VmAfdLocalGetSiteGUID(
 );
 
 DWORD
+VmAfdLocalGetSiteName(
+    PWSTR* ppwszSiteName
+);
+
+DWORD
 VmAfdLocalGetMachineID(
     PWSTR* ppwszMachineID
 );
@@ -236,6 +256,16 @@ VmAfdLocalJoinVmDir(
     PCWSTR pwszDomainName,
     PCWSTR pwszOrgUnit
 );
+
+DWORD
+VmAfdLocalJoinVmDir2(
+    PCWSTR           pwszDomainName,
+    PCWSTR           pwszUserName,
+    PCWSTR           pwszPassword,
+    PCWSTR           pwszMachineName,
+    PCWSTR           pwszOrgUnit,
+    VMAFD_JOIN_FLAGS dwFlags
+    );
 
 DWORD
 VmAfdLocalLeaveVmDir(
@@ -295,3 +325,58 @@ DWORD
 VmAfdLocalTriggerRootCertsRefresh(
     VOID
 );
+
+DWORD
+VmAfdLocalRefreshSiteName(
+    VOID
+);
+
+DWORD
+VmAfdLocalPostHeartbeat(
+    PCWSTR pwszServiceName,
+    DWORD  dwPort
+);
+
+DWORD
+VmAfdLocalGetHeartbeatStatus(
+    PVMAFD_HB_STATUS_W* ppHeartbeatStatus
+);
+
+DWORD
+VmAfdLocalConfigureDNSW(
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword
+    );
+
+// cdclocalclient.c
+
+DWORD
+CdcLocalEnableClientAffinity(
+    VOID
+    );
+
+DWORD
+CdcLocalDisableClientAffinity(
+    VOID
+    );
+
+DWORD
+CdcLocalGetDCNameW(
+    PCWSTR pszDomainName,
+    GUID_W pDomainGuid,
+    PCWSTR pszSiteName,
+    DWORD dwFlags,
+    PCDC_DC_INFO_W *ppDomainControllerInfo
+    );
+
+DWORD
+CdcLocalEnumDCEntries(
+    PWSTR **ppszDCEntries,
+    PDWORD pdwCount
+    );
+
+DWORD
+CdcLocalGetCurrentState(
+    PDWORD pdwState
+    );
+

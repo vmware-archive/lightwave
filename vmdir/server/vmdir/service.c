@@ -122,6 +122,7 @@ VmDirRegisterRpcServer(
     VMDIR_IF_HANDLE_T pVmDirInterfaceSpec    = vmdir_v1_4_s_ifspec;
     VMDIR_IF_HANDLE_T pVmDirFtpInterfaceSpec = vmdirftp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pSrpVerifierInterfaceSpec = rpc_srp_verifier_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
+    VMDIR_IF_HANDLE_T pSuperLogInterfaceSpec = vmdirsuperlog_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_RPC_BINDING_VECTOR_P_T pServerBinding = NULL;
 
     ulError = VmDirRpcServerRegisterIf(pVmDirInterfaceSpec);
@@ -131,6 +132,9 @@ VmDirRegisterRpcServer(
     BAIL_ON_VMDIR_ERROR(ulError);
 
     ulError = VmDirRpcServerRegisterIf(pSrpVerifierInterfaceSpec);
+    BAIL_ON_VMDIR_ERROR(ulError);
+
+    ulError = VmDirRpcServerRegisterIf(pSuperLogInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "VMware Directory Service registered successfully.");
@@ -176,11 +180,15 @@ VmDirUnRegisterRpcServer(
     ULONG ulError = 0;
     VMDIR_IF_HANDLE_T pVmDirInterfaceSpec    = vmdir_v1_4_s_ifspec;
     VMDIR_IF_HANDLE_T pVmDirFtpInterfaceSpec = vmdirftp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
+    VMDIR_IF_HANDLE_T pVmDirSuperLogInterfaceSpec = vmdirsuperlog_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
 
     ulError = VmDirRpcServerUnRegisterIf(pVmDirInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     ulError = VmDirRpcServerUnRegisterIf(pVmDirFtpInterfaceSpec);
+    BAIL_ON_VMDIR_ERROR(ulError);
+
+    ulError = VmDirRpcServerUnRegisterIf(pVmDirSuperLogInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "VMware Directory Service unregistered successfully.");

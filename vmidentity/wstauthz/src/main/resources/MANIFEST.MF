@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Name: WSTAuthz
+Specification-Title: VMSTS component - WSTAuthz
+Specification-Vendor: VMware Inc.
+Specification-Version: 6.0.2
+Class-Path: commons-lang-2.5.jar diagnostics-6.0.2.jar samltoken-6.0.2.jar admin-interfaces-6.0.2.jar log4j-1.2-api-2.0.2.jar log4j-core-2.2.jar log4j-core-2.2.jar log4j-slf4j-impl-2.2.jar slf4j-api-1.7.10.jar
+

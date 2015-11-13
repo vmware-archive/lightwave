@@ -267,6 +267,7 @@ VmwDeployBuildParams(
     DWORD dwError = 0;
     PVMW_IC_SETUP_PARAMS pSetupParams = NULL;
     PSTR pszPassword1 = NULL;
+    PSTR pszHostname = NULL;
 
     dwError = VmwDeployAllocateMemory(
                     sizeof(*pSetupParams),
@@ -287,12 +288,29 @@ VmwDeployBuildParams(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
-    dwError = VmwDeployGetHostname(&pSetupParams->pszHostname);
+    dwError = VmwDeployGetHostname(&pszHostname);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     if (IsNullOrEmptyString(pszDomain))
     {
         pszDomain = VMW_DEFAULT_DOMAIN_NAME;
+    }
+
+    if (!strchr(pszHostname, '.'))
+    {
+        dwError = VmwDeployAllocateStringPrintf(
+                        &pSetupParams->pszHostname,
+                        "%s.%s",
+                        pszHostname,
+                        pszDomain);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmwDeployAllocateStringA(
+                        pszHostname,
+                        &pSetupParams->pszHostname);
+        BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
     if (!pszPassword)
@@ -325,6 +343,10 @@ cleanup:
     if (pszPassword1)
     {
         VmwDeployFreeMemory(pszPassword1);
+    }
+    if (pszHostname)
+    {
+        VmwDeployFreeMemory(pszHostname);
     }
 
     return dwError;

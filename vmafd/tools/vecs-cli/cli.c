@@ -313,7 +313,8 @@ VecsCliAddEntryA(
     PCSTR pszPassword,
     PCSTR pszAlias,
     PCSTR pszCertFilePath,
-    PCSTR pszKeyFilePath
+    PCSTR pszKeyFilePath,
+    PCSTR pszKeyPassword
     )
 {
     DWORD dwError = 0;
@@ -400,7 +401,7 @@ VecsCliAddEntryA(
                       IsNullOrEmptyString(pszAlias)?pszAliasUsed:pszAlias,
                       pszCertificate,
                       pszKey,
-                      NULL, //PASSWORD
+                      pszKeyPassword, //PASSWORD
                       0 //AUTO_REFRESH
                       );
     BAIL_ON_VMAFD_ERROR (dwError);
@@ -544,7 +545,8 @@ DWORD VecsCliGetKeyA(
     PCSTR pszPassword,
     PCSTR pszAlias,
     PCSTR pszOutputFilePath,
-    DWORD dwFormatAsText
+    DWORD dwFormatAsText,
+    PCSTR pszKeyPassword
     )
 {
     DWORD dwError = 0;
@@ -599,7 +601,7 @@ DWORD VecsCliGetKeyA(
     dwError = VecsGetKeyByAliasA(
                         pStore,
                         pszAlias,
-                        NULL,
+                        pszKeyPassword,
                         &pszKey
                         );
     BAIL_ON_VMAFD_ERROR (dwError);

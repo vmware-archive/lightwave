@@ -52,7 +52,8 @@ VmDirReplUpdateCookies(
 DWORD
 VmDirCacheKrb5Creds(
     PCSTR pszUPN,
-    PCSTR pszPwd
+    PCSTR pszPwd,
+    PSTR  *ppszErrorMsg
     );
 
 #ifdef __cplusplus

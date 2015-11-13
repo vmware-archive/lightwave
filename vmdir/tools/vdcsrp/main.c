@@ -27,10 +27,9 @@
 
 #include "includes.h"
 
-#define VMDIR_MAX_PWD_LEN 127
-
+static
 int
-main(int argc, char* argv[])
+VmDirMain(int argc, char* argv[])
 {
     DWORD   dwError = 0;
 
@@ -101,3 +100,44 @@ error:
     goto cleanup;
 }
 
+#ifdef _WIN32
+
+int wmain(int argc, wchar_t* argv[])
+{
+    DWORD dwError = 0;
+    PSTR* ppszArgs = NULL;
+    int   iArg = 0;
+
+    dwError = VmDirAllocateMemory(sizeof(PSTR) * argc, (PVOID*)&ppszArgs);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (; iArg < argc; iArg++)
+    {
+        dwError = VmDirAllocateStringAFromW(argv[iArg], &ppszArgs[iArg]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirMain(argc, ppszArgs);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+error:
+
+    if (ppszArgs)
+    {
+        for (iArg = 0; iArg < argc; iArg++)
+        {
+            VMDIR_SAFE_FREE_MEMORY(ppszArgs[iArg]);
+        }
+        VmDirFreeMemory(ppszArgs);
+    }
+
+    return dwError;
+}
+#else
+
+int main(int argc, char* argv[])
+{
+    return VmDirMain(argc, argv);
+}
+
+#endif

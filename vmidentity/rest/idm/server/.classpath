@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" output="target/classes" path="src/main/java">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="common"/>
+	<classpathentry excluding="**" kind="src" output="target/classes" path="src/main/resources">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" output="target/test-classes" path="src/test/java">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry excluding="java/" kind="src" path="src/test"/>
+	<classpathentry kind="src" path="src/integration-test/java/com/vmware/identity/rest/idm/server/test/integration"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path="/idm"/>
+	<classpathentry kind="src" path="/vmware-identity-rest-idm-common"/>
+	<classpathentry kind="lib" path="/workspaces/p4/lotus/main/build/identity-server/packages/vmware-identity-diagnostics-src.jar"/>
+	<classpathentry kind="lib" path="/workspaces/p4/lotus/main/build/identity-server/packages/vmware-identity-diagnostics.jar"/>
+	<classpathentry kind="src" path="/vmware-identity-rest-core-common"/>
+	<classpathentry kind="lib" path="/workspaces/p4/lotus/lotus-main/build/rd-identity-server/packages/vmware-identity-rest-idm-common.jar"/>
+	<classpathentry kind="output" path="target/classes"/>
+</classpath>

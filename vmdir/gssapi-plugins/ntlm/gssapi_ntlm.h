@@ -19,7 +19,6 @@
 
 
 /*
- * Copyright (C) 2014, VMware Inc. All rights reserved.
  *
  * Module: gssapi_ntlm.h
  * Abstract:

@@ -1,0 +1,145 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{CDA5E15B-2F8D-4FE4-86C5-36B614A2E069}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Vmware.Tools.RestSsoAdminSnapIn.Service</RootNamespace>
+    <AssemblyName>Vmware.Tools.RestSsoAdminSnapIn.Service</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\..\..\mmc\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\..\..\mmc\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\..\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <WarningLevel>4</WarningLevel>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>..\..\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.IdentityModel" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.IdentityModel.Tokens.Jwt">
+      <HintPath>..\..\..\mac\VMRestSsoSnapIn\packages\System.IdentityModel.Tokens.Jwt.4.0.2.206221351\lib\net45\System.IdentityModel.Tokens.Jwt.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AdfService.cs" />
+    <Compile Include="AuthenticationException.cs" />
+    <Compile Include="AuthenticationService.cs" />
+    <Compile Include="CertificateScope.cs" />
+    <Compile Include="CertificateService.cs" />
+    <Compile Include="DomainType.cs" />
+    <Compile Include="IAuthenticationService.cs" />
+    <Compile Include="Contracts\IExternalIdentityProviderService.cs" />
+    <Compile Include="JwtTokenService.cs" />
+    <Compile Include="Mac\ExternalIdentityProviderService.cs" />
+    <Compile Include="OidcClientResource.cs" />
+    <Compile Include="RelyingPartyService.cs" />
+    <Compile Include="GroupMemberType.cs" />
+    <Compile Include="GroupService.cs" />
+    <Compile Include="HttpTransportService.cs" />
+    <Compile Include="IdentityProviderService.cs" />
+    <Compile Include="MemberType.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ResourceHelper.cs" />
+    <Compile Include="SamlTokenService.cs" />
+    <Compile Include="SearchType.cs" />
+    <Compile Include="ServerService.cs" />
+    <Compile Include="ServiceConfigManager.cs" />
+    <Compile Include="ServiceGateway.cs" />
+    <Compile Include="ServiceHelper.cs" />
+    <Compile Include="SolutionUserSearchType.cs" />
+    <Compile Include="SolutionUserService.cs" />
+    <Compile Include="TenantService.cs" />
+    <Compile Include="UserService.cs" />
+    <Compile Include="SerializationJsonHelper.cs" />
+    <Compile Include="Win\ExternalIdentityProviderService.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="xml\SAMLRequest.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\RestSsoAdminSnapIn.Core\RestSsoAdminSnapIn.Core.csproj">
+      <Project>{B64D4A16-C162-4FCD-943A-AEB556769D3C}</Project>
+      <Name>RestSsoAdminSnapIn.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\RestSsoAdminSnapIn.Dto\RestSsoAdminSnapIn.Dto.csproj">
+      <Project>{F826B9EF-3AE2-4186-8D57-BCE8A72EA0B4}</Project>
+      <Name>RestSsoAdminSnapIn.Dto</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="xml\SAMLToken.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="xml\SAMLToken2.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="xml\SamlTokenByCertificate.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="xml\SamlTokenByToken.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="xml\SamlTokenByToken2.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="xml\SamlTokenByCertificate2.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="xml\BETLoginRequest.xml" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+</Project>

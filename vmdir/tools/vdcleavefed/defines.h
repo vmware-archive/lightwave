@@ -26,5 +26,3 @@
 #define VMDIR_OPTION_PASSWORD_LOGIN     "-w"
 
 #endif
-
-#define VMDIR_MAX_PWD_LEN     128

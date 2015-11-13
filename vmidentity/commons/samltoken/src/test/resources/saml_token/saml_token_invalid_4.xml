@@ -1,0 +1,19 @@
+<Assertion xmlns="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ns2="http://www.w3.org/2000/09/xmldsig#" ID="_b07b804c-7c29-ea16-7300-4f3d6f7928ac" IssueInstant="2004-12-05T09:05:05Z" Version="2.0"><Issuer Format="urn:oasis:names:tc:SAML:2.0:nameid-format:entity">    http://sts.example.com/service  </Issuer><ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:SignedInfo><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><ds:Reference URI="#_b07b804c-7c29-ea16-7300-4f3d6f7928ac"><ds:Transforms><ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/><ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/></ds:Transforms><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><ds:DigestValue>qiimbg8Zm0WuWLGbYfhV2iOdRRGARbwEysJCwaapDpo=</ds:DigestValue></ds:Reference></ds:SignedInfo><ds:SignatureValue>yaRxj9lMJnji8GBZ1hsxQ0XrxkehkVGz2zswa1j4eFTBA+8R2uHtEfFgt1iUpPqJLmRbTZberVkf
+jCDrWLDaJy6SZfCcP6CukJlLDC1MXTLRSH5kflg3O/+xeRXVvoUj5gJ12W8axYOEyEHDjJ+bPuXm
+yX6Da273/vz5tbm3hwkkarYM2hUTDXMqEfWm2jlVoPATqRcriy7s5dsJnE3qi9ucaqrnHnvmXaOR
+61pKb43mlo4uX2LnOZjKCT4nszZyonnfYUtbYJd4vJDmGW3np+41mmt/ufUHw3CXgdPKSVRv6mVU
+3GHtJJBIFwpJjv4XuyFGyKzjIuMWDx3rfiO9/g==</ds:SignatureValue><ds:KeyInfo><ds:X509Data><ds:X509Certificate>MIIDPDCCAiSgAwIBAgIES17AyTANBgkqhkiG9w0BAQsFADBgMQswCQYDVQQGEwJiZzEOMAwGA1UE
+CBMFc29maWExDjAMBgNVBAcTBXNvZmlhMQ8wDQYDVQQKEwZ2bXdhcmUxDzANBgNVBAsTBnZtd2Fy
+ZTEPMA0GA1UEAxMGdm13YXJlMB4XDTEwMDEyNjEwMTUzN1oXDTE0MTIzMTEwMTUzN1owYDELMAkG
+A1UEBhMCYmcxDjAMBgNVBAgTBXNvZmlhMQ4wDAYDVQQHEwVzb2ZpYTEPMA0GA1UEChMGdm13YXJl
+MQ8wDQYDVQQLEwZ2bXdhcmUxDzANBgNVBAMTBnZtd2FyZTCCASIwDQYJKoZIhvcNAQEBBQADggEP
+ADCCAQoCggEBAM3uoJMjO+cH3zlMg0SInvpRUcuV2BgpaDKoJvvw6yDjactGsievZOkDOTKJnk+q
+WyKC0xJTW3LUfnHAbWPASlN/P55XaAhjsNOPMshDHlIRE4MpCiXgaOv7mei2ZlmxxaIqG/74pktO
+AEsYjhZmzG4ssC2z4BBMO/QGQJB2qZEc+le48/rvcq8jAH94PzdSHhR84yQq4KI0ZuFX+nkn1A5c
+X8HCTBWLhLw5qZsZgGAHVNpKAw57YESCYiTAg7EXFFJth9cAAs61FuGsFOkAu+zFMLctT7BNTedm
+cCb9nJZuEYDbEEGEupWZpXO58ETkb4USGC+nvIMgZSK8zV5TvPsCAwEAATANBgkqhkiG9w0BAQsF
+AAOCAQEARP8FpJEtplSv/MKKJfQqrGNoouLz/BXhhz3gYrUDlUIvCpFEILyfwsqzZwNcMOlLXpQz
+x09yBFaP+9s9WQCN8Mmb+ZNVIf1Nx5AxV45cbW/kGgnQW8bJmIpehJkcv3EXlQ+tKsp7nF/cs/Jl
+OnG1SW3CnxR3Va5ADetQ3OC1IDYGVgEUkwU9xdtSsm1QRD1W+38ZnZbWwmPR5vnpw37BrlvWUh5g
+jNv5l/sd1A4mdbFhWZXJuXFy2u+5JuIkrOsdNAY7tnD3Lw8XNdmmLckcnpnOzcSU3xi9jGGH2Iy0
+PQz/yjmtl6rhcbd/t4Wr3kYlv2Zj/EmRwQxm5WEQolNqQA==</ds:X509Certificate></ds:X509Data></ds:KeyInfo></ds:Signature><Subject><NameID Format="http://schemas.xmlsoap.org/claims/UPN">      user@example.com    </NameID><SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><SubjectConfirmationData NotOnOrAfter="2021-12-05T09:27:05Z"/></SubjectConfirmation></Subject><Conditions NotBefore="2004-12-05T09:17:05Z" NotOnOrAfter="2020-12-05T09:27:05Z"/><AuthnStatement AuthnInstant="2004-12-05T09:22:00Z"><AuthnContext><AuthnContextClassRef>        urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport      </AuthnContextClassRef></AuthnContext></AuthnStatement><AttributeStatement><Attribute FriendlyName="Group" Name="http://rsa.com/schemas/attr-names/2009/01/GroupIdentity" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"><AttributeValue>Employee</AttributeValue><AttributeValue>Developer</AttributeValue></Attribute></AttributeStatement></Assertion>

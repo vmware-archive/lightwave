@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2015 VMware, Inc.  All rights reserved. -- VMware Confidential
+# Copyright 2015 VMware, Inc.  All rights reserved. --
 
 """
 Base script which takes care of all VECS/VMCA/DIR_CLI operations.

@@ -13,6 +13,7 @@ vdcpass_CPPFLAGS = \
 
 vdcpass_LDADD = \
     $(top_builddir)/client/libvmdirclient.la \
+    $(top_builddir)/common/libcommon.la \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \

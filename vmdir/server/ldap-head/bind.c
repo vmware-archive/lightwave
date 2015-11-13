@@ -58,7 +58,7 @@ VmDirPerformBind(
 
    VMDIR_LOG_VERBOSE( LDAP_DEBUG_ARGS,
        "Bind Request (%s): Protocol version: %d, Bind DN: \"%s\", Method: %ld",
-        VDIR_SAFE_STRING(pOperation->conn->pszSocketInfo),
+        pOperation->conn->szClientIP,
         pOperation->protocol,
         pOperation->reqDn.lberbv.bv_val, pBindReq->method );
 
@@ -116,7 +116,7 @@ VmDirPerformBind(
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
             "Bind Request Failed (%s) error %u: Protocol version: %d, Bind DN: \"%s\", Method: %ld",
-            VDIR_SAFE_STRING(pOperation->conn->pszSocketInfo),
+            pOperation->conn->szClientIP,
             retVal,
             pOperation->protocol,
             VDIR_SAFE_STRING(pOperation->reqDn.lberbv.bv_val),

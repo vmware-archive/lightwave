@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+       Copyright VMware, Inc. All rights reserved. VMware confidential.
+-->
+<project name="vmidentity-dist" default="build">
+   <property name="MAINSRCROOT" value="${basedir}/.." />
+   <property file="../product.properties" />
+   <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
+   <import file="${MAINSRCROOT}/build/ant/presets.xml" />
+   <import file="${MAINSRCROOT}/build/ant/libraries.xml" />
+
+   <property name="COMPONENT_DIST_DIR" location="${buildRoot}/dist" />
+   <property name="build.dist" location="${COMPONENT_DIST_DIR}" />
+   <property name="PUBLISH_DIR" location="${buildRoot}/publish" />
+   <property name="build.publish" location="${PUBLISH_DIR}" />
+
+   <target name="module.samltoken">
+      <make-module dir="samltoken" />
+   </target>
+
+   <target name="module.deploy">
+      <ant dir="samltoken" target="deploy"/>
+   </target>
+
+   <target name="module.publish" depends="module.samltoken">
+      <osfamily property="os_type" />
+          <if>
+              <not><equals arg1="${os_type}" arg2="windows" /></not>
+                  <then>
+                      <echo message="Publish Path: ${build.publish}" />
+                      <copy file="${build.dist}/samltoken.jar" todir="${build.publish}"/>
+                  </then>
+	  </if>
+   </target>
+
+   <target name="build" depends="module.samltoken"/>
+
+   <target name="publish" depends="module.publish"/>
+
+   <target name="deploy" depends="module.deploy"/>
+
+   <target name="clean" depends="import-helper-tasks">
+
+      <delete dir="${buildRoot}/${PRODUCT_NAME}" />
+
+   </target>
+
+</project>

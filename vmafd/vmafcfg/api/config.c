@@ -80,6 +80,36 @@ VmAfConfigCreateKey(
 }
 
 DWORD
+VmAfConfigDeleteKey(
+    PVMAF_CFG_CONNECTION pConnection,
+    PVMAF_CFG_KEY        pKey,
+    PCSTR                pszSubKey
+    )
+{
+    return gpVmAfCfgApiGlobals->pCfgPackage->pfnDeleteKey(
+                                                pConnection,
+                                                pKey,
+                                                pszSubKey
+                                                );
+}
+
+DWORD
+VmAfConfigEnumKeys(
+    PVMAF_CFG_CONNECTION pConnection,
+    PVMAF_CFG_KEY        pKey,
+    PSTR                 **ppszKeyNames,
+    PDWORD               pdwKeyNameCount
+    )
+{
+    return gpVmAfCfgApiGlobals->pCfgPackage->pfnEnumKeys(
+                                                pConnection,
+                                                pKey,
+                                                ppszKeyNames,
+                                                pdwKeyNameCount
+                                                );
+}
+
+DWORD
 VmAfConfigReadStringValue(
     PVMAF_CFG_KEY       pKey,
     PCSTR               pszSubkey,

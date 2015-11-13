@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : includes.h
+ *
+ * Abstract :
+ *
+ */
 #ifndef _WIN32
 
 #include <config.h>
@@ -48,6 +56,7 @@
 #include <vmafderrorcode.h>
 #include <vmafdcommon.h>
 #include <vmafdclient.h>
+#include <cdcclient.h>
 
 #include "defines.h"
 #include "structs.h"

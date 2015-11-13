@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/mvc"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+
+	<annotation-driven />
+	<context:annotation-config />
+
+    <context:component-scan base-package="com.vmware.identity.openidconnect.sample" />
+
+    <beans:bean id="sessionManager"  class="com.vmware.identity.openidconnect.sample.SessionManager"/>
+    <beans:bean id="authnStateRepo"  class="com.vmware.identity.openidconnect.sample.AuthnRequestStateRepository"/>
+    <beans:bean id="logoutStateRepo" class="com.vmware.identity.openidconnect.sample.LogoutRequestStateRepository"/>
+
+    <beans:bean id="relyingPartyConfig" class="com.vmware.identity.openidconnect.sample.RelyingPartyConfig">
+        <beans:property name="opFQDN"           value="localhost.localdomain" />
+        <beans:property name="opListeningPort"  value="443" />
+        <beans:property name="rpListeningPort"  value="7444" />
+        <beans:property name="regInfoDir"       value="/tmp/oidcRegInfo" />
+        <beans:property name="clientPrefix"     value="oidc-client-" />
+        <beans:property name="adminUsername"    value="Administrator@vsphere.local" />
+        <beans:property name="adminPassword"    value="Admin!23" />
+        <beans:property name="tenant"           value="vsphere.local" />
+        <beans:property name="rpHaEnabled"      value="false" />
+        <beans:property name="rpVecsEnabled"    value="false" />
+    </beans:bean>
+
+    <!-- Resolves views selected for rendering by @Controllers to .jsp resources in the /WEB-INF/views directory -->
+	<beans:bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<beans:property name="prefix" value="/WEB-INF/views/" />
+		<beans:property name="suffix" value=".jsp" />
+	</beans:bean>
+
+</beans:beans>

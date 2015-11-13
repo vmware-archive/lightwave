@@ -16320,6 +16320,7 @@ dITContentRules:  (
         $ posixGroup
         $ shadowAccount
         $ vmwServicePrincipal
+        $ vmwExternalIdpUser
         )
     MUST ( objectSid
          )
@@ -19558,6 +19559,166 @@ attributeTypes: (
     SINGLE-VALUE
     )
 
+attributetypes: (
+    VMWare.STS.attribute.72
+    NAME 'vmwSTSExternalIdpEnableJit'
+    DESC 'VMWare identity Service - Allow Just In Time Provisioning'
+    EQUALITY booleanMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.73
+    NAME 'vmwSTSExternalIdpUpnSuffix'
+    DESC 'VMWare identity Service - UPN Suffix for Just In Time Provisioning'
+    EQUALITY caseIgnoreMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.74
+    NAME 'vmwSTSExternalIdpUserId'
+    DESC 'VMWare identity Service - SubjectName string in external token'
+    EQUALITY caseIgnoreMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.75
+    NAME 'vmwSTSAuthnTypes'
+    DESC 'VMWare identity Service - Client Authn types allowed'
+    EQUALITY integerMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.76
+    NAME 'vmwSTSClientCertRevocationCheckEnabled'
+    DESC 'VMWare identity Service - Client Cert Revocation Check Enabled'
+    EQUALITY booleanMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.77
+    NAME 'vmwSTSClientCertOCSPEnabled'
+    DESC 'VMWare identity Service - Use OCSP whenever possible, Applicable only when vmwSTSClientCertRevocationCheckEnabled is true'
+    EQUALITY booleanMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.78
+    NAME 'vmwSTSClientCertUseCRLAsFailOver'
+    DESC 'VMWare identity Service - Client Cert Use CRL as Fail Over'
+    EQUALITY booleanMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.79
+    NAME 'vmwSTSClientCertSendOCSPNounce'
+    DESC 'VMWare identity Service - Client Cert Send OCSP Nounce'
+    EQUALITY booleanMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.80
+    NAME 'vmwSTSClientCertOCSPUrl'
+    DESC 'VMWare identity Service - Client Cert OCSP address'
+    EQUALITY caseExactMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.81
+    NAME 'vmwSTSClientCertUseCertCRL'
+    DESC 'VMWare identity Service - Check user certificate CRL distribution point'
+    EQUALITY booleanMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.82
+    NAME 'vmwSTSClientCertCRLUrl'
+    DESC 'VMWare identity Service - Client Cert Revocation check CRL address'
+    EQUALITY caseExactMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.83
+    NAME 'vmwSTSClientCertCRLCacheSize'
+    DESC 'VMWare identity Service - Client Cert CRL Check Cache Size'
+    EQUALITY integerMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.84
+    NAME 'vmwSTSClientCertCustomCertPolicyOid'
+    DESC 'VMWare identity Service - Custom certificate policy OID filters'
+    EQUALITY caseExactMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.85
+    NAME 'vmwSTSMaxBearerRefreshTokenLifetime'
+    DESC 'VMWare identity Service - Max Bearer Refresh Token Lifetime'
+    EQUALITY integerMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.86
+    NAME 'vmwSTSMaxHolderOfKeyRefreshTokenLifetime'
+    DESC 'VMWare identity Service - Max Holder of Key Refresh Token Lifetime'
+    EQUALITY integerMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.87
+    NAME 'vmwSTSLogonBannerTitle'
+    DESC 'VMWare identity Service - Logon Banner Title'
+    EQUALITY caseExactMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.88
+    NAME 'vmwSTSLogonBannerEnableCheckbox'
+    DESC 'VMWare identity Service - Enable checkbox for logon banner'
+    EQUALITY booleanMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.89
+    NAME 'vmwSTSEnableIdpSelection'
+    DESC 'VMWare identity Service - Enable IDP Selection per tenant'
+    EQUALITY booleanMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
 objectClasses: (
     VMWare.STS.objectclass.1
     NAME 'vmwSTSTenant'
@@ -19569,6 +19730,7 @@ objectClasses: (
          )
     MAY  ( name
          $ vmwSTSEntityId
+         $ vmwSTSAlias
          $ vmwSTSClockTolerance
          $ vmwSTSIssuerName
          $ vmwSTSDelegationCount
@@ -19582,8 +19744,14 @@ objectClasses: (
          $ vmwSTSDefaultIdentityProvider
          $ vmwSTSSignatureAlgorithmIdentifier
          $ vmwSTSBrandName
+         $ vmwSTSLogonBannerTitle
          $ vmwSTSLogonBanner
+         $ vmwSTSLogonBannerEnableCheckbox
+         $ vmwSTSEnableIdpSelection
          $ vmwSTSTenantKey
+         $ vmwSTSAuthnTypes
+         $ vmwSTSMaxBearerRefreshTokenLifetime
+         $ vmwSTSMaxHolderOfKeyRefreshTokenLifetime
          )
     )
 
@@ -19609,6 +19777,7 @@ objectClasses: (
          $ vmwSTSUserBaseDN
          $ vmwSTSGroupBaseDN
          $ vmwSTSConnectionStrings
+         $ userCertificate
          $ vmwSTSUpnSuffixes
          $ vmwSTSIdentityStoreFlags
          )
@@ -19795,8 +19964,146 @@ objectClasses: (
          $ vmwSTSEntityId
         )
    MAY ( vmwSTSNameIDFormat
+         $ vmwSTSExternalIdpEnableJit
+         $ vmwSTSExternalIdpUpnSuffix
+         $ vmwSTSAlias
        )
    )
+
+objectClasses: (
+    VMWare.STS.objectclass.25
+    NAME 'vmwExternalIdpUser'
+    DESC 'VMWare external idp user'
+    AUXILIARY
+    MUST ( vmwSTSEntityId
+           vmwSTSExternalIdpUserId
+        )
+    )
+
+objectClasses: (
+   VMWare.STS.objectclass.26
+   NAME 'vmwSTSTenantClientCertificatePolicy'
+   DESC 'VMware Identity Service - Client Certificate Policy'
+   SUP top
+   STRUCTURAL
+   MUST ( cn )
+   MAY ( vmwSTSClientCertRevocationCheckEnabled
+         $ vmwSTSClientCertOCSPEnabled
+         $ vmwSTSClientCertUseCRLAsFailOver
+         $ vmwSTSClientCertSendOCSPNounce
+         $ vmwSTSClientCertOCSPUrl
+         $ userCertificate
+         $ vmwSTSClientCertUseCertCRL
+         $ vmwSTSClientCertCRLUrl
+         $ vmwSTSClientCertCRLCacheSize
+         $ vmwSTSClientCertCustomCertPolicyOid
+       )
+   )
+
+############################################################
+# VMware OIDC
+############################################################
+
+attributeTypes: (
+    VMWare.OIDC.attribute.1
+    NAME 'vmwOidcClientID'
+    DESC 'Client identifier'
+    EQUALITY caseExactMatch
+    ORDERING caseExactOrderingMatch
+    SUBSTR caseExactSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.2
+    NAME 'vmwOidcRedirectURIs'
+    DESC 'Redirection URIs'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.3
+    NAME 'vmwOidcTokenEndpointAuthMethod'
+    DESC 'Token endpoint authentication method'
+    EQUALITY caseExactMatch
+    ORDERING caseExactOrderingMatch
+    SUBSTR caseExactSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.4
+    NAME 'vmwOidcTokenEndpointJWSAlg'
+    DESC 'Token endpoint JWS algorithm for JWT client authentication'
+    EQUALITY caseExactMatch
+    ORDERING caseExactOrderingMatch
+    SUBSTR caseExactSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.5
+    NAME 'vmwOidcIDTokenJWSAlg'
+    DESC 'ID Token JWS algorithm'
+    EQUALITY caseExactMatch
+    ORDERING caseExactOrderingMatch
+    SUBSTR caseExactSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.6
+    NAME 'vmwOidcPostLogoutRedirectURI'
+    DESC 'Post logout redirect URI'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.7
+    NAME 'vmwOidcLogoutURI'
+    DESC 'Logout URI'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.8
+    NAME 'vmwOidcCertSubDN'
+    DESC 'Certificate Subject DN'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+objectClasses: (
+    VMWare.OIDC.objectclass.1
+    NAME 'vmwOidcRelyingParty'
+    DESC 'OpenID Connect 1.0 Relying Party (RP)'
+    STRUCTURAL
+    MUST ( vmwOidcClientID $
+           vmwOidcRedirectURIs )
+    MAY ( vmwOidcTokenEndpointAuthMethod $
+          vmwOidcTokenEndpointJWSAlg $
+          vmwOidcIDTokenJWSAlg $
+          vmwOidcPostLogoutRedirectURI $
+          vmwOidcLogoutURI $
+          vmwOidcCertSubDN )
+    )
 
 ############################################################
 # VMware Lookup Service

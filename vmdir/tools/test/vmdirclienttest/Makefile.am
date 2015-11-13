@@ -15,6 +15,7 @@ vmdirclienttest_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 vmdirclienttest_LDADD = \
+    $(top_builddir)/common/libcommon.la \
     $(top_builddir)/client/libvmdirclient.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \

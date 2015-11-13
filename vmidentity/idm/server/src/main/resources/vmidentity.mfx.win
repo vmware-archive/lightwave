@@ -1,0 +1,26 @@
+% Manifest name: vmidentity
+% Manifest group: VirtualAppliance
+% Manifest default: Enabled
+
+# identity server logs
+copy IGNORE_MISSING $VMWARE_LOG_DIR/vmware/sso/*
+copy IGNORE_MISSING $VMWARE_LOG_DIR/sso/*
+copy IGNORE_MISSING $VMWARE_LOG_DIR/vmware-identity/*
+copy IGNORE_MISSING $VMWARE_RUNTIME_DATA_DIR/VMwareSTSService/logs/*
+
+# Lookup Service Registration Information
+run TIMEOUT=30,IGNORE_ERROR,IGNORE_MISSING,RELOCATE=commands\lstool.txt "%VMWARE_CIS_HOME%\python\python.exe" "%VMWARE_CIS_HOME%\VMware Identity Services\lstool\scripts\lstool.py" list --url "http://localhost:7080/lookupservice/sdk"
+
+
+# Get identity source information
+run TIMEOUT=30,IGNORE_ERROR,IGNORE_MISSING,RELOCATE=commands\sso-config.txt "%VMWARE_CIS_HOME%\VMware Identity Services\sso-config.bat" get_identity_sources %VMWARE_CIS_HOME%
+
+# Export registry entries to support bundle
+run EXTENSION=txt,TIMEOUT=30 reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\services\VMwareIdentityMgmtService" /s
+run EXTENSION=txt,TIMEOUT=30 reg query "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\services\VMwareSTS" /s
+run EXTENSION=txt,TIMEOUT=30 reg query "HKEY_LOCAL_MACHINE\SOFTWARE\VMware\Identity\Configuration" /s
+run EXTENSION=txt,TIMEOUT=30 reg query "HKEY_LOCAL_MACHINE\SOFTWARE\VMware, Inc.\VMware Identity Services" /s
+run EXTENSION=txt,TIMEOUT=30 reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Apache Software Foundation\Procrun 2.0\VMwareIdentityMgmtService\Parameters\Java" /s
+run EXTENSION=txt,TIMEOUT=30 reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Apache Software Foundation\Procrun 2.0\VMwareIdentityMgmtService\Parameters\Log" /s
+run EXTENSION=txt,TIMEOUT=30 reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Apache Software Foundation\Procrun 2.0\VMwareIdentityMgmtService\Parameters\Start" /s
+run EXTENSION=txt,TIMEOUT=30 reg query "HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Apache Software Foundation\Procrun 2.0\VMwareIdentityMgmtService\Parameters\Stop" /s

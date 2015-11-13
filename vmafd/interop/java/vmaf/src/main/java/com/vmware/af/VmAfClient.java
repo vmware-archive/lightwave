@@ -42,6 +42,11 @@ public class VmAfClient
         VmAfClientAdapter.setDomainName(_vmAfServerUrl, domain);
     }
 
+    public int getRHTTPProxyPort()
+    {
+        return VmAfClientAdapter.getRHTTPProxyPort(_vmAfServerUrl);
+    }
+
     public void setRHTTPProxyPort(int port)
     {
         VmAfClientAdapter.setRHTTPProxyPort(_vmAfServerUrl, port);
@@ -65,6 +70,11 @@ public class VmAfClient
     public String getPNID()
     {
         return VmAfClientAdapter.getPNID(_vmAfServerUrl);
+    }
+    
+    public String getPNIDUrl()
+    {
+        return VmAfClientAdapter.getPNIDUrl(_vmAfServerUrl);
     }
 
     public String getDomainController()
@@ -145,5 +155,10 @@ public class VmAfClient
     public PasswordCredential getMachineAccountCredentials()
     {
     	return VmAfClientAdapter.getMachineAccountCredentials();
+    }
+
+    public String getSiteGUID()
+    {
+        return VmAfClientAdapter.getSiteGUID(_vmAfServerUrl);
     }
 }

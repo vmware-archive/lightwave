@@ -27,8 +27,9 @@
 
 #include "includes.h"
 
+static
 int
-main(int argc, char* argv[])
+VmDirMain(int argc, char* argv[])
 {
     DWORD   dwError = 0;
 
@@ -37,6 +38,7 @@ main(int argc, char* argv[])
     PSTR    pszLoginPassword = NULL;
     PSTR    pszNewPassword = NULL;
     PSTR    pszUserDN = NULL;
+    CHAR    pszPasswordBuf[VMDIR_MAX_PWD_LEN + 1] = {0};
 
 
     setlocale(LC_ALL, "");
@@ -53,6 +55,13 @@ main(int argc, char* argv[])
     {
         ShowUsage();
         goto cleanup;
+    }
+
+    if (pszLoginPassword == NULL)
+    {
+        // read passowrd from stdin
+        VmDirReadString("password: ", pszPasswordBuf, VMDIR_MAX_PWD_LEN, TRUE);
+        pszLoginPassword = pszPasswordBuf;
     }
 
     if (pszUserDN) //set password
@@ -80,6 +89,9 @@ main(int argc, char* argv[])
     }
 
 cleanup:
+
+    memset(pszPasswordBuf, 0, sizeof(pszPasswordBuf));
+
     return dwError;
 
 error:
@@ -88,3 +100,44 @@ error:
     goto cleanup;
 }
 
+#ifdef _WIN32
+
+int wmain(int argc, wchar_t* argv[])
+{
+    DWORD dwError = 0;
+    PSTR* ppszArgs = NULL;
+    int   iArg = 0;
+
+    dwError = VmDirAllocateMemory(sizeof(PSTR) * argc, (PVOID*)&ppszArgs);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (; iArg < argc; iArg++)
+    {
+        dwError = VmDirAllocateStringAFromW(argv[iArg], &ppszArgs[iArg]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirMain(argc, ppszArgs);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+error:
+
+    if (ppszArgs)
+    {
+        for (iArg = 0; iArg < argc; iArg++)
+        {
+            VMDIR_SAFE_FREE_MEMORY(ppszArgs[iArg]);
+        }
+        VmDirFreeMemory(ppszArgs);
+    }
+
+    return dwError;
+}
+#else
+
+int main(int argc, char* argv[])
+{
+    return VmDirMain(argc, argv);
+}
+
+#endif

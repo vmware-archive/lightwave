@@ -145,7 +145,9 @@ VmAfdLog(
       }
       else
       {
+#ifndef __MACH__
          clock_gettime(CLOCK_REALTIME, &tspec);
+#endif
          gmtime_r(&tspec.tv_sec, &mytm);
          logLevelTag = logLevelToTag(level);
          snprintf(extraLogMessage, sizeof(extraLogMessage) - 1,

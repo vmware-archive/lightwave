@@ -54,6 +54,10 @@ extern "C" {
 
 #define GENERALIZED_TIME_STR_LEN       17
 
+#ifndef INET6_ADDRSTRLEN
+#define INET6_ADDRSTRLEN 46
+#endif
+
 #define SOCK_BUF_MAX_INCOMING ((1<<24) - 1) // 16M - 1, e.g. to handle large Add object requests.
 
 // Fix bootstrap attribute id used in schema/defines.h VDIR_SCHEMA_BOOTSTRP_ATTR_INITIALIZER definition
@@ -105,6 +109,16 @@ typedef struct _VDIR_BACKEND_CTX
                                     // i.e. should be the first USN number acquired per backend write txn.
 } VDIR_BACKEND_CTX, *PVDIR_BACKEND_CTX;
 
+// accessRoleBitmap is a bit map on bind dn access role if the info is valid
+#define VDIR_ACCESS_ADMIN_MEMBER_VALID_INFO 0x0001            // valid info in accessRoleBitmap on system domain admins
+#define VDIR_ACCESS_IS_ADMIN_MEMBER 0x0002                    // bind dn is a member of system domain admins
+#define VDIR_ACCESS_ADMIN_MEMBER_INFO VDIR_ACCESS_ADMIN_MEMBER_VALID_INFO
+#define VDIR_ACCESS_DCGROUP_MEMBER_VALID_INFO 0x0004          // valid info in accessRoleBitmap member of DC group
+#define VDIR_ACCESS_IS_DCGROUP_MEMBER 0x0008                  // bind dn is a member of DC group
+#define VDIR_ACCESS_DCGROUP_MEMBER_INFO VDIR_ACCESS_DCGROUP_MEMBER_VALID_INFO
+#define VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_VALID_INFO 0x0010   // valid info in accessRoleBitmap on member of DC client group
+#define VDIR_ACCESS_IS_DCCLIENT_GROUP_MEMBER 0x0020           // bind dn is a member of DC client group
+#define VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_INFO VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_VALID_INFO
 typedef struct _VDIR_ACCESS_INFO
 {
     ENTRYID       bindEID;     // bind user ENTRYID
@@ -112,9 +126,37 @@ typedef struct _VDIR_ACCESS_INFO
     PSTR          pszNormBindedDn;
     PSTR          pszBindedObjectSid;
     PACCESS_TOKEN pAccessToken;
+    UINT32        accessRoleBitmap; // access role if the info is valid
 } VDIR_ACCESS_INFO, *PVDIR_ACCESS_INFO;
 
 typedef struct _VDIR_SASL_BIND_INFO*    PVDIR_SASL_BIND_INFO;
+
+typedef struct _VDIR_SUPERLOG_RECORD_SEARCH_INFO
+{
+    PSTR    pszAttributes;
+    PSTR    pszBaseDN;
+    PSTR    pszScope;
+    PSTR    pszIndexResults;
+    DWORD   dwScanned;
+    DWORD   dwReturned;
+} VDIR_SUPERLOG_RECORD_SEARCH_INFO;
+
+typedef union _VDIR_SUPERLOG_RECORD_OPERATION_INFO
+{
+    VDIR_SUPERLOG_RECORD_SEARCH_INFO searchInfo;
+} VDIR_SUPERLOG_RECORD_OPERATION_INFO;
+
+typedef struct _VDIR_SUPERLOG_RECORD
+{
+    uint64_t   iStartTime;
+    uint64_t   iEndTime;
+
+    // bind op
+    PSTR       pszBindID; // could be either DN or UPN
+    PSTR       pszOperationParameters;
+
+    VDIR_SUPERLOG_RECORD_OPERATION_INFO opInfo;
+} VDIR_SUPERLOG_RECORD, *PVDIR_SUPERLOG_RECORD;
 
 typedef struct _VDIR_CONNECTION
 {
@@ -124,7 +166,11 @@ typedef struct _VDIR_CONNECTION
     BOOLEAN                 bIsAnonymousBind;
     BOOLEAN                 bIsLdaps;
     PVDIR_SASL_BIND_INFO    pSaslInfo;
-    PSTR                    pszSocketInfo;
+    char                    szServerIP[INET6_ADDRSTRLEN];
+    DWORD                   dwServerPort;
+    char                    szClientIP[INET6_ADDRSTRLEN];
+    DWORD                   dwClientPort;
+    VDIR_SUPERLOG_RECORD    SuperLogRec;
 } VDIR_CONNECTION, *PVDIR_CONNECTION;
 
 typedef struct _VDIR_CONNECTION_CTX
@@ -303,8 +349,9 @@ struct _VDIR_FILTER
 {
     ber_tag_t                   choice;
     FilterComponent             filtComp;
-    struct _VDIR_FILTER *      next;
+    struct _VDIR_FILTER *       next;
     VDIR_FILTER_COMPUTE_RESULT  computeResult;
+    int                         iMaxIndexScan;  // limit scan to qualify for good filter. 0 means unlimited.
     VDIR_CANDIDATES *           candidates;    // Entry IDs candidate list that matches this filter, maintained for internal
                                         // operation.
 };
@@ -409,7 +456,7 @@ typedef struct SyncRequestControlValue
 typedef struct SyncDoneControlValue
 {
     USN                     intLastLocalUsnProcessed;
-    PLW_HASHTABLE        htUtdVector;
+    PLW_HASHTABLE           htUtdVector;
     BOOLEAN                 refreshDeletes;
 } SyncDoneControlValue;
 
@@ -485,6 +532,9 @@ typedef struct _VDIR_OPERATION
 
     USN                 lowestPendingUncommittedUsn; // recorded at the beginning of replication search operation.
 
+    PSTR                pszFilters; // filter candidates' size recorded in string
+
+    DWORD               dwSentEntries; // number of entries sent back to client
 } VDIR_OPERATION, *PVDIR_OPERATION;
 
 typedef struct _VDIR_THREAD_INFO
@@ -708,9 +758,9 @@ VmDirToLDAPError(
     DWORD   dwVmDirError
     );
 
-PCVOID
+void const *
 UtdVectorEntryGetKey(
-    PLW_HASHTABLE_NODE  pNode,
+    PLW_HASHTABLE_NODE     pNode,
     PVOID                  pUnused
     );
 
@@ -835,6 +885,17 @@ VmDirIsAncestorDN(
     PVDIR_BERVALUE  pBervAncestorDN,
     PVDIR_BERVALUE  pBervTargetDN,
     PBOOLEAN        pbResult
+    );
+
+DWORD
+VmDirHasSingleAttrValue(
+    PVDIR_ATTRIBUTE pAttr
+    );
+
+DWORD
+VmDirValidatePrincipalName(
+    PVDIR_ATTRIBUTE pAttr,
+    PSTR*           ppErrMsg
     );
 
 // candidates.c
@@ -981,6 +1042,185 @@ VdirPasswordCheck(
     PVDIR_BERVALUE      pClearTextPassword,
     PVDIR_ENTRY         pEntry
     );
+
+// security-sd.c
+DWORD
+VmDirSetGroupSecurityDescriptor(
+    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor,
+    PSID Group,
+    BOOLEAN IsGroupDefaulted
+    );
+
+ULONG
+VmDirLengthSid(
+    PSID Sid
+    );
+
+DWORD
+VmDirCreateAcl(
+    PACL Acl,
+    ULONG AclLength,
+    ULONG AclRevision
+    );
+
+DWORD
+VmDirAddAccessAllowedAceEx(
+    PACL Acl,
+    ULONG AceRevision,
+    ULONG AceFlags,
+    ACCESS_MASK AccessMask,
+    PSID Sid
+    );
+
+DWORD
+VmDirSetDaclSecurityDescriptor(
+    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor,
+    BOOLEAN IsDaclPresent,
+    PACL Dacl,
+    BOOLEAN IsDaclDefaulted
+    );
+
+BOOLEAN
+VmDirValidSecurityDescriptor(
+    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor
+    );
+
+DWORD
+VmDirAbsoluteToSelfRelativeSD(
+    PSECURITY_DESCRIPTOR_ABSOLUTE AbsoluteSecurityDescriptor,
+    PSECURITY_DESCRIPTOR_RELATIVE SelfRelativeSecurityDescriptor,
+    PULONG BufferLength
+    );
+
+DWORD
+VmDirQuerySecurityDescriptorInfo(
+    SECURITY_INFORMATION SecurityInformationNeeded,
+    PSECURITY_DESCRIPTOR_RELATIVE SecurityDescriptorInput,
+    PSECURITY_DESCRIPTOR_RELATIVE SecurityDescriptorOutput,
+    PULONG Length
+    );
+
+DWORD
+VmDirSelfRelativeToAbsoluteSD(
+    PSECURITY_DESCRIPTOR_RELATIVE SelfRelativeSecurityDescriptor,
+    PSECURITY_DESCRIPTOR_ABSOLUTE AbsoluteSecurityDescriptor,
+    PULONG AbsoluteSecurityDescriptorSize,
+    PACL pDacl,
+    PULONG pDaclSize,
+    PACL pSacl,
+    PULONG pSaclSize,
+    PSID Owner,
+    PULONG pOwnerSize,
+    PSID PrimaryGroup,
+    PULONG pPrimaryGroupSize
+    );
+
+BOOLEAN
+VmDirAccessCheck(
+    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor,
+    PACCESS_TOKEN AccessToken,
+    ACCESS_MASK DesiredAccess,
+    ACCESS_MASK PreviouslyGrantedAccess,
+    PGENERIC_MAPPING GenericMapping,
+    PACCESS_MASK GrantedAccess,
+    PDWORD pAccessError
+    );
+
+DWORD
+VmDirGetOwnerSecurityDescriptor(
+    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor,
+    PSID* Owner,
+    PBOOLEAN pIsOwnerDefaulted
+    );
+
+DWORD
+VmDirGetGroupSecurityDescriptor(
+    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor,
+    PSID* Group,
+    PBOOLEAN pIsGroupDefaulted
+    );
+
+DWORD
+VmDirGetDaclSecurityDescriptor(
+    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor,
+    PBOOLEAN pIsDaclPresent,
+    PACL* Dacl,
+    PBOOLEAN pIsDaclDefaulted
+    );
+
+DWORD
+VmDirGetSaclSecurityDescriptor(
+    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor,
+    PBOOLEAN pIsSaclPresent,
+    PACL* Sacl,
+    PBOOLEAN pIsSaclDefaulted
+    );
+
+BOOLEAN
+VmDirValidRelativeSecurityDescriptor(
+    PSECURITY_DESCRIPTOR_RELATIVE SecurityDescriptor,
+    ULONG SecurityDescriptorLength,
+    SECURITY_INFORMATION RequiredInformation
+    );
+
+DWORD
+VmDirSetSecurityDescriptorInfo(
+    SECURITY_INFORMATION SecurityInformation,
+    PSECURITY_DESCRIPTOR_RELATIVE InputSecurityDescriptor,
+    PSECURITY_DESCRIPTOR_RELATIVE ObjectSecurityDescriptor,
+    PSECURITY_DESCRIPTOR_RELATIVE NewObjectSecurityDescriptor,
+    PULONG NewObjectSecurityDescripptorLength,
+    PGENERIC_MAPPING GenericMapping
+    );
+
+DWORD
+VmDirCreateSecurityDescriptorAbsolute(
+    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor,
+    ULONG Revision
+    );
+
+VOID
+VmDirReleaseAccessToken(
+    PACCESS_TOKEN* AccessToken
+    );
+
+DWORD
+VmDirSetOwnerSecurityDescriptor(
+    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor,
+    PSID Owner,
+    BOOLEAN IsOwnerDefaulted
+    );
+
+DWORD
+VmDirCreateWellKnownSid(
+    WELL_KNOWN_SID_TYPE wellKnownSidType,
+    PSID pDomainSid,
+    PSID pSid,
+    DWORD* pcbSid
+);
+
+VOID
+VmDirMapGenericMask(
+    PDWORD pdwAccessMask,
+    PGENERIC_MAPPING pGenericMapping
+);
+
+DWORD
+VmDirQueryAccessTokenInformation(
+    HANDLE hTokenHandle,
+    TOKEN_INFORMATION_CLASS tokenInformationClass,
+    PVOID pTokenInformation,
+    DWORD dwTokenInformationLength,
+    PDWORD pdwReturnLength
+);
+
+DWORD
+VmDirAllocateSddlCStringFromSecurityDescriptor(
+    PSECURITY_DESCRIPTOR_RELATIVE pSecurityDescriptor,
+    DWORD dwRequestedStringSDRevision,
+    SECURITY_INFORMATION securityInformation,
+    PSTR* ppStringSecurityDescriptor
+);
 
 // srp.c
 DWORD

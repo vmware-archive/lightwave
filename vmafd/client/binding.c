@@ -29,7 +29,7 @@ VmAfdRpcCreateSrpAuthIdentity(
     OM_uint32 min = 0;
     OM_uint32 maj = 0;
     const gss_OID_desc gss_srp_password_oid =
-        {VMAFD_GSS_SRP_PASSWORD_LEN, (void *) VMAFD_GSS_SRP_PASSWORD_OID};
+        {GSSAPI_SRP_CRED_OPT_PW_LEN, (void *) GSSAPI_SRP_CRED_OPT_PW};
     const gss_OID_desc spnego_mech_oid =
         {VMAFD_SPNEGO_OID_LENGTH, (void *) VMAFD_SPNEGO_OID};
     gss_buffer_desc name_buf = {0};
@@ -100,19 +100,11 @@ VmAfdRpcCreateSrpAuthIdentity(
 
     gss_pwd.value = (char *) password;
     gss_pwd.length = strlen(gss_pwd.value);
-#ifdef _WIN32 /* Really _MIT_KRB5_1_11 */
     maj = gss_set_cred_option(
               &min,
               &cred_handle,
               (gss_OID) &gss_srp_password_oid,
               &gss_pwd);
-#else
-    maj = gssspi_set_cred_option(
-              &min,
-              cred_handle,
-              (gss_OID) &gss_srp_password_oid,
-              &gss_pwd);
-#endif
     if (maj)
     {
         goto error;

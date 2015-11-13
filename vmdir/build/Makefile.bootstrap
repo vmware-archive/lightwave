@@ -68,6 +68,7 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_datadir /opt/vmware/share" \
               --define "_includedir /opt/vmware/include" \
               --define "_likewise_open_prefix /opt/likewise" \
+              --define "_vmevent_prefix /opt/vmware" \
               --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
               SPECS/$(PKG_SPEC)
 

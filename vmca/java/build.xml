@@ -4,31 +4,19 @@
 -->
 <project name="vmware-vmca-client" default="build" basedir=".">
 
-   <property name="target-sets" value="main" />
+           <property name="target-sets" value="main" />
+   
+   	   <property file="../product.properties" />
+ 	   <property name="MAINSRCROOT" value="${basedir}/.." />
+   	   <property name="buildRoot" location="${MAINSRCROOT}/build" />
+ 
+           <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
 
-   	 <!-- VMCA Client  manifest properties -->
-	   <property name="vmcaj.title" value="vmcaj" />
-	   <property name="vmcaj.version" value="0.0.1.${BUILD_NUMBER}" />
-	   <property name="vmcaj.vendor" value="VMWare, Inc." />
+	  <path id="classpath.main">
+             <fileset refid="jar-set.jna" />
+             <fileset refid="jar-set.commons-codec" />          
+	 </path>
 
-	   <property file="product.properties" />
-	   <property name="MAINSRCROOT" value="${basedir}/../.."/>
-	   <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
+          <import file="${MAINSRCROOT}/build/ant/buildcycle-template.xml" />
 
-
-	   <import file="${MAINSRCROOT}/ant/defaults.xml" />
-
-	   <property name="build.packages.vmware-vmca-client"
-             value="${build.packages}/vmware-vmca-client.jar" />
-
-	 <path id="classpath.main">
-		<pathelement location="${build.packages.vmware-vmca-client}" />
-		<pathelement location="${tcRoot}/noarch/jna-3.2.7/jna.jar" />
-		<pathelement location="${tcRoot}/noarch/jna-3.2.7/platform.jar" />
-		<pathelement location="${tcRoot}/noarch/junit-4.4/junit-4.4.jar" />
-        <pathelement location="${tcRoot}/noarch/apache-commons-codec-1.4/commons-codec-1.4.jar"/>
-	</path>
-
-     <import file="${MAINSRCROOT}/ant/buildcycle-template.xml" />
-
-	</project>
+</project>

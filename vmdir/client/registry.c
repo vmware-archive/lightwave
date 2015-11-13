@@ -113,24 +113,6 @@ error:
 #endif
 
 DWORD
-VmDirGetRegGuid(
-    PCSTR pszKey,
-    PSTR  pszGuid
-    )
-{
-    return VmDirGetRegKeyValue( VMDIR_CONFIG_PARAMETER_KEY_PATH, pszKey, pszGuid, VMDIR_GUID_STR_LEN );
-}
-
-DWORD
-VmDirGetRegKeyTabFile(
-    PSTR  pszKeyTabFile
-    )
-{
-    return VmDirGetRegKeyValue( VMAFD_CONFIG_PARAMETER_KEY_PATH, VMDIR_REG_KEY_KEYTAB_FILE, pszKeyTabFile,
-                                VMDIR_MAX_FILE_NAME_LEN );
-}
-
-DWORD
 VmDirConfigSetDCAccountInfo(
     PCSTR pszDCAccount,
     PCSTR pszDCAccountDN,

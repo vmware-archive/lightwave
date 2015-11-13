@@ -8,9 +8,9 @@ vmdird_SOURCES = \
     globals.c     \
     init.c        \
     instance.c    \
-		ipcserver.c   \
-		ipclocalapi.c \
-		ipcapihandler.c \
+    ipcserver.c   \
+    ipclocalapi.c \
+    ipcapihandler.c \
     parseargs.c   \
     main.c        \
     regconfig.c   \
@@ -22,28 +22,20 @@ vmdird_SOURCES = \
     shutdown.c    \
     signal.c      \
     srvthr.c      \
+    superlogging.c \
     utils.c       \
     krb.c       \
     vmdir_sstub.c \
     vmdirftp_sstub.c \
-    srp_verifier_sstub.c
-
-if HAVE_BDB_STORE
-VMDIRD_BACKEND_INCLUDES=@BDB_INCLUDES@
-VMDIRD_BACKEND_LD_FLAGS=@BDB_LDFLAGS@
-VMDIRD_BACKEND_STORE=$(top_builddir)/server/bdb-store/libbdb-store.la
-endif
+    srp_verifier_sstub.c \
+    vmdirsuperlog_sstub.c \
+    vmevent.c \
+    partnerschema.c
 
 if HAVE_MDB_STORE
 VMDIRD_BACKEND_INCLUDES=
 VMDIRD_BACKEND_LD_FLAGS=
 VMDIRD_BACKEND_STORE= $(top_builddir)/server/mdb-store/libmdb-store.la
-endif
-
-if HAVE_TC_STORE
-VMDIRD_BACKEND_INCLUDES=@TC_INCLUDES@ @ZLIB_INCLUDES@ @BZIP_INCLUDES@
-VMDIRD_BACKEND_LD_FLAGS=@TC_LDFLAGS@ @ZLIB_LDFLAGS@ @BZIP_LDFLAGS@
-VMDIRD_BACKEND_STORE= $(top_builddir)/server/tokyocabinet-store/libtcstore.la
 endif
 
 vmdird_CPPFLAGS = \
@@ -57,7 +49,8 @@ vmdird_CPPFLAGS = \
     $(VMDIRD_BACKEND_INCLUDES) \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
-    @OPENSSL_INCLUDES@
+    @OPENSSL_INCLUDES@ \
+    @VMEVENT_INCLUDES@
 
 vmdird_LDADD = \
     $(top_builddir)/server/vmkdc/libvmkdcserv.la \
@@ -88,7 +81,6 @@ vmdird_LDADD = \
     @UUID_LIBS@ \
     @LDAP_LIBS@ \
     @LBER_LIBS@ \
-    @SASL_LIBS@ \
     @CRYPTO_LIBS@ \
     @CRYPT_LIBS@ \
     @PTHREAD_LIBS@
@@ -97,7 +89,6 @@ vmdird_LDFLAGS = \
     -rdynamic \
     $(VMDIRD_BACKEND_LD_FLAGS) \
     @OPENSSL_LDFLAGS@ \
-    @SASL_LDFLAGS@ \
     @LW_LDFLAGS@
 
 CLEANFILES = \
@@ -109,9 +100,12 @@ CLEANFILES = \
     vmdirftp_sstub.c \
     srp_verifier_h.h \
     srp_verifier_cstub.c \
-    srp_verifier_sstub.c
+    srp_verifier_sstub.c \
+    vmdirsuperlog_h.h \
+    vmdirsuperlog_cstub.c \
+    vmdirsuperlog_sstrub.c
 
-BUILT_SOURCES = vmdir_h.h vmdirftp_h.h srp_verifier_h.h
+BUILT_SOURCES = vmdir_h.h vmdirftp_h.h srp_verifier_h.h vmdirsuperlog_h.h
 
 vmdir_h.h vmdir_sstub.c: $(idl_srcdir)/vmdir.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdir_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<
@@ -121,3 +115,6 @@ vmdirftp_h.h vmdirftp_sstub.c: $(idl_srcdir)/vmdirftp.idl
 
 srp_verifier_h.h srp_verifier_sstub.c: $(idl_srcdir)/srp_verifier.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header srp_verifier_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) $<
+
+vmdirsuperlog_h.h vmdirsuperlog_sstub.c: $(idl_srcdir)/vmdirsuperlog.idl
+	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirsuperlog_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/include/public $<

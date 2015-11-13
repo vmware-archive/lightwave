@@ -53,7 +53,7 @@
 #include <bdbstore.h>
 #endif
 
-#ifdef HAVE_MDB_STORE
+#ifdef HAVE_LMDB_H
 #include <mdbstore.h>
 #endif
 
@@ -87,7 +87,10 @@
 #include <lber_pvt.h>
 #include <lber-int.h>
 
-#include "banned.h"
+#define LW_STRICT_NAMESPACE
+#include <lw/types.h>
+#include <lw/hash.h>
+#include <lw/security-types.h>
 
 #include <vmdir.h>
 #include <vmdirtypes.h>
@@ -112,5 +115,6 @@
 
 #include "structs.h"
 #include "externs.h"
+#include "banned.h"
 
 #endif

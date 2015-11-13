@@ -106,6 +106,12 @@ public class VmAfClientAdapter extends NativeAdapter
             );
 
         int
+        VmAfdGetRHTTPProxyPortA(
+            String pszServerName, /* IN     OPTIONAL */
+            IntByReference pdwPort
+            );
+
+        int
         VmAfdSetRHTTPProxyPortA(
             String pszServerName, /* IN     OPTIONAL */
             int port              /* IN              */
@@ -181,6 +187,12 @@ public class VmAfClientAdapter extends NativeAdapter
         VmAfdSetDCNameW(
             WString pwszServerName,  /* IN      OPTIONAL */
             WString pwszDCName       /* IN               */
+            );
+        
+        int
+        VmAfdGetPNIDForUrlA(
+            String             pszServerName,
+            PointerByReference ppszPNID
             );
 
         int
@@ -337,6 +349,18 @@ public class VmAfClientAdapter extends NativeAdapter
             PointerByReference ppwszDomain,            /*    OUT          */
             PointerByReference ppwszDistinguishedName, /*    OUT          */
             PointerByReference ppwszNetbiosName        /*    OUT          */
+            );
+
+        int
+        VmAfdGetSiteGUIDA(
+            String pszServerName,                      /* IN              */
+            PointerByReference ppszSiteGUID            /*    OUT          */
+            );
+
+        int
+        VmAfdGetSiteGUIDW(
+            WString pwszServerName,                   /* IN               */
+            PointerByReference ppwszSiteGUID          /*    OUT           */
             );
 
         void VmAfdFreeMemory(Pointer pMemory);
@@ -532,6 +556,17 @@ public class VmAfClientAdapter extends NativeAdapter
         }
     }
 
+    public static int getRHTTPProxyPort(String hostname)
+    {
+        IntByReference pdwPort = new IntByReference(0);
+        int errCode = VmAfClientLibrary.INSTANCE.VmAfdGetRHTTPProxyPortA(hostname, pdwPort);
+        if( errCode != 0 )
+        {
+            throw new VmAfClientNativeException(errCode);
+        }
+        return pdwPort.getValue();
+    }
+
     public static void setRHTTPProxyPort(String hostname, int port)
     {
         int errCode = VmAfClientLibrary.INSTANCE.VmAfdSetRHTTPProxyPortA(
@@ -615,6 +650,33 @@ public class VmAfClientAdapter extends NativeAdapter
         try
         {
             int errCode = VmAfClientLibrary.INSTANCE.VmAfdGetPNIDA(
+                                                        hostname,
+                                                        ppszPNID);
+            if (errCode != 0)
+            {
+                throw new VmAfClientNativeException(errCode);
+            }
+
+            return ppszPNID.getValue().getString(0);
+        }
+        finally
+        {
+            Pointer val = ppszPNID.getValue();
+
+            if (val != Pointer.NULL)
+            {
+                VmAfClientLibrary.INSTANCE.VmAfdFreeMemory(val);
+            }
+        }
+    }
+    
+    public static String getPNIDUrl(String hostname)
+    {
+        PointerByReference ppszPNID = new PointerByReference();
+
+        try
+        {
+            int errCode = VmAfClientLibrary.INSTANCE.VmAfdGetPNIDForUrlA(
                                                         hostname,
                                                         ppszPNID);
             if (errCode != 0)
@@ -1004,4 +1066,32 @@ public class VmAfClientAdapter extends NativeAdapter
             }
             }
     }
+
+    public static String getSiteGUID(String hostname)
+    {
+        PointerByReference ppszSiteGUID = new PointerByReference();
+
+        try
+        {
+            int errCode = VmAfClientLibrary.INSTANCE.VmAfdGetSiteGUIDA(
+                                                        hostname,
+                                                        ppszSiteGUID);
+            if (errCode != 0)
+            {
+                throw new VmAfClientNativeException(errCode);
+            }
+
+            return ppszSiteGUID.getValue().getString(0);
+        }
+        finally
+        {
+            Pointer val = ppszSiteGUID.getValue();
+
+            if (val != Pointer.NULL)
+            {
+                VmAfClientLibrary.INSTANCE.VmAfdFreeMemory(val);
+            }
+        }
+    }
+
 }

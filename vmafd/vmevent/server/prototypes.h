@@ -208,21 +208,18 @@ EventLogRpcFreeEventContainer(
 /* enumpkgs.c */
 DWORD
 EventLogServerAddEvent(
-   RP_PWSTR pszServerName,
    DWORD eventID,
    DWORD eventType,
    RP_PWSTR pszMessage
    );
+
 DWORD
 EventLogServerInitEnumEventsHandle(
-    RP_PWSTR pszServerName,
     PDWORD pdwHandle
     );
 
-
 DWORD
 EventLogServerEnumEvents(
-    RP_PWSTR pszServerName,
     DWORD    dwHandle,
     DWORD    dwStartIndex,
     DWORD    dwNumPackages,

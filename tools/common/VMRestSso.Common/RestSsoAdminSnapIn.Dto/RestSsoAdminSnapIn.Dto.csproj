@@ -1,0 +1,137 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{F826B9EF-3AE2-4186-8D57-BCE8A72EA0B4}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Vmware.Tools.RestSsoAdminSnapIn.Dto</RootNamespace>
+    <AssemblyName>Vmware.Tools.RestSsoAdminSnapIn.Dto</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\..\..\mmc\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\..\..\mmc\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\..\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <WarningLevel>4</WarningLevel>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>..\..\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ActiveDirectoryJoinInfoDto.cs" />
+    <Compile Include="ActiveDirectoryJoinRequestDto.cs" />
+    <Compile Include="AssertionConsumerServiceDto.cs" />
+    <Compile Include="AttributeConsumerServiceDto.cs" />
+    <Compile Include="AttributeDto.cs" />
+    <Compile Include="Attributes\AttributeId.cs" />
+    <Compile Include="Attributes\GroupAttributeId.cs" />
+    <Compile Include="Attributes\PasswordAttributeId.cs" />
+    <Compile Include="Attributes\DomainAttributeId.cs" />
+    <Compile Include="Attributes\UserAttributeId.cs" />
+    <Compile Include="Attributes\ObjectId.cs" />
+    <Compile Include="AuthError.cs" />
+    <Compile Include="AuthErrorDto.cs" />
+    <Compile Include="AuthTokenDto.cs" />
+    <Compile Include="BrandPolicyDto.cs" />
+    <Compile Include="CertificateChainDto.cs" />
+    <Compile Include="CertificateDto.cs" />
+    <Compile Include="CertificateType.cs" />
+    <Compile Include="ClaimDto.cs" />
+    <Compile Include="ClientCertificatePolicyDto.cs" />
+    <Compile Include="ComputerDto.cs" />
+    <Compile Include="CredentialsDto.cs" />
+    <Compile Include="EncrptionAlgorithm.cs" />
+    <Compile Include="ExternalIdentityProviderDto.cs" />
+    <Compile Include="GroupDetailsDto.cs" />
+    <Compile Include="GroupDto.cs" />
+    <Compile Include="GroupMembershipDto.cs" />
+    <Compile Include="HttpRequestHeader.cs" />
+    <Compile Include="HttpResponseHeader.cs" />
+    <Compile Include="HttpTransportCollection.cs" />
+    <Compile Include="IdentityProviderProbeDto.cs" />
+    <Compile Include="AuthenticationPolicyDto.cs" />
+    <Compile Include="JwtClaimDto.cs" />
+    <Compile Include="JwtHeaderDto.cs" />
+    <Compile Include="LockoutPolicyDto.cs" />
+    <Compile Include="OidcClientDto.cs" />
+    <Compile Include="OidcClientMetadataDto.cs" />
+    <Compile Include="PasswordDetails.cs" />
+    <Compile Include="PasswordPolicyDto.cs" />
+    <Compile Include="PrincipalDto.cs" />
+    <Compile Include="PrivateKeyDto.cs" />
+    <Compile Include="PropertyDescriptors\HttpTransportCollectionPropertyDescriptor.cs" />
+    <Compile Include="HttpTransportItem.cs" />
+    <Compile Include="IDataContext.cs" />
+    <Compile Include="IdentityProviderDto.cs" />
+    <Compile Include="LoginDto.cs" />
+    <Compile Include="PersonUserDto.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ProviderPolicyDto.cs" />
+    <Compile Include="RelyingPartyDto.cs" />
+    <Compile Include="SchemaObjectMappingDto.cs" />
+    <Compile Include="ServerDto.cs" />
+    <Compile Include="ServiceEndpointDto.cs" />
+    <Compile Include="SignatureAlgorithmDto.cs" />
+    <Compile Include="SolutionUserDto.cs" />
+    <Compile Include="State.cs" />
+    <Compile Include="SubjectFormatDto.cs" />
+    <Compile Include="TenantConfigurationDto.cs" />
+    <Compile Include="TenantCredentialsDto.cs" />
+    <Compile Include="TenantDto.cs" />
+    <Compile Include="Token.cs" />
+    <Compile Include="TokenClaimGroupDto.cs" />
+    <Compile Include="TokenDisplayDto.cs" />
+    <Compile Include="TokenPolicyDto.cs" />
+    <Compile Include="TokenType.cs" />
+    <Compile Include="UserCertificateDto.cs" />
+    <Compile Include="UserDto.cs" />
+    <Compile Include="UserRole.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

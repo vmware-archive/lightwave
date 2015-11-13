@@ -1,0 +1,11 @@
+[Unit]
+Description=VMware Identity Manager Service
+After=syslog.target network.target
+Requires=lwsmd.service
+
+[Service]
+Type=forking
+ExecStart=@VMSTS_SBIN_DIR@/vmware-idmd.sh start
+
+[Install]
+WantedBy=multi-user.target

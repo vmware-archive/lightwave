@@ -1,6 +1,6 @@
 # Map any Linux path separators "/" to Windows path separators "\"
 #
-DCERPC_WIN32_TOP = $(GOBUILD_PLATFORM_SDK_WINDOWS_ROOT:/=\)
+DCERPC_WIN32_TOP = $(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT:/=\)
 ConfigurationName=$(CONFIGURATIONNAME)
 
 DCEIDL = $(DCERPC_WIN32_TOP)\$(ConfigurationName)\bin\dceidl.exe
@@ -19,10 +19,12 @@ debug: $(OUTDIR_DEBUG)\vmca_h.h
 # vmca.idl debug/release stub generation
 #
 $(OUTDIR_DEBUG)\vmca_h.h $(OUTDIR_DEBUG)\vmca_s.c $(OUTDIR_DEBUG)\vmca_c.c: vmca.idl
+	-mkdir ..\x64
 	-mkdir $(OUTDIR_DEBUG)
 	$(DCEIDL) $(DCE_INCLUDE) -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_DEBUG)\vmca_c.c -sstub $(OUTDIR_DEBUG)\vmca_s.c -header $(OUTDIR_DEBUG)\vmca_h.h vmca.idl 2>&1
 
 $(OUTDIR_RELEASE)\vmca_h.h $(OUTDIR_RELEASE)\vmca_s.c $(OUTDIR_RELEASE)\vmca_c.c: vmca.idl
+	-mkdir ..\x64
 	-mkdir $(OUTDIR_RELEASE)
 	$(DCEIDL) $(DCE_INCLUDE) -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_RELEASE)\vmca_c.c -sstub $(OUTDIR_RELEASE)\vmca_s.c -header $(OUTDIR_RELEASE)\vmca_h.h vmca.idl 2>&1
 

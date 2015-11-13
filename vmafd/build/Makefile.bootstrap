@@ -23,6 +23,7 @@ RPMBUILD_DIRS= \
 SRCROOT=..
 
 CLEAN_OBJECTS = \
+    authentication-framework \
     client \
     common \
     config \
@@ -34,6 +35,9 @@ CLEAN_OBJECTS = \
     rpmbuild \
     server \
     test \
+    depends \
+    domainjoin \
+    jdepends \
     tools \
     vmafcfg \
     vmauthsvc \
@@ -69,6 +73,9 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_datadir /opt/vmware/share" \
               --define "_includedir /opt/vmware/include" \
               --define "_likewise_open_prefix /opt/likewise" \
+              --define "_vmdir_prefix /opt/vmware" \
+              --define "_vmdns_prefix /opt/vmware" \
+              --define "_javahome /opt/OpenJDK-1.8.0.51-bin" \
               --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
               SPECS/$(PKG_SPEC)
 

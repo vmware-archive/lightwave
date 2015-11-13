@@ -1,0 +1,3 @@
+Manifest-Version: 1.0
+Main-Class: com.vmware.pscsetup.PlatformServicesControllerDeploy
+Class-Path: ./ jna.jar platform.jar commons-logging-1.1.1.jar log4j-1.2.16.jar commons-lang-2.5.jar commons-codec-1.4.jar authentication-framework.jar vmware-endpoint-certificate-store.jar vmware-vmca-client.jar vmware-identity-idm-interface.jar vmware-identity-idm-client.jar vmware-identity-platform.jar lookupservice-bindings-client.jar lookupservice.jar slf4j-api-1.7.2.jar slf4j-log4j12-1.7.2.jar httpclient-4.3.3.jar

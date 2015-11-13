@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : authservice.c
+ *
+ * Abstract :
+ *
+ */
 #include "includes.h"
 
 

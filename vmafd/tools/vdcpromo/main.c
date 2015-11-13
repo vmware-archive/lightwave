@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -27,22 +27,14 @@
 
 #include "includes.h"
 
-#ifndef _WIN32
-#define VMAFD_LOG_PATH "/var/log/vmware/vmafd/"
-#else
-#define VMAFD_SOFTWARE_KEY_PATH "SOFTWARE\\VMware, Inc.\\VMware Afd Services"
-#define VMAFD_LOGPATH_KEY_VALUE "LogsPath"
-
-extern FILE gVmAfdLogFile;
-
+#ifdef _WIN32
 static
 DWORD
-_ConfigGetString(
+VmAfdConfigGetString(
     PCSTR    pszSubKey,      /* IN     */
     PCSTR    pszValueName,   /* IN     */
-    PWSTR*   ppwszValue      /*    OUT */
+    PSTR*    ppszValue      /*    OUT */
     );
-
 #endif
 
 int main(int argc, char* argv[])
@@ -50,6 +42,7 @@ int main(int argc, char* argv[])
     DWORD   dwError = 0;
     int    retCode = 0;
     PSTR   pszDomain = NULL;
+    PSTR   pszDomainName = NULL;
     PSTR   pszUserName = NULL;
     PSTR   pszPassword = NULL;
     PSTR   pszPwdFile = NULL;
@@ -58,30 +51,36 @@ int main(int argc, char* argv[])
     PSTR   pszLotusServerName = NULL;
     PSTR   pszPasswordBuf = NULL;
     FILE * fpPwdFile = NULL;
-    PSTR    pszPath = NULL;
-    PSTR    pszLogPathName = NULL;
+    PSTR   pszPath = NULL;
+    PSTR   pszLogPathName = NULL;
     size_t dPwdLen = 0;
-    BOOLEAN bLogInitialized = FALSE;
+    BOOL   bLogInitialized = FALSE;
     PCSTR  pszErrorMsg = NULL;
     PSTR   pszErrorDesc = NULL;
-
+    PCSTR  pszLocalhost = "localhost";
+    PSTR   pszPnid = NULL;
+    DNS_INIT_FLAG dnsInitFlag = DNS_NONE;
 #ifdef _WIN32
-    PWSTR   pwszLogPathName = NULL;
-#else
+    WSADATA wsaData = { 0 };
+    BOOLEAN bWsaStartup = FALSE;
+#endif
+
+#ifndef _WIN32
     setlocale(LC_ALL, "");
+#else
+    dwError = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    BAIL_ON_VMAFD_ERROR(dwError);
+    bWsaStartup = TRUE;
 #endif
 
     dwError = VmAfCfgInit();
     BAIL_ON_VMAFD_ERROR(dwError);
 
 #ifndef _WIN32
-    dwError = VmAfdAllocateStringA( VMAFD_LOG_PATH, &pszLogPathName );
+    dwError = VmAfdAllocateStringA(VMAFD_LOG_PATH, &pszLogPathName );
     BAIL_ON_VMAFD_ERROR(dwError);
 #else
-    dwError = _ConfigGetString( VMAFD_SOFTWARE_KEY_PATH, VMAFD_LOGPATH_KEY_VALUE, &pwszLogPathName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfdAllocateStringAFromW( pwszLogPathName, &pszLogPathName );
+    dwError = VmAfdConfigGetString(VMAFD_SOFTWARE_KEY_PATH, VMAFD_LOGPATH_KEY_VALUE, &pszLogPathName);
     BAIL_ON_VMAFD_ERROR(dwError);
 #endif
 
@@ -100,20 +99,12 @@ int main(int argc, char* argv[])
                              &pszSiteName,
                              &pszPartnerHostName,
                              &pszLotusServerName,
-                             &pszPwdFile);
+                             &pszPwdFile,
+                             &dnsInitFlag);
     if (dwError)
     {
         ShowUsage();
         BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    if (IsNullOrEmptyString(pszDomain))
-    {
-        VmAfdLog(VMAFD_DEBUG_ANY, "Domain parameter is not valid");
-    }
-    else
-    {
-        VmAfdLog(VMAFD_DEBUG_ANY, "Domain: \"%s\"", pszDomain);
     }
 
     if (IsNullOrEmptyString(pszUserName))
@@ -130,19 +121,13 @@ int main(int argc, char* argv[])
         VmAfdLog(VMAFD_DEBUG_ANY, "Password parameter is not valid");
     }
 
-    if (pszSiteName)
+    if (IsNullOrEmptyString(pszDomain))
     {
-        VmAfdLog(VMAFD_DEBUG_ANY, "Site name: \"%s\"", pszSiteName);
+        VmAfdLog(VMAFD_DEBUG_ANY, "Domain parameter is not valid");
     }
-
-    if (pszPartnerHostName)
+    else
     {
-        VmAfdLog(VMAFD_DEBUG_ANY, "Partner hostname: \"%s\"", pszPartnerHostName);
-    }
-
-    if (pszLotusServerName)
-    {
-        VmAfdLog(VMAFD_DEBUG_ANY, "Preferred Lotus server name: \"%s\"", pszLotusServerName);
+        VmAfdLog(VMAFD_DEBUG_ANY, "Domain: \"%s\"", pszDomain);
     }
 
     dwError = VmAfdAllocateMemory(VMAFD_MAX_PWD_LEN+1, (PVOID *)&pszPasswordBuf);
@@ -179,16 +164,40 @@ int main(int argc, char* argv[])
        VmAfdReadString("password: ", pszPasswordBuf, VMAFD_MAX_PWD_LEN+1, FALSE);
     }
 
+    if (IsNullOrEmptyString(pszDomain))
+    {
+        dwError = VmAfdGetDomainNameA(NULL, &pszDomainName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pszDomain = pszDomainName;
+    }
+
+    if (dnsInitFlag == DNS_INIT)
+    {
+        dwError = VmAfdConfigureDNSA(pszUserName, pszPasswordBuf);
+        if (dwError)
+        {
+            fprintf(stderr, "Warning: failed to initialize DNS. Error [%d]\n", dwError);
+        }
+        else
+        {
+            fprintf(stdout, "Successfully initialized DNS.\n");
+        }
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        goto cleanup;
+    }
+
     printf("Initializing Directory server instance ... \n");
     fflush(stdout);
 
     dwError = VmAfdPromoteVmDirA(
-                    pszLotusServerName ? pszLotusServerName : "localhost",
-                    pszDomain,
-                    pszUserName,
-                    pszPasswordBuf,
-                    pszSiteName,
-                    pszPartnerHostName);
+                        pszLotusServerName ? pszLotusServerName : pszLocalhost,
+                        pszDomain,
+                        pszUserName,
+                        pszPasswordBuf,
+                        pszSiteName,
+                        pszPartnerHostName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     printf("Directory host instance created successfully\n");
@@ -202,14 +211,18 @@ cleanup:
         VmAfdLogTerminate();
     }
 
+#ifdef _WIN32
+    if (bWsaStartup != FALSE)
+    {
+        WSACleanup();
+    }
+#endif
+    VMAFD_SAFE_FREE_MEMORY(pszPnid);
     VMAFD_SAFE_FREE_MEMORY(pszPasswordBuf);
     VMAFD_SAFE_FREE_MEMORY(pszPath);
     VMAFD_SAFE_FREE_MEMORY(pszLogPathName);
     VMAFD_SAFE_FREE_MEMORY(pszErrorDesc);
-#ifdef _WIN32
-    VMAFD_SAFE_FREE_MEMORY(pwszLogPathName);
-#endif
-
+    VMAFD_SAFE_FREE_MEMORY(pszDomainName);
     return retCode;
 
 error:
@@ -260,6 +273,10 @@ error:
             retCode = 25;
             pszErrorMsg = "Authorization failed.\nVerify account has proper administrative privileges.";
             break;
+        case VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE:
+            retCode = 26;
+            pszErrorMsg = "Could not join to the remote service VMWare Directory Service.\nThe remote schema is incompatible with the local schema.";
+            break;
         default:
             retCode = 1;
     }
@@ -299,10 +316,10 @@ error:
 
 static
 DWORD
-_ConfigGetString(
+VmAfdConfigGetString(
     PCSTR    pszSubKey,      /* IN     */
     PCSTR    pszValueName,   /* IN     */
-    PWSTR*   ppwszValue      /*    OUT */
+    PSTR*    ppszValue      /*    OUT */
     )
 {
     DWORD dwError = 0;
@@ -310,9 +327,8 @@ _ConfigGetString(
     PVMAF_CFG_KEY pRootKey = NULL;
     PVMAF_CFG_KEY pParamsKey = NULL;
     PSTR  pszValue = NULL;
-    PWSTR pwszValue = NULL;
 
-    BAIL_ON_VMAFD_INVALID_POINTER(ppwszValue, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(ppszValue, dwError);
 
     dwError = VmAfConfigOpenConnection(&pConnection);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -341,10 +357,7 @@ _ConfigGetString(
                     &pszValue);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdAllocateStringWFromA(pszValue, &pwszValue);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    *ppwszValue = pwszValue;
+    *ppszValue = pszValue;
 
 cleanup:
 
@@ -361,18 +374,17 @@ cleanup:
         VmAfConfigCloseConnection(pConnection);
     }
 
-    VMAFD_SAFE_FREE_STRINGA(pszValue);
-
     return dwError;
 
 error:
 
-    if (ppwszValue)
+    if (ppszValue)
     {
-        *ppwszValue = NULL;
+        *ppszValue = NULL;
     }
 
     goto cleanup;
 }
 
 #endif
+

@@ -579,3 +579,29 @@ DirCliQueryCACerts(
     PVMAFD_CA_CERT_ARRAY* ppCACertificates
     );
 
+DWORD
+DirCliGetFuncLvl(
+    PCSTR      pszHostName,
+    PCSTR      pszUPN,
+    PCSTR      pszPassword,
+    PCSTR      pszDomainName,
+    PDWORD     pdwFuncLvl
+    );
+
+DWORD
+DirCliSetFuncLvl(
+    PCSTR      pszHostName,
+    PCSTR      pszUPN,
+    PCSTR      pszPassword,
+    PCSTR      pszDomainName,
+    PDWORD     pdwFuncLvl
+    );
+
+DWORD
+DirCliGetDCNodesVersion(
+    PCSTR      pszHostName,
+    PCSTR      pszUserName,
+    PCSTR      pszPassword,
+    PCSTR      pszDomainName,
+    PVMDIR_DC_VERSION_INFO *ppDCVerInfo
+    );

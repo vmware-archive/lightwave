@@ -42,4 +42,3 @@
 #endif
 
 #define VMDIR_MAX_KDC_SERVERS 10
-#define VMDIR_MAX_PWD_LEN     128

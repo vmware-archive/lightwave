@@ -397,6 +397,14 @@ VmDirSchemaCheckSetAttrDesc(
     PVDIR_ENTRY           pEntry
     );
 
+/*
+ * Check if ctx contains live/global schema instance
+ */
+BOOLEAN
+VmDirIsLiveSchemaCtx(
+    PVDIR_SCHEMA_CTX        pCtx
+    );
+
 ///////////////////////////////////////////////////////////////////////////////
 // AD compatible schema search
 ///////////////////////////////////////////////////////////////////////////////

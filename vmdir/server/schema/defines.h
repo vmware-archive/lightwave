@@ -580,9 +580,7 @@
 {                                                            \
     VDIR_ATTRIBUTE_OBJECT_CLASSES,                           \
     VDIR_ATTRIBUTE_ATTRIBUTE_TYPES,                          \
-    VDIR_ATTRIBUTE_DIT_STRUCTURERULES,                       \
     VDIR_ATTRIBUTE_DIT_CONTENTRULES,                         \
-    VDIR_ATTRIBUTE_NAMEFORMS,                                \
 }
 
 #define VDIR_IMMUTABLE_SCHEMA_ELEMENT_INITIALIZER            \
@@ -590,6 +588,8 @@
     VDIR_ATTRIBUTE_LADPSYNTAXES,                             \
     VDIR_ATTRIBUTE_MATCHINGRULEUSE,                          \
     VDIR_ATTRIBUTE_MATCHINGRULES,                            \
+    VDIR_ATTRIBUTE_DIT_STRUCTURERULES,                       \
+    VDIR_ATTRIBUTE_NAMEFORMS,                                \
 }
 
 // index into fix map VDIR_SCHEMA_BOOTSTRP_ATTR_INITIALIZER below

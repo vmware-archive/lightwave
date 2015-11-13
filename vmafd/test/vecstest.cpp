@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : vecstest.cpp
+ *
+ * Abstract :
+ *
+ */
 #define BOOST_AUTO_TEST_MAIN
 #define BOOST_TEST_MODULE vecsTest
 

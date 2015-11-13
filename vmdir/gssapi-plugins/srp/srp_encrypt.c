@@ -221,7 +221,7 @@ srp_make_enc_keyblock(
                   "srp_make_enc_keyblock: got derived session key");
 
     /* Build b64 encoded string of SRP session key */
-    b64_alloc_len = srp_session_key_len * 4 / 3 + 3;
+    b64_alloc_len = (srp_session_key_len + 2) / 3  * 4 + 1;
     srp_session_key_str = calloc(b64_alloc_len, sizeof(char));
     if (!srp_session_key_str)
     {

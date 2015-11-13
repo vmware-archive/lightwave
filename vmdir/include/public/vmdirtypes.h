@@ -32,6 +32,8 @@
 extern "C" {
 #endif
 
+#ifndef _DCE_IDL_
+
 #if defined(_WIN32) || defined(WIN32_LEAN_AND_MEAN)
 typedef     _Longlong             EntryId;
 typedef     _Longlong             USN;
@@ -76,6 +78,28 @@ typedef struct _VMDIR_SERVER_INFO
 {
     CHAR*       pszServerDN;
 } VMDIR_SERVER_INFO, *PVMDIR_SERVER_INFO;
+
+typedef struct _VMDIR_SCHEMA_DIFF
+{
+    PSTR*       baseHostDiffList;
+    PSTR*       partnerHostDiffList;
+    DWORD       dwBaseHostDiffCount;
+    DWORD       dwPartnerHostDiffCount;
+    PSTR        pszBaseHostName ;
+    PSTR        pszPartnerHostName ;
+    BOOLEAN     bIsServerDown ;
+    BOOLEAN     bIsMetadataVersionOutofSync;
+    PSTR        pszMetadataVerison ;
+
+} VMDIR_SCHEMA_DIFF, *PVMDIR_SCHEMA_DIFF;
+
+typedef struct VMDIR_DC_VERSION_INFO
+{
+    DWORD dwSize;
+    PSTR *ppszServer;
+    PSTR *ppszVersion;
+    DWORD dwMaxDomainFuncLvl;
+} VMDIR_DC_VERSION_INFO, * PVMDIR_DC_VERSION_INFO;
 
 // opaque type PVMDIR_LOG_CTX
 typedef struct _VMDIR_LOG_CTX* PVMDIR_LOG_CTX;
@@ -172,9 +196,142 @@ typedef struct _VMDIR_USER_INFO_1_A
 
 #endif /* VMDIR_USER_INFO_1_DEFINED */
 
+#endif
+
+
+#ifdef _DCE_IDL_
+
+cpp_quote("#include <vmdirtypes.h>")
+cpp_quote("#if 0")
+
+#ifndef _WIN32
+#include <lw/types.h>
+#else
+typedef byte BOOLEAN;
+typedef unsigned long int UINT32;
+typedef unsigned hyper int UINT64;
+#endif
+
+#endif
+
+#ifndef VMDIR_WSTRING_DEFINED
+#define VMDIR_WSTRING_DEFINED
+typedef
+#ifdef _DCE_IDL_
+[ptr, string]
+#endif
+unsigned short *wstring;   /* wchar16_t */
+#endif
+
+typedef
+#ifdef _DCE_IDL_
+[context_handle]
+#endif
+void *vmdir_superlog_cookie_t;
+
+typedef struct _VMDIR_SUPERLOG_SERVER_DATA
+{
+    UINT64 iServerStartupTime;
+    UINT64 iAddCount;
+    UINT64 iBindCount;
+    UINT64 iDeleteCount;
+    UINT64 iModifyCount;
+    UINT64 iSearchCount;
+    UINT64 iUnbindCount;
+} VMDIR_SUPERLOG_SERVER_DATA, *PVMDIR_SUPERLOG_SERVER_DATA;
+
+typedef struct _LDAP_SEARCH_INFO
+{
+    wstring pwszAttributes;
+    wstring pwszBaseDN;
+    wstring pwszScope;
+    wstring pwszIndexResults;
+    UINT32 dwScanned;
+    UINT32 dwReturned;
+} LDAP_SEARCH_INFO;
+
+typedef
+#ifdef _DCE_IDL_
+[switch_type(UINT32)]
+#endif
+union _LDAP_OPERATION_INFO{
+#ifdef _DCE_IDL_
+[case(0x63U)] // LDAP_REQ_SEARCH
+#endif
+    LDAP_SEARCH_INFO searchInfo;
+#ifdef _DCE_IDL_
+[default] ;
+#endif
+} LDAP_OPERATION_INFO;
+
+typedef struct _VMDIR_SUPERLOG_ENTRY_LDAPOPERATION
+{
+    wstring pwszLoginDN;
+    wstring pwszClientIP;
+    wstring pwszServerIP;
+    wstring pwszOperation;
+    wstring pwszString;
+    UINT32 dwClientPort;
+    UINT32 dwServerPort;
+    UINT32 dwErrorCode;
+    UINT64 iStartTime;
+    UINT64 iEndTime;
+    UINT32 opType;
+#ifdef _DCE_IDL_
+    [switch_is(opType)]
+#endif
+    LDAP_OPERATION_INFO opInfo;
+} VMDIR_SUPERLOG_ENTRY_LDAPOPERATION, *PVMDIR_SUPERLOG_ENTRY_LDAPOPERATION;
+
+typedef struct _VMDIR_SUPERLOG_ENTRY_LDAPOPERATION_ARRAY
+{
+    UINT32 dwCount;
+#ifdef _DCE_IDL_
+    [size_is(dwCount)]
+#endif
+    PVMDIR_SUPERLOG_ENTRY_LDAPOPERATION entries;
+} VMDIR_SUPERLOG_ENTRY_LDAPOPERATION_ARRAY, *PVMDIR_SUPERLOG_ENTRY_LDAPOPERATION_ARRAY;
+
+#define VMDIR_SUPERLOG_TABLE_COL_NUM   7
+
+typedef enum
+{
+    LOGIN_DN,
+    IP,
+    PORT,
+    OPERATION,
+    STRING,
+    ERROR_CODE,
+    AVG_TIME
+} VMDIR_SUPERLOG_TABLE_COLUMN;
+
+typedef struct _VMDIR_SUPERLOG_TABLE_COLUMN_SET
+{
+    unsigned int isColumnSet[VMDIR_SUPERLOG_TABLE_COL_NUM];
+} VMDIR_SUPERLOG_TABLE_COLUMN_SET, *PVMDIR_SUPERLOG_TABLE_COLUMN_SET;
+
+typedef struct _VMDIR_SUPERLOG_TABLE_ROW
+{
+    char* colVals[VMDIR_SUPERLOG_TABLE_COL_NUM];
+    UINT64 totalTime;
+    UINT32 count;
+} VMDIR_SUPERLOG_TABLE_ROW, *PVMDIR_SUPERLOG_TABLE_ROW;
+
+typedef struct _VMDIR_SUPERLOG_TABLE
+{
+    UINT32 numRows;
+    PVMDIR_SUPERLOG_TABLE_COLUMN_SET cols;
+    PVMDIR_SUPERLOG_TABLE_ROW rows;
+} VMDIR_SUPERLOG_TABLE, *PVMDIR_SUPERLOG_TABLE;
+
+
+#ifdef _DCE_IDL_
+cpp_quote("#endif")
+#endif
+
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* __VDIR_TYPES_H__ */
-

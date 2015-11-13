@@ -1,0 +1,5 @@
+Bundle-ManifestVersion: 2
+Bundle-Vendor: VMware Inc.
+Bundle-Name: SSO Client module
+Bundle-SymbolicName: com.vmware.sso.client
+Bundle-Version: ${bundle.version}

@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2014 VMware, Inc. All rights reserved.
+ *
+ * Module   : vecsserviceapi.c
+ *
+ * Abstract :
+ *
+ */
 #include "includes.h"
 
 static
@@ -479,6 +487,7 @@ VecsSrvGetPrivateKeyByAlias(
 {
     DWORD dwError = 0;
     PWSTR pszPrivateKey = NULL;
+    CERT_ENTRY_TYPE cEntryType;
 
     dwError = VecsDbGetPrivateKeyByAlias(
                         pStore->dwStoreId,
@@ -488,19 +497,44 @@ VecsSrvGetPrivateKeyByAlias(
                         );
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdAllocateStringW(pszPrivateKey, ppszPrivateKey);
+    dwError = VecsSrvGetEntryTypeByAlias(
+                                pStore,
+                                pszAliasName,
+                                &cEntryType);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (cEntryType != CERT_ENTRY_TYPE_ENCRYPTED_PRIVATE_KEY)
+    {
+        dwError = VmAfdAllocateStringW(pszPrivateKey, ppszPrivateKey);
+    }
+    else
+    {
+        if (IsNullOrEmptyString(pszPassword))
+        {
+            dwError = ERROR_WRONG_PASSWORD;
+            BAIL_ON_VMAFD_ERROR (dwError);
+        }
+
+        dwError = VecsDecryptAndFormatKey (
+                                pszPrivateKey,
+                                pszPassword,
+                                &pszPrivateKey
+                                );
+        *ppszPrivateKey = pszPrivateKey;
+    }
+
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
-    VMAFD_SAFE_FREE_MEMORY (pszPrivateKey);
 
     return dwError;
 error:
-    if (ppszPrivateKey)
+    if (*ppszPrivateKey)
     {
         *ppszPrivateKey = NULL;
     }
 
+    VMAFD_SAFE_FREE_MEMORY (pszPrivateKey);
     goto cleanup;
 }
 
@@ -516,6 +550,7 @@ VecsSrvAddCertificate(
     )
 {
     DWORD dwError = 0;
+    DWORD dwErrorAddToDb = 0;
     PSTR  pszAlias = NULL;
     PWSTR pszAliasToUse = NULL;
     PWSTR pszCanonicalCertPEM = NULL;
@@ -602,28 +637,43 @@ VecsSrvAddCertificate(
 
         else
         {
-          dwError = VecsValidateAndFormatKey (
+            dwError = VecsValidateCertKeyPair(
+                                    pszCertificate,
+                                    pszPrivateKey
+                                    );
+            BAIL_ON_VMAFD_ERROR (dwError);
+
+            dwError = VecsValidateAndFormatKey(
                                     pszPrivateKey,
+                                    pszPassword,
                                     &pszCanonicalKeyPEM
                                   );
-          BAIL_ON_VMAFD_ERROR (dwError);
+            BAIL_ON_VMAFD_ERROR (dwError);
+            if (pszPassword)
+            {
+                cEntryType = CERT_ENTRY_TYPE_ENCRYPTED_PRIVATE_KEY;
+            }
         }
     }
 
-    dwError = VecsDbAddCert(
+    dwErrorAddToDb = VecsDbAddCert(
                   pStore->dwStoreId,
                   cEntryType,
                   pszAliasToUse,
                   pszCanonicalCertPEM,
                   pszCanonicalKeyPEM,
-                  pszPassword,
+                  NULL,
                   bAutoRefresh
                   );
-    BAIL_ON_VMAFD_ERROR (dwError);
+    if (dwErrorAddToDb != ERROR_ALREADY_EXISTS)
+    {
+        dwError = dwErrorAddToDb;
+        BAIL_ON_VMAFD_ERROR (dwError);
 
-    dwError = VmAfdAllocateStringAFromW(pszAliasToUse, &pszAlias);
-    BAIL_ON_VMAFD_ERROR (dwError);
-    VmAfdLog(VMAFD_DEBUG_ANY, "Added cert to VECS DB: %s", pszAlias);
+        dwError = VmAfdAllocateStringAFromW(pszAliasToUse, &pszAlias);
+        BAIL_ON_VMAFD_ERROR (dwError);
+        VmAfdLog(VMAFD_DEBUG_ANY, "Added cert to VECS DB: %s", pszAlias);
+    }
 
     if (cEntryType == CERT_ENTRY_TYPE_TRUSTED_CERT
             && pStore->dwStoreId == VECS_TRUSTED_ROOT_STORE_ID)
@@ -637,6 +687,8 @@ VecsSrvAddCertificate(
         dwError = VecsSrvFlushCrl(pStore, pszCanonicalCertPEM);
         BAIL_ON_VMAFD_ERROR (dwError);
     }
+
+    dwError = dwErrorAddToDb;
 
 cleanup:
     VMAFD_SAFE_FREE_MEMORY(pszAlias);

@@ -15,7 +15,6 @@ libindexcfg_la_CPPFLAGS = \
     -I$(top_srcdir)/thirdparty/openldap/libraries/liblber \
     -I$(top_srcdir)/thirdparty/openldap/libraries/libldap \
     -I$(top_srcdir)/server/include \
-    @BDB_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
