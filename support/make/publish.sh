@@ -12,7 +12,7 @@ if [ $# -le 1 ]
         exit 1
 fi
 
-if [[ ( $# == "--help") || $# == "-h" ]]
+if [[ ( $1 == "--help") || $1 == "-h" ]]
     then
         display_usage
         exit 0
