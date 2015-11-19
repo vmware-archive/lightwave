@@ -1,7 +1,25 @@
 #!/bin/sh
 
-REPO_URL=https://api.bintray.com/maven/vmware/lightwave-maven/lightwave
-ARTIFACT_VERSION=6.0.2
+display_usage() {
+    echo "Publish Lightwave artifacts to a specified Maven repository." 
+    echo "Usage: ./publish.sh repo_url artifact_version"
+    echo "For example: ./publish.sh https://repohost/dir 1.0.0" 
+    } 
+
+if [ $# -le 1 ]
+    then
+        display_usage
+        exit 1
+fi
+
+if [[ ( $# == "--help") || $# == "-h" ]]
+    then
+        display_usage
+        exit 0
+fi
+
+REPO_URL=$1
+ARTIFACT_VERSION=$2
 REPO_ID=lightwave
 
 #publish non-native maven projects, version number in pom.xml files need to be manually changed
