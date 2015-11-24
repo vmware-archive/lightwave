@@ -75,3 +75,64 @@ app files will be created under x64/Debug folder by default. If you need a Relea
 
 ##Installer
 To create a MacOSX installer, use ./buildproduct.sh. This script will package all the apps from the x64/Debug folder into an installer which can be used to install on other machines. To package Release files, use ./buildproduct.sh Release 
+
+
+##Known Issues
+
+I. Move Lightwave Tools from user folder back to Applications folder.
+
+Steps to move the Lightwave Tools apps back from a user folder back to
+Application/LightwaveTools folder (typically useful only on developer
+machines):
+
+1. Install the LightwaveToolsInstaller.pkg package
+
+2. Check the path where the app contained in this pkg are installed using
+the following command:
+tail -n 100 /var/log/install.log
+
+NOTE: It should contain details as below:
+Nov 18 20:41:15 LOCALMACHINE.local Installer[13136]: PackageKit:
+Registered bundle file:///Applications/LightwaveTools/Lightwave%20CA.app/
+for uid 93024
+Nov 18 20:41:15 LOCALMACHINE.local Installer[13136]: PackageKit:
+Registered bundle
+file:///Applications/LightwaveTools/Lightwave%20Certificate%20Store.app/
+for uid 93024
+Nov 18 20:41:15 LOCALMACHINE.local Installer[13136]: PackageKit:
+Registered bundle
+file:///Applications/LightwaveTools/Lightwave%20Directory.app/ for uid
+93024
+Nov 18 20:41:15 LOCALMACHINE.local Installer[13136]: PackageKit:
+Registered bundle file:///Applications/LightwaveTools/Lightwave%20SSO.app/
+for uid 93024
+
+
+
+3. If the paths in install.log in step 2. Are something other than above
+then run the following steps:
+
+	i. Run any of the following command based on the "culprit" app that is
+not under LightwaveTools:
+	   sudo pkgutil --forget com.vmware.LightwaveDirectory OR
+	   sudo pkgutil --forget com.vmware.LightwaveSSO OR
+	   sudo pkgutil --forget com.vmware.LightwaveCertStore OR
+           sudo pkgutil --forget com.vmware.LightwaveCA
+
+	ii. Go to the folder that the "culprit" app is unstalled under and move
+that app to Trash.
+
+	iii. Now re-run step 1.
+
+4. Continue this until all the apps shown in Step 2 show the path as
+Applications/LightwaveTools OR you see all the apps listed under
+Applications UI.
+
+5. You can now safely uninstall the LightwaveTools from Application (by
+dragging the Application/LightwaveTools to trash) and re-install them
+using step 1.
+
+
+NOTE: Each time the developer builds or runs the code from Xamarin Studio,
+the path of the above packages will be changed. So the developer needs to
+do step 1-4 to use the installer post this.
