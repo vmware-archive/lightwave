@@ -4,12 +4,6 @@
 # Main
 #
 
-domain_state=`/opt/vmware/bin/vmafd-cli get-domain-state --server-name localhost`
-if [ "$domain_state" != "None" ]; then
-   echo "Lightwave is configured as $domain_state"
-   exit 0
-fi
-
 AWK=
 if [ -x /bin/awk ]; then
     AWK=/bin/awk

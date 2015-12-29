@@ -1,6 +1,6 @@
 Name:    vmware-ic-config
 Summary: VMware Infrastructure Controller Configuration Tool
-Version: 1.0.2
+Version: 1.0.3
 Release: 0
 Group:   Applications/System
 Vendor:  VMware, Inc.
