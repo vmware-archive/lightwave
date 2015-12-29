@@ -7,7 +7,7 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.1, likewise-open >= 6.2.9, vmware-directory >= 6.0.2, vmware-afd >= 6.0.2, vmware-ca >= 6.0.2, vmware-ic-config >= 1.0.2, vmware-sts >= 6.0, vmware-dns >= 6.0
+Requires:  coreutils >= 8.22, openssl >= 1.0.1, likewise-open >= 6.2.9, vmware-directory >= 6.0.2, vmware-afd >= 6.0.2, vmware-ca >= 6.0.2, vmware-ic-config >= 1.0.3, vmware-sts >= 6.0, vmware-dns >= 6.0
 
 %description
 VMware Infrastructure Controller
