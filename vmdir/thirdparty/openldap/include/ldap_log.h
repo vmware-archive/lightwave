@@ -120,6 +120,7 @@ LDAP_BEGIN_DECL
 ////#define LDAP_DEBUG_PARSE	0x0800
 #define LDAP_DEBUG_REPL         0x1000
 #define LDAP_DEBUG_REPL_ATTR    0x2000
+#define LDAP_DEBUG_AUTH         0x4000
 #if 0 /* no longer used (nor supported) */
 #define LDAP_DEBUG_CACHE	0x1000
 #define LDAP_DEBUG_INDEX	0x2000
