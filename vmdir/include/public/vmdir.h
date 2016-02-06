@@ -210,6 +210,12 @@ extern "C" {
 #define ATTR_SRP_SECRET_LEN                 sizeof(ATTR_SRP_SECRET)-1
 #define ATTR_SITE_GUID                      "siteGUID"
 #define ATTR_SITE_GUID_LEN                  sizeof(ATTR_SITE_GUID)-1
+#define ATTR_VMWITCUSTOMERNUMBER            "vmwitcustomernumber"
+#define ATTR_VMWITCUSTOMERNUMBER_LEN        sizeof(ATTR_VMWITCUSTOMERNUMBER)-1
+#define ATTR_UID                            "uid"
+#define ATTR_UID_LEN                        sizeof(ATTR_UID)-1
+#define ATTR_VMWITUSERGUID                  "vmwituserguid"
+#define ATTR_VMWITUSERGUID_LEN              sizeof(ATTR_VMWITUSERGUID)-1
 
 #define ATTR_VMW_OBJECT_SECURITY_DESCRIPTOR   "vmwSecurityDescriptor"
 #define ATTR_VMW_ORGANIZATION_GUID            "vmwOrganizationGuid"
