@@ -16,9 +16,8 @@
 
 #include "includes.h"
 
-static
 DWORD
-vmdirVsnprintf(
+VmDirVsnprintf(
     PSTR*    ppszOut,
     PCSTR    pszFormat,
     va_list  args
@@ -221,8 +220,6 @@ VmDirAllocateStringAVsnprintf(
     DWORD   dwError = 0;
     BOOLEAN bVAEnd = FALSE;
     va_list args;
-    //PSTR str1, str2;
-
 
     if (!ppszOut || !pszFormat)
     {
@@ -233,11 +230,7 @@ VmDirAllocateStringAVsnprintf(
     va_start(args, pszFormat);
     bVAEnd = TRUE;
 
-    //TODO: Clean this up later
-    //str1 = va_arg( args, char*);
-    //str2 = va_arg( args, char*);
-
-    dwError = vmdirVsnprintf(
+    dwError = VmDirVsnprintf(
                 ppszOut,
                 pszFormat,
                 args);
@@ -500,9 +493,8 @@ error:
     goto cleanup;
 }
 
-static
 DWORD
-vmdirVsnprintf(
+VmDirVsnprintf(
     PSTR*    ppszOut,
     PCSTR    pszFormat,
     va_list args

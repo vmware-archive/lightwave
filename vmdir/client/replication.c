@@ -52,6 +52,90 @@ _VmDirReplicationEntriesExist(
     PBOOLEAN pbEntriesExist
     );
 
+static
+DWORD
+_VmDirStrToToken(
+    PCSTR               pszTokenize,
+    CHAR                delimiter,
+    PVMDIR_STRING_LIST* ppStrList
+    );
+
+static
+DWORD
+_VmDirStrToNameAndNumber(
+    PCSTR   pszStr,
+    CHAR    del,
+    PSTR*   ppszName,
+    USN*    pUSN
+    );
+
+static
+DWORD
+_VmDirRAsToStruct(
+    PCSTR   pszStr,
+    PVMDIR_REPL_REPL_AGREEMENT*  ppRA
+    );
+
+static
+DWORD
+_VmDirUTDVectorToStruct(
+    PCSTR   pszStr,
+    PVMDIR_REPL_UTDVECTOR*  ppVector
+    );
+
+static
+DWORD
+_VmDirQueryReplStateUSN(
+    LDAP*   pLd,
+    PCSTR   pszInvocationId,
+    USN     currentUSN,
+    USN*    maxConsumableUSN,
+    USN*    maxOriginatingUSN
+    );
+
+static
+DWORD
+_VmDirEntryToReplState(
+    LDAP*           pLd,
+    LDAPMessage*    pEntry,
+    PVMDIR_REPL_STATE  pReplState
+    );
+
+static
+VOID
+_VmDirFreeReplVector(
+    PVMDIR_REPL_UTDVECTOR  pVector
+    );
+
+static
+VOID
+_VmDirFreeReplRA(
+    PVMDIR_REPL_REPL_AGREEMENT  pRA
+    );
+
+static
+DWORD
+_VmDirGetServerObjectBC(
+    LDAP*               pLd,
+    PCSTR               pszServerDN,
+    PVMDIR_REPL_STATE   pReplState
+    );
+
+static
+DWORD
+_VmDirGetRAObjectBC(
+    LDAP*               pLd,
+    PCSTR               pszServerDN,
+    PVMDIR_REPL_STATE   pReplState
+    );
+
+static
+DWORD
+_VmDirGetReplicationStateBC(
+    LDAP*               pLd,
+    PVMDIR_REPL_STATE   pReplState
+    );
+
 /*
  * The UpToDate vector and Invocation Id attributes are on the same entry.
  */
@@ -642,5 +726,746 @@ cleanup:
 
 error:
      goto cleanup;
+}
+
+DWORD
+VmDirGetReplicationStateInternal(
+    LDAP*               pLd,
+    PVMDIR_REPL_STATE*  ppReplState
+    )
+{
+    DWORD   dwError = 0;
+    PCSTR   pszBaseDN = "cn=replicationstatus";
+    PCSTR   pszFilter = "objectclass=*";
+    PCSTR   pszReplStatus = ATTR_SERVER_RUNTIME_STATUS;
+    PCSTR   ppszAttrs[] = { pszReplStatus, NULL };
+    LDAPMessage*        pResult = NULL;
+    LDAPMessage*        pEntry = NULL;
+    PVMDIR_REPL_STATE   pReplState = NULL;
+
+    if ( pLd == NULL || ppReplState == NULL)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(*pReplState), (PVOID*)&pReplState);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = ldap_search_ext_s(
+                pLd,
+                pszBaseDN,
+                LDAP_SCOPE_BASE,
+                pszFilter,
+                (PSTR*)ppszAttrs,
+                FALSE, /* get values      */
+                NULL,  /* server controls */
+                NULL,  /* client controls */
+                NULL,  /* timeout         */
+                0,     /* size limit */
+                &pResult);
+    dwError = VmDirMapLdapError(dwError);
+    if (dwError == VMDIR_ERROR_ENTRY_NOT_FOUND)
+    {   // 6.0GA and prior.
+        dwError = _VmDirGetReplicationStateBC(
+                    pLd,
+                    pReplState);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (ldap_count_entries(pLd, pResult) == 0)
+        {
+            dwError = VMDIR_ERROR_ENTRY_NOT_FOUND;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        pEntry = ldap_first_entry(pLd, pResult);
+        dwError = _VmDirEntryToReplState(pLd, pEntry, pReplState);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppReplState = pReplState;
+
+cleanup:
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
+
+    return dwError;
+
+error:
+    VmDirFreeReplicationStateInternal(pReplState);
+    goto cleanup;
+}
+
+VOID
+VmDirFreeReplicationStateInternal(
+    PVMDIR_REPL_STATE   pReplState
+    )
+{
+    if (pReplState)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pReplState->pszHost);
+        VMDIR_SAFE_FREE_MEMORY(pReplState->pszInvocationId);
+        _VmDirFreeReplVector(pReplState->pReplUTDVec);
+        _VmDirFreeReplRA(pReplState->pReplRA);
+        VMDIR_SAFE_FREE_MEMORY(pReplState);
+    }
+
+    return;
+}
+
+static
+DWORD
+_VmDirGetRAObjectBC(
+    LDAP*               pLd,
+    PCSTR               pszServerDN,
+    PVMDIR_REPL_STATE   pReplState
+    )
+{
+    DWORD   dwError = 0;
+    PCSTR   pszUSNProcessed = ATTR_LAST_LOCAL_USN_PROCESSED;
+    PCSTR   pszLabeledURI = ATTR_LABELED_URI;
+    PCSTR   ppszAttrs[] = { pszUSNProcessed, pszLabeledURI, NULL };
+    LDAPMessage*    pResult = NULL;
+    LDAPMessage*    pEntry = NULL;
+    struct berval** ppUSNProcessed = NULL;
+    struct berval** ppLabeledURI = NULL;
+    PVMDIR_REPL_REPL_AGREEMENT  pRA = NULL;
+    PVMDIR_REPL_REPL_AGREEMENT  pTmpRA = NULL;
+
+    dwError = ldap_search_ext_s(
+                pLd,
+                pszServerDN,
+                LDAP_SCOPE_SUBTREE,
+                "objectclass=vmwreplicationagreement",
+                (PSTR*)ppszAttrs,
+                FALSE, /* get values      */
+                NULL,  /* server controls */
+                NULL,  /* client controls */
+                NULL,  /* timeout         */
+                0,     /* size limit */
+                &pResult);
+    dwError = VmDirMapLdapError(dwError);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (pEntry = ldap_first_entry(pLd, pResult);
+         pEntry;
+         pEntry = ldap_next_entry(pLd, pEntry))
+    {
+
+        dwError = VmDirAllocateMemory(sizeof(*pTmpRA), (PVOID*)&pTmpRA);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pTmpRA->next = pRA;
+        pRA          = pTmpRA;
+        pTmpRA       = NULL;
+
+        if (ppUSNProcessed)
+        {
+            ldap_value_free_len(ppUSNProcessed);
+            ppUSNProcessed = NULL;
+        }
+        if (ppLabeledURI)
+        {
+            ldap_value_free_len(ppLabeledURI);
+            ppLabeledURI = NULL;
+        }
+
+        ppUSNProcessed  = ldap_get_values_len(pLd, pEntry, pszUSNProcessed);
+        ppLabeledURI    = ldap_get_values_len(pLd, pEntry, pszLabeledURI);
+
+        if (ppUSNProcessed[0])
+        {
+            pRA->maxProcessedUSN = atol(ppUSNProcessed[0]->bv_val);
+        }
+        if (ppLabeledURI[0])
+        {
+            dwError = VmDirReplURIToHostname(ppLabeledURI[0]->bv_val, &(pRA->pszPartnerName));
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    pReplState->pReplRA = pRA;
+
+cleanup:
+    if (ppUSNProcessed)
+    {
+        ldap_value_free_len(ppUSNProcessed);
+    }
+    if (ppLabeledURI)
+    {
+        ldap_value_free_len(ppLabeledURI);
+    }
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
+
+    return dwError;
+
+error:
+    _VmDirFreeReplRA(pRA);
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirGetServerObjectBC(
+    LDAP*               pLd,
+    PCSTR               pszServerDN,
+    PVMDIR_REPL_STATE   pReplState
+    )
+{
+    DWORD   dwError = 0;
+    PCSTR   pszCN = ATTR_CN;
+    PCSTR   pszInvocationid = ATTR_INVOCATION_ID;
+    PCSTR   pszUtdVector = ATTR_UP_TO_DATE_VECTOR;
+    PCSTR   ppszAttrs[] = { pszCN, pszInvocationid, pszUtdVector, NULL };
+    LDAPMessage*    pResult = NULL;
+    LDAPMessage*    pEntry = NULL;
+    struct berval** ppCN = NULL;
+    struct berval** ppInvocationid = NULL;
+    struct berval** ppUtdVector = NULL;
+
+    dwError = ldap_search_ext_s(
+                pLd,
+                pszServerDN,
+                LDAP_SCOPE_BASE,
+                NULL,
+                (PSTR*)ppszAttrs,
+                FALSE, /* get values      */
+                NULL,  /* server controls */
+                NULL,  /* client controls */
+                NULL,  /* timeout         */
+                0,     /* size limit */
+                &pResult);
+    dwError = VmDirMapLdapError(dwError);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pEntry          = ldap_first_entry(pLd, pResult);
+    ppCN            = ldap_get_values_len(pLd, pEntry, pszCN);
+    ppInvocationid  = ldap_get_values_len(pLd, pEntry, pszInvocationid);
+    ppUtdVector     = ldap_get_values_len(pLd, pEntry, pszUtdVector);
+
+    if (ppCN[0])
+    {
+        dwError = VmDirAllocateStringA(ppCN[0]->bv_val, &(pReplState->pszHost));
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    if (ppInvocationid[0])
+    {
+        dwError = VmDirAllocateStringA(ppInvocationid[0]->bv_val, &(pReplState->pszInvocationId));
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    if (ppUtdVector[0])
+    {
+        dwError = _VmDirUTDVectorToStruct(ppUtdVector[0]->bv_val, &(pReplState->pReplUTDVec));
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+
+cleanup:
+    if (ppCN)
+    {
+        ldap_value_free_len(ppCN);
+    }
+    if (ppInvocationid)
+    {
+        ldap_value_free_len(ppInvocationid);
+    }
+    if (ppUtdVector)
+    {
+        ldap_value_free_len(ppUtdVector);
+    }
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+/*
+ * Older version (6.0 GA and prior) does not have cn=replicationstatus sudo entry.
+ * Collect data from server and replication entries directly.
+ */
+static
+DWORD
+_VmDirGetReplicationStateBC(
+    LDAP*               pLd,
+    PVMDIR_REPL_STATE   pReplState
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszServerDN = NULL;
+    DWORD   dwLen = 0;
+
+    dwError = VmDirLdapGetSingleAttribute(
+                pLd,
+                "",
+                ATTR_SERVER_NAME,
+                (PBYTE*)&pszServerDN,
+                &dwLen);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirGetServerObjectBC( pLd, pszServerDN, pReplState);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirGetRAObjectBC( pLd, pszServerDN, pReplState);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszServerDN);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+/*
+ * Tokenize string pszTarget by CHAR delimiter.
+ */
+static
+DWORD
+_VmDirStrToToken(
+    PCSTR               pszTokenize,
+    CHAR                delimiter,
+    PVMDIR_STRING_LIST* ppStrList
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwLen = 0;
+    PCSTR   pszCurrent = pszTokenize;
+    PSTR    pszLocalResult = NULL;
+    PVMDIR_STRING_LIST  pStrList = NULL;
+
+    dwError = VmDirStringListInitialize(&pStrList, 8);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    while (pszCurrent)
+    {
+        PCSTR pszStart = pszCurrent;
+
+        pszCurrent = VmDirStringChrA(pszStart, delimiter);
+
+        if (pszCurrent)
+        {
+            dwLen = (DWORD)(pszCurrent - pszStart);
+            pszCurrent++;
+        }
+        else
+        {
+            dwLen = (DWORD)VmDirStringLenA(pszStart);
+        }
+
+        VMDIR_SAFE_FREE_MEMORY(pszLocalResult);
+        dwError = VmDirAllocateStringOfLenA( pszStart, dwLen, &pszLocalResult);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirStringListAdd(pStrList, pszLocalResult);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pszLocalResult = NULL;
+    }
+
+    *ppStrList = pStrList;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalResult);
+    return dwError;
+
+error:
+    VmDirStringListFree(pStrList);
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirStrToNameAndNumber(
+    PCSTR   pszStr,
+    CHAR    del,
+    PSTR*   ppszName,
+    USN*    pUSN
+    )
+{
+    DWORD   dwError = 0;
+    PCSTR   pszTmp = VmDirStringChrA(pszStr, del);
+    PSTR    pszName = NULL;
+    USN     localUSN = 0;
+
+    if (pszTmp)
+    {
+        dwError = VmDirAllocateStringOfLenA( pszStr, (DWORD)(pszTmp-pszStr), &pszName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        localUSN = atol( pszTmp+1 );
+    }
+    else
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppszName = pszName;
+    *pUSN = localUSN;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszName);
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirRAsToStruct(
+    PCSTR   pszStr,
+    PVMDIR_REPL_REPL_AGREEMENT*  ppRA
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCnt = 0;
+    PVMDIR_STRING_LIST          pStrList = NULL;
+    PVMDIR_REPL_REPL_AGREEMENT  pRA = NULL;
+    PVMDIR_REPL_REPL_AGREEMENT  pTmpRA = NULL;
+
+    dwError = _VmDirStrToToken(pszStr, ',', &pStrList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt=0; dwCnt<pStrList->dwCount; dwCnt++)
+    {
+        if (pStrList->pStringList[dwCnt][0] == '\0')
+        {
+            continue;
+        }
+
+        dwError = VmDirAllocateMemory(sizeof(*pTmpRA), (PVOID*)&pTmpRA);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pTmpRA->next = pRA;
+        pRA          = pTmpRA;
+        pTmpRA       = NULL;
+
+        dwError = _VmDirStrToNameAndNumber( pStrList->pStringList[dwCnt], '|',
+                                            &pRA->pszPartnerName,
+                                            &pRA->maxProcessedUSN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppRA = pRA;
+
+cleanup:
+    VmDirStringListFree(pStrList);
+    return dwError;
+
+error:
+    _VmDirFreeReplRA(pRA);
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirUTDVectorToStruct(
+    PCSTR   pszStr,
+    PVMDIR_REPL_UTDVECTOR*  ppVector
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCnt = 0;
+    PVMDIR_STRING_LIST      pStrList = NULL;
+    PVMDIR_REPL_UTDVECTOR   pVector = NULL;
+    PVMDIR_REPL_UTDVECTOR   pTmpVector = NULL;
+
+    dwError = _VmDirStrToToken(pszStr, ',', &pStrList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt=0; dwCnt<pStrList->dwCount; dwCnt++)
+    {
+        if (pStrList->pStringList[dwCnt][0] == '\0')
+        {
+            continue;
+        }
+
+        dwError = VmDirAllocateMemory(sizeof(*pTmpVector), (PVOID*)&pTmpVector);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pTmpVector->next = pVector;
+        pVector          = pTmpVector;
+        pTmpVector       = NULL;
+
+        dwError = _VmDirStrToNameAndNumber( pStrList->pStringList[dwCnt], ':',
+                                            &pVector->pszPartnerInvocationId,
+                                            &pVector->maxOriginatingUSN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppVector = pVector;
+
+cleanup:
+    VmDirStringListFree(pStrList);
+    return dwError;
+
+error:
+    _VmDirFreeReplVector(pVector);
+    goto cleanup;
+}
+
+/*
+ * Search the last MAX_REPL_STATE_USN_SEARCH of entries based on USNChanged.
+ * Best effort to derive:
+ *  maxConsumable  USN
+ *  maxOriginating USN
+ */
+static
+DWORD
+_VmDirQueryReplStateUSN(
+    LDAP*   pLd,
+    PCSTR   pszInvocationId,
+    USN     currentUSN,
+    USN*    maxConsumableUSN,
+    USN*    maxOriginatingUSN
+    )
+{
+    DWORD   dwError = 0;
+    int     i = 0, j=0;
+    PSTR    pszFilter = NULL;
+    PCSTR   pszUSNChanged = ATTR_USN_CHANGED;
+    PCSTR   pszMetadata = ATTR_ATTR_META_DATA;
+    PCSTR   pszObjectclass = ATTR_OBJECT_CLASS;
+    PCSTR   ppszAttrs[] = { pszUSNChanged, pszMetadata, pszObjectclass, NULL };
+    struct berval** ppUSNValues = NULL;
+    struct berval** ppMetadataValues = NULL;
+    struct berval** ppObjectClassValues = NULL;
+    USN     consumableUSN = 0;
+    USN     originatingUSN = 0;
+
+    LDAPMessage *pResult = NULL;
+    LDAPMessage *pEntry = NULL;
+
+    dwError = VmDirAllocateStringAVsnprintf(&pszFilter, "usnchanged>=%u",
+                                            VMDIR_MAX( currentUSN-MAX_REPL_STATE_USN_SEARCH, 0));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = ldap_search_ext_s(
+                pLd,
+                "",
+                LDAP_SCOPE_SUBTREE,
+                pszFilter,
+                (PSTR*)ppszAttrs,
+                FALSE, /* get values      */
+                NULL,  /* server controls */
+                NULL,  /* client controls */
+                NULL,  /* timeout         */
+                MAX_REPL_STATE_USN_SEARCH,     /* size limit */
+                &pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (pEntry = ldap_first_entry(pLd, pResult);
+         pEntry;
+         pEntry = ldap_next_entry(pLd, pEntry))
+    {
+        BOOLEAN bConsumable = TRUE;
+
+        if (ppUSNValues)
+        {
+            ldap_value_free_len(ppUSNValues);
+            ppUSNValues = NULL;
+        }
+        if (ppMetadataValues)
+        {
+            ldap_value_free_len(ppMetadataValues);
+            ppMetadataValues = NULL;
+        }
+        if (ppObjectClassValues)
+        {
+            ldap_value_free_len(ppObjectClassValues);
+            ppObjectClassValues = NULL;
+        }
+
+        ppUSNValues         = ldap_get_values_len(pLd, pEntry, ATTR_USN_CHANGED);
+        ppMetadataValues    = ldap_get_values_len(pLd, pEntry, ATTR_ATTR_META_DATA);
+        ppObjectClassValues  = ldap_get_values_len(pLd, pEntry, ATTR_OBJECT_CLASS);
+
+        for (i=0; ppObjectClassValues[i] != NULL; i++)
+        {
+            // per ldap-head/result.c, we do not send VMWDIRSERVER and VMWREPLICATIONAGREEMENT changes
+            // to partner during replication pull request.
+            if ( VmDirStringCompareA(ppObjectClassValues[i]->bv_val, OC_DIR_SERVER, FALSE) == 0  ||
+                 VmDirStringCompareA(ppObjectClassValues[i]->bv_val, OC_REPLICATION_AGREEMENT, FALSE) == 0
+               )
+            {
+                bConsumable = FALSE;
+                break;
+            }
+        }
+
+        if (bConsumable)
+        {
+            USN thisUSN = atol( ppUSNValues[0] ? ppUSNValues[0]->bv_val:"0" );
+            consumableUSN = VMDIR_MAX(thisUSN, consumableUSN);
+
+            for (j=0; ppMetadataValues[j] != NULL; j++)
+            {
+                if ( VmDirStringStrA(ppMetadataValues[j]->bv_val, ATTR_USN_CHANGED) != NULL  &&
+                     VmDirStringStrA(ppMetadataValues[j]->bv_val, pszInvocationId)  != NULL
+                   )
+                {
+                    USN thisUSN = atol( ppUSNValues[0] ? ppUSNValues[0]->bv_val:"0" );
+                    originatingUSN = VMDIR_MAX(thisUSN, originatingUSN);
+
+                    break;
+                }
+            }
+        }
+    }
+
+    *maxConsumableUSN = consumableUSN;
+    *maxOriginatingUSN = originatingUSN;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszFilter);
+    if (ppUSNValues)
+    {
+        ldap_value_free_len(ppUSNValues);
+    }
+    if (ppMetadataValues)
+    {
+        ldap_value_free_len(ppMetadataValues);
+    }
+    if (ppObjectClassValues)
+    {
+        ldap_value_free_len(ppObjectClassValues);
+    }
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
+
+    return dwError;
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirEntryToReplState(
+    LDAP*           pLd,
+    LDAPMessage*    pEntry,
+    PVMDIR_REPL_STATE  pReplState
+    )
+{
+    DWORD   dwError = 0;
+    int     iCnt = 0;
+    struct  berval** ppValues = NULL;
+
+    ppValues = ldap_get_values_len(
+                    pLd,
+                    pEntry,
+                    ATTR_SERVER_RUNTIME_STATUS);
+
+    for (iCnt=0; iCnt < ldap_count_values_len(ppValues); iCnt++)
+    {
+        if (VmDirStringNCompareA(ppValues[iCnt]->bv_val, REPL_STATUS_SERVER_NAME,
+                                 REPL_STATUS_SERVER_NAME_LEN, FALSE) == 0)
+        {
+            dwError = VmDirAllocateStringA(ppValues[iCnt]->bv_val+REPL_STATUS_SERVER_NAME_LEN, &pReplState->pszHost);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (VmDirStringNCompareA(ppValues[iCnt]->bv_val, REPL_STATUS_VISIBLE_USN,
+                                      REPL_STATUS_VISIBLE_USN_LEN, FALSE) == 0)
+        {
+            pReplState->maxVisibleUSN = atoi(ppValues[iCnt]->bv_val+REPL_STATUS_VISIBLE_USN_LEN);
+        }
+        else if (VmDirStringNCompareA(ppValues[iCnt]->bv_val, REPL_STATUS_CYCLE_COUNT,
+                                      REPL_STATUS_CYCLE_COUNT_LEN, FALSE) == 0)
+        {
+            pReplState->dwCycleCount = atoi(ppValues[iCnt]->bv_val+REPL_STATUS_CYCLE_COUNT_LEN);
+        }
+        else if (VmDirStringNCompareA(ppValues[iCnt]->bv_val, REPL_STATUS_INVOCATION_ID,
+                                      REPL_STATUS_INVOCATION_ID_LEN, FALSE) == 0)
+        {
+            dwError = VmDirAllocateStringA(ppValues[iCnt]->bv_val+REPL_STATUS_INVOCATION_ID_LEN, &pReplState->pszInvocationId);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (VmDirStringNCompareA(ppValues[iCnt]->bv_val, REPL_STATUS_UTDVECTOR,
+                                      REPL_STATUS_UTDVECTOR_LEN, FALSE) == 0)
+        {
+            dwError = _VmDirUTDVectorToStruct(ppValues[iCnt]->bv_val+REPL_STATUS_UTDVECTOR_LEN,
+                                              &pReplState->pReplUTDVec);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (VmDirStringNCompareA(ppValues[iCnt]->bv_val, REPL_STATUS_PROCESSED_USN_VECTOR,
+                                      REPL_STATUS_PROCESSED_USN_VECTOR_LEN, FALSE) == 0)
+        {
+            dwError = _VmDirRAsToStruct( ppValues[iCnt]->bv_val+REPL_STATUS_PROCESSED_USN_VECTOR_LEN,
+                                        &pReplState->pReplRA);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    if (pReplState->maxVisibleUSN > 0)
+    {
+        dwError = _VmDirQueryReplStateUSN( pLd,
+                                           pReplState->pszInvocationId,
+                                           pReplState->maxVisibleUSN,
+                                           &pReplState->maxConsumableUSN,
+                                           &pReplState->maxOriginatingUSN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    if (ppValues)
+    {
+        ldap_value_free_len(ppValues);
+    }
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+VOID
+_VmDirFreeReplVector(
+    PVMDIR_REPL_UTDVECTOR  pVector
+    )
+{
+    while (pVector)
+    {
+        PVMDIR_REPL_UTDVECTOR pNext = pVector->next;
+
+        VMDIR_SAFE_FREE_MEMORY(pVector->pszPartnerInvocationId);
+        VMDIR_SAFE_FREE_MEMORY(pVector);
+        pVector = pNext;
+    }
+
+    return;
+}
+
+static
+VOID
+_VmDirFreeReplRA(
+    PVMDIR_REPL_REPL_AGREEMENT  pRA
+    )
+{
+    while (pRA)
+    {
+        PVMDIR_REPL_REPL_AGREEMENT pNext = pRA->next;
+
+        VMDIR_SAFE_FREE_MEMORY(pRA->pszPartnerName);
+        VMDIR_SAFE_FREE_MEMORY(pRA);
+        pRA = pNext;
+    }
+
+    return;
 }
 

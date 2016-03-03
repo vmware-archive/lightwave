@@ -339,6 +339,165 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+ _VmDirCopyAttrToStrList(
+    PVDIR_ENTRY         pEntry,
+    PCSTR               pszAttrName,
+    PVMDIR_STRING_LIST  pStrList
+    )
+{
+    DWORD           dwError = 0;
+    size_t          i = 0;
+    PVDIR_ATTRIBUTE pAttr = NULL;
+
+    pAttr = VmDirFindAttrByName(pEntry, (PSTR)pszAttrName);
+    if (!pAttr)
+    {
+        dwError = VMDIR_ERROR_NO_SUCH_ATTRIBUTE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    for (i=0; i< pAttr->numVals; i++)
+    {
+        dwError = VmDirStringListAddStrClone(pAttr->vals[i].lberbv_val, pStrList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirGetEntrySchemaDefStr(
+    PVDIR_ENTRY                pEntry,
+    PVMDIR_LDAP_SCHEMA_DEF_STR pSchemaDefs
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = _VmDirCopyAttrToStrList(pEntry, ATTR_ATTRIBUTETYPES, pSchemaDefs->pATStrList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirCopyAttrToStrList(pEntry, ATTR_OBJECTCLASSES, pSchemaDefs->pOCStrList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirCopyAttrToStrList(pEntry, ATTR_DITCONTENTRULES, pSchemaDefs->pCRStrList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirAddOneOPMod(
+    PVDIR_OPERATION pOperation,
+    int             modOpType,
+    PCSTR           pszName,
+    PVMDIR_STRING_LIST  pStrList
+    )
+{
+    DWORD           dwError = 0;
+    DWORD           dwCnt = 0;
+    PVDIR_BERVALUE  pBerValue = NULL;
+
+    if (pStrList->dwCount < 1 || pStrList->dwCount > USHRT_MAX)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+     dwError = VmDirAllocateMemory(
+             sizeof(VDIR_BERVALUE) * (pStrList->dwCount+1),
+             (PVOID*)&pBerValue);
+     BAIL_ON_VMDIR_ERROR(dwError);
+
+     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Modify schema entry:");
+     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "OP type %d (ADD/0,DEL/1), %s", modOpType ,pszName);
+
+     for (dwCnt = 0; dwCnt < pStrList->dwCount; dwCnt++)
+     {
+         dwError = VmDirAllocateStringA(pStrList->pStringList[dwCnt], &pBerValue[dwCnt].lberbv_val);
+         BAIL_ON_VMDIR_ERROR(dwError);
+         pBerValue[dwCnt].lberbv_len = VmDirStringLenA(pBerValue[dwCnt].lberbv_val);
+         pBerValue[dwCnt].bOwnBvVal = TRUE;
+
+         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s", pStrList->pStringList[dwCnt]);
+     }
+
+     dwError = VmDirOperationAddModReq(
+             pOperation,
+             modOpType,
+             (PSTR)pszName,
+             pBerValue,
+             (size_t)pStrList->dwCount);
+     BAIL_ON_VMDIR_ERROR(dwError);
+     pBerValue = NULL; // pOperation takes over pBerValue
+
+cleanup:
+    return dwError;
+
+error:
+    if (pBerValue)
+    {
+        VmDirFreeBervalArrayContent(pBerValue, (USHORT)pStrList->dwCount);
+        VMDIR_SAFE_FREE_MEMORY(pBerValue);
+    }
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirSchemaDefToOPMod(
+    PVDIR_OPERATION             pOperation,
+    PVMDIR_LDAP_SCHEMA_MOD_STR  pSchemaModStr
+    )
+{
+    struct
+    {
+        int                 opMod;
+        PCSTR               pszName;
+        PVMDIR_STRING_LIST  pStrList;
+    }
+    values[] =
+    {
+        {LDAP_MOD_DELETE, ATTR_ATTRIBUTETYPES,  pSchemaModStr->pDelATStrList},
+        {LDAP_MOD_ADD,    ATTR_ATTRIBUTETYPES,  pSchemaModStr->pAddATStrList},
+        {LDAP_MOD_DELETE, ATTR_OBJECTCLASSES,   pSchemaModStr->pDelOCStrList},
+        {LDAP_MOD_ADD,    ATTR_OBJECTCLASSES,   pSchemaModStr->pAddOCStrList},
+        {LDAP_MOD_DELETE, ATTR_DITCONTENTRULES, pSchemaModStr->pDelCRStrList},
+        {LDAP_MOD_ADD,    ATTR_DITCONTENTRULES, pSchemaModStr->pAddCRStrList}
+    };
+    int   iValue = 0;
+    DWORD dwError = 0;
+
+    for (iValue = sizeof(values)/sizeof(values[0]) -1; iValue >= 0; iValue--)
+    {
+        if (values[iValue].pStrList->dwCount > 0)
+        {
+            dwError = _VmDirAddOneOPMod(pOperation,
+                                        values[iValue].opMod,
+                                        values[iValue].pszName,
+                                        values[iValue].pStrList);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 DWORD
 VmDirCopyPartnerSchema(
         PCSTR pszFQDomainName,
@@ -424,5 +583,60 @@ error:
     {
         ldapOp.pBEIF->pfnBETxnAbort(ldapOp.pBECtx);
     }
+    goto cleanup;
+}
+
+/*
+ * Compare DB and file schema definition.
+ * Generate LDAP VDIR_MODIFICATION to perform internal modify.
+ */
+DWORD
+VmDirSchemaPatchSetOPMod(
+    PVDIR_OPERATION     pOperation,
+    PVDIR_ENTRY         pEntry,
+    PCSTR               pszSchemaFile
+    )
+{
+    DWORD dwError = 0;
+    PVMDIR_LDAP_SCHEMA_STRUCT   pLdapSchema = NULL;
+    PVMDIR_LDAP_SCHEMA_STRUCT   pFileSchema = NULL;
+    VMDIR_LDAP_SCHEMA_DEF_STR   schemaDefs = {0};
+    VMDIR_LDAP_SCHEMA_MOD_STR   schemaModStr = {0};
+
+    if (!pOperation || !pEntry || !pszSchemaFile)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirInitModStrContent(&schemaModStr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirInitLdapSchemaDefsContent(&schemaDefs);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirGetEntrySchemaDefStr(pEntry,&schemaDefs);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetSchemaFromDefStr(&schemaDefs, &pLdapSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetSchemaFromLocalFile(pszSchemaFile, &pFileSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAnalyzeSchemaUpgrade(pLdapSchema, pFileSchema, &schemaModStr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirSchemaDefToOPMod(pOperation, &schemaModStr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirFreeLdapSchemaDefsContent(&schemaDefs);
+    VmDirFreeModStrContent(&schemaModStr);
+    VmDirFreeLdapSchemaStruct(pLdapSchema);
+    VmDirFreeLdapSchemaStruct(pFileSchema);
+    return dwError;
+
+error:
     goto cleanup;
 }

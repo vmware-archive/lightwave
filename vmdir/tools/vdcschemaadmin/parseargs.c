@@ -29,18 +29,24 @@
 
 DWORD
 VmDirParseArgs(
-        int      argc,
-        char*    argv[],
-        PSTR*    ppszUPN,
-        PSTR*    ppszPartnerHostName,
-        PSTR*    ppszVersionHostName,
-        PSTR*    ppszPartnerCurrPassword
-        )
+    int      argc,
+    char*    argv[],
+    PSTR*    ppszUPN,
+    PSTR*    ppszPartnerHostName,
+    PSTR*    ppszVersionHostName,
+    PSTR*    ppszUpgradeHostName,
+    PSTR*    ppszSchemaFile,
+    BOOLEAN* pDryRun,
+    PSTR*    ppszPartnerCurrPassword
+    )
 {
     DWORD       dwError                 = ERROR_SUCCESS;
     PSTR        pszUPN                  = NULL;
     PSTR        pszPartnerHostName      = NULL;
     PSTR        pszVersionHostName      = NULL;
+    PSTR        pszUpgradeHostName      = NULL;
+    PSTR        pszSchemaFile           = NULL;
+    PSTR        pszDryRun               = NULL;
     PSTR        pszPartnerCurrPassword  = NULL;
 
 #ifndef _WIN32
@@ -50,7 +56,13 @@ VmDirParseArgs(
     PSTR optarg = NULL;
 #endif
 
-    if ( ppszUPN  == NULL || ppszPartnerHostName == NULL || ppszPartnerCurrPassword == NULL)
+    if ( ppszUPN  == NULL               ||
+         ppszPartnerHostName == NULL    ||
+         ppszPartnerCurrPassword == NULL ||
+         ppszUpgradeHostName == NULL    ||
+         ppszSchemaFile == NULL         ||
+         pDryRun == NULL
+       )
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -75,6 +87,15 @@ VmDirParseArgs(
             case VMDIR_OPTION_SOURCE_HOSTNAME:
                 pszVersionHostName = optarg;
                 break;
+            case VMDIR_OPTION_UPGRADE_HOSTNAME:
+                pszUpgradeHostName = optarg;
+                break;
+            case VMDIR_OPTION_UPGRADE_SCHEMAFILE:
+                pszSchemaFile = optarg;
+                break;
+            case VMDIR_OPTION_UPGRADE_DRYRUN:
+                pszDryRun = optarg;
+                break;
             default:
                 dwError = ERROR_INVALID_PARAMETER;
                 BAIL_ON_VMDIR_ERROR(dwError);
@@ -98,6 +119,18 @@ VmDirParseArgs(
             {
                 VmDirGetCmdLineOption(argc, argv, &i, &pszVersionHostName);
             }
+            else if (VmDirStringCompareA(VMDIR_OPTION_UPGRADE_HOSTNAME, argv[i], TRUE) == 0)
+            {
+                VmDirGetCmdLineOption(argc, argv, &i, &pszUpgradeHostName);
+            }
+            else if (VmDirStringCompareA(VMDIR_OPTION_UPGRADE_SCHEMAFILE, argv[i], TRUE) == 0)
+            {
+                VmDirGetCmdLineOption(argc, argv, &i, &pszSchemaFile);
+            }
+            else if (VmDirStringCompareA(VMDIR_OPTION_UPGRADE_DRYRUN, argv[i], TRUE) == 0)
+            {
+                VmDirGetCmdLineOption(argc, argv, &i, &pszDryRun);
+            }
             else if (VmDirStringCompareA(VMDIR_OPTION_SOURCE_PASSWORD, argv[i], TRUE) == 0)
             {
                 VmDirGetCmdLineOption(argc, argv, &i, &pszPartnerCurrPassword);
@@ -107,7 +140,10 @@ VmDirParseArgs(
     }
 #endif
 
-    if ( pszUPN  == NULL || ( pszPartnerHostName  == NULL &&  pszVersionHostName == NULL) )
+    if ( pszUPN  == NULL ||
+         ( pszPartnerHostName  == NULL &&  pszVersionHostName == NULL &&  pszUpgradeHostName == NULL) ||
+         ( pszUpgradeHostName != NULL && pszSchemaFile == NULL)
+       )
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -116,6 +152,12 @@ VmDirParseArgs(
     *ppszUPN                    = pszUPN;
     *ppszPartnerHostName        = pszPartnerHostName;
     *ppszVersionHostName        = pszVersionHostName;
+    *ppszUpgradeHostName        = pszUpgradeHostName;
+    *ppszSchemaFile             = pszSchemaFile;
+    if (pszDryRun && VmDirStringCompareA(pszDryRun,"FALSE",FALSE)==0)
+    {
+        *pDryRun                = FALSE;
+    }
     *ppszPartnerCurrPassword    = pszPartnerCurrPassword;
 
 cleanup:
@@ -131,11 +173,15 @@ ShowUsage(
         )
 {
     printf(
-            "Usage: vdcschemaadmin -D <Bind UPN> [-H|-V] <Host> [-w <current password>]\n"
-            " -H: To examine and report federation schema state.\n"
+            "Usage: vdcschemaadmin -D <Bind UPN> [-H|-V|-U] <Host> [-w <current password>] [-f SchemaFileFullPath]\n"
+            " -H: To examine and report federation schema state.\n\n"
             " -V: If only metadata vesrion is out of sync, use this option to force sync metadata version.\n"
             "     Force sync takes time to converge in the federation.\n"
             "     So -H option could still report schema out of sync for a while after -V run.\n\n"
+            " -U: Upgrade host schema.\n"
+            "     -f specify full path to new schema definition file\n"
+            "     [-d TRUE|FALSE] dry run default to TRUE\n\n"
+            " -D: BIND UPN.\n"
             "if -w is not specified, read password from stdin\n"
           );
 }

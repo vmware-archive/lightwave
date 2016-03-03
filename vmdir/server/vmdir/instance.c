@@ -200,9 +200,6 @@ VmDirSrvSetupHostInstance(
     PSTR                          pszUserDN = NULL;
     PCSTR                         pszUsersContainerName    = "Users";
     PSTR                          pszUsersContainerDN   = NULL; // CN=Users,<domain DN>
-    PSTR                          pszDCGroupDN = NULL;
-    PSTR                          pszDCClientGroupDN = NULL;
-    PSTR                          pszServicesRootDN = NULL;
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Setting up a host instance (%s).",
 			               VDIR_SAFE_STRING(pszFQDomainName));
@@ -317,54 +314,51 @@ VmDirSrvSetupHostInstance(
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // BUGBUG BUGBUG
-    // following setting of gVmdirServerGlobals.XXX is UGLY.......
-
     // set gVmdirServerGlobals.bvDefaultAdminDN
-    VmDirFreeBervalContent(&bv);
-    bv.lberbv.bv_val = pszDefaultAdminDN;
-    bv.lberbv.bv_len = VmDirStringLenA( bv.lberbv.bv_val );
-    dwError = VmDirBervalContentDup( &bv, &gVmdirServerGlobals.bvDefaultAdminDN );
+    dwError = VmDirAllocateBerValueAVsnprintf(
+                &gVmdirServerGlobals.bvDefaultAdminDN,
+                "%s",
+                pszDefaultAdminDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirNormalizeDN( &gVmdirServerGlobals.bvDefaultAdminDN, pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // set systemDomainDN
-    VmDirFreeBervalContent(&bv);
-    bv.lberbv.bv_val = pszDomainDN;
-    bv.lberbv.bv_len = VmDirStringLenA( bv.lberbv.bv_val );
-    dwError = VmDirBervalContentDup( &bv, &gVmdirServerGlobals.systemDomainDN );
+    dwError = VmDirAllocateBerValueAVsnprintf(
+                &gVmdirServerGlobals.systemDomainDN,
+                "%s",
+                pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirNormalizeDN( &gVmdirServerGlobals.systemDomainDN, pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // set serverObjDN
-    VmDirFreeBervalContent(&bv);
-    bv.lberbv.bv_val = pszServerDN;
-    bv.lberbv.bv_len = VmDirStringLenA( bv.lberbv.bv_val );
-    dwError = VmDirBervalContentDup( &bv, &gVmdirServerGlobals.serverObjDN );
+    dwError = VmDirAllocateBerValueAVsnprintf(
+                &gVmdirServerGlobals.serverObjDN,
+                "%s",
+                pszServerDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirNormalizeDN( &gVmdirServerGlobals.serverObjDN, pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // set dcAccountDN
-    VmDirFreeBervalContent(&bv);
-    bv.lberbv.bv_val = pszDCAccountDN;
-    bv.lberbv.bv_len = VmDirStringLenA( bv.lberbv.bv_val );
-    dwError = VmDirBervalContentDup( &bv, &gVmdirServerGlobals.dcAccountDN );
+    dwError = VmDirAllocateBerValueAVsnprintf(
+                &gVmdirServerGlobals.dcAccountDN,
+                "%s",
+                pszDCAccountDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirNormalizeDN( &gVmdirServerGlobals.dcAccountDN, pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // set dcAccountUPN
-    VmDirFreeBervalContent(&bv);
-    bv.lberbv.bv_val = pszDCAccountUPN;
-    bv.lberbv.bv_len = VmDirStringLenA( bv.lberbv.bv_val );
-    dwError = VmDirBervalContentDup( &bv, &gVmdirServerGlobals.dcAccountUPN );
+    dwError = VmDirAllocateBerValueAVsnprintf(
+                &gVmdirServerGlobals.dcAccountUPN,
+                "%s",
+                pszDCAccountUPN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Set replInterval and replPageSize
@@ -399,46 +393,37 @@ VmDirSrvSetupHostInstance(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // set DomainControllerGroupDN for first,second+ host setup
-    dwError = VmDirAllocateStringAVsnprintf( &pszDCGroupDN,
-                                             "cn=%s,cn=%s,%s",
-                                             VMDIR_DC_GROUP_NAME,
-                                             VMDIR_BUILTIN_CONTAINER_NAME,
-                                             pszDomainDN);
+    dwError = VmDirAllocateBerValueAVsnprintf(
+                &gVmdirServerGlobals.bvDCGroupDN,
+                "cn=%s,cn=%s,%s",
+                VMDIR_DC_GROUP_NAME,
+                VMDIR_BUILTIN_CONTAINER_NAME,
+                pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    gVmdirServerGlobals.bvDCGroupDN.lberbv_val = pszDCGroupDN;
-    gVmdirServerGlobals.bvDCGroupDN.lberbv_len = VmDirStringLenA(pszDCGroupDN);
-    gVmdirServerGlobals.bvDCGroupDN.bOwnBvVal = TRUE;
-    pszDCGroupDN = NULL;
     dwError = VmDirNormalizeDN( &(gVmdirServerGlobals.bvDCGroupDN), pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // set DCClientGroupDN for first,second+ host setup
-    dwError = VmDirAllocateStringAVsnprintf( &pszDCClientGroupDN,
-                                             "cn=%s,cn=%s,%s",
-                                             VMDIR_DCCLIENT_GROUP_NAME,
-                                             VMDIR_BUILTIN_CONTAINER_NAME,
-                                             pszDomainDN);
+    dwError = VmDirAllocateBerValueAVsnprintf(
+                &gVmdirServerGlobals.bvDCClientGroupDN,
+                "cn=%s,cn=%s,%s",
+                VMDIR_DCCLIENT_GROUP_NAME,
+                VMDIR_BUILTIN_CONTAINER_NAME,
+                pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val = pszDCClientGroupDN;
-    gVmdirServerGlobals.bvDCClientGroupDN.lberbv_len = VmDirStringLenA(pszDCClientGroupDN);
-    gVmdirServerGlobals.bvDCClientGroupDN.bOwnBvVal = TRUE;
-    pszDCClientGroupDN = NULL;
     dwError = VmDirNormalizeDN( &(gVmdirServerGlobals.bvDCClientGroupDN), pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // set ServicesRootDN for first,second+ host setup
-    dwError = VmDirAllocateStringAVsnprintf( &pszServicesRootDN,
-                                             "cn=%s,%s",
-                                             VMDIR_SERVICES_CONTAINER_NAME,
-                                             pszDomainDN);
+    dwError = VmDirAllocateBerValueAVsnprintf(
+                &gVmdirServerGlobals.bvServicesRootDN,
+                "cn=%s,%s",
+                VMDIR_SERVICES_CONTAINER_NAME,
+                pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    gVmdirServerGlobals.bvServicesRootDN.lberbv_val = pszServicesRootDN;
-    gVmdirServerGlobals.bvServicesRootDN.lberbv_len = VmDirStringLenA(pszServicesRootDN);
-    gVmdirServerGlobals.bvServicesRootDN.bOwnBvVal = TRUE;
-    pszServicesRootDN = NULL;
     dwError = VmDirNormalizeDN( &(gVmdirServerGlobals.bvServicesRootDN), pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -530,9 +515,6 @@ cleanup:
         VmDirSchemaCtxRelease(pSchemaCtx);
     }
 
-    VMDIR_SAFE_FREE_MEMORY(pszDCGroupDN);
-    VMDIR_SAFE_FREE_MEMORY(pszDCClientGroupDN);
-    VMDIR_SAFE_FREE_MEMORY(pszServicesRootDN);
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
     VMDIR_SAFE_FREE_MEMORY(pszDelObjsContainerDN);
     VMDIR_SAFE_FREE_MEMORY(pszConfigContainerDN);

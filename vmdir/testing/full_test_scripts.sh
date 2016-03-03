@@ -40,7 +40,7 @@ if [ $mode = "package" ]; then
    /opt/likewise/bin/lwsm restart vmdir
 fi
 
-$VDCPROMO_PATH/vdcpromo -d vmware.com -u admin -w 123 -i 1
+$VDCPROMO_PATH/vdcpromo -d vmware.com -u administrator -w 123
 
 echo "Checking existence of data directory......."
 echo $TESTING_PATH/data

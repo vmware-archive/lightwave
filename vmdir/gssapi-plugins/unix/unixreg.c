@@ -208,17 +208,42 @@ srp_reg_get_machine_acct_password(
 DWORD
 srp_reg_get_dc_name(
     void *hRegistry,
-    PSTR *ppMachPwd)
+    PSTR *ppDcName)
 {
     DWORD dwError = 0;
     DWORD dcNameLen = 0;
+    PSTR pSzDCName = NULL;
 
     dwError = _srp_reg_get_value(
                   hRegistry,
                   VMAFD_CONFIG_PARAMETER_KEY_PATH,
-                  VMDIR_REG_KEY_DC_NAME,
+                  VMDIR_REG_KEY_DC_NAME_HA,
                   RRF_RT_REG_SZ,
-                  (PBYTE *) ppMachPwd,
+                  (PBYTE *) &pSzDCName,
                   &dcNameLen);
+
+    if (dwError)
+    {
+        free(pSzDCName);
+        pSzDCName = NULL;
+
+        dwError = _srp_reg_get_value(
+                    hRegistry,
+                    VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                    VMDIR_REG_KEY_DC_NAME,
+                    RRF_RT_REG_SZ,
+                    (PBYTE *) &pSzDCName,
+                    &dcNameLen);
+        if (dwError)
+        {
+            goto error;
+        }
+    }
+
+    *ppDcName = pSzDCName;
+    pSzDCName = NULL;
+
+error:
+    free(pSzDCName);
     return dwError;
 }

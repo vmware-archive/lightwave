@@ -20,7 +20,7 @@ echo $TESTING_PATH/data/data.ldif
 
 echo "Running modify_test"
 # Create 100 test objects
-ldapadd -c -h $host -p $port -x -D "cn=admin,cn=users,dc=vmware,dc=com" -w 123 -f $TESTING_PATH/data/data.ldif > $RESULT_PATH/addObjects.out1 2>&1
+ldapadd -c -h $host -p $port -x -D "cn=administrator,cn=users,dc=vmware,dc=com" -w 123 -f $TESTING_PATH/data/data.ldif > $RESULT_PATH/addObjects.out1 2>&1
 # Modify test scripts
 chmod +x $TESTING_PATH/modify_tests/test_script1.sh
 $TESTING_PATH/modify_tests/test_script1.sh -h $host -p $port > $RESULT_PATH/modify_tests_output.txt 2>&1
@@ -33,7 +33,7 @@ diff $TESTING_PATH/delete_tests/good_output.txt  $RESULT_PATH/delete_tests_outpu
 
 echo "Running search_test"
 # Re-Create 100 test objects
-ldapadd -c -h $host -p $port -x -D "cn=admin,cn=users,dc=vmware,dc=com" -w 123 -f $TESTING_PATH/data/data.ldif > $RESULT_PATH/addObjects.out2 2>&1
+ldapadd -c -h $host -p $port -x -D "cn=administrator,cn=users,dc=vmware,dc=com" -w 123 -f $TESTING_PATH/data/data.ldif > $RESULT_PATH/addObjects.out2 2>&1
 # Search test scripts
 chmod +x $TESTING_PATH/search_tests/test_script1.sh
 $TESTING_PATH/search_tests/test_script1.sh -h $host -p $port > $RESULT_PATH/search_tests_output.txt 2>&1
@@ -47,7 +47,7 @@ diff $TESTING_PATH/delete_tests/good_output.txt  $RESULT_PATH/delete_tests_outpu
 
 echo "Running group_test"
 # Re-Create 100 test objects
-ldapadd -c -h $host -p $port -x -D "cn=admin,cn=users,dc=vmware,dc=com" -w 123 -f $TESTING_PATH/data/data.ldif > $RESULT_PATH/addObjects.out3 2>&1
+ldapadd -c -h $host -p $port -x -D "cn=administrator,cn=users,dc=vmware,dc=com" -w 123 -f $TESTING_PATH/data/data.ldif > $RESULT_PATH/addObjects.out3 2>&1
 # Group members test scripts
 chmod +x $TESTING_PATH/group_tests/test_script1.sh
 $TESTING_PATH/group_tests/test_script1.sh -h $host -p $port > $RESULT_PATH/group_tests_output.txt 2>&1
@@ -63,7 +63,7 @@ echo "Running acl_test"
 # special acl objects with password information
 $TESTING_PATH/acl_tests/generate_data.sh > $TESTING_PATH/acl_tests/data.ldif
 # Re-Create 100 test objects
-ldapadd -c -h $host -p $port -x -D "cn=admin,cn=users,dc=vmware,dc=com" -w 123 -f $TESTING_PATH/acl_tests/data.ldif > $RESULT_PATH/addObjects.out4 2>&1
+ldapadd -c -h $host -p $port -x -D "cn=administrator,cn=users,dc=vmware,dc=com" -w 123 -f $TESTING_PATH/acl_tests/data.ldif > $RESULT_PATH/addObjects.out4 2>&1
 # ACL test scripts
 chmod +x $TESTING_PATH/acl_tests/test_script1.sh
 $TESTING_PATH/acl_tests/test_script1.sh -h $host -p $port > $RESULT_PATH/acl_tests_output.txt 2>&1

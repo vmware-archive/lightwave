@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -19,6 +19,14 @@
 
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#ifndef LOGGING_API
+#if defined(_WIN32)
+#define LOGGING_API __declspec(dllimport)
+#else
+#define LOGGING_API
+#endif
 #endif
 
 #include <lber.h>
@@ -92,6 +100,41 @@ VmDirGetServers(
     PCSTR               pszPassword,
     PVMDIR_SERVER_INFO* ppServerInfo,
     DWORD*              pdwNumServer
+    );
+
+DWORD
+VmDirGetComputers(
+    PCSTR               pszHostName,
+    PCSTR               pszUserName,
+    PCSTR               pszPassword,
+    PSTR**              pppszComputers,
+    DWORD*              pdwNumComputers
+    );
+
+DWORD
+VmDirGetDCInfo(
+    PCSTR               pszHostName,
+    PCSTR               pszUserName,
+    PCSTR               pszPassword,
+    PVMDIR_DC_INFO**    pppDC,
+    DWORD*              pdwNumDC
+    );
+
+VOID
+VmDirFreeDCInfo(
+    PVMDIR_DC_INFO      pDC
+    );
+
+VOID
+VmDirFreeDCInfoArray(
+    PVMDIR_DC_INFO*     ppDC,
+    DWORD               dwNumDC
+    );
+
+VOID
+VmDirFreeStringArray(
+    PSTR* ppszStr,
+    DWORD size
     );
 
 DWORD
@@ -254,17 +297,17 @@ VmDirCreateUserW(
 
 DWORD
 VmDirSetPassword(
-    PCSTR pszHostURI,		/* IN              */
-    PCSTR pszAdminDN,		/* IN              */
+    PCSTR pszHostName,		/* IN              */
+    PCSTR pszAdminUPN,		/* IN              */
     PCSTR pszAdminPassword,	/* IN              */
-    PCSTR pszUserDN,		/* IN              */
+    PCSTR pszUserUPN,		/* IN              */
     PCSTR pszNewPassword	/* IN              */
     );
 
 DWORD
 VmDirChangePassword(
-    PCSTR pszHostURI,		/* IN              */
-    PCSTR pszUserDN,		/* IN              */
+    PCSTR pszHostName,		/* IN              */
+    PCSTR pszUserUPN,		/* IN              */
     PCSTR pszOldPassword,	/* IN              */
     PCSTR pszNewPassword	/* IN              */
     );
@@ -327,6 +370,12 @@ VmDirSetLogLevelH(
     );
 
 DWORD
+VmDirGetLogLevelH(
+    PVMDIR_SERVER_CONTEXT    hInBinding,
+    VMDIR_LOG_LEVEL*         pLogLevel
+    );
+
+DWORD
 VmDirSetLogMask(
     UINT32  iVmDirLogMask
     );
@@ -338,9 +387,20 @@ VmDirSetLogMaskH(
     );
 
 DWORD
+VmDirGetLogMaskH(
+    PVMDIR_SERVER_CONTEXT   hInBinding,
+    UINT32*                 piVmDirLogMask
+    );
+
+DWORD
 VmDirSetState(
     PVMDIR_SERVER_CONTEXT   hBinding,
     UINT32                  dwState);
+
+DWORD
+VmDirGetState(
+    PVMDIR_SERVER_CONTEXT   hBinding,
+    UINT32*                 pdwState);
 
 DWORD
 VmDirGetLocalState(
@@ -421,12 +481,14 @@ VmDirSetComputerID(
     );
 
 #ifndef _VMDIR_COMMON_H__
+LOGGING_API
 void
 VmDirLog(
    ULONG        level,
    const char*  fmt,
    ...);
 
+LOGGING_API
 void
 VmDirLog1(
     VMDIR_LOG_LEVEL iLevel,
@@ -434,12 +496,13 @@ VmDirLog1(
     const char*     fmt,
     ...);
 
+LOGGING_API
 void
 VmDirLogTerminate(
     VOID
     );
-#endif
 
+LOGGING_API
 DWORD
 VmDirLogInitialize(
    PCSTR            pszLogFileName,
@@ -448,6 +511,7 @@ VmDirLogInitialize(
    VMDIR_LOG_LEVEL  iLogLevel,
    ULONG            iInitLogMask
    );
+#endif
 
 DWORD
 VmDirOpenServerA(
@@ -489,6 +553,16 @@ VmDirGetReplicationCycleCount(
     DWORD*              pdwReplCycleCount
     );
 
+DWORD
+VmDirGetReplicationState(
+    PVMDIR_CONNECTION  pConnection,
+    PVMDIR_REPL_STATE* ppReplState
+    );
+
+VOID
+VmDirFreeReplicationState(
+    PVMDIR_REPL_STATE   pReplState
+    );
 
 DWORD
 VmDirSuperLogQueryServerData(
@@ -601,6 +675,47 @@ VmDirGetDCNodesVersion (
 VOID
 VmDirFreeDCVersionInfo(
     PVMDIR_DC_VERSION_INFO pDCVerInfo
+    );
+
+DWORD
+VmDirSetBackendState(
+    PVMDIR_SERVER_CONTEXT    hBinding,
+    UINT32     dwFileTransferState,
+    UINT32     *pdwLogNum,
+    UINT32     *pdwDbSizeMb,
+    UINT32     *pdwDbMapSizeMb,
+    PBYTE      pDbPath,
+    UINT32     dwDbPathSize
+);
+
+DWORD
+VmDirOpenDatabaseFile(
+    PVMDIR_SERVER_CONTEXT   hBinding,
+    PCSTR                   pszDBFileName,
+    FILE **                 ppFileHandl
+);
+
+DWORD
+VmDirReadDatabaseFile(
+    PVMDIR_SERVER_CONTEXT    hBinding,
+    FILE *      pFileHandle,
+    UINT32 *    pdwCount,
+    PBYTE       pReadBuffer,
+    UINT32      bufferSize
+);
+
+DWORD
+VmDirCloseDatabaseFile(
+    PVMDIR_SERVER_CONTEXT   hBinding,
+    FILE **                 ppFileHandle
+);
+
+DWORD
+VmDirSchemaUpgrade(
+    PVMDIR_CONNECTION   pConnection,
+    PCSTR               pszSchemaFile,
+    BOOLEAN             bDryRun,
+    PSTR*               ppszErrMsg
     );
 
 #ifdef __cplusplus

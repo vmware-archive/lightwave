@@ -16,8 +16,8 @@
 
 DWORD
 VmDirParseBaseArgs(
-        int      argc,
-        char*    argv[],
+        int   argc,
+        char* argv[],
         PSTR* ppszNetworkAddress,
         PSTR* ppszDomain,
         PSTR* ppszUserName,
@@ -41,9 +41,9 @@ VmDirParseOperationArgs(
 
 DWORD
 VmDirParseSetSizeArgs(
-        int      argc,
-        char*    argv[],
-        PDWORD pdwSize
+        int     argc,
+        char*   argv[],
+        PDWORD  pdwSize
         );
 
 DWORD
@@ -57,6 +57,32 @@ VmDirParseAggregateArgs(
         PBOOLEAN pbString,
         PBOOLEAN pbErrorCode,
         PBOOLEAN pbTime
+        );
+
+DWORD
+VmDirValidateBaseArgs(
+        PSTR pszNetworkAddress,
+        PSTR pszDomain,
+        PSTR pszUserName,
+        PSTR pszPassword
+        );
+
+DWORD
+VmDirValidateOperationArgs(
+        BOOLEAN bNodeData,
+        BOOLEAN bEnable,
+        BOOLEAN bIsEnabled,
+        BOOLEAN bDisable,
+        BOOLEAN bSetSize,
+        BOOLEAN bGetSize,
+        BOOLEAN bRetrieve,
+        BOOLEAN bFlush,
+        BOOLEAN bAggregate
+        );
+
+DWORD
+VmDirValidateSetSizeArgs(
+        DWORD dwSize
         );
 
 VOID

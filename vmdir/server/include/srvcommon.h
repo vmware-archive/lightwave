@@ -64,6 +64,9 @@ extern "C" {
 #define SCHEMA_BOOTSTRAP_EID_SEQ_ATTRID_22     22
 #define SCHEMA_BOOTSTRAP_USN_SEQ_ATTRID_23     23
 
+#define VDIR_FOREST_FUNCTIONAL_LEVEL    "1"
+#define VDIR_DOMAIN_FUNCTIONAL_LEVEL	"2"  // This value is the DFL for the current version
+
 typedef struct _VDIR_CFG_ATTR_INDEX_DESC*   PVDIR_CFG_ATTR_INDEX_DESC;
 typedef struct _VDIR_BACKEND_INTERFACE*     PVDIR_BACKEND_INTERFACE;
 typedef struct _VDIR_SCHEMA_CTX*            PVDIR_SCHEMA_CTX;
@@ -107,6 +110,10 @@ typedef struct _VDIR_BACKEND_CTX
     PSTR        pszBEErrorMsg;
     USN         wTxnUSN;            // lowest USN associates with a write txn (could be nested tnx)
                                     // i.e. should be the first USN number acquired per backend write txn.
+    DWORD       iMaxScanForSizeLimit;  // Maximum candiates scaned an index for the best effort candidates
+                                       // build when search has a size limit hint. Unlimited if it is 0
+    int         iPartialCandidates; // indicate at least one of the filters with candidates contains partial result
+                                    //   valid only when iMaxScanForSizeLimt > 0
 } VDIR_BACKEND_CTX, *PVDIR_BACKEND_CTX;
 
 // accessRoleBitmap is a bit map on bind dn access role if the info is valid
@@ -214,12 +221,15 @@ typedef enum _VDIR_MOD_OPERATION_TYPE
     MOD_OP_REPLACE
 } VDIR_MOD_OPERATION_TYPE;
 
+#define VDIR_DEFAULT_FORCE_VERSION_GAP  512
+
 typedef struct _VDIR_MODIFICATION
 {
     VDIR_MOD_OPERATION_TYPE     operation;
     VDIR_ATTRIBUTE              attr;
     BOOLEAN                     ignore; // Used internally, e.g. to skip processing a Delete modification when the attribute
                                   // does not exist in the entry
+    unsigned short              usForceVersionGap;  // to intentionally create gap between attribute version
     struct _VDIR_MODIFICATION * next;
 } VDIR_MODIFICATION, *PVDIR_MODIFICATION;
 
@@ -352,6 +362,7 @@ struct _VDIR_FILTER
     struct _VDIR_FILTER *       next;
     VDIR_FILTER_COMPUTE_RESULT  computeResult;
     int                         iMaxIndexScan;  // limit scan to qualify for good filter. 0 means unlimited.
+    BOOLEAN                     bAncestorGotPositiveCandidateSet;  // any of ancestor filters got a positive candidate set
     VDIR_CANDIDATES *           candidates;    // Entry IDs candidate list that matches this filter, maintained for internal
                                         // operation.
 };

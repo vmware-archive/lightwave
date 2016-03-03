@@ -84,6 +84,8 @@ namespace VMDirInterop.LDAP
         public ILdapMessage LdapSearchExtS(string querybase, int scope, string filter, string[] attrs, int attrsonly, IntPtr timeout, int sizelimit)
         {
             ILdapMessage message;
+            if(attrs!=null)
+                Array.Resize(ref attrs, attrs.Length + 1);/* NULL Termination */
             var returnError = LdapClientLibrary.ldap_search_ext_s(this._connection, querybase, scope, filter, attrs, 0, 0, 0, timeout, sizelimit, ref this._result);
             ErrorCheckerHelper.Validate(returnError);
             message = new LdapMessage(this, _result);

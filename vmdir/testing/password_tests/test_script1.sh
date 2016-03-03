@@ -10,43 +10,41 @@ echo "#########################################################"
 echo "set policy parameter"
 echo "#########################################################"
 echo
-ldapmodify -c -h $host -p $port -x -D "cn=admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=password and lockout policy,dc=vmware,dc=com
 changetype: modify
-replace: vmIdentity-PasswordChangeFailedAttemptIntervalSec
-vmIdentity-PasswordChangeFailedAttemptIntervalSec: 2
+replace: vmwPasswordChangeFailedAttemptIntervalSec
+vmwPasswordChangeFailedAttemptIntervalSec: 2
 -
-replace: vmIdentity-PasswordChangeAutoUnlockIntervalSec
-vmIdentity-PasswordChangeAutoUnlockIntervalSec: 2
+replace: vmwPasswordChangeAutoUnlockIntervalSec
+vmwPasswordChangeAutoUnlockIntervalSec: 2
 -
-replace: vmIdentity-PasswordChangeMaxFailedAttempts
-vmIdentity-PasswordChangeMaxFailedAttempts: 2
+replace: vmwPasswordChangeMaxFailedAttempts
+vmwPasswordChangeMaxFailedAttempts: 2
 EOM
 
 echo "#########################################################"
 echo "Create password test user cn=password_test,cn=users,dc=vmware,dc=com"
 echo "#########################################################"
 echo
-# should change to user 'User' objectclass after we retire vmIdentity-User
-
-ldapmodify -c -h $host -p $port -x -D "cn=admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=password_test,cn=users,dc=vmware,dc=com
 changetype: add
-objectclass: vmIdentity-User
+objectclass: User
 cn: password_test
 sn: password_test_sn
 userpassword: mypaSsword9@
-vmIdentity-account: vmidentity account
+description: vmidentity account
 EOM
 
 echo "#########################################################"
 echo " TEST CASE 1"
-echo " BIND : admin user"
+echo " BIND : administrator user"
 echo " ACTION: set password"
 echo " RESULT: should fail - more than one userpassword"
 echo "#########################################################"
 echo
-ldapmodify -c -h $host -p $port -x -D "cn=admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=password_test,cn=users,dc=vmware,dc=com
 changetype: modify
 replace: userpassword
@@ -56,12 +54,12 @@ EOM
 
 echo "#########################################################"
 echo " TEST CASE 2"
-echo " BIND : admin user"
+echo " BIND : administrator user"
 echo " ACTION: set password"
 echo " RESULT: should succeed"
 echo "#########################################################"
 echo
-ldapmodify -c -h $host -p $port -x -D "cn=admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=password_test,cn=users,dc=vmware,dc=com
 changetype: modify
 replace: userpassword
@@ -246,23 +244,6 @@ echo "#########################################################"
 echo " TEST CASE 13"
 echo " BIND : self user"
 echo " ACTION: change password"
-echo " RESULT: should fail - strength fail - same adjacent char"
-echo "#########################################################"
-echo
-ldapmodify -c -h $host -p $port -x -D "cn=password_test,cn=Users,dc=vmware,dc=com" -w "NEWpaSsword9@" <<EOM
-dn: cn=password_test,cn=users,dc=vmware,dc=com
-changetype: modify
-add: userpassword
-userpassword: selfCHG9@dd
--
-delete: userpassword
-userpassword: NEWpaSsword9@
-EOM
-
-echo "#########################################################"
-echo " TEST CASE 14"
-echo " BIND : self user"
-echo " ACTION: change password"
 echo " RESULT: should succeed - selfCHG9@"
 echo "#########################################################"
 echo
@@ -283,7 +264,7 @@ echo
 ldapsearch -c -h $host -p $port -x -D "cn=password_test,cn=users,dc=vmware,dc=com" -w "selfCHG9@" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" dn
 
 echo "#########################################################"
-echo " TEST CASE 15 - PREPARE"
+echo " TEST CASE 14 - PREPARE"
 echo "#########################################################"
 echo
 ldapmodify -c -h $host -p $port -x -D "cn=password_test,cn=Users,dc=vmware,dc=com" -w "selfCHG9@" <<EOM
@@ -299,7 +280,7 @@ EOM
 ldapsearch -c -h $host -p $port -x -D "cn=password_test,cn=users,dc=vmware,dc=com" -w "selfCHG9#" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" dn
 
 echo "#########################################################"
-echo " TEST CASE 15"
+echo " TEST CASE 14"
 echo " BIND : self user"
 echo " ACTION: set password but use prior value"
 echo " RESULT: should fail - recycle password"
@@ -315,11 +296,11 @@ userpassword: selfCHG9#
 EOM
 
 echo "#########################################################"
-echo " TEST CASE 16 - PREPARE"
+echo " TEST CASE 15 - PREPARE"
 echo " useraccountcontrol lockout flag is clear 0x00000000"
 echo "#########################################################"
 echo
-ldapsearch -c -h $host -p $port -x -D "cn=admin,cn=users,dc=vmware,dc=com" -w "123" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" useraccountcontrol
+ldapsearch -c -h $host -p $port -x -D "cn=administrator,cn=users,dc=vmware,dc=com" -w "123" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" useraccountcontrol
 echo
 echo
 echo "#########################################################"
@@ -332,7 +313,7 @@ ldapsearch -c -h $host -p $port -x -D "cn=password_test,cn=users,dc=vmware,dc=co
 ldapsearch -c -h $host -p $port -x -D "cn=password_test,cn=users,dc=vmware,dc=com" -w "1selfCHG9#" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" dn
 
 echo "#########################################################"
-echo " TEST CASE 16"
+echo " TEST CASE 15"
 echo " BIND : sefl user"
 echo " ACTION: fail attempt > max allowed to trigger lockout"
 echo " RESULT: should fail - account lockout"
@@ -340,13 +321,13 @@ echo "#########################################################"
 ldapsearch -c -h $host -p $port -x -D "cn=password_test,cn=users,dc=vmware,dc=com" -w "selfCHG9#" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" useraccountcontrol
 
 echo "#########################################################"
-echo " TEST CASE 16-1"
-echo " BIND : admin user"
+echo " TEST CASE 15-1"
+echo " BIND : administrator user"
 echo " ACTION: fail attempt > max allowed to trigger lockout"
 echo " RESULT:  useraccountcontrol lockout flag is set 0x00000010"
 echo "#########################################################"
 echo
-ldapsearch -c -h $host -p $port -x -D "cn=admin,cn=users,dc=vmware,dc=com" -w "123" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" useraccountcontrol
+ldapsearch -c -h $host -p $port -x -D "cn=administrator,cn=users,dc=vmware,dc=com" -w "123" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" useraccountcontrol
 echo
 echo "#########################################################"
 echo " sleep 3 secs for auto unlock interval"
@@ -356,7 +337,7 @@ sleep 3
 
 echo
 echo "#########################################################"
-echo " TEST CASE 17"
+echo " TEST CASE 16"
 echo " BIND : self user"
 echo " ACTION: lockout with autounlock time pass"
 echo " RESULT:  useraccountcontrol lockout flag is set 0x00000000"
@@ -365,13 +346,13 @@ echo
 ldapsearch -c -h $host -p $port -x -D "cn=password_test,cn=users,dc=vmware,dc=com" -w "selfCHG9#" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" useraccountcontrol
 
 echo "#########################################################"
-echo " TEST CASE 18"
-echo " BIND : admin user"
+echo " TEST CASE 17"
+echo " BIND : administrator user"
 echo " ACTION: set user password that violate strength policy"
 echo " RESULT:  should fail"
 echo "#########################################################"
 echo
-ldapmodify -c -h $host -p $port -x -D "cn=admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=password_test,cn=users,dc=vmware,dc=com
 changetype: modify
 replace: userpassword
@@ -380,46 +361,46 @@ EOM
 
 echo
 echo "#########################################################"
-echo " self verify admin set password fail in TEST CASE 18 - search should succceed"
+echo " self verify administrator set password fail in TEST CASE 18 - search should succceed"
 echo "#########################################################"
 echo
 ldapsearch -c -h $host -p $port -x -D "cn=password_test,cn=users,dc=vmware,dc=com" -w "selfCHG9#" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" useraccountcontrol
 
 echo
 echo "#########################################################"
-echo " TEST CASE 19 - PREPARE"
+echo " TEST CASE 18 - PREPARE"
 echo "#########################################################"
 echo
-ldapsearch -c -h $host -p $port -x -D "cn=admin,cn=users,dc=vmware,dc=com" -w "bad123" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" dn
-ldapsearch -c -h $host -p $port -x -D "cn=admin,cn=users,dc=vmware,dc=com" -w "bad123" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" dn
-ldapsearch -c -h $host -p $port -x -D "cn=admin,cn=users,dc=vmware,dc=com" -w "bad123" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" dn
-ldapsearch -c -h $host -p $port -x -D "cn=admin,cn=users,dc=vmware,dc=com" -w "bad123" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" dn
+ldapsearch -c -h $host -p $port -x -D "cn=administrator,cn=users,dc=vmware,dc=com" -w "bad123" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" dn
+ldapsearch -c -h $host -p $port -x -D "cn=administrator,cn=users,dc=vmware,dc=com" -w "bad123" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" dn
+ldapsearch -c -h $host -p $port -x -D "cn=administrator,cn=users,dc=vmware,dc=com" -w "bad123" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" dn
+ldapsearch -c -h $host -p $port -x -D "cn=administrator,cn=users,dc=vmware,dc=com" -w "bad123" -b "cn=password_test,cn=users,dc=vmware,dc=com" -s base "objectclass=*" dn
 
 echo
+echo "#########################################################"
+echo " TEST CASE 18"
+echo " BIND : administrator user"
+echo " ACTION: fail login exceed max allowed in policy"
+echo " RESULT: should succeed - administrator account is NOT locked out"
+echo "#########################################################"
+echo
+ldapsearch -c -h $host -p $port -x -D "cn=administrator,cn=users,dc=vmware,dc=com" -w "123" -b "cn=administrator,cn=users,dc=vmware,dc=com" -s base "objectclass=*" useraccountcontrol
+
 echo "#########################################################"
 echo " TEST CASE 19"
-echo " BIND : admin user"
-echo " ACTION: fail login exceed max allowed in policy"
-echo " RESULT: should succeed - admin account is NOT locked out"
-echo "#########################################################"
-echo
-ldapsearch -c -h $host -p $port -x -D "cn=admin,cn=users,dc=vmware,dc=com" -w "123" -b "cn=admin,cn=users,dc=vmware,dc=com" -s base "objectclass=*" useraccountcontrol
-
-echo "#########################################################"
-echo " TEST CASE 20"
-echo " BIND : admin user"
+echo " BIND : administrator user"
 echo " ACTION: create user with password strength violoation"
 echo " RESULT: should fail"
 echo "#########################################################"
 echo
-ldapmodify -c -h $host -p $port -x -D "cn=admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=password_test_next,cn=users,dc=vmware,dc=com
 changetype: add
 objectclass: vmIdentity-User
 cn: password_test_next
 sn: password_test_sn
 userpassword: mypaSs
-vmIdentity-account: vmidentity account
+description: vmidentity account
 EOM
 
 echo
@@ -428,7 +409,7 @@ echo "Delete password test user cn=password_test,cn=users,dc=vmware,dc=com"
 echo "#########################################################"
 echo
 
-ldapmodify -c -h $host -p $port -x -D "cn=admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=password_test,cn=users,dc=vmware,dc=com
 changetype: delete
 EOM

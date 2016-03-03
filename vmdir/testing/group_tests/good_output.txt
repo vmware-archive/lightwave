@@ -15,7 +15,7 @@ Try to add a non-existing member to Group-1
 #########################################################
 
 ldap_modify: Constraint violation (19)
-	additional info: beChkDnReference constraint failed - (2105)(MDB_NOTFOUND: No matching key/data pair found)
+	additional info: BECheckDnRef, (9705)((Unknown error 9703)(cn=John-x,ou=eng,dc=vmware,dc=com))
 modifying entry "cn=Group-1,ou=eng,dc=vmware,dc=com"
 
 #########################################################

@@ -46,7 +46,7 @@ VmDirInternalUpdateSequence(
 DWORD
 VmDirSyncRIDSeqToDB(
     PSTR    pszDomainDN,
-    PSTR    pszRID
+    DWORD   dwRID
     );
 
 // acl.c
@@ -78,6 +78,13 @@ void
 VmDirFindDomainRidSequenceWithDN(
     PCSTR pszDomainDN,
     PDWORD pRidSeq
+    );
+
+DWORD
+VmDirGetSidGenStateIfDomain_inlock(
+    PCSTR                       pszObjectDN,
+    PSTR                        pszGuid, /* optional Guid used to generate sid */
+    PVDIR_DOMAIN_SID_GEN_STATE* ppDomainState
     );
 
 // ridsyncthr.c

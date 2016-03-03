@@ -74,8 +74,7 @@ _VmDirRidSyncThr(
     DWORD               dwError = 0;
     BOOLEAN             bInLock = FALSE;
     PVDIR_THREAD_INFO   pThrInfo = (PVDIR_THREAD_INFO)pArg;
-    PSTR                pszRID = NULL;
-    PSTR                pszDomain = NULL;
+    PVMDIR_SID_GEN_STACK_NODE pSidGenStackNode = NULL;
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "_VmDirRidSyc thr started" );
 
@@ -86,32 +85,23 @@ _VmDirRidSyncThr(
             goto cleanup;
         }
 
-        VMDIR_SAFE_FREE_MEMORY( pszRID );
-        while ( VmDirPopTSStack( gSidGenState.pStack, (PVOID*)&pszRID ) == 0
-                &&
-                pszRID != NULL
-              )
+        VMDIR_SAFE_FREE_MEMORY(pSidGenStackNode);
+        while (VmDirPopTSStack(gSidGenState.pStack, (PVOID*)&pSidGenStackNode) == 0 &&
+               pSidGenStackNode != NULL)
         {
-            // pszRID has format "RID:DOMAIN"
-            pszDomain = strchr( pszRID, VMDIR_RID_STACK_SEPARATOR);
-            if ( pszDomain != NULL )
-            {
-                pszDomain[0] = '\0';
-                pszDomain++;
-
-                VmDirSyncRIDSeqToDB( pszDomain, pszRID ); // ignore error
-            }
-            else
-            {
-                VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Bad RIDsync Stack pop (%s)", pszRID );
-            }
+            (VOID)VmDirSyncRIDSeqToDB(
+                    pSidGenStackNode->pszDomainDn,
+                    pSidGenStackNode->dwDomainRidSequence);
 
             if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
             {
-                goto cleanup;  // VmDirVmAclShutdown will handle final up to dated rid sync
+                //
+                // Any pending updates will be performed by VmDirVmAclShutdown.
+                //
+                goto cleanup;
             }
 
-            VMDIR_SAFE_FREE_MEMORY( pszRID );
+            VMDIR_SAFE_FREE_MEMORY(pSidGenStackNode);
         }
 
         VMDIR_LOCK_MUTEX(bInLock, pThrInfo->mutexUsed);
@@ -129,7 +119,7 @@ cleanup:
 
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "_VmDirRidSyc thr stopped (%d)", dwError );
 
-    VMDIR_SAFE_FREE_MEMORY( pszRID );
+    VMDIR_SAFE_FREE_MEMORY(pSidGenStackNode);
 
     return dwError;
 }

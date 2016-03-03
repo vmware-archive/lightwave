@@ -399,6 +399,45 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+_GetFilterCandidateLabel(
+    VDIR_FILTER *   f,
+    PSTR *          ppszLabel
+    )
+{
+    DWORD dwError = 0;
+
+    assert(f && ppszLabel);
+
+    switch (f->choice)
+    {
+        case LDAP_FILTER_EQUALITY:
+        case LDAP_FILTER_GE:
+        case LDAP_FILTER_LE:
+            *ppszLabel = f->filtComp.ava.type.lberbv.bv_val;
+            break;
+        case LDAP_FILTER_SUBSTRINGS:
+            *ppszLabel = f->filtComp.subStrings.type.lberbv.bv_val;
+            break;
+        case FILTER_ONE_LEVEL_SEARCH:
+            *ppszLabel = f->filtComp.parentDn.lberbv.bv_val;
+            break;
+        default:
+            dwError = ERROR_INVALID_DATA; // It must been one of above
+            BAIL_ON_VMDIR_ERROR(dwError);
+            break;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s,%d failed, error(%d)", __FUNCTION__, __LINE__, dwError );
+    goto cleanup;
+}
+
 /* BuildCandidateList: Process indexed attributes, and build a complete candidates list which is a super set of
  * the result set that we need to send back to the client.
  */
@@ -423,147 +462,152 @@ BuildCandidateList(
         case LDAP_FILTER_AND:
         {
             VDIR_FILTER *   specialFilter = NULL;
-            BOOLEAN         bDoneANDCandidateBuild = FALSE;
-            int             iMaxIndexScan = gVmdirGlobals.dwMaxIndexScan;  // should be always > 0
+            int             iMaxIndexScan = gVmdirGlobals.dwMaxIndexScan;
+            int             iSmallCandidateSet = gVmdirGlobals.dwSmallCandidateSet;
+            BOOLEAN         bGotPositiveCandidateSet = f->bAncestorGotPositiveCandidateSet;
+            SearchReq *     sr = &pOperation->request.searchReq;
 
             VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "Filter choice: AND" );
+
+            pOperation->pBECtx->iMaxScanForSizeLimit = 0;
+            if (pOperation->showPagedResultsCtrl == 0 && sr->sizeLimit > 0)
+            {
+                //pfnBEGetCandidates will try to avoid excessive index lookup when there is a sizeLimit hint
+                // - only if there is no page control
+                pOperation->pBECtx->iMaxScanForSizeLimit = gVmdirGlobals.dwMaxSizelimitScan;
+            }
 
             // Look for the "special" filters that ONLY need to be processed. Currently, special filters are:
             //      - equality match filter on a unique attribute (Priority 1)
             //      - filter on usnChanged attribute (Priority 2)
             //          replication issue query -b "" -s sub "usnChanged>=xxx"
-
             for (nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next)
             {
-                if (nextFilter->choice == LDAP_FILTER_GE && VmDirStringCompareA( nextFilter->filtComp.ava.type.lberbv.bv_val,
-                                                                        ATTR_USN_CHANGED, FALSE ) == 0)
+                if (nextFilter->choice == LDAP_FILTER_GE &&
+                    VmDirStringCompareA( nextFilter->filtComp.ava.type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE ) == 0)
                 {
                     specialFilter = nextFilter;
-                    continue; // keep looking for equality match filter on an indexed attribute;
+                    continue; //keep looking for equality match filter on a unique attribute
                 }
-                else // look for equality match filter on an indexed attribute
-                {
-                    if (nextFilter->choice == LDAP_FILTER_EQUALITY)
-                    {
-                        PVDIR_CFG_ATTR_INDEX_DESC   pIdxDesc = NULL;
-                        USHORT                      usVersion = 0;
 
-                        pIdxDesc = VmDirAttrNameToReadIndexDesc( nextFilter->filtComp.ava.type.lberbv.bv_val, usVersion,
+                if (nextFilter->choice == LDAP_FILTER_EQUALITY)
+                {
+                    //look for equality match filter on a unique indexed attribute
+                    PVDIR_CFG_ATTR_INDEX_DESC   pIdxDesc = NULL;
+                    USHORT                      usVersion = 0;
+
+                    pIdxDesc = VmDirAttrNameToReadIndexDesc( nextFilter->filtComp.ava.type.lberbv.bv_val, usVersion,
                                                                  &usVersion);
 
-                        if (pIdxDesc != NULL)
-                        {   // if we have "INDEXED_ATTRIBUTE=DATA" filter, make it special
-                            specialFilter = nextFilter;
-                            break;
-                        }
-                    }
-                }
-            }
-            // We found a special filter. Just build the candidate list for this filter, and we are done with building
-            // the candidates list for this AND filter
-            if (specialFilter != NULL)
-            {
-                specialFilter->iMaxIndexScan = iMaxIndexScan;
-                retVal = pOperation->pBEIF->pfnBEGetCandidates( pOperation->pBECtx, specialFilter);
-                if (retVal == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
-                {
-                    retVal = LDAP_SUCCESS;
-
-                }
-                else if (retVal == 0 && specialFilter->candidates)
-                {
-                    PSTR pszCandidates = NULL;
-                    if (pOperation->pszFilters)
+                    if (pIdxDesc != NULL && pIdxDesc->bIsUnique)
                     {
-                        retVal = VmDirAllocateStringPrintf(&pszCandidates, "%s, %s:%d", pOperation->pszFilters, specialFilter->filtComp.ava.type.lberbv.bv_val, specialFilter->candidates->size);
-                    }
-                    else
-                    {
-                        retVal = VmDirAllocateStringPrintf(&pszCandidates, "%s:%d", specialFilter->filtComp.ava.type.lberbv.bv_val, specialFilter->candidates->size);
-                    }
-                    VMDIR_SAFE_FREE_STRINGA(pOperation->pszFilters);
-                    pOperation->pszFilters = pszCandidates;
-                }
-                BAIL_ON_VMDIR_ERROR( retVal );
-
-                if ( specialFilter->candidates != NULL )
-                {
-                    if ( specialFilter->candidates->size <= specialFilter->iMaxIndexScan )
-                    {
-                        bDoneANDCandidateBuild = TRUE;
-                    }
-                    else
-                    {   // special filter attempt failed, clean up candidates.
-                        DeleteCandidates( &(specialFilter->candidates) );
-                    }
-                }
-            }
-
-            if ( !bDoneANDCandidateBuild )
-            {
-                BOOLEAN     bStopFilter = FALSE;
-
-                //////////////////////////////////////////////////////////////////////
-                // First pass.
-                //////////////////////////////////////////////////////////////////////
-                // For each AND filters, we limit the number of index scan allowed.
-                // If the filter exceeds this limit, we abandon it and move on to next one.
-                // The loop stop once we have a good positive filter/candidate.
-                //////////////////////////////////////////////////////////////////////
-                for ( nextFilter = f->filtComp.complex;
-                      nextFilter != NULL;
-                      nextFilter = nextFilter->next
-                    )
-                {
-                    if ( nextFilter == specialFilter )
-                    {   // try special filter with limit scan already, skip it.
-                        continue;
-                    }
-
-                    nextFilter->iMaxIndexScan = iMaxIndexScan;
-                    retVal = BuildCandidateList( pOperation, nextFilter);
-                    BAIL_ON_VMDIR_ERROR( retVal );
-
-                    if ( nextFilter->iMaxIndexScan > 0              &&
-                         nextFilter->candidates != NULL             &&
-                         nextFilter->candidates->size > nextFilter->iMaxIndexScan
-                       )
-                    {
-                        // index scan exceeds limit, clean up candidates.
-                        DeleteCandidates( &(nextFilter->candidates) );
-                        continue;
-                    }
-
-                    if ( nextFilter->candidates != NULL              &&
-                         nextFilter->candidates->size > 0            &&
-                         nextFilter->candidates->positive == TRUE
-                       )
-                    {
-                        // we have a filter with limited number of positive candidates:-)
-                        bStopFilter = TRUE;
+                        specialFilter = nextFilter;
                         break;
                     }
                 }
+            }
 
-                if ( bStopFilter == FALSE )
+            if (specialFilter == NULL)
+            {
+                goto first_pass;
+            }
+
+            // We found a special filter. Just build the candidate list for this filter.
+            specialFilter->iMaxIndexScan = 0; //special entry should return all matched entries.
+            retVal = BuildCandidateList( pOperation, specialFilter);
+            if (retVal == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
+            {
+                retVal = LDAP_SUCCESS;
+
+            }
+            BAIL_ON_VMDIR_ERROR( retVal );
+
+            if ( specialFilter->candidates != NULL )
+            {
+                if ( specialFilter->candidates->size <= iSmallCandidateSet )
                 {
-                    //////////////////////////////////////////////////////////////////////
-                    // Second pass.
-                    //////////////////////////////////////////////////////////////////////
-                    // Run through all filters w/o index scan limit.
-                    //////////////////////////////////////////////////////////////////////
-                    for ( nextFilter = f->filtComp.complex;
-                          nextFilter != NULL;
-                          nextFilter = nextFilter->next
-                        )
+                    goto candidate_build_done;
+                }
+                bGotPositiveCandidateSet = TRUE;
+            }
+
+first_pass:
+            // First pass - evalute non-composite filters in the AND component
+            // For each of the filters, we limit the number of index scan allowed.
+            // If it exceeds this limit, we abandon it and move on to next one.
+            // The loop stop once we have a small good positive filter/candidate.
+            // Will not attempt second pass if we got any good positive candidate set.
+            //////////////////////////////////////////////////////////////////////
+            for ( nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next )
+            {
+                if ( nextFilter == specialFilter || nextFilter->choice == LDAP_FILTER_AND || nextFilter->choice == LDAP_FILTER_OR )
+                {
+                    continue;
+                }
+
+                nextFilter->iMaxIndexScan = iMaxIndexScan;
+                retVal = BuildCandidateList( pOperation, nextFilter);
+                BAIL_ON_VMDIR_ERROR( retVal );
+
+                if ( nextFilter->candidates != NULL && nextFilter->candidates->size > 0 &&
+                     nextFilter->candidates->positive == TRUE )
+                {
+                    if (nextFilter->candidates->size <= iSmallCandidateSet )
                     {
-                        nextFilter->iMaxIndexScan = 0;
-                        retVal = BuildCandidateList( pOperation, nextFilter);
-                        BAIL_ON_VMDIR_ERROR( retVal );
+                        // We have a small, positive, candidate set, stop evaluating remaining filters in the AND component
+                        goto candidate_build_done;
                     }
+                    bGotPositiveCandidateSet = TRUE;
+                    //Continue loop looking for a better candidate set.
                 }
             }
 
+            // First pass - evaluate composite filters in the AND component
+            // The loop stop once we have a small good positive filter/candidate,
+            // otherwise, do not attempt the second pass if got any good positive candidate set.
+            // It passes in current bGotPositiveCandidateSet to the composit filters, so that
+            // their evaluations will not go through second pass when bGotPositiveCandidateSet is true.
+            for ( nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next )
+            {
+                if ( nextFilter->choice != LDAP_FILTER_AND && nextFilter->choice != LDAP_FILTER_OR )
+                {
+                    continue;
+                }
+
+                nextFilter->bAncestorGotPositiveCandidateSet = bGotPositiveCandidateSet;
+                retVal = BuildCandidateList( pOperation, nextFilter);
+                BAIL_ON_VMDIR_ERROR( retVal );
+
+                if ( nextFilter->candidates != NULL && nextFilter->candidates->size > 0 &&
+                     nextFilter->candidates->positive == TRUE)
+                {
+                    if (nextFilter->candidates->size <= iSmallCandidateSet )
+                    {
+                        // We have a small, positive, candidate set, stop evaluating remaining filters in the AND component
+                        goto candidate_build_done;
+                    }
+                    bGotPositiveCandidateSet = TRUE;
+                    //Continue loop looking for a better candidate set.
+                }
+            }
+
+            if ( bGotPositiveCandidateSet )
+            {
+                goto candidate_build_done;
+            }
+
+            //////////////////////////////////////////////////////////////////////
+            // Second pass - get here when failing to get any positive candidate set
+            // Run through all filters w/o index scan limit.
+            //////////////////////////////////////////////////////////////////////
+            for ( nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next )
+            {
+                nextFilter->iMaxIndexScan = 0;
+                retVal = BuildCandidateList( pOperation, nextFilter);
+                BAIL_ON_VMDIR_ERROR( retVal );
+            }
+
+candidate_build_done:
             // First, "AND" no candidates lists or "positive" candidates lists
             for (nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next)
             {
@@ -589,6 +633,8 @@ BuildCandidateList(
 
           for (nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next)
           {
+              //nextFilter inherents the bAncestorGotPositiveCandidateSet
+              nextFilter->bAncestorGotPositiveCandidateSet = f->bAncestorGotPositiveCandidateSet;
               retVal = BuildCandidateList( pOperation, nextFilter);
               BAIL_ON_VMDIR_ERROR( retVal );
           }
@@ -612,18 +658,26 @@ BuildCandidateList(
 
         case LDAP_FILTER_NOT:
             VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "Filter choice: NOT" );
-
+#if 0
             nextFilter = f->filtComp.complex;
             retVal = BuildCandidateList( pOperation, nextFilter);
             BAIL_ON_VMDIR_ERROR( retVal );
 
             NotFilterResults( nextFilter, f );
+#endif
+            //The nextFilter above may contain a super set of valid candidates
+            //substracting it from filter f may result in an incorrect result set.
+            //For now, simply set the destination filter to FILTER_RES_TRUE.
+            // Ignore candidate building on filtComp.complex for NOT filter.
+            // We rely on final pass to qualify NOT filter.
+            f->computeResult = FILTER_RES_TRUE;
             break;
 
         case LDAP_FILTER_EQUALITY:
         case LDAP_FILTER_SUBSTRINGS:
         case FILTER_ONE_LEVEL_SEARCH:
         case LDAP_FILTER_GE:
+        case LDAP_FILTER_LE:
           retVal = pOperation->pBEIF->pfnBEGetCandidates( pOperation->pBECtx, f);
           if (retVal != 0)
           {
@@ -634,17 +688,21 @@ BuildCandidateList(
           }
           else if (f->candidates)
           {
-              PSTR pszCandidates = NULL;
-              if (pOperation->pszFilters)
-              {
-                  retVal = VmDirAllocateStringPrintf(&pszCandidates, "%s, %s:%d", pOperation->pszFilters, f->filtComp.ava.type.lberbv.bv_val, f->candidates->size);
-              }
-              else
-              {
-                  retVal = VmDirAllocateStringPrintf(&pszCandidates, "%s:%d", f->filtComp.ava.type.lberbv.bv_val, f->candidates->size);
-              }
+              PSTR pszCand = NULL;
+              PSTR pszCandList = NULL;
+
+              retVal = _GetFilterCandidateLabel(f, &pszCand);
+              BAIL_ON_VMDIR_ERROR( retVal );
+
+              retVal = VmDirAllocateStringPrintf(&pszCandList, "%s%s%s:%d",
+                      pOperation->pszFilters ? pOperation->pszFilters : "",
+                      pOperation->pszFilters ? ", " : "",
+                      VDIR_SAFE_STRING(pszCand),
+                      f->candidates->size);
+              BAIL_ON_VMDIR_ERROR( retVal );
+
               VMDIR_SAFE_FREE_STRINGA(pOperation->pszFilters);
-              pOperation->pszFilters = pszCandidates;
+              pOperation->pszFilters = pszCandList;
           }
           BAIL_ON_VMDIR_ERROR( retVal );
           break;
@@ -661,10 +719,11 @@ BuildCandidateList(
     }
 
 cleanup:
-
     return retVal;
 
 error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s,%d failed, error(%d)", __FUNCTION__, __LINE__, retVal );
     goto cleanup;
 }
 
@@ -804,6 +863,14 @@ ProcessCandidateList(
         }
 
         VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "(%d) candiates processed and (%d) entries sent", cl->size, numSentEntries);
+    }
+
+    if ( pOperation->request.searchReq.sizeLimit && numSentEntries < pOperation->request.searchReq.sizeLimit &&
+         pOperation->pBECtx->iPartialCandidates)
+    {
+        retVal = LDAP_UNWILLING_TO_PERFORM;
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ProcessCandiateList may return none or paritial requested entries with sizelimit %d",
+                        pOperation->request.searchReq.sizeLimit);
     }
 
 cleanup:

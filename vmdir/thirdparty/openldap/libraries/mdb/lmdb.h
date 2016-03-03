@@ -287,6 +287,8 @@ typedef void (MDB_rel_func)(MDB_val *item, void *oldptr, void *newptr, void *rel
 #define MDB_NORDAHEAD	0x800000
 	/** don't initialize malloc'd memory before writing to datafile */
 #define MDB_NOMEMINIT	0x1000000
+        /** keep WAL files after checkpoint -- this version of MDB doesn't support WAL, and the flag is for forward-compatability*/
+#define MDB_KEEPXLOGS   0x2000000
 /** @} */
 
 /**	@defgroup	mdb_dbi_open	Database Flags
@@ -1457,6 +1459,26 @@ int	mdb_reader_list(MDB_env *env, MDB_msg_func *func, void *ctx);
 	 * @return 0 on success, non-zero on failure.
 	 */
 int	mdb_reader_check(MDB_env *env, int *dead);
+
+        /** @brief set or clear database file transfer state for remote file copy.
+         * @param[in]  env - environment handle returned by #mdb_env_create()
+         * @param[in]  1 - set mdb to READONLY state
+         *             2 - set mdb to keep xlogs state (used for hot database file copy only)
+         *             0 - clear MDB_KEEPXLOGS flag or mdb READONLY state
+         * @param[out] The starting transaction log number if dwFileTransferState is 2 and mdb support WAL.
+         *             If dwFileTransferState is 2 but mdb doesn't support WAL, then mdb would
+         *             be put at READONLY mode, and pdwLogNum set to 0.
+         * @param[out] assigned size of the partner's backend database file in MB.
+         * @param[out] the map size of the partner's backend database file in MB.
+         * @param[out] the path of the database home (where data.mdb and lock.mdb located)
+         * @param[in]  the memory size of db_path.
+         * @return      0 success
+         *              1 failed - invalid environment handle
+         *              2 failed - invalid state
+         *              3 failed - db_path buffer too small
+         */
+int     mdb_env_set_state(MDB_env *env, int fileTransferState, unsigned long *last_xlog_num, unsigned long *dbSizeMb, unsigned long *dbMapSizeMb, char *db_path, int db_path_size);
+
 /**	@} */
 
 #ifdef __cplusplus

@@ -34,6 +34,9 @@ VmDirParseArgs(
     PSTR*    ppszUPN,
     PSTR*    ppszPartnerHostName,
     PSTR*    ppszVersionHostName,
+    PSTR*    ppszUpgradeHostName,
+    PSTR*    ppszSchemaFile,
+    BOOLEAN* pDryRun,
     PSTR*    ppszPartnerCurrPassword
     );
 

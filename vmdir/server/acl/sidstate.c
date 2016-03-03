@@ -18,14 +18,14 @@
 DWORD
 VmDirSyncRIDSeqToDB(
     PSTR    pszDomainDN,
-    PSTR    pszRID
+    DWORD   dwRID
     )
 {
     DWORD               dwError = 0;
     VDIR_OPERATION      domainOp = {0};
     PVDIR_MODIFICATION  pMod = NULL;
 
-    if ( !pszDomainDN || !pszRID )
+    if (pszDomainDN == NULL)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -55,8 +55,8 @@ VmDirSyncRIDSeqToDB(
 
     dwError = VmDirAllocateStringPrintf(
                 &pMod->attr.vals[0].lberbv.bv_val,
-                "%s",
-                pszRID);
+                "%d",
+                dwRID);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pMod->attr.vals[0].bOwnBvVal = TRUE;
@@ -76,9 +76,9 @@ VmDirSyncRIDSeqToDB(
     dwError = VmDirInternalModifyEntry(&domainOp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "DB sync RIDseq (%s)(%s)",
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "DB sync RIDseq (%s)(%d)",
                     VDIR_SAFE_STRING(pszDomainDN),
-                    VDIR_SAFE_STRING(pszRID));
+                    dwRID);
 
 cleanup:
 
@@ -88,9 +88,9 @@ cleanup:
 
 error:
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "DB sync RIDseq failed: (%s)(%s)",
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "DB sync RIDseq failed: (%s)(%d)",
                      VDIR_SAFE_STRING(pszDomainDN),
-                     VDIR_SAFE_STRING(pszRID));
+                     dwRID);
 
     goto cleanup;
 }

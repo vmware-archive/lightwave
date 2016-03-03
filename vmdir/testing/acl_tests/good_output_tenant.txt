@@ -57,8 +57,7 @@ adding new entry "cn=John-10,ou=eng,dc=tenant2,dc=com"
 Add new object in dc=tenant1,dc=com as tenant1\John-1 (should fail)
 ##############################################################################################
 
-ldap_add: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+ldap_add: Insufficient access (50)
 adding new entry "cn=John-add,ou=eng,dc=tenant1,dc=com"
 
 Add tenant-1\John-1 to tenant1's built-in administrators group
@@ -79,7 +78,6 @@ adding new entry "cn=John-add,ou=eng,dc=tenant1,dc=com"
 #
 
 # John-add, eng, tenant1.com
-dn: cn=John-add,ou=eng,dc=tenant1,dc=com
 dn: cn=John-add,ou=eng,dc=tenant1,dc=com
 
 # search result
@@ -104,7 +102,8 @@ deleting entry "cn=John-add,ou=eng,dc=tenant1,dc=com"
 # search result
 search: 2
 result: 32 No such object
-text: InternalSearch: beDnToEntryId failed, Base DN does not exist.
+text: DNToEID (9703)((MDB_NOTFOUND: No matching key/data pair found)(cn=john-
+ add,ou=eng,dc=tenant1,dc=com))
 
 # numResponses: 1
 Remove tenant-1\John-1 from tenant1's built-in administrators group
@@ -116,35 +115,24 @@ modifying entry "cn=Administrators,cn=BuiltIn,dc=tenant1,dc=com"
 *********************************************************************************************
 
 ##############################################################################################
-Add new object in dc=tenant1,dc=com as vmware\admin
-##############################################################################################
-
-ldap_add: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-adding new entry "cn=John-add,ou=eng,dc=tenant1,dc=com"
-
-##############################################################################################
 Add new object in dc=tenant1,dc=com as tenant1\John-1 a non-admin user
 ##############################################################################################
 
-ldap_add: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+ldap_add: Insufficient access (50)
 adding new entry "cn=John-add,ou=eng,dc=tenant1,dc=com"
 
 ##############################################################################################
 Add new object in dc=tenant1,dc=com as tenant2\administrator an admin user in other tenant
 ##############################################################################################
 
-ldap_add: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+ldap_add: Insufficient access (50)
 adding new entry "cn=John-add,ou=eng,dc=tenant1,dc=com"
 
 ##############################################################################################
 Add new object in dc=tenant1,dc=com as tenant2\John-1 a non-admin user in other tenant
 ##############################################################################################
 
-ldap_add: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+ldap_add: Insufficient access (50)
 adding new entry "cn=John-add,ou=eng,dc=tenant1,dc=com"
 
 ##############################################################################################
@@ -164,7 +152,6 @@ adding new entry "cn=John-add,ou=eng,dc=tenant1,dc=com"
 
 # John-add, eng, tenant1.com
 dn: cn=John-add,ou=eng,dc=tenant1,dc=com
-dn: cn=John-add,ou=eng,dc=tenant1,dc=com
 
 # search result
 search: 2
@@ -178,17 +165,10 @@ result: 0 Success
 *********************************************************************************************
 
 ################################################################################################
-Delete tenant1 user as vmware\admin -- this should fail
-################################################################################################
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-deleting entry "cn=John-add,ou=eng,dc=tenant1,dc=com"
-
-################################################################################################
 Delete tenant1 user as tenant2\administrator -- this should fail
 ################################################################################################
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
 deleting entry "cn=John-add,ou=eng,dc=tenant1,dc=com"
 
 ################################################################################################
@@ -207,7 +187,8 @@ deleting entry "cn=John-add,ou=eng,dc=tenant1,dc=com"
 # search result
 search: 2
 result: 32 No such object
-text: InternalSearch: beDnToEntryId failed, Base DN does not exist.
+text: DNToEID (9703)((MDB_NOTFOUND: No matching key/data pair found)(cn=john-
+ add,ou=eng,dc=tenant1,dc=com))
 
 # numResponses: 1
 *********************************************************************************************
@@ -219,32 +200,26 @@ Add an attribute value (cn: david) to an existing indexed attribute.
 
 Bind as tenant1\John-1 to modify tenant1\John-2
 This should be access denied
-ldap_modify: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+ldap_modify: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)
 modifying entry "cn=John-2,ou=eng,dc=tenant1,dc=com"
 
 Bind as tenant2\John-1 to modify tenant1\John-1
 This should be access denied
-ldap_modify: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+ldap_modify: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)
 modifying entry "cn=John-1,ou=eng,dc=tenant1,dc=com"
 
 Bind as tenant2\John-1 to modify tenant1\John-2
 This should be access denied
-ldap_modify: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+ldap_modify: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)
 modifying entry "cn=John-2,ou=eng,dc=tenant1,dc=com"
 
 Bind as tenant2\administrator to modify tenant1\John-1
 This should be access denied
-ldap_modify: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-modifying entry "cn=John-1,ou=eng,dc=tenant1,dc=com"
-
-Bind as vmware\admin to modify tenant1\John-1
-This should be access denied
-ldap_modify: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+ldap_modify: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)
 modifying entry "cn=John-1,ou=eng,dc=tenant1,dc=com"
 
 Bind as tenant1\administrator to modify tenant1\John-1
@@ -260,7 +235,6 @@ modifying entry "cn=John-1,ou=eng,dc=tenant1,dc=com"
 #
 
 # John-1, eng, tenant1.com
-dn: cn=John-1,ou=eng,dc=tenant1,dc=com
 dn: cn=John-1,ou=eng,dc=tenant1,dc=com
 
 # search result
@@ -283,7 +257,6 @@ modifying entry "cn=John-1,ou=eng,dc=tenant1,dc=com"
 
 # John-1, eng, tenant1.com
 dn: cn=John-1,ou=eng,dc=tenant1,dc=com
-dn: cn=John-1,ou=eng,dc=tenant1,dc=com
 
 # search result
 search: 2
@@ -305,7 +278,6 @@ This should succeed, return 1 search result.
 #
 
 # John-1, eng, tenant1.com
-dn: cn=John-1,ou=eng,dc=tenant1,dc=com
 dn: cn=John-1,ou=eng,dc=tenant1,dc=com
 
 # search result
@@ -359,43 +331,33 @@ This should succeed, return 10 search result.
 
 # John-1, eng, tenant1.com
 dn: cn=John-1,ou=eng,dc=tenant1,dc=com
-dn: cn=John-1,ou=eng,dc=tenant1,dc=com
+
+# John-10, eng, tenant1.com
+dn: cn=John-10,ou=eng,dc=tenant1,dc=com
 
 # John-2, eng, tenant1.com
-dn: cn=John-2,ou=eng,dc=tenant1,dc=com
 dn: cn=John-2,ou=eng,dc=tenant1,dc=com
 
 # John-3, eng, tenant1.com
 dn: cn=John-3,ou=eng,dc=tenant1,dc=com
-dn: cn=John-3,ou=eng,dc=tenant1,dc=com
 
 # John-4, eng, tenant1.com
-dn: cn=John-4,ou=eng,dc=tenant1,dc=com
 dn: cn=John-4,ou=eng,dc=tenant1,dc=com
 
 # John-5, eng, tenant1.com
 dn: cn=John-5,ou=eng,dc=tenant1,dc=com
-dn: cn=John-5,ou=eng,dc=tenant1,dc=com
 
 # John-6, eng, tenant1.com
-dn: cn=John-6,ou=eng,dc=tenant1,dc=com
 dn: cn=John-6,ou=eng,dc=tenant1,dc=com
 
 # John-7, eng, tenant1.com
 dn: cn=John-7,ou=eng,dc=tenant1,dc=com
-dn: cn=John-7,ou=eng,dc=tenant1,dc=com
 
 # John-8, eng, tenant1.com
-dn: cn=John-8,ou=eng,dc=tenant1,dc=com
 dn: cn=John-8,ou=eng,dc=tenant1,dc=com
 
 # John-9, eng, tenant1.com
 dn: cn=John-9,ou=eng,dc=tenant1,dc=com
-dn: cn=John-9,ou=eng,dc=tenant1,dc=com
-
-# John-10, eng, tenant1.com
-dn: cn=John-10,ou=eng,dc=tenant1,dc=com
-dn: cn=John-10,ou=eng,dc=tenant1,dc=com
 
 # search result
 search: 2
@@ -420,146 +382,51 @@ result: 0 Success
 
 # numResponses: 1
 
-Bind as vmware\admin to search tenant1\John-*
-This should fail, return 0 search result.
-# extended LDIF
-#
-# LDAPv3
-# base <dc=tenant1,dc=com> with scope subtree
-# filter: (&(objectclass=*)(cn=John*))
-# requesting: dn 
-#
-
-# search result
-search: 2
-result: 0 Success
-
-# numResponses: 1
-
 *********************************************************************************************
 **************************CLEANUP PHASE *****************************************************
 *********************************************************************************************
 
 ################################################################################################
-Remove tenant content as vmware\admin -- this should fail
-################################################################################################
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-deleting entry "ou=eng,dc=tenant1,dc=com"
-
-deleting entry "cn=John-1,ou=eng,dc=tenant1,dc=com"
-
-deleting entry "cn=John-2,ou=eng,dc=tenant1,dc=com"
-
-deleting entry "cn=John-3,ou=eng,dc=tenant1,dc=com"
-
-deleting entry "cn=John-4,ou=eng,dc=tenant1,dc=com"
-
-deleting entry "cn=John-5,ou=eng,dc=tenant1,dc=com"
-
-deleting entry "cn=John-6,ou=eng,dc=tenant1,dc=com"
-
-deleting entry "cn=John-7,ou=eng,dc=tenant1,dc=com"
-
-deleting entry "cn=John-8,ou=eng,dc=tenant1,dc=com"
-
-deleting entry "cn=John-9,ou=eng,dc=tenant1,dc=com"
-
-deleting entry "cn=John-10,ou=eng,dc=tenant1,dc=com"
-
-deleting entry "ou=eng,dc=tenant1,dc=com"
-
-deleting entry "cn=administrator,cn=users,dc=tenant1,dc=com"
-
-deleting entry "cn=password and lockout policy,dc=tenant1,dc=com"
-
-deleting entry "cn=ForeignSecurityPrincipals,dc=tenant1,dc=com"
-
-deleting entry "cn=users,dc=tenant1,dc=com"
-
-deleting entry "cn=Administrators,cn=Builtin,dc=tenant1,dc=com"
-
-deleting entry "cn=Users,cn=BuiltIn,dc=tenant1,dc=com"
-
-deleting entry "cn=BuiltIn,dc=tenant1,dc=com"
-
-################################################################################################
 Remove tenant2 content as tenant1\administrator -- this should fail
 ################################################################################################
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
 deleting entry "ou=eng,dc=tenant1,dc=com"
 
 deleting entry "cn=John-1,ou=eng,dc=tenant1,dc=com"
@@ -685,7 +552,7 @@ deleting entry "cn=Users,cn=BuiltIn,dc=tenant2,dc=com"
 deleting entry "cn=BuiltIn,dc=tenant2,dc=com"
 
 ################################################################################################
-Remove tenants root as vmware\admin
+Remove tenants root as vmware\administrator
 ################################################################################################
 deleting entry "dc=tenant1,dc=com"
 

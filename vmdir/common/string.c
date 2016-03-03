@@ -143,7 +143,7 @@ VmDirGetStringLengthW(
     return ulError;
 }
 
-ULONG
+LONG
 VmDirStringCompareA(
     PCSTR pszStr1,
     PCSTR pszStr2,
@@ -185,7 +185,7 @@ VmDirIsValidSecret(
     return ret == 0;
 }
 
-ULONG
+LONG
 VmDirStringNCompareA(
     PCSTR pszStr1,
     PCSTR pszStr2,
@@ -301,7 +301,7 @@ VmDirStringNCpyA(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (count > numberOfElements)
+    if (count + 1 > numberOfElements)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);

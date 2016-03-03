@@ -211,6 +211,18 @@ VmDirParseArgs(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_FEDERATION_STATUS, pszFeatureSet, TRUE) == 0 )
+    {
+        if (
+               pszSrcHostName == NULL
+            || pszSrcPort     == NULL
+            || pszSrcUserName == NULL
+           )
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
     else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_SERVER_ATTRIBUTE, pszFeatureSet, TRUE) == 0 )
     {
         if (
@@ -284,6 +296,9 @@ ShowUsage(
         "                   -h <source_hostname> [-p <source_portnumber>]\n"
         "                   -u <source_username> [-w <source_password>]\n"
         "       vdcrepadmin -f showpartnerstatus\n"
+        "                   -h <source_hostname> [-p <source_portnumber>]\n"
+        "                   -u <source_username> [-w <source_password>]\n"
+        "       vdcrepadmin -f showfederationstatus\n"
         "                   -h <source_hostname> [-p <source_portnumber>]\n"
         "                   -u <source_username> [-w <source_password>]\n"
         "       vdcrepadmin -f showservers\n"

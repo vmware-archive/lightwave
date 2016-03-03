@@ -94,6 +94,9 @@ VmDirReplAgrEntryToInMemory(
         BAIL_ON_VMDIR_ERROR( dwError );
     }
 
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,"Replication partner: (%s) lastLocalUsnProcessed: (%s)",
+                   pReplAgr->ldapURI, pReplAgr->lastLocalUsnProcessed.lberbv_val);
+
     *ppReplAgr = pReplAgr;
 
 cleanup:

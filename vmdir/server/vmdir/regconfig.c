@@ -180,10 +180,24 @@ VmDirSrvUpdateConfig(
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
+                    VMDIR_REG_KEY_SMALL_CANDIDATE_SET,
+                    TRUE))
+        {
+            gVmdirGlobals.dwSmallCandidateSet = VMDIR_MAX(pEntry->dwValue, 32);
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
                     VMDIR_REG_KEY_ALLOW_ADMIN_LOCKOUT,
                     TRUE))
         {
             gVmdirGlobals.bAllowAdminLockout = pEntry->dwValue ? TRUE : FALSE;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_MAX_SIZELIMIT_SCAN,
+                    TRUE))
+        {
+            gVmdirGlobals.dwMaxSizelimitScan = VMDIR_MAX(pEntry->dwValue, 0);
         }
     }
 

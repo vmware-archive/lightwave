@@ -39,7 +39,6 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.pszBootStrapSchemaFile, NULL),
         VMDIR_SF_INIT(.bPatchSchema, FALSE),
         VMDIR_SF_INIT(.pszBDBHome, NULL),
-        VMDIR_SF_INIT(.iSocketFd, -1),
         VMDIR_SF_INIT(.bAllowInsecureAuth, 0),
         VMDIR_SF_INIT(.bAllowAdminLockout, 0),
         VMDIR_SF_INIT(.bDisableVECSIntegration, 0),

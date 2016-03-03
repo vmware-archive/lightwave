@@ -31,6 +31,8 @@
 
 #define SLEEP_INTERVAL_IN_SECS  10
 
+#define MAX_REPL_STATE_USN_SEARCH   64
+
 #define VMDIR_LOCALHOST         "localhost"
 
 #if !defined(_WIN32) || defined(HAVE_DCERPC_WIN32)
@@ -1056,6 +1058,7 @@ the buffer size will always be adequate.
     "(rpc_s_fault_codeset_conv_error) Fault codeset conversion error"}, \
 };
 
+#define VMDIR_DFL_UNKNOWN "UNKNOWN"
 #define VMDIR_DFL_5_5 "5.5"
 #define VMDIR_DFL_6_0 "6.0"
 #define VMDIR_DFL_6_5 "6.5"

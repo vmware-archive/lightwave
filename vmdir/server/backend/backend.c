@@ -179,6 +179,7 @@ VmDirBackendInitUSNList(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     gVdirBEGlobals.usnFirstNext = tmpUSN;
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Next available local USN: %lu", tmpUSN);
 
 error:
 

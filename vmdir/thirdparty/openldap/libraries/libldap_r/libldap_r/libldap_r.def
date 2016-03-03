@@ -176,6 +176,9 @@ EXPORTS
     ldap_attributetype2name
     ldap_attributetype2str
     ldap_attributetype_free
+    ldap_contentrule2name
+    ldap_contentrule2str
+    ldap_contentrule_free
     ldap_bind
     ldap_bind_s
     ldap_compare
@@ -210,6 +213,7 @@ EXPORTS
     ldap_str2attributetype
     ldap_str2matchingrule
     ldap_str2objectclass
+    ldap_str2contentrule
     ldap_str2syntax
     ldap_syntax2name
     ldap_syntax2str

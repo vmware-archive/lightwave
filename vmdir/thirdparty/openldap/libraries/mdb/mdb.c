@@ -8543,4 +8543,45 @@ int mdb_reader_check(MDB_env *env, int *dead)
 		*dead = count;
 	return MDB_SUCCESS;
 }
+
+/**
+ * lmdb.h mdb_env_set_state for parameters
+ */
+int
+mdb_env_set_state(MDB_env *env, int fileTransferState, unsigned long *last_xlog_num, unsigned long *dbSizeMb, unsigned long *dbMapSizeMb, char *db_path, int db_path_size)
+{
+    MDB_envinfo env_stats = {0};
+    int ret = 0;
+
+    if (env == NULL)
+        return 1; // invalid parameter
+
+    *last_xlog_num = 0; //Indicating that the backend doesn't support write-ahead-logging (WAL).
+                        //Will try to put the backend onto read-only state.
+    LOCK_MUTEX_W(env);
+
+    if (((env->me_flags & MDB_RDONLY) && fileTransferState == 1) || //Already in read-only state while trying to set to read-only
+        ((env->me_flags & MDB_RDONLY) && fileTransferState == 2) || //Already in read-only state while trying to set to keep XLOGS
+        (!(env->me_flags & MDB_RDONLY) && fileTransferState == 0)) // Not in read-only state while trying to clear read-only or keep XLOGS state
+        ret = 2;
+    else if ( fileTransferState == 1 || fileTransferState == 2 )
+         env->me_flags |= MDB_RDONLY;
+    else if ( fileTransferState == 0)
+         env->me_flags &= ~MDB_RDONLY;
+    else
+        ret = 1; // invalid parameter
+
+    mdb_env_sync(env, 1);
+    mdb_env_info(env, &env_stats);
+
+    //dbSizeMb is used as a hint so that there is no need to transfer the bytes beyond this value.
+    *dbSizeMb = 1 + (unsigned long)(((unsigned long long)env_stats.me_last_pgno * (unsigned long long)env->me_psize) >> 20);
+    *dbMapSizeMb = (unsigned long)((unsigned long long)env->me_mapsize >> 20);
+    if (db_path == NULL || db_path_size <= 0 || strlen(env->me_path) >= db_path_size)
+        ret = 3;
+    else
+        strcpy(db_path, env->me_path);
+    UNLOCK_MUTEX_W(env);
+    return ret;
+}
 /** @} */

@@ -160,7 +160,7 @@
 #define VDIR_POST_ADD_COMMIT_PLUGIN_INITIALIZER              \
 {                                                            \
     {                                                        \
-    VMDIR_SF_INIT(.bCallAlways,TRUE),                       \
+    VMDIR_SF_INIT(.bCallAlways, TRUE),                       \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplAgrPostAddCommit), \
     VMDIR_SF_INIT(.pNext, NULL )                             \
     },                                                       \
@@ -186,7 +186,7 @@
 #define VDIR_POST_DELETE_COMMIT_PLUGIN_INITIALIZER                   \
 {                                                                    \
     {                                                                \
-    VMDIR_SF_INIT(.bCallAlways,TRUE),                                \
+    VMDIR_SF_INIT(.bCallAlways, TRUE),                               \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplAgrPostDeleteCommit),\
     VMDIR_SF_INIT(.pNext, NULL )                                     \
     },                                                               \
@@ -623,8 +623,7 @@ _VmDirPluginLockoutPolicyEntryIntegrityCheck(
     DWORD           dwRtn = 0;
     PVDIR_ATTRIBUTE  pAttrOC = VmDirFindAttrByName(pEntry, ATTR_OBJECT_CLASS);
 
-    if (pOperation->opType != VDIR_OPERATION_TYPE_REPL  &&
-        pAttrOC != NULL)
+    if (pOperation->opType != VDIR_OPERATION_TYPE_REPL && pAttrOC != NULL)
     {
         unsigned int    iCnt = 0;
         BOOLEAN         bDone = FALSE;
@@ -711,6 +710,7 @@ _VmDirPluginGenericPreAdd(
     DWORD            dwError = 0;
     PVDIR_ATTRIBUTE  pAttrUPN   = VmDirFindAttrByName(pEntry, ATTR_KRB_UPN);
     PVDIR_ATTRIBUTE  pAttrSPN   = VmDirFindAttrByName(pEntry, ATTR_KRB_SPN);
+    PVDIR_ATTRIBUTE  pAttrSD    = VmDirFindAttrByName(pEntry, ATTR_OBJECT_SECURITY_DESCRIPTOR);
     PSTR             pszLocalErrMsg = NULL;
 
     if ( pAttrUPN )
@@ -723,6 +723,21 @@ _VmDirPluginGenericPreAdd(
     {
         dwError = VmDirValidatePrincipalName( pAttrSPN, &pszLocalErrMsg );
         BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pAttrSD)
+    {
+        BOOLEAN bReturn = FALSE;
+
+        bReturn = VmDirValidRelativeSecurityDescriptor(
+                    (PSECURITY_DESCRIPTOR_RELATIVE)pAttrSD->vals[0].bvnorm_val,
+                    (ULONG)pAttrSD->vals[0].bvnorm_len,
+                    OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION);
+        if (!bReturn)
+        {
+             dwError = VMDIR_ERROR_BAD_ATTRIBUTE_DATA;
+             BAIL_ON_VMDIR_ERROR(dwError);
+        }
     }
 
 cleanup:

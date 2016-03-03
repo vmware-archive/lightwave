@@ -123,6 +123,7 @@ VmDirRegisterRpcServer(
     VMDIR_IF_HANDLE_T pVmDirFtpInterfaceSpec = vmdirftp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pSrpVerifierInterfaceSpec = rpc_srp_verifier_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pSuperLogInterfaceSpec = vmdirsuperlog_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
+    VMDIR_IF_HANDLE_T pVmDirDbcpInterfaceSpec = vmdirdbcp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_RPC_BINDING_VECTOR_P_T pServerBinding = NULL;
 
     ulError = VmDirRpcServerRegisterIf(pVmDirInterfaceSpec);
@@ -137,6 +138,9 @@ VmDirRegisterRpcServer(
     ulError = VmDirRpcServerRegisterIf(pSuperLogInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
+    ulError = VmDirRpcServerRegisterIf(pVmDirDbcpInterfaceSpec);
+    BAIL_ON_VMDIR_ERROR(ulError);
+
     VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "VMware Directory Service registered successfully.");
 
     ulError = VmDirBindServer( &pServerBinding, endpoints, VmDirRegisterForTcpEndpoint() ? dwEpCount : dwEpCount - 1);
@@ -149,6 +153,9 @@ VmDirRegisterRpcServer(
     BAIL_ON_VMDIR_ERROR(ulError);
 
     ulError = VmDirRpcEpRegister( pServerBinding, pVmDirFtpInterfaceSpec, "VMware Directory Service FTP");
+    BAIL_ON_VMDIR_ERROR(ulError);
+
+    ulError = VmDirRpcEpRegister( pServerBinding, pVmDirDbcpInterfaceSpec, "VMware Directory Service dbcp");
     BAIL_ON_VMDIR_ERROR(ulError);
 #endif
 
@@ -181,6 +188,7 @@ VmDirUnRegisterRpcServer(
     VMDIR_IF_HANDLE_T pVmDirInterfaceSpec    = vmdir_v1_4_s_ifspec;
     VMDIR_IF_HANDLE_T pVmDirFtpInterfaceSpec = vmdirftp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirSuperLogInterfaceSpec = vmdirsuperlog_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
+    VMDIR_IF_HANDLE_T pVmDirDbcpInterfaceSpec = vmdirdbcp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
 
     ulError = VmDirRpcServerUnRegisterIf(pVmDirInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
@@ -189,6 +197,9 @@ VmDirUnRegisterRpcServer(
     BAIL_ON_VMDIR_ERROR(ulError);
 
     ulError = VmDirRpcServerUnRegisterIf(pVmDirSuperLogInterfaceSpec);
+    BAIL_ON_VMDIR_ERROR(ulError);
+
+    ulError = VmDirRpcServerUnRegisterIf(pVmDirDbcpInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "VMware Directory Service unregistered successfully.");
@@ -318,60 +329,6 @@ error:
     VMDIR_LOG_ERROR(  LDAP_DEBUG_RPC, "VmDirRpcAuthCallback failed (%u)", rpcStatus);
 
     goto cleanup;
-}
-
-void
-VmDirSrvSetSocketAcceptFd(
-    int fd
-    )
-{
-    BOOLEAN bInLock = FALSE;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-
-    if (gVmdirGlobals.iSocketFd >= 0)
-    {
-        tcp_close(gVmdirGlobals.iSocketFd);
-    }
-
-    gVmdirGlobals.iSocketFd = fd;
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-}
-
-int
-VmDirSrvGetSocketAcceptFd(
-    VOID
-    )
-{
-    int fd = -1;
-    BOOLEAN bInLock = FALSE;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-
-    fd = gVmdirGlobals.iSocketFd;
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-
-    return fd;
-}
-
-void
-VmDirSrvCloseSocketAcceptFd(
-    VOID
-    )
-{
-    BOOLEAN bInLock = FALSE;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-
-    if (gVmdirGlobals.iSocketFd >= 0)
-    {
-        tcp_close(gVmdirGlobals.iSocketFd);
-        gVmdirGlobals.iSocketFd = -1;
-    }
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
 }
 
 BOOLEAN

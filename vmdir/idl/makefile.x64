@@ -11,6 +11,7 @@ OUTDIR_RELEASE = ..\vmdird\x64\Release
 
 all: $(OUTDIR_DEBUG)\vmdir_h.h $(OUTDIR_RELEASE)\vmdir_h.h \
       $(OUTDIR_DEBUG)\vmdirftp_h.h $(OUTDIR_RELEASE)\vmdirftp_h.h \
+      $(OUTDIR_DEBUG)\vmdirdbcp_h.h $(OUTDIR_RELEASE)\vmdirdbcp_h.h \
       $(OUTDIR_DEBUG)\srp_verifier_h.h $(OUTDIR_RELEASE)\srp_verifier_h.h \
       $(OUTDIR_DEBUG)\vmdirsuperlog_h.h $(OUTDIR_RELEASE)\vmdirsuperlog_h.h
 
@@ -35,6 +36,17 @@ $(OUTDIR_DEBUG)\vmdirftp_h.h $(OUTDIR_DEBUG)\vmdirftp_s.c $(OUTDIR_DEBUG)\vmdirf
 $(OUTDIR_RELEASE)\vmdirftp_h.h $(OUTDIR_RELEASE)\vmdirftp_s.c $(OUTDIR_RELEASE)\vmdirftp_c.c: vmdirftp.idl
 	-mkdir $(OUTDIR_RELEASE)
 	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_RELEASE)\vmdirftp_c.c -sstub $(OUTDIR_RELEASE)\vmdirftp_s.c -header $(OUTDIR_RELEASE)\vmdirftp_h.h vmdirftp.idl 2>&1
+
+#
+# vmdirdbcp.idl debug/release stub generation
+#
+$(OUTDIR_DEBUG)\vmdirdbcp_h.h $(OUTDIR_DEBUG)\vmdirdbcp_s.c $(OUTDIR_DEBUG)\vmdirdbcp_c.c: vmdirdbcp.idl
+	-mkdir $(OUTDIR_DEBUG)
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_DEBUG)\vmdirdbcp_c.c -sstub $(OUTDIR_DEBUG)\vmdirdbcp_s.c -header $(OUTDIR_DEBUG)\vmdirdbcp_h.h vmdirdbcp.idl 2>&1
+
+$(OUTDIR_RELEASE)\vmdirdbcp_h.h $(OUTDIR_RELEASE)\vmdirdbcp_s.c $(OUTDIR_RELEASE)\vmdirdbcp_c.c: vmdirdbcp.idl
+	-mkdir $(OUTDIR_RELEASE)
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_RELEASE)\vmdirdbcp_c.c -sstub $(OUTDIR_RELEASE)\vmdirdbcp_s.c -header $(OUTDIR_RELEASE)\vmdirdbcp_h.h vmdirdbcp.idl 2>&1
 
 #
 # srp_verifier.idl debug/release stub generation
@@ -63,7 +75,9 @@ clean:
 	-del /f $(OUTDIR_DEBUG)\vmdir_c.c $(OUTDIR_DEBUG)\vmdir_s.c $(OUTDIR_DEBUG)\vmdir_h.h
 	-del /f $(OUTDIR_RELEASE)\vmdir_c.c $(OUTDIR_RELEASE)\vmdir_s.c $(OUTDIR_RELEASE)\vmdir_h.h
 	-del /f $(OUTDIR_DEBUG)\vmdirftp_c.c $(OUTDIR_DEBUG)\vmdirftp_s.c $(OUTDIR_DEBUG)\vmdirftp_h.h
+	-del /f $(OUTDIR_DEBUG)\vmdirdbcp_c.c $(OUTDIR_DEBUG)\vmdirdbcp_s.c $(OUTDIR_DEBUG)\vmdirdbcp_h.h
 	-del /f $(OUTDIR_RELEASE)\vmdirftp_c.c $(OUTDIR_RELEASE)\vmdirftp_s.c $(OUTDIR_RELEASE)\vmdirftp_h.h
+	-del /f $(OUTDIR_RELEASE)\vmdirdbcp_c.c $(OUTDIR_RELEASE)\vmdirdbcp_s.c $(OUTDIR_RELEASE)\vmdirdbcp_h.h
 	-del /f $(OUTDIR_DEBUG)\srp_verifier_c.c $(OUTDIR_DEBUG)\srp_verifier_s.c $(OUTDIR_DEBUG)\srp_verifier_h.h
 	-del /f $(OUTDIR_RELEASE)\srp_verifier_c.c $(OUTDIR_RELEASE)\srp_verifier_s.c $(OUTDIR_RELEASE)\srp_verifier_h.h
 	-del /f $(OUTDIR_DEBUG)\vmdirsuperlog_c.c $(OUTDIR_DEBUG)\vmdirsuperlog_s.c $(OUTDIR_DEBUG)\vmdirsuperlog_h.h

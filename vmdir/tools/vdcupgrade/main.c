@@ -112,6 +112,13 @@ ReplaceSamAccountOnDn(
     PCSTR pszNewSamAccount
     );
 
+static
+DWORD
+getPSCVersion(
+    LDAP* pLd,
+    PSTR* ppszPSCVer
+    );
+
 #ifdef _WIN32
 
 int wmain(int argc, wchar_t* argv[])
@@ -169,6 +176,7 @@ VmDirMain(
     PSTR    pszPnidFixAccountDn = NULL;
     PSTR    pszPnidFixSamAccount = NULL;
     PSTR    pszErrorMessage = NULL;
+    PSTR    pszVersion = NULL;
     LDAP*   pLd = NULL;
     CHAR    pszPasswordBuf[VMDIR_MAX_PWD_LEN + 1];
     BOOLEAN bAclOnly = FALSE;
@@ -219,9 +227,18 @@ VmDirMain(
     dwError = VmDirSafeLDAPBind(&pLd, pszServerName, pszAdminUPN, pszPasswordBuf);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // do ACL patch first, so newly added entry will have correct ACL.
-    dwError = UpdateEntriesACL( pLd, pszServerName, pszAdminUPN);
+    dwError = getPSCVersion(
+		pLd,
+		&pszVersion);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    // Only patch ACL from 5.5
+    if (VmDirStringNCompareA(pszVersion, "5.5", 3, FALSE) == 0)
+    {
+	// do ACL patch first, so newly added entry will have correct ACL.
+	dwError = UpdateEntriesACL( pLd, pszServerName, pszAdminUPN);
+	BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     if (!bAclOnly)
     {
@@ -241,6 +258,7 @@ VmDirMain(
 
 cleanup:
 
+    VMDIR_SAFE_FREE_STRINGA(pszVersion);
     VMDIR_SAFE_FREE_STRINGA(pszServerName);
     VMDIR_SAFE_FREE_STRINGA(pszAdminUPN);
     if (pszPassword)
@@ -649,6 +667,7 @@ _UpdatePSCVersion(
     )
 {
     DWORD  dwError = 0;
+    PSTR   pszDCAccountDN = NULL;
     PSTR   ppszVals [] = { VDIR_PSC_VERSION, NULL };
 
     if (!pLd)
@@ -664,16 +683,33 @@ _UpdatePSCVersion(
                 (PCSTR*) ppszVals);
     if (dwError)
     {
-        printf("Failed to update PSC version to %s, error (%d)\n", VDIR_PSC_VERSION, dwError);
+        printf("Failed to update DSE ROOT PSC version to %s, error (%d)\n", VDIR_PSC_VERSION, dwError);
     }
     else
     {
-        printf("Update PSC version to %s.\n", VDIR_PSC_VERSION);
+        printf("Update DSE ROOT PSC version to %s.\n", VDIR_PSC_VERSION);
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
-cleanup:
+    dwError = VmDirRegReadDCAccountDn( &pszDCAccountDN );
+    BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VdcLdapReplaceAttributeValues(
+                pLd,
+                pszDCAccountDN,
+                ATTR_PSC_VERSION,
+                (PCSTR*) ppszVals);
+    if (dwError)
+    {
+        printf("Failed to update DC PSC version to %s, error (%d)\n", VDIR_PSC_VERSION, dwError);
+    }
+    else
+    {
+        printf("Update DC PSC version to %s.\n", VDIR_PSC_VERSION);
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszDCAccountDN);
     return dwError;
 
 error:
@@ -1033,3 +1069,53 @@ cleanup:
 error:
     goto cleanup;
 }
+
+static
+DWORD
+getPSCVersion(
+    LDAP* pLd,
+    PSTR* ppszPSCVer
+    )
+{
+    DWORD  dwError = 0;
+    PSTR   pszPSCVer = NULL;
+    PCSTR  pszFilter = "objectclass=*";
+
+    if (!pLd || !ppszPSCVer)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VdcLdapGetAttributeValue(pLd,
+				       "",
+				       LDAP_SCOPE_BASE,
+				       pszFilter,
+				       ATTR_PSC_VERSION,
+				       &pszPSCVer);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (IsNullOrEmptyString(pszPSCVer))
+    {
+        dwError = VmDirAllocateStringA("5.5",
+                           &pszPSCVer);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppszPSCVer = pszPSCVer;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    if (ppszPSCVer)
+    {
+        *ppszPSCVer = NULL;
+    }
+
+    VMDIR_SAFE_FREE_MEMORY(pszPSCVer);
+    goto cleanup;
+}
+

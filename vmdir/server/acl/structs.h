@@ -32,3 +32,29 @@ typedef struct _VDIR_ACL_CTX
     PSECURITY_DESCRIPTOR_RELATIVE pSecurityDescriptor;
     ULONG ulSecDescLength;
 } VDIR_ACL_CTX;
+
+typedef struct _VMDIR_SID_GEN_STACK_NODE
+{
+    DWORD dwDomainRidSequence;
+    PSTR pszDomainDn;
+} VMDIR_SID_GEN_STACK_NODE, *PVMDIR_SID_GEN_STACK_NODE;
+
+typedef struct _VDIR_DOMAIN_SID_GEN_STATE
+{
+    PSTR                    pszDomainDn; // in order to search with a given DN
+    PSTR                    pszDomainSid; // comparably to domainSid
+    DWORD                   dwDomainRidSeqence;
+    DWORD                   dwCount;
+
+    LW_HASHTABLE_NODE       Node;
+
+} VDIR_DOMAIN_SID_GEN_STATE, *PVDIR_DOMAIN_SID_GEN_STATE;
+
+typedef struct _VDIR_SID_GEN_STATE
+{
+    // NOTE: order of fields MUST stay in sync with struct initializer...
+    PVMDIR_MUTEX        mutex;
+    PLW_HASHTABLE       pHashtable;
+    PVDIR_THREAD_INFO pRIDSyncThr;
+    PVMDIR_TSSTACK      pStack;
+} VDIR_SID_GEN_STATE, *PVDIR_SID_GEN_STATE;

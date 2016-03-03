@@ -72,13 +72,6 @@ _VmDirSchemaInitFixBootstrapEntry(
 
 static
 DWORD
-VmDirSchemaPatchMerge(
-    PVDIR_ENTRY pCurrentEntry,
-    PVDIR_ENTRY pPatchEntry
-    );
-
-static
-DWORD
 _VmDirSchemaEntryToInstance(
     PVDIR_ENTRY             pEntry,
     PVDIR_SCHEMA_INSTANCE*  ppSchema
@@ -89,12 +82,6 @@ DWORD
 _VmDirNormaliseNameField(
     PSTR       pszSource ,
     size_t      dwLen
-    );
-
-static
-VOID
-_VmDirSchemaNormalizeAttrValue(
-    PVDIR_ATTRIBUTE pAttr
     );
 
 /*
@@ -437,50 +424,6 @@ error:
     goto cleanup;
 
 }
-
-/*
- * 1. convert patch file into pNewEntry
- * 2. merge changes in pNewEntry INTO pEntry
- *
- * NOTE, Lotus schema/patch file should NEVER delete schema definitions.
- */
-DWORD
-VmDirSchemaPatchFileToEntry(
-    PCSTR           pszSchemaFilePath,
-    PVDIR_ENTRY     pEntry
-    )
-{
-    DWORD               dwError = 0;
-    PVDIR_ENTRY         pNewEntry = NULL;
-
-    if ( !pszSchemaFilePath || !pEntry )
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirSchemaInitalizeFileToEntry( pszSchemaFilePath,
-                                               &pNewEntry);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaPatchMerge( pEntry, pNewEntry );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-
-    if (pNewEntry)
-    {
-        VmDirFreeEntry(pNewEntry);
-    }
-
-    return dwError;
-
-error:
-
-    goto cleanup;
-}
-
-
 
 /*
  * Create a schema cache from pEntry
@@ -1055,198 +998,6 @@ error:
     {
         VmDirFreeAttribute(pAttr);
     }
-
-    goto cleanup;
-}
-
-static
-DWORD
-_VmDirSchemaAttrReplaceValue(
-    PVDIR_ATTRIBUTE pAttr,
-    PCSTR           pszMatchSubstr,
-    PCSTR           pszValue
-    )
-{
-#define MAX_BUF_SIZE_256    256
-
-    DWORD       dwError = 0;
-    unsigned    iCnt = 0;
-    CHAR        pszBuf[MAX_BUF_SIZE_256] = {0};
-
-    dwError = VmDirStringPrintFA( pszBuf, MAX_BUF_SIZE_256 -1 , "NAME '%s' ", pszMatchSubstr );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (iCnt = 0; iCnt < pAttr->numVals; iCnt++)
-    {
-        if ( VmDirCaselessStrStrA( pAttr->vals[iCnt].lberbv_val, pszBuf ) != NULL )
-        {
-            if ( VmDirStringCompareA( VDIR_SAFE_STRING(pAttr->vals[iCnt].lberbv_val),
-                                      pszValue,
-                                      FALSE ) != 0
-                                      )
-            {
-                VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Merge schema, replace old - %s",
-                                VDIR_SAFE_STRING(pAttr->vals[iCnt].lberbv_val));
-                VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Merge schema, replace new - %s", pszValue );
-            }
-
-            VMDIR_LOG_DEBUG( VMDIR_LOG_MASK_ALL, "Merge schema, replace old - %s",
-                             VDIR_SAFE_STRING(pAttr->vals[iCnt].lberbv_val));
-            VmDirFreeBervalContent( &(pAttr->vals[iCnt]) );
-
-            dwError = VmDirAllocateStringA( pszValue, &(pAttr->vals[iCnt].lberbv_val) );
-            BAIL_ON_VMDIR_ERROR(dwError);
-            pAttr->vals[iCnt].lberbv_len = VmDirStringLenA( pszValue );
-            pAttr->vals[iCnt].bOwnBvVal = TRUE;
-
-            VMDIR_LOG_DEBUG( VMDIR_LOG_MASK_ALL, "Merge schema, replace new - %s",
-                             VDIR_SAFE_STRING(pAttr->vals[iCnt].lberbv_val));
-
-            break;
-        }
-    }
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    goto cleanup;
-}
-
-static
-VOID
-_VmDirSchemaNormalizeAttrValue(
-    PVDIR_ATTRIBUTE pAttr
-    )
-{
-    size_t  idx = 0;
-
-    for (idx=0; idx < pAttr->numVals; idx++)
-    {   // remove heading/trailing spaces and compact multiple spaces
-        VmdDirSchemaParseNormalizeElement( pAttr->vals[idx].lberbv_val);
-    }
-}
-
-/*
- * merge current and patch schema
- * 1. if new schema defined in patch, copy them over to current schema
- * 2. if both current and patch schema have schema definition, use value from patch schema
- *
- * The output is merged into pCurrentEntry.
- */
-static
-DWORD
-VmDirSchemaPatchMerge(
-    PVDIR_ENTRY pCurrentEntry,
-    PVDIR_ENTRY pPatchEntry
-    )
-{
-    DWORD                   dwError = 0;
-    PVDIR_SCHEMA_INSTANCE   pPatchSchema = NULL;
-    PVDIR_ATTRIBUTE         pAttr = NULL;
-    USHORT                  usCnt = 0;
-
-    dwError = _VmDirSchemaEntryToInstance( pPatchEntry, &pPatchSchema);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pAttr = VmDirEntryFindAttribute( VDIR_ATTRIBUTE_ATTRIBUTE_TYPES, pCurrentEntry );
-    assert( pAttr );
-    _VmDirSchemaNormalizeAttrValue( pAttr );
-    for (usCnt = 0; usCnt < pPatchSchema->ats.usNumATs; usCnt++)
-    {
-        PVDIR_SCHEMA_AT_DESC    pATDesc = NULL;
-        dwError = VmDirSchemaAttrNameToDescriptor( pCurrentEntry->pSchemaCtx,
-                                                   pPatchSchema->ats.pATSortName[ usCnt ].pszName,
-                                                   &pATDesc);
-        if ( dwError == ERROR_NO_SUCH_ATTRIBUTE )
-        {
-            dwError = VmDirEntryAddSingleValueStrAttribute(
-                            pCurrentEntry,
-                            VDIR_ATTRIBUTE_ATTRIBUTE_TYPES,
-                            pPatchSchema->ats.pATSortName[ usCnt ].pszDefinition);
-            BAIL_ON_VMDIR_ERROR(dwError);
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Merge schema, add - %s",
-                            VDIR_SAFE_STRING(pPatchSchema->ats.pATSortName[ usCnt ].pszDefinition));
-        }
-        else
-        {
-            dwError = _VmDirSchemaAttrReplaceValue( pAttr,
-                                                   pPatchSchema->ats.pATSortName[ usCnt ].pszName,
-                                                   pPatchSchema->ats.pATSortName[ usCnt ].pszDefinition);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-
-    pAttr = VmDirEntryFindAttribute( VDIR_ATTRIBUTE_OBJECT_CLASSES, pCurrentEntry );
-    assert( pAttr );
-    _VmDirSchemaNormalizeAttrValue( pAttr );
-    for (usCnt = 0; usCnt < pPatchSchema->ocs.usNumOCs; usCnt++)
-    {
-        PVDIR_SCHEMA_OC_DESC    pOCDesc = NULL;
-
-        dwError = VmDirSchemaOCNameToDescriptor( pCurrentEntry->pSchemaCtx,
-                                                 pPatchSchema->ocs.pOCSortName[ usCnt ].pszName,
-                                                 &pOCDesc);
-        if ( dwError == ERROR_NO_SUCH_OBJECTCLASS )
-        {
-            dwError = VmDirEntryAddSingleValueStrAttribute(
-                            pCurrentEntry,
-                            VDIR_ATTRIBUTE_OBJECT_CLASSES,
-                            pPatchSchema->ocs.pOCSortName[ usCnt ].pszDefinition);
-            BAIL_ON_VMDIR_ERROR(dwError);
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Merge schema, add - %s",
-                            VDIR_SAFE_STRING(pPatchSchema->ocs.pOCSortName[ usCnt ].pszDefinition));
-        }
-        else
-        {
-            dwError = _VmDirSchemaAttrReplaceValue( pAttr,
-                                                   pPatchSchema->ocs.pOCSortName[ usCnt ].pszName,
-                                                   pPatchSchema->ocs.pOCSortName[ usCnt ].pszDefinition);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-
-    pAttr = VmDirEntryFindAttribute( VDIR_ATTRIBUTE_DIT_CONTENTRULES, pCurrentEntry );
-    assert ( pAttr );
-    _VmDirSchemaNormalizeAttrValue( pAttr );
-    for (usCnt = 0; pAttr && usCnt < pPatchSchema->contentRules.usNumContents; usCnt++)
-    {
-        PVDIR_SCHEMA_CR_DESC    pCRDesc = NULL;
-
-        dwError = VmDirSchemaCRNameToDescriptor( pCurrentEntry->pSchemaCtx,
-                                                 pPatchSchema->contentRules.pContentSortName[ usCnt ].pszName,
-                                                 &pCRDesc);
-        if ( dwError == ERROR_NO_SUCH_DITCONTENTRULES )
-        {
-            dwError = VmDirEntryAddSingleValueStrAttribute(
-                            pCurrentEntry,
-                            VDIR_ATTRIBUTE_DIT_CONTENTRULES,
-                            pPatchSchema->contentRules.pContentSortName[ usCnt ].pszDefinition);
-            BAIL_ON_VMDIR_ERROR(dwError);
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Merge schema, add - %s",
-                            VDIR_SAFE_STRING(pPatchSchema->contentRules.pContentSortName[ usCnt ].pszDefinition));
-        }
-        else
-        {
-            dwError = _VmDirSchemaAttrReplaceValue( pAttr,
-                                                   pPatchSchema->contentRules.pContentSortName[ usCnt ].pszName,
-                                                   pPatchSchema->contentRules.pContentSortName[ usCnt ].pszDefinition);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-
-cleanup:
-
-    if ( pPatchSchema )
-    {
-        VdirSchemaInstanceFree(pPatchSchema);
-    }
-
-    return dwError;
-
-error:
 
     goto cleanup;
 }

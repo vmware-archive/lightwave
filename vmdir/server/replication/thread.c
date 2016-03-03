@@ -178,10 +178,11 @@ VmDirParseEntryForDn(
     );
 
 static
-int
-_VmDirCompareEntryDnLength(
-    const void *p1,
-    const void *p2
+DWORD
+_VmDirFilterEmptyPageSyncDoneCtr(
+    PCSTR           pszPattern,
+    struct berval * pLocalCtrl,
+    struct berval * pPageSyncDoneCtrl
     );
 
 #if 0   // 2013 port
@@ -239,23 +240,6 @@ error:
 
     goto cleanup;
 }
-
-// vdirReplicationThrFun is the main replication function that:
-//  - Executes replication cycles endlessly
-//  - Each replication cycle consist of processing all the RAs for this vmdird instance.
-//  - Sleeps for gVmdirServerGlobals.replInterval between replication cycles.
-//
-
-/*
-     1.  Wait for a replication agreement
-     2.  While server running
-     2a.   Load schema context
-     2b.   Load credentials
-     2c.   For each replication agreement
-     2ci.      Connect to system
-     2cii.     Fetch Page
-     2ciii.    Process Page
-*/
 
 /*
  * If the old policy is a realtime one (RR or FIFO), then increase it by
@@ -327,8 +311,8 @@ vdirRaiseThreadSchedPriority()
 
    retVal = pthread_setschedparam(pthread_self(), new_sch_policy, &new_sch_param);
    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-        "vdirRaiseThreadSchedPriority: setschedparam failed old_sch_policy=%d old_sch_priority=%d new_sch_policy=%d new_sch_priority=%d",
-        old_sch_policy, old_sch_param.sched_priority, new_sch_policy, new_sch_param.sched_priority);
+        "vdirRaiseThreadSchedPriority: setschedparam failed: errno=%d old_sch_policy=%d old_sch_priority=%d new_sch_policy=%d new_sch_priority=%d",
+        errno, old_sch_policy, old_sch_param.sched_priority, new_sch_policy, new_sch_param.sched_priority);
 
    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
           "vdirRaiseThreadSchedPriority: old_sch_policy=%d old_sch_priority=%d new_sch_policy=%d new_sch_priority=%d",
@@ -343,6 +327,22 @@ error:
     goto done;
 }
 
+// vdirReplicationThrFun is the main replication function that:
+//  - Executes replication cycles endlessly
+//  - Each replication cycle consist of processing all the RAs for this vmdird instance.
+//  - Sleeps for gVmdirServerGlobals.replInterval between replication cycles.
+//
+
+/*
+     1.  Wait for a replication agreement
+     2.  While server running
+     2a.   Load schema context
+     2b.   Load credentials
+     2c.   For each replication agreement
+     2ci.      Connect to system
+     2cii.     Fetch Page
+     2ciii.    Process Page
+*/
 static
 DWORD
 vdirReplicationThrFun(
@@ -862,7 +862,7 @@ ReplAddEntry(
 
     if (bFirstReplicationCycle)
     {
-        retVal = _VmDirAssignEntryIdIfSpecialInternalEntry( pEntry );
+        retVal =  _VmDirAssignEntryIdIfSpecialInternalEntry( pEntry );
         BAIL_ON_VMDIR_ERROR( retVal );
     }
 
@@ -1287,6 +1287,11 @@ DetectAndResolveAttrsConflicts(
         metaData++;
 
         *(metaData - 1) = '\0';
+        if (pAttr)
+        {
+            VmDirFreeAttribute( pAttr );
+            pAttr = NULL;
+        }
         retVal = VmDirAttributeAllocate( pAttrAttrSupplierMetaData->vals[i].lberbv.bv_val, 0, pOperation->pSchemaCtx, &pAttr );
         *(metaData - 1) = ':';
         BAIL_ON_LDAP_ERROR( retVal, LDAP_OPERATIONS_ERROR, (pOperation->ldapResult.pszErrMsg),
@@ -1339,9 +1344,22 @@ DetectAndResolveAttrsConflicts(
                     "DN: %s, attr: %s, supplier attr meta: %s, consumer attr meta: %s",
                     pDn->lberbv.bv_val, pAttr->type.lberbv.bv_val, metaData, pAttr->metaData );
 
-                // Supplier meta-data loses. pAttrAttrSupplierMetaData->vals[i].lberbv.bv_val conatins just the attribute name
-                // followed by a ':' now, and no associated meta data.
-                *metaData = '\0';
+                if (VmDirStringCompareA( pAttr->type.lberbv_val, ATTR_USN_CHANGED, FALSE ) == 0)
+                {
+                    // Need to keep usnChanged to advance localUSN for this replication change.
+                    VmDirFreeBervalContent(pAttrAttrSupplierMetaData->vals+i);
+                    retVal = VmDirAllocateStringPrintf( &(pAttrAttrSupplierMetaData->vals[i].lberbv_val),
+                                                        "%s:%s",
+                                                        ATTR_USN_CHANGED, pAttr->metaData);
+                    BAIL_ON_VMDIR_ERROR(retVal);
+                    pAttrAttrSupplierMetaData->vals[i].bOwnBvVal = TRUE;
+                }
+                else
+                {
+                    // Supplier meta-data loses. pAttrAttrSupplierMetaData->vals[i].lberbv.bv_val conatins just the attribute name
+                    // followed by a ':' now, and no associated meta data.
+                    *metaData = '\0';
+                }
                 pAttrAttrSupplierMetaData->vals[i].lberbv.bv_len = strlen(pAttrAttrSupplierMetaData->vals[i].lberbv.bv_val);
             }
             else // supplierVersionNum = consumerVersionNum, compare serverIds, lexicographically larger one wins
@@ -1357,11 +1375,24 @@ DetectAndResolveAttrsConflicts(
                         "DN: %s, attr: %s, supplier attr meta: %s, consumer attr meta: %s",
                         pDn->lberbv.bv_val, pAttr->type.lberbv.bv_val, metaData, pAttr->metaData );
 
-                    // Supplier meta-data loses. pAttrAttrSupplierMetaData->vals[i].lberbv.bv_val conatins just the attribute
-                    // name followed by a ':' now, and no associated meta data.
-                    *metaData = '\0';
+                    if (VmDirStringCompareA( pAttr->type.lberbv_val, ATTR_USN_CHANGED, FALSE ) == 0)
+                    {
+                        // Need to keep usnChanged to advance localUSN for this replication change.
+                        VmDirFreeBervalContent(pAttrAttrSupplierMetaData->vals+i);
+                        retVal = VmDirAllocateStringPrintf( &(pAttrAttrSupplierMetaData->vals[i].lberbv_val),
+                                                            "%s:%s",
+                                                            ATTR_USN_CHANGED, pAttr->metaData);
+                        BAIL_ON_VMDIR_ERROR(retVal);
+                        pAttrAttrSupplierMetaData->vals[i].bOwnBvVal = TRUE;
+                    }
+                    else
+                    {
+                        // Supplier meta-data loses. pAttrAttrSupplierMetaData->vals[i].lberbv.bv_val conatins just the attribute
+                        // name followed by a ':' now, and no associated meta data.
+                        *metaData = '\0';
+                    }
                     pAttrAttrSupplierMetaData->vals[i].lberbv.bv_len = strlen(pAttrAttrSupplierMetaData->vals[i].lberbv.bv_val);
-                }
+               }
                 else
                 {
                     VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
@@ -1370,8 +1401,6 @@ DetectAndResolveAttrsConflicts(
                         pDn->lberbv.bv_val, pAttr->type.lberbv.bv_val, metaData, pAttr->metaData );
                 }
             }
-            VmDirFreeAttribute( pAttr );
-            pAttr = NULL;
         }
     }
 
@@ -1380,6 +1409,8 @@ cleanup:
     return retVal;
 
 ldaperror:
+    goto cleanup;
+error:
     goto cleanup;
 }
 
@@ -1474,7 +1505,6 @@ SetAttributesNewMetaData(
     size_t              localUsnStrlen = VmDirStringLenA( localUsnStr );
 
     *ppAttrAttrMetaData = NULL;
-
     // Set attrMetaData for the attributes, part of the new attrMetaData info is
     // present in the incoming operational attribute "attrMetaData"
     // Remove "attrMetaData" from the Attribute list for the entry.
@@ -1558,6 +1588,7 @@ SetAttributesNewMetaData(
                                      (VMDIR_MAX_ATTR_META_DATA_LEN - localUsnStrlen - 1), metaData + 1 /* skip : */);
                 }
                 // Mark attribute meta data value as "used"
+                VmDirFreeBervalContent(pAttrAttrMetaData->vals+i);
                 pAttrAttrMetaData->vals[i].lberbv.bv_val = "";
                 pAttrAttrMetaData->vals[i].lberbv.bv_len = 0;
                 break;
@@ -2380,6 +2411,8 @@ _VmDirWaitForReplicationAgreement(
 {
     DWORD dwError = 0;
     BOOLEAN bInReplAgrsLock = FALSE;
+    int retVal = 0;
+    PSTR pszPartnerHostName = NULL;
 
     assert(pbFirstReplicationCycle != NULL);
     assert(pbExitReplicationThread != NULL);
@@ -2415,33 +2448,27 @@ _VmDirWaitForReplicationAgreement(
         // When 1st RA is created for non-1st replica => try to perform special 1st replication cycle
         if (gVmdirReplAgrs && gVmdirServerGlobals.serverId != 1)
         {
-#if 0
-    // For 2013, use ldap replication mode only.
-    // BUGBUG BUGBUB RPC mode is NOT yet stable and will crash in steps below:
-    // 1. start up ssosetup in node 1
-    // 2. start up ssosetup in node 2 to join node 1 (HA mode)
-    // 3. start up ssosetup in node 3 to join node 1 (HA mode)
-    // repeat step 3 a couple times will eventually crash node 1 vmdir.
-    // A more aggressive test setup is step 1 + 2 + run multiple nodes step 3 in parallel.
-    // i.e. have, say 4 nodes, execute step 3 at the same time.
-
-            if ((retVal = VmDirFirstReplicationCycle( pszPartnerHostName, gVmdirReplAgrs )) == 0)
+            if ( gFirstReplCycleMode == FIRST_REPL_CYCLE_MODE_COPY_DB )
             {
-                VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: VmDirFirstReplicationCycle() SUCCEEDED." );
-
-                VMDIR_LOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
-                VmDirConditionSignal(gVmdirGlobals.replCycleDoneCondition);
-                VMDIR_UNLOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
+                if ((retVal=VmDirReplURIToHostname(gVmdirReplAgrs->ldapURI, &pszPartnerHostName)) !=0 ||
+                    (retVal=VmDirFirstReplicationCycle( pszPartnerHostName, gVmdirReplAgrs)) != 0)
+                {
+                    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+                          "vdirReplicationThrFun: VmDirReplURIToHostname or VmDirFirstReplicationCycle failed, error (%d).",
+                          gVmdirReplAgrs->ldapURI, retVal);
+                    VmDirForceExit();
+                    *pbExitReplicationThread = TRUE;
+                    dwError = LDAP_OPERATIONS_ERROR;
+                    BAIL_ON_VMDIR_ERROR( dwError );
+                } else
+                {
+                    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: VmDirFirstReplicationCycle() SUCCEEDED." );
+                }
+            } else
+            {
+                VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: performing normal replication logic." );
+                *pbFirstReplicationCycle = TRUE;
             }
-            else
-            {
-                // Just log the error. and try to perform normal replication logic.
-                VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: VmDirFirstReplicationCycle() FAILED. retVal = %d, "
-                          "Going to try normal replication logic.", retVal );
-#endif
-             VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirWaitForReplicationAgreement: LDAP replication mode");
-
-            *pbFirstReplicationCycle = TRUE;
         }
         VMDIR_LOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
     }
@@ -2468,6 +2495,7 @@ _VmDirConsumePartner(
     PVMDIR_REPLICATION_PAGE pPage = NULL;
     BOOLEAN bReplayEverything = FALSE;
     BOOLEAN bReTrialDesired = FALSE;
+    struct berval bervalSyncDoneCtrl = {0};
     int iPreviousCycleEntriesAddedErrorNoSuchObject = -1;
 
     do // do-while ( bReTrialDesired )
@@ -2500,8 +2528,8 @@ _VmDirConsumePartner(
 
             retVal = _VmDirFetchReplicationPage(
                         pConnection,
-                        lastSupplierUsnProcessed,
-                        initUsn,
+                        lastSupplierUsnProcessed, // used in search filter
+                        initUsn,                  // used in syncRequestCtrl to send(supplier) high watermark.
                         &pPage);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
@@ -2512,6 +2540,13 @@ _VmDirConsumePartner(
 
             lastSupplierUsnProcessed = pPage->lastSupplierUsnProcessed;
             iEntriesAddedErrorNoSuchObject += pPage->iEntriesAddedErrorNoSuchObject;
+
+            // When a page has 0 entry, we should selectively update bervalSyncDoneCtrl.
+            retVal = _VmDirFilterEmptyPageSyncDoneCtr(replAgr->lastLocalUsnProcessed.lberbv.bv_val,
+                                                      &bervalSyncDoneCtrl,
+                                                      &(pPage->searchResCtrls[0]->ldctl_value));
+            BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
         } while (pPage->iEntriesRequested > 0 &&
                  pPage->iEntriesReceived > 0 &&
                  pPage->iEntriesReceived == pPage->iEntriesRequested);
@@ -2563,11 +2598,12 @@ _VmDirConsumePartner(
 
     if (retVal == LDAP_SUCCESS)
     {
-        if (pPage)
+        // If page fetch return 0 entry, bervalSyncDoneCtrl.bv_val could be NULL. Do not update cookies in this case.
+        if (pPage && bervalSyncDoneCtrl.bv_val)
         {
             retVal = VmDirReplUpdateCookies(
                     pContext->pSchemaCtx,
-                    &(pPage->searchResCtrls[0]->ldctl_value),
+                    &bervalSyncDoneCtrl,
                     replAgr);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
         }
@@ -2580,11 +2616,68 @@ cleanup:
         _VmDirFreeReplicationPage(pPage);
         pPage = NULL;
     }
+    VMDIR_SAFE_FREE_MEMORY(bervalSyncDoneCtrl.bv_val);
 
     VmDirdSetLimitLocalUsnToBeSupplied(0);
     return retVal;
 
 ldaperror:
+    goto cleanup;
+}
+
+/*
+ *  During a cycle, we fetch and process page in a loop.
+ *
+ *  pszPattern is used as the high watermark in the syncRequestCtrl for "ALL" fetch call within the cycle.
+ *
+ *  The supplier uses pszPattern value to initialize its syncDoneCtrl high watermark.
+ *  (A) If supplier search result set > 0
+ *     It sends entry per UTDVector filtering.
+ *     It updates syncDoneCtrl high watermark
+ *
+ *  (B) If supplier search result set = 0, its syncDoneCtrl high watermark value does not change.
+ *
+ *  At the end of a replication search request, the supplier sends high watermark value in syncDoneCtrl.
+ *
+ *  Note, both (A) and (B) cases could return 0 entry.
+ *  But we should ignore syncDoneCtrl in scenario (B), which could happen during page boundary condition
+ *      where the last fetch return 0.  In this case, we should not use this syncDoneCtrl to update cookies.
+ *
+ */
+static
+DWORD
+_VmDirFilterEmptyPageSyncDoneCtr(
+    PCSTR           pszPattern,
+    struct berval * pLocalCtrl,
+    struct berval * pPageSyncDoneCtrl
+    )
+{
+    DWORD   dwError= 0;
+    PSTR    pszTmp = NULL;
+    size_t  iPatternLen = VmDirStringLenA(pszPattern);
+
+    // In WriteSyncDoneControl syncDoneCtrl value looks like: high watermark,utdVector.
+
+    // Update pLocalCtrl only if high watermark value differs between supplier syncDoneCtrl and consumer syncRequestCtrl.
+    if ( (VmDirStringNCompareA(pPageSyncDoneCtrl->bv_val, pszPattern, iPatternLen, FALSE) != 0) ||
+         pPageSyncDoneCtrl->bv_val[iPatternLen] != ','
+       )
+    {
+        VMDIR_SAFE_FREE_MEMORY(pLocalCtrl->bv_val);
+        pLocalCtrl->bv_len = 0;
+        dwError = VmDirAllocateStringA(pPageSyncDoneCtrl->bv_val, &pszTmp);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pLocalCtrl->bv_val = pszTmp;
+        pLocalCtrl->bv_len = VmDirStringLenA(pszTmp);
+        pszTmp = NULL;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszTmp);
     goto cleanup;
 }
 
@@ -2612,14 +2705,6 @@ _VmDirFetchReplicationPage(
     }
 
     pPage->iEntriesRequested = gVmdirServerGlobals.replPageSize;
-
-    if (VmDirAllocateMemory(
-            sizeof *(pPage->pEntries) * pPage->iEntriesRequested,
-            (PVOID)&pPage->pEntries))
-    {
-        retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
-    }
 
     if (VmDirAllocateStringPrintf(
             &pPage->pszFilter, "%s>=%ld",
@@ -2707,8 +2792,8 @@ _VmDirFetchReplicationPage(
 
     *ppPage = pPage;
 
-    VMDIR_LOG_VERBOSE(
-        VMDIR_LOG_MASK_ALL,
+    VMDIR_LOG_INFO(
+        LDAP_DEBUG_REPL,
         "_VmDirFetchReplicationPage: "
         "filter: '%s' requested: %d received: %d usn: %llu utd: '%s'",
         VDIR_SAFE_STRING(pPage->pszFilter),
@@ -2799,13 +2884,6 @@ _VmDirProcessReplicationPage(
     size_t i = 0;
 
     pSchemaCtx = pContext->pSchemaCtx;
-
-    // Sort by ascending DN path length to insert parents before children
-    qsort(pPage->pEntries,
-          pPage->iEntriesReceived,
-          sizeof(pPage->pEntries[0]),
-          _VmDirCompareEntryDnLength);
-
     pPage->iEntriesProcessed = 0;
     pPage->iEntriesAddedErrorNoSuchObject = 0;
     for (i = 0; i < pPage->iEntriesReceived; i++)
@@ -2846,8 +2924,8 @@ _VmDirProcessReplicationPage(
         VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "_VmDirProcessReplicationPage: %s -> %d\n", pPage->pEntries[i].pszDn, pPage->pEntries[i].errVal);
     }
 
-    VMDIR_LOG_VERBOSE(
-        VMDIR_LOG_MASK_ALL,
+    VMDIR_LOG_INFO(
+        LDAP_DEBUG_REPL,
         "_VmDirProcessReplicationPage: error %d "
         "filter: '%s' requested: %d received: %d last usn: %llu "
         "processed: %d nosuchobject: %d ",
@@ -2907,22 +2985,4 @@ ldaperror:
 
     VMDIR_SAFE_FREE_STRINGA(pszDn);
     goto cleanup;
-}
-
-static
-int
-_VmDirCompareEntryDnLength(
-    const void *p1,
-    const void *p2
-    )
-{
-    const VMDIR_REPLICATION_PAGE_ENTRY *e1 = p1;
-    const VMDIR_REPLICATION_PAGE_ENTRY *e2 = p2;
-
-    if (e1->dwDnLength < e2->dwDnLength)
-        return -1;
-    else if (e1->dwDnLength == e2->dwDnLength)
-        return 0;
-    else
-        return 1;
 }

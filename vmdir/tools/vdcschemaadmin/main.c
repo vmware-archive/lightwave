@@ -29,6 +29,56 @@
 #include "includes.h"
 
 static
+DWORD
+_VmDirSchemaUpgradeViaFile(
+    PCSTR   pszHost,
+    PCSTR   pszFile,
+    BOOLEAN bDryRun,
+    PCSTR   pszUPN,
+    PCSTR   pszPassword
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszDomain = NULL;
+    PSTR    pszUserName = NULL;
+    PSTR    pszErrMsg = NULL;
+    PVMDIR_CONNECTION   pConnection = NULL;
+
+    dwError = VmDirUPNToNameAndDomain(pszUPN, &pszUserName, &pszDomain);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirConnectionOpenByHost(
+                pszHost,
+                pszDomain,
+                pszUserName,
+                pszPassword,
+                &pConnection);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSchemaUpgrade(
+                pConnection,
+                pszFile,
+                bDryRun,
+                &pszErrMsg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,"[%s][%d] upgrade schema passed. Dry run (%d)",
+                    __FUNCTION__,__LINE__, bDryRun);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszUserName);
+    VMDIR_SAFE_FREE_MEMORY(pszDomain);
+    VMDIR_SAFE_FREE_MEMORY(pszErrMsg);
+    VmDirConnectionClose(pConnection);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,"[%s][%d] %s, error code (%d)",
+                    __FUNCTION__,__LINE__, VDIR_SAFE_STRING(pszErrMsg),dwError);
+    goto cleanup;
+}
+
+static
 int
 VmDirMain(
     int argc,
@@ -86,6 +136,9 @@ VmDirMain(int argc, char* argv[])
     PSTR        pszBaseHostName                     = NULL;
     PSTR        pszPartnerCurrPassword              = NULL;
     PSTR        pszVersionHostName                  = NULL;
+    PSTR        pszUpgradeHostName                  = NULL;
+    PSTR        pszSchemaFile                       = NULL;
+    BOOLEAN     bDryRun                             = TRUE;
     PSTR        pszPasswordBuf                      = NULL;
     PSTR        pszResult                           = NULL;
     CHAR        pszPath[MAX_PATH];
@@ -108,6 +161,9 @@ VmDirMain(int argc, char* argv[])
             &pszUPN,
             &pszBaseHostName,
             &pszVersionHostName,
+            &pszUpgradeHostName,
+            &pszSchemaFile,
+            &bDryRun,
             &pszPartnerCurrPassword);
 
     if (dwError)
@@ -130,32 +186,42 @@ VmDirMain(int argc, char* argv[])
         VmDirReadString("password: ", pszPasswordBuf, VMDIR_MAX_PWD_LEN+1, TRUE);
     }
 
-    if( pszVersionHostName != NULL )
+    if( pszBaseHostName != NULL )
     {
-
-        dwError = VmDirSyncVersionsInFederation(
-                                       pszVersionHostName,
-                                       pszUPN,
-                                       pszPasswordBuf,
-                                       &pszResult
-                                       );
-
+        dwError = VMDirCheckSchemaEquality(
+                    pszBaseHostName ,
+                    pszUPN ,
+                    pszPasswordBuf);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        printf("Schema in the whole federation is all in sync. \n");
+    }
+    else if ( pszVersionHostName != NULL )
+    {
+        dwError = VmDirSyncVersionsInFederation(
+                    pszVersionHostName,
+                    pszUPN,
+                    pszPasswordBuf,
+                    &pszResult);
+        BAIL_ON_VMDIR_ERROR (dwError);
 
         printf("Version sync completed successfully.\n%s\n",
                pszResult ? pszResult:"No metadata version synchronization required." );
     }
-    else
+    else if ( pszUpgradeHostName != NULL )
     {
-        dwError = VMDirCheckSchemaEquality(
-                  pszBaseHostName ,
-                  pszUPN ,
-                  pszPasswordBuf
-                  );
-        BAIL_ON_VMDIR_ERROR (dwError);
 
-        printf("Schema in the whole federation is all in sync. \n");
+        dwError = _VmDirSchemaUpgradeViaFile(
+                    pszUpgradeHostName,
+                    pszSchemaFile,
+                    bDryRun,
+                    pszUPN,
+                    pszPasswordBuf
+                    );
+        BAIL_ON_VMDIR_ERROR(dwError);
 
+        printf("[%s][%d] upgrade schema passed. Dry run (%d)\n",
+                            __FUNCTION__,__LINE__, bDryRun);
      }
 
 cleanup:

@@ -25,14 +25,36 @@ extern "C" {
 #ifndef __RPCDCE_H__
 typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 #endif
+#define LW_STRICT_NAMESPACE
+#include <lw/types.h>
+#include <lw/hash.h>
+
+#ifndef LOGGING_API
+#ifdef LOGGING_EXPORTS
+#define LOGGING_API __declspec(dllexport)
+#else
+#define LOGGING_API __declspec(dllimport)
+#endif
+#endif
+#else
+#ifndef LOGGING_API
+#define LOGGING_API
+#endif
 #endif
 
 #include <dce/uuid.h>
 #include <dce/dcethread.h>
 
 #include <ldap.h>
+#include <ldap_schema.h>
 #include <openssl/ssl.h>
 #include <type_spec.h>
+
+#define VMDIR_SIZE_1024         1024
+#define VMDIR_SIZE_2048         2048
+#define VMDIR_SIZE_4096         4096
+#define VMDIR_SIZE_8192         8192
+#define VMDIR_SIZE_9216         9216
 
 #define MAX_PATH 260
 #define MAX_INSTALL_PARAMETER_LEN 260
@@ -165,6 +187,61 @@ typedef HINSTANCE   VMDIR_LIB_HANDLE;
 typedef VOID*       VMDIR_LIB_HANDLE;
 #endif
 
+typedef struct _VMDIR_LDAP_ATTRIBUTETYPES
+{
+    PSTR                pszOrgDef;  // original string
+    PSTR                pszNormDef; // normalized string
+    BOOLEAN             bLegacyFix;
+    LDAPAttributeType*  pLdapAT;
+} VMDIR_LDAP_ATTRIBUTETYPES, *PVMDIR_LDAP_ATTRIBUTETYPES;
+
+typedef struct _VMDIR_LDAP_OBJECTCLASSES
+{
+    PSTR                pszOrgDef;  // original string
+    PSTR                pszNormDef; // normalized string
+    BOOLEAN             bLegacyFix;
+    LDAPObjectClass*    pLdapOC;
+} VMDIR_LDAP_OBJECTCLASSES, *PVMDIR_LDAP_OBJECTCLASSES;
+
+typedef struct _VMDIR_LDAP_CONTENTRULES
+{
+    PSTR                pszOrgDef;  // original string
+    PSTR                pszNormDef; // normalized string
+    BOOLEAN             bLegacyFix;
+    LDAPContentRule*    pLdapCR;
+} VMDIR_LDAP_CONTENTRULES, *PVMDIR_LDAP_CONTENTRULES;
+
+typedef struct _VMDIR_LDAP_SCHEMA_DEF_STR
+{
+    PVMDIR_STRING_LIST   pATStrList;
+    PVMDIR_STRING_LIST   pOCStrList;
+    PVMDIR_STRING_LIST   pCRStrList;
+} VMDIR_LDAP_SCHEMA_DEF_STR, *PVMDIR_LDAP_SCHEMA_DEF_STR;
+
+typedef struct _VMDIR_LDAP_SCHEMA_MOD_STR
+{
+    PVMDIR_STRING_LIST   pAddATStrList;
+    PVMDIR_STRING_LIST   pAddOCStrList;
+    PVMDIR_STRING_LIST   pAddCRStrList;
+    PVMDIR_STRING_LIST   pDelATStrList;
+    PVMDIR_STRING_LIST   pDelOCStrList;
+    PVMDIR_STRING_LIST   pDelCRStrList;
+} VMDIR_LDAP_SCHEMA_MOD_STR, *PVMDIR_LDAP_SCHEMA_MOD_STR;
+
+typedef struct _VMDIR_LDAP_SCHEMA_STRUCT
+{
+    size_t                      dwATSize;
+    PVMDIR_LDAP_ATTRIBUTETYPES  pATArray;
+    size_t                      dwOCSize;
+    PVMDIR_LDAP_OBJECTCLASSES   pOCArray;
+    size_t                      dwCRSize;
+    PVMDIR_LDAP_CONTENTRULES    pCRArray;
+
+    PLW_HASHMAP                 pATMap; // point to pATArray
+    PLW_HASHMAP                 pOCMap;
+    PLW_HASHMAP                 pCRMap;
+} VMDIR_LDAP_SCHEMA_STRUCT, *PVMDIR_LDAP_SCHEMA_STRUCT;
+
 ULONG
 VmDirRpcAllocateMemory(
     size_t size,
@@ -238,6 +315,12 @@ VmDirFreeStringArrayW(
     DWORD  dwCount
     );
 
+DWORD
+VmDirVsnprintf(
+    PSTR*    ppszOut,
+    PCSTR    pszFormat,
+    va_list  args
+    );
 
 DWORD
 VmDirAllocateStringAVsnprintf(
@@ -340,14 +423,14 @@ VmDirGetStringLengthW(
     PSIZE_T pLength
     );
 
-ULONG
+LONG
 VmDirStringCompareA(
     PCSTR pszStr1,
     PCSTR pszStr2,
     BOOLEAN bIsCaseSensitive
     );
 
-ULONG
+LONG
 VmDirStringNCompareA(
     PCSTR pszStr1,
     PCSTR pszStr2,
@@ -491,12 +574,14 @@ VmDirGetProgramDataEnvVar(
 
 #endif
 
+LOGGING_API
 void
 VmDirLog(
    ULONG        level,
    const char*  fmt,
    ...);
 
+LOGGING_API
 void
 VmDirLog1(
     VMDIR_LOG_LEVEL iLevel,
@@ -504,6 +589,17 @@ VmDirLog1(
     const char*     fmt,
     ...);
 
+LOGGING_API
+DWORD
+VmDirLogInitialize(
+   PCSTR            pszLogFileName,
+   BOOLEAN          bUseSysLog,
+   PCSTR            pszSyslogName,
+   VMDIR_LOG_LEVEL  iInitLogLevel,
+   ULONG            iInitLogMask
+   );
+
+LOGGING_API
 DWORD
 VmDirLogInternalInitialize(
    PCSTR            pszLogFileName,
@@ -516,26 +612,31 @@ VmDirLogInternalInitialize(
    );
 
 
+LOGGING_API
 void
 VmDirLogSetLevel(
     VMDIR_LOG_LEVEL iNewLogLevel
     );
 
+LOGGING_API
 VMDIR_LOG_LEVEL
 VmDirLogGetLevel(
     VOID
     );
 
+LOGGING_API
 void
 VmDirLogTerminate(
     VOID
     );
 
+LOGGING_API
 void
 VmDirLogSetMask(
     ULONG       iNewLogMask
     );
 
+LOGGING_API
 ULONG
 VmDirLogGetMask(
     VOID
@@ -775,7 +876,7 @@ typedef enum
 #ifndef _WIN32
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH     "Services\\Vmdir"
 #define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "Services\\Vmdir\\Parameters"
-#define VMDIR_LINUX_DB_PATH                 VMDIR_DB_DIR "/"
+#define VMDIR_LINUX_DB_PATH                 "/storage/db/vmware-vmdir/"
 #else
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH     "SYSTEM\\CurrentControlSet\\services\\VMWareDirectoryService"
 #define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "SYSTEM\\CurrentControlSet\\services\\VMWareDirectoryService\\Parameters"
@@ -1398,6 +1499,11 @@ VmDirDeleteSyncRequestControl(
     LDAPControl *syncReqCtrl
     );
 
+DWORD
+VmDirMapLdapError(
+    int ldapErrorCode
+    );
+
 // common/tsstack.c
 VOID
 VmDirFreeTSStack(
@@ -1465,6 +1571,13 @@ DWORD
 VmDirLdapURI2Host(
     PCSTR   pszURI,
     PSTR*   ppszHost
+    );
+
+DWORD
+VmDirUPNToNameAndDomain(
+    PCSTR   pszUPN,
+    PSTR*   ppszName,
+    PSTR*   ppszDomain
     );
 
 DWORD
@@ -1897,6 +2010,11 @@ VmDirStringListInitialize(
     );
 
 VOID
+VmDirStringListFreeContent(
+    PVMDIR_STRING_LIST pStringList
+    );
+
+VOID
 VmDirStringListFree(
     PVMDIR_STRING_LIST pStringList
     );
@@ -1917,6 +2035,118 @@ BOOLEAN
 VmDirStringListContains(
     PVMDIR_STRING_LIST pStringList,
     PCSTR pszString
+    );
+
+DWORD
+VmDirStringListAddStrClone(
+    PCSTR               pszStr,
+    PVMDIR_STRING_LIST  pStrList
+    );
+
+int
+VmDirQsortCaseExactCompareString(
+    const void*             ppStr1,
+    const void*             ppStr2
+    );
+
+int
+VmDirQsortCaseIgnoreCompareString(
+    const void*             ppStr1,
+    const void*             ppStr2
+    );
+
+DWORD
+VmDirReadSchemaFile(
+    PCSTR                       pszSchemaFilePath,
+    PVMDIR_LDAP_SCHEMA_DEF_STR pSchemaDef
+    );
+
+DWORD
+VmDirGetSchemaFromLocalFile(
+    PCSTR                       pszFile,
+    PVMDIR_LDAP_SCHEMA_STRUCT*  ppLdapSchema
+    );
+
+DWORD
+VmDirGetSchemaFromPartner(
+    LDAP*                       pLd,
+    PVMDIR_LDAP_SCHEMA_STRUCT*  ppLdapSchema
+    );
+
+DWORD
+VmDirGetSchemaFromDefStr(
+    PVMDIR_LDAP_SCHEMA_DEF_STR  pSchemaDefs,
+    PVMDIR_LDAP_SCHEMA_STRUCT*  ppLdapSchema
+    );
+
+DWORD
+VmDirAnalyzeSchemaUpgrade(
+    PVMDIR_LDAP_SCHEMA_STRUCT  pExistingSchema,
+    PVMDIR_LDAP_SCHEMA_STRUCT  pNewSchema,
+    PVMDIR_LDAP_SCHEMA_MOD_STR pModStr
+    );
+
+DWORD
+VmDirInitModStrContent(
+    PVMDIR_LDAP_SCHEMA_MOD_STR  pModStr
+    );
+
+VOID
+VmDirFreeModStrContent(
+    PVMDIR_LDAP_SCHEMA_MOD_STR  pModStr
+    );
+
+DWORD
+VmDirInitLdapSchemaDefsContent(
+    PVMDIR_LDAP_SCHEMA_DEF_STR  pSchemaDefs
+    );
+
+VOID
+VmDirFreeLdapSchemaDefsContent(
+    PVMDIR_LDAP_SCHEMA_DEF_STR  pSchemaDefs
+    );
+
+VOID
+VmDirFreeLdapSchemaStruct(
+    PVMDIR_LDAP_SCHEMA_STRUCT pSchemaStruct
+    );
+
+BOOLEAN
+VmDirIsSortedSuperSetof(
+    PSTR* ppszSuper,
+    PSTR* ppszSub
+    );
+
+BOOLEAN
+VmDirIsSortedSetIdentical(
+    PSTR* ppszSet1,
+    PSTR* ppszSet2
+    );
+
+DWORD
+VmDirMergeSet(
+    PSTR* ppszSetCur,
+    PSTR* ppszSetNew,
+    PSTR** pppszOutSet
+    );
+
+VOID
+VmDirFreeStrArray(
+    PSTR*   ppszArray
+    );
+
+#ifdef _WIN32
+
+DWORD
+VmDirGetCfgPath(
+    PSTR*   ppszCfgPath
+    );
+
+#endif
+
+DWORD
+VmDirGetDefaultSchemaFile(
+    PSTR*   ppszSchemaFile
     );
 
 #ifdef __cplusplus

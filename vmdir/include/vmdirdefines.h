@@ -628,7 +628,7 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 
 #define VMDIR_SASL_MIN_SSF              1
 #define VMDIR_SASL_MAX_SSF              1024
-#define VMDIR_SASL_MAX_BUFFER_LEN       65536
+#define VMDIR_SASL_MAX_BUFFER_LEN       0xfffff
 
 #define VMDIR_LDAPS_PROTOCOL            "ldaps"
 #define VMDIR_LDAP_PROTOCOL             "ldap"

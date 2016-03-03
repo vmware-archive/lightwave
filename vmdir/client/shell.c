@@ -131,8 +131,7 @@ VmDirGetVmDirLogPath(
     DWORD dwError = 0;
 
 #ifndef _WIN32
-    //BUGBUG, should NOT hard code path
-    dwError = VmDirStringCpyA(pszPath, MAX_PATH, "/var/log/vmware/vmdir/");
+    dwError = VmDirStringCpyA(pszPath, MAX_PATH, VMDIR_LOG_DIR);
     BAIL_ON_VMDIR_ERROR(dwError);
 #else
     _TCHAR* programDataPath           = NULL;

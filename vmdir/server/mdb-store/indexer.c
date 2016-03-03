@@ -37,7 +37,9 @@ MdbScanIndex(
     PVDIR_DB_TXN        pTxn,
     VDIR_BERVALUE *     attrType,
     PVDIR_DB_DBT        pKey,
-    VDIR_FILTER *       pFilter);
+    VDIR_FILTER *       pFilter,
+    int                 maxScanForSizeLimit,
+    int *               partialCandidates);
 
 static
 DWORD
@@ -358,6 +360,7 @@ VmDirMDBGetCandidates(
     {
         case LDAP_FILTER_EQUALITY:
         case LDAP_FILTER_GE:
+        case LDAP_FILTER_LE:
         {
             char *    normVal    = BERVAL_NORM_VAL(pFilter->filtComp.ava.value);
             ber_len_t normValLen = BERVAL_NORM_LEN(pFilter->filtComp.ava.value);
@@ -376,7 +379,7 @@ VmDirMDBGetCandidates(
 
             key.mv_size = normValLen + 1;
 
-            dwError = MdbScanIndex( pTxn, &(pFilter->filtComp.ava.type), &key, pFilter);
+            dwError = MdbScanIndex( pTxn, &(pFilter->filtComp.ava.type), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates);
             if ( pFilter->candidates )
             {
                 VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), bad filter (%d)",
@@ -441,7 +444,7 @@ VmDirMDBGetCandidates(
                 assert( FALSE );
             }
 
-            dwError = MdbScanIndex( pTxn, &(pFilter->filtComp.subStrings.type), &key, pFilter);
+            dwError = MdbScanIndex( pTxn, &(pFilter->filtComp.subStrings.type), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates);
             if ( pFilter->candidates )
             {
                 VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), bad filter (%d)",
@@ -466,7 +469,7 @@ VmDirMDBGetCandidates(
             key.mv_data = &parentEIdBytes[0];
             MDBEntryIdToDBT(parentId, &key);
 
-            dwError = MdbScanIndex( pTxn, &(parentIdAttr), &key, pFilter);
+            dwError = MdbScanIndex( pTxn, &(parentIdAttr), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates);
             if ( pFilter->candidates )
             {
                 VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), bad filter (%d)",
@@ -1070,7 +1073,9 @@ MdbScanIndex(
     PVDIR_DB_TXN        pTxn,
     VDIR_BERVALUE *     attrType,
     PVDIR_DB_DBT        pKey,
-    VDIR_FILTER *       pFilter)
+    VDIR_FILTER *       pFilter,
+    int                 maxScanForSizeLimit,
+    int *               partialCandidates)
 {
     DWORD               dwError = 0;
     VDIR_DB             mdbDBi = 0;
@@ -1092,7 +1097,7 @@ MdbScanIndex(
     pIdxDesc = VmDirAttrNameToReadIndexDesc(attrType->lberbv.bv_val, usVersion, &usVersion);
     if (!pIdxDesc)
     {
-        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "ScanIndex: non-indexed attribute. attrType = %s", attrType->lberbv.bv_val);
+        VMDIR_LOG_VERBOSE( LDAP_DEBUG_BACKEND, "ScanIndex: non-indexed attribute. attrType = %s", attrType->lberbv.bv_val);
         goto cleanup;
     }
 
@@ -1144,6 +1149,13 @@ MdbScanIndex(
 
         cursorFlags = bIsExactMatch ? MDB_SET : MDB_SET_RANGE;
 
+        if (pFilter->choice == LDAP_FILTER_LE                                   &&
+            mdb_cursor_get(pCursor, &currKey, &value, cursorFlags) == MDB_NOTFOUND)
+        {
+            // Key value too big, set to last record instead.
+            cursorFlags = MDB_LAST;
+        }
+
         do
         {
             if ((dwError = mdb_cursor_get(pCursor, &currKey, &value, cursorFlags )) != 0)
@@ -1180,13 +1192,21 @@ MdbScanIndex(
                )
             {
                 // Exceed max scan size, treats as data not found. BuildCandidateList logic will retry w/o limit.
-                // Do not delete candidates here as BuildCandidateList uses it to determine bad filter scenario.
+                // When candidates is set to NULL, AndFilterResults() will treat it as a non-indexed attribute.
+                DeleteCandidates( &(pFilter->candidates) );
                 dwError = MDB_NOTFOUND;
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
 
+            if (maxScanForSizeLimit > 0 && pFilter->candidates->size > maxScanForSizeLimit)
+            {
+                *partialCandidates = 1;
+                break;
+            }
+
             eId = 0;
-            cursorFlags = bIsExactMatch ? MDB_NEXT_DUP : MDB_NEXT;
+            cursorFlags = bIsExactMatch ? MDB_NEXT_DUP :
+                                          (pFilter->choice == LDAP_FILTER_LE) ? MDB_PREV : MDB_NEXT;
         }
         while (TRUE);
     }

@@ -107,6 +107,49 @@ error:
 }
 
 VOID
+VdcadminGetLogParameters(
+    VOID
+    )
+{
+    DWORD       dwError = 0;
+    UINT32      iMask = 0;
+    VMDIR_LOG_LEVEL logLevel = 0;
+    PVMDIR_SERVER_CONTEXT hServer = NULL;
+    PCSTR       pszLevel = NULL;
+
+    hServer = g_hServer;
+
+    dwError = VmDirGetLogLevelH(hServer, &logLevel);
+    if (dwError)
+    {
+        printf( "VmDirGetLogLevel failed (%u)\n", dwError);
+        goto error;
+    }
+    printf( "Log level ");
+    switch (logLevel)
+    {
+        case VMDIR_LOG_ERROR:   pszLevel = "ERROR";     break;
+        case VMDIR_LOG_WARNING: pszLevel = "WARNING";   break;
+        case VMDIR_LOG_INFO:    pszLevel = "INFO";      break;
+        case VMDIR_LOG_VERBOSE: pszLevel = "VERBOSE";   break;
+        case VMDIR_LOG_DEBUG:   pszLevel = "DEBUG";     break;
+        default:                pszLevel = "UNKNOWN";   break;
+    }
+    printf( "%s\n\n", pszLevel);
+
+    dwError = VmDirGetLogMaskH(hServer, &iMask);
+    if (dwError)
+    {
+        printf( "VmDirGetLogMask failed (%u)\n", dwError);
+        goto error;
+    }
+    printf( "Log mask (%u)\n\n", iMask);
+
+error:
+    return;
+}
+
+VOID
 VdcadminSetVmdirState(
     VOID
     )
@@ -157,6 +200,50 @@ cleanup:
 error:
 
     printf("\n SetVmDirState failed: %s\n", VDIR_SAFE_STRING(pszLocalErrorMsg));
+
+    goto cleanup;
+}
+
+VOID
+VdcadminGetVmdirState(
+    VOID
+    )
+{
+    DWORD       dwError = 0;
+    PCSTR       pszState = NULL;
+    PSTR        pszLocalErrorMsg = NULL;
+    PVMDIR_SERVER_CONTEXT hServer = NULL;
+    UINT32      vmdirState = 0;
+
+
+    if (g_hServer)
+    {
+        hServer = g_hServer;
+    }
+
+    dwError = VmDirGetState(hServer, &vmdirState );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
+                                  "VmDirGetState() failed. error(%u)", dwError );
+
+    switch (vmdirState)
+    {
+        case VMDIRD_STATE_UNDEFINED: pszState = "Undefined"; break;
+        case VMDIRD_STATE_STARTUP:   pszState = "Startup"; break;
+        case VMDIRD_STATE_READ_ONLY: pszState = "Read only"; break;
+        case VMDIRD_STATE_NORMAL:    pszState = "Normal" ; break;
+        case VMDIRD_STATE_SHUTDOWN:  pszState = "Shutdown"; break;
+    }
+    printf("\n\n VmDir State is - %s\n\n", pszState);
+
+cleanup:
+
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+
+    return;
+
+error:
+
+    printf("\n GetVmDirState failed: %s\n", VDIR_SAFE_STRING(pszLocalErrorMsg));
 
     goto cleanup;
 }

@@ -115,10 +115,13 @@ VOID
 _FreeSearchInformation(
         PVMDIR_SUPERLOG_ENTRY_LDAPOPERATION pEntry)
 {
-    VMDIR_SAFE_FREE_MEMORY(pEntry->opInfo.searchInfo.pwszAttributes);
-    VMDIR_SAFE_FREE_MEMORY(pEntry->opInfo.searchInfo.pwszBaseDN);
-    VMDIR_SAFE_FREE_MEMORY(pEntry->opInfo.searchInfo.pwszScope);
-    VMDIR_SAFE_FREE_MEMORY(pEntry->opInfo.searchInfo.pwszIndexResults);
+    if (pEntry)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pEntry->opInfo.searchInfo.pwszAttributes);
+        VMDIR_SAFE_FREE_MEMORY(pEntry->opInfo.searchInfo.pwszBaseDN);
+        VMDIR_SAFE_FREE_MEMORY(pEntry->opInfo.searchInfo.pwszScope);
+        VMDIR_SAFE_FREE_MEMORY(pEntry->opInfo.searchInfo.pwszIndexResults);
+    }
 }
 
 VOID
@@ -156,7 +159,7 @@ VmDirFreeSuperLogTable(
     )
 {
     unsigned int i, j;
-    if (pTable != NULL)
+    if (pTable)
     {
         for (i = 0; i < pTable->numRows; i++)
         {

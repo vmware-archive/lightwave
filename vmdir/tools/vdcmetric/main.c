@@ -139,6 +139,14 @@ _createSuperlogWrapper(
             );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirValidateBaseArgs(
+            pszNetworkAddress,
+            pszDomain,
+            pszUserName,
+            pszPassword
+            );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = CreateSuperlogWrapper(
             pszNetworkAddress,
             pszDomain,
@@ -192,6 +200,19 @@ _parseAndPerformOperation(
                 );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirValidateOperationArgs(
+                bNodeData,
+                bEnable,
+                bIsEnabled,
+                bDisable,
+                bSetSize,
+                bGetSize,
+                bRetrieve,
+                bFlush,
+                bAggregate
+                );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     if (bNodeData)
     {
         dwError = _performGetServerDataAndPrint(pSuperlogWrapper);
@@ -228,18 +249,12 @@ _parseAndPerformOperation(
     {
         dwError = _performAggregationAndPrint(argc, argv, pSuperlogWrapper);
     }
-    else
-    {
-        printf("OPERATION IS NOT SELECTED\n");
-        ShowUsage();
-    }
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     return dwError;
 
 error:
-    printf("Operation failed (Error code = %d)\n", dwError);
     goto cleanup;
 }
 
@@ -282,11 +297,10 @@ _performSetSize(
     DWORD dwError = 0;
     DWORD dwSize = 0;
 
-    dwError = VmDirParseSetSizeArgs(
-            argc,
-            argv,
-            &dwSize
-            );
+    dwError = VmDirParseSetSizeArgs(argc, argv, &dwSize);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirValidateSetSizeArgs(dwSize);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = SetSuperlogBufferSize(pSuperlogWrapper, dwSize);
@@ -658,9 +672,18 @@ _getColumnWidths(
 
     for (i = 0; i < numCols; i++)
     {
-        colWidths[i] = fixedColWidths[i] ?
-                fixedColWidths[i] :
-                remainingWindowWidth * dynamicColWidthPercents[i] / percentDenom;
+        if (fixedColWidths[i])
+        {
+            colWidths[i] = fixedColWidths[i];
+        }
+        else if (percentDenom)
+        {
+            colWidths[i] = remainingWindowWidth * dynamicColWidthPercents[i] / percentDenom;
+        }
+        else
+        {
+            colWidths[i] = 0;
+        }
     }
 }
 
@@ -670,6 +693,7 @@ VmDirMain(int argc, char* argv[])
 {
     DWORD dwError = 0;
     PSUPERLOG_WRAPPER pSuperlogWrapper = NULL;
+    PSTR pszErrorMessage = NULL;
 
     dwError = _initializeLog();
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -684,26 +708,18 @@ VmDirMain(int argc, char* argv[])
 
 cleanup:
     FreeSuperlogWrapper(pSuperlogWrapper);
+    VMDIR_SAFE_FREE_MEMORY(pszErrorMessage);
     return dwError;
 
 error:
-    switch (dwError)
+    VmDirGetErrorMessage(dwError, &pszErrorMessage);
+    printf("Error %d - %s\n", dwError, pszErrorMessage);
+
+    if (dwError == ERROR_INVALID_PARAMETER)
     {
-    case VMDIR_ERROR_CANNOT_CONNECT_VMDIR:
-        printf("Could not connect to the local service VMware Directory Service.\nVerify VMware Directory Service is running.\n");
-        break;
-    case VMDIR_ERROR_SERVER_DOWN:
-        printf("Could not connect to VMware Directory Service via LDAP.\nVerify VMware Directory Service is running on the appropriate system and is reachable from this host.\n");
-        break;
-    case VMDIR_ERROR_USER_INVALID_CREDENTIAL:
-        printf("Authentication to VMware Directory Service failed.\nVerify the username and password.\n");
-        break;
-    case ERROR_ACCESS_DENIED:
-        printf("Authorization failed.\nVerify account has proper administrative privileges.\n");
-        break;
-    default:
-        break;
+        ShowUsage();
     }
+
     goto cleanup;
 }
 

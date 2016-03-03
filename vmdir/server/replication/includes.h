@@ -29,6 +29,9 @@
 #include <config.h>
 
 #include <vmdirsys.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 // OpenLDAP ber library include files
 #include <lber.h>

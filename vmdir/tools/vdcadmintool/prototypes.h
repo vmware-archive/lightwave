@@ -37,7 +37,17 @@ VdcadminSetLogParameters(
     );
 
 VOID
+VdcadminGetLogParameters(
+    VOID
+    );
+
+VOID
 VdcadminSetVmdirState(
+    VOID
+    );
+
+VOID
+VdcadminGetVmdirState(
     VOID
     );
 

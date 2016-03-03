@@ -45,6 +45,9 @@ VmDirShutdown(
 
     pBE = VmDirBackendSelect(NULL);
 
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: stop LDAP listening threads", __func__);
+    VmDirShutdownConnAcceptThread();
+
     *pbWaitTimeOut = FALSE;
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: wait for operation threads to stop ...", __func__);
     VmDirWaitForOperationThr(pbWaitTimeOut);
@@ -52,7 +55,7 @@ VmDirShutdown(
     if (*pbWaitTimeOut)
     {
         //Cannot make a graceful shutdown
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: timeout while waiting for operation threads to stop.", __func__);
+        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "%s: timeout while waiting for operation threads to stop.", __func__);
         //Need to do sync RIDseq, however sync may be blocked for the same reason of
         // of the timeout, i.e. blocked at backend txn_begin.
         //TODO: Backend tests shutdown after txn_begin returned and abort the transaction if it is an external
@@ -69,17 +72,13 @@ VmDirShutdown(
     {
         VmDirRpcServerShutdown();
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: RPC service stopped", __func__);
-    }
 
-    VmDirIpcServerShutDown();
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: IPC service stopped", __func__);
+        VmDirIpcServerShutDown();
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: IPC service stopped", __func__);
+    }
 
     VmDirStopSrvThreads();
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: server threads stopped", __func__);
-
-    // TODO: need to close both sockets for non SSL and SSL.
-    VmDirSrvCloseSocketAcceptFd();
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: LDAP service stopped.", __func__);
 
     VmDirPasswordSchemeFree();
 

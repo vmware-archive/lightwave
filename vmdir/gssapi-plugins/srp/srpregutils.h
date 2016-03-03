@@ -25,6 +25,7 @@
 #define VMDIR_REG_KEY_MACHINE_ACCT "dcAccountDN"
 #define VMDIR_REG_KEY_MACHINE_PWD  "dcAccountPassword"
 #define VMDIR_REG_KEY_DC_NAME      "DCName"
+#define VMDIR_REG_KEY_DC_NAME_HA   "DCNameHA"
 
 
 typedef struct _VMDIR_CONFIG_CONNECTION_HANDLE

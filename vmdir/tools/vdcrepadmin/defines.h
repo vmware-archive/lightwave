@@ -19,6 +19,7 @@
 
 #define VDCREPADMIN_FEATURE_SHOW_PARTNERS              "showpartners"
 #define VDCREPADMIN_FEATURE_SHOW_PARTNER_STATUS        "showpartnerstatus"
+#define VDCREPADMIN_FEATURE_SHOW_FEDERATION_STATUS     "showfederationstatus"
 #define VDCREPADMIN_FEATURE_SHOW_SERVER_ATTRIBUTE      "showservers"
 #define VDCREPADMIN_FEATURE_CREATE_AGREEMENT           "createagreement"
 #define VDCREPADMIN_FEATURE_REMOVE_AGREEMENT           "removeagreement"

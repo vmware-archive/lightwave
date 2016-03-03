@@ -10591,6 +10591,7 @@ objectClasses: (
         $ msSFU30NisDomain
         $ nisMapName
         $ vmwMachineGUID
+        $ vmwPlatformServicesControllerVersion
         )
     )
 
@@ -19719,6 +19720,113 @@ attributetypes: (
     SINGLE-VALUE
     )
 
+attributetypes: (
+    VMWare.STS.attribute.90
+    NAME 'vmwSTSResponseEndpoint'
+    DESC 'VMWare identity Service - Response Endpoint'
+    EQUALITY caseIgnoreMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.91
+    NAME 'vmwSTSRsaSiteID'
+    DESC 'VMWare identity Service - Cluster site ID where the agent is associated'
+    EQUALITY caseExactMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.92
+    NAME 'vmwSTSRsaAgentName'
+    DESC 'VMWare identity Service - RSA agent name'
+    EQUALITY caseExactMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.93
+    NAME 'vmwSTSRsaSDConfigRec'
+    DESC 'VMWare identity Service - RSA agent sdconfig.rec file'
+    EQUALITY octetStringMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.94
+    NAME 'vmwSTSRsaSDOptsRec'
+    DESC 'VMWare identity Service - RSA agent sdopts.rec file'
+    EQUALITY octetStringMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.95
+    NAME 'vmwSTSRsaLogLevel'
+    DESC 'VMWare identity Service - RSA agent log level'
+    EQUALITY caseExactMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.96
+    NAME 'vmwSTSRsaLogFileSize'
+    DESC 'VMWare identity Service - RSA agent log file size in number of MB'
+    EQUALITY integerMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.97
+    NAME 'vmwSTSRsaMaxLogFileCount'
+    DESC 'VMWare identity Service - RSA agent maximum number of log files to keep'
+    EQUALITY integerMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.98
+    NAME 'vmwSTSRsaConnectionTimeOut'
+    DESC 'VMWare identity Service - RSA agent connection time out in seconds'
+    EQUALITY integerMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.99
+    NAME 'vmwSTSRsaReadTimeOut'
+    DESC 'VMWare identity Service - RSA agent read time out in seconds'
+    EQUALITY integerMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.100
+    NAME 'vmwSTSRsaEncryptionAlg'
+    DESC 'VMWare identity Service - RSA default encryption key wrapping algorithm'
+    EQUALITY caseExactMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.101
+    NAME 'vmwSTSRsaLoginGuidence'
+    DESC 'VMWare identity Service - RSA securID login guidence string'
+    EQUALITY caseExactMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
 objectClasses: (
     VMWare.STS.objectclass.1
     NAME 'vmwSTSTenant'
@@ -19777,6 +19885,7 @@ objectClasses: (
          $ vmwSTSUserBaseDN
          $ vmwSTSGroupBaseDN
          $ vmwSTSConnectionStrings
+         $ vmwSTSAuthnTypes
          $ userCertificate
          $ vmwSTSUpnSuffixes
          $ vmwSTSIdentityStoreFlags
@@ -19928,6 +20037,7 @@ objectClasses: (
     MUST ( cn )
     MAY ( vmwSTSBinding
         $ vmwSTSEndpoint
+        $ vmwSTSResponseEndpoint
         )
     )
 
@@ -19976,7 +20086,7 @@ objectClasses: (
     DESC 'VMWare external idp user'
     AUXILIARY
     MUST ( vmwSTSEntityId
-           vmwSTSExternalIdpUserId
+         $ vmwSTSExternalIdpUserId
         )
     )
 
@@ -20000,6 +20110,38 @@ objectClasses: (
        )
    )
 
+objectClasses: (
+   VMWare.STS.objectclass.27
+   NAME 'vmwSTSTenantRsaAgentConfiguration'
+   DESC 'VMware Identity Service - RSA secureID agent configuration'
+   SUP top
+   STRUCTURAL
+   MUST ( cn )
+   MAY ( vmwSTSRsaLoginGuidence
+         $ vmwSTSRsaLogLevel
+         $ vmwSTSRsaLogFileSize
+         $ vmwSTSRsaMaxLogFileCount
+         $ vmwSTSRsaConnectionTimeOut
+         $ vmwSTSRsaReadTimeOut
+         $ vmwSTSRsaEncryptionAlg
+       )
+   )
+
+
+objectClasses: (
+   VMWare.STS.objectclass.28
+   NAME 'vmwSTSTenantRsaAgentInstance'
+   DESC 'VMware Identity Service - RSA secureID site configuration'
+   SUP top
+   STRUCTURAL
+   MUST ( cn
+         $ vmwSTSRsaSiteID
+         $ vmwSTSRsaAgentName
+         $ vmwSTSRsaSDConfigRec
+       )
+   MAY ( vmwSTSRsaSDOptsRec
+       )
+   )
 ############################################################
 # VMware OIDC
 ############################################################
@@ -20090,6 +20232,27 @@ attributeTypes: (
     SINGLE-VALUE
     )
 
+attributeTypes: (
+    VMWare.OIDC.attribute.9
+    NAME 'vmwOidcResourceServerName'
+    DESC 'Resource Server Name'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.10
+    NAME 'vmwOidcResourceServerGroupFilter'
+    DESC 'Resource Server Group Filter'
+    EQUALITY caseIgnoreMatch
+    ORDERING caseIgnoreOrderingMatch
+    SUBSTR caseIgnoreSubstringsMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
 objectClasses: (
     VMWare.OIDC.objectclass.1
     NAME 'vmwOidcRelyingParty'
@@ -20103,6 +20266,15 @@ objectClasses: (
           vmwOidcPostLogoutRedirectURI $
           vmwOidcLogoutURI $
           vmwOidcCertSubDN )
+    )
+
+objectClasses: (
+    VMWare.OIDC.objectclass.2
+    NAME 'vmwOidcResourceServer'
+    DESC 'Resource Server'
+    STRUCTURAL
+    MUST ( vmwOidcResourceServerName )
+    MAY ( vmwOidcResourceServerGroupFilter )
     )
 
 ############################################################
@@ -20342,7 +20514,7 @@ attributetypes: (
 
 attributetypes: (
     VMWare.LKUP.attribute.27
-    NAME vmwLKUPLegacyIds
+    NAME 'vmwLKUPLegacyIds'
     DESC 'VMware Lookup Service - service identifier'
     EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{256}
@@ -20663,7 +20835,7 @@ attributetypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.2
     NAME 'vmwAuthzRoleName'
@@ -20673,7 +20845,7 @@ attributetypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.3
     NAME 'vmwAuthzRoleDescription'
@@ -20683,7 +20855,7 @@ attributetypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.4
     NAME 'vmwAuthzRoleVersion'
@@ -20692,7 +20864,7 @@ attributetypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.5
     NAME 'vmwAuthzTenantUri'
@@ -20701,7 +20873,7 @@ attributetypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.6
     NAME 'vmwAuthzRolePrivilegeId'
@@ -20709,7 +20881,7 @@ attributetypes: (
     EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.7
     NAME 'vmwAuthzPrivilegeId'
@@ -20718,7 +20890,7 @@ attributetypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.8
     NAME 'vmwAuthzPrivilegeDescription'
@@ -20728,7 +20900,7 @@ attributetypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.9
     NAME 'vmwAuthzPrivilegeGroupName'
@@ -20738,7 +20910,7 @@ attributetypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.10
     NAME 'vmwAuthzPrivilegeVersion'
@@ -20747,7 +20919,7 @@ attributetypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.11
     NAME 'vmwAuthzPrivilegeIsOnParent'
@@ -20756,7 +20928,7 @@ attributetypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.12
     NAME 'vmwAuthzPrincipalName'
@@ -20765,7 +20937,7 @@ attributetypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.13
     NAME 'vmwAuthzPrincipalGroup'
@@ -20775,7 +20947,7 @@ attributetypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.14
     NAME 'vmwAuthzPermissionVersion'
@@ -20785,7 +20957,7 @@ attributetypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.15
     NAME 'vmwAuthzPermissionPropagate'
@@ -20795,7 +20967,7 @@ attributetypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.16
     NAME 'vmwAuthzPermissionRoleId'
@@ -20803,7 +20975,7 @@ attributetypes: (
     EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     )
- 
+
 attributetypes: (
     VMWare.authz.attribute.17
     NAME 'vmwAuthzDocUri'
@@ -20844,7 +21016,7 @@ objectClasses: (
     MAY ( vmwAuthzPrivilegeIsOnParent
         )
     )
- 
+
 objectClasses: (
     VMWare.authz.objectclass.3
     NAME 'vmwAuthzRoleModel'
@@ -20854,7 +21026,7 @@ objectClasses: (
     MUST ( cn
          )
     )
- 
+
 objectClasses: (
     VMWare.authz.objectclass.4
     NAME 'vmwAuthzPrivModel'
@@ -20864,7 +21036,7 @@ objectClasses: (
     MUST ( cn
          )
     )
- 
+
 objectClasses: (
     VMWare.authz.objectclass.5
     NAME 'vmwAuthzAcl'
@@ -20880,7 +21052,7 @@ objectClasses: (
     MAY ( vmwAuthzPermissionRoleId
         )
     )
- 
+
 objectClasses: (
     VMWare.authz.objectclass.6
     NAME 'vmwAuthzAclMap'
@@ -20896,7 +21068,7 @@ objectClasses: (
     MAY  ( vmwAuthzPermissionRoleId
          )
     )
- 
+
 objectClasses: (
     VMWare.authz.objectclass.7
     NAME 'vmwAuthzAclModel'
@@ -21158,7 +21330,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.101
     NAME 'vmwLicSvcLicenseId'
@@ -21167,7 +21339,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.102
     NAME 'vmwLicSvcLicenseName'
@@ -21176,7 +21348,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.103
     NAME 'vmwLicSvcLicenseType'
@@ -21185,7 +21357,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.104
     NAME 'vmwLicSvcLicenseProperties'
@@ -21194,7 +21366,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.105
     NAME 'vmwLicSvcLicenseSerialKeys'
@@ -21203,7 +21375,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.201
     NAME 'vmwLicSvcLicenseDescriptionId'
@@ -21212,7 +21384,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.202
     NAME 'vmwLicSvcLicenseDescriptionType'
@@ -21221,7 +21393,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.203
     NAME 'vmwLicSvcLicenseDescriptionName'
@@ -21230,7 +21402,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.204
     NAME 'vmwLicSvcLicenseDescriptionContent'
@@ -21239,7 +21411,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.205
     NAME 'vmwLicSvcLicenseDescriptionProperties'
@@ -21248,7 +21420,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.301
     NAME 'vmwLicSvcLicenseLabelSerialKey'
@@ -21257,7 +21429,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.302
     NAME 'vmwLicSvcLicenseLabelKey'
@@ -21266,7 +21438,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.303
     NAME 'vmwLicSvcLicenseLabelValue'
@@ -21275,7 +21447,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.401
     NAME 'vmwLicSvcAssetId'
@@ -21284,7 +21456,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.402
     NAME 'vmwLicSvcAssetInstanceId'
@@ -21293,7 +21465,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.403
     NAME 'vmwLicSvcAssetScopeId'
@@ -21302,7 +21474,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.404
     NAME 'vmwLicSvcAssetOwnerId'
@@ -21311,7 +21483,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.405
     NAME 'vmwLicSvcAssetName'
@@ -21320,7 +21492,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.406
     NAME 'vmwLicSvcAssetVersion'
@@ -21329,7 +21501,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.407
     NAME 'vmwLicSvcAssetProductName'
@@ -21338,7 +21510,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.408
     NAME 'vmwLicSvcAssetProductVersion'
@@ -21347,7 +21519,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.409
     NAME 'vmwLicSvcAssetEvalExpiry'
@@ -21356,7 +21528,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.410
     NAME 'vmwLicSvcAssetEvalType'
@@ -21365,7 +21537,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.411
     NAME 'vmwLicSvcAssetEvalSerialKey'
@@ -21374,7 +21546,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.412
     NAME 'vmwLicSvcAssetLicenseId'
@@ -21383,7 +21555,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.413
     NAME 'vmwLicSvcAssetIsInEvaluation'
@@ -21392,7 +21564,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.414
     NAME 'vmwLicSvcAssetCostUnitUsageList'
@@ -21401,7 +21573,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.415
     NAME 'vmwLicSvcAssetFeaturesInUseList'
@@ -21410,7 +21582,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 attributeTypes: (
     VMWare.LicSvc.attribute.416
     NAME 'vmwLicSvcAssetPropertiesList'
@@ -21419,7 +21591,7 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
-#
+
 objectClasses: (
     VMWare.LicSvc.objectclass.1
     NAME 'vmwLicSvcLicenseEntity'
@@ -21436,7 +21608,7 @@ objectClasses: (
         $ vmwLicSvcLicenseProperties
         )
     )
-#
+
 objectClasses: (
     VMWare.LicSvc.objectclass.2
     NAME 'vmwLicSvcLicenseDescriptionEntity'
@@ -21453,7 +21625,7 @@ objectClasses: (
          $ vmwLicSvcLicenseDescriptionProperties
          )
     )
-#
+
 objectClasses: (
     VMWare.LicSvc.objectclass.3
     NAME 'vmwLicSvcLicenseLabelEntity'
@@ -21467,7 +21639,7 @@ objectClasses: (
          $ vmwLicSvcLicenseLabelValue
          )
     )
-#
+
 objectClasses: (
     VMWare.LicSvc.objectclass.4
     NAME 'vmwLicSvcAssetEntity'

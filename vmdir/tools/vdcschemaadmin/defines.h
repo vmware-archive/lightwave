@@ -19,14 +19,20 @@
 #define VMDIR_OPTION_UPN                'D'
 #define VMDIR_OPTION_TARGET_HOSTNAME    'H'
 #define VMDIR_OPTION_SOURCE_HOSTNAME    'V'
+#define VMDIR_OPTION_UPGRADE_HOSTNAME   'U'
+#define VMDIR_OPTION_UPGRADE_SCHEMAFILE 'f'
+#define VMDIR_OPTION_UPGRADE_DRYRUN     'd'
 #define VMDIR_OPTION_SOURCE_PASSWORD    'w'
-#define VMDIR_OPTIONS_VALID             "D:H:V:w:"
+#define VMDIR_OPTIONS_VALID             "D:H:V:U:f:w:d:"
 
 #else
 
 #define VMDIR_OPTION_UPN                "-D"
 #define VMDIR_OPTION_TARGET_HOSTNAME    "-H"
 #define VMDIR_OPTION_SOURCE_HOSTNAME    "-V"
+#define VMDIR_OPTION_UPGRADE_HOSTNAME   "-U"
+#define VMDIR_OPTION_UPGRADE_SCHEMAFILE "-f"
+#define VMDIR_OPTION_UPGRADE_DRYRUN     "-d"
 #define VMDIR_OPTION_SOURCE_PASSWORD    "-w"
 
 #endif

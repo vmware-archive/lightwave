@@ -936,10 +936,20 @@ compareIntegerString(
             for (iCnt=0; iCnt < iBerValLen; iCnt++)
             {
                 if (( bAssertSignPositive && (pAssertVal[iCnt] > pBerVal[iCnt])) ||
-                    (!bAssertSignPositive && (pAssertVal[iCnt] < pBerVal[iCnt]) ))
+                    (!bAssertSignPositive && (pAssertVal[iCnt] < pBerVal[iCnt])))
                 {
                     bRtn = FALSE;
                     goto done;
+                }
+                else if (( bAssertSignPositive && (pAssertVal[iCnt] < pBerVal[iCnt])) ||
+                         (!bAssertSignPositive && (pAssertVal[iCnt] > pBerVal[iCnt])))
+                {
+                    bRtn = TRUE;
+                    goto done;
+                }
+                else
+                {   // pAssertVal[iCnt] == pBerVal[iCnt] scenario
+                    continue;
                 }
             }
         }

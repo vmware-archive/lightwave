@@ -285,7 +285,7 @@ error:
             "VmDirMDBGetNextUSN: failed with error (%d),(%s)",
              dwError, mdb_strerror(dwError) );
 
-    dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx, "GetNextUSN");
+    dwError = MDBToBackendError(dwError, EACCES, VMDIR_ERROR_UNWILLING_TO_PERFORM, pBECtx, "GetNextUSN");
 
     goto cleanup;
 }

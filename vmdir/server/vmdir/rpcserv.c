@@ -945,72 +945,8 @@ Srv_RpcVmDirOpenDBFile(
     PWSTR       pwszDBFileName,
     vmdir_ftp_handle_t  *   ppFileHandle)
 {
-    DWORD               dwError = 0;
-    FILE              * pFileHandle = NULL;
-    PSTR                pszDBFileName = NULL;
-    PSTR                pszLocalErrMsg = NULL;
-    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-
-    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (IsNullOrEmptyString(pwszDBFileName)
-        || ppFileHandle == NULL
-        || VmDirdState() != VMDIRD_STATE_READ_ONLY  )
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringAFromW( pwszDBFileName, &pszDBFileName );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = _VmDirRemoteDBCopyWhiteList(pszDBFileName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_LOG_VERBOSE( LDAP_DEBUG_RPC, "Srv_RpcVmDirOpenDBFile: Request to open the DB file: %s", pszDBFileName );
-
-    if ((pFileHandle = fopen(pszDBFileName, "rb")) == NULL)
-    {
-        if (errno == ENOENT)
-        {
-            dwError = ERROR_NO_SUCH_FILE_OR_DIRECTORY;
-        }
-        else
-        {
-            dwError = ERROR_IO;
-        }
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                      "Srv_RpcVmDirOpenDBFile: fopen() call failed, DB file: (%s), error: (%s)",
-                                      pszDBFileName, strerror(errno) );
-    }
-
-    *ppFileHandle = pFileHandle;
-
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "Srv_RpcVmDirOpenDBFile: opened DB file (%s) with file handle (%x)",
-                                     pszDBFileName, *ppFileHandle );
-
-cleanup:
-    if (pAccessToken)
-    {
-        VmDirSrvReleaseAccessToken(pAccessToken);
-    }
-    VMDIR_SAFE_FREE_MEMORY(pszDBFileName);
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-    return dwError;
-
-error:
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirOpenDBFile failed  (%u)(%s)",
-                                      dwError, VDIR_SAFE_STRING(pszLocalErrMsg)  );
-    if (pFileHandle != NULL)
-    {
-        fclose(pFileHandle);
-    }
-    goto cleanup;
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirOpenDBFile is obsolete.");
+    return LDAP_OPERATIONS_ERROR;
 }
 
 UINT32
@@ -1020,60 +956,8 @@ Srv_RpcVmDirReadDBFile(
     UINT32      dwCount,
     VMDIR_FTP_DATA_CONTAINER  * pReadBufferContainer)
 {
-    DWORD   dwError = 0;
-    PBYTE   pData = NULL;
-    PSTR    pszLocalErrMsg = NULL;
-    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-
-    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (pReadBufferContainer == NULL
-        || pFileHandle == 0
-        || dwCount == 0 )
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    VMDIR_LOG_VERBOSE( LDAP_DEBUG_RPC, "Srv_RpcVmDirReadDBFile: file handle (%x), read (%d) bytes to transfer",
-                                        pFileHandle, dwCount );
-
-    dwError = VmDirRpcAllocateMemory( dwCount, (PVOID*)&(pData) );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if ((pReadBufferContainer->dwCount = (UINT32)fread(pData, 1, dwCount, (FILE *)pFileHandle)) == 0)
-    {
-        if (ferror((FILE *)pFileHandle))
-        {
-            dwError = ERROR_IO;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                          "Srv_RpcVmDirReadDBFile: read() call failed, error: %s.", strerror(errno));
-        }
-    }
-
-    pReadBufferContainer->data = pData;
-
-cleanup:
-
-    if (pAccessToken)
-    {
-        VmDirSrvReleaseAccessToken(pAccessToken);
-    }
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-
-    return dwError;
-
-error:
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirReadDBFile failed (%u)(%s)",
-                                      dwError, VDIR_SAFE_STRING(pszLocalErrMsg) );
-    VmDirRpcFreeMemory(pData);
-    pReadBufferContainer->dwCount = 0;
-    goto cleanup;
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirReadDBFile is obsolete.");
+    return LDAP_OPERATIONS_ERROR;
 }
 
 UINT32
@@ -1081,41 +965,8 @@ Srv_RpcVmDirCloseDBFile(
     handle_t    hBinding,
     vmdir_ftp_handle_t pFileHandle)
 {
-    DWORD dwError = 0;
-    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
-
-    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if ( pFileHandle == 0 )
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    VMDIR_LOG_VERBOSE( LDAP_DEBUG_RPC, "Srv_RpcVmDirCloseDBFile: DB file handle (%x)", pFileHandle );
-
-    if (fclose((FILE *)pFileHandle) != 0)
-    {
-        dwError = VMDIR_ERROR_IO;
-        BAIL_ON_VMDIR_ERROR( dwError );
-    }
-
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "Srv_RpcVmDirCloseDBFile: closed DB file handle (%x)", pFileHandle );
-
-cleanup:
-    if (pAccessToken)
-    {
-        VmDirSrvReleaseAccessToken(pAccessToken);
-    }
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirCloseDBFile failed (%u)(%x)", dwError, pFileHandle );
-    goto cleanup;
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirCloseDBFile is obsolete.");
+    return LDAP_OPERATIONS_ERROR;
 }
 
 
@@ -1288,12 +1139,8 @@ _VmDirRemoteDBCopyWhiteList(
 
     for (i=0; i < sizeof(pszDBFileNames)/sizeof(pszDBFileNames[0]); i++)
     {
-        VMDIR_SAFE_FREE_MEMORY(pszFullPathName);
-
-        dwError = VmDirAllocateStringAVsnprintf( &pszFullPathName, "%s%s", pszFilePath, pszDBFileNames[i]);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        if ( VmDirStringCompareA( pszFullPathName, pszTargetFile, TRUE ) == 0 )
+        if (VmDirStringStrA( pszTargetFile, pszDBFileNames[i]) != NULL &&
+            VmDirStringStrA( pszTargetFile, pszFilePath) != NULL)
         {
             bAccessAllowed = TRUE;
             break;
@@ -1611,3 +1458,381 @@ error:
     goto cleanup;
 }
 
+UINT32
+Srv_RpcVmDirOpenDatabaseFile(
+    handle_t    hBinding,
+    PWSTR       pwszDBFileName,
+    vmdir_dbcp_handle_t  *   ppFileHandle)
+{
+    DWORD              dwError = 0;
+    FILE              *pFileHandle = NULL;
+    PSTR               pszDBFileName = NULL;
+    PSTR               pszLocalErrMsg = NULL;
+
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (IsNullOrEmptyString(pwszDBFileName)
+        || ppFileHandle == NULL )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateStringAFromW( pwszDBFileName, &pszDBFileName );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirRemoteDBCopyWhiteList(pszDBFileName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_VERBOSE( LDAP_DEBUG_RPC, "Srv_RpcVmDirOpenDatabaseFile: Request to open the DB file: %s", pszDBFileName );
+
+    if ((pFileHandle = fopen(pszDBFileName, "rb")) == NULL)
+    {
+#ifdef _WIN32
+        errno = GetLastError();
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
+                                      "Srv_RpcVmDirOpenDatabaseFile: fopen() call failed, DB file: (%s), error: (%d)",
+                                      pszDBFileName, errno );
+#else
+        if (errno == ENOENT)
+        {
+            dwError = ERROR_NO_SUCH_FILE_OR_DIRECTORY;
+        }
+        else
+        {
+            dwError = ERROR_IO;
+        }
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
+                                      "Srv_RpcVmDirOpenDatabaseFile: fopen() call failed, DB file: (%s), error: (%s)",
+                                      pszDBFileName, strerror(errno) );
+#endif
+    }
+    *ppFileHandle = pFileHandle;
+    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "Srv_RpcVmDirOpenDatabaseFile: opened DB file (%s)", pszDBFileName);
+
+cleanup:
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pszDBFileName);
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+    return dwError;
+
+error:
+
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirOpenDatabaseFile failed  (%u)(%s)",
+                                      dwError, VDIR_SAFE_STRING(pszLocalErrMsg)  );
+    if (pFileHandle != NULL)
+    {
+        fclose(pFileHandle);
+    }
+    goto cleanup;
+}
+
+UINT32
+Srv_RpcVmDirReadDatabaseFile(
+    handle_t    hBinding,
+    vmdir_dbcp_handle_t pFileHandle,
+    UINT32      dwCount,
+    VMDIR_DBCP_DATA_CONTAINER  * pReadBufferContainer)
+{
+    DWORD   dwError = 0;
+    PBYTE   pData = NULL;
+    PSTR    pszLocalErrMsg = NULL;
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pReadBufferContainer == NULL
+        || pFileHandle == 0
+        || dwCount == 0 )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    VMDIR_LOG_VERBOSE( LDAP_DEBUG_RPC, "Srv_RpcVmDirReadDatabaseFile: file handle (%x), read (%d) bytes to transfer",
+                                        pFileHandle, dwCount );
+
+    dwError = VmDirRpcAllocateMemory( dwCount, (PVOID*)&(pData) );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if ((pReadBufferContainer->dwCount = (UINT32)fread(pData, 1, dwCount, (FILE *)pFileHandle)) == 0)
+    {
+        if (ferror((FILE *)pFileHandle))
+        {
+#ifdef _WIN32
+            dwError = GetLastError();
+#else
+            dwError = ERROR_IO;
+#endif
+            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
+                                          "Srv_RpcVmDirReadDatabaseFile: read() call failed, error: %d.", dwError);
+        }
+    }
+
+    pReadBufferContainer->data = pData;
+
+cleanup:
+
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+
+    return dwError;
+
+error:
+
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirReadDatabaseFile failed (%u)(%s)",
+                                      dwError, VDIR_SAFE_STRING(pszLocalErrMsg) );
+    VmDirRpcFreeMemory(pData);
+    pReadBufferContainer->dwCount = 0;
+    goto cleanup;
+}
+
+UINT32
+Srv_RpcVmDirCloseDatabaseFile(
+    handle_t    hBinding,
+    vmdir_dbcp_handle_t *ppFileHandle)
+{
+    DWORD dwError = 0;
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if ( ppFileHandle == NULL || *ppFileHandle == NULL)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC,  "Srv_RpcVmDirCloseDatabaseFile: DB file fd (%d)", fileno(*ppFileHandle));
+
+    if (fclose((FILE *)*ppFileHandle) != 0)
+    {
+        dwError = VMDIR_ERROR_IO;
+        BAIL_ON_VMDIR_ERROR( dwError );
+    }
+    *ppFileHandle = NULL;
+
+cleanup:
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirCloseDatabaseFile failed (%u)", dwError);
+    goto cleanup;
+}
+
+UINT32
+Srv_RpcVmDirSetBackendState(
+    handle_t    hBinding,
+    UINT32      fileTransferState,
+    UINT32      *pdwXlogNum,
+    UINT32      *pdwDbSizeMb,
+    UINT32      *pdwDbMapSizeMb,
+    VMDIR_DBCP_DATA_CONTAINER  * pDbPath,
+    UINT32      dwDbPathSize
+    )
+{
+    DWORD  dwError = 0;
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+    DWORD dwXlogNum = 0;
+    DWORD dwDbSizeMb = 0;
+    DWORD dwDbMapSizeMb = 0;
+    PBYTE pData = NULL;
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pDbPath == NULL || dwDbPathSize <= 0)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirRpcAllocateMemory( dwDbPathSize, (PVOID*)&(pData) );
+    BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmDirSetMdbBackendState(fileTransferState, &dwXlogNum, &dwDbSizeMb, &dwDbMapSizeMb, pData, dwDbPathSize);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *pdwXlogNum = dwXlogNum;
+    *pdwDbSizeMb = dwDbSizeMb;
+    *pdwDbMapSizeMb = dwDbMapSizeMb;
+    pDbPath->data = pData;
+    pDbPath->dwCount = dwDbPathSize;
+
+cleanup:
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetBackendState failed (%u)", dwError );
+    VmDirRpcFreeMemory(pData);
+    pDbPath->dwCount = 0;
+    goto cleanup;
+}
+
+UINT32
+Srv_RpcVmDirGetState(
+    handle_t    hBinding,
+    UINT32*     pdwState
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (!pdwState)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *pdwState = VmDirdState();
+
+cleanup:
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+UINT32
+Srv_RpcVmDirGetLogLevel(
+    handle_t        hBinding,
+    VMDIR_LOG_LEVEL* pLogLevel
+    )
+{
+    DWORD  dwError = 0;
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (!pLogLevel)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *pLogLevel = VmDirLogGetLevel();
+
+cleanup:
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+UINT32
+Srv_RpcVmDirGetLogMask(
+    handle_t    hBinding,
+    UINT32*     pLogMask
+    )
+{
+    DWORD  dwError = 0;
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (!pLogMask)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *pLogMask = VmDirLogGetMask();
+
+cleanup:
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+/*
+ * Rundown function for vmdir_dbcp_handle data. Handle the case where the
+ * client/server connection is lost and the existing connection handle (FILE *)
+ * is still open. Close the file to prevent a fd leak. However, must protect
+ * against calling fclose() twice on the same open FILE *.
+ */
+void vmdir_dbcp_handle_t_rundown(void *ctx)
+{
+    DWORD dwXlogNum = 0;
+    DWORD dwDbSizeMb = 0;
+    DWORD dwDbMapSizeMb = 0;
+    char tmp_buf[256];
+
+    FILE *pFileHandle = (FILE *)ctx;
+
+    if (pFileHandle)
+    {
+        if (fileno(pFileHandle) != -1)
+        {
+            VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "vmdir_dbcp_handle_t_rundown closing file with fd: %d", fileno(pFileHandle));
+            fclose(pFileHandle);
+        }
+    }
+    // Clear backend READ-ONLY mode when dbcp connection interrupted.
+    VmDirSetMdbBackendState(0, &dwXlogNum, &dwDbSizeMb, &dwDbMapSizeMb, tmp_buf, sizeof(tmp_buf));
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "vmdir_dbcp_handle_t_rundown: turn off keeping xlog flag on backend, xlognum: %d", dwXlogNum);
+}

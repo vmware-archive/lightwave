@@ -12,6 +12,7 @@ noinst_LTLIBRARIES = libcommon.la
 libcommon_la_SOURCES = \
     logging.c \
     circularbuffer.c \
+    ldapschemautil.c \
     memory.c  \
     marshalutil.c \
     networkutil.c \

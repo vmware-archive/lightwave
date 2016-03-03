@@ -57,6 +57,11 @@ DWORD
 VmDirInitConnAcceptThread(
     void);
 
+VOID
+VmDirShutdownConnAcceptThread(
+    VOID
+    );
+
 void
 VmDirFreeAccessInfo(
     PVDIR_ACCESS_INFO pAccessInfo

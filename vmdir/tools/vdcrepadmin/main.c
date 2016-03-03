@@ -29,16 +29,16 @@
 
 static
 DWORD
-_VmDirGetReplicateStatusCycle(
+_VmDirGetConnection(
     PCSTR   pszHostName,
     PCSTR   pszUserName,
-    PCSTR   pszPassword
+    PCSTR   pszPassword,
+    PVMDIR_CONNECTION* ppConnection
     )
 {
     DWORD   dwError = 0;
     PSTR    pszDomainName = NULL;
     PSTR    pszURI = NULL;
-    DWORD   dwCycleCount = 0;
     PVMDIR_CONNECTION pConnection = NULL;
 
     if ( VmDirIsIPV6AddrFormat( pszHostName ) )
@@ -58,6 +58,201 @@ _VmDirGetReplicateStatusCycle(
     dwError = VmDirConnectionOpen( pszURI, pszDomainName, pszUserName, pszPassword, &pConnection );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    *ppConnection = pConnection;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
+    VMDIR_SAFE_FREE_MEMORY(pszURI);
+    return dwError;
+
+error:
+    VmDirConnectionClose(pConnection);
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirGetDCList(
+    PCSTR   pszHostName,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword,
+    PVMDIR_STRING_LIST*  ppDCList
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCnt = 0;
+    PSTR    pszName = NULL;
+    PVMDIR_SERVER_INFO  pServerInfo = NULL;
+    DWORD               dwServerInfoCount = 0;
+    PVMDIR_STRING_LIST  pDCList = NULL;
+
+    dwError = VmDirStringListInitialize(&pDCList, 16);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetServers(
+                pszHostName,
+                pszUserName,
+                pszPassword,
+                &pServerInfo,
+                &dwServerInfoCount
+                );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt=0; dwCnt<dwServerInfoCount; dwCnt++)
+    {
+        PCSTR   pszTmp = VmDirStringChrA(pServerInfo[dwCnt].pszServerDN, ',');
+
+        if (pszTmp == NULL)
+        {
+            dwError = VMDIR_ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        VMDIR_SAFE_FREE_MEMORY(pszName);
+        dwError = VmDirAllocateStringOfLenA(
+                    pServerInfo[dwCnt].pszServerDN+3,
+                    (DWORD)(pszTmp-pServerInfo[dwCnt].pszServerDN-3),
+                    &pszName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirStringListAdd(pDCList, pszName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pszName = NULL;
+    }
+
+    *ppDCList = pDCList;
+
+cleanup:
+    for (dwCnt=0; dwCnt<dwServerInfoCount; dwCnt++)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pServerInfo[dwCnt].pszServerDN);
+    }
+
+    VMDIR_SAFE_FREE_MEMORY(pServerInfo);
+    VMDIR_SAFE_FREE_MEMORY(pszName);
+    return dwError;
+
+error:
+    VmDirStringListFree(pDCList);
+    goto cleanup;
+}
+
+static
+VOID
+_VmDirPrintReplState(
+    PCSTR             pszHostName,
+    PVMDIR_REPL_STATE pReplState)
+{
+    PVMDIR_REPL_UTDVECTOR       pVector = NULL;
+    PVMDIR_REPL_REPL_AGREEMENT  pRA = NULL;
+
+    if (pReplState)
+    {
+        printf("Domain Controller: %s\n",VDIR_SAFE_STRING(pReplState->pszHost) );
+        printf("Invocation ID: %s\n",VDIR_SAFE_STRING(pReplState->pszInvocationId) );
+        printf("Replication cycle count: %d\n",pReplState->dwCycleCount );
+        printf("Max consumable  USN: %lu\n",pReplState->maxConsumableUSN );
+        printf("Max originating USN: %lu\n",pReplState->maxOriginatingUSN );
+
+        pVector = pReplState->pReplUTDVec;
+        while (pVector)
+        {
+            printf("Has seen %lu USN from %s\n",pVector->maxOriginatingUSN,
+                   VDIR_SAFE_STRING(pVector->pszPartnerInvocationId) );
+            pVector = pVector->next;
+        }
+
+        pRA = pReplState->pReplRA;
+        while (pRA)
+        {
+            printf("Has processed %lu USN from %s\n", pRA->maxProcessedUSN,
+                   VDIR_SAFE_STRING(pRA->pszPartnerName));
+            pRA = pRA->next;
+        }
+
+        printf("\n\n");
+    }
+}
+
+static
+DWORD
+VmDirGetFederationStatus(
+    PCSTR   pszHostName,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCnt = 0;
+    PVMDIR_STRING_LIST pDCList = NULL;
+    PVMDIR_CONNECTION  pConnection = NULL;
+    PVMDIR_REPL_STATE  pReplState = NULL;
+
+    dwError = _VmDirGetDCList(
+                pszHostName,
+                pszUserName,
+                pszPassword,
+                &pDCList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt=0; dwCnt<pDCList->dwCount; dwCnt++)
+    {
+        VmDirConnectionClose( pConnection );
+        pConnection = NULL;
+        dwError = _VmDirGetConnection( pDCList->pStringList[dwCnt],
+                                       pszUserName,
+                                       pszPassword,
+                                       &pConnection);
+        if (dwError == VMDIR_ERROR_SERVER_DOWN)
+        {
+            printf("Domain Controller: %s is NOT available\n\n", pDCList->pStringList[dwCnt] );
+            dwError = 0;
+            continue;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VmDirFreeReplicationState(pReplState);
+        pReplState = NULL;
+        dwError = VmDirGetReplicationState(pConnection, &pReplState);
+        if (dwError == VMDIR_ERROR_ENTRY_NOT_FOUND)
+        {
+            printf("Domain Controller: %s is NOT supported\n\n", pDCList->pStringList[dwCnt] );
+            dwError = 0;
+            continue;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        _VmDirPrintReplState(pDCList->pStringList[dwCnt], pReplState);
+    }
+
+cleanup:
+    VmDirStringListFree(pDCList);
+    VmDirConnectionClose( pConnection );
+    VmDirFreeReplicationState(pReplState);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirGetReplicateStatusCycle(
+    PCSTR   pszHostName,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCycleCount = 0;
+    PVMDIR_CONNECTION pConnection = NULL;
+
+    dwError = _VmDirGetConnection( pszHostName,
+                                   pszUserName,
+                                   pszPassword,
+                                   &pConnection);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirGetReplicationCycleCount( pConnection, &dwCycleCount );
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -71,8 +266,6 @@ _VmDirGetReplicateStatusCycle(
     }
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY( pszURI );
-    VMDIR_SAFE_FREE_MEMORY( pszDomainName );
     VmDirConnectionClose( pConnection );
 
     return dwError;
@@ -214,8 +407,12 @@ VmDirMain(int argc, char* argv[])
 
     if (pszSrcPassword == NULL)
     {
-        // read passowrd from stdin
-        VmDirReadString("password: ", pszPasswordBuf, VMDIR_MAX_PWD_LEN, TRUE);
+        // read password from stdin
+        VmDirReadString(
+            "password: ",
+            pszPasswordBuf,
+            sizeof(pszPasswordBuf),
+            TRUE);
         pszSrcPassword = pszPasswordBuf;
     }
 
@@ -256,6 +453,16 @@ VmDirMain(int argc, char* argv[])
                                 );
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_FEDERATION_STATUS, pszFeatureSet, TRUE) == 0 )
+       {
+           dwError = VmDirGetFederationStatus(
+                           pszSrcHostName,
+                           pszSrcUserName,
+                           pszSrcPassword
+                           );
+           BAIL_ON_VMDIR_ERROR(dwError);
+
+       }
     else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_SERVER_ATTRIBUTE, pszFeatureSet, TRUE) == 0 )
     {
         dwError = VmDirGetServers(

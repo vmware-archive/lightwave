@@ -150,15 +150,6 @@ VmDirSchemaLibShutdown(
     void
     );
 
-/*
- * convert schema file + current custom schema definitions into an entry
- */
-DWORD
-VmDirSchemaPatchFileToEntry(
-    PCSTR           pszSchemaFilePath,
-    PVDIR_ENTRY     pEntry
-    );
-
 ///////////////////////////////////////////////////////////////////////////////
 // Schema context
 ///////////////////////////////////////////////////////////////////////////////

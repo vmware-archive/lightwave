@@ -7,11 +7,11 @@ source ../header.sh
 
 VDCPROMO_PATH=/usr/lib/vmware-vmdir/bin
 
-# Setting up tenant named tenant1
-$VDCPROMO_PATH/vdcpromo -d tenant1 -u administrator -w 456 -i 1 -t
+# Setting up tenant named tenant1.com
+$VDCPROMO_PATH/vdcpromo -d tenant1.com -u administrator -w 456 -t
 
-# Setting up tenant named tenant2
-$VDCPROMO_PATH/vdcpromo -d tenant2 -u administrator -w 456 -i 1 -t
+# Setting up tenant named tenant2.com
+$VDCPROMO_PATH/vdcpromo -d tenant2.com -u administrator -w 456 -t
 
 echo "###############################################################################################"
 echo "Adding 10 objects in each tenant (tenant1 and tenant2)"
@@ -117,12 +117,15 @@ echo "**************************ADD ACL TESTS WITH TENANTS**********************
 echo "*********************************************************************************************"
 echo
 
+: '
+TODO - Uncomment this test case when vmware\administrator privilege is fixed
+
 echo "##############################################################################################"
-echo "Add new object in dc=tenant1,dc=com as vmware\admin"
+echo "Add new object in dc=tenant1,dc=com as vmware\administrator"
 echo "##############################################################################################"
 echo
 
-ldapadd -c -h $host -p $port -x -D "cn=admin,cn=users,dc=vmware,dc=com" -w 123 <<EOM
+ldapadd -c -h $host -p $port -x -D "cn=administrator,cn=users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=John-add,ou=eng,dc=tenant1,dc=com
 changetype: add
 cn: John-add
@@ -140,6 +143,7 @@ title: engineer
 description: Employee of VMware
 userPassword: PaWorD@123
 EOM
+'
 
 echo "##############################################################################################"
 echo "Add new object in dc=tenant1,dc=com as tenant1\John-1 a non-admin user"
@@ -241,14 +245,17 @@ echo "**************************DELETE ACL TESTS WITH TENANTS*******************
 echo "*********************************************************************************************"
 echo
 
+: '
+TODO - Uncomment this test case when vmware\administrator privilege is fixed
+
 echo "################################################################################################"
-echo "Delete tenant1 user as vmware\admin -- this should fail"
+echo "Delete tenant1 user as vmware\administrator -- this should fail"
 echo "################################################################################################"
-ldapmodify -c -h $host -p $port -x -D "cn=admin,cn=Users,dc=vmware,dc=com" -w '123'<<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=administrator,cn=Users,dc=vmware,dc=com" -w '123'<<EOM
 dn: cn=John-add,ou=eng,dc=tenant1,dc=com
 changetype: delete
 EOM
-
+'
 
 echo "################################################################################################"
 echo "Delete tenant1 user as tenant2\administrator -- this should fail"
@@ -315,15 +322,18 @@ add: displayName
 displayName: wfu
 EOM
 
-echo "Bind as vmware\admin to modify tenant1\John-1"
+: '
+TODO - Uncomment this test case when vmware\administrator privilege is fixed
+
+echo "Bind as vmware\administrator to modify tenant1\John-1"
 echo "This should be access denied"
-ldapmodify -c -h $host -p $port -x -D "cn=admin,cn=users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=administrator,cn=users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=John-1,ou=eng,dc=tenant1,dc=com
 changetype: modify
 add: displayName
 displayName: wfu
 EOM
-
+'
 
 echo "Bind as tenant1\administrator to modify tenant1\John-1"
 echo "This should succeed"
@@ -376,11 +386,14 @@ echo "Bind as tenant1\administrator to search tenant2\John-*"
 echo "This should fail, return 0 search result."
 ldapsearch -h $host -p $port -x -D "cn=administrator,cn=users,dc=tenant1,dc=com" -w 456 -b "dc=tenant2,dc=com" -s subtree "(&(objectclass=*)(cn=John*))" dn
 
-echo
-echo "Bind as vmware\admin to search tenant1\John-*"
-echo "This should fail, return 0 search result."
-ldapsearch -h $host -p $port -x -D "cn=admin,cn=users,dc=vmware,dc=com" -w 123 -b "dc=tenant1,dc=com" -s subtree "(&(objectclass=*)(cn=John*))" dn
+: '
+TODO - Uncomment this test case when vmware\administrator privilege is fixed
 
+echo
+echo "Bind as vmware\administrator to search tenant1\John-*"
+echo "This should fail, return 0 search result."
+ldapsearch -h $host -p $port -x -D "cn=administrator,cn=users,dc=vmware,dc=com" -w 123 -b "dc=tenant1,dc=com" -s subtree "(&(objectclass=*)(cn=John*))" dn
+'
 
 echo
 echo "*********************************************************************************************"
@@ -391,11 +404,15 @@ echo
 ./generate_data_tenant1_del.sh > data_tenant1_del.ldif
 ./generate_data_tenant2_del.sh > data_tenant2_del.ldif
 
+: '
+TODO - Uncomment this test case when vmware\administrator privilege is fixed
+
 echo "################################################################################################"
-echo "Remove tenant content as vmware\admin -- this should fail"
+echo "Remove tenant content as vmware\administrator -- this should fail"
 echo "################################################################################################"
 
-ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w '123' -f data_tenant1_del.ldif
+ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w '123' -f data_tenant1_del.ldif
+'
 
 echo "################################################################################################"
 echo "Remove tenant2 content as tenant1\administrator -- this should fail"
@@ -417,15 +434,15 @@ ldapmodify -c -h $host -p $port -x -D "cn=administrator,cn=Users,dc=tenant2,dc=c
 
 
 echo "################################################################################################"
-echo "Remove tenants root as vmware\admin"
+echo "Remove tenants root as vmware\administrator"
 echo "################################################################################################"
 
-ldapmodify -c -h $host -p $port -x -D "cn=admin,cn=Users,dc=vmware,dc=com" -w '123'<<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=administrator,cn=Users,dc=vmware,dc=com" -w '123'<<EOM
 dn: dc=tenant1,dc=com
 changetype: delete
 EOM
 
-ldapmodify -c -h $host -p $port -x -D "cn=admin,cn=Users,dc=vmware,dc=com" -w '123'<<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=administrator,cn=Users,dc=vmware,dc=com" -w '123'<<EOM
 dn: dc=tenant2,dc=com
 changetype: delete
 EOM

@@ -34,12 +34,6 @@ _VmDirSASLSRPInteraction(
     void *      pIn
     );
 
-static
-DWORD
-VmDirMapLdapError(
-    int retVal
-    );
-
 DWORD
 VmDirSASLGSSAPIBind(
      LDAP**     ppLd,
@@ -112,6 +106,7 @@ VmDirSASLSRPBind(
     LDAP*       pLd = NULL;
     const int   ldapVer = LDAP_VERSION3;
     VMDIR_SASL_INTERACTIVE_DEFAULT srpDefault = {0};
+    int         iCnt = 0;
 
     if ( ppLd == NULL || pszURI == NULL || pszUPN == NULL || pszPass == NULL )
     {
@@ -125,21 +120,38 @@ VmDirSASLSRPBind(
     srpDefault.pszAuthName = pszLowerCaseUPN;
     srpDefault.pszPass     = pszPass;
 
-    retVal = ldap_initialize( &pLd, pszURI);
-    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+    for (iCnt=0; iCnt<2; iCnt++)
+    {
+        retVal = ldap_initialize( &pLd, pszURI);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-    retVal = ldap_set_option(pLd, LDAP_OPT_PROTOCOL_VERSION, &ldapVer);
-    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+        retVal = ldap_set_option(pLd, LDAP_OPT_PROTOCOL_VERSION, &ldapVer);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-    retVal = ldap_sasl_interactive_bind_s( pLd,
-                                            NULL,
-                                            "SRP",
-                                            NULL,
-                                            NULL,
-                                            LDAP_SASL_QUIET,
-                                            _VmDirSASLSRPInteraction,
-                                            &srpDefault);
-    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+        retVal = ldap_sasl_interactive_bind_s( pLd,
+                                                NULL,
+                                                "SRP",
+                                                NULL,
+                                                NULL,
+                                                LDAP_SASL_QUIET,
+                                                _VmDirSASLSRPInteraction,
+                                                &srpDefault);
+        if (retVal == LDAP_SERVER_DOWN)
+        {
+            VmDirSleep(50); // pause 50 ms
+            if ( pLd )
+            {
+                ldap_unbind_ext_s(pLd, NULL, NULL);
+                pLd = NULL;
+            }
+            continue;   // if transient network error, retry once.
+        }
+        else
+        {
+            break;
+        }
+    }
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);  // bail ldap_sasl_interactive_bind_s failure.
 
     *ppLd = pLd;
 
@@ -272,25 +284,22 @@ error:
 }
 
 /*
- * Two binding mechanisms are supported ["SRP","GSSAPI"]
- * This function will try to bind to LDAP server via supported mechanisms in the order above.
+ * Bind to partner via "SRP" mechanism.
  */
 DWORD
 VmDirSafeLDAPBind(
     LDAP**      ppLd,
     PCSTR       pszHost,
-    PCSTR       pszUPN,         // opt, if exists, will try SRP mech
-    PCSTR       pszPassword     // opt, if exists, will try SRP mech
+    PCSTR       pszUPN,
+    PCSTR       pszPassword
     )
 {
     DWORD       dwError = 0;
-    DWORD       dwSRPError = 0;
-    DWORD       dwGSSError = 0;
-    BOOLEAN     bDoneSRPBind = FALSE;
+
     LDAP*       pLd = NULL;
     char        ldapURI[VMDIR_MAX_LDAP_URI_LEN + 1] = {0};
 
-    if (ppLd == NULL || pszHost == NULL)
+    if (ppLd == NULL || pszHost == NULL || pszUPN == NULL || pszPassword == NULL)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -308,35 +317,19 @@ VmDirSafeLDAPBind(
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // try SRP if we have UPN/password
-    if (pszUPN != NULL && pszPassword != NULL)
-    {
-        bDoneSRPBind = TRUE;
-        dwError = dwSRPError = VmDirSASLSRPBind( &pLd, &(ldapURI[0]), pszUPN, pszPassword);
-    }
-    // fall back to GSSAPI/KRB if no credentials for SRP or SRP failed.
-    if ( bDoneSRPBind == FALSE || dwSRPError != 0 )
-    {
-        dwError = dwGSSError = VmDirSASLGSSAPIBind( &pLd, &(ldapURI[0]) );
-    }
+    dwError = VmDirSASLSRPBind( &pLd, &(ldapURI[0]), pszUPN, pszPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppLd = pLd;
 
 cleanup:
 
-    if (dwSRPError && dwGSSError)
-    {
-        // We can only return one error code. SRP is the preferred mechanism,
-        // so we will return its error (if there was an error from both mechs).
-        dwError = dwSRPError;
-    }
     return dwError;
 
 error:
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSafeLDAPBind to (%s) failed. SRP(%d), GSSAPI(%d)",
-                     ldapURI, dwSRPError, dwGSSError );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSafeLDAPBind to (%s) failed. SRP(%d)",
+                     ldapURI, dwError );
 
     if ( pLd )
     {
@@ -548,13 +541,12 @@ VmDirDeleteSyncRequestControl(
     }
 }
 
-static
 DWORD
 VmDirMapLdapError(
-    int retVal
+    int ldapErrorCode
     )
 {
-    switch(retVal)
+    switch(ldapErrorCode)
     {
         case LDAP_SUCCESS:
             return VMDIR_SUCCESS;

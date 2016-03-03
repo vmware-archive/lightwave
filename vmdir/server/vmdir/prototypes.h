@@ -104,6 +104,13 @@ VmDirSchemaPatchViaFile(
     PCSTR       pszSchemaFilePath
     );
 
+DWORD
+VmDirAllocateBerValueAVsnprintf(
+    PVDIR_BERVALUE pbvValue,
+    PCSTR pszFormat,
+    ...
+    );
+
 // instance.c
 
 DWORD
@@ -274,11 +281,6 @@ VmDirHandleSignals(
     );
 
 #endif
-
-void
-VmDirSrvCloseSocketAcceptFd(
-    VOID
-    );
 
 /*parseargs.c*/
 
@@ -477,6 +479,13 @@ VmDirCopyPartnerSchema(
     PCSTR pszUsername,
     PCSTR pszPassword,
     PCSTR pszReplURI
+    );
+
+DWORD
+VmDirSchemaPatchSetOPMod(
+    PVDIR_OPERATION     pOperation,
+    PVDIR_ENTRY         pEntry,
+    PCSTR               pszSchemaFile
     );
 
 #ifdef __cplusplus

@@ -29,11 +29,13 @@
 #include <ifaddrs.h>
 
 #include <config.h>
+#include <limits.h>
 
 #include <vmdirsys.h>
 
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/stat.h>
 
 // OpenLDAP ber library include files
 #include <lber.h>
@@ -60,6 +62,7 @@
 #include <vmacl.h>
 #include <indexcfg.h>
 #include <backend.h>
+#include <mdbstore.h>
 #include <middlelayer.h>
 #include <replication.h>
 #include <vmkdcserver.h>
@@ -72,6 +75,7 @@
 
 #include "vmdir_h.h"
 #include "vmdirftp_h.h"
+#include "vmdirdbcp_h.h"
 #include "srp_verifier_h.h"
 #include "vmdirsuperlog_h.h"
 #include "prototypes.h"
@@ -92,6 +96,7 @@
 #include <stddef.h>
 #include <tchar.h>
 #include <errno.h>
+#include <sys/stat.h>
 #if !defined(HAVE_DCERPC_WIN32)
 #include <winsvc.h>
 #include <rpc.h>
@@ -130,6 +135,7 @@
 #include <vmacl.h>
 #include <indexcfg.h>
 #include <backend.h>
+#include <mdbstore.h>
 #include <middlelayer.h>
 #include <replication.h>
 #include <vmkdcserver.h>
@@ -142,6 +148,7 @@
 
 #include "vmdir_h.h"
 #include "vmdirftp_h.h"
+#include "vmdirdbcp_h.h"
 #include "srp_verifier_h.h"
 #include "vmdirsuperlog_h.h"
 #include "prototypes.h"

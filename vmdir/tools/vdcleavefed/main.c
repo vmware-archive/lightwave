@@ -75,8 +75,12 @@ VmDirMain(
 
     if (pszPassword == NULL)
     {
-        // read passowrd from stdin
-        VmDirReadString("password: ", pszPasswordBuf, VMDIR_MAX_PWD_LEN, TRUE);
+        // read password from stdin
+        VmDirReadString(
+            "password: ",
+            pszPasswordBuf,
+            sizeof(pszPasswordBuf),
+            TRUE);
         pszPassword = pszPasswordBuf;
     }
 

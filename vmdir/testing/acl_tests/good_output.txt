@@ -1,5 +1,5 @@
 ##################################################################################
-ACL TEST ON ADD as 'ADMIN': Add new entry under ou=eng,dc=vmware,dc=com as 'admin'
+ACL TEST ON ADD as 'ADMINISTRATOR': Add new entry under ou=eng,dc=vmware,dc=com as 'administrator'
 ##################################################################################
 
 adding new entry "cn=John-add,ou=eng,dc=vmware,dc=com"
@@ -14,7 +14,6 @@ adding new entry "cn=John-add,ou=eng,dc=vmware,dc=com"
 
 # John-add, eng, vmware.com
 dn: cn=John-add,ou=eng,dc=vmware,dc=com
-dn: cn=John-add,ou=eng,dc=vmware,dc=com
 
 # search result
 search: 2
@@ -23,7 +22,7 @@ result: 0 Success
 # numResponses: 2
 # numEntries: 1
 #####################################################################################
-ACL TEST ON DELETE as 'ADMIN': Delete entry under ou=eng,dc=vmware,dc=com as 'admin'
+ACL TEST ON DELETE as 'ADMINISTRATOR': Delete entry under ou=eng,dc=vmware,dc=com as 'administrator'
 #####################################################################################
 
 deleting entry "cn=John-add,ou=eng,dc=vmware,dc=com"
@@ -55,7 +54,6 @@ adding new entry "cn=John-add,ou=eng,dc=vmware,dc=com"
 
 # John-add, eng, vmware.com
 dn: cn=John-add,ou=eng,dc=vmware,dc=com
-dn: cn=John-add,ou=eng,dc=vmware,dc=com
 
 # search result
 search: 2
@@ -67,8 +65,8 @@ result: 0 Success
 ACL TEST ON DELETE as 'John-1': Delete entry under ou=eng,dc=vmware,dc=com as 'John-1'
 #####################################################################################
 
-ldap_delete: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+ldap_delete: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)(Insufficient access, access denied)
 deleting entry "cn=John-add,ou=eng,dc=vmware,dc=com"
 
 # extended LDIF
@@ -81,7 +79,6 @@ deleting entry "cn=John-add,ou=eng,dc=vmware,dc=com"
 
 # John-add, eng, vmware.com
 dn: cn=John-add,ou=eng,dc=vmware,dc=com
-dn: cn=John-add,ou=eng,dc=vmware,dc=com
 
 # search result
 search: 2
@@ -90,7 +87,7 @@ result: 0 Success
 # numResponses: 2
 # numEntries: 1
 #####################################################################################
-ACL TEST ON DELETE as 'Admin': Delete entry under ou=eng,dc=vmware,dc=com as 'Admin'
+ACL TEST ON DELETE as 'Administrator': Delete entry under ou=eng,dc=vmware,dc=com as 'Administrator'
 #####################################################################################
 
 deleting entry "cn=John-add,ou=eng,dc=vmware,dc=com"
@@ -99,56 +96,14 @@ deleting entry "cn=John-add,ou=eng,dc=vmware,dc=com"
 ACL TEST ON ADD as 'John-1': Add new entry under ou=eng,dc=vmware,dc=com as 'John-1'
 ###################################################################################
 
-ldap_add: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+ldap_add: Insufficient access (50)
 adding new entry "cn=John-add,ou=eng,dc=vmware,dc=com"
 
-###########################################################################
-ACL TEST ON SYSTEM ENTRIES: Create telephonenumber equality index as 'admin'
-###########################################################################
-
-modifying entry "cn=indices,cn=config"
-
-###########################################################################
-ACL TEST ON SYSTEM ENTRIES: Create telephonenumber equality index as 'John-1'
-###########################################################################
-
-ldap_modify: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
-modifying entry "cn=indices,cn=config"
-
-# extended LDIF
-#
-# LDAPv3
-# base <cn=indices,cn=config> with scope baseObject
-# filter: objectclass=*
-# requesting: vmwAttrIndexDesc 
-#
-
-# indices, config
-dn: cn=indices,cn=config
-vmwAttrIndexDesc: cn eq sub
-vmwAttrIndexDesc: objectclass eq
-vmwAttrIndexDesc: dn eq sub unique
-vmwAttrIndexDesc: parentid eq
-vmwAttrIndexDesc: member eq
-vmwAttrIndexDesc: uSNChanged eq unique
-vmwAttrIndexDesc: attributeMetaData eq unique
-vmwAttrIndexDesc: vmwObjectSid eq unique
-vmwAttrIndexDesc: telephonenumber eq
-vmwAttrIndexDesc: telexNumber eq
-
-# search result
-search: 2
-result: 0 Success
-
-# numResponses: 2
-# numEntries: 1
 ######################################################################
 Add an attribute value (displayName: david) to an existing indexed attribute.
 ######################################################################
 
-Bind as admin to modify John-2
+Bind as administrator to modify John-2
 modifying entry "cn=John-2,ou=eng,dc=vmware,dc=com"
 
 # extended LDIF
@@ -190,13 +145,13 @@ result: 0 Success
 # numResponses: 2
 # numEntries: 1
 Bind as John-1 to modify John-2
-ldap_modify: Compare False (5)
-	additional info: VmDirSrvAccessCheck failed - (5)(Insufficient access, access denied)
+ldap_modify: Insufficient access (50)
+	additional info: VmDirSrvAccessCheck failed - (9207)
 modifying entry "cn=John-2,ou=eng,dc=vmware,dc=com"
 
 
 Bind Anonymously to search for 'cn=schemacontext'
-Anonymous search on 'cn=schemacontext' subtree should be allowed
+Anonymous search on 'cn=schemacontext' subtree should NOT be allowed
 # extended LDIF
 #
 # LDAPv3
@@ -205,20 +160,12 @@ Anonymous search on 'cn=schemacontext' subtree should be allowed
 # requesting: dn 
 #
 
-# schemacontext
-dn: cn=schemacontext
-dn: cn=schemacontext
-
-# aggregate, schemacontext
-dn: cn=aggregate,cn=schemacontext
-dn: cn=aggregate,cn=schemacontext
-
 # search result
 search: 2
-result: 0 Success
+result: 50 Insufficient access
+text: Not bind/authenticate yet
 
-# numResponses: 3
-# numEntries: 2
+# numResponses: 1
 
 Bind as John-1 to search for 'cn=schemacontext'
 A normal user should also have access right to 'cn=schemacontext' search
@@ -232,10 +179,8 @@ A normal user should also have access right to 'cn=schemacontext' search
 
 # schemacontext
 dn: cn=schemacontext
-dn: cn=schemacontext
 
 # aggregate, schemacontext
-dn: cn=aggregate,cn=schemacontext
 dn: cn=aggregate,cn=schemacontext
 
 # search result
@@ -246,7 +191,7 @@ result: 0 Success
 # numEntries: 2
 
 Bind as John-1 to search for 'dc=vmware,dc=com'
-A normal user should not have access right to 'dc=vmware,dc=com' (admin/admins have)
+A normal user should not have access right to 'dc=vmware,dc=com' (administrator/administrators have)
 # extended LDIF
 #
 # LDAPv3

@@ -867,3 +867,41 @@ MDBFreeMdbGlobals(
 
     MDbFreeIndexDBs(&gVdirMdbGlobals.mdbIndexDBs);
 }
+
+/*
+ * See file client.c VmDirSetBackendState on parameters
+ */
+DWORD
+VmDirSetMdbBackendState(
+    DWORD               dwFileTransferState,
+    DWORD               *pdwLogNum,
+    DWORD               *pdwDbSizeMb,
+    DWORD               *pdwDbMapSizeMb,
+    char                *pDbPath,
+    DWORD               dwDbPathSize)
+{
+    DWORD dwError = 0;
+    unsigned long lognum = 0L;
+    unsigned long  dbSizeMb = 0L;
+    unsigned long  dbMapSizeMb = 0L;
+
+    if (dwFileTransferState < 0 || dwFileTransferState > 2)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    *pdwLogNum = 0;
+    *pdwDbSizeMb = 0;
+    *pdwDbMapSizeMb = 0;
+    dwError = mdb_env_set_state(gVdirMdbGlobals.mdbEnv, dwFileTransferState, &lognum, &dbSizeMb, &dbMapSizeMb, pDbPath, dwDbPathSize);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    *pdwLogNum = lognum;
+    *pdwDbSizeMb = dbSizeMb;
+    *pdwDbMapSizeMb = dbMapSizeMb;
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}

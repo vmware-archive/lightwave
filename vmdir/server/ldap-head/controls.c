@@ -593,6 +593,8 @@ ParseSyncRequestControlVal(
     BerElementBuffer        berbuf;
     BerElement *            ber = (BerElement *)&berbuf;
     PSTR                    pszLocalErrorMsg = NULL;
+    VDIR_BACKEND_CTX        backendCtx = {0};
+    USN                     maxPartnerVisibleUSN = 0;
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "ParseSyncRequestControlVal: Begin." );
 
@@ -747,10 +749,22 @@ ParseSyncRequestControlVal(
                                         "Decoding error while parsing the end of sync request control value.");
     }
 
+    backendCtx.pBE = VmDirBackendSelect("");
+    maxPartnerVisibleUSN = backendCtx.pBE->pfnBEGetLeastOutstandingUSN( &backendCtx, FALSE ) - 1;
+
+    if (syncReqCtrlVal->intLastLocalUsnProcessed > maxPartnerVisibleUSN)
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ParseSyncRequestControlVal: ServerId %s has processed my USN (%u), my max USN is (%u).",
+                         syncReqCtrlVal->reqInvocationId.lberbv.bv_val, syncReqCtrlVal->intLastLocalUsnProcessed, maxPartnerVisibleUSN );
+        lr->errCode = LDAP_UNWILLING_TO_PERFORM;
+        retVal = LDAP_NOTICE_OF_DISCONNECT;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg), "Partner is ahead of my changes.");
+    }
+
 cleanup:
     // Even in the error case, syncDoneCtrl should be freed during operation delete.
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "ParseSyncRequestControlVal: End." );
-
+    VmDirBackendCtxContentFree( &backendCtx );
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
 
     return retVal;

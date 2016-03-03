@@ -307,34 +307,35 @@ VmDirInit(
     dwError = VmDirVmAclInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (!gVmdirGlobals.bPatchSchema)
+    if (gVmdirGlobals.bPatchSchema)
     {
-        dwError = VmDirRpcServerInit();
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (gVmdirGlobals.pszBootStrapSchemaFile )
+        {
+            dwError = VmDirSchemaPatchViaFile( gVmdirGlobals.pszBootStrapSchemaFile );
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            VmDirSetAdministratorPasswordNeverExpires(); // Ignore error
+        }
     }
-
-    dwError = VmDirIpcServerInit();
-    BAIL_ON_VMDIR_ERROR (dwError);
-
-    if (VmDirdGetRestoreMode())
+    else
     {
-        // TBD: What happens if server is started in restore mode even when it has not been promoted?
-        dwError = _VmDirRestoreInstance(); // fix invocationId and up-to-date-vector before starting replicating in.
-        BAIL_ON_VMDIR_ERROR( dwError );
-    }
+        if ( runMode == VMDIR_RUNMODE_NORMAL )
+        {
+            dwError = VmDirRpcServerInit();
+            BAIL_ON_VMDIR_ERROR(dwError);
 
-    if ( runMode == VMDIR_RUNMODE_NORMAL )
-    {
-        dwError = VmDirReplicationLibInit();
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+            dwError = VmDirIpcServerInit();
+            BAIL_ON_VMDIR_ERROR (dwError);
 
-    if ( gVmdirGlobals.bPatchSchema && gVmdirGlobals.pszBootStrapSchemaFile )
-    {
-        dwError = VmDirSchemaPatchViaFile( gVmdirGlobals.pszBootStrapSchemaFile );
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        VmDirSetAdministratorPasswordNeverExpires(); // Ignore error
+            dwError = VmDirReplicationLibInit();
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (runMode == VMDIR_RUNMODE_RESTORE)
+        {
+            // TBD: What happens if server is started in restore mode even when it has not been promoted?
+            dwError = _VmDirRestoreInstance(); // fix invocationId and up-to-date-vector before starting replicating in.
+            BAIL_ON_VMDIR_ERROR( dwError );
+        }
     }
 
     if (bWriteInvocationId) // Logic for backward compatibility. Needs to come after schema patch logic.
@@ -351,7 +352,7 @@ VmDirInit(
                                         5000);  // wait time 5 seconds
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (!VmDirdGetRestoreMode())
+    if (!(VmDirdGetRestoreMode() || gVmdirGlobals.bPatchSchema))
     {
         dwError = VmDirInitConnAcceptThread();
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -821,9 +822,6 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
     VDIR_BERVALUE       bv = VDIR_BERVALUE_INIT;
     BOOLEAN             bHasTxn = FALSE;
     VDIR_BERVALUE       serverGuid = VDIR_BERVALUE_INIT;
-    PSTR                pszDCGroupDN = NULL;
-    PSTR                pszDCClientGroupDN = NULL;
-    PSTR                pszServicesRootDN = NULL;
     PSTR                pszLocalErrMsg = NULL;
     PSTR                pszDcAccountPwd = NULL;
 
@@ -861,16 +859,14 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
             }
 
             // set DomainControllerGroupDN (NOTE, this is a hard code name, same as in instance.c)
-            dwError = VmDirAllocateStringAVsnprintf( &pszDCGroupDN,
-                                                     "cn=%s,cn=%s,%s",
-                                                     VMDIR_DC_GROUP_NAME,
-                                                     VMDIR_BUILTIN_CONTAINER_NAME,
-                                                     gVmdirServerGlobals.systemDomainDN.lberbv_val);
+            dwError = VmDirAllocateBerValueAVsnprintf(
+                        &gVmdirServerGlobals.bvDCGroupDN,
+                        "cn=%s,cn=%s,%s",
+                        VMDIR_DC_GROUP_NAME,
+                        VMDIR_BUILTIN_CONTAINER_NAME,
+                        gVmdirServerGlobals.systemDomainDN.lberbv_val);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            gVmdirServerGlobals.bvDCGroupDN.lberbv_val = pszDCGroupDN;
-            gVmdirServerGlobals.bvDCGroupDN.lberbv_len = VmDirStringLenA(pszDCGroupDN);
-            pszDCGroupDN = NULL;
             if (VmDirNormalizeDN( &(gVmdirServerGlobals.bvDCGroupDN), op.pSchemaCtx) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
@@ -879,16 +875,14 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
             }
 
             // set DCClientGroupDN (NOTE, this is a hard code name, same as in instance.c)
-            dwError = VmDirAllocateStringAVsnprintf( &pszDCClientGroupDN,
-                                                     "cn=%s,cn=%s,%s",
-                                                     VMDIR_DCCLIENT_GROUP_NAME,
-                                                     VMDIR_BUILTIN_CONTAINER_NAME,
-                                                     gVmdirServerGlobals.systemDomainDN.lberbv_val);
+            dwError = VmDirAllocateBerValueAVsnprintf(
+                        &gVmdirServerGlobals.bvDCClientGroupDN,
+                        "cn=%s,cn=%s,%s",
+                        VMDIR_DCCLIENT_GROUP_NAME,
+                        VMDIR_BUILTIN_CONTAINER_NAME,
+                        gVmdirServerGlobals.systemDomainDN.lberbv_val);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val = pszDCClientGroupDN;
-            gVmdirServerGlobals.bvDCClientGroupDN.lberbv_len = VmDirStringLenA(pszDCClientGroupDN);
-            pszDCClientGroupDN = NULL;
             if (VmDirNormalizeDN( &(gVmdirServerGlobals.bvDCClientGroupDN), op.pSchemaCtx) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
@@ -897,15 +891,13 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
             }
 
             // set ServicesRootDN (NOTE, this is a hard code name, same as in instance.c)
-            dwError = VmDirAllocateStringAVsnprintf( &pszServicesRootDN,
-                                                     "cn=%s,%s",
-                                                     VMDIR_SERVICES_CONTAINER_NAME,
-                                                     gVmdirServerGlobals.systemDomainDN.lberbv_val);
+            dwError = VmDirAllocateBerValueAVsnprintf(
+                        &gVmdirServerGlobals.bvServicesRootDN,
+                        "cn=%s,%s",
+                        VMDIR_SERVICES_CONTAINER_NAME,
+                        gVmdirServerGlobals.systemDomainDN.lberbv_val);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            gVmdirServerGlobals.bvServicesRootDN.lberbv_val = pszServicesRootDN;
-            gVmdirServerGlobals.bvServicesRootDN.lberbv_len = VmDirStringLenA(pszServicesRootDN);
-            pszServicesRootDN = NULL;
             if (VmDirNormalizeDN( &(gVmdirServerGlobals.bvServicesRootDN), op.pSchemaCtx) != 0)
             {
                 dwError = VMDIR_ERROR_GENERIC;
@@ -1097,6 +1089,7 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
                 BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
                                               "BervalContentDup failed." );
             }
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "UpdateToDate Vector: (%s)", gVmdirServerGlobals.utdVector.lberbv_val);
             continue;
         }
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_SERVER_ID, FALSE) == 0)
@@ -1136,7 +1129,6 @@ cleanup:
 
     VMDIR_SECURE_FREE_STRINGA(pszDcAccountPwd);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-    VMDIR_SAFE_FREE_MEMORY(pszDCGroupDN);
     VmDirFreeEntryContent( &dseRoot );
     VmDirFreeEntryContent( &serverObj );
     VmDirFreeBervalContent(&serverGuid);
@@ -1176,17 +1168,10 @@ VmDirSchemaPatchViaFile(
 {
 #define SCHEMA_ENTRY_CN "aggregate"
 
-    // TODO TODO
-    // we only support patching of attributetypes and objectclasses now.
-    static PCSTR        pszPatchAttrList[] = { "attributetypes",
-                                               "objectclasses",
-                                               "ditcontentrules"
-                                             };
     DWORD               dwError = 0;
     VDIR_OPERATION      ldapOp = {0};
-    int                 iListSize = sizeof(pszPatchAttrList)/sizeof(pszPatchAttrList[0]);
-    int                 iCnt = 0;
     VDIR_ENTRY_ARRAY    entryArray = {0};
+    PVDIR_MODIFICATION  pModReq = NULL;
 
 
     if ( IsNullOrEmptyString(pszSchemaFilePath) )
@@ -1213,11 +1198,6 @@ VmDirSchemaPatchViaFile(
     dwError = VmDirEntryUnpack( entryArray.pEntry );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // merge new semantics from file into current schema - pEntry
-    dwError = VmDirSchemaPatchFileToEntry(  pszSchemaFilePath,
-                                            entryArray.pEntry);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = VmDirInitStackOperation( &ldapOp,
                                        VDIR_OPERATION_TYPE_INTERNAL,
                                        LDAP_REQ_MODIFY,
@@ -1233,28 +1213,36 @@ VmDirSchemaPatchViaFile(
     ldapOp.request.modifyReq.dn.lberbv.bv_val = ldapOp.reqDn.lberbv.bv_val;
     ldapOp.request.modifyReq.dn.lberbv.bv_len = ldapOp.reqDn.lberbv.bv_len;
 
-    for (iCnt = 0; iCnt < iListSize ; iCnt++)
-    {
-        PVDIR_ATTRIBUTE pAttr = VmDirFindAttrByName( entryArray.pEntry, (PSTR) pszPatchAttrList[iCnt]);
-
-        if ( pAttr )
-        {
-            dwError = VmDirOperationAddModReq(  &ldapOp,
-                                                MOD_OP_REPLACE,
-                                                pAttr->type.lberbv_val,
-                                                pAttr->vals,
-                                                pAttr->numVals);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-
-    dwError = VmDirInternalModifyEntry(&ldapOp);
-    if (ldapOp.ldapResult.vmdirErrCode == VMDIR_ERROR_SCHEMA_UPDATE_PASSTHROUGH)
-    {
-        dwError = 0; // noop, no db and cache upgrade needed.
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Schema is up-to-date, no patch action needed." );
-    }
+    // compare db and file schema to generate operation modify request mods.
+    dwError = VmDirSchemaPatchSetOPMod(&ldapOp, entryArray.pEntry, pszSchemaFilePath);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (ldapOp.request.modifyReq.numMods > 0)
+    {
+        // 5.5/6.0 schema bootstrap behavior could cause schema entry attribute metadata version to be
+        // out of sync in the federation.
+        // Force a big gap in the first 6.5 schema patch would re-converge both schema entry and its
+        // attribute metadata version in the federation.
+        for ( pModReq = ldapOp.request.modifyReq.mods;
+              pModReq != NULL;
+              pModReq = pModReq->next
+            )
+        {
+            pModReq->usForceVersionGap = VDIR_DEFAULT_FORCE_VERSION_GAP;
+        }
+
+        dwError = VmDirInternalModifyEntry(&ldapOp);
+        if (ldapOp.ldapResult.vmdirErrCode == VMDIR_ERROR_SCHEMA_UPDATE_PASSTHROUGH)
+        {
+            dwError = 0; // noop, no db and cache upgrade needed.
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Schema is up-to-date, no patch action needed." );
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Schema is up-to-date, no mods generated." );
+    }
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>>>>>>>>> Schema patch succeeded <<<<<<<<<<");
 
@@ -1515,6 +1503,8 @@ InitializeResouceLimit(
     if ( setrlimit(RLIMIT_AS, &VMLimit)     // virtual memory
          ||
          setrlimit(RLIMIT_CORE, &VMLimit)   // core file size
+         ||
+         setrlimit(RLIMIT_NPROC, &VMLimit)  // thread
        )
     {
         dwError = ERROR_INVALID_CONFIGURATION;
@@ -1667,5 +1657,34 @@ cleanup:
     VmDirFreeEntryArrayContent(&entryArray);
     return dwError;
 error:
+    goto cleanup;
+}
+
+DWORD
+VmDirAllocateBerValueAVsnprintf(
+    PVDIR_BERVALUE pbvValue,
+    PCSTR pszFormat,
+    ...
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszValue = NULL;
+    va_list args;
+
+    va_start(args, pszFormat);
+    dwError = VmDirVsnprintf(&pszValue, pszFormat, args);
+    va_end(args);
+
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pbvValue->lberbv_val = pszValue;
+    pbvValue->lberbv_len = VmDirStringLenA(pszValue);
+    pbvValue->bOwnBvVal = TRUE;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszValue);
     goto cleanup;
 }

@@ -834,6 +834,10 @@ VmDirGenerateModsNewMetaData(
             currentVersion = VmDirStringToIA(strchr(pMod->attr.metaData, ':') + 1);
         }
 
+        // Force version gap if specified by pMod composer.
+        // User case: force sync schema metadata version in 6.5 schema patch.
+        currentVersion += pMod->usForceVersionGap;
+
         // SJ-TBD: Since, currently, Replace mod is replaced by Delete and Add mods, the logic to set new attribute
         // meta data in each of these 2 mods is bit strange, but works, because both Delete and Add mods read
         // current attribute meta data from the DB, and not Add mod seeing attribute meta data from the previous
@@ -968,15 +972,29 @@ _VmDirExternalModsSanityCheck(
                                             VDIR_SAFE_STRING(pLocalMod->attr.pATDesc->pszName));
         }
 
-        // ADD or REPLACE principal name, validate its syntax.
         if ( pLocalMod->operation == MOD_OP_ADD ||
              pLocalMod->operation == MOD_OP_REPLACE )
         {
+            // ADD or REPLACE principal name, validate its syntax.
             if ( VmDirStringCompareA(pLocalMod->attr.type.lberbv_val, ATTR_KRB_UPN, FALSE) == 0 ||
                  VmDirStringCompareA(pLocalMod->attr.type.lberbv_val, ATTR_KRB_SPN, FALSE) == 0 )
             {
                 retVal = VmDirValidatePrincipalName( &(pLocalMod->attr), &pszLocalErrMsg);
                 BAIL_ON_VMDIR_ERROR(retVal);
+            }
+            else if (VmDirStringCompareA(pLocalMod->attr.type.lberbv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE) == 0)
+            {
+                BOOLEAN bReturn = FALSE;
+
+                bReturn = VmDirValidRelativeSecurityDescriptor(
+                            (PSECURITY_DESCRIPTOR_RELATIVE)pLocalMod->attr.vals[0].lberbv_val,
+                            (ULONG)pLocalMod->attr.vals[0].lberbv_len,
+                            OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION);
+                if (!bReturn)
+                {
+                    retVal = VMDIR_ERROR_BAD_ATTRIBUTE_DATA;
+                    BAIL_ON_VMDIR_ERROR(retVal);
+                }
             }
         }
     }

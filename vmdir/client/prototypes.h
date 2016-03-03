@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -462,6 +462,19 @@ VmDirLdapModReplaceAttribute(
     );
 
 DWORD
+VmDirLdapModReplAttributesValue(
+    LDAP*   pLd,
+    PCSTR   pszDN,
+    PCSTR*  ppszAttValPair
+    );
+
+DWORD
+VmDirGetDCContainerDN(
+    PCSTR pszDomain,
+    PSTR* ppszContainerDN
+    );
+
+DWORD
 VmDirGetServerAccountDN(
     PCSTR pszDomain,
     PCSTR pszMachineName,
@@ -600,24 +613,6 @@ VmDirDCEGetErrorCode(
 #endif
 
 DWORD
-VmDirOpenDBFile(
-    PVMDIR_SERVER_CONTEXT   hBinding,
-    PCSTR                   pszDBFileName,
-    FILE **                 ppFileHandle);
-
-DWORD
-VmDirReadDBFile(
-    PVMDIR_SERVER_CONTEXT   hBinding,
-    FILE *                  pFileHandle,
-    UINT32 *                pdwCount,
-    PBYTE *                 ppReadBuffer);
-
-DWORD
-VmDirCloseDBFile(
-    PVMDIR_SERVER_CONTEXT   hBinding,
-    FILE *                  pFileHandle);
-
-DWORD
 VmDirGetDomainFuncLvlInternal(
     LDAP*  pLd,
     PCSTR  pszDomain,
@@ -632,6 +627,13 @@ VmDirSetDomainFuncLvlInternal(
     );
 
 DWORD
+VmDirGetAllDCInternal(
+    LDAP*   pLd,
+    PCSTR   pszDomainName,
+    PVMDIR_STRING_LIST* ppStrList
+    );
+
+DWORD
 VmDirGetPSCVersionInternal(
     LDAP* pLd,
     PSTR* ppszPSCVer
@@ -639,10 +641,40 @@ VmDirGetPSCVersionInternal(
 
 DWORD
 VmDirPSCVersion(
-    PCSTR               pszHostName,
-    PCSTR               pszUserName,
-    PCSTR               pszPassword,
-    PCSTR		pszDomainName,
-    PSTR*		ppszVersion
+    PCSTR       pszHostName,
+    PCSTR       pszUserName,
+    PCSTR       pszPassword,
+    PCSTR       pszDomainName,
+    PSTR*       ppszVersion
     );
 
+DWORD
+VmDirGetObjectAttribute(
+    LDAP*   pLd,
+    PCSTR   pszDomain,
+    PCSTR   pszSearchDNPrefix,
+    PCSTR   pszObjectClass,
+    PCSTR   pszAttribute,
+    int     scope,
+    PSTR**  pppszValues,
+    DWORD*  pdwNumValues
+    );
+
+DWORD
+VmDirGetReplicationStateInternal(
+    LDAP*               pLd,
+    PVMDIR_REPL_STATE*  ppReplState
+    );
+
+VOID
+VmDirFreeReplicationStateInternal(
+    PVMDIR_REPL_STATE   pReplState
+    );
+
+DWORD
+VmDirSchemaUpgradeInternal(
+    PVMDIR_CONNECTION   pConnection,
+    PCSTR               pszSchemaFile,
+    BOOLEAN             bDryRun,
+    PSTR*               ppszErrMsg
+    );

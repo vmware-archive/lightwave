@@ -14,7 +14,7 @@
 #include "includes.h"
 
 VOID
-VmDirStringListFree(
+VmDirStringListFreeContent(
     PVMDIR_STRING_LIST pStringList
     )
 {
@@ -26,7 +26,18 @@ VmDirStringListFree(
         {
             VmDirFreeStringA((PSTR)pStringList->pStringList[i]);
         }
+        pStringList->dwCount = 0;
+    }
+}
 
+VOID
+VmDirStringListFree(
+    PVMDIR_STRING_LIST pStringList
+    )
+{
+    if (pStringList != NULL)
+    {
+        VmDirStringListFreeContent(pStringList);
         VMDIR_SAFE_FREE_MEMORY(pStringList->pStringList);
         VmDirFreeMemory(pStringList);
     }
@@ -165,3 +176,34 @@ VmDirStringListContains(
 
     return FALSE;
 }
+
+DWORD
+VmDirStringListAddStrClone(
+    PCSTR               pszStr,
+    PVMDIR_STRING_LIST  pStrList
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszLocalStr = NULL;
+
+    if (!pszStr || !pStrList)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateStringA(pszStr, &pszLocalStr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirStringListAdd(pStrList, pszLocalStr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    pszLocalStr = NULL;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalStr);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+

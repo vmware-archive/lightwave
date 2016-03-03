@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -193,12 +193,82 @@ error:
      return dwError;
 }
 
+DWORD _VmDirFindUserDN(
+    LDAP *pLd,
+    PCSTR pszUserUPN,
+    PSTR *ppszUserDN
+    )
+{
+    DWORD dwError = 0;
+    LDAPMessage *searchRes = NULL;
+    LDAPMessage *entry = NULL;
+    PSTR pszSearchFilter = NULL;
+    PSTR pszUserDN = NULL;
+    PSTR pszDN = NULL;
+
+    dwError = VmDirAllocateStringAVsnprintf(
+                &pszSearchFilter,
+                "(%s=%s)",
+                ATTR_KRB_UPN,
+                pszUserUPN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = ldap_search_ext_s(pLd,
+                                "",
+                                LDAP_SCOPE_SUBTREE,
+                                pszSearchFilter,
+                                NULL,
+                                TRUE,
+                                NULL,
+                                NULL,
+                                NULL,
+                                0,
+                                &searchRes);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (ldap_count_entries(pLd, searchRes) != 1)
+    {
+        dwError = ERROR_INVALID_DATA;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    entry = ldap_first_entry(pLd, searchRes);
+    if (!entry)
+    {
+        dwError = ERROR_INVALID_ENTRY;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pszDN = ldap_get_dn(pLd, entry);
+    if (IsNullOrEmptyString(pszDN))
+    {
+        dwError = ERROR_INVALID_DN;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateStringA(pszDN, &pszUserDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppszUserDN = pszUserDN;
+    pszUserDN = NULL;
+
+cleanup:
+    ldap_memfree(pszDN);
+    ldap_msgfree(searchRes);
+    VMDIR_SAFE_FREE_MEMORY(pszSearchFilter);
+    VMDIR_SAFE_FREE_MEMORY(pszUserDN);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 DWORD
 VmDirSetPassword(
-    PCSTR pszHostURI,
-    PCSTR pszAdminDN,
+    PCSTR pszHostName,
+    PCSTR pszAdminUPN,
     PCSTR pszAdminPassword,
-    PCSTR pszUserDN,
+    PCSTR pszUserUPN,
     PCSTR pszNewPassword
     )
 {
@@ -208,24 +278,31 @@ VmDirSetPassword(
     LDAPMod     mod = {0};
     LDAPMod*    mods[2] = {&mod, NULL};
     PSTR        vals[2] = {(PSTR)pszNewPassword, NULL};
+    PSTR        pszUserDN = NULL;
 
-    if (IsNullOrEmptyString(pszHostURI) ||
-        IsNullOrEmptyString(pszAdminDN) ||
+    if (IsNullOrEmptyString(pszHostName) ||
+        IsNullOrEmptyString(pszAdminUPN) ||
         IsNullOrEmptyString(pszAdminPassword) ||
-        IsNullOrEmptyString(pszUserDN) ||
+        IsNullOrEmptyString(pszUserUPN) ||
         IsNullOrEmptyString(pszNewPassword))
     {
         dwError =  ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-/* TBD, use VmDirSafeLDAPBind instead....
-    dwError = VmDirConnectLDAPServerByDN(
-                            &pLd,
-                            pszHostURI,
-                            pszAdminDN,
-                            pszAdminPassword);
+
+    dwError = VmDirSafeLDAPBind(
+                &pLd,
+                pszHostName,
+                pszAdminUPN,
+                pszAdminPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
-*/
+
+    dwError = _VmDirFindUserDN(
+                pLd,
+                pszUserUPN,
+                &pszUserDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     mod.mod_op = LDAP_MOD_REPLACE;
     mod.mod_type = ATTR_USER_PASSWORD;
     mod.mod_vals.modv_strvals = vals;
@@ -239,6 +316,7 @@ VmDirSetPassword(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszUserDN);
     if (pLd)
     {
         ldap_unbind_ext_s(pLd, NULL, NULL);
@@ -252,8 +330,8 @@ error:
 
 DWORD
 VmDirChangePassword(
-    PCSTR pszHostURI,
-    PCSTR pszUserDN,
+    PCSTR pszHostName,
+    PCSTR pszUserUPN,
     PCSTR pszOldPassword,
     PCSTR pszNewPassword)
 {
@@ -264,23 +342,29 @@ VmDirChangePassword(
     LDAPMod*    mods[3] = {&mod[0], &mod[1], NULL};
     PSTR        vals_new[2] = {(PSTR)pszNewPassword, NULL};
     PSTR        vals_old[2] = {(PSTR)pszOldPassword, NULL};
+    PSTR        pszUserDN = NULL;
 
-    if (IsNullOrEmptyString(pszHostURI) ||
-        IsNullOrEmptyString(pszUserDN) ||
+    if (IsNullOrEmptyString(pszHostName) ||
+        IsNullOrEmptyString(pszUserUPN) ||
         IsNullOrEmptyString(pszOldPassword) ||
         IsNullOrEmptyString(pszNewPassword))
     {
         dwError =  ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-/* TBD, use VmDirSafeLDAPBind instead....
-    dwError = VmDirConnectLDAPServerByDN(
-                            &pLd,
-                            pszHostURI,
-                            pszUserDN,
-                            pszOldPassword);
+
+    dwError = VmDirSafeLDAPBind(
+                &pLd,
+                pszHostName,
+                pszUserUPN,
+                pszOldPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
-*/
+
+    dwError = _VmDirFindUserDN(
+                pLd,
+                pszUserUPN,
+                &pszUserDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     mod[0].mod_op = LDAP_MOD_ADD;
     mod[0].mod_type = ATTR_USER_PASSWORD;
@@ -299,6 +383,7 @@ VmDirChangePassword(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszUserDN);
     if (pLd)
     {
         ldap_unbind_ext_s(pLd, NULL, NULL);

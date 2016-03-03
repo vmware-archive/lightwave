@@ -163,4 +163,12 @@ VmDirMDBIndicesCreate(
     DWORD                       dwStartEntryId,
     DWORD                       dwBatchSize);
 
+DWORD
+VmDirSetMdbBackendState(
+    DWORD               dwFileTransferState,
+    DWORD               *pdwLogNum,
+    DWORD               *pdwDbSizeMb,
+    DWORD               *pdwDbMapSizeMb,
+    char                *pDbPath,
+    DWORD               dwDbPathSize);
 #endif /* MDB_STORE_INTERFACE_H_ */

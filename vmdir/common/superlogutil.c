@@ -21,14 +21,17 @@ VOID
 _FreeSearchInformation(
         PVMDIR_SUPERLOG_ENTRY_LDAPOPERATION pRpcEntry)
 {
-    VmDirRpcClientFreeMemory(pRpcEntry->opInfo.searchInfo.pwszAttributes);
-    pRpcEntry->opInfo.searchInfo.pwszAttributes = NULL;
-    VmDirRpcClientFreeMemory(pRpcEntry->opInfo.searchInfo.pwszBaseDN);
-    pRpcEntry->opInfo.searchInfo.pwszBaseDN = NULL;
-    VmDirRpcClientFreeMemory(pRpcEntry->opInfo.searchInfo.pwszScope);
-    pRpcEntry->opInfo.searchInfo.pwszScope = NULL;
-    VmDirRpcClientFreeMemory(pRpcEntry->opInfo.searchInfo.pwszIndexResults);
-    pRpcEntry->opInfo.searchInfo.pwszIndexResults = NULL;
+    if (pRpcEntry)
+    {
+        VmDirRpcClientFreeMemory(pRpcEntry->opInfo.searchInfo.pwszAttributes);
+        pRpcEntry->opInfo.searchInfo.pwszAttributes = NULL;
+        VmDirRpcClientFreeMemory(pRpcEntry->opInfo.searchInfo.pwszBaseDN);
+        pRpcEntry->opInfo.searchInfo.pwszBaseDN = NULL;
+        VmDirRpcClientFreeMemory(pRpcEntry->opInfo.searchInfo.pwszScope);
+        pRpcEntry->opInfo.searchInfo.pwszScope = NULL;
+        VmDirRpcClientFreeMemory(pRpcEntry->opInfo.searchInfo.pwszIndexResults);
+        pRpcEntry->opInfo.searchInfo.pwszIndexResults = NULL;
+    }
 }
 
 VOID

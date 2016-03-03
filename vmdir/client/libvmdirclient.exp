@@ -18,6 +18,11 @@ VmDirGetMemberships
 VmDirRpcFreeMemory
 VmDirGetErrorMessage
 VmDirGetServers
+VmDirGetComputers
+VmDirGetDCInfo
+VmDirFreeDCInfo
+VmDirFreeDCInfoArray
+VmDirFreeStringArray
 VmDirGetReplicationPartners
 VmDirGetReplicationPartnerStatus
 VmDirAddReplicationAgreement
@@ -25,6 +30,7 @@ VmDirRemoveReplicationAgreement
 VmDirSetupLdu
 VmDirGetVmDirLogPath
 VmDirSetState
+VmDirGetState
 VmDirCreateService
 VmDirCreateGroup
 VmDirGroupAddMember
@@ -37,8 +43,10 @@ VmDirLog1
 VmDirFreeMemory
 VmDirSetLogLevel
 VmDirSetLogLevelH
+VmDirGetLogLevelH
 VmDirSetLogMask
 VmDirSetLogMaskH
+VmDirGetLogMaskH
 VmDirSetSRPSecret
 VmDirGetSiteGuid
 VmDirConnectionOpen
@@ -82,3 +90,10 @@ VmDirGetDomainFunctionalLevel
 VmDirSetDomainFunctionalLevel
 VmDirGetDCNodesVersion
 VmDirFreeDCVersionInfo
+VmDirOpenDatabaseFile
+VmDirReadDatabaseFile
+VmDirCloseDatabaseFile
+VmDirSetBackendState
+VmDirGetReplicationState
+VmDirFreeReplicationState
+VmDirSchemaUpgrade

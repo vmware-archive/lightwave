@@ -44,31 +44,10 @@ static const struct option g_long_options[] =
 #endif
 
 
-static
-DWORD
-_checkAndSetOperation(
-        PBOOLEAN pOperation,
-        PBOOLEAN pIsOperationSet
-        )
-{
-    DWORD dwError = 0;
-    if (*pIsOperationSet)
-    {
-        printf("You can only pass one operation at a time\n");
-        dwError = ERROR_INVALID_PARAMETER;
-    }
-    else
-    {
-        *pOperation = TRUE;
-        *pIsOperationSet = TRUE;
-    }
-    return dwError;
-}
-
 DWORD
 VmDirParseBaseArgs(
-        int      argc,
-        char*    argv[],
+        int   argc,
+        char* argv[],
         PSTR* ppszNetworkAddress,
         PSTR* ppszDomain,
         PSTR* ppszUserName,
@@ -118,6 +97,11 @@ VmDirParseBaseArgs(
 
         case VDCMETRIC_OPTION_PASSWORD:
             pszPassword = optarg;
+            break;
+
+        case '?':
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
             break;
 
         default:
@@ -189,8 +173,6 @@ VmDirParseOperationArgs(
     int i = 1;
 #endif
 
-    BOOLEAN bIsOperationSet = FALSE;
-
     BOOLEAN bNodeData   = FALSE;
     BOOLEAN bEnable     = FALSE;
     BOOLEAN bIsEnabled  = FALSE;
@@ -222,47 +204,43 @@ VmDirParseOperationArgs(
         switch (opt)
         {
         case VDCMETRIC_OPTION_NODE_DATA:
-            dwError = _checkAndSetOperation(&bNodeData, &bIsOperationSet);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            bNodeData = TRUE;
             break;
 
         case VDCMETRIC_OPTION_ENABLE:
-            dwError = _checkAndSetOperation(&bEnable, &bIsOperationSet);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            bEnable = TRUE;
             break;
 
         case VDCMETRIC_OPTION_IS_ENABLED:
-            dwError = _checkAndSetOperation(&bIsEnabled, &bIsOperationSet);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            bIsEnabled = TRUE;
             break;
 
         case VDCMETRIC_OPTION_DISABLE:
-            dwError = _checkAndSetOperation(&bDisable, &bIsOperationSet);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            bDisable = TRUE;
             break;
 
         case VDCMETRIC_OPTION_SET_SIZE:
-            dwError = _checkAndSetOperation(&bSetSize, &bIsOperationSet);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            bSetSize = TRUE;
             break;
 
         case VDCMETRIC_OPTION_GET_SIZE:
-            dwError = _checkAndSetOperation(&bGetSize, &bIsOperationSet);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            bGetSize = TRUE;
             break;
 
         case VDCMETRIC_OPTION_RETRIEVE:
-            dwError = _checkAndSetOperation(&bRetrieve, &bIsOperationSet);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            bRetrieve = TRUE;
             break;
 
         case VDCMETRIC_OPTION_FLUSH:
-            dwError = _checkAndSetOperation(&bFlush, &bIsOperationSet);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            bFlush = TRUE;
             break;
 
         case VDCMETRIC_OPTION_AGGREGATE:
-            dwError = _checkAndSetOperation(&bAggregate, &bIsOperationSet);
+            bAggregate = TRUE;
+            break;
+
+        case '?':
+            dwError = ERROR_INVALID_PARAMETER;
             BAIL_ON_VMDIR_ERROR(dwError);
             break;
 
@@ -278,56 +256,47 @@ VmDirParseOperationArgs(
             if (VmDirStringCompareA(VDCMETRIC_LONG_OPTION_NODE_DATA, argv[i], TRUE) == 0
                     || VmDirStringCompareA(VDCMETRIC_OPTION_NODE_DATA, argv[i], TRUE) == 0)
             {
-                dwError = _checkAndSetOperation(&bNodeData, &bIsOperationSet);
-                BAIL_ON_VMDIR_ERROR(dwError);
+                bNodeData = TRUE;
             }
             else if (VmDirStringCompareA(VDCMETRIC_LONG_OPTION_ENABLE, argv[i], TRUE) == 0
                     || VmDirStringCompareA(VDCMETRIC_OPTION_ENABLE, argv[i], TRUE) == 0)
             {
-                dwError = _checkAndSetOperation(&bEnable, &bIsOperationSet);
-                BAIL_ON_VMDIR_ERROR(dwError);
+                bEnable = TRUE;
             }
             else if (VmDirStringCompareA(VDCMETRIC_LONG_OPTION_IS_ENABLED, argv[i], TRUE) == 0
                         || VmDirStringCompareA(VDCMETRIC_OPTION_IS_ENABLED, argv[i], TRUE) == 0)
             {
-                dwError = _checkAndSetOperation(&bIsEnabled, &bIsOperationSet);
-                BAIL_ON_VMDIR_ERROR(dwError);
+                bIsEnabled = TRUE;
             }
             else if (VmDirStringCompareA(VDCMETRIC_LONG_OPTION_DISABLE, argv[i], TRUE) == 0
                         || VmDirStringCompareA(VDCMETRIC_OPTION_DISABLE, argv[i], TRUE) == 0)
             {
-                dwError = _checkAndSetOperation(&bDisable, &bIsOperationSet);
-                BAIL_ON_VMDIR_ERROR(dwError);
+                bDisable = TRUE;
             }
             else if (VmDirStringCompareA(VDCMETRIC_LONG_OPTION_SET_SIZE, argv[i], TRUE) == 0
                         || VmDirStringCompareA(VDCMETRIC_OPTION_SET_SIZE, argv[i], TRUE) == 0)
             {
-                dwError = _checkAndSetOperation(&bSetSize, &bIsOperationSet);
-                BAIL_ON_VMDIR_ERROR(dwError);
+                bSetSize = TRUE;
             }
             else if (VmDirStringCompareA(VDCMETRIC_LONG_OPTION_GET_SIZE, argv[i], TRUE) == 0
                         || VmDirStringCompareA(VDCMETRIC_OPTION_GET_SIZE, argv[i], TRUE) == 0)
             {
-                dwError = _checkAndSetOperation(&bGetSize, &bIsOperationSet);
-                BAIL_ON_VMDIR_ERROR(dwError);
+                bGetSize = TRUE;
             }
             else if (VmDirStringCompareA(VDCMETRIC_LONG_OPTION_RETRIEVE, argv[i], TRUE) == 0
                         || VmDirStringCompareA(VDCMETRIC_OPTION_RETRIEVE, argv[i], TRUE) == 0)
             {
-                dwError = _checkAndSetOperation(&bRetrieve, &bIsOperationSet);
-                BAIL_ON_VMDIR_ERROR(dwError);
+                bRetrieve = TRUE;
             }
             else if (VmDirStringCompareA(VDCMETRIC_LONG_OPTION_FLUSH, argv[i], TRUE) == 0
                         || VmDirStringCompareA(VDCMETRIC_OPTION_FLUSH, argv[i], TRUE) == 0)
             {
-                dwError = _checkAndSetOperation(&bFlush, &bIsOperationSet);
-                BAIL_ON_VMDIR_ERROR(dwError);
+                bFlush = TRUE;
             }
             else if (VmDirStringCompareA(VDCMETRIC_LONG_OPTION_AGGREGATE, argv[i], TRUE) == 0
                         || VmDirStringCompareA(VDCMETRIC_OPTION_AGGREGATE, argv[i], TRUE) == 0)
             {
-                dwError = _checkAndSetOperation(&bAggregate, &bIsOperationSet);
-                BAIL_ON_VMDIR_ERROR(dwError);
+                bAggregate = TRUE;
             }
         }
         i++;
@@ -353,9 +322,9 @@ error:
 
 DWORD
 VmDirParseSetSizeArgs(
-        int      argc,
-        char*    argv[],
-        PDWORD pdwSize
+        int     argc,
+        char*   argv[],
+        PDWORD  pdwSize
         )
 {
     DWORD dwError = ERROR_SUCCESS;
@@ -382,7 +351,12 @@ VmDirParseSetSizeArgs(
         switch (opt)
         {
         case VDCMETRIC_OPTION_SET_SIZE:
-            dwSize = atoi(optarg);
+            dwSize = (DWORD)VmDirStringToLA(optarg, NULL, 10);
+            break;
+
+        case '?':
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
             break;
 
         default:
@@ -398,7 +372,7 @@ VmDirParseSetSizeArgs(
                     || VmDirStringCompareA(VDCMETRIC_OPTION_SET_SIZE, argv[i], TRUE) == 0)
             {
                 VmDirGetCmdLineOption(argc, argv, &i, &pszSize);
-                dwSize = atoi(pszSize);
+                dwSize = (DWORD)VmDirStringToLA(pszSize, NULL, 10);
             }
         }
         i++;
@@ -552,6 +526,132 @@ cleanup:
 error:
     goto cleanup;
 }
+
+DWORD
+VmDirValidateBaseArgs(
+        PSTR pszNetworkAddress,
+        PSTR pszDomain,
+        PSTR pszUserName,
+        PSTR pszPassword
+        )
+{
+    DWORD dwError = 0;
+
+    if (pszNetworkAddress || pszDomain || pszUserName || pszPassword)
+    {
+        if (!pszNetworkAddress)
+        {
+            printf("Missing option: -%c\n",
+                    VDCMETRIC_OPTION_NETWORK_ADDRESS);
+            dwError = ERROR_INVALID_PARAMETER;
+        }
+        if (!pszDomain)
+        {
+            printf("Missing option: -%c\n",
+                    VDCMETRIC_OPTION_DOMAIN);
+            dwError = ERROR_INVALID_PARAMETER;
+        }
+        if (!pszUserName)
+        {
+            printf("Missing option: -%c\n",
+                    VDCMETRIC_OPTION_USERNAME);
+            dwError = ERROR_INVALID_PARAMETER;
+        }
+        if (!pszPassword)
+        {
+            printf("Missing option: -%c\n",
+                    VDCMETRIC_OPTION_PASSWORD);
+            dwError = ERROR_INVALID_PARAMETER;
+        }
+    }
+
+    return dwError;
+}
+
+DWORD
+VmDirValidateOperationArgs(
+        BOOLEAN bNodeData,
+        BOOLEAN bEnable,
+        BOOLEAN bIsEnabled,
+        BOOLEAN bDisable,
+        BOOLEAN bSetSize,
+        BOOLEAN bGetSize,
+        BOOLEAN bRetrieve,
+        BOOLEAN bFlush,
+        BOOLEAN bAggregate
+        )
+{
+    DWORD dwError = 0;
+    DWORD dwOpCnt = 0;
+
+    if (bNodeData)
+    {
+        dwOpCnt++;
+    }
+    if (bEnable)
+    {
+        dwOpCnt++;
+    }
+    if (bIsEnabled)
+    {
+        dwOpCnt++;
+    }
+    if (bDisable)
+    {
+        dwOpCnt++;
+    }
+    if (bSetSize)
+    {
+        dwOpCnt++;
+    }
+    if (bGetSize)
+    {
+        dwOpCnt++;
+    }
+    if (bRetrieve)
+    {
+        dwOpCnt++;
+    }
+    if (bFlush)
+    {
+        dwOpCnt++;
+    }
+    if (bAggregate)
+    {
+        dwOpCnt++;
+    }
+
+    if (dwOpCnt == 0)
+    {
+        printf( "No operation were chosen\n");
+        dwError = ERROR_INVALID_PARAMETER;
+    }
+    else if (dwOpCnt > 1)
+    {
+        printf( "More than one operation were chosen, "
+                "You can choose only one operation\n");
+        dwError = ERROR_INVALID_PARAMETER;
+    }
+
+    return dwError;
+}
+
+DWORD
+VmDirValidateSetSizeArgs(
+        DWORD dwSize
+        )
+{
+    DWORD dwError = 0;
+
+    if (dwSize == 0)
+    {
+        printf("Enter valid buffer size to set\n");
+        dwError = ERROR_INVALID_PARAMETER;
+    }
+
+    return dwError;
+}
+
 
 VOID
 ShowUsage(

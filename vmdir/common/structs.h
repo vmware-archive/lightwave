@@ -132,6 +132,7 @@ typedef struct _VM_DIR_SECURITY_CONTEXT_
 {
 #if defined _WIN32
         PSID pSid;
+        BOOL bRoot;
 #else
         uid_t uid;
 #endif

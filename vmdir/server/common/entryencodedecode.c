@@ -51,6 +51,8 @@ VmDirComputeEncodedEntrySize(
     ber_len_t    size = 0;
     int          i = 0;
     PVDIR_ATTRIBUTE pAttr = NULL;
+    int          iLocalnAttrs = 0;
+    int          iLocalnVals = 0;
 
     VmDirLog( LDAP_DEBUG_TRACE, "ComputeEncodedEntrySize: Begin, DN: %s", pEntry->dn.lberbv.bv_val );
 
@@ -65,20 +67,35 @@ VmDirComputeEncodedEntrySize(
     size += LEN_OF_LEN; // to store number of attributes
     size += LEN_OF_LEN; // to store number of attribute values
 
-   for (pAttr = pEntry->attrs; pAttr != NULL; pAttr = pAttr->next, (*nAttrs)++)
+   for (pAttr = pEntry->attrs; pAttr != NULL; pAttr = pAttr->next)
    {
-        size += LEN_OF_LEN;        // store attribute id map in 2 bytes
-
-        size += LEN_OF_LEN;            // to store number of attribute values
-        for (i = 0; pAttr->vals[i].lberbv.bv_val; i++, (*nVals)++)
+        // NOTE: using bv_val != NULL check below causes compiler optimizer issue on windows => this check confuses the
+        // "for" loop below
+        if (pAttr->vals[0].lberbv.bv_len != 0) // at least one attribute value is present.
         {
-            size += LEN_OF_LEN;                // to store attribute value len
-            size += pAttr->vals[i].lberbv.bv_len + 1; // trailing NUL byte
+            size += LEN_OF_LEN;        // store attribute id map in 2 bytes
+
+            size += LEN_OF_LEN;            // to store number of attribute values
+            for (i = 0; pAttr->vals[i].lberbv.bv_val; i++, iLocalnVals++)
+            {
+                if (pAttr->vals[i].lberbv.bv_len > (UINT16_MAX - 1))
+                {
+                    dwError = VMDIR_ERROR_INVALID_ENTRY;
+                    VMDIR_LOG_ERROR ( VMDIR_LOG_MASK_ALL, "VmDirComputeEncodedEntrySize failed (%u) DN:(%s) attribute maximum length exceeded:(%d > %d)",
+                        dwError, pEntry->dn.lberbv.bv_val, pAttr->vals[i].lberbv.bv_len, UINT16_MAX - 1);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+                }
+                size += LEN_OF_LEN;                // to store attribute value len
+                size += pAttr->vals[i].lberbv.bv_len + 1; // trailing NUL byte
+            }
+            iLocalnVals++;            // Empty (with bv_val = NULL) BerValue at the end
+            iLocalnAttrs++;
         }
-        (*nVals)++;            // Empty (with bv_val = NULL) BerValue at the end
     }
 
     *pEncodedEntrySize = size;
+    *nAttrs = iLocalnAttrs;
+    *nVals = iLocalnVals;
 
 error:
 
@@ -155,7 +172,6 @@ VmDirEncodeEntry(
             dwError = ERROR_INVALID_ATTRIBUTETYPES;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
-        VmDirEncodeShort(&writer, attr->pATDesc->usAttrID);
 
         // Put values
         if (attr->vals)
@@ -164,19 +180,25 @@ VmDirEncodeEntry(
             {
                 ;
             }
-            VmDirEncodeShort(&writer, i);
 
-            for (i=0; attr->vals[i].lberbv.bv_val; i++)
+            if (i > 0)
             {
-                VmDirEncodeShort(&writer, attr->vals[i].lberbv.bv_len);
+                VmDirEncodeShort(&writer, attr->pATDesc->usAttrID);
+                VmDirEncodeShort(&writer, i);
 
-                // TODO: this needs to provide proper buffer size -
-                // i.e. what's left off of buffer, not whole original size
-                dwError = VmDirCopyMemory(writer, pEncodedBerval->lberbv.bv_len, attr->vals[i].lberbv.bv_val, attr->vals[i].lberbv.bv_len);
-                BAIL_ON_VMDIR_ERROR( dwError );
+                for (i=0; attr->vals[i].lberbv.bv_val; i++)
+                {
+                    VmDirEncodeShort(&writer, attr->vals[i].lberbv.bv_len);
 
-                writer += attr->vals[i].lberbv.bv_len;
-                *writer++ = '\0';
+                    // TODO: this needs to provide proper buffer size -
+                    // i.e. what's left off of buffer, not whole original size
+                    dwError = VmDirCopyMemory(writer, pEncodedBerval->lberbv.bv_len, attr->vals[i].lberbv.bv_val,
+                                              attr->vals[i].lberbv.bv_len);
+                    BAIL_ON_VMDIR_ERROR( dwError );
+
+                    writer += attr->vals[i].lberbv.bv_len;
+                    *writer++ = '\0';
+                }
             }
         }
     }

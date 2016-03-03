@@ -22,14 +22,6 @@ _VmDirIsIPV4AddrFormat(
     PCSTR   pszAddr
     );
 
-static
-int
-_VmDirQsortCompareString(
-        const void*         ppStr1,
-        const void*         ppStr2
-        );
-
-
 /*
  * Assumptions: tenant dn starts with "dc="
  */
@@ -1470,7 +1462,14 @@ VmDirSleep(
 )
 {
 #ifndef _WIN32
-    sleep( dwMilliseconds/1000 );
+    struct timespec req={0};
+    DWORD   dwSec = dwMilliseconds/1000;
+    DWORD   dwMS  = dwMilliseconds%1000;
+
+    req.tv_sec  = dwSec;
+    req.tv_nsec = dwMS*1000000;
+
+    nanosleep( &req, NULL ); // ignore error
 #else
     Sleep( dwMilliseconds );
 #endif
@@ -1481,7 +1480,7 @@ VmDirRun(
     PCSTR pszCmd
     )
 {
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "exeuting %s\n", pszCmd);
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "executing %s\n", pszCmd);
     return system(pszCmd);
 }
 
@@ -2192,6 +2191,10 @@ error:
     goto cleanup;
 }
 
+/*
+ * len should be the entire length of the string, including the space for the
+ * null terminator.
+ */
 VOID
 VmDirReadString(
     PCSTR szPrompt,
@@ -2542,6 +2545,62 @@ error:
 
 /*given the UPN eg. <username>@vsphere.local returns the UserName */
 DWORD
+VmDirUPNToNameAndDomain(
+    PCSTR   pszUPN,
+    PSTR*   ppszName,
+    PSTR*   ppszDomain
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszTmp = NULL;
+    PSTR    pszName = NULL;
+    PSTR    pszDomain = NULL;
+
+    if (pszUPN == NULL)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pszTmp = VmDirStringChrA(pszUPN, '@');
+    if (pszTmp)
+    {
+        dwError = VmDirAllocateStringOfLenA( pszUPN, pszTmp-pszUPN, &pszName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirAllocateStringA( pszTmp+1, &pszDomain);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+    }
+    else
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+    }
+
+    if (ppszName)
+    {
+        *ppszName = pszName;
+        pszName = NULL;
+    }
+    if (ppszDomain)
+    {
+        *ppszDomain = pszDomain;
+        pszDomain = NULL;
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszName);
+    VMDIR_SAFE_FREE_MEMORY(pszDomain);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "[%s][%d] for (%s) failed (%u)",
+                     __FUNCTION__,__LINE__, VDIR_SAFE_STRING(pszUPN), dwError);
+
+    goto cleanup;
+}
+
+DWORD
 VmDirUPNToUserName(
     PCSTR pszUPN,
     PSTR* ppszSrcUserName
@@ -2549,32 +2608,17 @@ VmDirUPNToUserName(
 {
     DWORD   dwError         = 0;
     PSTR    pszSrcUserName  = NULL;
-    DWORD   dwLen           = 0;
 
-    pszSrcUserName = VmDirStringChrA(pszUPN,'@');
-
-    dwLen = pszSrcUserName-pszUPN;
-
-    if(!pszSrcUserName || !dwLen)
-        return VMDIR_ERROR_INVALID_PARAMETER;
-
-    pszSrcUserName=NULL;
-
-    dwError = VmDirAllocateAndCopyMemory((void*)pszUPN,
-                                         dwLen,
-                                         (void*)&pszSrcUserName);
+    dwError = VmDirUPNToNameAndDomain(pszUPN, &pszSrcUserName, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppszSrcUserName=pszSrcUserName;
 
 cleanup:
-
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirUPNToUserName for (%s) failed (%u)", pszUPN, dwError);
     VMDIR_SAFE_FREE_MEMORY(pszSrcUserName);
-
     goto cleanup;
 }
 
@@ -2738,7 +2782,7 @@ VmDirGetSchemaAttributeValue (
         }
 
         // Sort Here
-        qsort (pszAttributeValues[dwAttributeIndex],dwValueCount,sizeof(PSTR),_VmDirQsortCompareString) ;
+        qsort (pszAttributeValues[dwAttributeIndex],dwValueCount,sizeof(PSTR),VmDirQsortCaseExactCompareString) ;
     }
 
     *pdwValueCount = dwValueCount ;
@@ -3201,12 +3245,11 @@ VmDirSchemaAttributesFree (
 /*
  * Qsort comparison function
  */
-static
 int
-_VmDirQsortCompareString(
+VmDirQsortCaseExactCompareString(
     const void*             ppStr1,
     const void*             ppStr2
-)
+    )
 {
 
     if ((ppStr1 == NULL || *(char * const *)ppStr1 == NULL) &&
@@ -3228,6 +3271,31 @@ _VmDirQsortCompareString(
     return VmDirStringCompareA(* (char * const *) ppStr1, * (char * const *) ppStr2, TRUE);
 }
 
+int
+VmDirQsortCaseIgnoreCompareString(
+    const void*             ppStr1,
+    const void*             ppStr2
+    )
+{
+
+    if ((ppStr1 == NULL || *(char * const *)ppStr1 == NULL) &&
+        (ppStr2 == NULL || *(char * const *)ppStr2 == NULL))
+    {
+        return 0;
+    }
+
+    if (ppStr1 == NULL || *(char * const *)ppStr1 == NULL)
+    {
+        return -1;
+    }
+
+    if (ppStr2 == NULL || *(char * const *)ppStr2 == NULL)
+    {
+        return 1;
+    }
+
+    return VmDirStringCompareA(* (char * const *) ppStr1, * (char * const *) ppStr2, FALSE);
+}
 
 DWORD
 VmDirSynchSchemaAttrMetadataVersion(
@@ -3530,4 +3598,94 @@ VmdDirSchemaParseNormalizeElement(
     }
 
     return;
+}
+
+#ifdef _WIN32
+
+static
+DWORD
+_VmDirGetGenericPath(
+    PCSTR   pszName,
+    PSTR*   ppszPath
+)
+{
+    DWORD   dwError = 0;
+    CHAR    pbuf[MAX_PATH+1] = {0};
+    PSTR    pszPath = NULL;
+
+    if (pszName==NULL || ppszPath== NULL)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirGetRegKeyValue(
+                VMDIR_CONFIG_SOFTWARE_KEY_PATH,
+                pszName,
+                pbuf,
+                MAX_PATH );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(pbuf, &pszPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppszPath = pszPath;
+
+cleanup:
+    return dwError;
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszPath);
+    goto cleanup;
+}
+
+DWORD
+VmDirGetCfgPath(
+    PSTR*   ppszCfgPath
+    )
+{
+    return _VmDirGetGenericPath(VMDIR_REG_KEY_CONFIG_PATH,ppszCfgPath);
+}
+
+#endif
+
+DWORD
+VmDirGetDefaultSchemaFile(
+    PSTR*   ppszSchemaFile
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszSchemaFile = NULL;
+#ifdef _WIN32
+    PSTR    pszCfgPath = NULL;
+#else
+    PCSTR   pszLinuxFile = VMDIR_CONFIG_DIR "/vmdirschema.ldif";
+#endif
+
+    if ( ppszSchemaFile==NULL)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+#ifdef _WIN32
+    dwError = VmDirGetCfgPath(&pszCfgPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(&pszSchemaFile,"%s\\vmdirschema.ldif", pszCfgPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+#else
+    dwError = VmDirAllocateStringA(pszLinuxFile, &pszSchemaFile);
+    BAIL_ON_VMDIR_ERROR(dwError);
+#endif
+
+    *ppszSchemaFile = pszSchemaFile;
+
+cleanup:
+    return dwError;
+error:
+#ifdef _WIN32
+    VMDIR_SAFE_FREE_MEMORY(pszCfgPath);
+#endif
+    VMDIR_SAFE_FREE_MEMORY(pszSchemaFile);
+    goto cleanup;
 }

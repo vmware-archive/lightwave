@@ -72,16 +72,11 @@ VmDirVmAclShutdown(
     VOID
     )
 {
-#define RID_BUF_SIZE24	24
-    DWORD                 dwCount = 0;
-    PLW_HASHTABLE_NODE pNode = NULL;
-    LW_HASHTABLE_ITER  iter = LW_HASHTABLE_ITER_INIT;
-    CHAR                  RIDBuf[RID_BUF_SIZE24] = {0};
+    PLW_HASHTABLE_NODE    pNode = NULL;
+    LW_HASHTABLE_ITER     iter = LW_HASHTABLE_ITER_INIT;
 
     if (gSidGenState.pHashtable)
     {
-        dwCount = LwRtlHashTableGetCount(gSidGenState.pHashtable);
-
         while ((pNode = LwRtlHashTableIterate(gSidGenState.pHashtable, &iter)))
         {
             DWORD                      RidSeq = 0;
@@ -89,10 +84,7 @@ VmDirVmAclShutdown(
             VmDirFindDomainRidSequenceWithDN( pState->pszDomainDn, &RidSeq);
             if (RidSeq > 0)
             {
-                if ( VmDirStringPrintFA( RIDBuf, RID_BUF_SIZE24 -1, "%lu", RidSeq) == 0 )
-                {
-                    VmDirSyncRIDSeqToDB( pState->pszDomainDn, RIDBuf ); // ignore error.
-                }
+                (VOID)VmDirSyncRIDSeqToDB(pState->pszDomainDn, RidSeq);
             }
         }
     }
@@ -112,7 +104,7 @@ VmDirVmAclShutdown(
 static
 LW_PCVOID
 _DomainSIDGenStateGetKey(
-    PLW_HASHTABLE_NODE   pNode,
+    PLW_HASHTABLE_NODE      pNode,
     PVOID                   pUnused
     )
 {
@@ -216,7 +208,7 @@ VmDirFreeSidGenState(
     PVDIR_SID_GEN_STATE pGsidGenState
     )
 {
-	BOOLEAN bInLock = FALSE;
+    BOOLEAN bInLock = FALSE;
     PLW_HASHTABLE_NODE pNode = NULL;
     LW_HASHTABLE_ITER iter = LW_HASHTABLE_ITER_INIT;
 

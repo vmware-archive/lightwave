@@ -122,30 +122,6 @@ extern "C" {
 // (the host instance created by running vdcpromo the first time)
 #define VMDIR_GUID_STRING_FOR_ROOT_DOMAIN  "00000000-0000-0001-8888-000000000000"
 
-#define VMDIR_RID_STACK_SEPARATOR  ':'
-
-typedef struct _VDIR_DOMAIN_SID_GEN_STATE
-{
-    PSTR                    pszDomainDn; // in order to search with a given DN
-    PSTR                    pszDomainSid; // comparably to domainSid
-    DWORD                   dwDomainRidSeqence;
-    DWORD                   dwCount;
-
-    LW_HASHTABLE_NODE    Node;
-
-} VDIR_DOMAIN_SID_GEN_STATE, *PVDIR_DOMAIN_SID_GEN_STATE;
-
-typedef struct _VDIR_SID_GEN_STATE
-{
-    // NOTE: order of fields MUST stay in sync with struct initializer...
-    PVMDIR_MUTEX        mutex;
-    PLW_HASHTABLE    pHashtable;
-    PVDIR_THREAD_INFO	pRIDSyncThr;
-    PVMDIR_TSSTACK      pStack;
-} VDIR_SID_GEN_STATE, *PVDIR_SID_GEN_STATE;
-
-extern VDIR_SID_GEN_STATE gSidGenState;
-
 // objectSid.c
 
 DWORD
@@ -188,13 +164,6 @@ VmDirFindDomainSidRid(
     PCSTR pszObjectSid,
     PSTR* ppszDomainSid,
     PDWORD pdwRid
-    );
-
-DWORD
-VmDirGetSidGenStateIfDomain_inlock(
-    PCSTR                       pszObjectDN,
-    PSTR                        pszGuid, /* optional Guid used to generate sid */
-    PVDIR_DOMAIN_SID_GEN_STATE* ppDomainState
     );
 
 // libmain.c

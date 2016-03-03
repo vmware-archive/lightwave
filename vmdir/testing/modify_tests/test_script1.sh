@@ -8,78 +8,93 @@ echo "Create telephonenumber equality index"
 echo "#########################################################"
 echo
 
-ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=indices,cn=config
 changetype: modify
 add: vmwAttrIndexDesc
 vmwAttrIndexDesc: telephonenumber eq
+vmwAttrIndexDesc: otherTelephone eq
 EOM
 
-ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -b "cn=indices,cn=config" -s base "objectclass=*"
+ldapsearch -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 -b "cn=indices,cn=config" -s base "objectclass=*"
 
 echo "#########################################################"
-echo "Add an attribute value (cn: david) to an existing indexed attribute."
+echo "Add a new attribute (otherTelephone: 223-556-8899)."
 echo "#########################################################"
 echo
 
-ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=John-2,ou=eng,dc=vmware,dc=com
 changetype: modify
-add: cn
-cn: david
+add: otherTelephone
+otherTelephone: 223-556-8899
 EOM
 
-ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=david" dn cn
+ldapsearch -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "otherTelephone=223-556-8899" dn otherTelephone
 
 echo "#########################################################"
-echo "Delete an attribute value (cn: david) for an indexed attribute."
+echo "Add an attribute value (otherTelephone: 224-557-8800) to an existing indexed attribute."
 echo "#########################################################"
 echo
 
-ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=John-2,ou=eng,dc=vmware,dc=com
 changetype: modify
-delete: cn
-cn: david
+add: otherTelephone
+otherTelephone: 224-557-8800
 EOM
 
-ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=david"
+ldapsearch -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "otherTelephone=224-557-8800" dn otherTelephone
 
-ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=John-2" dn cn
+echo "#########################################################"
+echo "Delete an attribute value (otherTelephone: 224-557-8800) for an indexed attribute."
+echo "#########################################################"
+echo
+
+ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+dn: cn=John-2,ou=eng,dc=vmware,dc=com
+changetype: modify
+delete: otherTelephone
+otherTelephone: 224-557-8800
+EOM
+
+ldapsearch -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "otherTelephone=224-557-8800"
+
+ldapsearch -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "otherTelephone=223-556-8899" dn otherTelephone
 
 echo "#########################################################"
 echo "Delete a non-indexed attribute (st)"
 echo "#########################################################"
 echo
 
-ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=John-2,ou=eng,dc=vmware,dc=com
 changetype: modify
 delete: st
 EOM
 
-ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=John-2" dn st
+ldapsearch -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=John-2" dn st
 
 echo "#########################################################"
 echo "Add a non-indexed attribute (st)"
 echo "#########################################################"
 echo
 
-ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=John-2,ou=eng,dc=vmware,dc=com
 changetype: modify
 add: st
 st: washington
 EOM
 
-ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=John-2" st
+ldapsearch -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=John-2" st
 
 echo "#########################################################"
 echo "Multiple Add mods (cn:david, st:california) should fail due to attribute st is a single value attribute"
 echo "#########################################################"
 echo
 
-ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=John-2,ou=eng,dc=vmware,dc=com
 changetype: modify
 add: cn
@@ -89,14 +104,14 @@ add: st
 st: california
 EOM
 
-ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=John-2" st
+ldapsearch -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=John-2" st
 
 echo "#########################################################"
 echo "Multiple Delete mods (cn:david, st:california)"
 echo "#########################################################"
 echo
 
-ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=John-2,ou=eng,dc=vmware,dc=com
 changetype: modify
 delete: cn
@@ -106,54 +121,54 @@ delete: st
 st: california
 EOM
 
-ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=John-2" st
+ldapsearch -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=John-2" st
 
 echo "#########################################################"
 echo "Try to delete a MUST attribute (cn)"
 echo "#########################################################"
 echo
 
-ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=John-2,ou=eng,dc=vmware,dc=com
 changetype: modify
 delete: cn
 EOM
 
-ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=John-2" dn cn
+ldapsearch -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=John-2" dn cn
 
 echo "#########################################################"
 echo "Delete telephonenumber attribute by replacing it with no values"
 echo "#########################################################"
 echo
 
-ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=John-2,ou=eng,dc=vmware,dc=com
 changetype: modify
 replace: telephonenumber
 EOM
 
-ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=John-2" dn telephonenumber
+ldapsearch -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=John-2" dn telephonenumber
 
 echo "#########################################################"
 echo "Add telephonenumber attribute by replacing it with values"
 echo "#########################################################"
 echo
 
-ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=John-2,ou=eng,dc=vmware,dc=com
 changetype: modify
 replace: telephonenumber
 telephonenumber: 425-123-456-2
 EOM
 
-ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=John-2" dn telephonenumber
+ldapsearch -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "cn=John-2" dn telephonenumber
 
 echo "#########################################################"
 echo "Replace telephonenumber attribute values"
 echo "#########################################################"
 echo
 
-ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 dn: cn=John-2,ou=eng,dc=vmware,dc=com
 changetype: modify
 replace: telephonenumber
@@ -162,7 +177,7 @@ telephonenumber: 0987654321-2
 telephonenumber: 0987654321-3
 EOM
 
-ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "telephonenumber=0987654321-2"
+ldapsearch -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 -b "dc=com" -s subtree "telephonenumber=0987654321-2"
 
 
 #echo "#########################################################"
@@ -170,7 +185,7 @@ ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -
 #echo "#########################################################"
 #echo
 
-#ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+#ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 #dn: cn=John-2,ou=eng,dc=vmware,dc=com
 #changetype: modify
 #replace: seeAlso
@@ -183,7 +198,7 @@ ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -
 #echo "#########################################################"
 #echo
 
-#ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+#ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 #dn: cn=Joe-2,ou=eng,dc=vmware,dc=com
 #changetype: add
 #cn: Joe-2
@@ -198,7 +213,7 @@ ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -
 #echo "#########################################################"
 #echo
 
-#ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+#ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 #dn: cn=Joe-2,ou=eng,dc=vmware,dc=com
 #changetype: add
 #cn: Joe-2
@@ -212,7 +227,7 @@ ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -
 #echo "#########################################################"
 #echo
 
-#ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+#ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 #dn: cn=Joe-2,ou=eng,dc=vmware,dc=com
 #changetype: modify
 #add: seeAlso
@@ -224,7 +239,7 @@ ldapsearch -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 -
 #echo "#########################################################"
 #echo
 
-#ldapmodify -c -h $host -p $port -x -D "cn=Admin,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
+#ldapmodify -c -h $host -p $port -x -D "cn=Administrator,cn=Users,dc=vmware,dc=com" -w 123 <<EOM
 #dn: cn=Joe-2,ou=eng,dc=vmware,dc=com
 #changetype: delete
 #EOM

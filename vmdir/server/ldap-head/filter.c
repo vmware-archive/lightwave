@@ -87,6 +87,12 @@ VmDirConcatTwoFilters(
     PVDIR_FILTER pAnd = NULL;
     PVDIR_SCHEMA_CTX pSchemaCtxCurr = NULL;
 
+    if ( !pszAttrFilterName1 || !pszAttrFilterVal1 || !pszAttrFilterName2 || !pszAttrFilterVal2 )
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     if (!pSchemaCtx)
     {
         dwError = VmDirSchemaCtxAcquire(&pSchemaCtxCurr);
@@ -426,6 +432,7 @@ CheckIfEntryPassesFilter(
             retVal = TestSubstringsFilter( op, e, f );
             break;
         case LDAP_FILTER_GE:
+        case LDAP_FILTER_LE:
             retVal = TestAvaFilter( op, e, f );
             break;
         case LDAP_FILTER_PRESENT:
@@ -477,6 +484,7 @@ DeleteFilter(
 
         case LDAP_FILTER_EQUALITY:
         case LDAP_FILTER_GE:
+        case LDAP_FILTER_LE:
             VmDirFreeBervalContent( &(f->filtComp.ava.value) );
             break;
 
@@ -650,7 +658,18 @@ FilterToStrFilter(
                 f->filtComp.ava.type.lberbv.bv_val,
                 f->filtComp.ava.value.lberbv.bv_val
             );
-            strFilter->lberbv.bv_len += 1 + f->filtComp.ava.type.lberbv.bv_len + 1 + f->filtComp.ava.value.lberbv.bv_len + 1;
+            strFilter->lberbv.bv_len += 1 + f->filtComp.ava.type.lberbv.bv_len + 2 + f->filtComp.ava.value.lberbv.bv_len + 1;
+            break;
+
+        case LDAP_FILTER_LE:
+            VmDirStringPrintFA(
+                strFilter->lberbv.bv_val + strFilter->lberbv.bv_len,
+                1 + f->filtComp.ava.type.lberbv.bv_len + 2 + f->filtComp.ava.value.lberbv.bv_len + 1 + 1,
+                "(%s<=%s)",
+                f->filtComp.ava.type.lberbv.bv_val,
+                f->filtComp.ava.value.lberbv.bv_val
+            );
+            strFilter->lberbv.bv_len += 1 + f->filtComp.ava.type.lberbv.bv_len + 2 + f->filtComp.ava.value.lberbv.bv_len + 1;
             break;
 
         case LDAP_FILTER_PRESENT:
@@ -781,6 +800,7 @@ ParseFilter(
             break;
 
         case LDAP_FILTER_GE:
+        case LDAP_FILTER_LE:
             retVal = ParseAva( op, f, lr );
             BAIL_ON_VMDIR_ERROR( retVal );
             break;
@@ -1202,7 +1222,8 @@ RequiredSizeForStrFilter(
         }
 
         case LDAP_FILTER_GE:
-            strSize = f->filtComp.ava.type.lberbv.bv_len + f->filtComp.ava.value.lberbv.bv_len + 4 /* (>=) */;
+        case LDAP_FILTER_LE:
+            strSize = f->filtComp.ava.type.lberbv.bv_len + f->filtComp.ava.value.lberbv.bv_len + 4 /* (>=) or (<=) */;
             break;
 
         case LDAP_FILTER_PRESENT:
@@ -1237,7 +1258,10 @@ TestAvaFilter(
     PFN_VDIR_COMPARE_FUNCTION   pCompareFunc = NULL;
     VDIR_SCHEMA_MATCH_TYPE      matchType = 0;
 
-    assert( op && e && f && (f->choice == LDAP_FILTER_EQUALITY || f->choice == LDAP_FILTER_GE));
+    assert( op && e && f &&
+            (f->choice == LDAP_FILTER_EQUALITY ||
+             f->choice == LDAP_FILTER_GE       ||
+             f->choice == LDAP_FILTER_LE));
 
     VmDirLog( LDAP_DEBUG_TRACE, "TestAvaFilter: Begin, filter attribute type = %s",
               f->filtComp.ava.type.lberbv.bv_val);
@@ -1265,6 +1289,16 @@ TestAvaFilter(
                 goto done;
             }
             matchType = VDIR_SCHEMA_MATCH_GE;
+            break;
+        case LDAP_FILTER_LE:
+            pCompareFunc = f->filtComp.ava.pATDesc->pOrderingMR ? f->filtComp.ava.pATDesc->pOrderingMR->pCompareFunc :
+                                                                  NULL;
+            if ( pCompareFunc == NULL )
+            {
+                retVal = FILTER_RES_UNDEFINED;
+                goto done;
+            }
+            matchType = VDIR_SCHEMA_MATCH_LE;
             break;
         default:
             assert( FALSE );

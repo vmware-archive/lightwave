@@ -44,6 +44,9 @@
 #include <stdint.h>
 #include <tchar.h>
 
+#define LW_STRICT_NAMESPACE
+#include <lw/types.h>
+
 #include "banned.h"
 
 #endif

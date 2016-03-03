@@ -58,6 +58,9 @@
 #include "ldap-int.h"
 #define LDAP_UNICODE 0
 
+#define LW_STRICT_NAMESPACE
+#include <lw/types.h>
+
 #include "banned.h"
 #include <vmdir.h>
 #include <vmdirdefines.h>

@@ -315,6 +315,12 @@ _VmDirLogSearchInformation(
 {
     DWORD dwError = 0;
 
+    if (!pLogEntry)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     if (!IsNullOrEmptyString(srcRec.opInfo.searchInfo.pszAttributes))
     {
         dwError = VmDirStringNCpyA(
@@ -444,6 +450,8 @@ _VmDirSuperLoggingAllocString(
     DWORD dwError = 0;
     PWSTR pwsz = NULL;
 
+    assert(ppDestinationString && pSourceString);
+
     dwError = VmDirAllocateStringWFromA(pSourceString, &pwsz);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -491,24 +499,30 @@ _CopyLogSearchInformation(
 {
     DWORD dwError = 0;
 
+    if (!row)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     dwError = _VmDirSuperLoggingAllocString(
             &row->opInfo.searchInfo.pwszAttributes,
-            searchInfo.szAttributes);
+            VDIR_SAFE_STRING(searchInfo.szAttributes));
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirSuperLoggingAllocString(
             &row->opInfo.searchInfo.pwszBaseDN,
-            searchInfo.szBaseDN);
+            VDIR_SAFE_STRING(searchInfo.szBaseDN));
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirSuperLoggingAllocString(
             &row->opInfo.searchInfo.pwszScope,
-            searchInfo.szScope);
+            VDIR_SAFE_STRING(searchInfo.szScope));
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirSuperLoggingAllocString(
             &row->opInfo.searchInfo.pwszIndexResults,
-            searchInfo.szIndexResults);
+            VDIR_SAFE_STRING(searchInfo.szIndexResults));
     BAIL_ON_VMDIR_ERROR(dwError);
 
     row->opInfo.searchInfo.dwScanned = searchInfo.dwScanned;

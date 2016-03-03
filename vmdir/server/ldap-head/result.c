@@ -360,36 +360,12 @@ VmDirSendSearchEntry(
                 }
             }
 
-            {   // we only support full replica, but exclude CFG, schema subtree (except schema entry) and CN=DSE Root entry
-                static VDIR_BERVALUE   BervCfgDN = { {CFG_ROOT_DN_LEN,CFG_ROOT_DN}, 0, CFG_ROOT_DN_LEN, CFG_ROOT_DN };
-                static VDIR_BERVALUE   BervSchemaDN = { {SCHEMA_NAMING_CONTEXT_DN_LEN,SCHEMA_NAMING_CONTEXT_DN},
-                                                      0, SCHEMA_NAMING_CONTEXT_DN_LEN, SCHEMA_NAMING_CONTEXT_DN };
-                BOOLEAN bIsCfgSubEntry = FALSE;
-                BOOLEAN bIsSchemaSubEntry = FALSE;
-
-                // do not replicate cn=config tree
-                retVal = VmDirIsAncestorDN(&BervCfgDN, &pSrEntry->dn, &bIsCfgSubEntry);
-                BAIL_ON_VMDIR_ERROR(retVal);
-                if (bIsCfgSubEntry)
-                {
-                    goto cleanup; // Don't send this entry
-                }
-
-                // do not replicate cn=schemacontext tree except cn=aggregate (schema entry)
-                retVal = VmDirIsAncestorDN(&BervSchemaDN, &pSrEntry->dn, &bIsSchemaSubEntry);
-                BAIL_ON_VMDIR_ERROR(retVal);
-                if (bIsSchemaSubEntry && pSrEntry->eId != SUB_SCEHMA_SUB_ENTRY_ID)
-                {
-                    goto cleanup; // Don't send this entry
-                }
-
-                // do not replicate DSE Root entry, because it is a "local" entry.
-                if (pSrEntry->eId == DSE_ROOT_ENTRY_ID)
-                {
-                    VMDIR_LOG_INFO( LDAP_DEBUG_REPL, "SendSearchEntry: Not sending modifications to DSE Root entry, DN: %s",
-                              pSrEntry->dn.bvnorm_val );
-                    goto cleanup; // Don't send this entry
-                }
+            // do not replicate DSE Root entry, because it is a "local" entry.
+            if (pSrEntry->eId == DSE_ROOT_ENTRY_ID)
+            {
+                VMDIR_LOG_INFO( LDAP_DEBUG_REPL, "SendSearchEntry: Not sending modifications to DSE Root entry, DN: %s",
+                          pSrEntry->dn.bvnorm_val );
+                goto cleanup; // Don't send this entry
             }
 
         }
@@ -416,7 +392,6 @@ VmDirSendSearchEntry(
             BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
                                             "Encoding msgId, RES_SEARCH_ENTRY, DN failed");
         }
-
         // Determine if we need to send back the attribute metaData
         if ( pOperation->syncReqCtrl != NULL ) // Replication
         {
@@ -511,11 +486,11 @@ VmDirSendSearchEntry(
             sr->iNumEntrySent++;
 
             VMDIR_LOG_INFO( LDAP_DEBUG_REPL, "SendSearchEntry: Send entry: %s", pSrEntry->dn.lberbv.bv_val);
-
         }
         else
         {
-            VMDIR_LOG_INFO( LDAP_DEBUG_REPL, "SendSearchEntry: NOT Sending entry: %s", pSrEntry->dn.lberbv.bv_val);
+            VMDIR_LOG_INFO( LDAP_DEBUG_REPL, "SendSearchEntry: NOT Sending entry: %s %p %d",
+                            pSrEntry->dn.lberbv.bv_val, pOperation->syncReqCtrl, nonTrivialAttrsInReplScope);
         }
 
         // record max local usnChanged in syncControlDone
@@ -588,17 +563,25 @@ IsAttrInReplScope(
 
     assert( op->syncReqCtrl != NULL );
 
-    if (VmDirStringCompareA( origInvocationId, op->syncReqCtrl->value.syncReqCtrlVal.reqInvocationId.lberbv.bv_val,
-                             TRUE ) == 0 ||
-        (attrType != NULL && (VmDirStringCompareA( attrType, ATTR_LAST_LOCAL_USN_PROCESSED, FALSE) == 0 ||
+    if ((attrType != NULL && (VmDirStringCompareA( attrType, ATTR_LAST_LOCAL_USN_PROCESSED, FALSE) == 0 ||
                               VmDirStringCompareA( attrType, ATTR_UP_TO_DATE_VECTOR, FALSE) == 0 ||
                               VmDirStringCompareA( attrType, VDIR_ATTRIBUTE_SEQUENCE_RID, FALSE) == 0)))
 
     {
-        VMDIR_LOG_VERBOSE( LDAP_DEBUG_REPL_ATTR, "IsAttrInReplScope: Attribute: %s, metaData: %s, replication scope = FALSE",
-                   attrType, attrMetaData );
-
-        // Reset metaData value so that we don't send metaData for this attribute back.
+        // Reset metaData value so that we don't send local only attribute back.
+        attrMetaData[0] = '\0';
+        *inScope = FALSE;
+        goto cleanup;
+    }
+    else if ( attrType != NULL && (VmDirStringCompareA( attrType, ATTR_USN_CHANGED, FALSE) == 0))
+    {
+        ; // always send uSNChanged. (PR 1573117)
+    }
+    else if (VmDirStringCompareA( origInvocationId,
+                  op->syncReqCtrl->value.syncReqCtrlVal.reqInvocationId.lberbv.bv_val,TRUE ) == 0)
+    {
+        // Change is originated from the requesting server.
+        // Reset metaData value so that we don't send metaData as well as this attribute back.
         attrMetaData[0] = '\0';
         *inScope = FALSE;
         goto cleanup;
@@ -667,7 +650,7 @@ IsAttrInReplScope(
         }
     }
 
-    VMDIR_LOG_VERBOSE( LDAP_DEBUG_REPL_ATTR, "IsAttrInReplScope: Attribute: %s, metaData: %s, replication scope = TRUE",
+    VMDIR_LOG_INFO( LDAP_DEBUG_REPL_ATTR, "IsAttrInReplScope: Attribute: %s, metaData: %s, replication scope = TRUE",
               attrType, attrMetaData );
     *inScope = TRUE;
 
@@ -937,6 +920,8 @@ WriteMetaDataAttribute(
 
     for ( ; pAttr != NULL; pAttr = pAttr->next)
     {
+        // By this time, we have already filtered out attributes that should be send back to replication consumer
+        // in prior WriteAttributes -> IsAttrInReplScope call.  They contain proper pAttr->metaData value.
         if (pAttr->metaData[0] != '\0')
         {
             VmDirStringPrintFA( attrMetaDataVal, sizeof(attrMetaDataVal), "%.256s:%s", pAttr->type.lberbv.bv_val, pAttr->metaData);
@@ -945,6 +930,8 @@ WriteMetaDataAttribute(
             if (VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_MODIFYTIMESTAMP, FALSE ) != 0 &&
                 VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE ) != 0)
             {
+                // To prevent endless replication ping pong, supplier should send result only if there are changes
+                // to attribute other than ATTR_USN_CHANGED and ATTR_MODIFYTIMESTAMP.
                 *nonTrivialAttrsInReplScope = TRUE;
             }
             if (ber_printf( ber, "O", &berVal ) == -1 )

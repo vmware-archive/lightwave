@@ -104,6 +104,24 @@ _VmDirFlowCtrlThrExit(
     VOID
     );
 
+static
+VOID
+_VmDirPingIPV6AcceptThr(
+    DWORD   dwPort
+    );
+
+static
+VOID
+_VmDirPingIPV4AcceptThr(
+    DWORD   dwPort
+    );
+
+static
+VOID
+_VmDirPingAcceptThr(
+    DWORD   dwPort
+    );
+
 void
 VmDirDeleteConnection(
     VDIR_CONNECTION **conn
@@ -177,7 +195,7 @@ VmDirInitConnAcceptThread(
                 pThrInfo,
                 gVmdirGlobals.replCycleDoneMutex,     // alternative mutex
                 gVmdirGlobals.replCycleDoneCondition, // alternative cond
-                FALSE);  // join by main thr
+                TRUE);  // join by main thr
 
         dwError = VmDirCreateThread(
                 &pThrInfo->tid,
@@ -209,7 +227,7 @@ VmDirInitConnAcceptThread(
                 pThrInfo,
                 gVmdirGlobals.replCycleDoneMutex,     // alternative mutex
                 gVmdirGlobals.replCycleDoneCondition, // alternative cond
-                FALSE);  // join by main thr
+                TRUE);  // join by main thr
 
         dwError = VmDirCreateThread(
                 &pThrInfo->tid,
@@ -237,6 +255,33 @@ error:
     VMDIR_SAFE_FREE_MEMORY(pdwPort);
 
     goto cleanup;
+}
+
+VOID
+VmDirShutdownConnAcceptThread(
+    VOID
+    )
+{
+    PDWORD  pdwLdapPorts = NULL;
+    DWORD   dwLdapPorts = 0;
+    PDWORD  pdwLdapsPorts = NULL;
+    DWORD   dwLdapsPorts = 0;
+    DWORD   i = 0;
+
+    VmDirGetLdapListenPorts(&pdwLdapPorts, &dwLdapPorts);
+    VmDirGetLdapsListenPorts(&pdwLdapsPorts, &dwLdapsPorts);
+
+    for (i = 0; i < dwLdapPorts; i++)
+    {
+        _VmDirPingAcceptThr(pdwLdapPorts[i]);
+    }
+
+    for (i = 0; gVmdirOpensslGlobals.bSSLInitialized && i < dwLdapsPorts; i++)
+    {
+        _VmDirPingAcceptThr(pdwLdapsPorts[i]);
+    }
+
+    return;
 }
 
 void
@@ -268,7 +313,7 @@ NewConnection(
 {
     int       retVal = LDAP_SUCCESS;
     ber_len_t max = SOCK_BUF_MAX_INCOMING;
-    PVDIR_CONNECTION pConn;
+    PVDIR_CONNECTION pConn = NULL;
     PSTR      pszLocalErrMsg = NULL;
 
     if (VmDirAllocateMemory(sizeof(VDIR_CONNECTION), (PVOID *)&pConn) != 0)
@@ -278,7 +323,7 @@ NewConnection(
     }
 
     pConn->bIsAnonymousBind = TRUE;  // default to anonymous bind
-    pConn->sd = sfd;
+    pConn->sd = sfd;                 // pConn takes over sfd
 
     retVal = VmDirGetNetworkInfoFromSocket(pConn->sd, pConn->szClientIP, sizeof(pConn->szClientIP), &pConn->dwClientPort, true);
     BAIL_ON_VMDIR_ERROR(retVal);
@@ -321,6 +366,7 @@ cleanup:
 
 error:
 
+    VmDirDeleteConnection(&pConn);
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "NewConnection failing with error %d", retVal);
 
     goto cleanup;
@@ -592,7 +638,14 @@ ProcessAConnection(
        }
 
       ber = ber_alloc();
-      assert( ber != NULL);
+      if (ber == NULL)
+      {
+          VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "ProcessAConnection: ber_alloc() failed.");
+          retVal = LDAP_NOTICE_OF_DISCONNECT;
+          BAIL_ON_VMDIR_ERROR(retVal);
+      }
 
       /* An LDAP request message looks like:
        * LDAPMessage ::= SEQUENCE {
@@ -926,8 +979,12 @@ vmdirConnAccept(
             continue;
         } else if (retVal == 0)
         {
-            //VMDIR_LOG_INFO( LDAP_DEBUG_CONNS, "%s: select() timeout (port %d)", __func__, dwPort);
             continue;
+        }
+
+        if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+        {
+            goto cleanup;
         }
 
         if (ip4_fd >= 0 && FD_ISSET(ip4_fd, &poll_fd_set))
@@ -1186,27 +1243,26 @@ _VmDirScrubSuperLogContent(
     ber_tag_t opTag,
     PVDIR_SUPERLOG_RECORD pSuperLogRec)
 {
-    if (opTag == LDAP_REQ_UNBIND)
+    if (pSuperLogRec)
     {
-        if ( pSuperLogRec )
+        if (opTag == LDAP_REQ_UNBIND)
         {
             VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->pszBindID);
             VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->pszOperationParameters);
-
             memset( pSuperLogRec, 0, sizeof(VDIR_SUPERLOG_RECORD) );
         }
-    }
-    else
-    {
-        if (opTag == LDAP_REQ_SEARCH)
+        else
         {
-            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszAttributes);
-            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszBaseDN);
-            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszScope);
-            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszIndexResults);
+            if (opTag == LDAP_REQ_SEARCH)
+            {
+                VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszAttributes);
+                VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszBaseDN);
+                VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszScope);
+                VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->opInfo.searchInfo.pszIndexResults);
+            }
+            pSuperLogRec->iStartTime = pSuperLogRec->iEndTime = 0;
+            VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->pszOperationParameters);
         }
-        pSuperLogRec->iStartTime = pSuperLogRec->iEndTime = 0;
-        VMDIR_SAFE_FREE_MEMORY(pSuperLogRec->pszOperationParameters);
     }
 }
 
@@ -1241,4 +1297,91 @@ error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error code %d", __FUNCTION__, dwError);
 
     goto cleanup;
+}
+
+/*
+ * During server shutdown, connect to listening thread to break select blocking call.
+ * So listening thread can shutdown gracefully.
+ */
+static
+VOID
+_VmDirPingIPV6AcceptThr(
+    DWORD   dwPort
+    )
+{
+    ber_socket_t        sockfd = -1;
+    struct sockaddr_in6 servaddr6 = {0};
+    struct in6_addr loopbackaddr = IN6ADDR_LOOPBACK_INIT;
+
+    if ((sockfd = socket (AF_INET6, SOCK_STREAM, 0)) < 0)
+    {
+        VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "[%s,%d] failed", __FUNCTION__, __LINE__);
+        goto error;
+    }
+
+    memset(&servaddr6, 0, sizeof(servaddr6));
+    servaddr6.sin6_family = AF_INET6;
+    servaddr6.sin6_addr = loopbackaddr;
+    servaddr6.sin6_port =  htons( (USHORT)dwPort );
+
+    // ping accept thread
+    if (connect(sockfd, (struct sockaddr *) &servaddr6, sizeof(servaddr6)) < 0)
+    {
+        VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "[%s,%d] failed %d", __FUNCTION__, __LINE__, errno);
+        goto error;
+    }
+
+error:
+    if (sockfd >= 0)
+    {
+        tcp_close(sockfd);
+    }
+    return;
+}
+
+static
+VOID
+_VmDirPingIPV4AcceptThr(
+    DWORD   dwPort
+    )
+{
+    ber_socket_t        sockfd = -1;
+    struct  sockaddr_in servaddr = {0};
+
+    if ((sockfd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
+    {
+        VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "[%s,%d] failed", __FUNCTION__, __LINE__);
+        goto error;
+    }
+
+    memset(&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr= inet_addr("127.0.0.1");
+    servaddr.sin_port =  htons( (USHORT)dwPort );
+
+    // ping accept thread
+    if (connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
+    {
+        VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "[%s,%d] failed %d", __FUNCTION__, __LINE__, errno);
+        goto error;
+    }
+
+error:
+    if (sockfd >= 0)
+    {
+        tcp_close(sockfd);
+    }
+    return;
+}
+
+static
+VOID
+_VmDirPingAcceptThr(
+    DWORD   dwPort
+    )
+{
+    _VmDirPingIPV4AcceptThr(dwPort);
+    _VmDirPingIPV6AcceptThr(dwPort);
+
+    return;
 }

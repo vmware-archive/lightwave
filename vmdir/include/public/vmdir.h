@@ -257,6 +257,13 @@ extern "C" {
 #define ATTR_MAX_SERVER_ID                  "vmwMaxServerId"
 #define ATTR_MAX_SERVER_ID_LEN              sizeof(ATTR_MAX_SERVER_ID)-1
 
+#define ATTR_ATTRIBUTETYPES                 "attributetypes"
+#define ATTR_ATTRIBUTETYPES_LEN             sizeof(ATTR_ATTRIBUTETYPES)-1
+#define ATTR_OBJECTCLASSES                  "objectclasses"
+#define ATTR_OBJECTCLASSES_LEN              sizeof(ATTR_OBJECTCLASSES)-1
+#define ATTR_DITCONTENTRULES                "ditcontentrules"
+#define ATTR_DITCONTENTRULES_LEN            sizeof(ATTR_DITCONTENTRULES)-1
+
 // ADSI support related attribute
 #define ATTR_ALLOWD_CHILD_CLASSES_EFFECTIVE     "allowedChildClassesEffective"
 #define ATTR_ALLOWD_CHILD_CLASSES_EFFECTIVE_LEN sizeof(ATTR_ALLOWD_CHILD_CLASSES_EFFECTIVE)-1
@@ -355,10 +362,8 @@ extern "C" {
 #define VMDIR_CERT_GROUP_NAME           "CAAdmins"
 #define VMDIR_BUILTIN_CONTAINER_NAME    "Builtin"
 
-#define VDIR_DOMAIN_FUNCTIONAL_LEVEL    "1"
-#define VDIR_FOREST_FUNCTIONAL_LEVEL    "1"
 #define VDIR_SERVER_VERSION             "1.0"
-#define VDIR_PSC_VERSION                "6.0.0"
+#define VDIR_PSC_VERSION                "6.5.0"
 
 #define SASL_MECH                       "GSSAPI SRP"
 

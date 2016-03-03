@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -65,6 +65,14 @@ typedef struct _VMDIR_REPL_PARTNER_INFO
     CHAR*       pszURI;
 } VMDIR_REPL_PARTNER_INFO, *PVMDIR_REPL_PARTNER_INFO;
 
+typedef struct _VMDIR_DC_INFO
+{
+    CHAR*       pszHostName;
+    CHAR*       pszSiteName;
+    CHAR**      ppPartners;
+    DWORD       dwPartnerCount;
+} VMDIR_DC_INFO, *PVMDIR_DC_INFO;
+
 typedef struct _VMDIR_REPL_PARTNER_STATUS
 {
     CHAR*       pszHost;
@@ -73,6 +81,32 @@ typedef struct _VMDIR_REPL_PARTNER_STATUS
     USN         targetUsn;
     USN         partnerUsn;
 } VMDIR_REPL_PARTNER_STATUS, *PVMDIR_REPL_PARTNER_STATUS;
+
+typedef struct _VMDIR_REPL_UTDVECTOR
+{
+    CHAR*   pszPartnerInvocationId;
+    USN     maxOriginatingUSN;
+    struct _VMDIR_REPL_UTDVECTOR*   next;
+} VMDIR_REPL_UTDVECTOR, *PVMDIR_REPL_UTDVECTOR;
+
+typedef struct _VMDIR_REPL_REPL_AGREEMENT
+{
+    CHAR*   pszPartnerName;
+    USN     maxProcessedUSN;
+    struct _VMDIR_REPL_REPL_AGREEMENT*  next;
+} VMDIR_REPL_REPL_AGREEMENT, *PVMDIR_REPL_REPL_AGREEMENT;
+
+typedef struct _VMDIR_REPL_STATE
+{
+    CHAR*       pszHost;
+    CHAR*       pszInvocationId;
+    DWORD       dwCycleCount;
+    USN         maxVisibleUSN;
+    USN         maxConsumableUSN;
+    USN         maxOriginatingUSN;
+    PVMDIR_REPL_UTDVECTOR       pReplUTDVec;
+    PVMDIR_REPL_REPL_AGREEMENT  pReplRA;
+} _VMDIR_REPL_STATE, *PVMDIR_REPL_STATE;
 
 typedef struct _VMDIR_SERVER_INFO
 {

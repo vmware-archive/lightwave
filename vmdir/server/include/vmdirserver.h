@@ -132,8 +132,6 @@ typedef struct _VMDIR_GLOBALS
     BOOLEAN                         bPatchSchema;
     PSTR                            pszBDBHome;
 
-    int                             iSocketFd;
-
     BOOLEAN                         bAllowInsecureAuth;
     BOOLEAN                         bAllowAdminLockout;
     BOOLEAN                         bDisableVECSIntegration;
@@ -194,6 +192,10 @@ typedef struct _VMDIR_GLOBALS
     UINT64                          iServerStartupTime;
     // Limit the index scan to hunt for good filter
     DWORD                           dwMaxIndexScan;
+    // # of candidate in search filter - used for search optimization
+    DWORD                           dwSmallCandidateSet;
+    // Limit index scan for the best effort sizelimit search
+    DWORD                           dwMaxSizelimitScan;
 } VMDIR_GLOBALS, *PVMDIR_GLOBALSS;
 
 extern VMDIR_GLOBALS gVmdirGlobals;
