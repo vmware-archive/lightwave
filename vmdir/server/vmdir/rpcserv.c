@@ -1126,7 +1126,7 @@ _VmDirRemoteDBCopyWhiteList(
 #ifdef _WIN32
     CHAR    pszFilePath[VMDIR_MAX_PATH_LEN] = {0};
 #else
-    CHAR    pszFilePath[VMDIR_MAX_PATH_LEN] = VMDIR_LINUX_DB_PATH;
+    CHAR    pszFilePath[VMDIR_MAX_PATH_LEN] = VMDIR_DB_DIR;
 #endif
 
 #ifdef _WIN32
