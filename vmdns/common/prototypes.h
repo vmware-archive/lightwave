@@ -168,6 +168,12 @@ VmDnsFindRecordMethods(
     );
 
 BOOLEAN
+VmDnsMatchRecordCommon(
+    PVMDNS_RECORD   pRecord1,
+    PVMDNS_RECORD   pRecord2
+    );
+
+BOOLEAN
 VmDnsCompareRecordCommon(
     PVMDNS_RECORD   pRecord1,
     PVMDNS_RECORD   pRecord2

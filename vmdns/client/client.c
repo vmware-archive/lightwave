@@ -29,12 +29,6 @@
 #include "vmdns_h.h"
 
 static
-VOID
-VmDnsFreeForwarders(
-    PVMDNS_FORWARDERS       pForwarder
-    );
-
-static
 DWORD
 VmDnsRpcGetErrorCode(
 dcethread_exc* pDceException
@@ -64,8 +58,64 @@ VmDnsValidateContext(PVMDNS_SERVER_CONTEXT pServerContext)
     return dwError;
 }
 
+static
+VOID
+VmDnsRpcFreeForwarders(
+    PVMDNS_FORWARDERS       pForwarder
+    );
 
 // Public client interfaces for RPC calls
+
+VMDNS_API
+DWORD
+VmDnsOpenServerWithTimeOutA(
+    PCSTR pszNetworkAddress,
+    PCSTR pszUserName,
+    PCSTR pszDomain,
+    PCSTR pszPassword,
+    DWORD dwFlags,
+    PVOID pReserved,
+    DWORD dwTimeOut,
+    PVMDNS_SERVER_CONTEXT *ppServerContext
+    )
+{
+    DWORD dwError = 0;
+    handle_t hBinding = NULL;
+    PVMDNS_SERVER_CONTEXT pServerContext = NULL;
+    CHAR szRpcPort[] = VMDNS_RPC_TCP_END_POINT;
+
+    dwError = VmDnsAllocateMemory(
+                            sizeof(*pServerContext),
+                            (PVOID)&pServerContext);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsCreateBindingHandleA(
+                            pszNetworkAddress,
+                            szRpcPort,
+                            pszUserName,
+                            pszDomain,
+                            pszPassword,
+                            &hBinding);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    pServerContext->hBinding = hBinding;
+    hBinding = NULL;
+
+    rpc_mgmt_set_com_timeout(pServerContext->hBinding, dwTimeOut, &dwError);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppServerContext = pServerContext;
+    pServerContext = NULL;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmDnsCloseServer(pServerContext);
+    goto cleanup;
+}
 
 VMDNS_API
 DWORD
@@ -80,36 +130,21 @@ VmDnsOpenServerA(
     )
 {
     DWORD dwError = 0;
-    handle_t hBinding = NULL;
     PVMDNS_SERVER_CONTEXT pServerContext = NULL;
-    BOOLEAN bBindingAuth = FALSE;
-    CHAR szRpcPort[] = VMDNS_RPC_TCP_END_POINT;
 
-    dwError = VmDnsAllocateMemory(
-                            sizeof(*pServerContext),
-                            (PVOID)&pServerContext);
+    dwError = VmDnsOpenServerWithTimeOutA(
+                                  pszNetworkAddress,
+                                  pszUserName,
+                                  pszDomain,
+                                  pszPassword,
+                                  dwFlags,
+                                  pReserved,
+                                  0,
+                                  &pServerContext
+                                  );
     BAIL_ON_VMDNS_ERROR(dwError);
-
-    if (!IsNullOrEmptyString(pszUserName) &&
-        !IsNullOrEmptyString(pszPassword))
-    {
-        bBindingAuth = TRUE;
-    }
-
-    dwError = VmDnsCreateBindingHandleA(
-                            pszNetworkAddress,
-                            szRpcPort,
-                            pszUserName,
-                            pszDomain,
-                            pszPassword,
-                            &hBinding);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    pServerContext->hBinding = hBinding;
-    hBinding = NULL;
 
     *ppServerContext = pServerContext;
-    pServerContext = NULL;
 
 cleanup:
 
@@ -140,20 +175,19 @@ VMDNS_API
 DWORD
 VmDnsGetForwardersA(
     PVMDNS_SERVER_CONTEXT   pServerContext,
-    PSTR**                  pppszForwarders,
-    PDWORD                  pdwCount
+    PVMDNS_FORWARDERS*      ppForwarders
     )
 {
     DWORD dwError = 0;
     PVMDNS_FORWARDERS pDnsForwarders = NULL;
+    PVMDNS_FORWARDERS pDnsForwardersOutput = NULL;
     PSTR* ppszForwarders = NULL;
     DWORD dwCount = 0;
 
     dwError = VmDnsValidateContext(pServerContext);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    BAIL_ON_VMDNS_INVALID_POINTER(pppszForwarders, dwError);
-    BAIL_ON_VMDNS_INVALID_POINTER(pdwCount, dwError);
+    BAIL_ON_VMDNS_INVALID_POINTER(ppForwarders, dwError);
 
     DCETHREAD_TRY
     {
@@ -173,51 +207,56 @@ VmDnsGetForwardersA(
         DWORD i = 0;
         PSTR szTemp = NULL;
 
-        dwError = VmDnsAllocateMemory(
-                                pDnsForwarders->dwCount * sizeof(PSTR*),
-                                (PVOID*)&ppszForwarders);
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        for (i = 0; i < pDnsForwarders->dwCount; ++i)
+        if (pDnsForwarders->dwCount > 0)
         {
-            dwError = VmDnsAllocateStringA(
-                                pDnsForwarders->ppszName[i],
-                                &szTemp
-                                );
+            dwError = VmDnsAllocateMemory(
+                                    pDnsForwarders->dwCount * sizeof(PSTR),
+                                    (PVOID*)&ppszForwarders);
             BAIL_ON_VMDNS_ERROR(dwError);
 
-            ppszForwarders[i] = szTemp;
-            ++dwCount;
+            for (i = 0; i < pDnsForwarders->dwCount; ++i)
+            {
+                dwError = VmDnsAllocateStringA(
+                                    pDnsForwarders->ppszName[i],
+                                    &szTemp
+                                    );
+                BAIL_ON_VMDNS_ERROR(dwError);
+
+                ppszForwarders[i] = szTemp;
+                ++dwCount;
+            }
         }
+
+        dwError = VmDnsAllocateMemory(
+                                sizeof(VMDNS_FORWARDERS),
+                                (PVOID*)&pDnsForwardersOutput);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        pDnsForwardersOutput->dwCount = pDnsForwarders->dwCount;
+        pDnsForwardersOutput->ppszName = ppszForwarders;
     }
 
-    *pppszForwarders = ppszForwarders;
-    *pdwCount = dwCount;
+    *ppForwarders = pDnsForwardersOutput;
 
 cleanup:
 
     if (pDnsForwarders)
     {
-        VmDnsFreeForwarders(pDnsForwarders);
+        VmDnsRpcFreeForwarders(pDnsForwarders);
     }
 
     return dwError;
 
 error:
 
-    if (pppszForwarders)
-    {
-        *pppszForwarders = NULL;
-    }
-
-    if (pdwCount)
-    {
-        *pdwCount = 0;
-    }
-
     if (ppszForwarders)
     {
         VmDnsFreeStringCountedArrayA(ppszForwarders, dwCount);
+    }
+
+    if (pDnsForwardersOutput)
+    {
+        VMDNS_SAFE_FREE_MEMORY(pDnsForwardersOutput);
     }
 
     goto cleanup;
@@ -783,8 +822,26 @@ VmDnsFreeRecordArray(
     }
 }
 
+VMDNS_API
 VOID
 VmDnsFreeForwarders(
+    PVMDNS_FORWARDERS       pForwarder
+    )
+{
+    DWORD idx = 0;
+    if (pForwarder)
+    {
+        for (; idx < pForwarder->dwCount; ++idx)
+        {
+            VmDnsFreeStringA(pForwarder->ppszName[idx]);
+        }
+        VmDnsFreeMemory(pForwarder);
+    }
+}
+
+static
+VOID
+VmDnsRpcFreeForwarders(
     PVMDNS_FORWARDERS       pForwarder
     )
 {

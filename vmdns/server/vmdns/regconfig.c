@@ -490,7 +490,7 @@ VmDnsConfigSetAdminCredentials(
     PCTSTR pszCredsKeyPath       = VMDNS_CONFIG_CREDS_KEY_PATH;
     PCTSTR pszValueAdminPassword = VMDNS_REG_KEY_ADMIN_PASSWD;
 
-    HKEY hKey;
+    HKEY hKey = NULL;
     SIZE_T lengthCheck;
 #define MSG_BUFFER_SIZE 2048
     _TCHAR msgBuffer[MSG_BUFFER_SIZE];
@@ -532,6 +532,7 @@ VmDnsConfigSetAdminCredentials(
     BAIL_ON_VMDNS_ERROR(dwError);
 
     RegCloseKey(hKey); // We don't care if this call fails.
+    hKey = NULL;
 
     dwError = RegCreateKeyEx(
                 HKEY_LOCAL_MACHINE,         //  __in        HKEY hKey,
@@ -565,24 +566,14 @@ VmDnsConfigSetAdminCredentials(
 
     BAIL_ON_VMDNS_ERROR(dwError);
 
-error:
-
+cleanup:
     if (hKey)
-        RegCloseKey(hKey);
-
-    if (dwError != ERROR_SUCCESS)
     {
-        FormatMessage(
-            FORMAT_MESSAGE_FROM_SYSTEM , //  __in      DWORD dwFlags,
-            NULL,                   //  __in_opt  LPCVOID lpSource,
-            dwError,                //  __in      DWORD dwMessageId,
-            LANG_SYSTEM_DEFAULT,    //  __in      DWORD dwLanguageId,
-            msgBuffer,              //  __out     LPTSTR lpBuffer,
-            MSG_BUFFER_SIZE,        //  __in      DWORD nSize,
-            NULL                    //  __in_opt  va_list *Arguments
-            );
+        RegCloseKey(hKey);
     }
     return dwError;
+error:
+    goto cleanup;
 }
 
 #endif

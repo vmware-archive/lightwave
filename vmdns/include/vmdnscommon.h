@@ -464,7 +464,7 @@ VmDnsTrimDomainNameSuffix(
     );
 
 DWORD
-VmDnsGenerateRtrNameFromIp(
+VmDnsGeneratePtrNameFromIp(
     PCSTR pszIPAddress,
     int*  pnFamily,
     PSTR* ppszPtrName
@@ -476,11 +476,23 @@ VmDnsGenerateReversZoneNameFromNetworkId(
     PSTR* ppszZone
     );
 
+BOOL
+VmDnsIsReverseZoneName(
+    PCSTR pszZoneName
+    );
+
 VOID
 VmDnsStringTrimA(
     PSTR pszStr,
     PCSTR pszSearch,
     BOOLEAN bCaseSensitive
+    );
+
+DWORD
+VmDnsMakeFQDN(
+    PCSTR pszHostName,
+    PCSTR pszDomainName,
+    PSTR* ppszFQDN
     );
 
 #ifdef _WIN32
@@ -835,6 +847,11 @@ VmDnsParseServiceProtocol(
 
 BOOL
 VmDnsIsShortNameRecordType(
+    DWORD   dwRecordType
+    );
+
+BOOL
+VmDnsIsSupportedRecordType(
     DWORD   dwRecordType
     );
 

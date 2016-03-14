@@ -203,6 +203,13 @@ extern "C" {
 #define InterlockedExchange __sync_lock_test_and_set
 #endif
 
+#define VMDNS_DEFAULT_REFRESH_INTERVAL  3600
+#define VMDNS_DEFAULT_RETRY_INTERVAL    600
+#define VMDNS_DEFAULT_EXPIRE            86400
+#define VMDNS_DEFAULT_TTL               3600
+#define VMDNS_DEFAULT_LDAP_PORT         389
+#define VMDNS_DEFAULT_KDC_PORT          88
+
 #ifdef __cplusplus
 }
 #endif

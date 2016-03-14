@@ -306,7 +306,7 @@ VmDnsNameEntryFindRecord(
     while (pEntry)
     {
         pRecordEntry = GET_RECORD_ENTRY(pEntry);
-        if (VmDnsCompareRecord(pRecord, pRecordEntry->Record))
+        if (VmDnsMatchRecord(pRecord, pRecordEntry->Record))
         {
             dwError = ERROR_SUCCESS;
             break;

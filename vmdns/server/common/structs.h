@@ -182,7 +182,6 @@ typedef struct _VMDNS_ZONE
     PSTR                pszName;
     PVMDNS_HASH_TABLE    pNameEntries;
     VMDNS_ZONE_FLAGS    dwFlags;
-    VMDNS_ZONE_TYPE     dwZoneType;
     PVMDNS_RWLOCK       pLock;
     DWORD               refCount;
 } VMDNS_ZONE;

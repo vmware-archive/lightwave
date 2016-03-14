@@ -36,11 +36,20 @@ VmDnsCompareSoaRecord(
 
 BOOLEAN
 VmDnsMatchSoaRecord(
-    PVMDNS_RECORD   pRecord,
-    PVMDNS_RECORD   pTemplate
+    PVMDNS_RECORD   pRecord1,
+    PVMDNS_RECORD   pRecord2
     )
 {
-    return FALSE;
+    return  VmDnsMatchRecordCommon(pRecord1, pRecord2) &&
+        VmDnsStringCompareA(pRecord1->Data.SOA.pNameAdministrator,
+                        pRecord2->Data.SOA.pNameAdministrator, FALSE) == 0 &&
+        VmDnsStringCompareA(pRecord1->Data.SOA.pNamePrimaryServer,
+                        pRecord2->Data.SOA.pNamePrimaryServer, FALSE) == 0 &&
+        pRecord1->Data.SOA.dwDefaultTtl == pRecord2->Data.SOA.dwDefaultTtl &&
+        pRecord1->Data.SOA.dwExpire == pRecord2->Data.SOA.dwExpire &&
+        pRecord1->Data.SOA.dwRefresh == pRecord2->Data.SOA.dwRefresh &&
+        pRecord1->Data.SOA.dwRetry == pRecord2->Data.SOA.dwRetry &&
+        pRecord1->Data.SOA.dwSerialNo == pRecord2->Data.SOA.dwSerialNo;
 }
 
 VOID

@@ -716,7 +716,7 @@ VmDnsFindRecordMethods(
 }
 
 BOOLEAN
-VmDnsCompareRecordCommon(
+VmDnsMatchRecordCommon(
     PVMDNS_RECORD   pRecord1,
     PVMDNS_RECORD   pRecord2
     )
@@ -738,11 +738,27 @@ VmDnsCompareRecordCommon(
     {
         result = FALSE;
     }
-    else if (pRecord1->dwTtl != pRecord2->dwTtl)
+    else if (VmDnsStringCompareA(pRecord1->pszName, pRecord2->pszName, TRUE))
     {
         result = FALSE;
     }
-    else if (VmDnsStringCompareA(pRecord1->pszName, pRecord2->pszName, TRUE))
+
+    return result;
+}
+
+BOOLEAN
+VmDnsCompareRecordCommon(
+    PVMDNS_RECORD   pRecord1,
+    PVMDNS_RECORD   pRecord2
+    )
+{
+    BOOLEAN result = TRUE;
+
+    if (!VmDnsMatchRecordCommon(pRecord1, pRecord2))
+    {
+        result = FALSE;
+    }
+    else if (pRecord1 && pRecord2 && pRecord1->dwTtl != pRecord2->dwTtl)
     {
         result = FALSE;
     }
@@ -1030,6 +1046,11 @@ VmDnsReadDomainNameFromBuffer(
 
         if (dwLabelLength)
         {
+            if (dwLabelLength > (255 - dwTotalStringLength))
+            {
+                dwError = ERROR_INVALID_PARAMETER;
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
 
             dwError = VmDnsCopyMemory(
                           pszTempStringCursor,
@@ -1198,4 +1219,19 @@ VmDnsIsShortNameRecordType(
         dwRecordType == VMDNS_RR_TYPE_AAAA ||
         dwRecordType == VMDNS_RR_TYPE_SRV ||
         dwRecordType == VMDNS_RR_TYPE_PTR;
+}
+
+BOOL
+VmDnsIsSupportedRecordType(
+    DWORD   dwRecordType
+    )
+{
+    return
+        dwRecordType == VMDNS_RR_TYPE_A ||
+        dwRecordType == VMDNS_RR_TYPE_AAAA ||
+        dwRecordType == VMDNS_RR_TYPE_CNAME ||
+        dwRecordType == VMDNS_RR_TYPE_NS ||
+        dwRecordType == VMDNS_RR_TYPE_PTR ||
+        dwRecordType == VMDNS_RR_TYPE_SOA ||
+        dwRecordType == VMDNS_RR_TYPE_SRV;
 }

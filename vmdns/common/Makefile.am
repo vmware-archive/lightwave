@@ -11,7 +11,7 @@ noinst_LTLIBRARIES = libcommon.la
 
 libcommon_la_SOURCES = \
     config.c \
-    posix/posixconfig.c \
+    posixconfig.c \
     buffer.c  \
     globals.c  \
     logging.c \

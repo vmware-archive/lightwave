@@ -570,7 +570,7 @@ VmSockPosixWaitForEvent(
                                         pSocket);
                         BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
-                        eventType = VM_SOCK_EVENT_TYPE_NEW_CONNECTION;
+                        eventType = VM_SOCK_EVENT_TYPE_TCP_NEW_CONNECTION;
 
                         break;
 
@@ -908,7 +908,7 @@ VmSockPosixRead(
     }
 
     pIoBuffer->dwCurrentSize += nRead;
-    pIoBuffer->dwBytesTransferred = nRead;
+    pIoBuffer->dwTotalBytesTransferred += nRead;
 
 cleanup:
 
@@ -1002,7 +1002,7 @@ VmSockPosixWrite(
     }
 
     pIoBuffer->dwCurrentSize += nWritten;
-    pIoBuffer->dwBytesTransferred = nWritten;
+    pIoBuffer->dwTotalBytesTransferred += nWritten;
 
 cleanup:
 

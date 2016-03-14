@@ -200,7 +200,6 @@ VmDnsProcessRequestFromCache(
     )
 {
     DWORD dwError = 0;
-    DWORD dwError1 = 0;
     DWORD dwIndex = 0;
     DWORD dwQDCount = 0;
     PVMDNS_MESSAGE_BUFFER pDnsMessageBuffer = NULL;
@@ -259,8 +258,8 @@ VmDnsProcessRequestFromCache(
             VMDNS_SAFE_FREE_MEMORY(pszRecordName);
 
             dwError = VmDnsGetAuthorityZone(
-                                    pQuestion->pszQName,
-                                    &pZoneInfo);
+                                pQuestion->pszQName,
+                                &pZoneInfo);
             if (dwError == DNS_ERROR_ZONE_DOES_NOT_EXIST)
             {
                 ResponseHeader.codes.RCODE = VM_DNS_RCODE_NAME_ERROR;
@@ -271,10 +270,10 @@ VmDnsProcessRequestFromCache(
             ResponseHeader.codes.AA = 1;
 
             dwError = VmDnsGetRecordNameFromQuery(
-                                              pZoneInfo->pszName,
-                                              pQuestion->pszQName,
-                                              &pszRecordName
-                                              );
+                                pZoneInfo->pszName,
+                                pQuestion->pszQName,
+                                &pszRecordName
+                                );
             BAIL_ON_VMDNS_ERROR(dwError);
 
             dwError = VmDnsZoneQuery(
@@ -285,6 +284,11 @@ VmDnsProcessRequestFromCache(
                                 );
             if (dwError)
             {
+                if (dwError == ERROR_NOT_SUPPORTED)
+                {
+                    ResponseHeader.codes.RCODE = VM_DNS_RCODE_NOT_IMPLEMENTED;
+                }
+
                 dwError = 0;//TODO: How does DNS handle multiple questions
                 //scenario where you have answer to one question but not to
                 //others
@@ -293,8 +297,8 @@ VmDnsProcessRequestFromCache(
             if (ppRecordsArray[dwIndex] && ppRecordsArray[dwIndex]->dwCount)
             {
                 VmDnsZoneRestoreRecordFQDN(
-                    pZoneInfo->pszName,
-                    ppRecordsArray[dwIndex]);
+                                pZoneInfo->pszName,
+                                ppRecordsArray[dwIndex]);
             }
         }
 
@@ -309,16 +313,16 @@ VmDnsProcessRequestFromCache(
     }
 
     dwError = VmDnsWriteHeaderToBuffer(
-                                  &ResponseHeader,
-                                  pDnsMessageBuffer
-                                  );
+                            &ResponseHeader,
+                            pDnsMessageBuffer
+                            );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     for (dwIndex = 0; dwIndex < dwQDCount; ++dwIndex)
     {
         dwError = VmDnsWriteQuestionToBuffer(
-                    pDnsMessage->pQuestions[dwIndex],
-                    pDnsMessageBuffer);
+                                pDnsMessage->pQuestions[dwIndex],
+                                pDnsMessageBuffer);
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
@@ -340,23 +344,23 @@ VmDnsProcessRequestFromCache(
     }
 
     dwError = VmDnsCopyBufferFromBufferStream(
-                                  pDnsMessageBuffer,
-                                  NULL,
-                                  &dwDnsResponseSize
-                                  );
+                            pDnsMessageBuffer,
+                            NULL,
+                            &dwDnsResponseSize
+                            );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsAllocateMemory(
-                          dwDnsResponseSize,
-                          (PVOID)&pDnsResponse
-                          );
+                            dwDnsResponseSize,
+                            (PVOID)&pDnsResponse
+                            );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsCopyBufferFromBufferStream(
-                                  pDnsMessageBuffer,
-                                  pDnsResponse,
-                                  &dwDnsResponseSize
-                                  );
+                            pDnsMessageBuffer,
+                            pDnsResponse,
+                            &dwDnsResponseSize
+                            );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     *pbFound = ResponseHeader.codes.RCODE == VM_DNS_RCODE_NOERROR;
@@ -376,7 +380,10 @@ cleanup:
     return dwError;
 error:
 
-    dwError1 = VmDnsHandleProcessRequestError(ResponseHeader, &pDnsResponse, &dwDnsResponseSize);
+    dwError = VmDnsHandleProcessRequestError(
+                            ResponseHeader,
+                            &pDnsResponse,
+                            &dwDnsResponseSize);
     goto cleanup;
 }
 
@@ -578,7 +585,6 @@ VmDnsCopyZoneInformation(
     pZoneInfoOut->expire = pZoneInfoIn->expire;
     pZoneInfoOut->minimum = pZoneInfoIn->minimum;
     pZoneInfoOut->dwFlags = pZoneInfoIn->dwFlags;
-    pZoneInfoOut->dwZoneType = pZoneInfoIn->dwZoneType;
 
     *ppZoneInfoOut = pZoneInfoOut;
 

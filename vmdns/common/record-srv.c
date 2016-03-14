@@ -37,7 +37,7 @@ VmDnsMatchSrvRecord(
     PVMDNS_RECORD   pTemplate
     )
 {
-    return  VmDnsCompareRecordCommon(pRecord, pTemplate) &&
+    return  VmDnsMatchRecordCommon(pRecord, pTemplate) &&
             VmDnsStringCompareA(pRecord->Data.SRV.pNameTarget,
                         pTemplate->Data.SRV.pNameTarget, FALSE) == 0;
 }

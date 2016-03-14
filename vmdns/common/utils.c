@@ -135,7 +135,6 @@ VmDnsRpcCopyZoneInfo(
     BAIL_ON_VMDNS_ERROR(dwError);
 
     pZoneInfoDest->dwFlags = pZoneInfoSrc->dwFlags;
-    pZoneInfoDest->dwZoneType = pZoneInfoSrc->dwZoneType;
     pZoneInfoDest->expire = pZoneInfoSrc->expire;
     pZoneInfoDest->minimum = pZoneInfoSrc->minimum;
     pZoneInfoDest->refreshInterval = pZoneInfoSrc->refreshInterval;
@@ -280,7 +279,7 @@ VmDnsGenerateReversZoneNameFromNetworkId(
 
     length = atoi(pLength);
 
-    dwError = VmDnsGenerateRtrNameFromIp(pszNetworkId, &family, &pszPtrName);
+    dwError = VmDnsGeneratePtrNameFromIp(pszNetworkId, &family, &pszPtrName);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     if (family != AF_INET && family != AF_INET6)
@@ -335,7 +334,7 @@ error:
 }
 
 DWORD
-VmDnsGenerateRtrNameFromIp(
+VmDnsGeneratePtrNameFromIp(
     PCSTR pszIPAddress,
     int*  pnFamily,
     PSTR* ppszPtrName
@@ -344,21 +343,29 @@ VmDnsGenerateRtrNameFromIp(
     DWORD dwError = 0;
     DWORD dwAddr = 0;
     PSTR pszPtrName = NULL;
-    struct addrinfo *pAddrInfo = NULL;
     BYTE* pByte = NULL;
+    int ret = 0;
+    int af = AF_INET;
+    unsigned char buf[sizeof(struct in6_addr)];
 
-    BAIL_ON_VMDNS_INVALID_POINTER(pszIPAddress, dwError);
+    BAIL_ON_VMDNS_EMPTY_STRING(pszIPAddress, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(ppszPtrName, dwError);
 
-    if (getaddrinfo(pszIPAddress, NULL, NULL, &pAddrInfo))
+    if (VmDnsStringChrA(pszIPAddress, ':'))
+    {
+        af = AF_INET6;
+    }
+
+    ret = inet_pton(af, pszIPAddress, buf);
+    if (ret <= 0)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    if (pAddrInfo->ai_family == AF_INET)
+    if (af == AF_INET)
     {
-        dwAddr = (DWORD)((struct sockaddr_in *)pAddrInfo->ai_addr)->sin_addr.s_addr;
+        dwAddr = ((struct in_addr*)buf)->s_addr;
 
         // See RFC 1035 for name format
         // In short, record name is octets in reverse order appened with "in-addr.arpa".
@@ -374,9 +381,13 @@ VmDnsGenerateRtrNameFromIp(
                     );
         BAIL_ON_VMDNS_ERROR(dwError);
     }
-    else if (pAddrInfo->ai_family == AF_INET6)
+    else
     {
-        pByte = ((struct sockaddr_in6 *)pAddrInfo->ai_addr)->sin6_addr.s6_addr;
+#ifdef _WIN32
+        pByte = ((struct in6_addr*)buf)->u.Byte;
+#else
+        pByte = ((struct in6_addr*)buf)->s6_addr;
+#endif
         // See RFC 1886 for ipv6 ptr name format
         // In short, record name is address presented in nibbles separated by dots,
         // in reverse order appened with "ip6.arpa".
@@ -406,28 +417,61 @@ VmDnsGenerateRtrNameFromIp(
                     );
         BAIL_ON_VMDNS_ERROR(dwError);
     }
-    else
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
 
     *ppszPtrName = pszPtrName;
     if (pnFamily)
     {
-        *pnFamily = pAddrInfo->ai_family;
+        *pnFamily = af;
     }
 
 cleanup:
-    if (pAddrInfo)
-    {
-        freeaddrinfo(pAddrInfo);
-    }
     return dwError;
 
 error:
     VMDNS_SAFE_FREE_STRINGA(pszPtrName);
     goto cleanup;
+}
+
+BOOL
+VmDnsIsReverseZoneName(
+    PCSTR pszZoneName
+    )
+{
+    BOOL result = FALSE;
+    DWORD idx = 0;
+    ULONG ulNameLength = 0, ulSuffixLength = 0;
+    PCSTR pszTail = NULL;
+    PCSTR suffix[] =
+    {
+        PTR_NAME_SUFFIX_IP4,
+        PTR_NAME_SUFFIX_IP6
+    };
+
+    if (!pszZoneName || !pszZoneName[0])
+    {
+        return FALSE;
+    }
+
+    ulNameLength = VmDnsStringLenA(pszZoneName);
+
+    for (; idx < sizeof(suffix)/sizeof(PCSTR); ++idx)
+    {
+        ulSuffixLength = VmDnsStringLenA(suffix[idx]);
+        if (ulSuffixLength < ulNameLength)
+        {
+            pszTail = pszZoneName + ulNameLength - ulSuffixLength;
+            if (VmDnsStringCompareA(
+                                pszTail,
+                                suffix[idx],
+                                FALSE) == 0)
+            {
+                result = TRUE;
+                break;
+            }
+        }
+    }
+
+    return result;
 }
 
 VOID
@@ -493,3 +537,47 @@ VmDnsCheckIfIPV6AddressA(
 
     return bResult;
 }
+
+DWORD
+VmDnsMakeFQDN(
+    PCSTR pszHostName,
+    PCSTR pszDomainName,
+    PSTR* ppszFQDN
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwLength = 0;
+    PSTR  pszFQDN = NULL;
+
+    BAIL_ON_VMDNS_EMPTY_STRING(pszHostName, dwError);
+    BAIL_ON_VMDNS_EMPTY_STRING(pszDomainName, dwError);
+    BAIL_ON_VMDNS_INVALID_POINTER(ppszFQDN, dwError);
+
+    if (!VmDnsCheckIfIPV4AddressA(pszHostName) &&
+        !VmDnsCheckIfIPV6AddressA(pszHostName))
+    {
+        dwLength = VmDnsStringLenA(pszHostName);
+        if (dwLength > 0 &&
+            (pszHostName)[dwLength - 1] != '.' &&
+            !VmDnsStringStrA(pszHostName, pszDomainName))
+        {
+            dwError = VmDnsAllocateStringPrintfA(
+                        &pszFQDN,
+                        "%s.%s",
+                        pszHostName,
+                        pszDomainName);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            *ppszFQDN = pszFQDN;
+            pszFQDN = NULL;
+        }
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDNS_SAFE_FREE_STRINGA(pszFQDN);
+    goto cleanup;
+}
+

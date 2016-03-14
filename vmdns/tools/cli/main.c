@@ -269,7 +269,7 @@ ParseArgs(
                         &pszDomain,
                         &pszPassword);
     }
-    else if (!strcmp(pszArg, "list-zones"))
+    else if (!strcmp(pszArg, "list-zone"))
     {
         pContext->action = VM_DNS_ACTION_LIST_ZONES;
 
@@ -305,7 +305,7 @@ ParseArgs(
                         &pszDomain,
                         &pszPassword);
     }
-    else if (!strcmp(pszArg, "list-records"))
+    else if (!strcmp(pszArg, "list-record"))
     {
         pContext->action = VM_DNS_ACTION_LIST_RECORDS;
 
@@ -554,12 +554,11 @@ ParseArgsAddZone(
             dwError = VmDnsAllocateStringA(pszArg, &pContext->pszNSIp);
             BAIL_ON_VMDNS_ERROR(dwError);
 
-
             if (!VmDnsCheckIfIPV4AddressA(pContext->pszNSIp) && !VmDnsCheckIfIPV6AddressA(pContext->pszNSIp))
             {
+                fprintf(stdout, "NS-IP parameter value should be valid IP (IPV4 or IPV6) address.");
                 dwError = ERROR_INVALID_ADDRESS;
                 BAIL_ON_VMDNS_ERROR(dwError);
-                fprintf(stdout, "NS-IP parameter value should be valid IP (IPV4 or IPV6) address.");
             }
 
             parseMode = PARSE_MODE_ADD_ZONE_OPEN;
@@ -700,6 +699,17 @@ ParseArgsDelZone(
             {
                 parseMode = PARSE_MODE_DELZONE_SERVER;
             }
+            else
+            {
+                if (pContext->pszZone)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_VMDNS_ERROR(dwError);
+                }
+
+                dwError = VmDnsAllocateStringA(pszArg, &pContext->pszZone);
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
 
             break;
 
@@ -812,7 +822,7 @@ ParseArgsAddRecord(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    pContext->record.dwTtl = -1;
+    pContext->record.dwTtl = VMDNS_DEFAULT_TTL;
 
     // First get record type
     pContext->record.dwType = VMDNS_RR_TYPE_NONE;
@@ -929,8 +939,7 @@ ParseArgsAddRecord(
 
                 else if (!strcmp(pszArg, "--ip"))
                 {
-                    if (pContext->record.dwType == VMDNS_RR_TYPE_A ||
-                        pContext->record.dwType == VMDNS_RR_TYPE_AAAA)
+                    if (pContext->record.dwType == VMDNS_RR_TYPE_A)
                     {
                         parseMode = PARSE_MODE_ADD_RECORD_A_IP;
                     }
@@ -946,7 +955,19 @@ ParseArgsAddRecord(
                 }
                 else if (!strcmp(pszArg, "--ip6"))
                 {
-                    parseMode = PARSE_MODE_ADD_RECORD_AAAA_IP;
+                    if (pContext->record.dwType == VMDNS_RR_TYPE_AAAA)
+                    {
+                        parseMode = PARSE_MODE_ADD_RECORD_AAAA_IP;
+                    }
+                    else if (pContext->record.dwType == VMDNS_RR_TYPE_PTR)
+                    {
+                        parseMode = PARSE_MODE_ADD_RECORD_PTR_IP;
+                    }
+                    else
+                    {
+                        dwError = ERROR_INVALID_PARAMETER;
+                        BAIL_ON_VMDNS_ERROR(dwError);
+                    }
                 }
                 else if (!strcmp(pszArg, "--ns-domain"))
                 {
@@ -1182,7 +1203,7 @@ ParseArgsAddRecord(
 
             case PARSE_MODE_ADD_RECORD_PTR_IP:
 
-                dwError = VmDnsGenerateRtrNameFromIp(
+                dwError = VmDnsGeneratePtrNameFromIp(
                                 pszArg,
                                 NULL,
                                 &pContext->record.pszName);
@@ -1315,7 +1336,7 @@ ParseArgsDelRecord(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    pContext->record.dwTtl = -1;
+    pContext->record.dwTtl = VMDNS_DEFAULT_TTL;
 
     // First get record type
     pContext->record.dwType = VMDNS_RR_TYPE_NONE;
@@ -1644,7 +1665,7 @@ ParseArgsDelRecord(
 
             case PARSE_MODE_DEL_RECORD_PTR_IP:
 
-                dwError = VmDnsGenerateRtrNameFromIp(
+                dwError = VmDnsGeneratePtrNameFromIp(
                                 pszArg,
                                 NULL,
                                 &pContext->record.pszName);
@@ -1750,6 +1771,20 @@ ParseArgsQueryRecords(
     )
 {
     DWORD dwError = 0;
+    typedef enum
+    {
+        PARSE_MODE_QUERY_RECORD_OPEN = 0,
+        PARSE_MODE_QUERY_RECORD_ZONE,
+        PARSE_MODE_QUERY_RECORD_TYPE,
+        PARSE_MODE_QUERY_RECORD_NAME,
+        PARSE_MODE_QUERY_RECORD_USERNAME,
+        PARSE_MODE_QUERY_RECORD_DOMAIN,
+        PARSE_MODE_QUERY_RECORD_PASSWORD,
+        PARSE_MODE_QUERY_RECORD_SERVER,
+
+    } PARSE_MODE_QUERY_RECORD;
+    PARSE_MODE_QUERY_RECORD parseMode = PARSE_MODE_QUERY_RECORD_OPEN;
+    int iArg = 0;
 
     if (!argc)
     {
@@ -1757,7 +1792,116 @@ ParseArgsQueryRecords(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    // TODO
+    pContext->record.dwTtl = VMDNS_DEFAULT_TTL;
+
+    pContext->record.dwType = VMDNS_RR_TYPE_NONE;
+    for (; iArg < argc; iArg++)
+    {
+        PSTR pszArg = argv[iArg];
+
+        switch (parseMode)
+        {
+            case PARSE_MODE_QUERY_RECORD_OPEN:
+
+                if (!strcmp(pszArg, "--zone"))
+                {
+                    parseMode = PARSE_MODE_QUERY_RECORD_ZONE;
+                }
+                else if (!strcmp(pszArg, "--type"))
+                {
+                    parseMode = PARSE_MODE_QUERY_RECORD_TYPE;
+                }
+                else if (!strcmp(pszArg, "--name"))
+                {
+                    parseMode = PARSE_MODE_QUERY_RECORD_NAME;
+                }
+                else if (!strcmp(pszArg, "--username"))
+                {
+                    parseMode = PARSE_MODE_QUERY_RECORD_USERNAME;
+                }
+                else if (!strcmp(pszArg, "--domain"))
+                {
+                    parseMode = PARSE_MODE_QUERY_RECORD_DOMAIN;
+                }
+                else if (!strcmp(pszArg, "--password"))
+                {
+                    parseMode = PARSE_MODE_QUERY_RECORD_PASSWORD;
+                }
+                else if (!strcmp(pszArg, "--server"))
+                {
+                    parseMode = PARSE_MODE_QUERY_RECORD_SERVER;
+                }
+
+                break;
+
+            case PARSE_MODE_QUERY_RECORD_ZONE:
+
+                dwError = VmDnsCopyStringArg(pszArg, &pContext->pszZone);
+                BAIL_ON_VMDNS_ERROR(dwError);
+
+                parseMode = PARSE_MODE_QUERY_RECORD_OPEN;
+
+                break;
+
+            case PARSE_MODE_QUERY_RECORD_TYPE:
+
+                dwError = VmDnsParseRecordType(pszArg, &pContext->record.dwType);
+                BAIL_ON_VMDNS_ERROR(dwError);
+
+                parseMode = PARSE_MODE_QUERY_RECORD_OPEN;
+
+                break;
+
+            case PARSE_MODE_QUERY_RECORD_NAME:
+
+                dwError = VmDnsCopyStringArg(pszArg, &pContext->record.pszName);
+                BAIL_ON_VMDNS_ERROR(dwError);
+
+                parseMode = PARSE_MODE_QUERY_RECORD_OPEN;
+
+                break;
+
+            case PARSE_MODE_QUERY_RECORD_USERNAME:
+
+                dwError = VmDnsCopyStringArg(pszArg, ppszUserName);
+                BAIL_ON_VMDNS_ERROR(dwError);
+
+                parseMode = PARSE_MODE_QUERY_RECORD_OPEN;
+
+                break;
+
+            case PARSE_MODE_QUERY_RECORD_PASSWORD:
+
+                dwError = VmDnsCopyStringArg(pszArg, ppszPassword);
+                BAIL_ON_VMDNS_ERROR(dwError);
+
+                parseMode = PARSE_MODE_QUERY_RECORD_OPEN;
+
+                break;
+
+            case PARSE_MODE_QUERY_RECORD_SERVER:
+
+                dwError = VmDnsCopyStringArg(pszArg, &pContext->pszServer);
+                BAIL_ON_VMDNS_ERROR(dwError);
+
+                parseMode = PARSE_MODE_QUERY_RECORD_OPEN;
+
+                break;
+
+            case PARSE_MODE_QUERY_RECORD_DOMAIN:
+
+                dwError = VmDnsCopyStringArg(pszArg, ppszDomain);
+                BAIL_ON_VMDNS_ERROR(dwError);
+
+                parseMode = PARSE_MODE_QUERY_RECORD_OPEN;
+
+                break;
+
+            default:
+
+                break;
+        }
+    }
 
 error:
 
@@ -2056,34 +2200,35 @@ ShowUsage(
         "\t\t--ns-ip <ip address>\n"
         "\t\t[--admin-email <admin-email>]\n"
         "\t\t[--type <forward|reverse>]\n"
-        "\t\t[--server <server>]\n"
-        "\t\t[--username <user>]\n"
-        "\t\t[--domain <domain>\n"
-        "\t\t[--password <pwd>]\n"
+        "\t\t--server <server>\n"
+        "\t\t--username <user>\n"
+        "\t\t--domain <domain>\n"
+        "\t\t--password <pwd>\n"
         "\t\tfor reverse lookup zone, pass network id instead of zone name. Zone name will be generated based on network id.\n"
         "\t\tfor example, 10.118.1.0/24 where 24 is the network id length in bits.\n"
         "\t\tfor ipv4, network id length can be 8, 16 or 24.\n"
         "\t\tfor ipv6, network id length must be more than 0 and less than 128 and must be dividable by 8.\n"
+        "\t\tip address part must be full ip address.\n"
         "\t\t--ns-ip isn't needed for reverse zone.\n"
         "\tExample: add-zone zone1 --ns-host ns1 --ns-ip 1.10.0.192 --type forward\n\n"
         "\tdel-zone <zone name>\n"
-        "\t\t[--server <server>]\n"
-        "\t\t[--username <user>]\n"
-        "\t\t[--domain <domain>]\n"
-        "\t\t[--password <pwd>]\n"
+        "\t\t--server <server>\n"
+        "\t\t--username <user>\n"
+        "\t\t--domain <domain>\n"
+        "\t\t--password <pwd>\n"
         "\tExample: del-zone zone1\n\n"
-        "\tlist-zones\n"
-        "\t\t[--server <server>]\n"
-        "\t\t[--username <user>]\n"
-        "\t\t[--domain <domain>]\n"
-        "\t\t[--password <pwd>]\n\n"
+        "\tlist-zone\n"
+        "\t\t--server <server>\n"
+        "\t\t--username <user>\n"
+        "\t\t--domain <domain>\n"
+        "\t\t--password <pwd>\n\n"
         "\tadd-record --zone <zone name>\n"
         "\t\t--type <record type>\n"
         "\t\t[<key> <value>]...\n"
-        "\t\t[--server <server>]\n"
-        "\t\t[--username <user>]\n"
-        "\t\t[--domain <domain>]\n"
-        "\t\t[--password <pwd>]\n"
+        "\t\t--server <server>\n"
+        "\t\t--username <user>\n"
+        "\t\t--domain <domain>\n"
+        "\t\t--password <pwd>\n"
         "\t\t<key> <value> pair for SRV:\n"
         "\t\t\t--service <service-type>\n"
         "\t\t\tService type examples: ldap, kerberos or any other services\n"
@@ -2101,7 +2246,7 @@ ShowUsage(
         "\t\t<key> <value> pair for NS:\n"
         "\t\t\t--ns-domain   <domain>\n"
         "\t\t\t--hostname <hostname>\n"
-        "\t\t\t<key> <value> pair for PTR:\n"
+        "\t\t<key> <value> pair for PTR:\n"
         "\t\t\t--<ip|ip6> <address>\n"
         "\t\t\t--hostname <hostname>\n"
         "\t\t<key> <value> pair for CNAME:\n"
@@ -2111,10 +2256,10 @@ ShowUsage(
         "\tdel-record --zone <zone name>\n"
         "\t\t--type <record type>\n"
         "\t\t[<key> <value>]...\n"
-        "\t\t[--server <server>]\n"
-        "\t\t[--username <user>]\n"
-        "\t\t[--domain <domain>]\n"
-        "\t\t[--password <pwd>]\n"
+        "\t\t--server <server>\n"
+        "\t\t--username <user>\n"
+        "\t\t--domain <domain>\n"
+        "\t\t--password <pwd>\n"
         "\t\t<key> <value> pair for SRV:\n"
         "\t\t\t--service <service-type>\n"
         "\t\t\tService type examples: ldap, kerberos or any other services\n"
@@ -2135,33 +2280,34 @@ ShowUsage(
         "\t\t<key> <value> pair for CNAME:\n"
         "\t\t\t--name <name>\n"
         "\t\t\t--hostname <hostname>\n"
-        "\tlist-records --zone <zone name>\n"
+        "\tlist-record --zone <zone name>\n"
         "\t\t[--server <server>]\n"
         "\t\t[--username <user>]\n"
         "\t\t[--domain <domain>]\n"
         "\t\t[--password <pwd>]\n\n"
         "\tquery-record --zone <zone name>\n"
         "\t\t--type <record type>\n"
+        "\t\t--name <record name>\n"
         "\t\t<key> <value>\n"
-        "\t\t[--server <server>]\n"
-        "\t\t[--username <user>]\n"
-        "\t\t[--domain <domain>]\n"
-        "\t\t[--password <pwd>]\n\n"
+        "\t\t--server <server>\n"
+        "\t\t--username <user>\n"
+        "\t\t--domain <domain>\n"
+        "\t\t--password <pwd>\n\n"
         "\tadd-forwarder <forwarder ip>\n"
-        "\t\t[--server <server>]\n"
-        "\t\t[--username <user>]\n"
-        "\t\t[--domain <domain>]\n"
-        "\t\t[--password <pwd>]\n\n"
+        "\t\t--server <server>\n"
+        "\t\t--username <user>\n"
+        "\t\t--domain <domain>\n"
+        "\t\t--password <pwd>\n\n"
         "\tdel-forwarder <forwarder ip>\n"
-        "\t\t[--server <server>]\n"
-        "\t\t[--username <user>]\n"
-        "\t\t[--domain <domain>]\n"
-        "\t\t[--password <pwd>]\n\n"
+        "\t\t--server <server>\n"
+        "\t\t--username <user>\n"
+        "\t\t--domain <domain>\n"
+        "\t\t--password <pwd>\n\n"
         "\tlist-forwarders\n"
-        "\t\t[--server <server>]\n"
-        "\t\t[--username <user>]\n"
-        "\t\t[--domain <domain>]\n"
-        "\t\t[--password <pwd>]\n\n"
+        "\t\t--server <server>\n"
+        "\t\t--username <user>\n"
+        "\t\t--domain <domain>\n"
+        "\t\t--password <pwd>\n\n"
         "\thelp\n");
 }
 
@@ -2173,25 +2319,20 @@ VmDnsCliGetRecordData_A(
     )
 {
     DWORD dwError = 0;
-    struct addrinfo *pAddrInfo = NULL;
     VMDNS_IP4_ADDRESS ip4 = 0;
+    int ret = 0;
+    unsigned char buf[sizeof(struct in_addr)];
 
-    BAIL_ON_VMDNS_INVALID_POINTER(pszIPAddress, dwError);
+    BAIL_ON_VMDNS_EMPTY_STRING(pszIPAddress, dwError);
 
-    if (getaddrinfo(pszIPAddress, NULL, NULL, &pAddrInfo))
+    ret = inet_pton(AF_INET, pszIPAddress, buf);
+    if (ret <= 0)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    if (pAddrInfo->ai_family != AF_INET)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
-    ip4 = (VMDNS_IP4_ADDRESS)ntohl(
-            ((struct sockaddr_in *)pAddrInfo->ai_addr)->sin_addr.s_addr);
+    ip4 = (VMDNS_IP4_ADDRESS)ntohl(((struct in_addr *)buf)->s_addr);
 
     dwError = VmDnsCopyMemory(
                   &pData->IpAddress,
@@ -2203,10 +2344,6 @@ VmDnsCliGetRecordData_A(
 
 cleanup:
 
-    if (pAddrInfo)
-    {
-        freeaddrinfo(pAddrInfo);
-    }
     return dwError;
 
 error:
@@ -2223,16 +2360,13 @@ VmDnsCliGetRecordData_AAAA(
 {
     DWORD dwError = 0;
     struct addrinfo *pAddrInfo = NULL;
+    int ret = 0;
+    unsigned char buf[sizeof(struct in6_addr)];
 
-    BAIL_ON_VMDNS_INVALID_POINTER(pszIP6Address, dwError);
+    BAIL_ON_VMDNS_EMPTY_STRING(pszIP6Address, dwError);
 
-    if (getaddrinfo(pszIP6Address, NULL, NULL, &pAddrInfo))
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
-    if (pAddrInfo->ai_family != AF_INET6)
+    ret = inet_pton(AF_INET6, pszIP6Address, buf);
+    if (ret <= 0)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -2241,7 +2375,11 @@ VmDnsCliGetRecordData_AAAA(
     dwError = VmDnsCopyMemory(
                     pData->Ip6Address.IP6Byte,
                     sizeof(pData->Ip6Address.IP6Byte),
-                    ((struct sockaddr_in6 *)pAddrInfo->ai_addr)->sin6_addr.s6_addr,
+#ifdef _WIN32
+                    ((struct in6_addr*)buf)->u.Byte,
+#else
+                    ((struct in6_addr*)buf)->s6_addr,
+#endif
                     sizeof(pData->Ip6Address.IP6Byte));
     BAIL_ON_VMDNS_ERROR(dwError);
 

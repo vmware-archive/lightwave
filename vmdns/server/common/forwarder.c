@@ -62,6 +62,12 @@ VmDnsPeekResponseCode(
     PDWORD      pdwResponseCode
     );
 
+static
+BOOLEAN
+VmDnsValidateForwarder(
+    PCSTR       pszForwarder
+    );
+
 DWORD
 VmDnsForwarderInit(
     PVMDNS_FORWARDER_CONETXT*   ppForwarder
@@ -230,6 +236,12 @@ VmDnsAddForwarder(
 
     BAIL_ON_VMDNS_INVALID_POINTER(pForwarder, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(pszForwarder, dwError);
+
+    if (!VmDnsValidateForwarder(pszForwarder))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
 
     VMDNS_LOCKREAD(pForwarder->pLock);
     bLocked = TRUE;
@@ -704,4 +716,21 @@ error :
 
     goto cleanup;
 
+}
+
+static
+BOOLEAN
+VmDnsValidateForwarder(
+    PCSTR       pszForwarder
+    )
+{
+    if (!pszForwarder ||
+        pszForwarder[0] == '\0' ||
+        VmDnsStringChrA(pszForwarder, '.') == NULL
+        )
+    {
+        return FALSE;
+    }
+
+    return TRUE;
 }

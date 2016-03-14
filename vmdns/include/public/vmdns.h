@@ -75,6 +75,19 @@ VmDnsOpenServerW(
 
 VMDNS_API
 DWORD
+VmDnsOpenServerWithTimeOutA(
+    PCSTR pszNetworkAddress,
+    PCSTR pszUserName,
+    PCSTR pszDomain,
+    PCSTR pszPassword,
+    DWORD dwFlags,
+    PVOID pReserved,
+    DWORD dwTimeOut,
+    PVMDNS_SERVER_CONTEXT *ppServerContext
+    );
+
+VMDNS_API
+DWORD
 VmDnsOpenServerA(
     PCSTR                   pszNetworkAddress,
     PCSTR                   pszUserName,
@@ -95,8 +108,7 @@ VMDNS_API
 DWORD
 VmDnsGetForwardersA(
     PVMDNS_SERVER_CONTEXT   pServerContext,
-    PSTR**                  pppszForwarders,
-    PDWORD                  pdwCount
+    PVMDNS_FORWARDERS*      ppForwarders
     );
 
 VMDNS_API
@@ -212,6 +224,12 @@ VMDNS_API
 VOID
 VmDnsFreeRecordArray(
     PVMDNS_RECORD_ARRAY     pRecordArray
+    );
+
+VMDNS_API
+VOID
+VmDnsFreeForwarders(
+    PVMDNS_FORWARDERS       pForwarder
     );
 
 #ifdef __cplusplus

@@ -99,7 +99,7 @@ VmSockWinOpenClient(
         nConnectionType = hints.ai_socktype = SOCK_STREAM;
     }
 
-    hints.ai_flags    = AI_CANONNAME | AI_NUMERICSERV;
+    hints.ai_flags = AI_CANONNAME | AI_NUMERICSERV;
 
     sprintf_s(szPort, sizeof(szPort), "%d", usPort);
 
@@ -586,8 +586,15 @@ VmSockWinWaitForEvent(
                 pIoContext->eventType,
                 dwIoSize);
 
-    pIoContext->IoBuffer.dwBytesTransferred = dwIoSize;
-    pIoContext->IoBuffer.dwCurrentSize += dwIoSize;
+    if (dwIoSize)
+    {
+        pIoContext->IoBuffer.dwTotalBytesTransferred += dwIoSize;
+    }
+    else
+    {
+        pIoContext->IoBuffer.dwTotalBytesTransferred = 0;
+    }
+
     *ppIoBuffer = &pIoContext->IoBuffer;
     *ppSocket = pSocket;
     *pEventType = pIoContext->eventType;
@@ -865,7 +872,6 @@ VmSockWinRead(
         }
     }
 
-    pIoContext->IoBuffer.dwBytesTransferred = dwBytesRead;
     pIoContext->IoBuffer.dwCurrentSize += dwBytesRead;
 
 cleanup:
@@ -983,7 +989,6 @@ VmSockWinWrite(
         dwError = ERROR_IO_PENDING;
     }
 
-    pIoContext->IoBuffer.dwBytesTransferred = dwBytesWritten;
     pIoContext->IoBuffer.dwCurrentSize += dwBytesWritten;
 
     pIoBuffer = NULL;
@@ -1262,7 +1267,10 @@ VmSockWinAcceptConnection(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    dwError = VmSockWinAllocateIoBuffer(VM_SOCK_EVENT_TYPE_NEW_CONNECTION, 0, &pIoBuffer);
+    dwError = VmSockWinAllocateIoBuffer(
+                    VM_SOCK_EVENT_TYPE_TCP_NEW_CONNECTION,
+                    0,
+                    &pIoBuffer);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     pIoContext = CONTAINING_RECORD(pIoBuffer, VM_SOCK_IO_CONTEXT, IoBuffer);

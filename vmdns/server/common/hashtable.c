@@ -476,8 +476,8 @@ VmDnsHashTableResize(
         );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    pTable->ulThreshold = RESIZE_THRESHOLD(ulSize);
     pTable->ppData = ppTempData;
+    pTable->ulSize = ulSize;
 
     for (ulIndex = 0; ulIndex < ulOldSize; ulIndex++)
     {
@@ -494,7 +494,7 @@ VmDnsHashTableResize(
         }
     }
 
-    pTable->ulSize = ulSize;
+    pTable->ulThreshold = RESIZE_THRESHOLD(ulSize);
 
 cleanup:
     VMDNS_SAFE_FREE_MEMORY(ppOldData);

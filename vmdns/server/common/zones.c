@@ -146,6 +146,13 @@ VmDnsZoneValidateZoneInfo(
     PVMDNS_ZONE_INFO pZoneInfo
     );
 
+static
+BOOLEAN
+VmDnsZoneIsRecordCompatible(
+    PCSTR           pszZoneName,
+    VMDNS_RR_TYPE   recordType
+    );
+
 DWORD
 VmdnsZoneBeginUpdate(
     PVMDNS_ZONE_UPDATE_CONTEXT* ppCtx
@@ -502,6 +509,14 @@ VmDnsZoneAddRecord(
         VMDNS_LOG_LEVEL_ERROR,
         "Failed to find the required zone to add a record to.");
 
+    if (!VmDnsZoneIsRecordCompatible(
+            pZone->pszName,
+            pRecord->dwType))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
     LOCKWRITE_ZONE(bZoneLocked);
 
     dwError = VmDnsZoneFindRecord(pZone, pQueryRecord);
@@ -536,7 +551,7 @@ VmDnsZoneAddRecord(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    VMDNS_LOG_DEBUG("Added record %s %u to zone %s",
+    VMDNS_LOG_INFO("Added record %s %u to zone %s",
                     pRecord->pszName,
                     pRecord->dwType,
                     pszZone);
@@ -600,6 +615,11 @@ VmDnsZoneDeleteRecord(
 
         dwError = VmDnsNameEntryDeleteRecord(pNameEntry, pQueryRecord, bDirSync);
         BAIL_ON_VMDNS_ERROR(dwError);
+
+        VMDNS_LOG_INFO("Deleted record %s %u from zone %s",
+                        pRecord->pszName,
+                        pRecord->dwType,
+                        pszZone);
     }
 
 cleanup:
@@ -691,6 +711,12 @@ VmDnsZoneQuery(
     BAIL_ON_VMDNS_EMPTY_STRING(pszZone, dwError);
     BAIL_ON_VMDNS_EMPTY_STRING(pszName, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(ppRecords, dwError);
+
+    if (!VmDnsIsSupportedRecordType(type))
+    {
+        dwError = ERROR_NOT_SUPPORTED;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
 
     dwError = VmDnsZoneGetRecordShortName(type, pszName, pszZone, &pszShortName);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -953,7 +979,8 @@ VmDnsCopyZoneInfo(
     pZoneInfo->retryInterval = pSoa->Data.SOA.dwRetry;
     pZoneInfo->serial = pSoa->Data.SOA.dwSerialNo;
     pZoneInfo->dwFlags = pZone->dwFlags;
-    pZoneInfo->dwZoneType = pZone->dwZoneType;
+    pZoneInfo->dwZoneType = VmDnsIsReverseZoneName(pZone->pszName) ?
+                        VMDNS_ZONE_TYPE_REVERSE : VMDNS_ZONE_TYPE_FORWARD;
 
 cleanup:
     VMDNS_FREE_RECORD(pSoa);
@@ -987,11 +1014,10 @@ VmDnsUpdateExistingZone(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    dwError = VmDnsNameEntryUpdateSoaRecord(pNameEntry, pZoneInfo, bDirSync);
+    dwError = VmDnsNameEntryUpdateSoaRecord(pNameEntry, pZoneInfo, FALSE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     pZone->dwFlags = pZoneInfo->dwFlags;
-    pZone->dwZoneType = pZoneInfo->dwZoneType;
 
     VMDNS_LOG_DEBUG("Successfully updated zone %s.", pZoneInfo->pszName);
 
@@ -1030,7 +1056,7 @@ VmDnsZoneFindRecord(
 cleanup:
     return dwError;
 error:
-    VMDNS_LOG_ERROR("%s failed with error %u.", __FUNCTION__, dwError);
+    VMDNS_LOG_DEBUG("%s failed with error %u.", __FUNCTION__, dwError);
     goto cleanup;
 }
 
@@ -1205,53 +1231,56 @@ VmDnsZoneRestoreRecordFQDN(
 {
     DWORD dwError = 0;
     DWORD idx = 0;
-    DWORD dwLength = 0;
-    PSTR  pszNewName = NULL;
-    PSTR  pszNewTarget = NULL;
     PVMDNS_RECORD pRecord = NULL;
+    PSTR  pszTemp = NULL;
     BAIL_ON_VMDNS_EMPTY_STRING(pszDomainName, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(pRecords, dwError);
 
     for (; idx < pRecords->dwCount; ++idx)
     {
         pRecord = &pRecords->Records[idx];
-        if (VmDnsIsShortNameRecordType(pRecord->dwType) &&
-            !VmDnsCheckIfIPV4AddressA(pRecord->pszName) &&
-            !VmDnsCheckIfIPV6AddressA(pRecord->pszName))
+        if (VmDnsIsShortNameRecordType(pRecord->dwType))
         {
-            dwLength = VmDnsStringLenA(pRecord->pszName);
-            if (dwLength > 0 && pRecord->pszName[dwLength - 1] != '.')
-            {
-                dwError = VmDnsAllocateStringPrintfA(
-                            &pszNewName,
-                            "%s.%s",
-                            pRecord->pszName,
-                            pszDomainName);
-                BAIL_ON_VMDNS_ERROR(dwError);
+            dwError = VmDnsMakeFQDN(pRecord->pszName, pszDomainName, &pszTemp);
+            BAIL_ON_VMDNS_ERROR(dwError);
 
-                VmDnsFreeStringA(pRecord->pszName);
-                pRecord->pszName = pszNewName;
-                pszNewName = NULL;
+            if (pszTemp)
+            {
+                VMDNS_SAFE_FREE_STRINGA(pRecord->pszName);
+                pRecord->pszName = pszTemp;
+                pszTemp = NULL;
             }
         }
 
-        if (pRecord->dwType == VMDNS_RR_TYPE_SRV &&
-            !VmDnsCheckIfIPV4AddressA(pRecord->Data.SRV.pNameTarget) &&
-            !VmDnsCheckIfIPV6AddressA(pRecord->Data.SRV.pNameTarget))
+        if (pRecord->dwType == VMDNS_RR_TYPE_SRV)
         {
-            dwLength = VmDnsStringLenA(pRecord->Data.SRV.pNameTarget);
-            if (dwLength > 0 && pRecord->Data.SRV.pNameTarget[dwLength - 1] != '.')
-            {
-                dwError = VmDnsAllocateStringPrintfA(
-                            &pszNewTarget,
-                            "%s.%s",
-                            pRecord->Data.SRV.pNameTarget,
-                            pszDomainName);
-                BAIL_ON_VMDNS_ERROR(dwError);
+            dwError = VmDnsMakeFQDN(
+                        pRecord->Data.SRV.pNameTarget,
+                        pszDomainName,
+                        &pszTemp);
+            BAIL_ON_VMDNS_ERROR(dwError);
 
-                VmDnsFreeStringA(pRecord->Data.SRV.pNameTarget);
-                pRecord->Data.SRV.pNameTarget = pszNewTarget;
-                pszNewTarget = NULL;
+            if (pszTemp)
+            {
+                VMDNS_SAFE_FREE_STRINGA(pRecord->Data.SRV.pNameTarget);
+                pRecord->Data.SRV.pNameTarget = pszTemp;
+                pszTemp = NULL;
+            }
+        }
+
+        if (pRecord->dwType == VMDNS_RR_TYPE_NS)
+        {
+            dwError = VmDnsMakeFQDN(
+                        pRecord->Data.NS.pNameHost,
+                        pszDomainName,
+                        &pszTemp);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            if (pszTemp)
+            {
+                VMDNS_SAFE_FREE_STRINGA(pRecord->Data.NS.pNameHost);
+                pRecord->Data.NS.pNameHost = pszTemp;
+                pszTemp = NULL;
             }
         }
     }
@@ -1261,6 +1290,7 @@ cleanup:
 
 error:
 
+    VMDNS_SAFE_FREE_STRINGA(pszTemp);
     goto cleanup;
 }
 
@@ -1334,6 +1364,11 @@ VmDnsZoneGetQueryRecord(
         pszShortName = NULL;
     }
 
+    if (pQueryRecord->dwType == VMDNS_RR_TYPE_SRV)
+    {
+        VmDnsTrimDomainNameSuffix(pQueryRecord->Data.SRV.pNameTarget, pszZone);
+    }
+
     *ppQueryRecord = pQueryRecord;
 
 cleanup:
@@ -1353,8 +1388,6 @@ VmDnsZoneValidateZoneInfo(
     )
 {
     if (pZoneInfo &&
-        (pZoneInfo->dwZoneType == VMDNS_ZONE_TYPE_FORWARD ||
-         pZoneInfo->dwZoneType == VMDNS_ZONE_TYPE_REVERSE) &&
         (VmDnsStringLenA(pZoneInfo->pszName) <= VMDNS_NAME_LENGTH_MAX) &&
         (VmDnsStringLenA(pZoneInfo->pszPrimaryDnsSrvName) <= VMDNS_NAME_LENGTH_MAX) &&
         (VmDnsStringLenA(pZoneInfo->pszRName) <= VMDNS_NAME_LENGTH_MAX))
@@ -1366,3 +1399,30 @@ VmDnsZoneValidateZoneInfo(
 
     return FALSE;
 }
+
+static
+BOOLEAN
+VmDnsZoneIsRecordCompatible(
+    PCSTR           pszZoneName,
+    VMDNS_RR_TYPE   recordType
+    )
+{
+    VMDNS_ZONE_TYPE zoneType = VMDNS_ZONE_TYPE_FORWARD;
+    if (VmDnsIsReverseZoneName(pszZoneName))
+    {
+        zoneType = VMDNS_ZONE_TYPE_REVERSE;
+    }
+
+    if ((zoneType == VMDNS_ZONE_TYPE_FORWARD &&
+        recordType == VMDNS_RR_TYPE_PTR) ||
+        (zoneType == VMDNS_ZONE_TYPE_REVERSE &&
+            (recordType != VMDNS_RR_TYPE_PTR &&
+            recordType != VMDNS_RR_TYPE_SOA &&
+            recordType != VMDNS_RR_TYPE_NS)))
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+

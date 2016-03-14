@@ -29,7 +29,12 @@ VmDnsStoreCreateZone(
     PVMDNS_ZONE_INFO    pZoneInfo
     )
 {
+#ifdef _DEBUG
+	VmDnsSetState(VMDNS_READY);
+	return 0;
+#else
     return VmDnsDirCreateZone(pZoneInfo);
+#endif
 }
 
 DWORD
@@ -37,7 +42,11 @@ VmDnsStoreUpdateZone(
     PVMDNS_ZONE_INFO    pZoneInfo
     )
 {
-    return VmDnsDirUpdateZone(pZoneInfo);
+#ifdef _DEBUG
+	return 0;
+#else
+	return VmDnsDirUpdateZone(pZoneInfo);
+#endif
 }
 
 DWORD
@@ -45,7 +54,11 @@ VmDnsStoreDeleteZone(
     PCSTR               pszZoneName
     )
 {
-    return VmDnsDirDeleteZone(pszZoneName);
+#ifdef _DEBUG
+	return 0;
+#else
+	return VmDnsDirDeleteZone(pszZoneName);
+#endif
 }
 
 DWORD
@@ -54,7 +67,11 @@ VmDnsStoreAddZoneRecord(
     PVMDNS_RECORD       pRecord
     )
 {
-    return VmDnsDirAddZoneRecord(pszZoneName, pRecord);
+#ifdef _DEBUG
+	return 0;
+#else
+	return VmDnsDirAddZoneRecord(pszZoneName, pRecord);
+#endif
 }
 
 DWORD
@@ -63,7 +80,11 @@ VmDnsStoreDeleteZoneRecord(
     PVMDNS_RECORD       pRecord
     )
 {
-    return VmDnsDirDeleteZoneRecord(pszZoneName, pRecord);
+#ifdef _DEBUG
+	return 0;
+#else
+	return VmDnsDirDeleteZoneRecord(pszZoneName, pRecord);
+#endif
 }
 
 DWORD
@@ -72,5 +93,9 @@ VmDnsStoreSaveForwarders(
     PSTR*               ppszForwarders
     )
 {
-    return VmDnsDirSaveForwarders(dwCount, ppszForwarders);
+#ifdef _DEBUG
+	return 0;
+#else
+	return VmDnsDirSaveForwarders(dwCount, ppszForwarders);
+#endif
 }

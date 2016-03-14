@@ -2049,6 +2049,8 @@ VmDnsDirZoneInfoCopy(
             pZoneInfo->refreshInterval = pRecord->Data.SOA.dwRefresh;
             pZoneInfo->retryInterval = pRecord->Data.SOA.dwRetry;
             pZoneInfo->serial = pRecord->Data.SOA.dwSerialNo;
+            pZoneInfo->dwZoneType = VmDnsIsReverseZoneName(pZoneEntry->ZoneName) ?
+                            VMDNS_ZONE_TYPE_REVERSE : VMDNS_ZONE_TYPE_FORWARD;
 
             dwError = ERROR_SUCCESS;
 

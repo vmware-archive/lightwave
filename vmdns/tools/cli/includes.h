@@ -17,6 +17,9 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <termios.h>
+#include <ifaddrs.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #else //_ WIN32
 #define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 #include <Windows.h>

@@ -35,6 +35,12 @@ VmDnsCliListRecord(
 
 static
 DWORD
+VmDnsCliQueryRecord(
+    PVM_DNS_CLI_CONTEXT pContext
+    );
+
+static
+DWORD
 VmDnsCliAddRecord(
     PVM_DNS_CLI_CONTEXT pContext
     );
@@ -121,6 +127,8 @@ VmDnsCliExecute(
 
         case VM_DNS_ACTION_QUERY_RECORD:
 
+            dwError = VmDnsCliQueryRecord(pContext);
+
             break;
 
         case VM_DNS_ACTION_ADD_FORWARDER:
@@ -166,8 +174,9 @@ VmDnsCliCreateZone(
     VMDNS_ZONE_INFO zoneInfo = { 0 };
     VMDNS_RECORD nsRecord = {0};
     VMDNS_RECORD addrRecord = {0};
-    struct addrinfo *pAddrInfo = NULL;
-
+    int ret = 0;
+    int af = AF_INET;
+    unsigned char buf[sizeof(struct in6_addr)];
 
     if (IsNullOrEmptyString(pContext->pszZone))
     {
@@ -201,12 +210,13 @@ VmDnsCliCreateZone(
     zoneInfo.pszPrimaryDnsSrvName   = pContext->pszNSHost;
     zoneInfo.pszRName               = pszMboxDomain ? pszMboxDomain : pContext->pszMboxDomain;
     zoneInfo.serial                 = 1;
-    zoneInfo.refreshInterval        = 3200;
-    zoneInfo.retryInterval          = 3200;
-    zoneInfo.expire                 = 0;           // upper limit of being authoritative.
-    zoneInfo.minimum                = pContext->record.dwTtl;          // Minimum TTL
+    zoneInfo.refreshInterval        = VMDNS_DEFAULT_REFRESH_INTERVAL;
+    zoneInfo.retryInterval          = VMDNS_DEFAULT_RETRY_INTERVAL;
+    zoneInfo.expire                 = VMDNS_DEFAULT_EXPIRE;
+    zoneInfo.minimum                = VMDNS_DEFAULT_TTL;
     zoneInfo.dwFlags                = 0;
-    zoneInfo.dwZoneType             = 0;
+    zoneInfo.dwZoneType             = VmDnsIsReverseZoneName(zoneInfo.pszName) ?
+                                        VMDNS_ZONE_TYPE_REVERSE : VMDNS_ZONE_TYPE_FORWARD;
 
     dwError = VmDnsCreateZoneA(pContext->pServerContext, &zoneInfo);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -236,25 +246,34 @@ VmDnsCliCreateZone(
         addrRecord.dwType   = VMDNS_RR_TYPE_A;
         addrRecord.dwTtl    = pContext->record.dwTtl;
 
-        if (getaddrinfo(pContext->pszNSIp, NULL, NULL, &pAddrInfo))
+        if (VmDnsStringChrA(pContext->pszNSIp, ':'))
+        {
+            af = AF_INET6;
+        }
+
+        ret = inet_pton(af, pContext->pszNSIp, buf);
+        if (ret <= 0)
         {
             dwError = ERROR_INVALID_PARAMETER;
             BAIL_ON_VMDNS_ERROR(dwError);
         }
 
-        if (pAddrInfo->ai_family == AF_INET)
+        if (af == AF_INET)
         {
             addrRecord.Data.A.IpAddress =
-                    (VMDNS_IP4_ADDRESS)
-                    ((struct sockaddr_in *)pAddrInfo->ai_addr)->sin_addr.s_addr;
+                   (VMDNS_IP4_ADDRESS)ntohl(((struct in_addr *)buf)->s_addr);
         }
-        else if (pAddrInfo->ai_family == AF_INET6)
+        else if (af == AF_INET6)
         {
             addrRecord.dwType = VMDNS_RR_TYPE_AAAA;
             dwError = VmDnsCopyMemory(
                 addrRecord.Data.AAAA.Ip6Address.IP6Byte,
                 sizeof(addrRecord.Data.AAAA.Ip6Address.IP6Byte),
-                ((struct sockaddr_in6 *)pAddrInfo->ai_addr)->sin6_addr.s6_addr,
+#ifdef _WIN32
+                ((struct in6_addr*)buf)->u.Byte,
+#else
+                ((struct in6_addr*)buf)->s6_addr,
+#endif
                 sizeof(addrRecord.Data.AAAA.Ip6Address.IP6Byte));
             BAIL_ON_VMDNS_ERROR(dwError);
         }
@@ -294,9 +313,10 @@ VmDnsCliPrintZone(
     if (pZoneInfo)
     {
         printf("Name:               %s\n", pZoneInfo->pszName);
-        printf("Type:               %u\n", pZoneInfo->dwZoneType);
+        printf("Type:               %s\n",
+                    VmDnsIsReverseZoneName(pZoneInfo->pszName) ?
+                        "Reverse" : "Forward");
         printf("Serial:             %u\n", pZoneInfo->serial);
-        printf("Flags:              %u\n", pZoneInfo->dwFlags);
         printf("Primary DNS server: %s\n", pZoneInfo->pszPrimaryDnsSrvName);
         printf("Administrator:      %s\n", pZoneInfo->pszRName);
         printf("Expiration:         %u\n", pZoneInfo->expire);
@@ -421,6 +441,44 @@ error:
 
 static
 DWORD
+VmDnsCliQueryRecord(
+    PVM_DNS_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_RECORD_ARRAY pRecordArray = NULL;
+
+    if (IsNullOrEmptyString(pContext->pszZone) ||
+        IsNullOrEmptyString(pContext->record.pszName) ||
+        pContext->record.dwType == VMDNS_RR_TYPE_NONE)
+    {
+        fprintf(
+            stderr,
+            "Zone, record name and type are required for querying record.\n");
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsQueryRecordsA(pContext->pServerContext,
+                                pContext->pszZone,
+                                pContext->record.pszName,
+                                pContext->record.dwType,
+                                0, // Options - Reserved
+                                &pRecordArray);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    VmDnsCliPrintRecordArray(pRecordArray);
+
+cleanup:
+    VmDnsFreeRecordArray(pRecordArray);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
 VmDnsCliAddRecord(
     PVM_DNS_CLI_CONTEXT pContext
     )
@@ -453,6 +511,7 @@ VmDnsCliDelRecord(
     DWORD idx = 0;
     PVMDNS_RECORD_ARRAY pRecordArray = NULL;
     BOOL bFound = FALSE;
+    PSTR pszTargetFQDN = NULL;
 
     if (pContext->record.dwType == VMDNS_RR_TYPE_SOA)
     {
@@ -463,6 +522,21 @@ VmDnsCliDelRecord(
 
     dwError = VmDnsCliValidateAndCompleteRecord(pContext);
     BAIL_ON_VMDNS_ERROR(dwError);
+
+    if (pContext->record.dwType == VMDNS_RR_TYPE_SRV)
+    {
+        dwError = VmDnsMakeFQDN(pContext->record.Data.SRV.pNameTarget,
+                        pContext->pszZone,
+                        &pszTargetFQDN);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        if (pszTargetFQDN)
+        {
+            VMDNS_SAFE_FREE_STRINGA(pContext->record.Data.SRV.pNameTarget);
+            pContext->record.Data.SRV.pNameTarget = pszTargetFQDN;
+            pszTargetFQDN = NULL;
+        }
+    }
 
     VmDnsTrimDomainNameSuffix(pContext->record.pszName, pContext->pszZone);
 
@@ -498,6 +572,7 @@ error:
     {
         fprintf(stderr, "Error: no matching record found.\n");
     }
+    VMDNS_SAFE_FREE_STRINGA(pszTargetFQDN);
     VmDnsFreeRecordArray(pRecordArray);
     return dwError;
 }
@@ -511,7 +586,7 @@ VmDnsCliValidateAndCompleteRecord(
     DWORD dwError = 0;
 
     pContext->record.iClass = VMDNS_CLASS_IN;
-    pContext->record.dwTtl = 3600;
+    pContext->record.dwTtl = VMDNS_DEFAULT_TTL;
 
     dwError = VmDnsCliValidateRecordInput(pContext);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -538,6 +613,14 @@ VmDnsCliValidateAndCompleteRecord(
             break;
 
         case VMDNS_RR_TYPE_PTR:
+            if (!VmDnsStringStrA(pContext->record.pszName, pContext->pszZone))
+            {
+                fprintf(stderr,
+                    "Error: IP address doesn't belong to "
+                    "the given reverse zone.\n");
+                dwError = ERROR_INVALID_PARAMETER;
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
             VmDnsTrimDomainNameSuffix(
                 pContext->record.pszName,
                 pContext->pszZone);
@@ -623,28 +706,27 @@ VmDnsCliListForwarders(
     )
 {
     DWORD dwError = 0;
-    PSTR* ppszForwarders = NULL;
-    DWORD dwCount = 0;
+    PVMDNS_FORWARDERS pForwarders = NULL;
     DWORD iForwarder = 0;
 
-    dwError = VmDnsGetForwardersA(pContext->pServerContext, &ppszForwarders, &dwCount);
+    dwError = VmDnsGetForwardersA(pContext->pServerContext, &pForwarders);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    if (dwCount > 0)
+    if (pForwarders->dwCount > 0)
     {
         fprintf(stdout, "Forwarders:\n");
 
-        for (; iForwarder < dwCount; iForwarder++)
+        for (; iForwarder < pForwarders->dwCount; iForwarder++)
         {
-            fprintf(stdout, "%s\n", ppszForwarders[iForwarder]);
+            fprintf(stdout, "%s\n", pForwarders->ppszName[iForwarder]);
         }
     }
 
 error:
 
-    if (ppszForwarders)
+    if (pForwarders)
     {
-        VmDnsFreeStringCountedArrayA(ppszForwarders, dwCount);
+        VmDnsFreeForwarders(pForwarders);
     }
 
     return dwError;

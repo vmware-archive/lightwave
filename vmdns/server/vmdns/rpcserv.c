@@ -431,22 +431,25 @@ VmDnsRpcAllocateForwarders(
                         (PVOID*)&pDnsForwarders);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    pDnsForwarders->dwCount = 0;
-
-    dwError = VmDnsRpcAllocateMemory(
-                        sizeof(PDNS_STRING) * dwCount,
-                        (PVOID*)&pDnsForwarders->ppszName);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    for (; iForwarder < dwCount; iForwarder++)
+    if (dwCount > 0)
     {
-        dwError = VmDnsRpcAllocateStringA(
-                            ppszForwarders[iForwarder],
-                            &pDnsForwarders->ppszName[iForwarder]);
+        dwError = VmDnsRpcAllocateMemory(
+                            sizeof(PDNS_STRING) * dwCount,
+                            (PVOID*)&pDnsForwarders->ppszName);
         BAIL_ON_VMDNS_ERROR(dwError);
 
-        ++pDnsForwarders->dwCount;
+        for (; iForwarder < dwCount; iForwarder++)
+        {
+            dwError = VmDnsRpcAllocateStringA(
+                                ppszForwarders[iForwarder],
+                                &pDnsForwarders->ppszName[iForwarder]);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            ++pDnsForwarders->dwCount;
+        }
     }
+
+    pDnsForwarders->dwCount = dwCount;
 
     *ppDnsForwarders = pDnsForwarders;
 
@@ -491,14 +494,11 @@ VmDnsRpcGetForwarders(
                         &dwCount);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    if (dwCount > 0)
-    {
-        dwError = VmDnsRpcAllocateForwarders(
-                        ppszForwarders,
-                        dwCount,
-                        &pDnsForwarders);
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
+    dwError = VmDnsRpcAllocateForwarders(
+                    ppszForwarders,
+                    dwCount,
+                    &pDnsForwarders);
+    BAIL_ON_VMDNS_ERROR(dwError);
 
     *ppDnsForwarders = pDnsForwarders;
 
@@ -561,6 +561,7 @@ VmDnsInitialize(
 {
     DWORD dwError = ERROR_SUCCESS;
     VMDNS_ZONE_INFO zoneInfo = {0};
+    VMDNS_RECORD nsRecord = {0};
     VMDNS_RECORD ldapSrvRecord = {0};
     VMDNS_RECORD kerberosSrvRecord = {0};
     VMDNS_RECORD ip4AddrRecord = {0};
@@ -609,6 +610,23 @@ VmDnsInitialize(
     {
         VMDNS_LOG_INFO("%s zone %s already exists.", __FUNCTION__, zoneInfo.pszName);
         dwError = 0;
+    }
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    // Add NS record
+    nsRecord.pszName = pInitInfo->pszDomain;
+    nsRecord.Data.NS.pNameHost = pInitInfo->pszDcSrvName;
+    nsRecord.iClass = VMDNS_CLASS_IN;
+    nsRecord.dwType = VMDNS_RR_TYPE_NS;
+    nsRecord.dwTtl = VMDNS_DEFAULT_TTL;
+
+    dwError = VmDnsZoneAddRecord(pCtx,
+                    pInitInfo->pszDomain,
+                    &nsRecord,
+                    TRUE);
+    if (dwError == ERROR_ALREADY_EXISTS)
+    {
+        dwError = ERROR_SUCCESS;
     }
     BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -738,6 +756,7 @@ VmDnsUninitialize(
 {
     DWORD dwError = ERROR_SUCCESS;
     VMDNS_RECORD srvRecord = {0};
+    PVMDNS_RECORD_ARRAY pNsRecordArray = NULL;
     PVMDNS_RECORD_ARRAY pLdapSrvRecordArray = NULL;
     PVMDNS_RECORD_ARRAY pKerberosSrvRecordArray = NULL;
     PVMDNS_RECORD_ARRAY pIpV4RecordArray = NULL;
@@ -757,6 +776,61 @@ VmDnsUninitialize(
 
     VmDnsTrimDomainNameSuffix(pszAddressRecordName, pInitInfo->pszDomain);
 
+    // Query NS record(s)
+    dwError = VmDnsZoneQuery(
+                pInitInfo->pszDomain,
+                pInitInfo->pszDomain,
+                VMDNS_RR_TYPE_NS,
+                &pNsRecordArray);
+    if (dwError)
+    {
+        VMDNS_LOG_ERROR("%s, failed to get NS records.", __FUNCTION__);
+    }
+
+    // Query LDAP TCP SRV record(s)
+    dwError = VmDnsZoneQuery(
+                pInitInfo->pszDomain,
+                VMDNS_LDAP_SRV_NAME,
+                VMDNS_RR_TYPE_SRV,
+                &pLdapSrvRecordArray);
+    if (dwError)
+    {
+        VMDNS_LOG_ERROR("%s, failed to get LDAP SRV records.", __FUNCTION__);
+    }
+
+    // Query KDC TCP SRV record(s)
+    dwError = VmDnsZoneQuery(
+                pInitInfo->pszDomain,
+                VMDNS_KERBEROS_SRV_NAME,
+                VMDNS_RR_TYPE_SRV,
+                &pKerberosSrvRecordArray);
+    if (dwError)
+    {
+        VMDNS_LOG_ERROR("%s, failed to get KDC SRV records.", __FUNCTION__);
+    }
+
+    // Query A record(s)
+    dwError = VmDnsZoneQuery(
+                pInitInfo->pszDomain,
+                pszAddressRecordName,
+                VMDNS_RR_TYPE_A,
+                &pIpV4RecordArray);
+    if (dwError)
+    {
+        VMDNS_LOG_ERROR("%s, failed to get IPV4 address records.", __FUNCTION__);
+    }
+
+    // Query AAAA record(s)
+    dwError = VmDnsZoneQuery(
+                pInitInfo->pszDomain,
+                pszAddressRecordName,
+                VMDNS_RR_TYPE_AAAA,
+                &pIpV6RecordArray);
+    if (dwError)
+    {
+        VMDNS_LOG_ERROR("%s, failed to get IPV6 address records.", __FUNCTION__);
+    }
+
     // Try initialized state first, then ready state, because state never goes
     // back to initialized from ready, we won't have a race condition.
     oldState = VmDnsConditionalSetState(VMDNS_UNINITIALIZING, VMDNS_INITIALIZED);
@@ -775,13 +849,35 @@ VmDnsUninitialize(
     srvRecord.iClass = VMDNS_CLASS_IN;
     srvRecord.Data.SRV.pNameTarget = pInitInfo->pszDcSrvName;
 
+    // Remove NS record
+    if (pNsRecordArray)
+    {
+        for (idx = 0; idx < pNsRecordArray->dwCount; ++idx)
+        {
+            if (!VmDnsStringCompareA(
+                    pNsRecordArray->Records[idx].Data.NS.pNameHost,
+                    pInitInfo->pszDcSrvName,
+                    FALSE))
+            {
+                dwError = VmDnsZoneDeleteRecord(pCtx,
+                                pInitInfo->pszDomain,
+                                &pNsRecordArray->Records[idx],
+                                TRUE);
+                VMDNS_LOG_ERROR(
+                    "%s failed to delete NS record. Error %u.",
+                    __FUNCTION__,
+                    dwError);
+            }
+        }
+    }
+
+    srvRecord.pszName = VMDNS_LDAP_SRV_NAME;
+    srvRecord.dwType = VMDNS_RR_TYPE_SRV;
+    srvRecord.iClass = VMDNS_CLASS_IN;
+    srvRecord.Data.SRV.pNameTarget = pInitInfo->pszDcSrvName;
+
     // Remove LDAP TCP SRV record(s)
-    dwError = VmDnsZoneQuery(
-                pInitInfo->pszDomain,
-                VMDNS_LDAP_SRV_NAME,
-                VMDNS_RR_TYPE_SRV,
-                &pLdapSrvRecordArray);
-    if (!dwError)
+    if (pLdapSrvRecordArray)
     {
         for (idx = 0; idx < pLdapSrvRecordArray->dwCount; ++idx)
         {
@@ -802,12 +898,7 @@ VmDnsUninitialize(
     srvRecord.pszName = VMDNS_KERBEROS_SRV_NAME;
 
     // Remove KDC TCP SRV record(s)
-    dwError = VmDnsZoneQuery(
-                pInitInfo->pszDomain,
-                VMDNS_KERBEROS_SRV_NAME,
-                VMDNS_RR_TYPE_SRV,
-                &pKerberosSrvRecordArray);
-    if (!dwError)
+    if (pKerberosSrvRecordArray)
     {
         for (idx = 0; idx < pKerberosSrvRecordArray->dwCount; ++idx)
         {
@@ -826,12 +917,7 @@ VmDnsUninitialize(
     }
 
     // Remove A record(s)
-    dwError = VmDnsZoneQuery(
-                pInitInfo->pszDomain,
-                pszAddressRecordName,
-                VMDNS_RR_TYPE_A,
-                &pIpV4RecordArray);
-    if (!dwError)
+    if (pIpV4RecordArray)
     {
         for (idx = 0; idx < pIpV4RecordArray->dwCount; ++idx)
         {
@@ -847,12 +933,7 @@ VmDnsUninitialize(
     }
 
     // Remove AAAA record(s)
-    dwError = VmDnsZoneQuery(
-                pInitInfo->pszDomain,
-                pszAddressRecordName,
-                VMDNS_RR_TYPE_AAAA,
-                &pIpV6RecordArray);
-    if (!dwError)
+    if (pIpV6RecordArray)
     {
         for (idx = 0; idx < pIpV6RecordArray->dwCount; ++idx)
         {
@@ -872,6 +953,7 @@ VmDnsUninitialize(
 cleanup:
     VMDNS_FREE_RECORD_ARRAY(pKerberosSrvRecordArray);
     VMDNS_FREE_RECORD_ARRAY(pLdapSrvRecordArray);
+    VMDNS_FREE_RECORD_ARRAY(pNsRecordArray);
     VMDNS_FREE_RECORD_ARRAY(pIpV4RecordArray);
     VMDNS_FREE_RECORD_ARRAY(pIpV6RecordArray);
     VMDNS_SAFE_FREE_STRINGA(pszAddressRecordName);
