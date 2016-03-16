@@ -299,7 +299,7 @@ public class WindowsIdmNativeAdapter extends NativeAdapter implements IIdmClient
     }
 
     @Override
-    public boolean LdapSaslBind(Pointer pLdapConnection)
+    public boolean LdapSaslBind(Pointer pLdapConnection, String userName, String domainName, String password)
     {
         throw new UnsupportedOperationException(
                     "LDAP SASL Bind is unsupported");

@@ -95,7 +95,11 @@ import com.vmware.identity.idm.PersonDetail;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.Principal;
 import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.idm.RSAAMInstanceInfo;
+import com.vmware.identity.idm.RSAAMResult;
+import com.vmware.identity.idm.RSAAgentConfig;
 import com.vmware.identity.idm.RelyingParty;
+import com.vmware.identity.idm.ResourceServer;
 import com.vmware.identity.idm.SearchCriteria;
 import com.vmware.identity.idm.SearchResult;
 import com.vmware.identity.idm.SecurityDomain;
@@ -107,6 +111,7 @@ import com.vmware.identity.idm.UserAccountLockedException;
 import com.vmware.identity.idm.ValidateUtil;
 import com.vmware.identity.idm.VmHostData;
 import com.vmware.identity.performanceSupport.IIdmAuthStat;
+import com.vmware.identity.performanceSupport.IIdmAuthStatus;
 
 /**
  * User: krishnag Date: 12/8/11 Time: 5:37 PM
@@ -302,6 +307,17 @@ public class CasIdmClient
         // set title and content to null to disable logon banner on websso
         setLogonBannerTitle(tenantName, null);
         setLogonBannerContent(tenantName, null);
+    }
+
+    /**
+     * Operation for setting authentication policy of an identity provider
+     *
+     * @param providerName Name of identity provider on which authentication policy to be set
+     * @param policy Authentication policy to set
+     * @throws Exception
+     */
+    public void setAuthnPolicyForProvider(String tenantName, String providerName, AuthnPolicy policy) throws Exception {
+        getService().setAuthnPolicyForProvider(tenantName, providerName, policy, this.getServiceContext());
     }
 
     /**
@@ -557,6 +573,26 @@ public class CasIdmClient
      */
     public Collection<OIDCClient> getOIDCClients(String tenantName) throws Exception {
         return getService().getOIDCClients(tenantName, this.getServiceContext());
+    }
+
+    public void addResourceServer(String tenantName, ResourceServer resourceServer) throws Exception {
+        getService().addResourceServer(tenantName, resourceServer, this.getServiceContext());
+    }
+
+    public void deleteResourceServer(String tenantName, String resourceServerName) throws Exception {
+        getService().deleteResourceServer(tenantName, resourceServerName, this.getServiceContext());
+    }
+
+    public ResourceServer getResourceServer(String tenantName, String resourceServerName) throws Exception {
+        return getService().getResourceServer(tenantName, resourceServerName, this.getServiceContext());
+    }
+
+    public void setResourceServer(String tenantName, ResourceServer resourceServer) throws Exception {
+        getService().setResourceServer(tenantName, resourceServer, this.getServiceContext());
+    }
+
+    public Collection<ResourceServer> getResourceServers(String tenantName) throws Exception {
+        return getService().getResourceServers(tenantName, this.getServiceContext());
     }
 
     /**
@@ -820,6 +856,12 @@ public class CasIdmClient
         return getService().getProvider(tenantName, ProviderName, this.getServiceContext());
     }
 
+    public
+    IIdentityStoreData getProviderWithInternalInfo(String tenantName, String ProviderName) throws Exception
+    {
+        return getService().getProviderWithInternalInfo(tenantName, ProviderName, this.getServiceContext());
+    }
+
     /**
      * Removes an identity provider from the tenant's configuration
      * No action if the provider does not exist.
@@ -990,6 +1032,20 @@ public class CasIdmClient
                 authType,
                 userName,
                 pwd, certificates, this.getServiceContext());
+    }
+
+    /**
+     * Checks the connectivity to an identity provider
+     *
+     * @param tenant
+     * @param idsData
+     * @throws Exception
+     */
+    public
+    void
+    probeProviderConnectivity(String tenant, IIdentityStoreData idsData) throws Exception
+    {
+        getService().probeProviderConnectivity(tenant, idsData, this.getServiceContext());
     }
 
     /**
@@ -1262,6 +1318,41 @@ public class CasIdmClient
         return getService().authenticate(tenantName, tlsCertChain, this.getServiceContext());
 
 	}
+
+    /**
+     * Authenticates a principal using the password specified
+     *
+     * The principal is expected to be managed by one of the Identity providers
+     * configured in the tenant.
+     *
+     * @param tenantName
+     *            Name of tenant. non-null non-empty, required
+     * @param principal
+     *            User principal to be authenticated. non-null non-empty,
+     *            required
+     * @param sessionId
+     *            index to secureID session. could be null for new request.
+     * @param passcode
+     *            Passcode. non-null non-empty, required
+     * @param passcode2
+     * @return RSAAMResult which includes normalized principal if successfully authenticated.
+     * @throws IDMLoginException
+     *             when authentication failed.
+     * @throws IDMSecureIDNextPinException
+     *             in next
+     * @throws Exception
+     */
+    public RSAAMResult authenticateRsaSecurId(
+        String tenantName,
+        String sessionId,
+        String principal,
+        String passcode
+        ) throws Exception
+    {
+        return getService().authenticateRsaSecurId(tenantName, sessionId,
+                principal, passcode, this.getServiceContext());
+    }
+
     /**
      * Retrieve default information/attribute definitions about a User or
      * Service Principal in the given tenant/domain.
@@ -3395,15 +3486,67 @@ public class CasIdmClient
      }
 
      /**
-      * Operation for retrieving the IDM authentication statistics
+      * Operation for retrieving the IDM authentication cache
+      *
       * @param tenantName
-      * @throws RemoteException
-      * @throws IDMException
+      * @throws Exception
       */
      public List<IIdmAuthStat> getIdmAuthStats(String tenantName)
              throws Exception
      {
          return getService().getIdmAuthStats(tenantName, this.getServiceContext());
+     }
+
+     /**
+      * Operation for retrieving the status of the IDM authentication cache
+      *
+      * @param tenantName
+      * @return the status of the IDM authentication cache
+      * @throws Exception
+      */
+     public IIdmAuthStatus getIdmAuthStatus(String tenantName) throws Exception {
+         return getService().getIdmAuthStatus(tenantName, this.getServiceContext());
+     }
+
+     /**
+      * Operation for clearing the IDM authentication cache
+      *
+      * @param tenantName
+      * @throws Exception
+      */
+     public void clearIdmAuthStats(String tenantName) throws Exception {
+         getService().clearIdmAuthStats(tenantName, this.getServiceContext());
+     }
+
+     /**
+      * Operation for setting the IDM authentication cache size
+      *
+      * @param tenantName
+      * @param size
+      * @throws Exception
+      */
+     public void setIdmAuthStatsSize(String tenantName, int size) throws Exception {
+         getService().setIdmAuthStatsSize(tenantName, size, this.getServiceContext());
+     }
+
+     /**
+      * Operation for enabling the IDM authentication cache
+      *
+      * @param tenantName
+      * @throws Exception
+      */
+     public void enableIdmAuthStats(String tenantName) throws Exception {
+         getService().enableIdmAuthStats(tenantName, this.getServiceContext());
+     }
+
+     /**
+      * Operation for disabling the IDM authentication cache
+      *
+      * @param tenantName
+      * @throws Exception
+      */
+     public void disableIdmAuthStats(String tenantName) throws Exception {
+         getService().disableIdmAuthStats(tenantName, this.getServiceContext());
      }
 
     /**
@@ -3429,6 +3572,50 @@ public class CasIdmClient
             throws Exception {
         getService().setAuthNPolicy(tenantName, policy,
                 this.getServiceContext());
+    }
+
+    /**
+     * return RSA securID configuration for the tenant
+     * @param tenantName
+     * @param siteID
+     * @return
+     * @throws Exception
+     */
+    public RSAAgentConfig getRSAConfig(String tenantName) throws Exception {
+        return getService()
+                .getRSAConfig(tenantName, this.getServiceContext());
+    }
+
+    /**
+     * set RSA securID configuration for the tenant
+     * @param tenantName
+     * @param rsaAgentConfig
+     * @throws Exception
+     */
+    public void setRSAConfig(String tenantName, RSAAgentConfig rsaAgentConfig)
+        throws Exception {
+            getService().setRSAConfig(tenantName, rsaAgentConfig,
+                    this.getServiceContext());
+    }
+
+    /**
+     * add RSA securID instance configuration for a site
+     * @param tenantName
+     * @param instInfo
+     * @throws Exception
+     */
+    public void addRSAInstanceInfo(String tenantName, RSAAMInstanceInfo instInfo) throws Exception {
+            getService().addRSAInstanceInfo(tenantName, instInfo,this.getServiceContext());
+    }
+
+    /**
+     * delete RSA securID instance configuration for a site
+     * @param tenantName
+     * @param siteID
+     * @throws Exception
+     */
+    public void deleteRSAInstanceInfo(String tenantName, String siteID) throws Exception {
+        getService().deleteRSAInstanceInfo(tenantName, siteID, this.getServiceContext());
     }
 
     /**

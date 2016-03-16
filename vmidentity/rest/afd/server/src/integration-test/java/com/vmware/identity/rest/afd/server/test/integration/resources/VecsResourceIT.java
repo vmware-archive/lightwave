@@ -20,7 +20,7 @@ import static org.junit.Assert.assertFalse;
 import java.util.Collection;
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 
 import org.easymock.EasyMock;
 import org.junit.Before;
@@ -36,13 +36,13 @@ import com.vmware.identity.rest.core.server.authorization.Config;
 public class VecsResourceIT extends TestBase {
 
     private VecsResource vecsResource;
-    private HttpServletRequest request;
+    private ContainerRequestContext request;
 
     @Before
     public void setup() {
-        request = EasyMock.createMock(HttpServletRequest.class);
-        expect(request.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        expect(request.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        request = EasyMock.createMock(ContainerRequestContext.class);
+        expect(request.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        expect(request.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
         replay(request);
 
         vecsResource = new VecsResource(request, null);

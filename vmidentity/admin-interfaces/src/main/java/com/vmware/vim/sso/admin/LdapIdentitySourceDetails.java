@@ -1,9 +1,21 @@
-/* **********************************************************************
- * Copyright 2013 VMware, Inc.  All rights reserved.
- * *********************************************************************/
+/*
+ *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License.  You may obtain a copy
+ *  of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, without
+ *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ *  License for the specific language governing permissions and limitations
+ *  under the License.
+ */
 package com.vmware.vim.sso.admin;
 
 import java.net.URI;
+import java.security.cert.X509Certificate;
+import java.util.Collection;
 
 import com.vmware.vim.sso.admin.impl.util.ValidateUtil;
 
@@ -20,6 +32,8 @@ public final class LdapIdentitySourceDetails {
    private final URI _primaryUrl;
    private final URI _failoverUrl;
    private final int _searchTimeoutSeconds;
+   private final boolean _isSiteAffinityEnabled;
+   private Collection<X509Certificate> _certificates;
 
    /**
     * Create an LdapIdentitySourceDetails instance.
@@ -50,10 +64,14 @@ public final class LdapIdentitySourceDetails {
     *           The maximum number of seconds the SSO Server will wait for the
     *           remote server to respond to a search query. Must be positive or
     *           zero (unlimited).
+    * @param isSiteAffinityEnabled
+    *           Enabled / Disable site affinity
+    * @param certificates
+    *           The trusted certificates used by ldaps connection
     */
    public LdapIdentitySourceDetails(String friendlyName, String userBaseDn,
       String groupBaseDn, URI primaryUrl, URI failoverUrl,
-      int searchTimeoutSeconds) {
+      int searchTimeoutSeconds, boolean isSiteAffinityEnabled, Collection<X509Certificate> certificates) {
 
       ValidateUtil.validateNotEmpty(friendlyName, "friendlyName");
       ValidateUtil.validateNotNull(primaryUrl, "primaryUrl");
@@ -69,6 +87,8 @@ public final class LdapIdentitySourceDetails {
       _primaryUrl = primaryUrl;
       _failoverUrl = failoverUrl;
       _searchTimeoutSeconds = searchTimeoutSeconds;
+      _isSiteAffinityEnabled = isSiteAffinityEnabled;
+      _certificates = certificates;
    }
 
    /**
@@ -119,6 +139,20 @@ public final class LdapIdentitySourceDetails {
       return _searchTimeoutSeconds;
    }
 
+   /**
+    * Returns true if site-affinity is enabled
+    */
+    public boolean isSiteAffinityEnabled() {
+        return _isSiteAffinityEnabled;
+    }
+
+   /**
+   * Returns the trusted certificates used by ldaps connection
+   */
+   public Collection<X509Certificate> getCertificates() {
+       return _certificates;
+   }
+
    @Override
    public String toString() {
       StringBuilder objString = new StringBuilder(100);
@@ -136,8 +170,18 @@ public final class LdapIdentitySourceDetails {
       objString.append(_failoverUrl);
       objString.append(", searchTimeoutSeconds=");
       objString.append(_searchTimeoutSeconds);
+      objString.append(", isSiteAffinityEnabled=");
+      objString.append(_isSiteAffinityEnabled);
+
+      if (_certificates != null)
+      {
+	  for (X509Certificate cert : _certificates)
+	  {
+	      objString.append(", certificate=");
+	      objString.append(cert.toString());
+	  }
+      }
+
       return objString.toString();
-
    }
-
 }

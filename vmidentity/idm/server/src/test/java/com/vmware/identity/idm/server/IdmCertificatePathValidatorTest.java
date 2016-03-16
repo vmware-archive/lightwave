@@ -24,9 +24,11 @@ import java.security.cert.X509Certificate;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Arrays;
+import java.util.Hashtable;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import com.vmware.identity.idm.CertRevocationStatusUnknownException;
 import com.vmware.identity.idm.CertificateRevocationCheckException;
@@ -69,11 +71,11 @@ public class IdmCertificatePathValidatorTest {
 
         X509Certificate[] certs = testUtil.getValidCert();
         IdmCertificatePathValidator validator = new IdmCertificatePathValidator(
-                        trustStore, certPolicy);
+                        trustStore, certPolicy, ClientCertTestUtils.tenant1);
 
         // rev check off
         try {
-            validator.validate(certs[0]);
+            validator.validate(certs[0], new Hashtable<String, String>());
         }
         catch (Exception e) {
             fail("unexpected error in validating cert");
@@ -100,9 +102,9 @@ public class IdmCertificatePathValidatorTest {
                             .getCRLLocalCacheURL(testUtil.dodCRLCacheROOTCA2));
 
             IdmCertificatePathValidator validator = new IdmCertificatePathValidator(
-                            trustStore, certPolicy);
+                            trustStore, certPolicy,ClientCertTestUtils.tenant1);
 
-            validator.validate(certs[0]);
+            validator.validate(certs[0], new Hashtable<String, String>());
             fail("CRL check should not succeed with wrong CRL file");
         } catch (CertRevocationStatusUnknownException e) {
             return;
@@ -133,9 +135,9 @@ public class IdmCertificatePathValidatorTest {
                             .getCRLLocalCacheURL(testUtil.dodCRLCacheROOTCA2));
 
             IdmCertificatePathValidator validator = new IdmCertificatePathValidator(
-                            trustStore, certPolicy);
+                            trustStore, certPolicy, ClientCertTestUtils.tenant1);
 
-            validator.validate(certs[0]);
+            validator.validate(certs[0], new Hashtable<String, String>());
             fail("CRL check should not succeed with wrong CRL file");
         } catch (CertRevocationStatusUnknownException e) {
             return;
@@ -165,9 +167,9 @@ public class IdmCertificatePathValidatorTest {
             certPolicy.setRevocationCheckEnabled(false);
 
             IdmCertificatePathValidator validator = new IdmCertificatePathValidator(trustStore,
-                            certPolicy);
+                            certPolicy, ClientCertTestUtils.tenant1);
 
-            validator.validate(certs[0]);
+            validator.validate(certs[0], new Hashtable<String, String>());
             return;
         } catch (CertRevocationStatusUnknownException e) {
             fail("revocation check status unkown");
@@ -199,9 +201,9 @@ public class IdmCertificatePathValidatorTest {
             certPolicy.setUseCertCRL(true);
 
             IdmCertificatePathValidator validator = new IdmCertificatePathValidator(
-                            trustStore, certPolicy);
+                            trustStore, certPolicy,ClientCertTestUtils.tenant1);
 
-            validator.validate(certs[0]);
+            validator.validate(certs[0], new Hashtable<String, String>());
             return;
         } catch (CertRevocationStatusUnknownException e) {
             fail("revocation check status unkown");
@@ -214,8 +216,9 @@ public class IdmCertificatePathValidatorTest {
 
     /**
      * CRLDP test with local DOD CRL cache. Using dod soft cert:
-     *  note: we have to turn on in-cert CRLDP as the cache is only for one end-cert.
+     *
      */
+    @Ignore
     @Test
     public void testDodCRLCache() {
 
@@ -225,17 +228,19 @@ public class IdmCertificatePathValidatorTest {
         }
         try {
             KeyStore trustStore = testUtil.getTrustStore();
+
             ClientCertPolicy certPolicy = ClientCertTestUtils.intializeCertPolicy();
             X509Certificate[] certs = testUtil.getDodValidCert1();
 
             certPolicy.setRevocationCheckEnabled(true);
-            certPolicy.setUseCertCRL(true);
+            certPolicy.setUseCertCRL(false);
+            //This static cache already expired. download  new one to replace it before running the test.
             certPolicy.setCRLUrl(testUtil.getCRLLocalCacheURL(testUtil.dodCRLCacheEMAILCA_29));
 
             IdmCertificatePathValidator validator = new IdmCertificatePathValidator(
-                            trustStore, certPolicy);
+                            trustStore, certPolicy, ClientCertTestUtils.tenant1);
 
-            validator.validate(certs[0]);
+            validator.validate(certs[0], new Hashtable<String, String>());
             return;
         } catch (CertRevocationStatusUnknownException e) {
             fail("revocation check status unkown");
@@ -245,6 +250,38 @@ public class IdmCertificatePathValidatorTest {
 
     }
 
+    /**
+     * CRLDP test with CRLDP that has both ldap and http URI.
+     *
+     */
+    @Test
+    public void testBoeingCRLDP() {
+
+        Calendar currentDate = new GregorianCalendar();
+        if (currentDate.after(testUtil.boeingCertExpireDate)) {
+            return;
+        }
+        try {
+            System.out.print("running testBoeingCRLDP");
+            KeyStore trustStore = testUtil.getTrustStore_BOE();
+            ClientCertPolicy certPolicy = ClientCertTestUtils.intializeCertPolicy();
+            X509Certificate[] certs = testUtil.getValidCert_BOE1();
+
+            certPolicy.setRevocationCheckEnabled(true);
+            certPolicy.setUseCertCRL(true);
+
+            IdmCertificatePathValidator validator = new IdmCertificatePathValidator(
+                            trustStore, certPolicy, ClientCertTestUtils.tenant1);
+
+            validator.validate(certs[0], new Hashtable<String, String>());
+            return;
+        } catch (CertRevocationStatusUnknownException e) {
+            fail("revocation check status unkown");
+        } catch (Exception e) {
+            fail("unexpected error in validating cert");
+        }
+
+    }
     /**
      * OCSP test using dod soft cert:
      *
@@ -266,9 +303,9 @@ public class IdmCertificatePathValidatorTest {
             certPolicy.setUseCertCRL(false);
 
             IdmCertificatePathValidator validator = new IdmCertificatePathValidator(
-                            trustStore, certPolicy);
+                            trustStore, certPolicy, ClientCertTestUtils.tenant1);
 
-            validator.validate(certs[0]);
+            validator.validate(certs[0], new Hashtable<String, String>());
             return;
         } catch (CertRevocationStatusUnknownException e) {
             fail("revocation check status unkown");
@@ -303,9 +340,9 @@ public class IdmCertificatePathValidatorTest {
             certPolicy.setOIDs(allowedPolicies);
 
             IdmCertificatePathValidator validator = new IdmCertificatePathValidator(
-                    trustStore, certPolicy);
+                    trustStore, certPolicy, ClientCertTestUtils.tenant1);
 
-            validator.validate(certs[0]);
+            validator.validate(certs[0], new Hashtable<String, String>());
             return;
         } catch (CertRevocationStatusUnknownException e) {
             fail("revocation check status unkown");
@@ -340,8 +377,8 @@ public class IdmCertificatePathValidatorTest {
             certPolicy.setOIDs(allowedPolicies);
 
             IdmCertificatePathValidator validator = new IdmCertificatePathValidator(
-                    trustStore, certPolicy);
-            validator.validate(certs[0]);
+                    trustStore, certPolicy, ClientCertTestUtils.tenant1);
+            validator.validate(certs[0], new Hashtable<String, String>());
             fail("unexpected success in validating cert");
         } catch (CertRevocationStatusUnknownException e) {
             fail("revocation check status unkown");
@@ -373,9 +410,9 @@ public class IdmCertificatePathValidatorTest {
             certPolicy.setOCSPUrl(testUtil.getDODResponderUrl());
 
             IdmCertificatePathValidator validator = new IdmCertificatePathValidator(
-                            trustStore, certPolicy);
+                            trustStore, certPolicy, ClientCertTestUtils.tenant1);
 
-            validator.validate(certs[0]);
+            validator.validate(certs[0], new Hashtable<String, String>());
             return;
         } catch (CertRevocationStatusUnknownException e) {
             fail("revocation check status unkown");
@@ -407,9 +444,9 @@ public class IdmCertificatePathValidatorTest {
             certPolicy.setOCSPUrl(testUtil.getDODResponderUrl());
 
             IdmCertificatePathValidator validator = new IdmCertificatePathValidator(
-                            trustStore, certPolicy);
+                            trustStore, certPolicy, ClientCertTestUtils.tenant1);
 
-            validator.validate(x509Certificates[0]);
+            validator.validate(x509Certificates[0], new Hashtable<String, String>());
             fail("unexpected success in validating cert");
         } catch (IdmCertificateRevokedException e) {
             return;
@@ -439,9 +476,9 @@ public class IdmCertificatePathValidatorTest {
             certPolicy.setRevocationCheckEnabled(true);
 
             IdmCertificatePathValidator validator = new IdmCertificatePathValidator(
-                            trustStore, certPolicy);
+                            trustStore, certPolicy, ClientCertTestUtils.tenant1);
 
-            validator.validate(x509Certificates[0]);
+            validator.validate(x509Certificates[0], new Hashtable<String, String>());
             return;
         } catch (CertRevocationStatusUnknownException e) {
             fail("revocation check status unkown");

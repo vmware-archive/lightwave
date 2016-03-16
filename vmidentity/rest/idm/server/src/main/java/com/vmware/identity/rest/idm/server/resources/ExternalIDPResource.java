@@ -14,9 +14,10 @@
 
 package com.vmware.identity.rest.idm.server.resources;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.Collection;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -24,9 +25,16 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -57,11 +65,11 @@ public class ExternalIDPResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(ExternalIDPResource.class);
 
-    public ExternalIDPResource(String tenant, @Context HttpServletRequest request, @Context SecurityContext securityContext) {
+    public ExternalIDPResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, securityContext);
     }
 
-    @GET @Path("/")
+    @GET
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public Collection<ExternalIDPDTO> getAll() {
@@ -81,7 +89,7 @@ public class ExternalIDPResource extends BaseSubResource {
         return externalIDPs;
     }
 
-    @POST @Path("/")
+    @POST
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public ExternalIDPDTO register(ExternalIDPDTO externalIDP) {
@@ -97,6 +105,30 @@ public class ExternalIDPResource extends BaseSubResource {
             throw new BadRequestException(sm.getString("res.external.add.failed", externalIDP.getEntityID(), tenant), e);
         } catch (Exception e) {
             log.error("Failed to register external identity provider '{}' for tenant '{}' due to a server side error", externalIDP.getEntityID(), tenant, e);
+            throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        }
+    }
+
+    /**
+     * Register external identity provider (ADFS, Shibboleth etc) with provided metadata
+     *
+     */
+    @POST
+    @Consumes(MediaType.APPLICATION_XML)
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role=Role.ADMINISTRATOR)
+    public ExternalIDPDTO registerWithMetadata(String externalIDPConfig) {
+        try {
+            String entityId = getIDMClient().importExternalIDPConfiguration(tenant, parseSAMLConfig(externalIDPConfig));
+            return ExternalIDPMapper.getExternalIDPDTO(getIDMClient().getExternalIdpConfigForTenant(tenant, entityId));
+        } catch (NoSuchTenantException e) {
+            log.warn("Failed to register external identity provider for tenant '{}'", tenant, e);
+            throw new NotFoundException(sm.getString("ec.404"), e);
+        } catch (InvalidArgumentException | DTOMapperException e) {
+            log.warn("Failed to register external identity provider for tenant '{}' due to a client side error", tenant, e);
+            throw new BadRequestException(sm.getString("res.external.add.metadata.failed", tenant), e);
+        } catch (Exception e) {
+            log.error("Failed to register external identity provider for tenant '{}' due to a server side error", tenant, e);
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         }
     }
@@ -134,6 +166,39 @@ public class ExternalIDPResource extends BaseSubResource {
             log.error("Failed to remove external identity provider '{}' from tenant '{}' due to a server side error", entityID, tenant, e);
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         }
+    }
+
+    /**
+     * Parse SAML configuration value passed as argument to DOM document.
+     *
+     * @param samlConfigDoc
+     *           SAML configuration
+     * @return DOM document representing SAML configuration
+     *
+     * @throws SAXException
+     *            If any parse errors occur.
+     * @throws IOException
+     *            If any IO errors occur
+     */
+    public static Document parseSAMLConfig(String samlConfigDoc)
+       throws IOException, SAXException {
+
+       assert samlConfigDoc != null;
+
+       DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+       dbf.setNamespaceAware(true);
+       dbf.setValidating(false);
+
+       DocumentBuilder builder;
+       try {
+          builder = dbf.newDocumentBuilder();
+
+       } catch (ParserConfigurationException e) {
+          throw new IllegalStateException(e);
+       }
+       ByteArrayInputStream strIn = new ByteArrayInputStream(samlConfigDoc.getBytes()); // No need to close this stream!
+
+       return builder.parse(strIn);
     }
 
 }

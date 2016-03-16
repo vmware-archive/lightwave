@@ -15,79 +15,108 @@
 package com.vmware.identity.openidconnect.server;
 
 import java.util.Collection;
-import java.util.EnumSet;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang3.Validate;
 
-import com.nimbusds.oauth2.sdk.OAuth2Error;
-import com.nimbusds.oauth2.sdk.Scope;
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeValuePair;
-import com.vmware.identity.idm.DomainType;
-import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.KnownSamlAttributes;
+import com.vmware.identity.idm.client.CasIdmClient;
+import com.vmware.identity.openidconnect.common.ErrorObject;
+import com.vmware.identity.openidconnect.common.Scope;
+import com.vmware.identity.openidconnect.common.ScopeValue;
 
 /**
  * @author Yehia Zayour
  */
 public class UserInfoRetriever {
-    private final IdmClient idmClient;
+    private final CasIdmClient idmClient;
 
-    public UserInfoRetriever(IdmClient idmClient) {
+    public UserInfoRetriever(CasIdmClient idmClient) {
+        Validate.notNull(idmClient, "idmClient");
         this.idmClient = idmClient;
     }
 
-    public UserInformation retrieveUserInfo(User user, Scope scope) throws ServerException {
+    public UserInfo retrieveUserInfo(
+            User user,
+            Scope scope,
+            Set<ResourceServerInfo> resourceServerInfos) throws ServerException {
         Validate.notNull(user, "user");
         Validate.notNull(scope, "scope");
+        Validate.notNull(resourceServerInfos, "resourceServerInfos");
 
         if (!isEnabled(user)) {
-            throw new ServerException(OAuth2Error.ACCESS_DENIED.setDescription("user has been disabled or deleted"));
+            throw new ServerException(ErrorObject.accessDenied("user has been disabled or deleted"));
         }
 
-        List<String> groupMembership = null;
-        String adminServerRole = null;
         String givenName = null;
         String familyName = null;
-
         if (user instanceof PersonUser) {
             com.vmware.identity.idm.PersonUser idmPersonUser;
             try {
                 idmPersonUser = this.idmClient.findPersonUser(user.getTenant(), user.getPrincipalId());
             } catch (Exception e) {
-                throw new ServerException(OAuth2Error.SERVER_ERROR.setDescription("idm error while retrieving person user"), e);
+                throw new ServerException(ErrorObject.serverError("idm error while retrieving person user"), e);
             }
             if (idmPersonUser == null) {
-                throw new ServerException(OAuth2Error.INVALID_REQUEST.setDescription("person user with specified id not found"));
+                throw new ServerException(ErrorObject.invalidRequest("person user with specified id not found"));
             }
             givenName = idmPersonUser.getDetail().getFirstName();
             familyName = idmPersonUser.getDetail().getLastName();
         }
 
-        if (scope.contains(ScopeValue.ID_TOKEN_GROUPS.getName()) || scope.contains(ScopeValue.ACCESS_TOKEN_GROUPS.getName())) {
+        String adminServerRole = null;
+        if (scope.contains(ScopeValue.RESOURCE_SERVER_ADMIN_SERVER)) {
+            adminServerRole = computeAdminServerRole(user);
+        }
+
+        List<String> groupMembership = null;
+        if (
+                scope.contains(ScopeValue.ID_TOKEN_GROUPS) ||
+                scope.contains(ScopeValue.ID_TOKEN_GROUPS_FILTERED) ||
+                scope.contains(ScopeValue.ACCESS_TOKEN_GROUPS) ||
+                scope.contains(ScopeValue.ACCESS_TOKEN_GROUPS_FILTERED)) {
             groupMembership = computeGroupMembership(user);
         }
 
-        if (scope.contains(ScopeValue.RESOURCE_SERVER_ADMIN_SERVER.getName())) {
-            if (groupMembership == null) {
-                groupMembership = computeGroupMembership(user);
+        boolean filteredGroupsRequested =
+                scope.contains(ScopeValue.ID_TOKEN_GROUPS_FILTERED) ||
+                scope.contains(ScopeValue.ACCESS_TOKEN_GROUPS_FILTERED);
+
+        boolean shouldComputeFilteredGroups = false;
+        if (filteredGroupsRequested && !resourceServerInfos.isEmpty()) {
+            boolean emptyFilterFound = false;
+            for (ResourceServerInfo rsInfo : resourceServerInfos) {
+                if (rsInfo.getGroupFilter().isEmpty()) {
+                    emptyFilterFound = true;
+                    break;
+                }
             }
-            adminServerRole = computeAdminServerRole(user.getTenant(), groupMembership);
+            if (!emptyFilterFound) {
+                shouldComputeFilteredGroups = true;
+            }
         }
 
-        return new UserInformation(groupMembership, adminServerRole, givenName, familyName);
+        Set<String> groupMembershipFiltered = null;
+        if (shouldComputeFilteredGroups) {
+            groupMembershipFiltered = computeGroupMembershipFiltered(groupMembership, resourceServerInfos);
+        }
+
+        return new UserInfo(groupMembership, groupMembershipFiltered, adminServerRole, givenName, familyName);
     }
 
-    public boolean isMemberOfActAsGroup(SolutionUser solutionUser) throws ServerException {
-        Validate.notNull(solutionUser, "solutionUser");
+    public boolean isMemberOfGroup(User user, String group) throws ServerException {
+        Validate.notNull(user, "user");
+        Validate.notEmpty(group, "group");
         try {
-            return this.idmClient.isMemberOfSystemGroup(solutionUser.getTenant(), solutionUser.getPrincipalId(), "ActAsUsers");
+            return this.idmClient.isMemberOfSystemGroup(user.getTenant(), user.getPrincipalId(), group);
         } catch (Exception e) {
-            throw new ServerException(OAuth2Error.SERVER_ERROR.setDescription("idm error while checking is member of ActAsUsers"), e);
+            throw new ServerException(ErrorObject.serverError("idm error while checking is member of system group"), e);
         }
     }
 
@@ -98,42 +127,48 @@ public class UserInfoRetriever {
         } catch (InvalidPrincipalException e) {
             enabled = false;
         } catch (Exception e) {
-            throw new ServerException(OAuth2Error.SERVER_ERROR.setDescription("idm error while checking isActive status"), e);
+            throw new ServerException(ErrorObject.serverError("idm error while checking isActive status"), e);
         }
         return enabled;
     }
 
+    private Set<String> computeGroupMembershipFiltered(List<String> groupMembership, Set<ResourceServerInfo> resourceServerInfos) {
+        // 1. result = {union of all filters}
+        Set<String> result = new HashSet<String>();
+        for (ResourceServerInfo rsInfo : resourceServerInfos) {
+            assert !rsInfo.getGroupFilter().isEmpty();
+            Set<String> groupFilterLowerCase = toLowerCase(rsInfo.getGroupFilter());
+            result.addAll(groupFilterLowerCase);
+        }
+
+        // 2. result = intersection of {union of all filters} with groupMembership
+        Set<String> groupMembershipLowerCase = toLowerCase(groupMembership);
+        result.retainAll(groupMembershipLowerCase);
+        return result;
+    }
+
     private List<String> computeGroupMembership(User user) throws ServerException {
-        Collection<Attribute> attributes = new HashSet<Attribute>();
-        attributes.add(new Attribute(KnownSamlAttributes.ATTRIBUTE_USER_GROUPS));
         Collection<AttributeValuePair> attributeValuePairs;
         try {
             attributeValuePairs = this.idmClient.getAttributeValues(
                     user.getTenant(),
                     user.getPrincipalId(),
-                    attributes);
+                    Collections.singleton(new Attribute(KnownSamlAttributes.ATTRIBUTE_USER_GROUPS)));
         } catch (Exception e) {
-            throw new ServerException(OAuth2Error.SERVER_ERROR.setDescription("idm error while retrieving group membership"), e);
+            throw new ServerException(ErrorObject.serverError("idm error while retrieving group membership"), e);
         }
-        Object[] pairsArray = attributeValuePairs.toArray();
-        assert pairsArray.length == 1;
-        AttributeValuePair attributeValuePair = (AttributeValuePair) pairsArray[0];
+        assert attributeValuePairs != null && attributeValuePairs.size() == 1;
+        AttributeValuePair attributeValuePair = attributeValuePairs.iterator().next();
         return attributeValuePair.getValues();
     }
 
-    private String computeAdminServerRole(String tenant, List<String> groupMembership) throws ServerException {
-        String systemDomainName = getSystemDomainName(tenant).toLowerCase() + "\\";
-        Set<String> groupsSet = new HashSet<String>();
-        for (String group : groupMembership) {
-            groupsSet.add(group.toLowerCase());
-        }
-
+    private String computeAdminServerRole(User user) throws ServerException {
         String role;
-        if (groupsSet.contains(systemDomainName + "administrators")) {
+        if (isMemberOfGroup(user, "administrators")) {
             role = "Administrator";
-        } else if (groupsSet.contains(systemDomainName + "systemconfiguration.administrators")) {
+        } else if (isMemberOfGroup(user, "systemconfiguration.administrators")) {
             role = "ConfigurationUser";
-        } else if (groupsSet.contains(systemDomainName + "users")) {
+        } else if (isMemberOfGroup(user, "users")) {
             role = "RegularUser";
         } else {
             role = "GuestUser";
@@ -141,17 +176,11 @@ public class UserInfoRetriever {
         return role;
     }
 
-    private String getSystemDomainName(String tenant) throws ServerException {
-        String systemDomainName = "";
-        Collection<IIdentityStoreData> identityStores;
-        try {
-            identityStores = this.idmClient.getProviders(tenant, EnumSet.of(DomainType.SYSTEM_DOMAIN));
-        } catch (Exception e) {
-            throw new ServerException(OAuth2Error.SERVER_ERROR.setDescription("idm error while retrieving system domain"), e);
+    private static Set<String> toLowerCase(Collection<String> collection) {
+        Set<String> result = new HashSet<String>();
+        for (String element : collection) {
+            result.add(element.toLowerCase());
         }
-        if ((identityStores != null) && (identityStores.size() > 0)) {
-            systemDomainName = identityStores.iterator().next().getName();
-        }
-        return systemDomainName;
+        return result;
     }
 }

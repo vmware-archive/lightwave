@@ -2,14 +2,15 @@
 [Authorization Code Flow]
 =======================================================================================
 Authn Request
-    GET /authorize?
+    GET /openidconnect/oidc/authorize?
         response_type=code&
         response_mode=form_post&
         client_id=_client_id_xyz_&
         redirect_uri=https://client.example.com/cb&
         state=_state_xyz_&
         nonce=_nonce_xyz_&
-        scope=openid id_groups at_groups rs_admin_server HTTP/1.1
+        scope=openid id_groups at_groups rs_admin_server&
+        client_assertion=<client_assertion>
     Host: server.example.com
 
 Authn Response
@@ -34,7 +35,7 @@ Authn Response
     </html>
 
 Token Request
-    POST /token HTTP/1.1
+    POST /openidconnect/token HTTP/1.1
     Host: server.example.com
     Content-Type: application/x-www-form-urlencoded
 
@@ -80,11 +81,20 @@ where
         "admin_server_role"="ConfigurationUser"
         ...
     }
+    
+    <refresh_token>=
+    {
+        "token_class"="refresh_token",
+        "token_type"="hotk-pk",
+        "hotk"=<jwks>,
+        "aud"="_client_id_xyz_",
+        ...
+    }
 =======================================================================================
 [Implicit Flow]
 =======================================================================================
 Authn Request
-    GET /authorize?
+    GET /openidconnect/oidc/authorize?
         response_type=id_token&
         response_mode=form_post&
         client_id=_client_id_xyz_&
@@ -118,7 +128,7 @@ Authn Response
 [Resource Owner Password Credentials Flow]
 =======================================================================================
 Token Request
-    POST /token HTTP/1.1
+    POST /openidconnect/token HTTP/1.1
     Host: server.example.com
     Content-Type: application/x-www-form-urlencoded
 
@@ -144,7 +154,7 @@ Token Response
 [Client Credentials Flow]
 =======================================================================================
 Token Request
-    POST /token HTTP/1.1
+    POST /openidconnect/token HTTP/1.1
     Host: server.example.com
     Content-Type: application/x-www-form-urlencoded
 
@@ -169,7 +179,7 @@ Token Response
 [Refresh Token Flow]
 =======================================================================================
 Token Request
-    POST /token HTTP/1.1
+    POST /openidconnect/token HTTP/1.1
     Host: server.example.com
     Content-Type: application/x-www-form-urlencoded
 
@@ -192,7 +202,7 @@ Token Response
 extension grant_type: Solution User Credentials (token by cert)
 =======================================================================================
 Token Request
-    POST /token HTTP/1.1
+    POST /openidconnect/token HTTP/1.1
     Host: server.example.com
     Content-Type: application/x-www-form-urlencoded
 
@@ -216,7 +226,7 @@ Token Response
 extension grant_type: GSS Ticket (token by ticket)
 =======================================================================================
 Token Request
-    POST /token HTTP/1.1
+    POST /openidconnect/token HTTP/1.1
     Host: server.example.com
     Content-Type: application/x-www-form-urlencoded
 
@@ -245,7 +255,8 @@ Logout Request
     GET /logout?
         id_token_hint=<id_token>&
         post_logout_redirect_uri=https://client.example.com/cb&
-        state=_state_xyz_
+        state=_state_xyz_&
+        client_assertion=<client_assertion>
     Host: server.example.com
     Cookie:oidc_session_id-<tenant>=<session_id>
 

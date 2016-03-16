@@ -22,6 +22,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -32,6 +33,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
+import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.AssertionConsumerService;
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeConsumerService;
@@ -43,12 +46,16 @@ import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.IIdentityStoreDataEx;
 import com.vmware.identity.idm.IdentityStoreType;
+import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.PasswordExpiration;
+import com.vmware.identity.idm.RSAAMInstanceInfo;
+import com.vmware.identity.idm.RSAAgentConfig;
 import com.vmware.identity.idm.RelyingParty;
 import com.vmware.identity.idm.ServiceEndpoint;
 import com.vmware.identity.idm.SignatureAlgorithm;
 import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.ValidateUtil;
+import com.vmware.identity.idm.server.IdentityManager;
 import com.vmware.identity.idm.server.IdmCertificate;
 import com.vmware.identity.idm.server.ServerUtils;
 import com.vmware.identity.idm.server.config.IConfigStore;
@@ -866,10 +873,8 @@ abstract class BaseLdapObjectBase<T, V> implements ILdapObject<T>
             {
                 value = entry.getAttributeValues(this._ctorAttributes[i]);
             }
-
             ctorArgs.add(value);
         }
-
         intermediateObject = this.createObject(ctorArgs);
 
         for( String str : this._nonCtorSettableAttributes)
@@ -1275,6 +1280,351 @@ final class TenantClientCertPolicy
     }
 }
 
+final class RSAAgentConfigLdapObject extends BaseLdapObject<RSAAgentConfig> {
+
+    private static RSAAgentConfigLdapObject _instance = new RSAAgentConfigLdapObject();
+
+    public static RSAAgentConfigLdapObject getInstance() {
+        return _instance;
+    }
+    private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory
+            .getLogger(RSAAgentConfigLdapObject.class);
+
+    public static final String PROPERTY_DEFAULT_NAME = "RsaConfig";
+    public static final String PROPERTY_NAME = CN;
+    private static final String OBJECT_CLASS = "vmwSTSTenantRsaAgentConfiguration";
+    private static final String PROPERTY_LOGIN_GUIDENCE = "vmwSTSRsaLoginGuidence";
+    private static final String PROPERTY_LOG_LEVEL = "vmwSTSRsaLogLevel";
+    private static final String PROPERTY_LOG_FILE_SIZE = "vmwSTSRsaLogFileSize";
+    private static final String PROPERTY_MAX_LOG_FILE_COUNT = "vmwSTSRsaMaxLogFileCount";
+    private static final String PROPERTY_CONNECTION_TIME_OUT = "vmwSTSRsaConnectionTimeOut";
+    private static final String PROPERTY_READ_TIME_OUT = "vmwSTSRsaReadTimeOut";
+    private static final String PROPERTY_ENCRYPTION_ALG = "vmwSTSRsaEncryptionAlg";
+
+
+    @SuppressWarnings("unchecked")
+    private RSAAgentConfigLdapObject()
+    {
+        super(
+                OBJECT_CLASS,
+                new PropertyMapperMetaInfo[]{
+                        new PropertyMapperMetaInfo<RSAAgentConfig>(
+                                PROPERTY_NAME,
+                                0,
+                                true,
+                                new IPropertyGetterSetter<RSAAgentConfig>() {
+                                    @Override
+                                    public void SetLdapValue(RSAAgentConfig object, LdapValue[] value)
+                                    {
+                                        throw new IllegalStateException("name cannot be set on Tenant;");
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(RSAAgentConfig object)
+                                    {
+                                        ValidateUtil.validateNotNull( object, "object");
+                                        return ServerUtils.getLdapValue( RSAAgentConfigLdapObject.PROPERTY_DEFAULT_NAME );
+                                    }
+                                },
+                                false // cannot update in ldap
+                         ),
+                         new PropertyMapperMetaInfo<RSAAgentConfig>(
+                                 PROPERTY_LOGIN_GUIDENCE,
+                                 -1,
+                                 true,
+                                 new IPropertyGetterSetter<RSAAgentConfig>() {
+                                     @Override
+                                     public void SetLdapValue(RSAAgentConfig object, LdapValue[] value) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         object.set_loginGuide(ServerUtils.getStringValue(value));
+                                     }
+                                     @Override
+                                     public LdapValue[] GetLdapValue(RSAAgentConfig object) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         return ServerUtils.getLdapValue(object.get_loginGuide());
+                                     }
+                                 },
+                                 true
+                         ),
+
+                         new PropertyMapperMetaInfo<RSAAgentConfig>(
+                                 PROPERTY_LOG_LEVEL,
+                                 -1,
+                                 true,
+                                 new IPropertyGetterSetter<RSAAgentConfig>() {
+                                     @Override
+                                     public void SetLdapValue(RSAAgentConfig object, LdapValue[] value) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         object.set_logLevel(
+                                                 RSAAgentConfig.RSALogLevelType.valueOf(ServerUtils.getStringValue(value)));
+                                     }
+                                     @Override
+                                     public LdapValue[] GetLdapValue(RSAAgentConfig object) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         return ServerUtils.getLdapValue(object.get_logLevel().toString());
+                                     }
+                                 },
+                                 true
+                         ),
+                         new PropertyMapperMetaInfo<RSAAgentConfig>(
+                                 PROPERTY_LOG_FILE_SIZE,
+                                 -1,
+                                 true,
+                                 new IPropertyGetterSetter<RSAAgentConfig>() {
+                                     @Override
+                                     public void SetLdapValue(RSAAgentConfig object, LdapValue[] value) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         Integer integerVal = ServerUtils.getIntegerValue(value);
+                                         if (integerVal != null) {
+                                             object.set_logFileSize(integerVal.intValue());
+                                         }
+                                     }
+                                     @Override
+                                     public LdapValue[] GetLdapValue(RSAAgentConfig object) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         return ServerUtils.getLdapValue(object.get_logFileSize());
+                                     }
+                                 },
+                                 true
+                         ),
+                         new PropertyMapperMetaInfo<RSAAgentConfig>(
+                                 PROPERTY_MAX_LOG_FILE_COUNT,
+                                 -1,
+                                 true,
+                                 new IPropertyGetterSetter<RSAAgentConfig>() {
+                                     @Override
+                                     public void SetLdapValue(RSAAgentConfig object, LdapValue[] value) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         Integer integerVal = ServerUtils.getIntegerValue(value);
+                                         if (integerVal != null) {
+                                             object.set_maxLogFileCount(integerVal.intValue());
+                                         }
+                                     }
+                                     @Override
+                                     public LdapValue[] GetLdapValue(RSAAgentConfig object) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         return ServerUtils.getLdapValue(object.get_maxLogFileCount());
+                                     }
+                                 },
+                                 true
+                         ),
+                         new PropertyMapperMetaInfo<RSAAgentConfig>(
+                                 PROPERTY_CONNECTION_TIME_OUT,
+                                 -1,
+                                 true,
+                                 new IPropertyGetterSetter<RSAAgentConfig>() {
+                                     @Override
+                                     public void SetLdapValue(RSAAgentConfig object, LdapValue[] value) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         Integer integerVal = ServerUtils.getIntegerValue(value);
+                                         if (integerVal != null) {
+                                             object.set_connectionTimeOut(integerVal.intValue());
+                                         }
+                                     }
+                                     @Override
+                                     public LdapValue[] GetLdapValue(RSAAgentConfig object) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         return ServerUtils.getLdapValue(object.get_connectionTimeOut());
+                                     }
+                                 },
+                                 true
+                         ),
+                         new PropertyMapperMetaInfo<RSAAgentConfig>(
+                                 PROPERTY_READ_TIME_OUT,
+                                 -1,
+                                 true,
+                                 new IPropertyGetterSetter<RSAAgentConfig>() {
+                                     @Override
+                                     public void SetLdapValue(RSAAgentConfig object, LdapValue[] value) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         Integer integerVal = ServerUtils.getIntegerValue(value);
+                                         if (integerVal != null) {
+                                             object.set_readTimeOut(integerVal.intValue());
+                                         }
+                                     }
+                                     @Override
+                                     public LdapValue[] GetLdapValue(RSAAgentConfig object) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         return ServerUtils.getLdapValue(object.get_readTimeOut());
+                                     }
+                                 },
+                                 true
+                         ),
+                         new PropertyMapperMetaInfo<RSAAgentConfig>(
+                                 PROPERTY_ENCRYPTION_ALG,
+                                 -1,
+                                 true,
+                                 new IPropertyGetterSetter<RSAAgentConfig>() {
+                                     @Override
+                                     public void SetLdapValue(RSAAgentConfig object, LdapValue[] value) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         Set<String> algSet = new HashSet<String>(Arrays.asList(ServerUtils.getMultiStringValue(value)));
+                                         object.set_rsaEncAlgList(algSet);
+                                     }
+                                     @Override
+                                     public LdapValue[] GetLdapValue(RSAAgentConfig object) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         return ServerUtils.getLdapValue(object.get_rsaEncAlgList());
+                                     }
+                                 },
+                                 true
+                         )
+                }
+          );
+    }
+    @Override
+    protected RSAAgentConfig createObject(List<LdapValue[]> ctorParams) {
+        if ( (ctorParams == null) || (ctorParams.size() < 1) )
+        {
+            throw new IllegalArgumentException("ctorParams");
+        }
+        return new RSAAgentConfig();
+    }
+}
+
+
+
+final class RSAInstanceLdapObject extends BaseLdapObject<RSAAMInstanceInfo> {
+
+    private static RSAInstanceLdapObject _instance = new RSAInstanceLdapObject();
+
+    public static RSAInstanceLdapObject getInstance() {
+        return _instance;
+    }
+    private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory
+            .getLogger(RSAAgentConfigLdapObject.class);
+
+    public static final String PROPERTY_NAME = CN;
+    public static final String OBJECT_CLASS = "vmwSTSTenantRsaAgentInstance";
+    private static final String PROPERTY_SITE_ID = "vmwSTSRsaSiteID";
+    private static final String PROPERTY_AGENT_NAME = "vmwSTSRsaAgentName";
+    private static final String PROPERTY_SDCONFIG_REC = "vmwSTSRsaSDConfigRec";
+    private static final String PROPERTY_SDOPTS_REC = "vmwSTSRsaSDOptsRec";
+
+
+    @SuppressWarnings("unchecked")
+    private RSAInstanceLdapObject()
+    {
+        super(
+                OBJECT_CLASS,
+                new PropertyMapperMetaInfo[]{
+                        new PropertyMapperMetaInfo<RSAAMInstanceInfo>(
+                                PROPERTY_NAME,
+                                0,
+                                true,
+                                new IPropertyGetterSetter<RSAAMInstanceInfo>() {
+                                    @Override
+                                    public void SetLdapValue(RSAAMInstanceInfo object, LdapValue[] value)
+                                    {
+                                        throw new IllegalStateException("name cannot be set on Tenant;");
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(RSAAMInstanceInfo object)
+                                    {
+                                        ValidateUtil.validateNotNull( object, "object");
+                                        return ServerUtils.getLdapValue( object.get_siteID() );
+                                    }
+                                },
+                                false // cannot update in ldap
+                         ),
+                         new PropertyMapperMetaInfo<RSAAMInstanceInfo>(
+                                 PROPERTY_SITE_ID,
+                                 -1,
+                                 true,
+                                 new IPropertyGetterSetter<RSAAMInstanceInfo>() {
+                                     @Override
+                                     public void SetLdapValue(RSAAMInstanceInfo object, LdapValue[] value) {
+                                            //do nothing
+                                     }
+                                     @Override
+                                     public LdapValue[] GetLdapValue(RSAAMInstanceInfo object) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         return ServerUtils.getLdapValue(object.get_siteID());
+                                     }
+                                 },
+                                 false
+                         ),
+                         new PropertyMapperMetaInfo<RSAAMInstanceInfo>(
+                                 PROPERTY_AGENT_NAME,
+                                 1,
+                                 true,
+                                 new IPropertyGetterSetter<RSAAMInstanceInfo>() {
+                                     @Override
+                                     public void SetLdapValue(RSAAMInstanceInfo object, LdapValue[] value) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         try {
+                                             object.set_agentName(ServerUtils.getStringValue(value));
+                                         } catch (InvalidArgumentException e) {
+                                             logger.error("Null or empty agent name string read from directory.");
+                                         }
+                                     }
+                                     @Override
+                                     public LdapValue[] GetLdapValue(RSAAMInstanceInfo object) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         return ServerUtils.getLdapValue(object.get_agentName());
+                                     }
+                                 },
+                                 true
+                         ),
+
+                         new PropertyMapperMetaInfo<RSAAMInstanceInfo>(
+                                 PROPERTY_SDCONFIG_REC,
+                                 2,
+                                 true,
+                                 new IPropertyGetterSetter<RSAAMInstanceInfo>() {
+                                     @Override
+                                     public void SetLdapValue(RSAAMInstanceInfo object, LdapValue[] value) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         try {
+                                             object.set_sdconfRec(ServerUtils.getBinaryValue(value));
+                                         } catch (InvalidArgumentException e) {
+                                             logger.error("Null or empty sdconf_rec file read from directory");
+                                         }
+                                     }
+                                     @Override
+                                     public LdapValue[] GetLdapValue(RSAAMInstanceInfo object) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         return ServerUtils.getLdapValue(object.get_sdconfRec());
+                                     }
+                                 },
+                                 true
+                         ),
+
+                         new PropertyMapperMetaInfo<RSAAMInstanceInfo>(
+                                 PROPERTY_SDOPTS_REC,
+                                 3,
+                                 true,
+                                 new IPropertyGetterSetter<RSAAMInstanceInfo>() {
+                                     @Override
+                                     public void SetLdapValue(RSAAMInstanceInfo object, LdapValue[] value) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         object.set_sdoptsRec(ServerUtils.getBinaryValue(value));
+                                     }
+                                     @Override
+                                     public LdapValue[] GetLdapValue(RSAAMInstanceInfo object) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         return ServerUtils.getLdapValue(object.get_sdoptsRec());
+                                     }
+                                 },
+                                 true
+                         )
+
+                }
+          );
+    }
+    @Override
+    protected RSAAMInstanceInfo createObject(List<LdapValue[]> ctorParams) {
+        if ( (ctorParams == null) || (ctorParams.size() < 1) )
+        {
+            throw new IllegalArgumentException("ctorParams");
+        }
+        return new RSAAMInstanceInfo(
+                ServerUtils.getStringValue(ctorParams.get(0)),
+                ServerUtils.getStringValue(ctorParams.get(1)),
+                ServerUtils.getBinaryValue(ctorParams.get(2)),
+                ServerUtils.getBinaryValue(ctorParams.get(3))
+                );
+    }
+}
 final class ClientCertPolicyLdapObject extends BaseLdapObject<TenantClientCertPolicy> {
     private static ClientCertPolicyLdapObject _instance = new ClientCertPolicyLdapObject();
 
@@ -1564,6 +1914,17 @@ final class TenantLdapObject extends BaseLdapObject<Tenant>
     public static final String PROPERTY_LOGON_BANNER_CONTENT = "vmwSTSLogonBanner";
     public static final String PROPERTY_LOGON_BANNER_ENABLE_CHECKBOX = "vmwSTSLogonBannerEnableCheckbox";
     public static final String PROPERTY_AUTHN_TYPES = "vmwSTSAuthnTypes";
+    public static final String PROPERTY_RSA_SITE_ID = "vmwSTSRsaSiteID";
+    public static final String PROPERTY_RSA_AGENT_NAME = "vmwSTSRsaAgentName";
+    public static final String PROPERTY_RSA_SDCONFIG_REC = "vmwSTSRsaSDConfigRec";
+    public static final String PROPERTY_RSA_SDOPTS_REC = "vmwSTSRsaSDOptsRec";
+    public static final String PROPERTY_RSA_LOG_LEVEL = "vmwSTSRsaLogLevel";
+    public static final String PROPERTY_RSA_LOGFILE_SIZE = "vmwSTSRsaLogFileSize";
+    public static final String PROPERTY_RSA_MAC_LOGFILE_COUNT = "vmwSTSRsaMaxLogFileCount";
+    public static final String PROPERTY_RSA_CONNECTION_TIME_OUT = "vmwSTSRsaConnectionTimeOut";
+    public static final String PROPERTY_RSA_READ_TIME_OUT = "vmwSTSRsaReadTimeOut";
+    public static final String PROPERTY_RSA_ENCRYPTION_ALG = "vmwSTSRsaEncryptionAlg";
+
     public static final String PROPERTY_MAX_BEARER_REFRESH_TOKEN_LIFETIME = "vmwSTSMaxBearerRefreshTokenLifetime";
     public static final String PROPERTY_MAX_HOK_REFRESH_TOKEN_LIFETIME = "vmwSTSMaxHolderOfKeyRefreshTokenLifetime";
     public static final String PROPERTY_ENABLE_IDP_SELECTION = "vmwSTSEnableIdpSelection";
@@ -2424,7 +2785,7 @@ final class IdentityProviderLdapObject extends BaseLdapObject<IIdentityStoreData
     public static final String PROPERTY_UPN_SUFFIXES = "vmwSTSUpnSuffixes";
     public static final String PROPERTY_FLAGS = "vmwSTSIdentityStoreFlags";
     public static final String PROPERTY_TRUSTED_CERTIFICATES = "userCertificate";
-
+    public static final String PROPERTY_AUTHN_TYPES = "vmwSTSAuthnTypes";
 
     @SuppressWarnings("unchecked")
     private IdentityProviderLdapObject()
@@ -2726,6 +3087,33 @@ final class IdentityProviderLdapObject extends BaseLdapObject<IIdentityStoreData
                                 }
                         ),
                         new PropertyMapperMetaInfo<IIdentityStoreData>(
+                                PROPERTY_AUTHN_TYPES,
+                                -1,
+                                true,
+                                new IPropertyGetterSetter<IIdentityStoreData>() {
+                                    @Override
+                                    public void SetLdapValue(IIdentityStoreData object, LdapValue[] value) {
+                                        IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(IdentityManager.class);
+                                        //log.info("VALUE LENGHT" + value.length);
+                                        if(value != null && value.length > 0) {
+                                            ServerIdentityStoreData serverIdentityStoreData =
+                                                    getServerIdentityStoreData(object);
+
+                                            serverIdentityStoreData.setAuthnTypes(
+                                                    ServerUtils.getMultiIntValue(value)
+                                            );
+                                        }
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(IIdentityStoreData object) {
+                                        ValidateUtil.validateNotNull( object, "object" );
+                                        IIdentityStoreDataEx storeData = getIIdentityStoreDataEx( object );
+                                        return ServerUtils.getLdapValue(
+                                                (storeData != null) ? storeData.getAuthnTypes() : null );
+                                    }
+                                }
+                        ),
+                        new PropertyMapperMetaInfo<IIdentityStoreData>(
                               PROPERTY_TRUSTED_CERTIFICATES,
                               -1,
                               true,
@@ -3006,6 +3394,7 @@ final class ContainerLdapObject extends BaseLdapObject<String>
     public static final String CONTAINER_TRUSTED_CERTIFICATE_CHAINS = "TrustedCertificateChains";
     public static final String CONTAINER_SOLUTION_USERS = "ServicePrincipals";
     public static final String CONTAINER_OIDC_CLIENTS = "OIDCClients";
+    public static final String CONTAINER_RESOURCE_SERVERS = "ResourceServers";
 
     //ExternalIdp containers
     public static final String CONTAINER_EXTERNAL_IDP_SSO_SERVICES = "SSOServices";
@@ -3016,6 +3405,11 @@ final class ContainerLdapObject extends BaseLdapObject<String>
 
     // Client Certificate Policy container
     public static final String CONTAINER_CLIENT_CERT_POLICIES = "ClientCertificatePolicies";
+
+    //RSA agent configuration containers
+    public static final String CONTAINER_RSA_CONFIGURATIONS = "RSAAgentConfigurations";
+    public static final String CONTAINER_RSA_INSTANCES = "RSAAMInstances";
+    public static final String CONTAINER_RSA_IDS_USERID_ATTRIBUTE_MAPS = "RSAAgentIDSAtributeMaps";
 
     @SuppressWarnings("unchecked")
     private ContainerLdapObject()
@@ -3861,6 +4255,7 @@ final class SingleLogoutServiceLdapObject extends BaseLdapObject<ServiceEndpoint
     public static final String PROPERTY_NAME = CN;
     public static final String PROPERTY_BINDING = "vmwSTSBinding";
     public static final String PROPERTY_ENDPOINT = "vmwSTSEndpoint";
+    public static final String PROPERTY_RESPONSE_ENDPOINT = "vmwSTSResponseEndpoint";
 
     @SuppressWarnings("unchecked")
     private SingleLogoutServiceLdapObject()
@@ -3903,6 +4298,25 @@ final class SingleLogoutServiceLdapObject extends BaseLdapObject<ServiceEndpoint
                                     {
                                         ValidateUtil.validateNotNull( singleLogoutService, "singleLogoutService" );
                                         return ServerUtils.getLdapValue(singleLogoutService.getEndpoint());
+                                    }
+                                }
+                        ),
+                        new PropertyMapperMetaInfo<ServiceEndpoint>(
+                                PROPERTY_RESPONSE_ENDPOINT,
+                                -1,
+                                true,
+                                new IPropertyGetterSetter<ServiceEndpoint>() {
+                                    @Override
+                                    public void SetLdapValue(ServiceEndpoint singleLogoutService, LdapValue[] value)
+                                    {
+                                        ValidateUtil.validateNotNull( singleLogoutService, "singleLogoutService" );
+                                        singleLogoutService.setResponseEndpoint( ServerUtils.getStringValue( value ));
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(ServiceEndpoint singleLogoutService)
+                                    {
+                                        ValidateUtil.validateNotNull( singleLogoutService, "singleLogoutService" );
+                                        return ServerUtils.getLdapValue(singleLogoutService.getResponseEndpoint());
                                     }
                                 }
                         ),
