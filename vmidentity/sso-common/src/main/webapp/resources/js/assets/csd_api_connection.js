@@ -11,10 +11,11 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
-
+ 
 // global
 var VMW_CSD_DEFAULT_WSS_PORT = 8093;
 var VMW_CSD_CONNECT_TRIES_SECONDS = 30; // 30 Seconds
+var VMW_CSD_VERSION = '2016';
 
 /**
  * The connection object for a Web Socket Apis.
@@ -34,29 +35,36 @@ function ApiConnection() {
    this.defaultCallback = null;
    this.createApiInstance = true;
    this.debug = false; // Set to true to have debug lines print to the console.
+   this._connectingSockets = [];
 
-   /**
    /**
     * Establish a connection.
     * @param args.appName (default 'ui')
     * @param args.sessionId (default random uuid)
     * @param args.port (default VMW_CSD_DEFAULT_WSS_PORT)
     * @param args.retrySeconds (default VMW_CSD_CONNECT_TRIES_SECONDS)
+    * @param args.csdVersion (default VMW_CSD_VERSION)
+    *        '2016' - 6.5, '2015' - 6.0, '2014' - 5.5
     */
    this.open = function(args) {
-      this.__debug_log__("Open Args: ", args);
+      this.__debug_log__("Open Args: ", JSON.stringify(args));
       this.appName = getFieldWithDefault(args, 'appName', 'ui');
       this.__debug_log__("Open App Name: ", this.appName);
       this._sessionId = getFieldWithDefault(args, 'sessionId', null);
       this._port = getFieldWithDefault(args, 'port', VMW_CSD_DEFAULT_WSS_PORT);
       this._maxTrials = getFieldWithDefault(args, 'retrySeconds',
             VMW_CSD_CONNECT_TRIES_SECONDS);
+      this._csdVersion = getFieldWithDefault(args, 'csdVersion', VMW_CSD_VERSION);
+      if (this._csdVersion.indexOf('@') == 0) {
+         // This was launcher by the test folder, and the version was not replaced.
+         // Use test defined value,
+         if (VMW_TEST_CSD_VERSION) {
+            this._csdVersion = VMW_TEST_CSD_VERSION;
+         }
+      }
       if (null == this._sessionId) {
          this._sessionId = createVMwareUUID();
       }
-      this.__callStartProtocolServer__();
-      this.__on_fail_handler__ = this.__on_lookup_fail__;
-      this.__on_connected_handler__ = this.__on_lookup_connected__;
       this._connectFailCount = 0;
       this.__openImpl__();
    };
@@ -69,18 +77,10 @@ function ApiConnection() {
       if (this._port) {
          line += "[" + this._port + "]";
       }
-      line += ": " + Array.join(arguments, " ");
+      var argArray = [].slice.apply(arguments);
+      line += ": " + argArray.join(" ");
       console.log(line);
    }
-
-   this.__open_protocol__ = function(port) {
-      this._port = port;
-      this.__on_fail_handler__ = this.__on_connect_fail__;
-      this.__on_connected_handler__ = this.__on_connected__;
-      this._maxTrials = 1; // Should not fail
-      this._connectFailCount = 0;
-      this.__openImpl__();
-   };
 
    this.__openImpl__ = function() {
       this.isOpenning = true;
@@ -102,24 +102,26 @@ function ApiConnection() {
    this.__tryOpen__ = function(method, port) {
       var me = this;
       try {
-         var socket = new WebSocket(method + "://vmware-localhost:" + port + "/");
+         var socket = new WebSocket(method + "://vmware-localhost:" + port + "/" +
+               "?src=client&sessionId=" + this._sessionId +
+               "&appName=" + this.appName +
+               "&version=" + this._csdVersion
+               );
+
+         this._connectingSockets.push(socket);
          socket.onmessage = function(evt) { me.__onmessage__(evt) };
          socket.onopen = function(evt) {
             me.__clearLogin_Timer__();
             me._socket = socket;
-            me.__on_connected_handler__(evt);
+            me.__on_lookup_connected__(evt);
          };
          onfail = function(evt) {
-            socket.onopen = null;
-            socket.onclose = null;
-            socket.onerror = null;
-            me.__on_fail_handler__(evt);
+            me.__close_socket__(socket);
          }
          socket.onclose = onfail;
          socket.onerror = onfail;
-
       } catch (err) {
-         this.__on_fail_handler__({data:err.message});
+         this.__debug_log__("Connection Error: " + err.message);
       }
    };
 
@@ -138,41 +140,46 @@ function ApiConnection() {
       var me = this;
       var socket = this._socket;
       this._socket.onopen = null;
-      this._socket.onclose = null;
+      this._socket.onclose = function(evt) {
+         fire(me.onclose, evt);
+      };
       this._socket.onerror = function(evt) {
-         me.__close_socket__(socket);
-         if (me._socket == socket) {
-            me._socket = null;
+         if (!me.isOpen) {
+            // Already failed
+            return;
          }
-	 fire(me.onerror, evt);
+         me.__debug_log__("Conn Failed: ", evt.data);
+         fire(me.onerror, evt);
+         me.close();
       };
 
+      this._connectingSockets.forEach(function(connectingSocket) {
+         if (connectingSocket == socket) {
+            return;
+         }
+         connectingSocket.close();
+      });
+      this._connectingSockets = [];
+
+      this.__debug_log__("CSD Connected");
+      this._sessionApi = this.getOrCreateApi("session");
+
+      // Might need to do something different for H5, but this will
+      // work for flex which does not show different pages.
+      window.addEventListener('unload', this.__on_unload__.bind(this));
+
+      this.__callStartProtocolServer__();
+
       // Give the protocol server, some time to start.
-      setTimeout(me.__init_session__.bind(this), 500);
-   };
-
-   this.__init_session__ = function() {
-      var sessionApi = this.getOrCreateApi("session");
-      // Passing csdService as a hack, since appName is required
-      // The lookup server does not use a keep alive, so passing false.
-      this.__debug_log__("init lookup server session: ", this.appName);
-      sessionApi.init({appName:this.appName, clientKeepAlive:false},
-            this.__on_protocol_session_init.bind(this));
-   };
-
-   this.__on_protocol_session_init = function(result, err) {
-      if (err) {
-         this.onApiError("Service init error code: " + err.statusCode);
-         return;
-      }
-      this.close();
-      this.__debug_log__("Init callback: port - ", result.port);
-      this.__open_protocol__(result.port);
+      setTimeout(function() {
+            me.onopen(evt);
+            }, 500);
    };
 
    this.__callStartProtocolServer__ = function() {
-      var pUrl = 'vmware-csd://csd?sessionId=' + this._sessionId;
-      pUrl += '&appName=' + this.appName;
+      var pUrl = 'vmware-csd://csd?sessionId=' + this._sessionId +
+            '&appName=' + this.appName +
+            '&version=' + this._csdVersion;
 
       this.__startProtocolServer__(pUrl);
    };
@@ -196,54 +203,12 @@ function ApiConnection() {
       }
    };
 
-   /**
-    * Handles the connected event.
-    */
-   this.__on_connected__ = function(con_evt) {
-      this.__debug_log__("CSD Connected");
-      this.isOpen = true;
-      this.isOpenning = false;
-      var me = this;
-      this._socket.onopen = null;
-      this._socket.onclose = function(evt) {
-         me.close();
-         fire(me.onclose, evt);
-      };
-      this._socket.onerror = function(evt) { fire(me.onerror, evt); };
-      this._sessionApi = this.getOrCreateApi("session");
-      this.__debug_log__("Fire onopen");
-      fire(me.onopen, con_evt);
-      // Might need to do something different for H5, but this will
-      // work for flex which does not show different pages.
-      window.addEventListener('unload', this.__on_unload__.bind(this));
-   };
-
    this.__on_unload__ = function(evt) {
       this.__debug_log__("OnUnload");
       // End the protocol server
       this._sessionApi.remove();
       // The browser is closed.
       this.close();
-   };
-
-   /**
-    * Handles the connection failure event.
-    */
-   this.__on_connect_fail__ = function(evt) {
-      this.__debug_log__("Conn Failed: ", evt.data);
-      if (!this.isOpenning) {
-         // Already failed
-         return;
-      }
-      this.close();
-      fire(this.onclose, evt);
-   };
-
-   /**
-    * Handles the lookup sever connection failure event.
-    */
-   this.__on_lookup_fail__ = function(evt) {
-      // The timer will do the retry logic to avoid hitting the sever to often.
    };
 
    /**
@@ -257,22 +222,16 @@ function ApiConnection() {
          return;
       }
       if (this._socket == null) {
-         this.__debug_log__("Close, and try again...");
-         this.close();
          // Not connected.
          this._connectFailCount++;
          if (this._connectFailCount < this._maxTrials) {
-            // at the 3rd retrial - send a onfail event
-            // so the download url is shown
-            if (this._connectFailCount == 3) {
-               fire(this.onfail, evt);
-            }
+            this.__debug_log__("Retry connect " + this._connectFailCount + "...");
             // try again - this can take a long time, since the user needs to accept the
             // protocol handler warning dialogs or the protocol handler is not installed.
             // TODO mvdb: Add code to detect if the protocol handler is installed.
             this.__openImpl__();
          } else {
-            fire(this.onclose, evt);
+            fire(this.onerror.bind(this), {data:"Connection timed out."});
          }
       }
    };
@@ -290,10 +249,10 @@ function ApiConnection() {
    /**
     * Override to handle a connection error.
     */
-   this.onerror = function(evt) { };
-
-   /* used to detect if a connection fails */
-   this.onfail = function(evt) { };
+   this.onerror = function(evt) {
+      // Log error rather then showing an alert.
+      this.__debug_log__("Connection Error: " + evt.data);
+   };
 
    /**
     * Override in local instance to handle unknown Api Error.
@@ -481,4 +440,10 @@ function ApiConnection() {
          api.__onmessage__(msg);
       }
    };
+
+   this.console = window.console;
+
+   if (!this.console) {
+      this.console = {log: function() {} };
+   }
 };

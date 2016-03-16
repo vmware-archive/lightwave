@@ -17,13 +17,17 @@ package com.vmware.identity.openidconnect.server;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.security.KeyPair;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPrivateKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.StringTokenizer;
 
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -35,6 +39,11 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import com.vmware.identity.openidconnect.common.JWTUtils;
 
 /**
  * @author Yehia Zayour
@@ -63,6 +72,21 @@ public class TestUtil {
         return request;
     }
 
+    public static Map<String, String> parseParameters(String query) throws UnsupportedEncodingException {
+        Map<String, String> params = new HashMap<>();
+
+        StringTokenizer st = new StringTokenizer(query, "&");
+        while (st.hasMoreTokens()) {
+            String token = st.nextToken();
+            String[] keyValuePair = token.split("=");
+            String key = URLDecoder.decode(keyValuePair[0], "UTF-8");
+            String value = URLDecoder.decode(keyValuePair[1], "UTF-8");
+            params.put(key, value);
+        }
+
+        return params;
+    }
+
     // JAXP fails to parse the authn response html so we need to extract fields manually
     public static String extractString(MockHttpServletResponse response, String prefix, String suffix) {
         String result;
@@ -86,7 +110,24 @@ public class TestUtil {
         return result;
     }
 
-    // TODO: this has been copied over from OIDCInstaller.java, move to a common location
+    public static String urlEncode(String value) {
+        try {
+            return URLEncoder.encode(value, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public static SignedJWT sign(
+            JWTClaimsSet claims,
+            RSAPrivateKey privateKey) {
+        try {
+            return JWTUtils.signClaimsSet(claims, privateKey);
+        } catch (JOSEException e) {
+            throw new IllegalStateException("failed to sign jwt", e);
+        }
+    }
+
     public static X509Certificate generateCertificate(
             KeyPair keyPair,
             String dn) throws OperatorCreationException, CertificateException {

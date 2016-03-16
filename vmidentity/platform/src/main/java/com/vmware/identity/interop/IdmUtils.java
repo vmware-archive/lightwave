@@ -42,12 +42,16 @@ public class IdmUtils {
    private static final String CONFIG_PATH_KEY = "ConfigPath";
 
    private static final String CONFIG_PATH_DEFAULT;
+   private static final String LOG_PATH_DEFAULT;
+
+   private static final String LOG_PATH_KEY = "LogsPath";
 
    static
    {
        if (Platform.isLinux())
        {
            CONFIG_PATH_DEFAULT = "/etc/vmware-sso/";
+           LOG_PATH_DEFAULT = "/var/log/vmware/sso/";
        }
        else if (Platform.isWindows())
        {
@@ -57,6 +61,7 @@ public class IdmUtils {
                programDataPath = programDataPath + "\\";
            }
            CONFIG_PATH_DEFAULT = programDataPath + "\\VMware\\CIS\\cfg\\vmware-sso\\";
+           LOG_PATH_DEFAULT = programDataPath + "\\VMware\\vCenterServer\\logs\\sso\\";
        }
        else
        {
@@ -85,6 +90,19 @@ public class IdmUtils {
            configDir = configDir + File.separator;
        }
        return configDir;
+   }
+
+   /**
+    * @return Returns the path of the log directory. It will be File.separator terminated.
+    */
+   public static String getIdentityServicesLogDir()
+   {
+       String logDir = getKeyValue( VMWARE_IDENTITY_SERVICES_ROOT_KEY, LOG_PATH_KEY, LOG_PATH_DEFAULT );
+       if ( logDir.endsWith(File.separator) == false )
+       {
+           logDir = logDir + File.separator;
+       }
+       return logDir;
    }
 
    private static String getPortValue(String portKey, String defaultValue)

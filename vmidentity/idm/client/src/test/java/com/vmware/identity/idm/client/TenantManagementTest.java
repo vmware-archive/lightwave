@@ -40,6 +40,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -113,6 +114,8 @@ import com.vmware.identity.idm.PersonDetail;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.Principal;
 import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.idm.RSAAMInstanceInfo;
+import com.vmware.identity.idm.RSAAgentConfig;
 import com.vmware.identity.idm.RelyingParty;
 import com.vmware.identity.idm.SearchCriteria;
 import com.vmware.identity.idm.ServiceEndpoint;
@@ -289,6 +292,7 @@ public final class TenantManagementTest
     private final String _exportedConfigFile = "export-config.xml";
     private final String _expTenantName = "xyz";
     private final String _impExternalIDPConfigFile = "/openam.xml";
+    private final String _impExternalIDPNoSLOConfigFile = "/openam-noSLO.xml";
     private final String _expCastleAsSPProfileFile = "export-SPProfile.xml";
     private final String _expCastleAsSPProfileFileNoOptionalExternalIDPData =
             "export-SPProfile-NoExternalIDP.xml";
@@ -492,6 +496,10 @@ public final class TenantManagementTest
                 builder.parse(getClass().getResourceAsStream(
                         _impExternalIDPConfigFile));
 
+        Document externalIDPNoSLODoc =
+                builder.parse(getClass().getResourceAsStream(
+                        _impExternalIDPNoSLOConfigFile));
+
         IdmClientTestUtil.ensureTenantExists(idmClient, _impTenantName);
 
         //get the certificates in order and key to setup the tenant's credentials
@@ -518,6 +526,9 @@ public final class TenantManagementTest
         try
         {
             //import
+            importedEntityId =
+                    idmClient.importExternalIDPConfiguration(_impTenantName,
+                            externalIDPNoSLODoc);
             importedEntityId =
                     idmClient.importExternalIDPConfiguration(_impTenantName,
                             externalIDPDoc);
@@ -674,9 +685,12 @@ public final class TenantManagementTest
 
             builder.setErrorHandler(new SamlParserErrorHandler());
 
+            Document tenantNoSLODoc =
+                    builder.parse(getClass().getResourceAsStream("/vcd-noSLO.xml"));
             Document tenantDoc =
                     builder.parse(getClass().getResourceAsStream("/vcd.xml"));
             IdmClientTestUtil.ensureTenantExists(idmClient, _impTenantName);
+            idmClient.importTenantConfiguration(_impTenantName, tenantNoSLODoc);
             idmClient.importTenantConfiguration(_impTenantName, tenantDoc);
         } catch (Exception e)
         {
@@ -1539,7 +1553,7 @@ public final class TenantManagementTest
                     IdentityStoreType.IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING,
                     AuthenticationType.PASSWORD, null, 0, adLdapsUserName, false, null,
                     adLdapsPwd, userSearchBaseDn, groupSearchBaseDn, ldapskdcList,
-                    attrMap, null, null, certs);
+                    attrMap, null, null, certs, null);
 
         IIdentityStoreData ldapsStore =
                 idmClient.getProvider(tenantName, adLdapsProviderName);
@@ -2112,7 +2126,7 @@ public final class TenantManagementTest
                                 IdentityStoreType.IDENTITY_STORE_TYPE_LDAP,
                                 AuthenticationType.PASSWORD, null, 0, olUserName, false, null,
                                 olPwd, userOlSearchBaseDn, groupOlSearchBaseDn,
-                                olldapHosts, attrMap, null, null, certs);
+                                olldapHosts, attrMap, null, null, certs, null);
         idmClient.addProvider(tenantName, olStore);
             }
 
@@ -5209,7 +5223,7 @@ public final class TenantManagementTest
 
         Assert.assertNotNull(adUserName);
 
-        final String password = 
+        final String password =
                 props.getProperty(CFG_KEY_IDM_TENANT_1_ADPROVIDER_USER_LOOKUP_PASSWORD);
 
         Assert.assertNotNull(password);
@@ -5230,6 +5244,140 @@ public final class TenantManagementTest
         Assert.assertTrue(stats3.size() > stats2.size() || ( (stats2.size() == stats3.size()) && ( stats2.size() == 10) ) );
 
         IdmClientTestUtil.ensureTenantExists(idmClient, tenantName);
+    }
+
+    @Test
+    public void testRSAAgentConfigs() throws Exception,
+    IDMException
+    {
+        CasIdmClient idmClient = getIdmClient();
+        String tenantName = "TestTenant1";
+        Tenant tenantToCreate = new Tenant(tenantName);
+        try {
+            IdmClientTestUtil.ensureTenantDoesNotExist(idmClient, tenantName);
+            idmClient.addTenant(tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
+        } catch (Exception ex) {
+            Assert.fail("should not reach here");
+        }
+
+        try
+        {
+            Tenant tenant = idmClient.getTenant(tenantName);
+            Assert.assertNotNull(tenant);
+            Assert.assertEquals(tenantName, tenant.getName());
+        }
+        catch (Exception ex)
+        {
+            Assert.fail("should not reach here");
+        }
+
+        try {
+            // Check default config
+            AuthnPolicy authnPolicy = idmClient.getAuthnPolicy(tenantName);
+            RSAAgentConfig config = authnPolicy.get_rsaAgentConfig();
+            Assert.assertNull("Default rsaConfigs in a new tenant should be null.", config);
+
+            String siteID = idmClient.getClusterId();
+            String siteID2 = "siteID2";
+
+            // Test setting config with one site
+            RSAAMInstanceInfo instInfo1 = new RSAAMInstanceInfo(siteID, "TestAgent", "sdConfBytes".getBytes() , "sdoptsTest".getBytes());
+            RSAAgentConfig configIn = new RSAAgentConfig( instInfo1);
+            idmClient.setRSAConfig(tenantName, configIn);
+            RSAAgentConfig configOut = idmClient.getRSAConfig(tenantName);
+            AssertRSAAgentConfig(configIn, configOut);
+
+            //test RSAAMInstanceInfo ctr
+            try {
+                RSAAMInstanceInfo instInfo = new RSAAMInstanceInfo(siteID, "TestAgent", null , null);
+                instInfo = new RSAAMInstanceInfo(null, "", "sdConfBytes".getBytes() , null);
+                instInfo = new RSAAMInstanceInfo("", "", "sdConfBytes".getBytes() , null);
+                Assert.fail("should not reach here");
+
+            } catch (IllegalArgumentException | NullPointerException e) {
+            }
+
+
+            // Test setting full RSA configuration and add a second site
+            configIn.set_loginGuide("Test login guidence string");
+            configIn.set_connectionTimeOut(10);
+            configIn.set_readTimeOut(20);
+            configIn.set_logFileSize(2);
+            RSAAMInstanceInfo instInfo2 = new RSAAMInstanceInfo(siteID2, "TestAgent2", "sdConfBytes".getBytes() , null);
+            configIn.add_instInfo(instInfo2);
+            configIn.set_logLevel(RSAAgentConfig.RSALogLevelType.valueOf("DEBUG"));
+            configIn.set_maxLogFileCount(20);
+            configIn.set_rsaEncAlgList(new HashSet<String>(Arrays.asList("alg1","alg2")));
+            HashMap<String,String> idsUserIDAttributeMap = new HashMap<String, String>();
+            idsUserIDAttributeMap.put("adTestIDS", "upn");
+            idsUserIDAttributeMap.put("localIDS", "email");
+            configIn.set_idsUserIDAttributeMaps(idsUserIDAttributeMap);
+
+            idmClient.setRSAConfig(tenantName, configIn);
+            configOut = idmClient.getRSAConfig(tenantName);
+            AssertRSAAgentConfig(configIn, configOut);
+
+            //Remove second site from RSAAgentConfig
+
+            HashMap<String, RSAAMInstanceInfo> instMap = configIn.get_instMap();
+            instMap.remove(siteID2);
+            configIn.set_instMap(instMap);
+
+            idmClient.deleteRSAInstanceInfo(tenantName, siteID2);
+            configOut = idmClient.getRSAConfig(tenantName);
+            AssertRSAAgentConfig(configIn, configOut);
+
+            //Udate siteInfo attributes
+            instMap = configIn.get_instMap();
+            instInfo1.set_agentName("TestAgentChanged");
+            instInfo1.set_sdoptsRec("sdoptsTestModified".getBytes());
+            instMap.put(siteID,instInfo1);
+            configIn.set_instMap(instMap);
+
+            idmClient.setRSAConfig(tenantName, configIn);
+            configOut = idmClient.getRSAConfig(tenantName);
+            AssertRSAAgentConfig(configIn, configOut);
+
+            // Test updates RSAAgentConfig attributes
+            configIn.set_loginGuide("Modified login guidence string");
+            configIn.set_connectionTimeOut(40);
+            configIn.set_readTimeOut(50);
+            configIn.set_logFileSize(70);
+            configIn.set_logLevel(RSAAgentConfig.RSALogLevelType.valueOf("WARN"));
+            configIn.set_maxLogFileCount(7);
+            configIn.set_rsaEncAlgList(new HashSet<String>(Arrays.asList("ALG1","ALG2")));
+            idsUserIDAttributeMap = new HashMap<String, String>();
+            idsUserIDAttributeMap.put("adTestIDS", "email");
+            idsUserIDAttributeMap.put("localIDS", "upn");
+            configIn.set_idsUserIDAttributeMaps(idsUserIDAttributeMap);
+
+            idmClient.setRSAConfig(tenantName, configIn);
+            configOut = idmClient.getRSAConfig(tenantName);
+            AssertRSAAgentConfig(configIn, configOut);
+
+        } catch (Exception e) {
+            Assert.fail("should not reach here");
+        }
+        finally {
+
+            // Cleanup
+            IdmClientTestUtil.ensureTenantDoesNotExist(idmClient, tenantName);
+        }
+    }
+    private void AssertRSAAgentConfig(RSAAgentConfig configIn, RSAAgentConfig configOut) {
+
+        Assert.assertEquals(configIn.get_connectionTimeOut(), configOut.get_connectionTimeOut());
+        Assert.assertEquals(configIn.get_readTimeOut(), configOut.get_readTimeOut());
+        Assert.assertEquals(configIn.get_idsUserIDAttributeMap(), configOut.get_idsUserIDAttributeMap());
+        Assert.assertEquals(configIn.get_logFileSize(), configOut.get_logFileSize());
+        Assert.assertEquals(configIn.get_logLevel(), configOut.get_logLevel());
+        Assert.assertEquals(configIn.get_maxLogFileCount(), configOut.get_maxLogFileCount());
+        Assert.assertEquals(configIn.get_rsaEncAlgList(), configOut.get_rsaEncAlgList());
+
+        HashMap<String, RSAAMInstanceInfo> instMapIn = configIn.get_instMap();
+        HashMap<String, RSAAMInstanceInfo> instMapOut = configOut.get_instMap();
+        Assert.assertEquals(instMapIn.keySet(), instMapOut.keySet());
+        Assert.assertEquals(instMapIn, instMapOut);
     }
 
     @Test

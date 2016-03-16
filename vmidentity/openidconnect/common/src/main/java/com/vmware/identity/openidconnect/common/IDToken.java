@@ -14,69 +14,137 @@
 
 package com.vmware.identity.openidconnect.common;
 
-import java.text.ParseException;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
-import com.nimbusds.jose.Header;
-import com.nimbusds.jose.util.Base64URL;
-import com.nimbusds.jwt.JWT;
-import com.nimbusds.jwt.ReadOnlyJWTClaimsSet;
+import net.minidev.json.JSONObject;
+
+import org.apache.commons.lang3.Validate;
+
+import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.nimbusds.oauth2.sdk.id.Identifier;
 
 /**
  * @author Yehia Zayour
  */
-public class IDToken extends Identifier implements JWT {
-    private static final long serialVersionUID = 2015_05_04L;
+public final class IDToken extends ServerIssuedToken {
+    private static final TokenClass TOKEN_CLASS = TokenClass.ID_TOKEN;
 
     private final SignedJWT signedJwt;
 
-    public IDToken(SignedJWT signedJwt) {
-        super(signedJwt.serialize());
+    private final Collection<String> groups;
+    private final String givenName;
+    private final String familyName;
+
+    private IDToken(SignedJWT signedJwt) throws ParseException {
+        super(TOKEN_CLASS, signedJwt);
+
         this.signedJwt = signedJwt;
+        JWTClaimsSet claims = JWTUtils.getClaimsSet(this.signedJwt);
+
+        String[] groupsStringArray = null;
+        if (claims.getClaims().containsKey("groups")) {
+            groupsStringArray = JWTUtils.getStringArray(claims, TOKEN_CLASS, "groups");
+        }
+        this.groups = (groupsStringArray == null) ? null : Collections.unmodifiableList(Arrays.asList(groupsStringArray));
+
+        String givenName = null;
+        if (claims.getClaims().containsKey("given_name")) {
+            givenName = JWTUtils.getString(claims, TOKEN_CLASS, "given_name");
+        }
+        this.givenName = givenName;
+
+        String familyName = null;
+        if (claims.getClaims().containsKey("family_name")) {
+            familyName = JWTUtils.getString(claims, TOKEN_CLASS, "family_name");
+        }
+        this.familyName = familyName;
     }
 
-    public SignedJWT getSignedJWT() {
+    public IDToken(
+            RSAPrivateKey privateKey,
+            TokenType tokenType,
+            JWTID jwtId,
+            Issuer issuer,
+            Subject subject,
+            List<String> audience,
+            Date issueTime,
+
+            Date expirationTime,
+            Scope scope,
+            String tenant,
+            ClientID clientId,
+            SessionID sessionId,
+            RSAPublicKey holderOfKey,
+            Subject actAs,
+            Nonce nonce,
+
+            Collection<String> groups,
+            String givenName,
+            String familyName) throws JOSEException {
+        super(TOKEN_CLASS, tokenType, jwtId, issuer, subject, audience, issueTime, expirationTime, scope, tenant, clientId, sessionId, holderOfKey, actAs, nonce);
+
+        Validate.notNull(privateKey, "privateKey");
+
+        this.groups = (groups == null) ? null : Collections.unmodifiableCollection(groups);
+        this.givenName = givenName;
+        this.familyName = familyName;
+
+        JWTClaimsSet.Builder claimsBuilder = super.claimsBuilder();
+        if (this.groups != null) {
+            claimsBuilder = claimsBuilder.claim("groups", this.groups);
+        }
+        if (this.givenName != null) {
+            claimsBuilder = claimsBuilder.claim("given_name", this.givenName);
+        }
+        if (this.familyName != null) {
+            claimsBuilder = claimsBuilder.claim("family_name", this.familyName);
+        }
+
+        this.signedJwt = JWTUtils.signClaimsSet(claimsBuilder.build(), privateKey);
+    }
+
+    @Override
+    protected SignedJWT getSignedJWT() {
         return this.signedJwt;
     }
 
-    @Override
-    public Header getHeader() {
-        return this.signedJwt.getHeader();
+    public Collection<String> getGroups() {
+        return this.groups;
     }
 
-    @Override
-    public ReadOnlyJWTClaimsSet getJWTClaimsSet() throws ParseException {
-        return this.signedJwt.getJWTClaimsSet();
+    public String getGivenName() {
+        return this.givenName;
     }
 
-    @Override
-    public Base64URL[] getParsedParts() {
-        return this.signedJwt.getParsedParts();
+    public String getFamilyName() {
+        return this.familyName;
     }
 
-    @Override
-    public String getParsedString() {
-        return this.signedJwt.getParsedString();
+    public static IDToken parse(JSONObject jsonObject) throws ParseException {
+        Validate.notNull(jsonObject, "jsonObject");
+        return new IDToken(JSONUtils.getSignedJWT(jsonObject, "id_token"));
     }
 
-    @Override
-    public String serialize() {
-        return this.signedJwt.serialize();
+    public static IDToken parse(Map<String, String> parameters) throws ParseException {
+        Validate.notNull(parameters, "parameters");
+        return new IDToken(ParameterMapUtils.getSignedJWT(parameters, "id_token"));
     }
 
-    @Override
-    public boolean equals(Object other) {
-        boolean areEqual = false;
-        if (other instanceof IDToken) {
-            IDToken otherToken = (IDToken) other;
-            areEqual = otherToken.signedJwt.equals(this.signedJwt);
-        }
-        return areEqual;
+    public static IDToken parse(String signedJwtString) throws ParseException {
+        Validate.notEmpty(signedJwtString, "signedJwtString");
+        return new IDToken(JWTUtils.parseSignedJWT(signedJwtString));
     }
 
-    @Override
-    public int hashCode() {
-        return super.hashCode(); // use Identifier.hashCode
+    public static IDToken parse(SignedJWT signedJwt) throws ParseException {
+        Validate.notNull(signedJwt, "signedJwt");
+        return new IDToken(signedJwt);
     }
 }
