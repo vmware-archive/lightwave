@@ -7,7 +7,6 @@ SUBDIRS = \
     diagnostics \
     platform \
     idm \
-    openidconnect \
     commons \
     samlauthority \
     ssolib \
@@ -16,4 +15,6 @@ SUBDIRS = \
     wstauthz \
     sts \
     wsTrustClient \
-    rest
+    install \
+    rest \
+    openidconnect

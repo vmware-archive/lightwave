@@ -54,6 +54,7 @@ import javax.security.auth.login.LoginException;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 
+import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.Attribute;
@@ -77,10 +78,12 @@ import com.vmware.identity.idm.UserAccountLockedException;
 import com.vmware.identity.idm.ValidateUtil;
 import com.vmware.identity.idm.server.IdentityManager;
 import com.vmware.identity.idm.server.ServerUtils;
+import com.vmware.identity.idm.server.performance.IIdmAuthStatRecorder;
 import com.vmware.identity.idm.server.provider.BaseLdapProvider;
 import com.vmware.identity.idm.server.provider.ILdapSchemaMapping;
 import com.vmware.identity.idm.server.provider.NoSuchGroupException;
 import com.vmware.identity.idm.server.provider.NoSuchUserException;
+import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
 import com.vmware.identity.interop.ldap.ILdapEntry;
 import com.vmware.identity.interop.ldap.ILdapMessage;
@@ -91,6 +94,8 @@ import com.vmware.identity.interop.ldap.LdapValue;
 import com.vmware.identity.interop.ldap.NoSuchObjectLdapException;
 import com.vmware.identity.interop.ldap.SizeLimitExceededLdapException;
 import com.vmware.identity.interop.ldap.UnavailableCritExtensionLdapException;
+import com.vmware.identity.performanceSupport.IIdmAuthStat.ActivityKind;
+import com.vmware.identity.performanceSupport.IIdmAuthStat.EventLevel;
 
 public class LdapProvider extends BaseLdapProvider
 {
@@ -191,6 +196,11 @@ public class LdapProvider extends BaseLdapProvider
    {
       ValidateUtil.validateNotNull( principal, "principal" );
 
+      IIdmAuthStatRecorder idmAuthStatRecorder = this.createIdmAuthStatRecorderInstance(
+              DiagnosticsContextFactory.getCurrentDiagnosticsContext().getTenantName(),
+              ActivityKind.AUTHENTICATE, EventLevel.INFO, principal);
+      idmAuthStatRecorder.start();
+
       principal = this.normalizeAliasInPrincipal(principal);
       ILdapConnectionEx connection = null;
 
@@ -211,6 +221,8 @@ public class LdapProvider extends BaseLdapProvider
          }
       }
 
+      idmAuthStatRecorder.end();
+
       return principal;
    }
 
@@ -221,6 +233,13 @@ public class LdapProvider extends BaseLdapProvider
          Collection<Attribute> attributes)
                throws Exception
     {
+        ValidateUtil.validateNotNull(principalId,  "principalId");
+
+        IIdmAuthStatRecorder idmAuthStatRecorder = this.createIdmAuthStatRecorderInstance(
+                DiagnosticsContextFactory.getCurrentDiagnosticsContext().getTenantName(),
+                ActivityKind.GETATTRIBUTES, EventLevel.INFO, principalId);
+        idmAuthStatRecorder.start();
+
         List<AttributeValuePair> result = new ArrayList<AttributeValuePair>();
 
         assert (attributes != null);
@@ -422,6 +441,8 @@ public class LdapProvider extends BaseLdapProvider
                 connection.close();
             }
         }
+
+        idmAuthStatRecorder.end();
 
         return result;
     }
@@ -991,12 +1012,12 @@ public class LdapProvider extends BaseLdapProvider
 
    @Override
    public
-   Set<Group> findDirectParentGroups(
+   PrincipalGroupLookupInfo findDirectParentGroups(
          PrincipalId principalId)
                throws Exception
    {
       Set<Group> groups = new HashSet<Group>();
-
+      PrincipalInfo principalInfo = null;
       ILdapConnectionEx connection = getConnection();
 
       try
@@ -1006,12 +1027,12 @@ public class LdapProvider extends BaseLdapProvider
           final String ATTR_ENTRY_UUID = _ldapSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeObjectId);
 
          String[] attrNames = { ATTR_NAME_CN, ATTR_DESCRIPTION, ATTR_ENTRY_UUID };
-         final String principalMembershipId = getPrincipalGroupMembershipId(connection, principalId);
-         if (ServerUtils.isNullOrEmpty(principalMembershipId) == false)
+         principalInfo = getPrincipalGroupMembershipId(connection, principalId);
+         if ((principalInfo != null) && (ServerUtils.isNullOrEmpty(principalInfo.getGroupMembershipId()) == false))
          {
              String filter = String.format(
                      _ldapSchemaMapping.getDirectParentGroupsQuery(),
-                     LdapFilterString.encode(principalMembershipId));
+                     LdapFilterString.encode(principalInfo.getGroupMembershipId()));
 
              try
              {
@@ -1063,26 +1084,32 @@ public class LdapProvider extends BaseLdapProvider
           }
       }
 
-      return groups;
+      return new PrincipalGroupLookupInfo(
+          groups,
+          (principalInfo!= null) ?
+              principalInfo.getObjectId() :
+              null
+      );
    }
 
    @Override
-   public Set<Group> findNestedParentGroups(
+   public PrincipalGroupLookupInfo findNestedParentGroups(
          PrincipalId userId)
                throws Exception
    {
       Set<Group> groups = new HashSet<Group>();
 
       ILdapConnectionEx connection = getConnection();
+      PrincipalInfo principalInfo = null;
 
       try
       {
-          final String principalMembershipId = getPrincipalGroupMembershipId(connection, userId);
+          principalInfo = getPrincipalGroupMembershipId(connection, userId);
 
-          if (ServerUtils.isNullOrEmpty(principalMembershipId) == false)
+          if ((principalInfo != null) && ( ServerUtils.isNullOrEmpty(principalInfo.getGroupMembershipId()) == false) )
           {
              // NestedParentGroups includes the direct parents, as well as the grandparents.
-             groups = getNestedGroups(connection, principalMembershipId, false);
+             groups = getNestedGroups(connection, principalInfo.getGroupMembershipId(), false);
           }
       }
       finally
@@ -1090,7 +1117,12 @@ public class LdapProvider extends BaseLdapProvider
          connection.close();
       }
 
-      return groups;
+      return new PrincipalGroupLookupInfo(
+          groups,
+          (principalInfo!= null) ?
+              principalInfo.getObjectId() :
+              null
+      );
    }
 
    @Override
@@ -1934,15 +1966,38 @@ public class LdapProvider extends BaseLdapProvider
                 locked);
     }
 
-   String getPrincipalGroupMembershipId(
+    private class PrincipalInfo
+    {
+        private String _groupMembershipId;
+        private String _objectId;
+        public PrincipalInfo(String groupMembershipId, String objectId)
+        {
+            this._groupMembershipId = groupMembershipId;
+            this._objectId = objectId;
+        }
+        public String getGroupMembershipId()
+        {
+            return this._groupMembershipId;
+        }
+
+        public String getObjectId()
+        {
+            return this._objectId;
+        }
+    }
+
+    PrincipalInfo getPrincipalGroupMembershipId(
          ILdapConnectionEx connection,
          PrincipalId principalId
          ) throws Exception
    {
+      final String ATTR_USER_OBJECTID = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeObjectId);
+
       String principalMembershipId = null;
+      String principalObjectId = null;
       String[] attrNames = ( (this._userGroupMembersListLinkIsDn) || (this._userGroupMembersListLinkExists == false) ) ?
-          new String[] { null } :
-          new String[] { USER_GROUP_MEMBERS_LIST_LINK_ATTRIBUTE, null };
+          new String[] { ATTR_USER_OBJECTID, null } :
+          new String[] { USER_GROUP_MEMBERS_LIST_LINK_ATTRIBUTE, ATTR_USER_OBJECTID, null };
       final String userFilter = this.buildUserQueryByPrincipalId(principalId);
 
       try(ILdapMessage userMessage =
@@ -1966,6 +2021,7 @@ public class LdapProvider extends BaseLdapProvider
                  principalMembershipId = getOptionalFirstStringValue(
                      entries[0].getAttributeValues(USER_GROUP_MEMBERS_LIST_LINK_ATTRIBUTE));
              }
+             principalObjectId = getOptionalFirstStringValue(entries[0].getAttributeValues(ATTR_USER_OBJECTID));
          }
          else if ( (entries != null) && (entries.length > 1) )
          {
@@ -1984,9 +2040,11 @@ public class LdapProvider extends BaseLdapProvider
       // try groups
       if ( ServerUtils.isNullOrEmpty(principalMembershipId) )
       {
+          final String ATTR_GROUP_OBJECTID = _ldapSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeObjectId);
+
           attrNames = ( (this._groupGroupMembersListLinkIsDn) || (this._groupGroupMembersListLinkExists == false) ) ?
-              new String[] { null } :
-              new String[] { GROUP_GROUP_MEMBERS_LIST_LINK_ATTRIBUTE, null };
+              new String[] { ATTR_GROUP_OBJECTID, null } :
+              new String[] { GROUP_GROUP_MEMBERS_LIST_LINK_ATTRIBUTE, ATTR_GROUP_OBJECTID, null };
           final String groupFilter =
               String.format(
                  this._ldapSchemaMapping.getGroupQueryByAccountName(),
@@ -2025,6 +2083,7 @@ public class LdapProvider extends BaseLdapProvider
                       principalMembershipId = getOptionalFirstStringValue(
                           entries[0].getAttributeValues(GROUP_GROUP_MEMBERS_LIST_LINK_ATTRIBUTE));
                   }
+                  principalObjectId = getOptionalFirstStringValue(entries[0].getAttributeValues(ATTR_GROUP_OBJECTID));
               }
            }
            catch (NoSuchObjectLdapException e)
@@ -2035,7 +2094,7 @@ public class LdapProvider extends BaseLdapProvider
            }
       }
 
-      return principalMembershipId;
+      return new PrincipalInfo(principalMembershipId, principalObjectId);
    }
 
    Set<PersonUser> getUsersWithAccountControlFlag(
@@ -2313,5 +2372,103 @@ public class LdapProvider extends BaseLdapProvider
             result.add(m);
         }
         return result;
+    }
+
+    @Override
+    public PrincipalId findActiveUser(String ldapAttrName, String attributeValue) throws Exception {
+        Validate.notEmpty(ldapAttrName, "ldapAttrName");
+        Validate.notEmpty(attributeValue, "attributeValue");
+
+        ILdapConnectionEx connection;
+        AccountLdapEntryInfo ldapEntryInfo = null;
+
+        try
+        {
+            connection = this.getConnection();
+        }
+        catch (Exception ex)
+        {
+            throw new IDMException("Failed to establish server connection", ex);
+        }
+
+        try
+        {
+            final String ATTR_NAME_SAM_ACCOUNT = _ldapSchemaMapping.getUserAttribute( IdentityStoreAttributeMapping.AttributeIds.UserAttributeAccountName );
+            final String ATTR_NAME_USER_ACCT_CTRL = _ldapSchemaMapping.getUserAttribute( IdentityStoreAttributeMapping.AttributeIds.UserAttributeAcountControl );
+
+             String[] attrNames =
+                    { ATTR_NAME_SAM_ACCOUNT, ATTR_NAME_USER_ACCT_CTRL};
+
+             String searchBaseDn = this.getStoreDataEx().getUserBaseDn();
+             String idsAttrNameForSearch;
+             String attrValueForSearch;
+
+             if (ldapAttrName.equalsIgnoreCase(_ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributePrincipalName))) {
+                 //if upn, use sam account to search
+                 idsAttrNameForSearch = ATTR_NAME_SAM_ACCOUNT;
+                 attrValueForSearch = attributeValue.split("@")[0];
+             } else {
+                 idsAttrNameForSearch = ldapAttrName;
+                 attrValueForSearch = attributeValue;
+             }
+             ValidateUtil.validateNotNull(idsAttrNameForSearch, "idsAttrNameForSearch");
+
+             final String filter_by_attr = this.buildUserQueryByAttribute(idsAttrNameForSearch, attrValueForSearch);
+
+             ldapEntryInfo = findAccountLdapEntry(connection,
+                     filter_by_attr,
+                     searchBaseDn,
+                     attrNames,
+                     false,attributeValue,null);
+
+
+             String accountName =
+                     getStringValue(ldapEntryInfo.accountLdapEntry.getAttributeValues(ATTR_NAME_SAM_ACCOUNT));
+
+             int currentFlag =
+                 getOptionalIntegerValue(
+                         ldapEntryInfo.accountLdapEntry.getAttributeValues(ATTR_NAME_USER_ACCT_CTRL),0);
+
+             if ( !AccountControlFlag.FLAG_DISABLED_ACCOUNT.isSet(currentFlag))
+             {
+                 return new PrincipalId(accountName, this.getDomain());
+             }
+             else
+             {
+                 throw new InvalidPrincipalException(String.format(
+                         "User account '%s@%s' is not active. ",
+                         accountName, this.getDomain()), String.format(
+                         "%s@%s", accountName, getDomain()));
+             }
+
+        }
+        finally
+        {
+             if (ldapEntryInfo != null)
+             {
+                 ldapEntryInfo.close_messages();
+             }
+             if (connection != null)
+             {
+                 connection.close();
+             }
+        }
+
+    }
+
+    private String buildUserQueryByAttribute(String vmdirAttrName, String attributeValue) {
+        ValidateUtil.validateNotNull(vmdirAttrName, "vmdirAttrName");
+        ValidateUtil.validateNotNull(attributeValue, "attributeValue");
+
+        String escapedsAttrName = LdapFilterString.encode(vmdirAttrName);
+        String escapedsAttrValue = LdapFilterString.encode(attributeValue);
+        return String.format(
+            this._ldapSchemaMapping.getUserQueryByAttribute(),
+            escapedsAttrName, escapedsAttrValue );
+    }
+
+    @Override
+    public String getStoreUPNAttributeName() {
+        return _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributePrincipalName);
     }
 }

@@ -38,7 +38,7 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
@@ -138,6 +138,7 @@ public class TenantResourceTest {
 
     // Provider policy related test constants
     private final String DEFAULT_PROVIDER = "test.local";
+    private final String DEFAULT_PROVIDER_ALIAS = "test.alias";
 
     // Brand Policy related tests constants
     private final String BRAND_NAME = "REST_IDM_UNIT_TESTS";
@@ -153,15 +154,15 @@ public class TenantResourceTest {
     private TenantResource tenantResource;
     private IMocksControl mControl;
     private CasIdmClient mockCasIdmClient;
-    private HttpServletRequest request;
+    private ContainerRequestContext request;
 
     @Before
     public void setUp() {
         mControl = createControl();
 
-        request = EasyMock.createMock(HttpServletRequest.class);
-        EasyMock.expect(request.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        EasyMock.expect(request.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        request = EasyMock.createMock(ContainerRequestContext.class);
+        EasyMock.expect(request.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        EasyMock.expect(request.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
         EasyMock.replay(request);
 
         mockCasIdmClient = mControl.createMock(CasIdmClient.class);
@@ -367,6 +368,8 @@ public class TenantResourceTest {
 
     private void assertProviderPolicy(ProviderPolicyDTO providerPolicy) {
         assertEquals(DEFAULT_PROVIDER, providerPolicy.getDefaultProvider());
+        assertEquals(DEFAULT_PROVIDER_ALIAS, providerPolicy.getDefaultProviderAlias());
+        assertTrue(providerPolicy.isProviderSelectionEnabled());
     }
 
     private void assertBrandPolicy(BrandPolicyDTO brandPolicy){
@@ -700,6 +703,8 @@ public class TenantResourceTest {
     private ProviderPolicyDTO getProviderPolicyDTO() {
         return ProviderPolicyDTO.builder()
                                 .withDefaultProvider(DEFAULT_PROVIDER)
+                                .withDefaultProviderAlias(DEFAULT_PROVIDER_ALIAS)
+                                .withProviderSelectionEnabled(Boolean.TRUE)
                                 .build();
     }
 

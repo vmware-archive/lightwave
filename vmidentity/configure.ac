@@ -403,6 +403,7 @@ AC_CONFIG_FILES([Makefile
                  wsTrustClient/Makefile
                  sts/Makefile
                  rest/Makefile
+                 install/Makefile
                 ])
 AC_OUTPUT
 

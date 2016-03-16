@@ -21,56 +21,51 @@ import java.util.List;
 
 import org.apache.commons.lang3.Validate;
 
-import com.nimbusds.oauth2.sdk.OAuth2Error;
-import com.nimbusds.oauth2.sdk.id.Issuer;
+import com.vmware.identity.idm.AuthnPolicy;
 import com.vmware.identity.idm.NoSuchTenantException;
+import com.vmware.identity.idm.client.CasIdmClient;
+import com.vmware.identity.openidconnect.common.ErrorObject;
+import com.vmware.identity.openidconnect.common.Issuer;
 
 /**
  * @author Yehia Zayour
  */
 public class TenantInfoRetriever {
-    private final IdmClient idmClient;
+    private final CasIdmClient idmClient;
 
-    public TenantInfoRetriever(IdmClient idmClient) {
+    public TenantInfoRetriever(CasIdmClient idmClient) {
         Validate.notNull(idmClient);
         this.idmClient = idmClient;
     }
 
-    public TenantInformation retrieveTenantInfo(String tenant) throws ServerException {
+    public TenantInfo retrieveTenantInfo(String tenant) throws ServerException {
         Validate.notEmpty(tenant, "tenant");
 
         try {
             this.idmClient.getTenant(tenant);
         } catch (NoSuchTenantException e) {
-            throw new ServerException(OAuth2Error.INVALID_REQUEST.setDescription("non-existent tenant"), e);
+            throw new ServerException(ErrorObject.invalidRequest("non-existent tenant"), e);
         } catch (Exception e) {
-            throw new ServerException(OAuth2Error.SERVER_ERROR.setDescription("idm error while retrieving tenant"), e);
+            throw new ServerException(ErrorObject.serverError("idm error while retrieving tenant"), e);
         }
 
         RSAPrivateKey privateKey;
         try {
             privateKey = (RSAPrivateKey) this.idmClient.getTenantPrivateKey(tenant);
         } catch (Exception e) {
-            throw new ServerException(OAuth2Error.SERVER_ERROR.setDescription("idm error while retrieving tenant private key"), e);
-        }
-        if (privateKey == null) {
-            throw new IllegalStateException("tenant has no private key!");
+            throw new ServerException(ErrorObject.serverError("idm error while retrieving tenant private key"), e);
         }
 
-        RSAPublicKey publicKey = null;
         List<Certificate> certChain;
         try {
             certChain = this.idmClient.getTenantCertificate(tenant);
         } catch (Exception e) {
-            throw new ServerException(OAuth2Error.SERVER_ERROR.setDescription("idm error while retrieving tenant cert"), e);
-        }
-        if (certChain != null && !certChain.isEmpty() && certChain.get(0) != null) {
-            publicKey = (RSAPublicKey) certChain.get(0).getPublicKey();
-        }
-        if (publicKey == null) {
-            throw new IllegalStateException("tenant has no public key!");
+            throw new ServerException(ErrorObject.serverError("idm error while retrieving tenant cert"), e);
         }
 
+        RSAPublicKey publicKey = (RSAPublicKey) certChain.get(0).getPublicKey();
+
+        AuthnPolicy authnPolicy;
         String issuer;
         String brandName;
         String logonBannerTitle;
@@ -84,6 +79,7 @@ public class TenantInfoRetriever {
         long refreshTokenHokLifetimeMs;
         long clockToleranceMs;
         try {
+            authnPolicy                  = this.idmClient.getAuthnPolicy(tenant);
             issuer                       = this.idmClient.getOIDCEntityID(tenant);
             brandName                    = this.idmClient.getBrandName(tenant);
             logonBannerTitle             = this.idmClient.getLogonBannerTitle(tenant);
@@ -97,12 +93,21 @@ public class TenantInfoRetriever {
             refreshTokenHokLifetimeMs    = this.idmClient.getMaximumHoKRefreshTokenLifetime(tenant);
             clockToleranceMs             = this.idmClient.getClockTolerance(tenant);
         } catch (Exception e) {
-            throw new ServerException(OAuth2Error.SERVER_ERROR.setDescription("idm error while retrieving tenant properties"), e);
+            throw new ServerException(ErrorObject.serverError("idm error while retrieving tenant properties"), e);
         }
 
-        return new TenantInformation.Builder(tenant).
+        String secureIdLoginGuide = (authnPolicy.get_rsaAgentConfig() != null) ? authnPolicy.get_rsaAgentConfig().get_loginGuide() : null;
+        TenantInfo.AuthnPolicy tenantAuthnPolicy = new TenantInfo.AuthnPolicy(
+                authnPolicy.IsPasswordAuthEnabled(),
+                authnPolicy.IsTLSClientCertAuthnEnabled(),
+                authnPolicy.IsWindowsAuthEnabled(),
+                authnPolicy.IsRsaSecureIDAuthnEnabled(),
+                secureIdLoginGuide);
+
+        return new TenantInfo.Builder(tenant).
                 privateKey(privateKey).
                 publicKey(publicKey).
+                authnPolicy(tenantAuthnPolicy).
                 issuer(new Issuer(issuer)).
                 brandName(brandName).
                 logonBannerTitle(logonBannerTitle).
@@ -121,7 +126,7 @@ public class TenantInfoRetriever {
         try {
             return this.idmClient.getDefaultTenant();
         } catch (Exception e) {
-            throw new ServerException(OAuth2Error.SERVER_ERROR.setDescription("idm error while retrieving default tenant name"), e);
+            throw new ServerException(ErrorObject.serverError("idm error while retrieving default tenant name"), e);
         }
     }
 }

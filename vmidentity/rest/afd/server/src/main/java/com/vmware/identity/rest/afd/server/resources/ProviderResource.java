@@ -13,10 +13,12 @@
  */
 package com.vmware.identity.rest.afd.server.resources;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Path;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
+
+import com.vmware.identity.rest.core.server.resources.BaseResource;
 
 /**
  * A sub-resource redirector for provider
@@ -27,7 +29,7 @@ import javax.ws.rs.core.SecurityContext;
 @Path("/provider")
 public class ProviderResource extends BaseResource {
 
-    public ProviderResource(@Context HttpServletRequest request, @Context SecurityContext securityContext) {
+    public ProviderResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(request, securityContext);
     }
 
