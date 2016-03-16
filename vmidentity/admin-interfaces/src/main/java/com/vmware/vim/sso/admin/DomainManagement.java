@@ -1,10 +1,22 @@
-/* **********************************************************************
- * Copyright 2010-2011 VMware, Inc.  All rights reserved.
- * *********************************************************************/
+/*
+ *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License.  You may obtain a copy
+ *  of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, without
+ *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ *  License for the specific language governing permissions and limitations
+ *  under the License.
+ */
 package com.vmware.vim.sso.admin;
 
 import java.net.URI;
 import java.security.cert.CertPath;
+import java.security.cert.X509Certificate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -133,12 +145,7 @@ public interface DomainManagement {
     *
     * @param serviceUri
     *           The URI of the target service. The scheme must be {@code ldap},
-    *           {@code ldaps} or {@code nis}. If the scheme is {@code ldaps}
-    *           (LDAP Secure), the remote server's SSL certificate must be
-    *           verifiable using the SSO Server's SSL trust store (or the
-    *           connection will fail). Cannot be <code>null</code>.
-    *
-    * @see #getSslCertificateManagement
+    *           {@code ldaps} or {@code nis}.
     *
     * @param authenticationType
     *           The authentication method to use. If {@code
@@ -165,6 +172,53 @@ public interface DomainManagement {
    void probeConnectivity(URI serviceUri,
       ExternalDomain.AuthenticationType authenticationType,
       AuthenticationCredentails authenticationCredentials)
+      throws DirectoryServiceConnectionException, NotAuthenticatedException,
+      NoPermissionException;
+
+   /**
+    * Probe the connectivity to the specified LDAP/NIS service and try to
+    * authenticate using the provided credentials.
+    *
+    * @param serviceUri
+    *           The URI of the target service. The scheme must be {@code ldap},
+    *           {@code ldaps} or {@code nis}. If the scheme is {@code ldaps}
+    *           (LDAP Secure), the remote server's SSL certificate must be
+    *           verifiable using the SSO Server's SSL trust store (or the
+    *           connection will fail). Cannot be <code>null</code>.
+    *
+    *
+    * @param authenticationType
+    *           The authentication method to use. If {@code
+    *           AuthenticationType#anonymous}, no authentication will be
+    *           attempted.
+    *
+    * @param authenticationCredentials
+    *           If {@code authenticationType} is {@code
+    *           AuthenticationType#password}, the credentials (username +
+    *           password) to use for authentication. Otherwise, should be
+    *           {@code null}.
+    *
+    * @param certificates
+    *           Trusted certificates used for ldaps connection. If the scheme is {@code ldaps}
+    *           (LDAP Secure), the remote server's SSL certificate must be
+    *           verifiable using the list of certificates (or the
+    *           connection will fail).
+    *
+    * @throws DirectoryServiceConnectionException
+    *            Indicates the SSO Server either failed to connect or to
+    *            authenticate to the service at the specified URI.
+    * @throws NotAuthenticatedException
+    *            when there is no authenticated SSO user associated with this
+    *            method call
+    * @throws NoPermissionException
+    *            when the required privilege for calling this method is not held
+    *            by the caller
+    */
+   @Privilege(Role.Administrator)
+   void probeConnectivity(URI serviceUri,
+      ExternalDomain.AuthenticationType authenticationType,
+      AuthenticationCredentails authenticationCredentials,
+      Collection<X509Certificate> certificates)
       throws DirectoryServiceConnectionException, NotAuthenticatedException,
       NoPermissionException;
 
@@ -382,7 +436,9 @@ public interface DomainManagement {
     * @throws NoPermissionException
     *            when the required privilege for calling this method is not held
     *            by the caller
+    * @deprecated This method has been deprecated. See {@link #setLogonBannerTitle(String) #setLogonBannerContent(String)}
     */
+   @Deprecated
    @Privilege(Role.Administrator)
    void setLogonBanner(String logonBanner) throws NotAuthenticatedException, NoPermissionException;
 
@@ -396,9 +452,127 @@ public interface DomainManagement {
     * @throws NoPermissionException
     *            when the required privilege for calling this method is not held
     *            by the caller
+    * @deprecated This method has been deprecated. See {@link #getLogonBannerTitle() #getLogonBannerContent()}
     */
+   @Deprecated
    @Privilege(Role.RegularUser)
    String getLogonBanner() throws NotAuthenticatedException, NoPermissionException;
+
+   /**
+    * Set the logon banner title for the tenant.
+    *
+    * @param logonBannerTitle
+    *           can be null or empty
+    * @throws NotAuthenticatedException
+    *            when there is no authenticated SSO user associated with this
+    *            method call
+    * @throws NoPermissionException
+    *            when the required privilege for calling this method is not held
+    *            by the caller
+    */
+   @Privilege(Role.Administrator)
+   void setLogonBannerTitle(String logonBannerTitle) throws NotAuthenticatedException, NoPermissionException;
+
+   /**
+    * Retrieve the logon banner title for the tenant
+    *
+    * @return the logon banner title or {@code null} if not set
+    * @throws NotAuthenticatedException
+    *            when there is no authenticated SSO user associated with this
+    *            method call
+    * @throws NoPermissionException
+    *            when the required privilege for calling this method is not held
+    *            by the caller
+    */
+   @Privilege(Role.RegularUser)
+   String getLogonBannerTitle() throws NotAuthenticatedException, NoPermissionException;
+
+   /**
+    * Set the logon banner content for the tenant.
+    *
+    * @param logonBannerContent
+    *           can be null or empty
+    * @throws NotAuthenticatedException
+    *            when there is no authenticated SSO user associated with this
+    *            method call
+    * @throws NoPermissionException
+    *            when the required privilege for calling this method is not held
+    *            by the caller
+    */
+   @Privilege(Role.Administrator)
+   void setLogonBannerContent(String logonBannerContent) throws NotAuthenticatedException, NoPermissionException;
+
+   /**
+    * Retrieve the logon banner content for the tenant
+    *
+    * @return the logon banner content or {@code null} if not set
+    * @throws NotAuthenticatedException
+    *            when there is no authenticated SSO user associated with this
+    *            method call
+    * @throws NoPermissionException
+    *            when the required privilege for calling this method is not held
+    *            by the caller
+    */
+   @Privilege(Role.RegularUser)
+   String getLogonBannerContent() throws NotAuthenticatedException, NoPermissionException;
+
+   /**
+    * Set the logon banner checkbox flag for the tenant.
+    *
+    * @param enableLogonBannerCheckbox
+    *           true to enable checkbox, false otherwise
+    * @throws NotAuthenticatedException
+    *            when there is no authenticated SSO user associated with this
+    *            method call
+    * @throws NoPermissionException
+    *            when the required privilege for calling this method is not held
+    *            by the caller
+    */
+   @Privilege(Role.Administrator)
+   void setLogonBannerCheckboxFlag(boolean enableLogonBannerCheckbox) throws NotAuthenticatedException, NoPermissionException;
+
+   /**
+    * Retrieve the logon banner checkbox flag for the tenant
+    *
+    * @return true if checkbox is enabled, false otherwise
+    * @throws NotAuthenticatedException
+    *            when there is no authenticated SSO user associated with this
+    *            method call
+    * @throws NoPermissionException
+    *            when the required privilege for calling this method is not held
+    *            by the caller
+    */
+   @Privilege(Role.RegularUser)
+   boolean getLogonBannerCheckboxFlag() throws NotAuthenticatedException, NoPermissionException;
+
+   /**
+    * Disable logon banner for the tenant.
+    * This will set the logon banner title and content to null.
+    * Set the title and content to non-null/non-empty Strings to enable logon banner.
+    *
+    * @throws NotAuthenticatedException
+    *            when there is no authenticated SSO user associated with this
+    *            method call
+    * @throws NoPermissionException
+    *            when the required privilege for calling this method is not held
+    *            by the caller
+    */
+   @Privilege(Role.Administrator)
+   void disableLogonBanner() throws NotAuthenticatedException, NoPermissionException;
+
+   /**
+    * Check if logon banner is disabled for the tenant
+    *
+    * @return true if logon banner is disabled, false otherwise
+    * @throws NotAuthenticatedException
+    *            when there is no authenticated SSO user associated with this
+    *            method call
+    * @throws NoPermissionException
+    *            when the required privilege for calling this method is not held
+    *            by the caller
+    */
+   @Privilege(Role.RegularUser)
+   boolean isLogonBannerDisabled() throws NotAuthenticatedException, NoPermissionException;
 
    /**
     * Update the details of the Domain associated with the given name.

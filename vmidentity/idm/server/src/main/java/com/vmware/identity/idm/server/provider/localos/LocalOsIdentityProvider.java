@@ -26,6 +26,8 @@ import java.util.Set;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang.Validate;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeValuePair;
@@ -48,6 +50,7 @@ import com.vmware.identity.idm.server.ServerUtils;
 import com.vmware.identity.idm.server.provider.IIdentityProvider;
 import com.vmware.identity.idm.server.provider.NoSuchGroupException;
 import com.vmware.identity.idm.server.provider.NoSuchUserException;
+import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.interop.ossam.GroupInfo;
 import com.vmware.identity.interop.ossam.IOsSamAdapter;
 import com.vmware.identity.interop.ossam.OsSamAdapterFactory;
@@ -67,6 +70,9 @@ public class LocalOsIdentityProvider implements IIdentityProvider
     public static final char UPN_SEPARATOR = '@';
 
     private final IIdentityStoreData _store;
+
+    private static final Log logger = LogFactory
+          .getLog(LocalOsIdentityProvider.class);
 
     public LocalOsIdentityProvider(IIdentityStoreData store)
     {
@@ -293,7 +299,8 @@ public class LocalOsIdentityProvider implements IIdentityProvider
         }
         catch(OsSamUserNotFoundException ex)
         {
-            user = null;
+           logger.info("User " + id.getName() + " not found, returning null.");
+           user = null;
         }
 
         return user;
@@ -477,7 +484,7 @@ public class LocalOsIdentityProvider implements IIdentityProvider
     }
 
     @Override
-    public Set<Group> findDirectParentGroups(PrincipalId principalId) throws Exception
+    public PrincipalGroupLookupInfo findDirectParentGroups(PrincipalId principalId) throws Exception
     {
         // per admin interface doc principal could be user or group ...
         try
@@ -495,7 +502,9 @@ public class LocalOsIdentityProvider implements IIdentityProvider
             else
             {
                 // local groups do not have nesting ...
-                return Collections.emptySet();
+                return new PrincipalGroupLookupInfo(
+                    Collections.<Group>emptySet(),
+                    group.getObjectId() );
             }
         }
     }
@@ -684,7 +693,7 @@ public class LocalOsIdentityProvider implements IIdentityProvider
     }
 
     @Override
-    public Set<Group> findNestedParentGroups(PrincipalId userId) throws Exception
+    public PrincipalGroupLookupInfo findNestedParentGroups(PrincipalId userId) throws Exception
     {
         return this.findGroupsForUser( userId, true );
     }
@@ -702,15 +711,23 @@ public class LocalOsIdentityProvider implements IIdentityProvider
     // privates
     /////////////////////////////////////////////////
 
-    private Set<Group> findGroupsForUser(PrincipalId userId, boolean nesting) throws Exception
+    private PrincipalGroupLookupInfo findGroupsForUser(PrincipalId userId, boolean nesting) throws Exception
     {
         this.validatePrincipal( userId );
 
         Set<Group> groups = new HashSet<Group>();
+        UserInfo userInfo = null;
 
         try
         {
             IOsSamAdapter samAdapter = getSamAdapter();
+            userInfo = samAdapter.getLocalUserInfo(userId.getName());
+            if(userInfo == null)
+            {
+                throw new NoSuchUserException(
+                    String.format( "User '%s' was not found.", userId.getName() )
+                );
+            }
             List<String> groupsList = samAdapter.GetLocalUserGroups( userId.getName(), nesting );
             if ( (groupsList != null) && (groupsList.size() > 0) )
             {
@@ -745,7 +762,12 @@ public class LocalOsIdentityProvider implements IIdentityProvider
                     String.format( "User '%s' was not found.", userId.getName() )
             );
         }
-        return groups;
+        return new PrincipalGroupLookupInfo(
+            groups,
+            (userInfo != null) ?
+                LocalOsIdentityProvider.getObjectId(
+                    buildUserPrincipalId( this.getDomain(), userInfo )) :
+                null);
     }
 
     private UserInfo retrieveUserInfo(PrincipalId id) throws Exception
@@ -972,5 +994,15 @@ public class LocalOsIdentityProvider implements IIdentityProvider
            return new PrincipalId(objectId.substring(0, idx),
                                   objectId.substring(idx + 1));
         }
+    }
+
+    @Override
+    public PrincipalId findActiveUser(String attributeName, String attributeValue) throws Exception {
+        throw new IDMException("findActiveUser() not supported in localos provider");
+    }
+
+    @Override
+    public String getStoreUPNAttributeName() {
+        return USER_PRINCIPAL_NAME_ATTRIBUTE;
     }
 }

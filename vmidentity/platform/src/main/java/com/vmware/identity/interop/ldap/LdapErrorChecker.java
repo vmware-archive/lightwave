@@ -600,11 +600,12 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_SERVER_DOWN.getCode(),
+                LdapErrors.LDAP_WinLdap_SERVER_DOWN.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new ServerDownLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -613,11 +614,26 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_LOCAL_ERROR.getCode(),
+                LdapErrors.LDAP_OpenLdap_SERVER_DOWN.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new ServerDownLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_LOCAL_ERROR.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new LocalErrorLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -626,11 +642,26 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_ENCODING_ERROR.getCode(),
+                LdapErrors.LDAP_OpenLdap_LOCAL_ERROR.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new LocalErrorLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_ENCODING_ERROR.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new EncodingErrorLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -639,11 +670,26 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_DECODING_ERROR.getCode(),
+                LdapErrors.LDAP_OpenLdap_ENCODING_ERROR.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new EncodingErrorLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_DECODING_ERROR.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new DecodingErrorLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -652,11 +698,26 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_TIMEOUT.getCode(),
+                LdapErrors.LDAP_OpenLdap_DECODING_ERROR.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new DecodingErrorLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_TIMEOUT.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new TimeoutLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -665,11 +726,26 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_AUTH_UNKNOWN.getCode(),
+                LdapErrors.LDAP_OpenLdap_TIMEOUT.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new TimeoutLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_AUTH_UNKNOWN.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new AuthUnknownLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -678,11 +754,26 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_FILTER_ERROR.getCode(),
+                LdapErrors.LDAP_OpenLdap_AUTH_UNKNOWN.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new AuthUnknownLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_FILTER_ERROR.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new FilterErrorLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -691,11 +782,26 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_USER_CANCELLED.getCode(),
+                LdapErrors.LDAP_OpenLdap_FILTER_ERROR.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new FilterErrorLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_USER_CANCELLED.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new UserCancelledLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -704,11 +810,26 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_PARAM_ERROR.getCode(),
+                LdapErrors.LDAP_OpenLdap_USER_CANCELLED.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new UserCancelledLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_PARAM_ERROR.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new ParamErrorLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -717,11 +838,26 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_NO_MEMORY.getCode(),
+                LdapErrors.LDAP_OpenLdap_PARAM_ERROR.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new ParamErrorLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_NO_MEMORY.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new NoMemoryLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -730,11 +866,26 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_CONNECT_ERROR.getCode(),
+                LdapErrors.LDAP_OpenLdap_NO_MEMORY.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new NoMemoryLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_CONNECT_ERROR.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new ConnectErrorLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -743,11 +894,26 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_NOT_SUPPORTED.getCode(),
+                LdapErrors.LDAP_OpenLdap_CONNECT_ERROR.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new ConnectErrorLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_NOT_SUPPORTED.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new NotSupportedLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -756,11 +922,26 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_NO_RESULTS_RETURNED.getCode(),
+                LdapErrors.LDAP_OpenLdap_NOT_SUPPORTED.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new NotSupportedLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_NO_RESULTS_RETURNED.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new NoResultsReturnedLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -769,11 +950,26 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_CONTROL_NOT_FOUND.getCode(),
+                LdapErrors.LDAP_OpenLdap_NO_RESULTS_RETURNED.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new NoResultsReturnedLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_CONTROL_NOT_FOUND.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new ControlNotFoundLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -782,11 +978,26 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_MORE_RESULTS_TO_RETURN.getCode(),
+                LdapErrors.LDAP_OpenLdap_CONTROL_NOT_FOUND.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new ControlNotFoundLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_MORE_RESULTS_TO_RETURN.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new MoreResultsToReturnLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -795,11 +1006,26 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_CLIENT_LOOP.getCode(),
+                LdapErrors.LDAP_OpenLdap_MORE_RESULTS_TO_RETURN.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new MoreResultsToReturnLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_CLIENT_LOOP.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
                         throw new ClientLoopLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));
@@ -808,11 +1034,40 @@ class LdapErrorChecker
         );
 
         _errorsMap.put(
-                LdapErrors.LDAP_REFERRAL_LIMIT_EXCEEDED.getCode(),
+                LdapErrors.LDAP_OpenLdap_CLIENT_LOOP.getCode(),
                 new ILdapErrorRaiser() {
                     @Override
                     public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
                     {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
+                        throw new ClientLoopLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_WinLdap_REFERRAL_LIMIT_EXCEEDED.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof WinLdapClientLibrary);
+                        throw new ReferralLimitExceededLdapException(
+                                errorCode,
+                                iLdapClientLibrary.ldap_err2string(errorCode));
+                    }
+                }
+        );
+
+        _errorsMap.put(
+                LdapErrors.LDAP_OpenLdap_REFERRAL_LIMIT_EXCEEDED.getCode(),
+                new ILdapErrorRaiser() {
+                    @Override
+                    public void RaiseLdapError(int errorCode, ILdapClientLibrary iLdapClientLibrary) throws LdapException
+                    {
+                        assert(iLdapClientLibrary instanceof OpenLdapClientLibrary);
                         throw new ReferralLimitExceededLdapException(
                                 errorCode,
                                 iLdapClientLibrary.ldap_err2string(errorCode));

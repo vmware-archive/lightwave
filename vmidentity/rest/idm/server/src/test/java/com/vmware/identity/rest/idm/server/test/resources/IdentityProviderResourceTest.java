@@ -20,6 +20,7 @@ import static org.easymock.EasyMock.isA;
 import static org.junit.Assert.assertEquals;
 
 import java.net.MalformedURLException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -27,9 +28,8 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.security.cert.X509Certificate;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
@@ -112,15 +112,15 @@ public class IdentityProviderResourceTest {
     private IMocksControl mControl;
     private IdentityProviderResource identitySourceResource;
     private CasIdmClient mockCasIDMClient;
-    private HttpServletRequest request;
+    private ContainerRequestContext request;
 
     @Before
     public void setUp() {
         mControl = EasyMock.createControl();
 
-        request = EasyMock.createMock(HttpServletRequest.class);
-        EasyMock.expect(request.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        EasyMock.expect(request.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        request = EasyMock.createMock(ContainerRequestContext.class);
+        EasyMock.expect(request.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        EasyMock.expect(request.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
         EasyMock.replay(request);
 
         mockCasIDMClient = mControl.createMock(CasIdmClient.class);
@@ -375,7 +375,7 @@ public class IdentityProviderResourceTest {
 
     @Test
     public void testProbeProvider() throws Exception {
-        mockCasIDMClient.probeProviderConnectivity(TENANT, connectionStrings.iterator().next(), AuthenticationType.PASSWORD, OPEN_LDAP_USER, PASSWORD, idsCertificates);
+        mockCasIDMClient.probeProviderConnectivity(isA(String.class), isA(IdentityStoreData.class));
         mControl.replay();
         identitySourceResource.create(getTestOpenLDAPIdentityProviderDTO(), true);
         mControl.verify();
@@ -383,7 +383,7 @@ public class IdentityProviderResourceTest {
 
     @Test(expected = NotFoundException.class)
     public void testProbeProviderOnNoSuchTenant_ThrowsNotFoundEx() throws Exception {
-        mockCasIDMClient.probeProviderConnectivity(TENANT, connectionStrings.iterator().next(), AuthenticationType.PASSWORD, OPEN_LDAP_USER, PASSWORD, idsCertificates);
+        mockCasIDMClient.probeProviderConnectivity(isA(String.class), isA(IdentityStoreData.class));
         expectLastCall().andThrow(new NoSuchTenantException("no such tenant"));
         mControl.replay();
         identitySourceResource.create(getTestOpenLDAPIdentityProviderDTO(), true);
@@ -392,7 +392,7 @@ public class IdentityProviderResourceTest {
 
     @Test(expected = BadRequestException.class)
     public void testProbeProviderOnIDMLoginException_ThrowsBadRequestEx() throws Exception {
-        mockCasIDMClient.probeProviderConnectivity(TENANT, connectionStrings.iterator().next(), AuthenticationType.PASSWORD, OPEN_LDAP_USER, PASSWORD, idsCertificates);
+        mockCasIDMClient.probeProviderConnectivity(isA(String.class), isA(IdentityStoreData.class));
         expectLastCall().andThrow(new IDMLoginException("login failed"));
         mControl.replay();
         identitySourceResource.create(getTestOpenLDAPIdentityProviderDTO(), true);
@@ -401,7 +401,7 @@ public class IdentityProviderResourceTest {
 
     @Test(expected = InternalServerErrorException.class)
     public void testProbeProviderOnIDMError_ThrowsInternalServerError() throws Exception {
-        mockCasIDMClient.probeProviderConnectivity(TENANT, connectionStrings.iterator().next(), AuthenticationType.PASSWORD, OPEN_LDAP_USER, PASSWORD, idsCertificates);
+        mockCasIDMClient.probeProviderConnectivity(isA(String.class), isA(IdentityStoreData.class));
         expectLastCall().andThrow(new IDMException("IDM error"));
         mControl.replay();
         identitySourceResource.create(IdentityProviderMapper.getIdentityProviderDTO(getTestOpenLDAPIdentityProvider()), true);
@@ -409,7 +409,7 @@ public class IdentityProviderResourceTest {
     }
 
     public static IdentityStoreData getTestADIdentityProvider() {
-        return IdentityStoreData.createActiveDirectoryIdentityStoreData(AD_PROVIDER_NAME, USER_NAME, false, AD_SPN, PASSWORD, attributesMap, null);
+        return IdentityStoreData.createActiveDirectoryIdentityStoreData(AD_PROVIDER_NAME, USER_NAME, false, AD_SPN, PASSWORD, attributesMap, null, null);
     }
 
     public static IdentityStoreData getTestOpenLDAPIdentityProvider() {

@@ -30,12 +30,14 @@ public class OIDCClientMapper {
 
         OIDCClient oidcClient = null;
         try {
+            Long lifetimeMS = oidcClientDTO.getOIDCClientMetadataDTO().getAuthnRequestClientAssertionLifetimeMS();
             oidcClient = new OIDCClient.Builder(oidcClientDTO.getClientId()).
                              redirectUris(oidcClientDTO.getOIDCClientMetadataDTO().getRedirectUris()).
                              tokenEndpointAuthMethod(oidcClientDTO.getOIDCClientMetadataDTO().getTokenEndpointAuthMethod()).
                              postLogoutRedirectUris(oidcClientDTO.getOIDCClientMetadataDTO().getPostLogoutRedirectUris()).
                              logoutUri(oidcClientDTO.getOIDCClientMetadataDTO().getLogoutUri()).
-                             certSubjectDN(oidcClientDTO.getOIDCClientMetadataDTO().getCertSubjectDN()).build();
+                             certSubjectDN(oidcClientDTO.getOIDCClientMetadataDTO().getCertSubjectDN()).
+                             authnRequestClientAssertionLifetimeMS((lifetimeMS == null) ? 0L : lifetimeMS.longValue()).build();
         } catch(Exception e) {
             throw new DTOMapperException("Failed to map OIDCClientDTO to OIDCClient", e);
         }
@@ -45,12 +47,14 @@ public class OIDCClientMapper {
     public static OIDCClient getOIDCClient(OIDCClientMetadataDTO oidcClientMetadataDTO) {
         OIDCClient oidcClient  = null;
         try {
+            Long lifetimeMS = oidcClientMetadataDTO.getAuthnRequestClientAssertionLifetimeMS();
             oidcClient = new OIDCClient.Builder(null).
                          redirectUris(oidcClientMetadataDTO.getRedirectUris()).
                          tokenEndpointAuthMethod(oidcClientMetadataDTO.getTokenEndpointAuthMethod()).
                          postLogoutRedirectUris(oidcClientMetadataDTO.getPostLogoutRedirectUris()).
                          logoutUri(oidcClientMetadataDTO.getLogoutUri()).
-                         certSubjectDN(oidcClientMetadataDTO.getCertSubjectDN()).build();
+                         certSubjectDN(oidcClientMetadataDTO.getCertSubjectDN()).
+                         authnRequestClientAssertionLifetimeMS((lifetimeMS == null) ? 0L : lifetimeMS.longValue()).build();
         } catch(Exception e) {
             throw new DTOMapperException("Failed to map OIDCClientMetadataDTO to OIDCClient", e);
         }
@@ -67,7 +71,8 @@ public class OIDCClientMapper {
                             withTokenEndpointAuthMethod(oidcClient.getTokenEndpointAuthMethod()).
                             withPostLogoutRedirectUris(oidcClient.getPostLogoutRedirectUris()).
                             withLogoutUri(oidcClient.getLogoutUri()).
-                            withCertSubjectDN(oidcClient.getCertSubjectDN()).build()).
+                            withCertSubjectDN(oidcClient.getCertSubjectDN()).
+                            withAuthnRequestClientAssertionLifetimeMS(oidcClient.getAuthnRequestClientAssertionLifetimeMS()).build()).
                             build();
         } catch(Exception e) {
             throw new DTOMapperException("Failed to map OIDCClient to OIDCClientDTO", e);

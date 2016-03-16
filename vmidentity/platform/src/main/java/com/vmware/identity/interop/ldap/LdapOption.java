@@ -41,10 +41,15 @@ public enum LdapOption
 
     LDAP_OPT_X_TLS_REQUIRE_CERT(0x6006),
 
+    // Open ldap option to DISABLE the reverse DNS lookup for SASL binding.
+    LDAP_OPT_X_SASL_NOCANON(0x610b),
+
     //option code 0x7000 ~ 0x7fff is the OpenLdap option code range reserved for application use
     //and it is not reserved value on winldap.h, as can be found here:
     //http://sourceforge.net/p/mingw/mingw-org-wsl/ci/master/tree/include/winldap.h#l360
-    LDAP_OPT_X_CLIENT_TRUSTED_FP_CALLBACK(0x7100);       //input
+    LDAP_OPT_X_CLIENT_TRUSTED_FP_CALLBACK(0x7100),       //input
+    LDAP_OPT_X_TLS_PROTOCOL(0x7101);
+
 
     private int _code;
 

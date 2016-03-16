@@ -222,6 +222,11 @@ public class IdentityStoreAttributeMapping implements Serializable {
         public final static String UserAttributeGroupMembersListLink = "UserAttributeGroupMembersListLink";
 
         /**
+         * Group object's attribute containing the sids of the groups to which this object belongs.
+         */
+        public final static String GroupAttributeTokenGroups = "GroupAttributeTokenGroups";
+
+        /**
          * Group object's attribute containing the logon name used.
          * (for example, 'sAMAccountName' in AD or 'cn' in OpenLdap)
          */
@@ -258,6 +263,11 @@ public class IdentityStoreAttributeMapping implements Serializable {
          * utilize a NO_LINK_ATTRIBUTE_MAPPING for a corresponding attribute mapping.]
          */
         public final static String GroupAttributeGroupMembersListLink = "GroupAttributeGroupMembersListLink";
+
+        /**
+         * Group object's attribute containing the group types.
+         */
+        public  final static String GroupAttributeGroupType = "GroupAttributeGroupTypes";
 
         /**
          * Password settings object's attribute, containing the maximum age for user account passwords.
