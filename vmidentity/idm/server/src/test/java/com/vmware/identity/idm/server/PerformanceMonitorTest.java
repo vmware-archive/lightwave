@@ -21,19 +21,20 @@ import org.junit.Test;
 
 import com.vmware.identity.idm.server.performance.IdmAuthStatCache;
 import com.vmware.identity.performanceSupport.IIdmAuthStat.ActivityKind;
+import com.vmware.identity.performanceSupport.IIdmAuthStat.EventLevel;
 import com.vmware.identity.performanceSupport.IdmAuthStat;
 
 public class PerformanceMonitorTest {
     @Test
     public void testIdmAuthStatCacheSingleThread() throws Exception {
         int size = 10;
-        IdmAuthStatCache cache = new IdmAuthStatCache(size);
+        IdmAuthStatCache cache = new IdmAuthStatCache(size, true);
 
         // element is added till cache size is reached.
         int current = 0;
         while (current < size) {
             cache.add(new IdmAuthStat("", "", current,
-                    ActivityKind.AUTHENTICATE, null, 0, 0, null));
+                    ActivityKind.AUTHENTICATE, EventLevel.INFO, null, 0, 0, null, null, null));
             Assert.assertEquals(cache.getIdmAuthStats().size(), current + 1);
             Assert.assertEquals(cache.getIdmAuthStats().get(current)
                     .getProviderFlag(), current);
@@ -42,8 +43,8 @@ public class PerformanceMonitorTest {
 
         // when cache size is reached, the first is removed, the new one added
         // to the end.
-        cache.add(new IdmAuthStat("", "", current, ActivityKind.AUTHENTICATE,
-                null, 0, 0, null)); // current == 10
+        cache.add(new IdmAuthStat("", "", current, ActivityKind.AUTHENTICATE, EventLevel.INFO,
+                null, 0, 0, null, null, null)); // current == 10
         Assert.assertEquals(cache.getIdmAuthStats().size(), size);
         Assert.assertEquals(cache.getIdmAuthStats().get(size - 1)
                 .getProviderFlag(), current);
@@ -51,8 +52,8 @@ public class PerformanceMonitorTest {
         ++current;
 
         // check again
-        cache.add(new IdmAuthStat("", "", current, ActivityKind.AUTHENTICATE,
-                null, 0, 0, null)); // current == 11
+        cache.add(new IdmAuthStat("", "", current, ActivityKind.AUTHENTICATE, EventLevel.INFO,
+                null, 0, 0, null, null, null)); // current == 11
         Assert.assertEquals(cache.getIdmAuthStats().size(), size);
         Assert.assertEquals(cache.getIdmAuthStats().get(size - 1)
                 .getProviderFlag(), current);
@@ -72,7 +73,7 @@ public class PerformanceMonitorTest {
             int current = 0;
             while (current < this._count) {
                 this._cache.add(new IdmAuthStat("", "", 0,
-                        ActivityKind.AUTHENTICATE, null, 0, 0, null));
+                        ActivityKind.AUTHENTICATE, EventLevel.INFO, null, 0, 0, null, null, null));
                 ++current;
             }
         }
@@ -81,7 +82,7 @@ public class PerformanceMonitorTest {
     @Test
     public void testIdmAuthStatCacheMultiThread() throws Exception {
         int cacheSize = 10;
-        IdmAuthStatCache cache = new IdmAuthStatCache(cacheSize);
+        IdmAuthStatCache cache = new IdmAuthStatCache(cacheSize, true);
 
         int threadCount = 5;
         Adder[] ts = new Adder[threadCount];

@@ -418,7 +418,7 @@ public class ADSchemaMapping extends BaseLdapSchemaMapping
     private static Map<String, String> defaultAttributesMap = null;
     static
     {
-        defaultAttributesMap = new HashMap<String,String>(25);
+        defaultAttributesMap = new HashMap<String,String>(27);
         defaultAttributesMap.put(ObjectIds.ObjectIdUser, "user");
         defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAcountControl, "userAccountControl");
         defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAccountName, "sAMAccountName");
@@ -444,11 +444,26 @@ public class ADSchemaMapping extends BaseLdapSchemaMapping
         defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeMembersList, "member");
         defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeObjectId, "objectSid");
         defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeGroupMembersListLink, DN_ATTRIBUTE);
+        defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeGroupType, "groupType");
+        defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeTokenGroups, "tokenGroups");
 
         defaultAttributesMap.put(ObjectIds.ObjectIdPasswordSettings, "msDS-PasswordSettings");
         defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.PasswordSettingsAttributeMaximumPwdAge, "msDS-MaximumPasswordAge");
 
         defaultAttributesMap.put(ObjectIds.ObjectIdDomain, "domain");
         defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.DomainAttributeMaxPwdAge, "maxPwdAge");
+    }
+    @Override
+    public String getUserQueryByAttribute() {
+        final String userObjectClass = this.getUserObjectClassValue();
+        ValidateUtil.validateNotNull(userObjectClass, "userObjectClass");
+
+        return String.format(
+            "(&(%1$s=%2$s)(objectClass=%3$s))",
+            "%s",
+            "%s",
+            userObjectClass
+        );
+
     }
 }

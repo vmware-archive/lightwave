@@ -21,7 +21,7 @@ import static org.junit.Assert.assertNull;
 import java.util.Collection;
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 
 import org.easymock.EasyMock;
 import org.junit.Before;
@@ -51,13 +51,13 @@ public class RelyingPartyResourceIT extends TestBase {
     private static final String RELYING_PARTY_URI = "http://dummy:8080";
 
     private RelyingPartyResource rpResource;
-    private HttpServletRequest request;
+    private ContainerRequestContext request;
 
     @Before
     public void setUp() {
-        request = EasyMock.createMock(HttpServletRequest.class);
-        EasyMock.expect(request.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        EasyMock.expect(request.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        request = EasyMock.createMock(ContainerRequestContext.class);
+        EasyMock.expect(request.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        EasyMock.expect(request.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
         EasyMock.replay(request);
         rpResource = new RelyingPartyResource(DEFAULT_TENANT, request, null);
         rpResource.setIDMClient(idmClient);

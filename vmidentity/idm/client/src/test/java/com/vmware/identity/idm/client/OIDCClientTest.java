@@ -49,6 +49,7 @@ public class OIDCClientTest {
     private final static List<String> postLogoutRedirectUris = Arrays.asList("https://www.vmware.com/postlogoutredirect1");
     private final static String logoutUri = "https://www.vmware.com/logout";
     private final static String certSubDN = "OU=mID-2400d17e-d4f4-4753-98fd-fb9ecbf098ae,C=US,DC=local,DC=vsphere,CN=oidc-client-123";
+    private final static long authnRequestClientAssertionLifetimeMS = 1234L;
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -66,6 +67,7 @@ public class OIDCClientTest {
         oidcClientBuilder.postLogoutRedirectUris(postLogoutRedirectUris);
         oidcClientBuilder.logoutUri(logoutUri);
         oidcClientBuilder.certSubjectDN(certSubDN);
+        oidcClientBuilder.authnRequestClientAssertionLifetimeMS(authnRequestClientAssertionLifetimeMS);
         oidcClient = oidcClientBuilder.build();
     }
 
@@ -116,7 +118,7 @@ public class OIDCClientTest {
     }
 
     @Test(expected=DuplicatedOIDCRedirectURLException.class)
-    public void testAddOIDCClientDuaplicatedRedirectURL() throws Exception, IDMException
+    public void testAddOIDCClientDuplicatedRedirectURL() throws Exception, IDMException
     {
         String tenantName = props.getProperty(IdmClientTestUtil.CFG_KEY_IDM_TENANT_1_NAME);
 
@@ -206,6 +208,7 @@ public class OIDCClientTest {
         oidcClientBuilder.postLogoutRedirectUris(postLogoutRedirectUris);
         oidcClientBuilder.logoutUri(logoutUri);
         oidcClientBuilder.certSubjectDN(certSubDN);
+        oidcClientBuilder.authnRequestClientAssertionLifetimeMS(authnRequestClientAssertionLifetimeMS);
         oidcClientBuilder.build();
     }
 }

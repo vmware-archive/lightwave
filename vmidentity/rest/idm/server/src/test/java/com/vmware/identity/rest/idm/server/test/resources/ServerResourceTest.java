@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.BadRequestException;
+import javax.ws.rs.container.ContainerRequestContext;
 
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
@@ -53,15 +53,15 @@ public class ServerResourceTest {
     private ServerResource serverResource;
     private CasIdmClient mockIDMClient;
     private IMocksControl mControl;
-    private HttpServletRequest request;
+    private ContainerRequestContext request;
 
     @Before
     public void setUp() {
         mControl = EasyMock.createControl();
 
-        request = EasyMock.createMock(HttpServletRequest.class);
-        expect(request.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        expect(request.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        request = EasyMock.createMock(ContainerRequestContext.class);
+        expect(request.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        expect(request.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
         replay(request);
 
         mockIDMClient = mControl.createMock(CasIdmClient.class);

@@ -44,7 +44,7 @@ interface ILdapClientLibrary {
     ldap_set_option(Pointer ld, int option, Pointer value);
 
     void
-    ldap_bind_s(Pointer ld, String dn, String cred, int method);
+    ldap_bind_s(LdapConnectionCtx connectionCtx, String dn, String cred, int method);
 
     void
     ldap_sasl_bind_s(Pointer ld, String userName, String domainName, String password);

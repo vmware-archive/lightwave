@@ -26,6 +26,7 @@ import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.Validate;
 import org.bouncycastle.asn1.ASN1Encodable;
@@ -38,6 +39,7 @@ import org.bouncycastle.asn1.DERTaggedObject;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.CertificatePathBuildingException;
 import com.vmware.identity.idm.CertificateRevocationCheckException;
 import com.vmware.identity.idm.ClientCertPolicy;
 import com.vmware.identity.idm.IDMException;
@@ -53,10 +55,16 @@ public class IdmClientCertificateValidator {
 
     private final ClientCertPolicy certPolicy;
     private final KeyStore trustStore;
+    private final String tenantName;
 
-    public IdmClientCertificateValidator(ClientCertPolicy certPolicy)
+    public IdmClientCertificateValidator(ClientCertPolicy certPolicy,String tenantName)
                     throws InvalidArgumentException {
+        Validate.notNull(certPolicy, "certPolicy");
+        Validate.notEmpty(tenantName, "tenantName");
+
         this.certPolicy = certPolicy;
+        this.tenantName = tenantName;
+
         trustStore = getTrustedClientCaStore();
     }
 
@@ -65,19 +73,21 @@ public class IdmClientCertificateValidator {
      *
      * @param x509Certificate
      *            Client end certificate .
+     * @param authStatExt
+     *            AuthStat extensions for profiling the detailed steps.
      * @throws CertificateRevocationCheckException
      * @throws InvalidArgumentException
      *             ocsp url is missing when ocsp is enabled. This condition will
      *             be allowed if we support in-cert ocsp.
      * @throws IdmCertificateRevokedException
+     * @throws CertificatePathBuildingException
      */
-    public void validateCertificatePath(X509Certificate x509Certificate)
+    public void validateCertificatePath(X509Certificate x509Certificate, Map<String, String> authStatExt)
             throws CertificateRevocationCheckException,
- InvalidArgumentException, IdmCertificateRevokedException {
-
+ InvalidArgumentException, IdmCertificateRevokedException, CertificatePathBuildingException {
         IdmCertificatePathValidator checker = new IdmCertificatePathValidator(
-                trustStore, certPolicy);
-        checker.validate(x509Certificate);
+                trustStore, certPolicy, this.tenantName);
+        checker.validate(x509Certificate, authStatExt);
     }
 
     /**
@@ -90,11 +100,7 @@ public class IdmClientCertificateValidator {
      * @return String UPN of the subject that the cert was issued to or throw
      *         exception.
      * @throws IdmClientCertificateParsingException
-     *             Not able to find principal in SSO with subject information in
-     *             the certificate.
-     * @throws InvalidPrincipalException
-     *             Subject name in certificate exist but does not match to valid
-     *             user in SSO.
+     *             Not able to extract UPN from the certificate.
      */
 
     public String extractUPN(X509Certificate clientCert)
@@ -155,10 +161,11 @@ public class IdmClientCertificateValidator {
             }
 
             if (upn != null) {
-                logger.info("Successfully extracted UPN from SAN entry:" + upn);
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Successfully extracted UPN from SAN entry:" + upn);
+                }
                 break;
             }
-
         }
 
         /*
@@ -166,6 +173,10 @@ public class IdmClientCertificateValidator {
          * X500Principal Note: if UPN is found in SAN but matching to user
          * failed, we do not look farther.
          */
+        if (upn == null) {
+            throw new IdmClientCertificateParsingException("No UPN entry in Subject Alternative Names extension");
+        }
+
         return upn;
     }
 

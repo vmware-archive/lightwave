@@ -15,23 +15,15 @@
 package com.vmware.identity.openidconnect.common;
 
 import java.net.URI;
-
-import javax.mail.internet.ContentType;
-import javax.mail.internet.ParseException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang3.Validate;
-
-import com.nimbusds.oauth2.sdk.AuthorizationCode;
-import com.nimbusds.oauth2.sdk.SerializeException;
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
-import com.nimbusds.oauth2.sdk.id.State;
-import com.nimbusds.oauth2.sdk.token.AccessToken;
-import com.nimbusds.openid.connect.sdk.ResponseMode;
 
 /**
  * @author Yehia Zayour
  */
-public class AuthenticationSuccessResponse extends com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse {
+public final class AuthenticationSuccessResponse extends AuthenticationResponse {
     private static final String HTML_RESPONSE =
             "<html>" +
             "    <head>" +
@@ -68,97 +60,115 @@ public class AuthenticationSuccessResponse extends com.nimbusds.openid.connect.s
             "    <input type=\"submit\" value=\"Submit\" style=\"position:absolute; left:-9999px; width:1px; height:1px;\" />" +
             "</form>";
 
-    private final ResponseMode responseMode;
-    private final boolean isAjaxRequest;
+    private final AuthorizationCode code;
+    private final IDToken idToken;
+    private final AccessToken accessToken;
 
     public AuthenticationSuccessResponse(
+            ResponseMode responseMode,
             URI redirectUri,
+            State state,
+            boolean isAjaxRequest,
             AuthorizationCode code,
             IDToken idToken,
-            AccessToken accessToken,
-            State state,
-            ResponseMode responseMode,
-            boolean isAjaxRequest) {
-        super(redirectUri, code, idToken, accessToken, state);
+            AccessToken accessToken) {
+        super(responseMode, redirectUri, state, isAjaxRequest);
+        // nullable code
+        // nullable idToken
+        // nullable accessToken
+        this.code = code;
+        this.idToken = idToken;
+        this.accessToken = accessToken;
+    }
 
-        Validate.notNull(responseMode, "responseMode");
-        this.responseMode = responseMode;
-        this.isAjaxRequest = isAjaxRequest;
+    public AuthorizationCode getAuthorizationCode() {
+        return this.code;
+    }
+
+    public IDToken getIDToken() {
+        return this.idToken;
+    }
+
+    public AccessToken getAccessToken() {
+        return this.accessToken;
     }
 
     @Override
-    public HTTPResponse toHTTPResponse() throws SerializeException {
-        HTTPResponse httpResponse;
-
-        if (this.responseMode.equals(ResponseMode.FORM_POST)) {
-            httpResponse = formPostResponse();
-        } else {
-            // query or fragment response mode
-            httpResponse = super.toHTTPResponse();
-            if (this.isAjaxRequest) {
-                httpResponse = ajaxRedirectResponse(httpResponse.getLocation());
-            }
+    protected Map<String, String> toParameters() {
+        Map<String, String> parameters = new HashMap<String, String>();
+        parameters.put("state", super.getState().getValue());
+        if (this.code != null) {
+            parameters.put("code", this.code.getValue());
         }
-
-        return httpResponse;
+        if (this.idToken != null) {
+            parameters.put("id_token", this.idToken.serialize());
+        }
+        if (this.accessToken != null) {
+            parameters.put("access_token", this.accessToken.serialize());
+            parameters.put("token_type", this.accessToken.getTokenType().getValue());
+            parameters.put("expires_in", Long.toString(this.accessToken.getLifetimeSeconds()));
+        }
+        return parameters;
     }
 
-    private HTTPResponse formPostResponse() throws SerializeException {
-        HTTPResponse httpResponse = new HTTPResponse(HTTPResponse.SC_OK);
-
-        try {
-            httpResponse.setContentType(new ContentType("text/html;charset=UTF-8"));
-        } catch (ParseException e) {
-            throw new SerializeException("could not set response type header", e);
-        }
-
-        httpResponse.setCacheControl("no-cache, no-store");
-        httpResponse.setPragma("no-cache");
-
+    @Override
+    protected String toFormPostResponse() {
         String form;
-        if (super.getAuthorizationCode() != null) {
+        if (this.code != null) {
             form = String.format(
                     FORM_AUTHZ_CODE,
-                    super.getRedirectionURI().toString(),
+                    super.getRedirectURI().toString(),
                     super.getState().getValue(),
-                    super.getAuthorizationCode().getValue());
-        } else if (super.getIDToken() != null && super.getAccessToken() == null) {
+                    this.code.getValue());
+        } else if (this.idToken != null && this.accessToken == null) {
             form = String.format(
                     FORM_ID_TOKEN_ONLY,
-                    super.getRedirectionURI().toString(),
+                    super.getRedirectURI().toString(),
                     super.getState().getValue(),
-                    super.getIDToken().serialize());
-        } else if (super.getIDToken() != null && super.getAccessToken() != null) {
+                    this.idToken.serialize());
+        } else if (this.idToken != null && this.accessToken != null) {
             form = String.format(
                     FORM_ID_TOKEN_ACCESS_TOKEN,
-                    super.getRedirectionURI().toString(),
+                    super.getRedirectURI().toString(),
                     super.getState().getValue(),
-                    super.getIDToken().serialize(),
-                    super.getAccessToken().toString(),
-                    super.getAccessToken().getType().getValue(),
-                    super.getAccessToken().getLifetime());
+                    this.idToken.serialize(),
+                    this.accessToken.serialize(),
+                    this.accessToken.getTokenType().getValue(),
+                    this.accessToken.getLifetimeSeconds());
         } else {
             throw new IllegalArgumentException("unexpected authn success response");
         }
-
-        httpResponse.setContent(String.format(HTML_RESPONSE, form));
-
-        return httpResponse;
+        return String.format(HTML_RESPONSE, form);
     }
 
-    private static HTTPResponse ajaxRedirectResponse(URI redirectLocation) throws SerializeException {
-        HTTPResponse httpResponse = new HTTPResponse(HTTPResponse.SC_OK);
+    public static AuthenticationSuccessResponse parse(HttpRequest httpRequest) throws ParseException {
+        Validate.notNull(httpRequest, "httpRequest");
+        Map<String, String> parameters = httpRequest.getParameters();
 
-        try {
-            httpResponse.setContentType(new ContentType("text/html;charset=UTF-8"));
-        } catch (ParseException e) {
-            throw new SerializeException("could not set response type header", e);
+        State state = State.parse(ParameterMapUtils.getString(parameters, "state"));
+
+        AuthorizationCode code = null;
+        if (parameters.containsKey("code")) {
+            code = new AuthorizationCode(ParameterMapUtils.getString(parameters, "code"));
         }
 
-        httpResponse.setCacheControl("no-cache, no-store");
-        httpResponse.setPragma("no-cache");
-        httpResponse.setContent(redirectLocation.toString());
+        IDToken idToken = null;
+        if (parameters.containsKey("id_token")) {
+            idToken = IDToken.parse(parameters);
+        }
 
-        return httpResponse;
+        AccessToken accessToken = null;
+        if (parameters.containsKey("access_token")) {
+            accessToken = AccessToken.parse(parameters);
+        }
+
+        return new AuthenticationSuccessResponse(
+                ResponseMode.FORM_POST, // we don't really know but it doesn't matter
+                httpRequest.getURI(),
+                state,
+                false /* isAjaxRequest, we don't really know but it doesn't matter */,
+                code,
+                idToken,
+                accessToken);
     }
 }

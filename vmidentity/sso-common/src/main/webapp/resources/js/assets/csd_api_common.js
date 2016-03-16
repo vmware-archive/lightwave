@@ -68,20 +68,37 @@ function cloneWithStrings(obj) {
    return res;
 }
 
-var vmwareUUIDchars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                      "1234567890";
+var vmwareUUIDchars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" + "1234567890";
 
-function createVMwareUUID() {
+function createVMwareUUIDOld() {
    var result = "";
    var n = vmwareUUIDchars.length;
-   for (var i = 0; i < 4; i++) {
-      if (i > 0) {
+
+   for (var i = 0; i < 16; i++) {
+      if (i > 0 && i%4 == 0) {
          result += "-";
       }
-      for (var y = 0; y < 4; y++) {
-         var rn = Math.floor(Math.random() * n);
-         result += vmwareUUIDchars.charAt(rn);
+      var rn = Math.floor(Math.random() * n);
+      result += vmwareUUIDchars.charAt(rn);
+   }
+   return result;
+}
+
+function createVMwareUUID() {
+   if  (!window.crypto || !window.crypto.getRandomValues) {
+      return createVMwareUUIDOld();
+   }
+   var result = "";
+   var n = vmwareUUIDchars.length;
+   var data = new Uint8Array(16);
+   window.crypto.getRandomValues(data);
+
+   for (var i = 0; i < data.length; i++) {
+      if (i > 0 && i % 4 == 0) {
+         result += "-";
       }
+      var rn = data[i] % n;
+      result += vmwareUUIDchars.charAt(rn);
    }
    return result;
 }
