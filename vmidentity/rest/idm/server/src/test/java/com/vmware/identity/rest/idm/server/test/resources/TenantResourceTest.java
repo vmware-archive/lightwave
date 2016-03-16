@@ -38,7 +38,7 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
@@ -153,15 +153,15 @@ public class TenantResourceTest {
     private TenantResource tenantResource;
     private IMocksControl mControl;
     private CasIdmClient mockCasIdmClient;
-    private HttpServletRequest request;
+    private ContainerRequestContext request;
 
     @Before
     public void setUp() {
         mControl = createControl();
 
-        request = EasyMock.createMock(HttpServletRequest.class);
-        EasyMock.expect(request.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        EasyMock.expect(request.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        request = EasyMock.createMock(ContainerRequestContext.class);
+        EasyMock.expect(request.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        EasyMock.expect(request.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
         EasyMock.replay(request);
 
         mockCasIdmClient = mControl.createMock(CasIdmClient.class);

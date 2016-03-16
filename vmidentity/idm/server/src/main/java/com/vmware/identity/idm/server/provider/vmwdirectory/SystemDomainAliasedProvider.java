@@ -44,6 +44,7 @@ import com.vmware.identity.idm.SolutionDetail;
 import com.vmware.identity.idm.SolutionUser;
 import com.vmware.identity.idm.ValidateUtil;
 import com.vmware.identity.idm.server.ServerUtils;
+import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.vmwdirectory.VMwareDirectoryProvider;
 
 public class SystemDomainAliasedProvider extends VMwareDirectoryProvider
@@ -207,17 +208,23 @@ public class SystemDomainAliasedProvider extends VMwareDirectoryProvider
     }
 
     @Override
-    public Set<Group> findDirectParentGroups(PrincipalId principalId)
+    public PrincipalGroupLookupInfo findDirectParentGroups(PrincipalId principalId)
             throws Exception
     {
-        return this.<Group>mapToAlias(super.findDirectParentGroups(this.mapFromAlias(principalId)));
+        PrincipalGroupLookupInfo info = super.findDirectParentGroups(this.mapFromAlias(principalId));
+        return (info != null) ?
+                new PrincipalGroupLookupInfo( this.<Group>mapToAlias(info.getGroups()), info.getPrincipalObjectId() ):
+                null;
     }
 
     @Override
-    public Set<Group> findNestedParentGroups(PrincipalId userId)
+    public PrincipalGroupLookupInfo findNestedParentGroups(PrincipalId userId)
             throws Exception
     {
-        return this.<Group>mapToAlias(super.findNestedParentGroups(this.mapFromAlias(userId)));
+        PrincipalGroupLookupInfo info = super.findNestedParentGroups(this.mapFromAlias(userId));
+        return (info != null) ?
+               new PrincipalGroupLookupInfo( this.<Group>mapToAlias(info.getGroups()), info.getPrincipalObjectId() ):
+               null;
     }
 
     @Override

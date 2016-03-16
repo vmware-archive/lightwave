@@ -17,7 +17,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.SecurityContext;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
@@ -27,6 +27,7 @@ import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
+import com.vmware.identity.rest.core.server.resources.BaseResource;
 
 /**
  *
@@ -46,7 +47,7 @@ public abstract class BaseSubResource extends BaseResource {
         this.tenant = tenant;
     }
 
-    public BaseSubResource(String tenant, HttpServletRequest request, SecurityContext securityContext) {
+    public BaseSubResource(String tenant, ContainerRequestContext request, SecurityContext securityContext) {
         super(request, securityContext);
         this.tenant = tenant;
     }

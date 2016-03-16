@@ -19,12 +19,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
@@ -35,6 +35,7 @@ import com.vmware.identity.idm.VmHostData;
 import com.vmware.identity.rest.core.server.authorization.Role;
 import com.vmware.identity.rest.core.server.authorization.annotation.RequiresRole;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
+import com.vmware.identity.rest.core.server.resources.BaseResource;
 import com.vmware.identity.rest.core.server.util.Validate;
 import com.vmware.identity.rest.idm.data.ServerDetailsDTO;
 import com.vmware.identity.rest.idm.data.attributes.ComputerType;
@@ -51,7 +52,7 @@ public class ServerResource extends BaseResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(ServerResource.class);
 
-    public ServerResource(@Context HttpServletRequest request, @Context SecurityContext securityContext) {
+    public ServerResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(request, securityContext);
     }
 
@@ -68,7 +69,7 @@ public class ServerResource extends BaseResource {
      * @throws IllegalArgumentException On invalid params in client request
      * @throws InternalServerErrorException Otherwise
      */
-    @GET @Path("computers")
+    @GET @Path("/computers")
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.CONFIGURATION_USER)
     public Collection<ServerDetailsDTO> getComputers(@DefaultValue("all") @QueryParam("type") String computerType)
@@ -112,7 +113,7 @@ public class ServerResource extends BaseResource {
      *
      * @return
      */
-    @GET @Path("status")
+    @GET @Path("/status")
     public void getStatus() {
         // TODO : Yet to implement
         // throw new NotImplementedError("ServerResource#getStatus not implemented");
