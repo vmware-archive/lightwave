@@ -26,6 +26,7 @@ import com.vmware.identity.rest.core.test.util.KeyPairUtil;
 import com.vmware.identity.rest.idm.data.ExternalIDPDTO;
 import com.vmware.identity.rest.idm.data.GroupDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
+import com.vmware.identity.rest.idm.data.ResourceServerDTO;
 import com.vmware.identity.rest.idm.data.PrivateKeyDTO;
 import com.vmware.identity.rest.idm.data.RelyingPartyDTO;
 import com.vmware.identity.rest.idm.data.SolutionUserDTO;
@@ -81,6 +82,10 @@ public class TestGenerator {
 
     public static OIDCClientMetadataDTO generateOIDCClientMetadata() {
         return OidcClientGenerator.generateOIDCClientMetadata();
+    }
+
+    public static ResourceServerDTO generateResourceServer() {
+        return ResourceServerGenerator.generateResourceServer();
     }
 
     public static RelyingPartyDTO generateRelyingParty(CertificateDTO certificate) {

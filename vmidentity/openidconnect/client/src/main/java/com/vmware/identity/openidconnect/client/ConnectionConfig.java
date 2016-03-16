@@ -20,6 +20,9 @@ import java.security.interfaces.RSAPublicKey;
 
 import org.apache.commons.lang3.Validate;
 
+import com.vmware.identity.openidconnect.common.Issuer;
+import com.vmware.identity.openidconnect.common.ProviderMetadata;
+
 /**
  * Server connection configuration
  *
@@ -59,7 +62,7 @@ public class ConnectionConfig {
 
         this.authorizationEndpointURI = providerMetadata.getAuthorizationEndpointURI();
         this.tokenEndpointURI = providerMetadata.getTokenEndpointURI();
-        this.endSessionEndpointURI = providerMetadata.getEndSessionEndpoint();
+        this.endSessionEndpointURI = providerMetadata.getEndSessionEndpointURI();
         this.issuer = providerMetadata.getIssuer();
         this.providerPublicKey = providerPublicKey;
         this.keyStore = keyStore;
