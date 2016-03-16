@@ -29,8 +29,11 @@ import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsContextScope;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.CorrelationID;
+import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.common.HttpRequest;
+import com.vmware.identity.openidconnect.common.HttpResponse;
 
 /**
  * @author Yehia Zayour
@@ -40,7 +43,7 @@ public class TokenController {
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(TokenController.class);
 
     @Autowired
-    private IdmClient idmClient;
+    private CasIdmClient idmClient;
 
     @Autowired
     private AuthorizationCodeManager authzCodeManager;
@@ -49,7 +52,7 @@ public class TokenController {
     }
 
     // for unit tests
-    TokenController(IdmClient idmClient, AuthorizationCodeManager authzCodeManager) {
+    TokenController(CasIdmClient idmClient, AuthorizationCodeManager authzCodeManager) {
         this.idmClient = idmClient;
         this.authzCodeManager = authzCodeManager;
     }
@@ -60,21 +63,22 @@ public class TokenController {
     }
 
     @RequestMapping(value = "/token", method = RequestMethod.POST, consumes = "application/x-www-form-urlencoded")
-    public void token(
+    public void acquireTokens(
             HttpServletRequest request,
             HttpServletResponse response) throws IOException {
-        token(request, response, null);
+        acquireTokens(request, response, null);
     }
 
     @RequestMapping(value = "/token/{tenant:.*}", method = RequestMethod.POST, consumes = "application/x-www-form-urlencoded")
-    public void token(
+    public void acquireTokens(
             HttpServletRequest request,
             HttpServletResponse response,
             @PathVariable("tenant") String tenant) throws IOException {
+        HttpResponse httpResponse;
         IDiagnosticsContextScope context = null;
 
         try {
-            HttpRequest httpRequest = HttpRequest.create(request);
+            HttpRequest httpRequest = HttpRequest.from(request);
             context = DiagnosticsContextFactory.createContext(CorrelationID.get(httpRequest).getValue(), tenant);
 
             TokenRequestProcessor p = new TokenRequestProcessor(
@@ -82,15 +86,17 @@ public class TokenController {
                     this.authzCodeManager,
                     httpRequest,
                     tenant);
-            HttpResponse httpResponse = p.process();
-            httpResponse.applyTo(response);
+            httpResponse = p.process();
         } catch (Exception e) {
-            logger.error("unhandled exception", e);
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "unhandled exception: " + e.getClass().getName());
+            ErrorObject errorObject = ErrorObject.serverError(String.format("unhandled %s: %s", e.getClass().getName(), e.getMessage()));
+            LoggerUtils.logFailedRequest(logger, errorObject, e);
+            httpResponse = HttpResponse.createJsonResponse(errorObject);
         } finally {
             if (context != null) {
                 context.close();
             }
         }
+
+        httpResponse.applyTo(response);
     }
 }

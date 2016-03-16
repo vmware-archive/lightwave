@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -33,6 +32,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
@@ -76,7 +76,7 @@ public class GroupResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(GroupResource.class);
 
-    public GroupResource(String tenant, @Context HttpServletRequest request, @Context SecurityContext securityContext) {
+    public GroupResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, securityContext);
     }
 
@@ -89,7 +89,7 @@ public class GroupResource extends BaseSubResource {
      * @throws InternalServerErrorException on server side errors
      * @throws NoSuchTenantException if the tenant or group does not exist
      */
-    @POST @Path("/")
+    @POST
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.ADMINISTRATOR)
     public GroupDTO create(GroupDTO groupDTO) {
@@ -106,7 +106,7 @@ public class GroupResource extends BaseSubResource {
             // Assume that the details we supplied were accepted...
             return new GroupDTO(groupId.getName(), groupId.getDomain(), groupDTO.getDetails(), null, null);
         } catch (NoSuchTenantException e) {
-            log.debug("Failed to create group '{}' on tenant '{}'", groupDTO.getName(), tenant);
+            log.debug("Failed to create group '{}' on tenant '{}'", groupDTO.getName(), tenant, e);
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (InvalidArgumentException | InvalidPrincipalException e) {
             log.warn("Failed to create group '{}' on tenant '{}' due to a client side error", groupDTO.getName(), tenant, e);

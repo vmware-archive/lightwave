@@ -16,19 +16,19 @@ package com.vmware.identity.openidconnect.server;
 
 import org.apache.commons.lang3.Validate;
 
-import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.AuthenticationRequest;
+import com.vmware.identity.openidconnect.common.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.SessionID;
 
 /**
  * @author Yehia Zayour
  */
 public class AuthorizationCodeManager {
-    private static final long LIFE_TIME_MS = 1000L * 60 * 2; // 2 minutes
-    private final SlidingWindowMap<AuthorizationCode, AuthorizationCodeEntry> map;
+    private static final long LIFETIME_MS = 10 * 60 * 1000L; // 10 minutes (allow for clock skew)
+    private final SlidingWindowMap<AuthorizationCode, Entry> map;
 
     public AuthorizationCodeManager() {
-        this.map = new SlidingWindowMap<AuthorizationCode, AuthorizationCodeEntry>(LIFE_TIME_MS);
+        this.map = new SlidingWindowMap<AuthorizationCode, Entry>(LIFETIME_MS);
     }
 
     public synchronized void add(
@@ -41,11 +41,38 @@ public class AuthorizationCodeManager {
         Validate.notNull(sessionId, "sessionId");
         Validate.notNull(authnRequest, "authnRequest");
 
-        this.map.add(authzCode, new AuthorizationCodeEntry(personUser, sessionId, authnRequest));
+        this.map.add(authzCode, new Entry(personUser, sessionId, authnRequest));
     }
 
-    public synchronized AuthorizationCodeEntry remove(AuthorizationCode authzCode) {
+    public synchronized Entry remove(AuthorizationCode authzCode) {
         Validate.notNull(authzCode, "authzCode");
         return this.map.remove(authzCode);
+    }
+
+    public static class Entry {
+        private final PersonUser personUser;
+        private final SessionID sessionId;
+        private final AuthenticationRequest authnRequest;
+
+        private Entry(
+                PersonUser personUser,
+                SessionID sessionId,
+                AuthenticationRequest authnRequest) {
+            this.personUser = personUser;
+            this.sessionId = sessionId;
+            this.authnRequest = authnRequest;
+        }
+
+        public PersonUser getPersonUser() {
+            return this.personUser;
+        }
+
+        public SessionID getSessionId() {
+            return this.sessionId;
+        }
+
+        public AuthenticationRequest getAuthenticationRequest() {
+            return this.authnRequest;
+        }
     }
 }

@@ -14,6 +14,7 @@
 
 package com.vmware.identity.openidconnect.sample;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -21,7 +22,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
-import java.net.URI;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -38,10 +38,13 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+
+import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
@@ -51,19 +54,23 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
-import com.vmware.identity.openidconnect.client.AdminServerHelper;
-import com.vmware.identity.openidconnect.client.ClientAuthenticationMethod;
 import com.vmware.identity.openidconnect.client.ClientConfig;
-import com.vmware.identity.openidconnect.client.ClientInformation;
-import com.vmware.identity.openidconnect.client.ClientRegistrationHelper;
 import com.vmware.identity.openidconnect.client.ConnectionConfig;
 import com.vmware.identity.openidconnect.client.MetadataHelper;
 import com.vmware.identity.openidconnect.client.OIDCClient;
 import com.vmware.identity.openidconnect.client.OIDCTokens;
-import com.vmware.identity.openidconnect.client.PasswordCredentialsGrant;
-import com.vmware.identity.openidconnect.client.ProviderMetadata;
 import com.vmware.identity.openidconnect.client.TokenSpec;
-import com.vmware.identity.openidconnect.client.TokenType;
+import com.vmware.identity.openidconnect.common.AccessToken;
+import com.vmware.identity.openidconnect.common.Base64Utils;
+import com.vmware.identity.openidconnect.common.ClientAuthenticationMethod;
+import com.vmware.identity.openidconnect.common.PasswordGrant;
+import com.vmware.identity.openidconnect.common.ProviderMetadata;
+import com.vmware.identity.rest.core.data.CertificateDTO;
+import com.vmware.identity.rest.idm.client.IdmClient;
+import com.vmware.identity.rest.idm.data.OIDCClientDTO;
+import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
+import com.vmware.identity.rest.idm.data.SolutionUserDTO;
+import com.vmware.identity.rest.idm.data.attributes.MemberType;
 
 /**
  * @author Jun Sun
@@ -89,11 +96,11 @@ class RelyingPartyInstaller {
         String tenant = this.relyingPartyConfig.getTenant();
 
         // retrieve OIDC meta data
-        MetadataHelper metadataHelper = new MetadataHelper.Builder(domainControllerFQDN)
-        .domainControllerPort(domainControllerPort)
-        .tenant(tenant)
-        .keyStore(this.keyStore)
-        .build();
+        MetadataHelper metadataHelper = new MetadataHelper.Builder(domainControllerFQDN).
+                domainControllerPort(domainControllerPort).
+                tenant(tenant).
+                keyStore(this.keyStore).
+                build();
 
         ProviderMetadata providerMetadata = metadataHelper.getProviderMetadata();
         RSAPublicKey providerPublicKey = metadataHelper.getProviderRSAPublicKey(providerMetadata);
@@ -102,10 +109,10 @@ class RelyingPartyInstaller {
         ConnectionConfig connectionConfig = new ConnectionConfig(providerMetadata, providerPublicKey, this.keyStore);
         ClientConfig clientConfig = new ClientConfig(connectionConfig, null, null);
         OIDCClient nonRegisteredClient = new OIDCClient(clientConfig);
-        PasswordCredentialsGrant passwordGrant = new PasswordCredentialsGrant(
+        PasswordGrant passwordGrant = new PasswordGrant(
                 this.relyingPartyConfig.getAdminUsername(),
                 this.relyingPartyConfig.getAdminPassword());
-        TokenSpec tokenSpec = new TokenSpec.Builder(TokenType.BEARER).resouceServers(Arrays.asList("rs_admin_server")).build();
+        TokenSpec tokenSpec = new TokenSpec.Builder().resourceServers(Arrays.asList("rs_admin_server")).build();
         OIDCTokens oidcTokens = nonRegisteredClient.acquireTokens(passwordGrant, tokenSpec);
 
         // create a private/public key pair, generate a certificate and assign it to a solution user name.
@@ -116,57 +123,43 @@ class RelyingPartyInstaller {
         String solutionUserName = this.relyingPartyConfig.getClientPrefix() + UUID.randomUUID().toString();
         X509Certificate clientCertificate = generateCertificate(keypair, solutionUserName);
 
-        // all REST calls should be replaced with REST Admin client library later.
-        AdminServerHelper adminServerHelper = new AdminServerHelper.Builder(domainControllerFQDN)
-        .domainControllerPort(domainControllerPort)
-        .tenant(tenant)
-        .keyStore(this.keyStore)
+        // create REST idm client
+        IdmClient idmClient = createIdmClient(
+                oidcTokens.getAccessToken(),
+                domainControllerFQDN,
+                domainControllerPort);
+
+        // create a solution user
+        CertificateDTO certificateDTO = new CertificateDTO.Builder()
+        .withEncoded(convertToBase64PEMString(clientCertificate))
         .build();
+        SolutionUserDTO solutionUserDTO = new SolutionUserDTO.Builder().
+                withName(solutionUserName).
+                withDomain(tenant).
+                withCertificate(certificateDTO).
+                build();
+        idmClient.solutionUser().create(tenant, solutionUserDTO);
 
-        // call REST admin server to create a solution user
-        adminServerHelper.createSolutionUser(
-                oidcTokens.getAccessToken(),
-                TokenType.BEARER,
-                solutionUserName,
-                clientCertificate);
+        // add the solution user to ActAs group
+        List<String> members = Arrays.asList(solutionUserName + "@" + tenant);
+        idmClient.group().addMembers(tenant, "ActAsUsers", tenant, members, MemberType.USER);
 
-        // call REST admin server to add the solution user to ActAs group
-        String solutionUserUPN = solutionUserName + "@" + tenant;
-        adminServerHelper.addSolutionUserToActAsUsersGroup(
-                oidcTokens.getAccessToken(),
-                TokenType.BEARER,
-                solutionUserUPN);
-
-        // call REST admin server to register an OIDC client
-        ClientRegistrationHelper clientRegistrationHelper = new ClientRegistrationHelper.Builder(domainControllerFQDN)
-        .domainControllerPort(domainControllerPort)
-        .tenant(tenant)
-        .keyStore(this.keyStore)
-        .build();
-
-        Set<URI> redirectURIs = new HashSet<URI>();
-        for (String uri : redirectEndpointUrls) {
-            redirectURIs.add(new URI(uri));
-        }
-        Set<URI> postLogoutRedirectURIs = new HashSet<URI>();
-        for (String uri : postLogoutRedirectUrls) {
-            postLogoutRedirectURIs.add(new URI(uri));
-        }
-        ClientInformation clientInformation = clientRegistrationHelper.registerClient(
-                oidcTokens.getAccessToken(),
-                TokenType.BEARER,
-                redirectURIs,
-                new URI(logoutUrl),
-                postLogoutRedirectURIs,
-                ClientAuthenticationMethod.PRIVATE_KEY_JWT,
-                clientCertificate.getSubjectDN().getName());
+        // register a OIDC client
+        OIDCClientMetadataDTO oidcClientMetadataDTO = new OIDCClientMetadataDTO.Builder().
+                withRedirectUris(Arrays.asList(redirectEndpointUrls)).
+                withPostLogoutRedirectUris(Arrays.asList(postLogoutRedirectUrls)).
+                withLogoutUri(logoutUrl).
+                withTokenEndpointAuthMethod(ClientAuthenticationMethod.PRIVATE_KEY_JWT.getValue()).
+                withCertSubjectDN(clientCertificate.getSubjectDN().getName()).
+                withAuthnRequestClientAssertionLifetimeMS(2 * 60 * 1000L).
+                build();
+        OIDCClientDTO oidcClientDTO = idmClient.oidcClient().register(tenant, oidcClientMetadataDTO);
 
         // persist data involved installation in files so they can be picked up in case server reboots
-        writeObject(this.relyingPartyConfig.getOpMetadataFile(), providerMetadata);
         savePublicKey(this.relyingPartyConfig.getOpPublickeyFile(), providerPublicKey);
         savePrivateKey(this.relyingPartyConfig.getRpPrivatekeyFile(), keypair.getPrivate());
         writeObject(this.relyingPartyConfig.getRpCertificateFile(), clientCertificate);
-        writeObject(this.relyingPartyConfig.getRpInfoFile(), clientInformation);
+        writeObject(this.relyingPartyConfig.getRpInfoFile(), oidcClientDTO.getClientId());
         writeObject(this.relyingPartyConfig.getRpListeningPortFile(), this.relyingPartyConfig.getRpListeningPort());
     }
 
@@ -264,5 +257,32 @@ class RelyingPartyInstaller {
         X509CertificateHolder certHolder = v3CertGen.build(sigGen);
         X509Certificate x509Certificate = new JcaX509CertificateConverter().getCertificate(certHolder);
         return x509Certificate;
+    }
+
+    private IdmClient createIdmClient(
+            AccessToken accessToken,
+            String domainControllerFQDN,
+            int domainControllerPort)
+            throws Exception {
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init(this.keyStore);
+        SSLContext sslContext = SSLContext.getInstance("SSL");
+        sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+        IdmClient idmClient = new IdmClient(domainControllerFQDN, domainControllerPort, new DefaultHostnameVerifier(), sslContext);
+        com.vmware.identity.rest.core.client.AccessToken restAccessToken =
+                new com.vmware.identity.rest.core.client.AccessToken(accessToken.serialize(),
+                        com.vmware.identity.rest.core.client.AccessToken.Type.JWT);
+        idmClient.setToken(restAccessToken);
+        return idmClient;
+    }
+
+    private String convertToBase64PEMString(X509Certificate x509Certificate) throws Exception {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        byteArrayOutputStream.write("-----BEGIN CERTIFICATE-----".getBytes());
+        byteArrayOutputStream.write("\n".getBytes());
+        byteArrayOutputStream.write(Base64Utils.encodeToBytes(x509Certificate.getEncoded()));
+        byteArrayOutputStream.write("-----END CERTIFICATE-----".getBytes());
+        byteArrayOutputStream.write("\n".getBytes());
+        return byteArrayOutputStream.toString();
     }
 }
