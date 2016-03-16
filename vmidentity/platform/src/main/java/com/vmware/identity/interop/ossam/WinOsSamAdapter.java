@@ -13,6 +13,9 @@
 
 package com.vmware.identity.interop.ossam;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import com.sun.jna.platform.win32.*;
 import com.sun.jna.win32.W32APIOptions;
 import com.sun.jna.Native;
@@ -25,6 +28,8 @@ import java.util.*;
 
 class WinOsSamAdapter implements IOsSamAdapter
 {
+    private static final Log logger = LogFactory
+         .getLog(WinOsSamAdapter.class);
     private static final WinOsSamAdapter _instance = new WinOsSamAdapter();
     public static WinOsSamAdapter getInstance() { return _instance; }
 
@@ -298,24 +303,37 @@ class WinOsSamAdapter implements IOsSamAdapter
 
     private static void CheckError(int errorCode)
     {
-        if( errorCode != OsSamConstants.NERR_Success )
+        if ( errorCode != OsSamConstants.NERR_Success )
         {
-            Win32Exception ex = (new Win32Exception(errorCode));
-            if( errorCode == OsSamConstants.NERR_GroupNotFound )
+            // TODO: log
+            String errorMessage = null;
+            try
             {
-                throw new OsSamGroupNotFoundException(ex.getMessage());
+                Win32Exception win32Ex = new Win32Exception(errorCode);
+                errorMessage = win32Ex.getMessage();
             }
-            else if( errorCode == OsSamConstants.NERR_UserNotFound )
+            catch (Exception e)
             {
-                throw new OsSamUserNotFoundException(ex.getMessage());
+                logger.error("Failed to convert error code: " + errorCode
+                        + " to Win32Exception. Continuing CheckError.", e);
+                errorMessage = e.getMessage();
             }
-            if(errorCode == OsSamConstants.ERROR_NO_SUCH_ALIAS)
+
+            if ( errorCode == OsSamConstants.NERR_GroupNotFound )
             {
-                throw new OsSamGroupNotFoundException(ex.getMessage());
+                throw new OsSamGroupNotFoundException(errorMessage);
+            }
+            else if ( errorCode == OsSamConstants.NERR_UserNotFound )
+            {
+                throw new OsSamUserNotFoundException(errorMessage);
+            }
+            else if ( errorCode == OsSamConstants.ERROR_NO_SUCH_ALIAS )
+            {
+                throw new OsSamGroupNotFoundException(errorMessage);
             }
             else
             {
-                throw new OsSamException( errorCode, ex.getMessage() );
+                throw new OsSamException(errorCode, errorMessage);
             }
         }
     }

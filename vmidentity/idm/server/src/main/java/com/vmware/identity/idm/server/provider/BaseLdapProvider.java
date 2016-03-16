@@ -31,15 +31,18 @@ package com.vmware.identity.idm.server.provider;
 import java.security.InvalidParameterException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
+import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.idm.AuthenticationType;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.IIdentityStoreDataEx;
 import com.vmware.identity.idm.IdentityStoreAttributeMapping;
 import com.vmware.identity.idm.InvalidPrincipalException;
+import com.vmware.identity.idm.InvalidProviderException;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.ValidateUtil;
 import com.vmware.identity.idm.server.LdapCertificateValidationSettings;
@@ -56,6 +59,7 @@ import com.vmware.identity.interop.ldap.LdapFilterString;
 import com.vmware.identity.interop.ldap.LdapScope;
 import com.vmware.identity.interop.ldap.LdapValue;
 import com.vmware.identity.performanceSupport.IIdmAuthStat.ActivityKind;
+import com.vmware.identity.performanceSupport.IIdmAuthStat.EventLevel;
 import com.vmware.identity.performanceSupport.LdapQueryStat;
 
 public abstract class BaseLdapProvider implements IIdentityProvider
@@ -74,6 +78,34 @@ public abstract class BaseLdapProvider implements IIdentityProvider
     public String getDomain()
     {
         return this._storeData.getName();
+    }
+
+    public void probeConnectionSettings() throws Exception
+    {
+        for (String connectionStr : _storeDataEx.getConnectionStrings()) {
+            ValidateUtil.validateNotEmpty(connectionStr, "connectionString");
+
+            try (ILdapConnectionEx connection = getConnection(
+                    Collections.unmodifiableList(Arrays.asList(connectionStr)), false)) {
+                checkDn(connection);
+            }
+        }
+    }
+
+    protected void checkDn(ILdapConnectionEx connection) throws InvalidProviderException
+    {
+      String userBaseDn = _storeDataEx.getUserBaseDn();
+      String groupBaseDn = _storeDataEx.getGroupBaseDn();
+      if (!ServerUtils.isValidDN(connection, userBaseDn))
+      {
+          String msg = String.format("DN is invalid: [%s]", userBaseDn);
+          throw new InvalidProviderException(msg, "userBaseDN", userBaseDn);
+      }
+      if (!ServerUtils.isValidDN(connection, groupBaseDn))
+      {
+          String msg = String.format("DN is invalid: [%s]", groupBaseDn);
+          throw new InvalidProviderException(msg, "groupBaseDN", groupBaseDn);
+      }
     }
 
     protected BaseLdapProvider(IIdentityStoreData storeData)
@@ -600,6 +632,73 @@ public abstract class BaseLdapProvider implements IIdentityProvider
         return new AccountLdapEntryInfo(userLdapEntry, message_upn, message_acct);
     }
 
+ /**
+ *
+ * @param connection
+ * @param filter_by_attr    filter with attribute that suppose to identity the user.
+ * @param baseDn
+ * @param attributes
+ * @param attributesOnly
+ * @param attrValue the attribute value associate to the filter
+ * @param authStatRecorder  can be null
+ * @return  AccountLdapEntryInfo if found
+ * @throws InvalidPrincipalException  if not found or multiple entry were found.
+ */
+protected AccountLdapEntryInfo findAccountLdapEntry(ILdapConnectionEx connection, String filter_by_attr,
+        String baseDn, String[] attributes, boolean attributesOnly, String attrValue,
+        IIdmAuthStatRecorder authStatRecorder) throws InvalidPrincipalException {
+    ILdapMessage message_acct = null;
+    ILdapMessage message_upn = null;
+    ILdapEntry userLdapEntry = null;
+
+    try
+    {
+        long startTime = System.currentTimeMillis();
+
+        message_upn = connection.search(
+                baseDn,
+                LdapScope.SCOPE_SUBTREE,
+                filter_by_attr,
+                attributes,
+                attributesOnly);
+
+        if (authStatRecorder != null) {
+            authStatRecorder.add(new LdapQueryStat(filter_by_attr, baseDn,
+                    getConnectionString(connection), System.currentTimeMillis() - startTime, 1));
+        }
+
+        try
+        {
+            ILdapEntry[] entries = message_upn.getEntries();
+            if (entries == null || entries.length == 0 )
+            {
+                throw new InvalidPrincipalException(
+                        String.format("Principal with attribute value %s found"), attrValue);
+            } else if (entries.length > 1) {
+                throw new InvalidPrincipalException(
+                        String.format("Principal with attribute value %s match multiple entries."), attrValue);
+            } else {
+                userLdapEntry = entries[0];
+            }
+        }
+        catch(InvalidPrincipalException ex)
+        {
+
+            if (authStatRecorder != null) {
+                authStatRecorder.add(new LdapQueryStat(filter_by_attr, baseDn,
+                        getConnectionString(connection), System.currentTimeMillis() - startTime, 1));
+            }
+        }
+    }
+    catch(Exception e)
+    {
+        throw new InvalidPrincipalException(
+                String.format("Failed to find Principal id : %s",attrValue), attrValue);
+    }
+
+    return new AccountLdapEntryInfo(userLdapEntry, message_upn, message_acct);
+}
+
     protected class MemberDnsResult
     {
         public ArrayList<String> memberDns;
@@ -724,18 +823,27 @@ public abstract class BaseLdapProvider implements IIdentityProvider
     }
 
     protected IIdmAuthStatRecorder createIdmAuthStatRecorderInstance(
-            String tenantName, ActivityKind opType, PrincipalId id) {
-        if (PerformanceMonitorFactory.getPerformanceMonitor().getCacheSize() > 0) {
+            String tenantName, ActivityKind opType, EventLevel eventLevel, PrincipalId id) {
+        return createIdmAuthStatRecorderInstance(
+                tenantName, opType, eventLevel, id == null? null : id.getUPN());
+    }
+
+    protected IIdmAuthStatRecorder createIdmAuthStatRecorderInstance(
+            String tenantName, ActivityKind opType, EventLevel eventLevel, String serIdentity) {
+        if (PerformanceMonitorFactory.getPerformanceMonitor().getCache(tenantName).isEnabled()) {
             return new IdmAuthStatRecorder(
                     tenantName,
-                    this.getClass().getName(),
+                    this.getClass().getSimpleName(),
                     this.getName(),
                     this._storeDataEx.getFlags(),
                     opType,
-                    id != null ? this.GetUPN(id) : "",
-                    PerformanceMonitorFactory.getPerformanceMonitor().summarizeLdapQueries());
+                    eventLevel,
+                    serIdentity != null ? serIdentity : "",
+                    PerformanceMonitorFactory.getPerformanceMonitor().summarizeLdapQueries(),
+                    DiagnosticsContextFactory.getCurrentDiagnosticsContext().getCorrelationId());
         } else {
             return NoopIdmAuthStatRecorder.getInstance();
         }
     }
+
 }

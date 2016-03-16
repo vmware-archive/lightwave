@@ -76,9 +76,9 @@ public interface IIdentityProvider
 
     Set<PersonUser> findLockedUsers(String searchString, int limit) throws Exception;
 
-    Set<Group> findDirectParentGroups(PrincipalId principalId) throws Exception;
+    PrincipalGroupLookupInfo findDirectParentGroups(PrincipalId principalId) throws Exception;
 
-    Set<Group> findNestedParentGroups(PrincipalId userId) throws Exception;
+    PrincipalGroupLookupInfo findNestedParentGroups(PrincipalId userId) throws Exception;
 
     Group findGroup(PrincipalId groupId) throws Exception;
 
@@ -99,5 +99,12 @@ public interface IIdentityProvider
     boolean IsActive(PrincipalId id) throws Exception;
 
     void checkUserAccountFlags(PrincipalId principalId) throws IDMException;
+
+    PrincipalId findActiveUser(String attributeName, String attributeValue) throws Exception;
+
+    /**
+     * @return attribute name mapped to UserAttributePrincipalName
+     */
+    String getStoreUPNAttributeName();
 }
 

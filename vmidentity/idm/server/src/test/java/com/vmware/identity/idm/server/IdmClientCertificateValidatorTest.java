@@ -45,7 +45,7 @@ public class IdmClientCertificateValidatorTest {
         X509Certificate[] certs = testUtil.getDodValidCert1();
         ClientCertPolicy certPolicy = new ClientCertPolicy();
         certPolicy.setTrustedCAs(certs);
-        IdmClientCertificateValidator validator = new IdmClientCertificateValidator(certPolicy);
+        IdmClientCertificateValidator validator = new IdmClientCertificateValidator(certPolicy,ClientCertTestUtils.tenant1);
 
         String upn = validator.extractUPN(certs[0]);
         assertTrue(upn.equals(testUtil.dodValidCert1UPN));

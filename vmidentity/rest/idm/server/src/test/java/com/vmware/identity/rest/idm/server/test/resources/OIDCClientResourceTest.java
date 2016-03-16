@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.SecurityContext;
 
 import org.easymock.EasyMock;
@@ -67,20 +67,20 @@ public class OIDCClientResourceTest {
     private OIDCClientResource oidcClientResource;
     private IMocksControl mControl;
     private SecurityContext mockSecurityContext;
-    private HttpServletRequest mockHTTPServletRequest;
+    private ContainerRequestContext mockRequest;
     private CasIdmClient mockIDMClient;
 
     @Before
     public void setUp() {
         this.mControl = EasyMock.createControl();
-        this.mockHTTPServletRequest = EasyMock.createMock(HttpServletRequest.class);
-        expect(this.mockHTTPServletRequest.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        expect(this.mockHTTPServletRequest.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
-        replay(this.mockHTTPServletRequest);
+        this.mockRequest = EasyMock.createMock(ContainerRequestContext.class);
+        expect(this.mockRequest.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        expect(this.mockRequest.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        replay(this.mockRequest);
 
         this.mockSecurityContext = this.mControl.createMock(SecurityContext.class);
         this.mockIDMClient = this.mControl.createMock(CasIdmClient.class);
-        this.oidcClientResource = new OIDCClientResource(TENANT, this.mockHTTPServletRequest, this.mockSecurityContext);
+        this.oidcClientResource = new OIDCClientResource(TENANT, this.mockRequest, this.mockSecurityContext);
         this.oidcClientResource.setIDMClient(this.mockIDMClient);
 
     }

@@ -16,7 +16,6 @@
 package com.vmware.identity.idm.server.clientcert;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
@@ -36,15 +35,14 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.PKIXParameters;
+import java.security.cert.X509CRL;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -54,7 +52,6 @@ import org.apache.commons.lang.Validate;
 import sun.security.x509.CRLDistributionPointsExtension;
 import sun.security.x509.DistributionPoint;
 import sun.security.x509.GeneralName;
-import sun.security.x509.X509CRLImpl;
 import sun.security.x509.X509CertImpl;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
@@ -62,6 +59,7 @@ import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.CertRevocationStatusUnknownException;
 import com.vmware.identity.idm.CertificatePathBuildingException;
 import com.vmware.identity.idm.CertificateRevocationCheckException;
+import com.vmware.identity.idm.CrlDownloadException;
 import com.vmware.identity.idm.IdmCertificateRevokedException;
 import com.vmware.identity.idm.ClientCertPolicy;
 import com.vmware.identity.idm.InvalidArgumentException;
@@ -78,9 +76,7 @@ public class IdmCertificatePathValidator {
     private static final String PREFIX_URI_NAME = "URIName: ";
     private final KeyStore trustStore;
     private CertificateFactory certFactory;
-
-    // CRLs location map of <CRL_URI, X509CRLImpl>
-    private final Map<String, X509CRLImpl> crlCheckMap = new HashMap<String, X509CRLImpl>();
+    private String tenantName;
 
     // collection containing certificates for certificate path building and CRLimpl for CRL checking
     // ivate final Collection<Object> crlCollection = new ArrayList<Object>();
@@ -90,14 +86,17 @@ public class IdmCertificatePathValidator {
     /**
      * @param trustStore
      * @param certPolicy
+     * @param tenantName
      * @throws CertificateRevocationCheckException
      */
-    public IdmCertificatePathValidator(KeyStore trustStore, ClientCertPolicy certPolicy) throws CertificateRevocationCheckException{
+    public IdmCertificatePathValidator(KeyStore trustStore, ClientCertPolicy certPolicy, String tenantName) throws CertificateRevocationCheckException{
         this.trustStore = trustStore;
         try {
             Validate.notNull(certPolicy, "Cert Policy");
             Validate.notNull(trustStore, "Trust Store");
+            Validate.notEmpty(tenantName, "tenantName");
 
+            this.tenantName = tenantName;
             this.certPolicy = certPolicy;
             this.certFactory = CertificateFactory.getInstance("X.509");
         } catch (CertificateException e) {
@@ -117,34 +116,39 @@ public class IdmCertificatePathValidator {
      *            Client cert chain. It could be a leaf certificate, a partial or a
      *            full chain including root CA.
      * Current implementation only relies on leaf certificate and use it to build certificate path then validate it.
-     *
-     * @throws CertificateRevocationCheckException
-     * @throws IdmCertificateRevokedException
+     * @param authStatExt
+     *            AuthStat extensions for profiling the detailed steps.
+     * @throws CertificateRevocationCheckException unable to validate revocation status.
+     * @throws IdmCertificateRevokedException  certificate revoked
      * @throws InvalidArgumentException
+     * @throws CertificatePathBuildingException  cert path building error of any reasons: such as expired cert, etc.
      */
-    public void validate(X509Certificate cert)
-            throws CertificateRevocationCheckException,
-            IdmCertificateRevokedException, InvalidArgumentException {
+    public void validate(X509Certificate cert, Map<String, String> authStatExt)
+            throws CertificateRevocationCheckException, IdmCertificateRevokedException, InvalidArgumentException, CertificatePathBuildingException {
 
         if (null == cert) {
-            throw new CertificateRevocationCheckException("No certs to validate.");
+            throw new InvalidArgumentException("No certs to validate.");
         }
 
-        logger.debug("Certificate policy: " + this.certPolicy.toString());
-        logger.debug("Checking revocation for certificate: "
+        if (logger.isDebugEnabled()) {
+            logger.debug("Certificate policy: " + this.certPolicy.toString());
+            logger.debug("Checking revocation for certificate: "
                  + cert.getSubjectDN());
+        }
 
         // Build the certpath
-        CertPath certPath;
-        try {
-            certPath = buildCertPath(cert);
-        } catch (CertificatePathBuildingException e) {
-            throw new CertificateRevocationCheckException("CertPath building failed. "
-                            + e.getMessage(), e);
-        }
+        long startTimeMs = System.currentTimeMillis();
+
+        CertPath certPath = buildCertPath(cert);
+
+        authStatExt.put("buildCertPath", String.format("%d Ms", System.currentTimeMillis() - startTimeMs));
+        startTimeMs = System.currentTimeMillis();
 
         // Validate certpath
         validateCertPath(certPath);
+        authStatExt.put("validateCertPath", String.format("%d Ms", System.currentTimeMillis() - startTimeMs));
+        logger.info("Successfully validated client certificate : "
+                 + cert.getSubjectDN());
 
     }
 
@@ -303,7 +307,7 @@ public class IdmCertificatePathValidator {
                     throws CertificateRevocationCheckException, IdmCertificateRevokedException {
 
         Collection<Object> crlCollection = new ArrayList<Object>();
-        setupValidateOptions(crlCollection);
+        setupValidateOptions(crlCollection, certPath);
         PKIXParameters params = createPKIXParameters(crlCollection);
 
         CertPathValidator certPathValidator;
@@ -355,9 +359,10 @@ public class IdmCertificatePathValidator {
      *  The ocsp controls currently are not thread-safe in the sense that multi-tenant usage of the feature could override
      *  each other. Note: DOD does not ask for multitenancy. PR 1417152.
      * @param certCollection   extra crl to be used in validating the status of the certificate.
+     * @param CertPath  target certificate path for validation.
      * @throws CertificateRevocationCheckException
      */
-    private void setupValidateOptions(Collection<Object> crlCollection)
+    private void setupValidateOptions(Collection<Object> crlCollection, CertPath certPath)
                     throws CertificateRevocationCheckException {
         /**
          * Extract in-cert CRLs and adding them to working list of CRLimpl Setup
@@ -384,13 +389,40 @@ public class IdmCertificatePathValidator {
                 enableCRLChecking = true;
             }
 
-            if (enableCRLChecking == true && this.certPolicy.getCRLUrl() != null) {
-                addCRLToWorkingList(this.certPolicy.getCRLUrl().toString(), crlCollection);
+            //get custom CRL
+            URL customCrlUri = this.certPolicy.getCRLUrl();
+            if (enableCRLChecking == true && customCrlUri != null) {
+                try {
+                    addCRLToWorkingList(customCrlUri.toString(), crlCollection);
+                } catch (CrlDownloadException e) {
+                    throw new CertificateRevocationCheckException("Failed to download CRL from custom CRL URI: "+customCrlUri.toString(), e);
+                }
             }
 
-            // setup crl checking with crlDP
-            setThreadLocalSystemProperty("com.sun.security.enableCRLDP",
-                            (enableCRLChecking && this.certPolicy.useCertCRL()) ? "true" : "false");
+            //get CRLs from certpath CRLDP, use cache if available. Turn off sun security CRLDP checking since we extract them as override
+            if (enableCRLChecking && this.certPolicy.useCertCRL()) {
+               List<? extends java.security.cert.Certificate> certList = certPath.getCertificates();
+
+               if (certList == null) {
+                   return;
+               }
+               Iterator<? extends java.security.cert.Certificate> it = certList.iterator();
+
+               while (it.hasNext()) {
+                   try {
+                       addCertCRLsToWorkingList((X509Certificate) it.next(), crlCollection);
+                   }
+                   catch (CertificateRevocationCheckException e) {
+                       //Not able to get any of CRLDP from this certificate. Throw if no custom CRL and OCSP is not enabled
+                       if (customCrlUri == null && this.certPolicy.useOCSP() == false) {
+                           throw new CertificateRevocationCheckException("CRL download failure. ", e);
+                       }
+                   }
+               }
+            }
+
+            setThreadLocalSystemProperty("com.sun.security.enableCRLDP", "false");
+
         } else {
             setThreadLocalSystemProperty("com.sun.security.enableCRLDP", "false");
         }
@@ -467,17 +499,26 @@ public class IdmCertificatePathValidator {
 
     /**
      * Extract certificate CRLs and adding them to the working map of CRLImpl for cert path
-     * validation.
+     * validation. Use cached copy if available.
      *
      * @param leafCert
-     * @param certFactory2
-     * @throws CertificateRevocationCheckException
+     * @param crlCollection crl collection that to contain any CRL found from the certificate or cached copy
+     * @return void if at least one CRLDP URI result in accessible CRL.
+     * @throws CertificateRevocationCheckException This exception is throw if one of the following occurs:
+     *              a) Failure in retrieve all f non-LDAP CRLDP (no cached copy and unable to download in realtime).
+     *              b) CRLDistributionPointsExtension.get fails. currently this happens only if we had passed a invalid
+     *          access point constant. We propagate this error.
      */
     // @SuppressWarnings("unchecked")
-    private void addCertCRLsToWorkingList(X509Certificate leafCert,
-                    CertificateFactory certFactory2, Collection<Object> crlCollection)
+    private void addCertCRLsToWorkingList(X509Certificate leafCert, Collection<Object> crlCollection)
                     throws CertificateRevocationCheckException {
 
+        if (logger.isDebugEnabled()) {
+            logger.debug("IdmCertificatePathValidator.addCertCRLsToWorkingList(): Adding CRLs from CRLDP");
+        }
+
+        String error = null;
+        boolean atLeastOneCrlAdded = false;
         X509CertImpl certImpl = (X509CertImpl) leafCert;
         CRLDistributionPointsExtension crlDistributionPointsExt = certImpl
               .getCRLDistributionPointsExtension();
@@ -491,88 +532,83 @@ public class IdmCertificatePathValidator {
                             .get(CRLDistributionPointsExtension.POINTS)) {
                 for (GeneralName crlGeneralName : distribPoint.getFullName().names()) {
                     String crlGeneralNameString = crlGeneralName.toString();
-                    try {
-                       if (crlGeneralNameString.startsWith(PREFIX_URI_NAME)) {
-                            String crlURLString = crlGeneralNameString
-                                  .substring(PREFIX_URI_NAME.length());
+                   if (crlGeneralNameString.startsWith(PREFIX_URI_NAME)) {
+                        String crlURLString = crlGeneralNameString
+                              .substring(PREFIX_URI_NAME.length());
+                        try {
                             addCRLToWorkingList(crlURLString, crlCollection);
-                       }
-                     } catch (CertificateRevocationCheckException e) {
-                         logger.warn("Problem importing CRL: "
-                                     + e.getMessage());
-                         if (logger.isDebugEnabled()) {
-                             logger.debug("Problem importing CRL: "
-                                   + e.getMessage(), e);
-                         }
-                         throw e;
-                    }
+                            atLeastOneCrlAdded = true;
+                        } catch (CrlDownloadException e) {
+                            if (logger.isDebugEnabled()) {
+                                logger.debug("No cached copy and failed to download CRL"
+                                        + e.getMessage());
+                            }
+                            //continue fetching remaining crl in case of error
+                            if (error == null) {
+                                error = String.format("Unable to obtain CRL from certificate at following distribution points: %s", crlURLString);
+                            } else {
+                                error += String.format(error+", %s", crlURLString);
+                            }
+
+                        }
+                   }
+
                 }
             }
-       } catch (CertificateRevocationCheckException ex) {
-           throw ex;
         } catch (IOException e) {
-            logger.error("Problem in accessing CRL: " + e.getMessage());
-            throw new CertificateRevocationCheckException(
-                    "Error reading CRL for smart-card or client certificate: "
-                            + "(" + e.getMessage() + ")", e);
-       }
+            logger.error("IOException in accessing CRLDP"
+                        + e.getMessage());
+            throw new CertificateRevocationCheckException("IOException in calling CRLDistributionPointsExtension.get()");
+        }
 
+        if (error != null) {
+            logger.warn(error);
+            if (!atLeastOneCrlAdded) {
+                throw new CertificateRevocationCheckException(error);
+            }
+        }
     }
 
     /**
-     * Adding a CRL to the working list to be used for certificate path validation
+     *
+     * Adding a CRL to the working list to be used for certificate path validation.
+     *
+     * Use the cached copy if available. Otherwise, download and add to CRL cache. LDAP URI is not supported.
+     * Note: TenantCrlCache refresh cached CRL periodically. Authentication thread does not download CRL if there is a cached copy.
+     *
      * @param crlURLString
-     * @param crlCollection
-     * @throws CertificateRevocationCheckException
-     * @return  if succeeded
+     * @param crlCollection             Crl collection passed in to contains accumulative result.
+     * @throws CrlDownloadException      if no crl was added due to downloading failure
+     * @return void
      */
     private void addCRLToWorkingList(String crlURLString, Collection<Object> crlCollection)
-                    throws CertificateRevocationCheckException {
+                    throws CrlDownloadException {
 
         if (logger.isDebugEnabled()) {
              logger.debug("Adding CRL: " + crlURLString);
         }
 
-        X509CRLImpl crlImpl = null;
+        X509CRL crlImpl = null;
 
-        crlImpl = crlCheckMap.get(crlURLString);
+        IdmCrlCache crlCache = TenantCrlCache.get().get(this.tenantName);
 
-        /*
-         * If CRL has been updated since the last check, clear it for refresh
-         */
-        if (crlImpl != null) {
-            Date update = crlImpl.getNextUpdate();
-            if (update.before(new Date())) {
-                crlCheckMap.remove(crlURLString);
-                crlImpl = null;
+        //add crl cache for the tenant if it does not exist.
+        if (crlCache == null) {
+            crlCache = new IdmCrlCache();
+            TenantCrlCache.get().put(this.tenantName, crlCache);
+        }
+
+        crlImpl = crlCache.get(crlURLString);
+
+        //If the crl is not cached, we download one and then add to the cache.
+        if (crlImpl == null) {
+
+            crlImpl = IdmCrlCache.downloadCrl(crlURLString);
+            if (null != crlImpl) {
+                crlCache.put(crlURLString, crlImpl);
             }
         }
 
-        try {
-            if (crlImpl == null) {
-                if (crlURLString.startsWith("ldap:///")) {
-                    throw new CertificateRevocationCheckException(
-                            "LDAP CRL stores is not supported");
-                } else {
-
-                    InputStream crlInputStream = new URL(crlURLString)
-                            .openConnection().getInputStream();
-                    try {
-                        crlImpl = (X509CRLImpl) this.certFactory
-                                .generateCRL(crlInputStream);
-                    } finally {
-                        crlInputStream.close();
-                    }
-
-                }
-
-                crlCheckMap.put(crlURLString, crlImpl);
-            }
-        } catch (Exception e) {
-            logger.error("Error reading CRL: " + crlURLString + e.getMessage());
-            throw new CertificateRevocationCheckException("Error reading CRL: "
-                    + crlURLString + "(" + e.getMessage() + ")", e);
-        }
         if (crlImpl != null) {
             crlCollection.add(crlImpl);
         }

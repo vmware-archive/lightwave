@@ -16,6 +16,9 @@
 
 package com.vmware.identity.idm.server.performance;
 
+import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
+import com.vmware.identity.performanceSupport.IIdmAuthStat;
+
 public class PerformanceMonitorFactory {
 	private static IPerformanceMonitor _perfMonitor = null;
 
@@ -33,4 +36,26 @@ public class PerformanceMonitorFactory {
 		return (_perfMonitor != null) ? _perfMonitor : PerformanceMonitor
 				.getInstance();
 	}
+
+	/**
+	 * Create an IIdmAuthStatRecorder instance.
+	 */
+    public static IIdmAuthStatRecorder createIdmAuthStatRecorderInstance(
+            String tenantName, String providerType, String providerId, int providerFlags,
+            IIdmAuthStat.ActivityKind opType, IIdmAuthStat.EventLevel eventLevel, String userId) {
+        if (PerformanceMonitorFactory.getPerformanceMonitor().getCache(tenantName).isEnabled()) {
+            return new IdmAuthStatRecorder(
+                    tenantName,
+                    providerType,
+                    providerId,
+                    providerFlags,
+                    opType,
+                    eventLevel,
+                    userId,
+                    PerformanceMonitorFactory.getPerformanceMonitor().summarizeLdapQueries(),
+                    DiagnosticsContextFactory.getCurrentDiagnosticsContext().getCorrelationId());
+        } else {
+            return NoopIdmAuthStatRecorder.getInstance();
+        }
+    }
 }
