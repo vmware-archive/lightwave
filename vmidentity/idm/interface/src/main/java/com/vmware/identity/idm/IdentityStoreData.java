@@ -64,6 +64,7 @@ public class IdentityStoreData implements IIdentityStoreData
                 null,
                 null,
                 flags,
+                null,
                 null);
     }
 
@@ -77,12 +78,13 @@ public class IdentityStoreData implements IIdentityStoreData
         String servicePrincipalName,
         String password,
         Map<String, String> attributesMap,
-        IdentityStoreSchemaMapping schemaMapping
+        IdentityStoreSchemaMapping schemaMapping,
+        int[] authnTypes
     )
     {
         return IdentityStoreData.createActiveDirectoryIdentityStoreData(
             name, userName, useMachineAccount, servicePrincipalName, password,
-            attributesMap, schemaMapping, 0
+            attributesMap, schemaMapping, 0, authnTypes
         );
     }
 
@@ -97,7 +99,8 @@ public class IdentityStoreData implements IIdentityStoreData
         String password,
         Map<String, String> attributesMap,
         IdentityStoreSchemaMapping schemaMapping,
-        int flags
+        int flags,
+        int[] authnTypes
     )
     {
         return IdentityStoreData.CreateExternalIdentityStoreData(
@@ -117,7 +120,8 @@ public class IdentityStoreData implements IIdentityStoreData
                 attributesMap,
                 schemaMapping,
                 null,
-                flags
+                flags,
+                authnTypes
         );
     }
 
@@ -153,6 +157,7 @@ public class IdentityStoreData implements IIdentityStoreData
                 null,
                 upnSuffixes,
                 flags,
+                null,
                 null);
     }
 
@@ -191,6 +196,7 @@ public class IdentityStoreData implements IIdentityStoreData
                 null,
                 null,
                 flags,
+                null,
                 null);
     }
 
@@ -344,6 +350,7 @@ public class IdentityStoreData implements IIdentityStoreData
                     schemaMapping,
                     upnSuffixes,
                     flags,
+                    null,
                     null);
     }
 
@@ -364,7 +371,8 @@ public class IdentityStoreData implements IIdentityStoreData
         String userBaseDN,
         String groupBaseDN,
         Collection<String>  connectionStrings,
-        Map<String, String> attributesMap
+        Map<String, String> attributesMap,
+        int[] authnTypes
     )
     {
         return IdentityStoreData.CreateExternalIdentityStoreData(
@@ -382,7 +390,8 @@ public class IdentityStoreData implements IIdentityStoreData
             groupBaseDN,
             connectionStrings,
             attributesMap,
-            null
+            null,
+            authnTypes
         );
     }
 
@@ -404,7 +413,8 @@ public class IdentityStoreData implements IIdentityStoreData
         String groupBaseDN,
         Collection<String>  connectionStrings,
         Map<String, String> attributesMap,
-        IdentityStoreSchemaMapping schemaMapping
+        IdentityStoreSchemaMapping schemaMapping,
+        int[] authnTypes
     )
     {
         return IdentityStoreData.CreateExternalIdentityStoreData(
@@ -423,7 +433,8 @@ public class IdentityStoreData implements IIdentityStoreData
             connectionStrings,
             attributesMap,
             schemaMapping,
-            0);
+            0,
+            authnTypes);
     }
 
     public
@@ -445,7 +456,8 @@ public class IdentityStoreData implements IIdentityStoreData
         Collection<String>  connectionStrings,
         Map<String, String> attributesMap,
         IdentityStoreSchemaMapping schemaMapping,
-        int flags
+        int flags,
+        int[] authnTypes
     )
     {
         return new IdentityStoreData(
@@ -467,7 +479,8 @@ public class IdentityStoreData implements IIdentityStoreData
                     schemaMapping,
                     null,
                     flags,
-                    null);
+                    null,
+                    authnTypes);
     }
 
     public
@@ -489,7 +502,8 @@ public class IdentityStoreData implements IIdentityStoreData
         Collection<String>  connectionStrings,
         Map<String, String> attributesMap,
         IdentityStoreSchemaMapping schemaMapping,
-        Set<String> upnSuffixes
+        Set<String> upnSuffixes,
+        int[] authnTypes
     )
     {
         return IdentityStoreData.CreateExternalIdentityStoreData(
@@ -509,7 +523,8 @@ public class IdentityStoreData implements IIdentityStoreData
             attributesMap,
             schemaMapping,
             upnSuffixes,
-            0);
+            0,
+            authnTypes);
     }
     public
     static
@@ -531,7 +546,8 @@ public class IdentityStoreData implements IIdentityStoreData
         Map<String, String> attributesMap,
         IdentityStoreSchemaMapping schemaMapping,
         Set<String> upnSuffixes,
-        Collection<X509Certificate> certificates
+        Collection<X509Certificate> certificates,
+        int[] authnTypes
     )
     {
 	return new IdentityStoreData(
@@ -553,7 +569,8 @@ public class IdentityStoreData implements IIdentityStoreData
                  schemaMapping,
                  upnSuffixes,
                  0,
-                 certificates);
+                 certificates,
+                 authnTypes);
     }
     public
     static
@@ -575,7 +592,8 @@ public class IdentityStoreData implements IIdentityStoreData
         Map<String, String> attributesMap,
         IdentityStoreSchemaMapping schemaMapping,
         Set<String> upnSuffixes,
-        int flags
+        int flags,
+        int[] authnTypes
     )
     {
         return new IdentityStoreData(
@@ -597,7 +615,8 @@ public class IdentityStoreData implements IIdentityStoreData
                     schemaMapping,
                     upnSuffixes,
                     flags,
-                    null);
+                    null,
+                    authnTypes);
     }
 
     public
@@ -621,7 +640,8 @@ public class IdentityStoreData implements IIdentityStoreData
         IdentityStoreSchemaMapping schemaMapping,
         Set<String> upnSuffixes,
         int flags,
-        Collection<X509Certificate> certificates
+        Collection<X509Certificate> certificates,
+        int[] authnTypes
     )
     {
         return new IdentityStoreData(
@@ -643,7 +663,8 @@ public class IdentityStoreData implements IIdentityStoreData
                     schemaMapping,
                     upnSuffixes,
                     flags,
-                    certificates);
+                    certificates,
+                    authnTypes);
     }
 
     @Override
@@ -712,7 +733,8 @@ public class IdentityStoreData implements IIdentityStoreData
         IdentityStoreSchemaMapping schemaMapping,
         Set<String> upnSuffixes,
         int flags,
-        Collection<X509Certificate> certificates
+        Collection<X509Certificate> certificates,
+        int[] authnTypes
     )
     {
         this(domainType,
@@ -733,7 +755,9 @@ public class IdentityStoreData implements IIdentityStoreData
              schemaMapping,
              upnSuffixes,
              flags,
-             certificates);
+             certificates,
+             authnTypes
+             );
     }
 
     private
@@ -756,7 +780,7 @@ public class IdentityStoreData implements IIdentityStoreData
         IdentityStoreSchemaMapping schemaMapping,
         Set<String> upnSuffixes,
         int flags,
-        Collection<X509Certificate> certificates
+        Collection<X509Certificate> certificates, int[] authnTypes
     )
     {
         ValidateUtil.validateIdsDomainName(name, domainType);
@@ -808,7 +832,7 @@ public class IdentityStoreData implements IIdentityStoreData
 
             this._extendedData = new IdentityStoreDataEx(
                 alias, type, authenticationType, friendlyName, searchTimeoutSeconds, normUserPrincipal, useMachineAccount, servicePrincipalName,
-                password, userBaseDN, groupBaseDN, connectionStrings, attributesMap, schemaMapping, upnSuffixes, flags, certificates);
+                password, userBaseDN, groupBaseDN, connectionStrings, attributesMap, schemaMapping, upnSuffixes, flags, certificates, authnTypes);
         }
         else if (this._domainType == DomainType.SYSTEM_DOMAIN)
         {//only return the upnSuffixes for system domain
@@ -830,7 +854,8 @@ public class IdentityStoreData implements IIdentityStoreData
                        null, /* schema map */
                        upnSuffixes,
                        flags,
-                       certificates);
+                       certificates,
+                       authnTypes);
         }
         else // local os
         {
@@ -854,7 +879,8 @@ public class IdentityStoreData implements IIdentityStoreData
                         null, /* schema map */
                         null,
                         flags,
-                        null);
+                        null,
+                        authnTypes);
             }
             else
             {
@@ -887,6 +913,7 @@ public class IdentityStoreData implements IIdentityStoreData
         private Set<String> _upnSuffixes;
         private int _flags;
         private Collection<X509Certificate> _certificates;
+        private int[] _authnTypes;
 
         public
         IdentityStoreDataEx(
@@ -906,7 +933,8 @@ public class IdentityStoreData implements IIdentityStoreData
             IdentityStoreSchemaMapping schemaMapping,
             Set<String> upnSuffixes,
             int flags,
-            Collection<X509Certificate> certificates
+            Collection<X509Certificate> certificates,
+            int[] authnTypes
             )
         {
 
@@ -945,6 +973,7 @@ public class IdentityStoreData implements IIdentityStoreData
             }
             this._flags = flags;
             this._certificates = certificates;
+            this._authnTypes = authnTypes;
         }
 
         @Override
@@ -1107,6 +1136,12 @@ public class IdentityStoreData implements IIdentityStoreData
         public Collection<X509Certificate> getCertificates()
         {
             return this._certificates;
+        }
+
+        @Override
+        public int[] getAuthnTypes()
+        {
+            return this._authnTypes;
         }
     }
 }

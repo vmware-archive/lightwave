@@ -18,13 +18,15 @@ package com.vmware.identity.openidconnect.server;
  * @author Yehia Zayour
  */
 public enum Flow {
-    AUTHZ_CODE,                 // response_type=code
-    IMPLICIT,                   // response_type=token id_token
-    IMPLICIT_ID_TOKEN_ONLY,     // response_type=id_token
-    PASSWORD,                   // no response_type since this is a token endpoint only flow (response_type is an authz request parameter)
+    AUTHZ_CODE,
+    IMPLICIT,
+    IMPLICIT_ID_TOKEN_ONLY,
+    PASSWORD,
+    SOLUTION_USER_CREDS,
     CLIENT_CREDS,
-    SOLUTION_USER_CREDS,        // extension grant_type
-    GSS_TICKET,                 // extension grant_type
+    CLIENT_CERT,
+    GSS_TICKET,
+    SECUREID,
     REFRESH_TOKEN;
 
     public boolean isImplicit() {
@@ -44,7 +46,9 @@ public enum Flow {
                 this.equals(Flow.PASSWORD) ||
                 this.equals(Flow.CLIENT_CREDS) ||
                 this.equals(Flow.SOLUTION_USER_CREDS) ||
+                this.equals(Flow.CLIENT_CERT) ||
                 this.equals(Flow.GSS_TICKET) ||
+                this.equals(Flow.SECUREID) ||
                 this.equals(Flow.REFRESH_TOKEN);
     }
 }

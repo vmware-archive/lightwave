@@ -26,13 +26,19 @@
     var searchString ="${searchstring}";
     var replaceString ='${replacestring}';
     var error = '${error}';
-    var errorSSPI = '${errorSSPI}';
-    var spn = "${spn}";
+    var errorSSPI = '${errorSSPI}'
+    var spn = "${spn}"
+    var cac_endpoint = "${cac_endpoint}";
+    var sso_endpoint = "${sso_endpoint}";
 
     var tlsclient_auth = '${enable_tlsclient_auth}';
     var password_auth = '${enable_password_auth}';
     var windows_auth = '${enable_windows_auth}';
-    var smartcard_reminder = '${smartcard_reminder}';
+    var rsa_am_auth = '${enable_rsaam_auth}';
+    var rsaam_reminder = '${rsaam_reminder}';
+    var rsaam_passcode_label = '${passcode}:';
+    var password_label = '${password}:';
+
    </script>
 
    <script type="text/javascript" src="../../resources/js/assets/csd_api_common.js"></script>
@@ -47,7 +53,6 @@
 
    <script type="text/javascript" src="../../resources/js/Base64.js"></script>
    <script type="text/javascript" src="../../resources/js/VmrcPluginUtil.js"></script>
-   <script type="text/javascript" src="../../resources/js/CspPluginInstance.js"></script>
    <script type="text/javascript" src="../../resources/js/jquery-2.1.4.min.js"></script>
    <script type="text/javascript" src="../../resources/js/jquery-ui.min.js"></script>
    <script type="text/javascript" src="../../resources/js/websso.js"></script>
@@ -103,15 +108,16 @@ else {
     <p id="smartcardID">
        <label id="checkboxLabel"><input id="smartcardCheckbox" disabled="false" type="checkbox" onchange='enableSmartcard(this);'/>${smartcard}</label>
     </p>
+    <p id="rsaamID">
+       <label id="checkboxLabel"><input id="rsaamCheckbox" disabled="false" type="checkbox" onchange='enableRsaam(this);'/>${rsaam}</label>
+    </p>
     <p id="loginButtonRow">
        <input id="submit" class="button blue" type="submit" value=${login} onclick="submitentry()"/>
     </p>
     <p id="logonBannerID">
-      <label id="checkboxLabel">
-        <input id="logonBannerCheckbox" type="checkbox" onclick="isBannerChecked()"/>
-        <span id="agreementMsg">${iAgreeTo}</span>
-        <a id="logonBannerTitle" href="javascript:void(0);" onClick="displayLogonBannerDialog()">${tenant_logonbanner_title}</a>
-      </label>
+      <input id="logonBannerCheckbox" type="checkbox" onclick="isBannerChecked()"/>
+      <span id="agreementMsg">${iAgreeTo}</span>
+      <a id="logonBannerTitle" class="hyphenate" href="javascript:void(0);" onClick="displayLogonBannerDialog()">${tenant_logonbanner_title}</a>
     </p>
 </div>
 
