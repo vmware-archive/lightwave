@@ -16,35 +16,29 @@ package com.vmware.identity.openidconnect.server;
 
 import org.apache.commons.lang3.Validate;
 
-import com.nimbusds.oauth2.sdk.ErrorObject;
+import com.vmware.identity.openidconnect.common.ErrorObject;
 
 /**
  * @author Yehia Zayour
  */
 public class ServerException extends Exception {
     private static final long serialVersionUID = 1L;
-    private final ErrorObject errorObject;
-    private final Header[] headers;
 
-    public ServerException(ErrorObject errorObject, Header... headers) {
+    private final ErrorObject errorObject;
+
+    public ServerException(ErrorObject errorObject) {
         Validate.notNull(errorObject, "errorObject");
         this.errorObject = errorObject;
-        this.headers = (headers == null) ? new Header[0] : headers;
     }
 
-    public ServerException(ErrorObject errorObject, Throwable cause, Header... headers) {
-        super("", cause);
+    public ServerException(ErrorObject errorObject, Throwable cause) {
+        super(cause);
         Validate.notNull(errorObject, "errorObject");
         Validate.notNull(cause, "cause");
         this.errorObject = errorObject;
-        this.headers = (headers == null) ? new Header[0] : headers;
     }
 
     public ErrorObject getErrorObject() {
         return this.errorObject;
-    }
-
-    public Header[] getHeaders() {
-        return this.headers;
     }
 }

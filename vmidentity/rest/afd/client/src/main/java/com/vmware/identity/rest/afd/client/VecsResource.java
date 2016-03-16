@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
-import javax.net.ssl.SSLContext;
-
 import org.apache.http.HttpException;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;

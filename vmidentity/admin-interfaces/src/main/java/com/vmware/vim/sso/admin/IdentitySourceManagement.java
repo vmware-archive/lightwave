@@ -1,11 +1,23 @@
-/* **********************************************************************
- * Copyright 2013 VMware, Inc.  All rights reserved.
- * *********************************************************************/
+/*
+ *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License.  You may obtain a copy
+ *  of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, without
+ *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ *  License for the specific language governing permissions and limitations
+ *  under the License.
+ */
 package com.vmware.vim.sso.admin;
 
 import java.net.URI;
 import java.security.cert.CertPath;
+import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import com.vmware.vim.sso.admin.LdapIdentitySource.KnownAuthenticationType;
@@ -599,10 +611,7 @@ public interface IdentitySourceManagement {
     *
     * @param serviceUri
     *           The URI of the target service. Required. The scheme must be
-    *           {@code ldap} or {@code ldaps}. If the scheme is {@code ldaps}
-    *           (LDAP Secure), the remote server's SSL certificate must be
-    *           verifiable using the SSO Server's SSL trust store (or the
-    *           connection will fail).
+    *           {@code ldap} or {@code ldaps}.
     *
     * @param authenticationType
     *           The authentication method to use. Required. If
@@ -625,12 +634,75 @@ public interface IdentitySourceManagement {
     *            when the required privilege for calling this method is not held
     *            by the caller
     *
-    * @see #getSslCertificateManager()
     */
    @Privilege(Role.Administrator)
    void probeConnectivity(URI serviceUri,
       KnownAuthenticationType authenticationType,
       AuthenticationCredentials authnCredentials)
+      throws DirectoryServiceConnectionException, NotAuthenticatedException,
+      NoPermissionException;
+
+   /**
+    * Probe the connectivity to the specified LDAP service and try to
+    * authenticate using the provided credentials.
+    *
+    * @param serviceUri
+    *           The URI of the target service. Required. The scheme must be
+    *           {@code ldap} or {@code ldaps}. If the scheme is {@code ldaps}
+    *           (LDAP Secure), the remote server's SSL certificate must be
+    *           verifiable using the certificates list (or the
+    *           connection will fail).
+    *
+    * @param authenticationType
+    *           The authentication method to use. Required. If
+    *           {@code KnownAuthenticationType#anonymous}, no authentication
+    *           will be attempted.
+    *
+    * @param authenticationCredentials
+    *           If {@code authenticationType} is
+    *           {@code AuthenticationType#password}, the credentials (username +
+    *           password) to use for authentication. Otherwise, it need not be
+    *           provided.
+    *
+    * @param certificates
+    *           Trusted certificates used for ldaps connection. If the scheme is {@code ldaps}
+    *           (LDAP Secure), the remote server's SSL certificate must be
+    *           verifiable using the list of certificates (or the
+    *           connection will fail).
+    *
+    * @throws DirectoryServiceConnectionException
+    *            Indicates the SSO Server either failed to connect or to
+    *            authenticate to the service at the specified URI.
+    * @throws NotAuthenticatedException
+    *            when there is no authenticated SSO user associated with this
+    *            method call
+    * @throws NoPermissionException
+    *            when the required privilege for calling this method is not held
+    *            by the caller
+    *
+    */
+   @Privilege(Role.Administrator)
+   void probeConnectivity(URI serviceUri,
+      KnownAuthenticationType authenticationType,
+      AuthenticationCredentials authnCredentials,
+      Collection<X509Certificate> certificates)
+      throws DirectoryServiceConnectionException, NotAuthenticatedException,
+      NoPermissionException;
+
+   /**
+    * Probe the connectivity to the specified LDAP identity source and try to
+    * authenticate using the provided credentials.
+    *
+    * @param domainName
+    * @param authnCredential
+    * @param identitySourceDetails
+    *
+    * @throws DirectoryServiceConnectionException
+    * @throws NotAuthenticatedException
+    * @throws NoPermissionException
+    */
+   @Privilege(Role.Administrator)
+   void probeConnectivity(String domainName, AuthenticationCredentials authnCredential, LdapIdentitySource identitySourceDetails)
       throws DirectoryServiceConnectionException, NotAuthenticatedException,
       NoPermissionException;
 

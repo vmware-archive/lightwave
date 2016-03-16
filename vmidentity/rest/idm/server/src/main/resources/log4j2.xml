@@ -8,7 +8,7 @@
         <RollingFile name="fileAppender"
             fileName="${sys:catalina.base}/logs/vmware-rest-idm.log"
             filePattern="vmware-idm-rest-test-%i.log" append="true">
-            <PatternLayout pattern="[%-5p][%d{ISO8601}][%X{id}] %C{1} - %m%n" />
+            <PatternLayout pattern="[%-5p][%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}][%X{id}] %c{1} - %m%n" />
             <ThresholdFilter level="DEBUG" />
             <Policies>
                 <SizeBasedTriggeringPolicy size="50 MB" />
@@ -17,12 +17,12 @@
         </RollingFile>
 
         <Console name="STDOUT" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%-5p][%d{ISO8601}][%X{id}] %C{1} - %m%n" />
+            <PatternLayout pattern="[%-5p][%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}][%X{id}] %c{1} - %m%n" />
         </Console>
     </Appenders>
 
     <Loggers>
-        <Logger name="org.glassfish.jersey" level="trace">
+        <Logger name="org.glassfish.jersey" level= "info">
             <AppenderRef ref="fileAppender">
             </AppenderRef>
         </Logger>
@@ -30,12 +30,11 @@
             <AppenderRef ref="fileAppender">
             </AppenderRef>
         </Logger>
-        <Logger name="com.vmware.idm" level="debug" additivity="false">
+        <Logger name="com.vmware.idm" level= "info" additivity="false">
             <AppenderRef ref="fileAppender">
             </AppenderRef>
         </Logger>
-        <!-- TODO : Modify the root log level to INFO later -->
-        <Root level="debug">
+        <Root level= "info">
             <AppenderRef ref="fileAppender" />
         </Root>
     </Loggers>

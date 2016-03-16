@@ -23,6 +23,7 @@ import org.glassfish.jersey.server.ServerProperties;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import com.vmware.identity.rest.core.server.authorization.filter.AuthorizationRequestFilter;
+import com.vmware.identity.rest.core.server.filter.ContextFilter;
 
 /**
  * Base application for AFD REST.
@@ -45,15 +46,19 @@ public class RestApplication extends ResourceConfig {
         // Register resources and providers under com.vmware.identity.rest.afd.server
         packages(true, "com.vmware.identity.rest.afd.server");
 
+        // Register the Context Filter
+        register(ContextFilter.class);
+
         // Register LoggingFilter with optional entity logging
         Logger log = Logger.getLogger(RestApplication.class.getName());
         boolean entityLog = Boolean.parseBoolean(System.getProperty(ENTITY_LOG_PROPERTY, "false"));
-        register(new LoggingFilter(log, entityLog));
+        // Register the LoggingFilter so it occurs after the ContextFilter so Correlation ID works correctly
+        register(new LoggingFilter(log, entityLog), Integer.MIN_VALUE + 1);
 
-        // Register authorization framework
+        // Register Authorization Provider
         register(AuthorizationRequestFilter.class);
 
-        // Optionally enable tracing support
+        // Enable tracing support
         // Supply header during request: "X-Jersey-Tracing-Accept:true"
         boolean traceLog = Boolean.parseBoolean(System.getProperty(TRACE_LOG_PROPERTY, "false"));
         if (traceLog) {
