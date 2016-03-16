@@ -17,6 +17,7 @@
 package com.vmware.identity.performanceSupport;
 
 import java.util.List;
+import java.util.Map;
 
 public class IdmAuthStat implements IIdmAuthStat {
     private static final long serialVersionUID = 1L;
@@ -24,14 +25,17 @@ public class IdmAuthStat implements IIdmAuthStat {
     private String _providerName;
     private int _providerFlag;
     private ActivityKind _opKind;
+    private EventLevel _eventLevel;
     private String _userName;
     private long _startTime;
     private long _timeTaken;
+    private String _correlationId;
     private List<ILdapQueryStat> _ldapStats;
+    private Map<String, String> _extensions;
 
     public IdmAuthStat(String providerType, String providerName,
-            int providerFlag, ActivityKind opKind, String userName,
-            long startTime, long timeTaken, List<ILdapQueryStat> ldapStats) {
+            int providerFlag, ActivityKind opKind, EventLevel eventLevel, String userName,
+            long startTime, long timeTaken, String correlationId, List<ILdapQueryStat> ldapStats, Map<String, String> ext) {
 
         this._providerType = providerType;
 
@@ -41,13 +45,19 @@ public class IdmAuthStat implements IIdmAuthStat {
 
         this._opKind = opKind;
 
+        this._eventLevel = eventLevel;
+
         this._userName = userName;
 
         this._startTime = startTime;
 
         this._timeTaken = timeTaken;
 
+        this._correlationId = correlationId;
+
         this._ldapStats = ldapStats;
+
+        this._extensions = ext;
 
     }
 
@@ -77,6 +87,11 @@ public class IdmAuthStat implements IIdmAuthStat {
     }
 
     @Override
+    public EventLevel getEventLevel() {
+        return this._eventLevel;
+    }
+
+    @Override
     public String getUserName() {
         return this._userName;
     }
@@ -87,8 +102,18 @@ public class IdmAuthStat implements IIdmAuthStat {
     }
 
     @Override
+    public String getCorrelationId() {
+        return this._correlationId;
+    }
+
+    @Override
     public List<ILdapQueryStat> getLdapQueryStats() {
         return this._ldapStats;
+    }
+
+    @Override
+    public Map<String, String> getExtensions() {
+        return this._extensions;
     }
 
 }

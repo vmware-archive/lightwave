@@ -25,6 +25,5 @@ public enum TokenValidationError {
     EXPIRED_TOKEN,
     PARSE_ERROR,
     INVALID_ISSUER,
-    INVALID_AUDIENCE,
-    INVALID_TOKEN_CLASS;
+    INVALID_AUDIENCE;
 }

@@ -36,6 +36,7 @@ import com.vmware.identity.rest.core.data.DTO;
 public class ExternalIDPDTO extends DTO {
 
     private final String entityID;
+    private final String alias;
     private final Collection<String> nameIDFormats;
     private final Collection<ServiceEndpointDTO> ssoServices;
     private final Collection<ServiceEndpointDTO> sloServices;
@@ -49,6 +50,7 @@ public class ExternalIDPDTO extends DTO {
      * Construct an {@code ExternalIDPDTO} with its various details.
      *
      * @param entityID the entity identifier.
+     * @param alias the alias of the IDP.
      * @param nameIDFormats a collection of name identifier formats.
      * @param ssoServices a collection of endpoints to use for single sign-on.
      * @param sloServices a collection of endpoints to use for single log-off.
@@ -58,11 +60,12 @@ public class ExternalIDPDTO extends DTO {
      * @param jitEnabled enable or disable just-in-time provisioning.
      * @param upnSuffix a UPN suffix to use for this identity provider.
      */
-    public ExternalIDPDTO(String entityID, Collection<String> nameIDFormats,
+    public ExternalIDPDTO(String entityID, String alias, Collection<String> nameIDFormats,
             Collection<ServiceEndpointDTO> ssoServices, Collection<ServiceEndpointDTO> sloServices,
             CertificateChainDTO signingCertificates, Map<String, String> subjectFormats,
             List<TokenClaimGroupDTO> tokenClaimGroups, Boolean jitEnabled, String upnSuffix) {
         this.entityID = entityID;
+        this.alias = alias;
         this.nameIDFormats = nameIDFormats;
         this.ssoServices = ssoServices;
         this.sloServices = sloServices;
@@ -80,6 +83,15 @@ public class ExternalIDPDTO extends DTO {
      */
     public String getEntityID() {
         return this.entityID;
+    }
+
+    /**
+     * Get the alias.
+     *
+     * @return the alias.
+     */
+    public String getAlias() {
+        return this.alias;
     }
 
     /**
@@ -173,6 +185,7 @@ public class ExternalIDPDTO extends DTO {
     @JsonPOJOBuilder
     public static class Builder {
         private String entityID;
+        private String alias;
         private Collection<String> nameIDFormats;
         private Collection<ServiceEndpointDTO> ssoServices;
         private Collection<ServiceEndpointDTO> sloServices;
@@ -187,6 +200,10 @@ public class ExternalIDPDTO extends DTO {
             return this;
         }
 
+        public Builder withAlias(String alias) {
+            this.alias = alias;
+            return this;
+        }
 
         public Builder withNameIDFormats(Collection<String> nameIDFormats) {
             this.nameIDFormats = nameIDFormats;
@@ -229,7 +246,7 @@ public class ExternalIDPDTO extends DTO {
         }
 
         public ExternalIDPDTO build() {
-            return new ExternalIDPDTO(entityID, nameIDFormats, ssoServices, sloServices, signingCertificates, subjectFormats, tokenClaimGroups, jitEnabled, upnSuffix);
+            return new ExternalIDPDTO(entityID, alias, nameIDFormats, ssoServices, sloServices, signingCertificates, subjectFormats, tokenClaimGroups, jitEnabled, upnSuffix);
         }
     }
 

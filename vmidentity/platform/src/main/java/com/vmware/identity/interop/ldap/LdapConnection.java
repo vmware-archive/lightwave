@@ -47,8 +47,7 @@ class LdapConnection implements ILdapConnectionExWithGetConnectionString
     private static int DEFAULT_MAX_SEARCHPAGE_RETURN = 1000;
 
     private Pointer _connection = Pointer.NULL;
-    // connection object owns the callback.
-    private final Object _sslCertValidationCallback;
+    private LdapConnectionCtx _connectionContext;
 
     private String _connectionString;
 
@@ -64,7 +63,7 @@ class LdapConnection implements ILdapConnectionExWithGetConnectionString
     {
         _ldapClientLibrary = LdapClientLibraryFactory.getInstance().getLdapClientLibrary(false);
         this._connection = _ldapClientLibrary.ldap_init( hostname, port );
-        this._sslCertValidationCallback = null;
+        this._connectionContext = new LdapConnectionCtx(this._connection, null, LdapSSLProtocols.getDefaultMinProtocol().getCode());
         this._connectionString = String.format("ldap://%s:%d", hostname, port);
     }
 
@@ -76,11 +75,9 @@ class LdapConnection implements ILdapConnectionExWithGetConnectionString
     LdapConnection(URI uri, List<LdapSetting> connOptions, boolean useWindowsOpenLdapLib) {
         _ldapClientLibrary = LdapClientLibraryFactory.getInstance().getLdapClientLibrary(useWindowsOpenLdapLib);
         this._connectionString = uri.toString();
-        LdapConnectionCtx connCtx = _ldapClientLibrary.ldap_initializeWithUri(
+        this._connectionContext = _ldapClientLibrary.ldap_initializeWithUri(
                 uri, connOptions);
-        this._connection = connCtx.getConnection();
-        this._sslCertValidationCallback = connCtx
-                .getsslCertValidationCallback();
+        this._connection = _connectionContext.getConnection();
     }
 
     @Override
@@ -129,7 +126,7 @@ class LdapConnection implements ILdapConnectionExWithGetConnectionString
 
         long startedAt = System.currentTimeMillis();
         try {
-            ldapClientLibrary.ldap_bind_s( this._connection, dn, cred, method.getCode() );
+            ldapClientLibrary.ldap_bind_s( this._connectionContext, dn, cred, method.getCode() );
         }finally {
             if (perfLog.isTraceEnabled()) {
                 perfLog.trace(String.format(
@@ -148,15 +145,6 @@ class LdapConnection implements ILdapConnectionExWithGetConnectionString
         long startedAt = System.currentTimeMillis();
         try{
             ldapClientLibrary.ldap_sasl_bind_s(this._connection, userName, domainName, userPassword);
-        }
-        catch (LdapException e)
-        {
-            if (e.getErrorCode() == LdapErrors.LDAP_LOCAL_ERROR.getCode())
-            {
-                throw new SaslBindFailLdapException(e.getErrorCode(), "Ldap_sasl_bind failed due to local errors, for instance, kerberos-related failures");
-            }
-
-            throw new SaslBindFailLdapException(e.getErrorCode(), "Ldap_sasl_bind failed"+e.getMessage());
         }
         finally
         {
