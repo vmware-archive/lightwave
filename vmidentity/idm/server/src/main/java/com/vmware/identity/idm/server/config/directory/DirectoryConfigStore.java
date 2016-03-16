@@ -58,8 +58,6 @@ import com.vmware.identity.idm.AssertionConsumerService;
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeConfig;
 import com.vmware.identity.idm.AttributeConsumerService;
-import com.vmware.identity.idm.AuthenticationType;
-import com.vmware.identity.idm.AuthnPolicy;
 import com.vmware.identity.idm.CertificateInUseException;
 import com.vmware.identity.idm.CertificateType;
 import com.vmware.identity.idm.CertificateUtil;
@@ -82,10 +80,14 @@ import com.vmware.identity.idm.NoSuchExternalIdpConfigException;
 import com.vmware.identity.idm.NoSuchIdpException;
 import com.vmware.identity.idm.NoSuchOIDCClientException;
 import com.vmware.identity.idm.NoSuchRelyingPartyException;
+import com.vmware.identity.idm.NoSuchResourceServerException;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.OIDCClient;
 import com.vmware.identity.idm.PasswordExpiration;
+import com.vmware.identity.idm.RSAAMInstanceInfo;
+import com.vmware.identity.idm.RSAAgentConfig;
 import com.vmware.identity.idm.RelyingParty;
+import com.vmware.identity.idm.ResourceServer;
 import com.vmware.identity.idm.ServiceEndpoint;
 import com.vmware.identity.idm.SignatureAlgorithm;
 import com.vmware.identity.idm.Tenant;
@@ -119,6 +121,7 @@ public class DirectoryConfigStore implements IConfigStore
     public static final int FLAG_AUTHN_TYPE_ALLOW_PASSWORD = 0x1;
     public static final int FLAG_AUTHN_TYPE_ALLOW_WINDOWS = 0x2;
     public static final int FLAG_AUTHN_TYPE_ALLOW_TLS_CERTIFICATE = 0x4;
+    public static final int FLAG_AUTHN_TYPE_ALLOW_RSA_SECUREID = 0x8;
 
     private static final String CLAIM_GROUP_DELIMITER = "#";
     private final Collection<URI> _uris;
@@ -867,6 +870,96 @@ public class DirectoryConfigStore implements IConfigStore
         ValidateUtil.validateNotEmpty(tenantName, "tenantName");
         LdapValue[] value = ServerUtils.getLdapValue(logonBannerContent);
         this.setTenantProperty(tenantName, TenantLdapObject.PROPERTY_LOGON_BANNER_CONTENT, value);
+    }
+
+    @Override
+    public void setAuthnTypesForProvider(String tenantName,
+                                         String providerName,
+                                         boolean password,
+                                         boolean windows,
+                                         boolean certificate,
+                                         boolean rsaSecureID) throws Exception {
+
+        HashSet<Integer> authnTypes = new HashSet<Integer>();
+        if (password) {
+            authnTypes.add(DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_PASSWORD);
+        }
+        if (windows) {
+            authnTypes.add(DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_WINDOWS);
+        }
+        if (certificate) {
+            authnTypes
+                    .add(DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_TLS_CERTIFICATE);
+        }
+        if (rsaSecureID) {
+            authnTypes
+                    .add(DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_RSA_SECUREID);
+        }
+        if (authnTypes.size() == 0) {
+            authnTypes.add(DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_NONE);
+        }
+
+        int[] authTypesArray = ArrayUtils.toPrimitive(authnTypes.toArray(new Integer[authnTypes.size()]));
+
+        this.setProviderProperty(tenantName,
+                                 providerName,
+                                 IdentityProviderLdapObject.PROPERTY_AUTHN_TYPES,
+                                 ServerUtils.getLdapValue(authTypesArray));
+    }
+
+    /**
+     * Add/Update property for a given identity provider
+     *
+     * @param tenantName name of tenant
+     * @param providerName name of identity source
+     * @param propertyName Name of property to be added
+     * @param propertyValue Value of property to be added
+     * @throws Exception
+     */
+    private void setProviderProperty(String tenantName, String providerName, String propertyName, LdapValue[] propertyValue) throws Exception{
+        ILdapConnectionEx connection = this.getConnection();
+        try
+        {
+            // Fetch tenant root dn
+            String tenantsRootDn = this.lookupTenantsRootDn(connection, tenantName);
+            validateTenantExistence(tenantsRootDn);
+
+            // Fetch identity provider container DN
+            String identityProvidersContainerDn = DirectoryConfigStore.ensureObjectExists(connection,
+                                                                                          tenantsRootDn,
+                                                                                          ContainerLdapObject.getInstance(),
+                                                                                          ContainerLdapObject.CONTAINER_IDENTITY_PROVIDERS,
+                                                                                          true);
+
+            // Lookup identity provider dn
+            String identityProviderRootDn = IdentityProviderLdapObject.getInstance().lookupObject(connection,
+                                                                  identityProvidersContainerDn,
+                                                                  LdapScope.SCOPE_ONE_LEVEL,
+                                                                  providerName);
+
+            setProviderProperty(connection, identityProviderRootDn, propertyName, propertyValue);
+        } finally
+        {
+            connection.close();
+        }
+    }
+
+    /**
+     * Set property for an identity provider
+     *
+     */
+    private static void setProviderProperty(ILdapConnectionEx connection,
+                                            String identityProvidersContainerDn,
+                                            String propertyName,
+                                            LdapValue[] propertyValue) throws Exception{
+        IdentityProviderLdapObject.getInstance().setObjectPropertyValue(connection, identityProvidersContainerDn, propertyName, propertyValue);
+    }
+
+    private void validateTenantExistence(String tenant) throws NoSuchTenantException {
+        if (ServerUtils.isNullOrEmpty(tenant))
+        {
+            throw new NoSuchTenantException(String.format("Tenant '%s' does not exist.", tenant));
+        }
     }
 
     @Override
@@ -1965,7 +2058,7 @@ public class DirectoryConfigStore implements IConfigStore
             String urisFilter = oidcClientLdapObject.getInSetSearchFilter(OIDCClientLdapObject.PROPERTY_OIDC_REDIRECT_URIS, uris);
 
             uriStrings = oidcClient.getPostLogoutRedirectUris();
-            if (uriStrings != null) {
+            if (uriStrings != null && uriStrings.size() > 0) {
                 uris = uriStrings.toArray(new String[uriStrings.size()]);
                 urisFilter = String.format( "(|%s%s)", urisFilter,
                         oidcClientLdapObject.getInSetSearchFilter(OIDCClientLdapObject.PROPERTY_OIDC_POST_LOGOUT_REDIRECT_URI, uris));
@@ -1992,6 +2085,8 @@ public class DirectoryConfigStore implements IConfigStore
 
         ILdapConnectionEx connection = this.getConnection();
         try {
+            boolean found = false;
+
             String tenantsRootDn = this.ensureTenantExists(connection, tenantName);
 
             ContainerLdapObject oidcClientsContainer = ContainerLdapObject.getInstance();
@@ -2012,15 +2107,17 @@ public class DirectoryConfigStore implements IConfigStore
                                 clientID);
 
                 if (ServerUtils.isNullOrEmpty(oidcClientDn) == false) {
+                    found = true;
                     oidcClientLdapObject.deleteObject(connection, oidcClientDn);
-                } else {
-                    throw new NoSuchOIDCClientException(String.format("The OIDC client %s does not exist on tenant %s", clientID, tenantName));
                 }
+            }
+
+            if (!found) {
+                throw new NoSuchOIDCClientException(String.format("The OIDC client %s does not exist on tenant %s", clientID, tenantName));
             }
         } finally {
             connection.close();
         }
-
     }
 
     @Override
@@ -2084,6 +2181,122 @@ public class DirectoryConfigStore implements IConfigStore
             return DirectoryConfigStore.getOIDCClients(this, connection, tenantName, null);
         } finally {
             connection.close();
+        }
+    }
+
+    @Override
+    public void addResourceServer(String tenantName, ResourceServer resourceServer) throws Exception {
+        ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+        ValidateUtil.validateNotNull(resourceServer, "resourceServer");
+
+        try (ILdapConnectionEx connection = this.getConnection()) {
+            String tenantsRootDn = this.ensureTenantExists(connection, tenantName);
+            ContainerLdapObject resourceServersContainer = ContainerLdapObject.getInstance();
+            String resourceServersContainerDn = DirectoryConfigStore.ensureObjectExists(
+                    connection,
+                    tenantsRootDn,
+                    resourceServersContainer,
+                    ContainerLdapObject.CONTAINER_RESOURCE_SERVERS,
+                    true /* createIfNotExists */);
+            ResourceServerLdapObject resourceServerLdapObject = ResourceServerLdapObject.getInstance();
+            String resourceServerDn = resourceServerLdapObject.getDnFromObject(resourceServersContainerDn, resourceServer);
+            resourceServerLdapObject.createObject(connection, resourceServerDn, resourceServer);
+        }
+    }
+
+    @Override
+    public void deleteResourceServer(String tenantName, String resourceServerName) throws Exception {
+        ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+        ValidateUtil.validateNotEmpty(resourceServerName, "resourceServerName");
+
+        try (ILdapConnectionEx connection = this.getConnection()) {
+            boolean found = false;
+
+            String tenantsRootDn = this.ensureTenantExists(connection, tenantName);
+            ContainerLdapObject resourceServersContainer = ContainerLdapObject.getInstance();
+            String resourceServersContainerDn = DirectoryConfigStore.ensureObjectExists(
+                    connection,
+                    tenantsRootDn,
+                    resourceServersContainer,
+                    ContainerLdapObject.CONTAINER_RESOURCE_SERVERS,
+                    false /* createIfNotExists */);
+
+            if (!ServerUtils.isNullOrEmpty(resourceServersContainerDn)) {
+                ResourceServerLdapObject resourceServerLdapObject = ResourceServerLdapObject.getInstance();
+                String resourceServerDn = resourceServerLdapObject.lookupObject(
+                        connection,
+                        resourceServersContainerDn,
+                        LdapScope.SCOPE_ONE_LEVEL,
+                        resourceServerName);
+                if (!ServerUtils.isNullOrEmpty(resourceServerDn)) {
+                    found = true;
+                    resourceServerLdapObject.deleteObject(connection, resourceServerDn);
+                }
+            }
+
+            if (!found) {
+                throw new NoSuchResourceServerException(String.format("The resource server %s does not exist on tenant %s", resourceServerName, tenantName));
+            }
+        }
+    }
+
+    @Override
+    public ResourceServer getResourceServer(String tenantName, String resourceServerName) throws Exception {
+        ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+        ValidateUtil.validateNotEmpty(resourceServerName, "resourceServerName");
+
+        try (ILdapConnectionEx connection = this.getConnection()) {
+            String tenantsRootDn = this.ensureTenantExists(connection, tenantName);
+            ContainerLdapObject resourceServersContainer = ContainerLdapObject.getInstance();
+            String resourceServersContainerDn = DirectoryConfigStore.ensureObjectExists(
+                    connection,
+                    tenantsRootDn,
+                    resourceServersContainer,
+                    ContainerLdapObject.CONTAINER_RESOURCE_SERVERS,
+                    false /* createIfNotExists */);
+
+            ResourceServer resourceServer = null;
+            if (!ServerUtils.isNullOrEmpty(resourceServersContainerDn)) {
+                ResourceServerLdapObject resourceServerLdapObject = ResourceServerLdapObject.getInstance();
+                resourceServer = resourceServerLdapObject.retrieveObject(
+                        connection,
+                        resourceServersContainerDn,
+                        LdapScope.SCOPE_ONE_LEVEL,
+                        resourceServerName);
+            }
+
+            if (resourceServer == null) {
+                throw new NoSuchResourceServerException(String.format("The resource server %s does not exist on tenant %s", resourceServerName, tenantName));
+            }
+
+            return resourceServer;
+        }
+    }
+
+    @Override
+    public void setResourceServer(String tenantName, ResourceServer resourceServer) throws Exception {
+        ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+        ValidateUtil.validateNotNull(resourceServer, "resourceServer");
+
+        this.deleteResourceServer(tenantName, resourceServer.getName());
+        this.addResourceServer(tenantName, resourceServer);
+    }
+
+    @Override
+    public Collection<ResourceServer> getResourceServers(String tenantName) throws Exception {
+        ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+
+        try (ILdapConnectionEx connection = this.getConnection()) {
+            Collection<ResourceServer> resourceServers;
+            String tenantsRootDn = this.ensureTenantExists(connection, tenantName);
+            resourceServers = DirectoryConfigStore.retrieveObjectsCollection(
+                    connection,
+                    tenantsRootDn,
+                    ContainerLdapObject.CONTAINER_RESOURCE_SERVERS,
+                    null /* additionalFilter */,
+                    ResourceServerLdapObject.getInstance(),
+                    null /* callback */);
+            return resourceServers;
         }
     }
 
@@ -2687,36 +2900,29 @@ public class DirectoryConfigStore implements IConfigStore
 
             if (ServerUtils.isNullOrEmpty(identityProvidersContainerDn) == false)
             {
-                IdentityProviderLdapObject identityProviderConfigObject =
-                        IdentityProviderLdapObject.getInstance();
-                IdentityProviderAliasLdapObject identityProviderAliasConfigObject =
-                        IdentityProviderAliasLdapObject.getInstance();
+                IdentityProviderLdapObject identityProviderConfigObject = IdentityProviderLdapObject.getInstance();
+                IdentityProviderAliasLdapObject identityProviderAliasConfigObject = IdentityProviderAliasLdapObject.getInstance();
 
-                String identityProviderDn =
-                        identityProviderConfigObject.lookupObject(connection,
-                                identityProvidersContainerDn,
-                                LdapScope.SCOPE_ONE_LEVEL, providerName);
+                String identityProviderDn = identityProviderConfigObject.lookupObject(connection,
+                                                                                      identityProvidersContainerDn,
+                                                                                      LdapScope.SCOPE_ONE_LEVEL,
+                                                                                      providerName);
 
                 if (ServerUtils.isNullOrEmpty(identityProviderDn) == true)
                 {
-                    IdentityProviderAlias identityProviderAlias =
-                            identityProviderAliasConfigObject.retrieveObject(
-                                    connection, identityProvidersContainerDn,
-                                    LdapScope.SCOPE_ONE_LEVEL, providerName);
+                    IdentityProviderAlias identityProviderAlias = identityProviderAliasConfigObject.retrieveObject(connection,
+                                                                                                                   identityProvidersContainerDn,
+                                                                                                                   LdapScope.SCOPE_ONE_LEVEL,
+                                                                                                                   providerName);
 
                     if (identityProviderAlias != null)
                     {
-                        identityProviderDn =
-                                identityProviderAlias.getProviderDn();
-                        providerName =
-                                ServerUtils
-                                .getStringValue(identityProviderConfigObject
-                                        .getObjectProperty(
-                                                connection,
-                                                identityProviderDn,
-                                                LdapScope.SCOPE_BASE,
-                                                null,
-                                                IdentityProviderLdapObject.PROPERTY_NAME));
+                        identityProviderDn = identityProviderAlias.getProviderDn();
+                        providerName = ServerUtils.getStringValue(identityProviderConfigObject.getObjectProperty(connection,
+                                                                                                                 identityProviderDn,
+                                                                                                                 LdapScope.SCOPE_BASE,
+                                                                                                                 null,
+                                                                                                                 IdentityProviderLdapObject.PROPERTY_NAME));
                     }
 
                     if (ServerUtils.isNullOrEmpty(providerName) == true) // not found
@@ -2727,22 +2933,15 @@ public class DirectoryConfigStore implements IConfigStore
 
                 if (ServerUtils.isNullOrEmpty(identityProviderDn) == false)
                 {
-                    IIdentityStoreData provObj =
-                            identityProviderConfigObject.retrieveObject(
-                                    connection, identityProviderDn,
-                                    LdapScope.SCOPE_BASE, null);
+                    IIdentityStoreData provObj = identityProviderConfigObject.retrieveObject(connection,
+                                                                                             identityProviderDn,
+                                                                                             LdapScope.SCOPE_BASE,
+                                                                                             null);
                     CryptoAESE cryptoAES = new CryptoAESE(tenant._tenantKey);
                     deCryptPassword(cryptoAES, provObj.getExtendedIdentityStoreData());
-
-                    retrieveIdentityProviderAttributesMap(connection,
-                            identityProviderDn, provObj, getInternalInfo);
-                    retrieveIdentityProviderSchemaMapping(connection,
-                            identityProviderDn, provObj, getInternalInfo);
-
-
-                    provider =
-                            getIIdenttyStoreDataToReturn(provObj,
-                                    getInternalInfo);
+                    retrieveIdentityProviderAttributesMap(connection, identityProviderDn, provObj, getInternalInfo);
+                    retrieveIdentityProviderSchemaMapping(connection, identityProviderDn, provObj, getInternalInfo);
+                    provider = getIIdenttyStoreDataToReturn(provObj, getInternalInfo);
                 }
             }
 
@@ -2765,8 +2964,13 @@ public class DirectoryConfigStore implements IConfigStore
         case EXTERNAL_DOMAIN:
 
             // future - perform an update instead of add/remove
+            Collection<String> defaultProviders = getDefaultProviders(tenantName);
             this.deleteProvider(tenantName, idsData.getName());
             this.addProvider(tenantName, idsData);
+            if ( (defaultProviders.size() == 1) &&
+                 (defaultProviders.contains(idsData.getName()))) {
+                setDefaultProviders(tenantName, defaultProviders);
+            }
 
             break;
 
@@ -3272,7 +3476,7 @@ public class DirectoryConfigStore implements IConfigStore
     }
 
     @Override
-    public void setAuthnTypes(String tenantName, boolean password, boolean windows, boolean certificate)
+    public void setAuthnTypes(String tenantName, boolean password, boolean windows, boolean certificate, boolean rsaSecureID)
             throws Exception {
             // Set AuthnTypes
             HashSet<Integer> authnTypes = new HashSet<Integer>();
@@ -3285,6 +3489,10 @@ public class DirectoryConfigStore implements IConfigStore
             if (certificate)
                 authnTypes
                         .add(DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_TLS_CERTIFICATE);
+            if (rsaSecureID)
+                authnTypes
+                        .add(DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_RSA_SECUREID);
+
             if (authnTypes.size() == 0) // This is to distinguish the case that
                                         // none of the AuthnTypes is set and
                                         // the case of migrating from old schema
@@ -3296,9 +3504,430 @@ public class DirectoryConfigStore implements IConfigStore
                     TenantLdapObject.PROPERTY_AUTHN_TYPES, ServerUtils.getLdapValue(authnTypesArray));
     }
 
-    //////////////////////////////////////////////////////////////////////
-    // privates
-    //////////////////////////////////////////////////////////////////////
+    @Override
+    public RSAAgentConfig getRSAAgentConfig(String tenantName) throws Exception {
+        ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+
+        ILdapConnectionEx connection = this.getConnection();
+        RSAAgentConfig rsaConfig = null;
+        try
+        {
+            ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+
+            String tenantsRootDn =
+                    this.ensureTenantExists(connection, tenantName);
+
+            Collection<RSAAgentConfig> configs =
+                    retrieveObjectsCollection(connection, tenantsRootDn,
+                            ContainerLdapObject.CONTAINER_RSA_CONFIGURATIONS,
+                            null, RSAAgentConfigLdapObject.getInstance(),
+                            new IObjectProcessedCallback<RSAAgentConfig>() {
+                        @Override
+                        public void processObjectSaved(
+                                ILdapConnectionEx connection,
+                                String rsaConfigDn, RSAAgentConfig rsaConfig)
+                        {
+                            rsaConfig.set_instMap(retrieveRSAAMInstancesMap(connection, rsaConfigDn));
+                            rsaConfig.set_idsUserIDAttributeMaps(retrieveRSAConfigIdsUserIDAttributeMaps(
+                                    connection, rsaConfigDn));
+                        }
+                    });
+            if (configs == null || configs.size() == 0) {
+                rsaConfig = null;
+            } else {
+                rsaConfig = configs.iterator().next();
+            }
+        } finally
+        {
+            connection.close();
+        }
+        return rsaConfig;
+    }
+
+    private static HashMap<String, RSAAMInstanceInfo> retrieveRSAAMInstancesMap(
+            ILdapConnectionEx connection, String rsaAgentConfigDn) {
+        ValidateUtil.validateNotEmpty(rsaAgentConfigDn, "rsaAgentConfigDn");
+
+        Collection<RSAAMInstanceInfo> instColection = retrieveObjectsCollection(connection, rsaAgentConfigDn,
+                ContainerLdapObject.CONTAINER_RSA_INSTANCES,
+                RSAInstanceLdapObject.getInstance(), null);
+        HashMap<String, RSAAMInstanceInfo> retMap = new HashMap<String, RSAAMInstanceInfo>();
+        if (instColection!=null && !instColection.isEmpty()) {
+            for (RSAAMInstanceInfo inst : instColection) {
+                retMap.put(inst.get_siteID(), inst);
+            }
+        }
+        return retMap;
+    }
+    private static HashMap<String, String> retrieveRSAConfigIdsUserIDAttributeMaps(
+            ILdapConnectionEx connection, String rsaAgentConfigDn)
+    {
+        ValidateUtil.validateNotEmpty(rsaAgentConfigDn, "rsaAgentConfigDn");
+        HashMap<String, String> attrMaps = null;
+
+        Collection<AttributeMapping> mapCollection = retrieveObjectsCollection(connection, rsaAgentConfigDn,
+                ContainerLdapObject.CONTAINER_RSA_IDS_USERID_ATTRIBUTE_MAPS,
+                AttributeMappingLdapObject.getInstance(), null);
+        if (mapCollection!=null && !mapCollection.isEmpty()) {
+            attrMaps = new HashMap<String, String>();
+        }
+        for (AttributeMapping pair : mapCollection) {
+            attrMaps.put(pair.getAttributeFrom(), pair.getAttributeTo());
+        }
+        return attrMaps;
+    }
+
+    @Override
+    public void setRsaAgentConfig(String tenantName, RSAAgentConfig rsaConfig)
+            throws Exception
+    {
+
+        ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+        if (rsaConfig == null) {
+            return;
+        }
+
+        ILdapConnectionEx connection = this.getConnection();
+        try
+        {
+            String tenantsRootDn =
+                    this.ensureTenantExists(connection, tenantName);
+
+            ContainerLdapObject rsaConfigsContainer =
+                    ContainerLdapObject.getInstance();
+            String rsaConfigsContainerDn =
+                    DirectoryConfigStore
+                    .ensureObjectExists(
+                            connection,
+                            tenantsRootDn,
+                            rsaConfigsContainer,
+                            ContainerLdapObject.CONTAINER_RSA_CONFIGURATIONS,
+                            true);
+
+
+            Collection<RSAAgentConfig> rsaConfigs = retrieveObjectsCollection(
+                    connection, tenantsRootDn,
+                    ContainerLdapObject.CONTAINER_RSA_CONFIGURATIONS, null,
+                    RSAAgentConfigLdapObject.getInstance(),
+                    new IObjectProcessedCallback<RSAAgentConfig>() {
+                        @Override
+                        public void processObjectSaved(
+                                ILdapConnectionEx connection, String objectDn,
+                                RSAAgentConfig rsaConfig) {
+                        }
+                    });
+            // Set rsaConfigurations
+            RSAAgentConfigLdapObject rsaConfigLdap =
+                    RSAAgentConfigLdapObject.getInstance();
+
+            String rsaConfigDn = rsaConfigLdap.getDnFromCn(
+                    rsaConfigsContainerDn,
+                    RSAAgentConfigLdapObject.PROPERTY_DEFAULT_NAME);
+
+            if (rsaConfig != null ) {
+                if (rsaConfigs.size() == 1 ) {
+                    RSAAgentConfigLdapObject.getInstance().updateObject(
+                            connection, rsaConfigDn,
+                            rsaConfig);
+                }else {
+                    rsaConfigLdap.createObject(connection, rsaConfigDn, rsaConfig);
+                }
+
+                setRsaInstances(rsaConfigDn,  connection,
+                        rsaConfig.get_instMap());
+                //First delete old IDSUserIDAttribute map. Then add the new one.
+                deleteRSAConfigUserIDAttributeMap(tenantName,connection,
+                            rsaConfigDn,
+                            rsaConfig);
+
+                DirectoryConfigStore.saveRSAConfigUserIDAttributeMap(
+                        connection, rsaConfigDn,
+                        rsaConfig.get_idsUserIDAttributeMap());
+            }
+        } finally
+        {
+            connection.close();
+        }
+
+    }
+    private void deleteRSAConfigUserIDAttributeMap(String tenantName,ILdapConnectionEx connection,
+            String rsaConfigDn, RSAAgentConfig config) {
+        ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+        ValidateUtil.validateNotEmpty(rsaConfigDn, "rsaConfigDn");
+        try
+        {
+            AttributeMappingLdapObject attrMapsLdapObject =
+                    AttributeMappingLdapObject.getInstance();
+
+            if (ServerUtils.isNullOrEmpty(rsaConfigDn) == false)
+            {
+                String idsUserIDAttributeMapsDn =
+                        attrMapsLdapObject.lookupObject(connection,
+                                rsaConfigDn,
+                                LdapScope.SCOPE_ONE_LEVEL, ContainerLdapObject.CONTAINER_RSA_IDS_USERID_ATTRIBUTE_MAPS);
+
+                if (ServerUtils.isNullOrEmpty(idsUserIDAttributeMapsDn) == false)
+                {
+                    attrMapsLdapObject.deleteObject(connection, idsUserIDAttributeMapsDn);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Unable to delete old RSAAgentIDSAtributeMaps");
+        }
+
+    }
+
+    private static void saveRSAConfigUserIDAttributeMap(
+            ILdapConnectionEx connection, String rsaConfigDn,
+            HashMap<String, String> idsUserIDAttributeMap)
+    {
+        Collection<AttributeMapping> attributeMappingArray = new ArrayList<AttributeMapping>();
+
+        if (idsUserIDAttributeMap != null) {
+            int i = 0;
+
+            Set<String> keySet = idsUserIDAttributeMap.keySet();
+            for (String key : keySet) {
+                attributeMappingArray.add(new AttributeMapping(key, idsUserIDAttributeMap.get(key), i++));
+            }
+        }
+
+        saveObjectsCollection(
+                connection,
+                rsaConfigDn,
+                ContainerLdapObject.CONTAINER_RSA_IDS_USERID_ATTRIBUTE_MAPS,
+                AttributeMappingLdapObject.getInstance(), attributeMappingArray,
+                null);
+
+    }
+
+
+    /**
+     * if the provided instance is not empty, this function does update and add entries but not remove existing entries.
+     * It clears the container if the updating map is empty.
+     *
+     *
+     * @param rsaConfigDn  non-null
+     * @param connection
+     * @param instMap  could be null or empty
+     */
+    private void setRsaInstances(String rsaConfigDn, ILdapConnectionEx connection, HashMap<String, RSAAMInstanceInfo> instMap) {
+        ValidateUtil.validateNotEmpty(rsaConfigDn, "rsaConfigDn");
+
+        ContainerLdapObject instContainer =
+                ContainerLdapObject.getInstance();
+        String instContainerDn =
+                DirectoryConfigStore
+                .ensureObjectExists(
+                        connection,
+                        rsaConfigDn,
+                        instContainer,
+                        ContainerLdapObject.CONTAINER_RSA_INSTANCES,
+                        true);
+
+        if (instMap != null && instMap.size() > 0) {
+
+            RSAInstanceLdapObject rsaInstanceLdap =
+                    RSAInstanceLdapObject.getInstance();
+            Collection<RSAAMInstanceInfo> instances = retrieveObjectsCollection(
+                    connection, rsaConfigDn,
+                    ContainerLdapObject.CONTAINER_RSA_INSTANCES, null,
+                    rsaInstanceLdap,
+                    new IObjectProcessedCallback<RSAAMInstanceInfo>() {
+                        @Override
+                        public void processObjectSaved(
+                                ILdapConnectionEx connection, String objectDn,
+                                RSAAMInstanceInfo instInfo) {
+                        }
+                    });
+
+            for (String siteID : instMap.keySet()) {
+                RSAAMInstanceInfo inst = instMap.get(siteID);
+                // Set RSAAMInstanceInfo
+
+                addRSAInstanceInfo( instContainerDn, connection, instances, inst);
+            }
+        } else {
+            // Delete the container since it is not set in the new data
+
+            RSAAgentConfigLdapObject.getInstance().deleteObject(
+                    connection, instContainerDn);
+        }
+
+    }
+
+    @Override
+    public void deleteRSAInstanceInfo(String tenantName, String siteID) throws Exception {
+
+        ValidateUtil.validateNotNull(siteID, "siteID");
+
+        ILdapConnectionEx connection = this.getConnection();
+
+        try {
+            String tenantsRootDn =
+                    this.ensureTenantExists(connection, tenantName);
+
+            ContainerLdapObject instContainer =
+                    ContainerLdapObject.getInstance();
+            String rsaConfigsContainerDn =
+                    DirectoryConfigStore
+                    .ensureObjectExists(
+                            connection,
+                            tenantsRootDn,
+                            instContainer,
+                            ContainerLdapObject.CONTAINER_RSA_CONFIGURATIONS,
+                            true);
+
+            String rsaConfigDn = instContainer.getDnFromCn(
+                    rsaConfigsContainerDn,
+                    RSAAgentConfigLdapObject.PROPERTY_DEFAULT_NAME);
+
+            String instContainerDn =
+                    DirectoryConfigStore
+                    .ensureObjectExists(
+                            connection,
+                            rsaConfigDn,
+                            instContainer,
+                            ContainerLdapObject.CONTAINER_RSA_INSTANCES,
+                            true);
+            //test
+            Set<String> rsaInstanceDns =
+                    instContainer.lookupObjects(connection,
+                            instContainerDn, LdapScope.SCOPE_ONE_LEVEL,
+                            siteID, RSAInstanceLdapObject.OBJECT_CLASS);
+
+            for (String instDn : rsaInstanceDns)
+            {
+                instContainer.deleteObject(
+                        connection, instDn);
+            }
+        } finally {
+            connection.close();
+        }
+
+    }
+    private void addRSAInstanceInfo( String instContainerDn,
+            ILdapConnectionEx connection, Collection<RSAAMInstanceInfo> instances, RSAAMInstanceInfo inst) {
+
+        RSAInstanceLdapObject rsaInstanceLdap =
+                RSAInstanceLdapObject.getInstance();
+        String instDn = rsaInstanceLdap.getDnFromCn(
+                instContainerDn,
+                inst.get_siteID());
+
+        if (inst != null ) {
+            if (isInstAlreadyCreated(instances, inst.get_siteID()) ) {
+                RSAInstanceLdapObject.getInstance().updateObject(
+                        connection, instDn,
+                        inst);
+            }else {
+                rsaInstanceLdap.createObject(connection, instDn, inst);
+            }
+        }
+
+    }
+
+    /**
+     * Check if RSAAMInstanceInfo is already defined for a site.
+     *
+     * @param instances set of RSAAMInstanceInfo defined for the tenant
+     * @param siteID the siteID to search for
+     * @return true if the set contains the given site
+     */
+    private boolean isInstAlreadyCreated(Collection<RSAAMInstanceInfo> instances, String siteID) {
+        boolean retVal = false;
+
+        ValidateUtil.validateNotNull(siteID, "siteID");
+        if (instances == null || instances.isEmpty()) {
+            retVal = false;
+        } else {
+            for (RSAAMInstanceInfo instInfo : instances) {
+                if (instInfo.get_siteID().equals(siteID)) {
+                    retVal = true;
+                }
+            }
+        }
+        return retVal;
+    }
+
+
+    @Override
+    public void addRSAInstanceInfo(String tenantName, RSAAMInstanceInfo instInfo) throws Exception {
+        ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+        ValidateUtil.validateNotNull(instInfo, "instInfo");
+        ILdapConnectionEx connection = this.getConnection();
+
+        try
+        {
+            String tenantsRootDn =
+                    this.ensureTenantExists(connection, tenantName);
+
+            ContainerLdapObject ldapContainer =
+                    ContainerLdapObject.getInstance();
+            String rsaConfigsContainerDn =
+                    DirectoryConfigStore
+                    .ensureObjectExists(
+                            connection,
+                            tenantsRootDn,
+                            ldapContainer,
+                            ContainerLdapObject.CONTAINER_RSA_CONFIGURATIONS,
+                            true);
+
+            Collection<RSAAgentConfig> rsaConfigs = retrieveObjectsCollection(
+                    connection, tenantsRootDn,
+                    ContainerLdapObject.CONTAINER_RSA_CONFIGURATIONS, null,
+                    RSAAgentConfigLdapObject.getInstance(),
+                    new IObjectProcessedCallback<RSAAgentConfig>() {
+                        @Override
+                        public void processObjectSaved(
+                                ILdapConnectionEx connection, String objectDn,
+                                RSAAgentConfig rsaConfig) {
+                        }
+                    });
+
+            //intialize a default RSAAgentCofig if needed
+            if (rsaConfigs == null || rsaConfigs.isEmpty() ) {
+                RSAAgentConfig agentConfig = new RSAAgentConfig();
+                setRsaAgentConfig(tenantName, agentConfig);
+            }
+
+            RSAAgentConfigLdapObject rsaConfigLdap =
+                    RSAAgentConfigLdapObject.getInstance();
+
+            String rsaConfigDn = rsaConfigLdap.getDnFromCn(
+                    rsaConfigsContainerDn,
+                    RSAAgentConfigLdapObject.PROPERTY_DEFAULT_NAME);
+
+            String instContainerDn =
+                    DirectoryConfigStore
+                    .ensureObjectExists(
+                            connection,
+                            rsaConfigDn,
+                            ldapContainer,
+                            ContainerLdapObject.CONTAINER_RSA_INSTANCES,
+                            true);
+
+            RSAInstanceLdapObject rsaInstanceLdap =
+                    RSAInstanceLdapObject.getInstance();
+            Collection<RSAAMInstanceInfo> instances = retrieveObjectsCollection(
+                    connection, rsaConfigDn,
+                    ContainerLdapObject.CONTAINER_RSA_INSTANCES, null,
+                    rsaInstanceLdap,
+                    new IObjectProcessedCallback<RSAAMInstanceInfo>() {
+                        @Override
+                        public void processObjectSaved(
+                                ILdapConnectionEx connection, String objectDn,
+                                RSAAMInstanceInfo instInfo) {
+                        }
+                    });
+
+            addRSAInstanceInfo(instContainerDn, connection, instances, instInfo);
+        } catch (Exception e) {
+            logger.error(String.format("Fail to add RSAAMInstance for site %s", instInfo.get_siteID()), e);
+        } finally {
+            connection.close();
+        }
+    }
 
     private Tenant getTenant(ILdapConnectionEx connection, String name) throws Exception
     {
@@ -3758,8 +4387,7 @@ public class DirectoryConfigStore implements IConfigStore
         IIdentityStoreData iIdentityStoreData = null;
         if (provider instanceof ServerIdentityStoreData)
         {
-            ServerIdentityStoreData storeData =
-                    (ServerIdentityStoreData) provider;
+            ServerIdentityStoreData storeData = (ServerIdentityStoreData) provider;
             if (getInternalInfo == false)
             {
                 iIdentityStoreData = storeData.getExternalIdentityStoreData();
@@ -3768,7 +4396,6 @@ public class DirectoryConfigStore implements IConfigStore
                 iIdentityStoreData = storeData;
             }
         }
-
         return iIdentityStoreData;
     }
 
@@ -4433,5 +5060,6 @@ public class DirectoryConfigStore implements IConfigStore
             }
         }
     }
+
 
 }

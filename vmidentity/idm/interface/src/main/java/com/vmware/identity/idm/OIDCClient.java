@@ -159,7 +159,7 @@ public class OIDCClient implements Serializable {
         // Validate and set OIDC meta data defaults
         // Refer OIDC SDK code for string representation of each fields
         private void validateAndSetDefaults() {
-            if (this.redirectUris == null) {
+            if (this.redirectUris == null || this.redirectUris.size() == 0) {
                 throw new IllegalArgumentException("Invalid client metadata: "
                         + "Redirect URI is required.");
             } else {
@@ -189,7 +189,7 @@ public class OIDCClient implements Serializable {
             }
 
             if (this.tokenEndpointAuthMethod == null) {
-                this.tokenEndpointAuthMethod = "client_secret_basic";
+                this.tokenEndpointAuthMethod = "none";
             }
 
             if (this.tokenEndpointAuthSigningAlg == null) {
