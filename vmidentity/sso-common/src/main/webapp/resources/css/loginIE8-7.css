@@ -96,8 +96,8 @@ body {
 #logonBannerID {
    clear: both;
    float:right;
-   margin-right:40px;
-   margin-left:162px;
+   width:248px;
+   text-align:left;
    margin-top:2px;
 }
 
@@ -133,6 +133,14 @@ body {
 	box-shadow: 0 0 10px #b2c0cc;
 }
 
+#rsaamID {
+   clear:both;
+   float:right;
+   width:248px;
+   text-align:left;
+   margin-top:8px;
+}
+
 #checkboxLabel {
     display: block;
     padding-left: 20px;
@@ -153,6 +161,19 @@ body {
 }
 
 #smartcardCheckbox {
+    width: 13px;
+    height: 13px;
+    padding: 0;
+    margin:0;
+    margin-right:10px;
+    vertical-align: bottom;
+    position: relative;
+    top: -1px;
+    left: 5px;
+    *overflow: hidden;
+}
+
+#rsaamCheckbox {
     width: 13px;
     height: 13px;
     padding: 0;
@@ -236,12 +257,12 @@ body {
    filter:alpha(opacity=30); /* For IE8 and earlier */
 }
 
-#smartcardCheckbox:enabled {
+#smartcardCheckbox:disabled {
    opacity:0.3;
    filter:alpha(opacity=30); /* For IE8 and earlier */
 }
 
-#logonBannerCheckbox:enabled {
+#logonBannerCheckbox:disabled {
    opacity:0.3;
    filter:alpha(opacity=30); /* For IE8 and earlier */
 }
@@ -313,4 +334,13 @@ body {
 .ui-dialog-titlebar {
 	background-color: #FFFFFF;
 	border: none;
+}
+
+.hyphenate {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  -webkit-hyphens: auto;
+  -ms-hyphens: auto;
+  -moz-hyphens: auto;
+  hyphens: auto;
 }

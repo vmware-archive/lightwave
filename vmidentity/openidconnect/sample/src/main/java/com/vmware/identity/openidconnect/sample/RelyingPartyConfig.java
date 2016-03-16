@@ -114,10 +114,6 @@ public class RelyingPartyConfig {
         return this.regInfoDir + "/rp.info";
     }
 
-    public String getOpMetadataFile() {
-        return this.regInfoDir + "/op.metadata";
-    }
-
     public String getOpPublickeyFile() {
         return this.regInfoDir + "/op.publickey";
     }

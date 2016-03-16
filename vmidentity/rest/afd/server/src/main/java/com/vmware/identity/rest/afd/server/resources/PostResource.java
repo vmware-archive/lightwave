@@ -15,11 +15,11 @@ package com.vmware.identity.rest.afd.server.resources;
 
 import java.util.Collection;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
@@ -28,6 +28,7 @@ import com.vmware.identity.rest.afd.data.ActiveDirectoryJoinInfoDTO;
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.core.server.authorization.Role;
 import com.vmware.identity.rest.core.server.authorization.annotation.RequiresRole;
+import com.vmware.identity.rest.core.server.resources.BaseResource;
 
 /**
  * Resource that contains alternative POST endpoints for every GET endpoint throughought the other
@@ -45,7 +46,7 @@ import com.vmware.identity.rest.core.server.authorization.annotation.RequiresRol
 @Path("/post")
 public class PostResource extends BaseResource {
 
-    public PostResource(@Context HttpServletRequest request, @Context SecurityContext securityContext) {
+    public PostResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(request, securityContext);
     }
 

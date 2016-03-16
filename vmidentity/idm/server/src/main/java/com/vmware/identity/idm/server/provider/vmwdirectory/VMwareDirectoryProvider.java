@@ -46,6 +46,7 @@ import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang.Validate;
 
+import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.Attribute;
@@ -78,10 +79,12 @@ import com.vmware.identity.idm.VmHostData;
 import com.vmware.identity.idm.server.IdentityManager;
 import com.vmware.identity.idm.server.ServerUtils;
 import com.vmware.identity.idm.server.config.IdmServerConfig;
+import com.vmware.identity.idm.server.performance.IIdmAuthStatRecorder;
 import com.vmware.identity.idm.server.provider.BaseLdapProvider;
 import com.vmware.identity.idm.server.provider.ISystemDomainIdentityProvider;
 import com.vmware.identity.idm.server.provider.NoSuchGroupException;
 import com.vmware.identity.idm.server.provider.NoSuchUserException;
+import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.interop.ldap.AlreadyExistsLdapException;
 import com.vmware.identity.interop.ldap.AttributeOrValueExistsLdapException;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
@@ -95,6 +98,8 @@ import com.vmware.identity.interop.ldap.LdapScope;
 import com.vmware.identity.interop.ldap.LdapValue;
 import com.vmware.identity.interop.ldap.NoSuchAttributeLdapException;
 import com.vmware.identity.interop.ldap.NoSuchObjectLdapException;
+import com.vmware.identity.performanceSupport.IIdmAuthStat.ActivityKind;
+import com.vmware.identity.performanceSupport.IIdmAuthStat.EventLevel;
 
 public class VMwareDirectoryProvider extends BaseLdapProvider implements
         ISystemDomainIdentityProvider
@@ -129,10 +134,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
      */
     private static final String USER_PRINC_QUERY_BY_USER_PRINCIPAL_OR_ACCT =
             "(&(|(userPrincipalName=%1$s)(sAMAccountName=%2$s))(objectClass=user)(!(vmwSTSSubjectDN=*))%3$s)";
-    /**
-     * the filter to select the users whose vmwSRPSecret is not set
-     */
-    private static final String FILTER_VMWSRPSECRET_NOT_SET = "(!(vmwSRPSecret=*))";
 
     private static final String USER_PRINC_QUERY_BY_OBJECTSID =
             "(&(objectSid=%s)(objectClass=user)(!(vmwSTSSubjectDN=*)))";
@@ -362,35 +363,42 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             throws LoginException
     {
         ValidateUtil.validateNotNull(principal, "principal");
+
+        IIdmAuthStatRecorder idmAuthStatRecorder = this.createIdmAuthStatRecorderInstance(
+                DiagnosticsContextFactory.getCurrentDiagnosticsContext().getTenantName(),
+                ActivityKind.AUTHENTICATE, EventLevel.INFO, principal);
+        idmAuthStatRecorder.start();
+
         principal = this.normalizeAliasInPrincipal(principal);
+        InvalidCredentialsLdapException srpEx = null;
         try {
             ILdapConnectionEx connection = null;
-            boolean srpSucceeded = false;
-            InvalidCredentialsLdapException srpEx = null;
             try {
                 connection = this.getConnection(principal.getUPN(), password, AuthenticationType.SRP, false);
-                srpSucceeded = true;
             } catch (InvalidCredentialsLdapException ex) {
-                logger.warn(String.format("Failed SRP binding to authenticate with error: %s", ex.getMessage()));
+                logger.warn("Failed to authenticate using SRP binding", ex);
                 srpEx = ex;
             } finally {
                 if (connection != null) {
                     connection.close();
+                    connection = null;
                 }
             }
-            if(!srpSucceeded){
+            if(srpEx != null){
                 String userDn = getUserDn(principal, true);
                 if(userDn != null){
                     try {
-                        // The user is NOT SRP enabled, do simple binding to authenticate user.
-                        logger.warn(String.format("Trying with simple binding to authenticate user %s", userDn));
-                        connection = null;
+                        logger.warn("The user is not SRP-enabled. Attempting to authenticate using simple bind.");
                         connection = this.getConnection(userDn, password, AuthenticationType.PASSWORD, false);
                     } finally {
                         if (connection != null) {
                             connection.close();
+                            connection = null;
                         }
                     }
+                } else {
+                    logger.warn("The user is SRP-enabled and failed to authenticate.");
+                    throw srpEx;
                 }
             }
         } catch (Exception ex) {
@@ -399,6 +407,8 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             loginException.initCause(ex);
             throw loginException;
         }
+
+        idmAuthStatRecorder.end();
 
         return principal;
     }
@@ -1698,7 +1708,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     }
 
     @Override
-    public Set<Group> findDirectParentGroups(PrincipalId id) throws Exception
+    public PrincipalGroupLookupInfo findDirectParentGroups(PrincipalId id) throws Exception
     {
         ValidateUtil.validateNotNull(id, "id");
 
@@ -1783,29 +1793,27 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
             ILdapEntry[] entries = message.getEntries();
 
-            if (entries == null || entries.length == 0)
-            {
-                // No direct parent groups found for this principal
-                return groups;
-            }
-
-            for (ILdapEntry entry : entries)
+            if (entries != null && entries.length > 0)
             {
 
-                String groupName =
-                        getStringValue(entry
-                                .getAttributeValues(ATTR_NAME_CN));
+               for (ILdapEntry entry : entries)
+               {
 
-                String description =
-                        getOptionalStringValue(entry
-                                .getAttributeValues(ATTR_DESCRIPTION));
+                   String groupName =
+                           getStringValue(entry
+                                   .getAttributeValues(ATTR_NAME_CN));
 
-                GroupDetail detail = new GroupDetail(description);
+                   String description =
+                           getOptionalStringValue(entry
+                                   .getAttributeValues(ATTR_DESCRIPTION));
 
-                PrincipalId groupId = new PrincipalId(groupName, domainName);
+                   GroupDetail detail = new GroupDetail(description);
 
-                group = new Group(groupId, this.getPrincipalAliasId(groupName), null/*sid*/, detail);
-                groups.add(group);
+                   PrincipalId groupId = new PrincipalId(groupName, domainName);
+
+                   group = new Group(groupId, this.getPrincipalAliasId(groupName), null/*sid*/, detail);
+                   groups.add(group);
+               }
             }
         } finally
         {
@@ -1819,12 +1827,11 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             }
             connection.close();
         }
-
-        return groups;
+        return new PrincipalGroupLookupInfo(groups, null);// this provider does not expose objectIds at the moment
     }
 
     @Override
-    public Set<Group> findNestedParentGroups(PrincipalId id) throws Exception
+    public PrincipalGroupLookupInfo findNestedParentGroups(PrincipalId id) throws Exception
     {
         ValidateUtil.validateNotNull(id, "id");
 
@@ -1888,57 +1895,54 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                LdapValue[] values =
                         userEntries[0].getAttributeValues(ATTR_NAME_MEMBEROF);
 
-                if (null == values)
+                if (null != values)
                 {
-                    // If the user doesn't belong to any group.
-                    return groups;
-                }
+                   for (LdapValue val : values)
+                   {
+                       String groupDn = val.toString();
+                       String[] attrNames =
+                               { ATTR_NAME_CN, ATTR_DESCRIPTION,
+                                       ATTR_NAME_MEMBER };
 
-                for (LdapValue val : values)
-                {
-                    String groupDn = val.toString();
-                    String[] attrNames =
-                            { ATTR_NAME_CN, ATTR_DESCRIPTION,
-                                    ATTR_NAME_MEMBER };
+                       String filter = GROUP_ALL_PRINC_QUERY;
 
-                    String filter = GROUP_ALL_PRINC_QUERY;
+                       // Search just this group
+                       String groupSearchBaseDn = groupDn;
 
-                    // Search just this group
-                    String groupSearchBaseDn = groupDn;
+                       message =
+                               connection.search(groupSearchBaseDn,
+                                       LdapScope.SCOPE_BASE, filter, attrNames,
+                                       false);
 
-                    message =
-                            connection.search(groupSearchBaseDn,
-                                    LdapScope.SCOPE_BASE, filter, attrNames,
-                                    false);
+                       ILdapEntry[] entries = message.getEntries();
 
-                    ILdapEntry[] entries = message.getEntries();
+                       // TODO: is this this the right exception to throw
+                       // We need to propagate appropriate exceptions to the admin
+                       // and its client.
+                       if (entries == null || entries.length == 0)
+                       {
+                           // No group found for the groupDn, this really shouldn't
+                           // happen
+                           throw new RuntimeException(String.format(
+                                   "no group found for %s", groupDn));
+                       }
 
-                    // check if this is the right exception to throw
-                    // We need to propagate appropriate exceptions to the admin
-                    // and its client.
-                    if (entries == null || entries.length == 0)
-                    {
-                        // No group found for the groupDn, this really shouldn't
-                        // happen
-                        throw new RuntimeException(String.format(
-                                "no group found for %s", groupDn));
-                    }
+                       String groupName =
+                               getStringValue(entries[0]
+                                       .getAttributeValues(ATTR_NAME_CN));
 
-                    String groupName =
-                            getStringValue(entries[0]
-                                    .getAttributeValues(ATTR_NAME_CN));
+                       String description =
+                               getOptionalStringValue(entries[0]
+                                       .getAttributeValues(ATTR_DESCRIPTION));
 
-                    String description =
-                            getOptionalStringValue(entries[0]
-                                    .getAttributeValues(ATTR_DESCRIPTION));
+                       GroupDetail detail = new GroupDetail(description);
 
-                    GroupDetail detail = new GroupDetail(description);
+                       PrincipalId groupId =
+                               new PrincipalId(groupName, domainName);
 
-                    PrincipalId groupId =
-                            new PrincipalId(groupName, domainName);
-
-                    group = new Group(groupId, this.getPrincipalAliasId(groupName), null/*sid*/, detail);
-                    groups.add(group);
+                       group = new Group(groupId, this.getPrincipalAliasId(groupName), null/*sid*/, detail);
+                       groups.add(group);
+                   }
                 }
             }
         } finally
@@ -1953,8 +1957,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             }
             connection.close();
         }
-
-        return groups;
+        return new PrincipalGroupLookupInfo(groups, null); // this provider does not expose object Ids at the moment
     }
 
     @Override
@@ -2081,6 +2084,11 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             throws Exception
     {
         ValidateUtil.validateNotNull(principalId, "principalId");
+
+        IIdmAuthStatRecorder idmAuthStatRecorder = this.createIdmAuthStatRecorderInstance(
+                DiagnosticsContextFactory.getCurrentDiagnosticsContext().getTenantName(),
+                ActivityKind.GETATTRIBUTES, EventLevel.INFO, principalId);
+        idmAuthStatRecorder.start();
 
         List<AttributeValuePair> result = new ArrayList<AttributeValuePair>();
 
@@ -2258,6 +2266,8 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 result.add(avPair);
             }
         }
+
+        idmAuthStatRecorder.end();
 
         return result;
     }
@@ -4663,12 +4673,18 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
         return filter;
     }
-    // return a list of group names who has FSP members in fspIds
-    // GroupName is in domainFqdn\\groupName format
-    @Override
-    public List<String> findGroupsForFsps(List<String> fspIds) throws Exception
+    private interface IGroupCallback<T>
+
+
     {
-        List<String> groupNames = new ArrayList<String>();
+        T processGroupEntry(ILdapEntry entry);
+    }
+
+    private <T> List<T> getGroupsForFsps(
+        List<String> fspIds, String[] groupAttributeNames,
+        IGroupCallback<T> groupCallBack) throws Exception
+    {
+        List<T> groups = new ArrayList<T>();
         ILdapConnectionEx connection = getConnection();
         ILdapMessage fspsMessage = null;
         ILdapMessage fspGroupsMessage = null;
@@ -4680,49 +4696,52 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             // (1) retrieves a list of FSPs DNs if found any
             String filterFsps = constructFilterToFindFsps(fspIds);
 
-            if (ServerUtils.isNullOrEmpty(filterFsps))
-                return groupNames;
-
-            fspsMessage = connection.search(getTenantSearchBaseRootDN(), LdapScope.SCOPE_SUBTREE,
-                                            filterFsps, attrNames, false);
-
-            ILdapEntry[] entriesFsps = fspsMessage.getEntries();
-            List<String> fspDns = new ArrayList<String>();
-            if (entriesFsps != null && entriesFsps.length > 0)
+            if (ServerUtils.isNullOrEmpty(filterFsps) == false)
             {
-                for (ILdapEntry entry : entriesFsps)
-                {
-                    if (entry == null) continue;
 
-                    fspDns.add(entry.getDN());
+                fspsMessage = connection.search(getTenantSearchBaseRootDN(), LdapScope.SCOPE_SUBTREE,
+                                                filterFsps, attrNames, false);
+                ILdapEntry[] entriesFsps = fspsMessage.getEntries();
+                List<String> fspDns = new ArrayList<String>();
+                if (entriesFsps != null && entriesFsps.length > 0)
+                {
+                    for (ILdapEntry entry : entriesFsps)
+                    {
+                        if (entry == null) continue;
+                        fspDns.add(entry.getDN());
+                    }
+                }
+
+                // (2) retrieves groups that have fspDns as member
+                String filterFspGroups = constructFilterForFindFspGroups(fspDns);
+
+                if (ServerUtils.isNullOrEmpty(filterFspGroups) == false)
+                {
+                    fspGroupsMessage =
+                            connection.search(getTenantSearchBaseRootDN(), LdapScope.SCOPE_SUBTREE,
+                                              filterFspGroups, groupAttributeNames, false);
+                    ILdapEntry[] entriesFspGroups = fspGroupsMessage.getEntries();
+                    T groupInstance = null;
+                    if (entriesFspGroups != null && entriesFspGroups.length > 0)
+                    {
+                        for (ILdapEntry entry : entriesFspGroups)
+                        {
+                            if (entry != null)
+                            {
+                                groupInstance = groupCallBack.processGroupEntry(entry);
+                                if ( groupInstance != null )
+                                {
+                                    groups.add(groupInstance);
+                                }
+                            }
+                        }
+                    }
+
+                    // TODO
+                    // If we want to support nested groups in system domain
+                    // For each group in groupNames, resolves its group membership
                 }
             }
-
-            // (2) retrieves groups that have fspDns as member
-            String filterFspGroups = constructFilterForFindFspGroups(fspDns);
-
-            if (ServerUtils.isNullOrEmpty(filterFspGroups))
-                return groupNames;
-
-            fspGroupsMessage =
-                    connection.search(getTenantSearchBaseRootDN(), LdapScope.SCOPE_SUBTREE,
-                                      filterFspGroups, attrNames, false);
-
-            ILdapEntry[] entriesFspGroups = fspGroupsMessage.getEntries();
-            if (entriesFspGroups != null && entriesFspGroups.length > 0)
-            {
-                for (ILdapEntry entry : entriesFspGroups)
-                {
-                    if (entry == null) continue;
-
-                    String groupName = getStringValue(entry.getAttributeValues(ATTR_NAME_ACCOUNT));
-                    String groupDomainName = ServerUtils.getDomainFromDN(entry.getDN());
-                    groupNames.add(groupDomainName + "\\" + groupName);
-                }
-            }
-
-            // If we want to support nested groups in system domain
-            // For each group in groupNames, resolves its group membership
         }
         finally
         {
@@ -4730,15 +4749,74 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 fspsMessage.close();
             }
-            if (null != fspGroupsMessage)
-            {
-                fspGroupsMessage.close();
-            }
 
             connection.close();
         }
 
-        return groupNames;
+        return groups;
+    }
+
+    // return a list of group names who has FSP members in fspIds
+    // GroupName is in domainFqdn\\groupName format
+    @Override
+    public List<String> findGroupsForFsps(List<String> fspIds) throws Exception
+    {
+        return getGroupsForFsps(
+            fspIds,
+            new String[] {ATTR_NAME_ACCOUNT},
+            new IGroupCallback<String>()
+            {
+                @Override
+                public String processGroupEntry(ILdapEntry entry)
+                {
+                    String groupName = null;
+                    if (entry != null)
+                    {
+                        String accountName = getStringValue(entry.getAttributeValues(ATTR_NAME_ACCOUNT));
+                        String groupDomainName = ServerUtils.getDomainFromDN(entry.getDN());
+                        groupName = groupDomainName + "\\" + accountName;
+                    }
+                    return groupName;
+                }
+            }
+        );
+    }
+
+    // return a list of groups who has FSP members in fspIds
+    @Override
+    public List<Group> findGroupObjectsForFsps(List<String> fspIds) throws Exception
+    {
+        return getGroupsForFsps(
+            fspIds,
+            new String[] { ATTR_DESCRIPTION, ATTR_NAME_CN },
+            new IGroupCallback<Group>()
+            {
+                @Override
+                public Group processGroupEntry(ILdapEntry entry)
+                {
+                    Group group = null;
+
+                    if(entry != null)
+                    {
+                        logger.trace(String.format("Processing group entry:%s", entry.getDN()));
+                        String groupName =
+                                getStringValue(entry
+                                        .getAttributeValues(ATTR_NAME_CN));
+
+                        String description =
+                                getOptionalStringValue(entry
+                                        .getAttributeValues(ATTR_DESCRIPTION));
+
+                        GroupDetail detail = new GroupDetail(description);
+
+                        PrincipalId groupId = new PrincipalId(groupName, ServerUtils.getDomainFromDN(entry.getDN()));
+
+                        group = new Group(groupId, getPrincipalAliasId(groupName), null/*sid*/, detail);
+                    }
+                    return group;
+                }
+            }
+        );
     }
 
     private void writePasswordPolicy(PasswordPolicy policy) throws Exception
@@ -6251,18 +6329,16 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
        return hosts;
     }
 
-    private String getUserDn(PrincipalId principal, boolean srpNotEnalbedUserOnly) throws Exception{
+    private String getUserDn(PrincipalId principal, boolean srpNotEnabledUserOnly) throws Exception{
         ILdapConnectionEx connection = getConnection();
         String userDn = null;
         ILdapMessage message = null;
+        final String vmwSRPSecretAttrName = "vmwSRPSecret";
         try {
             String domainName = getDomain();
             String searchBaseDn = getDomainDN(domainName);
-            String filter =
-                    srpNotEnalbedUserOnly?
-                    buildQueryByUserFilter(principal, FILTER_VMWSRPSECRET_NOT_SET):
-                    buildQueryByUserFilter(principal);
-            String[] attrs = new String[] {null};
+            String filter = buildQueryByUserFilter(principal);
+            String[] attrs = new String[] { vmwSRPSecretAttrName };
             message = connection.search(searchBaseDn,
                     LdapScope.SCOPE_SUBTREE, filter, attrs, true);
             ILdapEntry[] entries = message.getEntries();
@@ -6272,6 +6348,11 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 throw new IllegalStateException("Internal error : duplicate entries were found");
             } else {
                 userDn = entries[0].getDN();
+                LdapValue[] values = entries[0].getAttributeValues(vmwSRPSecretAttrName);
+                if(srpNotEnabledUserOnly && values != null && values.length > 0) {
+                    // return null as the caller doesn't want the userDn if its vmwSRPSecret attribute is set.
+                    userDn = null;
+                }
             }
             return userDn;
         } finally {
@@ -6279,5 +6360,10 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 message.close();
             connection.close();
         }
+    }
+
+    @Override
+    public String getStoreUPNAttributeName() {
+        return ATTR_USER_PRINCIPAL_NAME;
     }
 }
