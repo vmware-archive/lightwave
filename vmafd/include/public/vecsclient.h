@@ -21,6 +21,8 @@
 extern "C" {
 #endif
 
+#include "vmafdtypes.h"
+
 typedef struct _VECS_STORE_ *PVECS_STORE;
 typedef struct _VECS_ENUM_CONTEXT *PVECS_ENUM_CONTEXT;
 

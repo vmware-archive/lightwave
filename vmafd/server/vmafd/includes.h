@@ -51,6 +51,7 @@
 #include <vmafddefines.h>
 #include <vmafderrorcode.h>
 #include <vmafdcommon.h>
+#include <vmsuperlogging.h>
 #include <vmafcfg.h>
 #include <vecsdb.h>
 #include <cdcdb.h>
@@ -58,13 +59,12 @@
 #include <vecsauth.h>
 #include <authdb.h>
 #include <vmeventrpc.h>
-#include <vmauthsvcrpc.h>
 #include <wchar.h>
 #include <vmdns.h>
 #include <vmafdclient.h>
 #include <vmdirclient.h>
 #include <vmdirerrors.h>
-#include <vmdns.h> // comment out for now
+#include <vmdns.h>
 #include <dirent.h>
 #include <vecs_error.h>
 #include <linux/limits.h>
@@ -106,9 +106,9 @@
 #include <vmafddefines.h>
 #include <vmafderrorcode.h>
 #include <vmafdcommon.h>
+#include <vmsuperlogging.h>
 #include <vmafcfg.h>
 #include <vmeventrpc.h>
-#include <vmauthsvcrpc.h>
 #include <securitystructs.h>
 #include <vecsdb.h>
 #include <cdcdb.h>
@@ -117,7 +117,7 @@
 #include <vmafdclient.h>
 #include <vmdirclient.h>
 #include <vmdirerrors.h>
-#include <vmdns.h> // comment out for now
+#include <vmdns.h>
 #include <vecs_error.h>
 
 #endif
@@ -128,5 +128,7 @@
 #include "structs.h"
 #include "authprototypes.h"
 #include "prototypes.h"
+#include "vmafd60_h.h"
 #include "vmafd_h.h"
+#include "vmafdsuperlog_h.h"
 #include "externs.h"

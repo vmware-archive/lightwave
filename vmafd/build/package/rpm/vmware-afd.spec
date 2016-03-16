@@ -208,12 +208,15 @@ cd build && make install DESTDIR=%{buildroot}
 %{_bindir}/vdcpromo
 %{_bindir}/vecs-cli
 %{_bindir}/vmafd-cli
+%{_bindir}/sl-cli
 %{_sysconfdir}/vmware/java/vmware-override-java.security
 %{_datadir}/config/java.security.linux
 %{_lib64dir}/libvecsjni.so*
 %{_lib64dir}/libcdcjni.so*
+%{_lib64dir}/libheartbeatjni.so*
 %{_jreextdir}/vmware-endpoint-certificate-store.jar
 %{_jreextdir}/client-domain-controller-cache.jar
+%{_jreextdir}/afd-heartbeat-service.jar
 %{_jarsdir}/*.jar
 %{_lib64dir}/libvmafcfgapi.so*
 %{_lib64dir}/libvmafdclient.so*
@@ -221,14 +224,18 @@ cd build && make install DESTDIR=%{buildroot}
 
 %files client-devel
 %defattr(-,root,root)
-%{_includedir}/vecsclient.h
 %{_includedir}/vmafd.h
-%{_includedir}/vmafdclient.h
 %{_includedir}/vmafdtypes.h
+%{_includedir}/vmafdclient.h
+%{_includedir}/vecsclient.h
+%{_includedir}/cdcclient.h
+%{_includedir}/vmsuperlogging.h
 %{_lib64dir}/libcdcjni.a
 %{_lib64dir}/libcdcjni.la
 %{_lib64dir}/libvecsjni.a
 %{_lib64dir}/libvecsjni.la
+%{_lib64dir}/libheartbeatjni.a
+%{_lib64dir}/libheartbeatjni.la
 %{_lib64dir}/libvmafdclient.a
 %{_lib64dir}/libvmafdclient.la
 %{_lib64dir}/libvmafcfgapi.a

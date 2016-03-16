@@ -1153,3 +1153,64 @@ typedef struct _VMW_TYPE_SPEC_
   }\
 }
 
+#define GET_CDC_STATUS_INFO_INPUT_PARAMS \
+{\
+    {\
+        "DC Name",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "Domain Name",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    }\
+}
+
+
+#define GET_CDC_STATUS_INFO_OUTPUT_PARAMS \
+{\
+    {\
+        "Return Code",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+    {\
+        "Last Ping",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+    {\
+        "Last Response Time",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+    {\
+        "Last Error",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+    {\
+        "IsAlive",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+    {\
+        "DC Site Name",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "Heartbeat Status Blob",\
+        VMW_IPC_TYPE_BLOB,\
+        {NULL}\
+    },\
+    {\
+        "Heartbeat Status Blob Size",\
+        VMW_IPC_TYPE_BLOB_SIZE,\
+        {NULL}\
+    }\
+}
+
+
+

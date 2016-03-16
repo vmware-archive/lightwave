@@ -90,6 +90,12 @@ VmAfPosixCfgSetValue(
 	DWORD               dwSize
 	);
 
+DWORD
+VmAfPosixCfgDeleteValue(
+	PVMAF_CFG_KEY       pKey,
+	PCSTR               pszValue
+	);
+
 VOID
 VmAfPosixCfgCloseKey(
     PVMAF_CFG_KEY pKey

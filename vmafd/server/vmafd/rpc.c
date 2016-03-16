@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -222,6 +222,79 @@ error:
     goto cleanup;
 }
 
+DWORD
+CdcRpcServerAllocateDCInfoW(
+    PCDC_DC_INFO_W  pCdcInfo,
+    PCDC_DC_INFO_W  *ppRpcCdcInfo
+    )
+{
+    DWORD dwError = 0;
+    PCDC_DC_INFO_W  pRpcCdcInfo = NULL;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(pCdcInfo, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(ppRpcCdcInfo, dwError);
+
+    dwError = VmAfdRpcServerAllocateMemory(
+                  sizeof(CDC_DC_INFO_W),
+                  (PVOID *)&pRpcCdcInfo
+                  );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    if (pCdcInfo->pszDCAddress)
+    {
+        dwError = VmAfdRpcServerAllocateStringW(
+                        pCdcInfo->pszDCAddress,
+                        &pRpcCdcInfo->pszDCAddress
+                        );
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    if (pCdcInfo->pszDCName)
+    {
+        dwError = VmAfdRpcServerAllocateStringW(
+                        pCdcInfo->pszDCName,
+                        &pRpcCdcInfo->pszDCName
+                        );
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    if (pCdcInfo->pszDcSiteName)
+    {
+        dwError = VmAfdRpcServerAllocateStringW(
+                        pCdcInfo->pszDcSiteName,
+                        &pRpcCdcInfo->pszDcSiteName
+                        );
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    if (pCdcInfo->pszDomainName)
+    {
+        dwError = VmAfdRpcServerAllocateStringW(
+                        pCdcInfo->pszDomainName,
+                        &pRpcCdcInfo->pszDomainName
+                        );
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    *ppRpcCdcInfo = pRpcCdcInfo;
+
+cleanup:
+    return dwError;
+
+error:
+    if (ppRpcCdcInfo)
+    {
+        *ppRpcCdcInfo = NULL;
+    }
+    if (pRpcCdcInfo)
+    {
+        CdcRpcServerFreeDCInfoW(pRpcCdcInfo);
+    }
+
+    goto cleanup;
+}
+
+
 VOID
 VmAfdRpcServerFreeStringArrayA(
     PSTR*  ppszStrArray,
@@ -252,6 +325,27 @@ VmAfdRpcServerFreeStringArrayW(
         }
         VmAfdRpcServerFreeMemory(ppwszStrArray);
     }
+}
+
+DWORD
+CdcRpcServerFreeDCInfoW(
+    PCDC_DC_INFO_W  pCdcInfo
+    )
+{
+    DWORD dwError = 0;
+    BAIL_ON_VMAFD_INVALID_POINTER(pCdcInfo, dwError);
+
+    VmAfdRpcServerFreeMemory(pCdcInfo->pszDCAddress);
+    VmAfdRpcServerFreeMemory(pCdcInfo->pszDCName);
+    VmAfdRpcServerFreeMemory(pCdcInfo->pszDcSiteName);
+    VmAfdRpcServerFreeMemory(pCdcInfo->pszDomainName);
+    VmAfdRpcServerFreeMemory(pCdcInfo);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
 }
 
 VOID

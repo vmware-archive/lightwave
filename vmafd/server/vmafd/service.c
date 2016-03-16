@@ -116,10 +116,19 @@ VmAfdRegisterRpcServer(
             {"ncacn_ip_tcp", VMAFD_RPC_TCP_END_POINT},
         };
     DWORD dwEpCount = sizeof(endpoints)/sizeof(endpoints[0]);
-    rpc_if_handle_t pInterfaceSpec = vmafd_v1_4_s_ifspec;
+    rpc_if_handle_t pInterfaceSpec65 = vmafd_v1_5_s_ifspec;
+    rpc_if_handle_t pInterfaceSpec60 = vmafd_v1_4_s_ifspec;
+    rpc_if_handle_t pInterfaceSpecSL = vmafdsuperlog_v1_0_s_ifspec;
+
     rpc_binding_vector_p_t pServerBinding = NULL;
 
-    dwError = VmAfdRpcServerRegisterIf(pInterfaceSpec);
+    dwError = VmAfdRpcServerRegisterIf(pInterfaceSpec65);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdRpcServerRegisterIf(pInterfaceSpec60);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdRpcServerRegisterIf(pInterfaceSpecSL);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = EventLogRegisterRpcServerIf();

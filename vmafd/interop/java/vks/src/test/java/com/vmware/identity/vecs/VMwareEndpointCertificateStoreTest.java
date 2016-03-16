@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -304,6 +304,50 @@ public class VMwareEndpointCertificateStoreTest {
 
       entryCount = vecs.getEntryCount();
       Assert.assertEquals(0, entryCount);
+
+      vecs.closeStore();
+      _factory.deleteCertStore(storeName);
+   }
+
+   //@Test
+   public void testCreateStoresSetRevokeGetPermissions() throws AlreadyExistsException,
+         CertificateException, UnrecoverableKeyException,
+         NoSuchAlgorithmException, UnsupportedEncodingException {
+      int times = 10;
+      String storeName = "BlahStore5";
+      String baseUserName = "User"; //For expected existing users
+
+      VMwareEndpointCertificateStore vecs = _factory.createCertStore(storeName);
+      vecs.openStore();
+
+      for (int i = 0; i < times; i++) {
+         vecs.setPermission(baseUserName + i, (i%2==0)?
+                                 VecsPermission.AccessMask.READ: VecsPermission.AccessMask.WRITE);
+      }
+
+      List<VecsPermission> pStorePermissions = vecs.getPermissions();
+
+      int permSize = pStorePermissions.size();
+      for (int i = 0; i < times; i++) {
+         //First entry in permissions list is last entry added with set permission
+         VecsPermission permission = pStorePermissions.get(permSize - i - 1);
+         Assert.assertTrue(permission.userName.equals(baseUserName + i));
+         Assert.assertEquals((i%2==0)?VecsPermission.AccessMask.READ:VecsPermission.AccessMask.WRITE, permission.accessMask);
+      }
+
+      for (int i = 0; i < times; i++) {
+         vecs.revokePermission(baseUserName + i, (i%2==0)?VecsPermission.AccessMask.READ:VecsPermission.AccessMask.WRITE);
+      }
+
+      List<VecsPermission> pStorePermissions2 = vecs.getPermissions();
+      Assert.assertEquals(0, pStorePermissions2.size());
+
+      try {
+         vecs.setPermission(null, VecsPermission.AccessMask.READ);
+         Assert.fail();
+      } catch (VecsGenericException vge) {
+         Assert.assertEquals(VecsAdapter.ERROR_INVALID_PARAMETER, vge.getErrorCode());
+      }
 
       vecs.closeStore();
       _factory.deleteCertStore(storeName);

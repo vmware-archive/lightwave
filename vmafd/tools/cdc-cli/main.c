@@ -38,6 +38,14 @@ CdcCliExecGetDCName(
     );
 
 static
+DWORD
+CdcCliExecGetDCStatus(
+    int   argc,
+    char* argv[]
+    );
+
+
+static
 void
 ShowUsage(
     VOID
@@ -159,6 +167,12 @@ ParseArgs(
         dwError = CdcCliExecGetDCName(
                         dwArgsLeft,
                         dwArgsLeft > 0 ? &argv[iArg] : NULL);
+    }
+    else if (!strcmp(pszArg, "get-psc-status"))
+    {
+        dwError = CdcCliExecGetDCStatus(
+                        dwArgsLeft,
+                        dwArgsLeft > 0? &argv[iArg] : NULL);
     }
     else
     {
@@ -370,12 +384,22 @@ CdcCliExecClientAffinity(
 
                 if (!strcmp(pszArg, "enable"))
                 {
-                    command = CDC_COMMAND_ENABLE_CLIENT_AFFINITY;
+                    command = CDC_COMMAND_ENABLE_DEFAULT_HA;
                     mode = PARSE_MODE_ENABLE;
                 }
                 else if (!strcmp(pszArg, "disable"))
                 {
-                    command = CDC_COMMAND_DISABLE_CLIENT_AFFINITY;
+                    command = CDC_COMMAND_ENABLE_LEGACY_HA;
+                    mode = PARSE_MODE_DISABLE;
+                }
+                else if (!strcmp(pszArg, "default"))
+                {
+                    command = CDC_COMMAND_ENABLE_DEFAULT_HA;
+                    mode = PARSE_MODE_ENABLE;
+                }
+                else if (!strcmp(pszArg, "legacy"))
+                {
+                    command = CDC_COMMAND_ENABLE_LEGACY_HA;
                     mode = PARSE_MODE_DISABLE;
                 }
                 else if (!strcmp(pszArg, "state"))
@@ -450,16 +474,16 @@ CdcCliExecClientAffinity(
 
     switch (command)
     {
-        case CDC_COMMAND_ENABLE_CLIENT_AFFINITY:
+        case CDC_COMMAND_ENABLE_DEFAULT_HA:
 
-            dwError = CdcCliEnableClientAffinity(
+            dwError = CdcCliEnableDefaultHA(
                               pServer
                               );
             break;
 
-        case CDC_COMMAND_DISABLE_CLIENT_AFFINITY:
+        case CDC_COMMAND_ENABLE_LEGACY_HA:
 
-            dwError = CdcCliDisableClientAffinity(
+            dwError = CdcCliEnableLegacyHA(
                               pServer
                               );
 
@@ -586,6 +610,121 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+CdcCliExecGetDCStatus(
+    int   argc,
+    char* argv[]
+    )
+{
+    DWORD dwError = 0;
+    PSTR  pszServerName = NULL;
+    PSTR  pszUPN = NULL;
+    PSTR  pszPSC = NULL;
+    PVMAFD_SERVER pServer = NULL;
+    DWORD idx = 0;
+
+    typedef enum
+    {
+        PARSE_SUB_MODE_OPEN = 0,
+        PARSE_SUB_MODE_SERVER,
+        PARSE_SUB_MODE_UPN,
+        PARSE_SUB_MODE_PSC
+    } PARSE_SUB_MODE;
+    PARSE_SUB_MODE submode = PARSE_SUB_MODE_OPEN;
+
+    for (; idx < argc; idx++)
+    {
+        PSTR pszArg = argv[idx];
+
+        switch (submode)
+        {
+            case PARSE_SUB_MODE_OPEN:
+
+              if (!strcmp(pszArg, "--server"))
+              {
+                  submode = PARSE_SUB_MODE_SERVER;
+              }
+              else if (!strcmp(pszArg, "--upn"))
+              {
+                  submode = PARSE_SUB_MODE_UPN;
+              }
+              else if (!strcmp(pszArg, "--psc"))
+              {
+                  submode = PARSE_SUB_MODE_PSC;
+              }
+              else
+              {
+                  dwError = ERROR_INVALID_PARAMETER;
+                  BAIL_ON_VMAFD_ERROR (dwError);
+              }
+              break;
+
+            case PARSE_SUB_MODE_SERVER:
+              if (!pszServerName)
+              {
+                  pszServerName = pszArg;
+              }
+
+              submode = PARSE_SUB_MODE_OPEN;
+
+              break;
+            case PARSE_SUB_MODE_UPN:
+              if (!pszUPN)
+              {
+                  pszUPN = pszArg;
+              }
+
+              submode = PARSE_SUB_MODE_OPEN;
+
+              break;
+            case PARSE_SUB_MODE_PSC:
+              if (!pszPSC)
+              {
+                  pszPSC = pszArg;
+              }
+
+              submode = PARSE_SUB_MODE_OPEN;
+
+              break;
+
+            default:
+
+              dwError = ERROR_INVALID_PARAMETER;
+              BAIL_ON_VMAFD_ERROR (dwError);
+
+              break;
+        }
+    }
+
+    if (submode != PARSE_SUB_MODE_OPEN)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    dwError = OpenServer(pszServerName, pszUPN, &pServer);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = CdcCliGetDCStatus(
+                pServer,
+                pszPSC
+                );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    if (pServer)
+    {
+        VmAfdCloseServer(pServer);
+    }
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+
 
 static
 void
@@ -597,16 +736,20 @@ ShowUsage(
         stdout,
         "Usage: cdc-cli { arguments }\n\n"
         "Arguments:\n\n"
-        "\tclient-affinity enable\n"
+        "\tclient-affinity default\n"
         "\t            [--server <server-name>]\n"
         "\t            [--upn <user-name>]\n"
-        "\tclient-affinity disable\n"
+        "\tclient-affinity legacy\n"
         "\t            [--server <server-name>]\n"
         "\t            [--upn <user-name>]\n"
         "\tclient-affinity state\n"
         "\t            [--server <server-name>]\n"
         "\t            [--upn <user-name>]\n"
         "\tget-affinitized-psc \n"
+        "\t            [--server <server-name>]\n"
+        "\t            [--upn <user-name>]\n"
+        "\tget-psc-status \n"
+        "\t            --psc <psc-name>\n"
         "\t            [--server <server-name>]\n"
         "\t            [--upn <user-name>]\n"
         "\tcache list\n"

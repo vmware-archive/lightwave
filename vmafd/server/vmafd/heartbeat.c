@@ -410,7 +410,7 @@ VmAfdCheckServiceStatus(
 {
     BOOL bIsAlive = TRUE;
 
-    if (pNode->tLastPing < time(NULL)-45)
+    if (pNode->tLastPing < time(NULL)-(3*VMAFD_HEARTBEAT_INTERVAL))
     {
         bIsAlive = FALSE;
     }

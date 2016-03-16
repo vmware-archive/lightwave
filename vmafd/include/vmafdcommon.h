@@ -21,6 +21,17 @@
 extern "C" {
 #endif
 
+
+#if defined(_WIN32)
+#ifdef LOGGING_EXPORTS
+#define LOGGING_API __declspec(dllexport)
+#else
+#define LOGGING_API __declspec(dllimport)
+#endif
+#else
+#define LOGGING_API
+#endif
+
 #include <dce/uuid.h>
 #include <dce/dcethread.h>
 #include <type_spec.h>
@@ -42,6 +53,14 @@ typedef struct _VM_AFD_CONNECTION_CONTEXT_
 typedef struct _VM_AFD_CONNECTION_CONTEXT_ *PVM_AFD_CONNECTION_CONTEXT;
 //typedef struct _VMAFD_SECURITY_DESCRIPTOR *PVMAFD_SECURITY_DESCRIPTOR;
 //typedef struct _VMAFD_SECURITY_DESCRIPTOR_RELATIVE *PVMAFD_SECURITY_DESCRIPTOR_RELATIVE;
+
+
+typedef struct
+{
+    PCSTR *pStringList;
+    DWORD dwCount; // Current count.
+    DWORD dwSize; // Max number of strings we can store currently.
+} VMAFD_STRING_LIST, *PVMAFD_STRING_LIST;
 
 // Logging
 extern int  vmafd_syslog;
@@ -154,11 +173,6 @@ VmAfdFreeDomainControllerInfoW(
     PCDC_DC_INFO_W pDomainControllerInfoW
     );
 
-VOID
-VmAfdFreeCdcDbEntryArrayW(
-    PCDC_DB_ENTRY_W pCdcDbEntry,
-    DWORD dwCount
-    );
 
 VOID
 VmAfdFreeHbInfoA(
@@ -190,6 +204,21 @@ VmAfdFreeHbInfoArrayW(
 VOID
 VmAfdFreeHbStatusW(
     PVMAFD_HB_STATUS_W pHbStatusW
+    );
+
+VOID
+VmAfdFreeCredContextW(
+    PVMAFD_CRED_CONTEXT_W pCredContext
+    );
+
+VOID
+VmAfdFreeCdcStatusInfoA(
+    PCDC_DC_STATUS_INFO_A pCdcStatusInfo
+    );
+
+VOID
+VmAfdFreeCdcStatusInfoW(
+    PCDC_DC_STATUS_INFO_W pCdcStatusInfo
     );
 
 DWORD
@@ -422,6 +451,7 @@ VmAfdUpperCaseStringW(
     PWSTR pwszString
     );
 
+LOGGING_API
 VOID
 VmAfdLog(
     int level,
@@ -429,6 +459,7 @@ VmAfdLog(
     ...
     );
 
+LOGGING_API
 DWORD
 VmAfdLogInitialize(
     PCSTR logFileName,
@@ -436,6 +467,7 @@ VmAfdLogInitialize(
     INT64 i64MaxLogSizeBytes
     );
 
+LOGGING_API
 VOID
 VmAfdLogTerminate(
     VOID
@@ -1277,6 +1309,12 @@ VmAfdCheckIfIPV4AddressA(
 BOOLEAN
 VmAfdCheckIfIPV4AddressW(
     PCWSTR pwszNetworkAddress
+    );
+
+BOOLEAN
+VmAfdCheckIfServerIsUp(
+    PCWSTR pwszNetworkAddress,
+    DWORD  dwPort
     );
 
 #ifdef __cplusplus

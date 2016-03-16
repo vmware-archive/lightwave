@@ -40,7 +40,8 @@ IsWildcardString(
     const char ch = '*';
     size_t pos = 0;
 
-    while (pos < length && szString[pos] && szString[pos] != ch)
+    while (pos < length &&
+           szString[pos] != ch)
     {
         ++pos;
     }
@@ -759,7 +760,7 @@ error :
 
 DWORD
 VMCAPEMToCSR(
-    PSTR pCSR,
+    PCSTR pCSR,
     X509_REQ **ppReq
 )
 {
@@ -1522,7 +1523,7 @@ VMCACreateCertificateName(
             dwError = X509_NAME_add_entry_by_txt(pCertName,
                     "CN", MBSTRING_UTF8,
                     pszName, -1, -1, 0);
-            // ERR_print_errors_fp(stdout);
+            ERR_print_errors_fp(stdout);
             BAIL_ON_SSL_ERROR(dwError, VMCA_INVALID_CSR_FIELD);
     }
 
@@ -2628,7 +2629,7 @@ VMCAVerifyCertificateName(
     DWORD dwCNPos = -1;
     X509_NAME_ENTRY *pCNEntry = NULL;
     ASN1_STRING *pCNAsn1 = NULL;
-    PCSTR pszCNString = NULL;
+    PSTR pszCNString = NULL;
     size_t length = 0;
 
     for(;;)
@@ -2653,17 +2654,33 @@ VMCAVerifyCertificateName(
             BAIL_ON_VMCA_ERROR(dwError);
         }
 
-        pszCNString = ASN1_STRING_data(pCNAsn1);
-        length = ASN1_STRING_length(pCNAsn1);
+        length = ASN1_STRING_to_UTF8((unsigned char **)&pszCNString, pCNAsn1);
+
+        if (!pszCNString || length != strlen(pszCNString))
+        {
+            dwError = VMCA_CERT_DECODE_FAILURE;
+            BAIL_ON_VMCA_ERROR(dwError);
+        }
 
         if (IsWildcardString(pszCNString, length))
         {
             dwError = VMCA_ERROR_INVALID_SN;
             BAIL_ON_VMCA_ERROR(dwError);
         }
+
+        if (pszCNString)
+        {
+             OPENSSL_free(pszCNString);
+             pszCNString = NULL;
+        }
     }
 
 cleanup:
+    if (pszCNString)
+    {
+         OPENSSL_free(pszCNString);
+    }
+
     return dwError;
 
 error:
@@ -2680,6 +2697,7 @@ VMCAVerifySubjectAltNames(
     DWORD dwCountSanNames = 0;
     STACK_OF(GENERAL_NAME)* pSANNames = NULL;
     DWORD dwDNSCount = 0;
+    PSTR pszSANName = NULL;
 
     pSANNames = X509_get_ext_d2i(pCert, NID_subject_alt_name, NULL, NULL);
     if (pSANNames == NULL)
@@ -2695,18 +2713,28 @@ VMCAVerifySubjectAltNames(
         const GENERAL_NAME *pCurrentName = sk_GENERAL_NAME_value(pSANNames, i);
         if (pCurrentName->type == GEN_DNS)
         {
-            ++dwDNSCount;
-        }
-        if (pCurrentName->type == GEN_DNS)
-        {
-            PCSTR szSANName = ASN1_STRING_data((ASN1_IA5STRING*)pCurrentName->d.ptr);
-            size_t length = ASN1_STRING_length((ASN1_IA5STRING*)pCurrentName->d.ptr);
+            size_t length = ASN1_STRING_to_UTF8(
+                                    (unsigned char **)&pszSANName,
+                                    (ASN1_IA5STRING*)pCurrentName->d.ptr);
 
-            if (IsWildcardString(szSANName, length))
+            if (!pszSANName || length != strlen(pszSANName))
+            {
+                dwError = VMCA_CERT_DECODE_FAILURE;
+                BAIL_ON_VMCA_ERROR(dwError);
+            }
+
+            if (IsWildcardString(pszSANName, length))
             {
                 dwError = VMCA_ERROR_INVALID_SAN;
                 BAIL_ON_ERROR(dwError);
             }
+
+            if (pszSANName)
+            {
+                OPENSSL_free(pszSANName);
+                pszSANName = NULL;
+            }
+            ++dwDNSCount;
         }
     }
 
@@ -2717,6 +2745,11 @@ VMCAVerifySubjectAltNames(
     }
 
 cleanup:
+    if (pszSANName)
+    {
+        OPENSSL_free(pszSANName);
+    }
+
     if (pSANNames)
     {
         sk_GENERAL_NAME_pop_free(pSANNames, GENERAL_NAME_free);
@@ -3514,6 +3547,338 @@ VMCASetAddDCToX509Name(
     }
 cleanup:
     return dwError;
+error:
+    goto cleanup;
+}
+
+DWORD
+VMCAVerifyHostNameInCN(
+    X509_REQ* pCSR,
+    PCSTR szHostName
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+    DWORD dwCNPos = -1;
+    X509_NAME_ENTRY *pCNEntry = NULL;
+    ASN1_STRING *pCNAsn1 = NULL;
+    PSTR pszCNString = NULL;
+    size_t length = 0;
+
+    for(;;)
+    {
+        dwCNPos = X509_NAME_get_index_by_NID(
+                        X509_REQ_get_subject_name(pCSR),
+                        NID_commonName,
+                        dwCNPos);
+        if (dwCNPos == -1)
+        {
+             break;
+        }
+
+        pCNEntry = X509_NAME_get_entry(
+                        X509_REQ_get_subject_name(pCSR),
+                        dwCNPos);
+        if (pCNEntry == NULL)
+        {
+            dwError = VMCA_CERT_DECODE_FAILURE;
+            BAIL_ON_VMCA_ERROR(dwError);
+        }
+
+        pCNAsn1 = X509_NAME_ENTRY_get_data(pCNEntry);
+        if (pCNAsn1 == NULL)
+        {
+            dwError = VMCA_CERT_DECODE_FAILURE;
+            BAIL_ON_VMCA_ERROR(dwError);
+        }
+
+        length = ASN1_STRING_to_UTF8(
+                        (unsigned char **)&pszCNString,
+                        pCNAsn1);
+
+        if (!pszCNString || length != strlen(pszCNString))
+        {
+            dwError = VMCA_CERT_DECODE_FAILURE;
+            BAIL_ON_VMCA_ERROR(dwError);
+        }
+
+        if (!IsNullOrEmptyString(szHostName))
+        {
+            if (VMCAStringCompareA(
+                        pszCNString,
+                        szHostName,
+                        FALSE))
+            {
+                dwError = VMCA_ERROR_CN_HOSTNAME_MISMATCH;
+                BAIL_ON_VMCA_ERROR(dwError);
+            }
+        }
+        else
+        {
+            dwError = VMCA_ERROR_CN_HOSTNAME_MISMATCH;
+            BAIL_ON_VMCA_ERROR(dwError);
+        }
+
+        if (pszCNString)
+        {
+             OPENSSL_free(pszCNString);
+             pszCNString = NULL;
+        }
+    }
+
+cleanup:
+    if (pszCNString)
+    {
+         OPENSSL_free(pszCNString);
+    }
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+
+DWORD
+VMCAVerifyHostNameInSAN(
+    X509_REQ* pCSR,
+    PCSTR szHostName
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+    GENERAL_NAMES *pSANNames = NULL;
+    STACK_OF(X509_EXTENSION) *pExts = NULL;
+    PSTR pszSANName = NULL;
+    DWORD i, dwCountSanNames = 0;
+
+    pExts = X509_REQ_get_extensions(pCSR);
+    if (pExts == NULL)
+    {
+        dwError = ERROR_SUCCESS;
+        goto error;
+    }
+
+    pSANNames = X509V3_get_d2i(pExts, NID_subject_alt_name, NULL, NULL);
+    if (pSANNames == NULL)
+    {
+        dwError = ERROR_SUCCESS;
+        goto error;
+    }
+
+    dwCountSanNames = sk_GENERAL_NAME_num(pSANNames);
+
+    for (i = 0; i < dwCountSanNames; i++)
+    {
+        const GENERAL_NAME *pCurrentName = sk_GENERAL_NAME_value(pSANNames, i);
+
+        if (pCurrentName->type == GEN_DNS)
+        {
+            size_t length = ASN1_STRING_to_UTF8(
+                                    (unsigned char **)&pszSANName,
+                                    (ASN1_IA5STRING*)pCurrentName->d.dNSName);
+
+            if (!pszSANName || length != strlen(pszSANName))
+            {
+                dwError = VMCA_CERT_DECODE_FAILURE;
+                BAIL_ON_VMCA_ERROR(dwError);
+            }
+
+            if (!IsNullOrEmptyString(szHostName))
+            {
+                if (VMCAStringCompareA(
+                                pszSANName,
+                                szHostName,
+                                FALSE))
+                {
+                    dwError = VMCA_ERROR_SAN_HOSTNAME_MISMATCH;
+                    BAIL_ON_ERROR(dwError);
+                }
+            }
+            else
+            {
+                dwError = VMCA_ERROR_SAN_HOSTNAME_MISMATCH;
+                BAIL_ON_ERROR(dwError);
+            }
+
+            if (pszSANName)
+            {
+                OPENSSL_free(pszSANName);
+                pszSANName = NULL;
+            }
+        }
+    }
+
+cleanup:
+    if (pszSANName)
+    {
+        OPENSSL_free(pszSANName);
+    }
+
+    if (pSANNames)
+    {
+        sk_GENERAL_NAME_pop_free(pSANNames, GENERAL_NAME_free);
+    }
+
+    if (pExts)
+    {
+        sk_X509_EXTENSION_pop_free(pExts, X509_EXTENSION_free);
+    }
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+
+DWORD
+VMCAVerifyIpAddressInSAN(
+    X509_REQ* pCSR,
+    ASN1_OCTET_STRING* pAnsHostIp
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+    GENERAL_NAMES *pSANNames = NULL;
+    STACK_OF(X509_EXTENSION) *pExts = NULL;
+    DWORD i, dwCountSanNames = 0;
+
+    pExts = X509_REQ_get_extensions(pCSR);
+    if (pExts == NULL)
+    {
+        dwError = ERROR_SUCCESS;
+        goto error;
+    }
+
+    pSANNames = X509V3_get_d2i(pExts, NID_subject_alt_name, NULL, NULL);
+    if (pSANNames == NULL)
+    {
+        dwError = ERROR_SUCCESS;
+        goto error;
+    }
+
+    dwCountSanNames = sk_GENERAL_NAME_num(pSANNames);
+
+    for (i = 0; i < dwCountSanNames; i++)
+    {
+        const GENERAL_NAME *pCurrentName = sk_GENERAL_NAME_value(pSANNames, i);
+        if (pCurrentName->type == GEN_IPADD)
+        {
+            if (pAnsHostIp)
+            {
+                if (pAnsHostIp->length != pCurrentName->d.ip->length)
+                {
+                    dwError = VMCA_ERROR_SAN_IPADDR_INVALID;
+                    BAIL_ON_ERROR(dwError);
+                }
+
+                if (memcmp(
+                       pCurrentName->d.iPAddress->data,
+                       pAnsHostIp->data,
+                       pAnsHostIp->length))
+                {
+                    dwError = VMCA_ERROR_SAN_IPADDR_INVALID;
+                    BAIL_ON_ERROR(dwError);
+                }
+            }
+            else
+            {
+                dwError = VMCA_ERROR_SAN_IPADDR_INVALID;
+                BAIL_ON_ERROR(dwError);
+            }
+        }
+    }
+
+cleanup:
+
+    if (pSANNames)
+    {
+        sk_GENERAL_NAME_pop_free(pSANNames, GENERAL_NAME_free);
+    }
+
+    if (pExts)
+    {
+        sk_X509_EXTENSION_pop_free(pExts, X509_EXTENSION_free);
+    }
+
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VMCAVerifyHostName(
+    PCSTR pszHostName,
+    PCSTR pszHostIp,
+    PCSTR pszCSR
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+    X509_REQ *pRequest = NULL;
+    ASN1_OCTET_STRING* pAsnHostNameIp = NULL;
+    ASN1_OCTET_STRING* pAnsHostIp = NULL;
+
+    if (IsNullOrEmptyString(pszCSR))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    dwError = VMCAPEMToCSR(pszCSR, &pRequest);
+    BAIL_ON_ERROR(dwError);
+
+    dwError = VMCAVerifyHostNameInCN(pRequest, pszHostName);
+    BAIL_ON_ERROR(dwError);
+
+    dwError = VMCAVerifyHostNameInSAN(pRequest, pszHostName);
+    BAIL_ON_ERROR(dwError);
+
+    pAsnHostNameIp = a2i_IPADDRESS(pszHostName);
+    if (pAsnHostNameIp)
+    {
+        dwError = VMCAVerifyIpAddressInSAN(pRequest, pAsnHostNameIp);
+        BAIL_ON_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pszHostIp))
+    {
+        pAnsHostIp = a2i_IPADDRESS(pszHostIp);
+
+        if (!pszHostIp)
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_ERROR(dwError);
+        }
+
+        dwError = VMCAVerifyIpAddressInSAN(pRequest, pAnsHostIp);
+        BAIL_ON_ERROR(dwError);
+    }
+
+    if (!pAsnHostNameIp && IsNullOrEmptyString(pszHostIp))
+    {
+        dwError = VMCAVerifyIpAddressInSAN(pRequest, NULL);
+        BAIL_ON_ERROR(dwError);
+    }
+
+cleanup:
+
+    if (pAsnHostNameIp)
+    {
+        ASN1_OCTET_STRING_free(pAsnHostNameIp);
+    }
+
+    if (pAnsHostIp)
+    {
+        ASN1_OCTET_STRING_free(pAnsHostIp);
+    }
+
+    if (pRequest)
+    {
+        X509_REQ_free(pRequest);
+    }
+
+    return dwError;
+
 error:
     goto cleanup;
 }

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/opt/vmware/bin/python
 # Copyright 2015 VMware, Inc.  All rights reserved.
 
 """
@@ -23,6 +23,7 @@ from cis.utils import *
 
 global server
 global vecs
+node_type = ''
 vmca = VmcaOps()
 dir_cli = DirCliOps()
 isLinux = os.name == 'posix'
@@ -40,15 +41,18 @@ def check_and_request_server_ip(ip=Constants.IP_LOCALHOST):
     :param ip: Provide PSC/Infra IP in case of distributed env else 'localhost'
     """
     global server
+    global node_type
     if len(ip) > 0:
         server = ip
     else:
         server = Constants.IP_LOCALHOST
     try:
         if vecs._management_node:
+            node_type = "management_node"
             log_info_msg('Performing operation on distributed setup, Please provide valid Infrastructure Server IP.')
             server = raw_input("Server : ")
         else:
+            node_type = "embedded_node"
             logging.info('Performing operation on embedded setup using \'localhost\' as server')
     except EOFError:
         log_info_msg(Constants.TERMINATE_OP)
@@ -82,13 +86,15 @@ def initialize_services():
     """
     try:
         if isLinux:
-            start_service(Constants.VMCA_SERVICE_LIN)
             start_service(Constants.VMAFD_SERVICE_LIN)
-            start_service(Constants.VMDIRD_SERVICE_LIN)
+            if not is_management_node():
+                start_service(Constants.VMCA_SERVICE_LIN)
+                start_service(Constants.VMDIRD_SERVICE_LIN)
         else:
-            start_service(Constants.VMCA_SERVICE_WIN)
             start_service(Constants.VMAFD_SERVICE_WIN)
-            start_service(Constants.VMDIRD_SERVICE_WIN)
+            if not is_management_node():
+                start_service(Constants.VMCA_SERVICE_LIN)
+                start_service(Constants.VMDIRD_SERVICE_LIN)
     except EOFError:
         log_info_msg(Constants.TERMINATE_OP)
         exit(0)
@@ -126,19 +132,30 @@ def replace_ssl_cert_with_custom_cert():
 def replace_root_cert_with_custom_cert():
     logging.info(
         'Selected operation: Replace VMCA Root certificate with Custom CA Certificate and replace all certificates (signed by Custom CA root')
+    cfg_filename = 'MACHINE_SSL_CERT'
+    prepare_cfg_file(cfg_filename)
+    if (cfg_flag):
+        for cfg_filename in vecs._solution_user_stores:
+            prepare_cfg_file(cfg_filename)
     perform_root_cert_ops(False)
 
 
 def replace_ssl_cert_with_vmca_cert():
     logging.info('Selected operation: Replace SSL certificate with VMCA Certificate')
-    prepare_cfg_file()
+    cfg_filename = 'MACHINE_SSL_CERT'
+    prepare_cfg_file(cfg_filename)
     perform_ssl_cert_ops(True)
 
 
 def regenerate_root_cert_and_replace_all_certs():
     logging.info(
         'Selected operation: Regenerate a new VMCA root cert and replace all certificates (signed by the new root)')
-    prepare_cfg_file()
+    cfg_filenames = ['root', 'MACHINE_SSL_CERT']
+    for cfg_file in cfg_filenames:
+        prepare_cfg_file(cfg_file)
+    if (cfg_flag):
+        for cfg_file in vecs._solution_user_stores:
+            prepare_cfg_file(cfg_file)
     perform_root_cert_ops(True)
 
 
@@ -149,6 +166,9 @@ def replace_solution_user_certs_with_custom_cert():
 
 def replace_solution_user_certs_with_vmca_cert():
     logging.info('Selected operation: Replace Solution user certs with VMCA Certificate')
+    if (cfg_flag):
+        for cfg_filename in vecs._solution_user_stores:
+            prepare_cfg_file(cfg_filename)
     perform_solution_user_cert_ops(True)
 
 
@@ -192,26 +212,19 @@ def get_csr_output_paths():
         raise VMCACSRException('Please see log file at {0} for more information'.format(get_log_file()))
     return privKeyPath,csrPath
 
-def perform_csr_ops(store_name,alias,privKeyPath,csrPath):
+def perform_csr_ops(privKeyPath,csrPath):
     try:
-        tmpCrtCreated = False
-        if not store_name:
-            certFile = get_root_cert_dir() + Constants.ROOT_CERT
-        else:
-            certFile = os.path.join(tempfile.gettempdir(),'vecs_crt.crt')
-            vecs.get_cert_file(store_name, alias, certFile)
-            tmpCrtCreated = True
-        vmca.generateCSR(certFile,privKeyPath,csrPath,server)
+        prepare_cfg_file('certool')
+        cfgFile = get_dest_config_file_loc('certool')
+        vmca.generateCSR(cfgFile,privKeyPath,csrPath,server)
         log_info_msg('CSR generated at: '+csrPath)
 
     except Exception as e:
-        if tmpCrtCreated:
-            os.remove(os.path.join(tempfile.gettempdir(),'vecs_crt.crt'))
         log_error_msg('Error while generating CSR')
         logging.error(e)
         raise VMCACSRException('Please see log file at {0} for more information'.format(get_log_file()))
 
-def perform_cert_csr_ops(store_name,alias):
+def perform_cert_csr_ops():
     csrDirPath = ""
     privKeyPath = ""
     csrPath = ""
@@ -222,23 +235,17 @@ def perform_cert_csr_ops(store_name,alias):
         logging.error(e)
         raise VMCACSRException('Please see  log file at {0} for more information'.format(get_log_file()))
 
-    if not store_name:
-        privKeyPath = os.path.join(csrDirPath,Constants.ROOT_PRIVATE_KEY_OUTPUT_FILENAME)
-        csrPath = os.path.join(csrDirPath,Constants.ROOT_CSR_FILE_OUTPUT_FILENAME)
-    elif store_name == Constants.MACHINE_SSL_STORE:
-        privKeyPath = os.path.join(csrDirPath,Constants.MACHINE_SSL_PRIVATE_KEY_OUTPUT_FILENAME)
-        csrPath =  os.path.join(csrDirPath,Constants.MACHINE_SSL_CSR_OUTPUT_FILENAME)
-    else:
-        log_error_msg('Not a valid operation')
-        raise VMCACSRException('Invalid store name passed to function. Pleasee see log file {0} for more information'.format(get_log_file()))
-
-    perform_csr_ops(store_name,alias,privKeyPath,csrPath)
+    privKeyPath = os.path.join(csrDirPath,Constants.PRIVATE_KEY_OUTPUT_FILENAME)
+    csrPath =  os.path.join(csrDirPath,Constants.CSR_OUTPUT_FILENAME)
+    perform_csr_ops(privKeyPath,csrPath)
     return
 
 def perform_soluser_csr_ops():
     csrDirPath = ""
+    print ""
     try:
         csrDirPath = ask_for_output_file_path(Constants.READ_CSR_OP_DIR_PATH, True)
+        log_info_msg('Provide CSR inputs in the order machine, WebClient, vpxd and vpxd-extension respectively.')
     except Exception as e:
         log_error_msg('Error in output directory path')
         logging.error(e)
@@ -248,7 +255,7 @@ def perform_soluser_csr_ops():
         for store in vecs._solution_user_stores:
             privKeyPath = os.path.join(csrDirPath,store+'.key')
             csrPath = os.path.join(csrDirPath,store+'.csr')
-            perform_csr_ops(store, store, privKeyPath, csrPath)
+            perform_csr_ops(privKeyPath, csrPath)
     except Exception as e:
         log_error_msg('Error in generating CSR for solution user certificates')
         logging.error(e)
@@ -264,7 +271,7 @@ def perform_ssl_cert_ops(is_vmca):
         else:
             isCSR = print_customcert_replace_options('Machine SSL certificate')
             if isCSR == '1':
-                perform_cert_csr_ops(Constants.MACHINE_SSL_STORE, Constants.MACHINE_SSL_ALIAS)
+                perform_cert_csr_ops()
                 print_post_customcert_csr_options('Machine SSL certificate')
 
             (cert_file, key_file) = read_custom_certs_for_ssl()
@@ -295,7 +302,7 @@ def perform_root_cert_ops(is_vmca):
         else:
             isCSR = print_customcert_replace_options('VMCA Root Signing certificate')
             if isCSR == '1':
-                perform_cert_csr_ops('', '')
+                perform_cert_csr_ops()
                 print_post_customcert_csr_options('VMCA Root Signing certificate')
 
             cert = ask_for_file_and_validate(Constants.READ_ROOT_CRT)
@@ -304,7 +311,6 @@ def perform_root_cert_ops(is_vmca):
             show_progress(0, Constants.REPLACE_ROOT_CERT)
             replace_root_cert(cert, key, server)
             show_progress(35, Constants.REPLACED_ROOT_CERT)
-            prepare_cfg_file()
 
         show_progress(35, Constants.REPLACE_MACHINE_SSL)
         generate_machine_ssl_and_replace(Constants.MACHINE_SSL_STORE, Constants.MACHINE_SSL_ALIAS, server)
@@ -467,10 +473,14 @@ def factory_reset_all_certs():
     try:
         if vecs._management_node:
             log_info_msg(Constants.MGMT_RESET_MSG.format(server))
+            prepare_cfg_file('MACHINE_SSL_CERT')
+            if (cfg_flag):
+                for cfg_file in vecs._solution_user_stores:
+                    prepare_cfg_file(cfg_file)
             if not get_user_confirmation(Constants.CONTINUE_OPERATION):
                 log_info_msg(Constants.TERMINATE_OP)
                 return
-            prepare_cfg_file()
+            confirm_operation(Constants.MGMT_RESET_MSG)
             show_progress(0, Constants.RESET_MACHINE_SSL)
             generate_machine_ssl_and_replace(Constants.MACHINE_SSL_STORE, Constants.MACHINE_SSL_ALIAS, server)
             percent_complete = 45
@@ -480,10 +490,16 @@ def factory_reset_all_certs():
                 percent_complete += 5
         else:
             log_info_msg(Constants.RESET_MSG)
+            cfg_filenames = ['root', 'MACHINE_SSL_CERT']
+            for cfg_file in cfg_filenames:
+                prepare_cfg_file(cfg_file)
+            if (cfg_flag):
+                for cfg_file in vecs._solution_user_stores:
+                    prepare_cfg_file(cfg_file)
             if not get_user_confirmation(Constants.CONTINUE_OPERATION):
                 log_info_msg(Constants.TERMINATE_OP)
                 return
-            prepare_cfg_file()
+            confirm_operation(Constants.RESET_MSG)
             show_progress(0, Constants.RESET_ROOT_CERT)
             replace_root_cert(None, None, server)
             show_progress(30, Constants.RESET_MACHINE_SSL)
@@ -552,6 +568,10 @@ def roll_back(operation):
             log_error_msg('please see {0} for more information.'.format(get_log_file()))
 
 
+def get_machine_ssl_cert_to_dir():
+    oldcert = os.path.join(get_cis_tmp_dir(), Constants.BKP_MACHINE_CERT)
+    vecs.get_cert_file(Constants.MACHINE_SSL_STORE, Constants.MACHINE_SSL_ALIAS, oldcert)
+
 # Scripts responsible for cert replacement
 
 def replace_cert(store_name, alias, cert_file, key_file, verify=True):
@@ -567,21 +587,30 @@ def replace_cert(store_name, alias, cert_file, key_file, verify=True):
     logging.info(vecs.list_entries(store_name))
     if verify:
         verify_cert_changed(vecs, serial_number, thumb_print, store_name, alias, server)
+    if store_name == "MACHINE_SSL_CERT":
+        user, password = get_credentials()
+        oldcert = os.path.join(get_cis_tmp_dir(), Constants.BKP_MACHINE_CERT)
+        machine_sslthumbprint = get_cert_thumbprint(oldcert)
+        remove_file(oldcert)
+        update_service_endpoints(node_type, user, password, cert_file, machine_sslthumbprint)
 
 
 def generate_machine_ssl_and_replace(store_name, alias, server):
-    vmca.generate_cert(store_name, server)
+    cfg_file = 'MACHINE_SSL_CERT'
+    vmca.generate_cert(store_name, server, cfg_file)
     cert = get_cert_dir() + store_name + Constants.CERT_EXT
     key = get_cert_dir() + store_name + Constants.KEY_EXT
     replace_cert(store_name, alias, cert, key)
 
-
 def generate_solution_user_cert_and_replace(store_name, alias, server):
-    vmca.generate_solution_user_cert(store_name, server)
+    if (cfg_flag):
+        cfg_filename = store_name
+        vmca.generate_cert(store_name, server, cfg_filename)
+    else:
+        vmca.generate_solution_user_cert(store_name, server)
     cert = get_cert_dir() + store_name + Constants.CERT_EXT
     key = get_cert_dir() + store_name + Constants.KEY_EXT
     replace_solution_user_certs(store_name, alias, cert, key)
-
 
 def replace_solution_user_certs(store_name, alias, cert_file, key_file, ignore_error=False, verify=True):
     service_name = dir_cli.get_service_name_for_solution_user(store_name)
@@ -594,7 +623,8 @@ def replace_root_cert(cert, key, server, verify=True):
     (serial_number, thumb_print) = parse_cert(vmca.get_root_ca(server))
     if cert is None or key is None:
         logging.info('Regenerating Root Cert using VMCA...')
-        vmca.selfca(server)
+        cfg_file = 'root'
+        vmca.selfca(server, cfg_file)
     else:
         logging.info('Replacing Root Cert using Custom CA...')
         vmca.rootca(cert, key, server)
@@ -649,14 +679,18 @@ def parse_arguments():
     else:
         # Init logging and certificate manager directory
         initialize_ops()
+        global cfg_flag
+        if var.strip() in ['2', '4', '6', '8']:
+            cfg_flag = get_user_confirmation('Do you wish to generate all certificates using configuration file')
+        initialize_services()
         read_and_validate_password()
         global vecs
         vecs = VecsOps()
         if vecs._management_node and var.strip() in ['2','4']:
             log_info_msg('Root certificate operations are not supported from Management machine, please perform from Platform Service Controller machine')
             return
-        initialize_services()
         check_and_request_server_ip()
+        get_machine_ssl_cert_to_dir()
         operations[var.strip()]()
 
 

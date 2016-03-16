@@ -1263,7 +1263,6 @@ VecsAddEntryW(
     )
 {
     DWORD dwError = 0;
-    size_t dwKeyLength = 0;
     PWSTR pszCanonicalCertPEM = NULL;
     PWSTR pszCanonicalKeyPEM = NULL;
 
@@ -1319,18 +1318,6 @@ VecsAddEntryW(
     {
        if (entryType == CERT_ENTRY_TYPE_SECRET_KEY)
        {
-          dwError = VmAfdGetStringLengthW(
-                                      pszPrivateKey,
-                                      &dwKeyLength
-                                      );
-          BAIL_ON_VMAFD_ERROR (dwError);
-
-          if (dwKeyLength > VECS_SECRET_KEY_LENGTH_MAX)
-          {
-              dwError = ERROR_LABEL_TOO_LONG;
-              BAIL_ON_VMAFD_ERROR (dwError);
-          }
-
           dwError = VmAfdAllocateStringW(
                                       pszPrivateKey,
                                       &pszCanonicalKeyPEM

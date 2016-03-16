@@ -15,7 +15,7 @@ CdcCliMapState(
     );
 
 DWORD
-CdcCliEnableClientAffinity(
+CdcCliEnableDefaultHA(
     PVMAFD_SERVER pServer
     )
 {
@@ -26,19 +26,25 @@ CdcCliEnableClientAffinity(
                     );
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    fprintf(stdout, "Successfully enabled client affinity. \n");
+    fprintf(stdout, "Successfully set to Default client affinity HA mode. \n");
 
 cleanup:
 
     return dwError;
 
 error:
-
+    if (dwError == ERROR_NOT_SUPPORTED)
+    {
+        fprintf(
+            stdout,
+            "Domain function level is not ready for PSC HA. "
+            "PSC HA will be available when DFL is ready.");
+    }
     goto cleanup;
 }
 
 DWORD
-CdcCliDisableClientAffinity(
+CdcCliEnableLegacyHA(
     PVMAFD_SERVER pServer
     )
 {
@@ -49,7 +55,7 @@ CdcCliDisableClientAffinity(
                     );
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    fprintf(stdout, "Successfully disabled client affinity. \n");
+    fprintf(stdout, "Successfully set to legacy mode HA. \n");
 
 cleanup:
 
@@ -198,6 +204,57 @@ error:
     goto cleanup;
 }
 
+DWORD
+CdcCliGetDCStatus(
+    PVMAFD_SERVER pServer,
+    PCSTR pszPSC
+    )
+{
+    DWORD dwError = 0;
+    PCDC_DC_STATUS_INFO_A pCdcStatusInfo = NULL;
+    PVMAFD_HB_STATUS_A pHeartbeatStatus = NULL;
+
+    dwError = CdcGetDCStatusInfoA(
+                            pServer,
+                            pszPSC,
+                            NULL,
+                            &pCdcStatusInfo,
+                            &pHeartbeatStatus
+                            );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    fprintf (stdout, "The state of PSC [%s] is:\n", pszPSC);
+
+    fprintf (
+            stdout,
+            "Last Ping     : %d\n"
+            "Response Time : %d\n"
+            "Error(if any) : %d\n"
+            "Status        : %s\n",
+            pCdcStatusInfo->dwLastPing,
+            pCdcStatusInfo->dwLastResponseTime,
+            pCdcStatusInfo->dwLastError,
+            pCdcStatusInfo->bIsAlive? "ALIVE" : "DOWN"
+            );
+
+cleanup:
+
+    if (pCdcStatusInfo)
+    {
+        CdcFreeDCStatusInfoA(pCdcStatusInfo);
+    }
+    if (pHeartbeatStatus)
+    {
+        VmAfdFreeHeartbeatStatusA(pHeartbeatStatus);
+    }
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
 static
 PCSTR
 CdcCliMapState(
@@ -208,9 +265,9 @@ CdcCliMapState(
 
     switch(cdcState)
     {
-      case CDC_DC_STATE_DISABLED:
+      case CDC_DC_STATE_LEGACY:
 
-        pszState = "HA is disabled";
+        pszState = "Legacy Mode";
         break;
 
       case CDC_DC_STATE_NO_DC_LIST:

@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-# Copyright 2015 VMware, Inc.  All rights reserved. --
+#!/opt/vmware/bin/python
+# Copyright 2015 VMware, Inc.  All rights reserved.
 
 """
 Base script which takes care of all VECS/VMCA/DIR_CLI operations.
@@ -15,6 +15,7 @@ import os
 import os.path
 import getpass
 import tempfile
+import socket
 
 from cis.defaults import def_by_os, get_component_home_dir, get_cis_log_dir
 from cis.exceptions import *
@@ -22,6 +23,8 @@ from certificateManagerUtils import *
 from utils import *
 
 isLinux = os.name == 'posix'
+user = ''
+password = ''
 if not isLinux:
     import pywintypes
     import win32service as w32s
@@ -29,7 +32,6 @@ if not isLinux:
     __SERVICE_CTL_PREFIX = '"' + os.getenv('VMWARE_CIS_HOME',"C:\\Program Files\\VMware\\vCenter Server") +'\\bin\\service-control.bat' + '"'
 else:
     __SERVICE_CTL_PREFIX = 'service-control'
-global password
 
 
 def cli_path(cli_name):
@@ -115,6 +117,59 @@ def vmafd_machine_id():
         raise e
     return result.strip()
 
+def execute_extensioncert(vpxd_cert, vpxd_key):
+    """
+    This function is responsible for executing updateExtensionCertInVC.py
+    to update certificate for VC extended solutions.
+    """
+    if not isLinux:
+        cis_home = os.environ["VMWARE_CIS_HOME"]
+        file_path = 'vpxd\\scripts\\updateExtensionCertInVC.py'
+        script_path = os.path.join(cis_home, file_path)
+    else:
+        script_path = '/usr/lib/vmware-vpx/scripts/updateExtensionCertInVC.py'
+    python_path = os.environ["VMWARE_PYTHON_BIN"]
+    if not python_path:
+        log_info_msg('Path variable VMWARE_PYTHON_BIN not set.')
+    extn_soln = ['com.vmware.vim.eam', 'com.vmware.rbd']
+    for soln_name in extn_soln:
+        cmd = [python_path, script_path,
+               '-e', soln_name, '-s', socket.getfqdn(),
+               '-c', vpxd_cert,
+               '-k', vpxd_key,
+               '-u', user,
+               '-p', password]
+        try:
+            execute_command_ext_cmd(cmd)
+        except Exception as e:
+            msg = 'Error in updating certificate for solution: {0}'.format(soln_name)
+            e.appendErrorStack(msg)
+            raise e
+
+def execute_command_ext_cmd(cmd, quiet=False):
+    if (('--password' in cmd) | ('-p' in cmd)):
+        tmp = list(cmd)
+        tmp[len(tmp)-1] = '*****'
+        logging.info('Running command : ' + str(tmp))
+    else:
+        logging.info("Running command :- " + str(cmd))
+
+    (code, output, err) = run_command(cmd, None, True)
+    logging.info("Command output :- \n {0}".format(str(output)))
+    if isinstance(code, int):
+        if code == 0:
+            pass
+        else:
+            msg = (str(output))
+            log_error_msg(msg)
+    else:
+        for status in code:
+            if status == 0:
+                pass
+            else:
+                msg = (str(output))
+                log_error_msg(msg)
+    logging.info("Command executed successfully")
 
 def execute_command(cmd, quiet=False):
     """
@@ -123,7 +178,7 @@ def execute_command(cmd, quiet=False):
     :param quiet: Flag to turnoff logging for this command
     :return:
     """
-    if '--password' in cmd:
+    if (('--password' in cmd) | ('-p' in cmd)):
         #Donot print password
         tmp = list(cmd)
         tmp[len(tmp)-1] = '*****'
@@ -166,15 +221,23 @@ def execute_command(cmd, quiet=False):
                 raise InvokeCommandException(msg)
     logging.info("Command executed successfully")
 
+def get_credentials():
+    return (user, password)
+
 def read_and_validate_password():
     """
     This function is to read sso password from user and authenticate which will further used for
     certificate operations
     """
+    global user
     global password
     dir_cli = DirCliOps()
-    log_info_msg('Please provide valid SSO password to perform certificate operations.')
-    password = getpass.getpass()
+    log_info_msg('Please provide valid SSO and VC priviledged user '
+                 'credential to perform certificate operations.')
+    user = raw_input('Enter username [Administrator@vsphere.local]:')
+    if not user:
+        user = 'Administrator@vsphere.local'
+    password = getpass.getpass(prompt='Enter password:')
     result = authenticate_password(dir_cli)
     for i in reversed(range(1, 3)):
         if result:
@@ -205,6 +268,19 @@ def authenticate_password(dir_cli):
     except Exception as e:
         return False
 
+def is_management_node():
+    """
+    Function to determine if this is a management node
+    :param:
+    :return:
+    """
+    try:
+        if not check_file_exists(get_root_cert_dir() + Constants.ROOT_CERT):
+            return True
+        return False
+    except Exception as e:
+        return False
+
 class VecsOps():
     """
     This Class Implements functions that are used to perform VECS operations
@@ -212,12 +288,10 @@ class VecsOps():
 
     def __init__(self):
         self._cli = cli_path('vecs-cli')
-        self._management_node = False
+        self._management_node = is_management_node()
         self._infra_node = False
         dir_cli = DirCliOps()
         services = dir_cli.get_services_list()
-        if not check_file_exists(get_root_cert_dir() + Constants.ROOT_CERT):
-            self._management_node = True
 
         self._solution_user_stores = []
         stores = self.list_stores()
@@ -291,6 +365,8 @@ class VecsOps():
             msg = 'Error in creating a new entry for {0} in VECS Store {1}.'.format(alias, store_name)
             e.appendErrorStack(msg)
             raise e
+        if store_name == "vpxd-extension":
+            execute_extensioncert(cert_path, private_key_path)
 
     def get_cert_file(self, store_name, alias, outFile, quiet=False):
         """
@@ -414,6 +490,7 @@ class DirCliOps():
         cmd = [self._cli, 'service', 'update',
                '--cert', cert,
                '--name', service.strip(),
+               '--login', user,
                '--password', password]
         try:
             execute_command(cmd, ignoreError)
@@ -433,6 +510,8 @@ class DirCliOps():
         """
         cmd = [self._cli, 'trustedcert', 'publish',
                '--cert', cert_path,
+               '--chain',
+               '--login', user,
                '--password', password]
         try:
             execute_command(cmd)
@@ -446,7 +525,7 @@ class DirCliOps():
         Function to get available services list from lotus
         :return: Returns services list from lotus
         """
-        cmd = [self._cli, 'service', 'list', '--password', password]
+        cmd = [self._cli, 'service', 'list', '--login', user, '--password', password]
         #Donot print password
         tmp = list(cmd)
         tmp[len(tmp)-1] = '*****'
@@ -484,7 +563,7 @@ class VmcaOps():
     def __init__(self):
         self._cli = cli_path('certool')
 
-    def generate_cert(self, service_acc_name, server):
+    def generate_cert(self, service_acc_name, server, config_file):
         """
         Function to generate certificate for given service account
         :param service_acc_name: Name of the store
@@ -511,7 +590,7 @@ class VmcaOps():
                '--gencert',
                '--privkey=' + get_cert_dir() + service_acc_name + Constants.KEY_EXT,
                '--cert=' + get_cert_dir() + service_acc_name + Constants.CERT_EXT,
-               '--config=' + get_dest_config_file_loc()]
+               '--config=' + get_dest_config_file_loc(config_file)]
         try:
             execute_command(cmd)
         except InvokeCommandException as e:
@@ -577,13 +656,13 @@ class VmcaOps():
         return result
 
 
-    def selfca(self, server):
+    def selfca(self, server, config_file):
         """
         Function to regenerate Root signing certificate using VMCA
         :param server: Provide PSC/Infra IP in case of distributed env else 'localhost'
         """
         cmd = [self._cli, '--selfca',
-               '--config', get_dest_config_file_loc(),
+               '--config', get_dest_config_file_loc(config_file),
                '--server', server]
         try:
             execute_command(cmd)
@@ -609,7 +688,7 @@ class VmcaOps():
             e.appendErrorStack(msg)
             raise e
 
-    def generateCSR(self, cert_path, key_output_path, csr_output_path, server):
+    def generateCSR(self, config_path, key_output_path, csr_output_path, server):
         """
         Function to generate CSR
         :param cert_path: certificate file path
@@ -617,8 +696,8 @@ class VmcaOps():
         :param csr_output_path: output csr path
         """
 
-        if not os.path.isfile(cert_path):
-            raise FileNotFoundError ('Cannot find certificate file')
+        if not os.path.isfile(config_path):
+            raise FileNotFoundError ('Cannot find certool configuration file')
         pubKeyTempPath = os.path.join(tempfile.gettempdir(), 'pubkey.pub')
 
         logging.info("Generating key ")
@@ -634,9 +713,10 @@ class VmcaOps():
             raise e
         os.remove(pubKeyTempPath)
 
-        cmd = [self._cli, '--gencsrfromcert',
+        cmd = [self._cli, '--gencsr',
               '--privkey', key_output_path,
-              '--cert',cert_path,
+              '--pubkey',pubKeyTempPath,
+               '--config', config_path,
               '--csrfile', csr_output_path]
         logging.info('Running command: ' + str(cmd))
         try:

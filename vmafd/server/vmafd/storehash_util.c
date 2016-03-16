@@ -666,11 +666,13 @@ VmAfdTearDownStoreHashMap (
         if (storeMapEntry.pSecurityDescriptor)
         {
             VmAfdFreeSecurityDescriptor (storeMapEntry.pSecurityDescriptor);
+            storeMapEntry.pSecurityDescriptor = NULL;
         }
 
         if (storeMapEntry.pStoreContextList)
         {
             VmAfdFreeContextList(storeMapEntry.pStoreContextList);
+            storeMapEntry.pStoreContextList = NULL;
         }
 
 

@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -21,6 +21,7 @@
 #define VMAFD_KRB5_CONF       "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"
 #define VMAFD_KEYTAB_PATH     "C:\\ProgramData\\VMware\\cis\\cfg\\vmafdd\\krb5.keytab"
 #define VMAFD_TRUSTED_ROOT_DOWNLOAD_PATH     "%VMWARE_CFG_DIR%\\vmware-vpx\\docRoot\\certs"
+#define VMAFD_MACHINE_SSL_PATH               "%VMWARE_CFG_DIR%\\vmafdd"
 #else
 #include "vmafd-server-defines.h"
 #endif
@@ -190,6 +191,7 @@
 }
 
 #define VMAFD_FIRST_REPL_CYCLE_MODE_COPY_DB 1
+#define VMAFD_FIRST_REPL_CYCLE_MODE_BY_OBJECT 3
 
 #define VMAFD_MAX_KDC_SERVERS 10
 #define VMAFD_MACHINE_CERT "__MachineCert"
@@ -227,10 +229,24 @@ if (bLocked) \
 #define IPV4_LINKLOCAL_PREFIX_BYTE_2 0xFE
 #define IPV6_LINKLOCAL_PREFIX_BYTE_1 0xFE
 #define IPV6_LINKLOCAL_PREFIX_BYTE_2 0x80
+#define IPV6_ULA_PREFIX_BYTE_1 0xFC
+#define IPV6_ULA_PREFIX_BYTE_2 0x00
 
 #define IS_IPV4_LINKLOCAL(a) \
     (((a)[0] == IPV4_LINKLOCAL_PREFIX_BYTE_1) && ((a)[1] == IPV4_LINKLOCAL_PREFIX_BYTE_2))
 #define IS_IPV6_LINKLOCAL(a) \
     (((a)[0] == IPV6_LINKLOCAL_PREFIX_BYTE_1) && (((a)[1] & 0xC0)== IPV6_LINKLOCAL_PREFIX_BYTE_2))
+#define IS_IPV6_ULA(a) \
+    (((a)[0] == IPV6_ULA_PREFIX_BYTE_1) && (((a)[1] & 0xC0)== IPV6_ULA_PREFIX_BYTE_2))
 
 #define VMDNS_DEFAULT_LDAP_PORT 389
+
+
+
+#define NSECS_PER_SEC       1000000000
+#define NSECS_PER_MSEC      1000000
+#define MSECS_PER_SEC       1000
+#define CDC_DISABLE_OFFSITE 1
+
+#define SSO_HA_MIN_DOMAIN_LEVEL_MAJOR   2
+#define SSO_HA_MIN_DOMAIN_LEVEL_MINOR   0

@@ -78,6 +78,12 @@ typedef DWORD (*PFN_VMAF_CFG_SET_VALUE)(
 					DWORD                dwSize
 					);
 
+typedef DWORD (*PFN_VMAF_CFG_DELETE_VALUE)(
+					PVMAF_CFG_KEY        pKey,
+					PCSTR                pszValue
+					);
+
+
 typedef VOID (*PFN_VMAF_CFG_CLOSE_KEY)(
                     PVMAF_CFG_KEY pKey
                     );
@@ -97,6 +103,7 @@ typedef struct _VMAF_CFG_PACKAGE
     PFN_VMAF_CFG_READ_STRING_VALUE pfnReadStringValue;
     PFN_VMAF_CFG_READ_DWORD_VALUE  pfnReadDWORDValue;
     PFN_VMAF_CFG_SET_VALUE         pfnSetValue;
+    PFN_VMAF_CFG_DELETE_VALUE      pfnDeleteValue;
     PFN_VMAF_CFG_CLOSE_KEY         pfnCloseKey;
     PFN_VMAF_CFG_CLOSE_CONNECTION  pfnCloseConnection;
 

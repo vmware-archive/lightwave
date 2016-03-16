@@ -19,9 +19,13 @@ VmAfdJoinDomain(
     DWORD dwError = 0;
     VMAFD_JOIN_FLAGS dwFlags = 0;
 
+#if defined(PLATFORM_VMWARE_ESX)
+
     dwFlags = (VMAFD_JOIN_FLAGS_ENABLE_NSSWITCH |
                VMAFD_JOIN_FLAGS_ENABLE_PAM |
                VMAFD_JOIN_FLAGS_ENABLE_SSH);
+
+#endif
 
     if (!pszDomain)
     {
@@ -40,8 +44,10 @@ VmAfdJoinDomain(
         pszUsername = "Administrator";
     }
 
+#if !defined(PLATFORM_VMWARE_ESX)
     dwError = VMwDeployStartServiceClient();
     BAIL_ON_VMAFD_ERROR(dwError);
+#endif
 
     dwError = VmAfdJoinVmDir2A(
                     pszDomain,

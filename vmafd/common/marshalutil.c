@@ -101,7 +101,7 @@ VmAfdGetMarshalLength(
 			case VMW_IPC_TYPE_STRING:
 				dwResponseSize += sizeof (UINT32);
 				tempString = pInput[iArgCounter].data.pString;
-				dwResponseSize += sizeof (size_t);
+				dwResponseSize += sizeof (VMAFD_IPC_SIZE_T);
 				if (tempString != NULL){
 				  dwResponseSize += strlen(tempString);
 				}
@@ -109,7 +109,7 @@ VmAfdGetMarshalLength(
 			case VMW_IPC_TYPE_WSTRING:
 				dwResponseSize += sizeof(UINT32);
 				tempWString = pInput[iArgCounter].data.pWString;
-				dwResponseSize += sizeof (size_t);
+				dwResponseSize += sizeof (VMAFD_IPC_SIZE_T);
 				if (tempWString != NULL){
                                         dwError = VmAfdGetStringLengthW (tempWString, &stringLength);
                                         BAIL_ON_VMAFD_ERROR (dwError);
@@ -223,17 +223,17 @@ VmAfdMarshal(
 				pCursor += sizeof (UINT32);
 				tempString = pInput[iArgCounter].data.pString;
 				if (tempString == NULL){
-                                        dwError = VmAfdCheckMemory (sizeof (size_t), &dwActualResponseSz);
+                                        dwError = VmAfdCheckMemory (sizeof (VMAFD_IPC_SIZE_T), &dwActualResponseSz);
                                         BAIL_ON_VMAFD_ERROR (dwError);
-					*((size_t *)pCursor) = 0;
-					pCursor += sizeof (size_t);
+					*((VMAFD_IPC_SIZE_T *)pCursor) = 0;
+					pCursor += sizeof (VMAFD_IPC_SIZE_T);
 					break;
 				}
-                                dwError = VmAfdCheckMemory (sizeof (size_t), &dwActualResponseSz);
+                                dwError = VmAfdCheckMemory (sizeof (VMAFD_IPC_SIZE_T), &dwActualResponseSz);
                                 BAIL_ON_VMAFD_ERROR (dwError);
 				stringLength = strlen(tempString);
-				*((size_t *)pCursor) = stringLength;
-				pCursor += sizeof (size_t);
+				*((VMAFD_IPC_SIZE_T *)pCursor) = (VMAFD_IPC_SIZE_T)stringLength;
+				pCursor += sizeof (VMAFD_IPC_SIZE_T);
                                 dwError = VmAfdCheckMemory (stringLength, &dwActualResponseSz);
                                 BAIL_ON_VMAFD_ERROR (dwError);
 				strncpy (pCursor, tempString, stringLength);
@@ -246,18 +246,18 @@ VmAfdMarshal(
 				pCursor += sizeof(UINT32);
 				tempWString = pInput[iArgCounter].data.pWString;
 				if (tempWString == NULL){
-                                        dwError = VmAfdCheckMemory (sizeof(size_t), &dwActualResponseSz);
+                                        dwError = VmAfdCheckMemory (sizeof(VMAFD_IPC_SIZE_T), &dwActualResponseSz);
                                         BAIL_ON_VMAFD_ERROR (dwError);
-					*((size_t *)pCursor) = 0;
-					pCursor += sizeof (size_t);
+					*((VMAFD_IPC_SIZE_T *)pCursor) = 0;
+					pCursor += sizeof (VMAFD_IPC_SIZE_T);
 					break;
 				}
 				dwError = VmAfdGetStringLengthW(tempWString, &stringLength);
 				BAIL_ON_VMAFD_ERROR (dwError);
-                                dwError = VmAfdCheckMemory (sizeof(size_t), &dwActualResponseSz);
+                                dwError = VmAfdCheckMemory (sizeof(VMAFD_IPC_SIZE_T), &dwActualResponseSz);
                                 BAIL_ON_VMAFD_ERROR (dwError);
-				*((size_t *)pCursor) = stringLength;
-				pCursor += sizeof (size_t);
+				*((VMAFD_IPC_SIZE_T *)pCursor) = (VMAFD_IPC_SIZE_T)stringLength;
+				pCursor += sizeof (VMAFD_IPC_SIZE_T);
                                 dwError = VmAfdCheckMemory (sizeof(WCHAR)*stringLength, &dwActualResponseSz);
                                 BAIL_ON_VMAFD_ERROR (dwError);
                                 memcpy (pCursor, tempWString, stringLength*sizeof(WCHAR));
@@ -389,7 +389,7 @@ VmAfdUnMarshal(
 	while (iArgCounter < noOfArgs){
 
 		UINT32 typeInput = *((UINT32 *)pResponse);
-		size_t stringLength;
+		size_t stringLength = 0;
 		PSTR pTempString = NULL;
                 PBYTE pTempByte = NULL;
                 PWSTR pTempWString = NULL;
@@ -410,9 +410,9 @@ VmAfdUnMarshal(
 				dwBytesRead += sizeof (UINT32);
 				break;
 			case VMW_IPC_TYPE_STRING:
-				stringLength = *((size_t *)pResponse);
-				pResponse += sizeof (size_t);
-				dwBytesRead += sizeof (size_t);
+				stringLength = *((VMAFD_IPC_SIZE_T *)pResponse);
+				pResponse += sizeof (VMAFD_IPC_SIZE_T);
+				dwBytesRead += sizeof (VMAFD_IPC_SIZE_T);
 				if (stringLength == 0){
 					pInput[iArgCounter].data.pString = NULL;
 					break;
@@ -427,9 +427,9 @@ VmAfdUnMarshal(
 				pInput[iArgCounter].data.pString = pTempString;
 				break;
 			case VMW_IPC_TYPE_WSTRING:
-				stringLength = *((size_t *)pResponse);
-				pResponse += sizeof (size_t);
-				dwBytesRead += sizeof (size_t);
+				stringLength = *((VMAFD_IPC_SIZE_T *)pResponse);
+				pResponse += sizeof (VMAFD_IPC_SIZE_T);
+				dwBytesRead += sizeof (VMAFD_IPC_SIZE_T);
 				if (stringLength == 0){
 					pInput[iArgCounter].data.pWString = NULL;
 					break;
@@ -529,18 +529,18 @@ VmAfdMarshalStringArrayGetSize (
 
         for (;dwIndex < dwArraySize; dwIndex++)
         {
-                size_t dwStringLength = 0;
-                dwSizeRequired += sizeof (size_t); //Length of String
+                size_t stringLength = 0;
+                dwSizeRequired += sizeof (VMAFD_IPC_SIZE_T); //Length of String
 
                 if (pwszStringArray[dwIndex])
                 {
                         dwError = VmAfdGetStringLengthW (
                                                          pwszStringArray[dwIndex],
-                                                         &dwStringLength
+                                                         &stringLength
                                                         );
                         BAIL_ON_VMAFD_ERROR (dwError);
 
-                        dwSizeRequired += dwStringLength*sizeof(WCHAR);
+                        dwSizeRequired += stringLength*sizeof(WCHAR);
                 }
         }
 
@@ -614,42 +614,42 @@ VmAfdMarshalStringArray (
 
         for (;dwIndex<dwArraySize; dwIndex++)
         {
-                size_t dwStringLength = 0;
+                size_t stringLength = 0;
 
                 if (pwszStringArray[dwIndex])
                 {
 
                         dwError = VmAfdGetStringLengthW(
                                                         pwszStringArray[dwIndex],
-                                                        &dwStringLength
+                                                        &stringLength
                                                        );
                         BAIL_ON_VMAFD_ERROR (dwError);
 
                         dwError = VmAfdCheckMemory (
-                                                     sizeof (size_t),
+                                                     sizeof (VMAFD_IPC_SIZE_T),
                                                      &dwSizeRemainining
                                                    );
                         BAIL_ON_VMAFD_ERROR (dwError);
 
-                        *((size_t *)pCursor) = dwStringLength;
-                        pCursor += sizeof (size_t);
+                        *((VMAFD_IPC_SIZE_T *)pCursor) = (VMAFD_IPC_SIZE_T)stringLength;
+                        pCursor += sizeof (VMAFD_IPC_SIZE_T);
 
-                        dwError = VmAfdCheckMemory (sizeof(WCHAR)*dwStringLength, &dwSizeRemainining);
+                        dwError = VmAfdCheckMemory (sizeof(WCHAR)*stringLength, &dwSizeRemainining);
                         BAIL_ON_VMAFD_ERROR (dwError);
 
-                        memcpy (pCursor, pwszStringArray[dwIndex], dwStringLength*sizeof(WCHAR));
-                        pCursor += dwStringLength*sizeof(WCHAR);
+                        memcpy (pCursor, pwszStringArray[dwIndex], stringLength*sizeof(WCHAR));
+                        pCursor += stringLength*sizeof(WCHAR);
                 }
                 else
                 {
                         dwError = VmAfdCheckMemory (
-                                                        sizeof (size_t),
+                                                        sizeof (VMAFD_IPC_SIZE_T),
                                                         &dwSizeRemainining
                                                    );
                         BAIL_ON_VMAFD_ERROR (dwError);
 
-                        *((size_t *)pCursor) = dwStringLength;
-                        pCursor += sizeof(size_t);
+                        *((VMAFD_IPC_SIZE_T *)pCursor) = (VMAFD_IPC_SIZE_T)stringLength;
+                        pCursor += sizeof(VMAFD_IPC_SIZE_T);
                 }
         }
 
@@ -737,13 +737,13 @@ VmAfdUnMarshalStringArray (
                 size_t stringLength = 0;
 
                 dwError = VmAfdCheckMemory (
-                                             sizeof (size_t),
+                                             sizeof (VMAFD_IPC_SIZE_T),
                                              &dwBytesAvailable
                                            );
                 BAIL_ON_VMAFD_ERROR (dwError);
 
-                stringLength = *((size_t *)pCursor);
-                pCursor += sizeof (size_t);
+                stringLength = *((VMAFD_IPC_SIZE_T *)pCursor);
+                pCursor += sizeof (VMAFD_IPC_SIZE_T);
 
                 if (stringLength)
                 {
@@ -829,7 +829,7 @@ VmAfdMarshalEntryArrayLength (
             dwSizeRequired += sizeof (UINT32) + sizeof (UINT32);
             //For storing type of dwDate and the actual dwDate
 
-            dwSizeRequired += sizeof (UINT32) + sizeof (size_t);
+            dwSizeRequired += sizeof (UINT32) + sizeof (VMAFD_IPC_SIZE_T);
             //For Storing type of pszAlias and the length of the alias
 
             if (pCertCursor->pAlias)
@@ -844,7 +844,7 @@ VmAfdMarshalEntryArrayLength (
                 stringLength = 0;
             }
 
-            dwSizeRequired += sizeof (UINT32) + sizeof (size_t);
+            dwSizeRequired += sizeof (UINT32) + sizeof (VMAFD_IPC_SIZE_T);
             //For storing type of pszCertificate and the lenght of cert
 
             if (pCertCursor->pCert)
@@ -859,7 +859,7 @@ VmAfdMarshalEntryArrayLength (
                 stringLength = 0;
             }
 
-            dwSizeRequired += sizeof (UINT32) + sizeof (size_t);
+            dwSizeRequired += sizeof (UINT32) + sizeof (VMAFD_IPC_SIZE_T);
             //For storing type of pszKey and the length of key
 
             if (pCertCursor->pPassword)
@@ -1215,7 +1215,7 @@ VmAfdMarshalPermissionArrayLength (
 
         if (pPermArray)
         {
-            dwSizeRequired += sizeof (UINT32) + sizeof (size_t);
+            dwSizeRequired += sizeof (UINT32) + sizeof (VMAFD_IPC_SIZE_T);
             //For Storing type of pszUserName and the length of the userName
 
             if (pCursor->pszUserName)
@@ -1506,7 +1506,7 @@ VmAfdMarshalHeartbeatStatusArrLength (
 
         if (pInfoArray)
         {
-            dwSizeRequired += sizeof (UINT32) + sizeof (size_t);
+            dwSizeRequired += sizeof (UINT32) + sizeof (VMAFD_IPC_SIZE_T);
 
             if (pCursor->pszServiceName)
             {
@@ -2043,7 +2043,7 @@ VmAfdMarshalStringW (
     pCursor += sizeof (UINT32);
 
     dwError = VmAfdCheckMemory (
-                                sizeof (size_t),
+                                sizeof (VMAFD_IPC_SIZE_T),
                                 &dwSizeRemainining
                                );
 
@@ -2057,8 +2057,8 @@ VmAfdMarshalStringW (
                                         );
         BAIL_ON_VMAFD_ERROR (dwError);
 
-        *((size_t *)pCursor) = stringLength;
-        pCursor += sizeof (size_t);
+        *((VMAFD_IPC_SIZE_T *)pCursor) = (VMAFD_IPC_SIZE_T)stringLength;
+        pCursor += sizeof (VMAFD_IPC_SIZE_T);
 
         dwError = VmAfdCheckMemory (
                                     stringLength * sizeof (WCHAR),
@@ -2076,8 +2076,8 @@ VmAfdMarshalStringW (
     }
     else
     {
-        *((size_t *)pCursor) = stringLength;
-        pCursor += sizeof (size_t);
+        *((VMAFD_IPC_SIZE_T *)pCursor) = stringLength;
+        pCursor += sizeof (VMAFD_IPC_SIZE_T);
     }
 
     dwBytesRead = dwBlobSize - dwSizeRemainining;
@@ -2139,13 +2139,13 @@ VmAfdUnMarshalString (
     BAIL_ON_VMAFD_ERROR (dwError);
 
     dwError = VmAfdCheckMemory (
-                                sizeof (size_t),
+                                sizeof (VMAFD_IPC_SIZE_T),
                                 &dwSizeRemainining
                              );
     BAIL_ON_VMAFD_ERROR (dwError);
 
-    stringLength = *((size_t *)pCursor);
-    pCursor += sizeof (size_t);
+    stringLength = *((VMAFD_IPC_SIZE_T *)pCursor);
+    pCursor += sizeof (VMAFD_IPC_SIZE_T);
 
     if (stringLength)
     {

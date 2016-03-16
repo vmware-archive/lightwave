@@ -1,0 +1,313 @@
+/*
+ * Copyright (C) 2011-2013 VMware, Inc. All rights reserved.
+ *
+ * Module   : vmafd.idl
+ *
+ * Abstract :
+ *
+ *            VMware afd Service
+ *
+ *            Interface Definition
+ *
+ *            Core API
+ *
+ * Authors  : Sriram Nambakam (snambakam@vmware.com)
+ *
+ */
+[
+    uuid (6A720396-760C-11E2-B755-000C29B1C8FE),
+    version(1.4),
+    pointer_default(unique)
+#ifdef _WIN32
+    , endpoint("ncalrpc:[VMWareAfdService]")
+#endif // #ifdef _WIN32
+]
+
+interface vmafd
+{
+#ifndef _WIN32
+
+#include <lw/types.h>
+
+#else // _WIN32
+
+#define UINT32 unsigned int
+typedef unsigned char BYTE;
+
+#endif
+
+typedef [context_handle] void *vecs_store_handle60_t;
+typedef [context_handle] void *vecs_entry_enum_handle60_t;
+
+
+#include <vmafdtypes.h>
+
+    UINT32
+    VmAfdRpcGetStatus(
+        [in]           handle_t      hBinding,
+        [in, out, ref] VMAFD_STATUS *pStatus
+        );
+
+    UINT32
+    VmAfdRpcGetDomainName(
+        [in]  handle_t hBinding,
+        [out] wstring_t* ppwszDomain
+        );
+
+    UINT32
+    VmAfdRpcGetDomainState(
+        [in]           handle_t            hBinding,
+        [in, out, ref] VMAFD_DOMAIN_STATE *pDomainState
+        );
+
+    UINT32
+    VmAfdRpcSetDomainName(
+        [in] handle_t hBinding,
+        [in] wstring_t  pswzDomainName
+        );
+
+    UINT32
+    VmAfdRpcGetLDU(
+        [in]  handle_t hBinding,
+        [out] wstring_t* ppwszLDU
+        );
+
+    UINT32
+    VmAfdRpcSetLDU(
+        [in] handle_t hBinding,
+        [in] wstring_t  pswzLDU
+        );
+
+    UINT32
+    VmAfdRpcSetRHTTPProxyPort(
+        [in] handle_t hBinding,
+        [in] UINT32   dwPort
+        );
+
+    UINT32
+    VmAfdRpcSetDCPort(
+        [in] handle_t hBinding,
+        [in] UINT32   dwPort
+        );
+
+    UINT32
+    VmAfdRpcGetCMLocation(
+        [in]  handle_t hBinding,
+        [out] wstring_t* ppwszCMLocation
+        );
+
+    UINT32
+    VmAfdRpcGetLSLocation(
+        [in]  handle_t hBinding,
+        [out] wstring_t* ppwszLSLocation
+        );
+
+    UINT32
+    VmAfdRpcGetDCName(
+        [in]  handle_t hBinding,
+        [out] wstring_t* ppwszDCName
+        );
+
+    UINT32
+    VmAfdRpcSetDCName(
+        [in] handle_t hBinding,
+        [in] wstring_t  pswzDCName
+        );
+
+#if 0
+    UINT32
+    VmAfdRpcGetMachineAccountInfo(
+        [in]  handle_t hBinding,
+        [out] wstring_t* ppwszAccount,
+        [out] wstring_t* ppwszPassword
+        );
+#endif
+
+    UINT32
+    VmAfdRpcGetSiteGUID(
+        [in]  handle_t hBinding,
+        [out] wstring_t* ppwszGUID
+        );
+
+    UINT32
+    VmAfdRpcGetMachineID(
+        [in]  handle_t hBinding,
+        [out] wstring_t* ppwszMachineID
+        );
+
+    UINT32
+    VmAfdRpcSetMachineID(
+        [in] handle_t hBinding,
+        [in] wstring_t  pwszMachineID
+        );
+
+    UINT32
+    VmAfdRpcQueryAD(
+        [in] handle_t hBinding,
+        [out] wstring_t* ppwszComputer,
+        [out] wstring_t* ppwszDomain,
+        [out] wstring_t* ppwszDistinguishedName,
+        [out] wstring_t* ppwszNetbiosName
+        );
+
+    UINT32
+    VmAfdRpcForceReplication(
+        [in] handle_t hBinding,
+        [in] wstring_t  pwszServerName
+        );
+
+    UINT32
+    VmAfdRpcGetPNID(
+        [in]  handle_t hBinding,
+        [out] wstring_t* ppwszPNID
+        );
+
+    UINT32
+    VmAfdRpcSetPNID(
+        [in] handle_t hBinding,
+        [in] wstring_t  pswzPNID
+        );
+
+    UINT32
+    VmAfdRpcGetCAPath(
+        [in]  handle_t hBinding,
+        [out] wstring_t* ppwszPath
+        );
+
+    UINT32
+    VmAfdRpcSetCAPath(
+        [in] handle_t hBinding,
+        [in] wstring_t  pswzPath
+        );
+
+    UINT32
+    VmAfdRpcTriggerRootCertsRefresh(
+        [in] handle_t hBinding
+        );
+
+    UINT32
+    VecsRpcCreateCertStore(
+	[in] handle_t hBinding,
+	[in] wstring_t pwszStoreName,
+	[in] wstring_t pwszPassword,
+	[in,out] vecs_store_handle60_t *ppStore
+        );
+
+    UINT32
+    VecsRpcOpenCertStore(
+	[in] handle_t hBinding,
+	[in] wstring_t pwszStoreName,
+	[in] wstring_t pwszPassword,
+	[in,out] vecs_store_handle60_t *ppStore
+        );
+
+    UINT32
+    VecsRpcCloseCertStore(
+	[in] handle_t hBinding,
+	[in,out] vecs_store_handle60_t *ppStore
+        );
+
+    UINT32
+    VecsRpcEnumCertStore(
+    [in] handle_t hBinding,
+    [out] PVMAFD_CERT_STORE_ARRAY * ppCertStoreArray
+    );
+
+    UINT32
+    VecsRpcDeleteCertStore(
+    [in] handle_t hBinding,
+    [in] wstring_t  pwszStoreName
+    );
+
+    UINT32
+    VecsRpcBeginEnumCerts(
+    [in]     handle_t                  hBinding,
+    [in]     vecs_store_handle60_t       pStore,
+    [in]     UINT32                    dwMaxCount,
+    [in]     UINT32                    dwInfoLevel,
+    [in,out]    UINT32*                   dwLimit,
+    [in,out] vecs_entry_enum_handle60_t* ppEnumContext
+    );
+
+    UINT32
+    VecsRpcEnumCerts(
+    [in]  handle_t                 hBinding,
+    [in]  vecs_entry_enum_handle60_t pEnumContext,
+    [out] PVMAFD_CERT_ARRAY*       ppCertContainer
+    );
+
+    UINT32
+    VecsRpcEndEnumCerts(
+    [in]     handle_t                  hBinding,
+    [in,out] vecs_entry_enum_handle60_t* ppEnumContext
+    );
+
+    UINT32
+    VecsRpcGetEntryCount(
+    [in]    handle_t                 hBinding,
+    [in]    vecs_store_handle60_t      pStore,
+    [out]   UINT32*                  pdwSize
+    );
+
+    UINT32
+    VecsRpcGetCertificateByAlias(
+    [in]    handle_t      hBinding,
+    [in]    vecs_store_handle60_t   pStore,
+    [in]    wstring_t pAlias,
+    [out]   wstring_t* pCertificate
+    );
+
+    UINT32
+    VecsRpcGetPrivateKeyByAlias(
+    [in]   handle_t hBinding,
+    [in]   vecs_store_handle60_t  pStore,
+    [in]   wstring_t pszAlias,
+    [in]   wstring_t pszPassword,
+    [out]  wstring_t *ppszPrivateKey
+    );
+
+    UINT32
+    VecsRpcAddCertificate(
+    [in]  handle_t hBinding,
+    [in]  vecs_store_handle60_t pStore,
+    [in]  UINT32 entryType,
+    [in]  wstring_t pszAlias,
+    [in]  wstring_t pszCertificate,
+    [in]  wstring_t pszPrivateKey,
+    [in]  wstring_t pszPassword,
+    [in]  UINT32 bAutoRefresh
+    );
+
+    UINT32
+    VecsRpcGetEntryTypeByAlias(
+    [in] handle_t hBinding,
+    [in] vecs_store_handle60_t pStore,
+    [in] wstring_t pszAlias,
+    [in,out] UINT32* pEntryType
+    );
+
+    UINT32
+    VecsRpcGetEntryDateByAlias(
+    [in] handle_t hBinding,
+    [in] vecs_store_handle60_t pStore,
+    [in] wstring_t pszAlias,
+    [in,out] UINT32* pdwDate
+    );
+
+    UINT32
+    VecsRpcGetEntryByAlias(
+    [in] handle_t hBinding,
+    [in] vecs_store_handle60_t pStore,
+    [in] wstring_t pszAlias,
+    [in] UINT32 dwInfoLevel,
+    [out] PVMAFD_CERT_ARRAY *ppCertArray
+    );
+
+    UINT32
+    VecsRpcDeleteCertificate(
+    [in] handle_t hBinding,
+    [in] vecs_store_handle60_t pStore,
+    [in] wstring_t pszAlias
+    );
+
+}

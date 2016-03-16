@@ -65,7 +65,7 @@ VecsDbSetSecurityDescriptor (
         BAIL_ON_VECS_ERROR (dwError);
     }
 
-    dwError = VecsDbCreateContext(&pDbContext);
+    dwError = VecsDbCreateContext(&pDbContext, VMAFD_DB_MODE_WRITE);
     BAIL_ON_VECS_ERROR (dwError);
 
     if (!pDbContext->pQuerySetSecurityDescriptor)
@@ -113,6 +113,7 @@ VecsDbSetSecurityDescriptor (
     }
 
     pDbQuery = pDbContext->pQuerySetSecurityDescriptor;
+
 
     if (!pDbContext->bInTx)
     {
@@ -265,7 +266,7 @@ VecsDbGetSecurityDescriptor (
         BAIL_ON_VECS_ERROR (dwError);
     }
 
-    dwError = VecsDbCreateContext(&pDbContext);
+    dwError = VecsDbCreateContext(&pDbContext, VMAFD_DB_MODE_READ);
     BAIL_ON_VECS_ERROR (dwError);
 
     if (!pDbContext->pQueryGetSecurityDescriptor)
@@ -425,7 +426,7 @@ VecsDbEnumFilteredStores (
                             );
     BAIL_ON_VECS_ERROR (dwError);*/
 
-    dwError = VecsDbCreateContext(&pDbContext);
+    dwError = VecsDbCreateContext(&pDbContext, VMAFD_DB_MODE_READ);
     BAIL_ON_VECS_ERROR (dwError);
 
     dwError = VecsDbGetFilteredStoreCount (
@@ -568,6 +569,12 @@ VecsDbAddAces (
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VECS_ERROR (dwError);
+    }
+
+    if (pDbContext->dbOpenMode != VMAFD_DB_MODE_WRITE)
+    {
+        dwError = ERROR_INVALID_ACCESS;
+        BAIL_ON_VECS_ERROR(dwError);
     }
 
     pAceList = pAcl->pAceList;

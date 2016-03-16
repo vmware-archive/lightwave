@@ -21,7 +21,23 @@ VmAfConfigOpenConnection(
     PVMAF_CFG_CONNECTION* ppConnection
     )
 {
-    return gpVmAfCfgApiGlobals->pCfgPackage->pfnOpenConnection(ppConnection);
+    DWORD dwError = 0;
+
+    if (!ppConnection || !gpVmAfCfgApiGlobals->pCfgPackage)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError =  gpVmAfCfgApiGlobals->pCfgPackage->pfnOpenConnection(ppConnection);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
 }
 
 DWORD
@@ -33,12 +49,28 @@ VmAfConfigOpenRootKey(
 	PVMAF_CFG_KEY*       ppKey
 	)
 {
-	return gpVmAfCfgApiGlobals->pCfgPackage->pfnOpenRootKey(
-												pConnection,
-												pszKeyName,
-												dwOptions,
-												dwAccess,
-												ppKey);
+      DWORD dwError = 0;
+
+      if (!gpVmAfCfgApiGlobals->pCfgPackage)
+      {
+          dwError =  ERROR_INVALID_PARAMETER;
+          BAIL_ON_VMAFD_ERROR(dwError);
+      }
+
+      dwError = gpVmAfCfgApiGlobals->pCfgPackage->pfnOpenRootKey(
+                            pConnection,
+                            pszKeyName,
+                            dwOptions,
+                            dwAccess,
+                            ppKey);
+      BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+      return dwError;
+error:
+
+      goto cleanup;
 }
 
 DWORD
@@ -51,13 +83,29 @@ VmAfConfigOpenKey(
     PVMAF_CFG_KEY*       ppKey
     )
 {
-    return gpVmAfCfgApiGlobals->pCfgPackage->pfnOpenKey(
+    DWORD dwError = 0;
+
+    if (!gpVmAfCfgApiGlobals->pCfgPackage)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError =  gpVmAfCfgApiGlobals->pCfgPackage->pfnOpenKey(
                                                 pConnection,
                                                 pKey,
                                                 pszSubKey,
                                                 dwOptions,
                                                 dwAccess,
                                                 ppKey);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
 }
 
 DWORD
@@ -70,13 +118,29 @@ VmAfConfigCreateKey(
     PVMAF_CFG_KEY*       ppKey
     )
 {
-    return gpVmAfCfgApiGlobals->pCfgPackage->pfnCreateKey(
+    DWORD dwError = 0;
+
+    if (!gpVmAfCfgApiGlobals->pCfgPackage)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError =  gpVmAfCfgApiGlobals->pCfgPackage->pfnCreateKey(
                                                 pConnection,
                                                 pKey,
                                                 pszSubKey,
                                                 dwOptions,
                                                 dwAccess,
                                                 ppKey);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
 }
 
 DWORD
@@ -86,11 +150,27 @@ VmAfConfigDeleteKey(
     PCSTR                pszSubKey
     )
 {
-    return gpVmAfCfgApiGlobals->pCfgPackage->pfnDeleteKey(
+    DWORD dwError = 0;
+
+    if (!gpVmAfCfgApiGlobals->pCfgPackage)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError =  gpVmAfCfgApiGlobals->pCfgPackage->pfnDeleteKey(
                                                 pConnection,
                                                 pKey,
                                                 pszSubKey
                                                 );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
 }
 
 DWORD
@@ -101,12 +181,28 @@ VmAfConfigEnumKeys(
     PDWORD               pdwKeyNameCount
     )
 {
-    return gpVmAfCfgApiGlobals->pCfgPackage->pfnEnumKeys(
+    DWORD dwError = 0;
+
+    if (!gpVmAfCfgApiGlobals->pCfgPackage)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError =  gpVmAfCfgApiGlobals->pCfgPackage->pfnEnumKeys(
                                                 pConnection,
                                                 pKey,
                                                 ppszKeyNames,
                                                 pdwKeyNameCount
                                                 );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
 }
 
 DWORD
@@ -117,11 +213,28 @@ VmAfConfigReadStringValue(
     PSTR*               ppszValue
     )
 {
-    return gpVmAfCfgApiGlobals->pCfgPackage->pfnReadStringValue(
+
+    DWORD dwError = 0;
+
+    if (!gpVmAfCfgApiGlobals->pCfgPackage)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError =  gpVmAfCfgApiGlobals->pCfgPackage->pfnReadStringValue(
                                                 pKey,
                                                 pszSubkey,
                                                 pszName,
                                                 ppszValue);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
 }
 
 DWORD
@@ -132,11 +245,27 @@ VmAfConfigReadDWORDValue(
     PDWORD              pdwValue
     )
 {
-    return gpVmAfCfgApiGlobals->pCfgPackage->pfnReadDWORDValue(
+    DWORD dwError = 0;
+
+    if (!gpVmAfCfgApiGlobals->pCfgPackage)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError =  gpVmAfCfgApiGlobals->pCfgPackage->pfnReadDWORDValue(
                                                 pKey,
                                                 pszSubkey,
                                                 pszName,
                                                 pdwValue);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
 }
 
 DWORD
@@ -148,20 +277,65 @@ VmAfConfigSetValue(
 	DWORD               dwSize
 	)
 {
-	return gpVmAfCfgApiGlobals->pCfgPackage->pfnSetValue(
+    DWORD dwError = 0;
+
+    if (!gpVmAfCfgApiGlobals->pCfgPackage)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+	  dwError =  gpVmAfCfgApiGlobals->pCfgPackage->pfnSetValue(
 												pKey,
 												pszName,
 												dwType,
 												pValue,
 												dwSize);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
 }
+
+DWORD
+VmAfConfigDeleteValue(
+	PVMAF_CFG_KEY       pKey,
+	PCSTR               pszName
+	)
+{
+    DWORD dwError = 0;
+
+    if (!gpVmAfCfgApiGlobals->pCfgPackage)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+	  dwError =  gpVmAfCfgApiGlobals->pCfgPackage->pfnDeleteValue(
+                                                              pKey,
+                                                              pszName
+                                                              );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
+}
+
 
 VOID
 VmAfConfigCloseKey(
     PVMAF_CFG_KEY pKey
     )
 {
-    if (pKey)
+    if (pKey && gpVmAfCfgApiGlobals->pCfgPackage)
     {
         gpVmAfCfgApiGlobals->pCfgPackage->pfnCloseKey(pKey);
     }
@@ -172,7 +346,7 @@ VmAfConfigCloseConnection(
     PVMAF_CFG_CONNECTION pConnection
     )
 {
-    if (pConnection)
+    if (pConnection && gpVmAfCfgApiGlobals->pCfgPackage)
     {
         gpVmAfCfgApiGlobals->pCfgPackage->pfnCloseConnection(pConnection);
     }

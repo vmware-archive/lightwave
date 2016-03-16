@@ -130,6 +130,36 @@ typedef struct _VMAFD_THREAD
 
 } VMAFD_THREAD, *PVMAFD_THREAD;
 
+typedef struct _CDC_THREAD_CONTEXT
+{
+    pthread_t       thread;
+    pthread_t*      pThread;
+    pthread_mutex_t thr_mutex;
+    pthread_cond_t  thr_cond;
+    BOOLEAN         bShutdown;
+} CDC_THREAD_CONTEXT, *PCDC_THREAD_CONTEXT;
+
+typedef struct _CDC_CACHE_UPDATE_CONTEXT
+{
+    PCDC_THREAD_CONTEXT pUpdateThrContext;
+    BOOLEAN             bRefreshCache;
+    BOOLEAN             bActiveAlive;
+    DWORD               dwOffsiteRefresh;
+} CDC_CACHE_UPDATE_CONTEXT, *PCDC_CACHE_UPDATE_CONTEXT;
+
+typedef struct _CDC_STATE_MACHINE_CONTEXT
+{
+    PCDC_THREAD_CONTEXT       pStateThrContext;
+    pthread_mutex_t           state_mutex;
+} CDC_STATE_MACHINE_CONTEXT, *PCDC_STATE_MACHINE_CONTEXT;
+
+typedef struct _CDC_CONTEXT
+{
+    PCDC_STATE_MACHINE_CONTEXT pCdcStateMachineContext;
+    PCDC_CACHE_UPDATE_CONTEXT  pCdcCacheUpdateContext;
+    pthread_mutex_t            context_mutex;
+} CDC_CONTEXT, *PCDC_CONTEXT;
+
 typedef struct _VMAFD_GLOBALS
 {
     // NOTE: order of fields MUST stay in sync with struct initializer...
@@ -144,8 +174,9 @@ typedef struct _VMAFD_GLOBALS
     PSTR                            pszKrb5Keytab;
 
     PVMAFD_THREAD                   pCertUpdateThr;
+    pthread_mutex_t                 pCertUpdateMutex;
     PVMAFD_THREAD                   pPassRefreshThr;
-    PVMAFD_THREAD                   pDCCacheThr;
+    PCDC_CONTEXT                    pCdcContext;
 
     // following fields are protected by mutex
     pthread_t                       thread;
@@ -170,6 +201,9 @@ typedef struct _VMAFD_GLOBALS
 
     pthread_rwlock_t                rwlockStoreMap;
 
+    PVMSUPERLOGGING                 pLogger;
+
+    PVMSUPERLOG_THREAD_INFO               pSrvThrInfo;
 } VMAFD_GLOBALS, *PVMAFD_GLOBALS;
 
 typedef struct _VMAFD_KRB_CONFIG {

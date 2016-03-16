@@ -283,16 +283,20 @@ if ( VMAFD_ASCII_UPPER(c) )             \
 #define VMAFD_IPC_REFRESH_SITE_NAME          51
 #define VMAFD_IPC_CONFIGURE_DNS              52
 
-#define CDC_IPC_ENABLE_CLIENT_AFFINITY       60
-#define CDC_IPC_DISABLE_CLIENT_AFFINITY      61
+#define CDC_IPC_ENABLE_DEFAULT_HA            60
+#define CDC_IPC_ENABLE_LEGACY_HA             61
 #define CDC_IPC_GET_DC_NAME                  62
 #define CDC_IPC_GET_CDC_STATE                63
-#define CDC_IPC_FORCE_REFRESH_CACHE          64
-#define CDC_IPC_ENUM_DC_ENTRIES              65
+#define CDC_IPC_ENUM_DC_ENTRIES              64
+#define CDC_IPC_GET_DC_STATUS_INFO           65
 
 #define VMAFD_IPC_POST_HEARTBEAT             70
 #define VMAFD_IPC_GET_HEARBEAT_STATUS        71
 
+#define VMAFD_MIN(a, b) ((a) < (b) ? (a) : (b))
+#define VMAFD_MAX(a, b) ((a) > (b) ? (a) : (b))
+
+#define RPC_PING_TIMEOUT 5
 
 typedef enum
 {
@@ -325,27 +329,17 @@ typedef enum
 
 //CDC
 
-#define DCCA_DEFAULT_SYNC_INTERVAL    10*60
-#define DCCA_DEFAULT_HEARTBEAT         1*60
+#define CDC_DEFAULT_SYNC_INTERVAL     1*60
+#define CDC_DEFAULT_HEARTBEAT         30
 
 typedef enum
 {
     CDC_DB_ENTRY_STATUS_UNDEFINED = 0,
     CDC_DB_ENTRY_STATUS_NEW,
-    CDC_DB_ENTRY_STATUS_FULL_UPDATE,
-    CDC_DB_ENTRY_STATUS_UPDATE
+    CDC_DB_ENTRY_STATUS_SITE_UPDATE,
+    CDC_DB_ENTRY_STATUS_UPDATE,
+    CDC_DB_ENTRY_STATUS_EXISTING
 } CDC_DB_ENTRY_STATUS, *PCDC_DB_ENTRY_STATUS;
-
-typedef struct _CDC_DB_ENTRY_A
-{
-    PSTR pszDCName;
-    PSTR pszSiteName;
-    PSTR pszDomainName;
-    DWORD dwPingTime;
-    DWORD dwLastPing;
-    BOOL  bIsAlive;
-    CDC_DB_ENTRY_STATUS cdcEntryStatus;
-} CDC_DB_ENTRY_A, *PCDC_DB_ENTRY_A;
 
 typedef struct _CDC_DB_ENTRY_W
 {
@@ -354,10 +348,27 @@ typedef struct _CDC_DB_ENTRY_W
     PWSTR pszDomainName;
     DWORD dwPingTime;
     DWORD dwLastPing;
+    DWORD dwLastError;
     BOOL  bIsAlive;
     CDC_DB_ENTRY_STATUS cdcEntryStatus;
 } CDC_DB_ENTRY_W, *PCDC_DB_ENTRY_W;
 
+typedef struct _CDC_DB_ENTRY_ARRAY
+{
+    PCDC_DB_ENTRY_W *pCdcDbEntries;
+    DWORD dwCount;
+} CDC_DB_ENTRY_ARRAY, *PCDC_DB_ENTRY_ARRAY;
+
+typedef struct _VMAFD_CRED_CONTEXT_W
+{
+    PWSTR pwszDCName;
+    PWSTR pwszUPN;
+    PWSTR pwszPassword;
+} VMAFD_CRED_CONTEXT_W, *PVMAFD_CRED_CONTEXT_W;
+
+
+//Heartbeat
+#define VMAFD_HEARTBEAT_INTERVAL 10
 
 #ifndef _WIN32
 #define VMAFD_CONFIG_PARAMETER_KEY_PATH "Services\\vmafd\\Parameters"
@@ -376,7 +387,7 @@ typedef struct _CDC_DB_ENTRY_W
 #define VMAFD_REG_KEY_RHTTPPROXY_PORT "RHTTPProxyPort"
 #define VMAFD_REG_KEY_DC_PORT         "DCPort"
 #define VMAFD_REG_KEY_DC_NAME         "DCName"
-#define VMAFD_REG_KEY_DC_NAME_NEW     "DCNameNew"
+#define VMAFD_REG_KEY_DC_NAME_HA      "DCNameHA"
 #define VMAFD_REG_KEY_DC_ENTRIES      "DCEntries"
 #define VMAFD_REG_KEY_PNID            "PNID"
 #define VMAFD_REG_KEY_CA_PATH         "CAPath"
@@ -392,7 +403,7 @@ typedef struct _CDC_DB_ENTRY_W
 #define VMAFD_REG_KEY_DC_OLD_PASSWORD "dcAccountOldPassword"
 #define VMAFD_REG_KEY_MACHINE_GUID    "MachineGuid"
 
-#define VMAFD_REG_VALUE_HA_CONFIG     "EnableHA"
+#define VMAFD_REG_VALUE_HA_CONFIG     "LegacyModeHA"
 #define VMAFD_REG_VALUE_SITE          "Site"
 #define VMAFD_REG_VALUE_LAST_PING     "LastPing"
 #define VMAFD_REG_VALUE_PING_TIME     "PingTime"

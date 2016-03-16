@@ -664,12 +664,14 @@ AC_CONFIG_FILES([Makefile
                  tools/domainjoin/Makefile
                  tools/vdcpromo/Makefile
                  tools/vecs-cli/Makefile
+                 tools/sl-cli/Makefile
                  interop/Makefile
                  interop/cdcjni/Makefile
+                 interop/heartbeatjni/Makefile
                  interop/java/Makefile
                  interop/jni/Makefile
                  interop/python/Makefile
-		 test/Makefile
+		         test/Makefile
                 ])
 AC_OUTPUT
 

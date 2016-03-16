@@ -603,17 +603,6 @@ VmAfdLocalAPIHandler(
 
             break;
 
-        case CDC_IPC_FORCE_REFRESH_CACHE:
-            dwError = CdcIpcForceRefreshCache(
-                            pConnectionContext,
-                            pRequest,
-                            dwRequestSize,
-                            &pResponse,
-                            &dwResponseSize
-                            );
-
-            break;
-
         case CDC_IPC_ENUM_DC_ENTRIES:
             dwError = CdcIpcEnumDCEntries(
                             pConnectionContext,
@@ -624,8 +613,8 @@ VmAfdLocalAPIHandler(
                             );
 
             break;
-       case CDC_IPC_ENABLE_CLIENT_AFFINITY:
-            dwError = CdcIpcEnableClientAffinity(
+       case CDC_IPC_ENABLE_DEFAULT_HA:
+            dwError = CdcIpcEnableDefaultHA(
                             pConnectionContext,
                             pRequest,
                             dwRequestSize,
@@ -634,8 +623,19 @@ VmAfdLocalAPIHandler(
                             );
 
             break;
-       case CDC_IPC_DISABLE_CLIENT_AFFINITY:
-            dwError = CdcIpcDisableClientAffinity(
+       case CDC_IPC_ENABLE_LEGACY_HA:
+            dwError = CdcIpcEnableLegacyModeHA(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+
+            break;
+
+       case CDC_IPC_GET_DC_STATUS_INFO:
+            dwError = CdcIpcGetDCStatusInfo(
                             pConnectionContext,
                             pRequest,
                             dwRequestSize,
