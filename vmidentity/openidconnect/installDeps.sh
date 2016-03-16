@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 VERSION=6.0.0
-PACKAGE_BASE=../../build/rd-identity-server/packages
+PACKAGE_BASE=../../vmidentity/build/vmware-sts/packages
 
 GROUP_BASE=com.vmware.identity.idm
 deps=("vmware-identity-idm-client" "vmware-identity-idm-interface")

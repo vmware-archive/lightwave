@@ -25,7 +25,7 @@ import org.apache.commons.lang3.tuple.Pair;
 /**
  * @author Yehia Zayour
  */
-public class SlidingWindowMap<Key, Value> {
+public class SlidingWindowMap<K, V> {
     public interface TimeProvider {
         public Date getCurrentTime();
     }
@@ -39,7 +39,7 @@ public class SlidingWindowMap<Key, Value> {
 
     private final long widthMilliseconds;
     private final TimeProvider timeProvider;
-    private final LinkedHashMap<Key, Pair<Value, Date>> map;
+    private final LinkedHashMap<K, Pair<V, Date>> map;
 
     public SlidingWindowMap(long widthMilliseconds) {
         this(widthMilliseconds, new DefaultTimeProvider());
@@ -51,10 +51,10 @@ public class SlidingWindowMap<Key, Value> {
 
         this.widthMilliseconds = widthMilliseconds;
         this.timeProvider = timeProvider;
-        this.map = new LinkedHashMap<Key, Pair<Value, Date>>();
+        this.map = new LinkedHashMap<K, Pair<V, Date>>();
     }
 
-    public void add(Key key, Value value) {
+    public void add(K key, V value) {
         Validate.notNull(key, "key");
         Validate.notNull(value, "value");
 
@@ -67,29 +67,29 @@ public class SlidingWindowMap<Key, Value> {
         this.map.put(key, Pair.of(value, now));
     }
 
-    public Value remove(Key key) {
+    public V remove(K key) {
         Validate.notNull(key, "key");
 
         Date now = this.timeProvider.getCurrentTime();
         cleanUp(now);
-        Pair<Value, Date> pair = this.map.remove(key);
+        Pair<V, Date> pair = this.map.remove(key);
         return (pair == null) ? null : pair.getLeft();
     }
 
-    public Value get(Key key) {
+    public V get(K key) {
         Validate.notNull(key, "key");
 
         Date now = this.timeProvider.getCurrentTime();
         cleanUp(now);
-        Pair<Value, Date> pair = this.map.get(key);
+        Pair<V, Date> pair = this.map.get(key);
         return (pair == null) ? null : pair.getLeft();
     }
 
     private void cleanUp(Date now) {
         // the oldest items are at the head of the queue, as long as we see expired items we continue removing
-        Iterator<Entry<Key, Pair<Value, Date>>> iterator = this.map.entrySet().iterator();
+        Iterator<Entry<K, Pair<V, Date>>> iterator = this.map.entrySet().iterator();
         while (iterator.hasNext()) {
-            Entry<Key, Pair<Value, Date>> entry = iterator.next();
+            Entry<K, Pair<V, Date>> entry = iterator.next();
             Date insertionDate = entry.getValue().getRight();
             if (now.after(new Date(insertionDate.getTime() + this.widthMilliseconds))) {
                 iterator.remove();

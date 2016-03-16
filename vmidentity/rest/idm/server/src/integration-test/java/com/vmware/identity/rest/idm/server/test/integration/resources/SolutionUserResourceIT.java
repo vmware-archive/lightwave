@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 
 import org.easymock.EasyMock;
 import org.junit.Before;
@@ -50,13 +50,13 @@ public class SolutionUserResourceIT extends TestBase {
     private static final String SOLUTIONUSER_UPN_UNKNOWN_TENANT = SOLUTION_USERNAME + "@" + "unknown.local";
 
     private SolutionUserResource solutionUserResource;
-    private HttpServletRequest request;
+    private ContainerRequestContext request;
 
     @Before
     public void testSetUp() {
-        request = EasyMock.createMock(HttpServletRequest.class);
-        EasyMock.expect(request.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        EasyMock.expect(request.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        request = EasyMock.createMock(ContainerRequestContext.class);
+        EasyMock.expect(request.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        EasyMock.expect(request.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
         EasyMock.replay(request);
 
         solutionUserResource = new SolutionUserResource(DEFAULT_TENANT, request, null);

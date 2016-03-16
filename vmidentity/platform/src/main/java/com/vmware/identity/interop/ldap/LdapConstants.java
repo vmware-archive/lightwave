@@ -41,4 +41,6 @@ public final class LdapConstants {
 
     public static final int LDAP_OPT_X_TLS_NEVER = 0;
     public static final int LDAP_OPT_X_TLS_DEMAND = 2;
+
+    public static final int LDAP_OPT_X_TLS_PROTOCOL_TLSv1 = 1;
 }
