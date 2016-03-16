@@ -8,7 +8,7 @@
         <RollingFile name="fileAppender"
             fileName="target/failsafe-reports/vmware-rest-afd-test.log"
             filePattern="vmware-rest-afd-test-%i.log" append="true">
-            <PatternLayout pattern="[%-5p][%d{ISO8601}] %C{1} - %m%n" />
+            <PatternLayout pattern="[%-5p][%d{ISO8601}] %c{1} - %m%n" />
             <ThresholdFilter level="DEBUG" />
             <Policies>
                 <SizeBasedTriggeringPolicy size="25 MB" />
@@ -17,7 +17,7 @@
         </RollingFile>
 
         <Console name="STDOUT" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%-5p][%d{ISO8601}] %C{1} - %m%n" />
+            <PatternLayout pattern="[%-5p][%d{ISO8601}] %c{1} - %m%n" />
         </Console>
     </Appenders>
 

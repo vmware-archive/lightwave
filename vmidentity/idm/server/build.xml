@@ -24,6 +24,9 @@
    <property name="build.packages.vmware-identity-platform"
              value="${build.packages}/vmware-identity-platform.jar" />
 
+   <property name="authapi-jar"
+             value="../thirdparty/authapi-8.5.jar" />
+   
    <property name="build.packages.vmware-identity-idm-interface"
              value="${build.packages}/vmware-identity-idm-interface.jar" />
 
@@ -42,7 +45,7 @@
       <pathelement location="${build.packages.vmware-identity-idm-interface}" />
       <pathelement location="${build.packages.vmware-identity-diagnostics}" />
       <pathelement location="${build.packages.platform}" />
-
+      <pathelement location="${authapi-jar}" />
       <pathelement location="${vmafd.classpath}" />
       <fileset refid="jar-set.apache-commons-logging" />
       <fileset refid="jar-set.LOG4J2" />

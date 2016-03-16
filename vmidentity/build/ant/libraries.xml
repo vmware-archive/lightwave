@@ -132,7 +132,7 @@
    </fileset>
 
    <fileset id="jar-set.nimbus-jose-jwt" dir="${MAINSRCROOT}/build/depends">
-        <include name="nimbus-jose-jwt-3.1.2.jar"/>
+        <include name="nimbus-jose-jwt-4.12.jar"/>
    </fileset>
 
    <fileset id="jar-set.ouath2-oidc-sdk" dir="${MAINSRCROOT}/build/depends">
