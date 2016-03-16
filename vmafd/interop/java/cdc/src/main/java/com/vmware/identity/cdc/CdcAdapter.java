@@ -1,5 +1,5 @@
 /* **********************************************************************
- * Copyright 2015 VMware, Inc. All rights reserved.
+ * Copyright 2015 VMware, Inc. All rights reserved
  * ********************************************************************
  */
 package com.vmware.identity.cdc;
@@ -15,9 +15,9 @@ class CdcAdapter {
         String osName = System.getProperty("os.name");
         boolean isWindows  = osName.startsWith("Windows") ? true : false;
         if (isWindows) {
-          System.loadLibrary("libcdcjni");
+            System.loadLibrary("libcdcjni");
         } else {
-        System.load("/usr/lib/vmware-vmafd/lib64/libcdcjni.so");
+            System.load("/opt/vmware/lib64/libcdcjni.so");
         }
       }
 

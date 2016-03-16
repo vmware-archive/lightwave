@@ -608,6 +608,13 @@ VMCARestrictDirectoryAccess(
     PCSTR pszDirectoryName
     );
 
+DWORD
+VMCAVerifyHostName(
+    PCSTR pszHostName,
+    PCSTR pszHostIp,
+    PCSTR pCertRequest
+    );
+
 /////////////////////////////Actual VMCA Common Functions///////////////////
 
 #ifndef _VMCA_CA_STRUCT_DEFINED
@@ -731,7 +738,7 @@ VMCAPEMToPublicKey(
 
 DWORD
 VMCAPEMToCSR(
-    PSTR pCSR,
+    PCSTR pCSR,
     X509_REQ **ppReq
 );
 
@@ -1156,15 +1163,6 @@ VMCAGetCRLNamePath(PSTR *pszPrivPath);
 
 DWORD
 VMCAGetTempCRLNamePath(PSTR *pszPrivPath);
-
-DWORD
-VMCALoginUserPrivate(
-    PCSTR pszUserName,
-    const char* pszPassword);
-
-DWORD
-VMCALogOutPrivate(
-    );
 
 DWORD
 VMCAStringToLower(

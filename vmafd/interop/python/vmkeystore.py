@@ -57,7 +57,7 @@ class VmKeyStore:
         pass
 
     def delete_entry(self, alias):
-        self._client.DeleteCerts(self._store_context, alias)
+        self._client.DeleteCert(self._store_context, alias)
 
     def get_certificate(self, alias):
         cert_data = self._client.GetCertByAlias(self._store_context, alias)

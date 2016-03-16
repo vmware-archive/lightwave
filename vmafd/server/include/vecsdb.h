@@ -76,25 +76,6 @@ VecsDbReset(
     VOID
     );
 
-DWORD
-VecsDbCreateContext(
-    PVECS_DB_CONTEXT* ppDbContext
-    );
-
-DWORD
-VecsDbCtxBeginTransaction(
-    PVECS_DB_CONTEXT	pDbContext
-    );
-
-DWORD
-VecsDbCtxCommitTransaction(
-    PVECS_DB_CONTEXT	pDbContext
-    );
-
-DWORD
-VecsDbCtxRollbackTransaction(
-    PVECS_DB_CONTEXT	pDbContext
-    );
 
 DWORD
 VecsDbCreateCertStore(

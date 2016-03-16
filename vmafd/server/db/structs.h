@@ -33,6 +33,13 @@
 
 typedef enum
 {
+    VMAFD_DB_MODE_UNKNOWN = 0,
+    VMAFD_DB_MODE_READ,
+    VMAFD_DB_MODE_WRITE
+}VMAFD_DB_MODE;
+
+typedef enum
+{
     VECS_DB_COLUMN_TYPE_UNKNOWN = 0,
     VECS_DB_COLUMN_TYPE_INT32,
     VECS_DB_COLUMN_TYPE_INT64,
@@ -69,6 +76,7 @@ typedef struct _VECS_DB_STMT_ARRAY
 typedef struct __VECS_DB_CONTEXT
 {
     sqlite3 * pDb;
+    VMAFD_DB_MODE dbOpenMode;
     BOOLEAN bInTx; // Explicit transaction
 
     sqlite3_stmt* pAddCertQuery;

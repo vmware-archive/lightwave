@@ -30,6 +30,7 @@ BUILT_SOURCES = vecsjni.h
 vecsjni.h:
 	@echo "Using classpath $(JARDIR)"
 	$(JAVAH) -o $@ -classpath $(JAR) $(CLASSNAME)
-
+    
 jreext_DATA= \
-    @top_builddir@/authentication-framework/packages/vmware-endpoint-certificate-store.jar
+    @top_builddir@/authentication-framework/packages/vmware-endpoint-certificate-store.jar    
+

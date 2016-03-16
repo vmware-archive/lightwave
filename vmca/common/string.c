@@ -284,7 +284,9 @@ VMCAGetUTCTimeString(PSTR *pszTimeString)
         BAIL_ON_VMCA_ERROR_NO_LOG(dwError);
     }
 
+#ifndef __MACH__
     clock_gettime(CLOCK_REALTIME, &tspec);
+#endif
     gmtime_r(&tspec.tv_sec, &mytm);
 
     dwError = VMCAAllocateStringPrintfA(

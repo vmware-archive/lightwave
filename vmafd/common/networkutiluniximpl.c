@@ -332,3 +332,124 @@ VmAfdFreeConnectionImpl(
         }
         VMAFD_SAFE_FREE_MEMORY (pConnection);
 }
+
+BOOLEAN
+VmAfdCheckIfServerIsUp(
+      PCWSTR pwszNetworkAddress,
+      DWORD  dwPort
+      )
+{
+    DWORD dwError = 0;
+    DWORD dwNumFDs = 0;
+    int sockfd = -1;
+    fd_set fdset;
+    PSTR pszNetworkAddress = NULL;
+    PSTR pszPort = NULL;
+    BOOLEAN bServerIsUp = FALSE;
+    struct addrinfo* pHostInfo = NULL;
+    struct addrinfo hints = {0};
+    struct timeval tv = {0};
+
+    if (IsNullOrEmptyString(pwszNetworkAddress) || !dwPort)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringAFromW(
+                                pwszNetworkAddress,
+                                &pszNetworkAddress
+                                );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringPrintf(
+                                      &pszPort,
+                                      "%d",
+                                      dwPort
+                                      );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    dwError = getaddrinfo(
+                      pszNetworkAddress,
+                      pszPort,
+                      &hints,
+                      &pHostInfo);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    sockfd = socket( pHostInfo->ai_family, SOCK_STREAM, pHostInfo->ai_protocol);
+
+    if (sockfd == -1)
+    {
+        dwError = LwErrnoToWin32Error(errno);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (fcntl(sockfd, F_SETFL, O_NONBLOCK) == -1)
+    {
+        dwError = LwErrnoToWin32Error(errno);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (connect( sockfd, pHostInfo->ai_addr, pHostInfo->ai_addrlen) == -1)
+    {
+        if (errno != EINPROGRESS)
+        {
+            dwError = LwErrnoToWin32Error(errno);
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
+        FD_ZERO(&fdset);
+        FD_SET(sockfd, &fdset);
+        tv.tv_sec = RPC_PING_TIMEOUT;
+
+        dwNumFDs = select(sockfd+1, NULL, &fdset, NULL, &tv);
+
+        if (dwNumFDs == -1)
+        {
+            dwError = LwErrnoToWin32Error(errno);
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
+        if (dwNumFDs > 0)
+        {
+            int iSocketError = 0;
+            socklen_t slen = sizeof(iSocketError);
+            if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &iSocketError, &slen) == -1)
+            {
+                dwError = LwErrnoToWin32Error(errno);
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+            if (iSocketError)
+            {
+                dwError = LwErrnoToWin32Error(iSocketError);
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+
+            bServerIsUp = TRUE;
+        }
+    }
+    else
+    {
+        bServerIsUp = TRUE;
+    }
+
+cleanup:
+
+    if (sockfd != -1)
+    {
+        close(sockfd);
+    }
+
+    VMAFD_SAFE_FREE_MEMORY(pszNetworkAddress);
+    VMAFD_SAFE_FREE_MEMORY(pszPort);
+
+    return bServerIsUp;
+error:
+
+    bServerIsUp = FALSE;
+    goto cleanup;
+}

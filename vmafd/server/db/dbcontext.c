@@ -30,6 +30,13 @@
 #include "includes.h"
 
 static
+DWORD
+VmAfdDbGetSqliteOpenMode(
+      VMAFD_DB_MODE vmafdOpenMode,
+      PDWORD        pdwOpenMode
+      );
+
+static
 VOID
 VecsDbFreeStmtArray (
       PVECS_DB_STMT_ARRAY pStmtArray
@@ -37,35 +44,63 @@ VecsDbFreeStmtArray (
 
 DWORD
 VecsDbCreateContext(
-    PVECS_DB_CONTEXT* ppDbContext
+    PVECS_DB_CONTEXT* ppDbContext,
+    VMAFD_DB_MODE     vmafdOpenMode
     )
 {
     DWORD dwError = 0;
     PVECS_DB_CONTEXT pDbContext = NULL;
+    DWORD dwSqlite3OpenMode = 0;
 
     VECS_DB_LOCK_MUTEX(&gVecsDbGlobals.mutex);
     if (gVecsDbGlobals.pDbContextList)
     {
-        pDbContext = gVecsDbGlobals.pDbContextList;
-        gVecsDbGlobals.pDbContextList = gVecsDbGlobals.pDbContextList->pNext;
+        PVECS_DB_CONTEXT pDbContextCursor = gVecsDbGlobals.pDbContextList;
+        PVECS_DB_CONTEXT pDbContextPrev = NULL;
 
-        pDbContext->pNext = NULL;
+        while (pDbContextCursor)
+        {
+            if (pDbContextCursor->dbOpenMode == vmafdOpenMode)
+            {
+                pDbContext = pDbContextCursor;
+                if (pDbContextPrev)
+                {
+                    pDbContextPrev->pNext = pDbContextCursor->pNext;
+                }
+                else
+                {
+                    gVecsDbGlobals.pDbContextList = pDbContext->pNext;
+                }
+                pDbContext->pNext = NULL;
+                gVecsDbGlobals.dwNumCachedContexts--;
+                break;
+            }
 
-        gVecsDbGlobals.dwNumCachedContexts--;
+            pDbContextPrev = pDbContextCursor;
+            pDbContextCursor = pDbContextCursor->pNext;
+        }
     }
-    else
+    if (!pDbContext)
     {
         dwError = VmAfdAllocateMemory(sizeof(*pDbContext), (PVOID*)&pDbContext);
         BAIL_ON_VECS_ERROR(dwError);
 
-        dwError = sqlite3_open(
-                    gVecsDbGlobals.pszDbPath,
-                    &pDbContext->pDb);
+        dwError = VmAfdDbGetSqliteOpenMode(vmafdOpenMode, &dwSqlite3OpenMode);
         BAIL_ON_VECS_ERROR(dwError);
+
+        dwError = sqlite3_open_v2(
+                    gVecsDbGlobals.pszDbPath,
+                    &pDbContext->pDb,
+                    dwSqlite3OpenMode,
+                    NULL
+                    );
+        BAIL_ON_VECS_ERROR(dwError);
+
+        pDbContext->dbOpenMode = vmafdOpenMode;
 
         dwError = sqlite3_busy_timeout(
                     pDbContext->pDb,
-                    5000);
+                    60000);
         BAIL_ON_VECS_ERROR(dwError);
     }
 
@@ -223,6 +258,48 @@ VecsDbFreeContext(
 
         VmAfdFreeMemory(pContext);
     }
+}
+
+static
+DWORD
+VmAfdDbGetSqliteOpenMode(
+      VMAFD_DB_MODE vmafdOpenMode,
+      PDWORD        pdwOpenMode
+      )
+{
+    DWORD dwError = 0;
+    DWORD dwOpenMode = 0;
+
+    if (!pdwOpenMode)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VECS_ERROR(dwError);
+    }
+
+    switch (vmafdOpenMode)
+    {
+        case VMAFD_DB_MODE_READ:
+            dwOpenMode = SQLITE_OPEN_READONLY;
+            break;
+
+        case VMAFD_DB_MODE_WRITE:
+            dwOpenMode = SQLITE_OPEN_READWRITE;
+            break;
+
+        default:
+            dwError = ERROR_INVALID_PARAMETER;
+            break;
+    }
+    BAIL_ON_VECS_ERROR(dwError);
+
+    *pdwOpenMode = dwOpenMode;
+
+cleanup:
+
+    return dwError;
+error:
+
+    goto cleanup;
 }
 
 static

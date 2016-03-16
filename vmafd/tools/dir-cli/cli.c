@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -74,6 +74,20 @@ static
 DWORD
 DirCliGetDCName(
     PSTR*      ppszDCName
+    );
+
+static
+VOID
+DirCliPrintDCInfo(
+    PVMDIR_DC_INFO* ppDC,
+    DWORD dwNumDC
+    );
+
+static
+VOID
+DirCliPrintComputers(
+    PSTR* ppszComputers,
+    DWORD dwNumComputers
     );
 
 DWORD
@@ -1449,6 +1463,79 @@ cleanup:
         DirCliLdapClose(pLd);
         pLd = NULL;
     }
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+DirCliListNodesA(
+    PCSTR     pszHostName,
+    PCSTR     pszLogin,
+    PCSTR     pszPassword
+    )
+{
+    DWORD     dwError = 0;
+    PSTR      pszDomain = NULL;
+    PSTR      pszPassword1 = NULL;
+    PSTR      pszUser = NULL;
+    PSTR      pszDCName = NULL;
+    PCSTR     pszDCNameLocal = pszHostName;
+    PCSTR     pszPasswordLocal = pszPassword;
+    PCSTR     pszLoginLocal = pszLogin ? pszLogin : DIR_LOGIN_DEFAULT;
+    PVMDIR_DC_INFO* ppDC = NULL;
+    DWORD     dwNumDC = 0;
+    PSTR*     ppszComputers = NULL;
+    DWORD     dwNumComputers = 0;
+
+    dwError = DirCliParsePrincipal(pszLoginLocal, &pszUser, &pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (!pszPassword)
+    {
+        dwError = DirCliReadPassword(pszUser, pszDomain,
+                         NULL, &pszPassword1);
+        BAIL_ON_VMAFD_ERROR(dwError);
+        pszPasswordLocal = pszPassword1;
+    }
+
+    if(!pszHostName)
+    {
+        dwError = DirCliGetDCName(&pszDCName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pszDCNameLocal = pszDCName;
+    }
+
+    dwError = VmDirGetDCInfo(
+                    pszDCNameLocal,
+                    pszUser,
+                    pszPasswordLocal,
+                    &ppDC,
+                    &dwNumDC);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    DirCliPrintDCInfo(ppDC, dwNumDC);
+
+    dwError = VmDirGetComputers( pszDCNameLocal,
+                    pszUser,
+                    pszPasswordLocal,
+                    &ppszComputers,
+                    &dwNumComputers);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    DirCliPrintComputers(ppszComputers, dwNumComputers);
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pszUser);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword1);
+    VMAFD_SAFE_FREE_MEMORY(pszDomain);
+    VMAFD_SAFE_FREE_MEMORY(pszDCName);
+
+    VmDirFreeDCInfoArray(ppDC, dwNumDC);
+    VmDirFreeStringArray(ppszComputers, dwNumComputers);
 
     return dwError;
 
@@ -2951,3 +3038,61 @@ error:
 
     goto cleanup;
 }
+
+static
+VOID
+DirCliPrintDCInfo(
+    PVMDIR_DC_INFO* ppDC,
+    DWORD dwNumDC
+    )
+{
+    DWORD idx = 0;
+    DWORD idxPartner = 0;
+
+    for (; idx < dwNumDC; ++idx)
+    {
+        fprintf(
+            stdout,
+            "Node: %s\n"
+            "Type: PSC\n"
+            "Site: %s\n",
+            ppDC[idx]->pszHostName,
+            ppDC[idx]->pszSiteName
+            );
+        if (ppDC[idx]->dwPartnerCount > 0)
+        {
+            for (; idxPartner < ppDC[idx]->dwPartnerCount; ++idxPartner)
+            {
+                fprintf(
+                    stdout,
+                    "Partner #%d: %s\n",
+                    idx + 1,
+                    ppDC[idx]->ppPartners[idxPartner]
+                    );
+            }
+        }
+        fprintf(stdout, "\n");
+    }
+}
+
+static
+VOID
+DirCliPrintComputers(
+    PSTR* ppszComputers,
+    DWORD dwNumComputers
+    )
+{
+    DWORD idx = 0;
+
+    for (; idx < dwNumComputers; ++idx)
+    {
+        fprintf(
+            stdout,
+            "Node: %s\n"
+            "Type: Management\n",
+            ppszComputers[idx]
+            );
+        fprintf(stdout, "\n");
+    }
+}
+

@@ -1,0 +1,87 @@
+/*
+ * Copyright (C) 2015 VMware, Inc. All rights reserved.
+ *
+ * Module   : vmdirsuperlog.idl
+ *
+ * Abstract :
+ *
+ *            VMware AFD Service
+ *
+ *            Interface Definition
+ *
+ *            SuperLog API
+ *
+ * Authors  : Elena Shutova
+ *
+ */
+[
+    uuid (50E8189F-654E-4DCE-BFFA-0F7EA0D8BDC1),
+    version(1.0),
+    pointer_default(unique)
+#ifdef _WIN32
+    , endpoint("ncalrpc:[VMWareAfdService]")
+#endif // #ifdef _WIN32
+]
+
+interface vmafdsuperlog
+{
+#ifndef _WIN32
+
+#include <lw/types.h>
+
+#else // _WIN32
+
+#define UINT32 unsigned int
+typedef unsigned char BYTE;
+
+#endif
+
+#include <vmafdtypes.h>
+//#include <vmsuperlogging.h>
+
+UINT32
+RpcVmAfdSuperLogEnable(
+    [in]                 handle_t     hBinding
+);
+
+
+UINT32
+RpcVmAfdSuperLogDisable(
+    [in]                 handle_t     hBinding
+);
+
+
+UINT32
+RpcVmAfdIsSuperLogEnabled(
+    [in]                 handle_t     hBinding,
+    [out]                UINT32      *enabled
+);
+
+
+UINT32
+RpcVmAfdClearSuperLog(
+    [in]                 handle_t     hBinding
+);
+
+UINT32
+RpcVmAfdSuperLogSetSize(
+    [in]                 handle_t     hBinding,
+    [in]                 UINT32       size
+);
+
+UINT32
+RpcVmAfdSuperLogGetSize(
+    [in]                 handle_t     hBinding,
+    [in, out]            UINT32       *size
+);
+
+
+UINT32
+RpcVmAfdSuperLogGetEntries(
+    [in]                 handle_t        hBinding,
+    [in, out]            vmafd_superlog_cookie_t     *pEnumerationCookie,
+    [in]                 UINT32                      dwCountRequested,
+    [in, out]            PVMAFD_SUPERLOG_ENTRY_ARRAY *ppEntries
+);
+
+}

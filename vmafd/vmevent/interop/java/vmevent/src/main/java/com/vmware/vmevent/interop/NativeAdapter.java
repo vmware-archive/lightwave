@@ -29,7 +29,7 @@ public abstract class NativeAdapter
     {
         final String propName = "jna.library.path";
 
-        final String LINUX_VMEVENT_LIB64_PATH    = "/usr/lib/vmware-vmafd/lib64";
+        final String LINUX_VMEVENT_LIB64_PATH    = "/opt/vmware/lib64";
         final String LINUX_LIKEWISE_LIB64_PATH = "/opt/likewise/lib64";
 
         final String WIN_VMWARE_CIS_VMEVENT_PATH =

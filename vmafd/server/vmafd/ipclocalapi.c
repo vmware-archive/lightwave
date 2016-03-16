@@ -4935,7 +4935,7 @@ VmAfdIpcTriggerRootCertsRefresh(
     }
     else
     {
-        uResult = VmAfdWakeupCertificateUpdatesThr(gVmafdGlobals.pCertUpdateThr, TRUE);
+        uResult = VmAfdRootFetchTask(TRUE);
     }
 
     // Allocate a buffer, marshall the response
@@ -5181,7 +5181,7 @@ error:
 }
 
 DWORD
-CdcIpcEnableClientAffinity(
+CdcIpcEnableDefaultHA(
     PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
     PBYTE pRequest,
     DWORD dwRequestSize,
@@ -5191,7 +5191,7 @@ CdcIpcEnableClientAffinity(
 {
     DWORD dwError = 0;
     UINT32 uResult = 0;
-    UINT32 apiType = CDC_IPC_ENABLE_CLIENT_AFFINITY;
+    UINT32 apiType = CDC_IPC_ENABLE_DEFAULT_HA;
     DWORD noOfArgsIn = 0;
     DWORD noOfArgsOut = 0;
     PBYTE pResponse = NULL;
@@ -5229,7 +5229,7 @@ CdcIpcEnableClientAffinity(
                         );
     BAIL_ON_VMAFD_ERROR (dwError);
 
-    uResult = CdcEnableClientAffinity();
+    uResult = CdcSrvEnableDefaultHA(gVmafdGlobals.pCdcContext);
 
     // Allocate a buffer, marshall the response
     //
@@ -5265,7 +5265,7 @@ error:
 }
 
 DWORD
-CdcIpcDisableClientAffinity(
+CdcIpcEnableLegacyModeHA(
     PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
     PBYTE pRequest,
     DWORD dwRequestSize,
@@ -5275,7 +5275,7 @@ CdcIpcDisableClientAffinity(
 {
     DWORD dwError = 0;
     UINT32 uResult = 0;
-    UINT32 apiType = CDC_IPC_DISABLE_CLIENT_AFFINITY;
+    UINT32 apiType = CDC_IPC_ENABLE_LEGACY_HA;
     DWORD noOfArgsIn = 0;
     DWORD noOfArgsOut = 0;
     PBYTE pResponse = NULL;
@@ -5313,7 +5313,7 @@ CdcIpcDisableClientAffinity(
                         );
     BAIL_ON_VMAFD_ERROR (dwError);
 
-    uResult = CdcDisableClientAffinity();
+    uResult = CdcSrvEnableLegacyModeHA(gVmafdGlobals.pCdcContext);
 
     // Allocate a buffer, marshall the response
     //
@@ -5400,14 +5400,17 @@ CdcIpcGetDCName(
 
     if (bForceRefresh)
     {
-        if (!gVmafdGlobals.pDCCacheThr)
-        {
-            dwError = ERROR_INVALID_STATE;
-        }
-        else
-        {
-            CdcWakeupDCCachingThread(gVmafdGlobals.pDCCacheThr, TRUE);
-        }
+        /*
+         *TODO: Fix this as part of the failover changes
+         *if (!gVmafdGlobals.pDCCacheThr)
+         *{
+         *    dwError = ERROR_INVALID_STATE;
+         *}
+         *else
+         *{
+         *    CdcWakeupDCCachingThread(gVmafdGlobals.pDCCacheThr, TRUE);
+         *}
+         */
     }
 
     uResult = CdcSrvGetDCName(pwszDomainName, &pAffinitizedDC);
@@ -5436,10 +5439,13 @@ cleanup:
     *ppResponse = pResponse;
     *pdwResponseSize = dwResponseSize;
 
+    VmAfdFreeTypeSpecContent (input_spec, noOfArgsIn);
+
     if (pAffinitizedDC)
     {
         VmAfdFreeDomainControllerInfoW(pAffinitizedDC);
     }
+
     VmAfdLog (VMAFD_DEBUG_DEBUG, "End of %s", __FUNCTION__);
     return dwError;
 
@@ -5535,89 +5541,6 @@ error:
 }
 
 DWORD
-CdcIpcForceRefreshCache(
-    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
-    PBYTE pRequest,
-    DWORD dwRequestSize,
-    PBYTE * ppResponse,
-    PDWORD pdwResponseSize
-    )
-{
-    DWORD dwError = 0;
-    UINT32 uResult = 0;
-    UINT32 apiType = CDC_IPC_FORCE_REFRESH_CACHE;
-    DWORD noOfArgsIn = 0;
-    DWORD noOfArgsOut = 0;
-    PBYTE pResponse = NULL;
-    DWORD dwResponseSize = 0;
-    VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
-
-    VmAfdLog (VMAFD_DEBUG_DEBUG, "Entering %s", __FUNCTION__);
-
-    if (!pConnectionContext)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMAFD_ERROR (dwError);
-    }
-
-    //
-    // Unmarshall the request buffer to the format
-    // that the API actually has
-    //
-    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
-    dwError = VmAfdUnMarshal (
-                        apiType,
-                        VER1_INPUT,
-                        noOfArgsIn,
-                        pRequest,
-                        dwRequestSize,
-                        NULL
-                        );
-    BAIL_ON_VMAFD_ERROR (dwError);
-
-    if (!gVmafdGlobals.pDCCacheThr)
-    {
-        uResult = CdcRunStateMachine(TRUE);
-    }
-    else
-    {
-        uResult = CdcWakeupDCCachingThread(gVmafdGlobals.pDCCacheThr, TRUE);
-    }
-
-    // Allocate a buffer, marshall the response
-    //
-    output_spec[0].data.pUint32 = &uResult;
-
-    dwError = VecsMarshalResponse(
-                            apiType,
-                            output_spec,
-                            noOfArgsOut,
-                            &pResponse,
-                            &dwResponseSize
-                            );
-    BAIL_ON_VMAFD_ERROR (dwError);
-
-cleanup:
-    *ppResponse = pResponse;
-    *pdwResponseSize = dwResponseSize;
-
-    VmAfdLog (VMAFD_DEBUG_DEBUG, "End of %s", __FUNCTION__);
-    return dwError;
-
-error:
-    VmAfdHandleError(
-            apiType,
-            dwError,
-            output_spec,
-            noOfArgsOut,
-            &pResponse,
-            &dwResponseSize
-            );
-    dwError = 0;
-    goto cleanup;
-}
-
-DWORD
 CdcIpcEnumDCEntries(
     PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
     PBYTE pRequest,
@@ -5661,7 +5584,7 @@ CdcIpcEnumDCEntries(
         BAIL_ON_VMAFD_ERROR (dwError);
 
 
-        uResult = CdcDbEnumDCEntries (
+        uResult = CdcSrvEnumDCEntries (
                                         &pwszDCEntriesArray,
                                         &dwDCEntriesCount
                                        );
@@ -5724,6 +5647,150 @@ error:
         dwError = 0;
 	goto cleanup;
 }
+
+DWORD
+CdcIpcGetDCStatusInfo(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    )
+{
+    DWORD dwError = 0;
+    UINT32 uResult = 0;
+    UINT32 apiType = CDC_IPC_GET_DC_STATUS_INFO;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    PBYTE pResponse = NULL;
+    DWORD dwResponseSize = 0;
+    PWSTR pwszDCName = NULL;
+    PWSTR pwszDomainName = NULL;
+
+    PCDC_DC_STATUS_INFO_W pDCStatusInfo = NULL;
+    PVMAFD_HB_STATUS_W pHbStatus = NULL;
+    DWORD dwHeartbeatStatusBlobSize = 0;
+    PBYTE pHeartbeatStatusBlob = NULL;
+
+    VMW_TYPE_SPEC input_spec[] = GET_CDC_STATUS_INFO_INPUT_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = GET_CDC_STATUS_INFO_OUTPUT_PARAMS;
+
+    VmAfdLog (VMAFD_DEBUG_DEBUG, "Entering %s", __FUNCTION__);
+
+    if (!pConnectionContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    //
+    // Unmarshall the request buffer to the format
+    // that the API actually has
+    //
+    noOfArgsIn = sizeof (input_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+    dwError = VmAfdUnMarshal (
+                        apiType,
+                        VER1_INPUT,
+                        noOfArgsIn,
+                        pRequest,
+                        dwRequestSize,
+                        input_spec
+                        );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    pwszDCName = input_spec[0].data.pWString;
+    pwszDomainName = input_spec[1].data.pWString;
+
+
+    uResult = CdcSrvGetDCStatusInfo(
+                          pwszDCName,
+                          pwszDomainName,
+                          &pDCStatusInfo,
+                          &pHbStatus
+                          );
+
+    // Allocate a buffer, marshall the response
+    //
+    output_spec[0].data.pUint32 = &uResult;
+
+    if (pDCStatusInfo)
+    {
+        output_spec[1].data.pUint32 = &pDCStatusInfo->dwLastPing;
+        output_spec[2].data.pUint32 = &pDCStatusInfo->dwLastResponseTime;
+        output_spec[3].data.pUint32 = &pDCStatusInfo->dwLastError;
+        output_spec[4].data.pUint32 = &pDCStatusInfo->bIsAlive;
+        output_spec[5].data.pWString = pDCStatusInfo->pwszSiteName;
+    }
+
+    if (pHbStatus)
+    {
+            dwError = VmAfdMarshalHeartbeatStatusArrLength (
+                                              pHbStatus->pHeartbeatInfoArr,
+                                              pHbStatus->dwCount,
+                                              &dwHeartbeatStatusBlobSize
+                                            );
+            BAIL_ON_VMAFD_ERROR (dwError);
+
+            dwError = VmAfdAllocateMemory (
+                                    dwHeartbeatStatusBlobSize,
+                                    (PVOID *)&pHeartbeatStatusBlob
+                                    );
+            BAIL_ON_VMAFD_ERROR (dwError);
+
+            dwError = VmAfdMarshalHeartbeatStatusArray (
+                                       pHbStatus->pHeartbeatInfoArr,
+                                       pHbStatus->dwCount,
+                                       dwHeartbeatStatusBlobSize,
+                                       pHeartbeatStatusBlob
+                                    );
+
+            BAIL_ON_VMAFD_ERROR (dwError);
+
+            output_spec[6].data.pByte = (PBYTE) pHeartbeatStatusBlob;
+    }
+
+
+    dwError = VecsMarshalResponse(
+                            apiType,
+                            output_spec,
+                            noOfArgsOut,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+cleanup:
+    *ppResponse = pResponse;
+    *pdwResponseSize = dwResponseSize;
+
+
+    VmAfdFreeTypeSpecContent (input_spec, noOfArgsIn);
+
+    if (pDCStatusInfo)
+    {
+        VmAfdFreeCdcStatusInfoW(pDCStatusInfo);
+    }
+    if (pHbStatus)
+    {
+        VmAfdFreeHbStatusW(pHbStatus);
+    }
+    VmAfdLog (VMAFD_DEBUG_DEBUG, "End of %s", __FUNCTION__);
+    return dwError;
+
+error:
+    VmAfdHandleError(
+            apiType,
+            dwError,
+            output_spec,
+            noOfArgsOut,
+            &pResponse,
+            &dwResponseSize
+            );
+    dwError = 0;
+    goto cleanup;
+}
+
 
 DWORD
 VmAfdIpcPostHeartbeatStatus(

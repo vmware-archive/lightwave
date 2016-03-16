@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-       Copyright 2011 VMware, Inc. All rights reserved. VMware confidential.
+       Copyright 2011 VMware, Inc. All rights reserved.
 -->
 <project name="vmevent-dist" default="build">
    <property file="product.properties" />
@@ -11,8 +11,8 @@
 
    <property name="PUBLISH_DIR" location="${buildRoot}/publish" />
    <property name="build.publish" location="${PUBLISH_DIR}" />
-   <property name="deploy.prefix" value="/usr/lib/vmware-vmafd/vmevent" />
-   <property name="deploy.prefix.support" value="/usr/lib/vmware-vmafd/vmevent" />
+   <property name="deploy.prefix" value="/opt/vmware" />
+   <property name="deploy.prefix.support" value="/opt/vmware" />
 
    <target name="module.gobuild-components" depends="import-helper-tasks">
       <gobuild-auto-components />

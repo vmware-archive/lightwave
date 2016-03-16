@@ -1105,21 +1105,6 @@ VMCAGetCertificateCountHW(
     VMCA_CERTIFICATE_STATUS dwStatus,
     DWORD *dwNumCertificates
 );
-// DWORD
-// VMCAReadPKCS12();
-
-
-DWORD
-VMCALoginUser(
-    PSTR pszDomain,
-    PSTR pszUserName,
-    PSTR pszPassword
-    );
-
-
-DWORD
-VMCALogout(
-    );
 
 DWORD
 VMCAOpenServerA(
@@ -1308,6 +1293,27 @@ VMCAGetCSRFromCertificate(
     PVMCA_CSR *ppszCSR
     );
 
+DWORD
+VMCAGetSignedCertificateForHostA(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCSTR pszHostName,
+    PCSTR pszHostIp,
+    PCVMCA_CSR pCertRequest,
+    time_t tmNotBefore,
+    time_t tmNotAfter,
+    PVMCA_CERTIFICATE* ppCertificate
+    );
+
+DWORD
+VMCAGetSignedCertificateForHostW(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCWSTR pszHostName,
+    PCWSTR pszHostIp,
+    PCVMCA_CSR pCertRequest,
+    time_t tmNotBefore,
+    time_t tmNotAfter,
+    PVMCA_CERTIFICATE* ppCertificate
+    );
 
 // VMCAPublishRootCerts publishes the root certificate to
 // the Lotus directory service.
@@ -1346,6 +1352,7 @@ VMCAGetCSRFromCertificate(
 #define VMCAInitPKCS10Data                  VMCAInitPKCS10DataW
 #define VMCAInitPKCS10Data                  VMCAInitPKCS10DataW
 #define VMCAGetCertificateCount             VMCAGetCertificateCountW
+#define VMCAGetSignedCertificateForHost     VMCAGetSignedCertificateForHostW
 #else
 #define VMCA_PKCS_10_REQ_DATA               VMCA_PKCS_10_REQ_DATAA
 #define PVMCA_PKCS_10_REQ_DATA              PVMCA_PKCS_10_REQ_DATAA
@@ -1380,6 +1387,7 @@ VMCAGetCSRFromCertificate(
 #define VMCAPublishRootCerts                VMCAPublishRootCertsA
 #define VMCAInitPKCS10Data                  VMCAInitPKCS10DataA
 #define VMCAGetCertificateCount             VMCAGetCertificateCountA
+#define VMCAGetSignedCertificateForHost     VMCAGetSignedCertificateForHostA
 #endif
 
 #ifdef __cplusplus

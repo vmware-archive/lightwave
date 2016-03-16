@@ -7,8 +7,12 @@ vmafdd_SOURCES = \
     authservice.c \
     authutil.c    \
     certutil.c    \
+    circularbuffer.c    \
     config.c      \
     cdcservice.c \
+    cdcstatemachine.c \
+    cdcthread.c \
+    cdcupdate.c \
     dcfinder.c    \
     dns.c         \
     globals.c     \
@@ -31,10 +35,14 @@ vmafdd_SOURCES = \
     signal.c      \
     shutdown.c    \
     storehash_util.c \
+    superlogging.c \
     utils.c       \
     vecsserviceapi.c \
     vmdir.c       \
-    vmafd_sstub.c
+    rpcserv60.c   \
+    vmafd_sstub.c \
+    vmafd60_sstub.c \
+    vmafdsuperlog_sstub.c
 
 vmafdd_CPPFLAGS = \
     -DLDAP_DEPRECATED \
@@ -77,10 +85,20 @@ vmafdd_LDFLAGS = \
 
 CLEANFILES = \
     vmafd_h.h \
+    vmafd60_h.h \
+    vmafdsuperlog_h.h \
     vmafd_cstub.c \
-    vmafd_sstub.c
+    vmafd60_sstub.c \
+    vmafdsuperlog_cstub.c \
+    vmafdsuperlog_sstub.c
 
-BUILT_SOURCES = vmafd_h.h
+BUILT_SOURCES = vmafd_h.h vmafd60_h.h vmafdsuperlog_h.h
 
 vmafd_h.h vmafd_sstub.c: $(idl_srcdir)/vmafd.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmafd_h.h -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
+
+vmafd60_h.h vmafd60_sstub.c: $(idl_srcdir)/vmafd60.idl
+	$(IDL) $(IDLFLAGS) -keep c_source -header vmafd60_h.h -sstub_pref Srv60_ -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
+
+vmafdsuperlog_h.h vmafdsuperlog_cstub.c: $(idl_srcdir)/vmafdsuperlog.idl
+	$(IDL) $(IDLFLAGS) -keep c_source -header vmafdsuperlog_h.h -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/include/public $<

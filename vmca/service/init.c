@@ -117,27 +117,27 @@ InitializeEventLog(
 
 DWORD
 VMCASrvInitCA(
-	VOID
-	)
+    VOID
+    )
 {
     DWORD dwError = 0;
     PVMCA_CERTIFICATE pRootCACert = NULL;
     PVMCA_KEY pPrivateKey = NULL;
-	PSTR pszRootCertFile = NULL;
-	PSTR pszPrivateKeyFile = NULL;
-	PSTR pszPasswordFile = NULL;
-	PVMCA_X509_CA pCA = NULL;
+    PSTR pszRootCertFile = NULL;
+    PSTR pszPrivateKeyFile = NULL;
+    PSTR pszPasswordFile = NULL;
+    PVMCA_X509_CA pCA = NULL;
     DWORD dwCRLNumberCurrent = 0;
     BOOL bIsHoldingMutex = FALSE;
 
-	dwError = VMCAGetRootCertificateFilePath(&pszRootCertFile);
-	BAIL_ON_VMCA_ERROR(dwError);
+    dwError = VMCAGetRootCertificateFilePath(&pszRootCertFile);
+    BAIL_ON_VMCA_ERROR(dwError);
 
-	dwError = VMCAGetPrivateKeyPath(&pszPrivateKeyFile);
-	BAIL_ON_VMCA_ERROR(dwError);
+    dwError = VMCAGetPrivateKeyPath(&pszPrivateKeyFile);
+    BAIL_ON_VMCA_ERROR(dwError);
 
-	dwError = VMCAGetPrivateKeyPasswordPath(&pszPasswordFile);
-	BAIL_ON_VMCA_ERROR(dwError);
+    dwError = VMCAGetPrivateKeyPasswordPath(&pszPasswordFile);
+    BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAReadCertificateChainFromFile(pszRootCertFile,&pRootCACert);
     BAIL_ON_VMCA_ERROR(dwError);
@@ -146,19 +146,25 @@ VMCASrvInitCA(
     // TODO : Support Passwords for private key
     //
     dwError =  VMCAReadPrivateKeyFromFilePrivate(
-					pszPrivateKeyFile,
-					NULL,
-					&pPrivateKey);
+                    pszPrivateKeyFile,
+                    NULL,
+                    &pPrivateKey);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAValidateCACertificatePrivate(
-    				(LPSTR) pRootCACert,
-    				NULL,
-    				pPrivateKey);
+                    (LPSTR) pRootCACert,
+                    NULL,
+                    pPrivateKey);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCACreateCA( pRootCACert, pPrivateKey, NULL, &pCA);
     BAIL_ON_VMCA_ERROR(dwError);
+
+    if (BN_num_bits(pCA->pKey->pkey.rsa->n) < VMCA_MIN_CA_CERT_PRIV_KEY_LENGTH)
+    {
+        dwError = VMCA_ERROR_INVALID_KEY_LENGTH;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
 
     dwError = VMCASrvSetCA(pCA);
     BAIL_ON_VMCA_ERROR(dwError);
@@ -196,14 +202,14 @@ error:
     {
         pthread_mutex_unlock(&gVMCAServerGlobals.mutexCRL);
     }
-	VMCA_SAFE_FREE_STRINGA(pszRootCertFile);
-	VMCA_SAFE_FREE_STRINGA(pszPrivateKeyFile);
-	VMCA_SAFE_FREE_STRINGA(pszPasswordFile);
+    VMCA_SAFE_FREE_STRINGA(pszRootCertFile);
+    VMCA_SAFE_FREE_STRINGA(pszPrivateKeyFile);
+    VMCA_SAFE_FREE_STRINGA(pszPasswordFile);
 
-	if (pCA)
-	{
-		VMCAReleaseCA(pCA);
-	}
+    if (pCA)
+    {
+        VMCAReleaseCA(pCA);
+    }
 
     return dwError;
 }

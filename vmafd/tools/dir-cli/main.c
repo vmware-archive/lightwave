@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -74,6 +74,13 @@ DirCliExecFuncLvlRequest(
 
 DWORD
 DirCliExecNodesVersionRequest(
+    int   argc,
+    char* argv[]
+    );
+
+static
+DWORD
+DirCliExecTopologyRequest(
     int   argc,
     char* argv[]
     );
@@ -181,7 +188,7 @@ error:
 	case VMDIR_ERROR_INVALID_FUNC_LVL:
 	    retCode = 27;
 	    pszErrorMsg = "Invalid Domain Functional Level\n"
-		"Verify that level is valid and less than or equal to maximum for domain";
+		"Verify that level is valid for domain.";
 	    break;
 	case VMDIR_ERROR_INCOMPLETE_MAX_DFL:
 	    retCode = 28;
@@ -297,7 +304,12 @@ ParseArgs(
                         dwArgsLeft,
                         dwArgsLeft > 0 ? &argv[iArg] : NULL);
     }
-
+    else if (!VmAfdStringCompareA(pszArg, "nodes", TRUE))
+    {
+        dwError = DirCliExecTopologyRequest(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL);
+    }
     else
     {
         dwError = ERROR_LOCAL_OPTION_UNKNOWN;
@@ -1135,6 +1147,151 @@ DirCliExecCertificateRequest(
 
         case DIR_COMMAND_CERTIFICATE_LIST:
             dwError = DirCliListCertificationAuthoritiesA(pszLogin, pszPassword);
+            BAIL_ON_VMAFD_ERROR(dwError);
+            break;
+
+        default:
+            dwError = ERROR_INVALID_STATE;
+            break;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+DirCliExecTopologyRequest(
+    int   argc,
+    char* argv[]
+    )
+{
+    DWORD dwError = 0;
+    DWORD idx = 0;
+    PSTR pszServerName = NULL;
+
+    typedef enum
+    {
+        PARSE_MODE_OPEN = 0,
+        PARSE_MODE_LIST
+    } PARSE_MODE;
+
+    typedef enum
+    {
+        PARSE_SUB_MODE_OPEN = 0,
+        PARSE_SUB_MODE_SERVER_NAME,
+        PARSE_SUB_MODE_LOGIN,
+        PARSE_SUB_MODE_PASSWORD
+    } PARSE_SUB_MODE;
+
+    PARSE_MODE mode = PARSE_MODE_OPEN;
+    PARSE_SUB_MODE submode = PARSE_SUB_MODE_OPEN;
+    DIR_COMMAND command = DIR_COMMAND_UNKNOWN;
+
+    PSTR pszLogin = NULL;
+    PSTR pszPassword = NULL;
+
+    if (!argc)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    for (; idx < argc; idx++)
+    {
+        PSTR pszArg = argv[idx];
+
+        switch (mode)
+        {
+            case PARSE_MODE_OPEN:
+
+                if (!VmAfdStringCompareA(pszArg, "list", TRUE))
+                {
+                    command = DIR_COMMAND_NODES_LIST;
+                    mode = PARSE_MODE_LIST;
+                }
+                else
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+                break;
+
+            case PARSE_MODE_LIST:
+                switch (submode)
+                {
+                    case PARSE_SUB_MODE_OPEN:
+
+                        if (!strcmp(pszArg, "--server-name"))
+                        {
+                            submode = PARSE_SUB_MODE_SERVER_NAME;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--login", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_LOGIN;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--password", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_PASSWORD;
+                        }
+                        else
+                        {
+                            dwError = ERROR_INVALID_PARAMETER;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        break;
+
+                    case PARSE_SUB_MODE_SERVER_NAME:
+
+                        if (pszServerName)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+
+                        pszServerName = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_LOGIN:
+
+                        pszLogin = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_PASSWORD:
+
+                        pszPassword = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    default:
+
+                        dwError = ERROR_INVALID_STATE;
+                        BAIL_ON_VMAFD_ERROR(dwError);
+
+                        break;
+                }
+
+            default:
+                dwError = ERROR_INVALID_STATE;
+                break;
+        }
+    }
+
+    switch (command)
+    {
+        case DIR_COMMAND_NODES_LIST:
+            dwError = DirCliListNodesA(pszServerName, pszLogin, pszPassword);
             BAIL_ON_VMAFD_ERROR(dwError);
             break;
 
@@ -2621,7 +2778,7 @@ DirCliExecFuncLvlRequest(
                     BAIL_ON_VMAFD_ERROR(dwError);
                 }
 
-		pszDomainName = pszArg;
+                pszDomainName = pszArg;
 
                 parseSubMode = PARSE_SUB_MODE_OPEN;
 
@@ -3014,6 +3171,10 @@ ShowUsage(
         "\tpassword change --account <account>\n"
         "\t             [ --current  <current password>         ]\n"
         "\t             [ --new      <new password>             ]\n"
+        "\tnodes list\n"
+        "\t             [ --login    <admin user id>            ]\n"
+        "\t             [ --password <password>                 ]\n"
+        "\t             [ --server-name <server name>           ]\n"
 	"\tdomain-functional-level get\n"
         "\t             [ --login       <admin user id>         ]\n"
         "\t             [ --password    <password>              ]\n"

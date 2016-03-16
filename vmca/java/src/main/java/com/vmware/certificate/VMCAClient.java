@@ -280,6 +280,40 @@ public class VMCAClient implements Iterable<X509Certificate> {
                         certificateRequest, epochNotBefore, epochNotAfter));
     }
 
+    /*
+     * Returns a Signed Certificate from the Server
+     *
+     * @param certificateRequest -- A PKCS 10 Certificate request
+     *
+     * @param hostName -- Host name, CSR will be validated against hostname
+     *
+     * @param ipAddress -- optional -- ipAddress to validate against CSR
+     *
+     * @param notBefore - Start date of the Certificate
+     *
+     * @param notAfter - End Date of the Certificate
+     *
+     * @return X509Certificate
+     *
+     * @throws Exception
+     */
+    protected X509Certificate
+    getCertificateForHost(VMCAServerContext context, String hostName,
+            String ipAddress, String certificateRequest,
+            Date notBefore, Date notAfter) throws Exception {
+
+        long epochNotBefore = notBefore.getTime();
+        long epochNotAfter = notAfter.getTime();
+
+        epochNotBefore = epochNotBefore / 1000;
+        epochNotAfter = epochNotAfter / 1000;
+
+        return getCertificateFromString(VMCAAdapter2
+                .VMCAGetSignedCertificateForHost(context,
+                        hostName, ipAddress, certificateRequest,
+                        epochNotBefore, epochNotAfter));
+    }
+
     private String getPEMEncodedKey(KeyPair Keys) {
         byte[] privBytes = Keys.getPrivate().getEncoded();
         String encoded = new String(Base64.encodeBase64(privBytes));

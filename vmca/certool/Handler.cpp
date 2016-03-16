@@ -250,8 +250,7 @@ HandleCreateSelfSignedCA()
     PVMCA_CSR pCSR = NULL;
     PVMCA_CERTIFICATE pCertificate = NULL;
     PSTR pszDefaultDomainName = NULL;
-    PSTR pszServer = "localhost";
-    std::string caDN;
+    PCSTR pszServer = "localhost";
     char hostName [HOST_NAME_MAX] = {0,};
     unsigned long dwMask = 0;
     time_t now = 0;
@@ -321,8 +320,6 @@ HandleCreateSelfSignedCA()
     WSACleanup();
 #endif
 
-    caDN.append("CA");
-
     dwError = VmAfdGetDomainNameA(
                                   pszServer,
                                   &pszDefaultDomainName
@@ -338,14 +335,14 @@ HandleCreateSelfSignedCA()
     // Don't fail , this avoids the failure due the race condition.
 
     dwError = VMCAInitPKCS10DataWithDCA(
-                              caDN.c_str(),
+                              cfgName.c_str(),
                               pszDefaultDomainName,
                               hostName,
-                              NULL,
-                              NULL,
+                              cfgOrgUnit.c_str(),
+                              cfgState.c_str(),
                               cfgCountry.c_str(),
-                              NULL,
-                              NULL,
+                              cfgEmail.c_str(),
+                              cfgIPAddress.c_str(),
                               pCertReqData);
     if (dwError != 0)
     {
@@ -1034,11 +1031,11 @@ HandleGenCISCert()
     PSTR pszDomainName = NULL;
     PSTR pszOrgUnit    = NULL;
     PSTR pszMachineID  = NULL;
-    PSTR format = "%s@%s";
+    PCSTR format = "%s@%s";
     int ret = 0;
     PSTR pszCert = NULL;
     PSTR pszPrivateKey = NULL;
-    PSTR pszLocalHost = "localhost";
+    PCSTR pszLocalHost = "localhost";
     std::string vecsAlias(cfgName);
 #ifndef __NO_AFD__
     PVECS_STORE pStore = NULL;
@@ -1376,27 +1373,6 @@ error :
 
     VMCAFreeCertificate(pCert);
     return dwError;
-}
-
-
-DWORD
-HandleLogin()
-{
-  DWORD dwError = 0;
-  dwError = VMCALoginUser(
-    (PSTR) argDomainName.c_str(),
-    (PSTR) argUserName.c_str(),
-    (PSTR) argPassword.c_str());
- return dwError;
-}
-
-
-DWORD
-HandleLogout()
-{
-  DWORD dwError = 0;
-  dwError = VMCALogout();
-  return dwError;
 }
 
 DWORD

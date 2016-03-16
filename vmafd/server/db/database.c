@@ -227,7 +227,7 @@ VecsDbResetAppDatabase(
     BOOL bInTx = FALSE;
     PVECS_DB_CONTEXT pDbContext = NULL;
 
-    dwError = VecsDbCreateContext(&pDbContext);
+    dwError = VecsDbCreateContext(&pDbContext, VMAFD_DB_MODE_WRITE);
     BAIL_ON_VECS_ERROR(dwError);
 
     dwError = VecsDbBeginTransaction(pDbContext->pDb);
@@ -1068,6 +1068,7 @@ CdcCreateAppDatabase(
                         "Domain VARCHAR(256),"
                         "LastPing DATE DEFAULT (STRFTIME('%s','now')),"
                         "PingResponse INTEGER,"
+                        "PingError    INTEGER,"
                         "IsAlive INTEGER,"
                         "UNIQUE(DCName,Domain));"
                         );
@@ -1095,6 +1096,19 @@ CdcCreateAppDatabase(
         BAIL_ON_VECS_ERROR(dwError);
 
         dwError = VecsDbSqliteExecuteTransaction(
+                       pDB,
+                       "CREATE TABLE IF NOT EXISTS DCServiceStatus ("
+                       "DCID INTEGER,"
+                       "ServiceName VARCHAR(128) COLLATE NOCASE NOT NULL,"
+                       "Port INTEGER,"
+                       "IsAlive INTEGER,"
+                       "LastHeartbeat INTEGER,"
+                       "FOREIGN KEY(DCID) REFERENCES DCTable(DCID),"
+                       "UNIQUE(ServiceName,Port,DCID));"
+                       );
+        BAIL_ON_VECS_ERROR(dwError);
+
+        dwError = VecsDbSqliteExecuteTransaction(
                                 pDB,
                                 "CREATE TRIGGER delete_dc "
                                 "AFTER DELETE on DCTable "
@@ -1103,6 +1117,17 @@ CdcCreateAppDatabase(
                                 "WHERE DCID = old.DCID;"
                                 "END;");
         BAIL_ON_VECS_ERROR(dwError);
+
+        dwError = VecsDbSqliteExecuteTransaction(
+                                pDB,
+                                "CREATE TRIGGER delete_dc_status "
+                                "AFTER DELETE on DCTable "
+                                "BEGIN "
+                                "DELETE FROM DCServiceStatus "
+                                "WHERE DCID = old.DCID;"
+                                "END;");
+        BAIL_ON_VECS_ERROR(dwError);
+
 
         VecsDbCommitTransaction(pDB);
     }

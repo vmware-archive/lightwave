@@ -13,15 +13,18 @@
 
 #include <vmafdcommon.h>
 #include <vmafdclient.h>
+#include <vmsuperlogging.h>
 #include <vecsclient.h>
 #include <cdcclient.h>
 #include <vecslocalclient.h>
 #include <vecs_error.h>
 
+
 #include "defines.h"
 #include "vmafd_h.h"
 #include "structs.h"
 #include "prototypes.h"
+#include "vmafdsuperlog_h.h"
 
 #else //_ WIN32
 
@@ -45,6 +48,7 @@
 
 #include <vmafdcommon.h>
 #include <vmafdclient.h>
+#include <vmsuperlogging.h>
 #include <vecsclient.h>
 #include <cdcclient.h>
 #include <vecslocalclient.h>
@@ -54,5 +58,6 @@
 #include "vmafd_h.h"
 #include "structs.h"
 #include "prototypes.h"
+#include "vmafdsuperlog_h.h"
 
 #endif // #ifndef _WIN32

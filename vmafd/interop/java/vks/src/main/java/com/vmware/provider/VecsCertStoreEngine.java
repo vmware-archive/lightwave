@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -63,6 +63,10 @@ final public class VecsCertStoreEngine extends CertStoreSpi{
       ArrayList<X509CRL> resList = new ArrayList<X509CRL>();
 
       X500Principal targetCertIssuer = null;
+
+      if(selector == null) {
+          throw new CertStoreException("CRLSelector argument is null");
+      }
 
       if (selector instanceof X509CRLSelector) {
          X509Certificate targetCert = ((X509CRLSelector)selector).getCertificateChecking();

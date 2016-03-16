@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2011 VMware, Inc. All rights reserved.
+-->
+<project name="afd-heartbeat-service" default="build" basedir=".">
+
+   <property name="target-sets" value="main" />
+
+   <property name="afd-heartbeat-service.title"
+             value="VMWare Afd Heartbeat Service" />
+   <property name="afd-heartbeat-service.version"
+             value="3.0.0.${BUILD_NUMBER}" />
+   <property name="afd-heartbeat-service.vendor"
+             value="VMWare, Inc." />
+
+   <property file="../product.properties" />
+   <property name="MAINSRCROOT" value="${basedir}/../../.."/>
+   <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}"/>
+
+   <import file="${MAINSRCROOT}/build/ant/presets.xml" />
+   <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
+
+   <path id="classpath.main">
+   </path>
+
+   <import file="${MAINSRCROOT}/build/ant/buildcycle-template.xml" />
+
+</project>

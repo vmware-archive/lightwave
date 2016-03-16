@@ -467,6 +467,37 @@ error:
 	return dwError;
 }
 
+DWORD
+VmAfPosixCfgDeleteValue(
+	PVMAF_CFG_KEY       pKey,
+	PCSTR               pszValue
+	)
+{
+	DWORD dwError = 0;
+
+	if (!pKey || IsNullOrEmptyString(pszValue))
+	{
+		dwError = ERROR_INVALID_PARAMETER;
+		BAIL_ON_VMAFD_ERROR(dwError);
+	}
+
+	dwError = RegDeleteValueA(
+                  pKey->pConnection->hConnection,
+                  pKey->hKey,
+                  pszValue
+                  );
+
+  if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
+  {
+      dwError = ERROR_FILE_NOT_FOUND;
+  }
+
+error:
+
+	return dwError;
+}
+
+
 VOID
 VmAfPosixCfgCloseKey(
     PVMAF_CFG_KEY pKey

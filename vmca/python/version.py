@@ -12,7 +12,7 @@
 # under the License.
 #
 import sys
-sys.path.append("/usr/lib/vmware-vmca/lib64")
+sys.path.append("/opt/vmware/lib64")
 import vmca
 import time
 
