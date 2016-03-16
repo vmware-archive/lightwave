@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright 2011 VMware, Inc. All rights reserved. VMware confidential.
+  Copyright 2011 VMware, Inc. All rights reserved.
 -->
 <project name="vmware-identity-websso-client" default="build" basedir="." xmlns:artifact="antlib:org.apache.maven.artifact.ant">
 

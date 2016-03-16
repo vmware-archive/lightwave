@@ -59,8 +59,11 @@ class WinLdapClientLibrary implements ILdapClientLibrary
     private static final int LDAP_OPT_SSL = 0x0a;
     private static final int LDAP_OPT_SERVER_CERTIFICATE = 0x81;
     private static final int LDAP_OPT_SSL_INFO = 0x93;
-    private static final int SP_PROT_TLS1_SERVER = 0x40;
-    
+    private static final int SP_PROT_SSL3_SERVER = 0x10;
+    private static final int SP_PROT_TLS1_0_SERVER = 0x40;
+    private static final int SP_PROT_TLS1_1_SERVER = 0x100;
+    private static final int SP_PROT_TLS1_2_SERVER = 0x400;
+
     @Override
     public LdapConnectionCtx ldap_initializeWithUri(URI uri, List<LdapSetting> connOptions)
     {
@@ -95,7 +98,7 @@ class WinLdapClientLibrary implements ILdapClientLibrary
        }
        logger.debug("ssl_init() succeeded. Setting ldap_options.");
 
-       Object sslCertValidationCallback = ldapSetOptions(p, connOptions);
+       LdapConnectionCtx connectionCtx = ldapSetOptions(p, connOptions);
 
        logger.debug("successfully set ldap_options.");
 
@@ -127,16 +130,17 @@ class WinLdapClientLibrary implements ILdapClientLibrary
        }
 
        logger.debug("client initialized");
-       return new LdapConnectionCtx(p, sslCertValidationCallback);
+       return connectionCtx;
     }
 
-    private Object ldapSetOptions(Pointer ld, List<LdapSetting> connOptions)
+    private LdapConnectionCtx ldapSetOptions(Pointer ld, List<LdapSetting> connOptions)
     {
        // Callback object (from platform) to client layer, where it is set
        ISslX509VerificationCallback callback = null;
        // This is the Windows Crypt32 callback during the process of SSL handshake.
        IServerCertVerify sslCertVerifyObj = null;
        boolean tlsDemand = false;
+       int sslMinimumProtocol = 0;
 
        for (LdapSetting setting : connOptions)
        {
@@ -209,6 +213,13 @@ class WinLdapClientLibrary implements ILdapClientLibrary
               // so that we can unset it after the bind happens on windows
               this.networkTimeoutSetting = setting;
               break;
+          case LDAP_OPT_X_TLS_PROTOCOL:
+              Validate.notNull(val);
+              if (val instanceof Integer)
+              {
+                 sslMinimumProtocol = (Integer)val;
+              }
+              break;
           default:
              Validate.notNull(val);
              String msg = String.format("unsupport options: [%s, %d]", option, val);
@@ -225,8 +236,8 @@ class WinLdapClientLibrary implements ILdapClientLibrary
           WinLdapClientLibrary.CheckError(
               LdapClientLibrary.INSTANCE.ldap_set_option(ld, LDAP_OPT_SERVER_CERTIFICATE, sslCertVerifyObj));
        }
-       //return the callback object to the caller.
-       return sslCertVerifyObj;
+       //return connection context object to the caller.
+       return new LdapConnectionCtx(ld, sslCertVerifyObj, sslMinimumProtocol);
     }
 
     @Override
@@ -247,7 +258,7 @@ class WinLdapClientLibrary implements ILdapClientLibrary
     @Override
     public void ldap_set_option(Pointer ld, int option, Pointer value)
     {
-        // TODO: we may want to translate 'LDAP_OPT_NETWORK_TIMEOUT' here to be consistent with ldap_bind
+        // we may want to translate 'LDAP_OPT_NETWORK_TIMEOUT' here to be consistent with ldap_bind
         WinLdapClientLibrary.CheckError(LdapClientLibrary.INSTANCE.ldap_set_option(ld, option, value));
     }
 
@@ -264,8 +275,9 @@ class WinLdapClientLibrary implements ILdapClientLibrary
                 rTimeoutVal.getPointer()));    }
 
     @Override
-    public void ldap_bind_s(Pointer ld, String dn, String cred, int method)
+    public void ldap_bind_s(LdapConnectionCtx ctx, String dn, String cred, int method)
     {
+        Pointer ld = ctx.getConnection();
         boolean bNeedResetTimeout = false;
         TimevalNative rTimeoutVal = new TimevalNative(0,0);
 
@@ -299,7 +311,9 @@ class WinLdapClientLibrary implements ILdapClientLibrary
         try
         {
             WinLdapClientLibrary.CheckError(LdapClientLibrary.INSTANCE.ldap_connect(ld, rTimeoutVal.tv_sec > 0 ? rTimeoutVal.getPointer() : null));
-            checkSSLProtocolVersion(ld);
+
+            checkSSLProtocolVersion(ld, ctx.getSSLMinimumProtocol());
+
             logger.debug(String.format("ldap_bind_s(ld, %s, cred, %d).", dn, method));
             WinLdapClientLibrary.CheckError( LdapClientLibrary.INSTANCE.ldap_bind_s( ld, dn, cred, method ) );
         }
@@ -370,11 +384,20 @@ class WinLdapClientLibrary implements ILdapClientLibrary
 
         try
         {
-           WinLdapClientLibrary.CheckError( LdapClientLibrary.INSTANCE.ldap_bind_s( ld,
-                                                                                    null,
-                                                                                    secCreds == null ? Pointer.NULL : secCreds.getPointer(),
-                                                                                    LdapBindMethod.LDAP_AUTH_NEGOTIATE.getCode()
-                                                                                   ));
+            WinLdapClientLibrary.CheckError( LdapClientLibrary.INSTANCE.ldap_bind_s( ld,
+                    null,
+                    secCreds == null ? Pointer.NULL : secCreds.getPointer(),
+                    LdapBindMethod.LDAP_AUTH_NEGOTIATE.getCode()
+                   ));
+        }
+        catch (LdapException e)
+        {
+            if (e.getErrorCode() == LdapErrors.LDAP_WinLdap_LOCAL_ERROR.getCode())
+            {
+                throw new SaslBindFailLdapException(e.getErrorCode(), "Ldap_sasl_bind failed due to local errors, for instance, kerberos-related failures");
+            }
+
+            throw new SaslBindFailLdapException(e.getErrorCode(), "Ldap_sasl_bind failed"+e.getMessage());
         }
         finally
         {
@@ -502,7 +525,6 @@ class WinLdapClientLibrary implements ILdapClientLibrary
                 LdapClientLibrary.INSTANCE.ldap_msgfree(values.getValue());
             }
 
-            // TODO: logging
             if(ex instanceof LdapException)
             {
                 throw ((LdapException)ex);
@@ -562,7 +584,6 @@ class WinLdapClientLibrary implements ILdapClientLibrary
                 LdapClientLibrary.INSTANCE.ldap_msgfree(values.getValue());
             }
 
-            // TODO: logging
             if(ex instanceof LdapException)
             {
                 throw ((LdapException)ex);
@@ -855,23 +876,57 @@ class WinLdapClientLibrary implements ILdapClientLibrary
     // private ctor
     private WinLdapClientLibrary() {}
 
-    private void checkSSLProtocolVersion(Pointer ld) {
+    private void checkSSLProtocolVersion(Pointer ld, int sslMinProtocol) {
+
+        //min protocol is not set when certificate validation is not enabled
+        if (sslMinProtocol == 0)
+            return;
+
         ConnectionInfoNative sslInfo = new ConnectionInfoNative();
         IntByReference op = new IntByReference(0);
         WinLdapClientLibrary
                 .CheckError(LdapClientLibrary.INSTANCE.ldap_get_option(ld, LDAP_OPT_SSL, op.getPointer()));
 
-        // If SSL is enabled check the protocol is minimum TLSv1.
+        // If SSL is enabled check the protocol is minimum sslMinProtocol
         if (op.getValue() == LdapConstants.LDAP_OPT_ON) {
 
             WinLdapClientLibrary.CheckError(LdapClientLibrary.INSTANCE.ldap_get_option(ld, LDAP_OPT_SSL_INFO,
                     sslInfo.getPointer()));
             sslInfo.read();
 
-            if (sslInfo.dwProtocol < SP_PROT_TLS1_SERVER)
-                throw new ServerDownLdapException(LdapErrors.LDAP_SERVER_DOWN.getCode(),
-                        "Minimum protocol required is SSLv3.");
+            if (sslInfo.dwProtocol < getWinLdapProtocol(sslMinProtocol))
+                throw new ServerDownLdapException(LdapErrors.LDAP_WinLdap_SERVER_DOWN.getCode(),
+                        String.format("Minimum protocol required is %s, but was used %s", LdapSSLProtocols.getProtocolByCode(sslMinProtocol).getName(), getLdapSSLProtocol(sslInfo.dwProtocol).getName()));
         }
+    }
+
+    private int getWinLdapProtocol(int sslMinProtocol) {
+        LdapSSLProtocols ldapSSLMinProtocol = LdapSSLProtocols
+                .getProtocolByCode(sslMinProtocol);
+        switch (ldapSSLMinProtocol) {
+        case SSLv3:
+            return SP_PROT_SSL3_SERVER;
+        case TLSv1_0:
+            return SP_PROT_TLS1_0_SERVER;
+        case TLSv1_1:
+            return SP_PROT_TLS1_1_SERVER;
+        case TLSv1_2:
+            return SP_PROT_TLS1_2_SERVER;
+        default:
+            return SP_PROT_TLS1_0_SERVER;
+        }
+    }
+
+    private LdapSSLProtocols getLdapSSLProtocol(int winLdapProtocol)
+    {
+        if (winLdapProtocol < SP_PROT_TLS1_0_SERVER)
+            return LdapSSLProtocols.SSLv3;
+        if (winLdapProtocol == SP_PROT_TLS1_1_SERVER)
+            return LdapSSLProtocols.TLSv1_0;
+        if (winLdapProtocol == SP_PROT_TLS1_2_SERVER)
+            return LdapSSLProtocols.TLSv1_1;
+        else
+            return LdapSSLProtocols.TLSv1_0;
     }
 
     private static void CheckError(int errorCode)

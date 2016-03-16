@@ -63,11 +63,11 @@ class GSSTestUtils {
         password = adPassword.toCharArray();
     };
 
-    static NegotiationHandler getKerberosNegotiationHandler() throws GSSException, LoginException, IOException {
+    static GSSNegotiationHandler getKerberosNegotiationHandler() throws GSSException, LoginException, IOException {
         getProperties();
         final javax.security.auth.Subject jaasSubject = new javax.security.auth.Subject();
         GSSContext context = createGSSContext(spn);
-        NegotiationHandler handler = new GssNegotiationHandler(jaasSubject, context);
+        GSSNegotiationHandler handler = new GssNegotiationHandler(jaasSubject, context);
 
         LoginContext login = getLoginCtx(principal, password, jaasSubject);
         login.login();
@@ -110,7 +110,7 @@ class GSSTestUtils {
         return GSSManager.getInstance().createContext(gssName, krb5Mech, null, GSSContext.DEFAULT_LIFETIME);
     }
 
-    static class GssNegotiationHandler implements NegotiationHandler {
+    static class GssNegotiationHandler implements GSSNegotiationHandler {
         private final javax.security.auth.Subject _jaasSubject;
         private final GSSContext _context;
 

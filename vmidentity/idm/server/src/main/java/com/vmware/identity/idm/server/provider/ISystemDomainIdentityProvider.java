@@ -149,7 +149,10 @@ public interface ISystemDomainIdentityProvider extends IIdentityProvider
 
     String getSiteId() throws Exception;
 
+    //GroupName is in domainFqdn\\groupName
     List<String> findGroupsForFsps(List<String> fspIds) throws Exception;
+
+    List<Group> findGroupObjectsForFsps(List<String> fspIds) throws Exception;
 
     List<VmHostData> getComputers(boolean getDCOnly) throws Exception;
 }

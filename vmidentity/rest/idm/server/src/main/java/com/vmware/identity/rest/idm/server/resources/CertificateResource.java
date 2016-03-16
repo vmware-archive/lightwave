@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -30,6 +29,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
@@ -70,7 +70,7 @@ public class CertificateResource extends BaseSubResource {
         super(tenant, locale, correlationId, securityContext);
     }
 
-    public CertificateResource(String tenant, @Context HttpServletRequest request, @Context SecurityContext securityContext) {
+    public CertificateResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, securityContext);
     }
 
@@ -81,7 +81,7 @@ public class CertificateResource extends BaseSubResource {
      *         is expected to return active and older certificates chains if any
      * @see CertificateDTO, CertificateChainDTO
      */
-    @GET @Path("/")
+    @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Collection<CertificateChainDTO> getCertificates(@QueryParam("scope") String certificateScope) {
         CertificateScope scope = validateCertificateScope(certificateScope);
@@ -190,7 +190,7 @@ public class CertificateResource extends BaseSubResource {
      * @throws InternalServerErrorException on server side errors
      * @throws NoSuchTenantException if the tenant or certificate does not exist
      */
-    @POST @Path("/")
+    @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void addCertificate(CertificateDTO certificate) {
@@ -217,7 +217,7 @@ public class CertificateResource extends BaseSubResource {
      * @throws InternalServerErrorException on server side errors
      * @throws NoSuchTenantException if the tenant or certificate does not exist
      */
-    @DELETE @Path("/")
+    @DELETE
     @Consumes(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void delete(@QueryParam("fingerprint") String fingerprint) {

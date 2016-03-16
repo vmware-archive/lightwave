@@ -158,4 +158,10 @@ public interface ILdapSchemaMapping
     boolean doesLinkExist(String mappedAttributeName);
 
     boolean isDnAttribute(String attributeName);
+
+    /**
+     * @return Query template for (user or group) parameterized with
+     * - arg1 attribute arg2 attribute value
+     */
+    String getUserQueryByAttribute();
 }

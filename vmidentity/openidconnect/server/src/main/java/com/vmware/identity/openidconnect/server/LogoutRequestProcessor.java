@@ -15,10 +15,7 @@
 package com.vmware.identity.openidconnect.server;
 
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.text.ParseException;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -27,25 +24,25 @@ import javax.servlet.http.Cookie;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.crypto.RSASSAVerifier;
-import com.nimbusds.jwt.ReadOnlyJWTClaimsSet;
-import com.nimbusds.oauth2.sdk.ErrorObject;
-import com.nimbusds.oauth2.sdk.OAuth2Error;
-import com.nimbusds.oauth2.sdk.id.ClientID;
-import com.nimbusds.openid.connect.sdk.rp.OIDCClientInformation;
-import com.nimbusds.openid.connect.sdk.rp.OIDCClientMetadata;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.client.CasIdmClient;
+import com.vmware.identity.openidconnect.common.ClientID;
+import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.common.HttpRequest;
+import com.vmware.identity.openidconnect.common.HttpResponse;
+import com.vmware.identity.openidconnect.common.IDToken;
+import com.vmware.identity.openidconnect.common.LogoutErrorResponse;
 import com.vmware.identity.openidconnect.common.LogoutRequest;
 import com.vmware.identity.openidconnect.common.LogoutSuccessResponse;
 import com.vmware.identity.openidconnect.common.SessionID;
-import com.vmware.identity.openidconnect.common.TokenClass;
 
 /**
  * @author Yehia Zayour
  */
 public class LogoutRequestProcessor {
+    private static final long CLIENT_ASSERTION_LIFETIME_MS = 2 * 60 * 1000L; // 2 minutes
+
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(LogoutRequestProcessor.class);
 
     private final TenantInfoRetriever tenantInfoRetriever;
@@ -54,13 +51,14 @@ public class LogoutRequestProcessor {
 
     private final SessionManager sessionManager;
     private final HttpRequest httpRequest;
-    private final String tenant;
+    private String tenant;
 
-    private TenantInformation tenantInfo;
+    private TenantInfo tenantInfo;
+    private ClientInfo clientInfo;
     private LogoutRequest logoutRequest;
 
     public LogoutRequestProcessor(
-            IdmClient idmClient,
+            CasIdmClient idmClient,
             SessionManager sessionManager,
             HttpRequest httpRequest,
             String tenant) {
@@ -72,178 +70,165 @@ public class LogoutRequestProcessor {
         this.httpRequest = httpRequest;
         this.tenant = tenant;
 
-        // set by initialize()
         this.tenantInfo = null;
         this.logoutRequest = null;
     }
 
     public HttpResponse process() {
-        HttpResponse httpResponse;
-
-        try {
-            initialize();
-            Pair<LogoutSuccessResponse, Cookie> result = processInternal();
-            httpResponse = HttpResponse.success(result.getLeft(), result.getRight());
-        } catch (ServerException e) {
-            Shared.logFailedRequest(logger, e);
-            httpResponse = HttpResponse.error(e);
-        }
-
-        return httpResponse;
-    }
-
-    private void initialize() throws ServerException {
+        ClientID clientId;
+        URI postLogoutRedirectUri;
+        LogoutErrorResponse parseErrorResponse;
         try {
             this.logoutRequest = LogoutRequest.parse(this.httpRequest);
-        } catch (com.nimbusds.oauth2.sdk.ParseException e) {
-            throw new ServerException(OAuth2Error.INVALID_REQUEST.setDescription("logout request parse error: " + e.getMessage()), e);
+            clientId = this.logoutRequest.getClientID();
+            postLogoutRedirectUri = this.logoutRequest.getPostLogoutRedirectURI();
+            parseErrorResponse = null;
+        } catch (LogoutRequest.ParseException e) {
+            if (e.getClientID() != null && e.getPostLogoutRedirectURI() != null && e.createLogoutErrorResponse() != null) {
+                clientId = e.getClientID();
+                postLogoutRedirectUri = e.getPostLogoutRedirectURI();
+                parseErrorResponse = e.createLogoutErrorResponse();
+            } else {
+                LoggerUtils.logFailedRequest(logger, e.getErrorObject(), e);
+                return HttpResponse.createErrorResponse(e.getErrorObject());
+            }
         }
 
-        String tenantName = this.tenant;
-        if (tenantName == null) {
-            tenantName = this.tenantInfoRetriever.getDefaultTenantName();
+        try {
+            if (this.tenant == null) {
+                this.tenant = this.tenantInfoRetriever.getDefaultTenantName();
+            }
+            this.tenantInfo = this.tenantInfoRetriever.retrieveTenantInfo(this.tenant);
+            this.clientInfo = this.clientInfoRetriever.retrieveClientInfo(this.tenant, clientId);
+            if (!this.clientInfo.getPostLogoutRedirectURIs().contains(postLogoutRedirectUri)) {
+                throw new ServerException(ErrorObject.invalidRequest("unregistered post_logout_redirect_uri"));
+            }
+        } catch (ServerException e) {
+            LoggerUtils.logFailedRequest(logger, e);
+            return HttpResponse.createErrorResponse(e.getErrorObject());
         }
-        this.tenantInfo = this.tenantInfoRetriever.retrieveTenantInfo(tenantName);
+
+        if (parseErrorResponse != null) {
+            LoggerUtils.logFailedRequest(logger, parseErrorResponse.getErrorObject());
+            return parseErrorResponse.toHttpResponse();
+        }
+
+        try {
+            authenticateClient();
+
+            Pair<LogoutSuccessResponse, Cookie> result = processInternal();
+            LogoutSuccessResponse logoutSuccessResponse = result.getLeft();
+            Cookie clientCertLoggedOutCookie = result.getRight();
+
+            HttpResponse httpResponse = logoutSuccessResponse.toHttpResponse();
+            httpResponse.addCookie(loggedOutSessionCookie());
+            if (clientCertLoggedOutCookie != null) {
+                httpResponse.addCookie(clientCertLoggedOutCookie);
+            }
+            return httpResponse;
+        } catch (ServerException e) {
+            LoggerUtils.logFailedRequest(logger, e);
+            LogoutErrorResponse logoutErrorResponse = new LogoutErrorResponse(
+                    this.logoutRequest.getPostLogoutRedirectURI(),
+                    this.logoutRequest.getState(),
+                    e.getErrorObject());
+            return logoutErrorResponse.toHttpResponse();
+        }
     }
 
     private Pair<LogoutSuccessResponse, Cookie> processInternal() throws ServerException {
-        String sessionIdString = this.httpRequest.getCookieValue(Shared.getSessionCookieName(this.tenantInfo.getName()));
+        String sessionIdString = this.httpRequest.getCookieValue(SessionManager.getSessionCookieName(this.tenant));
         SessionID sessionId = null;
-        SessionEntry entry = null;
+        SessionManager.Entry entry = null;
         if (sessionIdString != null) {
             sessionId = new SessionID(sessionIdString);
             entry = this.sessionManager.get(sessionId);
         }
 
-        boolean validSignature;
-        try {
-            validSignature = this.logoutRequest.getIDTokenHint().getSignedJWT().verify(new RSASSAVerifier(this.tenantInfo.getPublicKey()));
-        } catch (JOSEException e) {
-            throw new ServerException(OAuth2Error.SERVER_ERROR.setDescription("error while verifying id_token_hint signature"), e);
-        }
-        if (!validSignature) {
-            throw new ServerException(OAuth2Error.INVALID_REQUEST.setDescription("id_token_hint has an invalid signature"));
-        }
+        validateIDToken(this.logoutRequest.getIDTokenHint(), entry);
 
-        ReadOnlyJWTClaimsSet idTokenHintClaimsSet;
-        try {
-            idTokenHintClaimsSet = this.logoutRequest.getIDTokenHint().getSignedJWT().getJWTClaimsSet();
-        } catch (ParseException e) {
-            throw new ServerException(OAuth2Error.INVALID_REQUEST.setDescription("failed to parse claims out of id_token_hint"), e);
-        }
-
-        ErrorObject error = validateIdTokenHintClaims(idTokenHintClaimsSet, entry);
-        if (error != null) {
-            throw new ServerException(error);
-        }
-
-        String clientId = idTokenHintClaimsSet.getAudience().get(0);
-        OIDCClientInformation clientInfo = this.clientInfoRetriever.retrieveClientInfo(this.tenantInfo.getName(), new ClientID(clientId));
-        String certSubjectDn = (String) clientInfo.getOIDCMetadata().getCustomField("cert_subject_dn");
-        if (certSubjectDn != null) {
-            if (this.logoutRequest.getClientAssertion() != null) {
-                this.solutionUserAuthenticator.authenticateByClientAssertion(
-                        this.logoutRequest.getClientAssertion(),
-                        this.httpRequest.getRequestUrl(),
-                        this.tenantInfo,
-                        clientInfo);
-            } else {
-                throw new ServerException(OAuth2Error.INVALID_CLIENT.setDescription("client_assertion parameter is required since client has registered a cert"));
+        Cookie clientCertLoggedOutCookie = null;
+        if (entry != null) {
+            this.sessionManager.remove(sessionId);
+            if (entry.getLoginMethod() == LoginMethod.CLIENT_CERTIFICATE) {
+                clientCertLoggedOutCookie = clientCertLoggedOutCookie();
             }
         }
 
-        if (this.logoutRequest.getPostLogoutRedirectionURI() != null) {
-            Set<URI> postLogoutRedirectUris = clientInfo.getOIDCMetadata().getPostLogoutRedirectionURIs();
-            if (postLogoutRedirectUris == null || !postLogoutRedirectUris.contains(this.logoutRequest.getPostLogoutRedirectionURI())) {
-                throw new ServerException(OAuth2Error.INVALID_REQUEST.setDescription("unregistered post_logout_redirect_uri"));
-            }
-        }
-
+        // SLO using OpenID Connect HTTP-Based Logout 1.0 - draft 03
+        // construct iframe links containing logout_uri requests, the browser will send these to other participating clients
+        // do not include the client that initiated this logout request as that client has already logged out before sending us this request
         Set<URI> logoutUris = new HashSet<URI>();
         if (entry != null) {
-            for (OIDCClientInformation client : entry.getClients()) {
-                URI logoutUri = getClientLogoutUri(client);
-                if (logoutUri != null) {
-                    logoutUris.add(logoutUri);
+            for (ClientInfo client : entry.getClients()) {
+                if (client.getLogoutURI() != null && !Objects.equals(client.getID(), this.logoutRequest.getClientID())) {
+                    logoutUris.add(client.getLogoutURI());
                 }
             }
-            this.sessionManager.remove(sessionId);
         }
 
-        return Pair.of(
-                new LogoutSuccessResponse(
-                    this.logoutRequest.getPostLogoutRedirectionURI(),
-                    this.logoutRequest.getState(),
-                    sessionId,
-                    logoutUris),
-                (sessionId == null) ? null : wipeOutSessionCookie());
+        LogoutSuccessResponse logoutSuccessResponse = new LogoutSuccessResponse(
+                this.logoutRequest.getPostLogoutRedirectURI(),
+                this.logoutRequest.getState(),
+                sessionId,
+                logoutUris);
+
+        return Pair.of(logoutSuccessResponse, clientCertLoggedOutCookie);
     }
 
-    private ErrorObject validateIdTokenHintClaims(ReadOnlyJWTClaimsSet idTokenHintClaimsSet, SessionEntry entry) {
-        ErrorObject error = null;
-
-        final String errorPrefix = "id_token_hint validation error: ";
-
-        if (error == null) {
-            try {
-                idTokenHintClaimsSet = this.logoutRequest.getIDTokenHint().getSignedJWT().getJWTClaimsSet();
-            } catch (ParseException e) {
-                error = OAuth2Error.INVALID_REQUEST.setDescription("failed to parse claims out of id_token_hint");
+    private void validateIDToken(IDToken idToken, SessionManager.Entry entry) throws ServerException {
+        try {
+            if (!idToken.hasValidSignature(this.tenantInfo.getPublicKey())) {
+                throw new ServerException(ErrorObject.invalidRequest("id_token has an invalid signature"));
             }
+        } catch (JOSEException e) {
+            throw new ServerException(ErrorObject.serverError("error while verifying id_token signature"), e);
         }
 
-        if (error == null) {
-            try {
-                if (!TokenClass.ID_TOKEN.getName().equals(idTokenHintClaimsSet.getStringClaim("token_class"))) {
-                    error = OAuth2Error.INVALID_REQUEST.setDescription(errorPrefix + "jwt must have token_class=id_token");
-                }
-            } catch (ParseException e) {
-                error = OAuth2Error.INVALID_REQUEST.setDescription(errorPrefix + "failed to parse token_class or token_type claims out of jwt");
-            }
+        if (!Objects.equals(idToken.getTenant(), this.tenant)) {
+            throw new ServerException(ErrorObject.invalidRequest("id_token has incorrect tenant"));
         }
 
-        if (error == null && !Objects.equals(this.tenantInfo.getIssuer().getValue(), idTokenHintClaimsSet.getIssuer())) {
-            error = OAuth2Error.INVALID_REQUEST.setDescription(errorPrefix + "invalid issuer");
+        if (!Objects.equals(idToken.getIssuer(), this.tenantInfo.getIssuer())) {
+            throw new ServerException(ErrorObject.invalidRequest("id_token has incorrect issuer"));
         }
 
-        if (error == null && idTokenHintClaimsSet.getSubject() == null) {
-            error = OAuth2Error.INVALID_REQUEST.setDescription(errorPrefix + "jwt is missing a sub (subject) claim");
+        if (entry != null && !Objects.equals(idToken.getSubject(), entry.getPersonUser().getSubject())) {
+            throw new ServerException(ErrorObject.invalidRequest("id_token subject does not match the session user"));
         }
-
-        if (error == null && entry != null && !Objects.equals(entry.getPersonUser().getSubject().getValue(), idTokenHintClaimsSet.getSubject())) {
-            error = OAuth2Error.INVALID_REQUEST.setDescription(errorPrefix + "jwt subject does not match the session user");
-        }
-
-        if (error == null) {
-            List<String> audience = idTokenHintClaimsSet.getAudience();
-            if (audience == null || audience.size() != 1) {
-                error = OAuth2Error.INVALID_REQUEST.setDescription(errorPrefix + "jwt must have a single audience value containing the client_id");
-            }
-        }
-
-        return error;
     }
 
-    private Cookie wipeOutSessionCookie() {
-        Cookie sessionCookie = new Cookie(Shared.getSessionCookieName(this.tenantInfo.getName()), "");
-        sessionCookie.setPath("/openidconnect");
-        sessionCookie.setSecure(true);
-        sessionCookie.setHttpOnly(true);
-        sessionCookie.setMaxAge(0);
-        return sessionCookie;
+    private void authenticateClient() throws ServerException {
+        if (this.clientInfo.getCertSubjectDN() == null) {
+            return; // no client authentication since no cert was specified at client registration time
+        }
+
+        if (this.logoutRequest.getClientAssertion() == null) {
+            throw new ServerException(ErrorObject.invalidClient("client_assertion parameter is required since client has registered a cert"));
+        }
+
+        this.solutionUserAuthenticator.authenticateByClientAssertion(
+                this.logoutRequest.getClientAssertion(),
+                CLIENT_ASSERTION_LIFETIME_MS,
+                this.httpRequest.getURI(),
+                this.tenantInfo,
+                this.clientInfo);
     }
 
-    private static URI getClientLogoutUri(OIDCClientInformation clientInfo) {
-        URI logoutUri = null;
-        OIDCClientMetadata clientMetadata = clientInfo.getOIDCMetadata();
-        String logoutUriString = (String) clientMetadata.getCustomField("logout_uri");
-        if (logoutUriString != null) {
-            try {
-                logoutUri = new URI(logoutUriString);
-            } catch (URISyntaxException e) {
-                logoutUri = null;
-            }
-        }
-        return logoutUri;
+    private Cookie loggedOutSessionCookie() {
+        Cookie cookie = new Cookie(SessionManager.getSessionCookieName(this.tenant), "");
+        cookie.setPath("/openidconnect");
+        cookie.setSecure(true);
+        cookie.setHttpOnly(true);
+        cookie.setMaxAge(0);
+        return cookie;
+    }
+
+    private Cookie clientCertLoggedOutCookie() {
+        Cookie cookie = new Cookie(SessionManager.getClientCertificateLoggedOutCookieName(this.tenant), "");
+        cookie.setPath("/openidconnect");
+        cookie.setSecure(true);
+        cookie.setHttpOnly(true);
+        return cookie;
     }
 }
