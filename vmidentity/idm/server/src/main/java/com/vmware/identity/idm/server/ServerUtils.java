@@ -47,6 +47,7 @@ import java.util.Map;
 
 import javax.security.auth.login.LoginException;
 
+import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.Validate;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
@@ -76,6 +77,7 @@ import com.vmware.identity.interop.ldap.LdapConnectionFactory;
 import com.vmware.identity.interop.ldap.LdapConnectionFactoryEx;
 import com.vmware.identity.interop.ldap.LdapConstants;
 import com.vmware.identity.interop.ldap.LdapOption;
+import com.vmware.identity.interop.ldap.LdapSSLProtocols;
 import com.vmware.identity.interop.ldap.LdapScope;
 import com.vmware.identity.interop.ldap.LdapSetting;
 import com.vmware.identity.interop.ldap.LdapValue;
@@ -145,6 +147,7 @@ public class ServerUtils
         }
         else
         {
+           logger.error("Caught an unexpected exception", ex);
            idmEx = new IDMException(ex.getMessage());
         }
 
@@ -286,27 +289,47 @@ public class ServerUtils
 		DEFAULT_LDAP_NETWORK_TIMEOUT));
 
 	if (isLdaps) {
-           
-           if(certValidationsettings == null) {
-	      certValidationsettings = new LdapCertificateValidationSettings(null);
-           }
-
-            ISslX509VerificationCallback certVerifierCallback = certValidationsettings.getCertVerificationCallback(uri);
+	   //if is ldaps connection and certificate validation is enabled set the options for validation
+	   boolean isLdapsCertValidationEnabled = certValidationsettings != null &&
+	               (certValidationsettings.isForceValidation() || IdmServerConfig.getInstance().isLdapsCertValidationEnabled() || !certValidationsettings.isLegacy());
+       if (isLdapsCertValidationEnabled)
+       {
+           ISslX509VerificationCallback certVerifierCallback = certValidationsettings.getCertVerificationCallback(uri);
 	       settings.add(new LdapSetting(
 	               LdapOption.LDAP_OPT_X_TLS_REQUIRE_CERT,
 	               LdapConstants.LDAP_OPT_X_TLS_DEMAND));
 	       settings.add(new LdapSetting(
 	               LdapOption.LDAP_OPT_X_CLIENT_TRUSTED_FP_CALLBACK,
 	               certVerifierCallback));
-	}
 
-	connOptions = Collections.unmodifiableList(settings);
+           int sslMinProtocol = certValidationsettings.isLegacy() ? LdapSSLProtocols.getDefaultLegacyMinProtocol().getCode() : LdapSSLProtocols.getDefaultMinProtocol().getCode();
+           settings.add(new LdapSetting(
+                   LdapOption.LDAP_OPT_X_TLS_PROTOCOL,
+                   sslMinProtocol));
+        }
+        else
+        {
+            settings.add(new LdapSetting(LdapOption.LDAP_OPT_X_TLS_REQUIRE_CERT, LdapConstants.LDAP_OPT_X_TLS_NEVER));
+        }
+	}
+	    // When doing GSSAPI authentication, LDAP SASL binding by default does reverse DNS lookup to validate the
+	    // target name, this causes authentication failures because Most DNS servers in AD do not have PTR records
+	    // registered for all DCs, any of which could be the binding target.
+	    if (!SystemUtils.IS_OS_WINDOWS && authType == AuthenticationType.USE_KERBEROS) {
+	       settings.add(new LdapSetting(LdapOption.LDAP_OPT_X_SASL_NOCANON, LdapConstants.LDAP_OPT_ON));
+	    }
+
+	    connOptions = Collections.unmodifiableList(settings);
 
         ILdapConnectionEx connection = null;
 
         // if No port# or the default port of 389 (ldap) or 636 (ldaps) is specified then useGcport takes effect;
         // otherwise, go with the explicit specified port#
-        if ((uri.getPort() == -1 || uri.getPort() == LdapConstants.LDAP_PORT || uri.getPort() == LdapConstants.LDAP_SSL_PORT)
+        if (authType == AuthenticationType.SRP)
+        {
+            connection = (ILdapConnectionEx) LdapConnectionFactory.getInstance().getLdapConnection(uri, connOptions, true);
+        }
+        else if ((uri.getPort() == -1 || uri.getPort() == LdapConstants.LDAP_PORT || uri.getPort() == LdapConstants.LDAP_SSL_PORT)
             && useGcPort)
         {
             connection =
@@ -316,14 +339,6 @@ public class ServerUtils
         }
         else
         {
-            connection =
-                    LdapConnectionFactoryEx.getInstance().getLdapConnection(uri, connOptions);
-        }
-
-        if(AuthenticationType.SRP == authType){
-            connection =
-                    (ILdapConnectionEx) LdapConnectionFactory.getInstance().getLdapConnection(uri, connOptions, true);
-        } else {
             connection =
                     LdapConnectionFactoryEx.getInstance().getLdapConnection(uri, connOptions);
         }
@@ -549,6 +564,18 @@ public class ServerUtils
     public static LdapValue[] getLdapValue(long val)
     {
         return new LdapValue[] { new LdapValue( val ) };
+    }
+
+    public static LdapValue[] getLdapValue(byte[] bytes)
+    {
+        LdapValue[] value = null;
+        if ((bytes != null) && (bytes.length > 0) )
+        {
+            value = new LdapValue[] {
+                new LdapValue( bytes )
+            };
+        }
+        return value;
     }
 
     public static LdapValue[] getLdapValue(int[] integers)
@@ -1093,46 +1120,6 @@ public class ServerUtils
                 connection.close();
             }
         }
-    }
-
-    public static String canonicalizeStringForLdapDN(String name) {
-        //@see RFC 2253
-        StringBuilder sb = new StringBuilder();
-        if ((name.length() > 0) && ((name.charAt(0) == ' ') || (name.charAt(0) == '#'))) {
-            sb.append('\\');
-        }
-        for (int i = 0; i < name.length(); i++) {
-            char curChar = name.charAt(i);
-            switch (curChar) {
-                case '\\':
-                    sb.append("\\\\");
-                    break;
-                case ',':
-                    sb.append("\\,");
-                    break;
-                case '+':
-                    sb.append("\\+");
-                    break;
-                case '"':
-                    sb.append("\\\"");
-                    break;
-                case '<':
-                    sb.append("\\<");
-                    break;
-                case '>':
-                    sb.append("\\>");
-                    break;
-                case ';':
-                    sb.append("\\;");
-                    break;
-                default:
-                    sb.append(curChar);
-            }
-        }
-        if ((name.length() > 1) && (name.charAt(name.length() - 1) == ' ')) {
-            sb.insert(sb.length() - 1, '\\');
-        }
-        return sb.toString();
     }
 
     public static PrincipalId getPrincipalId(String upn){

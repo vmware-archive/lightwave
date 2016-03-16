@@ -19,11 +19,22 @@ package com.vmware.identity.performanceSupport;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 public interface IIdmAuthStat extends Serializable {
 
     public enum ActivityKind {
         AUTHENTICATE, GETATTRIBUTES,
+    }
+
+    public enum EventLevel {
+        FATAL,
+        ERROR,
+        WARN,
+        INFO,
+        DEBUG,
+        TRACE,
+        ALL
     }
 
     public String getProviderType();
@@ -34,11 +45,21 @@ public interface IIdmAuthStat extends Serializable {
 
     ActivityKind getOpKind();
 
+    EventLevel getEventLevel();
+
     String getUserName();
 
     long getStartTime();
 
     long getTimeTaken();
 
+    String getCorrelationId();
+
     List<ILdapQueryStat> getLdapQueryStats();
+
+    /**
+     * Gets the extended authentication logging items, which is keyed by the extra item name,
+     * for example: for CAC authentication, it has extensions: buildCertPath, validateCertPath, etc.
+     */
+    Map<String, String> getExtensions();
 }

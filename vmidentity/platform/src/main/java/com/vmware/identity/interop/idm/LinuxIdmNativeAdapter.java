@@ -92,7 +92,7 @@ public class LinuxIdmNativeAdapter extends NativeAdapter implements
             PointerByReference ppAuthContext /* PIDM_AUTH_CONTEXT* */
             );
 
-        int IDMLdapSaslBind(Pointer pLd);
+        int IDMLdapSaslBind(Pointer pLd, String userName, String domainName, String password);
 
         int
         IDMAllocateMemory(
@@ -341,13 +341,13 @@ public class LinuxIdmNativeAdapter extends NativeAdapter implements
 
     @Override
     public
-    boolean LdapSaslBind(Pointer pLdapConnection)
+    boolean LdapSaslBind(Pointer pLdapConnection, String userName, String domainName, String password)
     {
         Validate.validateNotNull(pLdapConnection, "LDAP Connection handle");
 
         int errCode =
                 IdmNativeLibrary.INSTANCE.IDMLdapSaslBind(
-                        pLdapConnection);
+                        pLdapConnection, userName, domainName, password);
         if (errCode != 0)
         {
             throw new IdmNativeException(errCode);
