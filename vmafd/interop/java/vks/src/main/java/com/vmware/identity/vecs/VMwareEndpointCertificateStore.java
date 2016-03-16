@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -388,6 +388,58 @@ public class VMwareEndpointCertificateStore {
                "Deleting entry by alias '%s' from store '%s' failed. "
                + "[Server: %s, User: %s]", alias,
                _storeName, _serverName, _userName);
+   }
+
+   /**
+    * Sets store permission READ/WRITE for a user.
+    *
+    * @param userName
+    *           User name. It cannot be null or empty.
+    * @param accessMask
+    *           Access mask READ/WRITE.
+    */
+   public void setPermission(String userName, VecsPermission.AccessMask accessMask) {
+      int error = VecsAdapter.VecsSetPermissionW(_storeHandle, userName, accessMask.getValue());
+
+      BAIL_ON_ERROR(error, "Setting permission of store '%s' for user '%s' failed. [Server: %s, User: %s]",
+               _storeName, userName, _serverName, _userName);
+   }
+
+   /**
+    * Revokes store permission RED/WRITE for a user
+    *
+    * @param userName
+    *           User name. It cannot be null or empty.
+    * @param accessMask
+    *           Access mask READ/WRITE.
+    */
+   public void revokePermission(String userName, VecsPermission.AccessMask accessMask) {
+      int error = VecsAdapter.VecsRevokePermissionW(_storeHandle, userName, accessMask.getValue());
+
+      BAIL_ON_ERROR(error, "Revoking permission of store '%s' for user '%s' failed. [Server: %s, User: %s]",
+               _storeName, userName, _serverName, _userName);
+   }
+
+   /**
+    * Gets a list of VECS permissions for the store.
+    *
+    * @return Permissions for the store.
+    */
+   public List<VecsPermission> getPermissions() {
+      List<VecsPermissionNative> pStorePermissionsNative = new ArrayList<VecsPermissionNative>();
+      StringRef pOwner = new StringRef();
+
+      int error = VecsAdapter.VecsGetPermissionsW(_storeHandle, pOwner, pStorePermissionsNative);
+
+      BAIL_ON_ERROR(error, "Get permissions of store '%s' failed. [Server: %s, User: %s]", _storeName, _serverName, _userName);
+
+      List<VecsPermission> pStorePermissions = new ArrayList<VecsPermission>(pStorePermissionsNative.size());
+      for (VecsPermissionNative permission : pStorePermissionsNative) {
+         VecsPermission.AccessMask accessMask = (permission.accessMask == VecsPermission.AccessMask.READ.getValue())?VecsPermission.AccessMask.READ:VecsPermission.AccessMask.WRITE;
+         pStorePermissions.add(new VecsPermission(permission.userName, accessMask));
+      }
+
+      return pStorePermissions;
    }
 
    // ////PRIVATE HELPER METHODS

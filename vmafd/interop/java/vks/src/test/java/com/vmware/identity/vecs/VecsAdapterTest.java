@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -222,6 +222,58 @@ public class VecsAdapterTest {
          error = VecsAdapter.VecsDeleteEntryW(pStore, baseEntryAlias + i);
          Assert.assertEquals(0, error);
       }
+
+      error = VecsAdapter.VecsCloseCertStore(pStore);
+      Assert.assertEquals(0, error);
+      Assert.assertTrue(PointerRef.isNull(pStore));
+
+      error = VecsAdapter.VecsDeleteCertStoreHW(_serverHandle, storeName);
+      Assert.assertEquals(0, error);
+   }
+
+   //@Test
+   public void testCreateStoresSetRevokeGetPermissions() {
+      int times = 10;
+      String storeName = "BlahStore5";
+      String baseUserName = "User"; //For expected existing users
+      //Authorization Access Masks
+      final int READ_STORE =  0x40000000;
+      final int WRITE_STORE = 0x80000000;
+      PointerRef pStore = new PointerRef();
+
+      int error = VecsAdapter.VecsCreateCertStoreHW(_serverHandle, storeName, "passw",
+            pStore);
+      Assert.assertEquals(0, error);
+      Assert.assertTrue(!PointerRef.isNull(pStore));
+
+      for (int i = 0; i < times; i++) {
+         error = VecsAdapter.VecsSetPermissionW(pStore, baseUserName + i, (i%2==0)?READ_STORE:WRITE_STORE);
+         Assert.assertEquals(0, error);
+      }
+
+      StringRef pOwner = new StringRef();
+      List<VecsPermissionNative> pStorePermissions = new ArrayList<VecsPermissionNative>();
+      error = VecsAdapter.VecsGetPermissionsW(pStore, pOwner, pStorePermissions);
+      Assert.assertEquals(0, error);
+
+      int permSize = pStorePermissions.size();
+      for (int i = 0; i < times; i++) {
+         //First entry in permissions list is last entry added with set permission
+         VecsPermissionNative permission = pStorePermissions.get(permSize - i - 1);
+         Assert.assertTrue(permission.userName.equals(baseUserName + i));
+         Assert.assertEquals((i%2==0)?READ_STORE:WRITE_STORE, permission.accessMask);
+      }
+
+      for (int i = 0; i < times; i++) {
+         error = VecsAdapter.VecsRevokePermissionW(pStore, baseUserName + i, (i%2==0)?READ_STORE:WRITE_STORE);
+         Assert.assertEquals(0, error);
+      }
+
+      StringRef pOwner2 = new StringRef();
+      List<VecsPermissionNative> pStorePermissions2 = new ArrayList<VecsPermissionNative>();
+      error = VecsAdapter.VecsGetPermissionsW(pStore, pOwner2, pStorePermissions2);
+      Assert.assertEquals(0, error);
+      Assert.assertEquals(0, pStorePermissions2.size());
 
       error = VecsAdapter.VecsCloseCertStore(pStore);
       Assert.assertEquals(0, error);

@@ -201,6 +201,7 @@ typedef DWORD VMCA_FUNC_LEVEL;
 #define FILE_CHUNK (64 * 1024)
 #define VMCA_TIME_LAG_OFFSET_CRL (10*60)
 #define VMCA_TIME_LAG_OFFSET_CERTIFICATE (5*60)
+#define VMCA_MIN_CA_CERT_PRIV_KEY_LENGTH (2048)
 
 #define VMCA_LOCK_MUTEX_EXCLUSIVE(pmutex, bLocked) \
 if (! (bLocked) ) \

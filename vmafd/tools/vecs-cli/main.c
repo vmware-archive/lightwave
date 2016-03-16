@@ -10,6 +10,9 @@
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
  * License for the specific language governing permissions and limitations
  * under the License.
+ *
+ * Module   : vecs-cli/main.c
+ * Author   : Aishu Raghavan (araghavan@vmware.com)
  */
 
 
@@ -1462,7 +1465,7 @@ ShowUsage(
         "\tstore list\n"
         "\t            [--server <server-name>]\n"
         "\t            [--upn <user-name>]\n"
-        "\tstore delete --name <name> [ --password <password> ]\n"
+        "\tstore delete --name <name> \n"
         "\t            [--server <server-name>]\n"
         "\t            [--upn <user-name>]\n"
         "\t            [-y]\n"

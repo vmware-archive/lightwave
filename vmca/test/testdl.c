@@ -6,7 +6,7 @@ int
 main(void)
 {
 	void *handle;
-	handle = dlopen("/usr/lib/vmware-vmca/lib64/libvmcaclient.so.0.0.0", 
+	handle = dlopen("/opt/vmware/lib64/libvmcaclient.so.0.0.0", 
 						RTLD_LAZY);
 	if( handle == NULL )
 	{

@@ -9,6 +9,31 @@
 extern "C" {
 #endif
 
+
+/*
+ * @brief Set HA mode to default
+ *
+ * @param[in]  pServer Host server struct
+ *
+ * @return Returns 0 for success
+ */
+DWORD
+CdcEnableDefaultHAMode(
+        PVMAFD_SERVER pServer
+        );
+
+/*
+ * @brief Set HA Mode to Legacy Mode
+ *
+ * @param[in]  pServer Host server struct
+ *
+ * @return Returns 0 for success
+ */
+DWORD
+CdcEnableLegacyHAMode(
+        PVMAFD_SERVER pServer
+        );
+
 /*
  * @brief Enables client affinity
  *
@@ -111,6 +136,47 @@ CdcEnumDCEntriesW(
         );
 
 /*
+ * @brief Gets the status of a specific DC entry
+ *
+ * @param[in]           pServer Host server struct
+ * @param[in]           pszDCName DCName for which detailed info is required
+ * @param[in,optional]  pszDomain Domain for which detailed info is required
+ * @param[out]          ppDCStatusInfo Returns the status of pszDCName
+ * @param[out,optional] ppHbStatus Returns the heartbeat status of services
+ *
+ * @return Returns 0 for success
+ */
+DWORD
+CdcGetDCStatusInfoA(
+        PVMAFD_SERVER          pServer,
+        PCSTR                  pszDCName,
+        PCSTR                  pszDomainName,
+        PCDC_DC_STATUS_INFO_A  *ppDCStatusInfo,
+        PVMAFD_HB_STATUS_A     *ppHbStatus
+        );
+
+/*
+ * @brief Gets the status of a specific DC entry
+ *
+ * @param[in]           pServer Host server struct
+ * @param[in]           pwszDCName DCName for which detailed info is required
+ * @param[in,optional]  pwszDomain Domain for which detailed info is required
+ * @param[in]           infoLevel Level of detailed info required
+ * @param[out]          ppDCStatusInfo Returns the count of entries
+ * @param[out,optional] ppHbStatus Returns the heartbeat status of services
+ *
+ * @return Returns 0 for success
+ */
+DWORD
+CdcGetDCStatusInfoW(
+        PVMAFD_SERVER          pServer,
+        PCWSTR                 pwszDCName,
+        PCWSTR                 pwszDomainName,
+        PCDC_DC_STATUS_INFO_W  *ppDCStatusInfo,
+        PVMAFD_HB_STATUS_W     *ppHbStatus
+        );
+
+/*
  * @brief Gets the current state of the client domain controller cache
  *
  * @param[in]           pServer Host server struct
@@ -174,6 +240,30 @@ CdcFreeDomainControllerInfoA(
 VOID
 CdcFreeDomainControllerInfoW(
     PCDC_DC_INFO_W pDomainControllerInfoW
+    );
+
+/*
+ * @brief Frees Domain Controller Status Info structure
+ *
+ * @param[in] pDCStatusInfo
+ *
+ * @return Returns 0 for success
+ */
+VOID
+CdcFreeDCStatusInfoA(
+    PCDC_DC_STATUS_INFO_A pDCStatusInfo
+    );
+
+/*
+ * @brief Frees Domain Controller Status Info structure
+ *
+ * @param[in] pDCStatusInfo
+ *
+ * @return Returns 0 for success
+ */
+VOID
+CdcFreeDCStatusInfoW(
+    PCDC_DC_STATUS_INFO_W pDCStatusInfo
     );
 
 #ifdef __cplusplus

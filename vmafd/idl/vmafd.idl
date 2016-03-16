@@ -15,8 +15,8 @@
  *
  */
 [
-    uuid (6A720396-760C-11E2-B755-000C29B1C8FE),
-    version(1.4),
+    uuid (EB649676-6AD6-47e2-827A-06A1EDDD254B),
+    version(1.5),
     pointer_default(unique)
 #ifdef _WIN32
     , endpoint("ncalrpc:[VMWareAfdService]")
@@ -321,4 +321,51 @@ typedef [context_handle] void *vecs_entry_enum_handle_t;
     [in] handle_t hBinding,
     [out] PVMAFD_HB_STATUS_W *ppHeartbeatStatus
     );
+
+    UINT32
+    VmAfdRpcGetSiteName(
+        [in] handle_t hBinding,
+        [out] wstring_t *ppszSiteName
+        );
+
+    UINT32
+    CdcRpcGetCurrentState(
+        [in] handle_t hBinding,
+        [in, out, ref] CDC_DC_STATE* pCdcState
+        );
+
+    UINT32
+    CdcRpcEnableDefaultHA(
+        [in] handle_t hBinding
+        );
+
+    UINT32
+    CdcRpcEnableLegacyModeHA(
+        [in] handle_t hBinding
+        );
+
+    UINT32
+    CdcRpcGetDCName(
+        [in] handle_t hBinding,
+        [in] wstring_t pszDomainName,
+        [in] wstring_t pszSiteName,
+        [in] UINT32 dwFlags,
+        [out] PCDC_DC_INFO_W *ppDomainControllerInfo
+    );
+
+    UINT32
+    CdcRpcEnumDCEntries(
+        [in] handle_t hBinding,
+        [out] PCDC_DC_ENTRIES_W* ppDcEntries
+        );
+
+    UINT32
+    CdcRpcGetDCStatusInfo(
+        [in] handle_t hBinding,
+        [in] wstring_t pszDCName,
+        [in] wstring_t pszDomainName,
+        [out] PCDC_DC_STATUS_INFO_W* ppDCStatusInfo,
+        [out] PVMAFD_HB_STATUS_W* ppHbStatus
+        );
+
 }

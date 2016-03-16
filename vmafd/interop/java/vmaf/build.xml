@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright 2011 VMware, Inc. All rights reserved. VMware confidential.
+  Copyright 2011 VMware, Inc. All rights reserved.
 -->
 <project name="authentication-framework" default="build" basedir=".">
 
@@ -14,7 +14,7 @@
              value="VMWare, Inc." />
 
    <property file="../product.properties" />
-   <property name="MAINSRCROOT" value="${basedir}/../../.." />
+   <property name="MAINSRCROOT" value="${basedir}/../../.."/>
    <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}"/>
 
    <import file="${MAINSRCROOT}/build/ant/presets.xml" />
@@ -25,7 +25,7 @@
       <fileset refid="jar-set.jna" />
       <fileset refid="jar-set.apache-commons-logging" />
       <fileset refid="jar-set.apache-commons-lang" />
-    
+     
    </path>
 
    <import file="${MAINSRCROOT}/build/ant/buildcycle-template.xml" />

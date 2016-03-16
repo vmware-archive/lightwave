@@ -291,3 +291,62 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+VmAfdRegDeleteValue(
+    PCSTR    pszSubKey,      /* IN     */
+    PCSTR    pszValueName   /* IN     */
+    )
+{
+    DWORD dwError = 0;
+    PVMAF_CFG_CONNECTION pConnection = NULL;
+    PVMAF_CFG_KEY pRootKey = NULL;
+    PVMAF_CFG_KEY pParamsKey = NULL;
+
+    dwError = VmAfConfigOpenConnection(&pConnection);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfConfigOpenRootKey(
+                    pConnection,
+                    "HKEY_LOCAL_MACHINE",
+                    0,
+                    KEY_SET_VALUE,
+                    &pRootKey);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfConfigOpenKey(
+                    pConnection,
+                    pRootKey,
+                    pszSubKey,
+                    0,
+                    KEY_SET_VALUE,
+                    &pParamsKey);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfConfigDeleteValue(
+                    pParamsKey,
+                    pszValueName
+                    );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    if (pParamsKey)
+    {
+        VmAfConfigCloseKey(pParamsKey);
+    }
+    if (pRootKey)
+    {
+        VmAfConfigCloseKey(pRootKey);
+    }
+    if (pConnection)
+    {
+        VmAfConfigCloseConnection(pConnection);
+    }
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}

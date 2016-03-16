@@ -3,10 +3,7 @@ bin_PROGRAMS = certool
 certool_SOURCES = \
     certool.cpp  \
     Handler.cpp  \
-    utility.cpp  \
-    pkcs12.cpp
-
-
+    utility.cpp
 
 certool_CPPFLAGS = \
     -I$(top_srcdir)/include \
@@ -25,6 +22,7 @@ certool_LDADD = \
     $(top_builddir)/client/libvmcaclient.la \
     @VMAFD_LIBS@ \
     @DL_LIBS@  \
+    @BOOST_LIBS@ \
     @PTHREAD_LIBS@ \
     @GSSAPI_LIBS@ \
     @UUID_LIBS@ \
@@ -38,15 +36,13 @@ certool_LDADD = \
     @DCERPC_LIBS@ \
     @UUID_LIBS@ \
     @LDAP_LIBS@ \
-    @LBER_LIBS@ \
-    @BOOST_LIBS@
-
+    @LBER_LIBS@
 
 certool_LDFLAGS = \
-    @VMAFD_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
-    @LW_LDFLAGS@ \
-    @BOOST_LDFLAGS@
+    @VMAFD_LDFLAGS@ \
+    @BOOST_LDFLAGS@ \
+    @LW_LDFLAGS@
 
 
 

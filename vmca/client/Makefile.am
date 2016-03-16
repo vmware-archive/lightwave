@@ -21,6 +21,7 @@ libvmcaclient_la_LIBADD = \
     @top_builddir@/common/libcommon.la \
     @DCERPC_LIBS@ \
     @LWBASE_LIBS@ \
+    @GSSAPI_LIBS@ \
     @PTHREAD_LIBS@ 
 
 libvmcaclient_la_LDFLAGS = \

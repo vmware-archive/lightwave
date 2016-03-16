@@ -21,6 +21,7 @@ class VecsAdapter {
    static final int ERROR_OBJECT_NOT_FOUND = 4312;
 //   static final int ERROR_NO_MORE_ITEMS = 259;
    static final int ERROR_ALREADY_EXISTS = 183;
+   static final int ERROR_INVALID_PARAMETER = 87;
 
 //   static final int VECS_BASE_ERROR = 90000;
    // private static final int VECS_GENERIC_FILE_IO = VECS_BASE_ERROR + 1;
@@ -128,6 +129,27 @@ class VecsAdapter {
    VecsDeleteEntryW(
          PointerRef pStore,
          String alias
+         );
+
+   static native int
+   VecsSetPermissionW(
+         PointerRef pStore,
+         String userName,
+         int accessMask
+         );
+
+   static native int
+   VecsRevokePermissionW(
+         PointerRef pStore,
+         String userName,
+         int accessMask
+         );
+
+   static native int
+   VecsGetPermissionsW(
+         PointerRef pStore,
+         StringRef owner,
+         List<VecsPermissionNative> pStorePermissions
          );
 
    static native int

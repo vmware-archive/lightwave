@@ -18,7 +18,6 @@ libcommon_la_SOURCES = \
     string.c \
     misc.c \
     pkcs_crl.c \
-    vmca_krb.c \
     logging.c
 
 libcommon_la_CPPFLAGS = \

@@ -16,6 +16,14 @@
 
 #include "includes.h"
 
+#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
+static
+DWORD
+VmAfSrvSignalVmdirProvider(
+    VOID
+    );
+#endif
+
 static
 DWORD
 VmAfSrvDirOpenConnection(
@@ -25,21 +33,6 @@ VmAfSrvDirOpenConnection(
     PCWSTR pwszPassword,
     PVMDIR_CONNECTION*ppConnection
     );
-
-static
-DWORD
-VmAfSrvGetSiteNameForDC(
-    PWSTR pwszDCName,
-    PWSTR* ppwszSiteName
-    );
-
-#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
-static
-DWORD
-VmAfSrvSignalVmdirProvider(
-    VOID
-    );
-#endif
 
 static
 DWORD
@@ -106,8 +99,9 @@ cleanup:
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "Failed to create Kerberos configuration. Error(%u)",
-                              dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "Failed to create Kerberos configuration. Error(%u)",
+             dwError);
 
     goto cleanup;
 }
@@ -180,7 +174,9 @@ cleanup:
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s failed. Error(%u)",
+             __FUNCTION__, dwError);
 
     if (ppwszSiteGUID)
     {
@@ -314,7 +310,7 @@ VmAfSrvPromoteVmDir(
                           pszPassword,
                           pszSiteName,
                           pszPartnerHostName,
-                          VMAFD_FIRST_REPL_CYCLE_MODE_COPY_DB);
+                          VMAFD_FIRST_REPL_CYCLE_MODE_BY_OBJECT);
         BAIL_ON_VMAFD_ERROR(dwError);
 
         dwError = VmDirGetDomainName(
@@ -342,6 +338,11 @@ VmAfSrvPromoteVmDir(
                     );
     BAIL_ON_VMAFD_ERROR(dwError);
 
+#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
+    dwError = VmAfSrvSignalVmdirProvider();
+    BAIL_ON_VMAFD_ERROR(dwError);
+#endif
+
     dwError = VmAfSrvGetPNID(&pwszPNID);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -367,6 +368,17 @@ VmAfSrvPromoteVmDir(
             __FUNCTION__);
     }
 
+    dwError = VmAfdInitCertificateThread(&gVmafdGlobals.pCertUpdateThr);
+    if (dwError)
+    {
+        VmAfdLog(
+            VMAFD_DEBUG_ANY,
+            "%s failed to initiate certificate thread. Error(%u)",
+            __FUNCTION__,
+            dwError);
+        dwError = 0;
+    }
+
 #if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
     dwError = VmAfSrvSignalVmdirProvider();
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -389,7 +401,9 @@ cleanup:
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s failed. Error(%u)",
+             __FUNCTION__, dwError);
 
     goto cleanup;
 }
@@ -473,6 +487,12 @@ VmAfSrvDemoteVmDir(
 
     /* TODO: remove KrbConfig entries */
 
+    if (gVmafdGlobals.pCertUpdateThr)
+    {
+        VmAfdShutdownCertificateThread(gVmafdGlobals.pCertUpdateThr);
+        gVmafdGlobals.pCertUpdateThr = NULL;
+    }
+
 cleanup:
 
     VMAFD_SAFE_FREE_STRINGW(pwszDomainName);
@@ -484,7 +504,9 @@ cleanup:
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s failed. Error(%u)",
+             __FUNCTION__, dwError);
 
     goto cleanup;
 }
@@ -579,7 +601,31 @@ VmAfSrvJoinVmDir(
     dwError = VmAfSrvSetSiteName(pwszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvJoinVmDir: joined Vmdir.");
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s: joined Vmdir.",
+             __FUNCTION__);
+
+    dwError = VmAfdInitCertificateThread(&gVmafdGlobals.pCertUpdateThr);
+    if (dwError)
+    {
+        VmAfdLog(
+            VMAFD_DEBUG_ANY,
+            "%s failed to initiate certificate thread. Error(%u)",
+            __FUNCTION__,
+            dwError);
+        dwError = 0;
+    }
+
+    dwError = CdcSrvInitDefaultHAMode(gVmafdGlobals.pCdcContext);
+    if (dwError)
+    {
+        VmAfdLog(
+            VMAFD_DEBUG_ANY,
+            "%s failed to initiate HA. Error(%u)",
+            __FUNCTION__,
+            dwError);
+        dwError = 0;
+    }
 
 cleanup:
 
@@ -596,8 +642,9 @@ cleanup:
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvJoinVmDir: Failed to join Vmdir. Error(%u)",
-                              dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s: Failed to join Vmdir. Error(%u)",
+             __FUNCTION__, dwError);
 
     goto cleanup;
 }
@@ -623,7 +670,6 @@ VmAfSrvJoinVmDir2(
     PSTR pszCanonicalHostname = NULL;
     PSTR pszDCHostname = NULL;
     PSTR pszDCAddress = NULL;
-    PSTR pszDCAddressIPV6 = NULL;
     PWSTR pwszDCHostname = NULL;
     PWSTR pwszSiteName = NULL;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
@@ -721,20 +767,11 @@ VmAfSrvJoinVmDir2(
                       pszOrgUnit);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (VmAfdCheckIfIPV6AddressA(pszDCAddress))
-    {
-        dwError = VmAfdAllocateStringPrintf(
-                        &pszDCAddressIPV6,
-                        "[%s]",
-                        pszDCAddress);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
     dwError = _CreateKrbConfig(
                       pszDefaultRealm,
                       gVmafdGlobals.pszKrb5Config,
                       gVmafdGlobals.pszKrb5Keytab,
-                      pszDCAddressIPV6 ? pszDCAddressIPV6 : pszDCAddress,
+                      pszDCHostname,
                       NULL);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -761,24 +798,30 @@ VmAfSrvJoinVmDir2(
                       pszMachineName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(PLATFORM_VMWARE_ESX)
     if (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_ENABLE_NSSWITCH))
     {
-        VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvJoinVmDir2: configuring NSSWITCH.");
+        VmAfdLog(VMAFD_DEBUG_ANY,
+                 "%s: configuring NSSWITCH.",
+                 __FUNCTION__);
 
         dwError = DJConfigureNSSwitch();
         BAIL_ON_VMAFD_ERROR(dwError);
     }
     if (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_ENABLE_PAM))
     {
-        VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvJoinVmDir2: configuring PAM.");
+        VmAfdLog(VMAFD_DEBUG_ANY,
+                 "%s: configuring PAM.",
+                 __FUNCTION__);
 
         dwError = DJConfigurePAM();
         BAIL_ON_VMAFD_ERROR(dwError);
     }
     if (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_ENABLE_SSH))
     {
-        VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvJoinVmDir2: configuring SSH.");
+        VmAfdLog(VMAFD_DEBUG_ANY,
+                 "%s: configuring SSH.",
+                 __FUNCTION__);
 
         dwError = DJConfigureSSH();
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -793,7 +836,20 @@ VmAfSrvJoinVmDir2(
     BAIL_ON_VMAFD_ERROR(dwError);
 #endif
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvJoinVmDir2: joined Vmdir.");
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s: joined Vmdir.",
+             __FUNCTION__);
+
+    dwError = VmAfdInitCertificateThread(&gVmafdGlobals.pCertUpdateThr);
+    if (dwError)
+    {
+        VmAfdLog(
+            VMAFD_DEBUG_ANY,
+            "%s failed to initiate certificate thread. Error(%u)",
+            __FUNCTION__,
+            dwError);
+        dwError = 0;
+    }
 
 cleanup:
 
@@ -809,14 +865,14 @@ cleanup:
     VMAFD_SAFE_FREE_MEMORY(pszDCAddress);
     VMAFD_SAFE_FREE_MEMORY(pszDCHostname);
     VMAFD_SAFE_FREE_MEMORY(pwszDCHostname);
-    VMAFD_SAFE_FREE_MEMORY(pszDCAddressIPV6);
 
     return dwError;
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvJoinVmDir2: Failed to join Vmdir. Error(%u)",
-                              dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s: Failed to join Vmdir. Error(%u)",
+             __FUNCTION__, dwError);
 
     if (dwError == VMDIR_ERROR_SERVER_DOWN)
     {
@@ -885,13 +941,17 @@ VmAfSrvLeaveVmDir(
      * TODO: remove krb5.conf entries, machine account, etc.
      */
 
-#ifndef _WIN32
-    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvLeaveVmDir: unconfiguring NSSWITCH.");
+#if !defined(_WIN32) && !defined(PLATFORM_VMWARE_ESX)
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s: unconfiguring NSSWITCH.",
+             __FUNCTION__);
 
     dwError = DJUnconfigureNSSwitch();
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfSrvLeaveVmDir: unconfiguring PAM.");
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s: unconfiguring PAM.",
+             __FUNCTION__);
 
     dwError = DJUnconfigurePAM();
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -899,6 +959,17 @@ VmAfSrvLeaveVmDir(
     dwError = DJUnconfigureSSH();
     BAIL_ON_VMAFD_ERROR(dwError);
 #endif
+
+    if (gVmafdGlobals.pCertUpdateThr)
+    {
+        VmAfdShutdownCertificateThread(gVmafdGlobals.pCertUpdateThr);
+        gVmafdGlobals.pCertUpdateThr = NULL;
+    }
+
+    if (gVmafdGlobals.pCdcContext)
+    {
+        CdcSrvShutdownDefaultHAMode(gVmafdGlobals.pCdcContext);
+    }
 
 cleanup:
 
@@ -911,8 +982,9 @@ cleanup:
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "Failed to leave Vmdir. Error(%u)",
-                              dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s: Failed to leave Vmdir. Error(%u)",
+             __FUNCTION__, dwError);
 
     goto cleanup;
 }
@@ -935,7 +1007,9 @@ cleanup:
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s failed. Error(%u)",
+             __FUNCTION__, dwError);
 
     goto cleanup;
 }
@@ -1033,7 +1107,9 @@ cleanup:
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s failed. Error(%u)",
+             __FUNCTION__, dwError);
 
     if (ppwszGUID)
     {
@@ -1135,7 +1211,9 @@ cleanup:
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s failed. Error(%u)",
+             __FUNCTION__, dwError);
 
     goto cleanup;
 }
@@ -1206,6 +1284,11 @@ cleanup:
     return dwError;
 
 error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s failed. Error(%u)",
+             __FUNCTION__, dwError);
+
     if (ppszMemberships != NULL && dwMemberships > 0)
     {
         VmDirFreeMemberships(ppszMemberships, dwMemberships);
@@ -1252,111 +1335,6 @@ VmAfSrvDirIsMember(
     return bRetVal;
 }
 
-DWORD
-VmAfSrvRefreshSiteName(
-    VOID
-    )
-{
-    DWORD dwError = 0;
-    PWSTR pwszDCName = NULL;
-    PWSTR pwszSiteName = NULL;
-
-    dwError = VmAfSrvGetDCName(&pwszDCName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfSrvGetSiteNameForDC(
-                               pwszDCName,
-                               &pwszSiteName
-                               );
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfSrvSetSiteName(pwszSiteName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-cleanup:
-
-    VMAFD_SAFE_FREE_MEMORY(pwszDCName);
-    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
-
-    return dwError;
-error:
-
-    goto cleanup;
-}
-
-static
-DWORD
-VmAfSrvDirOpenConnection(
-    PCWSTR pwszDCName,
-    PCWSTR pwszDomain,
-    PCWSTR pwszAccount,
-    PCWSTR pwszPassword,
-    PVMDIR_CONNECTION*ppConnection
-    )
-{
-    DWORD dwError = 0;
-    PSTR  pszDCName = NULL;
-    PSTR  pszDomain = NULL;
-    PSTR  pszAccount = NULL;
-    PSTR  pszPassword = NULL;
-    PSTR  pszURI = NULL;
-    PVMDIR_CONNECTION pConnection = NULL;
-
-    dwError = VmAfdAllocateStringAFromW(pwszDCName, &pszDCName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfdAllocateStringAFromW(pwszDomain, &pszDomain);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfdAllocateStringAFromW(pwszAccount, &pszAccount);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfdAllocateStringAFromW(pwszPassword, &pszPassword);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfdAllocateStringPrintf(
-                &pszURI,
-                "ldap://%s:%d",
-                pszDCName,
-                LDAP_PORT);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmDirConnectionOpen(
-                pszURI,
-                pszDomain,
-                pszAccount,
-                pszPassword,
-                &pConnection);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    *ppConnection = pConnection;
-
-cleanup:
-
-    VMAFD_SAFE_FREE_MEMORY(pszURI);
-    VMAFD_SAFE_FREE_MEMORY(pszDCName);
-    VMAFD_SAFE_FREE_MEMORY(pszDomain);
-    VMAFD_SAFE_FREE_MEMORY(pszAccount);
-    VMAFD_SAFE_FREE_MEMORY(pszPassword);
-
-    return dwError;
-
-error:
-
-    if (ppConnection)
-    {
-        *ppConnection = NULL;
-    }
-
-    if (pConnection)
-    {
-        VmDirConnectionClose(pConnection);
-    }
-
-    goto cleanup;
-}
-
-static
 DWORD
 VmAfSrvGetSiteNameForDC(
     PWSTR pwszDCName,
@@ -1439,6 +1417,120 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmAfSrvRefreshSiteName(
+    VOID
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszDCName = NULL;
+    PWSTR pwszSiteName = NULL;
+
+    dwError = VmAfSrvGetDCName(&pwszDCName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvGetSiteNameForDC(
+                               pwszDCName,
+                               &pwszSiteName
+                               );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvSetSiteName(pwszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszDCName);
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s failed. Error(%u)",
+             __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmAfSrvDirOpenConnection(
+    PCWSTR pwszDCName,
+    PCWSTR pwszDomain,
+    PCWSTR pwszAccount,
+    PCWSTR pwszPassword,
+    PVMDIR_CONNECTION*ppConnection
+    )
+{
+    DWORD dwError = 0;
+    PSTR  pszDCName = NULL;
+    PSTR  pszDomain = NULL;
+    PSTR  pszAccount = NULL;
+    PSTR  pszPassword = NULL;
+    PSTR  pszURI = NULL;
+    PVMDIR_CONNECTION pConnection = NULL;
+
+    dwError = VmAfdAllocateStringAFromW(pwszDCName, &pszDCName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszDomain, &pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszAccount, &pszAccount);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszPassword, &pszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringPrintf(
+                &pszURI,
+                "ldap://%s:%d",
+                pszDCName,
+                LDAP_PORT);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmDirConnectionOpen(
+                pszURI,
+                pszDomain,
+                pszAccount,
+                pszPassword,
+                &pConnection);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppConnection = pConnection;
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pszURI);
+    VMAFD_SAFE_FREE_MEMORY(pszDCName);
+    VMAFD_SAFE_FREE_MEMORY(pszDomain);
+    VMAFD_SAFE_FREE_MEMORY(pszAccount);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword);
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s failed. Error(%u)",
+             __FUNCTION__, dwError);
+
+    if (ppConnection)
+    {
+        *ppConnection = NULL;
+    }
+
+    if (pConnection)
+    {
+        VmDirConnectionClose(pConnection);
+    }
+
+    goto cleanup;
+}
+
+
 static
 DWORD
 VmAfSrvSetDNSRecords(
@@ -1451,12 +1543,15 @@ VmAfSrvSetDNSRecords(
     DWORD dwError = 0;
     DWORD dwFlags = 0;
     PVMDNS_SERVER_CONTEXT pServerContext = NULL;
-    VMDNS_RECORD record = {0};
     VMDNS_IP4_ADDRESS* pV4Addresses = NULL;
     DWORD dwNumV4Address = 0;
     VMDNS_IP6_ADDRESS* pV6Addresses = NULL;
     DWORD dwNumV6Address = 0;
     size_t i = 0;
+    PVMDNS_RECORD_ARRAY pRecordArray = NULL;
+    PSTR pszZone = (PSTR)pszDomain;
+    PSTR pszName = (PSTR)pszMachineName;
+    VMDNS_RECORD record = {0};
 
     dwError = VmDnsOpenServerA(
                     pszDCAddress,
@@ -1466,33 +1561,91 @@ VmAfSrvSetDNSRecords(
                     dwFlags,
                     NULL,
                     &pServerContext);
+    if (dwError)
+    {
+        VmAfdLog(VMAFD_DEBUG_ANY,
+                 "%s: failed to connect to DNS server %s (%u)",
+                 __FUNCTION__, pszDCAddress, dwError);
+    }
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvGetIPAddressesWrap(
-                          &pV4Addresses,
-                          &dwNumV4Address,
-                          &pV6Addresses,
-                          &dwNumV6Address);
+                    &pV4Addresses,
+                    &dwNumV4Address,
+                    &pV6Addresses,
+                    &dwNumV6Address);
+    if (dwError)
+    {
+        VmAfdLog(VMAFD_DEBUG_ANY,
+                 "%s: failed to get interface addresses (%u)",
+                 __FUNCTION__, dwError);
+    }
     BAIL_ON_VMAFD_ERROR(dwError);
 
     record.iClass = VMDNS_CLASS_IN;
-    record.pszName = (PSTR)pszMachineName;
+    record.pszName = pszName;
     record.dwType = VMDNS_RR_TYPE_A;
     record.dwTtl = 3600;
 
+    dwError = VmDnsQueryRecordsA(
+                    pServerContext,
+                    pszZone,
+                    pszName,
+                    VMDNS_RR_TYPE_A,
+                    0,
+                    &pRecordArray);
+    if (dwError != 0 && dwError != ERROR_NOT_FOUND)
+    {
+        VmAfdLog(VMAFD_DEBUG_ANY,
+                 "%s: failed to query DNS records (%u)",
+                 __FUNCTION__, dwError);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (dwError == 0)
+    {
+        record.Data.A.IpAddress = pV4Addresses[0];
+
+        /* delete existing A records for this hostname */
+        for (i = 0; i < pRecordArray->dwCount; i++)
+        {
+            dwError = VmDnsDeleteRecordA(
+                            pServerContext,
+                            pszZone,
+                            &pRecordArray->Records[i]);
+            if (dwError)
+            {
+                VmAfdLog(VMAFD_DEBUG_ANY,
+                         "%s: failed to delete DNS record for %s (%u)",
+                         __FUNCTION__, pRecordArray->Records[i].pszName, dwError);
+            }
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+    }
+
+    /* add A records for this hostname */
     for (i = 0; i < dwNumV4Address; i++)
     {
         record.Data.A.IpAddress = pV4Addresses[i];
 
         dwError = VmDnsAddRecordA(
                         pServerContext,
-                        (PSTR)pszDomain,
+                        pszZone,
                         &record);
-        BAIL_ON_VMAFD_ERROR(dwError);
+        if (dwError)
+        {
+            VmAfdLog(VMAFD_DEBUG_ANY,
+                     "%s: failed to add DNS A record for %s (%u)",
+                     __FUNCTION__, record.pszName, dwError);
+        }
     }
 
 cleanup:
 
+    if (pRecordArray)
+    {
+        VmDnsFreeRecordArray(pRecordArray);
+    }
     VMAFD_SAFE_FREE_MEMORY(pV4Addresses);
     VMAFD_SAFE_FREE_MEMORY(pV6Addresses);
 
@@ -1504,6 +1657,9 @@ cleanup:
     return dwError;
 
 error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)",
+             __FUNCTION__, dwError);
 
     goto cleanup;
 }
@@ -1536,6 +1692,10 @@ cleanup:
     return dwError;
 
 error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)",
+             __FUNCTION__, dwError);
+
     goto cleanup;
 }
 #endif

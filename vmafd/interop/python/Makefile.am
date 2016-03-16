@@ -21,8 +21,8 @@ vmafd_la_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 vmafd_la_LIBADD = \
+    @BOOST_PYTHON_LDFLAGS@ \
     $(top_builddir)/client/libvmafdclient.la \
-    $(GOBUILD_BOOST1470_LIN64_GCC412_ROOT)/lib/libboost_python-gcc41-mt-1_47.a \
     @DL_LIBS@  \
     @PTHREAD_LIBS@ \
     @GSSAPI_LIBS@ \

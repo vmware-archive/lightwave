@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-# Copyright 2015 VMware, Inc.  All rights reserved. --
+#!/opt/vmware/bin/python
+# Copyright 2015 VMware, Inc.  All rights reserved.
 
 """
 Utility functions to support certificate-manager
@@ -62,6 +62,11 @@ def initialize_ops():
     if isLinux:
         log_folder = 'vmcad'
     logDir = os.path.join(get_cis_log_dir(), log_folder)
+
+    # to be removed
+    if not os.path.exists(logDir) or not os.path.isdir(logDir):
+        logDir = get_cis_log_dir()
+
     setupLogging('certificate-manager', logMechanism='file', logDir=logDir)
     logfile = os.path.join(logDir, 'certificate-manager.log')
 
@@ -106,13 +111,13 @@ def get_rollback_cert_dir():
 
 def get_src_config_file_loc():
     if isLinux:
-        return "/usr/lib/vmware-vmca/share/config/certool.cfg"
+        return "/opt/vmware/share/config/certool.cfg"
     else:
         return get_env_var('VMWARE_CIS_HOME') + os.path.sep + 'vmcad' + os.path.sep + 'certool.cfg'
 
 
-def get_dest_config_file_loc():
-    directory = os.path.join(get_cis_tmp_dir(), 'certool.cfg')
+def get_dest_config_file_loc(file):
+    directory = os.path.join(get_cis_tmp_dir(), file + Constants.CFG_EXT)
     return directory
 
 
@@ -144,33 +149,44 @@ def read_cfg_file(filename):
                 cfgValues.append((line.split('=')[1]).replace('\t', '').strip())
 
 
-def write_cfg_file():
-    file = open(get_dest_config_file_loc(), "wb")
-    logging.info('Certool.cfg file contents.')
+def write_cfg_file(cfg_file):
+    file = open(get_dest_config_file_loc(cfg_file), "wb")
+    logging.info(cfg_file + '.cfg file contents.')
     for item in resultCfg:
         logging.info(item)
         file.write(item + "\n")
     file.close()
+    del resultCfg[:]
 
-
-def prepare_cfg_file():
+def prepare_cfg_file(cfg_file):
     """
     Method to prepare Certool.cfg file
     """
     str = 'Default'
     #If config file exists then reconfigure else create new using default certool.cfg file
-    if check_file_exists(get_dest_config_file_loc()):
-        if get_user_confirmation(Constants.RECONFIGURE_CFG_MSG):
-            filename = get_dest_config_file_loc()
+    if check_file_exists(get_dest_config_file_loc(cfg_file)):
+        if get_user_confirmation(cfg_file + '.cfg file exists, Do you wish to reconfigure'):
+            filename = get_dest_config_file_loc(cfg_file)
             str = 'Previous'
         else:
             return
     else:
-        log_info_msg(Constants.CONFIGURE_CFG_MSG)
+        log_info_msg('Please configure '+ cfg_file + '.cfg with proper values before proceeding to next step.')
         filename = get_src_config_file_loc()
+    del cfgKeys[:]
     read_cfg_file(filename)
     log_info_msg('Press Enter key to skip optional parameters or use {0} value.'.format(str))
     index = 0
+    if cfg_file == "root":
+        if '#IPAddress' in cfgKeys:
+            cfgKeys.remove('#IPAddress')
+        if 'IPAddress' in cfgKeys:
+            cfgKeys.remove('IPAddress')
+        if 'Email' in cfgKeys:
+            cfgKeys.remove('Email')
+        if 'Hostname' in cfgKeys:
+            cfgKeys.remove('Hostname')
+
     for item in cfgKeys:
         #Optional param will be commented, uncomment while reconfiguring
         if '#' in item:
@@ -209,7 +225,7 @@ def prepare_cfg_file():
                 var = raw_input("\nEnter proper value for '{0}' [{1}] : ".format(item, value))
         index += 1
         resultCfg.append(item + " = " + var)
-    write_cfg_file()
+    write_cfg_file(cfg_file)
 
 
 def check_file_exists(filename):
@@ -329,6 +345,7 @@ class Constants():
     TERMINATE_OP = '\nTerminating operation.'
     PASSWORD_ATTEMPTS_ERROR = 'Reached max number of attempts, terminating operation.'
     BKP_CERT_EXT = '_bkp.crt'
+    BKP_MACHINE_CERT = 'old_machine_ssl.crt'
     BKP_KEY_EXT = '_bkp.priv'
     SSL_ROLLBACK_MSG = 'Performing rollback of Machine SSL Cert...'
     SOL_ROLLBACK_MSG = 'Performing rollback of Solution User Certs...'
@@ -337,12 +354,13 @@ class Constants():
     CERT_EXT = '.crt'
     KEY_EXT = '.priv'
     PUB_EXT = '.pub'
+    CFG_EXT = '.cfg'
     RECONFIGURE_CFG_MSG = 'Certool.cfg file exists, Do you wish to reconfigure'
     CONFIGURE_CFG_MSG = 'Please configure certool.cfg file with proper values before proceeding to next step.'
     ROOT_PRIVATE_KEY_OUTPUT_FILENAME = 'root_signing_cert.key'
     ROOT_CSR_FILE_OUTPUT_FILENAME = 'root_signing_cert.csr'
-    MACHINE_SSL_PRIVATE_KEY_OUTPUT_FILENAME = 'machine_ssl.key'
-    MACHINE_SSL_CSR_OUTPUT_FILENAME = 'machine_ssl.csr'
+    PRIVATE_KEY_OUTPUT_FILENAME = 'vmca_issued_key.key'
+    CSR_OUTPUT_FILENAME = 'vmca_issued_csr.csr'
 
 
     #service constants

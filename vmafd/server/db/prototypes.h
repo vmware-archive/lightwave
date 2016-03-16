@@ -165,6 +165,28 @@ VecsCheckifTableExists(
     const char *psztableName,
     PDWORD bExist);
 
+/* dbcontext.c */
+DWORD
+VecsDbCreateContext(
+    PVECS_DB_CONTEXT* ppDbContext,
+    VMAFD_DB_MODE     vmafdOpenMode
+    );
+
+DWORD
+VecsDbCtxBeginTransaction(
+    PVECS_DB_CONTEXT	pDbContext
+    );
+
+DWORD
+VecsDbCtxCommitTransaction(
+    PVECS_DB_CONTEXT	pDbContext
+    );
+
+DWORD
+VecsDbCtxRollbackTransaction(
+    PVECS_DB_CONTEXT	pDbContext
+    );
+
 /* libmain.c */
 
 /* regdbutil.c */
@@ -194,6 +216,13 @@ VmAfdRegSetInteger(
     PCSTR    pszValueName,   /* IN     */
     DWORD    dwValue         /* IN     */
     );
+
+DWORD
+VmAfdRegDeleteValue(
+    PCSTR    pszSubKey,      /* IN     */
+    PCSTR    pszValueName   /* IN     */
+    );
+
 
 #ifdef __cplusplus
 }

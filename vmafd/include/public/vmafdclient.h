@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -38,6 +38,22 @@ VmAfdOpenServerW(
     PCWSTR pwszServerName,
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,
+    PVMAFD_SERVER *ppServer);
+
+DWORD
+VmAfdOpenServerWithTimeoutA(
+    PCSTR pszServerName,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    DWORD dwTimeout,
+    PVMAFD_SERVER *ppServer);
+
+DWORD
+VmAfdOpenServerWithTimeoutW(
+    PCWSTR pwszServerName,
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword,
+    DWORD  dwTimeout,
     PVMAFD_SERVER *ppServer);
 
 VOID
@@ -267,6 +283,18 @@ DWORD
 VmAfdGetSiteNameW(
     PCWSTR pszServerName,  /* IN     OPTIONAL */
     PWSTR* ppszSiteName    /*    OUT          */
+    );
+
+DWORD
+VmAfdGetSiteNameHA(
+    PVMAFD_SERVER pServer,
+    PSTR*  ppszSiteName    /*    OUT          */
+    );
+
+DWORD
+VmAfdGetSiteNameHW(
+    PVMAFD_SERVER pServer,
+    PWSTR* ppwszSiteName   /*    OUT          */
     );
 
 DWORD
@@ -594,6 +622,47 @@ DWORD
 VmAfdConfigureDNSW(
     PCWSTR pwszUserName,
     PCWSTR pwszPassword
+    );
+
+DWORD
+VmAfdSuperLogEnable(
+    PVMAFD_SERVER       pServer
+    );
+
+DWORD
+VmAfdSuperLogGetSize(
+    PVMAFD_SERVER       pServer,
+    PDWORD    pdwSize
+    );
+
+DWORD
+VmAfdSuperLogGetEntries(
+    PVMAFD_SERVER       pServer,
+    UINT32 **ppEnumerationCookie,
+    DWORD     dwCount, // 0 ==> all
+    PVMAFD_SUPERLOG_ENTRY_ARRAY *ppEntries
+    );
+
+DWORD
+VmAfdIsSuperLogEnabled(
+    PVMAFD_SERVER       pServer,
+    PBOOLEAN pbEnabled
+    );
+
+DWORD
+VmAfdSuperLogSetSize(
+    PVMAFD_SERVER       pServer,
+    DWORD    dwSize
+    );
+
+DWORD
+VmAfdClearSuperLog(
+    PVMAFD_SERVER       pServer
+    );
+
+DWORD
+VmAfdSuperLogDisable(
+    PVMAFD_SERVER    pServer
     );
 
 #ifdef UNICODE

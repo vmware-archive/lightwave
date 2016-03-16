@@ -211,8 +211,8 @@ error:
 
 DWORD
 VmAfSrvUnconfigureDNSA(
-    PCSTR   pszDomainName,
     PCSTR   pszServerName,
+    PCSTR   pszDomainName,
     PCSTR   pszUserName,
     PCSTR   pszPassword
     )
@@ -449,7 +449,8 @@ VmAfSrvGetIPAddresses(
                 continue;
             }
 #endif
-            if (IS_IPV6_LINKLOCAL(pIp6Addr->sin6_addr.s6_addr))
+            if (IS_IPV6_LINKLOCAL(pIp6Addr->sin6_addr.s6_addr) ||
+                IS_IPV6_ULA(pIp6Addr->sin6_addr.s6_addr))
             {
                 continue;
             }

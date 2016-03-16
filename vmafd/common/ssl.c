@@ -497,6 +497,7 @@ VecsPEMFiletoX509Crl(
 
 cleanup:
 
+    VMAFD_SAFE_FREE_MEMORY(pszFileContent);
     return dwError;
 
 error:
@@ -521,6 +522,12 @@ VecsHashToAlias(
     BUF_MEM *bPtr = NULL;
     char buff[8] = { 0 };
     PSTR pszAlias = NULL;
+
+    if (!ppszAlias)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     b64Bio = BIO_new(BIO_f_base64());
     if ( b64Bio == NULL)
@@ -580,7 +587,10 @@ cleanup:
 
 error:
 
-    *ppszAlias = NULL;
+    if (ppszAlias)
+    {
+      *ppszAlias = NULL;
+    }
 
     goto cleanup;
 }

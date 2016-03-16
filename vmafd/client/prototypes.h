@@ -73,6 +73,23 @@ VmAfdReleaseServer(
     PVMAFD_SERVER pServer
     );
 
+DWORD
+VmAfdAllocateFromRpcHeartbeatStatus(
+   PVMAFD_HB_STATUS_W   pHeartbeatStatusSrc,
+   PVMAFD_HB_STATUS_W *ppHeartbeatStatusDest
+   );
+
+VOID
+VmAfdRpcClientFreeHeartbeatStatus(
+   PVMAFD_HB_STATUS_W pHeartbeatStatus
+   );
+
+DWORD
+VmAfdHeartbeatStatusAFromW(
+    PVMAFD_HB_STATUS_W  pwHeartbeatStatus,
+    PVMAFD_HB_STATUS_A* ppHeartbeatStatus
+    );
+
 /* rpc.c */
 
 DWORD
@@ -373,6 +390,14 @@ DWORD
 CdcLocalEnumDCEntries(
     PWSTR **ppszDCEntries,
     PDWORD pdwCount
+    );
+
+DWORD
+CdcLocalGetDCStatusInfo(
+    PCWSTR pwszDCName,
+    PCWSTR pwszDomainName,
+    PCDC_DC_STATUS_INFO_W *ppDCStatusInfo,
+    PVMAFD_HB_STATUS_W    *ppHbStatus
     );
 
 DWORD

@@ -197,5 +197,5 @@ ShowUsage(
       "       [-n]\n"
       "Note : Specify -d for first Ldu\n"
       "       Specify -H for subsequent Ldus\n"
-      "       Specify -n to initialize local DNS of an already promoted DC.");
+      "       Specify -n to initialize local DNS of an already promoted DC.\n");
 }

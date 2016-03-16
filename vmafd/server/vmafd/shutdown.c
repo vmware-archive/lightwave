@@ -32,7 +32,7 @@ VmAfdVmDirClientShutdown(
  * Server shutdown
  */
 VOID
-VmAfdShutdown(
+VmAfdServerShutdown(
     VOID)
 {
     if (gVmafdGlobals.bEnableRPC)
@@ -57,6 +57,13 @@ VmAfdShutdown(
         VmAfdShutdownPassRefreshThread(
             gVmafdGlobals.pPassRefreshThr);
         gVmafdGlobals.pPassRefreshThr = NULL;
+    }
+
+    if (gVmafdGlobals.pCdcContext)
+    {
+        CdcShutdownCdcService(
+            gVmafdGlobals.pCdcContext);
+        gVmafdGlobals.pCdcContext= NULL;
     }
 
     VmAfCfgShutdown();
