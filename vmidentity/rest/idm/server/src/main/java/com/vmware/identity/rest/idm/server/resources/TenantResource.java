@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -31,6 +30,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
@@ -57,6 +57,7 @@ import com.vmware.identity.rest.core.server.exception.DTOMapperException;
 import com.vmware.identity.rest.core.server.exception.client.BadRequestException;
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
+import com.vmware.identity.rest.core.server.resources.BaseResource;
 import com.vmware.identity.rest.core.server.util.PrincipalUtil;
 import com.vmware.identity.rest.core.server.util.Validate;
 import com.vmware.identity.rest.idm.data.AuthenticationPolicyDTO;
@@ -97,7 +98,7 @@ public class TenantResource extends BaseResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(TenantResource.class);
 
-    public TenantResource(@Context HttpServletRequest request, @Context SecurityContext securityContext) {
+    public TenantResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(request, securityContext);
     }
 
@@ -112,7 +113,7 @@ public class TenantResource extends BaseResource {
      * @throws {@link BadRequestException} On bad requests (invalid input)
      * @throws {@link InternalServerErrorException} Otherwise
      */
-    @POST @Path("/")
+    @POST
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.ADMINISTRATOR)
     public TenantDTO create(TenantDTO tenantDTO) {
@@ -472,6 +473,16 @@ public class TenantResource extends BaseResource {
     @Path(PathParameters.TENANT_NAME_VAR + "/oidcclient")
     public OIDCClientResource getOIDCClientSubResource(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
         return new OIDCClientResource(tenantName, getRequest(), getSecurityContext());
+    }
+
+    @Path(PathParameters.TENANT_NAME_VAR + "/resourceserver")
+    public ResourceServerResource getResourceServerSubResource(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
+        return new ResourceServerResource(tenantName, getRequest(), getSecurityContext());
+    }
+
+    @Path(PathParameters.TENANT_NAME_VAR + "/diagnostics")
+    public DiagnosticsResource getDiagnosticsSubResource(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
+        return new DiagnosticsResource(tenantName, getRequest(), getSecurityContext());
     }
 
     private void validateConfigType(String configName) {

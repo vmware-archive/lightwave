@@ -16,16 +16,17 @@
 
 package com.vmware.identity.idm.server.performance;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
-import com.vmware.identity.idm.server.config.IdmServerConfig;
-import com.vmware.identity.idm.server.provider.ldap.LdapWithAdMappingsProvider;
+import com.vmware.identity.performanceSupport.IIdmAuthStat.ActivityKind;
+import com.vmware.identity.performanceSupport.IIdmAuthStat.EventLevel;
 import com.vmware.identity.performanceSupport.ILdapQueryStat;
 import com.vmware.identity.performanceSupport.IdmAuthStat;
-import com.vmware.identity.performanceSupport.IIdmAuthStat.ActivityKind;
 
 public class IdmAuthStatRecorder implements IIdmAuthStatRecorder {
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(IdmAuthStatRecorder.class);
@@ -35,21 +36,27 @@ public class IdmAuthStatRecorder implements IIdmAuthStatRecorder {
     private String _providerName;
     private int _providerFlag;
     private ActivityKind _opType;
+    private EventLevel _eventLevel;
     private String _upn;
     private long _startTime;
+    private String _correlationId;
     private List<ILdapQueryStat> _ldapQueries;
+    private Map<String, String> _ext;
 
     public IdmAuthStatRecorder(String tenantName, String providerType,
-            String providerName, int providerFlag, ActivityKind opType,
-            String upn, boolean summarizeLdapQueries) {
+            String providerName, int providerFlag, ActivityKind opType, EventLevel eventLevel,
+            String upn, boolean summarizeLdapQueries, String correlationId) {
+        this._correlationId = correlationId;
         this._summarizeLdapQueries = summarizeLdapQueries;
         this._tenantName = tenantName;
         this._providerType = providerType;
         this._providerName = providerName;
         this._providerFlag = providerFlag;
         this._opType = opType;
+        this._eventLevel = eventLevel;
         this._upn = upn;
         this._ldapQueries = new LinkedList<ILdapQueryStat>();
+        this._ext = new HashMap<String, String>();
     }
 
     @Override
@@ -71,13 +78,21 @@ public class IdmAuthStatRecorder implements IIdmAuthStatRecorder {
         }
     }
 
+    @java.lang.Override
+    public void add(Map<String, String> ext) {
+        if (ext != null) {
+            this._ext = ext;
+        }
+    }
+
     @Override
     public void end() {
         try {
             IdmAuthStat authStat = new IdmAuthStat(this._providerType,
                     this._providerName, this._providerFlag, this._opType,
-                    this._upn, this._startTime, System.currentTimeMillis()
-                            - this._startTime, this._ldapQueries);
+                    this._eventLevel, this._upn, this._startTime,
+                    System.currentTimeMillis() - this._startTime,
+                    this._correlationId, this._ldapQueries, this._ext);
 
             PerformanceMonitor.getInstance().getCache(this._tenantName)
                     .add(authStat);

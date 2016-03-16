@@ -61,5 +61,5 @@ public interface IIdmClientLibrary {
     UserInfo getUserInfo(AuthenticationContext context);
 
     boolean
-    LdapSaslBind(Pointer pLdapConnection);
+    LdapSaslBind(Pointer pLdapConnection, String userName, String domainName, String password);
 }

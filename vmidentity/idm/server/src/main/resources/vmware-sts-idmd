@@ -32,7 +32,7 @@ CLOUDVM_RAM_SIZE=/usr/sbin/cloudvm-ram-size
 
 PREFIX=/opt/vmware
 LIBDIR=$PREFIX/lib64
-CLASSPATH=$LIBDIR/commons-lang-2.5.jar:$LIBDIR/commons-logging-1.1.1.jar:$LIBDIR/log4j-api-2.2.jar:$LIBDIR/log4j-core-2.2.jar:$LIBDIR/jna.jar:$LIBDIR/commons-daemon-1.0.8.jar:$LIBDIR/bcpkix-jdk15on-147.jar:$LIBDIR/bcprov-jdk15on-147.jar:$LIBDIR/vmware-identity-platform.jar:$LIBDIR/vmware-identity-idm-interface.jar:$LIBDIR/vmware-identity-idm-server.jar:$LIBDIR/vmware-identity-diagnostics.jar:$LIBDIR/bcprov-jdk16-145.jar:$LIBDIR/authentication-framework.jar:$LIBDIR/httpclient-4.3.3.jar:$LIBDIR
+CLASSPATH=$LIBDIR/commons-lang-2.5.jar:$LIBDIR/commons-logging-1.1.1.jar:$LIBDIR/log4j-api-2.2.jar:$LIBDIR/log4j-core-2.2.jar:$LIBDIR/log4j-1.2-api-2.0.2.jar:$LIBDIR/jna.jar:$LIBDIR/commons-daemon-1.0.8.jar:$LIBDIR/bcpkix-jdk15on-147.jar:$LIBDIR/bcprov-jdk15on-147.jar:$LIBDIR/vmware-identity-platform.jar:$LIBDIR/vmware-identity-idm-interface.jar:$LIBDIR/vmware-identity-idm-server.jar:$LIBDIR/vmware-identity-diagnostics.jar:$LIBDIR/bcprov-jdk16-145.jar:$LIBDIR/authentication-framework.jar:$LIBDIR/afd-heartbeat-service.jar:$LIBDIR/httpclient-4.3.3.jar:$LIBDIR/authapi-8.5.jar:$LIBDIR/cryptoj-6.1.jar:$LIBDIR/log4j-1.2.12rsa-1.jar:$LIBDIR/xmlsec-1.5.5.jar:$LIBDIR
 DAEMON_CLASS=com.vmware.identity.idm.server.IdmServer
 PIDFILE=/var/run/vmware-sts-idmd.pid
 SERVICE_NAME=vmware-sts-idmd
@@ -62,7 +62,11 @@ rc_exit()
 
 STATUS=0
 PLATFORM=""
-if [ -f /etc/init.d/functions ]; then
+if [ -f /etc/photon-release ]; then
+    . /etc/rc.status
+    rc_reset
+    PLATFORM="PHOTON"
+elif [ -f /etc/init.d/functions ]; then
     . /etc/init.d/functions
     PLATFORM="REDHAT"
 elif [ -f /etc/rc.status ]; then
@@ -75,7 +79,7 @@ fi
 
 check_status()
 {
-   if [ "$PLATFORM" = 'SUSE' ]; then
+   if [ "$PLATFORM" = 'SUSE' -o "$PLATFORM" = "PHOTON" ]; then
       checkproc -p $PIDFILE $JSVC_BIN
    else
       status -p "$PIDFILE" -l $JSVC $JSVC_BIN
@@ -88,17 +92,17 @@ case "$1" in
 
         DEBUG_OPTS=
         if [ $# -gt 1 ] && [ "$2" = "debug" ]; then
-           DEBUG_OPTS="-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
+           DEBUG_OPTS="-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n -Dvmware.idm.allow.remote=true"
         fi
 
-        JVM_MEM_ARGS=`$CLOUDVM_RAM_SIZE -J $SERVICE_NAME`
+        JVM_ARGS=`$CLOUDVM_RAM_SIZE -J $SERVICE_NAME`
 
-        if [[ "${JVM_MEM_ARGS}" != *-Xmx* ]]; then
-            JVM_MEM_ARGS="$JVM_MEM_ARGS -Xmx$DEFAULT_MAX_RAM"
+        if [[ "${JVM_ARGS}" != *-Xmx* ]]; then
+            JVM_ARGS="$JVM_ARGS -Xmx$DEFAULT_MAX_RAM"
         fi
 
-        if [[ "${JVM_MEM_ARGS}" != *-XX:MaxPermSize* ]]; then
-            JVM_MEM_ARGS="$JVM_MEM_ARGS -XX:MaxPermSize=$DEFAULT_MAX_PERM"
+        if [[ "${JVM_ARGS}" != *-XX:CompressedClassSpaceSize* ]]; then
+            JVM_ARGS="$JVM_ARGS -XX:CompressedClassSpaceSize=$DEFAULT_MAX_PERM"
         fi
 
         export LC_ALL=en_US.UTF-8
@@ -108,7 +112,7 @@ case "$1" in
 
         $JSVC_BIN -procname $SERVICE_NAME \
                   -server \
-                   $JVM_MEM_ARGS \
+                  $JVM_ARGS \
                   -XX:ErrorFile=$SERVICE_LOG_DIR/hs_err_idm_pid%p.log \
                   -XX:HeapDumpPath=$SERVICE_LOG_DIR \
                   -home $JAVA_HOME \
@@ -118,7 +122,7 @@ case "$1" in
                   -Djava.rmi.server.codebase="file:///$LIBDIR/vmware-identity-idm-interface.jar file:///$LIBDIR/vmware-identity-idm-server.jar" \
                   -Djava.security.policy=$PREFIX/share/config/server.policy \
                   -Dvmware.log.dir=/var/log/vmware/sso \
-                  -Dlog4j.configuration=file://$PREFIX/share/config/log4j2.xml \
+                  -Dlog4j.configurationFile=file://$PREFIX/share/config/log4j2.xml \
                   $DEBUG_OPTS \
                   $DAEMON_CLASS
         rc_status -v
