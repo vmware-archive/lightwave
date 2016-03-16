@@ -21,11 +21,14 @@ import java.security.cert.Certificate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AuthnPolicy;
 import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.IIdentityStoreData;
+import com.vmware.identity.idm.RSAAgentConfig;
 import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.ValidateUtil;
 import com.vmware.identity.idm.server.provider.IIdentityProvider;
@@ -59,6 +62,8 @@ public class TenantInformation
     private final Collection<String> _defaultProviders;
     private final AuthnPolicy _authnPolicy;
     private final boolean _enableIdpSelection;
+    private final ReadWriteLock _rsaConfigFilesLock;
+    private RSAAgentConfig _preRsaAgentConfig;
 
     public
     TenantInformation(
@@ -116,6 +121,8 @@ public class TenantInformation
         _defaultProviders = defaultProviders;
         _authnPolicy = authnPolicy;
         _enableIdpSelection = idpSelectionFlag;
+        _rsaConfigFilesLock = new ReentrantReadWriteLock();
+        _preRsaAgentConfig = null;
     }
 
     public Tenant getTenant()
@@ -308,5 +315,17 @@ public class TenantInformation
     public boolean isIDPSelectionEnabled()
     {
         return _enableIdpSelection;
+    }
+
+    public ReadWriteLock get_rsaConfigFilesLock() {
+        return _rsaConfigFilesLock;
+    }
+
+    public RSAAgentConfig get_preRsaAgentConfig() {
+        return _preRsaAgentConfig;
+    }
+
+    public void set_preRsaAgentConfig(RSAAgentConfig _preRsaAgentConfig) {
+        this._preRsaAgentConfig = _preRsaAgentConfig;
     }
 }

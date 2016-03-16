@@ -17,11 +17,12 @@
 package com.vmware.identity.idm.server.performance;
 
 public interface IPerformanceMonitor {
+
 	public IdmAuthStatCache getCache(String tenantName);
 
 	public void deleteCache(String tenantName);
 
-	public int getCacheSize();
+	public int getDefaultCacheSize();
 
 	public boolean summarizeLdapQueries();
 }

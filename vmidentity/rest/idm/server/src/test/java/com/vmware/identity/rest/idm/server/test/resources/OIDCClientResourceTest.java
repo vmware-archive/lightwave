@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.SecurityContext;
 
 import org.easymock.EasyMock;
@@ -63,24 +63,25 @@ public class OIDCClientResourceTest {
     private static final List<String> POST_LOGOUT_REDIRECT_URIS = Arrays.asList("https://www.vmware.com/postlogoutredirect1");
     private static final String LOGOUT_URI = "https://www.vmware.com/logout";
     private static final String CERT_SUBJECT_DN = "OU=mID-2400d17e-d4f4-4753-98fd-fb9ecbf098ae,C=US,DC=local,DC=vsphere,CN=oidc-client-123";
+    private static final Long AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS = new Long(1234L);
 
     private OIDCClientResource oidcClientResource;
     private IMocksControl mControl;
     private SecurityContext mockSecurityContext;
-    private HttpServletRequest mockHTTPServletRequest;
+    private ContainerRequestContext mockRequest;
     private CasIdmClient mockIDMClient;
 
     @Before
     public void setUp() {
         this.mControl = EasyMock.createControl();
-        this.mockHTTPServletRequest = EasyMock.createMock(HttpServletRequest.class);
-        expect(this.mockHTTPServletRequest.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        expect(this.mockHTTPServletRequest.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
-        replay(this.mockHTTPServletRequest);
+        this.mockRequest = EasyMock.createMock(ContainerRequestContext.class);
+        expect(this.mockRequest.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        expect(this.mockRequest.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        replay(this.mockRequest);
 
         this.mockSecurityContext = this.mControl.createMock(SecurityContext.class);
         this.mockIDMClient = this.mControl.createMock(CasIdmClient.class);
-        this.oidcClientResource = new OIDCClientResource(TENANT, this.mockHTTPServletRequest, this.mockSecurityContext);
+        this.oidcClientResource = new OIDCClientResource(TENANT, this.mockRequest, this.mockSecurityContext);
         this.oidcClientResource.setIDMClient(this.mockIDMClient);
 
     }
@@ -139,7 +140,8 @@ public class OIDCClientResourceTest {
                 withTokenEndpointAuthMethod(TOKEN_ENDPOINT_AUTH_METHOD).
                 withPostLogoutRedirectUris(POST_LOGOUT_REDIRECT_URIS).
                 withLogoutUri(LOGOUT_URI).
-                withCertSubjectDN(CERT_SUBJECT_DN).build();
+                withCertSubjectDN(CERT_SUBJECT_DN).
+                withAuthnRequestClientAssertionLifetimeMS(AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS).build();
 
         this.mockIDMClient.addOIDCClient(eq(TENANT),isA(OIDCClient.class));
         expect(this.mockIDMClient.getOIDCClient(eq(TENANT), isA(String.class))).andAnswer(
@@ -192,6 +194,7 @@ public class OIDCClientResourceTest {
         assertEquals(POST_LOGOUT_REDIRECT_URIS, oidcClientDTO.getOIDCClientMetadataDTO().getPostLogoutRedirectUris());
         assertEquals(LOGOUT_URI, oidcClientDTO.getOIDCClientMetadataDTO().getLogoutUri());
         assertEquals(CERT_SUBJECT_DN, oidcClientDTO.getOIDCClientMetadataDTO().getCertSubjectDN());
+        assertEquals(AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS, oidcClientDTO.getOIDCClientMetadataDTO().getAuthnRequestClientAssertionLifetimeMS());
     }
 
     private OIDCClient getTestOIDCClient(String clientId) throws CertificateException, IOException {
@@ -200,7 +203,8 @@ public class OIDCClientResourceTest {
                 tokenEndpointAuthMethod(TOKEN_ENDPOINT_AUTH_METHOD).
                 postLogoutRedirectUris(POST_LOGOUT_REDIRECT_URIS).
                 logoutUri(LOGOUT_URI).
-                certSubjectDN(CERT_SUBJECT_DN).build();
+                certSubjectDN(CERT_SUBJECT_DN).
+                authnRequestClientAssertionLifetimeMS(AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS).build();
     }
 
     private OIDCClientMetadataDTO getTestOIDCClientMetadataDTO(String clientId) throws CertificateException, IOException {
@@ -210,6 +214,7 @@ public class OIDCClientResourceTest {
                 withPostLogoutRedirectUris(POST_LOGOUT_REDIRECT_URIS).
                 withLogoutUri(LOGOUT_URI).
                 withCertSubjectDN(CERT_SUBJECT_DN).
+                withAuthnRequestClientAssertionLifetimeMS(AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS).
                 build();
     }
 }

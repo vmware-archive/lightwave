@@ -16,6 +16,8 @@
 
 package com.vmware.identity.performanceSupport;
 
+import java.util.concurrent.TimeUnit;
+
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 
@@ -46,7 +48,7 @@ public abstract class PerformanceDecorator
     {
         assert(task != null);
         assert(aPerfDataSink != null);
-        long startedAt = System.currentTimeMillis();
+        long startedAt = System.nanoTime();
         T result = null;
         try {
             result = task.call();
@@ -63,7 +65,7 @@ public abstract class PerformanceDecorator
             assert key != null;
 
             aPerfDataSink.addMeasurement(
-                    key, System.currentTimeMillis() - startedAt);
+                    key, TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt));
         }catch (Exception e){
             //swallow any performance data processing error
             log.error("Exception occurred when adding performance data", e);

@@ -33,6 +33,7 @@ public class OIDCClientDataGenerator {
     public static final List<String> POST_LOGOUT_REDIRECT_URIS = Arrays.asList("https://www.vmware.com/postlogoutredirect1");
     public static final String LOGOUT_URI = "https://www.vmware.com/logout";
     public static final String CERT_SUBJECT_DN = "OU=mID-2400d17e-d4f4-4753-98fd-fb9ecbf098ae,C=US,DC=local,DC=vsphere,CN=oidc-client-123";
+    public static final Long AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS = new Long(1234L);
 
     public static OIDCClient generateOIDCClient(String clientId) throws CertificateException, IOException {
         return new OIDCClient.Builder(clientId).
@@ -51,6 +52,7 @@ public class OIDCClientDataGenerator {
                 withTokenEndpointAuthMethod(TOKEN_ENDPOINT_AUTH_METHOD).
                 withPostLogoutRedirectUris(POST_LOGOUT_REDIRECT_URIS).
                 withLogoutUri(LOGOUT_URI).
-                withCertSubjectDN(CERT_SUBJECT_DN).build();
+                withCertSubjectDN(CERT_SUBJECT_DN).
+                withAuthnRequestClientAssertionLifetimeMS(AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS).build();
     }
 }

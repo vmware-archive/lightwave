@@ -16,6 +16,9 @@ package com.vmware.identity.openidconnect.client;
 
 import org.apache.commons.lang3.Validate;
 
+import com.vmware.identity.openidconnect.common.AccessToken;
+import com.vmware.identity.openidconnect.common.RefreshToken;
+
 /**
  * OIDC Tokens, contain all tokens
  *
@@ -23,23 +26,31 @@ import org.apache.commons.lang3.Validate;
  */
 public class OIDCTokens {
 
+    private final ClientIDToken clientIdToken;
     private final AccessToken accessToken;
-    private final IDToken idToken;
     private final RefreshToken refreshToken;
 
     /**
      * Constructor
-     *
+     * @param clientIdToken     id token
      * @param accessToken       access token
-     * @param idToken           id token
      * @param refreshToken      refresh token
      */
-    OIDCTokens(AccessToken accessToken, IDToken idToken, RefreshToken refreshToken) {
-        Validate.notNull(idToken, "idToken");
+    public OIDCTokens(ClientIDToken clientIdToken, AccessToken accessToken, RefreshToken refreshToken) {
+        Validate.notNull(clientIdToken, "clientIdToken");
 
+        this.clientIdToken = clientIdToken;
         this.accessToken = accessToken;
-        this.idToken = idToken;
         this.refreshToken = refreshToken;
+    }
+
+    /**
+     * Get id token
+     *
+     * @return                  id token
+     */
+    public ClientIDToken getClientIDToken() {
+        return this.clientIdToken;
     }
 
     /**
@@ -49,15 +60,6 @@ public class OIDCTokens {
      */
     public AccessToken getAccessToken() {
         return this.accessToken;
-    }
-
-    /**
-     * Get id token
-     *
-     * @return                  id token
-     */
-    public IDToken getIdToken() {
-        return this.idToken;
     }
 
     /**

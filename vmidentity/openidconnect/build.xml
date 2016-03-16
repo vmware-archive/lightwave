@@ -24,6 +24,31 @@
         <exec executable="${maven}" failonerror="true">
             <env key="M2_HOME" value="${M2_HOME}" />
             <env key="JAVA_HOME" value="${JRE_HOME}"/>
+            <arg line=" -s settings.xml install:install-file -Dfile=${PACKAGE_BASE}/vmware-identity-rest-core-common.jar -DgroupId=com.vmware.identity.rest.core -DartifactId=vmware-identity-rest-core-common -Dversion=${IDM_VERSION} -Dpackaging=jar" />
+        </exec>
+        <exec executable="${maven}" failonerror="true">
+            <env key="M2_HOME" value="${M2_HOME}" />
+            <env key="JAVA_HOME" value="${JRE_HOME}"/>
+            <arg line=" -s settings.xml install:install-file -Dfile=${PACKAGE_BASE}/vmware-identity-rest-idm-common.jar -DgroupId=com.vmware.identity.rest.idm -DartifactId=vmware-identity-rest-idm-common -Dversion=${IDM_VERSION} -Dpackaging=jar" />
+        </exec>
+         <exec executable="${maven}" failonerror="true">
+            <env key="M2_HOME" value="${M2_HOME}" />
+            <env key="JAVA_HOME" value="${JRE_HOME}"/>
+            <arg line=" -s settings.xml install:install-file -Dfile=${PACKAGE_BASE}/vmware-identity-rest-core-client.jar -DgroupId=com.vmware.identity.rest.core -DartifactId=vmware-identity-rest-core-client -Dversion=${IDM_VERSION} -Dpackaging=jar" />
+        </exec>
+         <exec executable="${maven}" failonerror="true">
+            <env key="M2_HOME" value="${M2_HOME}" />
+            <env key="JAVA_HOME" value="${JRE_HOME}"/>
+            <arg line=" -s settings.xml install:install-file -Dfile=${PACKAGE_BASE}/vmware-identity-rest-idm-client.jar -DgroupId=com.vmware.identity.rest.idm -DartifactId=vmware-identity-rest-idm-client -Dversion=${IDM_VERSION} -Dpackaging=jar" />
+        </exec>
+         <exec executable="${maven}" failonerror="true">
+            <env key="M2_HOME" value="${M2_HOME}" />
+            <env key="JAVA_HOME" value="${JRE_HOME}"/>
+            <arg line=" -s settings.xml install:install-file -Dfile=${PACKAGE_BASE}/vmware-identity-rest-afd-client.jar -DgroupId=com.vmware.identity.rest.afd -DartifactId=vmware-identity-rest-afd-client -Dversion=${IDM_VERSION} -Dpackaging=jar" />
+        </exec>
+        <exec executable="${maven}" failonerror="true">
+            <env key="M2_HOME" value="${M2_HOME}" />
+            <env key="JAVA_HOME" value="${JRE_HOME}"/>
             <arg line=" -s settings.xml install:install-file -Dfile=${PACKAGE_BASE}/vmware-identity-idm-client.jar -DgroupId=${GROUP_BASE_IDM} -DartifactId=vmware-identity-idm-client -Dversion=${IDM_VERSION} -Dpackaging=jar" />
         </exec>
         <exec executable="${maven}" failonerror="true">
