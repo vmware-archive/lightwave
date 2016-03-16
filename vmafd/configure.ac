@@ -257,7 +257,7 @@ AC_SUBST(ANT_CLASSPATH)
 
 # Likewise components
 
-KRB5_DEFAULT_ENABLED="no"
+KRB5_DEFAULT_ENABLED="yes"
 AC_ARG_ENABLE([krb5-default],
     [AC_HELP_STRING([--enable-krb5-default], [enable default krb5.conf/krb5.keytab (default: disabled)])],
     [
@@ -664,12 +664,14 @@ AC_CONFIG_FILES([Makefile
                  tools/domainjoin/Makefile
                  tools/vdcpromo/Makefile
                  tools/vecs-cli/Makefile
+                 tools/sl-cli/Makefile
                  interop/Makefile
                  interop/cdcjni/Makefile
+                 interop/heartbeatjni/Makefile
                  interop/java/Makefile
                  interop/jni/Makefile
                  interop/python/Makefile
-		 test/Makefile
+		         test/Makefile
                 ])
 AC_OUTPUT
 

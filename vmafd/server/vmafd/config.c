@@ -125,8 +125,6 @@ VmAfSrvSetDomainName(
                                pwszDomain);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded", __FUNCTION__);
-
 cleanup:
 
     return dwError;
@@ -149,8 +147,6 @@ VmAfSrvSetSiteName(
                                VMAFD_REG_KEY_SITE_NAME,
                                pwszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
-
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded", __FUNCTION__);
 
 cleanup:
 
@@ -175,8 +171,6 @@ VmAfSrvGetSiteName(
                                VMAFD_REG_KEY_SITE_NAME,
                                &pwszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
-
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded", __FUNCTION__);
 
     *ppwszSiteName = pwszSiteName;
 
@@ -209,8 +203,6 @@ VmAfSrvSetDomainNameA(
                                VMAFD_REG_KEY_DOMAIN_NAME,
                                pwszDomain);
     BAIL_ON_VMAFD_ERROR(dwError);
-
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded", __FUNCTION__);
 
 cleanup:
 
@@ -261,8 +253,6 @@ VmAfSrvSetDomainState(
                                 (DWORD)domainState);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded", __FUNCTION__);
-
 cleanup:
 
     return dwError;
@@ -286,8 +276,6 @@ VmAfSrvGetLDU(
                                VMAFD_REG_KEY_LDU,
                                &pwszLDU);
     BAIL_ON_VMAFD_ERROR(dwError);
-
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded", __FUNCTION__);
 
     *ppwszLDU = pwszLDU;
 
@@ -313,8 +301,6 @@ VmAfSrvSetLDU(
                                VMAFD_REG_KEY_LDU,
                                pwszLDU);
     BAIL_ON_VMAFD_ERROR(dwError);
-
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded", __FUNCTION__);
 
 cleanup:
 
@@ -366,8 +352,6 @@ VmAfSrvSetRHTTPProxyPort(
                                 dwPort);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded", __FUNCTION__);
-
 cleanup:
 
     return dwError;
@@ -390,8 +374,6 @@ VmAfSrvGetDCPort(
     dwError = _ConfigGetInteger(VMAFD_REG_KEY_DC_PORT,
                                 &dwPort);
     BAIL_ON_VMAFD_ERROR(dwError);
-
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded", __FUNCTION__);
 
     *pdwPort = dwPort;
 
@@ -419,8 +401,6 @@ VmAfSrvSetDCPort(
     dwError = _ConfigSetInteger(VMAFD_REG_KEY_DC_PORT,
                                 dwPort);
     BAIL_ON_VMAFD_ERROR(dwError);
-
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded", __FUNCTION__);
 
 cleanup:
 
@@ -617,6 +597,10 @@ VmAfSrvSetDCName(
     {
     case VMAFD_DOMAIN_STATE_NONE:
         /* allow initial setting of DCName */
+        dwError = _ConfigSetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                               VMAFD_REG_KEY_DC_NAME,
+                               pwszDCName);
+        BAIL_ON_VMAFD_ERROR(dwError);
         break;
 
     case VMAFD_DOMAIN_STATE_CONTROLLER:
@@ -647,6 +631,20 @@ VmAfSrvSetDCName(
         }
         BAIL_ON_VMAFD_ERROR(dwError);
 
+        dwError = _ConfigSetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                               VMAFD_REG_KEY_DC_NAME,
+                               pwszDCName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvRefreshSiteName();
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = CdcSrvShutdownDefaultHAMode(gVmafdGlobals.pCdcContext);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = CdcSrvInitDefaultHAMode(gVmafdGlobals.pCdcContext);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
         break;
 
     default:
@@ -654,10 +652,6 @@ VmAfSrvSetDCName(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = _ConfigSetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
-                               VMAFD_REG_KEY_DC_NAME,
-                               pwszDCName);
-    BAIL_ON_VMAFD_ERROR(dwError);
 
     VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded, DCName=%s", __FUNCTION__, pszDCName);
 
@@ -721,8 +715,6 @@ VmAfSrvSetPNID(
                                VMAFD_REG_KEY_PNID,
                                pwszPNID);
     BAIL_ON_VMAFD_ERROR(dwError);
-
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s succeeded", __FUNCTION__);
 
 cleanup:
 

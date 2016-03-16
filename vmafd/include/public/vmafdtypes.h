@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -435,10 +435,11 @@ typedef enum {
     CDC_DC_STATE_SITE_AFFINITIZED,
     CDC_DC_STATE_OFF_SITE,
     CDC_DC_STATE_NO_DCS_ALIVE,
-    CDC_DC_STATE_DISABLED
+    CDC_DC_STATE_LEGACY
 } CDC_DC_STATE, *PCDC_DC_STATE;
 
 #endif
+
 
 typedef UINT32 VMAFD_JOIN_FLAGS;
 
@@ -491,10 +492,80 @@ typedef struct _VMAFD_HB_STATUS_W
 {
     UINT32             bIsAlive;
     UINT32             dwCount;
+#ifdef _DCE_IDL_
+    [size_is(dwCount)]
+#endif /* _DCE_IDL_ */
     PVMAFD_HB_INFO_W   pHeartbeatInfoArr;
 } VMAFD_HB_STATUS_W, *PVMAFD_HB_STATUS_W;
 
 #endif
+
+#ifndef CDC_DC_STATUS_INFO_A_DEFINED
+#define CDC_DC_STATUS_INFO_A_DEFINED    1
+
+typedef struct _CDC_DC_STATUS_INFO_A
+{
+    UINT32             dwLastPing;
+    UINT32             dwLastResponseTime;
+    UINT32             dwLastError;
+    UINT32             bIsAlive;
+    char*              pszSiteName;
+} CDC_DC_STATUS_INFO_A, *PCDC_DC_STATUS_INFO_A;
+#endif
+
+#ifndef CDC_DC_STATUS_INFO_W_DEFINED
+#define CDC_DC_STATUS_INFO_W_DEFINED    1
+
+typedef struct _CDC_DC_STATUS_INFO_W
+{
+    UINT32             dwLastPing;
+    UINT32             dwLastResponseTime;
+    UINT32             dwLastError;
+    UINT32             bIsAlive;
+    wstring_t          pwszSiteName;
+} CDC_DC_STATUS_INFO_W, *PCDC_DC_STATUS_INFO_W;
+#endif
+
+
+#ifndef VMAFD_MAX_DN_LEN
+#define VMAFD_MAX_DN_LEN 1024
+#endif
+
+typedef struct _VMAFD_SUPERLOG_ENTRY
+{
+    UINT32 dwErrorCode;
+    UINT32 iStartTime;
+    UINT32 iEndTime;
+    UINT32 dwState;
+    UINT32 dwCDCPingTime;
+    UINT32 dwCDCLastPing;
+    UINT32 bCDCIsAlive;
+    UINT32 bHBIsAlive;
+    UINT32 dwHBCount;
+    unsigned char pszDomainName[VMAFD_MAX_DN_LEN];
+    unsigned char pszDCName[VMAFD_MAX_DN_LEN];
+    unsigned char pszSiteName[VMAFD_MAX_DN_LEN];
+    unsigned char pszDCAddress[VMAFD_MAX_DN_LEN];
+} VMAFD_SUPERLOG_ENTRY, *PVMAFD_SUPERLOG_ENTRY;
+
+
+typedef struct _VMAFD_SUPERLOG_ENTRY_ARRAY
+{
+    UINT32 dwCount;
+#ifdef _DCE_IDL_
+    [size_is(dwCount)]
+#endif
+    PVMAFD_SUPERLOG_ENTRY entries;
+} VMAFD_SUPERLOG_ENTRY_ARRAY, *PVMAFD_SUPERLOG_ENTRY_ARRAY;
+
+
+typedef
+#ifdef _DCE_IDL_
+[context_handle]
+#endif
+void *vmafd_superlog_cookie_t;
+
+
 
 #ifndef _DCE_IDL_
 #ifndef VMAFD_SERVER_DEFINED
@@ -506,6 +577,15 @@ typedef struct _VMAFD_HB_STATUS_W
 typedef struct _VMAFD_SERVER VMAFD_SERVER, *PVMAFD_SERVER;
 #endif /* VMAFD_SERVER_DEFINED */
 #endif
+
+typedef struct _VMAFD_DC_ENTRIES_W
+{
+    UINT32 dwCount;
+#ifdef _DCE_IDL_
+    [size_is(dwCount)]
+#endif
+    wstring_t* ppszEntries;
+} CDC_DC_ENTRIES_W, *PCDC_DC_ENTRIES_W;
 
 #ifdef _DCE_IDL_
 cpp_quote("#endif")

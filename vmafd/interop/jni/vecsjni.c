@@ -62,6 +62,15 @@ JniAddEntriesToList(
 
 static
 DWORD
+JniAddPermissionsToList(
+        JNIEnv *env,
+        jobject jList,
+        PVECS_STORE_PERMISSION_W pPermissions,
+        DWORD dwCount
+        );
+
+static
+DWORD
 JniPopulateJavaVecsEntryNative(
         JNIEnv *env,
         jobject jEntry,
@@ -784,6 +793,162 @@ error:
 }
 
 JNIEXPORT jint JNICALL
+Java_com_vmware_identity_vecs_VecsAdapter_VecsSetPermissionW(
+        JNIEnv *env,
+        jclass clazz,
+        jobject jpStore,
+        jstring jUserName,
+        jint jAccessMask)
+{
+    DWORD dwError = 0;
+    PVECS_STORE pStore = NULL;
+    PCWSTR pwszUserName = NULL;
+    DWORD dwAccessMask = 0;
+
+    if (jpStore == NULL) {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_ERROR(dwError);
+    }
+    dwError = JniGetPointer(env, jpStore, (PVOID*)&pStore);
+    BAIL_ON_ERROR(dwError);
+
+    if (jUserName == NULL)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_ERROR(dwError);
+    }
+    pwszUserName = (*env)->GetStringChars(env, jUserName, NULL);
+
+    if (jAccessMask != READ_STORE && jAccessMask != WRITE_STORE)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_ERROR(dwError);
+    }
+    dwAccessMask = (DWORD) jAccessMask;
+
+    dwError = VecsSetPermissionW(
+            pStore,
+            pwszUserName,
+            dwAccessMask
+            );
+    BAIL_ON_ERROR(dwError);
+
+cleanup:
+    if (pwszUserName)
+    {
+        (*env)->ReleaseStringChars(env, jUserName, pwszUserName);
+    }
+    return dwError;
+
+error:
+    goto cleanup;
+
+}
+
+JNIEXPORT jint JNICALL
+Java_com_vmware_identity_vecs_VecsAdapter_VecsRevokePermissionW(
+        JNIEnv *env,
+        jclass clazz,
+        jobject jpStore,
+        jstring jUserName,
+        jint jAccessMask)
+{
+    DWORD dwError = 0;
+    PVECS_STORE pStore = NULL;
+    PCWSTR pwszUserName = NULL;
+    DWORD dwAccessMask = 0;
+
+    if (jpStore == NULL) {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_ERROR(dwError);
+    }
+    dwError = JniGetPointer(env, jpStore, (PVOID*)&pStore);
+    BAIL_ON_ERROR(dwError);
+
+    if (jUserName == NULL)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_ERROR(dwError);
+    }
+    pwszUserName = (*env)->GetStringChars(env, jUserName, NULL);
+
+    if (jAccessMask != READ_STORE && jAccessMask != WRITE_STORE)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_ERROR(dwError);
+    }
+    dwAccessMask = (DWORD) jAccessMask;
+
+    dwError = VecsRevokePermissionW(
+            pStore,
+            pwszUserName,
+            dwAccessMask
+            );
+    BAIL_ON_ERROR(dwError);
+
+cleanup:
+    if (pwszUserName)
+    {
+        (*env)->ReleaseStringChars(env, jUserName, pwszUserName);
+    }
+    return dwError;
+
+error:
+    goto cleanup;
+
+}
+
+JNIEXPORT jint JNICALL
+Java_com_vmware_identity_vecs_VecsAdapter_VecsGetPermissionsW(
+        JNIEnv *env,
+        jclass clazz,
+        jobject jpStore,
+        jobject jOwner,
+        jobject jpStorePermissions)
+{
+    DWORD dwError = 0;
+    PVECS_STORE pStore = NULL;
+    PVECS_STORE_PERMISSION_W pStorePermissions = NULL;
+    PWSTR pwszOwner = NULL;
+    DWORD dwUserCount = 0;
+
+    if (jpStore == NULL || jOwner == NULL || jpStorePermissions == NULL) {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_ERROR(dwError);
+    }
+    dwError = JniGetPointer(env, jpStore, (PVOID*)&pStore);
+    BAIL_ON_ERROR(dwError);
+
+    dwError = VecsGetPermissionsW(
+            pStore,
+            &pwszOwner,
+            &dwUserCount,
+            &pStorePermissions
+            );
+
+    dwError = JniSetString(env, jOwner, pwszOwner, "str");
+    BAIL_ON_ERROR(dwError);
+
+    dwError = JniAddPermissionsToList(env, jpStorePermissions, pStorePermissions, dwUserCount);
+    BAIL_ON_ERROR(dwError);
+
+cleanup:
+    if (pStorePermissions)
+    {
+        VecsFreeStorePermissionsArrayW(pStorePermissions, dwUserCount);
+    }
+    if (pwszOwner)
+    {
+        VMAFD_SAFE_FREE_MEMORY(pwszOwner);
+    }
+    return dwError;
+
+error:
+    goto cleanup;
+
+}
+
+JNIEXPORT jint JNICALL
 Java_com_vmware_identity_vecs_VecsAdapter_VecsCloseCertStore(
         JNIEnv  *env,
         jclass  clazz,
@@ -1224,6 +1389,91 @@ JniAddEntriesToList(
 
 
         jbSuccess = (*env)->CallBooleanMethod(env, jList, mid, jEntry);
+        if (jbSuccess != JNI_TRUE)
+        {
+            dwError = ERROR_BAD_UNIT;
+            BAIL_ON_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+JniAddPermissionsToList(
+        JNIEnv *env,
+        jobject jList,
+        PVECS_STORE_PERMISSION_W pPermissions,
+        DWORD dwCount
+        )
+{
+    DWORD dwError = 0;
+    jmethodID mid = NULL;
+    jfieldID fidUserName = NULL;
+    jfieldID fidAccessMask = NULL;
+    jstring  jStr = NULL;
+    jclass jPermissionClass = NULL;
+    jobject jPermission = NULL;
+    jboolean jbSuccess = JNI_FALSE;
+    DWORD dwIndex = 0;
+    size_t size = 0;
+
+    jclass jListClass = (*env)->GetObjectClass(env, jList);
+
+    if (jListClass == NULL) {
+        dwError = ERROR_INVALID_DATATYPE;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    mid = (*env)->GetMethodID(env, jListClass, "add", "(Ljava/lang/Object;)Z");
+    if (mid == NULL) {
+        dwError = ERROR_INVALID_FUNCTION;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    jPermissionClass = (*env)->FindClass(env, "com/vmware/identity/vecs/VecsPermissionNative");
+    if (jPermissionClass == NULL)
+    {
+        dwError = ERROR_INVALID_DATATYPE;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    fidUserName = (*env)->GetFieldID(env, jPermissionClass, "userName", "Ljava/lang/String;");
+    if (fidUserName == NULL) {
+        dwError = ERROR_INVALID_FUNCTION;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    fidAccessMask = (*env)->GetFieldID(env, jPermissionClass, "accessMask", "I");
+    if (fidAccessMask == NULL) {
+        dwError = ERROR_INVALID_FUNCTION;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    dwIndex = 0;
+    for (; dwIndex < dwCount; dwIndex++)
+    {
+        PVECS_STORE_PERMISSION_W pStorePermission = &pPermissions[dwIndex];
+        jPermission = (*env)->AllocObject(env, jPermissionClass);
+        if (jPermission == NULL)
+        {
+            dwError = ERROR_BAD_UNIT;
+            BAIL_ON_ERROR(dwError);
+        }
+
+        dwError = VmAfdGetStringLengthW(pStorePermission->pszUserName, &size);
+        BAIL_ON_ERROR(dwError);
+        jStr = (*env)->NewString(env, pStorePermission->pszUserName, size);
+        (*env)->SetObjectField(env, jPermission, fidUserName, jStr);
+
+        (*env)->SetIntField(env, jPermission, fidAccessMask, (jint)(pStorePermission->dwAccessMask));
+
+        jbSuccess = (*env)->CallBooleanMethod(env, jList, mid, jPermission);
         if (jbSuccess != JNI_TRUE)
         {
             dwError = ERROR_BAD_UNIT;

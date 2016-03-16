@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -28,26 +28,6 @@ VmAfdHeartbeatWorker(
     PVOID pThreadArgs
     );
 
-static
-DWORD
-VmAfdHeartbeatStatusAFromW(
-    PVMAFD_HB_STATUS_W  pwHeartbeatStatus,
-    PVMAFD_HB_STATUS_A* ppHeartbeatStatus
-    );
-
-static
-DWORD
-VmAfdAllocateFromRpcHeartbeatStatus(
-   PVMAFD_HB_STATUS_W   pHeartbeatStatusSrc,
-   PVMAFD_HB_STATUS_W *ppHeartbeatStatusDest
-   );
-
-static
-VOID
-VmAfdRpcClientFreeHeartbeatStatus(
-   PVMAFD_HB_STATUS_W pHeartbeatStatus
-   );
-
 DWORD
 VmAfdOpenServerA(
     PCSTR pszServerName,
@@ -57,7 +37,6 @@ VmAfdOpenServerA(
 {
     DWORD dwError = 0;
     PVMAFD_SERVER pServer = NULL;
-    BOOLEAN bIsLocalHost = TRUE;
 
     BAIL_ON_VMAFD_INVALID_POINTER(ppServer, dwError);
 
@@ -68,51 +47,14 @@ VmAfdOpenServerA(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfdAllocateMemory(
-                  sizeof(VMAFD_SERVER),
-                  (PVOID *)&pServer);
+    dwError = VmAfdOpenServerWithTimeoutA(
+                                pszServerName,
+                                pszUserName,
+                                pszPassword,
+                                0,
+                                &pServer
+                                );
     BAIL_ON_VMAFD_ERROR(dwError);
-
-    if (pszServerName)
-    {
-        dwError = VmAfdAllocateStringA(
-                      pszServerName,
-                      &pServer->pszServerName);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    if (pszUserName)
-    {
-        dwError = VmAfdAllocateStringA(
-                      pszUserName,
-                      &pServer->pszUserName);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    bIsLocalHost = VmAfdIsLocalHost(pszServerName);
-    if (!bIsLocalHost && pszUserName && pszPassword)
-    {
-        dwError = VmAfdCreateBindingHandleAuthA(
-                      pszServerName,
-                      NULL,
-                      pszUserName,
-                      NULL,
-                      pszPassword,
-                      &pServer->hBinding);
-        BAIL_ON_VMAFD_ERROR(dwError);
-
-        dwError = VmAfdAllocateStringA(
-                      pszServerName,
-                      &pServer->pszServerName);
-        BAIL_ON_VMAFD_ERROR(dwError);
-
-        dwError = VmAfdAllocateStringA(
-                      pszUserName,
-                      &pServer->pszUserName);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    pServer->refCount = 1;
 
     *ppServer = pServer;
 
@@ -136,6 +78,120 @@ VmAfdOpenServerW(
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,
     PVMAFD_SERVER *ppServer)
+{
+    DWORD dwError = 0;
+    PVMAFD_SERVER pServer = NULL;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(ppServer, dwError);
+
+    if ((pwszServerName && !pwszPassword) ||
+        (!pwszServerName && pwszPassword))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdOpenServerWithTimeoutW(
+                  pwszServerName,
+                  pwszUserName,
+                  pwszPassword,
+                  0,
+                  &pServer);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppServer = pServer;
+
+cleanup:
+
+    return dwError;
+error:
+
+    if (pServer)
+    {
+        VmAfdCloseServer(pServer);
+    }
+    goto cleanup;
+}
+
+DWORD
+VmAfdOpenServerWithTimeoutA(
+    PCSTR pszServerName,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    DWORD dwTimeout,
+    PVMAFD_SERVER *ppServer)
+{
+    DWORD dwError = 0;
+    PVMAFD_SERVER pServer = NULL;
+    BOOLEAN bIsLocalHost = TRUE;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(ppServer, dwError);
+
+    if ((pszServerName && !pszPassword) ||
+        (!pszServerName && pszPassword))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateMemory(
+                  sizeof(VMAFD_SERVER),
+                  (PVOID *)&pServer);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    bIsLocalHost = VmAfdIsLocalHost(pszServerName);
+    if (!bIsLocalHost && pszUserName && pszPassword)
+    {
+        dwError = VmAfdCreateBindingHandleAuthA(
+                      pszServerName,
+                      NULL,
+                      pszUserName,
+                      NULL,
+                      pszPassword,
+                      &pServer->hBinding);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdAllocateStringA(
+                      pszServerName,
+                      &pServer->pszServerName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdAllocateStringA(
+                      pszUserName,
+                      &pServer->pszUserName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        rpc_mgmt_set_com_timeout(pServer->hBinding, dwTimeout, &dwError);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    pServer->refCount = 1;
+
+    *ppServer = pServer;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    if (pServer)
+    {
+        VmAfdCloseServer(pServer);
+    }
+
+    goto cleanup;
+
+}
+
+DWORD
+VmAfdOpenServerWithTimeoutW(
+    PCWSTR pwszServerName,
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword,
+    DWORD  dwTimeout,
+    PVMAFD_SERVER *ppServer)
+
 {
     DWORD dwError = 0;
     PVMAFD_SERVER pServer = NULL;
@@ -170,10 +226,11 @@ VmAfdOpenServerW(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfdOpenServerA(
+    dwError = VmAfdOpenServerWithTimeoutA(
                   pszServerName,
                   pszUserName,
                   pszPassword,
+                  dwTimeout,
                   &pServer);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -195,6 +252,7 @@ error:
     }
 
     goto cleanup;
+
 }
 
 VOID
@@ -1949,7 +2007,10 @@ VmAfdGetSiteNameW(
     )
 {
     DWORD dwError = 0;
+    PWSTR  pwszSiteName = NULL;
     PWSTR  pwszSiteNameRet = NULL;
+    handle_t hBinding = NULL;
+    PCWSTR pwszServerEndpoint = NULL;
 
     BAIL_ON_VMAFD_INVALID_POINTER(ppwszSiteName, dwError);
 
@@ -1960,7 +2021,24 @@ VmAfdGetSiteNameW(
     }
     else
     {
-        dwError = ERROR_NOT_SUPPORTED;
+        dwError = VmAfdCreateBindingHandleW(
+                        pwszServerName,
+                        pwszServerEndpoint,
+                        &hBinding);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        DCETHREAD_TRY
+        {
+            dwError = VmAfdRpcGetSiteName(hBinding, &pwszSiteName);
+        }
+        DCETHREAD_CATCH_ALL(THIS_CATCH)
+        {
+            dwError = VmAfdRpcGetErrorCode(THIS_CATCH);
+        }
+        DCETHREAD_ENDTRY;
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdAllocateStringW(pwszSiteName, &pwszSiteNameRet);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -1968,6 +2046,105 @@ VmAfdGetSiteNameW(
 
 cleanup:
 
+    if (hBinding)
+    {
+        VmAfdFreeBindingHandle(&hBinding);
+    }
+
+    VMAFD_RPC_SAFE_FREE_MEMORY(pwszSiteName);
+    return dwError;
+
+error:
+
+    if (ppwszSiteName)
+    {
+        *ppwszSiteName = NULL;
+    }
+
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteNameRet);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdGetSiteNameHA(
+    PVMAFD_SERVER pServer,
+    PSTR*  ppszSiteName
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszSiteName  = NULL;
+    PSTR  pszSiteName = NULL;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(pServer, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(ppszSiteName, dwError);
+
+    dwError = VmAfdGetSiteNameHW(pServer, &pwszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszSiteName, &pszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppszSiteName = pszSiteName;
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
+
+    return dwError;
+
+error:
+
+    if (ppszSiteName)
+    {
+        *ppszSiteName = NULL;
+    }
+
+    VMAFD_SAFE_FREE_MEMORY(pszSiteName);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdGetSiteNameHW(
+    PVMAFD_SERVER pServer,
+    PWSTR* ppwszSiteName
+    )
+{
+    DWORD dwError = 0;
+    PWSTR  pwszSiteName = NULL;
+    PWSTR  pwszSiteNameRet = NULL;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(pServer, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(ppwszSiteName, dwError);
+
+    if (!pServer->hBinding)
+    {
+        dwError = VmAfdLocalGetSiteName(&pwszSiteNameRet);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else
+    {
+        DCETHREAD_TRY
+        {
+            dwError = VmAfdRpcGetSiteName(pServer->hBinding, &pwszSiteName);
+        }
+        DCETHREAD_CATCH_ALL(THIS_CATCH)
+        {
+            dwError = VmAfdRpcGetErrorCode(THIS_CATCH);
+        }
+        DCETHREAD_ENDTRY;
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdAllocateStringW(pwszSiteName, &pwszSiteNameRet);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    *ppwszSiteName = pwszSiteNameRet;
+
+cleanup:
+
+    VMAFD_RPC_SAFE_FREE_MEMORY(pwszSiteName);
     return dwError;
 
 error:
@@ -3266,7 +3443,7 @@ VmAfdGetPNIDForUrlW(
 
         for (; pwszRCursor && *pwszRCursor; pwszRCursor++)
         {
-            *pwszWCursor++ = *pwszRCursor; 
+            *pwszWCursor++ = *pwszRCursor;
         }
 
         *pwszWCursor++ = delimiters[1];
@@ -3775,6 +3952,8 @@ VmAfdStartHeartbeatW(
     BAIL_ON_VMAFD_ERROR(dwError);
 
     pHandle->dwPort = dwServicePort;
+    pHandle->condStopHeartbeat = (pthread_cond_t) PTHREAD_COND_INITIALIZER;
+    pHandle->mutStopHeartbeat = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
 
     dwError = pthread_create(
                       &pHandle->threadHandle,
@@ -3949,14 +4128,16 @@ VmAfdStopHeartbeat(
 {
     if (pHandle)
     {
+        pthread_cond_signal(&pHandle->condStopHeartbeat);
         if (pHandle->pThreadHandle)
         {
-            pthread_cancel(*pHandle->pThreadHandle);
             pthread_join(*pHandle->pThreadHandle,NULL);
 
             pHandle->pThreadHandle = NULL;
 
         }
+        pthread_cond_destroy(&pHandle->condStopHeartbeat);
+        pthread_mutex_destroy(&pHandle->mutStopHeartbeat);
         VMAFD_SAFE_FREE_MEMORY(pHandle->pszServiceName);
         VMAFD_SAFE_FREE_MEMORY(pHandle);
     }
@@ -4094,8 +4275,8 @@ VmAfdHeartbeatWorker(
 {
     DWORD dwError = 0;
     PVMAFD_HB_HANDLE pInfo = NULL;
-
-    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    BOOL bCanceled = FALSE;
+    struct timespec ts = {0};
 
     pInfo = (PVMAFD_HB_HANDLE)pThreadArgs;
 
@@ -4108,8 +4289,22 @@ VmAfdHeartbeatWorker(
         dwError = 0;
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        VmAfdSleep(15000);
-    } while(TRUE);
+        pthread_mutex_lock(&pInfo->mutStopHeartbeat);
+
+        ts.tv_sec = time(NULL) + VMAFD_HEARTBEAT_INTERVAL;
+        dwError = pthread_cond_timedwait(
+                                     &pInfo->condStopHeartbeat,
+                                     &pInfo->mutStopHeartbeat,
+                                     &ts
+                                     );
+
+        if (dwError != ETIMEDOUT)
+        {
+            bCanceled = TRUE;
+        }
+        pthread_mutex_unlock(&pInfo->mutStopHeartbeat);
+    } while(!bCanceled);
+
 
 cleanup:
 
@@ -4119,7 +4314,6 @@ error:
     goto cleanup;
 }
 
-static
 DWORD
 VmAfdAllocateFromRpcHeartbeatStatus(
    PVMAFD_HB_STATUS_W   pHeartbeatStatusSrc,
@@ -4197,7 +4391,6 @@ error:
     goto cleanup;
 }
 
-static
 VOID
 VmAfdRpcClientFreeHeartbeatStatus(
    PVMAFD_HB_STATUS_W pHeartbeatStatus
@@ -4227,7 +4420,6 @@ VmAfdRpcClientFreeHeartbeatStatus(
     }
 }
 
-static
 DWORD
 VmAfdHeartbeatStatusAFromW(
     PVMAFD_HB_STATUS_W  pwHeartbeatStatus,

@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -106,6 +106,9 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
 #define VMCA_ERROR_INVALID_CHAIN            (VMCA_ROOT_CA_MISSING + 63)
 #define VMCA_ERROR_CANNOT_FORM_REQUEST      (VMCA_ROOT_CA_MISSING + 64)
 #define VMCA_KEY_DECODE_FAILURE             (VMCA_ROOT_CA_MISSING + 65)
+#define VMCA_ERROR_CN_HOSTNAME_MISMATCH     (VMCA_ROOT_CA_MISSING + 67)
+#define VMCA_ERROR_SAN_HOSTNAME_MISMATCH    (VMCA_ROOT_CA_MISSING + 68)
+#define VMCA_ERROR_SAN_IPADDR_INVALID       (VMCA_ROOT_CA_MISSING + 69)
 
 #define VMCA_UNKNOW_ERROR                   (VMCA_ROOT_CA_MISSING + 101)
 
@@ -127,7 +130,7 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
     { VMCA_INVALID_CSR_FIELD        , "VMCA_INVALID_CSR_FIELD","Invalid CSR field" }, \
     { VMCA_SELF_SIGNATURE_FAILED    , "VMCA_SELF_SIGNATURE_FAILED","Self Signature failed" }, \
     { VMCA_INIT_CA_FAILED           , "VMCA_INIT_CA_FAILED", "Init CA failure" } , \
-    { VMCA_ERROR_INVALID_KEY_LENGTH , "VMCA_ERROR_INVALID_KEY_LENGTH", "Key Length has to be between 1024(1KB) and 16382(16KB)" }, \
+    { VMCA_ERROR_INVALID_KEY_LENGTH , "VMCA_ERROR_INVALID_KEY_LENGTH", "Key length has to be between 2048(2KB) and 16382(16KB)" }, \
     { VMCA_PKCS12_CREAT_FAIL        , "VMCA_PKCS12_CREAT_FAIL", "PKCS12 creation Failure" }, \
     { VMCA_PKCS12_IO_FAIL           , "VMCA_PKCS12_IO_FAIL","PCKS12 I/O failure" }, \
     { VMCA_CRL_ERROR                , "VMCA_CRL_ERROR", "CRL update failed"}, \
@@ -184,6 +187,9 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
     { VMCA_ERROR_INVALID_CHAIN      , "VMCA_ERROR_INVALID_CERT_CHAIN", "Invalid Certificate Chain was gives as input"},\
     { VMCA_ERROR_CANNOT_FORM_REQUEST, "VMCA_ERROR_CANNOT_FORM_REQUEST", "Could not create the CSR from the certificate"},\
     { VMCA_KEY_DECODE_FAILURE       , "VMCA_KEY_DECODE_FAILURE", "Could not decode the Private Key from the given format"},\
+    { VMCA_ERROR_CN_HOSTNAME_MISMATCH, "VMCA_ERROR_CN_HOSTNAME_MISMATCH", "CSR CN does not match to hostname"},\
+    { VMCA_ERROR_SAN_HOSTNAME_MISMATCH, "VMCA_ERROR_SAN_HOSTNAME_MISMATCH", "CSR SAN does not match to hostname"},\
+    { VMCA_ERROR_SAN_IPADDR_INVALID, "VMCA_ERROR_SAN_IPADDR_INVALID", "CSR SAN has an invalid ip"},\
     { VMCA_UNKNOW_ERROR             , "VMCA_UNKNOWN_ERROR", "Certificate Server Unknown Error" }, \
 };
 

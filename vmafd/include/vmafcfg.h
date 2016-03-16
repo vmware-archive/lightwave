@@ -100,6 +100,12 @@ VmAfConfigSetValue(
 	DWORD               dwSize
 	);
 
+DWORD
+VmAfConfigDeleteValue(
+	PVMAF_CFG_KEY       pKey,
+	PCSTR               pszName
+	);
+
 VOID
 VmAfConfigCloseKey(
     PVMAF_CFG_KEY pKey

@@ -239,7 +239,7 @@ class CerTool:
             return os.path.normpath(PROGRAM_FILES +
                     '/VMware/CIS/Vmcad/certool.exe')
         elif (os.name == 'posix'):
-            return '/usr/lib/vmware-vmca/bin/certool'
+            return '/opt/vmware/bin/certool'
 
     def GetOpenSSLPath(self):
         if(os.name == "nt"):

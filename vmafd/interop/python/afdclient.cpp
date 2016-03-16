@@ -1242,7 +1242,7 @@ std::string client::GetCdcState()
       case CDC_DC_STATE_NO_DCS_ALIVE:
         result.assign("NO_DCS_ALIVE");
         break;
-      case CDC_DC_STATE_DISABLED:
+      case CDC_DC_STATE_LEGACY:
         result.assign("DISABLED");
         break;
       default:

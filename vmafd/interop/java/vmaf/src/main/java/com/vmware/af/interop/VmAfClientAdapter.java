@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -188,7 +188,7 @@ public class VmAfClientAdapter extends NativeAdapter
             WString pwszServerName,  /* IN      OPTIONAL */
             WString pwszDCName       /* IN               */
             );
-        
+
         int
         VmAfdGetPNIDForUrlA(
             String             pszServerName,
@@ -402,7 +402,28 @@ public class VmAfClientAdapter extends NativeAdapter
                 WString            pwszServerName,
                 PointerByReference ppwszMachineId
                 );
+
+        int
+        VmAfdStartHeartbeatA(
+                String             pszServiceName,
+                int                port,
+                PointerByReference ppHeartbeatHandle
+                );
+
+        int
+        VmAfdStartHeartbeatW(
+                WString            pwszServiceName,
+                int                port,
+                PointerByReference ppHeartbeatHandle
+                );
+
+        int
+        VmAfdStopHeartbeat(
+                Pointer           pHeartbeatHandle
+                );
     }
+
+    private Pointer _vmAfHeartbeatHandle;
 
     public static int getStatus(String hostname)
     {
@@ -1094,4 +1115,32 @@ public class VmAfClientAdapter extends NativeAdapter
         }
     }
 
+    public static Object
+    startHeartbeat(String ServiceName, int Port)
+    {
+        PointerByReference ppHeartbeatHandle = new PointerByReference();
+
+        int errCode = VmAfClientLibrary.INSTANCE.VmAfdStartHeartbeatA(
+                                                               ServiceName,
+                                                               Port,
+                                                               ppHeartbeatHandle);
+        if (errCode != 0)
+        {
+            throw new VmAfClientNativeException(errCode);
+        }
+
+        return ppHeartbeatHandle.getValue();
+    }
+
+    public static void
+    stopHeartbeat(Object pHeartbeatHandle)
+    {
+        Pointer HeartbeatPointer= null;
+        if (pHeartbeatHandle != null && pHeartbeatHandle instanceof Pointer)
+        {
+            HeartbeatPointer = (Pointer)pHeartbeatHandle;
+            VmAfClientLibrary.INSTANCE.VmAfdStopHeartbeat(HeartbeatPointer);
+            HeartbeatPointer = null;
+        }
+    }
 }

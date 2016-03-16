@@ -3,11 +3,8 @@
        Copyright 2011 VMware, Inc. All rights reserved.
 -->
 <project name="vmaf-dist" default="build" basedir=".">
-
    <property name="MAINSRCROOT" value="${basedir}/../.." />
-   <property file="product.properties" />
    <property name="buildRoot" location="${MAINSRCROOT}/build" />
-
    <import file="${MAINSRCROOT}/build/ant/presets.xml" />
    <import file="${MAINSRCROOT}/build/ant/libraries.xml" />
 
@@ -16,17 +13,18 @@
    </target>
 
    <target name="module.vks" >
-      <echo message="Publish Path: ${build.publish}" />
-      <make-module dir="vks" />
+       <make-module dir="vks" />
    </target>
 
    <target name="module.cdc" >
-      <echo message="Publish Path: ${build.publish}" />
       <make-module dir="cdc" />
    </target>
 
-   <target name="build" depends="module.af-client, module.vks, module.cdc" />
+   <target name="module.heartbeat" >
+      <make-module dir="heartbeat" />
+   </target>
 
+   <target name="build" depends="module.af-client, module.vks, module.cdc, module.heartbeat" />
    <target name="clean">
        <delete dir="${buildRoot}" />
    </target>

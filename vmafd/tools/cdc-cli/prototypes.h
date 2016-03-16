@@ -9,12 +9,12 @@
 
 // cli.c
 DWORD
-CdcCliEnableClientAffinity(
+CdcCliEnableDefaultHA(
     PVMAFD_SERVER pServer
     );
 
 DWORD
-CdcCliDisableClientAffinity(
+CdcCliEnableLegacyHA(
     PVMAFD_SERVER pServer
     );
 
@@ -41,4 +41,10 @@ CdcCliDcCacheList(
 DWORD
 CdcCliDcCacheRefresh(
     PVMAFD_SERVER pServer
+    );
+
+DWORD
+CdcCliGetDCStatus(
+    PVMAFD_SERVER pServer,
+    PCSTR          pszPSC
     );

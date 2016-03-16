@@ -1,6 +1,6 @@
 # Map any Linux path separators "/" to Windows path separators "\"
 #
-DCERPC_WIN32_TOP = $(GOBUILD_PLATFORM_SDK_WINDOWS_ROOT:/=\)
+DCERPC_WIN32_TOP = $(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT:/=\)
 ConfigurationName=$(CONFIGURATIONNAME)
 
 DCEIDL = $(DCERPC_WIN32_TOP)\$(ConfigurationName)\bin\dceidl.exe
@@ -11,21 +11,44 @@ OUTDIR_RELEASE = ..\x64\Release
 
 all: release debug
 
-release: $(OUTDIR_RELEASE)\vmafd_h.h
+release: $(OUTDIR_RELEASE)\vmafd_h.h $(OUTDIR_RELEASE)\vmafd60_h.h $(OUTDIR_RELEASE)\vmafdsuperlog_h.h
 
-debug: $(OUTDIR_DEBUG)\vmafd_h.h
+debug: $(OUTDIR_DEBUG)\vmafd_h.h $(OUTDIR_DEBUG)\vmafd60_h.h $(OUTDIR_DEBUG)\vmafdsuperlog_h.h
 
 #
 # vmafd.idl debug/release stub generation
 #
 $(OUTDIR_DEBUG)\vmafd_h.h $(OUTDIR_DEBUG)\vmafd_s.c $(OUTDIR_DEBUG)\vmafd_c.c: vmafd.idl
 	-mkdir $(OUTDIR_DEBUG)
-	$(DCEIDL) $(DCE_INCLUDE) -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_DEBUG)\vmafd_c.c -sstub $(OUTDIR_DEBUG)\vmafd_s.c -header $(OUTDIR_DEBUG)\vmafd_h.h vmafd.idl 2>&1
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_DEBUG)\vmafd_c.c -sstub $(OUTDIR_DEBUG)\vmafd_s.c -header $(OUTDIR_DEBUG)\vmafd_h.h vmafd.idl 2>&1
 
 $(OUTDIR_RELEASE)\vmafd_h.h $(OUTDIR_RELEASE)\vmafd_s.c $(OUTDIR_RELEASE)\vmafd_c.c: vmafd.idl
 	-mkdir $(OUTDIR_RELEASE)
-	$(DCEIDL) $(DCE_INCLUDE) -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_RELEASE)\vmafd_c.c -sstub $(OUTDIR_RELEASE)\vmafd_s.c -header $(OUTDIR_RELEASE)\vmafd_h.h vmafd.idl 2>&1
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_RELEASE)\vmafd_c.c -sstub $(OUTDIR_RELEASE)\vmafd_s.c -header $(OUTDIR_RELEASE)\vmafd_h.h vmafd.idl 2>&1
+
+$(OUTDIR_DEBUG)\vmafd60_h.h $(OUTDIR_DEBUG)\vmafd60_s.c $(OUTDIR_DEBUG)\vmafd60_c.c: vmafd60.idl
+	-mkdir $(OUTDIR_DEBUG)
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv60_ keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_DEBUG)\vmafd60_c.c -sstub $(OUTDIR_DEBUG)\vmafd60_s.c -header $(OUTDIR_DEBUG)\vmafd60_h.h vmafd60.idl 2>&1
+
+$(OUTDIR_RELEASE)\vmafd60_h.h $(OUTDIR_RELEASE)\vmafd60_s.c $(OUTDIR_RELEASE)\vmafd60_c.c: vmafd60.idl
+	-mkdir $(OUTDIR_RELEASE)
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv60_ keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_RELEASE)\vmafd60_c.c -sstub $(OUTDIR_RELEASE)\vmafd60_s.c -header $(OUTDIR_RELEASE)\vmafd60_h.h vmafd60.idl 2>&1
+
+#
+# vmafdsuperlog.idl debug/release stub generation
+#
+$(OUTDIR_DEBUG)\vmafdsuperlog_h.h $(OUTDIR_DEBUG)\vmafdsuperlog_s.c $(OUTDIR_DEBUG)\vmafdsuperlog_c.c: vmafdsuperlog.idl
+	-mkdir $(OUTDIR_DEBUG)
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_DEBUG)\vmafdsuperlog_c.c -sstub $(OUTDIR_DEBUG)\vmafdsuperlog_s.c -header $(OUTDIR_DEBUG)\vmafdsuperlog_h.h vmafdsuperlog.idl 2>&1
+
+$(OUTDIR_RELEASE)\vmafdsuperlog_h.h $(OUTDIR_RELEASE)\vmafdsuperlog_s.c $(OUTDIR_RELEASE)\vmafdsuperlog_c.c: vmafdsuperlog.idl
+	-mkdir $(OUTDIR_RELEASE)
+	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_RELEASE)\vmafdsuperlog_c.c -sstub $(OUTDIR_RELEASE)\vmafdsuperlog_s.c -header $(OUTDIR_RELEASE)\vmafdsuperlog_h.h vmafdsuperlog.idl 2>&1
 
 clean:
 	-del /f $(OUTDIR_DEBUG)\vmafd_c.c $(OUTDIR_DEBUG)\vmafd_s.c $(OUTDIR_DEBUG)\vmafd_h.h
 	-del /f $(OUTDIR_RELEASE)\vmafd_c.c $(OUTDIR_RELEASE)\vmafd_s.c $(OUTDIR_RELEASE)\vmafd_h.h
+	-del /f $(OUTDIR_DEBUG)\vmafd60_c.c $(OUTDIR_DEBUG)\vmafd60_s.c $(OUTDIR_DEBUG)\vmafd60_h.h
+	-del /f $(OUTDIR_RELEASE)\vmafd60_c.c $(OUTDIR_RELEASE)\vmafd60_s.c $(OUTDIR_RELEASE)\vmafd60_h.h
+	-del /f $(OUTDIR_DEBUG)\vmafdsuperlog_c.c $(OUTDIR_DEBUG)\vmafdsuperlog_s.c $(OUTDIR_DEBUG)\vmafdsuperlog_h.h
+	-del /f $(OUTDIR_RELEASE)\vmafdsuperlog_c.c $(OUTDIR_RELEASE)\vmafdsuperlog_s.c $(OUTDIR_RELEASE)\vmafdsuperlog_h.h

@@ -128,7 +128,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="advapi32.lib ws2_32.lib user32.lib Gdi32.lib libcommon.lib dcelib.lib pthreadVC2.lib libvmafdclient.lib"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(TCROOT)\win64\openssl-1.0.1j-vc90sp1\lib&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\Lib\x64&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\VC\Lib\amd64&quot;"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\Lib\x64&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\VC\Lib\amd64&quot;"
 				GenerateDebugInformation="true"
 				TargetMachine="17"
 			/>

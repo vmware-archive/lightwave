@@ -307,7 +307,7 @@ GetPasswordFromFile(PVM_AFD_CLI_CONTEXT pContext, PSTR passwordFile)
     dwError = VmAfdAllocateMemory(VMAFD_MAX_PWD_LEN+1, (PVOID *)&pszPasswordBuf);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (fread(pszPasswordBuf, VMAFD_MAX_PWD_LEN, 1, fpPwdFile)<0)
+    if (!fread(pszPasswordBuf, VMAFD_MAX_PWD_LEN, 1, fpPwdFile))
     {
            dwError = ERROR_LOCAL_PASSWORDFILE_CANNOT_READ;
            BAIL_ON_VMAFD_ERROR(dwError);

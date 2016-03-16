@@ -52,6 +52,7 @@ InitializeGlobals(
     pthread_cond_init(&pGlobals->statusCond, NULL);
 
     pGlobals->mutexConnection = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+    pGlobals->pCertUpdateMutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
     pGlobals->mutexStoreState = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     pGlobals->mutexCreateStore = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     pGlobals->rwlockStoreMap = (pthread_rwlock_t) PTHREAD_RWLOCK_INITIALIZER;
@@ -120,6 +121,9 @@ VmAfdInit(
     dwError = VmAfdIpcServerInit();
     BAIL_ON_VMAFD_ERROR (dwError);
 
+    // One of the decisions is not  to check return value to prevent failure of AFD because of SL
+    dwError = VmAfdSuperLoggingInit(&(gVmafdGlobals.pLogger));
+    BAIL_ON_VMAFD_ERROR (dwError);
 
 error:
 

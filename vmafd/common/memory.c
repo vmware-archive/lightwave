@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -787,25 +787,6 @@ VmAfdFreeDomainControllerInfoW(
     }
 }
 
-VOID
-VmAfdFreeCdcDbEntryArrayW(
-    PCDC_DB_ENTRY_W pCdcDbEntry,
-    DWORD dwCount
-    )
-{
-    DWORD dwIndex = 0;
-
-    if (pCdcDbEntry)
-    {
-        for (;dwIndex<dwCount;++dwIndex)
-        {
-            VMAFD_SAFE_FREE_MEMORY(pCdcDbEntry->pszDCName);
-            VMAFD_SAFE_FREE_MEMORY(pCdcDbEntry->pszSiteName);
-            VMAFD_SAFE_FREE_MEMORY(pCdcDbEntry->pszDomainName);
-        }
-        VMAFD_SAFE_FREE_MEMORY(pCdcDbEntry);
-    }
-}
 
 VOID
 VmAfdFreeHbInfoA(
@@ -896,3 +877,41 @@ VmAfdFreeHbStatusW(
     }
 }
 
+VOID
+VmAfdFreeCredContextW(
+    PVMAFD_CRED_CONTEXT_W pCredContext
+    )
+{
+    if (pCredContext)
+    {
+        VMAFD_SAFE_FREE_MEMORY(pCredContext->pwszDCName);
+        VMAFD_SAFE_FREE_MEMORY(pCredContext->pwszUPN);
+        VMAFD_SAFE_FREE_MEMORY(pCredContext->pwszPassword);
+
+        VmAfdFreeMemory(pCredContext);
+    }
+}
+
+VOID
+VmAfdFreeCdcStatusInfoA(
+    PCDC_DC_STATUS_INFO_A pCdcStatusInfo
+    )
+{
+    if (pCdcStatusInfo)
+    {
+        VMAFD_SAFE_FREE_STRINGA(pCdcStatusInfo->pszSiteName);
+    }
+    VMAFD_SAFE_FREE_MEMORY(pCdcStatusInfo);
+}
+
+VOID
+VmAfdFreeCdcStatusInfoW(
+    PCDC_DC_STATUS_INFO_W pCdcStatusInfo
+    )
+{
+    if (pCdcStatusInfo)
+    {
+        VMAFD_SAFE_FREE_STRINGW(pCdcStatusInfo->pwszSiteName);
+    }
+    VMAFD_SAFE_FREE_MEMORY(pCdcStatusInfo);
+}

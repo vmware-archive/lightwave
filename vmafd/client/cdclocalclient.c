@@ -20,7 +20,7 @@ DWORD
 CdcLocalEnableClientAffinity()
 {
     DWORD dwError = 0;
-    UINT32 apiType = CDC_IPC_ENABLE_CLIENT_AFFINITY;
+    UINT32 apiType = CDC_IPC_ENABLE_DEFAULT_HA;
     DWORD noOfArgsIn = 0;
     DWORD noOfArgsOut = 0;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
@@ -54,7 +54,7 @@ DWORD
 CdcLocalDisableClientAffinity()
 {
     DWORD dwError = 0;
-    UINT32 apiType = CDC_IPC_DISABLE_CLIENT_AFFINITY;
+    UINT32 apiType = CDC_IPC_ENABLE_LEGACY_HA;
     DWORD noOfArgsIn = 0;
     DWORD noOfArgsOut = 0;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
@@ -262,6 +262,119 @@ error:
 
     goto cleanup;
 }
+
+
+DWORD
+CdcLocalGetDCStatusInfo(
+    PCWSTR pwszDCName,
+    PCWSTR pwszDomainName,
+    PCDC_DC_STATUS_INFO_W *ppDCStatusInfo,
+    PVMAFD_HB_STATUS_W    *ppHbStatus
+    )
+{
+    DWORD dwError = 0;
+    UINT32 apiType = CDC_IPC_GET_DC_STATUS_INFO;
+
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    PCDC_DC_STATUS_INFO_W pDCStatusInfoW = NULL;
+    PVMAFD_HB_STATUS_W pHbStatusW = NULL;
+
+    VMW_TYPE_SPEC input_spec[] = GET_CDC_STATUS_INFO_INPUT_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = GET_CDC_STATUS_INFO_OUTPUT_PARAMS;
+
+
+    if (!ppDCStatusInfo || !ppHbStatus || IsNullOrEmptyString(pwszDCName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    noOfArgsIn = sizeof(input_spec) / sizeof(input_spec[0]);
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    input_spec[0].data.pWString = (PWSTR)pwszDCName;
+
+    if (!IsNullOrEmptyString(pwszDomainName))
+    {
+        input_spec[1].data.pWString = (PWSTR)pwszDomainName;
+    }
+
+    dwError = VecsLocalIPCRequest (
+                                    apiType,
+                                    noOfArgsIn,
+                                    noOfArgsOut,
+                                    input_spec,
+                                    output_spec
+                                  );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    dwError = VmAfdAllocateMemory(
+                          sizeof(CDC_DC_STATUS_INFO_W),
+                          (PVOID*)&pDCStatusInfoW
+                          );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    pDCStatusInfoW->dwLastPing = *(output_spec[1].data.pUint32);
+    pDCStatusInfoW->dwLastResponseTime = *(output_spec[2].data.pUint32);
+    pDCStatusInfoW->dwLastError = *(output_spec[3].data.pUint32);
+    pDCStatusInfoW->bIsAlive = *(output_spec[4].data.pUint32);
+
+    dwError = VmAfdAllocateStringW(
+                              output_spec[5].data.pWString,
+                              &pDCStatusInfoW->pwszSiteName
+                              );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateMemory(
+                        sizeof(VMAFD_HB_STATUS_W),
+                        (PVOID *)&pHbStatusW
+                        );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    pHbStatusW->bIsAlive = pDCStatusInfoW->bIsAlive;
+
+    dwError = VmAfdUnMarshalHeartbeatStatusArray(
+                        *output_spec[7].data.pUint32,
+                        output_spec[6].data.pByte,
+                        &pHbStatusW->dwCount,
+                        &pHbStatusW->pHeartbeatInfoArr
+                        );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    *ppDCStatusInfo = pDCStatusInfoW;
+    *ppHbStatus = pHbStatusW;
+
+cleanup:
+
+    VmAfdFreeTypeSpecContent (output_spec, noOfArgsOut);
+    return dwError;
+
+error:
+
+    if (ppDCStatusInfo)
+    {
+        *ppDCStatusInfo = NULL;
+    }
+    if (ppHbStatus)
+    {
+        *ppHbStatus = NULL;
+    }
+    if (pDCStatusInfoW)
+    {
+        CdcFreeDCStatusInfoW(pDCStatusInfoW);
+    }
+    if (pHbStatusW)
+    {
+        VmAfdFreeHeartbeatStatusW(pHbStatusW);
+    }
+    goto cleanup;
+}
+
 
 DWORD
 CdcLocalGetCurrentState(

@@ -25,6 +25,7 @@
 #include <openssl/pem.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <fcntl.h>
 #include <pwd.h>
 #include <vmafd.h>
 #include <vmafdtypes.h>
@@ -48,12 +49,13 @@
 
 #include "targetver.h"
 #define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-
+#pragma comment (lib, "Ws2_32.lib")
 #include <windows.h>
 #include <wincrypt.h>
 #include <ws2tcpip.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <io.h>
 #include <stdlib.h>
 #include <malloc.h>
 #include <errno.h>

@@ -1008,6 +1008,7 @@ VMCAGetCertificateCount(
 //
     VMCA_LOCK_MUTEX_SHARED(&gVMCAServerGlobals.svcMutex, bLocked);
 
+    // Don't do this, even if we have no Root Cert,
     // The client program should be able to read
     // the number of certificates in the Data base.
     // In most common Scenerios, this will be 0.

@@ -17,3 +17,4 @@
 #define VMAFD_KRB5_CONF       "@VMAFD_KRB5CONF_FILEPATH@"
 #define VMAFD_KEYTAB_PATH     "@VMAFD_KEYTAB_CONFIG_DIR@/krb5.keytab"
 #define VMAFD_TRUSTED_ROOT_DOWNLOAD_PATH     "/etc/vmware-vpx/docRoot/certs"
+#define VMAFD_MACHINE_SSL_PATH               "/etc/vmware/vmware-vmafd"

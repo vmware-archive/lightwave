@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -38,7 +38,8 @@ typedef enum
     DIR_COMMAND_PASSWORD_CHANGE,
     DIR_COMMAND_PASSWORD_RESET,
     DIR_COMMAND_FUNCLVL_GET,
-    DIR_COMMAND_FUNCLVL_SET
+    DIR_COMMAND_FUNCLVL_SET,
+    DIR_COMMAND_NODES_LIST
 } DIR_COMMAND;
 
 typedef enum

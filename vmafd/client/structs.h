@@ -46,8 +46,10 @@ typedef struct _VECS_ENUM_CONTEXT
 
 typedef struct _VMAFD_HB_HANDLE
 {
-    pthread_t  threadHandle;
-    pthread_t* pThreadHandle;
-    PWSTR      pszServiceName;
-    DWORD      dwPort;
+    pthread_t       threadHandle;
+    pthread_t*      pThreadHandle;
+    pthread_cond_t  condStopHeartbeat;
+    pthread_mutex_t mutStopHeartbeat;
+    PWSTR           pszServiceName;
+    DWORD           dwPort;
 } VMAFD_HB_HANDLE;

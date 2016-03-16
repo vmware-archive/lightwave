@@ -27,6 +27,7 @@ VMAF_CFG_PACKAGE gVmAfPosixCfgApiTable =
         .pfnReadStringValue = &VmAfPosixCfgReadStringValue,
         .pfnReadDWORDValue  = &VmAfPosixCfgReadDWORDValue,
         .pfnSetValue        = &VmAfPosixCfgSetValue,
+        .pfnDeleteValue     = &VmAfPosixCfgDeleteValue,
         .pfnCloseKey        = &VmAfPosixCfgCloseKey,
         .pfnCloseConnection = &VmAfPosixCfgCloseConnection
 };

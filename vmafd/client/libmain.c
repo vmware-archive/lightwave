@@ -29,7 +29,7 @@ VmAfdInitialize(
 
 __attribute__((destructor))
 VOID
-VmAfdShutdown(
+VmAfdClientShutdown(
     VOID
     )
 {

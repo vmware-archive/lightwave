@@ -1016,19 +1016,20 @@ VMCAGetSignedCertificateFromCSRHW(
     DWORD dwCertLength = 0;
     PSTR pszRpcHandle = NULL;
 
-    VMCA_VERIFY_SERVER(pwszServerName);
-
-    if (pCertRequest == NULL) {
+    if (pCertRequest == NULL)
+    {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_ERROR(dwError);
     }
 
-    if(pwszServerName == NULL) {
+    if(pwszServerName == NULL && hInBinding == NULL )
+    {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_ERROR(dwError);
     }
 
-    if(tmNotBefore >= tmNotAfter){
+    if(tmNotBefore >= tmNotAfter)
+    {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_ERROR(dwError);
     }
@@ -1880,7 +1881,7 @@ VMCAGetCertificateCountHW(
     VMCARpcCall(
          RpcVMCAGetCertificateCount(
                     BindingHandle,
-                    dwStatus,
+                    (DWORD)dwStatus,
                     dwNumCertificates)
                 );
     BAIL_ON_ERROR(dwError);
@@ -2178,67 +2179,6 @@ error :
     return dwError;
 }
 
-DWORD
-VMCALoginUser(
-    PSTR pszDomain,
-    PSTR pszUserName,
-    PSTR pszPassword
-    )
-{
-    DWORD dwError = 0;
-    PSTR  pszPrincipalName = NULL;
-    PSTR  pszDomainName = NULL;
-    PSTR  pszDomainIter = NULL;
-
-    if (IsNullOrEmptyString(pszDomain)){
-        dwError = VMCA_INVALID_DOMAIN_NAME;
-        BAIL_ON_ERROR(dwError);
-    }
-
-    if (IsNullOrEmptyString(pszUserName)) {
-        dwError = VMCA_INVALID_USER_NAME;
-        BAIL_ON_ERROR(dwError);
-    }
-
-    if(pszPassword == NULL) {
-        dwError = VMCA_ARGUMENT_ERROR;
-        BAIL_ON_ERROR(dwError);
-    }
-    dwError = VMCAAllocateStringA(pszDomain, &pszDomainName);
-    BAIL_ON_ERROR(dwError);
-
-    pszDomainIter = pszDomainName;
-
-    while(pszDomainIter && *pszDomainIter){
-        *pszDomainIter = toupper((int)*pszDomainIter);
-        pszDomainIter ++;
-    }
-
-    dwError = VMCAAllocateStringPrintfA(&pszPrincipalName,
-                                        "%s@%s",
-                                        pszUserName,
-                                        pszDomainName);
-    BAIL_ON_ERROR(dwError);
-
-    dwError = VMCALoginUserPrivate(pszPrincipalName, pszPassword);
-    BAIL_ON_ERROR(dwError);
-
-error :
-    VMCA_SAFE_FREE_STRINGA(pszPrincipalName);
-    VMCA_SAFE_FREE_STRINGA(pszDomainName);
-
-    return dwError;
-}
-
-
-
-DWORD
-VMCALogout(
-    )
-{
-    return VMCALogOutPrivate();
-}
-
 
 DWORD
 VMCAGetCRLHW(
@@ -2248,7 +2188,6 @@ VMCAGetCRLHW(
     PWSTR pwszNewCRLFileName
     )
 {
-
     #define FILE_CHUNK (64 * 1024) - 1
     handle_t BindingHandle = NULL;
     DWORD dwError = 0;
@@ -3765,6 +3704,123 @@ error:
         *ppszCSR = NULL;
     }
     VMCA_SAFE_FREE_STRINGA(pszCSR);
+
+    goto cleanup;
+}
+
+DWORD
+VMCAGetSignedCertificateForHostA(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCSTR pszHostName,
+    PCSTR pszHostIp,
+    PCVMCA_CSR pCertRequest,
+    time_t tmNotBefore,
+    time_t tmNotAfter,
+    PVMCA_CERTIFICATE* ppCertificate
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+    PVMCA_CERTIFICATE pCertificate = NULL;
+
+    if (IsNullOrEmptyString(pCertRequest) || !ppCertificate)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = VMCAVerifyHostName(pszHostName, pszHostIp, pCertRequest);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAGetSignedCertificateFromCSRHA(
+                        hInBinding,
+                        NULL,
+                        pCertRequest,
+                        tmNotBefore,
+                        tmNotAfter,
+                        &pCertificate);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    *ppCertificate = pCertificate;
+
+cleanup:
+    return dwError;
+
+error:
+    if (ppCertificate)
+    {
+        *ppCertificate = NULL;
+    }
+
+    if (pCertificate)
+    {
+        VMCAFreeCertificate(pCertificate);
+    }
+
+    goto cleanup;
+}
+
+DWORD
+VMCAGetSignedCertificateForHostW(
+    PVMCA_SERVER_CONTEXT hInBinding,
+    PCWSTR pwszHostName,
+    PCWSTR pwszHostIp,
+    PCVMCA_CSR pCertRequest,
+    time_t tmNotBefore,
+    time_t tmNotAfter,
+    PVMCA_CERTIFICATE* ppCertificate
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+    PSTR pszHostName = NULL;
+    PSTR pszHostIp = NULL;
+    PVMCA_CERTIFICATE pCertificate = NULL;
+
+    if (IsNullOrEmptyString(pCertRequest) || !ppCertificate)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    if (pwszHostName)
+    {
+        dwError = VMCAAllocateStringAFromW(pwszHostName, &pszHostName);
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    if (pwszHostIp)
+    {
+        dwError = VMCAAllocateStringAFromW(pwszHostIp, &pszHostIp);
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = VMCAGetSignedCertificateForHostA(
+                        hInBinding,
+                        pszHostName,
+                        pszHostIp,
+                        pCertRequest,
+                        tmNotBefore,
+                        tmNotAfter,
+                        &pCertificate);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    *ppCertificate = pCertificate;
+
+cleanup:
+
+    VMCA_SAFE_FREE_STRINGA(pszHostName);
+    VMCA_SAFE_FREE_STRINGA(pszHostIp);
+
+    return dwError;
+error:
+    if (ppCertificate)
+    {
+        *ppCertificate = NULL;
+    }
+
+    if (pCertificate)
+    {
+        VMCAFreeCertificate(pCertificate);
+    }
 
     goto cleanup;
 }

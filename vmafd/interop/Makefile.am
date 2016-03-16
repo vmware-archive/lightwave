@@ -1,7 +1,8 @@
 SUBDIRS = \
     java \
     jni  \
-    cdcjni
+    cdcjni \
+    heartbeatjni
 
 SKIP_DIRS = \
     python

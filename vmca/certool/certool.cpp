@@ -76,10 +76,10 @@ std::string cfgEmail;
 std::string cfgHostName;
 
 
- time_t now;
- time_t expire;
+time_t now;
+time_t expire;
 
-PSTR
+PCSTR
 ErrorCodeToName(int code)
 {
     int i = 0;
@@ -91,11 +91,11 @@ ErrorCodeToName(int code)
     {
         if ( code == VMCA_ERROR_Table[i].code)
         {
-            return (PSTR) VMCA_ERROR_Table[i].name;
+            return VMCA_ERROR_Table[i].name;
         }
     }
 
-    return (PSTR) UNKNOWN_STRING;
+    return UNKNOWN_STRING;
 }
 
 VMCA_FILE_ENCODING GetFileEncoding(std::ifstream& ifs, bool bSkipHeader)
@@ -238,7 +238,7 @@ VMCAReadPassword(
 
     // Read up to 32 characters of password
 
-    for (; iChar < sizeof(szPassword); iChar++)
+    for (; iChar < sizeof(szPassword)-1; iChar++)
     {
         ssize_t nRead = 0;
         CHAR ch;
@@ -790,28 +790,6 @@ DispatchInitFunctions(po::variables_map argsMap,po::options_description& config)
 
     if(argsMap.count("WaitVMDIR")) {
         dwError = HandleWaitVMDIR();
-        BAIL_ON_ERROR(dwError);
-    }
-
-
-    if(argsMap.count("login")){
-         if(!argsMap.count("user") ||
-            !argsMap.count("password") ||
-            !argsMap.count("domain")) {
-                std::cout << "To login we need a user name and password.\n"
-                      << "Example : certool --login --user=administrator"
-                      << " --domain=VSPHERE.LOCAL"
-                      << " --password=<password>\n";
-            dwError =  VMCA_ARGUMENT_ERROR;
-            BAIL_ON_ERROR(dwError);
-         }
-
-        dwError = HandleLogin();
-        BAIL_ON_ERROR(dwError);
-    }
-
-    if(argsMap.count("logout")) {
-        dwError = HandleLogout();
         BAIL_ON_ERROR(dwError);
     }
 
