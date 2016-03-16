@@ -49,6 +49,7 @@ import com.vmware.identity.idm.server.performance.IPerformanceMonitor;
 import com.vmware.identity.idm.server.performance.IdmAuthStatCache;
 import com.vmware.identity.idm.server.performance.PerformanceMonitorFactory;
 import com.vmware.identity.idm.server.provider.IIdentityProvider;
+import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.activedirectory.ActiveDirectoryProvider;
 import com.vmware.identity.idm.server.provider.ldap.LdapWithAdMappingsProvider;
 
@@ -58,6 +59,7 @@ public class ADProviderTest
    private static ServerIdentityStoreData storeData = null;
    private static ServerIdentityStoreData storeDataSchemaMapped = null;
    private static final String attrNameGivenName = "givenName";
+   private static final String attrSamAccountName = "sAMAccountName";
    private static final String attrNameSn = "sn";
    private static final String attrNameMemberOf = "memberof";
    private static final String attrNameSubjectType = "subjectType";
@@ -257,6 +259,49 @@ public class ADProviderTest
    }
 
    @Test
+   public void testFindActiveUser() throws Exception
+   {
+       PrincipalId user = new PrincipalId("lookup", AD_DOMAIN_NAME_USER);
+       IIdentityProvider provider =  schemaMappedprovider;
+       try {
+           PrincipalId result = provider.findActiveUser(attrNameUserPrincipalName, user.getUPN());
+           Assert.assertNotNull(result);
+           Assert.assertEquals("", user.getName(), result.getName());
+        }
+        catch (Exception e)
+        {
+            Assert.fail(String.format("Failed to find the user by UPN", user.getUPN()) );
+        }
+
+       String accountName = "lookup";
+       try {
+           PrincipalId result = provider.findActiveUser(attrSamAccountName, accountName);
+           Assert.assertNotNull(result);
+           Assert.assertEquals("", user.getName(), result.getName());
+        }
+        catch (InvalidPrincipalException e)
+        {
+            Assert.fail(String.format("Failed to find the user by account name %s.", accountName) );
+        }
+
+       String givenName = "lookup";
+       try {
+           PrincipalId result = provider.findActiveUser(attrNameGivenName, givenName);
+           Assert.assertNotNull(result);
+           Assert.assertEquals("", user.getName(), result.getName());
+        }
+        catch (InvalidPrincipalException e)
+        {
+            Assert.fail(String.format("Failed to find the user by account name %s.", givenName) );
+        }
+        catch (Exception e) {
+            Assert.fail("Unexpected search result.");
+        }
+
+
+   }
+
+   @Test
    public void testFindMatches() throws Exception
    {
        Set<PersonUser> users = unMappedprovider.findUsers("testuser", storeData.getName(), -1);
@@ -270,28 +315,28 @@ public class ADProviderTest
 
            Assert.assertEquals(isActive, isActiveMapped);
 
-           Set<Group> groups = unMappedprovider.findDirectParentGroups(pu.getId());
-           Set<Group> groupsMapped = schemaMappedprovider.findDirectParentGroups(pu.getId());
+           PrincipalGroupLookupInfo groups = unMappedprovider.findDirectParentGroups(pu.getId());
+           PrincipalGroupLookupInfo groupsMapped = schemaMappedprovider.findDirectParentGroups(pu.getId());
 
            Assert.assertEquals(groups, groupsMapped);
            groups = unMappedprovider.findNestedParentGroups(pu.getId());
            groupsMapped = schemaMappedprovider.findNestedParentGroups(pu.getId());
 
            Assert.assertEquals(groups, groupsMapped);
+           if (groups != null)
+              for(Group g :  groups.getGroups())
+              {
+                  Set<PersonUser> users1 = null;
+                  users1 = unMappedprovider.findUsersInGroup(g.getId(), "", -1);
 
-           for(Group g : groups)
-           {
-               Set<PersonUser> users1 = null;
-               users1 = unMappedprovider.findUsersInGroup(g.getId(), "", -1);
+                  Set<PersonUser> usersMapped1 = schemaMappedprovider.findUsersInGroup(g.getId(), "", -1);
 
-               Set<PersonUser> usersMapped1 = schemaMappedprovider.findUsersInGroup(g.getId(), "", -1);
+                  Assert.assertEquals(users1, usersMapped1);
+                  Set<Group> group1 = unMappedprovider.findGroupsInGroup(g.getId(), "", -1);
+                  Set<Group> groupMapped1 = schemaMappedprovider.findGroupsInGroup(g.getId(), "", -1);
 
-               Assert.assertEquals(users1, usersMapped1);
-               Set<Group> group1 = unMappedprovider.findGroupsInGroup(g.getId(), "", -1);
-               Set<Group> groupMapped1 = schemaMappedprovider.findGroupsInGroup(g.getId(), "", -1);
-
-               Assert.assertEquals(group1, groupMapped1);
-           }
+                  Assert.assertEquals(group1, groupMapped1);
+              }
        }
 
        users = unMappedprovider.findDisabledUsers("testuser", -1);
@@ -403,6 +448,7 @@ public class ADProviderTest
        objectMapBuilder.addAttributeMapping(new IdentityStoreAttributeMapping(IdentityStoreAttributeMapping.AttributeIds.UserAttributePwdLastSet, "pwdLastSet"));
        schemaMapBuilder.addObjectMappings(objectMapBuilder.buildObjectMapping());
 
+
        objectMapBuilder = new IdentityStoreObjectMapping.Builder(ObjectIds.ObjectIdGroup);
        objectMapBuilder.setObjectClass("group");
        objectMapBuilder.addAttributeMapping(new IdentityStoreAttributeMapping(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeAccountName, "sAMAccountName"));
@@ -439,7 +485,7 @@ class TestPerfMonitor implements IPerformanceMonitor {
     }
 
     @Override
-    public int getCacheSize() {
+    public int getDefaultCacheSize() {
         return 0;
     }
 

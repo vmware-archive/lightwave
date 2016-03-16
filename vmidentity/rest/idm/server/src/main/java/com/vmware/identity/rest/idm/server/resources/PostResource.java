@@ -16,7 +16,6 @@ package com.vmware.identity.rest.idm.server.resources;
 import java.util.Collection;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.POST;
@@ -24,19 +23,25 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
+import javax.ws.rs.core.UriInfo;
 
 import com.vmware.identity.rest.core.server.authorization.Role;
 import com.vmware.identity.rest.core.server.authorization.annotation.RequiresRole;
+import com.vmware.identity.rest.core.server.resources.BaseResource;
 import com.vmware.identity.rest.idm.data.CertificateChainDTO;
+import com.vmware.identity.rest.idm.data.EventLogDTO;
+import com.vmware.identity.rest.idm.data.EventLogStatusDTO;
 import com.vmware.identity.rest.idm.data.ExternalIDPDTO;
 import com.vmware.identity.rest.idm.data.GroupDTO;
 import com.vmware.identity.rest.idm.data.IdentityProviderDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
 import com.vmware.identity.rest.idm.data.PrivateKeyDTO;
 import com.vmware.identity.rest.idm.data.RelyingPartyDTO;
+import com.vmware.identity.rest.idm.data.ResourceServerDTO;
 import com.vmware.identity.rest.idm.data.SearchResultDTO;
 import com.vmware.identity.rest.idm.data.ServerDetailsDTO;
 import com.vmware.identity.rest.idm.data.SolutionUserDTO;
@@ -59,7 +64,7 @@ import com.vmware.identity.rest.idm.data.UserDTO;
 @Path("/post")
 public class PostResource extends BaseResource {
 
-    public PostResource(@Context HttpServletRequest request, @Context SecurityContext securityContext) {
+    public PostResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(request, securityContext);
     }
 
@@ -239,4 +244,37 @@ public class PostResource extends BaseResource {
     public Collection<OIDCClientDTO> getAllOidcClients(@PathParam("tenantName") String tenantName, @PathParam("clientId") String clientId) {
         return new OIDCClientResource(tenantName, getRequest(), getSecurityContext()).getAll();
     }
+
+    // Resource Server Resource
+
+    @POST @Path("/tenant/{tenantName}/resourceserver/{resourceServerName}")
+    @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role = Role.ADMINISTRATOR)
+    public ResourceServerDTO getResourceServer(@PathParam("tenantName") String tenantName, @PathParam("resourceServerName") String resourceServerName) {
+        return new ResourceServerResource(tenantName, getRequest(), getSecurityContext()).get(resourceServerName);
+    }
+
+    @POST @Path("/tenant/{tenantName}/resourceserver")
+    @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role = Role.ADMINISTRATOR)
+    public Collection<ResourceServerDTO> getAllResourceServers(@PathParam("tenantName") String tenantName, @PathParam("resourceServerName") String resourceServerName) {
+        return new ResourceServerResource(tenantName, getRequest(), getSecurityContext()).getAll();
+    }
+
+    // Diagnostics Resource
+
+    @POST @Path("/tenant/{tenantName}/diagnostics/eventlog")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role = Role.ADMINISTRATOR)
+    public Collection<EventLogDTO> getEventLog(@PathParam("tenantName") String tenantName, @Context UriInfo info) {
+        return new DiagnosticsResource(tenantName, getRequest(), getSecurityContext()).getEventLog(info);
+    }
+
+    @POST @Path("/tenant/{tenantName}/diagnostics/eventlog/status")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role = Role.ADMINISTRATOR)
+    public EventLogStatusDTO getEventLogStatus(@PathParam("tenantName") String tenantName) {
+        return new DiagnosticsResource(tenantName, getRequest(), getSecurityContext()).getEventLogStatus();
+    }
+
 }

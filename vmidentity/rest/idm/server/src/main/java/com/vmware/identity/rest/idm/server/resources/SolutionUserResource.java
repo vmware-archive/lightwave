@@ -16,7 +16,6 @@ package com.vmware.identity.rest.idm.server.resources;
 import java.security.cert.CertificateException;
 import java.util.Collection;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -27,6 +26,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
@@ -60,7 +60,7 @@ public class SolutionUserResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(SolutionUserResource.class);
 
-    public SolutionUserResource(String tenant, @Context HttpServletRequest request, @Context SecurityContext securityContext) {
+    public SolutionUserResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, securityContext);
     }
 
@@ -71,7 +71,7 @@ public class SolutionUserResource extends BaseSubResource {
      * @param certificate PEM format certificate.
      * @return Details of new solution user @see {@link SolutionUserDTO}
      */
-    @POST @Path("/")
+    @POST
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public SolutionUserDTO create(SolutionUserDTO user) {
@@ -195,9 +195,8 @@ public class SolutionUserResource extends BaseSubResource {
      * @return Set of Groups associated with requested solution user.
      * @see {@link SolutionUserDTO}
      */
-    @GET
+    @GET @Path("/{name}/groups")
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{name}/groups")
     @RequiresRole(role=Role.REGULAR_USER)
     public Collection<SolutionUserDTO> getGroups(@PathParam("name") String name, @DefaultValue("200") @QueryParam("limit") int limit) {
 
