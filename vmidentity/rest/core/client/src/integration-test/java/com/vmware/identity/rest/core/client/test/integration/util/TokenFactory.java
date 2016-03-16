@@ -1,5 +1,5 @@
 /* **********************************************************************
- * Copyright 2015 VMware, Inc. All rights reserved.
+ * Copyright 2015 VMware, Inc. All rights reserved. VMware Confidential
  * *********************************************************************/
 package com.vmware.identity.rest.core.client.test.integration.util;
 

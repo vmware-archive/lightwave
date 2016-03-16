@@ -18,12 +18,16 @@ import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.Locale;
+import java.util.Scanner;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -46,14 +50,16 @@ import com.vmware.identity.rest.idm.server.test.util.IDPConfigUtil;
 @Category(IntegrationTest.class)
 public class ExternalIDPResourceIT extends TestBase {
 
+    private static final String TEST_DATA_EXTERNAL_IDP_PATH = "src/integration-test/resources/external_idp_config.xml";
+
     private ExternalIDPResource resource;
-    private HttpServletRequest request;
+    private ContainerRequestContext request;
 
     @Before
     public void setup() {
-        request = createMock(HttpServletRequest.class);
-        expect(request.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        expect(request.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        request = createMock(ContainerRequestContext.class);
+        expect(request.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        expect(request.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
         replay(request);
 
         resource = new ExternalIDPResource(DEFAULT_TENANT, request, null);
@@ -102,6 +108,23 @@ public class ExternalIDPResourceIT extends TestBase {
         } finally {
             delete(config);
         }
+    }
+
+    @Test
+    public void testRegister_WithMetadata() throws Exception {
+        String expectedEntityId = "https://sc-rdops-vm06-dhcp-183-243.eng.vmware.com/websso/SAML2/Metadata/vsphere.local";
+        String metadata  = new Scanner(new File(TEST_DATA_EXTERNAL_IDP_PATH)).useDelimiter("\\Z").next();
+        ExternalIDPDTO idp = null;
+        try {
+            idp = registerWithMetadata(metadata);
+            assertNotNull(idp);
+            assertEquals(expectedEntityId, idp.getEntityID());
+        } finally {
+            if (idp != null) {
+                delete(idp.getEntityID());
+            }
+        }
+
     }
 
     @Ignore
@@ -170,8 +193,16 @@ public class ExternalIDPResourceIT extends TestBase {
         return resource.register(ExternalIDPMapper.getExternalIDPDTO(config));
     }
 
+    private ExternalIDPDTO registerWithMetadata(String metadata) throws Exception {
+        return resource.registerWithMetadata(metadata);
+    }
+
     private void delete(IDPConfig config) throws Exception {
         resource.delete(config.getEntityID());
+    }
+
+    private void delete(String externalIdpEntityId) throws Exception {
+        resource.delete(externalIdpEntityId);
     }
 
 }

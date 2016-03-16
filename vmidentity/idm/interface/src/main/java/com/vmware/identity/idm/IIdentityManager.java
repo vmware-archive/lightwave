@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.vmware.identity.performanceSupport.IIdmAuthStat;
+import com.vmware.identity.performanceSupport.IIdmAuthStatus;
 
 /**
  * Created by IntelliJ IDEA.
@@ -231,22 +232,56 @@ public interface IIdentityManager extends java.rmi.Remote
     /*
      *  OIDC Client
      */
-    public void addOIDCClient(String tenantName,
+    public void addOIDCClient(
+            String tenantName,
             OIDCClient oidcClient,
             IIdmServiceContext serviceContext) throws RemoteException, IDMException;
 
-    public void deleteOIDCClient(String tenantName, String clientID, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException;
+    public void deleteOIDCClient(
+            String tenantName,
+            String clientID,
+            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
 
-    public OIDCClient getOIDCClient(String tenantName, String clientID, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException;
+    public OIDCClient getOIDCClient(
+            String tenantName,
+            String clientID,
+            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
 
-    public void setOIDCClient(String tenantName,
+    public void setOIDCClient(
+            String tenantName,
             OIDCClient oidcClient,
             IIdmServiceContext serviceContext) throws RemoteException, IDMException;
 
-    public Collection<OIDCClient> getOIDCClients(String tenantName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException;
+    public Collection<OIDCClient> getOIDCClients(
+            String tenantName,
+            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+
+    /*
+     *  ResourceServer
+     */
+    public void addResourceServer(
+            String tenantName,
+            ResourceServer resourceServer,
+            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+
+    public void deleteResourceServer(
+            String tenantName,
+            String resourceServerName,
+            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+
+    public ResourceServer getResourceServer(
+            String tenantName,
+            String resourceServerName,
+            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+
+    public void setResourceServer(
+            String tenantName,
+            ResourceServer resourceServer,
+            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+
+    public Collection<ResourceServer> getResourceServers(
+            String tenantName,
+            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
 
     /*
      *  IdentityProvider
@@ -256,6 +291,8 @@ public interface IIdentityManager extends java.rmi.Remote
     public void deleteProvider(String tenantName, String providerName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
 
     public IIdentityStoreData getProvider(String tenantName, String ProviderName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+
+    public IIdentityStoreData getProviderWithInternalInfo(String tenantName, String providerName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
 
     public void setProvider(String tenantName, IIdentityStoreData idpData, IIdmServiceContext serviceContext ) throws RemoteException, IDMException;
 
@@ -268,6 +305,8 @@ public interface IIdentityManager extends java.rmi.Remote
     public Collection<SecurityDomain> getSecurityDomains(String tenantName, String providerName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
 
     public void probeProviderConnectivity(String tenantName, String providerUri,AuthenticationType authType, String userName, String pwd, Collection<X509Certificate> certificates, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+
+    public void probeProviderConnectivity(String tenantName, IIdentityStoreData idsData, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
 
     public void probeProviderConnectivityWithCertValidation(String tenantName, String providerUri, AuthenticationType authType, String userName, String pwd, Collection<X509Certificate> certificates, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
 
@@ -289,6 +328,23 @@ public interface IIdentityManager extends java.rmi.Remote
     public GSSResult authenticate(String tenantName, String contextId, byte[] gssTicket, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
 
     public PrincipalId authenticate(String tenantName, X509Certificate[] tlsCertChain, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+
+    /**
+     * authenticate with secure ID
+     *
+     * @param tenantName
+     * @param rsaSessionID
+     *            could be null which refers to a fresh login request.
+     * @param principal
+     * @param passcode
+     * @return
+     * @throws IDMSecureIDNewPinException
+     * @throws IDMLoginException
+     */
+    public RSAAMResult authenticateRsaSecurId(String tenantName,
+            String sessionID, String principal, String passcode,
+            IIdmServiceContext serviceContext)
+            throws RemoteException, IDMException;
 
     public boolean IsActive(String tenantName,PrincipalId principal, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
 
@@ -783,6 +839,17 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      * @throws IDMException
      */
+
+    /**
+     * Set authentication policy for identity provider
+     *
+     * @param tenantName Name of tenant
+     * @param providerName Name of identity provider.
+     * @param policy Authentication policy to be set on identity provider
+     * @param serviceContext
+     */
+    public void setAuthnPolicyForProvider(String tenantName, String providerName, AuthnPolicy policy, IIdmServiceContext serviceContext) throws Exception;
+
     boolean getLogonBannerCheckboxFlag(String tenantName, IIdmServiceContext serviceContext) throws RemoteException,  IDMException;
 
     /**
@@ -883,17 +950,78 @@ public interface IIdentityManager extends java.rmi.Remote
     */
     void leaveActiveDirectory(String user, String password, IIdmServiceContext serviceContext) throws RemoteException, IDMException, ADIDSAlreadyExistException, IdmADDomainException;
 
+    /**
+     * @param tenantName
+     * @param serviceContext
+     * @return non null current AuthnPolicy object.
+     * @throws RemoteException
+     * @throws IDMException
+     */
     public AuthnPolicy getAuthNPolicy(String tenantName, IIdmServiceContext serviceContext)
             throws RemoteException, IDMException;
 
     /**
-     * Operation for retrieving the IDM authentication statistics
-     * @param tenantName
-     * @param serviceContext
+     * Operation for retrieving the IDM authentication statistics cache
+     *
+     * @param tenantName cannot be null or empty
+     * @param serviceContext required, non-null
      * @throws RemoteException
      * @throws IDMException
      */
-    List<IIdmAuthStat> getIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public List<IIdmAuthStat> getIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+
+    /**
+     * Operation for retrieving the status of the IDM authentication statistics cache
+     *
+     * @param tenantName cannot be null or empty
+     * @param serviceContext required, non-null
+     * @return the status of the authentication statistics cache
+     * @throws RemoteException
+     * @throws IDMException
+     */
+    public IIdmAuthStatus getIdmAuthStatus(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+
+    /**
+     * Operation for clearing the IDM authentication statistics cache
+     *
+     * @param tenantName cannot be null or empty
+     * @param serviceContext required, non-null
+     * @throws RemoteException
+     * @throws IDMException
+     */
+    public void clearIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+
+    /**
+     * Operation for setting the IDM authentication statistics cache size
+     *
+     * @param tenantName cannot be null or empty
+     * @param size size of the authentication stat window
+     * @param serviceContext required, non-null
+     * @throws RemoteException
+     * @throws IDMException
+     */
+    public void setIdmAuthStatsSize(String tenantName, int size, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+
+    /**
+     * Operation for enabling the IDM authentication statistics cache
+     *
+     * @param tenantName cannot be null or empty
+     * @param serviceContext required, non-null
+     * @throws RemoteException
+     * @throws IDMException
+     */
+    public void enableIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+
+    /**
+     * Operation for disabling the IDM authentication statistics cache
+     *
+     * @param tenantName cannot be null or empty
+     * @param serviceContext required, non-null
+     * @throws RemoteException
+     * @throws IDMException
+     */
+    public void disableIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+
     public void setAuthNPolicy(String tenantName, AuthnPolicy policy, IIdmServiceContext serviceContext)
             throws RemoteException, IDMException;
 
@@ -908,4 +1036,39 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws Exception
      */
     String getServerSPN() throws RemoteException, Exception;
+
+    /**
+     * Add rsa secureID agent
+     * @param tenantName  non null string name.
+     * @param rsaAgentConfig non null RSAAgentConfig
+     * @param serviceContext
+     * @throws Exception
+     */
+    public void setRSAConfig(String tenantName, RSAAgentConfig rsaAgentConfig, IIdmServiceContext serviceContext) throws Exception;
+
+    /**
+     * Return RSA secureID agent configuration that is associates to the site.
+     * @param tenantName
+     * @param siteID
+     * @param serviceContext
+     * @return RSAAgentConfig or null
+     * @throws IDMException
+     * @throws RemoteException
+     */
+    public RSAAgentConfig getRSAConfig(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+
+    /**
+     * Adding a RSA AM instance-specific configuration to tenant
+     * @param tenantName
+     * @param rsaAgentConfig
+     * @param serviceContext
+     * @throws Exception
+     */
+    public void addRSAInstanceInfo(String tenantName, RSAAMInstanceInfo rsaInstInfo, IIdmServiceContext serviceContext) throws Exception;
+    /**
+     * @param tenantName
+     * @param siteID
+     * @throws Exception
+     */
+    public void deleteRSAInstanceInfo(String tenantName, String siteID, IIdmServiceContext serviceContext) throws Exception;
 }
