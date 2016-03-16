@@ -16,6 +16,8 @@ package com.vmware.identity.openidconnect.client;
 
 import org.apache.commons.lang3.Validate;
 
+import com.vmware.identity.openidconnect.common.ClientID;
+
 /**
  * Client configuration
  *
@@ -26,6 +28,7 @@ public class ClientConfig {
     private final ClientID clientId;
     private final HolderOfKeyConfig holderOfKeyConfig;
     private final HighAvailabilityConfig highAvailabilityConfig;
+    private final long clockToleranceInSeconds;
 
     /**
      * Constructor
@@ -38,7 +41,7 @@ public class ClientConfig {
             ConnectionConfig connectionConfig,
             ClientID clientId,
             HolderOfKeyConfig holderOfKeyConfig) {
-        this(connectionConfig, clientId, holderOfKeyConfig, (HighAvailabilityConfig) null);
+        this(connectionConfig, clientId, holderOfKeyConfig, (HighAvailabilityConfig) null, 0L);
     }
 
     /**
@@ -54,12 +57,48 @@ public class ClientConfig {
             ClientID clientId,
             HolderOfKeyConfig holderOfKeyConfig,
             HighAvailabilityConfig highAvailabilityConfig) {
+        this(connectionConfig, clientId, holderOfKeyConfig, highAvailabilityConfig, 0L);
+    }
+
+    /**
+     * Constructor
+     *
+     * @param connectionConfig                  Server connection configuration.
+     * @param clientId                          OIDC registered client Id.
+     * @param holderOfKeyConfig                 Client key configuration.
+     * @param clockToleranceInSeconds           Clock tolerance in seconds.
+     */
+    public ClientConfig(
+            ConnectionConfig connectionConfig,
+            ClientID clientId,
+            HolderOfKeyConfig holderOfKeyConfig,
+            long clockToleranceInSeconds) {
+        this(connectionConfig, clientId, holderOfKeyConfig, (HighAvailabilityConfig) null, clockToleranceInSeconds);
+    }
+
+    /**
+     * Constructor
+     *
+     * @param connectionConfig                  Server connection configuration.
+     * @param clientId                          OIDC registered client Id.
+     * @param holderOfKeyConfig                 Client key configuration.
+     * @param highAvailabilityConfig            High Availability / Site Affinity config.
+     * @param clockToleranceInSeconds           Clock tolerance in seconds.
+     */
+    public ClientConfig(
+            ConnectionConfig connectionConfig,
+            ClientID clientId,
+            HolderOfKeyConfig holderOfKeyConfig,
+            HighAvailabilityConfig highAvailabilityConfig,
+            long clockToleranceInSeconds) {
         Validate.notNull(connectionConfig, "connectionConfig");
+        Validate.isTrue(clockToleranceInSeconds >= 0L, "clock toleance must be no less than zero");
 
         this.connectionConfig = connectionConfig;
         this.clientId = clientId;
         this.holderOfKeyConfig = holderOfKeyConfig;
         this.highAvailabilityConfig = highAvailabilityConfig;
+        this.clockToleranceInSeconds = clockToleranceInSeconds;
     }
 
     /**
@@ -96,5 +135,14 @@ public class ClientConfig {
      */
     public HighAvailabilityConfig getHighAvailabilityConfig() {
         return this.highAvailabilityConfig;
+    }
+
+    /**
+     * Get clock tolerance
+     *
+     * @return                          Clock tolerance in seconds
+     */
+    public long getClockToleranceInSeconds() {
+        return this.clockToleranceInSeconds;
     }
 }

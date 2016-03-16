@@ -22,15 +22,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 
 import org.easymock.EasyMock;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
-import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.rest.core.server.exception.client.BadRequestException;
@@ -48,7 +46,6 @@ import com.vmware.identity.rest.idm.server.test.annotation.IntegrationTest;
 import com.vmware.identity.rest.idm.server.test.integration.util.PrincipalAssertor;
 import com.vmware.identity.rest.idm.server.test.integration.util.data.GroupDataGenerator;
 import com.vmware.identity.rest.idm.server.test.integration.util.data.UserDataGenerator;
-import com.vmware.identity.rest.idm.server.test.resources.UserResourceTest;
 
 /**
  * Integration tests for Group Resource
@@ -66,14 +63,13 @@ public class GroupResourceIT extends TestBase {
     private static final String GROUP_UPN_UNKNOWN_TENANT = GROUPNAME + "@" + "unknown.local";
 
     private GroupResource groupResource;
-    private HttpServletRequest request;
-    private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(UserResourceTest.class);
+    private ContainerRequestContext request;
 
     @Before
     public void setUp() {
-        request = EasyMock.createMock(HttpServletRequest.class);
-        EasyMock.expect(request.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        EasyMock.expect(request.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        request = EasyMock.createMock(ContainerRequestContext.class);
+        EasyMock.expect(request.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        EasyMock.expect(request.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
         EasyMock.replay(request);
 
         groupResource = new GroupResource(DEFAULT_TENANT, request, null);

@@ -21,7 +21,6 @@ import java.security.cert.Certificate;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.CertificateType;
@@ -31,7 +30,10 @@ import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.OIDCClient;
 import com.vmware.identity.idm.PasswordExpiration;
+import com.vmware.identity.idm.RSAAMInstanceInfo;
+import com.vmware.identity.idm.RSAAgentConfig;
 import com.vmware.identity.idm.RelyingParty;
+import com.vmware.identity.idm.ResourceServer;
 import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.server.config.directory.TenantAttributes;
 
@@ -265,6 +267,19 @@ public interface IConfigStore
     public Collection<OIDCClient> getOIDCClients(String tenantName) throws Exception;
 
     /*
+     *  Resource Server
+     */
+    public void addResourceServer(String tenantName, ResourceServer resourceServer) throws Exception;
+
+    public void deleteResourceServer(String tenantName, String resourceServerName) throws Exception;
+
+    public ResourceServer getResourceServer(String tenantName, String resourceServerName) throws Exception;
+
+    public void setResourceServer(String tenantName, ResourceServer resourceServer) throws Exception;
+
+    public Collection<ResourceServer> getResourceServers(String tenantName) throws Exception;
+
+    /*
      *  IdentityProvider
      */
     public
@@ -329,6 +344,8 @@ public interface IConfigStore
 
     public void setLogonBannerContent(String tenantName, String logonBannerContent) throws Exception;
 
+    public void setAuthnTypesForProvider(String tenantName, String providerName, boolean password, boolean windows, boolean certificate,boolean rsaSecureID) throws Exception;
+
     public void setLogonBannerTitle(String tenantName, String logonBannerTitle) throws Exception;
 
     public void setLogonBannerCheckboxFlag(String tenantName, boolean logonBannerEnableCheckbox) throws Exception;
@@ -344,6 +361,14 @@ public interface IConfigStore
    public void setClientCertPolicy(String tenantName, ClientCertPolicy policy)
             throws Exception;
 
-   public void setAuthnTypes(String tenantName, boolean password, boolean windows, boolean certificate)
+   public void setAuthnTypes(String tenantName, boolean password, boolean windows, boolean certificate, boolean rsaSecureID)
            throws Exception;
+
+   public void setRsaAgentConfig(String tenantName, RSAAgentConfig rsaConfig) throws Exception;
+
+   public RSAAgentConfig getRSAAgentConfig(String tenantName) throws Exception;
+
+   public void addRSAInstanceInfo(String tenantName, RSAAMInstanceInfo instInfo) throws Exception;
+
+   public void deleteRSAInstanceInfo(String tenantName, String siteID) throws Exception;
 }

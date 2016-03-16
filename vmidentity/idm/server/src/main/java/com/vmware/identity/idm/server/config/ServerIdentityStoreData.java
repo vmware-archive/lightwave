@@ -63,6 +63,7 @@ public class ServerIdentityStoreData implements IIdentityStoreData, IIdentitySto
     private Set<String> _upnSuffixes;
     private int _flags;
     private Collection<X509Certificate> _certificates;
+    private int[] _authnTypes;
 
     public ServerIdentityStoreData( DomainType domainType, String name )
     {
@@ -86,6 +87,7 @@ public class ServerIdentityStoreData implements IIdentityStoreData, IIdentitySto
         this._upnSuffixes = null;
         this._flags = 0;
         this._certificates = null;
+        this._authnTypes = null;
     }
 
     /*
@@ -134,6 +136,12 @@ public class ServerIdentityStoreData implements IIdentityStoreData, IIdentitySto
     public String getUserName()
     {
         return this._userName;
+    }
+
+    @Override
+    public int[] getAuthnTypes()
+    {
+        return this._authnTypes;
     }
 
     @Override
@@ -213,6 +221,9 @@ public class ServerIdentityStoreData implements IIdentityStoreData, IIdentitySto
     * public methods
     */
 
+    public void setAuthnTypes(int[] authnTypes){
+        this._authnTypes = authnTypes;
+    }
 
     public void setProviderType(IdentityStoreType type)
     {
@@ -354,7 +365,7 @@ public class ServerIdentityStoreData implements IIdentityStoreData, IIdentitySto
                     this.getUserBaseDn(), this.getGroupBaseDn(), this.getConnectionStrings(),
                     this.getAttributeMap(), this.getIdentityStoreSchemaMapping(),
                     (this.getUpnSuffixes() != null? Collections.unmodifiableSet((this.getUpnSuffixes())):null),
-                    this.getFlags(), this.getCertificates()
+                    this.getFlags(), this.getCertificates(), this.getAuthnTypes()
             );
         }
         else

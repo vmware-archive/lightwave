@@ -18,6 +18,7 @@ import static org.easymock.EasyMock.createNiceMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 
+import java.net.URI;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.SecureRandom;
@@ -30,6 +31,8 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.vmware.identity.openidconnect.common.ClientID;
+import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.TokenClass;
 
 /**
@@ -49,6 +52,7 @@ public class ListenerHelperTest {
     private static ClientID clientID = new ClientID("test-client");
     private static Issuer issuer = new Issuer("https://abc.com/openidconnect");
     private static Long tokenLifeTime = 2 * 60 * 1000L;
+    private static URI requestUri = URI.create("https://client/redirect_uri");
 
     @BeforeClass
     public static void setUp() throws Exception {
@@ -69,10 +73,18 @@ public class ListenerHelperTest {
         parameterMap.put("error_description", error_description);
         parameterMap.put("state", state);
 
-        AuthenticationResponse response = ListenerHelper.parseAuthenticationResponse(parameterMap, null);
+        OIDCServerException exception;
+        try {
+            ListenerHelper.parseAuthenticationCodeResponse(parameterMap, requestUri);
+            exception = null;
+            Assert.fail("expecting OIDCServerException to be thrown");
+        } catch (OIDCServerException e) {
+            exception = e;
+        }
 
-        Assert.assertEquals(OIDCServerError.getOIDCServerError(error), ((AuthenticationErrorResponse) response).getOIDCServerError());
-        Assert.assertEquals(state, ((AuthenticationErrorResponse) response).getState().getValue());
+        Assert.assertEquals(error, exception.getErrorObject().getErrorCode().getValue());
+        Assert.assertEquals(error_description, exception.getErrorObject().getDescription());
+        Assert.assertEquals(state, exception.getState().getValue());
     }
 
     @Test
@@ -82,45 +94,42 @@ public class ListenerHelperTest {
         parameterMap.put("code", code);
         parameterMap.put("state", state);
 
-        AuthenticationResponse response = ListenerHelper.parseAuthenticationResponse(parameterMap, null);
+        AuthenticationCodeResponse response = ListenerHelper.parseAuthenticationCodeResponse(parameterMap, requestUri);
 
-        Assert.assertEquals(code, ((AuthenticationCodeResponse) response).getAuthorizationCode().getValue());
-        Assert.assertEquals(state, ((AuthenticationCodeResponse) response).getState().getValue());
+        Assert.assertEquals(code, response.getAuthorizationCode().getValue());
+        Assert.assertEquals(state, response.getState().getValue());
     }
 
     @Test
     public void testParseAuthenticationTokensResponse() throws Exception {
 
         Map<String, String> parameterMap = new HashMap<String, String>();
-        parameterMap.put("id_token", TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getName(), providerPrivateKey, tokenLifeTime));
+        parameterMap.put("id_token", TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getValue(), providerPrivateKey, tokenLifeTime));
+        parameterMap.put("state", state);
 
         ConnectionConfig connectionConfigMock = createNiceMock(ConnectionConfig.class);
         expect(connectionConfigMock.getProviderPublicKey()).andReturn(providerPublicKey);
         expect(connectionConfigMock.getIssuer()).andReturn(issuer);
         replay(connectionConfigMock);
-        ClientConfig clientConfig = new ClientConfig(
-                connectionConfigMock,
-                clientID,
-                null);
-        AuthenticationResponse response = ListenerHelper.parseAuthenticationResponse(parameterMap, clientConfig);
-        Assert.assertNotNull(((AuthenticationTokensResponse) response).getOidcTokens().getIdToken());
-        Assert.assertNull(((AuthenticationTokensResponse) response).getOidcTokens().getAccessToken());
-        Assert.assertNull(((AuthenticationTokensResponse) response).getOidcTokens().getRefreshToken());
+        AuthenticationTokensResponse response = ListenerHelper.parseAuthenticationTokensResponse(parameterMap, requestUri, providerPublicKey, clientID, 0L);
+        Assert.assertNotNull(response.getTokens().getClientIDToken());
+        Assert.assertNull(response.getTokens().getAccessToken());
+        Assert.assertEquals(state, response.getState().getValue());
     }
 
     @Test(expected=OIDCClientException.class)
     public void testParseAuthenticationTokensResponseException() throws Exception {
 
         Map<String, String> parameterMap = new HashMap<String, String>();
-        parameterMap.put("id_token", TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getName(), providerPrivateKey, tokenLifeTime));
+        parameterMap.put("id_token", TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getValue(), providerPrivateKey, tokenLifeTime));
 
-        ListenerHelper.parseAuthenticationResponse(parameterMap, null);
+        ListenerHelper.parseAuthenticationCodeResponse(parameterMap, requestUri);
     }
 
     @Test(expected=OIDCClientException.class)
     public void testParseAuthenticationResponseException() throws Exception {
 
         Map<String, String> parameterMap = new HashMap<String, String>();
-        ListenerHelper.parseAuthenticationResponse(parameterMap, null);
+        ListenerHelper.parseAuthenticationCodeResponse(parameterMap, requestUri);
     }
 }

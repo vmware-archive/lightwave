@@ -72,6 +72,27 @@ public class ExternalIDPResource extends ClientResource {
     }
 
     /**
+     * Register an external identity provider(ADFS, Shibboleth etc) with IDP provided metadata.
+     *
+     * <p><b>Required Role:</b> {@code administrator}.
+     *
+     * @param tenant the tenant to register the external identity provider for.
+     * @param metadata the XML configuration data provided by external identity provider (ADFS, Shibboleth, etc) to register.
+     * @return the external identity provider that was registered.
+     * @throws ClientException if a client side error occurs.
+     * @throws ClientProtocolException in case of an http protocol error.
+     * @throws WebApplicationException in the event of an application error.
+     * @throws HttpException if there was a generic error with the remote call.
+     * @throws IOException if there was an error with the IO stream.
+     */
+    public ExternalIDPDTO register(String tenant, String metadata) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
+        URI uri = buildURI(parent.getHostRetriever(), EXTERNAL_IDP_URI, tenant);
+
+        HttpPost post = RequestFactory.createPostRequest(uri, parent.getToken(), metadata);
+        return execute(parent.getClient(), post, ExternalIDPDTO.class);
+    }
+
+    /**
      * Request the list of external identity providers associated with a .
      *
      * <p><b>Required Role:</b> {@code administrator}.

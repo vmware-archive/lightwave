@@ -35,24 +35,24 @@ public class OIDCClientGssIT extends OIDCClientITBase {
     public void testNonRegNoHOKConfigClientGetBearerWithRefreshByGssGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 nonRegNoHOKConfigClient,
-                new GssGrant(getNegotiationHandler()),
-                bearerWithRefreshSpec);
+                getNegotiationHandler(),
+                withRefreshSpec);
     }
 
     @Test
     public void testNonRegNoHOKConfigClientGetBearerWithoutRefreshByGssGrant() throws Exception {
         TestUtils.verifyTokens(
                 nonRegNoHOKConfigClient,
-                new GssGrant(getNegotiationHandler()),
-                bearerWithoutRefreshSpec);
+                getNegotiationHandler(),
+                withoutRefreshSpec);
     }
 
     @Test
     public void testNonRegNoHOKConfigClientGetHOKWithRefreshByGssGrant() throws Exception {
         TestUtils.verifyOIDCClientException(
                 nonRegNoHOKConfigClient,
-                new GssGrant(getNegotiationHandler()),
-                hokWithRefreshSpec,
+                getNegotiationHandler(),
+                withRefreshSpec,
                 "Holder of key configuation can not be null if HOK token is requested.");
     }
 
@@ -60,8 +60,8 @@ public class OIDCClientGssIT extends OIDCClientITBase {
     public void testNonRegNoHOKConfigClientGetHOKWithoutRefreshByGssGrant() throws Exception {
         TestUtils.verifyOIDCClientException(
                 nonRegNoHOKConfigClient,
-                new GssGrant(getNegotiationHandler()),
-                hokWithoutRefreshSpec,
+                getNegotiationHandler(),
+                withoutRefreshSpec,
                 "Holder of key configuation can not be null if HOK token is requested.");
     }
 
@@ -70,32 +70,32 @@ public class OIDCClientGssIT extends OIDCClientITBase {
     public void testNonRegHOKConfigClientGetBearerWithRefreshByGssGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 nonRegHOKConfigClient,
-                new GssGrant(getNegotiationHandler()),
-                bearerWithRefreshSpec);
+                getNegotiationHandler(),
+                withRefreshSpec);
     }
 
     @Test
     public void testNonRegHOKConfigClientGetBearerWithoutRefreshByGssGrant() throws Exception {
         TestUtils.verifyTokens(
                 nonRegHOKConfigClient,
-                new GssGrant(getNegotiationHandler()),
-                bearerWithoutRefreshSpec);
+                getNegotiationHandler(),
+                withoutRefreshSpec);
     }
 
     @Test
     public void testNonRegHOKConfigClientGetHOKWithRefreshByGssGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 nonRegHOKConfigClient,
-                new GssGrant(getNegotiationHandler()),
-                hokWithRefreshSpec);
+                getNegotiationHandler(),
+                withRefreshSpec);
     }
 
     @Test
     public void testNonRegHOKConfigClientGetHOKWithoutRefreshByGssGrant() throws Exception {
         TestUtils.verifyTokens(
                 nonRegHOKConfigClient,
-                new GssGrant(getNegotiationHandler()),
-                hokWithoutRefreshSpec);
+                getNegotiationHandler(),
+                withoutRefreshSpec);
     }
 
     // RegClient, GssGrant
@@ -103,35 +103,35 @@ public class OIDCClientGssIT extends OIDCClientITBase {
     public void testRegClientGetBearerWithRefreshByGssGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 regClient,
-                new GssGrant(getNegotiationHandler()),
-                bearerWithRefreshSpec);
+                getNegotiationHandler(),
+                withRefreshSpec);
     }
 
     @Test
     public void testRegClientGetBearerWithoutRefreshByGssGrant() throws Exception {
         TestUtils.verifyTokens(
                 regClient,
-                new GssGrant(getNegotiationHandler()),
-                bearerWithoutRefreshSpec);
+                getNegotiationHandler(),
+                withoutRefreshSpec);
     }
 
     @Test
     public void testRegClientGetHOKWithRefreshByGssGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 regClient,
-                new GssGrant(getNegotiationHandler()),
-                hokWithRefreshSpec);
+                getNegotiationHandler(),
+                withRefreshSpec);
     }
 
     @Test
     public void testRegClientGetHOKWithoutRefreshByGssGrant() throws Exception {
         TestUtils.verifyTokens(
                 regClient,
-                new GssGrant(getNegotiationHandler()),
-                hokWithoutRefreshSpec);
+                getNegotiationHandler(),
+                withoutRefreshSpec);
     }
 
-    private NegotiationHandler getNegotiationHandler() throws Exception {
+    private GSSNegotiationHandler getNegotiationHandler() throws Exception {
         if (SystemUtils.IS_OS_LINUX) {
             return GSSTestUtils.getKerberosNegotiationHandler();
         } else {

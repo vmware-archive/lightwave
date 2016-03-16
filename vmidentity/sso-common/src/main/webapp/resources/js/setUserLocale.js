@@ -17,7 +17,7 @@
  * By default en is always loaded in index.html
  */
 var supportedLocales = [ "de", "fr", "ja", "ko", "zh" ];
-var cLocale = navigator.language || navigator.userLanguage;
+var cLocale = navigator.languages[0] || navigator.language || navigator.userLanguage;
 
 cLocale = cLocale.toLowerCase();
 
