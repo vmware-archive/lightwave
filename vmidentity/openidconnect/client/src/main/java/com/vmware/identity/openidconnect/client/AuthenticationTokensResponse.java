@@ -16,38 +16,28 @@ package com.vmware.identity.openidconnect.client;
 
 import org.apache.commons.lang3.Validate;
 
+import com.vmware.identity.openidconnect.common.State;
+
 /**
- * Authentication Token Response
- *
  * @author Jun Sun
+ * @author Yehia Zayour
  */
-public class AuthenticationTokensResponse extends AuthenticationResponse {
-
+public final class AuthenticationTokensResponse {
     private final State state;
-    private final OIDCTokens oidcTokens;
+    private final OIDCTokens tokens;
 
-    AuthenticationTokensResponse(State state, OIDCTokens oidcTokens) {
-        Validate.notNull(oidcTokens, "oidcTokens");
-
+    public AuthenticationTokensResponse(State state, OIDCTokens tokens) {
+        Validate.notNull(state, "state");
+        Validate.notNull(tokens, "tokens");
         this.state = state;
-        this.oidcTokens = oidcTokens;
+        this.tokens = tokens;
     }
 
-    /**
-     * Get state value.
-     *
-     * @return                  State value in response.
-     */
     public State getState() {
         return this.state;
     }
 
-    /**
-     * Get OIDC tokens.
-     *
-     * @return                  OIDC tokens in response.
-     */
-    public OIDCTokens getOidcTokens() {
-        return this.oidcTokens;
+    public OIDCTokens getTokens() {
+        return this.tokens;
     }
 }

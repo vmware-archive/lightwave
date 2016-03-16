@@ -1,0 +1,107 @@
+<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:vmes="http://vmware.com/schemas/attr-names/2012/04/Extensions" entityID="https://sc-rdops-vm06-dhcp-183-243.eng.vmware.com/websso/SAML2/Metadata/vsphere.local">
+     <Extensions>
+          <vmes:ExportedOn>2015-11-04T21:55:22Z</vmes:ExportedOn>
+          <vmes:ExportedBy>Exported by VMware Identity Server (c) 2012</vmes:ExportedBy>
+     </Extensions>
+     <IDPSSODescriptor WantAuthnRequestsSigned="false" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+          <KeyDescriptor xmlns:ds="http://www.w3.org/2000/09/xmldsig#" use="signing">
+               <ds:KeyInfo>
+                    <ds:X509Data>
+                         <ds:X509Certificate>MIIDoDCCAoigAwIBAgIJAOKCqJx+vmiaMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAMMAkNBMRcw
+FQYKCZImiZPyLGQBGRYHdnNwaGVyZTEVMBMGCgmSJomT8ixkARkWBWxvY2FsMQswCQYDVQQGEwJV
+UzEyMDAGA1UECgwpc2MtcmRvcHMtdm0wNi1kaGNwLTE4My0yNDMuZW5nLnZtd2FyZS5jb20wHhcN
+MTUxMTAyMjE1OTI2WhcNMjUxMDI3MjIwOTEyWjAYMRYwFAYDVQQDDA1zc29zZXJ2ZXJTaWduMIIB
+IjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsC4xTYRfInGQkBF98hb4r9WqUx1GPRT3gbpt
+GchCDChQjlzjq6rqIw+9zEvoCaSXg7uxaId/PeJZ4Fu36xTts0+4sixD1HNzNLvxNabv7nR6sUiC
+i/wgNB6Qaqrrl7f3u4b/sOGHPMECua1J1s7pVdN3HcDiboLnXVNFzZvufSsqa1VN2hgGwxrC1VfV
+pcmm1IZkmfWUh5zt7JsK4Cam11kqD7Q8FCtpCQEqeHDXCddSmV2Oupn7/3p2vnQgUXTDO+lxbByV
+OMcS6SkmXmHEwyq6nuIQ2PC7WMex5A97yHlypLAuQCmWzovPxepLXmPmXLUqp4pAjL0UnGuCll7z
+PwIDAQABo4GGMIGDMAsGA1UdDwQEAwIF4DA0BgNVHREELTArgilzYy1yZG9wcy12bTA2LWRoY3At
+MTgzLTI0My5lbmcudm13YXJlLmNvbTAdBgNVHQ4EFgQUqhTwfH8MqAZvj4+SdbcyXBm1w18wHwYD
+VR0jBBgwFoAUqWB/WCV/kIGt2jT6MZtbtSx0y/UwDQYJKoZIhvcNAQELBQADggEBAGwtoHixyYck
+0Ror2xeHIMRoKmLOGdPd196s1WKYvUXKoF1HtWwtSua0T+tXL2JpeDf/0S0EDiGcrfth0cbmydLw
+JeSjX/eIGEiF/jWJQWBmVq20S6mvcqdxrFI5pSKPjgEsGsbLjBVZREoIwGECuMhUk2JXahqtBhV5
+Gzt5iLX8mgIqgIfkEMkTuTgqSe9Ie6CW+0QdjwNknsx0yQYK+cmAlPk/4ZH685ti73gUc84QABjC
+j8uju8NvEkp+qbzG9rKGvop+Kjq9LgIjcvXPzzDP+OmfaBkVM6AvyicvtsT4vwMIM4ku9KOVhJry
+zQN66jEYmS8Uckzl2J1aOEHuQvM=</ds:X509Certificate>
+                         <ds:X509Certificate>MIIDxDCCAqygAwIBAgIJAP+gVInlJh4gMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAMMAkNBMRcw
+FQYKCZImiZPyLGQBGRYHdnNwaGVyZTEVMBMGCgmSJomT8ixkARkWBWxvY2FsMQswCQYDVQQGEwJV
+UzEyMDAGA1UECgwpc2MtcmRvcHMtdm0wNi1kaGNwLTE4My0yNDMuZW5nLnZtd2FyZS5jb20wHhcN
+MTUxMDMwMjIwOTEyWhcNMjUxMDI3MjIwOTEyWjB+MQswCQYDVQQDDAJDQTEXMBUGCgmSJomT8ixk
+ARkWB3ZzcGhlcmUxFTATBgoJkiaJk/IsZAEZFgVsb2NhbDELMAkGA1UEBhMCVVMxMjAwBgNVBAoM
+KXNjLXJkb3BzLXZtMDYtZGhjcC0xODMtMjQzLmVuZy52bXdhcmUuY29tMIIBIjANBgkqhkiG9w0B
+AQEFAAOCAQ8AMIIBCgKCAQEAslGX4HRGWszPvLlEfzn8dN/5B0Tf8VAQZ6IuTPtPxE3aGWB9FWEI
+PJW/tgO3zAA2kAqduWSEvTpll03DVI6z7EcV7i9pJLUKL4kEHv9Q6mxDICdfqxvt1FSu9sC5eEGw
+uK8JEE5Bkw1IVZCYYOA/KG63RaY79T+mWd/UQb8JLJfTr+UdXZ3tXMikD0peuHnVKX+XGDwPC4I+
+FPJ+z4blcy4jF6I/oAc7Bcysdu8YKNMjDDAv3+SEoL+qP8BkQZ3xutL75aBiTc22SthIM0+3ek84
+/qdv7Wny56+OvLEJoEDT762lelzxmKHtN96OJpDKUVKUAL/RmN+vbfkJzS49LQIDAQABo0UwQzAd
+BgNVHQ4EFgQUqWB/WCV/kIGt2jT6MZtbtSx0y/UwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQI
+MAYBAf8CAQAwDQYJKoZIhvcNAQELBQADggEBAH+cS80FreZNgQ7MIk3GosJ+Y0X80jJmLllmpXE5
+0bPYOSmVhcqpdwtn59WYW2SjejfQV6IOemwqZPcXJKdVNYfF6gq8Gg154tytUVLZo1VT9ejgzbvH
+3CTNgJr+Nhxb8Lyk7EC1UWQAMGTM/SYqW1OjGfdwL1VWcrAPhUzIZMtdEOLcR7eeLpXbb1ACQVpe
+4O4CIbECMxCpx/170qwyt9uZTnjTWKgAoAF9yT8tsyJ70g8U+NGBDAsfZgUwa2AJv/HmdRGkWeHs
+MXZ+l2mO12MMFCd7isBHAaPDSUffaWXWFoenKvOx78mw6CLpxNQT6+o6dKB6zShA+KaHI8ZN5LI=</ds:X509Certificate>
+                    </ds:X509Data>
+               </ds:KeyInfo>
+          </KeyDescriptor>
+          <SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://sc-rdops-vm06-dhcp-183-243.eng.vmware.com/websso/SAML2/SLO/vsphere.local"/>
+          <SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" Location="https://sc-rdops-vm06-dhcp-183-243.eng.vmware.com/websso/SAML2/SLO/vsphere.local"/>
+          <NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat>
+          <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</NameIDFormat>
+          <NameIDFormat>http://schemas.xmlsoap.org/claims/UPN</NameIDFormat>
+          <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://sc-rdops-vm06-dhcp-183-243.eng.vmware.com/websso/SAML2/SSO/vsphere.local"/>
+          <saml:Attribute FriendlyName="Groups" Name="http://rsa.com/schemas/attr-names/2009/01/GroupIdentity" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"/>
+          <saml:Attribute FriendlyName="givenName" Name="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"/>
+          <saml:Attribute FriendlyName="surname" Name="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"/>
+          <saml:Attribute FriendlyName="Subject Type" Name="http://vmware.com/schemas/attr-names/2011/07/isSolution" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"/>
+          <saml:Attribute FriendlyName="userPrincipalName" Name="http://schemas.xmlsoap.org/claims/UPN" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"/>
+          <saml:Attribute FriendlyName="email" Name="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress" NameFormat="urn:oasis:names:tc:SAML:2.0:attrname-format:uri"/>
+     </IDPSSODescriptor>
+     <SPSSODescriptor AuthnRequestsSigned="false" WantAssertionsSigned="true" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+          <KeyDescriptor xmlns:ds="http://www.w3.org/2000/09/xmldsig#" use="signing">
+               <ds:KeyInfo>
+                    <ds:X509Data>
+                         <ds:X509Certificate>MIIDoDCCAoigAwIBAgIJAOKCqJx+vmiaMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAMMAkNBMRcw
+FQYKCZImiZPyLGQBGRYHdnNwaGVyZTEVMBMGCgmSJomT8ixkARkWBWxvY2FsMQswCQYDVQQGEwJV
+UzEyMDAGA1UECgwpc2MtcmRvcHMtdm0wNi1kaGNwLTE4My0yNDMuZW5nLnZtd2FyZS5jb20wHhcN
+MTUxMTAyMjE1OTI2WhcNMjUxMDI3MjIwOTEyWjAYMRYwFAYDVQQDDA1zc29zZXJ2ZXJTaWduMIIB
+IjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsC4xTYRfInGQkBF98hb4r9WqUx1GPRT3gbpt
+GchCDChQjlzjq6rqIw+9zEvoCaSXg7uxaId/PeJZ4Fu36xTts0+4sixD1HNzNLvxNabv7nR6sUiC
+i/wgNB6Qaqrrl7f3u4b/sOGHPMECua1J1s7pVdN3HcDiboLnXVNFzZvufSsqa1VN2hgGwxrC1VfV
+pcmm1IZkmfWUh5zt7JsK4Cam11kqD7Q8FCtpCQEqeHDXCddSmV2Oupn7/3p2vnQgUXTDO+lxbByV
+OMcS6SkmXmHEwyq6nuIQ2PC7WMex5A97yHlypLAuQCmWzovPxepLXmPmXLUqp4pAjL0UnGuCll7z
+PwIDAQABo4GGMIGDMAsGA1UdDwQEAwIF4DA0BgNVHREELTArgilzYy1yZG9wcy12bTA2LWRoY3At
+MTgzLTI0My5lbmcudm13YXJlLmNvbTAdBgNVHQ4EFgQUqhTwfH8MqAZvj4+SdbcyXBm1w18wHwYD
+VR0jBBgwFoAUqWB/WCV/kIGt2jT6MZtbtSx0y/UwDQYJKoZIhvcNAQELBQADggEBAGwtoHixyYck
+0Ror2xeHIMRoKmLOGdPd196s1WKYvUXKoF1HtWwtSua0T+tXL2JpeDf/0S0EDiGcrfth0cbmydLw
+JeSjX/eIGEiF/jWJQWBmVq20S6mvcqdxrFI5pSKPjgEsGsbLjBVZREoIwGECuMhUk2JXahqtBhV5
+Gzt5iLX8mgIqgIfkEMkTuTgqSe9Ie6CW+0QdjwNknsx0yQYK+cmAlPk/4ZH685ti73gUc84QABjC
+j8uju8NvEkp+qbzG9rKGvop+Kjq9LgIjcvXPzzDP+OmfaBkVM6AvyicvtsT4vwMIM4ku9KOVhJry
+zQN66jEYmS8Uckzl2J1aOEHuQvM=</ds:X509Certificate>
+                         <ds:X509Certificate>MIIDxDCCAqygAwIBAgIJAP+gVInlJh4gMA0GCSqGSIb3DQEBCwUAMH4xCzAJBgNVBAMMAkNBMRcw
+FQYKCZImiZPyLGQBGRYHdnNwaGVyZTEVMBMGCgmSJomT8ixkARkWBWxvY2FsMQswCQYDVQQGEwJV
+UzEyMDAGA1UECgwpc2MtcmRvcHMtdm0wNi1kaGNwLTE4My0yNDMuZW5nLnZtd2FyZS5jb20wHhcN
+MTUxMDMwMjIwOTEyWhcNMjUxMDI3MjIwOTEyWjB+MQswCQYDVQQDDAJDQTEXMBUGCgmSJomT8ixk
+ARkWB3ZzcGhlcmUxFTATBgoJkiaJk/IsZAEZFgVsb2NhbDELMAkGA1UEBhMCVVMxMjAwBgNVBAoM
+KXNjLXJkb3BzLXZtMDYtZGhjcC0xODMtMjQzLmVuZy52bXdhcmUuY29tMIIBIjANBgkqhkiG9w0B
+AQEFAAOCAQ8AMIIBCgKCAQEAslGX4HRGWszPvLlEfzn8dN/5B0Tf8VAQZ6IuTPtPxE3aGWB9FWEI
+PJW/tgO3zAA2kAqduWSEvTpll03DVI6z7EcV7i9pJLUKL4kEHv9Q6mxDICdfqxvt1FSu9sC5eEGw
+uK8JEE5Bkw1IVZCYYOA/KG63RaY79T+mWd/UQb8JLJfTr+UdXZ3tXMikD0peuHnVKX+XGDwPC4I+
+FPJ+z4blcy4jF6I/oAc7Bcysdu8YKNMjDDAv3+SEoL+qP8BkQZ3xutL75aBiTc22SthIM0+3ek84
+/qdv7Wny56+OvLEJoEDT762lelzxmKHtN96OJpDKUVKUAL/RmN+vbfkJzS49LQIDAQABo0UwQzAd
+BgNVHQ4EFgQUqWB/WCV/kIGt2jT6MZtbtSx0y/UwDgYDVR0PAQH/BAQDAgEGMBIGA1UdEwEB/wQI
+MAYBAf8CAQAwDQYJKoZIhvcNAQELBQADggEBAH+cS80FreZNgQ7MIk3GosJ+Y0X80jJmLllmpXE5
+0bPYOSmVhcqpdwtn59WYW2SjejfQV6IOemwqZPcXJKdVNYfF6gq8Gg154tytUVLZo1VT9ejgzbvH
+3CTNgJr+Nhxb8Lyk7EC1UWQAMGTM/SYqW1OjGfdwL1VWcrAPhUzIZMtdEOLcR7eeLpXbb1ACQVpe
+4O4CIbECMxCpx/170qwyt9uZTnjTWKgAoAF9yT8tsyJ70g8U+NGBDAsfZgUwa2AJv/HmdRGkWeHs
+MXZ+l2mO12MMFCd7isBHAaPDSUffaWXWFoenKvOx78mw6CLpxNQT6+o6dKB6zShA+KaHI8ZN5LI=</ds:X509Certificate>
+                    </ds:X509Data>
+               </ds:KeyInfo>
+          </KeyDescriptor>
+          <SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://sc-rdops-vm06-dhcp-183-243.eng.vmware.com/websso/SsoClient/SLO/vsphere.local"/>
+          <NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat>
+          <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</NameIDFormat>
+          <NameIDFormat>http://schemas.xmlsoap.org/claims/UPN</NameIDFormat>
+          <AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://sc-rdops-vm06-dhcp-183-243.eng.vmware.com/websso/SsoClient/SSO/vsphere.local" index="0"/>
+     </SPSSODescriptor>
+</EntityDescriptor>

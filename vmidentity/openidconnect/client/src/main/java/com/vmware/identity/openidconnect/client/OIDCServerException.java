@@ -14,6 +14,8 @@
 
 package com.vmware.identity.openidconnect.client;
 
+import com.vmware.identity.openidconnect.common.ErrorObject;
+import com.vmware.identity.openidconnect.common.State;
 
 /**
  * OIDC server side exception.
@@ -22,25 +24,41 @@ package com.vmware.identity.openidconnect.client;
  */
 public class OIDCServerException extends Exception {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
-    private final OIDCServerError oidcServerError;
+    private final ErrorObject errorObject;
+    private final State state;
 
-    OIDCServerException(String errorCode, String errorDescription) {
+    OIDCServerException(ErrorObject errorObject) {
         super(String.format(
                 "Server error response. Error code: %s; Error description: %s.",
-                errorCode,
-                errorDescription));
+                errorObject.getErrorCode().getValue(),
+                errorObject.getDescription()));
 
-        this.oidcServerError = OIDCServerError.getOIDCServerError(errorCode);
+        this.errorObject = errorObject;
+        this.state = null;
+    }
+
+    OIDCServerException(ErrorObject errorObject, State state) {
+        super(String.format(
+                "Server error response. Error code: %s; Error description: %s.",
+                errorObject.getErrorCode().getValue(),
+                errorObject.getDescription()));
+
+        this.errorObject = errorObject;
+        this.state = state;
     }
 
     /**
-     * Get OIDC server error
+     * Get error object
      *
-     * @return                          OIDC server error object
+     * @return                          error object
      */
-    public OIDCServerError getOIDCServerError() {
-        return this.oidcServerError;
+    public ErrorObject getErrorObject() {
+        return this.errorObject;
+    }
+
+    public State getState() {
+        return this.state;
     }
 }

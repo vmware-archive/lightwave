@@ -120,6 +120,7 @@ public class SAMLNames
     public static final String WANTASSERTIONSSIGNED = "WantAssertionsSigned";
     public static final String BINDING = "Binding";
     public static final String LOCATION = "Location";
+    public static final String RESPONSE_LOCATION ="ResponseLocation";
     public static final String INDEX = "index";
     public static final String ISDEFAULT = "isDefault";
     public static final String WANTSIGNED = "WantAuthnRequestsSigned";

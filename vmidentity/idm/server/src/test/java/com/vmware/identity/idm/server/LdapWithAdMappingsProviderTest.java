@@ -46,6 +46,7 @@ import com.vmware.identity.idm.UserAccountLockedException;
 import com.vmware.identity.idm.server.config.ServerIdentityStoreData;
 import com.vmware.identity.idm.server.performance.PerformanceMonitorFactory;
 import com.vmware.identity.idm.server.provider.IIdentityProvider;
+import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.activedirectory.ActiveDirectoryProvider;
 import com.vmware.identity.idm.server.provider.ldap.LdapWithAdMappingsProvider;
 
