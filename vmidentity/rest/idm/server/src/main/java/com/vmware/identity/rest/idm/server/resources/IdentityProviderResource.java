@@ -18,7 +18,6 @@ import java.rmi.NotBoundException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -29,6 +28,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
@@ -52,8 +52,8 @@ import com.vmware.identity.rest.core.server.exception.server.InternalServerError
 import com.vmware.identity.rest.core.server.util.Validate;
 import com.vmware.identity.rest.idm.data.IdentityProviderDTO;
 import com.vmware.identity.rest.idm.data.attributes.IdentityProviderType;
-import com.vmware.identity.rest.idm.server.mapper.IdentityProviderMapper;
 import com.vmware.identity.rest.idm.server.mapper.CertificateMapper;
+import com.vmware.identity.rest.idm.server.mapper.IdentityProviderMapper;
 
 /**
  * All operations related to identity providers( aka identity sources) are implemented in this
@@ -77,7 +77,7 @@ public class IdentityProviderResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(IdentityProviderResource.class);
 
-    public IdentityProviderResource(String tenant, @Context HttpServletRequest request, @Context SecurityContext securityContext) {
+    public IdentityProviderResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, securityContext);
     }
 
@@ -87,7 +87,7 @@ public class IdentityProviderResource extends BaseSubResource {
      * @throws BadRequestException On client side errors like bad input.
      * @throws InternalServerErrorException Otherwise
      */
-    @GET @Path("/")
+    @GET
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public Collection<IdentityProviderDTO> getAll() {
@@ -114,7 +114,7 @@ public class IdentityProviderResource extends BaseSubResource {
      * @param probe URI used to probe/examine connectivity with identity provider. Should be set to test connectivity only.
      * @return details of added identity provider
      */
-    @POST @Path("/")
+    @POST
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public IdentityProviderDTO create(IdentityProviderDTO identityProvider, @DefaultValue("false") @QueryParam("probe") boolean probe) throws DTOMapperException {
@@ -124,8 +124,8 @@ public class IdentityProviderResource extends BaseSubResource {
             if (probe) {
                 // Currently, Probing AD as LDAP and OpenLDAP are supported only
                 validateProbeEssentials(identityProvider);
-                String probeURI = identityProvider.getConnectionStrings().iterator().next();
-                getIDMClient().probeProviderConnectivity(tenant, probeURI, AuthenticationType.PASSWORD, identityProvider.getUsername(), identityProvider.getPassword(), CertificateMapper.getX509Certificates(identityProvider.getCertificates()));
+                IIdentityStoreData identityStoreData = IdentityProviderMapper.getIdentityStoreData(identityProvider);
+                getIDMClient().probeProviderConnectivity(tenant, identityStoreData);
                 return IdentityProviderMapper.sanitizeProbeResponse(identityProvider);
             } else {
                 IIdentityStoreData identityStoreData = IdentityProviderMapper.getIdentityStoreData(identityProvider);

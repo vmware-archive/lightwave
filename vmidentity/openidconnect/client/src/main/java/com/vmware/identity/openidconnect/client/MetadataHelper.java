@@ -14,25 +14,20 @@
 
 package com.vmware.identity.openidconnect.client;
 
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
 import java.security.KeyStore;
 import java.security.interfaces.RSAPublicKey;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
-import net.minidev.json.JSONObject;
 
 import org.apache.commons.lang3.Validate;
 
 import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.http.HTTPRequest;
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
-import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
+import com.vmware.identity.openidconnect.common.ErrorObject;
+import com.vmware.identity.openidconnect.common.HttpRequest;
+import com.vmware.identity.openidconnect.common.HttpResponse;
+import com.vmware.identity.openidconnect.common.ParseException;
+import com.vmware.identity.openidconnect.common.ProviderMetadata;
+import com.vmware.identity.openidconnect.common.StatusCode;
+import com.vmware.identity.openidconnect.common.URIUtils;
 
 /**
  * OIDC Metadata helper class
@@ -40,11 +35,11 @@ import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
  * @author Jun Sun
  */
 public class MetadataHelper {
-    private final URL metadataURL;
+    private final URI metadataURI;
     private final KeyStore keyStore;
 
     private MetadataHelper(Builder builder) {
-        this.metadataURL = builder.metadataURL;
+        this.metadataURI = builder.metadataURI;
         this.keyStore = builder.keyStore;
     }
 
@@ -52,7 +47,7 @@ public class MetadataHelper {
      * Builder for MetadataHelper
      */
     public static class Builder {
-        private URL metadataURL;
+        private URI metadataURI;
         private KeyStore keyStore;
         private final String domainControllerFQDN;
         private int domainControllerPort = OIDCClientUtils.DEFAULT_OP_PORT;
@@ -128,9 +123,9 @@ public class MetadataHelper {
             sb.append("/.well-known/openid-configuration");
 
             try {
-                this.metadataURL = new URL(sb.toString());
-            } catch (MalformedURLException e) {
-                throw new IllegalArgumentException("Failed to build metadata endpoint URL: " + e.getMessage(), e);
+                this.metadataURI = URIUtils.parseURI(sb.toString());
+            } catch (ParseException e) {
+                throw new IllegalArgumentException("Failed to build metadata endpoint URI: " + e.getMessage(), e);
             }
 
             return new MetadataHelper(this);
@@ -146,67 +141,9 @@ public class MetadataHelper {
      * @throws SSLConnectionException   SSL connection exception.
      */
     public ProviderMetadata getProviderMetadata() throws OIDCClientException, OIDCServerException, SSLConnectionException {
-        HTTPRequest httpRequest = null;
-        httpRequest = new HTTPRequest(HTTPRequest.Method.GET, this.metadataURL);
-        HTTPResponse httpResponse = OIDCClientUtils.sendSecureRequest(httpRequest, this.keyStore);
-        OIDCProviderMetadata oidcProviderMetadata = parseMetadataResponse(httpResponse);
-
-        List<ResponseType> responseTypes = new ArrayList<ResponseType>();
-        for (com.nimbusds.oauth2.sdk.ResponseType rt : oidcProviderMetadata.getResponseTypes()) {
-            Set<ResponseValue> rvs = new HashSet<ResponseValue>();
-            for (Iterator<com.nimbusds.oauth2.sdk.ResponseType.Value> iter = rt.iterator(); iter.hasNext(); ) {
-                rvs.add(ResponseValue.getResponseValue(iter.next().getValue()));
-            }
-            responseTypes.add(new ResponseType(rvs));
-        }
-
-        List<ResponseMode> responseModes = new ArrayList<ResponseMode>();
-        for (com.nimbusds.openid.connect.sdk.ResponseMode rm : oidcProviderMetadata.getResponseModes()) {
-            responseModes.add(ResponseMode.getResponseMode(rm.getValue()));
-        }
-
-        List<GrantType> grantTypes = new ArrayList<GrantType>();
-        for (com.nimbusds.oauth2.sdk.GrantType gt : oidcProviderMetadata.getGrantTypes()) {
-            grantTypes.add(GrantType.getGrantType(gt.getValue()));
-        }
-
-        List<SubjectType> subjectTypes = new ArrayList<SubjectType>();
-        for (com.nimbusds.openid.connect.sdk.SubjectType st : oidcProviderMetadata.getSubjectTypes()) {
-            subjectTypes.add(SubjectType.getSubjectType(st.toString()));
-        }
-
-        List<ClientAuthenticationMethod> tokenEndpointAuthMethods = new ArrayList<ClientAuthenticationMethod>();
-        for (com.nimbusds.oauth2.sdk.auth.ClientAuthenticationMethod cam : oidcProviderMetadata.getTokenEndpointAuthMethods()) {
-            tokenEndpointAuthMethods.add(ClientAuthenticationMethod.getClientAuthenticationMethod(cam.getValue()));
-        }
-
-        List<JWSAlgorithm> tokenEndpointJWSAlgs = new ArrayList<JWSAlgorithm>();
-        for (com.nimbusds.jose.JWSAlgorithm ja : oidcProviderMetadata.getTokenEndpointJWSAlgs()) {
-            tokenEndpointJWSAlgs.add(JWSAlgorithm.getJWSAlgorithm(ja.getName()));
-        }
-
-        List<JWSAlgorithm> idTokenJWSAlgs = new ArrayList<JWSAlgorithm>();
-        for (com.nimbusds.jose.JWSAlgorithm ja : oidcProviderMetadata.getIDTokenJWSAlgs()) {
-            idTokenJWSAlgs.add(JWSAlgorithm.getJWSAlgorithm(ja.getName()));
-        }
-
-        ProviderMetadata providerMetadata = new ProviderMetadata(
-                new Issuer(oidcProviderMetadata.getIssuer().getValue()),
-                oidcProviderMetadata.getAuthorizationEndpointURI(),
-                oidcProviderMetadata.getTokenEndpointURI(),
-                oidcProviderMetadata.getRegistrationEndpointURI(),
-                oidcProviderMetadata.getEndSessionEndpointURI(),
-                oidcProviderMetadata.getJWKSetURI(),
-                new Scope(oidcProviderMetadata.getScopes().toStringList()),
-                responseTypes,
-                responseModes,
-                grantTypes,
-                subjectTypes,
-                tokenEndpointAuthMethods,
-                tokenEndpointJWSAlgs,
-                idTokenJWSAlgs,
-                oidcProviderMetadata.getClaims(),
-                oidcProviderMetadata.supportsRequestURIParam());
+        HttpRequest httpRequest = HttpRequest.createGetRequest(this.metadataURI);
+        HttpResponse httpResponse = OIDCClientUtils.sendSecureRequest(httpRequest, this.keyStore);
+        ProviderMetadata providerMetadata = parseMetadataResponse(httpResponse);
         return providerMetadata;
     }
 
@@ -227,55 +164,54 @@ public class MetadataHelper {
     }
 
     private JWKSet getProviderJWKSet(ProviderMetadata providerMetadata) throws OIDCClientException, OIDCServerException, SSLConnectionException {
-        HTTPRequest httpRequest = null;
-        try {
-            httpRequest = new HTTPRequest(HTTPRequest.Method.GET, providerMetadata.getJWKSetURI().toURL());
-        } catch (MalformedURLException e) {
-            throw new OIDCClientException("URL conversion exception: " + e.getMessage(), e);
-        }
-        HTTPResponse httpResponse = OIDCClientUtils.sendSecureRequest(httpRequest, this.keyStore);
+        HttpRequest httpRequest = HttpRequest.createGetRequest(providerMetadata.getJWKSetURI());
+        HttpResponse httpResponse = OIDCClientUtils.sendSecureRequest(httpRequest, this.keyStore);
         JWKSet providerJWKSet = parseAuthorizationServerJWKSetResponse(httpResponse);
 
         return providerJWKSet;
     }
 
-    private OIDCProviderMetadata parseMetadataResponse(HTTPResponse httpResponse) throws OIDCClientException, OIDCServerException {
+    private ProviderMetadata parseMetadataResponse(HttpResponse httpResponse) throws OIDCClientException, OIDCServerException {
         Validate.notNull(httpResponse, "httpResponse");
 
         try {
-            verifyHTTPResponse(httpResponse);
+            verifyHttpResponse(httpResponse);
 
-            OIDCProviderMetadata oidcProviderMetadata = OIDCProviderMetadata.parse(httpResponse.getContentAsJSONObject());
-            return oidcProviderMetadata;
+            ProviderMetadata providerMetadata = ProviderMetadata.parse(httpResponse.getJsonContent());
+            return providerMetadata;
         } catch (ParseException e) {
             throw new OIDCClientException("Metadata response parse failed: " + e.getMessage(), e);
         }
     }
 
-    private JWKSet parseAuthorizationServerJWKSetResponse(HTTPResponse httpResponse) throws OIDCClientException, OIDCServerException {
+    private JWKSet parseAuthorizationServerJWKSetResponse(HttpResponse httpResponse) throws OIDCClientException, OIDCServerException {
         Validate.notNull(httpResponse, "httpResponse");
 
         try {
-            verifyHTTPResponse(httpResponse);
+            verifyHttpResponse(httpResponse);
 
-            JWKSet jwkSet = JWKSet.parse(httpResponse.getContentAsJSONObject());
+            JWKSet jwkSet = JWKSet.parse(httpResponse.getJsonContent());
             return jwkSet;
-        } catch (ParseException | java.text.ParseException e) {
+        } catch (java.text.ParseException e) {
             throw new OIDCClientException("Authorization server JWK set parse failed: " + e.getMessage(), e);
         }
     }
 
-    private void verifyHTTPResponse(HTTPResponse httpResponse) throws OIDCServerException, OIDCClientException {
+    private void verifyHttpResponse(HttpResponse httpResponse) throws OIDCServerException, OIDCClientException {
         Validate.notNull(httpResponse, "httpResponse");
 
-        if (httpResponse.getStatusCode() != HTTPResponse.SC_OK) {
-            JSONObject jsonObject = null;
+        if (httpResponse.getJsonContent() == null) {
+            throw new OIDCClientException("expecting json http response");
+        }
+
+        if (httpResponse.getStatusCode() != StatusCode.OK) {
+            ErrorObject errorObject;
             try {
-                jsonObject = httpResponse.getContentAsJSONObject();
+                errorObject = ErrorObject.parse(httpResponse);
             } catch (ParseException e) {
-                throw new OIDCClientException("Parse HTTP response failed: " + e.getMessage(), e);
+                throw new OIDCClientException("failed to parse ErrorObject", e);
             }
-            throw new OIDCServerException((String) jsonObject.get("error"), (String) jsonObject.get("error_description"));
+            throw new OIDCServerException(errorObject);
         }
     }
 }

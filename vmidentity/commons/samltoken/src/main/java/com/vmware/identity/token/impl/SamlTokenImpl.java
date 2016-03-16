@@ -542,7 +542,7 @@ public class SamlTokenImpl implements ValidatableSamlTokenEx {
          "Trusted root certificates");
       KeySelector signKeySelector = new X509TrustChainKeySelector(
          trustedRootCertificates);
-      if (validateSignature(signKeySelector)) {
+     if (validateSignature(signKeySelector)) {
          validateWithinTokenLifePeriod(clockToleranceSec);
          validateSubjectConfirmationExpDate();
          _tokenValidated.set(true);

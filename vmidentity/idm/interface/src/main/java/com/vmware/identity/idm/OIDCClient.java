@@ -40,6 +40,7 @@ public class OIDCClient implements Serializable {
     private final List<String> postLogoutRedirectUris;
     private final String logoutUri;
     private final String certSubjectDN;
+    private final long authnRequestClientAssertionLifetimeMS;
 
     private OIDCClient(Builder oidcClientBuilder) {
 
@@ -54,6 +55,7 @@ public class OIDCClient implements Serializable {
         this.postLogoutRedirectUris = oidcClientBuilder.postLogoutRedirectUris;
         this.logoutUri = oidcClientBuilder.logoutUri;
         this.certSubjectDN = oidcClientBuilder.certSubjectDN;
+        this.authnRequestClientAssertionLifetimeMS = oidcClientBuilder.authnRequestClientAssertionLifetimeMS;
     }
 
     public String getClientId() {
@@ -88,6 +90,10 @@ public class OIDCClient implements Serializable {
         return this.certSubjectDN;
     }
 
+    public long getAuthnRequestClientAssertionLifetimeMS() {
+        return this.authnRequestClientAssertionLifetimeMS;
+    }
+
     // The builder class with additional data validation and defaults setting
     public static class Builder {
 
@@ -102,6 +108,7 @@ public class OIDCClient implements Serializable {
         private List<String> postLogoutRedirectUris;
         private String logoutUri;
         private String certSubjectDN;
+        private long authnRequestClientAssertionLifetimeMS;
 
         public Builder(String clientId) {
             // create client id as an UUID string if it is null.
@@ -147,6 +154,11 @@ public class OIDCClient implements Serializable {
             return this;
         }
 
+        public Builder authnRequestClientAssertionLifetimeMS(long authnRequestClientAssertionLifetimeMS) {
+            this.authnRequestClientAssertionLifetimeMS = authnRequestClientAssertionLifetimeMS;
+            return this;
+        }
+
         public OIDCClient build() {
 
             // Validate, set defaults and check data.
@@ -159,7 +171,7 @@ public class OIDCClient implements Serializable {
         // Validate and set OIDC meta data defaults
         // Refer OIDC SDK code for string representation of each fields
         private void validateAndSetDefaults() {
-            if (this.redirectUris == null) {
+            if (this.redirectUris == null || this.redirectUris.size() == 0) {
                 throw new IllegalArgumentException("Invalid client metadata: "
                         + "Redirect URI is required.");
             } else {
@@ -184,12 +196,16 @@ public class OIDCClient implements Serializable {
                 }
             }
 
+            if (this.authnRequestClientAssertionLifetimeMS < 0) {
+                throw new IllegalArgumentException("negative authnRequestClientAssertionLifetimeMS: " + this.authnRequestClientAssertionLifetimeMS);
+            }
+
             if (this.idTokenSignedResponseAlg == null) {
                 this.idTokenSignedResponseAlg = "RS256";
             }
 
             if (this.tokenEndpointAuthMethod == null) {
-                this.tokenEndpointAuthMethod = "client_secret_basic";
+                this.tokenEndpointAuthMethod = "none";
             }
 
             if (this.tokenEndpointAuthSigningAlg == null) {

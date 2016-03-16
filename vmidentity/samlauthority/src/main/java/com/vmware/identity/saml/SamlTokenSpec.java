@@ -725,7 +725,7 @@ public final class SamlTokenSpec {
       private final Date sessionExpireDate;
 
       public static enum AuthnMethod {
-         PASSWORD, KERBEROS, XMLDSIG, NTLM, ASSERTION, TLSCLIENT
+         PASSWORD, KERBEROS, XMLDSIG, NTLM, ASSERTION, TLSCLIENT,TIMESYNCTOKEN
       }
 
       /**
