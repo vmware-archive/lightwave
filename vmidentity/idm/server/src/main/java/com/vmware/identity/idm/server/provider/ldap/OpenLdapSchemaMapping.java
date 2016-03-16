@@ -341,7 +341,7 @@ public class OpenLdapSchemaMapping extends BaseLdapSchemaMapping
     private static Map<String, String> defaultAttributesMap = null;
     static
     {
-        defaultAttributesMap = new HashMap<String,String>(25);
+        defaultAttributesMap = new HashMap<String,String>(27);
         defaultAttributesMap.put(ObjectIds.ObjectIdUser, "inetOrgPerson");
         defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAcountControl, "userAccountControl");
         defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAccountName, "uid");
@@ -367,6 +367,8 @@ public class OpenLdapSchemaMapping extends BaseLdapSchemaMapping
         defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeMembersList, "uniqueMember");
         defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeObjectId, "entryUUID");
         defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeGroupMembersListLink, DN_ATTRIBUTE);
+        defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeGroupType, "groupType");
+        defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeTokenGroups, "tokenGroups");
 
         defaultAttributesMap.put(ObjectIds.ObjectIdPasswordSettings, "pwdPolicy");
         defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.PwdPolicyAttributePwdLockoutDuration, "pwdLockoutDuration");
@@ -375,5 +377,17 @@ public class OpenLdapSchemaMapping extends BaseLdapSchemaMapping
 
         defaultAttributesMap.put(ObjectIds.ObjectIdDomain, null);
         defaultAttributesMap.put(IdentityStoreAttributeMapping.AttributeIds.DomainAttributeMaxPwdAge, null);
+    }
+    @Override
+    public String getUserQueryByAttribute() {
+        final String userObjectClass = this.getUserObjectClassValue();
+        ValidateUtil.validateNotNull(userObjectClass, "userObjectClass");
+
+        return String.format(
+            "(&(objectClass=%s)(%s=%s))",
+            userObjectClass,
+            "%s",
+            "%s"
+        );
     }
 }

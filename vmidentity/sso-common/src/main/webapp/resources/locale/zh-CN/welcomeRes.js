@@ -1,0 +1,14 @@
+var ID_ResourceLang = 'zh-CN';
+var ID_Welcome = '欢迎使用';
+var ID_GettingStarted = '入门';
+var ID_DocDesc = '如需帮助，请参见';
+var ID_AboutOSSDesc = 'VMware 产品可能包含个别开放源码软件组件，每种组件都有各自的版权和适用的许可证条件。有关详细信息，请访问 <a href=\'http://www.vmware.com/info?id=1127\'>http://<wbr />www<wbr />.<wbr />vmware<wbr />.com/<wbr />info<wbr />?id<wbr />=1127</a>。';
+var ID_CopyrightText = '版权所有 &#169; 1998-2016 VMware, Inc. 保留所有权利。本产品受美国和国际版权及知识产权法保护。VMware 产品受 <a href=\'http://www.vmware.com/cn/support/patents\'>http://www.vmware.com/cn/support/patents</a> 网站上列出的一项或多项专利保护。';
+var ID_TrademarkText = 'VMware 是 VMware, Inc. 在美国和/或其他法律辖区的注册商标或商标。此处提到的所有其他商标和名称分别是其各自公司的商标。';
+var ID_FooterEndMsg = '';
+var ID_VIFlexClient_NOT_REGISTERED = '此 vCenter Server 当前未通过 vSphere Web Client 进行注册。请使用运行 vSphere Web Client 的计算机上的 vSphere Client 管理工具 (https://localhost:{port-number}/admin-app) 注册此 vCenter Server。';
+var ID_LogInVisl = '登录到 vISL';
+var ID_VislDesc = '要管理 ESXi 安装和升级，<br/>请使用 vISL。';
+var ID_WelcomePsc= '欢迎使用 Platform Services Controller 1.0';
+var ID_VC_GettingStartedDesc = '要远程访问 vSphere，请从管理<br/>节点使用 vSphere Web Client';
+var ID_DownloadDoc = "Platform Services Controller 文档";

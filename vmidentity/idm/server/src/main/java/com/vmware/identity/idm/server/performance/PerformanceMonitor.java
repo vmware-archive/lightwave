@@ -36,7 +36,8 @@ public class PerformanceMonitor implements IPerformanceMonitor {
     public IdmAuthStatCache getCache(String tenantName) {
         assert (tenantName != null && !tenantName.isEmpty());
 
-        return this._cacheMap.putIfAbsent(tenantName, new IdmAuthStatCache(getCacheSize()));
+        IdmAuthStatCache cache = this._cacheMap.putIfAbsent(tenantName, new IdmAuthStatCache(getDefaultCacheSize(), false));
+        return cache != null? cache : this._cacheMap.get(tenantName);
     }
 
     @Override
@@ -47,7 +48,7 @@ public class PerformanceMonitor implements IPerformanceMonitor {
     }
 
     @Override
-    public int getCacheSize() {
+    public int getDefaultCacheSize() {
         return IdmServerConfig.getInstance().getIdmAuthStatsCacheDepth();
     }
 

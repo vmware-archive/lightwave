@@ -35,6 +35,10 @@ import com.vmware.identity.idm.ClientCertPolicy;
 
 public class ClientCertTestUtils {
 
+    private static final String caStoreNameBOE = "boeingCAStore";
+
+    public static final String tenant1 = "TestTenant1";
+
     // ocsp responder url
     public final String dodOCSPResponder = "http://ocsp.nsn0.rcvs.nit.disa.mil";
 
@@ -59,6 +63,8 @@ public class ClientCertTestUtils {
     // local cached CRL files
     public final String dodCRLCacheROOTCA2 = "DODJITCROOTCA2.crl";
     public final String dodCRLCacheEMAILCA_29 = "DODJITCEMAILCA_29.crl";
+    public final String dodCRLDistributionPointEMAILCA_29 = "http://crl.nit.disa.mil/crl/DODJITCEMAILCA_29.crl";
+    public final String boeingCRLDistributionPoint = "http://crl.boeing.com/crl/Boeing%20Basic%20PREPROD%20CA.crl";
 
     // DOD test client cert stored in clientCertStore
     public final String validDodCertAlias1 = "bill.preston.s.9301000121.email_sig.cer";// expire
@@ -68,6 +74,8 @@ public class ClientCertTestUtils {
     public final Calendar dodCertExpireDate = new GregorianCalendar(
                     2017, 3, 10);
 
+    public final Calendar boeingCertExpireDate = new GregorianCalendar(
+            2020, 6, 20);
 
     // More DOD test certs store. In P12 format
     //
@@ -78,6 +86,7 @@ public class ClientCertTestUtils {
     private final String dodValidStore = "ValidID.p12";
     private final String dodValidCertAlias = "CERTIFICATE.VALID.9000080970's U.S. Government ID";
     private final String dodStorePass = "password";
+
 
 
     public KeyStore getTrustStore() {
@@ -186,6 +195,23 @@ public class ClientCertTestUtils {
         );
         return policy;
 
+    }
+
+    public KeyStore getTrustStore_BOE() {
+        KeyStore ts = loadKeyStore(caStoreNameBOE, storePass);
+        return ts;
+    }
+
+    public X509Certificate[] getValidCert_BOE1() throws KeyStoreException {
+        String certAlias = "boeingSmartCard.cer";
+        KeyStore ks = loadKeyStore(clientStoreName, storePass);
+        if (!ks.isCertificateEntry(certAlias)) {
+            throw new KeyStoreException("Cert not in the store");
+        }
+        X509Certificate leaf = (X509Certificate) ks
+                        .getCertificate(certAlias);
+        X509Certificate[] certs = { leaf };
+        return certs;
     }
 
 }

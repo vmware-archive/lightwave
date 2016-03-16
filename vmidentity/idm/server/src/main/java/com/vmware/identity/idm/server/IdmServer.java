@@ -13,177 +13,256 @@
  *  under the License.
  *
  */
-
 package com.vmware.identity.idm.server;
 
 import java.rmi.Naming;
 import java.rmi.RMISecurityManager;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.RMIClientSocketFactory;
+import java.rmi.server.RMIServerSocketFactory;
+import java.rmi.server.RMISocketFactory;
+import java.rmi.server.UnicastRemoteObject;
+
+import org.apache.commons.daemon.Daemon;
+import org.apache.commons.daemon.DaemonContext;
+import org.apache.commons.daemon.DaemonInitException;
 
 import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsContextScope;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.diagnostics.VmEvent;
+import com.vmware.identity.heartbeat.VmAfdHeartbeat;
+import com.vmware.identity.idm.ILoginManager;
+import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.server.config.ConfigStoreFactory;
 import com.vmware.identity.idm.server.config.IConfigStoreFactory;
 import com.vmware.identity.idm.server.provider.IProviderFactory;
 import com.vmware.identity.idm.server.provider.ProviderFactory;
-import com.vmware.identity.performanceSupport.PerfDataSink;
-import org.apache.commons.daemon.Daemon;
-import org.apache.commons.daemon.DaemonContext;
-import org.apache.commons.daemon.DaemonInitException;
-
-import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.performanceSupport.IPerfDataSink;
-import com.vmware.identity.idm.ILoginManager;
-import java.rmi.server.UnicastRemoteObject;
+import com.vmware.identity.performanceSupport.PerfDataSink;
 
+public class IdmServer implements Daemon {
 
-public class IdmServer implements Daemon
-{
+    private static final String ALLOW_REMOTE_PROPERTY = "vmware.idm.allow.remote";
+
+    private static final int ERROR_SERVICE_NOT_ACTIVE = 0x462; // 1062
+    private static final int ERROR_FAIL_SHUTDOWN = 0x15F; // 351
+
     private static final String IDENTITY_MANAGER_BIND_NAME = "IdentityManager";
-    private static Registry registry = null;
-    private static Object serviceLock = new Object();
-
-    private static int           reportHitCount = 100; // Trigger report by number of entries
-    private static int           reportInterval = 5;   // Trigger report by time interval
-    private static IPerfDataSink perfDataSink;
-
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(IdmServer.class);
+    private static final int reportHitCount = 100; // Trigger report by number of entries
+    private static final int reportInterval = 5; // Trigger report by time interval in minutes
+    private static Registry registry;
+    private static Object serviceLock = new Object();
+    private static IPerfDataSink perfDataSink;
+    private static IdentityManager manager;
+    private static ILoginManager loginManager;
+    private static VmAfdHeartbeat heartbeat = new VmAfdHeartbeat(IDENTITY_MANAGER_BIND_NAME, Tenant.RMI_PORT);
 
-    public static void main (String[] argv)
-    {
-        IdmServer.startserver(argv);
+    public static void main(String[] args) throws Exception {
+        startserver(args);
     }
 
-    public static void startserver (String[] argv)
-    {
-        try(IDiagnosticsContextScope diagCtxt = DiagnosticsContextFactory.createContext("4b3cb569-e80c-4702-9505-804a4e0f86d8", ""))
-        {
-            try
-            {
-                logger.info("IDM Server starting...");
-                logger.debug("Creating RMI reguistry using port {}.", Tenant.RMI_PORT);
+    /**
+     * Start the IDM server and continue running until
+     * {@link #stopserver(String[])} is called.
+     * <p>
+     * Note: Used when deployed as a Windows service with Apache Commons Procrun.
+     * </p>
+     *
+     * @param args arguments for the server.
+     */
+    public static void startserver(String[] args) {
+        try {
+            initialize();
 
-                registry = LocateRegistry.createRegistry(Tenant.RMI_PORT);
-
-                // Assign a security manager, in the event that dynamic
-                // classes are loaded
-                if (System.getSecurityManager() == null)
-                {
-                    logger.debug("Creating RMISecurityManager...");
-                    System.setSecurityManager ( new RMISecurityManager() );
-                }
-
-                logger.debug("Creating config store factory...");
-                IConfigStoreFactory cfgStoreFactory = new ConfigStoreFactory();
-
-                logger.debug("Creating identity provider factory");
-
-                IProviderFactory providerFactory = new ProviderFactory();
-
-                logger.debug("Checking vmware directory...");
-                ServerUtils.check_directory_service();
-                logger.debug("Successfully contact vmware directory.");
-
-                logger.debug("Creating identity manager instance");
-
-                // make system properties ThreadLocal
-                System.setProperties(new ThreadLocalProperties(System
-                                .getProperties()));
-
-                IdentityManager manager = new IdentityManager(cfgStoreFactory, providerFactory);
-
-                logger.debug("Binding to RMI Port rmi://localhost:{}/{}", Tenant.RMI_PORT, IDENTITY_MANAGER_BIND_NAME );
-                ILoginManager idmloginManager = new IdmLoginManager(manager);
-                ILoginManager stub =(ILoginManager) UnicastRemoteObject.exportObject(idmloginManager, 0);
-
-                Naming.rebind (
-                        String.format("rmi://localhost:%d/%s", Tenant.RMI_PORT, IDENTITY_MANAGER_BIND_NAME),
-                        stub);
-
-                logger.debug("Waiting to acquire service lock");
-
-                synchronized (IdmServer.serviceLock)
-                {
-                    logger.info(VmEvent.SERVER_STARTED, "Idm Server has started.");
-                    IdmServer.serviceLock.wait();
-                }
-
-                logger.debug("Idm Server is ready.");
+            synchronized (serviceLock) {
+                logger.debug("IDM Server is ready and waiting...");
+                serviceLock.wait();
             }
-            catch(Throwable t)
-            {
-                logger.error(
-                    VmEvent.SERVER_FAILED_TOSTART,
-                    String.format( "Start server failed with '%s'.", t.getMessage() ),
-                    t
-                );
+        } catch (Throwable t) {
+            try {
+                shutdown();
+            } catch (Throwable t2) {
+                // Do nothing since we were shutting down anyway
+            } finally {
+                logger.debug("Hard exiting service...");
+                System.exit(ERROR_SERVICE_NOT_ACTIVE);
             }
         }
     }
 
-    public static synchronized IPerfDataSink getPerfDataSinkInstance()
-    {
-        if (perfDataSink == null)
-        {
+    private static void startHeartbeat() {
+        heartbeat.startBeating();
+        logger.info("Heartbeat started");
+    }
+
+    private static void stopHeartbeat() {
+        heartbeat.stopBeating();
+        logger.info("Heartbeat stopped");
+    }
+
+    /**
+     * Stop the IDM server when it has been started with
+     * {@link #startserver(String[])}.
+     * <p>
+     * Note: Used when deployed as a Windows service with Apache Commons Procrun.
+     * </p>
+     *
+     * @param args arguments from prunsrv.
+     */
+    public static void stopserver(String[] args) {
+        try {
+            shutdown();
+
+            synchronized(serviceLock) {
+                logger.debug("Notifying service lock...");
+                serviceLock.notifyAll();
+            }
+        } catch (Throwable t) {
+            logger.debug("Hard exiting the service...");
+            System.exit(ERROR_FAIL_SHUTDOWN);
+        }
+    }
+
+    /**
+     * Retrieve the performance data sink for IDM.
+     *
+     * @return a performance data sink.
+     */
+    public static synchronized IPerfDataSink getPerfDataSinkInstance() {
+        if (perfDataSink == null) {
             perfDataSink = new PerfDataSink(reportHitCount, reportInterval);
         }
 
         return perfDataSink;
     }
 
-    public static void stopserver (String[] argv)
-    {
-        try(IDiagnosticsContextScope diagCtxt = DiagnosticsContextFactory.createContext("830ee15b-ab5a-4654-82b6-4d53bd0a3a72", ""))
-        {
-            try
-            {
-                logger.info("Stopping Idm Server.");
+    /**
+     * Frees any resources allocated by this {@code Daemon} such as file
+     * descriptors or sockets.
+     * <p>
+     * Note: Used when deployed on Linux as a daemon.
+     * </p>
+     */
+    @Override
+    public void destroy() {
+    }
 
-                if (registry != null)
-                {
-                    logger.debug("unbinding the registry...");
-                    registry.unbind( IdmServer.IDENTITY_MANAGER_BIND_NAME );
-                }
+    /**
+     * Initializes this {@code Daemon} instance.
+     * <p>
+     * Note: Used when deployed on Linux as a daemon.
+     * </p>
+     *
+     * @param context context to initialize the daemon.
+     */
+    @Override
+    public void init(DaemonContext context) throws DaemonInitException, Exception {
+    }
 
-                synchronized(IdmServer.serviceLock)
-                {
-                    IdmServer.serviceLock.notifyAll();
-                }
+    /**
+     * Starts the operation of this {@code Daemon} instance.
+     * <p>
+     * Note: Used when deployed on Linux as a daemon.
+     * </p>
+     */
+    @Override
+    public void start() throws Exception {
+        initialize();
+    }
+
+    /**
+     * Stops the operation of this {@code Daemon} instance.
+     * <p>
+     * Note: Used when deployed on Linux as a daemon.
+     * </p>
+     */
+    @Override
+    public void stop() throws Exception {
+        shutdown();
+    }
+
+    /**
+     * Initialize the IDM service.
+     *
+     * @throws Exception when something goes wrong with initialization.
+     */
+    private static void initialize() throws Exception {
+        try (IDiagnosticsContextScope diagCtxt = DiagnosticsContextFactory.createContext("IDM Startup", "")){
+            logger.info("Starting IDM Server...");
+            logger.debug("Creating RMI registry on port {}", Tenant.RMI_PORT);
+
+            boolean allowRemoteConnections = Boolean.parseBoolean(System.getProperty(ALLOW_REMOTE_PROPERTY, "false"));
+
+            if (allowRemoteConnections) {
+                logger.warn("RMI registry is allowing remote connections!");
+                registry = LocateRegistry.createRegistry(Tenant.RMI_PORT);
+            } else {
+                logger.debug("RMI registry is restricted to the localhost");
+                RMIClientSocketFactory csf = RMISocketFactory.getDefaultSocketFactory();
+                RMIServerSocketFactory ssf = new LocalRMIServerSocketFactory();
+                registry = LocateRegistry.createRegistry(Tenant.RMI_PORT, csf, ssf);
             }
-            catch(Exception ex)
-            {
-                logger.error(
-                    VmEvent.SERVER_ERROR,
-                    String.format( "stopserver failed with '%s'", ex.getMessage() ),
-                    ex
-                );
+
+            // Assign a security manager, in the event that dynamic classes are loaded
+            if (System.getSecurityManager() == null) {
+                logger.debug("Creating RMI Security Manager...");
+                System.setSecurityManager(new RMISecurityManager());
             }
+
+            logger.debug("Creating Config Store factory...");
+            IConfigStoreFactory cfgStoreFactory = new ConfigStoreFactory();
+
+            logger.debug("Creating Identity Provider factory...");
+            IProviderFactory providerFactory = new ProviderFactory();
+
+            logger.debug("Checking VMware Directory Service...");
+            ServerUtils.check_directory_service();
+
+            logger.debug("Setting system properties...");
+            System.setProperties(new ThreadLocalProperties(System.getProperties()));
+
+            logger.debug("Creating Identity Manager instance...");
+            manager = new IdentityManager(cfgStoreFactory, providerFactory);
+
+            String rmiAddress = String.format("rmi://localhost:%d/%s", Tenant.RMI_PORT, IDENTITY_MANAGER_BIND_NAME);
+            logger.debug("Binding to RMI address '{}'", rmiAddress);
+            loginManager = new IdmLoginManager(manager);
+            ILoginManager stub = (ILoginManager) UnicastRemoteObject.exportObject(loginManager, 0);
+            Naming.rebind(rmiAddress, stub);
+
+            startHeartbeat();
+
+            logger.info(VmEvent.SERVER_STARTED, "IDM Server has started");
+        } catch (Throwable t) {
+            logger.error(VmEvent.SERVER_FAILED_TOSTART, "IDM Server has failed to start", t);
+            throw t;
         }
     }
 
-    @Override
-    public void destroy()
-    {
-    }
+    /**
+     * Shutdown the IDM service.
+     *
+     * @throws Exception when something goes wrong with shutdown.
+     */
+    private static void shutdown() throws Exception {
+        try(IDiagnosticsContextScope diagCtxt = DiagnosticsContextFactory.createContext("IDM Shutdown", "")) {
+            logger.info("Stopping IDM Server...");
 
-    @Override
-    public void init(DaemonContext arg0) throws DaemonInitException, Exception
-    {
-    }
+            if (registry != null) {
+                logger.debug("Unbinding the registry...");
+                registry.unbind(IDENTITY_MANAGER_BIND_NAME);
+            }
 
-    @Override
-    public void start() throws Exception
-    {
-        IdmServer.startserver(null);
-    }
+            stopHeartbeat();
 
-    @Override
-    public void stop() throws Exception
-    {
-        IdmServer.stopserver(null);
+            logger.info("IDM Server has stopped");
+        } catch (Throwable t) {
+            logger.error(VmEvent.SERVER_ERROR, "IDM Server failed to stop", t);
+            throw t;
+        }
     }
 }

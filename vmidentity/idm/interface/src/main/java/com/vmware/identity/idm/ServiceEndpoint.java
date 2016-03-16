@@ -24,6 +24,7 @@ public class ServiceEndpoint implements Serializable
 
     private final String name;
     private String endpoint;
+    private String responseEndpoint;
     private String binding;
 
     /**
@@ -78,6 +79,34 @@ public class ServiceEndpoint implements Serializable
     }
 
     /**
+     * Creates a ServiceEndpoint with name, endpoint, and binding.
+     *
+     * @param name
+     *          the name of the service. If null or empty, defaults to
+     *          the {@code endpoint}.
+     * @param endpoint
+     *          the endpoint of the service. Cannot be null or empty.
+     * @param responseEndpoint
+     *          the response endpoint of the service. Optional.
+     * @param binding
+     *          the binding for the service. Cannot be null or empty.
+     */
+    public ServiceEndpoint(String name, String endpoint, String responseEndpoint, String binding)
+    {
+        ValidateUtil.validateNotEmpty(endpoint, "endpoint");
+        ValidateUtil.validateNotEmpty(binding, "binding");
+
+        if (name == null || name.isEmpty()) {
+            name = endpoint;
+        }
+
+        this.name = name;
+        this.endpoint = endpoint;
+        this.responseEndpoint = responseEndpoint;
+        this.binding = binding;
+    }
+
+    /**
      * Fetch the name of the service.
      *
      * @return the name of the service.
@@ -106,6 +135,27 @@ public class ServiceEndpoint implements Serializable
     public void setEndpoint(String endpoint)
     {
         this.endpoint = endpoint;
+    }
+
+    /**
+     * Fetch the response endpoint for the service.
+     *
+     * @return the response endpoint of the service.
+     */
+    public String getResponseEndpoint()
+    {
+        return this.responseEndpoint;
+    }
+
+    /**
+     * Set the response endpoint for the service.
+     *
+     * @param responseEndpoint
+     *          the new endpoint of the service.
+     */
+    public void setResponseEndpoint(String responseEndpoint)
+    {
+        this.responseEndpoint = responseEndpoint;
     }
 
     /**
