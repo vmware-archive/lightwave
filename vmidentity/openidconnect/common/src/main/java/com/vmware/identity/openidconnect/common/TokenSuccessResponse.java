@@ -18,72 +18,72 @@ import net.minidev.json.JSONObject;
 
 import org.apache.commons.lang3.Validate;
 
-import com.nimbusds.jwt.SignedJWT;
-import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.Scope;
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
-import com.nimbusds.oauth2.sdk.token.AccessToken;
-import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
-import com.nimbusds.oauth2.sdk.token.RefreshToken;
-import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
-import com.nimbusds.openid.connect.sdk.OIDCAccessTokenResponse;
-
 /**
  * @author Yehia Zayour
  */
-public class TokenSuccessResponse extends OIDCAccessTokenResponse {
+public final class TokenSuccessResponse extends TokenResponse {
+    private final IDToken idToken;
+    private final AccessToken accessToken;
+    private final RefreshToken refreshToken;
+
     public TokenSuccessResponse(
             IDToken idToken,
             AccessToken accessToken,
             RefreshToken refreshToken) {
-        super(accessToken, refreshToken, idToken);
         Validate.notNull(idToken, "idToken");
+        Validate.notNull(accessToken, "accessToken");
+        // nullable refreshToken
+        this.idToken = idToken;
+        this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
+    }
+
+    public IDToken getIDToken() {
+        return this.idToken;
+    }
+
+    public AccessToken getAccessToken() {
+        return this.accessToken;
+    }
+
+    public RefreshToken getRefreshToken() {
+        return this.refreshToken;
     }
 
     @Override
-    public IDToken getIDToken() {
-        return (IDToken) super.getIDToken();
+    public HttpResponse toHttpResponse() {
+        return HttpResponse.createJsonResponse(StatusCode.OK, toJSONObject());
     }
 
-    public static TokenSuccessResponse parse(HTTPResponse httpResponse) throws ParseException {
+    private JSONObject toJSONObject() {
+        JSONObject json = new JSONObject();
+
+        json.put("id_token", this.idToken.serialize());
+        json.put("access_token", this.accessToken.serialize());
+        json.put("token_type", this.accessToken.getTokenType().getValue());
+        json.put("expires_in", this.accessToken.getLifetimeSeconds());
+        if (this.refreshToken != null) {
+            json.put("refresh_token", this.refreshToken.serialize());
+        }
+
+        return json;
+    }
+
+    public static TokenSuccessResponse parse(HttpResponse httpResponse) throws ParseException {
         Validate.notNull(httpResponse, "httpResponse");
 
-        httpResponse.ensureStatusCode(HTTPResponse.SC_OK);
-        JSONObject jsonObject = httpResponse.getContentAsJSONObject();
-        return parse(jsonObject);
-    }
-
-    public static TokenSuccessResponse parse(JSONObject jsonObject) throws ParseException {
-        Validate.notNull(jsonObject, "jsonObject");
-
-        SignedJWT idTokenJwt;
-        try {
-            idTokenJwt = SignedJWT.parse(JSONObjectUtils.getString(jsonObject, "id_token"));
-        } catch (java.text.ParseException e) {
-            throw new ParseException("failed to parse id_token", e);
-        }
-        IDToken idToken = new IDToken(idTokenJwt);
-
-        SignedJWT accessTokenJwt;
-        try {
-            accessTokenJwt = SignedJWT.parse(JSONObjectUtils.getString(jsonObject, "access_token"));
-        } catch (java.text.ParseException e) {
-            throw new ParseException("failed to parse access_token", e);
+        if (httpResponse.getStatusCode() != StatusCode.OK) {
+            throw new ParseException("expecting status code OK, actual: " + httpResponse.getStatusCode());
         }
 
-        long expiresIn = JSONObjectUtils.getLong(jsonObject, "expires_in");
-        String tokenType = JSONObjectUtils.getString(jsonObject, "token_type");
-
-        AccessToken accessToken;
-        if (tokenType.equals(TokenType.BEARER.getName())) {
-            accessToken = new BearerAccessToken(accessTokenJwt.serialize(), expiresIn, (Scope) null);
-        } else if (tokenType.equals(TokenType.HOK.getName())) {
-            accessToken = new HolderOfKeyAccessToken(accessTokenJwt.serialize(), expiresIn);
-        } else {
-            throw new ParseException("invalid token_type value: " + tokenType);
+        JSONObject jsonObject = httpResponse.getJsonContent();
+        if (jsonObject == null) {
+            throw new ParseException("expecting json http response");
         }
 
-        RefreshToken refreshToken = RefreshToken.parse(jsonObject);
+        IDToken idToken = IDToken.parse(jsonObject);
+        AccessToken accessToken = AccessToken.parse(jsonObject);
+        RefreshToken refreshToken = jsonObject.containsKey("refresh_token") ? RefreshToken.parse(jsonObject) : null;
 
         return new TokenSuccessResponse(idToken, accessToken, refreshToken);
     }

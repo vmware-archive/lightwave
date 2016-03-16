@@ -37,32 +37,7 @@ public class SolutionUser extends User {
         this.certificate = certificate;
     }
 
-    public X509Certificate getCertificate() {
-        return this.certificate;
-    }
-
     public RSAPublicKey getPublicKey() {
         return (RSAPublicKey) this.certificate.getPublicKey();
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        boolean areEqual = false;
-        if (other instanceof SolutionUser) {
-            SolutionUser otherSolutionUser = (SolutionUser) other;
-            areEqual =
-                    super.getPrincipalId().equals(otherSolutionUser.getPrincipalId()) &&
-                    super.getTenant().equals(otherSolutionUser.getTenant()) &&
-                    this.certificate.equals(otherSolutionUser.certificate);
-        }
-        return areEqual;
-    }
-
-    @Override
-    public int hashCode() {
-        return
-                super.getPrincipalId().hashCode() +
-                super.getTenant().hashCode() +
-                this.certificate.hashCode();
     }
 }
