@@ -66,16 +66,21 @@ cd build && make install DESTDIR=%{buildroot}
 case "$1" in
     1)
 
-        /bin/ln -s /lib/systemd/system/vmware-idmd.service /etc/systemd/system/vmware-idmd.service
-        /bin/ln -s /lib/systemd/system/vmware-stsd.service /etc/systemd/system/vmware-stsd.service
+        /bin/systemctl enable vmware-idmd.service >/dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            /bin/ln -s /lib/systemd/system/vmware-idmd.service /etc/systemd/system/multi-user.target.wants/vmware-idmd.service
+        fi
+
+        /bin/systemctl enable vmware-stsd.service >/dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            /bin/ln -s /lib/systemd/system/vmware-stsd.service /etc/systemd/system/multi-user.target.wants/vmware-stsd.service
+        fi
         /bin/systemctl >/dev/null 2>&1
         if [ $? -eq 0 ]; then
             /bin/systemctl daemon-reload
-            /bin/systemctl enable vmware-idmd.service
-            /bin/systemctl enable vmware-stsd.service
         fi
         ;;
-        
+
     2)
         ;;
 esac
