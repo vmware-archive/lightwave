@@ -16,10 +16,6 @@
 	<string>NSApplication</string>
 	<key>CFBundleDisplayName</key>
 	<string>Lightwave SSO</string>
-	<key>CFBundleShortVersionString</key>
-	<string>1.0.0</string>
-	<key>LSApplicationCategoryType</key>
-	<string>public.app-category.developer-tools</string>
 	<key>CFBundleIconFile</key>
 	<string>SSO</string>
 </dict>

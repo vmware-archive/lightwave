@@ -9,7 +9,7 @@
     <RootNamespace>VMRestSsoSnapIn</RootNamespace>
     <MonoMacResourcePrefix>Resources</MonoMacResourcePrefix>
     <AssemblyName>Lightwave SSO</AssemblyName>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -26,8 +26,8 @@
     <EnablePackageSigning>false</EnablePackageSigning>
     <CodeSigningKey>Mac Developer</CodeSigningKey>
     <EnableCodeSigning>false</EnableCodeSigning>
-    <CreatePackage>true</CreatePackage>
-    <XamMacArch>i386</XamMacArch>
+    <CreatePackage>false</CreatePackage>
+    <XamMacArch>x86_64</XamMacArch>
     <PackageSigningKey>Developer ID Installer</PackageSigningKey>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -45,6 +45,17 @@
     <EnableCodeSigning>false</EnableCodeSigning>
     <EnablePackageSigning>false</EnablePackageSigning>
     <XamMacArch>x86_64</XamMacArch>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AppStore|AnyCPU' ">
+    <Optimize>false</Optimize>
+    <OutputPath>bin\AppStore</OutputPath>
+    <WarningLevel>4</WarningLevel>
+    <UseRefCounting>false</UseRefCounting>
+    <UseSGen>false</UseSGen>
+    <IncludeMonoRuntime>false</IncludeMonoRuntime>
+    <CreatePackage>false</CreatePackage>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <EnablePackageSigning>false</EnablePackageSigning>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
