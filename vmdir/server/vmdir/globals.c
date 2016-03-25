@@ -80,6 +80,10 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwMaxFlowCtrlThr, 1024),
         VMDIR_SF_INIT(.pLogger, NULL),
         VMDIR_SF_INIT(.iServerStartupTime, 0),
+        VMDIR_SF_INIT(.dwMaxIndexScan, 512),
+        VMDIR_SF_INIT(.dwSmallCandidateSet,32),
+        VMDIR_SF_INIT(.dwMaxSizelimitScan,0),
+        VMDIR_SF_INIT(.bAllowImportOpAttrs, FALSE),
     };
 
 VMDIR_KRB_GLOBALS gVmdirKrbGlobals =
