@@ -310,7 +310,7 @@ VmAfSrvPromoteVmDir(
                           pszPassword,
                           pszSiteName,
                           pszPartnerHostName,
-                          VMAFD_FIRST_REPL_CYCLE_MODE_BY_OBJECT);
+                          VMAFD_FIRST_REPL_CYCLE_MODE_COPY_DB);
         BAIL_ON_VMAFD_ERROR(dwError);
 
         dwError = VmDirGetDomainName(
