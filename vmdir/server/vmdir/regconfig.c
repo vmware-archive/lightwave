@@ -199,6 +199,13 @@ VmDirSrvUpdateConfig(
         {
             gVmdirGlobals.dwMaxSizelimitScan = VMDIR_MAX(pEntry->dwValue, 0);
         }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_ALLOW_IMPORT_OP_ATTR,
+                    TRUE))
+        {
+            gVmdirGlobals.bAllowImportOpAttrs = pEntry->dwValue ? TRUE : FALSE;
+        }
     }
 
 cleanup:
