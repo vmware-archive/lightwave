@@ -969,6 +969,8 @@ _VmDirPluginAddOpAttrsPreAdd(
     char         objectGuidStr[VMDIR_GUID_STR_LEN];
     PCSTR        pszErrorContext = NULL;
     PCSTR        pszCreatorsDN = NULL;
+    PVDIR_ATTRIBUTE pAttrModifyTimeStamp = VmDirFindAttrByName(pEntry,ATTR_MODIFYTIMESTAMP);
+    PVDIR_ATTRIBUTE pAttrCreateTimeStamp = VmDirFindAttrByName(pEntry,ATTR_CREATETIMESTAMP);
 
     // Get/create USN value
     pszErrorContext = "Get next USN";
@@ -994,15 +996,35 @@ _VmDirPluginAddOpAttrsPreAdd(
 
     VmDirCurrentGeneralizedTime(pszTimeBuf, sizeof(pszTimeBuf));
 
-    // ModifyTimeStamp
-    pszErrorContext = "Add modify timestamp";
-    dwError = VmDirEntryAddSingleValueStrAttribute(pEntry, ATTR_MODIFYTIMESTAMP, pszTimeBuf);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    // We auto generate modifytimestamp or take value from input if allowed.
+    if (gVmdirGlobals.bAllowImportOpAttrs == FALSE && pAttrModifyTimeStamp)
+    {
+        pszErrorContext = "Operational Attribute modifytimestamp is NOT allowed";
+        dwError = VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else if (!pAttrModifyTimeStamp)
+    {
+        // ModifyTimeStamp
+        pszErrorContext = "Add modify timestamp";
+        dwError = VmDirEntryAddSingleValueStrAttribute(pEntry, ATTR_MODIFYTIMESTAMP, pszTimeBuf);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
-    // CreateTimeStamp
-    pszErrorContext = "Add create timestamp";
-    dwError = VmDirEntryAddSingleValueStrAttribute(pEntry, ATTR_CREATETIMESTAMP, pszTimeBuf);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    // We auto generate createtimestamp or take value from input if allowed.
+    if (gVmdirGlobals.bAllowImportOpAttrs == FALSE && pAttrCreateTimeStamp)
+    {
+        pszErrorContext = "Operational Attribute createtimestamp is NOT allowed";
+        dwError = VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else if (!pAttrCreateTimeStamp)
+    {
+        // CreateTimeStamp
+        pszErrorContext = "Add create timestamp";
+        dwError = VmDirEntryAddSingleValueStrAttribute(pEntry, ATTR_CREATETIMESTAMP, pszTimeBuf);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     pszCreatorsDN = VMDIR_CURRENT_AUTHENTICATED_DN( &(pOperation->conn->AccessInfo) );
     if ( IsNullOrEmptyString( pszCreatorsDN) )
