@@ -196,6 +196,8 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwSmallCandidateSet;
     // Limit index scan for the best effort sizelimit search
     DWORD                           dwMaxSizelimitScan;
+
+    BOOLEAN                         bAllowImportOpAttrs;
 } VMDIR_GLOBALS, *PVMDIR_GLOBALSS;
 
 extern VMDIR_GLOBALS gVmdirGlobals;
