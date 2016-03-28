@@ -13,11 +13,10 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.1, krb5 >= 1.12, cyrus-s
 %define _dbdir %_localstatedir/lib/vmware/vmafd
 %define _vecsdir %{_dbdir}/vecs
 %define _crlsdir %{_dbdir}/crl
-%define _anthome  /opt/apache-ant-1.9.4
 %define _jarsdir  %{_prefix}/jars
 
 %if 0%{?_javahome:1} == 0
-%define _javahome /opt/OpenJDK-1.8.0.45-bin
+%define _javahome %{_javahome}
 %endif
 
 %define _jreextdir %{_javahome}/jre/lib/ext

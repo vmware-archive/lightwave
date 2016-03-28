@@ -5,7 +5,7 @@
    <!-- - - - - - Ant Task Libraries - - - - - -->
 
    <property name="libs.ant-contrib-home"
-             location="/opt/ant-contrib" />
+             location="/var/opt/ant-contrib" />
 
    <fileset id="jar-set.apache-commons-lang" dir="${MAINSRCROOT}/build/depends">
         <include name="commons-lang-2.5.jar"/>

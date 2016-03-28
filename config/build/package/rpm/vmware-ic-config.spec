@@ -18,7 +18,7 @@ BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.1, likewise-open-devel >=
 %endif
 
 %if 0%{?_javahome:1} == 0
-%define _javahome /opt/OpenJDK-1.8.0.45-bin
+%define _javahome %{_javahome}
 %endif
 
 %if 0%{?_vmdir_prefix:1} == 0
@@ -47,7 +47,7 @@ autoreconf -mif .. &&
 ../configure --prefix=%{_prefix} \
              --libdir=%{_lib64dir} \
              --with-java=%{_javahome} \
-             --with-ant=/opt/apache-ant-1.9.4 \
+             --with-ant=%{_anthome} \
              --with-likewise=%{_likewise_open_prefix} \
              --with-vmdir=%{_vmdir_prefix} \
              --with-vmca=%{_vmca_prefix} \
