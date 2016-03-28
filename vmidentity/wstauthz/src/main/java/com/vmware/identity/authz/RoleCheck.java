@@ -13,7 +13,6 @@
  */
 package com.vmware.identity.authz;
 
-import com.vmware.vim.sso.PrincipalId;
 import com.vmware.vim.sso.admin.exception.InvalidPrincipalException;
 import com.vmware.vim.sso.client.SamlToken;
 
@@ -21,8 +20,6 @@ import com.vmware.vim.sso.client.SamlToken;
  *  Retrieves the role which a user has been assigned to.
  */
 public interface RoleCheck<R extends Enum<R>> {
-
-   R getRole(PrincipalId userId) throws InvalidPrincipalException;
 
    R getRole(SamlToken token) throws InvalidPrincipalException;
 
