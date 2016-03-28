@@ -15,7 +15,7 @@ BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.1, likewise-open-devel >=
 %define _webappsdir %_prefix/webapps
 
 %if 0%{?_javahome:1} == 0
-%define _javahome /opt/OpenJDK-1.8.0.45-bin
+%define _javahome %_javahome
 %endif
 
 %description
@@ -38,10 +38,11 @@ autoreconf -mif .. &&
              --with-likewise=%{_likewise_open_prefix} \
              --with-ssl=/usr \
              --with-java=%{_javahome} \
-             --with-ant=/opt/apache-ant-1.9.4 \
-             --with-tomcat=/opt/apache-tomcat-7.0.63 \
-             --with-jax-ws=/opt/jaxws-ri-2.2.5 \
-             --with-maven=/opt/apache-maven-3.3.3
+             --with-commons-daemon=%{_commons_daemondir} \
+             --with-ant=%{_antdir} \
+             --with-tomcat=%{_tomcatdir} \
+             --with-jax-ws= %{_jaxwsdir} \
+             --with-maven=%{_mavendir}
 make
 
 %install
