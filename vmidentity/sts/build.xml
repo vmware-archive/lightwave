@@ -14,7 +14,7 @@
         <property name="MAINSRCROOT" value="${basedir}/.." />
    <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
    <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
-
+ 
    <property name="build.packages.samlauthority"
              value="${build.packages}/samlauthority.jar" />
    <property name="build.packages.vmware-identity-idm-interface"
@@ -50,13 +50,13 @@
       <fileset refid="jar-set.opensaml" />
       <fileset refid="jar-set.velocity" />
       <fileset refid="jar-set.esapi" />
+      <fileset refid="jar-set.activation" />
       <pathelement location="${build.packages.vmware-identity-idm-interface}" />
       <pathelement location="${build.packages.vmware-identity-idm-client}" />
       <pathelement location="${build.packages.vmware-identity-diagnostics}" />
       <pathelement location="${build.packages.samlauthority}" />
       <pathelement location="${build.packages.admin-interfaces}" />
       <pathelement location="${build.packages.wstauthz}" />
-      <pathelement location="${jax-ws.home}/lib/activation.jar" />
       <pathelement location="${jax-ws.home}/lib/FastInfoset.jar" />
       <pathelement location="${jax-ws.home}/lib/gmbal-api-only.jar" />
       <pathelement location="${jax-ws.home}/lib/ha-api.jar" />
