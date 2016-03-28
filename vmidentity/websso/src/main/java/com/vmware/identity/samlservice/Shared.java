@@ -72,6 +72,7 @@ public final class Shared {
     public static final String KERB_AUTH_PREFIX = "Negotiate";
     public static final String PASSWORD_AUTH_PREFIX = "Basic";
     public static final String TLSCLIENT_AUTH_PREFIX = "TLSClient";
+    public static final String RSAAM_AUTH_PREFIX = "RSAAM";
     public static final String RELYINGPARTY_ENTITYID = "RelyingPartyEntityId";
     public static final String IDP_SELECTION_HEADER = "CastleIDPSelection";
 
@@ -79,6 +80,7 @@ public final class Shared {
 
     public static final String RESPONSE_AUTH_HEADER = "CastleAuthorization";
     public static final String SESSION_COOKIE_NAME = "CastleSession";
+    public static final String LOGOUT_SESSION_COOKIE_NAME = "CastleLoggedOut";
     public static final String TENANT_IDP_COOKIE_NAME = "CastleIDPId";
     public static final int TOKEN_LIFETIME_MINUTES = 15;
     public static final int SESSION_LIFETIME_MINUTES = 480;
@@ -94,6 +96,9 @@ public final class Shared {
 
     public static final String HTML_CONTENT_TYPE = "text/html";
     public static final String METADATA_CONTENT_TYPE = "application/samlmetadata+xml";
+
+    public final static String ssoCACEndpoint = "/websso/SAML2/SSOCAC";
+    public final static String ssoEndpoint = "/websso/SAML2/SSO";
 
     /**
      * Return exception stack trace as a string
@@ -309,6 +314,15 @@ public final class Shared {
             }
         }
         return (defaultValue);
+    }
+
+    /**
+     * Return a logout cookie name
+     * @param nameSuffix
+     * @return */
+    public static String getLogoutCookieName(String nameSuffix)
+    {
+        return Shared.LOGOUT_SESSION_COOKIE_NAME + nameSuffix;
     }
 
     /**
