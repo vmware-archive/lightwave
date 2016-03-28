@@ -28,16 +28,17 @@ import java.security.Signature;
 import java.security.cert.CertPath;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.XMLConstants;
 import javax.xml.namespace.QName;
 
 import org.apache.commons.lang.StringEscapeUtils;
@@ -91,8 +92,6 @@ import org.springframework.context.MessageSource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import javax.xml.XMLConstants;
-
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.IDPConfig;
@@ -103,8 +102,8 @@ import com.vmware.identity.samlservice.IdmAccessor;
 import com.vmware.identity.samlservice.LogoutState;
 import com.vmware.identity.samlservice.OasisNames;
 import com.vmware.identity.samlservice.SamlService;
-import com.vmware.identity.samlservice.Shared;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
+import com.vmware.identity.samlservice.Shared;
 import com.vmware.identity.websso.client.AssertionConsumerService;
 import com.vmware.identity.websso.client.IDPConfiguration;
 import com.vmware.identity.websso.client.IDPConfigurationFactory;
@@ -328,7 +327,7 @@ public class SamlServiceImpl implements SamlService {
             sw.write("<input type=\"hidden\" name=\"RelayState\" value=\""
                     + StringEscapeUtils.escapeHtml(relayState) + "\" />");
         }
-        sw.write("<input type=\"submit\" value=\"Submit\" /> </form>");
+        sw.write("<input type=\"submit\" value=\"Submit\" style=\"display:none;\" /> </form>");
         String resultForm = sw.toString();
 
         StringWriter sw2 = new StringWriter();
@@ -689,12 +688,16 @@ public class SamlServiceImpl implements SamlService {
 
     static public IDPConfiguration generateIDPConfiguration(IDPConfig idmIdpConfig) {
         log.debug("AuthnRequestStateExternalAuthenticationFilter.generateIDPConfiguration is called");
-        Validate.notNull(idmIdpConfig, "idmIdpConfig");
 
         Validate.notNull(idmIdpConfig, "IDPConfig for the external IDP is not intialized");
-        ArrayList<String> nameIDFormatStrs = new ArrayList<String>(idmIdpConfig.getNameIDFormats());
+
+        ArrayList<String> nameIDFormatStrs = null;
+        if (idmIdpConfig.getNameIDFormats() != null) {
+            nameIDFormatStrs = new ArrayList<String>(idmIdpConfig.getNameIDFormats());
+        }
 
         //Creating a com.vmware.identity.websso.client.SingleSignOnService list
+        Validate.notNull(idmIdpConfig.getSsoServices(), "IDPConfig SsoServices is not initialized");
         ArrayList<ServiceEndpoint> idm_sso_services = new ArrayList<ServiceEndpoint>(idmIdpConfig.getSsoServices());
         ArrayList<com.vmware.identity.websso.client.SingleSignOnService> ssolib_sso_services =
                     new ArrayList<com.vmware.identity.websso.client.SingleSignOnService>();
@@ -707,7 +710,10 @@ public class SamlServiceImpl implements SamlService {
         Validate.notEmpty(ssolib_sso_services, "Empty client lib SingleSignOnService");
 
         //Creating a com.vmware.identity.websso.client.SingleLogoutService list
-        ArrayList<ServiceEndpoint> idm_slo_services = new ArrayList<ServiceEndpoint>(idmIdpConfig.getSloServices());
+        ArrayList<ServiceEndpoint> idm_slo_services = new ArrayList<ServiceEndpoint>();
+        if (idmIdpConfig.getSloServices() != null) {
+            idm_slo_services.addAll(idmIdpConfig.getSloServices());
+        }
         ArrayList<com.vmware.identity.websso.client.SingleLogoutService> ssolib_slo_services =
                 new ArrayList<com.vmware.identity.websso.client.SingleLogoutService>();
 
@@ -716,7 +722,7 @@ public class SamlServiceImpl implements SamlService {
                     new com.vmware.identity.websso.client.SingleLogoutService(m.getEndpoint(), m.getBinding());
             ssolib_slo_services.add(ssolib_slo_service);
         }
-        Validate.notEmpty(ssolib_slo_services, "Empty client lib SingleLogoutService");
+
         String idpAlias = (idmIdpConfig.getAlias()==null || idmIdpConfig.getAlias().isEmpty())? idmIdpConfig.getEntityID():idmIdpConfig.getAlias();
         IDPConfiguration clientIdpConfig = IDPConfigurationFactory
                 .createIDPConfigurationWithoutSiteAffinity(idpAlias,

@@ -16,8 +16,6 @@ package com.vmware.identity.wstrust.client.impl;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
-import java.security.PublicKey;
-import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -115,7 +113,7 @@ abstract class WsSecuritySignatureImpl implements WsSecuritySignature {
             String bodyUuid = createSoapBodyUuid(message);
             CanonicalizationMethod canonicalizationMethod = xmlSigFactory.newCanonicalizationMethod(
                     CanonicalizationMethod.EXCLUSIVE, (C14NMethodParameterSpec) null);
-            SignatureMethod signatureMethod = getSignatureMethod(xmlSigFactory);
+            SignatureMethod signatureMethod = xmlSigFactory.newSignatureMethod(RSA_WITH_SHA512, null);
             ArrayList<String> refList = new ArrayList<String>();
             refList.add(bodyUuid);
             refList.add(createTimestampUuid(message));
@@ -192,24 +190,6 @@ abstract class WsSecuritySignatureImpl implements WsSecuritySignature {
         }
 
         return result;
-    }
-
-    /**
-     * @param xmlSigFactory
-     * @return return the signature method based on the public key size
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidAlgorithmParameterException
-     */
-    private SignatureMethod getSignatureMethod(XMLSignatureFactory xmlSigFactory) throws NoSuchAlgorithmException,
-            InvalidAlgorithmParameterException {
-        SignatureMethod signatureMethod;
-        PublicKey publicKey = holderOfKeyConfig.getCertificate().getPublicKey();
-        if (publicKey instanceof RSAPublicKey && ((RSAPublicKey) publicKey).getModulus().bitCount() <= 512) {
-            signatureMethod = xmlSigFactory.newSignatureMethod(SignatureMethod.RSA_SHA1, null);
-        } else {
-            signatureMethod = xmlSigFactory.newSignatureMethod(RSA_WITH_SHA512, null);
-        }
-        return signatureMethod;
     }
 
     /**
