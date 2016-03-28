@@ -26,6 +26,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -56,10 +57,13 @@ import com.vmware.identity.saml.SignatureAlgorithm;
 import com.vmware.identity.saml.SystemException;
 import com.vmware.identity.saml.TokenAuthority;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
+import com.vmware.identity.samlservice.impl.AuthnRequestStateCookieWrapper;
+import com.vmware.identity.samlservice.impl.AuthnRequestStateRsaAmAuthenticationFilter;
 import com.vmware.identity.samlservice.impl.AuthnRequestStateValidator;
 import com.vmware.identity.session.Session;
 import com.vmware.identity.session.SessionManager;
 import com.vmware.identity.util.TimePeriod;
+
 
 /**
  * Object that encapsulates a lifetime of SAML AuthnRequest
@@ -93,6 +97,7 @@ public class AuthnRequestState {
     private String identityFormat;
     private String issuerValue;
     private String sessionId;
+    private String correlationId;
     private AuthnMethod authnMethod;
     private Date startTime;
     private boolean isRenewable;
@@ -280,7 +285,9 @@ public class AuthnRequestState {
         this.request = request;
         this.response = response;
         this.sessionManager = sessionManager;
-        this.factory = new DefaultIdmAccessorFactory();
+        //TODO - check for correlation id in the headers PR1561606
+        this.correlationId = UUID.randomUUID().toString();
+        this.factory = new DefaultIdmAccessorFactory(this.correlationId);
         Validate.notNull(this.factory);
         this.idmAccessor = this.factory.getIdmAccessor();
         this.validator = new AuthnRequestStateValidator();
@@ -296,7 +303,7 @@ public class AuthnRequestState {
         //initialize authnTypesSupported based only on tenant policy.
         AuthnPolicy authnPolicy = this.idmAccessor.getAuthnPolicy(tenant);
         this.authnTypesSupported = new AuthnTypesSupported(authnPolicy.IsPasswordAuthEnabled()
-                , authnPolicy.IsWindowsAuthEnabled(), authnPolicy.IsTLSClientCertAuthnEnabled());
+                , authnPolicy.IsWindowsAuthEnabled(), authnPolicy.IsTLSClientCertAuthnEnabled(), authnPolicy.IsRsaSecureIDAuthnEnabled());
         Validate.notNull(this.samlRequest);
 
         // construct message that was supposed to be signed
@@ -335,15 +342,19 @@ public class AuthnRequestState {
         Validate.notNull(this.idmAccessor);
         Validate.notNull(this.request);
 
-        // check for replays and resent request
-        if (this.requestCache.shouldDenyRequest(this.samlRequest)) {
-            log.info("Replay attack detected - DENYING authentication request");
-            this.validationResult = new ValidationResult(
-                    HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Replay");
-            throw new IllegalStateException("Forbidden");
-        } else {
-        	this.setIsExistingRequest(this.requestCache.isExistingRequest(this.samlRequest));
-            this.requestCache.storeRequest(this.samlRequest);
+        if (!(authenticator instanceof AuthnRequestStateRsaAmAuthenticationFilter ||
+               ( authenticator instanceof AuthnRequestStateCookieWrapper &&
+                       ((AuthnRequestStateCookieWrapper) authenticator).getAuthenticator() instanceof AuthnRequestStateRsaAmAuthenticationFilter)) ){
+            // check for replays and resent request
+            if (this.requestCache.shouldDenyRequest(this.samlRequest)) {
+                log.info("Replay attack detected - DENYING authentication request");
+                this.validationResult = new ValidationResult(
+                        HttpServletResponse.SC_FORBIDDEN, "Forbidden", "Replay");
+                throw new IllegalStateException("Forbidden");
+            } else {
+                this.setIsExistingRequest(this.requestCache.isExistingRequest(this.samlRequest));
+                this.requestCache.storeRequest(this.samlRequest);
+            }
         }
 
         // relying party unknown at this point, specify null
@@ -380,7 +391,7 @@ public class AuthnRequestState {
         // if signature was specified along with signing algorithm, verify
         // signature
         Issuer issuer = this.authnRequest.getIssuer();
-        if (issuer == null || issuer.getValue() == null) {
+        if (issuer == null || issuer.getValue() == null || this.idmAccessor.getRelyingPartyByUrl(issuer.getValue()) == null) {
             service = null;
         } else {
             this.setIssuerValue(issuer.getValue());
@@ -449,16 +460,17 @@ public class AuthnRequestState {
             authenticator.authenticate(this);
         } catch (SamlServiceException e) {
             // more auth data is required
-            log.error("Caught Saml Service Exception from authenticate ",e);
-            if (this.validationResult == null) {
+            log.error("Caught Saml Service Exception from authenticate "
+                    + e.toString());
+            if (this.getValidationResult() == null || this.getValidationResult().isValid()) {
                 this.validationResult = new ValidationResult(
                     HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", null);
             }
             return null;
         } catch (Exception e) {
             // unexpected processing error
-            log.error("Caught Exception from authenticate ",e);
-            if (this.validationResult == null) {
+            log.error("Caught Exception from authenticate " + e.toString());
+            if (this.getValidationResult() == null || this.getValidationResult().isValid()) {
                 this.validationResult = new ValidationResult(OasisNames.RESPONDER);
             }
             return null;
@@ -727,12 +739,22 @@ public class AuthnRequestState {
         CertPath certPath = this.idmAccessor
                 .getCertificatesForRelyingParty(relyingParty);
 
+        SignatureAlgorithm checkAlgorithm;
+        if (this.sigAlg == null) {
+            checkAlgorithm = null;
+        } else {
+            checkAlgorithm = SignatureAlgorithm.getSignatureAlgorithmForURI(this.sigAlg);
+            if (checkAlgorithm == null) {
+                this.validationResult = new ValidationResult(HttpServletResponse.SC_BAD_REQUEST, "BadRequest", null);
+                throw new IllegalStateException("authn request has invalid signature algorithm");
+            }
+        }
+
         SamlServiceFactory factory = new DefaultSamlServiceFactory();
         return factory.createSamlService(
                 null,
                 null, /* will not use this service to sign messages */
-                this.sigAlg == null ? null : SignatureAlgorithm
-                        .getSignatureAlgorithmForURI(this.sigAlg),
+                checkAlgorithm,
                 this.idmAccessor.getIdpEntityId(), certPath);
     }
 

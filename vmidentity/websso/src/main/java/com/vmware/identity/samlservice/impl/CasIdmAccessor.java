@@ -39,10 +39,12 @@ import com.vmware.identity.idm.AuthnPolicy;
 import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.GSSResult;
 import com.vmware.identity.idm.Group;
+import com.vmware.identity.idm.IDMSecureIDNewPinException;
 import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.PersonDetail;
 import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.idm.RSAAMResult;
 import com.vmware.identity.idm.RelyingParty;
 import com.vmware.identity.idm.SSOImplicitGroupNames;
 import com.vmware.identity.idm.ServiceEndpoint;
@@ -481,6 +483,23 @@ public class CasIdmAccessor implements IdmAccessor {
 	}
 
     @Override
+    public RSAAMResult authenticatebyPasscode(String rsaSessionId,
+            String username, String passcode) throws IDMSecureIDNewPinException {
+        logger.debug("rsa secureID authenticate");
+
+        try {
+            return client.authenticateRsaSecurId(tenant, rsaSessionId,
+                    username, passcode);
+        } catch (IDMSecureIDNewPinException e) {
+            logger.debug("New pin required.");
+            throw e;
+        } catch (Exception e) {
+            logger.debug("Caught exception ", e);
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Override
     public String getSloForRelyingParty(String relyingParty, String binding)
             throws IllegalStateException {
         logger.debug("getSloForRelyingParty " + relyingParty + ", binding "
@@ -493,27 +512,32 @@ public class CasIdmAccessor implements IdmAccessor {
             Validate.notNull(rp);
             Collection<ServiceEndpoint> sloServices = rp
                     .getSingleLogoutServices();
-            Validate.notNull(sloServices);
-            Validate.isTrue(sloServices.size() > 0);
 
-            // lookup by binding
-            for (ServiceEndpoint slo : sloServices) {
-                if (slo != null && binding.equals(slo.getBinding())) {
-                    retval = slo.getEndpoint();
+            // SLO service is optional and if it does not exist or binding does not match, return null.
+            if (sloServices != null && sloServices.size() > 0) {
+                // lookup by binding
+                for (ServiceEndpoint slo : sloServices) {
+                    if (slo != null && binding.equals(slo.getBinding())) {
+                        retval = slo.getResponseEndpoint();
+                        if (retval == null || retval.isEmpty()) {
+                            retval = slo.getEndpoint();
+                        }
+                    }
                 }
+                // by now we should have found something
+                if (retval == null) {
+                    logger.warn(String.format("SLO service for relying party %s exists, but does not support %s binding.",
+                            relyingParty, binding));
+                }
+            } else {
+                logger.warn(String.format("SLO service for relying party %s does not exist.", relyingParty));
             }
-            // by now we should have found something
-            if (retval == null) {
-                throw new IllegalStateException("BadRequest");
-            }
+            return retval;
         } catch (IllegalStateException e) {
             throw e;
         } catch (Exception e) {
             throw new IllegalStateException("BadRequest", e);
         }
-
-        Validate.notNull(retval);
-        return retval;
     }
 
     @Override
@@ -690,6 +714,7 @@ public class CasIdmAccessor implements IdmAccessor {
     @Override
     public PrincipalId createUserAccountJustInTime(Subject subject, String tenant,
             IDPConfig extIdp) throws Exception {
+        final String userNameDelimiter = "-";
         if (subject == null) {
             throw new InvalidTokenException("The subject retrieved from external token is null.");
         }
@@ -700,18 +725,21 @@ public class CasIdmAccessor implements IdmAccessor {
                 .getProviders(tenant, domains).iterator();
         String systemDomain = iter.next().getName();
         PrincipalId subjectUpn = null;
+        String userName = null;
         String upnSuffix = null;
         String extUserId = null;
 
         if (subject.subjectUpn() != null) {
             subjectUpn = subject.subjectUpn();
             upnSuffix = subjectUpn.getDomain();
+            // add upn suffix to user name for ext users to avoid conflict with local user with the same name
+            userName = subjectUpn.getName() + userNameDelimiter + upnSuffix;
             extUserId = subjectUpn.getUPN();
         } else {
             // to support non-upn subject format in external token
             String nameId = subject.subjectNameId().getName();
             // compose user name as sanitizedExternalID.GUID
-            String userName = sanitizeSubjectNameIdForUserName(nameId) + "." + UUID.randomUUID().toString();
+            userName = sanitizeSubjectNameIdForUserName(nameId) + userNameDelimiter + UUID.randomUUID().toString();
             upnSuffix = extIdp.getUpnSuffix();
             if (upnSuffix == null || upnSuffix.isEmpty()) {
                 throw new IllegalStateException("UPN suffix is not set for external IDP: " + extIdp.getEntityID());
@@ -723,13 +751,13 @@ public class CasIdmAccessor implements IdmAccessor {
         // register upn suffix to system domain
         client.registerUpnSuffix(tenant, systemDomain, upnSuffix);
 
-        logger.info(String.format("Creating a temporary user account for the user %s with domain %s "
+        logger.info("Creating a temporary user account for the user {} with domain {} "
                 + "in VMware identity store since the user is not found "
                 + "during delegated logon via SAML IDP federation.",
-                subjectUpn.getUPN(), tenant));
+                subjectUpn.getUPN(), tenant);
         return client.addJitUser(
                 tenant,
-                subjectUpn.getName(),
+                userName,
                 new PersonDetail.Builder()
                         .userPrincipalName(subjectUpn.getUPN())
                         .description(
@@ -782,6 +810,8 @@ public class CasIdmAccessor implements IdmAccessor {
                 if (!currentGroups.contains(g)) {
                     try {
                         client.addUserToGroup(tenant, subjectUpn, g.getName());
+                        logger.debug("User {} added to group{}s in tenant {}",
+                                subjectUpn.getUPN(), g.getName(), tenant);
                     } catch (Exception e) {
                         logger.error(String.format("Failed to add user %s to group %s in tenant %s. "
                                 + "Continue updating user group membership...",

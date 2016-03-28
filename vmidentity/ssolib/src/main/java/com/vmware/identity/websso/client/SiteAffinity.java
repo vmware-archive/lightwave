@@ -64,10 +64,10 @@ public class SiteAffinity {
             }
         }catch (java.lang.UnsatisfiedLinkError e) {
             // in case it can't load libcdcjni.so
-            logger.info("Failed to init CdcSession, likly due to missing libcdcjni.so.", e);
+            logger.warn("Failed to init CdcSession, likely due to missing libcdcjni.so. Message: {}", e.getMessage());
         } catch (NoClassDefFoundError e) {
             // in case vmafd jars are not found
-            logger.info("Failed to init CdcSession. likly due to missing vmafd jar.", e);
+            logger.warn("Failed to init CdcSession. likely due to missing vmafd jar. Message: {}", e.getMessage());
         }
 
         return affinitizedDC;
