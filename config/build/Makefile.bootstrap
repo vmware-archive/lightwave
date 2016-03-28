@@ -67,7 +67,8 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_vmafd_prefix /opt/vmware" \
               --define "_vmca_prefix /opt/vmware" \
               --define "_vmsts_prefix /opt/vmware" \
-              --define "_javahome /opt/OpenJDK-1.8.0.51-bin" \
+              --define "_javahome /var/opt/OpenJDK-1.8.0.72-bin" \
+              --define "_anthome /var/opt/apache-ant-1.9.6" \
               --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
               SPECS/$(PKG_SPEC)
 

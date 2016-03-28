@@ -7,7 +7,7 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.1, krb5 >= 1.12, cyrus-sasl >= 2.1, likewise-open >= 6.2.9, vmware-directory-client >= 6.0.2, vmware-afd-client >= 6.0.2, boost >= 1.56
+Requires:  boost-devel >= 1.56, coreutils >= 8.22, openssl >= 1.0.1, krb5 >= 1.12, cyrus-sasl >= 2.1, likewise-open >= 6.2.9, vmware-directory-client >= 6.0.2, vmware-afd-client >= 6.0.2, boost >= 1.56
 BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.1, krb5 >= 1.12, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.9, vmware-directory-client-devel >= 6.0.2, vmware-afd-client-devel >= 6.0.2, sqlite-autoconf, boost >= 1.56
 
 %define _dbdir %_localstatedir/lib/vmware/vmca
@@ -21,7 +21,7 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.1, krb5 >= 1.12, cyrus-s
 %define _likewise_open_sbindir %{_likewise_open_prefix}/sbin
 
 %if 0%{?_javahome:1} == 0
-%define _javahome /opt/OpenJDK-1.8.0.45-bin
+%define _javahome %{_javahome}
 %endif
 
 %if 0%{?_vmdir_prefix:1} == 0
@@ -56,7 +56,7 @@ autoreconf -mif .. &&
             --libdir=%{_lib64dir} \
             --localstatedir=/var/lib/vmware/vmca \
             --with-java=%{_javahome} \
-            --with-ant=/opt/apache-ant-1.9.4 \
+            --with-ant=%{_anthome} \
             --with-likewise=%{_likewise_open_prefix} \
             --with-vmdir=%{_vmdir_prefix} \
             --with-afd=%{_vmafd_prefix} \
