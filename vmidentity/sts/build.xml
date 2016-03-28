@@ -14,7 +14,7 @@
         <property name="MAINSRCROOT" value="${basedir}/.." />
    <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
    <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
-
+ 
    <property name="build.packages.samlauthority"
              value="${build.packages}/samlauthority.jar" />
    <property name="build.packages.vmware-identity-idm-interface"
@@ -29,7 +29,7 @@
              value="${build.packages}/samltoken.jar" />
    <property name="build.packages.wstauthz"
              value="${build.packages}/wstauthz.jar" />
-  <property unless:set="property" name="jax-ws.home" value="/opt/jaxws-ri-2.2.5"/>
+  <property unless:set="property" name="jax-ws.home" value="/var/opt/jaxws-ri-2.2.10"/>
 
    <path id="classpath.runtime-dependencies">
       <fileset refid="jar-set.LOG4J2" />
@@ -50,31 +50,31 @@
       <fileset refid="jar-set.opensaml" />
       <fileset refid="jar-set.velocity" />
       <fileset refid="jar-set.esapi" />
+      <fileset refid="jar-set.activation" />
+      <fileset refid="jar-set.saaj-api" />
+      <fileset refid="jar-set.jsr-173" />
+      <fileset refid="jar-set.jsr-250" />
+      <fileset refid="jar-set.http" />
       <pathelement location="${build.packages.vmware-identity-idm-interface}" />
       <pathelement location="${build.packages.vmware-identity-idm-client}" />
       <pathelement location="${build.packages.vmware-identity-diagnostics}" />
       <pathelement location="${build.packages.samlauthority}" />
       <pathelement location="${build.packages.admin-interfaces}" />
       <pathelement location="${build.packages.wstauthz}" />
-      <pathelement location="${jax-ws.home}/lib/activation.jar" />
       <pathelement location="${jax-ws.home}/lib/FastInfoset.jar" />
       <pathelement location="${jax-ws.home}/lib/gmbal-api-only.jar" />
       <pathelement location="${jax-ws.home}/lib/ha-api.jar" />
-      <pathelement location="${jax-ws.home}/lib/http.jar" />
       <pathelement location="${jax-ws.home}/lib/jaxb-api.jar" />
       <pathelement location="${jax-ws.home}/lib/jaxb-impl.jar" />
       <pathelement location="${jax-ws.home}/lib/jaxb-xjc.jar" />
       <pathelement location="${jax-ws.home}/lib/jaxws-api.jar" />
       <pathelement location="${jax-ws.home}/lib/jaxws-rt.jar" />
       <pathelement location="${jax-ws.home}/lib/jaxws-tools.jar" />
-      <pathelement location="${jax-ws.home}/lib/jsr173_api.jar" />
       <pathelement location="${jax-ws.home}/lib/jsr181-api.jar" />
-      <pathelement location="${jax-ws.home}/lib/jsr250-api.jar" />
       <pathelement location="${jax-ws.home}/lib/management-api.jar" />
       <pathelement location="${jax-ws.home}/lib/mimepull.jar" />
       <pathelement location="${jax-ws.home}/lib/policy.jar" />
       <pathelement location="${jax-ws.home}/lib/resolver.jar" />
-      <pathelement location="${jax-ws.home}/lib/saaj-api.jar" />
       <pathelement location="${jax-ws.home}/lib/saaj-impl.jar" />
       <pathelement location="${jax-ws.home}/lib/stax-ex.jar" />
       <pathelement location="${jax-ws.home}/lib/streambuffer.jar" />

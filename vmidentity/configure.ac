@@ -105,6 +105,18 @@ fi
 AC_SUBST(ANT_HOME)
 AC_SUBST(ANT_CLASSPATH)
 
+# Commons Daemon component
+
+AC_ARG_WITH([commons-daemon],
+    [AC_HELP_STRING([--with-commons-daemon=<dir>], [use Commons daemon binaries rooted at prefix <dir> ])],
+    [
+        COMMONS_DAEMON_HOME="$withval"
+        JSVC=$COMMONS_DAEMON_HOME/bin/jsvc
+    ])
+
+AC_SUBST(COMMONS_DAEMON_HOME)
+AC_SUBST(JSVC)
+
 # JAX-WS component
 
 AC_ARG_WITH([jax-ws],
