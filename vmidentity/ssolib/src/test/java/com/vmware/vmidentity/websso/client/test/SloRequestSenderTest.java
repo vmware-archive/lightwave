@@ -1,5 +1,5 @@
 /* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved.
+ * Copyright 2012 VMware, Inc. All rights reserved. VMware Confidential
  **********************************************************************************/
 package com.vmware.vmidentity.websso.client.test;
 
@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletResponse;
@@ -21,11 +22,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
+import com.vmware.identity.websso.client.IDPConfiguration;
 import com.vmware.identity.websso.client.MessageStore;
 import com.vmware.identity.websso.client.MessageStoreImpl;
 import com.vmware.identity.websso.client.MetadataSettings;
 import com.vmware.identity.websso.client.SamlNames;
 import com.vmware.identity.websso.client.SamlUtils;
+import com.vmware.identity.websso.client.SingleLogoutService;
 import com.vmware.identity.websso.client.SloRequestSettings;
 import com.vmware.identity.websso.client.endpoint.SharedComponent;
 import com.vmware.identity.websso.client.endpoint.SloRequestSender;
@@ -47,7 +50,7 @@ public class SloRequestSenderTest {
     private static String nameIDFormat = SamlNames.PERSISTENT; // defaults to
                                                                // persistant
 
-    private static SloRequestSender requestSender = null;
+    private static SloRequestSender requestSender, requestSenderNoIDPSLO;
 
     private static String sessionIndex = null;
 
@@ -73,6 +76,20 @@ public class SloRequestSenderTest {
         requestSender.setMessageStore(messageStore);
         requestSender.setLogoutProcessor(new LogoutProcessorImpl());
         requestSender.setMetadataSettings(metadataSettings);
+
+        requestSenderNoIDPSLO = new SloRequestSender();
+
+        MetadataSettings metadataSettingsNoIDPSLO = TestUtils.CreateMetadataSettings();
+        // set IDP SLO service to an empty list.
+        for (IDPConfiguration idp : metadataSettingsNoIDPSLO.getAllIDPConfigurations()) {
+            idp.setSingleLogoutServices(new ArrayList<SingleLogoutService>());
+        }
+
+        // call setters here since we are not using autowiring for the unit
+        // testing.
+        requestSenderNoIDPSLO.setMessageStore(messageStore);
+        requestSenderNoIDPSLO.setLogoutProcessor(new LogoutProcessorImpl());
+        requestSenderNoIDPSLO.setMetadataSettings(metadataSettingsNoIDPSLO);
     }
 
     /**
@@ -125,12 +142,29 @@ public class SloRequestSenderTest {
     }
 
     /**
+     * Test unsigned request-url creation, IDP does not support SLO.
+     *
+     * @throws UnsupportedEncodingException
+     * @throws MalformedURLException
+     */
+    @Test
+    public final void testGetRequestUrlNoIDPSLO_NotSigned() throws UnsupportedEncodingException, MalformedURLException {
+        log.info("\nStart unit test: testSendRequest");
+        SloRequestSettings requestSettings = new SloRequestSettings(spAlias, idpAlias, false, subject, nameIDFormat,
+                sessionIndex, relayState);
+
+        // build request URL and check is null
+        String reqUrl = requestSenderNoIDPSLO.getRequestUrl(requestSettings);
+        Assert.isNull(reqUrl);
+    }
+
+    /**
      * Test sending signed request-url creation.
      * 
      * @throws MalformedURLException
      * @throws UnsupportedEncodingException
      */
-    // @Test
+    @Test
     public final void testGetRequestUrl_Signed() throws MalformedURLException, UnsupportedEncodingException {
         log.info("\nStart unit test: testSendRequest");
         SloRequestSettings requestSettings = new SloRequestSettings(spAlias, idpAlias, true, subject, nameIDFormat,
@@ -147,6 +181,22 @@ public class SloRequestSenderTest {
         Assert.notNull(TestUtils.getParameterFromQueryMap(queryMap, SamlUtils.SIGNATURE_ALGORITHM_PARAMETER));
         Assert.notNull(TestUtils.getParameterFromQueryMap(queryMap, SamlUtils.SIGNATURE_PARAMETER));
 
+    }
+
+    /**
+     * Test sending signed request-url creation, IDP does not support SLO.
+     *
+     * @throws MalformedURLException
+     * @throws UnsupportedEncodingException
+     */
+    @Test
+    public final void testGetRequestUrlNoIDPSLO_Signed() throws MalformedURLException, UnsupportedEncodingException {
+        log.info("\nStart unit test: testSendRequest");
+        SloRequestSettings requestSettings = new SloRequestSettings(spAlias, idpAlias, true, subject, nameIDFormat,
+                sessionIndex, relayState);
+        // build request URL and check is null
+        String reqUrl = requestSenderNoIDPSLO.getRequestUrl(requestSettings);
+        Assert.isNull(reqUrl);
     }
 
     /**

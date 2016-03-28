@@ -114,6 +114,44 @@ public class AuthnRequestStateTest {
 		}
 	}
 
+    @Test
+    public void TestParseInvalidSignatureAlgorithm() throws Exception {
+        SharedUtils.bootstrap(false); // use real data
+
+        StringBuffer sbRequestUrl = new StringBuffer();
+        int tenantId = 0;
+        AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
+        sbRequestUrl.append(authnRequest.getDestination());
+
+        HttpServletRequest request = SharedUtils.buildMockRequestObject(
+                authnRequest,
+                relayStateParameter,
+                "InvalidSignatureAlgorithmGoesHere",
+                null,
+                sbRequestUrl,
+                TestConstants.AUTHORIZATION,
+                null,
+                tenantId);
+
+        HttpServletResponse response = SharedUtils.buildMockResponseSuccessObject(new StringWriter(), Shared.HTML_CONTENT_TYPE, false, null);
+        AuthnRequestState requestState = new AuthnRequestState(request, response, sessionManager, ServerConfig.getTenant(tenantId));
+
+        boolean invalidSigAlg = false;
+
+        try {
+            requestState.parseRequestForTenant(tenant, filter);
+        } catch (IllegalStateException e) {
+            if (e.getMessage().equals("authn request has invalid signature algorithm") &&
+                    requestState.getValidationResult().getResponseCode() == HttpServletResponse.SC_BAD_REQUEST) {
+                invalidSigAlg = true;
+            }
+        }
+
+        if (!invalidSigAlg) {
+            fail();
+        }
+    }
+
 	@Test
 	public void TestAuthenticate() throws Exception {
 		AuthnRequestState requestState = null;

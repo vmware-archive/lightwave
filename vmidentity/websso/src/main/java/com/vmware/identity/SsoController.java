@@ -38,6 +38,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.AuthnPolicy;
+import com.vmware.identity.idm.RSAAgentConfig;
 import com.vmware.identity.idm.RelyingParty;
 import com.vmware.identity.samlservice.AuthenticationFilter;
 import com.vmware.identity.samlservice.AuthnRequestState;
@@ -54,9 +56,6 @@ import com.vmware.identity.session.SessionManager;
 @Controller
 public class SsoController extends BaseSsoController {
 
-	//TODO remove this switch once the feature is complete, level-tested and ship ready per 2016 release process
-
-	static boolean smartCardFeatureSwitch = true;
     @Autowired
     private MessageSource messageSource;
 
@@ -65,6 +64,9 @@ public class SsoController extends BaseSsoController {
 
     @Autowired
     private AuthenticationFilter<AuthnRequestState> passwordAuthenticator;
+
+    @Autowired
+    private AuthenticationFilter<AuthnRequestState> rsaamAuthenticator;
 
     @Autowired
     private AuthenticationFilter<AuthnRequestState> tlsClientAuthenticator;
@@ -116,6 +118,16 @@ public class SsoController extends BaseSsoController {
     }
 
     /**
+     * Handle SAML AuthnRequest for CAC - i.e. requesting client side cert
+     */
+    @RequestMapping(value = "/SAML2/SSOCAC/{tenant:.*}", method = {RequestMethod.GET, RequestMethod.POST})
+    public String cacSso(Locale locale, @PathVariable(value = "tenant") String tenant,
+            Model model, HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        return this.sso( locale, tenant, model, request, response );
+    }
+
+    /**
      * Choose auth method to use based on castle auth header contents
      * @param request
      * @return
@@ -135,10 +147,13 @@ public class SsoController extends BaseSsoController {
                 } else if (castleAuthType.startsWith(Shared.PASSWORD_AUTH_PREFIX)) {
                     retval = this.getPasswordAuthenticator();
                     logger.debug("Password authenticator chosen");
+                } else if (castleAuthType.startsWith(Shared.RSAAM_AUTH_PREFIX)) {
+                    retval = this.getRsaAmAuthenticator();
+                    logger.debug("Rsa am authenticator chosen");
                 } else if (castleAuthType.startsWith(Shared.TLSCLIENT_AUTH_PREFIX)) {
-	                retval = this.getTlsClientAuthenticator();
-	                logger.debug("TLSClient authenticator chosen");
-	            }
+                    retval = this.getTlsClientAuthenticator();
+                    logger.debug("TLSClient authenticator chosen");
+                }
             }
         }
 
@@ -212,6 +227,15 @@ public class SsoController extends BaseSsoController {
         sso(locale, Shared.getDefaultTenant(), model, request, response);
     }
 
+    /**
+     * Handle SAML AuthnRequest for default tenant for CAC - i.e. requesting client side cert
+     */
+    @RequestMapping(value = "/SAML2/SSOCAC", method = {RequestMethod.GET, RequestMethod.POST})
+    public void cacSsoDefaultTenant(Locale locale, Model model,
+        HttpServletRequest request, HttpServletResponse response)
+        throws IOException {
+        ssoDefaultTenant(locale, model, request, response);
+    }
 
     /**
      * Handle request sent with a wrong binding
@@ -286,6 +310,8 @@ public class SsoController extends BaseSsoController {
                 messageSource.getMessage("LoginForm.UserName.Placeholder", null, locale));
         model.addAttribute("password",
                 messageSource.getMessage("LoginForm.Password", null, locale));
+        model.addAttribute("passcode",
+                messageSource.getMessage("LoginForm.Passcode", null, locale));
         model.addAttribute("submit",
                 messageSource.getMessage("LoginForm.Submit", null, locale));
         model.addAttribute("error",
@@ -307,20 +333,28 @@ public class SsoController extends BaseSsoController {
 
         setLogonBannerModelAttributes(tenant, model);
 
-        if (smartCardFeatureSwitch == true) {
-            AuthnTypesSupported supportedAuthnTypes;
-            if (requestState != null) {
-                supportedAuthnTypes = requestState.getAuthTypesSupportecd();
-            } else {
-                supportedAuthnTypes = new AuthnTypesSupported(true,true, false);
-            }
-            model.addAttribute("enable_password_auth", supportedAuthnTypes.supportsPasswordProtectTransport());
-            model.addAttribute("enable_windows_auth",supportedAuthnTypes.supportsWindowsSession());
-            model.addAttribute("enable_tlsclient_auth",supportedAuthnTypes.supportsTlsClientCert());
-            model.addAttribute("smartcard",
-                            messageSource.getMessage("LoginForm.Smartcard", null, locale));
-            model.addAttribute("smartcard_reminder",
-                            messageSource.getMessage("LoginForm.SmartcardReminder", null, locale));
+        AuthnTypesSupported supportedAuthnTypes;
+        if (requestState != null) {
+            supportedAuthnTypes = requestState.getAuthTypesSupportecd();
+        } else {
+            supportedAuthnTypes = new AuthnTypesSupported(true,true, false, false);
+        }
+
+        model.addAttribute("enable_password_auth", supportedAuthnTypes.supportsPasswordProtectTransport());
+        model.addAttribute("enable_windows_auth",supportedAuthnTypes.supportsWindowsSession());
+        model.addAttribute("enable_tlsclient_auth",supportedAuthnTypes.supportsTlsClientCert());
+        model.addAttribute("enable_rsaam_auth",supportedAuthnTypes.supportsRsaSecureID());
+
+        model.addAttribute("smartcard",
+                        messageSource.getMessage("LoginForm.Smartcard", null, locale));
+        model.addAttribute("rsaam", messageSource.getMessage("LoginForm.RsaSecurID", null, locale));
+
+        model.addAttribute("cac_endpoint", Shared.ssoCACEndpoint);
+        model.addAttribute("sso_endpoint", Shared.ssoEndpoint);
+
+        if (supportedAuthnTypes.supportsRsaSecureID()) {
+            model.addAttribute("rsaam_reminder",
+                    StringEscapeUtils.escapeJavaScript(getRsaSecurIDLoginGuide(tenant)));
         }
 
     }
@@ -382,6 +416,22 @@ public class SsoController extends BaseSsoController {
     public void setPasswordAuthenticator(
             AuthenticationFilter<AuthnRequestState> passwordAuthenticator) {
         this.passwordAuthenticator = passwordAuthenticator;
+    }
+
+    /**
+     * @return the rsaamAuthenticator
+     */
+    public AuthenticationFilter<AuthnRequestState> getRsaAmAuthenticator() {
+        return rsaamAuthenticator;
+    }
+
+    /**
+     * @param rsaamAuthenticator
+     *            the rsaamAuthenticator to set
+     */
+    public void setRsaAmAuthenticator(
+            AuthenticationFilter<AuthnRequestState> rsaamAuthenticator) {
+        this.rsaamAuthenticator = rsaamAuthenticator;
     }
 
     /**
@@ -467,6 +517,28 @@ public class SsoController extends BaseSsoController {
         model.addAttribute("tenant_logonbanner_title", logonBannerTitle);
         model.addAttribute("tenant_logonbanner_content", logonBannerContent);
         model.addAttribute("enable_logonbanner_checkbox", idmAccessor.getLogonBannerCheckboxFlag());
+    }
+
+    /**
+     * return tenant setting of rsa login guide.
+     * @param tenantName
+     * @return guide string. if not defined.
+     */
+    private String getRsaSecurIDLoginGuide(String tenantName) {
+       if (tenantName == null || tenantName.isEmpty()) {
+           return null;
+       }
+       DefaultIdmAccessorFactory idmFactory = new DefaultIdmAccessorFactory();
+       Validate.notNull(idmFactory, "idmFactory");
+       IdmAccessor idmAccessor = idmFactory.getIdmAccessor();
+
+       idmAccessor.setTenant(tenantName);
+       RSAAgentConfig config = idmAccessor.getAuthnPolicy(tenantName).get_rsaAgentConfig();
+       String rsaLoginGuide = null;
+       if (null != config) {
+           rsaLoginGuide = config.get_loginGuide();
+       }
+       return rsaLoginGuide;
     }
 
     private String getServerSPN() {
