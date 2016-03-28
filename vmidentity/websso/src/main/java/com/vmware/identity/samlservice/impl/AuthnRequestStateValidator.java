@@ -430,7 +430,7 @@ public class AuthnRequestStateValidator implements
                 log.warn("WEBSSO only support EXACT comparison type for RequestedAuthnContext. Ignore RequestedAuthnContext the element.");
             }
             else {
-                AuthnTypesSupported allowedTypes = new AuthnTypesSupported(false, false, false);  //init with all off
+                AuthnTypesSupported allowedTypes = new AuthnTypesSupported(false, false, false,false);  //init with all off
                 AuthnTypesSupported tenantAllowedTypes = t.getAuthTypesSupportecd();
 
                 List<AuthnContextClassRef> requestedTypes = authnContext.getAuthnContextClassRefs();
