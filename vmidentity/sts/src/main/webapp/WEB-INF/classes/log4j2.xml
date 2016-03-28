@@ -31,13 +31,13 @@
 </Appenders>
 
 <Loggers>
-    <Logger additivity="false" name="com.vmware.identity.diagnostics" level="trace">
+    <Logger additivity="false" name="com.vmware.identity.diagnostics" level="info">
         <AppenderRef ref="LOGFILE"/>
     </Logger>
-    <Logger additivity="false" name="com.vmware.identity.idm" level="trace">
+    <Logger additivity="false" name="com.vmware.identity.idm" level="info">
         <AppenderRef ref="LOGFILE"/>
     </Logger>
-    <Logger name="com.vmware.identity.perf" level="trace">
+    <Logger name="com.vmware.identity.perf" level="info">
         <AppenderRef ref="PERFLOG"/>
     </Logger>
     <Logger additivity="false" name="com.vmware.identity.performanceSupport.PerfDataSink" level="info">
@@ -46,19 +46,19 @@
     <Logger additivity="false" name="com.vmware.identity.performanceSupport.PerformanceDecorator" level="info">
         <AppenderRef ref="PERFLOG"/>
     </Logger>
-    <Logger additivity="false" name="com.vmware.identity.saml" level="trace">
+    <Logger additivity="false" name="com.vmware.identity.saml" level="info">
         <AppenderRef ref="LOGFILE"/>
     </Logger>
-    <Logger additivity="false" name="com.vmware.identity.sts" level="trace">
+    <Logger additivity="false" name="com.vmware.identity.sts" level="info">
         <AppenderRef ref="LOGFILE"/>
     </Logger>
-    <Logger additivity="false" name="com.vmware.identity.sts.authz" level="trace">
+    <Logger additivity="false" name="com.vmware.identity.sts.authz" level="info">
         <AppenderRef ref="LOGFILE"/>
     </Logger>
     <Logger additivity="true" name="com.vmware.identity.sts.ws.handlers.SoapMsgMetricsCollector" level="info">
         <AppenderRef ref="PERFLOG"/>
     </Logger>
-    <Logger additivity="false" name="com.vmware.identity.token" level="trace">
+    <Logger additivity="false" name="com.vmware.identity.token" level="info">
         <AppenderRef ref="LOGFILE"/>
     </Logger>
     <Logger name="org.apache" level="warn">

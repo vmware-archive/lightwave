@@ -44,6 +44,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -76,7 +77,9 @@ import com.vmware.identity.idm.IIdentityManager;
 import com.vmware.identity.idm.ILoginManager;
 import com.vmware.identity.idm.IdmDataCreator;
 import com.vmware.identity.idm.IdmDataRemover;
+import com.vmware.identity.idm.RelyingParty;
 import com.vmware.identity.idm.ServerConfig;
+import com.vmware.identity.idm.ServiceEndpoint;
 import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.saml.SignatureAlgorithm;
@@ -283,6 +286,16 @@ public class SharedUtils {
         CasIdmClient idmClient = new CasIdmClient(idmHost);
         IdmDataCreator.createData(idmClient);
         lastData = testData;
+    }
+
+    public static void removeSLOfromRelyingParties(String tenant) throws Exception {
+        String idmHost = getIdmHostName();
+
+        CasIdmClient idmClient = new CasIdmClient(idmHost);
+        for (RelyingParty rp : idmClient.getRelyingParties(tenant)) {
+            rp.setSingleLogoutServices(new ArrayList<ServiceEndpoint>());
+            idmClient.setRelyingParty(tenant, rp);
+        }
     }
 
     /**
@@ -706,7 +719,7 @@ class IdmLoginManagerForwarder implements com.vmware.identity.idm.ILoginManager
     private static final int RETRY_COUNT=3;
     private static final int RETRY_TIMEOUT_SECS = 30;
 
-    private String _realIdmHostName;
+    private final String _realIdmHostName;
     IdmLoginManagerForwarder( String realIdmHostName ) throws RemoteException, MalformedURLException
     {
         Validate.notEmpty(realIdmHostName);
