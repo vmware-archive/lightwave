@@ -1,5 +1,5 @@
 /* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved.
+ * Copyright 2012 VMware, Inc. All rights reserved. VMware Confidential
  **********************************************************************************/
 package com.vmware.identity.websso.client;
 
@@ -28,7 +28,7 @@ public abstract class ValidationState {
     private MessageData messageData;
     private String sessionIndex;
     private ValidationResult validationResult;
-    private RelaxedURIComparator comparator;
+    private final RelaxedURIComparator comparator;
 
     // helper data
     private MetadataSettings metadataSettings;
@@ -108,6 +108,8 @@ public abstract class ValidationState {
                 IDPConfiguration idpConfig = metaSettings.getIDPConfigurationByEntityID(issuerVal);
                 String issuerSloLocation = SamlUtils.getIdpSloLocation(idpConfig, SamlNames.HTTP_REDIRECT);
 
+                // Since a SLO response from IDP has been received and a matching SLO request is also found,
+                // IDP's SLO end point should exist and can not be null.
                 if (issuerSloLocation == null || !issuerSloLocation.equals(originalRequstTarget)) {
                     logger.warn("logout response issuer is a unknown IDP! Issuer: " + issuerVal
                             + "	The original slo request target is:" + originalRequstTarget
