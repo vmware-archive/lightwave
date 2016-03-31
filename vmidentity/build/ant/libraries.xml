@@ -13,6 +13,10 @@
         <include name="commons-daemon-1.0.10.jar"/>
    </fileset>
 
+   <fileset id="jar-set.tomcat-coyote" dir="${MAINSRCROOT}/build/depends">
+        <include name="tomcat-coyote-7.0.26.jar"/>
+   </fileset>
+
    <fileset id="jar-set.apache-httpclient" dir="${MAINSRCROOT}/build/depends">
         <include name="httpclient-4.3.3.jar"/>
         <include name="httpcore-4.3.2.jar"/>

@@ -387,6 +387,7 @@ AC_CONFIG_FILES([Makefile
                  config/vmware-stsd.service
                  diagnostics/Makefile
                  idm/Makefile
+                 tomcat-extensions/Makefile
                  interop/Makefile
                  interop/idm/Makefile
                  interop/idm/common/Makefile
