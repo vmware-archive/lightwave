@@ -3,6 +3,7 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = \
     config \
     jdepends \
+    tomcat-extensions \
     interop \
     diagnostics \
     platform \

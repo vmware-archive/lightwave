@@ -82,16 +82,17 @@
                    connectionTimeout="20000"
                    keepAliveTimeout="60000"
                    executor="tomcatThreadPool"
-                   keyAlias="ssoserver"
-                   keystoreFile="${catalina.base}/conf/ssoserver.p12"
+                   keyAlias="_MACHINE_CERT"
                    keystorePass="changeme"
-                   keystoreType="PKCS12"
+                   keystoreType="VKS"
                    maxKeepAliveRequests="-1"
                    port="443"
                    protocol="org.apache.coyote.http11.Http11Protocol"
                    redirectPort="443"
                    scheme="https"
-                   secure="true"/>
+                   secure="true"
+                   sslEnabledProtocols="TLSv1,TLSv1.1,TLSv1.2" 
+                   sslImplementationName="com.vmware.identity.tomcat.VECSAwareSSLImplementation" />
     <!-- A "Connector" using the shared thread pool-->
     <!--
     <Connector executor="tomcatThreadPool"

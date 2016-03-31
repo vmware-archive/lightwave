@@ -1,12 +1,13 @@
 /* **********************************************************************
- * Copyright 2014 VMware, Inc.  All rights reserved.
+ * Copyright 2014 VMware, Inc.  All rights reserved. VMware Confidential
  * *********************************************************************/
 
 package com.vmware.pscsetup;
 
 import java.io.Console;
 
-import com.vmware.pscsetup.interop.DomainControllerNativeException;
+import com.vmware.identity.configure.DomainControllerNativeException;
+import com.vmware.identity.configure.PlatformInstallObserverDefault;
 
 public class PlatformServicesControllerDeploy {
 
@@ -72,8 +73,6 @@ public class PlatformServicesControllerDeploy {
                     mode = ParseMode.PARSE_MODE_SERVER;
                 } else if (arg.equals("--site")) {
                     mode = ParseMode.PARSE_MODE_SITE;
-                } else if (arg.equals("--runDmc")) {
-                    mode = ParseMode.PARSE_MODE_RUN_DMC;
                 }
                 break;
             case PARSE_MODE_HOSTNAME:
@@ -92,10 +91,6 @@ public class PlatformServicesControllerDeploy {
                 params.setSite(arg);
                 mode = ParseMode.PARSE_MODE_OPEN;
                 break;
-            case PARSE_MODE_RUN_DMC:
-                psc.setRunDmc(Boolean.parseBoolean(arg));
-                mode = ParseMode.PARSE_MODE_RUN_DMC;
-                break;
             case PARSE_MODE_SERVER:
                 if (setupMode == DirectorySetupMode.PARTNER)
                     ((DomainControllerPartnerParams) params).setServer(arg);
@@ -109,6 +104,6 @@ public class PlatformServicesControllerDeploy {
     }
 
     enum ParseMode {
-	PARSE_MODE_OPEN, PARSE_MODE_MODE, PARSE_MODE_HOSTNAME, PARSE_MODE_DOMAIN, PARSE_MODE_PASSWORD, PARSE_MODE_SITE, PARSE_MODE_RUN_DMC, PARSE_MODE_SERVER,
+	    PARSE_MODE_OPEN, PARSE_MODE_MODE, PARSE_MODE_HOSTNAME, PARSE_MODE_DOMAIN, PARSE_MODE_PASSWORD, PARSE_MODE_SITE, PARSE_MODE_SERVER,
     }
 }

@@ -12,11 +12,12 @@ import com.sun.jna.ptr.PointerByReference;
 import com.vmware.pscsetup.DirectorySetupMode;
 import com.vmware.pscsetup.DomainControllerPartnerParams;
 import com.vmware.pscsetup.DomainControllerStandaloneParams;
+import com.vmware.identity.configure.DomainControllerNativeException;
 
 public class DeployUtilsAdapter extends NativeAdapter {
 	public interface DeployUtilsLibrary extends Library {
 		DeployUtilsLibrary INSTANCE = (DeployUtilsLibrary) Native.loadLibrary(
-				"cfgutils", DeployUtilsLibrary.class);
+				"deployutils", DeployUtilsLibrary.class);
 
 		int VmwDeploySetupInstance(Pointer pParams);
 
