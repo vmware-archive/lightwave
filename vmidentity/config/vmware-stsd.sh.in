@@ -33,7 +33,7 @@ STSD_INITD_ERR_LOG="$STSD_LOG_DIR/utils/$SERVICE_NAME.err"
 
 # Tomcat Catalina settings
 
-CATALINA_HOME=/opt/apache-tomcat-7.0.63
+CATALINA_HOME=/var/opt/apache-tomcat-7.0.68
 CATALINA_BASE="$VMWARE_HOME/$INSTANCE_NAME"
 
 ShowUsage()

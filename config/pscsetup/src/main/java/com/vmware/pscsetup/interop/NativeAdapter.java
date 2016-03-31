@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.lang.SystemUtils;
+import com.vmware.identity.configure.WinInstallerHelper;
 
 import com.sun.jna.platform.win32.Advapi32Util;
 import com.sun.jna.platform.win32.WinReg;
@@ -35,11 +36,13 @@ abstract class NativeAdapter {
 
 		final String LINUX_VMWARE_DEPLOY_PATH = "/opt/vmware/lib64";
 
-		final String WIN_REG_DEPLOY_PATH = "SOFTWARE\\VMWare, Inc.\\VMware Deploy";
+		final String WIN_REG_DEPLOY_PATH = "SOFTWARE\\VMWare, Inc.\\VMware IC-Deploy";
 		final String WIN_REG_INSTALL_KEY = "InstallPath";
-		String WIN_VMWARE_DEPLOY_PATH = String.format(
-				"C:%sProgram Files%sVMware%svCenter Server%sic-deploy", File.separator,
-				File.separator, File.separator, File.separator);
+		String WIN_VMWARE_DEPLOY_PATH = null;
+
+		if (SystemUtils.IS_OS_WINDOWS) {
+		    WIN_VMWARE_DEPLOY_PATH = WinInstallerHelper.readRegEdit(WIN_REG_DEPLOY_PATH, WIN_REG_INSTALL_KEY);
+		}
 
 		List<String> paths = null;
 		if (SystemUtils.IS_OS_LINUX) {
