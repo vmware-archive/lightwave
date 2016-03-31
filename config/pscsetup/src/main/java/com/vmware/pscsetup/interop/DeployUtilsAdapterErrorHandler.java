@@ -4,6 +4,8 @@ import java.util.HashMap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import com.vmware.identity.configure.DeployUtilsErrors;
+import com.vmware.identity.configure.DomainControllerNativeException;
 
 class DeployUtilsAdapterErrorHandler {
 
