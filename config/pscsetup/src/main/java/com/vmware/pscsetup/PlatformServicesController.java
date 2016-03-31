@@ -1,24 +1,30 @@
 /* **********************************************************************
- * Copyright 2014 VMware, Inc.  All rights reserved.
+ * Copyright 2014 VMware, Inc.  All rights reserved. VMware Confidential
  * *********************************************************************/
 
 package com.vmware.pscsetup;
 
 import java.net.InetAddress;
+
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.vmware.identity.configure.DeployUtilsErrors;
+import com.vmware.identity.configure.DomainControllerNativeException;
+import com.vmware.identity.configure.IPlatformComponentInstaller;
+import com.vmware.identity.configure.IPlatformInstallObserver;
+import com.vmware.identity.configure.IdentityManagerInstaller;
+import com.vmware.identity.configure.PlatformInstallComponent;
+import com.vmware.identity.configure.SecureTokenServerInstaller;
+import com.vmware.identity.interop.Validate;
 import com.vmware.pscsetup.interop.DeployUtilsAdapter;
-import com.vmware.pscsetup.interop.DeployUtilsErrors;
-import com.vmware.pscsetup.interop.DomainControllerNativeException;
 
 public class PlatformServicesController {
 
 	private IPlatformInstallObserver observer = null;
-	private boolean runDmc = true; //default value true - always run Domain Controller.
 
 	public boolean setupInstanceStandalone(
 			DomainControllerStandaloneParams standaloneParams)
@@ -121,12 +127,10 @@ public class PlatformServicesController {
 	private List<IPlatformComponentInstaller> getComponents(
 			DomainControllerStandaloneParams standaloneParams) {
 		List<IPlatformComponentInstaller> components = new ArrayList<IPlatformComponentInstaller>();
-		if(getRunDmc()){
-		    components.add(new AuthenticationFrameworkInstaller(standaloneParams));
-        }
+	    components.add(new AuthenticationFrameworkInstaller(standaloneParams));
 		components.add(new IdentityManagerInstaller("Administrator",
 		        standaloneParams.getDomainName(), standaloneParams
-						.getPassword()));
+						.getPassword(), true));
 		components.add(new SecureTokenServerInstaller());
 		return components;
 	}
@@ -143,13 +147,4 @@ public class PlatformServicesController {
 					"Invalid host name - %s", params.getHostname()));
 		}
 	}
-
-    public boolean getRunDmc() {
-        return runDmc;
-    }
-
-    public void setRunDmc(boolean runDmc) {
-        this.runDmc = runDmc;
-    }
 }
-
