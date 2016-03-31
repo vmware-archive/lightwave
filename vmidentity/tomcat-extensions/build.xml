@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2015 VMware, Inc. All rights reserved.
+-->
+<project name="vmware-identity-tomcat-extensions" default="build" xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
+
+    <property name="AFD_PACKAGE_BASE" value="${MAINSRCROOT}/../vmafd/build/authentication-framework/packages" /> 
+    <property file="../product.properties" />
+    <property name="MAINSRCROOT" value="${basedir}/.." />
+    <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
+
+    <property name="target-sets" value="main" />
+
+
+    <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
+    <property name="build.packages.vmware-endpoint-certificate-store"
+             value="${AFD_PACKAGE_BASE}/vmware-endpoint-certificate-store.jar" />
+
+    <path id="classpath.main">
+        <pathelement location="${build.packages.vmware-endpoint-certificate-store}" />       
+        <fileset refid="jar-set.LOG4J2" />
+        <fileset refid="jar-set.tomcat-coyote" />
+        <fileset refid="jar-set.apache-commons-lang" />
+    </path>
+
+    <import file="${MAINSRCROOT}/build/ant/buildcycle-template.xml" />
+</project>
