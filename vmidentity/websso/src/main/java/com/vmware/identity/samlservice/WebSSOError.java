@@ -31,6 +31,9 @@ public class WebSSOError {
      */
     public static final String NO_CLIENT_CERT = "NoClientCert";
     public static final String INVALID_CREDENTIAL = "InvalidCredential";
+    public static final String LOGGED_OUT_TLS_SESSION = "LoggedOutTLSSession";
+    public static final String SECUREID_NEWPIN_REQUIRED = "SecureIDNewPinRequired";
+    public static final String SECUREID_NEXTCODE_MODE = "SecureIDNextCode";
     /*
      * Internal error messages
      */

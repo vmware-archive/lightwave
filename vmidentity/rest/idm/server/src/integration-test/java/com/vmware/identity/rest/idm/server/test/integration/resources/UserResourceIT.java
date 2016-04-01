@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 import java.security.Principal;
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.SecurityContext;
 
 import org.easymock.EasyMock;
@@ -64,13 +64,13 @@ public class UserResourceIT extends TestBase {
     private IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(UserResourceTest.class);
 
     private UserResource userResource;
-    private HttpServletRequest request;
+    private ContainerRequestContext request;
 
     @Before
     public void setUp() {
-        request = EasyMock.createMock(HttpServletRequest.class);
-        EasyMock.expect(request.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        EasyMock.expect(request.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        request = EasyMock.createMock(ContainerRequestContext.class);
+        EasyMock.expect(request.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        EasyMock.expect(request.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
         EasyMock.replay(request);
 
         userResource = new UserResource(DEFAULT_TENANT, request, null);

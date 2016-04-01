@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-       Copyright VMware, Inc. All rights reserved. VMware confidential.
+       Copyright VMware, Inc. All rights reserved.
 -->
 <project name="vmidentity-dist" default="build">
    <property name="MAINSRCROOT" value="${basedir}/.." />
