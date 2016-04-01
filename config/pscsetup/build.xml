@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright 2011 VMware, Inc. All rights reserved.
+  Copyright 2011 VMware, Inc. All rights reserved. VMware confidential.
 -->
 <project name="pscsetup" default="build" basedir=".">
 
@@ -9,16 +9,13 @@
         <property file="../product.properties" />
         <property name="MAINSRCROOT" value="${basedir}/.."/>
         <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}"/>
-
+        <property name="VMSTS_PACKAGE_BASE" value="${MAINSRCROOT}/../vmidentity/build/vmware-sts/packages" />
         <property name="vmsts.classpath" value="${VMSTS_CLASSPATH}" />
-
-        <property name="build.packages.vmware-identity-idm-interface"
-             value="${vmsts.classpath}/vmware-identity-idm-interface.jar" />
-        <property name="build.packages.vmware-identity-idm-client"
-             value="${vmsts.classpath}/vmware-identity-idm-client.jar" />
         <property name="build.packages.vmware-identity-platform"
              value="${vmsts.classpath}/vmware-identity-platform.jar" />
-       <property name="build.packages.vmware-authentication-framework"
+        <property name="build.packages.vmware-identity-install" 
+             value="${VMSTS_PACKAGE_BASE}/vmware-identity-install.jar" />
+        <property name="build.packages.vmware-authentication-framework"
              value="${vmsts.classpath}/authentication-framework.jar" />
         <property name="build.packages.vmware-vmca-client"
              value="${vmsts.classpath}/vmware-vmca-client.jar" />
@@ -32,12 +29,10 @@
 	<property name="src.main.resources.manifest_mf" value="${src.main.resources}/${manifest_mf}" description="Instructs the 'package' task to use this manifest file." />
 
 	<path id="classpath.main">
-
-      <pathelement location="{build.packages.vmware}" />
-      <pathelement location="${build.packages.vmware-identity-idm-interface}"/>
-      <pathelement location="${build.packages.vmware-identity-idm-client}"/>
-      <pathelement location="${build.packages.vmware-vmca-client}" />
       <pathelement location="${build.packages.vmware-identity-platform}" />
+      <pathelement location="{build.packages.vmware}" />
+      <pathelement location="${build.packages.vmware-identity-install}" />
+      <pathelement location="${build.packages.vmware-vmca-client}" />
       <pathelement location="${build.packages.vmware-authentication-framework}" />
       <pathelement location="${build.packages.vmware-vecs}" />
       <fileset refid="jar-set.jna" />

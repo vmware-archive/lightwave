@@ -15,6 +15,7 @@ package com.vmware.identity;
 
 import java.io.IOException;
 import java.util.Locale;
+import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -70,8 +71,10 @@ public class IdpSsoController {
 
 		ModelAndView retval = null;
 
+		//TODO - check for correlation id in the headers PR1561606
+        String correlationId = UUID.randomUUID().toString();
 		// load up config
-		DefaultIdmAccessorFactory factory = new DefaultIdmAccessorFactory();
+		DefaultIdmAccessorFactory factory = new DefaultIdmAccessorFactory(correlationId);
 		try {
 			SamlServiceFactory samlFactory = new DefaultSamlServiceFactory();
 			SamlService service = samlFactory.createSamlService(null, null, null, null, null);

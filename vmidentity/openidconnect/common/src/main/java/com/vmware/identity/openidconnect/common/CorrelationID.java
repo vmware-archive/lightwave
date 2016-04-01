@@ -17,30 +17,27 @@ package com.vmware.identity.openidconnect.common;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
-import com.nimbusds.oauth2.sdk.id.Identifier;
-
 /**
  * @author Yehia Zayour
  */
-public class CorrelationID extends Identifier {
-    private static final long serialVersionUID = 1L;
-
+public final class CorrelationID extends Identifier {
     public CorrelationID() {
-        super(); // this will initialize the value
     }
 
     public CorrelationID(String value) {
         super(value);
     }
 
+    @Override
+    public boolean equals(Object other) {
+        return
+                other instanceof CorrelationID &&
+                ((CorrelationID) other).getValue().equals(this.getValue());
+    }
+
     public static CorrelationID get(HttpRequest httpRequest) {
         Validate.notNull(httpRequest, "httpRequest");
         String correlationIdString = httpRequest.getParameters().get("correlation_id");
-        return StringUtils.isBlank(correlationIdString) ? new CorrelationID() : new CorrelationID(correlationIdString);
-    }
-
-    @Override
-    public boolean equals(Object object) {
-        return object instanceof CorrelationID && this.toString().equals(object.toString());
+        return StringUtils.isEmpty(correlationIdString) ? new CorrelationID() : new CorrelationID(correlationIdString);
     }
 }

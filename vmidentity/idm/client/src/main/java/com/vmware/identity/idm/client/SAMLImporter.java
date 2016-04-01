@@ -35,6 +35,7 @@ import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeConstants;
 import javax.xml.datatype.DatatypeFactory;
@@ -46,6 +47,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
+import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.AssertionConsumerService;
 import com.vmware.identity.idm.AttributeConfig;
 import com.vmware.identity.idm.AuthenticationType;
@@ -79,6 +82,8 @@ import com.vmware.identity.idm.ValidateUtil;
  */
 
 class SAMLImporter {
+
+    private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(SAMLImporter.class);
 
     private final CasIdmClient idmClient;
     private String tenantName;
@@ -250,7 +255,6 @@ class SAMLImporter {
 
             ValidateUtil.validateNotEmpty(nameIDFormatStrs, "[idpConfig.nameIDFormatStrs]");
             ValidateUtil.validateNotEmpty(x509Certs, "[idpConfig.signingCertificates]");
-            ValidateUtil.validateNotEmpty(sloServices, "[idpConfig.sloServices]");
             ValidateUtil.validateNotEmpty(ssoServices, "[idpConfig.ssoServices]");
 
             object.setNameIDFormats(nameIDFormatStrs);
@@ -727,7 +731,8 @@ class SAMLImporter {
                                 searchBaseDn,
                                 searchBaseDn,
                                 kdcList,
-                                attrMap
+                                attrMap,
+                                null
                         );
 
                 //  delete duplicated store
@@ -930,34 +935,39 @@ class SAMLImporter {
      */
     private Collection<ServiceEndpoint> getSingleLogoutServices(Element ssoDescElem) throws IDMException
     {
+        List<ServiceEndpoint> services = new ArrayList<ServiceEndpoint>();
+
         NodeList serviceList = ssoDescElem.getElementsByTagNameNS(
                 SAMLNames.NS_NAME_SAML_METADATA,
                 SAMLNames.SINGLELOGOUTSERVICE);
         int nNode = serviceList.getLength();
-        if (nNode == 0) {
-            throw new IDMException("SAML metadata error: No SingleLogoutService");
-        }
 
-        boolean redirectService = false;
-        List<ServiceEndpoint> services =
-                new ArrayList<ServiceEndpoint>();
-        for (int ind=0; ind < nNode; ind++) {
-            Element ele = (Element) serviceList.item(ind);
-            String binding = ele.getAttribute(SAMLNames.BINDING);
-            if (binding.equals(SAMLNames.HTTP_REDIRECT_BINDING)) {
-                redirectService = true;
-            } else {
-                continue;
+        // SLO service is optional and the number of node can be 0.
+        if (nNode != 0) {
+            boolean redirectService = false;
+
+            for (int ind=0; ind < nNode; ind++) {
+                Element ele = (Element) serviceList.item(ind);
+                String binding = ele.getAttribute(SAMLNames.BINDING);
+                if (binding.equals(SAMLNames.HTTP_REDIRECT_BINDING)) {
+                    redirectService = true;
+                } else {
+                    continue;
+                }
+                String loc = ele.getAttribute(SAMLNames.LOCATION);
+                String rspLoc = null;
+                if (ele.hasAttribute(SAMLNames.RESPONSE_LOCATION)) {
+                    rspLoc = ele.getAttribute(SAMLNames.RESPONSE_LOCATION);
+                }
+
+                //create new object and set the three required attributes.
+                ServiceEndpoint e = new ServiceEndpoint(loc+binding, loc, rspLoc, binding);
+
+                services.add(e);
             }
-            String loc = ele.getAttribute(SAMLNames.LOCATION);
-
-            //create new object and set the three required attributes.
-            ServiceEndpoint e = new ServiceEndpoint(loc+binding, loc, binding);
-
-            services.add(e);
-        }
-        if (!redirectService) {
-            throw new IDMException("Expect HTTP-Redirect binding Single Logout Service!");
+            if (!redirectService) {
+                logger.warn("Expect HTTP-Redirect binding Single Logout Service!");
+            }
         }
         return services;
     }

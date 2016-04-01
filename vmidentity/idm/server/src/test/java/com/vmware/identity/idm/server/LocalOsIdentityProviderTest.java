@@ -42,6 +42,7 @@ import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.server.config.ServerIdentityStoreData;
 import com.vmware.identity.idm.server.provider.IIdentityProvider;
+import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.ProviderFactory;
 import com.vmware.identity.idm.server.provider.localos.LocalOsIdentityProvider;
 
@@ -165,17 +166,17 @@ public class LocalOsIdentityProviderTest
             // ---------------------
             Set<GroupInfo> groups = _usersToGroups.get( userInfo.getName() );
 
-            Set<Group> directParentGroups = localOsProvider.findDirectParentGroups(
+            PrincipalGroupLookupInfo directParentGroups = localOsProvider.findDirectParentGroups(
                     new PrincipalId( userInfo.getName(), domainName )
             );
 
-            validateGroupsSubset( groups, directParentGroups, domainName, domainAlias );
+            validateGroupsSubset( groups, ((directParentGroups== null) ? null : directParentGroups.getGroups()), domainName, domainAlias );
 
-            Set<Group> userGroups = localOsProvider.findNestedParentGroups(
+            PrincipalGroupLookupInfo userGroups = localOsProvider.findNestedParentGroups(
                     new PrincipalId( userInfo.getName(), domainName )
             );
 
-            validateGroupsSubset( groups, userGroups, domainName, domainAlias);
+            validateGroupsSubset( groups, ((userGroups == null)? null:userGroups.getGroups()), domainName, domainAlias);
         }
     }
 
@@ -253,10 +254,13 @@ public class LocalOsIdentityProviderTest
             // ---------------------
             // findDirectParentGroups
             // ---------------------
-            Set<Group> directParentGroups = localOsProvider.findDirectParentGroups(
+            PrincipalGroupLookupInfo directParentGroups = localOsProvider.findDirectParentGroups(
                     new PrincipalId( groupInfo.getName(), domainName )
             );
-            Assert.assertTrue( (directParentGroups == null) || (directParentGroups.size() == 0) );
+            Assert.assertTrue(
+                (directParentGroups == null) ||
+                (directParentGroups.getGroups() == null) ||
+                (directParentGroups.getGroups().size() == 0) );
         }
     }
 

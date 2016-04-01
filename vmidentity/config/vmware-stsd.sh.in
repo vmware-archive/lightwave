@@ -33,7 +33,7 @@ STSD_INITD_ERR_LOG="$STSD_LOG_DIR/utils/$SERVICE_NAME.err"
 
 # Tomcat Catalina settings
 
-CATALINA_HOME=/opt/apache-tomcat-7.0.63
+CATALINA_HOME=/var/opt/apache-tomcat-7.0.68
 CATALINA_BASE="$VMWARE_HOME/$INSTANCE_NAME"
 
 ShowUsage()
@@ -68,7 +68,7 @@ StartService()
             $JAVA_OPTS \
             $CATALINA_OPTS \
             -Djava.endorsed.dirs="$CATALINA_HOME/endorsed" \
-            -classpath "$CATALINA_HOME/bin/bootstrap.jar:$CATALINA_HOME/bin/tomcat-juli.jar" \
+            -classpath "$CATALINA_HOME/lib/*:$CATALINA_HOME/bin/bootstrap.jar:$CATALINA_HOME/bin/tomcat-juli.jar:$CATALINA_BASE/bin/vmware-identity-tomcat-extensions.jar" \
             -Dcatalina.base=$CATALINA_BASE \
             -Dcatalina.home=$CATALINA_HOME \
             -Dvmware.log.dir=$STSD_LOG_DIR \
