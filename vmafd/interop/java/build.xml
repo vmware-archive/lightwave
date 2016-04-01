@@ -31,22 +31,22 @@
      <exec executable="${maven}" failonerror="true">
        <env key="M2_HOME" value="${MavenHome}" />
        <env key="JAVA_HOME" value="${JAVA_HOME}"/>
-       <arg line="install:install-file -Dfile=<PKGBASE>/authentication-framework.jar -DgroupId=${GROUP_BASE} -DartifactId=authentication-framework -Dversion=${AFD_VERSION} -Dpackaging=jar" />
+       <arg line="install:install-file -Dfile=${PKGBASE}/authentication-framework.jar -DgroupId=${GROUP_BASE} -DartifactId=authentication-framework -Dversion=${AFD_VERSION} -Dpackaging=jar" />
      </exec>
      <exec executable="${maven}" failonerror="true">
        <env key="M2_HOME" value="${MavenHome}" />
        <env key="JAVA_HOME" value="${JAVA_HOME}"/>
-       <arg line="install:install-file -Dfile=<PKGBASE>/vmware-endpoint-certificate-store.jar -DgroupId=${GROUP_BASE} -DartifactId=vmware-endpoint-certificate-store -Dversion=${AFD_VERSION} -Dpackaging=jar" />
+       <arg line="install:install-file -Dfile=${PKGBASE}/vmware-endpoint-certificate-store.jar -DgroupId=${GROUP_BASE} -DartifactId=vmware-endpoint-certificate-store -Dversion=${AFD_VERSION} -Dpackaging=jar" />
      </exec>
      <exec executable="${maven}" failonerror="true">
        <env key="M2_HOME" value="${MavenHome}" />
        <env key="JAVA_HOME" value="${JAVA_HOME}"/>
-       <arg line="install:install-file -Dfile=<PKGBASE>/client-domain-controller-cache.jar -DgroupId=${GROUP_BASE} -DartifactId=client-domain-controller-cache -Dversion=${AFD_VERSION} -Dpackaging=jar" />
+       <arg line="install:install-file -Dfile=${PKGBASE}/client-domain-controller-cache.jar -DgroupId=${GROUP_BASE} -DartifactId=client-domain-controller-cache -Dversion=${AFD_VERSION} -Dpackaging=jar" />
      </exec>
      <exec executable="${maven}" failonerror="true">
        <env key="M2_HOME" value="${MavenHome}" />
        <env key="JAVA_HOME" value="${JAVA_HOME}"/>
-       <arg line="install:install-file -Dfile=<PKGBASE>/afd-heartbeat-service.jar -DgroupId=${GROUP_BASE} -DartifactId=afd-heartbeat-service -Dversion=${AFD_VERSION} -Dpackaging=jar" />
+       <arg line="install:install-file -Dfile=${PKGBASE}/afd-heartbeat-service.jar -DgroupId=${GROUP_BASE} -DartifactId=afd-heartbeat-service -Dversion=${AFD_VERSION} -Dpackaging=jar" />
      </exec>
    </target>
 
