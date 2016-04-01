@@ -28,20 +28,22 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
             set { password = value; }
         }
 
-        long passwordLastSet;
+        [DataMember(EmitDefaultValue = false)]
+        long lastSet;
 
         public long LastSet
         {
-            get { return passwordLastSet; }
-            set { passwordLastSet = value; }
+            get { return lastSet; }
+            set { lastSet = value; }
         }
 
-        long passwordLifetime;
+        [DataMember(EmitDefaultValue = false)]
+        long lifetime;
 
         public long Lifetime
         {
-            get { return passwordLifetime; }
-            set { passwordLifetime = value; }
+            get { return lifetime; }
+            set { lifetime = value; }
         }
     }
 }

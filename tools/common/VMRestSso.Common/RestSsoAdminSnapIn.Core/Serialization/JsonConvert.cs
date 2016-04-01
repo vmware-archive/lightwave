@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Web.Script.Serialization;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Core.Serialization
 {
@@ -33,7 +34,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Core.Serialization
         /// <returns>Serialized json string</returns>
         public static string Serialize<T>(T obj, bool dictionary=false) where T : class
         {
-            //throw new Exception("Test error in serialize");
             DataContractJsonSerializer serializer;
             if (dictionary)
             {
@@ -92,7 +92,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Core.Serialization
         /// <returns>Object of type T</returns>
         public static T Deserialize<T>(string json, bool dictionary = false) where T : class
         {
-            //throw new Exception("Test error in de-serialize");
             var obj = Activator.CreateInstance<T>();
             using (var ms = new MemoryStream(Encoding.Unicode.GetBytes(json)))
             {
@@ -121,7 +120,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Core.Serialization
 		/// <returns>Object of type T</returns>
 		public static T Deserialize<T>(string json, string rootName, Type[] types, bool dictionary = false) where T : class
 		{
-			//throw new Exception("Test error in de-serialize");
 			var obj = Activator.CreateInstance<T> ();
 			using (var ms = new MemoryStream (Encoding.Unicode.GetBytes (json))) {
 				DataContractJsonSerializer serializer;
@@ -141,5 +139,37 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Core.Serialization
 				return obj;
 			}
 		}
+
+        /// <summary>
+        /// Deserialize using Javascript serializer
+        /// </summary>
+        /// <typeparam name="T">Dto</typeparam>
+        /// <param name="json">json string</param>
+        /// <returns>Instance of Dto</returns>
+        public static T JsonDeserialize<T>(string json)
+        {
+            var serializer = new JavaScriptSerializer();
+            var result = serializer.Deserialize<T>(json);
+            return result;
+        }
+
+        /// <summary>
+        /// Serialize using Javascript serializer
+        /// </summary>
+        public static string JsonSerialize(Object obj)
+        {
+            var serializer = new JavaScriptSerializer();
+            var result = serializer.Serialize(obj);
+            return result;
+        }
+
+        /// <summary>
+        /// Serialize using Javascript serializer
+        /// </summary>
+        public static void JsonSerialize(Object obj, StringBuilder output)
+        {
+            var serializer = new JavaScriptSerializer();
+            serializer.Serialize(obj, output);
+        }
     }
 }

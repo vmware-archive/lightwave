@@ -49,24 +49,11 @@ namespace RestSsoAdminSnapIn
 					if (obj is ServerNode) {
 						ServerNode serverNode = obj as ServerNode;
 						if (serverNode.IsLoggedIn) {
-//							NSMenuItem logout = new NSMenuItem ("Logout", serverNode.OnLogout);
-//
-//							var image = NSImage.ImageNamed ("NSLockLockedTemplate");
-//							logout.Image = image;
-//							logout.Image.Size = new CGSize{ Width = (float)16.0, Height = (float)16.0 };
-//							menu.AddItem (logout);
-
 							NSMenuItem addNewTenant = new NSMenuItem ("Add New Tenant", serverNode.OnAddNewTenant);
 							var image = NSImage.ImageNamed ("NSAddTemplate");
 							addNewTenant.Image = image;
 							addNewTenant.Image.Size = new CGSize{ Width = (float)16.0, Height = (float)16.0 };
 							menu.AddItem (addNewTenant);
-
-//							NSMenuItem addExistingTenant = new NSMenuItem ("Add Existing Tenant", serverNode.OnAddExistingTenant);
-//							image = NSImage.ImageNamed ("NSAddTemplate");
-//							addExistingTenant.Image = image;
-//							addExistingTenant.Image.Size = new CGSize{ Width = (float)16.0, Height = (float)16.0 };
-//							menu.AddItem (addExistingTenant);
 
 							NSMenuItem activeDirectory = new NSMenuItem ("Active Directory", serverNode.OnShowActiveDirectory);
 							image = NSImage.ImageNamed ("NSNetwork");
@@ -81,39 +68,13 @@ namespace RestSsoAdminSnapIn
 							menu.AddItem (getComputers);
 
 							NSMenuItem tokenWizard = new NSMenuItem ("Diagnostics", serverNode.ShowTokenWizard);
-							image = NSImage.ImageNamed ("NSRevealFreestandingTemplate");
+							image = NSImage.ImageNamed ("NSSmartBadgeTemplate");
 							tokenWizard.Image = image;
 							tokenWizard.Image.Size =  new CGSize{ Width = (float)16.0, Height = (float)16.0 };
 							menu.AddItem (tokenWizard);
-
-//							NSMenuItem httpTransport = new NSMenuItem ("Show HTTP Transport", serverNode.ShowHttpTransport);
-//							image = NSImage.ImageNamed ("NSBookmarksTemplate");
-//							httpTransport.Image = image;
-//							httpTransport.Image.Size =  new CGSize{ Width = (float)16.0, Height = (float)16.0 };
-//							menu.AddItem (httpTransport);
-
 						} 
-//						else {
-//							NSMenuItem login = new NSMenuItem ("Login", serverNode.OnLogin);
-//							var image = NSImage.ImageNamed ("NSLockLockedTemplate");
-//							login.Image = image;
-//							login.Image.Size = new CGSize{ Width = (float)16.0, Height = (float)16.0 };
-//							menu.AddItem (login);
-//
-//							NSMenuItem delete = new NSMenuItem ("Delete", serverNode.DeleteServer);
-//							image = NSImage.ImageNamed ("NSTrashFull");
-//							delete.Image = image;
-//							delete.Image.Size = new CGSize{ Width = (float)16.0, Height = (float)16.0 };
-//							menu.AddItem (delete);
-//						}
 					} else if (obj is TenantNode) {
 						TenantNode tenantNode = obj as TenantNode;
-//						NSMenuItem deleteTenant = new NSMenuItem ("Delete", tenantNode.Delete);
-//						var image = NSImage.ImageNamed ("Delete_Object_64.png");
-//						deleteTenant.Image = image;
-//						deleteTenant.Image.Size =  new CGSize{ Width = (float)16.0, Height = (float)16.0 };
-//						menu.AddItem (deleteTenant);
-
 						NSMenuItem showConfig = new NSMenuItem ("Tenant Configuration", tenantNode.ShowConfiguration);
 						var image = NSImage.ImageNamed ("config.png");
 						showConfig.Image = image;
@@ -286,12 +247,6 @@ namespace RestSsoAdminSnapIn
 						item.Image = image;
 						item.Image.Size =  new CGSize{ Width = (float)16.0, Height = (float)16.0 };
 						menu.AddItem (item);
-
-//						item = new NSMenuItem ("Delete", node.Delete);
-//						image = NSImage.ImageNamed ("NSTrashFull");
-//						item.Image = image;
-//						item.Image.Size =  new CGSize{ Width = (float)16.0, Height = (float)16.0 };
-//						menu.AddItem (item);
 					}
 					NSMenu.PopUpContextMenu (menu, theEvent, theEvent.Window.ContentView);
 				}

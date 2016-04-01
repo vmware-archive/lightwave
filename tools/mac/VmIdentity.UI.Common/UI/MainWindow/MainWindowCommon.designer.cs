@@ -1,10 +1,10 @@
-﻿/*
+/*
  * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
+ *·
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -12,10 +12,102 @@
  * under the License.
  */
 
+// WARNING
+//
+// This file has been generated automatically by Xamarin Studio to store outlets and
+// actions made in the UI designer. If it is removed, they will be lost.
+// Manual changes to this file may not be handled correctly.
+//
+using Foundation;
+using System.CodeDom.Compiler;
+
 namespace VmIdentity.UI.Common
 {
-    [global::Foundation.Register ("MainWindowCommon")]
-    public partial class MainWindowCommon
+    [Register("MainWindowCommonController")]
+    partial class MainWindowCommonController
     {
+        [Outlet]
+        public VmIdentity.UI.Common.ActivatableToolBarItem BackForwardToolBarItem { get; private set; }
+
+        [Outlet]
+        public AppKit.NSView ContainerView { get; private set; }
+
+        [Outlet]
+        public AppKit.NSTextField LoggedInLabel { get; private set; }
+
+        [Outlet]
+        public VmIdentity.UI.Common.ActivatableToolBarItem RefreshToolBarItem { get; private set; }
+
+        [Outlet]
+        public AppKit.NSSearchFieldCell SearchFieldCell { get; set; }
+
+        [Outlet]
+        public AppKit.NSSearchField SearchRecordsField { get; private set; }
+
+        [Outlet]
+        public VmIdentity.UI.Common.ActivatableToolBarItem SearchToolBarItem { get; private set; }
+
+        [Outlet]
+        public VmIdentity.UI.Common.ActivatableToolBarItem ServerToolBarItem { get; private set; }
+
+        void ReleaseDesignerOutlets()
+        {
+            if (BackForwardToolBarItem != null)
+            {
+                BackForwardToolBarItem.Dispose();
+                BackForwardToolBarItem = null;
+            }
+
+            if (ContainerView != null)
+            {
+                ContainerView.Dispose();
+                ContainerView = null;
+            }
+
+            if (LoggedInLabel != null)
+            {
+                LoggedInLabel.Dispose();
+                LoggedInLabel = null;
+            }
+
+            if (RefreshToolBarItem != null)
+            {
+                RefreshToolBarItem.Dispose();
+                RefreshToolBarItem = null;
+            }
+
+            if (SearchRecordsField != null)
+            {
+                SearchRecordsField.Dispose();
+                SearchRecordsField = null;
+            }
+
+            if (SearchToolBarItem != null)
+            {
+                SearchToolBarItem.Dispose();
+                SearchToolBarItem = null;
+            }
+
+            if (ServerToolBarItem != null)
+            {
+                ServerToolBarItem.Dispose();
+                ServerToolBarItem = null;
+            }
+
+            if (SearchFieldCell != null)
+            {
+                SearchFieldCell.Dispose();
+                SearchFieldCell = null;
+            }
+        }
+    }
+
+    [Register("MainWindowCommon")]
+    partial class MainWindowCommon
+    {
+		
+        void ReleaseDesignerOutlets()
+        {
+        }
     }
 }

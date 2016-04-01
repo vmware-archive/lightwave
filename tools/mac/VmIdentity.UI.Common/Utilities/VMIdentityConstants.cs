@@ -18,9 +18,16 @@ namespace VmIdentity.UI.Common
 {
     public  static class VMIdentityConstants
     {
-        /*dialog result codes */
+        /* dialog result codes */
         public const int DIALOGOK = 1;
         public const int DIALOGCANCEL = -1;
+
+        /* UI Control labels */
+        public const string CONNECT = "Connect";
+        public const string CONNECT_TO = "Connected to ";
+        public const string DISCONNECT = "Disconnect";
+        public const string NAME_FIELD = "Name";
+        public const string LOGGED_IN = "Logged in : ";
 
         /* Certificate Constants */
         public const string CERT_ISSUED_BY = "IssuedBy";
@@ -29,6 +36,24 @@ namespace VmIdentity.UI.Common
         public const string CERT_INTENDED_PURPOSES = "IntendedPurposes";
         public const string CERT_STATUS = "Status";
         public const string CERT_ISSUED_TO = "IssuedTo";
+
+        /* UI Error Messages */
+        /* Error Messages */
+        public const string SERVER_CONNECT_ERROR = "Unable to connect to the Server. Please check the login details.";
+        public const string SERVER_TIMED_OUT = "Server timed out";
+        public const string SERVER_CONNECT = "Connect to Server";
+        public const string EMPTY_FIELD = "One or more fields are empty. Please make sure to provide values.";
+
+        public const string HOST_NOT_REACHABLE = "Host not reachable";
+        public const string HOST_OR_IP_ADDRESS_NOT_REACHABLE = "Host or IP address is not reachable. Please enter a valid server name of ip address and try again.";
+        public const string CONFIRM_DELETE = "Are you Sure?";
+
+        /* File Path/Names */
+        public const string APPLICATION_DATA_FOLDER_NAME = "LightwaveTools";
+
+		/* General constants */
+		public const int DefaultColumnWidth = 200;
+		public const int ServerTimeoutInSeconds = 30;
     }
 }
 

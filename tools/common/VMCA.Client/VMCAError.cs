@@ -48,6 +48,16 @@ namespace VMCA.Client
             if (resultCode == VMCAAdaptor.VMCA_SUCCESS || resultCode == VMCAAdaptor.VMCA_ENUM_END)
                 return;
 
+            switch ((VMCAErrorCode)resultCode)
+            {
+                case VMCAErrorCode.KeyIOFailure:
+                    throw new VMCAException(resultCode, "Private key is not valid");
+                case VMCAErrorCode.CertIOFailure:
+                    throw new VMCAException(resultCode, "Certificate is not valid");
+                case VMCAErrorCode.NotCACert:
+                    throw new VMCAException(resultCode, "Certificate is not a valid CA Certificate");
+            }
+
             var errorStringPtr = new IntPtr ();
             UInt32 dwError = VMCAAdaptor.VMCAGetErrorString (
                                  resultCode, out errorStringPtr);

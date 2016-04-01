@@ -24,7 +24,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions;
 using Vmware.Tools.RestSsoAdminSnapIn.DataSource;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
-
+using VmIdentity.CommonUtils.Utilities;
 using Vmware.Tools.RestSsoAdminSnapIn;
 
 namespace RestSsoAdminSnapIn
@@ -280,13 +280,11 @@ namespace RestSsoAdminSnapIn
 		}
 		private void InitializeSignatureAlgorithm()
 		{
-			//_signatureAlgorithmView = new NSTableView ();
 			foreach(NSTableColumn column in SignAlgoTableView.TableColumns())
 			{
 				SignAlgoTableView.RemoveColumn (column);
 			}
 			SignAlgoTableView.Delegate = new TableDelegate ();
-			//this.LstSignatureAlgorithm.AddSubview (_signatureAlgorithmView);
 			var listView = new SignatureAlgorithmDataSource { Entries = RelyingPartyDto.SignatureAlgorithms };
 			var columnNames = new List<ColumnOptions> {
 				new ColumnOptions{ Id = "MaxKeySize", DisplayName = "Max Key Size", DisplayOrder = 1, Width = 80 },
@@ -377,17 +375,7 @@ namespace RestSsoAdminSnapIn
 					}
 					else if (string.IsNullOrEmpty (TxtUrl.StringValue)) {
 					UIErrorHelper.ShowAlert ("Please enter valid Url", "Alert");
-				} /*else if (string.IsNullOrEmpty (TxtCertificate.StringValue)) {
-					UIErrorHelper.ShowAlert ("Please enter valid Certificate path", "Alert");
-				} else if (RelyingPartyDto.SignatureAlgorithms.Count == 0) {
-					UIErrorHelper.ShowAlert ("Please add atleast one signature algorithm", "Alert");
-				} else if (RelyingPartyDto.AssertionConsumerServices.Count == 0) {
-					UIErrorHelper.ShowAlert ("Please add atleast one assertion consumer service", "Alert");
-				} else if (RelyingPartyDto.AttributeConsumerServices.Count == 0) {
-					UIErrorHelper.ShowAlert ("Please add atleast one attribute consumer service", "Alert");
-				} else if (RelyingPartyDto.SingleLogoutServices.Count == 0) {
-					UIErrorHelper.ShowAlert ("Please add atleast one single logout service", "Alert");
-				}*/ else if (!string.IsNullOrEmpty (TxtCertificate.StringValue))
+				} else if (!string.IsNullOrEmpty (TxtCertificate.StringValue))
 				if (!System.IO.File.Exists (TxtCertificate.StringValue.Replace ("file://", string.Empty))) {
 					UIErrorHelper.ShowAlert ("Certificate path is not valid", "Alert");
 				} else {
@@ -396,7 +384,7 @@ namespace RestSsoAdminSnapIn
 						cert.Import (TxtCertificate.StringValue.Replace ("file://", string.Empty));
 					});
 					RelyingPartyDto.Name = TxtName.StringValue;
-					RelyingPartyDto.Certificate = new CertificateDto { Encoded = cert.ToPem () };
+					RelyingPartyDto.Certificate = new CertificateDto { Encoded = cert.ExportToPem () };
 					RelyingPartyDto.Url = TxtUrl.StringValue;
 
 					var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (ServerDto.ServerName);

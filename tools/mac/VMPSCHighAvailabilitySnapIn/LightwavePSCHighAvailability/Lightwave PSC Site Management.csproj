@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectTypeGuids>{A3F8F2AB-B479-4A4A-A458-A89E7DC349F1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>{21A17A96-415B-42B5-B860-F93D022A1A5D}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>LightwavePSCHighAvailability</RootNamespace>
+    <MonoMacResourcePrefix>Resources</MonoMacResourcePrefix>
+    <AssemblyName>Lightwave PSC Site Management</AssemblyName>
+    <UseXamMacFullFramework>true</UseXamMacFullFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\x64\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <UseRefCounting>true</UseRefCounting>
+    <UseSGen>true</UseSGen>
+    <IncludeMonoRuntime>false</IncludeMonoRuntime>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <CodeSigningKey>Mac Developer</CodeSigningKey>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <CreatePackage>false</CreatePackage>
+    <Profiling>false</Profiling>
+    <PackageSigningKey>Developer ID Installer</PackageSigningKey>
+    <XamMacArch>x86_64</XamMacArch>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\x64\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <UseRefCounting>true</UseRefCounting>
+    <UseSGen>true</UseSGen>
+    <IncludeMonoRuntime>true</IncludeMonoRuntime>
+    <CreatePackage>false</CreatePackage>
+    <CodeSigningKey>Developer ID Application</CodeSigningKey>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <Profiling>false</Profiling>
+    <PackageSigningKey>Developer ID Installer</PackageSigningKey>
+    <XamMacArch>x86_64</XamMacArch>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Xamarin.Mac" />
+    <Reference Include="System.Xml" />
+    <Reference Include="VMAFD.Client">
+      <HintPath>..\..\..\interop\lib64\VMAFD.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="VMDIR.Client">
+      <HintPath>..\..\..\interop\lib64\VMDIR.Client.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+    <Folder Include="UI\" />
+    <Folder Include="DataSources\" />
+    <Folder Include="UI\TableViewDelegates\" />
+    <Folder Include="Nodes\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Main.cs" />
+    <Compile Include="UI\AppDelegate.cs" />
+    <Compile Include="UI\AppDelegate.designer.cs">
+      <DependentUpon>AppDelegate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\VMPSCHighAvailabilityMainWindowController.cs" />
+    <Compile Include="UI\VMPSCHighAvailabilityMainWindowController.designer.cs">
+      <DependentUpon>VMPSCHighAvailabilityMainWindowController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\VMPSCHighAvailabilityMainWindowControllerFactory.cs" />
+    <Compile Include="UI\Monitor.cs" />
+    <Compile Include="UI\MonitorController.cs" />
+    <Compile Include="UI\Monitor.designer.cs">
+      <DependentUpon>Monitor.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\MonitorController.designer.cs">
+      <DependentUpon>MonitorController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\DomainControllerItem.cs" />
+    <Compile Include="UI\DomainControllerItemController.cs" />
+    <Compile Include="UI\DomainControllerItem.designer.cs">
+      <DependentUpon>DomainControllerItem.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\DomainControllerItemController.designer.cs">
+      <DependentUpon>DomainControllerItemController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DataSources\PscDataSource.cs" />
+    <Compile Include="DataSources\ServiceDataSource.cs" />
+    <Compile Include="UI\TableViewDelegates\ServicesTableViewDelegate.cs" />
+    <Compile Include="UI\TableViewDelegates\MonitorTableViewDelegate.cs" />
+    <Compile Include="PscHighAvailabilityAppEnvironment.cs" />
+    <Compile Include="UI\SplitCustomView.cs" />
+    <Compile Include="UI\SplitCustomViewController.cs" />
+    <Compile Include="UI\SplitCustomView.designer.cs">
+      <DependentUpon>SplitCustomView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\SplitCustomViewController.designer.cs">
+      <DependentUpon>SplitCustomViewController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Nodes\ScopeNode.cs" />
+    <Compile Include="Nodes\SiteNode.cs" />
+    <Compile Include="Nodes\InfrastructureNode.cs" />
+    <Compile Include="Nodes\ManagementNode.cs" />
+    <Compile Include="Nodes\InfrastucturesGroupNode.cs" />
+    <Compile Include="Nodes\ManagementsGroupNode.cs" />
+    <Compile Include="DataSources\OutlineViewDataSource.cs" />
+    <Compile Include="Nodes\GlobalTopologyNode.cs" />
+    <Compile Include="UI\TableViewDelegates\OutlineDelegate.cs" />
+    <Compile Include="UI\DefaultEmpty.cs" />
+    <Compile Include="UI\DefaultEmptyController.cs" />
+    <Compile Include="UI\DefaultEmpty.designer.cs">
+      <DependentUpon>DefaultEmpty.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\DefaultEmptyController.designer.cs">
+      <DependentUpon>DefaultEmptyController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\MainTable.cs" />
+    <Compile Include="UI\MainTableController.cs" />
+    <Compile Include="UI\MainTable.designer.cs">
+      <DependentUpon>MainTable.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\MainTableController.designer.cs">
+      <DependentUpon>MainTableController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Nodes\ISiteNameFetcher.cs" />
+    <Compile Include="UI\TableViewDelegates\MainTableViewDelegate.cs" />
+    <Compile Include="DataSources\NodeDataSource.cs" />
+    <Compile Include="UI\Infrastructure.cs" />
+    <Compile Include="UI\InfrastructureController.cs" />
+    <Compile Include="UI\Infrastructure.designer.cs">
+      <DependentUpon>Infrastructure.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\InfrastructureController.designer.cs">
+      <DependentUpon>InfrastructureController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\IServiceTableViewController.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterfaceDefinition Include="UI\MainMenu.xib" />
+    <InterfaceDefinition Include="UI\Monitor.xib" />
+    <InterfaceDefinition Include="UI\DomainControllerItem.xib" />
+    <InterfaceDefinition Include="UI\SplitCustomView.xib" />
+    <InterfaceDefinition Include="UI\DefaultEmpty.xib" />
+    <InterfaceDefinition Include="UI\MainTable.xib" />
+    <InterfaceDefinition Include="UI\Infrastructure.xib" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Info.plist" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\VmIdentity.UI.Common\VmIdentity.UI.Common.csproj">
+      <Project>{35037B87-3B35-40FA-A9D3-7974DCDDABB5}</Project>
+      <Name>VmIdentity.UI.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
+      <Project>{CD959E2E-5B9C-4329-B085-352844CFDCDD}</Project>
+      <Name>VMIdentity.CommonUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMPSCHighAvailability.Common\VMPSCHighAvailability.Common.csproj">
+      <Project>{54A01C73-8044-4B29-B21F-0BEE451CE1CA}</Project>
+      <Name>VMPSCHighAvailability.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <BundleResource Include="Resources\connect.png" />
+    <BundleResource Include="Resources\disconnect_64x.png" />
+    <BundleResource Include="Resources\servermonitor.icns" />
+    <BundleResource Include="Resources\host.png" />
+    <BundleResource Include="Resources\filter.png" />
+    <BundleResource Include="Resources\servermonitor.png" />
+    <BundleResource Include="Resources\service.png" />
+    <BundleResource Include="Resources\provider.png" />
+    <BundleResource Include="Resources\global.png" />
+    <BundleResource Include="Resources\node.png" />
+    <BundleResource Include="Resources\health.png" />
+  </ItemGroup>
+</Project>

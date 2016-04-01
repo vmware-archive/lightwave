@@ -25,6 +25,8 @@ namespace Vecs
                 return;
             if (resultCode == VecsAdaptor.SUCCESS)
                 return;
+            if (resultCode == 183)
+                throw new VecsException(resultCode, "Entry already exist!");
 
             string errorString = "Unknown Error";
             var errorStringPtr = new IntPtr ();

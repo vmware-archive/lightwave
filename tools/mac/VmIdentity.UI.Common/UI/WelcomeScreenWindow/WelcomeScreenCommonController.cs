@@ -32,57 +32,53 @@ namespace VmIdentity.UI.Common
 
         public string Description3 { get; set; }
 
-        public WelcomeScreenCommonController (IntPtr handle) : base (handle)
+        public WelcomeScreenCommonController(IntPtr handle)
+            : base(handle)
         {
         }
 
-        [Export ("initWithCoder:")]
-        public WelcomeScreenCommonController (NSCoder coder) : base (coder)
+        [Export("initWithCoder:")]
+        public WelcomeScreenCommonController(NSCoder coder)
+            : base(coder)
         {
         }
 
-        public WelcomeScreenCommonController () : base ("WelcomeScreenCommon")
+        public WelcomeScreenCommonController()
+            : base("WelcomeScreenCommon")
         {
         }
 
-        public WelcomeScreenCommonController (string[] servers) : base ("WelcomeScreenCommon")
+        public override void AwakeFromNib()
         {
-            this.Servers = servers;
-        }
-
-        public override void AwakeFromNib ()
-        {
-            base.AwakeFromNib ();
+            base.AwakeFromNib();
             //set window background color
-            this.Window.BackgroundColor = NSColor.FromSrgb (1, 1, (float)1, (float)1);
+            this.Window.BackgroundColor = NSColor.FromSrgb(1, 1, (float)1, (float)1);
 
             this.TitleDescriptionField.StringValue = TitleDescription;
             this.DescriptionField1.StringValue = Description1;
             this.DescriptionField2.StringValue = Description2;
             this.DescriptionField3.StringValue = Description3;
 
-            //string[] servers = VMDirSnapInEnvironment.Instance.LocalData.GetServerArray ();
-            ConnectToServer.AddItem ("Connect to Server");
-            //ConnectToServer.AddItems (Servers);
+
+            ConnectToServer.StringValue = VMIdentityConstants.SERVER_CONNECT;
 
             ConnectToServer.Activated += LoginAction;
         }
 
-        public void LoginAction (object sender, EventArgs e)
+        public void LoginAction(object sender, EventArgs e)
         {
             NSButton senderButton = sender as NSButton;
-            if (!string.IsNullOrEmpty (senderButton.Title)) {
+            if (!string.IsNullOrEmpty(senderButton.Title))
+            {
                 SelectedServer = senderButton.Title;
-                this.Close ();
-                NSApplication.SharedApplication.StopModalWithCode (1);
-            } else {
-                this.Close ();
-                NSApplication.SharedApplication.StopModalWithCode (0);
-              
             }
+            this.Close();
+            NSApplication.SharedApplication.StopModalWithCode(1);
+
         }
 
-        public new WelcomeScreenCommon Window {
+        public new WelcomeScreenCommon Window
+        {
             get { return (WelcomeScreenCommon)base.Window; }
         }
     }

@@ -74,6 +74,7 @@ namespace RestSsoAdminSnapIn
 					Certificates = new List<CertificateDto>()
 			};
 			TxtEntityName.StringValue = (NSString)(string.IsNullOrEmpty (ExternalIdentityProviderDto.EntityID) ? string.Empty : ExternalIdentityProviderDto.EntityID);
+			TxtAlias.StringValue = (NSString) (string.IsNullOrEmpty (ExternalIdentityProviderDto.Alias) ? string.Empty : ExternalIdentityProviderDto.Alias);
 			BtnJit.StringValue = ExternalIdentityProviderDto.JitEnabled ? "1" : "0";
 			ReloadTableView(NameFormatTableView, ExternalIdentityProviderDto.NameIDFormats);
 			ReloadTableView(SubjectFormatTableView, ExternalIdentityProviderDto.SubjectFormats);
@@ -102,13 +103,13 @@ namespace RestSsoAdminSnapIn
 			tableView.Delegate = new TableDelegate ();
 			var columnNames = new List<ColumnOptions> {
 				new ColumnOptions{ Id = "Name", DisplayName = "Name", DisplayOrder = 1, Width = 80 },
-				new ColumnOptions{ Id = "Value", DisplayName = "Value", DisplayOrder = 2, Width = 200 }
+				new ColumnOptions{ Id = "Value", DisplayName = "Value", DisplayOrder = 1, Width = 200 }
 			};
 			var columns = ListViewHelper.ToNSTableColumns (columnNames);
 			foreach (var column in columns) {
 				tableView.AddColumn (column);
 			}
-			var listView = new DictionaryDataSource { Entries = datasource.Keys.ToList(), Datasource = datasource };
+			var listView = new DictionaryDataSource { Entries = datasource.Keys.ToList() };
 			tableView.DataSource = listView;
 			tableView.ReloadData ();
 		}
@@ -122,10 +123,10 @@ namespace RestSsoAdminSnapIn
 			var listView = new TrustedCertificatesDataSource { Entries = ExternalIdentityProviderDto.SigningCertificates.Certificates };
 			var columnNames = new List<ColumnOptions> {
 				new ColumnOptions{ Id = "SubjectDn", DisplayName = "Subject DN", DisplayOrder = 1, Width = 120 },
-				new ColumnOptions{ Id = "IssuedBy", DisplayName = "Issuer", DisplayOrder = 2, Width = 150 },
-				new ColumnOptions{ Id = "IssuedOn", DisplayName = "Valid From", DisplayOrder = 3, Width = 80 },
-				new ColumnOptions{ Id = "Expiration", DisplayName = "Valid To", DisplayOrder = 4, Width = 80 },
-				new ColumnOptions{ Id = "Fingerprint", DisplayName = "FingerPrint", DisplayOrder = 5, Width = 150 }
+				new ColumnOptions{ Id = "IssuedBy", DisplayName = "Issuer", DisplayOrder = 1, Width = 150 },
+				new ColumnOptions{ Id = "IssuedOn", DisplayName = "Valid From", DisplayOrder = 1, Width = 80 },
+				new ColumnOptions{ Id = "Expiration", DisplayName = "Valid To", DisplayOrder = 1, Width = 80 },
+				new ColumnOptions{ Id = "Fingerprint", DisplayName = "FingerPrint", DisplayOrder = 1, Width = 150 }
 			};
 			var columns = ListViewHelper.ToNSTableColumns (columnNames);
 			foreach (var column in columns) {

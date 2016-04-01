@@ -23,6 +23,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using System.Security.Cryptography.X509Certificates;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
+using VmIdentity.CommonUtils.Utilities;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.DataSource
 {
@@ -75,7 +76,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.DataSource
 						break;
 					case "Purpose": 
 						cert = new X509Certificate2 (Encoding.ASCII.GetBytes (obj.Encoded));
-						value = (NSString)cert.ToKeyUsage ();
+						value = (NSString)cert.GetKeyUsage ();
 						break;
 					case "SubjectDn": 
 						cert = new X509Certificate2 (Encoding.ASCII.GetBytes (obj.Encoded));

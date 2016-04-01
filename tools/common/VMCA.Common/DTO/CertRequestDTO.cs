@@ -72,7 +72,6 @@ namespace VMCASnapIn.DTO
         public CertRequestDTO ()
         {
             Country = "US";
-            Name = "<Certificate Name>";
             NotBefore = DateTime.Now;
             NotAfter = NotBefore.AddYears (10);
             PrivateKey = new PrivateKeyDTO ();

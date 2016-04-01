@@ -1,0 +1,64 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMCASnapIn", "VMCASnapIn\VMCASnapIn.csproj", "{2BF9B87F-BE4C-43D2-ACE6-59CD51BB3772}"
+	ProjectSection(ProjectDependencies) = postProject
+		{24B08641-C034-4A2C-8F18-705F001CD43F} = {24B08641-C034-4A2C-8F18-705F001CD43F}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMwareMMCIDP.UI.Common", "..\VMwareMMCIDP.UI.Common\VMwareMMCIDP.UI.Common.csproj", "{474831AB-37DE-415C-B944-37E2D10D1E85}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMCA.Client", "..\..\common\VMCA.Client\VMCA.Client.csproj", "{24B08641-C034-4A2C-8F18-705F001CD43F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMCA.Common", "..\..\common\VMCA.Common\VMCA.Common.csproj", "{4DB29D06-5154-4A8D-BBFB-FBCCE9E3D66F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMIdentity.CommonUtils", "..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj", "{CD959E2E-5B9C-4329-B085-352844CFDCDD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2BF9B87F-BE4C-43D2-ACE6-59CD51BB3772}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BF9B87F-BE4C-43D2-ACE6-59CD51BB3772}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2BF9B87F-BE4C-43D2-ACE6-59CD51BB3772}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2BF9B87F-BE4C-43D2-ACE6-59CD51BB3772}.Debug|x64.Build.0 = Debug|Any CPU
+		{2BF9B87F-BE4C-43D2-ACE6-59CD51BB3772}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2BF9B87F-BE4C-43D2-ACE6-59CD51BB3772}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2BF9B87F-BE4C-43D2-ACE6-59CD51BB3772}.Release|x64.ActiveCfg = Release|Any CPU
+		{474831AB-37DE-415C-B944-37E2D10D1E85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{474831AB-37DE-415C-B944-37E2D10D1E85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{474831AB-37DE-415C-B944-37E2D10D1E85}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{474831AB-37DE-415C-B944-37E2D10D1E85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{474831AB-37DE-415C-B944-37E2D10D1E85}.Release|Any CPU.Build.0 = Release|Any CPU
+		{474831AB-37DE-415C-B944-37E2D10D1E85}.Release|x64.ActiveCfg = Release|Any CPU
+		{24B08641-C034-4A2C-8F18-705F001CD43F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{24B08641-C034-4A2C-8F18-705F001CD43F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{24B08641-C034-4A2C-8F18-705F001CD43F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{24B08641-C034-4A2C-8F18-705F001CD43F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{24B08641-C034-4A2C-8F18-705F001CD43F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{24B08641-C034-4A2C-8F18-705F001CD43F}.Release|x64.ActiveCfg = Release|Any CPU
+		{4DB29D06-5154-4A8D-BBFB-FBCCE9E3D66F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DB29D06-5154-4A8D-BBFB-FBCCE9E3D66F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DB29D06-5154-4A8D-BBFB-FBCCE9E3D66F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4DB29D06-5154-4A8D-BBFB-FBCCE9E3D66F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DB29D06-5154-4A8D-BBFB-FBCCE9E3D66F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4DB29D06-5154-4A8D-BBFB-FBCCE9E3D66F}.Release|x64.ActiveCfg = Release|Any CPU
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Debug|x64.ActiveCfg = Debug|x64
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Debug|x64.Build.0 = Debug|x64
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Release|x64.ActiveCfg = Release|x64
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

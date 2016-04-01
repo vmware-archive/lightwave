@@ -10,9 +10,6 @@
     <MonoMacResourcePrefix>Resources</MonoMacResourcePrefix>
     <AssemblyName>VmIdentity.UI.Common</AssemblyName>
     <UseXamMacFullFramework>true</UseXamMacFullFramework>
-    <ReleaseVersion>0.2</ReleaseVersion>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -29,6 +26,7 @@
     <CreatePackage>false</CreatePackage>
     <EnableCodeSigning>false</EnableCodeSigning>
     <EnablePackageSigning>false</EnablePackageSigning>
+    <Profiling>false</Profiling>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>full</DebugType>
@@ -43,6 +41,7 @@
     <CreatePackage>false</CreatePackage>
     <EnableCodeSigning>false</EnableCodeSigning>
     <EnablePackageSigning>false</EnablePackageSigning>
+    <Profiling>false</Profiling>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -98,9 +97,13 @@
     <Compile Include="UI\WelcomeScreenWindow\WelcomeScreenCommonController.cs" />
     <Compile Include="UI\WelcomeScreenWindow\WelcomeScreenCommonController.designer.cs" />
     <Compile Include="UI\MainWindow\MainWindowCommon.cs" />
-    <Compile Include="UI\MainWindow\MainWindowCommon.designer.cs" />
+    <Compile Include="UI\MainWindow\MainWindowCommon.designer.cs">
+      <DependentUpon>MainWindowCommon.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\MainWindow\MainWindowCommonController.cs" />
-    <Compile Include="UI\MainWindow\MainWindowCommonController.designer.cs" />
+    <Compile Include="ScopeNodeBase.cs" />
+    <Compile Include="Utilities\NSTableColumnHelper.cs" />
+    <Compile Include="Utilities\ColumnOptions.cs" />
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="UI\LoginWindow.xib" />
@@ -113,7 +116,19 @@
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
   <ItemGroup>
-    <BundleResource Include="Resources\BulletBlackIcon.png" />
+    <BundleResource Include="Resources\BulletBlackIcon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </BundleResource>
     <BundleResource Include="Resources\lightwave.png" />
+    <BundleResource Include="Resources\connect_32x32.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </BundleResource>
+    <BundleResource Include="Resources\disconnect_64x.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
+      <Project>{CD959E2E-5B9C-4329-B085-352844CFDCDD}</Project>
+      <Name>VMIdentity.CommonUtils</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

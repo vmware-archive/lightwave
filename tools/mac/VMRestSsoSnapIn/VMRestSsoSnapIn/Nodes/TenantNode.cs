@@ -50,7 +50,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 						break;
 					}
 				}
-				//NSNotificationCenter.DefaultCenter.PostNotificationName ("ReloadOutlineView", parent);
 				Active = false;
 			});
 		}

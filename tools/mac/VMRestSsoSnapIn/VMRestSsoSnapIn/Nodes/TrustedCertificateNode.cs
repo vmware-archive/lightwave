@@ -26,6 +26,7 @@ using System.Security.Cryptography.X509Certificates;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Security.Certificate;
 using RestSsoAdminSnapIn;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
+using VmIdentity.CommonUtils.Utilities;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 {

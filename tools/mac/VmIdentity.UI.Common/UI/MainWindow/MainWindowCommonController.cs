@@ -13,17 +13,16 @@
  */
 
 using System;
-
 using Foundation;
 using AppKit;
 
 namespace VmIdentity.UI.Common
 {
-    public partial class MainWindowCommonController : NSWindowController
+	public partial class MainWindowCommonController : NSWindowController
     {
-        public MainWindowCommonController (IntPtr handle) : base (handle)
+		public MainWindowCommonController (IntPtr handle) : base (handle)
         {
-        }
+		}
 
         [Export ("initWithCoder:")]
         public MainWindowCommonController (NSCoder coder) : base (coder)
@@ -37,10 +36,13 @@ namespace VmIdentity.UI.Common
         public MainWindowCommonController () : base ("MainWindowCommon")
         {
         }
-
         public override void AwakeFromNib ()
         {
             base.AwakeFromNib ();
+        }
+
+        public virtual void InitialiseViews ()
+        {
         }
 
         public void SetSubView (NSView view)

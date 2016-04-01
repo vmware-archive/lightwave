@@ -97,6 +97,14 @@ namespace Vecs
             }
         }
 
+        public void CloseServer()
+        {
+             ErrorHelper.CatchAndThrow (delegate() {
+                 if (_serverContext != IntPtr.Zero)
+                     VMAfdAdaptor.VmAfdCloseServer(_serverContext);
+             });
+        }
+
         public void RefreshServerContext (string user, string pass)
         {
             ErrorHelper.CatchAndThrow (delegate() {

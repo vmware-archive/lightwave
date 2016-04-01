@@ -12,6 +12,8 @@
  * under the License.
  */
 
+using Vmware.Tools.RestSsoAdminSnapIn.Dto;
+
 namespace Vmware.Tools.RestSsoAdminSnapIn.Service
 {
     public class ServiceConfigManager
@@ -19,17 +21,17 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         // Authentication Endpoints
         public const string LoginTokenFragments = "/openidconnect/token/";
         public const string LoginEndPoint = "{0}://{1}:{2}/openidconnect/token/{3}";
-        public const string LoginArguments = "grant_type=password&username={0}%40{2}&password={1}&scope=openid+offline_access+id_groups+at_groups+rs_admin_server";
+        private const string LoginArguments = "grant_type=password&username={0}%40{2}&password={1}&scope=openid+offline_access+id_groups+at_groups+rs_admin_server";
         public const string GssTicketLoginArguments = "grant_type=urn:vmware:grant_type:gss_ticket&gss_ticket={0}&context_id=_context_id_{1}&scope=openid+offline_access";
         public const string JwtTokenBySolutionUserArguments = "grant_type=urn:vmware:grant_type:solution_user_credentials&solution_assertion={0}&scope=openid";
         public const string RefreshTokenEndPoint = "{0}://{1}:{2}/openidconnect/token/{3}";
-        public const string RefreshTokenArguments = "grant_type=refresh_token&refresh_token={0}";
+        private const string RefreshTokenArguments = "grant_type=refresh_token&refresh_token={0}";
 
         // User Resource Endpoints
         public const string UsersEndPoint = "{0}://{1}:{2}/idm/tenant/{3}/users";
         public const string UserEndPoint = "{0}://{1}:{2}/idm/tenant/{3}/users/{4}";
         public const string UserGroupsEndPoint = "{0}://{1}:{2}/idm/tenant/{3}/users/{4}/groups";
-        public const string UserPasswordEndPoint = "{0}://{1}:{2}/idm/tenant/{3}/users/{4}/password?currentpassword={5}&newpassword={6}";
+        public const string UserPasswordEndPoint = "{0}://{1}:{2}/idm/tenant/{3}/users/{4}/password";
         public const string GetUserEndPostPoint = "{0}://{1}:{2}/idm/post/tenant/{3}/users/{4}";
         public const string GetUserGroupsPostEndPoint = "{0}://{1}:{2}/idm/post/tenant/{3}/users/{4}/groups";
         public const string UsersString = "/users";
@@ -99,14 +101,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         public const string ContentType = "application/x-www-form-urlencoded; charset=utf-8";
         public const string JsonContentType = "application/json";
         public const string PlainTextContentType = "text/plain";
+        public const string XmlContentType = "application/xml";
         public const string UserAgent = "VMware-client/5.1.0";
 
         // Validation
         public const string ValidationUri = "{0}://{1}/{2}";
 
         // Server Endpoints
-        //public const string GetServerComputersEndPoint = "{0}://{1}:{2}/idm/server/computers?type=all";
-        //public const string GetServerStatusEndPoint = "{0}://{1}:{2}/idm/server/status";
         public const string GetServerComputersPostEndPoint = "{0}://{1}:{2}/idm/post/server/computers";
         public const string GetServerStatusPostEndPoint = "{0}://{1}:{2}/idm/post/server/status";
 
@@ -117,5 +118,67 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         // Certificate Types
         public const string LdapTrustedCertificate = "LDAP_TRUSTED_CERT";
         public const string StsTrustedCertificate = "STS_TRUST_CERT";
+
+        // Super Logging Endpoints
+        public const string GetEventLogPostEndPoint = "{0}://{1}:{2}/idm/post/tenant/{3}/diagnostics/eventlog";
+        public const string EventLogEndPoint = "{0}://{1}:{2}/idm/tenant/{3}/diagnostics/eventlog";
+        public const string StartEventLogPostEndPoint = "{0}://{1}:{2}/idm/tenant/{3}/diagnostics/eventlog/start?size={4}";
+        public const string StopEventLogPostEndPoint = "{0}://{1}:{2}/idm/tenant/{3}/diagnostics/eventlog/stop";
+        public const string StatusEventLogPostEndPoint = "{0}://{1}:{2}/idm/post/tenant/{3}/diagnostics/eventlog/status";
+        public const string StatusEventLogEndPoint = "{0}://{1}:{2}/idm/tenant/{3}/diagnostics/eventlog/status";
+
+        internal static string FormatLoginArgs(LoginDto loginDto)
+        {
+            return string.Format(ServiceConfigManager.LoginArguments, loginDto.User, loginDto.Pass, loginDto.DomainName);
+        }
+
+        internal static string GetLoginUrl(ServerDto serverDto, string tenant)
+        {
+            return string.Format(ServiceConfigManager.LoginEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant);
+        }
+
+        internal static string GetRefreshUrl(ServerDto serverDto, string tenant)
+        {
+            return string.Format(ServiceConfigManager.RefreshTokenEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant);
+        }
+        internal static string FormatRefreshTokenArgs(string refreshToken)
+        {
+            return string.Format(ServiceConfigManager.RefreshTokenArguments, refreshToken);
+        }
+
+        internal static string GetCertificatesUrl(ServerDto serverDto, string tenant)
+        {
+            return string.Format(ServiceConfigManager.CertificatesEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant);
+        }
+
+        internal static string GetTokenFromCertificateUrl(ServerDto serverDto)
+        {
+            return string.Format(ServiceConfigManager.LoginEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, serverDto.Tenant);
+        }
+
+        internal static string GetValidIssuer(ServerDto serverDto, string hostName, string tenantName)
+        {
+            return string.Format(ServiceConfigManager.ValidationUri, serverDto.Protocol, hostName, tenantName);
+        }
+
+        internal static string GetJwtTokenBySolutionUserArgs(string signedToken)
+        {
+            return string.Format(ServiceConfigManager.JwtTokenBySolutionUserArguments, signedToken);
+        }
+
+        internal static string GetTokenFromGssTicketUrl(ServerDto serverDto)
+        {
+            return string.Format(ServiceConfigManager.LoginEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, serverDto.Tenant);
+        }
+
+        internal static string GetTokenFromGssTicketArgs(string base64EncodedBytes, string clientId)
+        {
+            return string.Format(ServiceConfigManager.GssTicketLoginArguments, base64EncodedBytes, clientId);
+        }
+
+        internal static string UpdatePasswordUrl(ServerDto serverDto, string tenantName, string upn)
+        {
+            return string.Format(ServiceConfigManager.UserPasswordEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName, upn);
+        }
     }
 }

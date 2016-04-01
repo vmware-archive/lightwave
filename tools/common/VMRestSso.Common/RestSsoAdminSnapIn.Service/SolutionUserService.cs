@@ -80,7 +80,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.SolutionUser
         public SolutionUserDto Update(ServerDto serverDto, string tenantName, SolutionUserDto userDto, Token token)
         {
             tenantName = Uri.EscapeDataString(tenantName);
-            var name = Uri.EscapeDataString(userDto.Name + "@" + userDto.Domain);
+            var name = Uri.EscapeDataString(userDto.Name);
             var url = string.Format(ServiceConfigManager.SolutionUserEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName, name);
             var json = JsonConvert.Serialize(userDto);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };

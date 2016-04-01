@@ -34,13 +34,5 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Core.Web
             }
             return pingable;
         }
-
-		public static bool IsValidHttpUrl(string uri)
-		{
-			Uri uriResult;
-			bool result = Uri.TryCreate(uri, UriKind.Absolute, out uriResult) &&
-				(uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
-			return result;
-		}
     }
 }

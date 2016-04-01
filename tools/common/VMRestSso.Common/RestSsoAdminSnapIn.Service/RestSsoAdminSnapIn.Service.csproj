@@ -64,11 +64,13 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.IdentityModel.Tokens.Jwt">
-      <HintPath>..\..\..\mac\VMRestSsoSnapIn\packages\System.IdentityModel.Tokens.Jwt.4.0.2.206221351\lib\net45\System.IdentityModel.Tokens.Jwt.dll</HintPath>
+      <HintPath>..\lib\System.IdentityModel.Tokens.Jwt.dll</HintPath>
     </Reference>
-    <Reference Include="System.Web.Extensions" />
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\lib\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AdfService.cs" />
@@ -98,6 +100,8 @@
     <Compile Include="ServiceHelper.cs" />
     <Compile Include="SolutionUserSearchType.cs" />
     <Compile Include="SolutionUserService.cs" />
+    <Compile Include="SuperLoggingHelper.cs" />
+    <Compile Include="SuperLoggingService.cs" />
     <Compile Include="TenantService.cs" />
     <Compile Include="UserService.cs" />
     <Compile Include="SerializationJsonHelper.cs" />
@@ -139,7 +143,4 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
 </Project>

@@ -111,6 +111,8 @@ namespace VMDir.Common
         public const int GROUPTYPE_ACCOUNT = 2;
 
         public const int SERVERTIMEOUT_IN_MILLI = 5000;
+
+        public const string UNABLE_TO_FETCH_DATA="Unable to fetch data for the object specified. Please ensure the user has access";
     }
 }
 

@@ -39,8 +39,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Adf
             };
             var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
             var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
-            //var authorization = string.Format("{0} {1}", token.TokenType, token.AccessToken);
-            //headers.Add(HttpRequestHeader.Authorization, authorization);
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
             return JsonConvert.Deserialize<ActiveDirectoryJoinInfoDto>(response);
         }
@@ -56,8 +54,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Adf
             };
             var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
             json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
-            //var authorization = string.Format("{0} {1}", token.TokenType, token.AccessToken);
-            //headers.Add(HttpRequestHeader.Authorization, authorization);
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return JsonConvert.Deserialize<ActiveDirectoryJoinInfoDto>(response);
         }
@@ -72,8 +68,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Adf
                 Method = HttpMethod.Delete,
             };
             var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
-            //var authorization = string.Format("{0} {1}", token.TokenType, token.AccessToken);
-            //headers.Add(HttpRequestHeader.Authorization, authorization);
             json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return string.IsNullOrEmpty(response);

@@ -108,6 +108,16 @@ namespace VMCertStore.Common.DTO
             return dto;
         }
 
+        public void Cleanup()
+        {
+            _vecsClient.CloseServer();
+            _certStoreClient = null;
+            _afdClient = null;
+            _vecsClient = null;
+            IsLoggedIn = false;
+            Password = null;
+        }
+
         public async Task LogintoServer (string user, string pass, string domain)
         {
             UserName = user + "@" + domain;
@@ -134,7 +144,7 @@ namespace VMCertStore.Common.DTO
                 string[] stores = VecsClient.GetStores ();
                 if (stores != null)
                     IsLoggedIn = true;
-            } catch (Exception e) {
+            } catch (Exception) {
                 IsLoggedIn = false;
             }
         }

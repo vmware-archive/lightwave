@@ -33,11 +33,5 @@ namespace RestSsoAdminSnapIn
         {
             base.AwakeFromNib ();
         }
-
-        /*[Export ("windowWillClose:")]
-		public void WindowWillClose (NSNotification notification)
-		{
-			NSApplication.SharedApplication.Terminate (this);
-		}*/
     }
 }
