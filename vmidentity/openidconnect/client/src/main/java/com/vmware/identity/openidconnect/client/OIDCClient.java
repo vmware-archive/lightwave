@@ -17,36 +17,44 @@ package com.vmware.identity.openidconnect.client;
 import java.net.URI;
 import java.security.KeyStore;
 import java.security.interfaces.RSAPublicKey;
-import java.util.Set;
 import java.util.UUID;
 
 import org.apache.commons.lang3.Validate;
 
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jwt.SignedJWT;
-import com.nimbusds.oauth2.sdk.SerializeException;
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
-import com.nimbusds.openid.connect.sdk.OIDCResponseTypeValue;
 import com.vmware.identity.openidconnect.common.AuthenticationRequest;
+import com.vmware.identity.openidconnect.common.AuthorizationCodeGrant;
+import com.vmware.identity.openidconnect.common.AuthorizationGrant;
+import com.vmware.identity.openidconnect.common.ClientAssertion;
+import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.CorrelationID;
+import com.vmware.identity.openidconnect.common.HttpResponse;
 import com.vmware.identity.openidconnect.common.LogoutRequest;
+import com.vmware.identity.openidconnect.common.Nonce;
+import com.vmware.identity.openidconnect.common.RefreshTokenGrant;
+import com.vmware.identity.openidconnect.common.ResponseMode;
+import com.vmware.identity.openidconnect.common.ResponseType;
+import com.vmware.identity.openidconnect.common.ResponseTypeValue;
+import com.vmware.identity.openidconnect.common.Scope;
+import com.vmware.identity.openidconnect.common.State;
+import com.vmware.identity.openidconnect.common.URIUtils;
 
 /**
  * OIDC Client
  *
  * @author Jun Sun
+ * @author Yehia Zayour
  */
 public class OIDCClient {
 
     private final URI authorizationEndpointURI;
     private final URI tokenEndpointURI;
     private final URI endSessionEndpointURI;
-    private final Issuer issuer;
     private final RSAPublicKey providerPublicKey;
 
     private final ClientID clientId;
     private final HolderOfKeyConfig holderOfKeyConfig;
     private final HighAvailabilityConfig highAvailabilityConfig;
+    private final long clockToleranceInSeconds;
     private final KeyStore keyStore;
 
     /**
@@ -60,12 +68,12 @@ public class OIDCClient {
         this.authorizationEndpointURI = clientConfig.getConnectionConfig().getAuthorizationEndpointURI();
         this.tokenEndpointURI = clientConfig.getConnectionConfig().getTokenEndpointURI();
         this.endSessionEndpointURI = clientConfig.getConnectionConfig().getEndSessionEndpointURI();
-        this.issuer = clientConfig.getConnectionConfig().getIssuer();
         this.providerPublicKey = clientConfig.getConnectionConfig().getProviderPublicKey();
 
         this.clientId = clientConfig.getClientId();
         this.holderOfKeyConfig = clientConfig.getHolderOfKeyConfig();
         this.highAvailabilityConfig = clientConfig.getHighAvailabilityConfig();
+        this.clockToleranceInSeconds = clientConfig.getClockToleranceInSeconds();
         this.keyStore = clientConfig.getConnectionConfig().getKeyStore();
     }
 
@@ -92,81 +100,56 @@ public class OIDCClient {
         Validate.notNull(responseType, "responseType");
         Validate.notNull(responseMode, "responseMode");
         Validate.notNull(tokenSpec, "tokenSpec");
+        Validate.notNull(state, "state");
+        Validate.notNull(nonce, "nonce");
 
-        com.nimbusds.oauth2.sdk.ResponseType nimbusResponseType = new com.nimbusds.oauth2.sdk.ResponseType();
-        Set<ResponseValue> responseTypeSet = responseType.getResponseTypeSet();
-        if (responseTypeSet.size() == 1 && responseTypeSet.contains(ResponseValue.CODE)) {
-            if (!tokenSpec.getTokenType().equals(TokenType.HOK)) {
-                throw new OIDCClientException("Only HOK token is supported when response type is code.");
+        if (responseType.contains(ResponseTypeValue.AUTHORIZATION_CODE)) {
+            if (this.holderOfKeyConfig == null) {
+                throw new OIDCClientException("HolderOfKeyConfig is required when response type is code.");
             }
-            if (!responseMode.equals(ResponseMode.QUERY) && !responseMode.equals(ResponseMode.FORM_POST)) {
+            if (responseMode != ResponseMode.QUERY && responseMode != ResponseMode.FORM_POST) {
                 throw new OIDCClientException("Only 'QUERY' or 'FORM_POST' response mode is supported when response type is code.");
             }
-            nimbusResponseType.add(com.nimbusds.oauth2.sdk.ResponseType.Value.CODE);
-        } else if (responseTypeSet.contains(ResponseValue.ID_TOKEN)) {
-            if (!tokenSpec.getTokenType().equals(TokenType.BEARER)) {
-                throw new OIDCClientException("Only Bearer token is supported when response type includes id_token.");
-            }
-            if (!responseMode.equals(ResponseMode.FRAGMENT) && !responseMode.equals(ResponseMode.FORM_POST)) {
+        } else if (responseType.contains(ResponseTypeValue.ID_TOKEN)) {
+            if (responseMode != ResponseMode.FRAGMENT && responseMode != ResponseMode.FORM_POST) {
                 throw new OIDCClientException("Only 'FRAGMENT' or 'FORM_POST' response mode is supported when response type includes id_token.");
             }
-            if (nonce == null) {
-                throw new OIDCClientException("Nonce is required for OIDC implicit flow.");
-            }
-            nimbusResponseType.add(OIDCResponseTypeValue.ID_TOKEN);
-            if (responseTypeSet.size() == 1) {
-                // do nothing
-            } else if (responseTypeSet.size() == 2 && responseTypeSet.contains(ResponseValue.TOKEN)) {
-                nimbusResponseType.add(com.nimbusds.oauth2.sdk.ResponseType.Value.TOKEN);
-            } else {
-                throw new OIDCClientException("The requested response type is not supported.");
-            }
-        } else {
-            throw new OIDCClientException("The requested response type is not supported.");
         }
 
         URI authorizationEndpointURI = this.authorizationEndpointURI;
         if (highAvailabilityEnabled()) {
             String domainController = getAvailableDomainController();
-            authorizationEndpointURI = OIDCClientUtils.changeUriHostComponent(authorizationEndpointURI, domainController);
+            authorizationEndpointURI = URIUtils.changeHostComponent(authorizationEndpointURI, domainController);
         }
 
         Scope scope = OIDCClientUtils.buildScopeFromTokenSpec(tokenSpec);
 
-        SignedJWT clientAssertion = null;
+        ClientAssertion clientAssertion = null;
         if (this.holderOfKeyConfig != null) {
-            try {
-                clientAssertion = OIDCClientUtils.createAssertion(this.clientId, this.holderOfKeyConfig, authorizationEndpointURI.toString());
-            } catch (JOSEException e) {
-                throw new OIDCClientException("failed to construct client_assertion parameter");
-            }
+            clientAssertion = OIDCClientUtils.createClientAssertion(this.clientId, this.holderOfKeyConfig, authorizationEndpointURI);
         }
 
         AuthenticationRequest authenticationRequest = new AuthenticationRequest(
                 authorizationEndpointURI,
-                nimbusResponseType,
-                com.nimbusds.openid.connect.sdk.ResponseMode.parse(responseMode.getValue()),
-                new com.nimbusds.oauth2.sdk.id.ClientID(this.clientId.getValue()),
+                responseType,
+                responseMode,
+                this.clientId,
                 redirectEndpointURI,
-                com.nimbusds.oauth2.sdk.Scope.parse(scope.getScopeList()),
-                (state == null) ? null : new com.nimbusds.oauth2.sdk.id.State(state.getValue()),
-                (nonce == null) ? null : new com.nimbusds.openid.connect.sdk.Nonce(nonce.getValue()),
+                scope,
+                state,
+                nonce,
                 clientAssertion,
                 new CorrelationID());
-
-        try {
-            return authenticationRequest.toURI();
-        } catch (SerializeException e) {
-            throw new OIDCClientException("Build authentication request URI failed: " + e.getMessage(), e);
-        }
+        return authenticationRequest.toHttpRequest().getURI();
     }
 
     /**
      * Get tokens by grant
      *
      * @param authorizationGrant        Authorization grant. It can be one of the following:
-     *                                  PasswordCredentialsGrant, GssGrant, SolutionUserCredentialsGrant,
-     *                                  ClientCredentialsGrant, RefreshTokenGrant, AuthorizationCodeGrant
+     *                                  PasswordGrant, SolutionUserCredentialsGrant,
+     *                                  ClientCredentialsGrant, RefreshTokenGrant, AuthorizationCodeGrant, ClientCertificateGrant
+     *                                  for GssTicketGrant and SecureIDGrant use the below overrides which will handle multi-legged exchanges
      * @param tokenSpec                 Specification of tokens requested.
      * @return                          OIDC Tokens.
      * @throws OIDCClientException      Client side exception.
@@ -179,87 +162,161 @@ public class OIDCClient {
             TokenSpec tokenSpec) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
         Validate.notNull(authorizationGrant, "authorizationGrant");
         Validate.notNull(tokenSpec, "tokenSpec");
-
-        URI tokenEndpointURI = this.tokenEndpointURI;
-        if (highAvailabilityEnabled()) {
-            String domainController = getAvailableDomainController();
-            tokenEndpointURI = OIDCClientUtils.changeUriHostComponent(tokenEndpointURI, domainController);
+        if ((authorizationGrant instanceof AuthorizationCodeGrant || authorizationGrant instanceof RefreshTokenGrant) && tokenSpec != TokenSpec.EMPTY) {
+            throw new IllegalArgumentException("tokenSpec must be TokenSpec.EMPTY for authz code and refresh token grants");
         }
 
-        HTTPResponse httpResponse = null;
-
-        if (authorizationGrant instanceof GssGrant) {
-            httpResponse = OIDCClientUtils.negotiateGssResponse(
-                    ((GssGrant) authorizationGrant).getNegotiationHandler(),
-                    tokenSpec,
-                    tokenEndpointURI,
-                    this.clientId,
-                    this.holderOfKeyConfig,
-                    this.keyStore,
-                    UUID.randomUUID().toString());
-        } else {
-            httpResponse = OIDCClientUtils.buildAndSendTokenRequest(
-                    authorizationGrant,
-                    tokenSpec,
-                    tokenEndpointURI,
-                    this.clientId,
-                    this.holderOfKeyConfig,
-                    this.keyStore);
-        }
-
-        OIDCTokens oidcTokens = OIDCClientUtils.parseTokenResponse(
-                httpResponse,
+        HttpResponse httpResponse = OIDCClientUtils.buildAndSendTokenRequest(
+                authorizationGrant,
                 tokenSpec,
+                getTokenEndpointURI(),
+                this.clientId,
+                this.holderOfKeyConfig,
+                this.keyStore);
+
+        return OIDCClientUtils.parseTokenResponse(
+                httpResponse,
                 this.providerPublicKey,
                 this.clientId,
-                this.issuer);
-        return oidcTokens;
+                this.clockToleranceInSeconds);
+    }
+
+    /**
+     * Get tokens by GSSNegotiationHandler which handles multi-legged GSSTicketGrant
+     *
+     * @param gssNegotiationHandler     client-implemented interface that provides us with the next gss ticket
+     * @param tokenSpec                 Specification of tokens requested.
+     * @return                          OIDC Tokens.
+     * @throws OIDCClientException      Client side exception.
+     * @throws OIDCServerException      Server side exception.
+     * @throws TokenValidationException Token validation exception.
+     * @throws SSLConnectionException   SSL connection exception.
+     */
+    public OIDCTokens acquireTokens(
+            GSSNegotiationHandler gssNegotiationHandler,
+            TokenSpec tokenSpec) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
+        Validate.notNull(gssNegotiationHandler, "gssNegotiationHandler");
+        Validate.notNull(tokenSpec, "tokenSpec");
+
+        HttpResponse httpResponse = OIDCClientUtils.negotiateGssResponse(
+                gssNegotiationHandler,
+                tokenSpec,
+                getTokenEndpointURI(),
+                this.clientId,
+                this.holderOfKeyConfig,
+                this.keyStore,
+                UUID.randomUUID().toString());
+
+        return OIDCClientUtils.parseTokenResponse(
+                httpResponse,
+                this.providerPublicKey,
+                this.clientId,
+                this.clockToleranceInSeconds);
+    }
+
+    /**
+     * Get tokens by SecureIDRetriever which handles multi-legged SecureIDGrant
+     *
+     * @param secureIdRetriever         client-implemented class that provides us with the next RSA SecurID passcode
+     * @param tokenSpec                 Specification of tokens requested.
+     * @return                          OIDC Tokens.
+     * @throws OIDCClientException      Client side exception.
+     * @throws OIDCServerException      Server side exception.
+     * @throws TokenValidationException Token validation exception.
+     * @throws SSLConnectionException   SSL connection exception.
+     */
+    public OIDCTokens acquireTokens(
+            SecureIDRetriever secureIdRetriever,
+            TokenSpec tokenSpec) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
+        Validate.notNull(secureIdRetriever, "secureIdRetriever");
+        Validate.notNull(tokenSpec, "tokenSpec");
+
+        HttpResponse httpResponse = OIDCClientUtils.handleSecureIDMultiLeggedGrant(
+                secureIdRetriever,
+                tokenSpec,
+                getTokenEndpointURI(),
+                this.clientId,
+                this.holderOfKeyConfig,
+                this.keyStore);
+
+        return OIDCClientUtils.parseTokenResponse(
+                httpResponse,
+                this.providerPublicKey,
+                this.clientId,
+                this.clockToleranceInSeconds);
     }
 
     /**
      * Build a logout request URI
      *
      * @param postLogoutRedirectEndpointURI     Post logout URI.
-     * @param idToken                           ID token received from a previous request.
+     * @param clientIdToken                     ID token received from a previous request.
      * @param state                             State value used in a logout request, it is optional.
      * @return                                  Logout request URI.
      * @throws OIDCClientException              Client side exception.
      */
     public URI buildLogoutRequestURI(
             URI postLogoutRedirectEndpointURI,
-            IDToken idToken,
+            ClientIDToken clientIdToken,
             State state) throws OIDCClientException {
         Validate.notNull(postLogoutRedirectEndpointURI, "postLogoutRedirectEndpointURI");
-        Validate.notNull(idToken, "idToken");
+        Validate.notNull(clientIdToken, "clientIdToken");
 
+        LogoutRequest logoutRequest = buildLogoutRequest(postLogoutRedirectEndpointURI, clientIdToken, state);
+        return logoutRequest.toHttpRequest().getURI();
+    }
+
+    /**
+     * Build a logout request html form (client returns form that is auto-submitted to the Authorization Server)
+     *
+     * @param postLogoutRedirectEndpointURI     Post logout URI.
+     * @param clientIdToken                     ID token received from a previous request.
+     * @param state                             State value used in a logout request, it is optional.
+     * @return                                  Logout request html form.
+     * @throws OIDCClientException              Client side exception.
+     */
+    public String buildLogoutRequestHtmlForm(
+            URI postLogoutRedirectEndpointURI,
+            ClientIDToken clientIdToken,
+            State state) throws OIDCClientException {
+        Validate.notNull(postLogoutRedirectEndpointURI, "postLogoutRedirectEndpointURI");
+        Validate.notNull(clientIdToken, "clientIdToken");
+
+        LogoutRequest logoutRequest = buildLogoutRequest(postLogoutRedirectEndpointURI, clientIdToken, state);
+        return logoutRequest.toHtmlForm();
+    }
+
+    private LogoutRequest buildLogoutRequest(
+            URI postLogoutRedirectEndpointURI,
+            ClientIDToken clientIdToken,
+            State state) throws OIDCClientException {
         URI endSessionEndpointURI = this.endSessionEndpointURI;
         if (highAvailabilityEnabled()) {
             String domainController = getAvailableDomainController();
-            endSessionEndpointURI = OIDCClientUtils.changeUriHostComponent(endSessionEndpointURI, domainController);
+            endSessionEndpointURI = URIUtils.changeHostComponent(endSessionEndpointURI, domainController);
         }
 
-        SignedJWT clientAssertion = null;
+        ClientAssertion clientAssertion = null;
         if (this.holderOfKeyConfig != null) {
-            try {
-                clientAssertion = OIDCClientUtils.createAssertion(this.clientId, this.holderOfKeyConfig, endSessionEndpointURI.toString());
-            } catch (JOSEException e) {
-                throw new OIDCClientException("failed to construct client_assertion parameter");
-            }
+            clientAssertion = OIDCClientUtils.createClientAssertion(this.clientId, this.holderOfKeyConfig, endSessionEndpointURI);
         }
 
-        LogoutRequest logoutRequest = new LogoutRequest(
+        return new LogoutRequest(
                 endSessionEndpointURI,
-                new com.vmware.identity.openidconnect.common.IDToken(idToken.getSignedJWT()),
+                clientIdToken.getIDToken(),
                 postLogoutRedirectEndpointURI,
-                (state == null) ? null : new com.nimbusds.oauth2.sdk.id.State(state.getValue()),
+                state,
                 clientAssertion,
                 new CorrelationID());
+    }
 
-        try {
-            return logoutRequest.toURI();
-        } catch (SerializeException e) {
-            throw new OIDCClientException("Build logout request URI failed: " + e.getMessage(), e);
+    private URI getTokenEndpointURI() throws OIDCClientException {
+        URI tokenEndpointURI = this.tokenEndpointURI;
+        if (highAvailabilityEnabled()) {
+            String domainController = getAvailableDomainController();
+            tokenEndpointURI = URIUtils.changeHostComponent(tokenEndpointURI, domainController);
         }
+        return tokenEndpointURI;
     }
 
     private boolean highAvailabilityEnabled() {

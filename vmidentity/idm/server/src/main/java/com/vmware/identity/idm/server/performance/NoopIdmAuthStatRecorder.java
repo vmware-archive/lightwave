@@ -17,6 +17,7 @@
 package com.vmware.identity.idm.server.performance;
 
 import java.util.List;
+import java.util.Map;
 
 import com.vmware.identity.performanceSupport.ILdapQueryStat;
 
@@ -41,6 +42,10 @@ public class NoopIdmAuthStatRecorder implements IIdmAuthStatRecorder {
 
     @Override
     public void add(ILdapQueryStat ldapQuery) {
+    }
+
+    @java.lang.Override
+    public void add(Map<String, String> ext) {
     }
 
     @Override

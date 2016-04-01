@@ -15,23 +15,15 @@
 package com.vmware.identity.openidconnect.common;
 
 import java.net.URI;
-
-import javax.mail.internet.ContentType;
-import javax.mail.internet.ParseException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang3.Validate;
-
-import com.nimbusds.oauth2.sdk.ErrorObject;
-import com.nimbusds.oauth2.sdk.ResponseType;
-import com.nimbusds.oauth2.sdk.SerializeException;
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
-import com.nimbusds.oauth2.sdk.id.State;
-import com.nimbusds.openid.connect.sdk.ResponseMode;
 
 /**
  * @author Yehia Zayour
  */
-public class AuthenticationErrorResponse extends com.nimbusds.openid.connect.sdk.AuthenticationErrorResponse {
+public final class AuthenticationErrorResponse extends AuthenticationResponse {
     private static final String HTML_RESPONSE =
             "<html>" +
             "    <head>" +
@@ -49,75 +41,54 @@ public class AuthenticationErrorResponse extends com.nimbusds.openid.connect.sdk
             "    </body>" +
             "</html>";
 
-    private final ResponseMode responseMode;
-    private final boolean isAjaxRequest;
+    private final ErrorObject errorObject;
 
     public AuthenticationErrorResponse(
-            URI redirectUri,
-            ErrorObject error,
-            ResponseType responseType,
-            State state,
             ResponseMode responseMode,
-            boolean isAjaxRequest) {
-        super(redirectUri, error, responseType, state);
+            URI redirectUri,
+            State state,
+            boolean isAjaxRequest,
+            ErrorObject errorObject) {
+        super(responseMode, redirectUri, state, isAjaxRequest);
+        Validate.notNull(errorObject, "errorObject");
+        this.errorObject = errorObject;
+    }
 
-        Validate.notNull(responseMode, "responseMode");
-        this.responseMode = responseMode;
-        this.isAjaxRequest = isAjaxRequest;
+    public ErrorObject getErrorObject() {
+        return this.errorObject;
     }
 
     @Override
-    public HTTPResponse toHTTPResponse() throws SerializeException {
-        HTTPResponse httpResponse;
-
-        if (this.responseMode.equals(ResponseMode.FORM_POST)) {
-            httpResponse = formPostResponse();
-        } else {
-            // query or fragment response mode
-            httpResponse = super.toHTTPResponse();
-            if (this.isAjaxRequest) {
-                httpResponse = ajaxRedirectResponse(httpResponse.getLocation());
-            }
-        }
-
-        return httpResponse;
+    protected Map<String, String> toParameters() {
+        Map<String, String> parameters = new HashMap<String, String>();
+        parameters.put("state", super.getState().getValue());
+        parameters.put("error", this.errorObject.getErrorCode().getValue());
+        parameters.put("error_description", this.errorObject.getDescription());
+        return parameters;
     }
 
-    private HTTPResponse formPostResponse() throws SerializeException {
-        HTTPResponse httpResponse = new HTTPResponse(HTTPResponse.SC_OK);
-
-        try {
-            httpResponse.setContentType(new ContentType("text/html;charset=UTF-8"));
-        } catch (ParseException e) {
-            throw new SerializeException("could not set response type header", e);
-        }
-
-        httpResponse.setCacheControl("no-cache, no-store");
-        httpResponse.setPragma("no-cache");
-
-        httpResponse.setContent(String.format(
+    @Override
+    protected String toFormPostResponse() {
+        return String.format(
                 HTML_RESPONSE,
-                super.getRedirectionURI().toString(),
+                super.getRedirectURI().toString(),
                 super.getState().getValue(),
-                super.getErrorObject().getCode(),
-                super.getErrorObject().getDescription()));
-
-        return httpResponse;
+                this.errorObject.getErrorCode().getValue(),
+                this.errorObject.getDescription());
     }
 
-    private static HTTPResponse ajaxRedirectResponse(URI redirectLocation) throws SerializeException {
-        HTTPResponse httpResponse = new HTTPResponse(HTTPResponse.SC_OK);
+    public static AuthenticationErrorResponse parse(HttpRequest httpRequest) throws ParseException {
+        Validate.notNull(httpRequest, "httpRequest");
+        Map<String, String> parameters = httpRequest.getParameters();
 
-        try {
-            httpResponse.setContentType(new ContentType("text/html;charset=UTF-8"));
-        } catch (ParseException e) {
-            throw new SerializeException("could not set response type header", e);
-        }
+        State state = State.parse(ParameterMapUtils.getString(parameters, "state"));
+        ErrorObject errorObject = ErrorObject.parse(parameters, StatusCode.OK /* we do not know and it doesn't matter */);
 
-        httpResponse.setCacheControl("no-cache, no-store");
-        httpResponse.setPragma("no-cache");
-        httpResponse.setContent(redirectLocation.toString());
-
-        return httpResponse;
+        return new AuthenticationErrorResponse(
+                ResponseMode.FORM_POST, // we don't really know but it doesn't matter
+                httpRequest.getURI(),
+                state,
+                false /* isAjaxRequest, we don't really know but it doesn't matter */,
+                errorObject);
     }
 }

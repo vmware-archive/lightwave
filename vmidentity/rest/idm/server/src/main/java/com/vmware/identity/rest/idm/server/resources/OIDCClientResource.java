@@ -15,7 +15,6 @@ package com.vmware.identity.rest.idm.server.resources;
 
 import java.util.Collection;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -24,6 +23,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
@@ -58,27 +58,29 @@ public class OIDCClientResource extends BaseSubResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(OIDCClientResource.class);
 
-    public OIDCClientResource(String tenant, @Context HttpServletRequest request, @Context SecurityContext securityContext) {
+    public OIDCClientResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, securityContext);
     }
 
     /**
      * Add an OIDC client for tenant
      */
-    @POST @Path("/")
+    @POST
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public OIDCClientDTO add(OIDCClientMetadataDTO oidcClientMetadataDTO) {
+        String clientId = null;
         try {
             OIDCClient oidcClient = OIDCClientMapper.getOIDCClient(oidcClientMetadataDTO);
+            clientId = oidcClient.getClientId();
             getIDMClient().addOIDCClient(this.tenant, oidcClient);
-            return OIDCClientMapper.getOIDCClientDTO(getIDMClient().getOIDCClient(this.tenant, oidcClient.getClientId()));
+            return OIDCClientMapper.getOIDCClientDTO(getIDMClient().getOIDCClient(this.tenant, clientId));
         } catch (NoSuchTenantException e) {
             log.debug("Failed to add an OIDC client for tenant '{}' due to missing tenant", this.tenant, e);
             throw new NotFoundException(this.sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException | DuplicatedOIDCRedirectURLException e) {
             log.debug("Failed to add an OIDC client for tenant '{}' due to a client side error", this.tenant, e);
-            throw new BadRequestException(this.sm.getString("res.oidcclient.create.failed", this.tenant), e);
+            throw new BadRequestException(this.sm.getString("res.oidcclient.create.failed", clientId, this.tenant), e);
         } catch (Exception e) {
             log.error("Failed to add an OIDC client for tenant '{}' due to a server side error", this.tenant, e);
             throw new InternalServerErrorException(this.sm.getString("ec.500"), e);
@@ -88,7 +90,7 @@ public class OIDCClientResource extends BaseSubResource {
     /**
      * Get the details of all OIDC clients on requested tenant.
      */
-    @GET @Path("/")
+    @GET
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public Collection<OIDCClientDTO> getAll() {
@@ -129,7 +131,7 @@ public class OIDCClientResource extends BaseSubResource {
             throw new NotFoundException(this.sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException e) {
             log.debug("Failed to get an OIDC client '{}' from tenant '{}' due to a client side error", clientId, this.tenant, e);
-            throw new BadRequestException(this.sm.getString("res.oidcclient.get.failed", this.tenant), e);
+            throw new BadRequestException(this.sm.getString("res.oidcclient.get.failed", clientId, this.tenant), e);
         } catch (Exception e) {
             log.error("Failed to get an OIDC client '{}' from tenant '{}' due to a server side error", clientId, this.tenant, e);
             throw new InternalServerErrorException(this.sm.getString("ec.500"), e);
@@ -149,7 +151,7 @@ public class OIDCClientResource extends BaseSubResource {
             throw new NotFoundException(this.sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException | InvalidPrincipalException e) {
             log.debug("Failed to delete an OIDC client '{}' from tenant '{}' due to a client side error", clientId, this.tenant, e);
-            throw new BadRequestException(this.sm.getString("res.oidcclient.delete.failed", this.tenant), e);
+            throw new BadRequestException(this.sm.getString("res.oidcclient.delete.failed", clientId, this.tenant), e);
         } catch (Exception e) {
             log.error("Failed to delete an OIDC client '{}' from tenant '{}' due to a server side error", clientId, this.tenant, e);
             throw new InternalServerErrorException(this.sm.getString("ec.500"), e);
@@ -176,7 +178,7 @@ public class OIDCClientResource extends BaseSubResource {
             throw new NotFoundException(this.sm.getString("ec.404"), e);
         } catch (DTOMapperException | InvalidArgumentException | DuplicatedOIDCRedirectURLException e) {
             log.debug("Failed to update an OIDC client '{}' on tenant '{}' due to a client side error", clientId, this.tenant, e);
-            throw new BadRequestException(this.sm.getString("res.oidcclient.update.failed", this.tenant), e);
+            throw new BadRequestException(this.sm.getString("res.oidcclient.update.failed", clientId, this.tenant), e);
         } catch (Exception e) {
             log.error("Failed to update an OIDC client '{}' on tenant '{}' due to a server side error", clientId, this.tenant, e);
             throw new InternalServerErrorException(this.sm.getString("ec.500"), e);

@@ -33,30 +33,26 @@
   <property name="MavenHome" value="${maven.home}" />
   <property name="JRE_HOME"  value="${jre.home}" />
   <property name="maven" value="${MavenHome}/bin/mvn" />  
-
-  <!-- <condition property="maven" value="${tcRoot}/noarch/apache-maven-3.0.3/bin/mvn.bat" else="${tcRoot}/noarch/apache-maven-3.0.3/bin/mvn">
-    <os family="windows" />
-  </condition>
-
-  <condition property="isWindows">
-    <os family="windows" />
-  </condition>
-
-  <condition property="isUnix">
-    <os family="unix" />
-  </condition>-->
+  <property name="AFD_PACKAGE_BASE" value="${MAINSRCROOT}/../vmafd/build/authentication-framework/packages" />
 
   <target name="install.vmware-dependencies">
+    <exec executable="${maven}" failonerror="true">
+      <env key="M2_HOME" value="${MavenHome}" />
+      <env key="JAVA_HOME" value="${JRE_HOME}"/>
+      <arg line=" -s settings.xml install:install-file -Dfile=${AFD_PACKAGE_BASE}/client-domain-controller-cache.jar -DgroupId=${GROUP_BASE} -DartifactId=client-domain-controller-cache -Dversion=${IDM_VERSION} -Dpackaging=jar" />
+    </exec>
     <exec  executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${MavenHome}"/>
       <env key="JAVA_HOME" value="${JRE_HOME}"/>
       <arg line=" -s settings.xml install:install-file -Dfile=${PACKAGE_BASE}/${idmClient} -DgroupId=${GROUP_BASE} -DartifactId=vmware-identity-idm-client -Dversion=${IDM_VERSION} -Dpackaging=jar" />
     </exec>
+
     <exec  executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${MavenHome}"/>
       <env key="JAVA_HOME" value="${JRE_HOME}"/>
       <arg line=" -s settings.xml install:install-file -Dfile=${PACKAGE_BASE}/${idmInterface} -DgroupId=${GROUP_BASE} -DartifactId=vmware-identity-idm-interface -Dversion=${IDM_VERSION} -Dpackaging=jar" />
     </exec>
+
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${MavenHome}" />
       <env key="JAVA_HOME" value="${JRE_HOME}"/>

@@ -17,41 +17,45 @@ package com.vmware.identity.openidconnect.server;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.commons.lang3.Validate;
 
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeValuePair;
-import com.vmware.identity.idm.DomainType;
+import com.vmware.identity.idm.AuthnPolicy;
 import com.vmware.identity.idm.GSSResult;
 import com.vmware.identity.idm.IDMLoginException;
-import com.vmware.identity.idm.IIdentityStoreData;
+import com.vmware.identity.idm.IDMSecureIDNewPinException;
 import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.NoSuchOIDCClientException;
+import com.vmware.identity.idm.NoSuchResourceServerException;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.OIDCClient;
 import com.vmware.identity.idm.PersonDetail;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.idm.RSAAMResult;
+import com.vmware.identity.idm.ResourceServer;
 import com.vmware.identity.idm.SolutionDetail;
 import com.vmware.identity.idm.SolutionUser;
 import com.vmware.identity.idm.Tenant;
+import com.vmware.identity.idm.client.CasIdmClient;
 
 /**
  * @author Yehia Zayour
  */
-public class MockIdmClient extends IdmClient {
+public class MockIdmClient extends CasIdmClient {
     private final String tenantName;
     private final PrivateKey tenantPrivateKey;
     private final Certificate tenantCertificate;
+    private final AuthnPolicy authnPolicy;
     private final String issuer;
 
     private final String clientId;
@@ -65,13 +69,15 @@ public class MockIdmClient extends IdmClient {
 
     private final String username;
     private final String password;
+    private final String secureIdPasscode;
+    private final String secureIdSessionId;
+    private final boolean secureIdNewPinRequired;
     private final String gssContextId;
     private final byte[] gssServerLeg;
     private final boolean personUserEnabled;
 
     private final String solutionUsername;
     private final boolean solutionUserEnabled;
-    private final boolean isMemberOfSystemGroup;
 
     private final long maxBearerTokenLifetime;
     private final long maxHoKTokenLifetime;
@@ -79,12 +85,18 @@ public class MockIdmClient extends IdmClient {
     private final long maxHoKRefreshTokenLifetime;
     private final long clockTolerance;
 
+    private final Set<String> systemGroupMembership;
+    private final Set<String> groupMembership;
+    private final Map<String, ResourceServer> resourceServerMap;
     private final Map<String, OIDCClient> clientMap;
 
     private MockIdmClient(Builder builder) {
+        super("hostname");
+
         this.tenantName              = builder.tenantName;
         this.tenantPrivateKey        = builder.tenantPrivateKey;
         this.tenantCertificate       = builder.tenantCertificate;
+        this.authnPolicy             = builder.authnPolicy;
         this.issuer                  = builder.issuer;
 
         this.clientId                = builder.clientId;
@@ -98,19 +110,25 @@ public class MockIdmClient extends IdmClient {
 
         this.username                = builder.username;
         this.password                = builder.password;
+        this.secureIdPasscode        = builder.secureIdPasscode;
+        this.secureIdSessionId       = builder.secureIdSessionId;
+        this.secureIdNewPinRequired  = builder.secureIdNewPinRequired;
         this.gssContextId            = builder.gssContextId;
         this.gssServerLeg            = builder.gssServerLeg;
         this.personUserEnabled       = builder.personUserEnabled;
 
         this.solutionUsername        = builder.solutionUsername;
         this.solutionUserEnabled     = builder.solutionUserEnabled;
-        this.isMemberOfSystemGroup   = builder.isMemberOfSystemGroup;
 
         this.maxBearerTokenLifetime         = builder.maxBearerTokenLifetime;
         this.maxHoKTokenLifetime            = builder.maxHoKTokenLifetime;
         this.maxBearerRefreshTokenLifetime  = builder.maxBearerRefreshTokenLifetime;
         this.maxHoKRefreshTokenLifetime     = builder.maxHoKRefreshTokenLifetime;
         this.clockTolerance                 = builder.clockTolerance;
+
+        this.systemGroupMembership          = builder.systemGroupMembership;
+        this.groupMembership                = builder.groupMembership;
+        this.resourceServerMap              = builder.resourceServerMap;
 
         this.clientMap = new HashMap<String, OIDCClient>();
 
@@ -146,8 +164,20 @@ public class MockIdmClient extends IdmClient {
     }
 
     @Override
-    public PrincipalId authenticate(String tenantName, X509Certificate[] tlsCertChain) throws Exception {
-        throw new UnsupportedOperationException();
+    public PrincipalId authenticate(
+            String tenantName,
+            X509Certificate[] tlsCertChain) throws Exception {
+        Validate.notEmpty(tenantName, "tenantName");
+        Validate.notNull(tlsCertChain, "tlsCertChain");
+
+        boolean match =
+                tlsCertChain.length == 1 &&
+                tlsCertChain[0].equals(this.clientCertificate);
+        if (!match) {
+            throw new IDMLoginException("invalid credentials");
+        }
+
+        return new PrincipalId(this.username, this.tenantName);
     }
 
     @Override
@@ -164,6 +194,33 @@ public class MockIdmClient extends IdmClient {
         return (this.gssServerLeg != null) ?
                 new GSSResult(this.gssContextId, this.gssServerLeg) :
                 new GSSResult(this.gssContextId, new PrincipalId(this.username, this.tenantName));
+    }
+
+    @Override
+    public RSAAMResult authenticateRsaSecurId(
+            String tenantName,
+            String sessionId,
+            String principal,
+            String passcode) throws Exception {
+        validateTenant(tenantName);
+        // nullable sessionId
+        Validate.notEmpty(principal, "principal");
+        Validate.notEmpty(passcode, "passcode");
+
+        boolean match =
+                Objects.equals(principal, this.username) &&
+                Objects.equals(passcode, this.secureIdPasscode);
+        if (!match) {
+            throw new IDMLoginException("invalid credentials");
+        }
+
+        if (this.secureIdNewPinRequired) {
+            throw new IDMSecureIDNewPinException("new pin required");
+        }
+
+        return (this.secureIdSessionId != null) ?
+                new RSAAMResult(this.secureIdSessionId) :
+                new RSAAMResult(new PrincipalId(this.username, this.tenantName));
     }
 
     @Override
@@ -223,16 +280,8 @@ public class MockIdmClient extends IdmClient {
 
         AttributeValuePair pair = new AttributeValuePair();
         pair.setAttrDefinition(attributes.iterator().next());
+        pair.getValues().addAll(this.groupMembership);
         return Arrays.asList(pair);
-    }
-
-    @Override
-    public Collection<IIdentityStoreData> getProviders(
-            String tenantName,
-            EnumSet<DomainType> domains) throws Exception {
-        validateTenant(tenantName);
-        Validate.notEmpty(domains, "domains");
-        return new ArrayList<IIdentityStoreData>();
     }
 
     @Override
@@ -259,6 +308,12 @@ public class MockIdmClient extends IdmClient {
     }
 
     @Override
+    public AuthnPolicy getAuthnPolicy(String tenantName) throws Exception {
+        validateTenant(tenantName);
+        return this.authnPolicy;
+    }
+
+    @Override
     public String getOIDCEntityID(String tenantName) throws Exception {
         validateTenant(tenantName);
         return this.issuer;
@@ -274,6 +329,18 @@ public class MockIdmClient extends IdmClient {
             throw new NoSuchOIDCClientException("client not found");
         }
         return client;
+    }
+
+    @Override
+    public ResourceServer getResourceServer(String tenantName, String resourceServerName) throws Exception {
+        validateTenant(tenantName);
+        Validate.notEmpty(resourceServerName, "resourceServerName");
+
+        ResourceServer resourceServer = this.resourceServerMap.get(resourceServerName);
+        if (resourceServer == null) {
+            throw new NoSuchResourceServerException("resource server not found");
+        }
+        return resourceServer;
     }
 
     @Override
@@ -335,7 +402,7 @@ public class MockIdmClient extends IdmClient {
         validateTenant(tenantName);
         Validate.notNull(id, "id");
         Validate.notEmpty(groupName, "groupName");
-        return this.isMemberOfSystemGroup;
+        return this.systemGroupMembership.contains(groupName);
     }
 
     @Override
@@ -359,6 +426,7 @@ public class MockIdmClient extends IdmClient {
         private String tenantName;
         private PrivateKey tenantPrivateKey;
         private Certificate tenantCertificate;
+        private AuthnPolicy authnPolicy;
         private String issuer;
 
         private String clientId;
@@ -372,19 +440,25 @@ public class MockIdmClient extends IdmClient {
 
         private String username;
         private String password;
+        private String secureIdPasscode;
+        private String secureIdSessionId;
+        private boolean secureIdNewPinRequired;
         private String gssContextId;
         private byte[] gssServerLeg;
         private boolean personUserEnabled;
 
         private String solutionUsername;
         private boolean solutionUserEnabled;
-        private boolean isMemberOfSystemGroup;
 
         private long maxBearerTokenLifetime;
         private long maxHoKTokenLifetime;
         private long maxBearerRefreshTokenLifetime;
         private long maxHoKRefreshTokenLifetime;
         private long clockTolerance;
+
+        private Set<String> systemGroupMembership;
+        private Set<String> groupMembership;
+        private Map<String, ResourceServer> resourceServerMap;
 
         public Builder() {
         }
@@ -401,6 +475,11 @@ public class MockIdmClient extends IdmClient {
 
         public Builder tenantCertificate(Certificate tenantCertificate) {
             this.tenantCertificate = tenantCertificate;
+            return this;
+        }
+
+        public Builder authnPolicy(AuthnPolicy authnPolicy) {
+            this.authnPolicy = authnPolicy;
             return this;
         }
 
@@ -460,6 +539,21 @@ public class MockIdmClient extends IdmClient {
             return this;
         }
 
+        public Builder secureIdPasscode(String secureIdPasscode) {
+            this.secureIdPasscode = secureIdPasscode;
+            return this;
+        }
+
+        public Builder secureIdSessionId(String secureIdSessionId) {
+            this.secureIdSessionId = secureIdSessionId;
+            return this;
+        }
+
+        public Builder secureIdNewPinRequired(boolean secureIdNewPinRequired) {
+            this.secureIdNewPinRequired = secureIdNewPinRequired;
+            return this;
+        }
+
         public Builder gssContextId(String gssContextId) {
             this.gssContextId = gssContextId;
             return this;
@@ -485,11 +579,6 @@ public class MockIdmClient extends IdmClient {
             return this;
         }
 
-        public Builder isMemberOfSystemGroup(boolean isMemberOfSystemGroup) {
-            this.isMemberOfSystemGroup = isMemberOfSystemGroup;
-            return this;
-        }
-
         public Builder maxBearerTokenLifetime(long maxBearerTokenLifetime) {
             this.maxBearerTokenLifetime = maxBearerTokenLifetime;
             return this;
@@ -512,6 +601,24 @@ public class MockIdmClient extends IdmClient {
 
         public Builder clockTolerance(long clockTolerance) {
             this.clockTolerance = clockTolerance;
+            return this;
+        }
+
+        public Builder systemGroupMembership(Set<String> systemGroupMembership) {
+            Validate.notNull(systemGroupMembership, "systemGroupMembership");
+            this.systemGroupMembership = systemGroupMembership;
+            return this;
+        }
+
+        public Builder groupMembership(Set<String> groupMembership) {
+            Validate.notNull(groupMembership, "groupMembership");
+            this.groupMembership = groupMembership;
+            return this;
+        }
+
+        public Builder resourceServerMap(Map<String, ResourceServer> resourceServerMap) {
+            Validate.notNull(resourceServerMap, "resourceServerMap");
+            this.resourceServerMap = resourceServerMap;
             return this;
         }
 
