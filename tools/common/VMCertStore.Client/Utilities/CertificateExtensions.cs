@@ -5,4 +5,4 @@
             return sb.ToString ();        }
         public static string GetKeyUsage (this X509Certificate2 cert)        {            string result = "";            foreach (var ext in cert.Extensions) {                if (ext is X509KeyUsageExtension) {                    var keyUsageExtension = ext as X509KeyUsageExtension;                    result = keyUsageExtension.KeyUsages.ToString ();                    break;                }            }            return result;        }
         public static X509Certificate2 GetX509Certificate2FromString (this string certString)        {            certString = certString.Replace (BEGIN_CERTIFICATE, "");            certString = certString.Replace (END_CERTIFICATE, "");            certString = certString.Trim ();
-            var bytes = Convert.FromBase64String (certString);            return new X509Certificate2 (bytes);        }    }}
+            var bytes = Convert.FromBase64String (certString);            return new X509Certificate2 (bytes);        }    }}

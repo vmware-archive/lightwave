@@ -1,9 +1,17 @@
-// WARNING
-//
-// This file has been generated automatically by Xamarin Studio to store outlets and
-// actions made in the UI designer. If it is removed, they will be lost.
-// Manual changes to this file may not be handled correctly.
-//
+/*
+ * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
 using Foundation;
 using System.CodeDom.Compiler;
 
@@ -37,6 +45,9 @@ namespace RestSsoAdminSnapIn
 		AppKit.NSButton BtnUploadContent { get; set; }
 
 		[Outlet]
+		AppKit.NSButton CbEnablePoviderSelection { get; set; }
+
+		[Outlet]
 		AppKit.NSTableView CertificateTableView { get; set; }
 
 		[Outlet]
@@ -65,6 +76,9 @@ namespace RestSsoAdminSnapIn
 
 		[Outlet]
 		AppKit.NSButton ChkLogonBannerCheckbox { get; set; }
+
+		[Outlet]
+		AppKit.NSTextField DefaultProviderAlias { get; set; }
 
 		[Outlet]
 		AppKit.NSTextField TxtAuthenticationOcspUrlOverride { get; set; }
@@ -188,6 +202,11 @@ namespace RestSsoAdminSnapIn
 			if (BtnSave != null) {
 				BtnSave.Dispose ();
 				BtnSave = null;
+			}
+
+			if (BtnUploadContent != null) {
+				BtnUploadContent.Dispose ();
+				BtnUploadContent = null;
 			}
 
 			if (CertificateTableView != null) {
@@ -385,9 +404,14 @@ namespace RestSsoAdminSnapIn
 				TxtTokenRenewCount = null;
 			}
 
-			if (BtnUploadContent != null) {
-				BtnUploadContent.Dispose ();
-				BtnUploadContent = null;
+			if (DefaultProviderAlias != null) {
+				DefaultProviderAlias.Dispose ();
+				DefaultProviderAlias = null;
+			}
+
+			if (CbEnablePoviderSelection != null) {
+				CbEnablePoviderSelection.Dispose ();
+				CbEnablePoviderSelection = null;
 			}
 		}
 	}

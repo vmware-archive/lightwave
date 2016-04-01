@@ -76,7 +76,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 				var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (_serverDto.ServerName);
 				var service = SnapInContext.Instance.ServiceGateway;
 				var dto = service.Tenant.Search (_serverDto, _tenantName, _domainName, MemberType.USER, SearchType.NAME, auth.Token, searchString);
-				list = dto.Users;// != null ? (dto.Users.Where(x=> !x.Name.Contains("/")).ToList()) : new List<UserDto>();
+				list = dto.Users;
 			});
 			return list;
 		}

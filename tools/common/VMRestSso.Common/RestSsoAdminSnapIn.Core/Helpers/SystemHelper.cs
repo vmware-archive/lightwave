@@ -52,11 +52,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Core.Helpers
             binr.BaseStream.Seek(-1, SeekOrigin.Current);		//last ReadByte wasn't a removed zero, so back up a byte
             return count;
         }
-        public static readonly bool IsMacOSX = CheckPlatform(PlatformID.Unix);
-		public static readonly bool IsWindows = CheckPlatform(PlatformID.Win32NT) ||
-			CheckPlatform(PlatformID.Win32S) ||
-			CheckPlatform(PlatformID.Win32Windows) ||
-			CheckPlatform(PlatformID.WinCE);
+        public static readonly bool IsMacOSX = CheckPlatform(PlatformID.MacOSX);
 
         public static bool CheckPlatform(PlatformID platform)
         {

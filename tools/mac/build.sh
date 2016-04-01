@@ -48,11 +48,17 @@ buildSolution() {
 # pre-build
 nuget restore "VMRestSsoSnapIn/Lightwave SSO.sln"
 
+mkdir -p -m 777 'x64'
+cd 'x64'
+mkdir -p -m 777 $BUILD_CONFIG
+cd ..
+
 # build
 buildSolution VMCASnapIn $BUILD_CONFIG
 buildSolution VMCertStoreSnapIn $BUILD_CONFIG
 buildSolution VMDirSnapIn $BUILD_CONFIG
 buildSolution VMRestSsoSnapIn $BUILD_CONFIG
+buildSolution VMPSCHighAvailabilitySnapIn $BUILD_CONFIG
 
 echo ''
 echo ''

@@ -41,16 +41,12 @@ namespace VMCASnapIn.UI
 
             //set window background color
             this.Window.BackgroundColor = NSColor.FromSrgb (1, 1, (float)1, (float)1);
-            ConnectPopupButton.AddItem ("New Server");
-            ConnectPopupButton.AddItems (VMCAAppEnvironment.Instance.LocalData.GetServerArray ());
         }
 
         partial void OnConnect (Foundation.NSObject sender)
         {
             this.Close ();
             String server = "";
-            if (ConnectPopupButton.SelectedItem.Title != "Add Server")
-                server = ConnectPopupButton.SelectedItem.Title;
             MainWindowController mainWindowController = new MainWindowController (server);
             mainWindowController.Window.MakeKeyAndOrderFront (this);
         }

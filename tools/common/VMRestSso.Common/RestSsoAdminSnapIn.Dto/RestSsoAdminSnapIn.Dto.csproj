@@ -87,7 +87,10 @@
     <Compile Include="ComputerDto.cs" />
     <Compile Include="CredentialsDto.cs" />
     <Compile Include="EncrptionAlgorithm.cs" />
+    <Compile Include="EventLogStatusDto.cs" />
+    <Compile Include="EventLogDto.cs" />
     <Compile Include="ExternalIdentityProviderDto.cs" />
+    <Compile Include="FilterCriteriaDto.cs" />
     <Compile Include="GroupDetailsDto.cs" />
     <Compile Include="GroupDto.cs" />
     <Compile Include="GroupMembershipDto.cs" />
@@ -103,6 +106,7 @@
     <Compile Include="OidcClientMetadataDto.cs" />
     <Compile Include="PasswordDetails.cs" />
     <Compile Include="PasswordPolicyDto.cs" />
+    <Compile Include="PasswordResetRequestDto.cs" />
     <Compile Include="PrincipalDto.cs" />
     <Compile Include="PrivateKeyDto.cs" />
     <Compile Include="PropertyDescriptors\HttpTransportCollectionPropertyDescriptor.cs" />
@@ -132,6 +136,12 @@
     <Compile Include="UserCertificateDto.cs" />
     <Compile Include="UserDto.cs" />
     <Compile Include="UserRole.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\RestSsoAdminSnapIn.Core\RestSsoAdminSnapIn.Core.csproj">
+      <Project>{B64D4A16-C162-4FCD-943A-AEB556769D3C}</Project>
+      <Name>RestSsoAdminSnapIn.Core</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

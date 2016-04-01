@@ -20,10 +20,12 @@ using Foundation;
 using AppKit;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using System.Security.Cryptography.X509Certificates;
+using Vmware.Tools.RestSsoAdminSnapIn.Core.Crypto;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions;
 using Vmware.Tools.RestSsoAdminSnapIn.DataSource;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Helpers;
+using VmIdentity.CommonUtils.Utilities;
 
 namespace RestSsoAdminSnapIn
 {
@@ -87,7 +89,7 @@ namespace RestSsoAdminSnapIn
 					ActionHelper.Execute (delegate() {
 						cert.Import (filePath);
 						_certs.Add(filePath);
-						var certfificateDto = new CertificateDto { Encoded = cert.ToPem(), };
+						var certfificateDto = new CertificateDto { Encoded = cert.ExportToPem(), };
 						TenantDto.Credentials.Certificates.Add(certfificateDto);
 						ReloadCertificates();
 					});
@@ -114,10 +116,17 @@ namespace RestSsoAdminSnapIn
 					var filePath = openPanel.Url.AbsoluteString.Replace("file://",string.Empty);
 
 					ActionHelper.Execute (delegate() {
+						if(ShaWithRsaSigner.IsPrivateKeyValid(filePath))
+						{
 							var text = System.IO.File.ReadAllText(filePath);
 							var privateKey = PrivateKeyHelper.ExtractBase64EncodedPayload(text);
 							TxtPrivateKeyPath.StringValue = filePath;
 							TenantDto.Credentials.PrivateKey = new PrivateKeyDto(){ Algorithm = EncrptionAlgorithm.RSA, Encoded = privateKey };
+						}
+						else
+						{
+							UIErrorHelper.ShowAlert ("Selected private key is not valid", "Alert");
+						}
 					});
 				}
 			};

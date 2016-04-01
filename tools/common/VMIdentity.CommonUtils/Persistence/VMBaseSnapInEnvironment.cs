@@ -22,52 +22,63 @@ namespace VmIdentity.CommonUtils
 {
     public abstract class VMBaseSnapInEnvironment
     {
-        private string DATA_FILE_NAME;
+        protected  string DataFileName { get; set; }
 
         public LocalData LocalData { get; set; }
 
         protected string ApplicationPath;
-        public  static VMBaseSnapInEnvironment _instance;
+        public   static VMBaseSnapInEnvironment instance;
 
-        // public NSWindow MainWindow { get; set; } - define in derived class
+        public abstract string GetApplicationPath();
 
-        public abstract string GetApplicationPath ();
-
-
-        public abstract void SaveLocalData ();
-
-
-        public void SetSnapInDataFileName (string name)
+        public void SetSnapInDataFileName(string name)
         {
-            DATA_FILE_NAME = name;
+            DataFileName = name;
         }
 
-        public string StoreFileName {
-            get {
-                return Path.Combine (ApplicationPath, DATA_FILE_NAME);
-            }
-        }
+        public  abstract string FileNamePath{ get; }
 
-        public void LoadLocalData ()
+        public void LoadLocalData()
         {
-            if (!File.Exists (StoreFileName)) {
-                LocalData = new LocalData ();
-                return;
-            }
-            try {
-                using (var ms = new MemoryStream ()) {
-                    var bytes = File.ReadAllBytes (StoreFileName);
-                    ms.Write (bytes, 0, bytes.Length);
-                    ms.Seek (0, SeekOrigin.Begin);
-                    var xmlSerializer = new XmlSerializer (typeof(LocalData));
-                    LocalData = xmlSerializer.Deserialize (ms) as LocalData;
+            if (FileNamePath != null)
+            {
+                if (!File.Exists(FileNamePath))
+                    LocalData = new LocalData();
+                else
+                {
+                    try
+                    {
+                        using (var ms = new MemoryStream())
+                        {
+                            var bytes = File.ReadAllBytes(FileNamePath);
+                            ms.Write(bytes, 0, bytes.Length);
+                            ms.Seek(0, SeekOrigin.Begin);
+                            var xmlSerializer = new XmlSerializer(typeof(LocalData));
+                            LocalData = xmlSerializer.Deserialize(ms) as LocalData;
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        //Exception during reading or deserializing file - ignore and continue.
+                    }
                 }
-            } catch (Exception) {
             }
         }
 
-
- 
+		/// <summary>
+		/// Saves the local data.
+		/// </summary>
+		public void SaveLocalData ()
+		{
+			try {
+				using (var ms = new MemoryStream ()) {
+					var xmlSerializer = new XmlSerializer (typeof(LocalData));
+					xmlSerializer.Serialize (ms, LocalData);
+					File.WriteAllBytes (FileNamePath, ms.ToArray ());
+				}
+			} catch (Exception) {
+			}
+		}
     }
 }
 

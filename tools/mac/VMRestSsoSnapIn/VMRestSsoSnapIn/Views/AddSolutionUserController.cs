@@ -20,7 +20,7 @@ using System.Security.Cryptography.X509Certificates;
 using Foundation;
 using AppKit;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
-
+using VmIdentity.CommonUtils.Utilities;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 
@@ -86,7 +86,7 @@ namespace RestSsoAdminSnapIn
 				SolutionUserDto = new SolutionUserDto () {
 					Name = TxtUsername.StringValue,
 					Description = TxtDescription.StringValue,
-					Certificate = new CertificateDto { Encoded = cert.ToPem() }
+					Certificate = new CertificateDto { Encoded = cert.ExportToPem() }
 				};
 				this.Close ();
 				NSApplication.SharedApplication.StopModalWithCode (1);

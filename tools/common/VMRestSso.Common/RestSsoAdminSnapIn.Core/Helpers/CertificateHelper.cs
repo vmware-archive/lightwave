@@ -30,8 +30,15 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Core.Security.Certificate
         public static string GetDisplayString(string certString)
         {
             var bytes = Convert.FromBase64String(certString);
-            var x509Certificate2 = new X509Certificate2(bytes);
-            return x509Certificate2.GetDisplayString();
+            var cert = new X509Certificate2(bytes);
+            if (cert != null)
+            {
+                return string.Format("Subject:{0}, Issuer:{1}, Expires:{2}",
+                    cert.SubjectName.Name,
+                    cert.IssuerName.Name,
+                    cert.NotAfter.ToString("MM-dd-yyyy hh:mm:ss"));
+            }
+            return "Invalid certificate";
         }
         public static X509Certificate2 GetX509Certificate2FromString(string certString)
         {

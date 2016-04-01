@@ -47,7 +47,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
             soapString = string.Format(soapString, dt.ToString(format), dtEnd.ToString(format), principalName, pass, dt.ToString(format), dtEnd.ToString(format));
 
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-            //var data = string.Format(ServiceConfigManager.LoginArguments, loginDto.User, loginDto.Pass, loginDto.DomainName, clientId);
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,
@@ -93,8 +92,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
             string dtEndStr = dtEnd.ToString(format);
             soapString = string.Format(soapString, dtStartStr, dtEndStr, certString, samlAssertion[0].OuterXml, dtStartStr, dtEndStr);
 
-            //var rsaKey = PrivateKeyHelper.DecodeRSAPrivateKey(Convert.FromBase64String(keyString));
-            //var rsaKey =  (RSACryptoServiceProvider)cert.PrivateKey;
             signed = SigningHelper.SignXmlFile(soapString, rsaKey);
 
             string xml2 = XmlResourceHelper.GetResourceXml("Vmware.Tools.RestSsoAdminSnapIn.Service.xml.SamlTokenByToken2.xml");

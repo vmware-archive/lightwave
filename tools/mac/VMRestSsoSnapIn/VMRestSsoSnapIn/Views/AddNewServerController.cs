@@ -153,12 +153,6 @@ namespace RestSsoAdminSnapIn
 						TenantName = TxtTenant.StringValue
 					};
 					NSApplication.SharedApplication.StopModalWithCode (1);
-
-//					if(!_changeServer)
-//					{
-//						var mainWindowController = new MainWindowController (ServerDto);
-//						mainWindowController.Window.MakeKeyAndOrderFront (this);
-//					}
 				}
 			});
 		}

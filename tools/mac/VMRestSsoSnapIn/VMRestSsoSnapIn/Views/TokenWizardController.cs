@@ -26,6 +26,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
+using Vmware.Tools.RestSsoAdminSnapIn.Core.Crypto;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Web;
 
 namespace RestSsoAdminSnapIn
@@ -292,12 +293,28 @@ namespace RestSsoAdminSnapIn
 						if (RdoTypeGroup.SelectedTag == 1) {
 							var auth = SnapInContext.Instance.ServiceGateway.Authentication.Login (serverDto, login, Constants.ClientId);
 							PopulateToken (auth);
+						} else if (RdoTypeGroup.SelectedTag == 2) {
+							var cert = new X509Certificate2 (TxtCertificate.StringValue);
+							var rsa = ShaWithRsaSigner.PrivatePemKeyToRSACryptoServiceProvider (TxtPrivateKey.StringValue);
+							var auth = SnapInContext.Instance.ServiceGateway.JwtTokenService.GetTokenFromCertificate (serverDto, cert, rsa);
+							PopulateToken (auth);
 						}
 					} else {
 						if (RdoTypeGroup.SelectedTag == 1) {
 							var auth = SnapInContext.Instance.ServiceGateway.SamlTokenService.Authenticate (serverDto, login, Constants.ClientId);
 							var bytes = Convert.FromBase64String (auth.Token.AccessToken);
 							var token = System.Text.Encoding.Default.GetString (bytes);
+							TxtSamlToken.StringValue = token;
+						} else if (RdoTypeGroup.SelectedTag == 2) {
+							var cert = new X509Certificate2 (TxtCertificate.StringValue);
+							var rsa = ShaWithRsaSigner.PrivatePemKeyToRSACryptoServiceProvider (TxtPrivateKey.StringValue);
+							var token = SnapInContext.Instance.ServiceGateway.SamlTokenService.GetSamlTokenFromCertificate (serverDto, cert, rsa);
+							TxtSamlToken.StringValue = token;
+						} else if (RdoTypeGroup.SelectedTag == 3) {
+							var cert = new X509Certificate2 (TxtCertificate.StringValue);
+							var rsa = ShaWithRsaSigner.PrivatePemKeyToRSACryptoServiceProvider (TxtPrivateKey.StringValue);
+							var tokenText = System.IO.File.ReadAllText (TxtTokenFile.StringValue);
+							var token = SnapInContext.Instance.ServiceGateway.SamlTokenService.GetSamlTokenFromToken (serverDto, tokenText, cert, rsa);
 							TxtSamlToken.StringValue = token;
 						}
 					}
@@ -307,6 +324,7 @@ namespace RestSsoAdminSnapIn
 				{
 					if (CbSaml.StringValue == "1") {
 						if (exp != null && exp.Response != null) {
+							var response = exp.Response as HttpWebResponse;
 							var resp = new StreamReader (exp.Response.GetResponseStream ()).ReadToEnd ();
 							UIErrorHelper.ShowAlert (resp, "Error");
 							return;

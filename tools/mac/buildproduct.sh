@@ -35,6 +35,7 @@ makePkg $CONFIG 'Lightwave CA.app' 'LightwaveCA.pkg'
 makePkg $CONFIG 'Lightwave Certificate Store.app' 'LightwaveCertStore.pkg'
 makePkg $CONFIG 'Lightwave Directory.app' 'LightwaveDirectory.pkg'
 makePkg $CONFIG 'Lightwave SSO.app' 'LightwaveSSO.pkg'
+makePkg $CONFIG 'Lightwave PSC Site Management.app' 'LightwavePSCSiteManagement.pkg'
 
 #generate distribution xml
 productbuild --synthesize \
@@ -42,6 +43,7 @@ productbuild --synthesize \
   --package "x64/$CONFIG/LightwaveCertStore.pkg" \
   --package "x64/$CONFIG/LightwaveDirectory.pkg" \
   --package "x64/$CONFIG/LightwaveSSO.pkg" \
+  --package "x64/$CONFIG/LightwavePSCSiteManagement.pkg" \
   "x64/$CONFIG/Distribution.xml"
 
 #generate installer

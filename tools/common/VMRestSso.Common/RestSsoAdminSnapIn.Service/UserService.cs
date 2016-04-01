@@ -110,18 +110,19 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.User
             return JsonConvert.Deserialize<List<GroupDto>>(response);
         }
 
-        public UserDto UpdatePassword(ServerDto serverDto, string tenantName, UserDto user, string currentPassword, string newPassword, Token token)
+        public UserDto UpdatePassword(ServerDto serverDto, string tenantName, UserDto user,PasswordResetRequestDto requestDto, Token token)
         {
-            var name = Uri.EscapeDataString(user.Name + "@" + user.Domain);
+            var upn = Uri.EscapeDataString(user.Name + "@" + user.Domain);
             tenantName = Uri.EscapeDataString(tenantName);
-            var url = string.Format(ServiceConfigManager.UserPasswordEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName, name, currentPassword, newPassword);
+            var json = JsonConvert.Serialize(requestDto);
+            var url = ServiceConfigManager.UpdatePasswordUrl(serverDto, tenantName, upn);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Put,
             };
             var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
-            var json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
+            json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
             var result = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return JsonConvert.Deserialize<UserDto>(result);
         }

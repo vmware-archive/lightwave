@@ -56,8 +56,9 @@ namespace VMCASnapIn.DTO
             }
         }
 
-        public void Cleanup ()
+        public void Cleanup()
         {
+            VMCAClient.CloseServer();
             _vmcaClient = null;
             IsLoggedIn = false;
             Password = null;

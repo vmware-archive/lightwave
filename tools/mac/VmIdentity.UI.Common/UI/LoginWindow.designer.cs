@@ -1,3 +1,17 @@
+/*
+ * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
 // WARNING
 //
 // This file has been generated automatically by Xamarin Studio to store outlets and
@@ -9,59 +23,72 @@ using System.CodeDom.Compiler;
 
 namespace VmIdentity.UI.Common
 {
-	[Register ("LoginWindowController")]
-	partial class LoginWindowController
-	{
-		[Outlet]
-		AppKit.NSButton CancelButton { get; set; }
+    [Register("LoginWindowController")]
+    partial class LoginWindowController
+    {
+        [Outlet]
+        AppKit.NSButton CancelButton { get; set; }
 
-		[Outlet]
-		AppKit.NSButton OKButton { get; set; }
+        [Outlet]
+        AppKit.NSButton OKButton { get; set; }
 
-		[Outlet]
-		AppKit.NSSecureTextField PasswordTxtField { get; set; }
+        [Outlet]
+        AppKit.NSSecureTextField PasswordTxtField { get; set; }
 
-		[Outlet]
-		AppKit.NSTextField ServerTxtField { get; set; }
+        [Outlet]
+        AppKit.NSComboBox ServerCombo { get; set; }
 
-		[Outlet]
-		AppKit.NSTextField UserNameTxtField { get; set; }
-		
-		void ReleaseDesignerOutlets ()
-		{
-			if (CancelButton != null) {
-				CancelButton.Dispose ();
-				CancelButton = null;
-			}
+        [Outlet]
+        AppKit.NSTextField ServerTxtField { get; set; }
 
-			if (OKButton != null) {
-				OKButton.Dispose ();
-				OKButton = null;
-			}
+        [Outlet]
+        AppKit.NSTextField UserNameTxtField { get; set; }
 
-			if (PasswordTxtField != null) {
-				PasswordTxtField.Dispose ();
-				PasswordTxtField = null;
-			}
+        void ReleaseDesignerOutlets()
+        {
+            if (ServerCombo != null)
+            {
+                ServerCombo.Dispose();
+                ServerCombo = null;
+            }
 
-			if (UserNameTxtField != null) {
-				UserNameTxtField.Dispose ();
-				UserNameTxtField = null;
-			}
+            if (CancelButton != null)
+            {
+                CancelButton.Dispose();
+                CancelButton = null;
+            }
 
-			if (ServerTxtField != null) {
-				ServerTxtField.Dispose ();
-				ServerTxtField = null;
-			}
-		}
-	}
+            if (OKButton != null)
+            {
+                OKButton.Dispose();
+                OKButton = null;
+            }
 
-	[Register ("LoginWindow")]
-	partial class LoginWindow
-	{
-		
-		void ReleaseDesignerOutlets ()
-		{
-		}
-	}
+            if (PasswordTxtField != null)
+            {
+                PasswordTxtField.Dispose();
+                PasswordTxtField = null;
+            }
+
+            if (ServerTxtField != null)
+            {
+                ServerTxtField.Dispose();
+                ServerTxtField = null;
+            }
+
+            if (UserNameTxtField != null)
+            {
+                UserNameTxtField.Dispose();
+                UserNameTxtField = null;
+            }
+        }
+    }
+
+    [Register("LoginWindow")]
+    partial class LoginWindow
+    {
+        void ReleaseDesignerOutlets()
+        {
+        }
+    }
 }

@@ -22,48 +22,60 @@ namespace VmIdentity.CommonUtils.Persistance
     public class LocalData
     {
         [XmlIgnoreAttribute]
-        Queue<string> _servers = new Queue<string> ();
+        Queue<string> _servers = new Queue<string>();
 
         [XmlIgnoreAttribute]
         public Queue<string> ServerQueue { get { return _servers; } set { _servers = value; } }
 
-        public List<string> SerializableList = new List<string> ();
+        public List<string> SerializableList = new List<string>();
 
         // Currently upto 3 recent servers are supported.
         public int CacheSize = 3;
+        private bool isQueueLoaded = false;
 
-        public LocalData ()
+        public LocalData()
         {
-            FillServerQueue ();
         }
 
-        public void AddServer (string server)
+        public void AddServer(string server)
         {
-            try {
-                var match = SerializableList.FirstOrDefault (stringToCheck => stringToCheck.Contains (server));
-                if (match == null) {
-                    if (ServerQueue.Count >= CacheSize) {
-                        string item = ServerQueue.Dequeue ();
-                        SerializableList.Remove (item);
+            try
+            {
+                var match = SerializableList.FirstOrDefault(stringToCheck => stringToCheck.Contains(server));
+                if (match == null)
+                {
+                    if (ServerQueue.Count >= CacheSize)
+                    {
+                        string item = ServerQueue.Dequeue();
+                        SerializableList.Remove(item);
                     }
-                    ServerQueue.Enqueue (server);
-                    SerializableList.Add (server);
+                    ServerQueue.Enqueue(server);
+                    SerializableList.Add(server);
                 }
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 throw e;
             }
         }
 
-        public string[] GetServerArray ()
+        public string[] GetServerArray()
         {
-            FillServerQueue ();
-            return ServerQueue.ToArray ();
+            if (!isQueueLoaded)
+            {
+                FillServerQueue();
+                isQueueLoaded = true;
+            }
+
+            return ServerQueue.ToArray();
+
         }
 
-        public void FillServerQueue ()
+        public void FillServerQueue()
         {
-            foreach (var item in SerializableList) {
-                ServerQueue.Enqueue (item);
+            foreach (var item in SerializableList)
+            {
+                ServerQueue.Enqueue(item);
             }
         }
     }

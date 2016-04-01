@@ -66,8 +66,7 @@ namespace VMCA.Client
                     yield break;
 
                 string certString = Marshal.PtrToStringAnsi (pCert);
-                error = VMCAAdaptor.VMCAFreeCertificate (pCert);
-                VMCAError.Check (error);
+                VMCAAdaptor.VMCAFreeCertificate (pCert);
 
                 var cert = new X509Certificate2 (ASCIIEncoding.ASCII.GetBytes (certString));
                 yield return cert;

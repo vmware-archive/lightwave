@@ -58,6 +58,9 @@ namespace RestSsoAdminSnapIn
 		RestSsoAdminSnapIn.ActivatableToolBarItem SearchToolbarItem { get; set; }
 
 		[Outlet]
+		RestSsoAdminSnapIn.ActivatableToolBarItem SuperLoggingToolbarItem { get; set; }
+
+		[Outlet]
 		RestSsoAdminSnapIn.ActivatableToolBarItem TenantConfigToolbarItem { get; set; }
 
 		[Outlet]
@@ -129,6 +132,11 @@ namespace RestSsoAdminSnapIn
 			if (DetailedCustomView != null) {
 				DetailedCustomView.Dispose ();
 				DetailedCustomView = null;
+			}
+
+			if (SuperLoggingToolbarItem != null) {
+				SuperLoggingToolbarItem.Dispose ();
+				SuperLoggingToolbarItem = null;
 			}
 
 			if (ForwardToolbarItem != null) {

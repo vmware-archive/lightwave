@@ -60,11 +60,6 @@ namespace RestSsoAdminSnapIn
 		}
 		public void ReloadTableView(NSTableView tableView, List<HttpTransportViewData> datasource, HttpTransportCollection collection)
 		{
-//			tableView.Delegate = new TableDelegate (this);
-//			var listView = new HttpTransportDataSource { Entries = datasource };
-//			tableView.DataSource = listView;
-//			tableView.ReloadData ();
-
 			foreach(NSTableColumn column in tableView.TableColumns())
 			{
 				tableView.RemoveColumn (column);

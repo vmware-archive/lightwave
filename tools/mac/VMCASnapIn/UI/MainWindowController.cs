@@ -114,15 +114,18 @@ namespace VMCASnapIn.UI
         {
             ProgressWindowController pwc = new ProgressWindowController ();
             IntPtr session = new IntPtr (0);
-            LoginWindowController lwc = new LoginWindowController (server);
+            string[] servers = VMCAAppEnvironment.Instance.LocalData.GetServerArray ();
+            LoginWindowController lwc = new LoginWindowController (servers);
             NSApplication.SharedApplication.BeginSheet (lwc.Window, this.Window, () => {
             });
             nint result = NSApplication.SharedApplication.RunModalForWindow (lwc.Window);
             try {
                 if (result == (nint)Constants.DIALOGOK) {
-                    
                     this.Initialise (lwc.Server);
                     Servernode.ServerDTO.Server = lwc.Server;
+                    Servernode.ServerDTO.DomainName = lwc.DomainName;
+                    Servernode.ServerDTO.UserName = lwc.UserName;
+                    Servernode.ServerDTO.Password = lwc.Password;
                     NSApplication.SharedApplication.BeginSheet (pwc.Window, this.Window as NSWindow, () => {
                     });
                     session = NSApplication.SharedApplication.BeginModalSession (pwc.Window);
