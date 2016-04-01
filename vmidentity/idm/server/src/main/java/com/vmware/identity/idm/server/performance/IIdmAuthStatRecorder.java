@@ -17,6 +17,8 @@
 package com.vmware.identity.idm.server.performance;
 
 import java.util.List;
+import java.util.Map;
+
 import com.vmware.identity.performanceSupport.ILdapQueryStat;
 
 public interface IIdmAuthStatRecorder {
@@ -25,6 +27,8 @@ public interface IIdmAuthStatRecorder {
     public void add(List<ILdapQueryStat> ldapQueries);
 
     public void add(ILdapQueryStat ldapQuery);
+
+    public void add(Map<String, String> ext);
 
     public void end();
 

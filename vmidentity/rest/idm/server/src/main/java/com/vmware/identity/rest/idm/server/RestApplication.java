@@ -25,6 +25,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.rest.core.server.authorization.filter.AuthorizationRequestFilter;
+import com.vmware.identity.rest.core.server.filter.ContextFilter;
 
 /**
  * Base application for IDM REST.
@@ -47,10 +48,14 @@ public class RestApplication extends ResourceConfig {
         // Register resources and providers under com.vmware.identity.rest.idm.server
         packages(true, "com.vmware.identity.rest.idm.server");
 
+        // Register the Context Filter
+        register(ContextFilter.class);
+
         // Register LoggingFilter with optional entity logging
         Logger log = Logger.getLogger(RestApplication.class.getName());
         boolean entityLog = Boolean.parseBoolean(System.getProperty(ENTITY_LOG_PROPERTY, "false"));
-        register(new LoggingFilter(log, entityLog));
+        // Register the LoggingFilter so it occurs after the ContextFilter so Correlation ID works correctly
+        register(new LoggingFilter(log, entityLog), Integer.MIN_VALUE + 1);
 
         // Register Authorization Provider
         register(AuthorizationRequestFilter.class);

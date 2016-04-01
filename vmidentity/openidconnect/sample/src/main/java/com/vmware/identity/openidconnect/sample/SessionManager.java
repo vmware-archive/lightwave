@@ -16,27 +16,37 @@ package com.vmware.identity.openidconnect.sample;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.lang3.Validate;
+
 import com.vmware.identity.openidconnect.client.OIDCTokens;
+import com.vmware.identity.openidconnect.common.SessionID;
 
 /**
  * @author Yehia Zayour
  */
 public class SessionManager {
-    private final ConcurrentHashMap<String, OIDCTokens> map;
+    private final ConcurrentHashMap<SessionID, OIDCTokens> map;
 
     public SessionManager() {
-        this.map = new ConcurrentHashMap<String, OIDCTokens>();
+        this.map = new ConcurrentHashMap<SessionID, OIDCTokens>();
     }
 
-    public void add(String sessionId, OIDCTokens tokens) {
+    public void add(SessionID sessionId, OIDCTokens tokens) {
+        Validate.notNull(sessionId, "sessionId");
+        Validate.notNull(tokens, "tokens");
+        if (this.map.contains(sessionId)) {
+            throw new IllegalArgumentException("already has this sessionId: " + sessionId);
+        }
         this.map.put(sessionId, tokens);
     }
 
-    public void remove(String sessionId) {
-        this.map.remove(sessionId);
+    public OIDCTokens remove(SessionID sessionId) {
+        Validate.notNull(sessionId, "sessionId");
+        return this.map.remove(sessionId);
     }
 
-    public OIDCTokens get(String sessionId) {
+    public OIDCTokens get(SessionID sessionId) {
+        Validate.notNull(sessionId, "sessionId");
         return this.map.get(sessionId);
     }
 }

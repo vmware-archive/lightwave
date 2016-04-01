@@ -34,11 +34,10 @@ import com.vmware.identity.interop.registry.RegistryAdapterFactory;
 
 public class IdmLoginManager implements ILoginManager {
 
-    private static final String SECRET_FILE = "ssoserver.p12";
-    private static final String LINUX_SECRET_FILE = "ssoserverSign.key";
+    private static final String SECRET_FILE = "idmlogin.txt";
     private static final String WIN_REG_PATH = "SOFTWARE\\VMware, Inc.\\VMware Identity Services";
-    private static final String WIN_REG_KEY = "ConfigPath";
-    private static final String LINUX_FILE_PATH = "/etc/vmware-sso/keys/";
+    private static final String WIN_REG_KEY = "InstallPath";
+    private static final String LINUX_FILE_PATH = "/opt/vmware/lib64/";
     private IdentityManager server = null;
     private final String serverHash;
 
@@ -82,8 +81,7 @@ public class IdmLoginManager implements ILoginManager {
         try {
             String configPath = regAdapter.getStringValue(rootKey, WIN_REG_PATH,
                     WIN_REG_KEY, false);
-            String path = configPath.concat("keys\\");
-            return new File(path.concat(SECRET_FILE));
+            return new File(configPath.concat(SECRET_FILE));
         } finally {
             if(rootKey != null)
             rootKey.close();
@@ -92,6 +90,6 @@ public class IdmLoginManager implements ILoginManager {
 
     private File getSecretFileLinux() {
         String filePath = LINUX_FILE_PATH;
-        return new File(filePath.concat(LINUX_SECRET_FILE));
+        return new File(filePath.concat(SECRET_FILE));
     }
 }

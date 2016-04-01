@@ -20,7 +20,7 @@ import com.vmware.identity.idm.client.IServiceContextProvider;
 
 public class ClientFactory {
 
-    public static final String LOCAL_HOST = "127.0.0.1";
+    public static final String LOCAL_HOST = "localhost";
 
     private static String host = LOCAL_HOST;
 

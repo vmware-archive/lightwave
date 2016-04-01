@@ -24,6 +24,7 @@ SRCROOT=..
 
 CLEAN_OBJECTS = \
     admin-interfaces \
+    tomcat-extensions \
     config \
     depends \
     diagnostics \
@@ -47,6 +48,7 @@ CLEAN_OBJECTS = \
     wstauthz \
     sts \
     wsTrustClient \
+    install \
     $(SRCROOT)/aclocal.m4 \
     $(SRCROOT)/ar-lib \
     $(SRCROOT)/autom4te.cache \

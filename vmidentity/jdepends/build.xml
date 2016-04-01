@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Copyright 2011 VMware, Inc. All rights reserved. VMware confidential.
+  Copyright 2011 VMware, Inc. All rights reserved.
 -->
 <project name="vmware-identity-depends" default="build" basedir=".">
 
@@ -20,7 +20,8 @@
        <resources>
 
           <!-- CORE (COMPILE_TIME + RUN_TIME)DEPENDENCIES -->
-
+           <url url="http://central.maven.org/maven2/com/sun/xml/bind/jaxb-core/2.2.10/jaxb-core-2.2.10.jar" />
+           <url url="http://central.maven.org/maven2/org/apache/tomcat/tomcat-coyote/7.0.26/tomcat-coyote-7.0.26.jar" />
            <url url="http://central.maven.org/maven2/javax/activation/activation/1.1.1/activation-1.1.1.jar" />           
 	   <url url="http://central.maven.org/maven2/com/sun/net/httpserver/http/20070405/http-20070405.jar" />
 	   <url url="http://central.maven.org/maven2/javax/xml/jsr173/1.0/jsr173-1.0.jar" />

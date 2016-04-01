@@ -22,15 +22,22 @@ import java.io.Serializable;
  * AuthnPolicy specifies the allowed client authentication methods
  * @author qiangw
  */
+/**
+ * @author root
+ *
+ */
 public class AuthnPolicy implements Serializable {
 
     private static final long serialVersionUID = 3313553465520313163L;
 
-    private boolean _passwordAuthEnabled;
-    private boolean _windowsAuthEnabled;
-    private boolean _certAuthEnabled;
-    private ClientCertPolicy _clientCertPolicy;
+    private final boolean _passwordAuthEnabled;
+    private final boolean _windowsAuthEnabled;
+    private final boolean _certAuthEnabled;
+    private final boolean _rsaSecureIDAuthnEnabled;
 
+    private final ClientCertPolicy _clientCertPolicy;
+
+    private RSAAgentConfig _rsaAgentConfig;
     /**
      * Constructor of AuthnPolicy
      * @param password
@@ -43,7 +50,27 @@ public class AuthnPolicy implements Serializable {
         this._passwordAuthEnabled = password;
         this._windowsAuthEnabled = windows;
         this._certAuthEnabled = cert;
+        this._rsaSecureIDAuthnEnabled = false;
         this._clientCertPolicy = certPolicy;
+        this._rsaAgentConfig = null;
+    }
+
+    /**
+     * Constructor of AuthnPolicy
+     * @param password
+     * @param windows
+     * @param cert
+     * @param rsaSecureID
+     * @param certPolicy, can be set to null
+     */
+    public AuthnPolicy(boolean password, boolean windows, boolean cert,boolean rsaSecureID,
+            ClientCertPolicy certPolicy, RSAAgentConfig rsaConfig) {
+        this._passwordAuthEnabled = password;
+        this._windowsAuthEnabled = windows;
+        this._certAuthEnabled = cert;
+        this._rsaSecureIDAuthnEnabled = rsaSecureID;
+        this._clientCertPolicy = certPolicy;
+        this._rsaAgentConfig = rsaConfig;
     }
 
     /**
@@ -75,4 +102,20 @@ public class AuthnPolicy implements Serializable {
     public ClientCertPolicy getClientCertPolicy() {
         return this._clientCertPolicy;
     }
+
+    /**
+     * @return if rsa secureID authenticatin enabled.
+     */
+    public boolean IsRsaSecureIDAuthnEnabled() {
+        return _rsaSecureIDAuthnEnabled;
+    }
+
+    public RSAAgentConfig get_rsaAgentConfig() {
+        return _rsaAgentConfig;
+    }
+
+    public void set_rsaAgentConfigs(RSAAgentConfig _rsaAgentConfig) {
+        this._rsaAgentConfig = _rsaAgentConfig;
+    }
+
 }

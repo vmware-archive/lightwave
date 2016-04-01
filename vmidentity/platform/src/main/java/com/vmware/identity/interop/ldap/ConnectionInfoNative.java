@@ -18,16 +18,23 @@ import java.util.List;
 
 import com.sun.jna.Structure;
 
-//typedef struct _SecPkgContext_ConnectionInfo {
-//    DWORD  dwProtocol;
-//    ALG_ID aiCipher;
-//    DWORD  dwCipherStrength;
-//    ALG_ID aiHash;
-//    DWORD  dwHashStrength;
-//    ALG_ID aiExch;
-//    DWORD  dwExchStrength;
-//}
-
+/**
+ * This class is mapping to the native SecPkgContext_ConnectionInfo structure used to return the security information.
+ * The structure is used by the InitializeSecurityContext (Schannel) function.
+ * The the native structure:
+ * <pre>
+ * typedef struct _SecPkgContext_ConnectionInfo {
+ *  DWORD  dwProtocol;
+ *  ALG_ID aiCipher;
+ *  DWORD  dwCipherStrength;
+ *  ALG_ID aiHash;
+ *  DWORD  dwHashStrength;
+ *  ALG_ID aiExch;
+ *  DWORD  dwExchStrength;
+ *  }
+ * </pre>
+ *
+ */
 public class ConnectionInfoNative extends Structure {
 
     public int dwProtocol;

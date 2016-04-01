@@ -27,7 +27,7 @@ import com.vmware.identity.rest.idm.data.ProviderPolicyDTO;
  */
 public class ProviderPolicyMapper {
 
-    public static ProviderPolicyDTO getProviderPolicyDTO(Collection<String> defaultProviders) {
+    public static ProviderPolicyDTO getProviderPolicyDTO(Collection<String> defaultProviders, String defaultProviderAlias, boolean providerSelectionEnabled) {
         if (defaultProviders == null || defaultProviders.size() > 1) {
             // We never expect more than one default identity providers set per tenant.
             throw new DTOMapperException("Failed to map provider policy");
@@ -39,7 +39,9 @@ public class ProviderPolicyMapper {
             defaultProvider = defaultProviders.iterator().next();
         }
 
-        return ProviderPolicyDTO.builder().withDefaultProvider(defaultProvider).build();
+        return ProviderPolicyDTO.builder().withDefaultProvider(defaultProvider)
+                                          .withDefaultProvider(defaultProviderAlias)
+                                          .withProviderSelectionEnabled(new Boolean(providerSelectionEnabled)).build();
     }
 
 }
