@@ -15,10 +15,10 @@
 package com.vmware.identity.openidconnect.server;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 import javax.servlet.http.HttpServletResponse;
 
-import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
@@ -29,39 +29,64 @@ import org.junit.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.jwk.KeyUse;
-import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
+import com.vmware.identity.openidconnect.common.JSONUtils;
 
 /**
  * @author Jun Sun
+ * @author Yehia Zayour
  */
 public class MetadataControllerTest {
-
     private static MetadataController metadataController;
     private static String tenant;
-    private static String issuer;
     private static String nonExistTenant;
+    private static String issuer;
 
     @BeforeClass
     public static void setUp() throws Exception {
         TestContext.initialize();
         metadataController = new MetadataController(TestContext.idmClient());
         tenant = TestContext.TENANT_NAME;
-        issuer = TestContext.ISSUER;
         nonExistTenant = "tenant_not_exist";
+        issuer = TestContext.ISSUER;
     }
 
     @Test
     public void testMetadataSuccess() throws IOException, ParseException {
-
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setMethod("GET");
 
         MockHttpServletResponse response = new MockHttpServletResponse();
         metadataController.metadata(request, response, tenant);
 
+        validateSuccessResponse(response);
+    }
+
+    @Test
+    public void testMetadataSuccessDefaultTenant() throws IOException, ParseException {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setMethod("GET");
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        metadataController.metadata(request, response);
+
+        validateSuccessResponse(response);
+    }
+
+    @Test
+    public void testMetadataNonExistentTenant() throws IOException, ParseException, com.vmware.identity.openidconnect.common.ParseException {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setMethod("GET");
+        request.setServerName("abc.com");
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        metadataController.metadata(request, response, nonExistTenant);
+
+        Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, response.getStatus());
+        Assert.assertEquals("invalid_request", JSONUtils.parseJSONObject(response.getContentAsString()).get("error"));
+        Assert.assertEquals("non-existent tenant", JSONUtils.parseJSONObject(response.getContentAsString()).get("error_description"));
+    }
+
+    private static void validateSuccessResponse(MockHttpServletResponse response) throws UnsupportedEncodingException, ParseException {
         JSONParser jsonParser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
         JSONObject jsonObject = (JSONObject) jsonParser.parse(response.getContentAsString());
 
@@ -72,69 +97,15 @@ public class MetadataControllerTest {
         String actualEndSessionEndpoint = (String) jsonObject.get("end_session_endpoint");
 
         String expectedIssuer = issuer;
-        String expectedJwksURI = Shared.replaceLast(issuer, tenant, "jwks/" + tenant);
-        String expectedAuthzEndpoint = Shared.replaceLast(issuer, tenant, "oidc/authorize/" + tenant);
-        String expectedTokenEndpoint = Shared.replaceLast(issuer, tenant, "token/" + tenant);
-        String expectedEndSessionEndpoint = Shared.replaceLast(issuer, tenant, "logout/" + tenant);
+        String expectedJwksURI = TestContext.JWKS_ENDPOINT_URI.toString();
+        String expectedAuthzEndpoint = TestContext.AUTHZ_ENDPOINT_URI.toString();
+        String expectedTokenEndpoint = TestContext.TOKEN_ENDPOINT_URI.toString();
+        String expectedEndSessionEndpoint = TestContext.LOGOUT_ENDPOINT_URI.toString();
 
         Assert.assertEquals(expectedIssuer, actualIssuer);
         Assert.assertEquals(expectedJwksURI, actualJwksURI);
         Assert.assertEquals(expectedAuthzEndpoint, actualAuthzEndpoint);
         Assert.assertEquals(expectedTokenEndpoint, actualTokenEndpoint);
         Assert.assertEquals(expectedEndSessionEndpoint, actualEndSessionEndpoint);
-
-        // TODO: validate other fields
-    }
-
-    @Test
-    public void testJwksSuccess() throws IOException, ParseException {
-
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setMethod("GET");
-        request.setServerName("abc.com");
-
-        MockHttpServletResponse response = new MockHttpServletResponse();
-        metadataController.jwks(request, response, tenant);
-
-        JSONParser jsonParser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
-        JSONObject jsonObject = (JSONObject) jsonParser.parse(response.getContentAsString());
-
-        JSONArray jsonArray = (JSONArray) jsonObject.get("keys");
-        JSONObject jwk = (JSONObject) jsonArray.get(0);
-
-        String alg = (String) jwk.get("alg");
-        String use = (String) jwk.get("use");
-        String e = (String) jwk.get("e");
-        String n = (String) jwk.get("n");
-
-        RSAKey rsaKey = new RSAKey(
-                TestContext.TENANT_PUBLIC_KEY,
-                KeyUse.SIGNATURE,
-                null,
-                JWSAlgorithm.RS256,
-                null,
-                null,
-                null,
-                null);
-
-        Assert.assertEquals("RS256", alg);
-        Assert.assertEquals("sig", use);
-        Assert.assertEquals(rsaKey.getPublicExponent().toString(), e);
-        Assert.assertEquals(rsaKey.getModulus().toString(), n);
-    }
-
-    @Test
-    public void testJwksNoSuchTenantException() throws IOException, ParseException, com.nimbusds.oauth2.sdk.ParseException {
-
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setMethod("GET");
-        request.setServerName("abc.com");
-
-        MockHttpServletResponse response = new MockHttpServletResponse();
-        metadataController.jwks(request, response, nonExistTenant);
-
-        Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, response.getStatus());
-        Assert.assertEquals("invalid_request", JSONObjectUtils.parseJSONObject(response.getContentAsString()).get("error"));
-        Assert.assertEquals("non-existent tenant", JSONObjectUtils.parseJSONObject(response.getContentAsString()).get("error_description"));
     }
 }

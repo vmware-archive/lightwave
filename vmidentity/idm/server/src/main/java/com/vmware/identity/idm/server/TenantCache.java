@@ -24,10 +24,16 @@ import java.util.Hashtable;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.vmware.identity.idm.RSAAgentConfig;
+
 public class TenantCache
 {
     private ReentrantReadWriteLock                _tenantLookupLock;
     private Dictionary<String, TenantInformation> _tenantLookup;
+
+    //this setting reflect what is persisted on local server. It could be lagging behind a refreshed tenantInformation
+    private ReentrantReadWriteLock             _extRsaAgentConfigLookupLock;
+    private Dictionary<String, RSAAgentConfig> _extRsaAgentConfigLookup;
 
     private ReentrantReadWriteLock   _defaultTenantLock;
     private String _defaultTenant;
@@ -45,6 +51,9 @@ public class TenantCache
 
         _systemTenantLock = new ReentrantReadWriteLock();
         _systemTenant = null;
+
+        _extRsaAgentConfigLookupLock = new ReentrantReadWriteLock();
+        _extRsaAgentConfigLookup = new Hashtable<String, RSAAgentConfig>();
     }
 
     public TenantInformation findTenant(String name)
@@ -195,4 +204,55 @@ public class TenantCache
             readLock.unlock();
         }
     }
+
+    public RSAAgentConfig findExtRsaConfig(String name)
+    {
+        final Lock readLock = _extRsaAgentConfigLookupLock.readLock();
+
+        readLock.lock();
+
+        try
+        {
+            return _extRsaAgentConfigLookup.get(name);
+        }
+        finally
+        {
+            readLock.unlock();
+        }
+    }
+
+    public void addExtRsaConfig(String tenantName, RSAAgentConfig config)
+    {
+        final Lock writeLock = _extRsaAgentConfigLookupLock.writeLock();
+
+        writeLock.lock();
+
+        try
+        {
+            if (null != config && null != tenantName && !tenantName.isEmpty()) {
+                _extRsaAgentConfigLookup.put(tenantName, config);
+            }
+        }
+        finally
+        {
+            writeLock.unlock();
+        }
+    }
+
+    public void deleteExtRsaConfig(String name)
+    {
+        final Lock writeLock = _extRsaAgentConfigLookupLock.writeLock();
+
+        writeLock.lock();
+
+        try
+        {
+            _extRsaAgentConfigLookup.remove(name);
+        }
+        finally
+        {
+            writeLock.unlock();
+        }
+    }
+
 }

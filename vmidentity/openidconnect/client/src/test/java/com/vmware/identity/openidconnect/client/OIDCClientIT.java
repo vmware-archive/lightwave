@@ -14,6 +14,11 @@
 
 package com.vmware.identity.openidconnect.client;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -29,39 +34,21 @@ public class OIDCClientIT extends OIDCClientITBase {
         setUp("config.properties");
     }
 
-    // NonRegNoHOKConfigClient, PasswordCredentialsGrant
+    // NonRegNoHOKConfigClient, PasswordGrant
     @Test
     public void testNonRegNoHOKConfigClientGetBearerWithRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 nonRegNoHOKConfigClient,
-                passwordCredentialsGrant,
-                bearerWithRefreshSpec);
+                passwordGrant,
+                withRefreshSpec);
     }
 
     @Test
     public void testNonRegNoHOKConfigClientGetBearerWithoutRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokens(
                 nonRegNoHOKConfigClient,
-                passwordCredentialsGrant,
-                bearerWithoutRefreshSpec);
-    }
-
-    @Test
-    public void testNonRegNoHOKConfigClientGetHOKWithRefreshByPasswordCredentialsGrant() throws Exception {
-        TestUtils.verifyOIDCClientException(
-                nonRegNoHOKConfigClient,
-                passwordCredentialsGrant,
-                hokWithRefreshSpec,
-                "Holder of key configuation can not be null if HOK token is requested.");
-    }
-
-    @Test
-    public void testNonRegNoHOKConfigClientGetHOKWithoutRefreshByPasswordCredentialsGrant() throws Exception {
-        TestUtils.verifyOIDCClientException(
-                nonRegNoHOKConfigClient,
-                passwordCredentialsGrant,
-                hokWithoutRefreshSpec,
-                "Holder of key configuation can not be null if HOK token is requested.");
+                passwordGrant,
+                withoutRefreshSpec);
     }
 
     // NonRegNoHOKConfigClient, SolutionUserCredentialsGrant
@@ -70,8 +57,8 @@ public class OIDCClientIT extends OIDCClientITBase {
         TestUtils.verifyOIDCClientException(
                 nonRegNoHOKConfigClient,
                 solutionUserCredentialsGrant,
-                bearerWithRefreshSpec,
-                "Solution user credentials grant requires an non-null solution assertion.");
+                withRefreshSpec,
+                "Solution user credentials grant requires an non-null solution user assertion.");
     }
 
     @Test
@@ -79,26 +66,8 @@ public class OIDCClientIT extends OIDCClientITBase {
         TestUtils.verifyOIDCClientException(
                 nonRegNoHOKConfigClient,
                 solutionUserCredentialsGrant,
-                bearerWithoutRefreshSpec,
-                "Solution user credentials grant requires an non-null solution assertion.");
-    }
-
-    @Test
-    public void testNonRegNoHOKConfigClientGetHOKWithRefreshBySolutionUserCredentialsGrant() throws Exception {
-        TestUtils.verifyOIDCClientException(
-                nonRegNoHOKConfigClient,
-                solutionUserCredentialsGrant,
-                hokWithRefreshSpec,
-                "Holder of key configuation can not be null if HOK token is requested.");
-    }
-
-    @Test
-    public void testNonRegNoHOKConfigClientGetHOKWithoutRefreshBySolutionUserCredentialsGrant() throws Exception {
-        TestUtils.verifyOIDCClientException(
-                nonRegNoHOKConfigClient,
-                solutionUserCredentialsGrant,
-                hokWithoutRefreshSpec,
-                "Holder of key configuation can not be null if HOK token is requested.");
+                withoutRefreshSpec,
+                "Solution user credentials grant requires an non-null solution user assertion.");
     }
 
     // NonRegNoHOKConfigClient, ClientCredentialsGrant
@@ -107,7 +76,7 @@ public class OIDCClientIT extends OIDCClientITBase {
         TestUtils.verifyOIDCClientException(
                 nonRegNoHOKConfigClient,
                 clientCredentialsGrant,
-                bearerWithRefreshSpec,
+                withRefreshSpec,
                 "Client credentials grant requires an non-null client assertion.");
     }
 
@@ -116,95 +85,50 @@ public class OIDCClientIT extends OIDCClientITBase {
         TestUtils.verifyOIDCClientException(
                 nonRegNoHOKConfigClient,
                 clientCredentialsGrant,
-                bearerWithoutRefreshSpec,
+                withoutRefreshSpec,
                 "Client credentials grant requires an non-null client assertion.");
     }
 
-    @Test
-    public void testNonRegNoHOKConfigClientGetHOKWithRefreshByClientCredentialsGrant() throws Exception {
-        TestUtils.verifyOIDCClientException(
-                nonRegNoHOKConfigClient,
-                clientCredentialsGrant,
-                hokWithRefreshSpec,
-                "Holder of key configuation can not be null if HOK token is requested.");
-    }
-
-    @Test
-    public void testNonRegNoHOKConfigClientGetHOKWithoutRefreshByClientCredentialsGrant() throws Exception {
-        TestUtils.verifyOIDCClientException(
-                nonRegNoHOKConfigClient,
-                clientCredentialsGrant,
-                hokWithoutRefreshSpec,
-                "Holder of key configuation can not be null if HOK token is requested.");
-    }
-
-    // NonRegHOKConfigClient, PasswordCredentialsGrant
+    // NonRegHOKConfigClient, PasswordGrant
     @Test
     public void testNonRegHOKConfigClientGetBearerWithRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 nonRegHOKConfigClient,
-                passwordCredentialsGrant,
-                bearerWithRefreshSpec);
+                passwordGrant,
+                withRefreshSpec);
     }
 
     @Test
     public void testNonRegHOKConfigClientGetBearerWithoutRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokens(
                 nonRegHOKConfigClient,
-                passwordCredentialsGrant,
-                bearerWithoutRefreshSpec);
+                passwordGrant,
+                withoutRefreshSpec);
     }
 
     @Test
     public void testNonRegHOKConfigClientGetHOKWithRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 nonRegHOKConfigClient,
-                passwordCredentialsGrant,
-                hokWithRefreshSpec);
+                passwordGrant,
+                withRefreshSpec);
     }
 
     @Test
     public void testNonRegHOKConfigClientGetHOKWithoutRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokens(
                 nonRegHOKConfigClient,
-                passwordCredentialsGrant,
-                hokWithoutRefreshSpec);
+                passwordGrant,
+                withoutRefreshSpec);
     }
 
     // NonRegHOKConfigClient, SolutionUserCredentialsGrant
-    @Test
-    public void testNonRegHOKConfigClientGetBearerWithRefreshBySolutionUserCredentialsGrant() throws Exception {
-        TestUtils.verifyOIDCClientException(
-                nonRegHOKConfigClient,
-                solutionUserCredentialsGrant,
-                bearerWithRefreshSpec,
-                "Solution user credentials grant requires an non-null solution assertion.");
-    }
-
-    @Test
-    public void testNonRegHOKConfigClientGetBearerWithoutRefreshBySolutionUserCredentialsGrant() throws Exception {
-        TestUtils.verifyOIDCClientException(
-                nonRegHOKConfigClient,
-                solutionUserCredentialsGrant,
-                bearerWithoutRefreshSpec,
-                "Solution user credentials grant requires an non-null solution assertion.");
-    }
-
-    @Test
-    public void testNonRegHOKConfigClientGetHOKWithRefreshBySolutionUserCredentialsGrant() throws Exception {
-        TestUtils.verifyOIDCServerException(
-                nonRegHOKConfigClient,
-                solutionUserCredentialsGrant,
-                hokWithRefreshSpec,
-                "Server error response. Error code: invalid_scope; Error description: refresh token (offline_access) is not allowed for this grant_type.");
-    }
-
     @Test
     public void testNonRegHOKConfigClientGetHOKWithoutRefreshBySolutionUserCredentialsGrant() throws Exception {
         TestUtils.verifyTokens(
                 nonRegHOKConfigClient,
                 solutionUserCredentialsGrant,
-                hokWithoutRefreshSpec);
+                withoutRefreshSpec);
     }
 
     // NonRegHOKConfigClient, ClientCredentialsGrant
@@ -213,7 +137,7 @@ public class OIDCClientIT extends OIDCClientITBase {
         TestUtils.verifyOIDCClientException(
                 nonRegHOKConfigClient,
                 clientCredentialsGrant,
-                bearerWithRefreshSpec,
+                withRefreshSpec,
                 "Client credentials grant requires an non-null client assertion.");
     }
 
@@ -222,7 +146,7 @@ public class OIDCClientIT extends OIDCClientITBase {
         TestUtils.verifyOIDCClientException(
                 nonRegHOKConfigClient,
                 clientCredentialsGrant,
-                bearerWithoutRefreshSpec,
+                withoutRefreshSpec,
                 "Client credentials grant requires an non-null client assertion.");
     }
 
@@ -231,7 +155,7 @@ public class OIDCClientIT extends OIDCClientITBase {
         TestUtils.verifyOIDCClientException(
                 nonRegHOKConfigClient,
                 clientCredentialsGrant,
-                hokWithRefreshSpec,
+                withRefreshSpec,
                 "Client credentials grant requires an non-null client assertion.");
     }
 
@@ -240,41 +164,41 @@ public class OIDCClientIT extends OIDCClientITBase {
         TestUtils.verifyOIDCClientException(
                 nonRegHOKConfigClient,
                 clientCredentialsGrant,
-                hokWithoutRefreshSpec,
+                withoutRefreshSpec,
                 "Client credentials grant requires an non-null client assertion.");
     }
 
-    // RegClient, PasswordCredentialsGrant
+    // RegClient, PasswordGrant
     @Test
     public void testRegClientGetBearerWithRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 regClient,
-                passwordCredentialsGrant,
-                bearerWithRefreshSpec);
+                passwordGrant,
+                withRefreshSpec);
     }
 
     @Test
     public void testRegClientGetBearerWithoutRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokens(
                 regClient,
-                passwordCredentialsGrant,
-                bearerWithoutRefreshSpec);
+                passwordGrant,
+                withoutRefreshSpec);
     }
 
     @Test
     public void testRegClientGetHOKWithRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 regClient,
-                passwordCredentialsGrant,
-                hokWithRefreshSpec);
+                passwordGrant,
+                withRefreshSpec);
     }
 
     @Test
     public void testRegClientGetHOKWithoutRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokens(
                 regClient,
-                passwordCredentialsGrant,
-                hokWithoutRefreshSpec);
+                passwordGrant,
+                withoutRefreshSpec);
     }
 
     // RegClient, SolutionUserCredentialsGrant
@@ -283,8 +207,8 @@ public class OIDCClientIT extends OIDCClientITBase {
         TestUtils.verifyOIDCClientException(
                 regClient,
                 solutionUserCredentialsGrant,
-                bearerWithRefreshSpec,
-                "Solution user credentials grant requires an non-null solution assertion.");
+                withRefreshSpec,
+                "Solution user credentials grant requires an non-null solution user assertion.");
     }
 
     @Test
@@ -292,8 +216,8 @@ public class OIDCClientIT extends OIDCClientITBase {
         TestUtils.verifyOIDCClientException(
                 regClient,
                 solutionUserCredentialsGrant,
-                bearerWithoutRefreshSpec,
-                "Solution user credentials grant requires an non-null solution assertion.");
+                withoutRefreshSpec,
+                "Solution user credentials grant requires an non-null solution user assertion.");
     }
 
     @Test
@@ -301,8 +225,8 @@ public class OIDCClientIT extends OIDCClientITBase {
         TestUtils.verifyOIDCClientException(
                 regClient,
                 solutionUserCredentialsGrant,
-                hokWithRefreshSpec,
-                "Solution user credentials grant requires an non-null solution assertion.");
+                withRefreshSpec,
+                "Solution user credentials grant requires an non-null solution user assertion.");
     }
 
     @Test
@@ -310,52 +234,38 @@ public class OIDCClientIT extends OIDCClientITBase {
         TestUtils.verifyOIDCClientException(
                 regClient,
                 solutionUserCredentialsGrant,
-                hokWithoutRefreshSpec,
-                "Solution user credentials grant requires an non-null solution assertion.");
+                withoutRefreshSpec,
+                "Solution user credentials grant requires an non-null solution user assertion.");
     }
 
     // RegClient, ClientCredentialsGrant
-    @Test
-    public void testRegClientGetBearerWithRefreshByClientCredentialsGrant() throws Exception {
-        TestUtils.verifyOIDCClientException(
-                regClient,
-                clientCredentialsGrant,
-                bearerWithRefreshSpec,
-                "Client credentials grant requires an non-null client assertion.");
-    }
-
-    @Test
-    public void testRegClientGetBearerWithoutRefreshByClientCredentialsGrant() throws Exception {
-        TestUtils.verifyOIDCClientException(
-                regClient,
-                clientCredentialsGrant,
-                bearerWithoutRefreshSpec,
-                "Client credentials grant requires an non-null client assertion.");
-    }
-
-    @Test
-    public void testRegClientGetHOKWithRefreshByClientCredentialsGrant() throws Exception {
-        TestUtils.verifyOIDCServerException(
-                regClient,
-                clientCredentialsGrant,
-                hokWithRefreshSpec,
-                "Server error response. Error code: invalid_scope; Error description: refresh token (offline_access) is not allowed for this grant_type.");
-    }
-
     @Test
     public void testRegClientGetHOKWithoutRefreshByClientCredentialsGrant() throws Exception {
         TestUtils.verifyTokens(
                 regClient,
                 clientCredentialsGrant,
-                hokWithoutRefreshSpec);
+                withoutRefreshSpec);
     }
 
-    // RegClientWithHA, PasswordCredentialsGrant
+    // RegClientWithHA, PasswordGrant
     @Test
     public void testRegClientWithHAGetBearerWithRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
                 regClientWithHA,
-                passwordCredentialsGrant,
-                bearerWithRefreshSpec);
+                passwordGrant,
+                withRefreshSpec);
+    }
+
+    @Test
+    public void testGroupFiltering() throws Exception {
+        OIDCTokens tokens = nonRegNoHOKConfigClient.acquireTokens(passwordGrant, groupFilteringSpec);
+        ResourceServerAccessToken accessToken = ResourceServerAccessToken.build(
+                tokens.getAccessToken().serialize(),
+                connectionConfig.getProviderPublicKey(),
+                RESOURCE_SERVER_NAME,
+                0L /* clockTolerance */);
+        Collection<String> actualGroups = accessToken.getGroups();
+        List<String> expectedGroups = Arrays.asList(tenant + "\\administrators");
+        Assert.assertEquals("groups", expectedGroups, actualGroups);
     }
 }

@@ -35,8 +35,8 @@ import com.vmware.identity.rest.idm.data.SchemaObjectMappingDTO;
 import com.vmware.identity.rest.idm.data.attributes.IdentityProviderType;
 
 /**
- * Mapper for identity provider entity. 
- * 
+ * Mapper for identity provider entity.
+ *
  * @author Balaji Boggaram Ramanarayan
  * @author Travis Hall
  */
@@ -156,7 +156,8 @@ public class IdentityProviderMapper {
                                 identityProvider.getServicePrincipalName(),
                                 identityProvider.getPassword(),
                                 identityProvider.getAttributesMap(),
-                                identityProvider.getSchema() != null ? populateObjectMappingData(identityProvider.getSchema()) : null);
+                                identityProvider.getSchema() != null ? populateObjectMappingData(identityProvider.getSchema()) : null,
+                                null);
                  break;
 
             case IDENTITY_STORE_TYPE_LDAP:
@@ -180,7 +181,8 @@ public class IdentityProviderMapper {
                                                                                           identityProvider.isBaseDnForNestedGroupsEnabled(),
                                                                                           identityProvider.isDirectGroupsSearchEnabled(),
                                                                                           identityProvider.isSiteAffinityEnabled()),
-                                                                                  CertificateMapper.getX509Certificates(identityProvider.getCertificates()));
+                                                                                  CertificateMapper.getX509Certificates(identityProvider.getCertificates()),
+                                                                                  null);
                 break;
 
             case IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING:
@@ -204,7 +206,8 @@ public class IdentityProviderMapper {
                                                                                           identityProvider.isBaseDnForNestedGroupsEnabled(),
                                                                                           identityProvider.isDirectGroupsSearchEnabled(),
                                                                                           identityProvider.isSiteAffinityEnabled()),
-                                                                                     CertificateMapper.getX509Certificates(identityProvider.getCertificates()));
+                                                                                     CertificateMapper.getX509Certificates(identityProvider.getCertificates()),
+                                                                                     null);
                 break;
 
             default:
@@ -255,19 +258,19 @@ public class IdentityProviderMapper {
         return schemaMapBuilder.buildSchemaMapping();
     }
 
-    private static Boolean isMatchingRuleInChainEnabled(int flag) {
+    public static Boolean isMatchingRuleInChainEnabled(int flag) {
         return (flag & MATCHING_RULE_IN_CHAIN_ENABLED) != 0;
     }
 
-    private static Boolean isBaseDnForNestedGroupsEnabled(int flag) {
+    public static Boolean isBaseDnForNestedGroupsEnabled(int flag) {
         return (flag & BASE_DN_FOR_NESTED_GROUPS_DISABLED) == 0;
     }
 
-    private static Boolean isDirectGroupsSearchEnabled(int flag) {
+    public static Boolean isDirectGroupsSearchEnabled(int flag) {
         return (flag & DIRECT_GROUPS_SEARCH_ENABLED) != 0;
     }
 
-    private static Boolean isSiteAffinityEnabled(int flag) {
+    public static Boolean isSiteAffinityEnabled(int flag) {
         return (flag & SITE_AFFINITY_ENABLED) != 0;
     }
 

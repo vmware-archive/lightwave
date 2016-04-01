@@ -51,6 +51,7 @@ import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.SearchResult;
 import com.vmware.identity.idm.server.config.ServerIdentityStoreData;
 import com.vmware.identity.idm.server.provider.IIdentityProvider;
+import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.ldap.LdapProvider;
 
 public class LdapProviderTest
@@ -218,8 +219,8 @@ public class LdapProviderTest
 
       Map<PrincipalId, Map<String, String>> resultFromPrincipalId = new HashMap<PrincipalId, Map<String, String>>();
       Map<String, String> attributeValues = new HashMap<String, String>();
-      attributeValues.put( attrNameGivenName, "[givenName-John-1]" );
-      attributeValues.put( attrNameSn, "[Smith]" );
+      attributeValues.put( attrNameGivenName, "[givenName-John-1, gn222, gn333]" );
+      attributeValues.put( attrNameSn, "[Smith, sn333, sn222++]" );
       attributeValues.put( attrNameMemberOf, "[ssolabs-openldap.eng.vmware.com\\Group-2, ssolabs-openldap.eng.vmware.com\\Group-1, ssolabs-openldap.eng.vmware.com\\Group-3]");
       attributeValues.put( attrNameEmailAddress, "[John-1@vmware.com]");
       attributeValues.put( attrNameUserPrincipalName, "[John-1@ssolabs-openldap.eng.vmware.com]");
@@ -312,6 +313,10 @@ public class LdapProviderTest
             new PrincipalId("John-3", OPENLDAP_DOMAIN_ALIAS)
             );
       final String givenNamePreFix = "givenName-";
+      HashMap<String, String> expectedResult = new HashMap<String, String>(users.size());
+      expectedResult.put(users.get(0).getUPN(), "gn333");
+      expectedResult.put(users.get(1).getUPN(), givenNamePreFix + users.get(1).getName());
+      expectedResult.put(users.get(2).getUPN(), givenNamePreFix + users.get(2).getName());
       for (PrincipalId user : users)
       {
          PersonUser result = provider.findUser(user);
@@ -356,6 +361,7 @@ public class LdapProviderTest
       final String strAllBySnCis = "Cis";
       final String strAllBySnSmith = "Smith";
       final String strAllBySpecialChar = "specialChar";
+      final String strAllByFspNoUUID = "fspnouuid";
       final String strAllByPartialGivenNameCis = "Cis-";
       final String strAllByPartialGivenName = "John-";
       final String strAllByFspSn = "FSP";
@@ -366,6 +372,7 @@ public class LdapProviderTest
          Set<PersonUser> setAllBySnSmith = provider.findUsers(strAllBySnSmith, storeData.getName(), -1);
          Set<PersonUser> setAllByFspSn = provider.findUsers(strAllByFspSn, storeData.getName(), -1);
          Set<PersonUser> setAllBySpecChar = provider.findUsers(strAllBySpecialChar, storeData.getName(), -1);
+         Set<PersonUser> setAllByFspNoUUID = provider.findUsers(strAllByFspNoUUID, storeData.getName(), -1);
          Set<PersonUser> setAllByPartialGivenName = provider.findUsers(strAllByPartialGivenName, storeData.getName(), -1);
          Set<PersonUser> setAllByPartialGivenNameCis = provider.findUsers(strAllByPartialGivenNameCis, storeData.getName(), -1);
          Set<PersonUser> setAllByPartialFspGivenName = provider.findUsers(strAllByPartialGivenFspName, storeData.getName(), -1);
@@ -377,6 +384,7 @@ public class LdapProviderTest
          setAllByPartialGivenName.addAll(setAllByPartialFspGivenName);
          setAllByPartialGivenName.addAll(setAllByPartialGivenNameCis);
          setAllByPartialGivenName.addAll(setAllBySpecChar);
+         setAllByPartialGivenName.addAll(setAllByFspNoUUID);
          Assert.assertTrue(setAllByPartialGivenName.equals(setAll));
       }
       catch (Exception e)
@@ -565,7 +573,7 @@ public class LdapProviderTest
       {
          Assert.assertTrue("size does not match for query: " + current,
                sizeFromId.get(current)
-               .equals(provider.findDirectParentGroups(current).size()));
+               .equals(provider.findDirectParentGroups(current).getGroups().size()));
       }
 
       PrincipalId invalidId = new PrincipalId("nonExistant", OPENLDAP_DOMAIN_NAME_USER);
@@ -611,8 +619,8 @@ public class LdapProviderTest
 
       for (PrincipalId userId : sizeFromUserId.keySet())
       {
-         Set<Group> nestedGroups = provider.findNestedParentGroups(userId);
-         Assert.assertTrue("unexpected size", nestedGroups.size() == sizeFromUserId.get(userId).intValue());
+         PrincipalGroupLookupInfo nestedGroups = provider.findNestedParentGroups(userId);
+         Assert.assertTrue("unexpected size", nestedGroups.getGroups().size() == sizeFromUserId.get(userId).intValue());
       }
    }
 
@@ -822,6 +830,50 @@ public class LdapProviderTest
    }
 
    @Test
+   public void testFindActiveUser() {
+       testFindActiveUser(schemaMappedprovider);
+   }
+   private void testFindActiveUser(IIdentityProvider provider) {
+       PrincipalId user = new PrincipalId("John-3", OPENLDAP_DOMAIN_NAME_USER);
+/*
+       //search by upn
+       try {
+           PrincipalId result = provider.findActiveUser(IdentityStoreAttributeMapping.AttributeIds.UserAttributePrincipalName, user.getUPN());
+           Assert.assertNotNull(result);
+           Assert.assertEquals("", user.getName(), result.getName());
+       }
+       catch (Exception e)
+       {
+           Assert.fail(String.format("Failed to find the user by UPN", user.getUPN()) );
+       }
+*/
+       //by accuntname
+       String accountName = "John-3";
+       try {
+           PrincipalId result = provider.findActiveUser(attrNameUserPrincipalName, accountName);
+           Assert.assertNotNull(result);
+           Assert.assertEquals("", user.getName(), result.getName());
+        }
+        catch (Exception e)
+        {
+            Assert.fail(String.format("Failed to find the user by account name %s.", accountName) );
+        }
+
+       //by email
+       String emailValue = "John-3@vmware.com";
+       try {
+           PrincipalId result = provider.findActiveUser(attrNameEmailAddress, emailValue);
+           Assert.assertNotNull(result);
+           Assert.assertEquals("", user.getName(), result.getName());
+        }
+        catch (Exception e)
+        {
+            Assert.fail(String.format("Failed to find the user by account name %s.", accountName) );
+        }
+
+   }
+
+@Test
    public void testIsActiveSSL()
    {
        testIsActive(ldapsProvider);

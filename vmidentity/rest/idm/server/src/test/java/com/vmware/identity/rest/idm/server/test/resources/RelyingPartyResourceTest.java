@@ -29,7 +29,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.SecurityContext;
 
 import org.easymock.EasyMock;
@@ -90,20 +90,20 @@ public class RelyingPartyResourceTest {
     private RelyingPartyResource rpResource;
     private IMocksControl mControl;
     private SecurityContext mockSecurityContext;
-    private HttpServletRequest mockHTTPServletRequest;
+    private ContainerRequestContext mockRequest;
     private CasIdmClient mockIDMClient;
 
     @Before
     public void setUp() {
         mControl = EasyMock.createControl();
-        mockHTTPServletRequest = EasyMock.createMock(HttpServletRequest.class);
-        expect(mockHTTPServletRequest.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        expect(mockHTTPServletRequest.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
-        replay(mockHTTPServletRequest);
+        mockRequest = EasyMock.createMock(ContainerRequestContext.class);
+        expect(mockRequest.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        expect(mockRequest.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        replay(mockRequest);
 
         mockSecurityContext = mControl.createMock(SecurityContext.class);
         mockIDMClient = mControl.createMock(CasIdmClient.class);
-        rpResource = new RelyingPartyResource(TENANT, mockHTTPServletRequest, mockSecurityContext);
+        rpResource = new RelyingPartyResource(TENANT, mockRequest, mockSecurityContext);
         rpResource.setIDMClient(mockIDMClient);
 
     }

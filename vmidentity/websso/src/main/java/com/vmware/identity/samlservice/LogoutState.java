@@ -16,10 +16,12 @@ package com.vmware.identity.samlservice;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.security.cert.CertPath;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -38,6 +40,7 @@ import org.springframework.context.MessageSource;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.saml.SamlTokenSpec.AuthenticationData.AuthnMethod;
 import com.vmware.identity.saml.SignatureAlgorithm;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
 import com.vmware.identity.samlservice.impl.LogoutStateValidator;
@@ -77,6 +80,7 @@ public class LogoutState {
     private ValidationResult validationResult;
     private String issuerValue;
     private String sessionId;
+    private final String correlationId;
 
 
     /**
@@ -99,7 +103,9 @@ public class LogoutState {
         this.setLocale(locale);
         this.setMessageSource(messageSource);
         this.sessionManager = sessionManager;
-        this.factory = new DefaultIdmAccessorFactory();
+        //TODO - check for correlation id in the headers PR1561606
+        this.correlationId = UUID.randomUUID().toString();
+        this.factory = new DefaultIdmAccessorFactory(this.correlationId);
         Validate.notNull(factory);
         this.idmAccessor = factory.getIdmAccessor();
         this.validator = new LogoutStateValidator();
@@ -275,15 +281,24 @@ public class LogoutState {
         CertPath certPath = this.idmAccessor
                 .getCertificatesForRelyingParty(relyingParty);
 
+        SignatureAlgorithm checkAlgorithm;
+        if (this.sigAlg == null) {
+            checkAlgorithm = null;
+        } else {
+            checkAlgorithm = SignatureAlgorithm.getSignatureAlgorithmForURI(this.sigAlg);
+            if (checkAlgorithm == null) {
+                this.validationResult = new ValidationResult(HttpServletResponse.SC_BAD_REQUEST, "BadRequest", null);
+                throw new IllegalStateException("logout request has invalid signature algorithm");
+            }
+        }
+
         SamlServiceFactory factory = new DefaultSamlServiceFactory();
         return factory.createSamlService(
                 this.idmAccessor.getSAMLAuthorityPrivateKey(),
-                SignatureAlgorithm.RSA_SHA256, // TODO use
-                // real
-                // settings
-                this.sigAlg == null ? null : SignatureAlgorithm
-                        .getSignatureAlgorithmForURI(this.sigAlg),
-                        this.idmAccessor.getIdpEntityId(), certPath);
+                SignatureAlgorithm.RSA_SHA256, // TODO use real settings
+                checkAlgorithm,
+                this.idmAccessor.getIdpEntityId(),
+                certPath);
     }
 
     /**
@@ -322,6 +337,31 @@ public class LogoutState {
             // unexpected processing error
             log.debug("Caught Exception from process " + e.toString());
             this.validationResult = new ValidationResult(OasisNames.RESPONDER);
+        }
+
+        // add log out session cookie for tls client auth
+        try {
+            addLogoutSessionCookie();
+        } catch (Exception e) {
+            log.warn("Failed to add logout session cookie for TLS Client auth.", e);
+        }
+    }
+
+    private void addLogoutSessionCookie() throws UnsupportedEncodingException {
+        Session session = sessionManager.get(getSessionId());
+        if (session != null && session.getAuthnMethod() == AuthnMethod.TLSCLIENT) {
+            // set logout session cookie
+            String cookieName = Shared.getLogoutCookieName(this.getIdmAccessor().getTenant());
+            java.util.Date date= new java.util.Date();
+            String timestamp = new Timestamp(date.getTime()).toString();
+            String encodedTimestamp = Shared.encodeString(timestamp);
+            log.debug("Setting cookie " + cookieName
+                    + " value " + encodedTimestamp);
+            Cookie sessionCookie = new Cookie(cookieName, encodedTimestamp);
+            sessionCookie.setPath("/");
+            sessionCookie.setSecure(true);
+            sessionCookie.setHttpOnly(true);
+            response.addCookie(sessionCookie);
         }
     }
 
@@ -384,17 +424,23 @@ public class LogoutState {
                     }
                 }
 
+                String sloEndpoint = this.idmAccessor.getSloForRelyingParty(relyingParty, OasisNames.HTTP_REDIRECT);
+                if (sloEndpoint == null) {
+                    log.warn(String.format("SLO service for relying party %s does not exist.", relyingParty));
+                    // logout response can be be created since SLO end point does not exist.
+                    return null;
+                }
+
                 SamlService service = createSamlServiceForTenant(tenant,
                         relyingParty);
                 retval = service
                         .createSamlLogoutResponse(
                                 this.getID(),
-                                this.idmAccessor.getSloForRelyingParty(
-                                        relyingParty, OasisNames.HTTP_REDIRECT),
-                                        this.validationResult.getStatus(),
-                                        this.validationResult.getSubstatus(),
-                                        this.validationResult.getMessage(messageSource,
-                                                locale));
+                                sloEndpoint,
+                                this.validationResult.getStatus(),
+                                this.validationResult.getSubstatus(),
+                                this.validationResult.getMessage(messageSource,
+                                        locale));
 
                 // At this point, we have sent out SLO requests to non-initiating participants, and is about
                 // to send out SLO response to the intiating participant.  So now can kill the session.
@@ -471,6 +517,13 @@ public class LogoutState {
             // 4. combine everything into a redirect URL
             retval = this.idmAccessor.getSloForRelyingParty(relyingParty,
                     OasisNames.HTTP_REDIRECT);
+
+            if (retval == null) {
+                log.warn(String.format("SLO service for relying party %s does not exist.", relyingParty));
+                // logout response url can be be created since SLO end point does not exist.
+                return null;
+            }
+
             String queryString = service
                     .generateRedirectUrlQueryStringParameters(null,
                             encodedResponse, this.getRelayState(),
@@ -877,31 +930,35 @@ public class LogoutState {
                                     Validate.notNull(targetParticipant);
                                     Validate.notNull(targetRelyingParty);
 
-                                    // Create a request for this SP
-                                    this.idmAccessor.setTenant(tenant);
-                                    SamlService service = createSamlServiceForTenant(tenant,
-                                            targetRelyingParty);
-                                    PrincipalId principal = session.getPrincipalId();
-                                    Validate.notNull(principal);
-                                    LogoutRequest request = service
-                                            .createSamlLogoutRequest(
-                                                    null,
-                                                    this.idmAccessor.getSloForRelyingParty(
-                                                            targetRelyingParty, OasisNames.HTTP_REDIRECT),
-                                                            OasisNames.UNSPECIFIED,
-                                                            principal.getName() + "@" + principal.getDomain(),
-                                                            targetParticipant.getSessionId());
+                                    // sloEndpoint can be null if relying party does not support SLO.
+                                    String sloEndpoint = this.idmAccessor.getSloForRelyingParty(
+                                            targetRelyingParty, OasisNames.HTTP_REDIRECT);
+                                    if (sloEndpoint != null) {
+                                        // Create a request for this SP
+                                        this.idmAccessor.setTenant(tenant);
+                                        SamlService service = createSamlServiceForTenant(tenant,
+                                                targetRelyingParty);
+                                        PrincipalId principal = session.getPrincipalId();
+                                        Validate.notNull(principal);
+                                        LogoutRequest request = service
+                                                .createSamlLogoutRequest(
+                                                        null,
+                                                        sloEndpoint,
+                                                        OasisNames.UNSPECIFIED,
+                                                        principal.getName() + "@" + principal.getDomain(),
+                                                        targetParticipant.getSessionId());
 
-                                    String redirectUrl = generateRequestUrlForTenant(request, targetRelyingParty, service, tenant);
-                                    requestUrls.add(redirectUrl);
-                                    // Create/update logout request data in the session
-                                    if (logoutRequestData == null) {
-                                        logoutRequestData = new LogoutRequestData(originalRelyingParty, this.getID());
+                                        String redirectUrl = generateRequestUrlForTenant(request, targetRelyingParty, service, tenant);
+                                        requestUrls.add(redirectUrl);
+                                        // Create/update logout request data in the session
+                                        if (logoutRequestData == null) {
+                                            logoutRequestData = new LogoutRequestData(originalRelyingParty, this.getID());
+                                        }
+                                        logoutRequestData.setCurrent(targetRelyingParty);
+                                        logoutRequestData.setCurrentRequestId(request.getID());
+                                        session.setLogoutRequestData(logoutRequestData);
+                                        this.getSessionManager().update(session);
                                     }
-                                    logoutRequestData.setCurrent(targetRelyingParty);
-                                    logoutRequestData.setCurrentRequestId(request.getID());
-                                    session.setLogoutRequestData(logoutRequestData);
-                                    this.getSessionManager().update(session);
                                 }
                             }
                 } finally {

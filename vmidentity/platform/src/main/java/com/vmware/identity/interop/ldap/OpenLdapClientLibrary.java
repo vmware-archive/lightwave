@@ -13,14 +13,13 @@
 
 package com.vmware.identity.interop.ldap;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.Arrays;
 
 import org.apache.commons.lang.Validate;
 import org.apache.commons.logging.Log;
@@ -28,11 +27,9 @@ import org.apache.commons.logging.LogFactory;
 
 import com.sun.jna.Callback;
 import com.sun.jna.Library;
-import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
-import com.sun.jna.Structure;
 import com.sun.jna.TypeMapper;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
@@ -63,7 +60,7 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
       ///lib64/libssl.so.1.0.1 on Linux, or ssleay32.dll on Windows
         SSLLibrary INSTANCE = Platform.isWindows() ?
                 (SSLLibrary) Native.loadLibrary("ssleay32.dll", SSLLibrary.class) :
-                (SSLLibrary) Native.loadLibrary("libssl.so.1.0.0", SSLLibrary.class);
+                (SSLLibrary) Native.loadLibrary("libssl.so.1.0.2", SSLLibrary.class);
 
       //#include <openssl/ssl.h>
       //int SSL_library_init(void);
@@ -479,19 +476,19 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
 
       OpenLdapClientLibrary.CheckError(
             LdapClientLibrary.INSTANCE.ldap_initialize(prConnection, uri.toString()));
-      Object sslCertValidationCallback = ldap_set_options(prConnection, connOptions);
+      LdapConnectionCtx connectionCtx = ldap_set_options(prConnection, connOptions);
 
       Pointer pConnection = prConnection.getValue();
       if ( (pConnection == null) || (pConnection == Pointer.NULL) )
       {
          logger.error(" cannot establish connection: " + uri);
-         OpenLdapClientLibrary.CheckError(LdapErrors.LDAP_CONNECT_ERROR.getCode());
+         OpenLdapClientLibrary.CheckError(LdapErrors.LDAP_OpenLdap_CONNECT_ERROR.getCode());
       }
 
       if (logger.isDebugEnabled()){
          logger.debug("client initialized");
       }
-      return new LdapConnectionCtx(pConnection, sslCertValidationCallback);
+      return connectionCtx;
    }
 
    @Override
@@ -504,13 +501,13 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
       Pointer connection = LdapClientLibrary.INSTANCE.ldap_open( hostName, portNumber );
       if ( (connection == null) || (connection == Pointer.NULL) )
       {
-         // TODO: get proper error code from errno ....
+         // get proper error code from errno ....
          /*
             OpenLdap:
                 If an error occurs, ldap_open() and ldap_init() will  return  NULL  and
                 errno should be set appropriately.
           */
-         OpenLdapClientLibrary.CheckError( LdapErrors.LDAP_CONNECT_ERROR.getCode() );
+         OpenLdapClientLibrary.CheckError( LdapErrors.LDAP_OpenLdap_CONNECT_ERROR.getCode() );
       }
       if (logger.isTraceEnabled()){
          logger.trace("connection initialized");
@@ -518,7 +515,7 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
       return connection;
    }
 
-   private static Object ldap_set_options(PointerByReference prConnection, List<LdapSetting> connOptions)
+   private static LdapConnectionCtx ldap_set_options(PointerByReference prConnection, List<LdapSetting> connOptions)
    {
       Pointer ld = prConnection.getValue();
       PointerByReference prSslContext = new PointerByReference(Pointer.NULL);
@@ -528,6 +525,7 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
       // This is the OpenSSL callback during the process of SSL handshake.
       ISslCertVerify sslCertVerifyObj = null;
       boolean tlsDemand = false;
+      int sslMinimumProtocol = LdapSSLProtocols.getDefaultMinProtocol().getCode();
 
       for (LdapSetting setting : connOptions)
       {
@@ -541,6 +539,16 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
 
             switch (option)
             {
+            case LDAP_OPT_X_SASL_NOCANON:
+                Validate.notNull(val);
+                IntByReference rIntSaslNoCanon = new IntByReference(((Integer)val).intValue());
+                CheckSetOptionError(option, ld,
+                    LdapClientLibrary.INSTANCE.ldap_set_option(
+                        ld,
+                        option.getCode(),
+                        rIntSaslNoCanon.getPointer())
+                );
+                break;
             case LDAP_OPT_PROTOCOL_VERSION:
                Validate.notNull(val);
                IntByReference rIntVer = new IntByReference(((Integer)val).intValue());
@@ -613,6 +621,13 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
                         rTimeoutVal.getPointer())
                 );
                 break;
+            case LDAP_OPT_X_TLS_PROTOCOL:
+                Validate.notNull(val);
+                if (val instanceof Integer)
+                {
+                   sslMinimumProtocol = (Integer)val;
+                }
+                break;
             default:
                Validate.notNull(val);
                String msg = String.format("unsupport options: [%s, %s]", option, val);
@@ -630,12 +645,12 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
                             LdapOption.LDAP_OPT_X_TLS_REQUIRE_CERT.getCode(),
                             rIntVal.getPointer()));
 
-          IntByReference minProtocolVersion = new IntByReference(SSLConstants.LDAP_OPT_X_TLS_PROTOCOL_TLS1_0);
+          IntByReference rSsl3 = new IntByReference(getOpenLdapProtocol(sslMinimumProtocol));
           CheckSetSSLOptionError(SSLOption.LDAP_OPT_X_TLS_PROTOCOL_MIN, ld,
                 LdapClientLibrary.INSTANCE.ldap_set_option(
                             ld,
                             SSLOption.LDAP_OPT_X_TLS_PROTOCOL_MIN.getCode(),
-                            minProtocolVersion.getPointer()));
+                            rSsl3.getPointer()));
 
           CheckSetSSLOptionError(SSLOption.LDAP_OPT_X_TLS_NEWCTX, ld,
                 LdapClientLibrary.INSTANCE.ldap_set_option(
@@ -650,7 +665,7 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
           assert (pSslContext != null);
 
           //set mode (don't need to set the CA cert)
-          SSLLibrary.INSTANCE.SSL_CTX_set_verify(pSslContext, SSLConstants.SSL_VERIFY_PEER, null);
+          SSLLibrary.INSTANCE.SSL_CTX_set_verify(pSslContext, OpenLdapSSLConstants.SSL_VERIFY_PEER, null);
 
           Validate.notNull(sslCertVerifyObj);
           //use default peer certificate verification with call back
@@ -664,8 +679,8 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
              logger.debug("LDAP_OPT_X_TLS_REQUIRE_CERT set successfully: LDAP_OPT_X_TLS_DEMAND");
           }
       }
-      //return the callback object to the caller.
-      return sslCertVerifyObj;
+      //return the connection context object to the caller.
+      return new LdapConnectionCtx(ld, sslCertVerifyObj);
    }
 
    @Override
@@ -674,15 +689,15 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
       OpenLdapClientLibrary.CheckError(ld, LdapClientLibrary.INSTANCE.ldap_set_option(ld, option, value));
    }
 
-    @Override
-    public void ldap_bind_s(Pointer ld, String dn, String cred, int method) {
-        OpenLdapClientLibrary.CheckError(ld, LdapClientLibrary.INSTANCE.ldap_bind_s(ld, dn, cred, method));
-    }
+   @Override
+   public void ldap_bind_s(LdapConnectionCtx ctx, String dn, String cred, int method) {
+       OpenLdapClientLibrary.CheckError(ctx.getConnection(), LdapClientLibrary.INSTANCE.ldap_bind_s(ctx.getConnection(), dn, cred, method));
+   }
 
    @Override
    public void ldap_sasl_bind_s(Pointer ld, String userName, String domainName, String password)
    {
-       IdmClientLibraryFactory.getInstance().getLibrary().LdapSaslBind(ld);
+       IdmClientLibraryFactory.getInstance().getLibrary().LdapSaslBind(ld, userName, domainName, password);
    }
 
    final static LdapSaslSRPInteractFunc ldapSaslSrpInteractFunc = new LdapSaslSRPInteractFunc() {
@@ -1210,4 +1225,19 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
        OpenLdapClientLibrary.CheckError(ld, errorNumber.getValue());
    }
 
+    private static int getOpenLdapProtocol(int code) {
+        LdapSSLProtocols sslMinProtocol = LdapSSLProtocols.getProtocolByCode(code);
+        switch (sslMinProtocol) {
+        case SSLv3:
+            return OpenLdapSSLConstants.LDAP_OPT_X_TLS_PROTOCOL_SSL3;
+        case TLSv1_0:
+            return OpenLdapSSLConstants.LDAP_OPT_X_TLS_PROTOCOL_TLS1_0;
+        case TLSv1_1:
+            return OpenLdapSSLConstants.LDAP_OPT_X_TLS_PROTOCOL_TLS1_1;
+        case TLSv1_2:
+            return OpenLdapSSLConstants.LDAP_OPT_X_TLS_PROTOCOL_TLS1_2;
+        default:
+            return OpenLdapSSLConstants.LDAP_OPT_X_TLS_PROTOCOL_TLS1_0;
+        }
+   }
 }

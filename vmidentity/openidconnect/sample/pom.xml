@@ -13,6 +13,10 @@
         <bouncycastle.version>1.47</bouncycastle.version>
         <springframework.version>4.0.6.RELEASE</springframework.version>
         <jstl.version>1.2</jstl.version>
+        <jackson.annotations.version>2.3.2</jackson.annotations.version>
+        <jackson.databind.version>2.3.2</jackson.databind.version>
+        <jackson.core.version>2.3.2</jackson.core.version>
+        <jax.ws.rs.version>2.0.1</jax.ws.rs.version>
         <outputDirectory>${basedir}/../../build/vmware-sts/packages/</outputDirectory>
     </properties>
 
@@ -62,6 +66,36 @@
             <version>${vmware.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.vmware.identity.rest.core</groupId>
+            <artifactId>vmware-identity-rest-core-client</artifactId>
+            <version>${vmware.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vmware.identity.rest.afd</groupId>
+            <artifactId>vmware-identity-rest-afd-client</artifactId>
+            <version>${vmware.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vmware.identity.rest.idm</groupId>
+            <artifactId>vmware-identity-rest-idm-client</artifactId>
+            <version>${vmware.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.vmware.identity.rest.idm</groupId>
+            <artifactId>vmware-identity-rest-idm-common</artifactId>
+            <version>${vmware.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vmware.identity.rest.core</groupId>
+            <artifactId>vmware-identity-rest-core-common</artifactId>
+            <version>${vmware.version}</version>
+        </dependency>
+
         <!-- Compile Dependencies -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
@@ -97,5 +131,30 @@
             <version>${jstl.version}</version>
             <scope>runtime</scope>
         </dependency>
+
+        <dependency>
+           <groupId>javax.ws.rs</groupId>
+	   <artifactId>javax.ws.rs-api</artifactId>
+	   <version>${jax.ws.rs.version}</version>
+       </dependency>
+
+       <dependency>
+          <groupId>com.fasterxml.jackson.core</groupId>
+	  <artifactId>jackson-annotations</artifactId>
+	  <version>${jackson.annotations.version}</version>
+      </dependency>
+
+      <dependency>
+         <groupId>com.fasterxml.jackson.core</groupId>
+	 <artifactId>jackson-core</artifactId>
+	 <version>${jackson.core.version}</version>
+      </dependency>
+
+      <dependency>
+	 <groupId>com.fasterxml.jackson.core</groupId>
+	 <artifactId>jackson-databind</artifactId>
+	 <version>${jackson.databind.version}</version>
+      </dependency>
+
     </dependencies>
 </project>
