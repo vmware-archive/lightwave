@@ -1,5 +1,5 @@
 /* *************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved.
+ * Copyright 2012 VMware, Inc. All rights reserved. 
  **************************************************************************/
 package com.vmware.identity.websso.client.endpoint;
 
@@ -9,11 +9,11 @@ import java.security.PrivateKey;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.lang.Validate;
 import org.opensaml.saml2.core.LogoutResponse;
 import org.opensaml.saml2.core.StatusCode;
 import org.opensaml.xml.io.MarshallingException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -194,9 +194,14 @@ public class SloListener {
                     (SubjectData) validator.getMessageData(),
                     validator.getRelayState());
             logger.info("SP SAML Response URL is " + redirectUrl);
-            if (redirectUrl != null
-                    && validator.getValidationResult().isValid()) {
-                httpResponse.sendRedirect(redirectUrl);
+            if (validator.getValidationResult().isValid()) {
+                if (redirectUrl != null) {
+                    httpResponse.sendRedirect(redirectUrl);
+                } else {
+                    // redirectUrl can be null if IDP's SLO end point does not exist.
+                    logger.warn(String.format(
+                            "SLO end point does not exist for IDP: %s, SLO response is not sent.", validator.getIssuerVal()));
+                }
             }
         } catch (Exception error) {
             // This is an error on client side in producing the response. Report
@@ -333,9 +338,12 @@ public class SloListener {
 
                 String destination = SamlUtils.getIdpSloLocation(idpConfig,
                         SamlNames.HTTP_REDIRECT);
-                // we require this. otherwise the response can't be generated.
-                Validate.notEmpty(destination,
-                        "IDP's SLOLocation config is null or empty.");
+
+                // if IDP's SLO end point does not exist, return null LogoutResponse.
+                if (destination == null) {
+                    logger.warn(String.format("SLO end point does not exist for IDP: %s.", idpConfig.getAlias()));
+                    return null;
+                }
 
                 String issuerValue = this.getIssuerVal(this.tenant);
 

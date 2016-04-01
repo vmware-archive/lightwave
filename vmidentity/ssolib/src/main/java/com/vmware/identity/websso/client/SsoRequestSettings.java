@@ -1,5 +1,5 @@
 /* *************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved.
+ * Copyright 2012 VMware, Inc. All rights reserved. 
  * ************************************************************************/
 
 package com.vmware.identity.websso.client;
@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * SsoRequestSettings is a structure holding the settings for the authentication
  * request. It contains a number of fields with getters and setters.
- * 
+ *
  */
 public class SsoRequestSettings {
 
@@ -50,13 +50,14 @@ public class SsoRequestSettings {
 
     /**
      * Currently the following are supported by VMWareIdentity
-     * 
+     *
      * "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"
      * "urn:federation:authentication:windows"
      * urn:oasis:names:tc:SAML:2.0:ac:classes:Kerberos
      * "urn:oasis:names:tc:SAML:2.0:ac:classes:TLSClient"
-     * 
-     * 
+     * "urn:oasis:names:tc:SAML:2.0:ac:classes:TimeSyncToken"
+     *
+     *
      */
     private List<String> requestedAuthnContextClasses; // set of authentication
                                                        // type desired
@@ -66,7 +67,7 @@ public class SsoRequestSettings {
     /**
      * SsoRequestSettings object. This object correspond to
      * samlp:AuthnRequestType.
-     * 
+     *
      * @param alias
      *            Required.
      * @param entityID
@@ -87,7 +88,7 @@ public class SsoRequestSettings {
     /**
      * SsoRequestSettings object. This object correspond to
      * samlp:AuthnRequestType.
-     * 
+     *
      * @param spAlias
      *            Required. Need it set Issuer
      * @param idpAlias
@@ -108,7 +109,7 @@ public class SsoRequestSettings {
      *            Optional.
      * @param relayState
      *            Optional.
-     * 
+     *
      */
     public SsoRequestSettings(String spAlias, String idpAlias, Boolean isSigned, String nameIDFormat,
             Boolean allowProxy, Boolean forceAuthn, Boolean isPassive, Integer assertionConsumerServiceIndex,

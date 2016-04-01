@@ -20,28 +20,34 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.SecureRandom;
 import java.security.cert.Certificate;
+import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import java.util.Set;
 import java.util.UUID;
 
 import javax.crypto.Cipher;
 import javax.security.auth.login.LoginException;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.Validate;
 
@@ -59,6 +65,10 @@ import com.vmware.af.interop.VmAfNoSuchLogonSessionException;
 import com.vmware.af.interop.VmAfNotSupportedException;
 import com.vmware.af.interop.VmAfUnknownServerException;
 import com.vmware.af.interop.VmAfWrongPasswordException;
+import com.vmware.identity.auth.passcode.spi.AuthenticationSecret;
+import com.vmware.identity.auth.passcode.spi.AuthenticationSession;
+import com.vmware.identity.auth.passcode.spi.AuthenticationSessionFactory;
+import com.vmware.identity.auth.passcode.spi.AuthenticationResult;
 import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsContextScope;
@@ -85,6 +95,7 @@ import com.vmware.identity.idm.GroupDetail;
 import com.vmware.identity.idm.HostNotJoinedRequiredDomainException;
 import com.vmware.identity.idm.IDMException;
 import com.vmware.identity.idm.IDMLoginException;
+import com.vmware.identity.idm.IDMSecureIDNewPinException;
 import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.IIdentityManager;
 import com.vmware.identity.idm.IIdentityStoreData;
@@ -114,7 +125,11 @@ import com.vmware.identity.idm.PersonDetail;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.Principal;
 import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.idm.RSAAMInstanceInfo;
+import com.vmware.identity.idm.RSAAMResult;
+import com.vmware.identity.idm.RSAAgentConfig;
 import com.vmware.identity.idm.RelyingParty;
+import com.vmware.identity.idm.ResourceServer;
 import com.vmware.identity.idm.STSSpnValidator;
 import com.vmware.identity.idm.SearchCriteria;
 import com.vmware.identity.idm.SearchResult;
@@ -128,6 +143,8 @@ import com.vmware.identity.idm.UserAccountLockedException;
 import com.vmware.identity.idm.ValidateUtil;
 import com.vmware.identity.idm.VmHostData;
 import com.vmware.identity.idm.server.clientcert.IdmClientCertificateValidator;
+import com.vmware.identity.idm.server.clientcert.IdmCrlCache;
+import com.vmware.identity.idm.server.clientcert.TenantCrlCache;
 import com.vmware.identity.idm.server.config.IConfigStore;
 import com.vmware.identity.idm.server.config.IConfigStoreFactory;
 import com.vmware.identity.idm.server.config.IdmServerConfig;
@@ -135,7 +152,12 @@ import com.vmware.identity.idm.server.config.ServerIdentityStoreData;
 import com.vmware.identity.idm.server.config.directory.DirectoryConfigStore;
 import com.vmware.identity.idm.server.config.directory.TenantAttributes;
 import com.vmware.identity.idm.server.config.directory.TokenPolicy;
+import com.vmware.identity.idm.server.performance.IIdmAuthStatRecorder;
+import com.vmware.identity.idm.server.performance.IdmAuthStatCache;
+import com.vmware.identity.idm.server.performance.IdmAuthStatRecorder;
+import com.vmware.identity.idm.server.performance.NoopIdmAuthStatRecorder;
 import com.vmware.identity.idm.server.performance.PerformanceMonitor;
+import com.vmware.identity.idm.server.performance.PerformanceMonitorFactory;
 import com.vmware.identity.idm.server.provider.BaseLdapProvider;
 import com.vmware.identity.idm.server.provider.GSSAuthProvider;
 import com.vmware.identity.idm.server.provider.GSSAuthResult;
@@ -144,6 +166,7 @@ import com.vmware.identity.idm.server.provider.IIdentityProvider;
 import com.vmware.identity.idm.server.provider.IProviderFactory;
 import com.vmware.identity.idm.server.provider.ISystemDomainIdentityProvider;
 import com.vmware.identity.idm.server.provider.NoSuchUserException;
+import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.activedirectory.ActiveDirectoryProvider;
 import com.vmware.identity.idm.server.provider.activedirectory.ServerKrbUtils;
 import com.vmware.identity.idm.server.provider.localos.LocalOsIdentityProvider;
@@ -158,6 +181,7 @@ import com.vmware.identity.interop.idm.IIdmClientLibrary;
 import com.vmware.identity.interop.idm.IdmClientLibraryFactory;
 import com.vmware.identity.interop.ldap.AlreadyExistsLdapException;
 import com.vmware.identity.interop.ldap.ConstraintViolationLdapException;
+import com.vmware.identity.interop.ldap.DirectoryStoreProtocol;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
 import com.vmware.identity.interop.ldap.ServerDownLdapException;
 import com.vmware.identity.interop.registry.IRegistryAdapter;
@@ -165,6 +189,10 @@ import com.vmware.identity.interop.registry.IRegistryKey;
 import com.vmware.identity.interop.registry.RegKeyAccess;
 import com.vmware.identity.interop.registry.RegistryAdapterFactory;
 import com.vmware.identity.performanceSupport.IIdmAuthStat;
+import com.vmware.identity.performanceSupport.IIdmAuthStat.ActivityKind;
+import com.vmware.identity.performanceSupport.IIdmAuthStat.EventLevel;
+import com.vmware.identity.performanceSupport.IIdmAuthStatus;
+import com.vmware.identity.performanceSupport.IdmAuthStatus;
 import com.vmware.identity.performanceSupport.PerfBucketKey;
 import com.vmware.identity.performanceSupport.PerfMeasurementPoint;
 /**
@@ -186,7 +214,7 @@ implements IIdentityManager
             {
                 try
                 {
-                    long startTime = System.currentTimeMillis();
+                    long startTime = System.nanoTime();
 
                     IdentityManager.this.refreshTenantCache();
 
@@ -195,7 +223,7 @@ implements IIdentityManager
                         IdmServer.getPerfDataSinkInstance().addMeasurement(
                                 new PerfBucketKey(
                                         PerfMeasurementPoint.IDMPeriodicRefreshTenantCertificates),
-                                        System.currentTimeMillis() - startTime);
+                                        TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
                     }
                 }
                 catch (Throwable t)
@@ -220,6 +248,47 @@ implements IIdentityManager
     }
     }
 
+
+    /**
+     * CRL checker thread refreshing at interval of 1 hour (3600000 milliseconds)
+     *
+     */
+    class IdmCrlCachePeriodicChecker extends Thread
+    {
+        private final Integer CheckInterval = 3600000;
+        @Override
+        public void run()
+        {
+            try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", "IdmCrlCachePeriodicChecker", "IdmCrlCachePeriodicChecker") )
+            {
+                while(_crlCacheChecker == Thread.currentThread())
+                {
+                    try
+                    {
+                        IdentityManager.this.refreshTenantCrlCache();
+                    }
+                    catch (Throwable t)
+                    {
+                        logger.error(String.format("IdmCrlCachePeriodicChecker refreshTenantCrl failed : %s",
+                                t.getMessage()), t);
+                        t.printStackTrace();
+                    }
+
+                    try
+                    {
+                        Thread.sleep(CheckInterval);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        logger.error("IdmCrlCachePeriodicChecker Thread is interrupted!");
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+    }
+
+
     public static final String THIRD_PARTY_IDP_USER_DEFAULT_GROUP_NAME = "Users";
 
     // this will include both user's own sid as well as the sids of groups user is a member of
@@ -228,6 +297,8 @@ implements IIdentityManager
     private IProviderFactory providerFactory;
 
     private IConfigStoreFactory configStoreFactory;
+
+    private AuthSessionFactoryCache _rsaSessionFactoryCache = new AuthSessionFactoryCache();
 
     private static final long serialVersionUID = -7719567998332472234L;
     /* The following chars cannot be part of:
@@ -247,10 +318,13 @@ implements IIdentityManager
                .toCharArray();
 
     private final static String LOCAL_OS_STATIC_ALIAS = "localos";
+    private final static RsaAuthSessionCache _rsaSessionCache = new RsaAuthSessionCache();
 
     private IConfigStore _configStore;
     private Collection<Attribute>    _defaultAttributes;
     private TenantCache _tenantCache;
+    private TenantCrlCache _tenantCrlCache;
+    private volatile Thread _crlCacheChecker = null;
 
     public static final String WELLKNOWN_SOLUTIONUSERS_GROUP_NAME =
             "SolutionUsers";
@@ -270,13 +344,14 @@ implements IIdentityManager
     private static final PersonDetail EXTERNAL_USER_SAMPLE_PERSON_DETAIL =
             new PersonDetail.Builder().build();
 
-    private static final String EXTERNAL_IDP_USER_FSP_DOMAIN_NAME = "XXX"; //irrelevant for FSP
 
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(IdentityManager.class);
 
     private static final String DEFAULT_HTTPS_PORT = "443";
     private static final String HOSTNAME_MACRO = "<HOSTNAME>"; // to be susbstituted with getHostIPAddress()
     private static final String PORT_MACRO = "<PORT>"; // to be substituted with StsTomcat ipaddress
+
+    private static final String PROVIDER_TYPE_RSA_SECURID = "RsaSecureID";
 
     private static SsoHealthStatistics ssoHealthStatistics = new SsoHealthStatistics();
 
@@ -315,6 +390,7 @@ implements IIdentityManager
             this.providerFactory = pdFactory;
 
             _tenantCache = new TenantCache();
+            _tenantCrlCache = new TenantCrlCache();
 
             IdmServerConfig settings = IdmServerConfig.getInstance();
             _defaultAttributes = settings.getDefaultAttributesList();
@@ -344,14 +420,50 @@ implements IIdentityManager
             Thread t = new IdmCachePeriodicChecker();
             t.start();
 
+            // start the crl cache checking thread
+            ManageCrlCacheChecker();
+
             logger.info("Identity Manager initialized successfully");
         }
         catch(Exception ex)
         {
-            logger.error("Identity Manager failed to initialize");
+            logger.error("Identity Manager failed to initialize", ex);
 
             throw ServerUtils.getRemoteException(ex);
         }
+    }
+
+    /**
+     * Check if any tenant enabled smartcard authentication
+     * @return true if at least one tenant enables smart card authentication.
+     * @throws Exception if unable to check tenants.
+     */
+    private boolean smartCardAuthnEnabled() throws Exception {
+        Collection<String> allTenantNames = this.getAllTenants();
+        assert(allTenantNames != null && allTenantNames.size() > 0);
+
+        boolean smartCardAuthnEnabled = false;
+        for (String tenantName : allTenantNames)
+        {
+            try
+            {
+                AuthnPolicy policy = getTenantInfo(tenantName).getAuthnPolicy();
+
+                if (policy.IsTLSClientCertAuthnEnabled()) {
+                    smartCardAuthnEnabled = true;
+                    break;
+                }
+            }
+            catch(Exception ex)
+            {
+                logger.error(
+                        String.format(
+                                "Failed to retrieve Authentication policy for tenant %s. ",
+                                tenantName));
+                throw ex;
+            }
+        }
+        return smartCardAuthnEnabled;
     }
 
     private
@@ -391,7 +503,7 @@ implements IIdentityManager
             {
                 throw new IllegalStateException("Failed to find tenant's system domain");
             }
-            IIdentityStoreDataEx details =stores.iterator().next().getExtendedIdentityStoreData();
+            stores.iterator().next().getExtendedIdentityStoreData();
 
             ensureValidTenant(tenant.getName());
 
@@ -745,6 +857,87 @@ implements IIdentityManager
             logger.error(String.format("Failed to set logon banner for tenant [%s]", tenantName));
             throw ex;
         }
+    }
+
+    /**
+     * Set authentication policies per identity source. This also takes care of synchronizing authentication types for tenant
+     */
+    @Override
+    public void setAuthnPolicyForProvider(String tenantName, String providerName, AuthnPolicy policy, IIdmServiceContext serviceContext) throws Exception {
+
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setAuthnPolicyForProvider")) {
+
+            // Validate if provider exists
+            ValidateUtil.validateNotEmpty(providerName, "Identity provider name");
+            IIdentityStoreData provider = getProviderWithInternalInfo(tenantName, providerName);
+            if (provider == null) {
+                String errMessage = String.format("Failed to find provider:'%s' on tenant :'%s'", providerName, tenantName);
+                logger.error(errMessage);
+                throw new NoSuchIdpException(errMessage);
+            }
+
+            // Set authentication policy for identity source
+            _configStore.setAuthnTypesForProvider(tenantName, providerName,
+                    policy.IsPasswordAuthEnabled(),
+                    policy.IsWindowsAuthEnabled(),
+                    policy.IsTLSClientCertAuthnEnabled(),
+                    policy.IsRsaSecureIDAuthnEnabled());
+
+            // Delete tenant data from cache such that it will load fresh data on next request
+            _tenantCache.deleteTenant(tenantName);
+
+            // Synchronize tenant authentication policy
+            synchronizeTenantAuthenticationPolicy(tenantName);
+
+        } catch (Exception ex) {
+            logger.error("Failed to set authentication policy for provider : " + providerName, ex);
+            throw ServerUtils.getRemoteException(ex);
+        }
+    }
+
+    /**
+     *
+     * This ensure the authentication policy set on tenant is always a super set of authentication policies of each identity source
+     * attached to the same tenant.
+     *
+     * @param tenantName name of tenant
+     */
+    private void synchronizeTenantAuthenticationPolicy(String tenantName) throws Exception{
+
+        boolean passwordAuthEnabled = false;
+        boolean windowsAuthEnabled = false;
+        boolean certAuthEnabled = false;
+        boolean rsaSecureIDAuthnEnabled = false;
+
+        Collection<IIdentityStoreData> providers = getProviders(tenantName);
+        Set<Integer> tenantPermissibleAuthnTypes = new HashSet<Integer>();
+        for(IIdentityStoreData provider : providers) {
+            int[] authnTypes = provider.getExtendedIdentityStoreData().getAuthnTypes();
+            for(int authnType : authnTypes) {
+                tenantPermissibleAuthnTypes.add(Integer.valueOf(authnType));
+            }
+        }
+
+        // Sync password authentication
+        if(tenantPermissibleAuthnTypes.contains(DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_PASSWORD)) {
+            passwordAuthEnabled = true;
+        }
+
+        // Sync windows based authentication
+        if(tenantPermissibleAuthnTypes.contains(DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_WINDOWS)) {
+            windowsAuthEnabled = true;
+        }
+
+        // Sync CAC based authentication
+        if(tenantPermissibleAuthnTypes.contains(DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_TLS_CERTIFICATE)) {
+            certAuthEnabled = true;
+        }
+
+        // Sync RSA securID authentication
+        if(tenantPermissibleAuthnTypes.contains(DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_RSA_SECUREID)) {
+            rsaSecureIDAuthnEnabled = true;
+        }
+        _configStore.setAuthnTypes(tenantName, passwordAuthEnabled, windowsAuthEnabled, certAuthEnabled, rsaSecureIDAuthnEnabled);
     }
 
     private String getLogonBannerContent(String tenantName)
@@ -1970,6 +2163,60 @@ implements IIdentityManager
         }
     }
 
+    private void addResourceServer(String tenantName, ResourceServer resourceServer) throws Exception {
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+            ValidateUtil.validateNotNull(resourceServer, "resourceServer");
+            _configStore.addResourceServer(tenantName, resourceServer);
+        } catch (Exception ex) {
+            logger.error(String.format("Failed to add resource server for tenant [%s]", tenantName), ex);
+            throw ex;
+        }
+    }
+
+    private void deleteResourceServer(String tenantName, String resourceServerName) throws Exception {
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+            ValidateUtil.validateNotEmpty(resourceServerName, "resourceServerName");
+            _configStore.deleteResourceServer(tenantName, resourceServerName);
+        } catch (Exception ex) {
+            logger.error(String.format("Failed to delete resource server [%s] for tenant [%s]", resourceServerName, tenantName), ex);
+            throw ex;
+        }
+    }
+
+    private ResourceServer getResourceServer(String tenantName, String resourceServerName) throws Exception {
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+            ValidateUtil.validateNotEmpty(resourceServerName, "resourceServerName");
+            return _configStore.getResourceServer(tenantName, resourceServerName);
+        } catch (Exception ex) {
+            logger.error(String.format("Failed to get resource server [%s] for tenant [%s]", resourceServerName, tenantName), ex);
+            throw ex;
+        }
+    }
+
+    private void setResourceServer(String tenantName, ResourceServer resourceServer) throws Exception {
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+            ValidateUtil.validateNotNull(resourceServer, "resourceServer");
+            _configStore.setResourceServer(tenantName, resourceServer);
+        } catch (Exception ex) {
+            logger.error(String.format("Failed to set resource server for tenant [%s]", tenantName), ex);
+            throw ex;
+        }
+    }
+
+    private Collection<ResourceServer> getResourceServers(String tenantName) throws Exception {
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+            return _configStore.getResourceServers(tenantName);
+        } catch (Exception ex) {
+            logger.error(String.format("Failed to get resource servers for tenant [%s]", tenantName), ex);
+            throw ex;
+        }
+    }
+
     /**
      * Go through the IDPs of the tenant and check whether IDP with specified type already exists.
      * Return name of the IDP or null if not found
@@ -2048,7 +2295,7 @@ implements IIdentityManager
             ActiveDirectoryProvider.probeAdConnectivity(idsData);
         }
 
-        // For native AD, we only need persist username, spn, password and bUserMachineAccount
+        // For native AD, we only need persist username, spn, password, bUserMachineAccount and flags
         return getADIdsToStore(idsData);
     }
 
@@ -2144,21 +2391,7 @@ implements IIdentityManager
                     // use simple bind
                     try
                     {
-                        for(String connStr : idsData.getExtendedIdentityStoreData().getConnectionStrings())
-                        {
-                            ValidateUtil.validateNotEmpty( connStr, "connectionString" );
-
-                            // for each connection string, we should pass connection probe
-                            this.probeProviderConnectivity(
-                                    tenantName,
-                                    connStr,
-                                    AuthenticationType.PASSWORD,
-                                    idsData.getExtendedIdentityStoreData().getUserName(),
-                                    idsData.getExtendedIdentityStoreData().getPassword(),
-                                    new LdapCertificateValidationSettings(idsData.getExtendedIdentityStoreData().getCertificates()));
-                            // should pass the DN check
-                            checkDn(idsData, new URI(connStr));
-                        }
+                       probeProviderConnectivity(tenantName, idsData);
                     }
                     catch(Exception ex)
                     {
@@ -2275,7 +2508,7 @@ implements IIdentityManager
             ValidateUtil.validateNotEmpty(
                     providerName,
                     "Identity provider name");
-            
+
             return _configStore.getProvider(
                         tenantName,
                         providerName,
@@ -2292,6 +2525,29 @@ implements IIdentityManager
         }
    }
 
+    /**
+     * Retrieves an identity provider from the tenant's configuration along with its internal info
+     *
+     * @param tenantName   Name of tenant. Required, non-null, non-empty, case insensitive.
+     * @param ProviderName Name of Identity Provider. Required.
+     * @return             Identity Provider information, null if not found.
+     * @throws IDMException On IDM server errors
+     * @throws NoSuchTenantException If tenant doesn't exist
+     * @throws InvalidArgumentException - one or more input argument is invalid.
+     */
+    private IIdentityStoreData getProviderWithInternalInfo(String tenantName, String providerName) throws Exception {
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            ValidateUtil.validateNotEmpty(providerName, "Identity provider name");
+            return _configStore.getProvider(tenantName, providerName, true);
+        }
+        catch(Exception ex)
+        {
+            logger.error(String.format("Failed to get identity provider [%s] for tenant [%s]", providerName, tenantName), ex);
+            throw ex;
+        }
+   }
+
     private
     void
     setProvider(
@@ -2304,7 +2560,7 @@ implements IIdentityManager
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
             ValidateUtil.validateNotNull(idsData, "Identity store configuration");
 
-         IIdentityStoreData provider = this.getProvider(tenantName, idsData.getName());
+         IIdentityStoreData provider = this.getProviderWithInternalInfo(tenantName, idsData.getName());
          if ( provider != null && provider.getDomainType() == DomainType.SYSTEM_DOMAIN)
          {
              throw new InvalidArgumentException(
@@ -2321,24 +2577,7 @@ implements IIdentityManager
                  IdentityStoreType.IDENTITY_STORE_TYPE_ACTIVE_DIRECTORY ||
                  authType != AuthenticationType.USE_KERBEROS)
          {
-             for (String connStr : idsData.getExtendedIdentityStoreData()
-                   .getConnectionStrings())
-             {
-                ValidateUtil.validateNotEmpty(connStr, "connectionString");
-                // remove assert here; if this is meant to prevent an edit of native AD,
-                // this should be done through InvalidArgumentException with proper message
-                assert (idsData.getExtendedIdentityStoreData().getProviderType()
-                      != IdentityStoreType.IDENTITY_STORE_TYPE_ACTIVE_DIRECTORY);
-                // for each connection string, we should pass connection probe
-                this.probeProviderConnectivity(tenantName, connStr,
-                      AuthenticationType.PASSWORD,
-                      idsData.getExtendedIdentityStoreData().getUserName(),
-                      idsData.getExtendedIdentityStoreData().getPassword(),
-                      new LdapCertificateValidationSettings(idsData.getExtendedIdentityStoreData().getCertificates()));
-
-                // should pass the DN check
-                checkDn(idsData, new URI(connStr));
-             }
+             probeProviderConnectivity(tenantName, idsData);
          }
          // native AD
          else
@@ -2610,6 +2849,61 @@ implements IIdentityManager
         }
     }
 
+    private void probeProviderConnectivity(String tenantName, IIdentityStoreData idsData) throws Exception {
+
+        ValidateUtil.validateNotNull(idsData.getExtendedIdentityStoreData(), "idsData details");
+        if( AuthenticationType.PASSWORD != idsData.getExtendedIdentityStoreData().getAuthenticationType() )
+        {
+             throw new IllegalArgumentException(String.format("AuthenticationType='%s' is not supported.",
+                            idsData.getExtendedIdentityStoreData().getAuthenticationType().toString()));
+        }
+        ServerUtils.validateNotEmptyUsername(idsData.getExtendedIdentityStoreData().getUserName());
+        ValidateUtil.validateNotNull(idsData.getExtendedIdentityStoreData().getPassword(), "pwd");
+
+        IIdentityProvider provider = providerFactory.buildProvider(tenantName, idsData, idsData.getExtendedIdentityStoreData().getCertificates());
+        if (!(provider instanceof BaseLdapProvider))
+            throw new IllegalArgumentException(String.format("Supported provider type is %s, %s provider is not of supported type.", BaseLdapProvider.class.toString(),
+                    provider.getClass().toString()));
+
+        StringBuilder connections = new StringBuilder();
+        for (String connectionStr : idsData.getExtendedIdentityStoreData().getConnectionStrings()) {
+            ValidateUtil.validateNotEmpty(connectionStr, "connectionString");
+
+            try {
+                URI connectionUri = new URI(connectionStr);
+                DirectoryStoreProtocol protocol = DirectoryStoreProtocol.getValue(connectionUri.getScheme().toString());
+                if (protocol  == null)
+                {
+                    throw new IllegalArgumentException(String.format("Unsupported providerUri='%s'.", connectionUri ));
+                }
+                else if (protocol == DirectoryStoreProtocol.LDAPS)
+                {
+                    ValidateUtil.validateNotEmpty(idsData.getExtendedIdentityStoreData().getCertificates(), "IdentityStore certificates");
+                }
+                connections.append(connectionStr + " ");
+            } catch (URISyntaxException e) {
+                throw new IllegalArgumentException(e.getMessage(), e);
+            }
+        }
+
+        try
+        {
+            //probe connectivity and DN check
+            ((BaseLdapProvider)provider).probeConnectionSettings();
+        }
+        catch (Exception ex)
+        {
+            String msg = String.format("Failed to probe provider connectivity [URI: %s]; tenantName [%s], userName [%s]",
+                    connections.toString(),
+                    tenantName,
+                    idsData.getExtendedIdentityStoreData().getUserName());
+
+            logger.warn(msg);
+
+            throw new IDMLoginException(msg, null, ex);
+        }
+    }
+
     private
     Collection<String>
     getDefaultProviders(String tenantName) throws Exception
@@ -2691,7 +2985,7 @@ implements IIdentityManager
             String    password
             ) throws Exception
             {
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
         boolean authFailed = false;
 
         PrincipalId userPrincipal = null;
@@ -2724,6 +3018,12 @@ implements IIdentityManager
             {
                 throw new IDMLoginException("Access denied");
             }
+
+            String identityProviderName = provider.getName();
+
+            validateProviderAllowedAuthnTypes(DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_PASSWORD,
+                                              identityProviderName,
+                                              tenantInfo);
 
             return provider.authenticate(userPrincipal, password);
         }
@@ -2839,7 +3139,7 @@ implements IIdentityManager
         }
         finally
         {
-            long delta = System.currentTimeMillis() - startTime;
+            long delta = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
 
             if (logger.isInfoEnabled())
             {
@@ -2874,6 +3174,42 @@ implements IIdentityManager
                             delta);
         }
             }
+
+    /**
+     * A helper method that will check if requested authentication type is supported based on a provider (user belonging to)
+     * @param requestedAuthnType authentication type to check if it is associated with provider
+     * @param requestedProvider Name of identity source
+     * @param tenantInfo tenant information
+     */
+    private void validateProviderAllowedAuthnTypes(int requestedAuthnType, String requestedProvider, TenantInformation tenantInfo) throws IDMLoginException {
+        boolean authenticationAllowed = false;
+
+        Collection<IIdentityStoreData> idsStores = tenantInfo.getIdsStores(); // All identity sources on tenant
+        AuthnPolicy tenantAuthnPolicy = tenantInfo.getAuthnPolicy(); // Authentication policy on tenant
+        IIdentityStoreData identitySource = null;
+
+        // Retrieve information of requested identity source
+        for(IIdentityStoreData identityStore : idsStores ) {
+            if(identityStore.getName().equalsIgnoreCase(requestedProvider)) {
+               identitySource = identityStore;
+               if(identitySource != null){
+                   IIdentityStoreDataEx extendedData = identitySource.getExtendedIdentityStoreData();
+                   if(extendedData.getAuthnTypes() != null) {
+                       int[] providerAuthnTypes = extendedData.getAuthnTypes();
+                       if(ArrayUtils.contains(providerAuthnTypes, requestedAuthnType)){
+                           authenticationAllowed = true;
+                       }
+
+                       if(!authenticationAllowed) {
+                           String errMessage = String.format("Authentication type : '%s' is not allowed for requested identity provider : '%s'", requestedAuthnType, requestedProvider);
+                           throw new IDMLoginException(errMessage);
+                       }
+                   }
+               }
+               break;
+            }
+        }
+    }
 
     private
     GSSResult
@@ -2912,6 +3248,9 @@ implements IIdentityManager
             if (result.getUserInfo() != null)
             {
                 IIdentityProvider adIdentityProvider = tenantInfo.findProviderADAsFallBack(result.getUserInfo().getDomain());
+                if (adIdentityProvider == null) {
+                    throw new NoSuchIdpException("Native AD Provider does not exist.");
+                }
                 //save PAC info to ActiveDirectoryProvider if the user domain is from AD provider
                 if (adIdentityProvider instanceof ActiveDirectoryProvider)
                 {
@@ -2983,6 +3322,31 @@ implements IIdentityManager
             throw new IDMLoginException("Error in retrieve tenantInfo");
         }
 
+        if (tlsCertChain == null || tlsCertChain.length < 1) {
+            logger.error("Certificate chain is empty or null");
+            throw new IDMLoginException("Certificate chain is empty or null");
+        }
+
+        if (logger.isDebugEnabled()) {
+            for (int i = 0; i < tlsCertChain.length; i++) {
+                logger.debug("Client Certificate [" + i + "] = "
+                                + tlsCertChain[i].toString());
+            }
+        }
+
+        String subjectDn = tlsCertChain[0].getSubjectDN() != null?
+                tlsCertChain[0].getSubjectDN().toString() : "";
+
+        IIdmAuthStatRecorder recorder = PerformanceMonitorFactory.createIdmAuthStatRecorderInstance(
+                tenantName,
+                "CertificateAuthentication",
+                "IDM",
+                0,
+                IIdmAuthStat.ActivityKind.AUTHENTICATE,
+                IIdmAuthStat.EventLevel.INFO,
+                subjectDn);
+        recorder.start();
+
         AuthnPolicy aPolicy = info.getAuthnPolicy();
 
         Validate.notNull(aPolicy, "AuthnPolicy can not be null.");
@@ -2995,22 +3359,26 @@ implements IIdentityManager
 
         ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
 
-        if (tlsCertChain == null || tlsCertChain.length < 1) {
-            logger.error("Certificate chain is empty or null");
-            throw new IDMLoginException("Certificate chain is empty or null");
-        }
+        IdmClientCertificateValidator certValidator = new IdmClientCertificateValidator(certPolicy,tenantName);
 
-        for (int i = 0; i < tlsCertChain.length; i++) {
-            logger.debug("Client Certificate [" + i + "] = "
-                            + tlsCertChain[i].toString());
-        }
+        Map<String, String> authStatsExtension = new HashMap<String, String> ();
+        recorder.add(authStatsExtension);
+        certValidator.validateCertificatePath(tlsCertChain[0], authStatsExtension);
 
-        IdmClientCertificateValidator certValidator = new IdmClientCertificateValidator(
-certPolicy);
-
-        certValidator.validateCertificatePath(tlsCertChain[0]);
-
+        long startTime = System.nanoTime();
         String upn = certValidator.extractUPN(tlsCertChain[0]);
+
+        //Validate allowed authentication type on provider
+        IIdentityProvider provider = null;
+        try{
+             PrincipalId userPrincipal = getUserPrincipal(tenantName, upn);
+             provider = info.findProviderADAsFallBack(userPrincipal.getDomain());
+           }catch (Exception e){
+               throw new IDMException("Failed to retrieve details of identity provider with domain :" + subjectDn);
+           }
+        if(provider != null) {
+            validateProviderAllowedAuthnTypes(DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_TLS_CERTIFICATE, provider.getName(), info);
+        }
 
         String[] parts = upn.split("@");
         PrincipalId principalID;
@@ -3026,6 +3394,9 @@ certPolicy);
                                                     +
                                     principalID.getUPN());
                 }
+
+                logger.info("Successfully validated subject of the client certificate : "
+                         + principalID.getUPN());
             } catch (Exception e) {
                 logger.error("Failed to determine the status of principal with candicate UPN:"
                                 + principalID.getUPN());
@@ -3038,9 +3409,315 @@ certPolicy);
             throw new IDMLoginException("Illegal UPN format: " + upn);
         }
 
+        authStatsExtension.put("SearchUserByCertificateUpn", String.format("%d Ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)));
+        recorder.end();
         // authentication is successful
         return principalID;
     }
+
+
+    /**
+     * authenticate with secure ID
+     *
+     * @param tenantName
+     * @param principal
+     * @param passcode
+     * @return
+     * @throw IDMLoginExceptin  if credential is denied
+     * @throw IDMRsaSecurIDNewPinException  if user need to setup new pin.
+     * @throws IDMException all other errors.
+     */
+    private RSAAMResult authenticateRsaSecurId(String tenantName, String sessionId,
+            String userName, String passcode)
+            throws IDMException
+
+    {
+        long startTime = System.nanoTime();
+        boolean authFailed = false;
+        RSAAMResult authResult = null;
+
+        logger.debug("Authenticating with RSA securID ..");
+
+        try
+        {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            ValidateUtil.validateNotNull(userName, "User Principal");
+
+            TenantInformation info = findTenant(tenantName);
+            AuthnPolicy aPolicy = info.getAuthnPolicy();
+            Validate.notNull(aPolicy, "AuthnPolicy can not be null.");
+            Validate.isTrue(aPolicy.IsRsaSecureIDAuthnEnabled(), "SecureID authentication is not turned on for this tenant.");
+
+            RSAAgentConfig rsaConfig = aPolicy.get_rsaAgentConfig();
+            Validate.notNull(rsaConfig, "RSAAgentConfig is not defined");
+
+            HashMap<String, String> userIDAttrMap = rsaConfig.get_idsUserIDAttributeMap();
+
+            // we should not need to create api all the time; but different tenant should have different api
+            AuthenticationSessionFactory api = null;
+
+            String[] userInfo = separateUserIDAndDomain(userName);
+            IIdentityProvider provider = info.findProviderADAsFallBack(userInfo[1]);
+
+            if (null == provider) {
+                throw new IDMLoginException(String.format(
+                        "Identity source was not defined for user: %s.", userName));
+            }
+            validateProviderAllowedAuthnTypes(DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_RSA_SECUREID,
+                                                provider.getName(),
+                                                info);
+
+            api = this._rsaSessionFactoryCache.getAuthnFactory(info);
+
+            String userID = extractRsaUserID(info, userName, userIDAttrMap);
+            AuthenticationSession session = null;
+            String cachedSessionId = sessionId;
+            PrincipalId pId = getPrincipalIDFromUserName(info, userName, userIDAttrMap);
+            try
+            {
+                // Retrieve session if this it is provided
+                if (cachedSessionId != null) {
+                    session = IdentityManager._rsaSessionCache.getSession(tenantName,cachedSessionId);
+                }
+                // generate a rsa session if not found in rsa session cache
+                if (session == null) {
+                    logger.debug("Using new AuthSession ...");
+                    session = api.createSession();
+                    String newSessionId = createSessionId();
+
+                    int status = session.authenticate(userID, new AuthenticationSecret(passcode)).getStatusCode();
+
+                    if (status == AuthenticationResult.NEXT_CODE_REQUIRED) {
+                        IdentityManager._rsaSessionCache.addSession(tenantName, newSessionId, session);
+                    }
+
+                    authResult = afterProcessRSAStatus(status,
+                            newSessionId, userName, pId);
+                } else {
+                    logger.debug("Using cached AuthSession, in second leg of NEXT_CODE_REQUIRED mode ...");
+
+                    //It must be in nextcode mode if the session is found
+                    int prevStatus = session.getAuthenticationStatus().getStatusCode();
+                    if (prevStatus != AuthenticationResult.NEXT_CODE_REQUIRED) {
+                        throw new IDMLoginException(String.format(
+                                "Unexpected status in a cached rsa session: %s.", prevStatus));
+                    }
+
+                    int status = session.nextAuthenticationStep(new AuthenticationSecret(passcode)).getStatusCode();
+                    authResult = afterProcessRSAStatus(status,
+                            cachedSessionId, userName, pId);
+
+                    if (status != AuthenticationResult.NEXT_CODE_REQUIRED) {
+                        IdentityManager._rsaSessionCache.removeSession(tenantName, cachedSessionId);
+                    }
+                }
+            } finally
+            {
+                if (session.getAuthenticationStatus().getStatusCode() != AuthenticationResult.NEXT_CODE_REQUIRED) {
+                    session.closeSession();
+                }
+            }
+        } catch (IDMLoginException ex) {
+            authFailed = true;
+            throw ex;
+        } catch (IDMException ex) {
+            // don't wrap it.
+            authFailed = true;
+            throw ex;
+        } catch (Exception ex)
+        {
+            authFailed = true;
+            logger.error(
+                    String.format(
+                            "Failed to authenticate principal [%s] by passcode",
+                            userName != null ? userName : "null"), ex);
+
+            throw new IDMException(ex.getMessage());
+        } finally
+        {
+            long delta = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
+
+            if (logger.isInfoEnabled())
+            {
+                logger.info(
+                        String.format(
+                                "Authentication %s for user [%s] in tenant [%s] in [%d] milliseconds with rsa secureID",
+                                authFailed ? "failed" : "succeeded or entered \"NEXT_CODE_REQUIRED\" mode",
+                                userName,
+                                tenantName,
+                                delta));
+
+            }
+
+            IdmServer.getPerfDataSinkInstance().addMeasurement(
+                    new PerfBucketKey(
+                            PerfMeasurementPoint.IDMAuthenticate,
+                            userName),
+                    delta);
+        }
+        return authResult;
+    }
+
+    private String createSessionId() {
+        SecureRandom randomGenerator = new SecureRandom();
+        int sessionId = randomGenerator.nextInt(1000000);
+        return String.valueOf(sessionId);
+    }
+
+    /**
+     *
+     * Handle rsa session status.
+     *
+     * Throw at NewPin mode. User need to setup new pin via rsa tool rather than our login page.
+     *
+     * For each status do the following 1. log the event 2. update rsa session
+     * cache. 3. throw or return RSAAMResult.
+     *
+     * @param status
+     *            Normal return conditions:
+     *            ACCESS_OK NEW_PIN_REQUIRED NEXT_CODE_REQUIRED,PIN_ACCEPTED
+     *            Throwing conditions:
+     *            ACCESS_DENIED, NEXT_CODE_BAD,PIN_REJECTED,
+     * @param cachedSessionId
+     * @param userName
+     *            userName used at login
+     *            -need in status of succeed.
+     * @return RSAAMResult
+     * @throws IDMLoginException
+     * @throws IDMSecureIDNewPinException if the status is AuthSession.NEW_PIN_REQUIRED.
+     */
+    private RSAAMResult afterProcessRSAStatus(int status,
+            String cachedSessionId, String userName, PrincipalId pId)
+            throws IDMLoginException, IDMSecureIDNewPinException
+    {
+        Validate.notEmpty(userName, "Empty userName");
+        RSAAMResult result;
+
+        switch (status) {
+            case AuthenticationResult.ACCESS_OK:
+                logger.info(String
+                        .format("Successfully authenticating principal [%s] by passcode.",
+                                userName));
+                result = new RSAAMResult(pId);
+                break;
+            case AuthenticationResult.ACCESS_DENIED:
+                logger.error(String
+                        .format("Failed authenticating principal [%s] by passcode.",
+                                userName));
+                throw new IDMLoginException(String.format(
+                        "RSA status: ACCESS_DENIED."));
+            case AuthenticationResult.NEXT_CODE_BAD:
+                //Next passcode failed to pass authentication.
+                logger.error(String
+                        .format("Failed authenticating principal [%s] by passcode.",
+                                userName));
+                throw new IDMLoginException(String.format(
+                        "RSA status: NEXT_CODE_BAD."));
+            case AuthenticationResult.NEXT_CODE_REQUIRED:
+                logger.info(String
+                        .format("Next code required authenticating principal [%s] by passcode.RSA SessionID [%s]",
+                                userName, cachedSessionId));
+                result = new RSAAMResult(cachedSessionId);
+                break;
+            case AuthenticationResult.NEW_PIN_REQUIRED:
+                logger.info(String
+                        .format("New pin required authenticate principal [%s] by passcode.",
+                                userName));
+                throw new IDMSecureIDNewPinException(String.format(
+                        "RSA status: PIN_REJECTED."));
+            default:
+                throw new IDMLoginException(
+                        String.format(
+                                "Unexpected RSA AM status:  %d",
+                                status));
+        }
+
+        return result;
+    }
+
+    private String extractRsaUserID(TenantInformation info, String userName, HashMap<String, String> userIDAttrMap) throws Exception {
+
+        Validate.notNull(info, "info");
+
+        String[] userInfo = separateUserIDAndDomain(userName);
+        if (userInfo == null) {
+            throw new IDMLoginException(String.format(
+                    "User name %s does not contain the domain - expected in format of name@domain",
+                    userName));
+        }
+
+        String userID;
+        if (userIDAttrMap == null || userIDAttrMap.isEmpty()) {
+            userID = userName;
+        } else {
+            IIdentityProvider provider = info.findProviderADAsFallBack(userInfo[1]);
+            String ldapAttr = userIDAttrMap.get(provider.getName());
+
+            if (ldapAttr == null || ldapAttr.equals("userPrincipalName")) {
+                userID = userName;
+            } else {
+                userID = userInfo[0];
+            }
+        }
+        return userID;
+    }
+
+    /**
+     * Split user name and domain at '@'.
+     * @param userName in the form of name@domain.
+     * @return name and domain in a string array.  null if there is no domain part
+     */
+    private String[] separateUserIDAndDomain(String userName) {
+        Validate.notEmpty(userName, "userName");
+        int i = userName.lastIndexOf("@");
+
+
+        if (i == -1) {
+            logger.error("User name does not have domain part.");
+            return null;
+        }
+        String name = userName.substring(0, i);
+        Validate.notEmpty(name, "Empty name string before the last \'@\' in user name string.");
+
+        String domainName = userName.substring(i+1);
+        Validate.notEmpty(domainName, "expect domain name after the last \'@\' in user name.");
+        String[] userInfo = {name, domainName};
+
+        return userInfo;
+    }
+
+    /**
+     * UserName is could be UPN or userID+domain. UserID here is the ldap attribute value used to identity the user.
+     * @param userName
+     *            user name for securID login
+     * @return
+     * @throws Exception
+     */
+    private PrincipalId getPrincipalIDFromUserName(TenantInformation info, String userName, HashMap<String, String> userIDAttrMap) throws Exception {
+
+        String[] userInfo = separateUserIDAndDomain(userName);
+        if (userInfo == null) {
+            throw new IDMLoginException(String.format(
+                    "User name %s does not contain the domain - expected in format of name@domain",
+                    userName));
+        }
+
+        if (userIDAttrMap == null || userIDAttrMap.isEmpty()) {
+            return new PrincipalId(userInfo[0], userInfo[1]);
+        }
+
+        IIdentityProvider provider = info.findProviderADAsFallBack(userInfo[1]);
+        String ldapAttrName = userIDAttrMap.get(provider.getName());
+
+        if (ldapAttrName == null || ldapAttrName.equals("userPrincipalName") ) {
+            return new PrincipalId(userInfo[0], userInfo[1]);
+        } else {
+            // find the user with the ldap attribute
+            PrincipalId pID = provider.findActiveUser(ldapAttrName, userInfo[0]);
+            return pID;
+        }
+    }
+
     private
     boolean
     IsActive(
@@ -3127,7 +3804,7 @@ certPolicy);
             Collection<AttributeValuePair> attributeValues =
                     new HashSet<AttributeValuePair>();
 
-            long startTime = System.currentTimeMillis();
+            long startTime = System.nanoTime();
 
             String samlGroupAttrName = tenantInfo.findSystemProvider()
                     .getMappingSamlAttributeForGroupMembership();
@@ -3165,7 +3842,7 @@ certPolicy);
                     }
                     catch(Exception e)
                     {
-                        logger.warn(
+                        logger.trace(
                                 String.format(
                                         "Failed to determine FSP for principal [%s] or any of its groups in tenant [%s]",
                                                         principal != null ? principal.getUPN() : "null",
@@ -3193,7 +3870,7 @@ certPolicy);
                     new PerfBucketKey(
                             PerfMeasurementPoint.IDMGetAttributeValues,
                             principal.getDomain()),
-                            System.currentTimeMillis() - startTime);
+                            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
 
             return attributeValues;
         }
@@ -4219,35 +4896,6 @@ certPolicy);
         }
     }
 
-    /**
-     * Finds the set of groups that contain the specified security principal in
-     * the tenant.
-     *
-     * The principal whose immediate parents are desired, may be a user or group
-     *
-     * @param tenantName  Name of tenant, required.non-null non-empty
-
-     * @param principalId Security principal id, required, non-null.
-     * @return Set of immediate parent groups found.
-     * @throws IDMException
-     * @throws NoSuchTenantException - if no such tenant exist
-     * @throws NoSuchIdpException   - system tenant is not set up.
-     * @throws InvalidArgumentException    -- if the tenant name is null or empty
-     * @throws InValidPrincipleException    - principal ID is invalid.
-     * @throws IDMException         - wrapping exception for any other exceptions
-     *                              from down the stack.
-     */
-    private
-    Set<Group>
-    findDirectParentGroups(
-            String      tenantName,
-            PrincipalId principalId
-            ) throws Exception
-    {
-        return findDirectParentGroupsInternal(tenantName,
-                                              principalId,
-                                              true);
-    }
 
     private boolean isMemberOfSystemGroup(String tenantName, PrincipalId principalId, String groupName)
             throws Exception
@@ -4298,94 +4946,29 @@ certPolicy);
         }
     }
 
-    // tenantInfo is non-null (checked before calling this)
-    // principId is non-null (checked before calling this)
+    /**
+     * Finds the set of groups that contain the specified security principal in
+     * the tenant.
+     *
+     * The principal whose immediate parents are desired, may be a user or group
+     *
+     * @param tenantName  Name of tenant, required.non-null non-empty
+
+     * @param principalId Security principal id, required, non-null.
+     * @return Set of immediate parent groups found.
+     * @throws IDMException
+     * @throws NoSuchTenantException - if no such tenant exist
+     * @throws NoSuchIdpException   - system tenant is not set up.
+     * @throws InvalidArgumentException    -- if the tenant name is null or empty
+     * @throws InValidPrincipleException    - principal ID is invalid.
+     * @throws IDMException         - wrapping exception for any other exceptions
+     *                              from down the stack.
+     */
     private
     Set<Group>
-    findFspsInParentGroups(
-        TenantInformation tenantInfo,
-        PrincipalId principalId,
-        ISystemDomainIdentityProvider systemProvider,
-        boolean bFoudnInDirectParentGroup
-        ) throws RemoteException, IDMException
-    {
-        String tenantName = tenantInfo.getTenant().getName();
-        Set<Group> sysGroups = new HashSet<Group>();
-        Set<Group> fspGroups = null;
-        // the user or group could be a member of a FSP group
-        try
-        {
-            IIdentityProvider provider = tenantInfo.findProviderADAsFallBack(
-                    principalId.getDomain());
-            ServerUtils.validateNotNullIdp(provider, tenantName, principalId.getDomain());
-
-            if (bFoudnInDirectParentGroup)
-            {
-                fspGroups = provider.findDirectParentGroups(principalId);
-            }
-            else
-            {
-                fspGroups = provider.findNestedParentGroups(principalId);
-            }
-        }
-        catch(Exception e)
-        {
-            logger.info(
-                    String.format(
-                            "Failed to find FSP user or gorup [%s@%s]'s %s parent groups in tenant [%s]",
-                            principalId != null ? principalId.getName() : "null",
-                            principalId != null ? principalId.getDomain() : "null",
-                            bFoudnInDirectParentGroup ? "direct" : "nested",
-                            tenantName));
-        }
-
-        if (fspGroups != null && fspGroups.size() > 0)
-        {
-            for (Group fspGrp : fspGroups)
-            {
-                if (fspGrp != null && fspGrp.getObjectId() != null /*skip group with null objectId*/)
-                {
-                    PrincipalId newFspGroupId = new PrincipalId(
-                            systemProvider.getObjectIdName(fspGrp.getObjectId()),
-                            principalId.getDomain());
-                    Set<Group> currSysGroups = null;
-                    try
-                    {
-                        if (bFoudnInDirectParentGroup)
-                        {
-                            currSysGroups = systemProvider.findDirectParentGroups(newFspGroupId);
-                        }
-                        else
-                        {
-                            currSysGroups = systemProvider.findNestedParentGroups(newFspGroupId);
-                        }
-                    }
-                    catch(Exception ex1)
-                    {
-                        logger.info(
-                                String.format(
-                                        "Failed to find group [%s@%s] as FSP group in tenant [%s]",
-                                        fspGrp != null ? fspGrp.getName() : "null",
-                                                fspGrp != null ? fspGrp.getDomain() : "null",
-                                                        tenantName));
-                    }
-                    if (currSysGroups != null && currSysGroups.size() > 0)
-                    {
-                        sysGroups.addAll(currSysGroups);
-                    }
-                }
-            }
-        }
-
-        return sysGroups;
-    }
-
-    private
-    Set<Group>
-    findDirectParentGroupsInternal(
+    findDirectParentGroups(
             String      tenantName,
-            PrincipalId principalId,
-            boolean bFoundInExternalIDP
+            PrincipalId principalId
             ) throws Exception
             {
         try
@@ -4393,7 +4976,7 @@ certPolicy);
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
             ValidateUtil.validateNotNull(principalId, "User principal");
 
-            long startedAt = System.currentTimeMillis();
+            long startedTime = System.nanoTime();
 
             TenantInformation tenantInfo = findTenant(tenantName);
             ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
@@ -4403,102 +4986,68 @@ certPolicy);
             ServerUtils.validateNotNullSystemIdp(systemProvider, tenantName);
 
             Set<Group> groups = new HashSet<Group>();
-            Set<Group> sysGroups = null;
-            boolean foundExternalIDPUser = false;
+            PrincipalGroupLookupInfo idpGroups = null;
+            List<Group> sysGroups = null;
+            String fspId = null;
+            // direct parent groups is a union of:
+            // - set of direct parent groups from specific identity source provider
+            // - set of direct parent groups from system provider for specified principal's object id
+            // [if prinicipal's identity source != system provider]
 
-            if (systemProvider.findUser(principalId) == null &&
-                    systemProvider.findGroup(principalId) == null &&
-                    lookupPrincipalIdServicePrincipal(tenantName, systemProvider, principalId))
+            IIdentityProvider provider = tenantInfo.findProviderADAsFallBack(
+                    principalId.getDomain());
+
+
+            // TODO: external registered Idp support needs to be re-considered for more straightforward handling...
+            if ( provider == null ) // this could be external idp registered user
             {
-                boolean bFoundUser = false;
-
-                // lookup principal Id as user
-                try
-                {
-                    PersonUser user = findPersonUser(tenantName, principalId);
-
-                    if (user != null)
-                    {
-                        bFoundUser = true;
-                        if (user.getObjectId() != null)
-                        {//FSP system group membership lookup
-                            PrincipalId newUserId = new PrincipalId(
-                                    systemProvider.getObjectIdName(user.getObjectId()),
-                                    principalId.getDomain());
-
-                            sysGroups = systemProvider.findDirectParentGroups(newUserId);
-                        }
-                    }
-                }
-                catch(Exception ex)
-                {
-                    logger.info(
-                            String.format(
-                                    "Failed to find principal [%s@%s] as FSP user in tenant [%s]",
-                                    principalId != null ? principalId.getName() : "null",
-                                            principalId != null ? principalId.getDomain() : "null",
-                                                    tenantName));
-
-                    // the user could be a member of a FSP group
-                    sysGroups = findFspsInParentGroups(
-                                                      tenantInfo,
-                                                      principalId,
-                                                      systemProvider,
-                                                      true);
-                }
-
-                // if not resolved as user, continue to lookup principal Id as group
-                if (!bFoundUser)
-                {
-                    boolean foundGroup = false;
-                    try
-                    {
-                        Group group = findGroup(tenantName, principalId);
-                        if (group != null)
-                        {
-                            foundGroup = true;
-                            if (group.getObjectId() != null)
-                            {
-                                PrincipalId newGroupId = new PrincipalId(
-                                        systemProvider.getObjectIdName(group.getObjectId()),
-                                        principalId.getDomain());
-
-                                sysGroups = systemProvider.findDirectParentGroups(newGroupId);
-                            }
-                        }
-                    }
-                    catch(Exception ex)
-                    {
-                        logger.info(
-                                String.format(
-                                        "Failed to find principal [%s@%s] as FSP group in tenant [%s]",
-                                        principalId != null ? principalId.getName() : "null",
-                                                principalId != null ? principalId.getDomain() : "null",
-                                                        tenantName));
-                        // the user could be a member of a FSP group
-                        sysGroups = findFspsInParentGroups(
-                                                          tenantInfo,
-                                                          principalId,
-                                                          systemProvider,
-                                                          true);
-                    }
-
-                    if (!foundGroup)
-                    {// no resolved as group (and user), continue to lookup as registered ExternalIDP user
-                        PersonUser user = findRegisteredExternalIDPUser(tenantName, principalId);
-                        if (null != user)
-                        {
-                            foundExternalIDPUser = true;
-                            PrincipalId newFspId = fspIdFromExternalIDPUser(user, tenantName);
-                            sysGroups = systemProvider.findDirectParentGroups(newFspId);
-                        }
-                    }
-                }
-
+                fspId = getRegisteredExternalIDPUserObjectId(tenantName, principalId);
             }
             else
             {
-                sysGroups = systemProvider.findDirectParentGroups(principalId);
+                try
+                {
+                    idpGroups = provider.findDirectParentGroups(principalId);
+                    if ( ( idpGroups != null ) && ( provider.getName().equalsIgnoreCase(systemProvider.getName()) == false ) )
+
+                    {
+                        fspId = idpGroups.getPrincipalObjectId();
+
+                    }
+                }
+                catch(InvalidPrincipalException ex)
+
+                {
+                    // this could be external idp registered user
+                    fspId = getRegisteredExternalIDPUserObjectId(tenantName, principalId);
+                }
+             }
+
+            if ( ServerUtils.isNullOrEmpty(fspId) == false)
+
+            {
+
+                try
+                {
+                    sysGroups = systemProvider.findGroupObjectsForFsps(Collections.<String>singletonList(fspId));
+                }
+                catch(InvalidPrincipalException ex)
+
+                {
+                    logger.trace(
+                        String.format(
+                            "Failed to find principal [%s@%s] as FSP principal in tenant [%s]",
+                            principalId != null ? principalId.getName() : "null",
+                            principalId != null ? principalId.getDomain() : "null",
+                            tenantName));
+                    sysGroups = null;
+                }
+            }
+
+            if ( (idpGroups != null) && (idpGroups.getGroups() != null) && (idpGroups.getGroups().isEmpty() == false) )
+
+            {
+                groups.addAll(idpGroups.getGroups());
             }
 
             if (sysGroups != null && !sysGroups.isEmpty())
@@ -4506,27 +5055,13 @@ certPolicy);
                 groups.addAll(sysGroups);
             }
 
-            if (!foundExternalIDPUser && bFoundInExternalIDP)
-            {// (2) Find from their external domain such as AD
-                IIdentityProvider provider = tenantInfo.findProviderADAsFallBack(
-                        principalId.getDomain());
-                ServerUtils.validateNotNullIdp(provider, tenantName, principalId.getDomain());
-
-                Set<Group> idpGroups = provider.findDirectParentGroups(principalId);
-
-                if (idpGroups != null && !idpGroups.isEmpty())
-                {
-                    groups.addAll(idpGroups);
-                }
-            }
-
+            // TODO: ideally everyone group should be added within system domain provider
             groups.add(systemProvider.getEveryoneGroup());
-
             IdmServer.getPerfDataSinkInstance().addMeasurement(
                     new PerfBucketKey(
                             PerfMeasurementPoint.IDMFindDirectParentGroups,
                             principalId.getDomain()),
-                            System.currentTimeMillis() - startedAt);
+                            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedTime));
             return groups;
         }
         catch(Exception ex)
@@ -4540,24 +5075,13 @@ certPolicy);
 
             throw ex;
         }
-            }
+    }
 
     private
     Set<Group>
     findNestedParentGroups(
         String      tenantName,
         PrincipalId principalId
-        ) throws Exception
-    {
-        return findNestedParentGroupsInternal(tenantName, principalId, true);
-    }
-
-    private
-    Set<Group>
-    findNestedParentGroupsInternal(
-        String      tenantName,
-        PrincipalId principalId,
-        boolean bFoundInExternalIDP
         ) throws Exception
     {
         try
@@ -4568,125 +5092,97 @@ certPolicy);
             TenantInformation tenantInfo = findTenant(tenantName);
             ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
 
-            // (1) Find from system domain
             ISystemDomainIdentityProvider systemProvider =
                     tenantInfo.findSystemProvider();
             ServerUtils.validateNotNullSystemIdp(systemProvider, tenantName);
 
             Set<Group> groups = new HashSet<Group>();
-            Set<Group> sysGroups = null;
-            boolean foundExternalIDPUser = false;
+            PrincipalGroupLookupInfo idpGroups = null;
+            List<Group> sysGroups = null;
+            ArrayList<String> fspIds = new ArrayList<String>();
 
-            if (systemProvider.findUser(principalId) == null &&
-                    systemProvider.findGroup(principalId) == null &&
-                    lookupPrincipalIdServicePrincipal(tenantName, systemProvider, principalId))
+            // nested parent groups is a union of:
+            // - set of nested parent groups from specific identity source provider
+            // - set of fsp parent groups from system provider for { specified principal's object id + all of the nested groups ids}.
+            //   [if principal's identity source != system provider]
+            IIdentityProvider provider = tenantInfo.findProviderADAsFallBack(
+                    principalId.getDomain());
+
+            // TODO: external registered Idp support needs to be re-considered for more straightforward handling...
+            if ( provider == null ) // this could be external idp registered user
             {
-                boolean bFoundUser = false;
-
-                // lookup principal Id as user
-                try
+                String externalUserId = getRegisteredExternalIDPUserObjectId(tenantName, principalId);
+                if (ServerUtils.isNullOrEmpty(externalUserId) == false )
                 {
-                    PersonUser user = findPersonUser(tenantName, principalId);
-
-                    if (user != null)
-                    {
-                        bFoundUser = true;
-                        if (user.getObjectId()!=null)
-                        {
-                            PrincipalId newUserId = new PrincipalId(
-                                    systemProvider.getObjectIdName(user.getObjectId()),
-                                    principalId.getDomain());
-                            sysGroups = systemProvider.findNestedParentGroups(newUserId);
-                        }
-                    }
-                }
-                catch(Exception ex)
-                {
-                    logger.info(
-                            String.format(
-                                    "Failed to find principal [%s@%s] as FSP group in tenant [%s]",
-                                    principalId != null ? principalId.getName() : "null",
-                                            principalId != null ? principalId.getDomain() : "null",
-                                                    tenantName));
-                    // the user could be a member of a FSP group
-                    sysGroups = findFspsInParentGroups(
-                                                      tenantInfo,
-                                                      principalId,
-                                                      systemProvider,
-                                                      false);
-                }
-
-                // if not resolved as user, continue to lookup principal Id as group
-                if (!bFoundUser)
-                {
-                    boolean foundGroup = false;
-                    try
-                    {
-                        Group group = findGroup(tenantName, principalId);
-                        if (group != null)
-                        {
-                            foundGroup = true;
-                            if (group.getObjectId() != null)
-                            {
-                                PrincipalId newGroupId = new PrincipalId(
-                                        systemProvider.getObjectIdName(group.getObjectId()),
-                                        principalId.getDomain());
-
-                                sysGroups = systemProvider.findNestedParentGroups(newGroupId);
-                            }
-                        }
-                    }
-                    catch(Exception ex)
-                    {
-                        logger.info(
-                                String.format(
-                                        "Failed to find principal [%s@%s] as FSP group in tenant [%s]",
-                                        principalId != null ? principalId.getName() : "null",
-                                                principalId != null ? principalId.getDomain() : "null",
-                                                        tenantName));
-                        // the user could be a member of a FSP group
-                        sysGroups = findFspsInParentGroups(
-                                                          tenantInfo,
-                                                          principalId,
-                                                          systemProvider,
-                                                          false);
-                    }
-
-                    if (!foundGroup)
-                    {// no resolved as group (and user), continue to lookup as registered ExternalIDP user
-                        PersonUser user = findRegisteredExternalIDPUser(tenantName, principalId);
-                        if (null != user)
-                        {
-                            foundExternalIDPUser = true;
-                            PrincipalId newFspId = fspIdFromExternalIDPUser(user, tenantName);
-                            sysGroups = systemProvider.findNestedParentGroups(newFspId);
-                        }
-                    }
+                    fspIds.add(externalUserId);
                 }
             }
             else
             {
-                sysGroups = systemProvider.findNestedParentGroups(principalId);
+                try
+                {
+                    idpGroups = provider.findNestedParentGroups(principalId);
+                    if  ( ( idpGroups != null ) &&
+                          ( provider.getName().equalsIgnoreCase(systemProvider.getName()) == false ) )
+                    {
+                        if ((ServerUtils.isNullOrEmpty(idpGroups.getPrincipalObjectId()) == false ))
+                        {
+                            fspIds.add(idpGroups.getPrincipalObjectId());
+                        }
+
+                        if ( ( idpGroups.getGroups() != null) && (idpGroups.getGroups().isEmpty() == false) )
+                        {
+                            for(Group g : idpGroups.getGroups())
+
+                            {
+                                if ( (g != null) && (ServerUtils.isNullOrEmpty(g.getObjectId()) == false ) )
+                                {
+                                    fspIds.add(g.getObjectId());
+
+                                }
+                            }
+                        }
+                    }
+                }
+                catch(InvalidPrincipalException ex)
+                {
+                    // this could be external idp registered user
+                    String externalUserId = getRegisteredExternalIDPUserObjectId(tenantName, principalId);
+                    if (ServerUtils.isNullOrEmpty(externalUserId) == false )
+                    {
+                        fspIds.add(externalUserId);
+                    }
+                }
+            }
+
+            if ( (fspIds != null) && (fspIds.isEmpty() == false) )
+
+            {
+                try
+                {
+                    sysGroups = systemProvider.findGroupObjectsForFsps(fspIds);
+                }
+                catch(InvalidPrincipalException ex)
+                {
+                    logger.trace(
+                        String.format(
+                            "Failed to find principal [%s@%s] as FSP principal in tenant [%s]",
+                            principalId != null ? principalId.getName() : "null",
+                            principalId != null ? principalId.getDomain() : "null",
+                            tenantName));
+                    sysGroups = null;
+                }
+            }
+
+            if (idpGroups != null && idpGroups.getGroups() != null && !idpGroups.getGroups().isEmpty())
+
+            {
+                groups.addAll(idpGroups.getGroups());
             }
 
             if (sysGroups != null && !sysGroups.isEmpty())
             {
                 groups.addAll(sysGroups);
-            }
-
-            if (!foundExternalIDPUser && bFoundInExternalIDP)
-            {
-                // (2) Find from their external domain such as AD
-                IIdentityProvider provider = tenantInfo.findProviderADAsFallBack(
-                        principalId.getDomain());
-                ServerUtils.validateNotNullIdp(provider, tenantName, principalId.getDomain());
-
-                Set<Group> idpGroups = provider.findNestedParentGroups(principalId);
-
-                if (idpGroups != null && !idpGroups.isEmpty())
-                {
-                    groups.addAll(idpGroups);
-                }
             }
 
             groups.add(systemProvider.getEveryoneGroup());
@@ -4703,6 +5199,23 @@ certPolicy);
 
             throw ex;
         }
+    }
+
+    private String getRegisteredExternalIDPUserObjectId(String tenantName, PrincipalId principalId)
+        throws Exception
+    {
+        String objectId = null;
+        PersonUser user = findRegisteredExternalIDPUser(tenantName, principalId);
+        if (null != user)
+        {
+            objectId = user.getObjectId();
+        }
+        else
+        {
+            throw new InvalidPrincipalException("Principal cannot be found.", principalId.getUPN() );
+        }
+
+        return objectId;
     }
 
     private
@@ -5291,9 +5804,7 @@ certPolicy);
                 if (user != null)
                 {
                     validateObjectIdNotNull(user);
-                    PrincipalId newUserId = new PrincipalId(
-                            provider.getObjectIdName(user.getObjectId()),
-                            userId.getDomain());
+                    PrincipalId newUserId = getFspIdForSystemDomain(provider, user);
                     return provider.addUserToGroup(newUserId, groupName);
                 }
                 else
@@ -5301,7 +5812,7 @@ certPolicy);
                     user = findRegisteredExternalIDPUser(tenantName, userId);
                     if (user != null)
                     {
-                        PrincipalId newFspId = fspIdFromExternalIDPUser(user, tenantName);
+                        PrincipalId newFspId =  getFspIdForSystemDomain(provider, user);
                         return provider.addUserToGroup(newFspId, groupName);
                     }
                 }
@@ -5357,9 +5868,8 @@ certPolicy);
                     {
                         if (user.getObjectId() != null)
                         {
-                            PrincipalId newUserId = new PrincipalId(
-                                    provider.getObjectIdName(user.getObjectId()),
-                                    principalId.getDomain());
+                            PrincipalId newUserId = getFspIdForSystemDomain(
+                                    provider,user);
 
                             return provider.removeFromGroup(newUserId, groupName);
                         }
@@ -5369,7 +5879,7 @@ certPolicy);
                         user = findRegisteredExternalIDPUser(tenantName, principalId);
                         if (user != null)
                         {
-                            PrincipalId newFspId = fspIdFromExternalIDPUser(user, tenantName);
+                            PrincipalId newFspId = getFspIdForSystemDomain(provider, user);
                             return provider.removeFromGroup(newFspId, groupName);
                         }
                     }
@@ -5390,10 +5900,7 @@ certPolicy);
                     Group group = findGroup(tenantName, principalId);
                     if (group != null && group.getObjectId() != null)
                     {
-                        PrincipalId newGroupId = new PrincipalId(
-                                provider.getObjectIdName(group.getObjectId()),
-                                principalId.getDomain());
-
+                        PrincipalId newGroupId = getFspIdForSystemDomain(provider, group);
                         return provider.removeFromGroup(newGroupId, groupName);
                     }
                     //NB: We don't need to support externalIDP group,
@@ -5490,9 +5997,7 @@ certPolicy);
                 if (group != null)
                 {
                     validateObjectIdNotNull(group);
-                    PrincipalId newGroupId = new PrincipalId(
-                            provider.getObjectIdName(group.getObjectId()),
-                            groupId.getDomain());
+                    PrincipalId newGroupId = getFspIdForSystemDomain(provider, group);
                     return provider.addGroupToGroup(newGroupId, groupName);
                 }
             }
@@ -6436,6 +6941,8 @@ certPolicy);
         boolean password = false;
         boolean windows = false;
         boolean certificate = false;
+        boolean rsaSecureID = false;
+
         if (authnTypes == null) {
             // default values if authnTypes attribute is not set to any value
             password = true;
@@ -6448,6 +6955,8 @@ certPolicy);
                     windows = true;
                 else if (authnType == DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_TLS_CERTIFICATE)
                     certificate = true;
+                else if (authnType == DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_RSA_SECUREID)
+                    rsaSecureID = true;
             }
         }
 
@@ -6455,7 +6964,9 @@ certPolicy);
         if(certPolicy == null){ // set default values
             certPolicy = new ClientCertPolicy();
         }
-        return new AuthnPolicy(password, windows, certificate, certPolicy);
+
+        RSAAgentConfig rsaConfig = _configStore.getRSAAgentConfig(tenantName);
+        return new AuthnPolicy(password, windows, certificate, rsaSecureID, certPolicy, rsaConfig);
     }
 
     protected
@@ -6725,6 +7236,140 @@ certPolicy);
         }
     }
 
+
+    /**
+     * Check update for cached CRL of all tenants
+     *
+     * @throws Exception
+     */
+    private void refreshTenantCrlCache() throws Exception
+    {
+
+        Collection<String> allTenantNames = this.getAllTenants();
+        assert(allTenantNames != null && allTenantNames.size() > 0);
+
+        for (String tenantName : allTenantNames)
+        {
+
+            //First, download custom CRL if defined
+            TenantInformation info = this.getTenantInfo(tenantName);
+
+            AuthnPolicy authnPolicy = info.getAuthnPolicy();
+            Validate.notNull(authnPolicy, "AuthnPolicy can not be null.");
+
+            ClientCertPolicy certPolicy = authnPolicy.getClientCertPolicy();
+            Validate.notNull(certPolicy, "CertPolicy can not be null.");
+
+            URL crlUrl = certPolicy.getCRLUrl();
+
+            if (crlUrl != null) {
+                String crlUriString = crlUrl.toString();
+                IdmCrlCache crlCache = TenantCrlCache.get().get(tenantName);
+
+                if (crlCache == null) {
+                    crlCache = TenantCrlCache.get().put(tenantName, new IdmCrlCache());
+                }
+                if (null == crlCache.get(crlUriString) && !crlUriString.isEmpty()) {
+                    try {
+                        X509CRL crl = IdmCrlCache.downloadCrl(crlUriString);
+                        if (null !=  crl ) {
+                            crlCache.put(crlUriString, crl);
+                        } else {
+                            throw new Exception("No CRL was download at "+ crlUriString);
+                        }
+                    } catch (Exception e) {
+                        //don't throw because of communication problem. This allow refreshing at other URI's.
+                        logger.error("Failed to download custom CRL at CRL refresh. "+e.getMessage());
+                    }
+                }
+            }
+            _tenantCrlCache.refreshCrl(tenantName);
+        }
+    }
+
+    /**
+     * Update rsa_api.properties, sdconf.rec and sdopts.rec if there is change in tenant configuration.
+     *
+     * @param tenantInfo
+     * @throws Exception
+     */
+    private void updateRSAConfigFiles(TenantInformation tenantInfo) throws Exception {
+        Validate.notNull(tenantInfo, "tenantInfo");
+
+        AuthnPolicy authnPolicy = tenantInfo.getAuthnPolicy();
+        if (authnPolicy == null || authnPolicy.get_rsaAgentConfig() == null) {
+            return;
+        }
+
+        RSAAgentConfig rsaConfig = authnPolicy.get_rsaAgentConfig();
+
+        try {
+            if (rsaConfig == null) {
+                return;
+            }
+
+            String tenantName = tenantInfo.getTenant().getName();
+            Validate.notEmpty(tenantName, "tenantName");
+
+            //detect changes
+            RSAAgentConfig existingConfig = _tenantCache.findExtRsaConfig(tenantName);
+            if (null != existingConfig &&
+                    existingConfig.equals(rsaConfig)) {
+                return;
+            }
+
+            //update disk files
+            RsaAgentConfFilesUpdater updater = new RsaAgentConfFilesUpdater(this.getClusterId());
+            updater.updateRSAConfigFiles(tenantInfo, rsaConfig);
+
+            //update existing config cache.
+            _tenantCache.deleteExtRsaConfig(tenantName);
+            _tenantCache.addExtRsaConfig(tenantName, rsaConfig);
+
+            //remove cached AuthSessionFactory and cached session for the tenant .
+            _rsaSessionCache.removeSessionCache(tenantName);
+            _rsaSessionFactoryCache.removeFactory(tenantName);
+        } catch (Exception e) {
+            logger.error("Failed updating RSA config files", e);
+            throw e;
+        }
+    }
+
+    /**
+     * install or remove jsafe provider only if secure ID authentication is enabled for
+     * at least one tenant.
+     *
+     * @param authnPolicy
+     * @throws Exception
+     */
+    private synchronized void installOrRemoveRSAProvider() throws Exception {
+
+        try {
+            Collection<String> allTenantNames = this.getAllTenants();
+            assert (allTenantNames != null && allTenantNames.size() > 0);
+
+            boolean serverNeedSecurID = false;
+
+            for (String tenantName : allTenantNames)
+            {
+                AuthnPolicy authnPolicy = this.findTenant(tenantName).getAuthnPolicy();
+
+                if (authnPolicy == null) {
+                    continue;
+                }
+
+                if (authnPolicy.IsRsaSecureIDAuthnEnabled()) {
+                    serverNeedSecurID = true;
+                    break;
+                }
+            }
+
+        }catch (Exception e) {
+            logger.error("Failed in trying to add or removing TLRSAJsafeProvider provider.");
+            throw e;
+        }
+    }
+
     private void registerTenant(Tenant tenant, String adminAccountName, char[] adminPwd) throws Exception
     {
         _configStore.addTenant(tenant, adminAccountName, adminPwd);
@@ -6842,6 +7487,8 @@ certPolicy);
         if (tenantInfo != null)
         {
             _tenantCache.addTenant(tenantInfo);
+            updateRSAConfigFiles(tenantInfo);
+            installOrRemoveRSAProvider();
         }
 
         return tenantInfo;
@@ -6987,28 +7634,37 @@ certPolicy);
     }
 
     /**
-     * construct PrincipalId from external IDP user to fsp candidate id (with
-     * the proper prefix and irrelevant domain name) EG: external PersonUser
-     * with PrincipalId [_name: joe, _domain: <guid>.vsphere.local] ==>
-     * PrincipalId [_name: externalObjectId=joe@<guid>.vsphere.local, _domain: XXX]
+     * get external IDP user's object id.
      *
-     * @param user
-     * @param tenantName
-     * @return
-     * @throws Exception
+     * we use Upn at the moment.
+     *
+     * EG: external PersonUser
+     * with PrincipalId [_name: joe, _domain: <guid>.vsphere.local] ==>
+     * joe@<guid>.vsphere.local
+     *
+     * @param id PrincipalId of the external user
+     * @return external IDP user's object id
+
+
      */
-    private PrincipalId fspIdFromExternalIDPUser(PersonUser user,
-        String tenantName) throws Exception
+    private static String getExternalIdpUserObjectId(PrincipalId id)
+
     {
-        ISystemDomainIdentityProvider systemProvider =
-                getTenantInfo(tenantName).findSystemProvider();
-        PrincipalId fspUserId =
-                new PrincipalId(systemProvider.getObjectIdName(user.getId()
-                        .getName()), user.getId().getDomain());
-        PrincipalId newFspId =
-                new PrincipalId(fspUserId.getUPN(),
-                        EXTERNAL_IDP_USER_FSP_DOMAIN_NAME);
-        return newFspId;
+        return id.getUPN();
+    }
+
+    // TODO: we should look into whether this logic of building fspid can be eliminated or hidden within system provider
+    private static PrincipalId getFspIdForSystemDomain(ISystemDomainIdentityProvider systemProvider, Principal fspPrincipal)
+    {
+        return getFspIdForSystemDomain(systemProvider, fspPrincipal.getObjectId(), fspPrincipal.getId());
+    }
+
+    // TODO: we should look into whether this logic of building fspid can be eliminated or hidden within system provider
+    private static PrincipalId getFspIdForSystemDomain(ISystemDomainIdentityProvider systemProvider, String objectId, PrincipalId principalId)
+    {
+        return new PrincipalId(
+                systemProvider.getObjectIdName(objectId),
+                principalId.getDomain());
     }
 
     private IIdentityStoreData getADIdsToStore(IIdentityStoreData store)
@@ -7050,7 +7706,9 @@ certPolicy);
                 connStrs, /* connection strings */
                 extData.getAttributeMap(),
                 extData.getIdentityStoreSchemaMapping(),
-                extData.getUpnSuffixes()
+                extData.getUpnSuffixes(),
+                extData.getFlags(),
+                extData.getAuthnTypes()
         );
     }
 
@@ -7230,9 +7888,7 @@ certPolicy);
             assert (systemProvider != null);
 
             //construct the fspUser's DN and use it to register with system provider
-            PrincipalId fspId =
-                    new PrincipalId(systemProvider.getObjectIdName(userId
-                            .getName()), userId.getDomain());
+            PrincipalId fspId = getFspIdForSystemDomain(systemProvider, getExternalIdpUserObjectId(userId), userId);
             return systemProvider.registerExternalIDPUser(fspId.getUPN());
         } catch (Exception ex)
         {
@@ -7260,9 +7916,7 @@ certPolicy);
             assert (systemProvider != null);
 
             //construct the fsp objectId used to register with system provider
-            PrincipalId fspId =
-                    new PrincipalId(systemProvider.getObjectIdName(userId
-                            .getName()), userId.getDomain());
+            PrincipalId fspId = getFspIdForSystemDomain(systemProvider, getExternalIdpUserObjectId(userId), userId);
             systemProvider.removeExternalIDPUser(fspId.getUPN());
             return true;
         } catch (Exception ex)
@@ -7294,7 +7948,7 @@ certPolicy);
 
             if (pid != null)
             {
-                return new PersonUser(pid, EXTERNAL_USER_SAMPLE_PERSON_DETAIL, false, false);
+                return new PersonUser(pid, null/*alias*/, getExternalIdpUserObjectId(pid)/*objectId*/, EXTERNAL_USER_SAMPLE_PERSON_DETAIL, false, false);
             }
             return null;
         }
@@ -8781,6 +9435,75 @@ certPolicy);
         }
     }
 
+    @Override
+    public void addResourceServer(
+            String tenantName,
+            ResourceServer resourceServer,
+            IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "addResourceServer")) {
+            try {
+                this.addResourceServer(tenantName, resourceServer);
+            } catch (Exception ex) {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    @Override
+    public void deleteResourceServer(
+            String tenantName,
+            String resourceServerName,
+            IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "deleteResourceServer")) {
+            try {
+                this.deleteResourceServer(tenantName, resourceServerName);
+            } catch (Exception ex) {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    @Override
+    public ResourceServer getResourceServer(
+            String tenantName,
+            String resourceServerName,
+            IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getResourceServer")) {
+            try {
+                return this.getResourceServer(tenantName, resourceServerName);
+            } catch (Exception ex) {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    @Override
+    public void setResourceServer(
+            String tenantName,
+            ResourceServer resourceServer,
+            IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setResourceServer")) {
+            try {
+                this.setResourceServer(tenantName, resourceServer);
+            } catch (Exception ex) {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    @Override
+    public Collection<ResourceServer> getResourceServers(
+            String tenantName,
+            IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getResourceServers")) {
+            try {
+                return this.getResourceServers(tenantName);
+            } catch (Exception ex) {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -8833,6 +9556,26 @@ certPolicy);
             try
             {
                 return this.getProvider(tenantName, ProviderName);
+            }
+            catch(Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public IIdentityStoreData getProviderWithInternalInfo(String tenantName, String ProviderName,
+            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+    {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getProvider"))
+        {
+            try
+            {
+                return this.getProviderWithInternalInfo(tenantName, ProviderName);
             }
             catch(Exception ex)
             {
@@ -8945,6 +9688,19 @@ certPolicy);
             {
                 throw ServerUtils.getRemoteException(ex);
             }
+        }
+    }
+
+    @Override
+    public void probeProviderConnectivity(String tenantName, IIdentityStoreData idsData, IIdmServiceContext serviceContext) throws RemoteException, IDMException
+    {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "probeProviderConnectivity"))
+        {
+            probeProviderConnectivity(tenantName, idsData);
+        }
+        catch(Exception ex)
+        {
+            throw ServerUtils.getRemoteException(ex);
         }
     }
 
@@ -9082,18 +9838,75 @@ certPolicy);
     public PrincipalId authenticate(String tenantName, X509Certificate[] tlsCertChain,
             IIdmServiceContext serviceContext) throws RemoteException, IDMException
     {
-        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "authenticate"))
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "authenticate"))
         {
             try
             {
                 return this.authenticate(tenantName, tlsCertChain);
-            }
-            catch(Exception ex)
+            } catch (Exception ex)
             {
                 throw ServerUtils.getRemoteException(ex);
             }
         }
     }
+
+    /**
+     * authenticate with secure ID
+     *
+     * @param tenantName
+     * @param principal
+     *            userID (if userID is UPN) or userID@domainName (if userID is not UPN)
+     * @param passcode
+     * @return
+     * @throws RemoteException
+     */
+
+    @Override
+    public RSAAMResult authenticateRsaSecurId(String tenantName,
+            String sessionId, String principal,
+            String passcode, IIdmServiceContext serviceContext) throws RemoteException, IDMException
+    {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "authenticate"))
+        {
+            IIdmAuthStatRecorder idmAuthStatRecorder = this.createIdmAuthStatRecorderInstance(
+                    tenantName,
+                    IdentityManager.PROVIDER_TYPE_RSA_SECURID, IdentityManager.PROVIDER_TYPE_RSA_SECURID, 0,
+                    ActivityKind.AUTHENTICATE, EventLevel.INFO, principal);
+            idmAuthStatRecorder.start();
+
+            try
+            {
+
+                RSAAMResult result = this.authenticateRsaSecurId(tenantName, sessionId,
+                        principal,
+                        passcode);
+                idmAuthStatRecorder.end();
+                return result;
+            } catch (Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    protected IIdmAuthStatRecorder createIdmAuthStatRecorderInstance(
+            String tenantName, String providerName, String providerType, int providerFlag, ActivityKind opType, EventLevel eventLevel, String id) {
+        if (PerformanceMonitorFactory.getPerformanceMonitor().getCache(tenantName).isEnabled()) {
+            return new IdmAuthStatRecorder(
+                    tenantName,
+                    providerName,
+                    providerType,
+                    providerFlag,
+                    opType,
+                    eventLevel,
+                    id != null ? id : "",
+                    PerformanceMonitorFactory.getPerformanceMonitor().summarizeLdapQueries(),
+                    DiagnosticsContextFactory.getCurrentDiagnosticsContext().getCorrelationId());
+        } else {
+            return NoopIdmAuthStatRecorder.getInstance();
+        }
+    }
+
 
     /**
      * {@inheritDoc}
@@ -10949,14 +11762,75 @@ certPolicy);
    }
 
     @Override
-    public List<IIdmAuthStat> getIdmAuthStats(String tenantName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException {
+    public List<IIdmAuthStat> getIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getIdmAuthStats"))
         {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
             TenantInformation tenantInfo = findTenant(tenantName);
             ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
             return PerformanceMonitor.getInstance().getCache(tenantName).getIdmAuthStats();
+        } catch (Exception ex) {
+            throw ServerUtils.getRemoteException(ex);
+        }
+    }
+
+    @Override
+    public IIdmAuthStatus getIdmAuthStatus(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getIdmAuthStatus")) {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+            IdmAuthStatCache cache = PerformanceMonitor.getInstance().getCache(tenantName);
+            return new IdmAuthStatus(cache.isEnabled(), cache.getDepth());
+        } catch (Exception ex) {
+            throw ServerUtils.getRemoteException(ex);
+        }
+    }
+
+    @Override
+    public void clearIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "clearIdmAuthStats")) {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+            PerformanceMonitor.getInstance().getCache(tenantName).clear();
+        } catch (Exception ex) {
+            throw ServerUtils.getRemoteException(ex);
+        }
+    }
+
+    @Override
+    public void setIdmAuthStatsSize(String tenantName, int size, IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setIdmAuthStatsSize")) {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            ValidateUtil.validateNonNegativeNumber(size, "size");
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+            PerformanceMonitor.getInstance().getCache(tenantName).setDepth(size);
+        } catch (Exception ex) {
+            throw ServerUtils.getRemoteException(ex);
+        }
+    }
+
+    @Override
+    public void enableIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "enableIdmAuthStats")) {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+            PerformanceMonitor.getInstance().getCache(tenantName).enable();
+        } catch (Exception ex) {
+            throw ServerUtils.getRemoteException(ex);
+        }
+    }
+
+    @Override
+    public void disableIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "disableIdmAuthStats")) {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+            PerformanceMonitor.getInstance().getCache(tenantName).disable();
         } catch (Exception ex) {
             throw ServerUtils.getRemoteException(ex);
         }
@@ -10971,6 +11845,10 @@ certPolicy);
      *
      * @throws Exception
      *
+     *@return
+     *
+     * null : If the machine is not joined AD or left AD domain <br/>
+     * HTTP/computername.domainname : If machine is domain joined.
      */
     @Override
     public String getServerSPN() throws Exception {
@@ -10992,7 +11870,7 @@ certPolicy);
             String domainName = (joinInfo.getJoinStatus() == ActiveDirectoryJoinInfo.JoinStatus.ACTIVE_DIRECTORY_JOIN_STATUS_DOMAIN) ? joinInfo
                     .getName() : null;
 
-            if (domainName != null && !domainName.isEmpty()) {
+                    if (domainName != null && !domainName.isEmpty()) {
                 if (SystemUtils.IS_OS_LINUX) {
                     final String FQDN_CONFIG_KEY =
                         "Services\\lsass\\Parameters\\Providers\\ActiveDirectory\\DomainJoin\\"
@@ -11016,9 +11894,6 @@ certPolicy);
                         }
 
                         spn = "HTTP/" + fqdn;
-                    } else {
-                        throw new IdmADDomainJoinStatusException(
-                        "Failed to get fqdn from registry: " + FQDN_CONFIG_KEY);
                     }
                 } else {
                     //Windows
@@ -11060,19 +11935,141 @@ certPolicy);
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
             TenantInformation tenantInfo = findTenant(tenantName);
             ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
-            if (!policy.IsPasswordAuthEnabled()
-                    && !policy.IsWindowsAuthEnabled()
-                    && !policy.IsTLSClientCertAuthnEnabled())
+            if (isAllAuthnTypesDisabled(policy))
             {
                 throw new IllegalArgumentException("Disabling all authentication types is not allowed.");
             }
-            _configStore.setAuthnTypes(tenantName, policy.IsPasswordAuthEnabled(), policy.IsWindowsAuthEnabled(), policy.IsTLSClientCertAuthnEnabled());
+            _configStore.setAuthnTypes(tenantName, policy.IsPasswordAuthEnabled()
+                    , policy.IsWindowsAuthEnabled(), policy.IsTLSClientCertAuthnEnabled()
+                    , policy.IsRsaSecureIDAuthnEnabled());
             _configStore.setClientCertPolicy(tenantName, policy.getClientCertPolicy());
+
+            RSAAgentConfig rsaConfig = policy.get_rsaAgentConfig();
+            if (policy.IsRsaSecureIDAuthnEnabled() && rsaConfig == null) {
+                // create a default tenant-wide settings
+                rsaConfig = new RSAAgentConfig();
+            }
+            _configStore.setRsaAgentConfig(tenantName, rsaConfig);
             _tenantCache.deleteTenant(tenantName);
+
+            ManageCrlCacheChecker();
         } catch (Exception ex) {
             throw ServerUtils.getRemoteException(ex);
         }
     }
+
+    /**
+     * Turn on/off crl checker thread based on current setting of authentication policy of all tenants.
+     * Making sure the thread is on only if at least one tenant uses smartcard authentication.
+     *
+     * @throws Exception
+     */
+    private void ManageCrlCacheChecker() throws Exception {
+        if (smartCardAuthnEnabled()) {
+            //start the thread
+            if (null == this._crlCacheChecker) {
+                this._crlCacheChecker = new IdmCrlCachePeriodicChecker();
+                this._crlCacheChecker.start();
+                logger.info("Started CrlCacheChecker thread");
+            }
+        } else {
+            //stop the thread
+            if (null != this._crlCacheChecker) {
+                this._crlCacheChecker = null;
+                logger.info("Stopped CrlCacheChecker thread");
+            }
+        }
+    }
+
+    private boolean isAllAuthnTypesDisabled(AuthnPolicy policy) {
+        return (!policy.IsPasswordAuthEnabled()
+                && !policy.IsWindowsAuthEnabled()
+                && !policy.IsTLSClientCertAuthnEnabled()
+                && !policy.IsRsaSecureIDAuthnEnabled());
+    }
+
+    @Override
+    public void setRSAConfig(String tenantName, RSAAgentConfig rsaAgentConfig,
+            IIdmServiceContext serviceContext) throws Exception {
+
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName,
+                serviceContext, "setRSAConfig")) {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            Validate.notNull(rsaAgentConfig, "rsaAgentConfig");
+
+            _configStore.setRsaAgentConfig(tenantName, rsaAgentConfig);
+            _tenantCache.deleteTenant(tenantName);
+        } catch (Exception ex) {
+            logger.error(
+                    String.format(
+                            "Failed to set RSA agent configin tenant [%s]",
+                            tenantName));
+
+            throw ServerUtils.getRemoteException(ex);
+        }
+
+    }
+
+    @Override
+    public RSAAgentConfig getRSAConfig(String tenantName, IIdmServiceContext serviceContext)
+            throws RemoteException, IDMException {
+
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+
+            AuthnPolicy authnPolicy = getAuthNPolicy(tenantName, serviceContext);
+
+            RSAAgentConfig rsaConfig = authnPolicy.get_rsaAgentConfig();
+
+            // TODO for testing only . remove this and enable above two lines as well as in getAutynPolicy
+
+            return rsaConfig;
+        } catch (Exception ex) {
+            throw ServerUtils.getRemoteException(ex);
+        }
+
+    }
+
+    @Override
+    public void addRSAInstanceInfo(String tenantName, RSAAMInstanceInfo instInfo,
+            IIdmServiceContext serviceContext) throws Exception {
+
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName,
+                serviceContext, "addRSAInstanceInfo")) {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            Validate.notNull(instInfo, "instInfo");
+
+            _configStore.addRSAInstanceInfo(tenantName, instInfo);
+            _tenantCache.deleteTenant(tenantName);
+        } catch (Exception ex) {
+            logger.error(
+                    String.format(
+                            "Failed to set RSA agent configin tenant [%s]",
+                            tenantName));
+
+            throw ServerUtils.getRemoteException(ex);
+        }
+
+    }
+
+    @Override
+    public void deleteRSAInstanceInfo(String tenantName, String siteID,
+            IIdmServiceContext serviceContext) throws Exception {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName,
+                serviceContext, "deleteRSAInstanceInfo")) {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            Validate.notNull(siteID, "siteID");
+
+            _configStore.deleteRSAInstanceInfo(tenantName, siteID);
+            _tenantCache.deleteTenant(tenantName);
+        } catch (Exception ex) {
+            logger.error(
+                    String.format(
+                            "Failed to delete RSAAM instance config for tenant [%s]",
+                            tenantName));
+
+            throw ServerUtils.getRemoteException(ex);
+        }
+
+    }
 }
-
-

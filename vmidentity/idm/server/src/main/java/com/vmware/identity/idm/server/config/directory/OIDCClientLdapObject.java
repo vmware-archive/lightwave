@@ -48,6 +48,7 @@ public final class OIDCClientLdapObject extends BaseLdapObjectBase<OIDCClient, O
     public static final String PROPERTY_OIDC_POST_LOGOUT_REDIRECT_URI = "vmwOidcPostLogoutRedirectURI";
     public static final String PROPERTY_OIDC_LOGOUT_URI = "vmwOidcLogoutURI";
     public static final String PROPERTY_OIDC_CERT_SUB_DN = "vmwOidcCertSubDN";
+    public static final String PROPERTY_OIDC_AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS = "vmwOidcAuthnRequestClientAssertionLifetimeMS";
 
     @SuppressWarnings("unchecked")
     private OIDCClientLdapObject() {
@@ -217,6 +218,25 @@ public final class OIDCClientLdapObject extends BaseLdapObjectBase<OIDCClient, O
                                 ValidateUtil.validateNotNull(oidcClient, "oidcClient");
                                 String s = oidcClient.getCertSubjectDN();
                                 return ServerUtils.getLdapValue(s);
+                            }
+                        },
+                        true
+                ),
+                new PropertyMapperMetaInfoBase<OIDCClient, OIDCClient.Builder>(PROPERTY_OIDC_AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS,
+                        -1,
+                        true,
+                        new IPropertyGetterSetterBase<OIDCClient, OIDCClient.Builder>() {
+                            @Override
+                            public void SetLdapValue(OIDCClient.Builder builder, LdapValue[] value) {
+                                ValidateUtil.validateNotNull(builder, "builder");
+                                long longValue = (value == null) ? 0L : ServerUtils.getNativeLongValue(value);
+                                builder.authnRequestClientAssertionLifetimeMS(longValue);
+                            }
+
+                            @Override
+                            public LdapValue[] GetLdapValue(OIDCClient oidcClient) {
+                                ValidateUtil.validateNotNull(oidcClient, "oidcClient");
+                                return ServerUtils.getLdapValue(oidcClient.getAuthnRequestClientAssertionLifetimeMS());
                             }
                         },
                         true

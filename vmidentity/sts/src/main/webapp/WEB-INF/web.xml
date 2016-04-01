@@ -12,6 +12,10 @@
       <listener-class>com.sun.xml.ws.transport.http.servlet.WSServletContextListener</listener-class>
    </listener>
 
+   <listener>
+        <listener-class>com.vmware.identity.sts.ws.StsApplicationListener</listener-class>
+    </listener>
+
    <servlet>
       <servlet-name>sts</servlet-name>
       <servlet-class>com.sun.xml.ws.transport.http.servlet.WSServlet</servlet-class>

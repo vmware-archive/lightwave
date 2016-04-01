@@ -34,6 +34,9 @@
    var userName = "";
    var _url = null;
    var _sspiCtxId = null;
+   var _rsaSessionID = null;
+   // get the language version of the browser
+   var browserLocale = navigator.language || navigator.browserLanguage;
 
    var api = {
       logging: {},
@@ -54,7 +57,7 @@
    // things to do when document is ready
    $(document).ready(function() {
 	   // if both logon banner title and content are set, display logon banner on websso
-	   if (!isEmptyString(tenant_logonbanner_title) && !isEmptyString(tenant_logonbanner_content)) {
+	   if (isLogonBannerEnabled()) {
 	       if (!logonBannerCheckboxEnabled) {
 	           // hide checkbox and agreementMsg if checkbox is not enabled
 	           $('#logonBannerCheckbox').hide();
@@ -68,7 +71,7 @@
          $('#smartcardCheckbox').attr('disabled', false);
 
          //Remove username and pw widgets if both u/p and windows authentication are not available
-         if (password_auth == "false" && windows_auth == "false") {
+         if (password_auth == "false" && windows_auth == "false" && rsa_am_auth == "false") {
             var usernameEle = document.getElementById("usernameID");
             usernameEle.parentNode.removeChild(usernameEle);
             var passwordEle = document.getElementById("passwordID");
@@ -78,7 +81,11 @@
          var smartcardEle = document.getElementById('smartcardCheckbox');
          smartcardEle.checked = true;
          enableSmartcard(smartcardEle);
-         displaySmartcardMessage(true);
+      } else {
+         var smartcardIDEle = document.getElementById("smartcardID");
+         smartcardIDEle.parentNode.removeChild(smartcardIDEle);
+         // Disable login button on page load unless smartcard authn is on
+         $('#submit').prop('disabled',true);
       }
 
       //Remove windows session or smartcard authn checkbox if the corresponding authn type was not turned on
@@ -87,21 +94,26 @@
          sspiEle.parentNode.removeChild(sspiEle);
       } else {
          //disbable username pw field when password authn is not available
-         if (password_auth == "false") {
-             //document.getElementById('username').disbaled = true;
+         if (password_auth == "false" && rsa_am_auth == "false") {
              $('#username').prop('disabled',true);
              $('#password').prop('disabled',true);
-             //document.getElementById('password').disabled = true;
          }
       }
 
-      if (tlsclient_auth == "false") {
-         var smartcardIDEle = document.getElementById("smartcardID");
-         smartcardIDEle.parentNode.removeChild(smartcardIDEle);
-         // Disable login button on page load unless smartcard authn is on
-         $('#submit').prop('disabled',true);
-      }
+      if (rsa_am_auth == "false") {
+          var rsaamIDEle = document.getElementById("rsaamID");
+          rsaamIDEle.parentNode.removeChild(rsaamIDEle);
+      } else {
+          $('#rsaamCheckbox').attr('disabled', false);
 
+          //default to select securID authentication if smartcard is not enabled.
+          if (tlsclient_auth != "true") {
+             var rsaCheckbox = document.getElementById('rsaamCheckbox');
+             rsaCheckbox.checked = true;
+             enableRsaam(rsaCheckbox);
+             displayRsaamMessage(true);
+          }
+      }
       // Make sure document is ready before checking if cookies are enabled
       // and displaying the related error.
       if (!areCookiesEnabled()) {
@@ -110,7 +122,7 @@
 
       //on change of username enable login button
       var userEle = document.getElementById('username');
-      if (password_auth == "true") {
+      if (password_auth == "true" || rsa_am_auth == "true") {
           $('#username').on('keyup keypress blur change', enableLoginButton);
       }
       // on check of sspi enable login button
@@ -135,9 +147,9 @@
    });
 
    // Validation that checks if the browser and OS are supported.
-   // At the time of writing a minimum of IE10, Firefox 30 or
-   // Chrome 35 are required on Windows. A minimum of Firefox 30
-   // or Chrome 35 are required on Mac OS X.
+   // At the time of writing a minimum of IE10, Firefox 34 or
+   // Chrome 39 are required on Windows. A minimum of Firefox 34
+   // or Chrome 39 are required on Mac OS X.
    var isBrowserSupportedVC = function isBrowserSupportedVC(){
       var chromeReg = /Mozilla\/.*? \((Windows|Macintosh)(.*?) AppleWebKit\/(\d.*?).*?Chrome\/(.*?) Safari\/(.*)/i;
       var CHROME_VERSION_INDEX = 4;
@@ -150,7 +162,7 @@
       var usrAgent = navigator.userAgent;
       var result;
       if ((result = chromeReg.exec(usrAgent)) !== null) {
-         if (result[CHROME_VERSION_INDEX].split(".")[0] >= 35) {
+         if (result[CHROME_VERSION_INDEX].split(".")[0] >= 39) {
             return true;
          }
       }
@@ -165,7 +177,7 @@
          }
       }
       if ((result = firefoxReg.exec(usrAgent)) !== null) {
-         if (result[FF_VERSION_INDEX] >= 30) {
+         if (result[FF_VERSION_INDEX] >= 34) {
             return true;
          }
       }
@@ -255,15 +267,17 @@
          $('#footer').html('');
          // If the plugin is there and we are running on Windows,
          // allow SSPI login to be enabled.
-         if (!isMac && document.getElementById('sspiCheckbox') != null) {
+         if (!isMac) {
              $('#sspiCheckbox').attr('disabled', false);
          }
          writeCSDInstalled(true);
       } else {
-         var cspDownloadLink = createCompleteUrl();
-         $('#downloadCIPlink').attr('href', cspDownloadLink);
-         $('#downloadCIPlinkBox').show();
-         writeCSDInstalled(false);
+         if (!isMac) {
+             var cspDownloadLink = createCompleteUrl();
+             $('#downloadCIPlink').attr('href', cspDownloadLink);
+             $('#downloadCIPlinkBox').show();
+             writeCSDInstalled(false);
+         }
       }
    };
 
@@ -296,7 +310,7 @@
    };
 
    var isVCLogin =   function isVCLogin() {
-      if (tenant_brandname == null ||tenant_brandname == '') {
+      if (tenant_brandname == null || tenant_brandname == '') {
          return true;
       } else {
          return false;
@@ -362,7 +376,7 @@
             var userEle = document.getElementById('username');
             var passwordEle = document.getElementById('password');
             if ( userEle != null && passwordEle != null) {
-                if (password_auth == "true") {
+                if (password_auth == "true" || rsa_am_auth == "true") {
                    userEle.disabled = status;
                    passwordEle.disabled = status;
                 } else {
@@ -387,11 +401,21 @@
             var smartcardEle = document.getElementById('smartcardCheckbox');
             if ( smartcardEle != null) {
                 smartcardEle.disabled = status;
+                if (smartcardEle.checked && userEle != null && passwordEle != null) {
+                    userEle.disabled = true;
+                    passwordEle.disabled = true;
+                }
             }
-
+            var rsaamEle = document.getElementById('rsaamCheckbox');
+            if ( rsaamEle != null) {
+                rsaamEle.disabled = status;
+            }
          };
 
    var enableSspi = function enableSspi(cb) {
+            // reset login guide text
+            document.getElementById('response').innerHTML = '';
+
             var usernameField = document.getElementById('username');
             var passwordField = document.getElementById('password');
             if (cb.checked) {
@@ -405,30 +429,51 @@
                var smartcardCheckboxEle = document.getElementById('smartcardCheckbox');
                if (smartcardCheckboxEle != null) {
                    smartcardCheckboxEle.checked = false;
-                   displaySmartcardMessage(false);
                }
-            } else if (password_auth == "true") {
+
+               var rsaamCheckboxEle = document.getElementById('rsaamCheckbox');
+               if (rsaamCheckboxEle != null) {
+                   if (cb.checked) {
+                       rsaamCheckboxEle.checked = false;
+                   }
+               }
+
+            } else if (password_auth == "true" || rsa_am_auth == "true") {
                usernameField.disabled = false;
                passwordField.disabled = false;
             }
          };
 
+     // return true if only smartcard authenticatin is supported
+     var onlySmartcardEnabled = function onlySmartcardEnabled() {
+              if (password_auth == "true" || rsa_am_auth == "true" || windows_auth == "true") {
+                  return false;
+              } else {
+                  return true;
+              }
+           }
      var enableSmartcard = function enableSmartcard(cb) {
+              // reset login guide text
+              document.getElementById('response').innerHTML = '';
+
               var usernameField = document.getElementById('username');
               var passwordField = document.getElementById('password');
+
+              //keep it checked if this is the only authentication method.
+              if (onlySmartcardEnabled()) {
+                  cb.checked = true;
+              }
 
               if (usernameField != null && passwordField != null) {
                   if (cb.checked) {
                       usernameField.disabled = true;
                       passwordField.disabled = true;
-                   } else if (password_auth == "true") {
+                   } else if (password_auth == "true" || rsa_am_auth == "true") {
                       //usernameField should always be avail if cb is enabled
                       usernameField.disabled = false;
                       passwordField.disabled = false;
                    }
               }
-
-              displaySmartcardMessage(cb.checked? true:false);
 
               //uncheck sspiCheckbox
               var sspiCheckboxEle = document.getElementById('sspiCheckbox');
@@ -437,36 +482,122 @@
                       sspiCheckboxEle.checked = false;
                   }
               }
+              var rsaamCheckboxEle = document.getElementById('rsaamCheckbox');
+              if (rsaamCheckboxEle != null) {
+                  if (cb.checked) {
+                      rsaamCheckboxEle.checked = false;
+                  }
+              }
 
            };
 
-   var handleSspiError = function handleSspiError(stage) {
-            document.getElementById('sspiCheckbox').disabled = false;
-            document.getElementById('submit').disabled = false;
-            document.getElementById('username').disabled = true;
-            document.getElementById('password').disabled = true;
-            document.getElementById('progressBar').style.display = 'none';
-            document.getElementById('response').style.display = 'block';
-            document.getElementById('response').innerHTML = errorSSPI;
-            console.log('Client Integration Plugin error calling ' + stage);
-            doLog("Client Integration Plugin error calling " + stage);
-         };
+     var onlyRsaamEnabled = function onlySmartcardEnabled() {
+              if (password_auth == "true" || tlsclient_auth == "true" || windows_auth == "true") {
+                  return false;
+              } else {
+                  return true;
+              }
+           }
 
+     var enableRsaam = function enableRsaam(cb) {
+           var usernameField = document.getElementById('username');
+           var passwordField = document.getElementById('password');
+
+           //keep it checked if this is the only authentication method.
+           if (onlyRsaamEnabled()) {
+               cb.checked = true;
+           }
+
+           if (usernameField != null && passwordField != null) {
+               if (cb.checked) {
+                   usernameField.disabled = false;
+                   passwordField.disabled = false;
+                   document.getElementById("passwordID").getElementsByTagName("span")[0].innerHTML = rsaam_passcode_label;
+                } else {
+                   //password is the non-user definable lablel. so this is secure.
+                   document.getElementById("passwordID").getElementsByTagName("span")[0].innerHTML = password_label;
+                }
+           }
+           displayRsaamMessage(cb.checked? true:false);
+
+           //uncheck or snartcard sspiCheckbox
+           var sspiCheckboxEle = document.getElementById('sspiCheckbox');
+           if (sspiCheckboxEle != null) {
+               if (cb.checked) {
+                   sspiCheckboxEle.checked = false;
+               }
+           }
+           var smartcardCheckboxEle = document.getElementById('smartcardCheckbox');
+           if (smartcardCheckboxEle != null) {
+               if (cb.checked) {
+                   smartcardCheckboxEle.checked = false;
+               }
+           }
+        };
+
+   var handleSspiError = function(stage, err) {
+      document.getElementById('sspiCheckbox').disabled = false;
+      document.getElementById('submit').disabled = false;
+      document.getElementById('username').disabled = true;
+      document.getElementById('password').disabled = true;
+      document.getElementById('progressBar').style.display = 'none';
+      document.getElementById('response').style.display = 'block';
+      var errorMessage = errorSSPI;
+      var logMsg = 'Client Integration Plugin error calling ' + stage;
+
+      if (err && err.localized == "true") {
+         errorMessage = err.message;
+         logMsg += ": " + errorMessage;
+      }
+      document.getElementById('response').innerHTML = errorMessage;
+      console.log(logMsg);
+      doLog(logMsg);
+      };
+
+   var readyAcceptingRSANextCode = function readyAcceptingRSANextCode(self) {
+           document.getElementById('rsaamCheckbox').disabled = false;
+           document.getElementById('submit').disabled = false;
+           document.getElementById('username').disabled = false;
+           document.getElementById('password').disabled = false
+           document.getElementById('progressBar').style.display = 'none';
+           document.getElementById('response').style.display = 'block';
+           var castleError = self.getResponseHeader('CastleError');
+           response.innerHTML = castleError != null ? Base64.decode(castleError) : "Please submit the next passcode";
+
+           console.log('Enter next passcode.');
+           doLog("Enter next passcode.");
+        };
    // handle the sso response
    var handleResponse = function (evt) {
             var self = this;
+            var sspiCheckbox = document.getElementById('sspiCheckbox');
+            var rsaamCheckbox = document.getElementById('rsaamCheckbox');
+            var sspiLogin = sspiCheckbox != null && sspiCheckbox.checked;
+            //var smartcardLogin = smartcardCheckbox != null && smartcardCheckbox.checked;
+            var rsaamLogin = rsaamCheckbox != null && rsaamCheckbox.checked;
+
             if (self.readyState == 4){
                // process response
                var base64ServerToken = null;
                var sspiContextId = null;
+               var rsaSessionID = null;
+
                if (self.status == 401) {
-                  // SSPI Negotiate is 2-legged, first leg will return 401
+                  // Multiple leg authentication
                   var authHeader = self.getResponseHeader('CastleAuthorization');
                   if (authHeader != null) {
                      authHeaderParts = authHeader.split(' ');
-                     if (authHeaderParts.length == 3 && authHeaderParts[0] == 'Negotiate') {
-                        sspiContextId = authHeaderParts[1];
-                        base64ServerToken = authHeaderParts[2];
+                     if (rsaamLogin) {
+                         // RSA AM NextCode mode, first leg will return 401 with rsa sessionID in header.
+                         if (authHeaderParts.length == 2 && authHeaderParts[0] == 'RSAAM') {
+                             rsaSessionID = authHeaderParts[1];
+                         }
+                     } else if (sspiLogin) {
+                         // SSPI Negotiate is 2-legged, first leg will return 401
+                         if (authHeaderParts.length == 3 && authHeaderParts[0] == 'Negotiate') {
+                             sspiContextId = authHeaderParts[1];
+                             base64ServerToken = authHeaderParts[2];
+                         }
                      }
                   }
                }
@@ -474,6 +605,10 @@
                if (self.status == 302) {
                   // redirect back to original url
                   document.location = originalurl;
+               } else if (rsaSessionID != null) {
+                  // next code mode.
+                  _rsaSessionID = rsaSessionID;
+                  readyAcceptingRSANextCode(this);
                } else if (base64ServerToken != null && sspiContextId != null) {
                   var base64SspiToken = null;
                   try {
@@ -482,10 +617,10 @@
                      // snanda:2nd leg of Negotiate SSPI
                      api.sspi.negotiate( {inToken:base64ServerToken} , onNegotiateSSPI);
                   } catch (err) {
-                     handleSspiError('negotiateSSPI');
+                     handleSspiError('negotiateSSPI', null);
                   }
                } else {
-
+                  //all non second leg scenarios.
                   var response = document.getElementById('response');
                   var progressBar = document.getElementById('progressBar');
                   var castleError = null;
@@ -535,11 +670,11 @@
             }
    };
 
-   function displaySmartcardMessage(messageOn) {
+   function displayRsaamMessage(messageOn) {
        var messageEle = document.getElementById('response');
        if (messageOn == true) {
            response.style.display = 'block';
-           response.innerHTML = smartcard_reminder;
+           response.innerHTML = rsaam_reminder;
        } else {
            response.style.display = 'none';
        }
@@ -547,13 +682,13 @@
 
    function onNegotiateSSPI(result, err) {
       if (result == null || err != null || _sspiCtxId == null) {
-         handleSspiError('negotiateSSPI');
+         handleSspiError('negotiateSSPI', err);
          return;
       }
       var base64SspiToken = result.result;
-      doLog("OnNegotiateSSPI : [ " + base64SspiToken + " ]");
       if (base64SspiToken == null) {
-         handleSspiError('negotiateSSPI');
+         doLog("OnNegotiateSSPI: [Empty Token]");
+         handleSspiError('negotiateSSPI', null);
          return;
       }
       base64SspiToken = base64SspiToken.replace(/\r\n/g, '');
@@ -565,6 +700,7 @@
       xml.setRequestHeader('Cache-Control', 'no-cache');
       xml.setRequestHeader('Pragma', 'no-cache');
       xml.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+      xml.setRequestHeader("Accept-Language", browserLocale);
       xml.send(params);
       doLog("OnNegotiateSSPI : Logging in now using final SSPI negotiation");
    }
@@ -579,17 +715,24 @@
       var submit = document.getElementById('submit');
       var sspiCheckbox = document.getElementById('sspiCheckbox');
       var smartcardCheckbox = document.getElementById('smartcardCheckbox');
+      var rsaamCheckbox = document.getElementById('rsaamCheckbox');
       var progressBar = document.getElementById('progressBar');
       var sspiLogin = sspiCheckbox != null && sspiCheckbox.checked;
       var smartcardLogin = smartcardCheckbox != null && smartcardCheckbox.checked;
+      var rsaamLogin = rsaamCheckbox != null && rsaamCheckbox.checked;
       var username = (document.getElementById('username') == null)? '': $.trim(document.getElementById('username').value);
       var password = (document.getElementById('password') == null)? '': document.getElementById('password').value;
       doLog("Login started for user : " + username);
       // Note: it is perfectly fine for the password field to be empty.
       if (username != '' || sspiLogin || smartcardLogin) {
-        if (logonBannerCheckboxEnabled && !isBannerChecked()) {
+        if (isLogonBannerEnabled() && logonBannerCheckboxEnabled && !isBannerChecked()) {
             return;
         }
+
+        if ( smartcardLogin ) {
+            _url = _url.replace(sso_endpoint, cac_endpoint);
+        }
+
          // Display progress bar
          progressBar.style.display = 'block';
          var response = document.getElementById('response');
@@ -609,7 +752,7 @@
                // 1st leg of Negotiate SSP
                api.sspi.initialize( {providerName: 'Negotiate', target: spn}, onInitializeSSPI);
             } catch (err) {
-               handleSspiError('initializeSSPI');
+               handleSspiError('initializeSSPI', null);
             }
             return;
          }
@@ -621,8 +764,15 @@
          //temp solution allowing smartcard authentication test.
          var authType = '';   //default
 
-         if (tlsclient_auth == "true" && document.getElementById('smartcardCheckbox').checked == true) {
+          if (tlsclient_auth == "true" && document.getElementById('smartcardCheckbox').checked == true) {
              authType = 'TLSClient ';
+          } else if (rsaamLogin) {
+             if (_rsaSessionID != null) {
+                authType = "RSAAM " + _rsaSessionID+ " "+ unp;
+                _rsaSessionID = null;
+             } else {
+                authType = "RSAAM " + unp;
+             }
           } else if (password_auth == "true") {
              authType = 'Basic ' + unp;
           }
@@ -631,8 +781,9 @@
           // disable http caching
           xml.setRequestHeader('Cache-Control', 'no-cache');
           xml.setRequestHeader('Pragma', 'no-cache');
-          // send request
           xml.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+          xml.setRequestHeader("Accept-Language", browserLocale);
+          // send request
           xml.send(params);
       } else {
          doLog("Error : Not ready to login");
@@ -642,13 +793,13 @@
    function onInitializeSSPI(result, err) {
       var xml = _xml;
       if (err != null || result == null || xml == null) {
-         handleSspiError('initializeSSPI');
+         handleSspiError('initializeSSPI', err);
          return;
       }
       var base64SspiToken = result.result;
-      doLog("OnInitializeSSPI : base64SSPIToken is : " + base64SspiToken);
       if (base64SspiToken == null) {
-         handleSspiError('initializeSSPI');
+         doLog("OnInitializeSSPI: [Empty Token]");
+         handleSspiError('initializeSSPI', null);
          return;
       }
       base64SspiToken = base64SspiToken.replace(/\r\n/g, '');
@@ -660,6 +811,7 @@
       xml.setRequestHeader('Cache-Control', 'no-cache');
       xml.setRequestHeader('Pragma', 'no-cache');
       xml.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+      xml.setRequestHeader("Accept-Language", browserLocale);
       xml.send(params);
    }
 
@@ -758,9 +910,13 @@
 	   return data.length === 0;
    }
 
+   var isLogonBannerEnabled = function isLogonBannerEnabled() {
+	   return !isEmptyString(tenant_logonbanner_title) && !isEmptyString(tenant_logonbanner_content)
+   }
+
    function displayLogonBannerDialog() {
        $('#dialogLogonBanner').html('<p class="title">' + tenant_logonbanner_title + '</p>'
-               + '<pre>' + tenant_logonbanner_content + '</pre>');
+               + '<pre class="hyphenate">' + tenant_logonbanner_content + '</pre>');
        $('#dialogLogonBanner').dialog(
               {
                    width: 650,

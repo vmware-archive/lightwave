@@ -19,11 +19,18 @@ class LdapConnectionCtx
 {
    private final Pointer conn;
    private final Object sslCertValidationCallback;
+   private int sslMinimumProtocol;
 
    LdapConnectionCtx(Pointer conn, Object sslCertValidationCallback)
    {
-      this.conn = conn;
-      this.sslCertValidationCallback = sslCertValidationCallback;
+      this(conn, sslCertValidationCallback, 0);
+   }
+
+   LdapConnectionCtx(Pointer conn, Object sslCertValidationCallback, int sslMinimumProtocol)
+   {
+       this.conn = conn;
+       this.sslCertValidationCallback = sslCertValidationCallback;
+       this.sslMinimumProtocol = sslMinimumProtocol;
    }
 
    Pointer getConnection()
@@ -34,5 +41,10 @@ class LdapConnectionCtx
    Object getsslCertValidationCallback()
    {
       return this.sslCertValidationCallback;
+   }
+
+   int getSSLMinimumProtocol()
+   {
+       return this.sslMinimumProtocol;
    }
 }

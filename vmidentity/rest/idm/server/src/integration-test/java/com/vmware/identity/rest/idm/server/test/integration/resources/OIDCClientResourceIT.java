@@ -20,7 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 
 import org.easymock.EasyMock;
 import org.junit.Assert;
@@ -46,13 +46,13 @@ import com.vmware.identity.rest.idm.server.test.integration.util.data.OIDCClient
 public class OIDCClientResourceIT extends TestBase {
 
     private OIDCClientResource oidcClientResource;
-    private HttpServletRequest request;
+    private ContainerRequestContext request;
 
     @Before
     public void setUp() {
-        this.request = EasyMock.createMock(HttpServletRequest.class);
-        EasyMock.expect(this.request.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        EasyMock.expect(this.request.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        this.request = EasyMock.createMock(ContainerRequestContext.class);
+        EasyMock.expect(this.request.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        EasyMock.expect(this.request.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
         EasyMock.replay(this.request);
         this.oidcClientResource = new OIDCClientResource(DEFAULT_TENANT, this.request, null);
         this.oidcClientResource.setIDMClient(this.idmClient);
@@ -109,6 +109,7 @@ public class OIDCClientResourceIT extends TestBase {
                 withPostLogoutRedirectUris(postLogoutRedirectUris).
                 withLogoutUri(OIDCClientDataGenerator.LOGOUT_URI).
                 withCertSubjectDN(OIDCClientDataGenerator.CERT_SUBJECT_DN).
+                withAuthnRequestClientAssertionLifetimeMS(OIDCClientDataGenerator.AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS).
                 build();
         OIDCClientDTO updatedOIDCClient = this.oidcClientResource.update(clientId1, oidcClientToUpdate);
         assertEquals(redirectURIs, updatedOIDCClient.getOIDCClientMetadataDTO().getRedirectUris());
@@ -138,6 +139,7 @@ public class OIDCClientResourceIT extends TestBase {
                 withPostLogoutRedirectUris(postLogoutRedirectUris).
                 withLogoutUri(OIDCClientDataGenerator.LOGOUT_URI).
                 withCertSubjectDN(OIDCClientDataGenerator.CERT_SUBJECT_DN).
+                withAuthnRequestClientAssertionLifetimeMS(OIDCClientDataGenerator.AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS).
                 build();
         OIDCClientDTO response2 = this.oidcClientResource.add(oidcClientMetadataDTOToAdd);
         clientId2 = response2.getClientId();
@@ -180,6 +182,7 @@ public class OIDCClientResourceIT extends TestBase {
                 withPostLogoutRedirectUris(OIDCClientDataGenerator.POST_LOGOUT_REDIRECT_URIS).
                 withLogoutUri(OIDCClientDataGenerator.LOGOUT_URI).
                 withCertSubjectDN(OIDCClientDataGenerator.CERT_SUBJECT_DN).
+                withAuthnRequestClientAssertionLifetimeMS(OIDCClientDataGenerator.AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS).
                 build();
         this.oidcClientResource.update("unknownOIDCClient", oidcClientToUpdate);
     }
@@ -191,5 +194,6 @@ public class OIDCClientResourceIT extends TestBase {
         assertEquals(OIDCClientDataGenerator.POST_LOGOUT_REDIRECT_URIS, oidcClientDTO.getOIDCClientMetadataDTO().getPostLogoutRedirectUris());
         assertEquals(OIDCClientDataGenerator.LOGOUT_URI, oidcClientDTO.getOIDCClientMetadataDTO().getLogoutUri());
         assertEquals(OIDCClientDataGenerator.CERT_SUBJECT_DN, oidcClientDTO.getOIDCClientMetadataDTO().getCertSubjectDN());
+        assertEquals(OIDCClientDataGenerator.AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS, oidcClientDTO.getOIDCClientMetadataDTO().getAuthnRequestClientAssertionLifetimeMS());
     }
 }

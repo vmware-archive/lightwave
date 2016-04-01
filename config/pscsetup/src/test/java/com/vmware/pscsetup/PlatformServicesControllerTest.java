@@ -1,7 +1,10 @@
 package com.vmware.pscsetup;
 
 import junit.framework.Assert;
+
 import org.junit.Test;
+
+import com.vmware.identity.configure.PlatformInstallObserverDefault;
 
 public class PlatformServicesControllerTest {
     private static String hostname = "";

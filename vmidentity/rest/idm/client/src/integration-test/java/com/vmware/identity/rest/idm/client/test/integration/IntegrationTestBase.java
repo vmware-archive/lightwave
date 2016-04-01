@@ -60,7 +60,7 @@ public class IntegrationTestBase {
     }
 
     public static void cleanup(boolean withTestTenant) throws ClientProtocolException, HttpException, ClientException, IOException {
-        if (withTestTenant) {
+        if (withTestTenant && testAdminClient != null) {
             testAdminClient.tenant().delete(testTenant.getName());
         }
     }
