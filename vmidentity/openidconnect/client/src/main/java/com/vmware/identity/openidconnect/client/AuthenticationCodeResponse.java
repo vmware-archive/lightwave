@@ -16,38 +16,29 @@ package com.vmware.identity.openidconnect.client;
 
 import org.apache.commons.lang3.Validate;
 
+import com.vmware.identity.openidconnect.common.AuthorizationCode;
+import com.vmware.identity.openidconnect.common.State;
+
 /**
- * Authentication Code Response
- *
  * @author Jun Sun
+ * @author Yehia Zayour
  */
-public class AuthenticationCodeResponse extends AuthenticationResponse {
-
+public final class AuthenticationCodeResponse {
     private final State state;
-    private final AuthorizationCode authorizationCode;
+    private final AuthorizationCode authzCode;
 
-    AuthenticationCodeResponse(State state, AuthorizationCode authorizationCode) {
-        Validate.notNull(authorizationCode, "authorizationCode");
-
+    public AuthenticationCodeResponse(State state, AuthorizationCode authzCode) {
+        Validate.notNull(state, "state");
+        Validate.notNull(authzCode, "authzCode");
         this.state = state;
-        this.authorizationCode = authorizationCode;
+        this.authzCode = authzCode;
     }
 
-    /**
-     * Get state value.
-     *
-     * @return                  State value in response.
-     */
     public State getState() {
         return this.state;
     }
 
-    /**
-     * Get authorization code.
-     *
-     * @return                  Authorization code in response.
-     */
     public AuthorizationCode getAuthorizationCode() {
-        return this.authorizationCode;
+        return this.authzCode;
     }
 }

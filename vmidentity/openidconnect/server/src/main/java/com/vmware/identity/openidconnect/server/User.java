@@ -16,8 +16,8 @@ package com.vmware.identity.openidconnect.server;
 
 import org.apache.commons.lang3.Validate;
 
-import com.nimbusds.oauth2.sdk.id.Subject;
 import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.openidconnect.common.Subject;
 
 /**
  * @author Yehia Zayour
@@ -25,12 +25,14 @@ import com.vmware.identity.idm.PrincipalId;
 public abstract class User {
     private final PrincipalId principalId;
     private final String tenant;
+    private final Subject subject;
 
     public User(PrincipalId principalId, String tenant) {
         Validate.notNull(principalId, "principalId");
         Validate.notEmpty(tenant, "tenant");
         this.principalId = principalId;
         this.tenant = tenant;
+        this.subject = new Subject(this.principalId.getUPN());
     }
 
     public PrincipalId getPrincipalId() {
@@ -42,6 +44,6 @@ public abstract class User {
     }
 
     public Subject getSubject() {
-        return new Subject(this.principalId.getUPN());
+        return this.subject;
     }
 }

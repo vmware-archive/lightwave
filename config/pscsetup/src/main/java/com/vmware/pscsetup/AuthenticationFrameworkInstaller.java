@@ -1,6 +1,9 @@
 package com.vmware.pscsetup;
 
 import com.vmware.pscsetup.interop.DeployUtilsAdapter;
+import com.vmware.identity.configure.IPlatformComponentInstaller;
+import com.vmware.identity.configure.PlatformInstallComponent;
+import com.vmware.identity.interop.Validate;
 
 public class AuthenticationFrameworkInstaller implements
 	IPlatformComponentInstaller {

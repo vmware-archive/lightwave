@@ -245,4 +245,45 @@ public class PlatformUtils
            return false;
        }
    }
+
+   public static String canonicalizeStringForLdapDN(String name) {
+       //@see RFC 2253
+       StringBuilder sb = new StringBuilder();
+       if ((name.length() > 0) && ((name.charAt(0) == ' ') || (name.charAt(0) == '#'))) {
+           sb.append('\\');
+       }
+       for (int i = 0; i < name.length(); i++) {
+           char curChar = name.charAt(i);
+           switch (curChar) {
+               case '\\':
+                   sb.append("\\\\");
+                   break;
+               case ',':
+                   sb.append("\\,");
+                   break;
+               case '+':
+                   sb.append("\\+");
+                   break;
+               case '"':
+                   sb.append("\\\"");
+                   break;
+               case '<':
+                   sb.append("\\<");
+                   break;
+               case '>':
+                   sb.append("\\>");
+                   break;
+               case ';':
+                   sb.append("\\;");
+                   break;
+               default:
+                   sb.append(curChar);
+           }
+       }
+       if ((name.length() > 1) && (name.charAt(name.length() - 1) == ' ')) {
+           sb.insert(sb.length() - 1, '\\');
+       }
+       return sb.toString();
+   }
+
 }

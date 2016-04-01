@@ -183,9 +183,6 @@ public final class TokenAuthorityImpl implements TokenAuthority {
       log.debug("Started issuing token for spec:{}", spec);
       Validate.notNull(spec);
 
-      final Date issueInstantTime = new Date();
-      log.debug("Issue instant time: {}", issueInstantTime);
-
       final Config config = this.configExtractor.getConfig();
       final SamlAuthorityConfiguration samlAuthorityConfig = config
               .getSamlAuthorityConfig();
@@ -198,8 +195,6 @@ public final class TokenAuthorityImpl implements TokenAuthority {
           new TokenLifetimeRemediator(signInfo, tokenRestrictions, config.getClockTolerance());
 
       final boolean requesterIsTokenOwner = spec.requesterIsTokenOwner();
-      final TimePeriod validity = lifetimeRemediator.remediateTokenValidity(
-         spec, issueInstantTime);
       final DelegationInfo delegationInfo = delegationHandler
          .getDelegationInfo(requesterIsTokenOwner, spec.getDelegationSpec());
       final int renewCount = new RenewRestrictor(requesterIsTokenOwner,
@@ -209,6 +204,13 @@ public final class TokenAuthorityImpl implements TokenAuthority {
       final List<Advice> advice = AdviceFilter.processRequest(
          requesterIsTokenOwner, spec.getRequestedAdvice(),
          spec.getPresentAdvice());
+
+      // move token issue time right before create assertion, PR 1550654.
+      final Date issueInstantTime = new Date();
+      log.debug("Issue instant time: {}", issueInstantTime);
+
+      final TimePeriod validity = lifetimeRemediator.remediateTokenValidity(
+              spec, issueInstantTime);
 
       final Assertion assertion = createAssertion(spec, issueInstantTime,
          validity, delegationInfo, renewCount, advice, samlAuthorityConfig);
@@ -819,6 +821,9 @@ public final class TokenAuthorityImpl implements TokenAuthority {
          break;
       case TLSCLIENT:
           authnMethodValue = AuthnContext.TLS_CLIENT_AUTHN_CTX;
+          break;
+      case TIMESYNCTOKEN:
+          authnMethodValue = AuthnContext.TIME_SYNC_TOKEN_AUTHN_CTX;
           break;
       default:
          throw new IllegalStateException("Unknown authentication method");

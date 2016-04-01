@@ -25,13 +25,9 @@
 
     <beans:bean id="serviceContextProvider" class="com.vmware.identity.openidconnect.server.IdmServiceContextProvider"/>
 
-    <beans:bean id="casIdmClient" class="com.vmware.identity.idm.client.CasIdmClient">
+    <beans:bean id="idmClient" class="com.vmware.identity.idm.client.CasIdmClient">
         <beans:constructor-arg value="localhost" />
         <beans:constructor-arg ref="serviceContextProvider" />
-    </beans:bean>
-
-    <beans:bean id="idmClient" class="com.vmware.identity.openidconnect.server.IdmClient">
-        <beans:constructor-arg ref="casIdmClient" />
     </beans:bean>
 
     <beans:bean id="authzCodeManager" class="com.vmware.identity.openidconnect.server.AuthorizationCodeManager"/>

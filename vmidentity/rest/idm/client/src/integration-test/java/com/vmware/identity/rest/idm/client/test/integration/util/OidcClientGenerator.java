@@ -25,6 +25,7 @@ public class OidcClientGenerator {
     private static final List<String> POST_LOGOUT_REDIRECT_URIS = Arrays.asList("https://www.vmware.com/postlogoutredirect1");
     private static final String LOGOUT_URI = "https://www.vmware.com/logout";
     private static final String OIDC_CERT_SUBJECT_DN = "OU=mID-2400d17e-d4f4-4753-98fd-fb9ecbf098ae,C=US,DC=local,DC=vsphere,CN=oidc-client-123";
+    private static final Long AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS = new Long(1234L);
 
     public static OIDCClientMetadataDTO generateOIDCClientMetadata() {
         return new OIDCClientMetadataDTO.Builder()
@@ -33,6 +34,7 @@ public class OidcClientGenerator {
             .withPostLogoutRedirectUris(POST_LOGOUT_REDIRECT_URIS)
             .withLogoutUri(LOGOUT_URI)
             .withCertSubjectDN(OIDC_CERT_SUBJECT_DN)
+            .withAuthnRequestClientAssertionLifetimeMS(AUTHN_REQUEST_CLIENT_ASSERTION_LIFETIME_MS)
             .build();
     }
 }

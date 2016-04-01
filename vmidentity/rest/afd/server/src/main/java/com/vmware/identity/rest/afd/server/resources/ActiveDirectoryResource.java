@@ -13,12 +13,12 @@
  */
 package com.vmware.identity.rest.afd.server.resources;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
@@ -36,6 +36,7 @@ import com.vmware.identity.rest.core.server.authorization.Role;
 import com.vmware.identity.rest.core.server.authorization.annotation.RequiresRole;
 import com.vmware.identity.rest.core.server.exception.client.BadRequestException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
+import com.vmware.identity.rest.core.server.resources.BaseResource;
 import com.vmware.identity.rest.core.server.util.Validate;
 
 /**
@@ -49,7 +50,7 @@ public class ActiveDirectoryResource extends BaseResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(ActiveDirectoryResource.class);
 
-    public ActiveDirectoryResource(@Context HttpServletRequest request, @Context SecurityContext securityContext) {
+    public ActiveDirectoryResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(request, securityContext);
     }
 

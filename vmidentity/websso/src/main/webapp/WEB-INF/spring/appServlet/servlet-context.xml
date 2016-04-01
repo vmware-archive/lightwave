@@ -62,6 +62,9 @@
     <beans:bean id="passwordAuth" class="com.vmware.identity.samlservice.impl.AuthnRequestStatePasswordAuthenticationFilter">
     </beans:bean>
 
+    <beans:bean id="rsaamAuth" class="com.vmware.identity.samlservice.impl.AuthnRequestStateRsaAmAuthenticationFilter">
+    </beans:bean>
+
     <beans:bean id="tlsClientAuth" class="com.vmware.identity.samlservice.impl.AuthnRequestStateTLSClientAuthenticationFilter">
     </beans:bean>
 
@@ -77,6 +80,11 @@
        </beans:property>
     </beans:bean>
 
+    <beans:bean id="rsaamAuthenticator" class="com.vmware.identity.samlservice.impl.AuthnRequestStateCookieWrapper">
+       <beans:property name="authenticator">
+           <beans:ref bean="rsaamAuth"/>
+       </beans:property>
+    </beans:bean>
 
     <beans:bean id="tlsClientAuthenticator" class="com.vmware.identity.samlservice.impl.AuthnRequestStateCookieWrapper">
        <beans:property name="authenticator">
@@ -111,6 +119,8 @@
 
     <beans:bean id="tomcatAccessLogCleaner" class="com.vmware.identity.session.TomcatAccessLogCleaner">
     </beans:bean>
+
+    <beans:bean id = "eventListenerBean" class="com.vmware.identity.WebssoApplicationListener" />
 
 	<context:component-scan base-package="com.vmware.identity" />
 

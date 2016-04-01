@@ -15,42 +15,43 @@
 package com.vmware.identity.openidconnect.client;
 
 import java.security.interfaces.RSAPublicKey;
-import java.text.ParseException;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.lang3.Validate;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.crypto.RSASSAVerifier;
-import com.nimbusds.jwt.ReadOnlyJWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
+import com.vmware.identity.openidconnect.common.AccessToken;
+import com.vmware.identity.openidconnect.common.ClientID;
+import com.vmware.identity.openidconnect.common.Issuer;
+import com.vmware.identity.openidconnect.common.JWTID;
+import com.vmware.identity.openidconnect.common.Nonce;
+import com.vmware.identity.openidconnect.common.ParseException;
+import com.vmware.identity.openidconnect.common.Scope;
+import com.vmware.identity.openidconnect.common.SessionID;
+import com.vmware.identity.openidconnect.common.Subject;
 import com.vmware.identity.openidconnect.common.TokenClass;
+import com.vmware.identity.openidconnect.common.TokenType;
 
 /**
- * Resource Server Access Token
- *
+ * @author Yehia Zayour
  * @author Jun Sun
  */
-public class ResourceServerAccessToken {
+public final class ResourceServerAccessToken {
+    private final AccessToken accessToken;
 
-    private final ReadOnlyJWTClaimsSet jwtClaimsSet;
-
-    private ResourceServerAccessToken(ReadOnlyJWTClaimsSet jwtClaimsSet) {
-        Validate.notNull(jwtClaimsSet, "jwtClaimsSet");
-
-        this.jwtClaimsSet = jwtClaimsSet;
+    private ResourceServerAccessToken(AccessToken accessToken) {
+        this.accessToken = accessToken;
     }
 
     /**
      * Access token builder, including signature verification and validation.
      *
      * @param value                             Opaque access token string.
-     * @param providerPublicKey                 OIDC server metadata from querying metadata endpoint. It contains server endpoints URI,
-     *                                          issuer and other server supported capability configurations.
+     * @param providerPublicKey                 public key retrieved from Authorization Server jwks endpoint
      * @param resourceServer                    Name of resource server.
-     * @param issuer                            OIDC issuer.
+     * @param clockToleranceInSeconds           Clock tolerance in seconds.
      * @return                                  Access token including claims.
      * @throws TokenValidationException         Token validation exception.
      */
@@ -58,142 +59,111 @@ public class ResourceServerAccessToken {
             String value,
             RSAPublicKey providerPublicKey,
             String resourceServer,
-            Issuer issuer) throws TokenValidationException {
-        Validate.notNull(value, "value");
+            long clockToleranceInSeconds) throws TokenValidationException {
+        Validate.notEmpty(value, "value");
         Validate.notNull(providerPublicKey, "providerPublicKey");
         Validate.notNull(resourceServer, "resourceServer");
-        Validate.notNull(issuer, "issuer");
 
-        // verify the signature
-        JWSVerifier verifier = new RSASSAVerifier(providerPublicKey);
-        SignedJWT signedJWT;
+        AccessToken accessToken;
         try {
-            signedJWT = SignedJWT.parse(value);
-
-            if (!signedJWT.verify(verifier)) {
-                throw new TokenValidationException(TokenValidationError.INVALID_SIGNATURE, "Token signature validation failed.");
-            }
+            accessToken = AccessToken.parse(value);
         } catch (ParseException e) {
             throw new TokenValidationException(TokenValidationError.PARSE_ERROR, "Token parsing failed." + e.getMessage(), e);
+        }
+
+        try {
+            if (!accessToken.hasValidSignature(providerPublicKey)) {
+                throw new TokenValidationException(TokenValidationError.INVALID_SIGNATURE, "Token signature validation failed.");
+            }
         } catch (JOSEException e) {
             throw new TokenValidationException(TokenValidationError.PARSE_ERROR, "Token Signature verification process failed." + e.getMessage(), e);
         }
 
-        // verify claims
-        Date now = new Date();
-        ReadOnlyJWTClaimsSet jwtClaimsSet = null;
-        try {
-            jwtClaimsSet = signedJWT.getJWTClaimsSet();
-
-            if (!jwtClaimsSet.getAudience().contains(resourceServer)) {
-                throw new TokenValidationException(TokenValidationError.INVALID_AUDIENCE, "Audience in claim set does not contain the specified resource server.");
-            }
-
-            // TODO: add clock skew
-            if ((jwtClaimsSet.getExpirationTime().before(now /* + clockSkew */))) {
-                throw new TokenValidationException(TokenValidationError.EXPIRED_TOKEN, "Token is expired.");
-            }
-
-            // validate id token class & type
-            if (!TokenClass.ACCESS_TOKEN.getName().equals(jwtClaimsSet.getStringClaim("token_class"))) {
-                throw new TokenValidationException(TokenValidationError.INVALID_TOKEN_CLASS, "Acess token class must be \"access_token\".");
-            }
-        } catch (java.text.ParseException e) {
-            throw new TokenValidationException(TokenValidationError.PARSE_ERROR, "Parse exception when getting a claim from claim set.", e);
+        if (!accessToken.getAudience().contains(resourceServer)) {
+            throw new TokenValidationException(TokenValidationError.INVALID_AUDIENCE, "Audience in claim set does not contain the specified resource server.");
         }
 
-        return new ResourceServerAccessToken(jwtClaimsSet);
+        Date adjustedCurrentDate = new Date(new Date().getTime() - clockToleranceInSeconds * 1000);
+        if ((accessToken.getExpirationTime().before(adjustedCurrentDate))) {
+            throw new TokenValidationException(TokenValidationError.EXPIRED_TOKEN, "Token is expired.");
+        }
+
+        return new ResourceServerAccessToken(accessToken);
     }
 
-    // all claim strings should be moved to common for sharing between client and server
-    /**
-     * Get group claims
-     *
-     * @return                          List of groups
-     */
-    @SuppressWarnings("unchecked")
-    public List<String> getGroups() {
-        return (List<String>) getClaim("groups");
+    public String serialize() {
+        return this.accessToken.serialize();
     }
 
-    /**
-     * Get token class claim
-     *
-     * @return                          Token class
-     */
-    public String getTokenClass() {
-        return (String) getClaim("token_class");
+    public TokenClass getTokenClass() {
+        return this.accessToken.getTokenClass();
     }
 
-    /**
-     * Get token type claim
-     *
-     * @return                          Token type
-     */
-    public String getTokenType() {
-        return (String) getClaim("token_type");
+    public TokenType getTokenType() {
+        return this.accessToken.getTokenType();
     }
 
-    /**
-     * Get subject claim
-     *
-     * @return                          Subject
-     */
-    public String getSubject() {
-        return this.jwtClaimsSet.getSubject();
+    public JWTID getJWTID() {
+        return this.accessToken.getJWTID();
     }
 
-    /**
-     * Get issuer claim
-     *
-     * @return                          Token issuer
-     */
-    public String getIssuer() {
-        return this.jwtClaimsSet.getIssuer();
+    public Issuer getIssuer() {
+        return this.accessToken.getIssuer();
     }
 
-    /**
-     * Get audience claim
-     *
-     * @return                          Token audience
-     */
+    public Subject getSubject() {
+        return this.accessToken.getSubject();
+    }
+
     public List<String> getAudience() {
-        return this.jwtClaimsSet.getAudience();
+        return this.accessToken.getAudience();
     }
 
-    /**
-     * Get issue time  claim
-     *
-     * @return                          Token issue time
-     */
     public Date getIssueTime() {
-        return this.jwtClaimsSet.getIssueTime();
+        return this.accessToken.getIssueTime();
     }
 
-    /**
-     * Get expiration claim
-     *
-     * @return                          Token expiration time
-     */
     public Date getExpirationTime() {
-        return this.jwtClaimsSet.getExpirationTime();
+        return this.accessToken.getExpirationTime();
     }
 
-    /**
-     * Get JWT id claim
-     *
-     * @return                          JWT id
-     */
-    public String getJWTID() {
-        return this.jwtClaimsSet.getJWTID();
+    public long getLifetimeSeconds() {
+        return this.accessToken.getLifetimeSeconds();
     }
 
-    /**
-     * Get a general claim
-     *
-     * @return                          Claim object
-     */
-    public Object getClaim(String claim) {
-        return this.jwtClaimsSet.getClaim(claim);
+    public Scope getScope() {
+        return this.accessToken.getScope();
+    }
+
+    public String getTenant() {
+        return this.accessToken.getTenant();
+    }
+
+    public ClientID getClientID() {
+        return this.accessToken.getClientID();
+    }
+
+    public SessionID getSessionID() {
+        return this.accessToken.getSessionID();
+    }
+
+    public RSAPublicKey getHolderOfKey() {
+        return this.accessToken.getHolderOfKey();
+    }
+
+    public Subject getActAs() {
+        return this.accessToken.getActAs();
+    }
+
+    public Nonce getNonce() {
+        return this.accessToken.getNonce();
+    }
+
+    public Collection<String> getGroups() {
+        return this.accessToken.getGroups();
+    }
+
+    public String getAdminServerRole() {
+        return this.accessToken.getAdminServerRole();
     }
 }
