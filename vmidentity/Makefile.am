@@ -3,11 +3,11 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = \
     config \
     jdepends \
+    tomcat-extensions \
     interop \
     diagnostics \
     platform \
     idm \
-    openidconnect \
     commons \
     samlauthority \
     ssolib \
@@ -16,4 +16,6 @@ SUBDIRS = \
     wstauthz \
     sts \
     wsTrustClient \
-    rest
+    install \
+    rest \
+    openidconnect

@@ -28,7 +28,7 @@ import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.SecurityContext;
 
 import org.easymock.EasyMock;
@@ -36,8 +36,6 @@ import org.easymock.IMocksControl;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
-import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.IDMException;
 import com.vmware.identity.idm.InvalidArgumentException;
@@ -89,21 +87,19 @@ public class UserResourceTest {
     private static final String CURRENT_PWD = "oldpassword_That_Needs_To_Be_Updated";
     private static final String NEW_PWD = "newpassword_Being_Updated_With";
 
-    private IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(UserResourceTest.class);
-
     private UserResource userResource;
     private IMocksControl mControl;
     private CasIdmClient mockCasIDMClient;
     private SecurityContext mockSecurityContext;
     private Principal mockPrincipal;
-    private HttpServletRequest request;
+    private ContainerRequestContext request;
 
     @Before
     public void setUp() {
         mControl = EasyMock.createControl();
-        request = EasyMock.createMock(HttpServletRequest.class);
-        EasyMock.expect(request.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        EasyMock.expect(request.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        request = EasyMock.createMock(ContainerRequestContext.class);
+        EasyMock.expect(request.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        EasyMock.expect(request.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
         EasyMock.replay(request);
 
         mockCasIDMClient = mControl.createMock(CasIdmClient.class);

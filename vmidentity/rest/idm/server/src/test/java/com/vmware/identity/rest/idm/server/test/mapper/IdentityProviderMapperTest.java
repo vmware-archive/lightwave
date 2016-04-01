@@ -280,6 +280,7 @@ public class IdentityProviderMapperTest {
                                                                         AD_SPN,
                                                                         PASSWORD,
                                                                         attributesMap,
+                                                                        null,
                                                                         null);
     }
 
@@ -290,7 +291,8 @@ public class IdentityProviderMapperTest {
                                                                         AD_SPN,
                                                                         PASSWORD,
                                                                         attributesMap,
-                                                                        getADSchemaMapping());
+                                                                        getADSchemaMapping(),
+                                                                        null);
     }
 
     private IdentityProviderDTO getTestADIdentityProviderDTO() {

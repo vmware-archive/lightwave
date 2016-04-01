@@ -25,10 +25,10 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
@@ -37,6 +37,7 @@ import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
+import com.vmware.identity.rest.core.server.resources.BaseResource;
 import com.vmware.provider.VecsLoadStoreParameter;
 
 /**
@@ -47,7 +48,7 @@ public class VecsResource extends BaseResource {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(VecsResource.class);
 
-    public VecsResource(@Context HttpServletRequest request, @Context SecurityContext securityContext) {
+    public VecsResource(@Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(request, securityContext);
     }
 

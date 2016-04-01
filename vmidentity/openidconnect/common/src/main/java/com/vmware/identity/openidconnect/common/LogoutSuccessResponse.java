@@ -15,22 +15,16 @@
 package com.vmware.identity.openidconnect.common;
 
 import java.net.URI;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
-import javax.mail.internet.ContentType;
-import javax.mail.internet.ParseException;
-
 import org.apache.commons.lang3.Validate;
-
-import com.nimbusds.oauth2.sdk.Response;
-import com.nimbusds.oauth2.sdk.SerializeException;
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
-import com.nimbusds.oauth2.sdk.id.State;
 
 /**
  * @author Yehia Zayour
  */
-public class LogoutSuccessResponse implements Response {
+public final class LogoutSuccessResponse extends LogoutResponse {
     private static final String HTML_RESPONSE =
             "<html>" +
             "    <head>" +
@@ -44,12 +38,10 @@ public class LogoutSuccessResponse implements Response {
             "        </script>" +
             "    </head>" +
             "    <body>" +
-            "        <!-- logoutUriImageLinks --> %s <!-- logoutUriImageLinks -->" +
+            "        <!-- logoutUriLinks --> %s <!-- logoutUriLinks -->" +
             "    </body>" +
             "</html>";
 
-    private final URI postLogoutRedirectUri;
-    private final State state;
     private final SessionID sessionId;
     private final Set<URI> logoutUris;
 
@@ -58,50 +50,37 @@ public class LogoutSuccessResponse implements Response {
             State state,
             SessionID sessionId,
             Set<URI> logoutUris){
+        super(postLogoutRedirectUri, state);
+
         Validate.notNull(logoutUris); // pass in empty set instead
         if (!logoutUris.isEmpty() && sessionId == null) {
             throw new IllegalArgumentException("sessionId should not be null when logoutUris is non-empty");
         }
 
-        this.postLogoutRedirectUri = postLogoutRedirectUri;
-        this.state = state;
         this.sessionId = sessionId;
         this.logoutUris = logoutUris;
     }
 
     @Override
-    public boolean indicatesSuccess() {
-        return true;
+    public HttpResponse toHttpResponse() {
+        URI postLogoutRedirectUriWithState = URIUtils.appendQueryParameter(super.getPostLogoutRedirectURI(), "state", super.getState().getValue());
+
+        StringBuilder logoutUriLinks = new StringBuilder();
+        for (URI logoutUri : this.logoutUris) {
+            URI logoutUriWithSid = URIUtils.appendQueryParameter(logoutUri, "sid", this.sessionId.getValue());
+            logoutUriLinks.append(String.format("<iframe src=\"%s\">", logoutUriWithSid.toString()));
+        }
+
+        String content = String.format(HTML_RESPONSE, postLogoutRedirectUriWithState, logoutUriLinks.toString());
+        return HttpResponse.createHtmlResponse(StatusCode.OK, content);
     }
 
-    @Override
-    public HTTPResponse toHTTPResponse() throws SerializeException {
-        HTTPResponse httpResponse = new HTTPResponse(HTTPResponse.SC_OK);
+    public static LogoutSuccessResponse parse(HttpRequest httpRequest) throws ParseException {
+        Validate.notNull(httpRequest, "httpRequest");
+        Map<String, String> parameters = httpRequest.getParameters();
 
-        try {
-            httpResponse.setContentType(new ContentType("text/html;charset=UTF-8"));
-        } catch (ParseException e) {
-            throw new SerializeException("could not set response type header", e);
-        }
+        State state = State.parse(ParameterMapUtils.getString(parameters, "state"));
 
-        httpResponse.setCacheControl("no-cache, no-store");
-        httpResponse.setPragma("no-cache");
-
-        String postLogoutRedirectUriWithState = "";
-        if (this.postLogoutRedirectUri != null) {
-            postLogoutRedirectUriWithState = (this.state == null) ?
-                    this.postLogoutRedirectUri.toString() :
-                    CommonUtils.appendQueryParameter(this.postLogoutRedirectUri, "state", this.state.getValue());
-        }
-
-        StringBuilder logoutUriImageLinks = new StringBuilder();
-        for (URI logoutUri : this.logoutUris) {
-            String logoutUriWithSid = CommonUtils.appendQueryParameter(logoutUri, "sid", this.sessionId.getValue());
-            logoutUriImageLinks.append(String.format("<img src=\"%s\">", logoutUriWithSid));
-        }
-
-        httpResponse.setContent(String.format(HTML_RESPONSE, postLogoutRedirectUriWithState, logoutUriImageLinks.toString()));
-
-        return httpResponse;
+        return new LogoutSuccessResponse(httpRequest.getURI(), state, (SessionID) null, Collections.<URI>emptySet());
     }
 }
