@@ -1,0 +1,163 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{2BF9B87F-BE4C-43D2-ACE6-59CD51BB3772}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>VMCertStoreSnapIn</RootNamespace>
+    <AssemblyName>VMCertStoreSnapIn</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="microsoft.managementconsole, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration.Install" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Design" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ListViews\VecsSecretKeysListView.cs" />
+    <Compile Include="ListViews\VecsPrivateKeysListView.cs" />
+    <Compile Include="ListViews\VecsStoreEntriesListView.cs" />
+    <Compile Include="ListViews\VecsTrustedCertsListView.cs" />
+    <Compile Include="Nodes\VecsStoreEntriesNode.cs" />
+    <Compile Include="Nodes\VecsSecretKeysNode.cs" />
+    <Compile Include="Nodes\VecsTrustedCertsNode.cs" />
+    <Compile Include="Nodes\VecsPrivateKeysNode.cs" />
+    <Compile Include="Nodes\VecsStoreNode.cs" />
+    <Compile Include="Nodes\VecsStoresNode.cs" />
+    <Compile Include="Nodes\VMCertStoreServerNode.cs" />
+    <Compile Include="Nodes\VMCertStoreRootNode.cs" />
+    <Compile Include="Persistence\LocalData.cs" />
+    <Compile Include="Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Utilities\MiscUtilsService.cs" />
+    <Compile Include="UI\FormAddSecretKey.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\FormAddSecretKey.Designer.cs">
+      <DependentUpon>FormAddSecretKey.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\FormAddPrivateKey.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\FormAddPrivateKey.Designer.cs">
+      <DependentUpon>FormAddPrivateKey.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\FormVecsCreateCertStore.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\FormVecsCreateCertStore.Designer.cs">
+      <DependentUpon>FormVecsCreateCertStore.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\frmAddCertificate.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\frmAddCertificate.Designer.cs">
+      <DependentUpon>frmAddCertificate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="VMCertStoreImageIndex.cs" />
+    <Compile Include="VMCertStoreSnapIn.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="VMCertStoreSnapInEnvironment.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Images\Toolbar.bmp" />
+    <EmbeddedResource Include="Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\FormAddSecretKey.resx">
+      <DependentUpon>FormAddSecretKey.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\FormAddPrivateKey.resx">
+      <DependentUpon>FormAddPrivateKey.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\FormVecsCreateCertStore.resx">
+      <DependentUpon>FormVecsCreateCertStore.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\frmAddCertificate.resx">
+      <DependentUpon>frmAddCertificate.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\common\VMCertStore.Client\VMCertStore.Client.csproj">
+      <Project>{24B08641-C034-4A2C-8F18-705F001CD43F}</Project>
+      <Name>VMCertStore.Client</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMCertStore.Common\VMCertStore.Common.csproj">
+      <Project>{106c16d6-b2bf-4373-b160-b8b983d56c60}</Project>
+      <Name>VMCertStore.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
+      <Project>{cd959e2e-5b9c-4329-b085-352844cfdcdd}</Project>
+      <Name>VMIdentity.CommonUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\VMwareMMCIDP.UI.Common\VMwareMMCIDP.UI.Common.csproj">
+      <Project>{474831AB-37DE-415C-B944-37E2D10D1E85}</Project>
+      <Name>VMwareMMCIDP.UI.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\privateEntity.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\secretKey.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\store.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\trustedCert.ico" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

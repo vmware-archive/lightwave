@@ -43,7 +43,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
                         ipAddress = entry.HostName;
                     }
                 }
-                catch (SocketException ex)
+                catch
                 {
                     return ipAddress;
                 }

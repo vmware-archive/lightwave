@@ -48,10 +48,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.HttpTransport
         {
             get
             {
-                //return index.ToString();
                 SsoHttpTransport tran = _collection[_index];
                 return tran.Method + " (" + tran.TimeTaken + ")";
-                //return tran.RequestHeader.SOAPAction;
             }
         }
         public override string Description
@@ -84,7 +82,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.HttpTransport
         }
         public override void SetValue(object component, object value)
         {
-            // this.collection[index] = value;
         }
     }
 }

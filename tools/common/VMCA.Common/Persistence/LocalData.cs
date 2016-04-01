@@ -51,6 +51,19 @@ namespace VMCASnapIn.Persistence
             }
         }
 
+        public void RemoveServer(VMCAServerDTO dto)
+        {
+            for (int i = 0; i < SerializableList.Count; i++)
+            {
+                VMCAServerDTO item = ServerQueue.Dequeue();
+                if (!string.Equals(item.Server, dto.Server))
+                {
+                    ServerQueue.Enqueue(item);
+                }
+            }
+            SerializableList.Remove(dto);
+        }
+
         public VMCAServerDTO GetServerDTO (string server)
         {
             return SerializableList.FirstOrDefault (listElement => string.Equals (listElement.Server, server));

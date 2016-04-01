@@ -20,7 +20,7 @@ using System.Security.Cryptography.X509Certificates;
 using Foundation;
 using AppKit;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
-
+using VmIdentity.CommonUtils.Utilities;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions;
 using Vmware.Tools.RestSsoAdminSnapIn;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
@@ -101,7 +101,7 @@ namespace RestSsoAdminSnapIn
 						TxtDn.StringValue = cert1.IssuerName.Format(true);
 						_certificate = cert1;
 					});
-					SolutionUserDto.Certificate.Encoded = _certificate.ToPem();
+					SolutionUserDto.Certificate.Encoded = _certificate.ExportToPem();
 				}
 			};
 

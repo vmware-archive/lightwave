@@ -24,6 +24,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;	
 using System.Security.Cryptography.X509Certificates;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions;
+using VmIdentity.CommonUtils.Utilities;
 
 namespace RestSsoAdminSnapIn
 {
@@ -63,7 +64,7 @@ namespace RestSsoAdminSnapIn
 					var cert = new X509Certificate2 ();
 					ActionHelper.Execute (delegate() {
 						cert.Import (filePath);
-						var certfificateDto = new CertificateDto { Encoded = cert.ToPem(), };
+						var certfificateDto = new CertificateDto { Encoded = cert.ExportToPem(), };
 						TenantConfigurationDto.AuthenticationPolicy.ClientCertificatePolicy.TrustedCACertificates.Add(certfificateDto);
 						ReloadCertificates();
 					});
@@ -148,11 +149,6 @@ namespace RestSsoAdminSnapIn
 			TxtBrandLogonBanner.Enabled = enableLogonBanner;
 			TxtLogonBannerTitle.Enabled = enableLogonBanner;
 			BtnUploadContent.Enabled = enableLogonBanner;
-
-//			if(!enableLogonBanner)
-//				TxtBrandLogonBanner.StringValue = string.Empty;
-//			if(!enableLogonBanner)
-//				TxtLogonBannerTitle.StringValue = string.Empty;
 		}
 
 		private void ViewToDto()
@@ -197,6 +193,8 @@ namespace RestSsoAdminSnapIn
 				TenantConfigurationDto.AuthenticationPolicy.ClientCertificatePolicy.TrustedCACertificates = new List<CertificateDto> ();
 
 			TenantConfigurationDto.ProviderPolicy.DefaultProvider = TxtProviderDefault.StringValue;
+			TenantConfigurationDto.ProviderPolicy.DefaultProviderAlias = DefaultProviderAlias.StringValue;
+			TenantConfigurationDto.ProviderPolicy.ProviderSelectionEnabled = CbEnablePoviderSelection.StringValue == "1";
 
 			TenantConfigurationDto.BrandPolicy.Name = TxtBrandName.StringValue;
 			TenantConfigurationDto.BrandPolicy.LogonBannerContent = TxtBrandLogonBanner.StringValue;
@@ -315,6 +313,10 @@ namespace RestSsoAdminSnapIn
 				TxtProviderDefault.StringValue = (NSString)(string.IsNullOrEmpty (TenantConfigurationDto.ProviderPolicy.DefaultProvider)
 					? string.Empty
 					: TenantConfigurationDto.ProviderPolicy.DefaultProvider);
+				DefaultProviderAlias.StringValue = (NSString)(string.IsNullOrEmpty (TenantConfigurationDto.ProviderPolicy.DefaultProviderAlias)
+					? string.Empty
+					: TenantConfigurationDto.ProviderPolicy.DefaultProviderAlias);
+				CbEnablePoviderSelection.StringValue = TenantConfigurationDto.ProviderPolicy.ProviderSelectionEnabled ? "1" : "0";
 			} else
 				TenantConfigurationDto.ProviderPolicy = new ProviderPolicyDto ();
 

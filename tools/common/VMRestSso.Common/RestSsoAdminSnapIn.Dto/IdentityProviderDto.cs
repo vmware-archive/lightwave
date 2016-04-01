@@ -50,7 +50,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
         [DataMember]
         private string type;
 
-        public string Type
+        public string IdentityStoreType
         {
             get { return type; }
             set { type = value; }
@@ -104,7 +104,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
         [DataMember]
         private bool machineAccount;
 
-        public bool MachineAccount
+        public bool UserMachineAccount
         {
             get { return machineAccount; }
             set { machineAccount = value; }
@@ -206,13 +206,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
                 DomainType = this.DomainType,
                 Name = this.Name,
                 Alias = this.Alias,
-                Type = this.Type,
+                IdentityStoreType = this.IdentityStoreType,
                 AuthenticationType = this.AuthenticationType,
                 FriendlyName = this.FriendlyName,
                 SearchTimeOutInSeconds = this.SearchTimeOutInSeconds,
                 Username = this.Username,
                 Password = this.Password,
-                MachineAccount = this.MachineAccount,
+                UserMachineAccount = this.UserMachineAccount,
                 UserBaseDN = this.UserBaseDN,
                 GroupBaseDN = this.GroupBaseDN,
                 ConnectionStrings = this.ConnectionStrings,
@@ -232,13 +232,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
             return DomainType == this.DomainType &&
                Name == this.Name &&
                Alias == this.Alias &&
-               Type == this.Type &&
+               IdentityStoreType == this.IdentityStoreType &&
                AuthenticationType == this.AuthenticationType &&
                FriendlyName == this.FriendlyName &&
                SearchTimeOutInSeconds == this.SearchTimeOutInSeconds &&
                Username == this.Username &&
                Password == this.Password &&
-               MachineAccount == this.MachineAccount &&
+               UserMachineAccount == this.UserMachineAccount &&
                UserBaseDN == this.UserBaseDN &&
                GroupBaseDN == this.GroupBaseDN &&
                ConnectionStrings[0] == this.ConnectionStrings[0] &&

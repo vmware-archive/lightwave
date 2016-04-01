@@ -26,7 +26,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Helpers
 		public static List<NSTableColumn> ToNSTableColumns (List<ColumnOptions> options)
 		{
 			var columns = new List<NSTableColumn> ();
-			//var bgColor = NSColor.FromDeviceRgba ((float)(229.0 / 255), (float)(229.0 / 255), (float)(255.0 / 255), (float)1.0);
 			foreach (var option in options.OrderBy(x=>x.DisplayOrder)) {
 				var width = option.Width == 0 ? 200 : option.Width;
 				var col = new NSTableColumn (option.Id) {
@@ -34,10 +33,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Helpers
 					HeaderCell = new NSTableHeaderCell { 
 						Title = option.DisplayName,
 						Alignment = NSTextAlignment.Left,
-						//BackgroundColor = bgColor,
-						//TextColor = NSColor.Blue,
-						//DrawsBackground = true,
-						//Bordered = true
 					},
 					MinWidth = width,
 					Width = width,

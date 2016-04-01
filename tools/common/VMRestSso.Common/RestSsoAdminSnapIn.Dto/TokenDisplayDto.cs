@@ -55,12 +55,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
         [DataMember]
         [DescriptionAttribute("Displays the refresh token issued by the Identity Provider.")]
         [ReadOnlyAttribute(true)]
-        public string RefreshToken { get; set; }
-        //[DataMember]
-        //[DescriptionAttribute("Displays the Claims associatted with the token.")]
-        //[ReadOnlyAttribute(true)]
-        //public List<ClaimDto> Claims { get; set; }
-
-
+        public string RefreshToken { get; set; }        
     }
 }

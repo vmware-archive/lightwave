@@ -1,0 +1,174 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{A29E642A-BC46-4D11-A532-EC8BE51AD5D4}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>VMPscHighAvailabilitySnapIn</RootNamespace>
+    <AssemblyName>VMPscHighAvailabilitySnapIn</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>servermonitor.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\..\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>..\..\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="microsoft.managementconsole, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration.Install" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="VMAFD.Client, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\interop\lib64\VMAFD.Client.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="VMDIR.Client, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\interop\lib64\VMDIR.Client.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="DataSources\IServiceListViewDatasource.cs" />
+    <Compile Include="DataSources\IHostListViewDatasource.cs" />
+    <Compile Include="ScopeNodes\HostNode.cs" />
+    <Compile Include="ScopeNodes\RootNode.cs" />
+    <Compile Include="ScopeNodes\ManagementsNode.cs" />
+    <Compile Include="ScopeNodes\InfrastructureNode.cs" />
+    <Compile Include="ScopeNodes\ManagementNode.cs" />
+    <Compile Include="ScopeNodes\InfrastructuresNode.cs" />
+    <Compile Include="ScopeNodes\SiteNode.cs" />
+    <Compile Include="ScopeNodes\ServerNode.cs" />
+    <Compile Include="SnapIn\PscHighAvailabilityAppEnvironment.cs" />
+    <Compile Include="SnapIn\VMPscHighAvailabilitySnapIn.cs" />
+    <Compile Include="UI\ServerFormView.cs" />
+    <Compile Include="UI\ServerView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\ServerView.Designer.cs">
+      <DependentUpon>ServerView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\GlobalView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\GlobalView.Designer.cs">
+      <DependentUpon>GlobalView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\HealthHelper.cs" />
+    <Compile Include="UI\InfrastructureFormView.cs" />
+    <Compile Include="UI\InfrastructureView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\InfrastructureView.Designer.cs">
+      <DependentUpon>InfrastructureView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\GlobalFormView.cs" />
+    <Compile Include="UI\ServiceListView.cs" />
+    <Compile Include="UI\Login.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\Login.Designer.cs">
+      <DependentUpon>Login.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ManagementViewControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\ManagementFormView.cs" />
+    <Compile Include="Utils\MiscUtilService.cs" />
+    <Compile Include="Utils\ResourceService.cs" />
+    <Compile Include="VMPscHighAvailabilitySnapInInstaller.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
+      <Project>{cd959e2e-5b9c-4329-b085-352844cfdcdd}</Project>
+      <Name>VMIdentity.CommonUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMPSCHighAvailability.Common\VMPSCHighAvailability.Common.csproj">
+      <Project>{54a01c73-8044-4b29-b21f-0bee451ce1ca}</Project>
+      <Name>VMPSCHighAvailability.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\VMwareMMCIDP.UI.Common\VMwareMMCIDP.UI.Common.csproj">
+      <Project>{474831ab-37de-415c-b944-37e2d10d1e85}</Project>
+      <Name>VMwareMMCIDP.UI.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="UI\ServerView.resx">
+      <DependentUpon>ServerView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\GlobalView.resx">
+      <DependentUpon>GlobalView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\InfrastructureView.resx">
+      <DependentUpon>InfrastructureView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\Login.resx">
+      <DependentUpon>Login.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\ManagementViewControl.resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="servermonitor.ico" />
+    <EmbeddedResource Include="Toolbar.bmp" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

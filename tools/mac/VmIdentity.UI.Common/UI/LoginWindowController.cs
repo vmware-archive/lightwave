@@ -27,78 +27,97 @@ namespace VmIdentity.UI.Common
 
         public String DomainName { get; set; }
 
-        public String Server { get; set; }
+        public String[] ServerArray { get; set; }
+
+        public string Server { get; set; }
 
         public String Upn { get; set; }
 
         #region Constructors
 
         // Called when created from unmanaged code
-        public LoginWindowController (IntPtr handle) : base (handle)
+        public LoginWindowController(IntPtr handle)
+            : base(handle)
         {
         }
 
         // Called when created directly from a XIB file
-        [Export ("initWithCoder:")]
-        public LoginWindowController (NSCoder coder) : base (coder)
+        [Export("initWithCoder:")]
+        public LoginWindowController(NSCoder coder)
+            : base(coder)
         {
         }
 
         // Call to load from the XIB/NIB file
-        public LoginWindowController () : base ("LoginWindow")
+        public LoginWindowController()
+            : base("LoginWindow")
         {
         }
 
         // Call to load from the XIB/NIB file
-        public LoginWindowController (String server) : base ("LoginWindow")
+        public LoginWindowController(String[] server)
+            : base("LoginWindow")
         {
-            this.Server = server;
+            //TODO - instead of server array, good to pass ServerDTO with username info.
+            this.ServerArray = server;
         }
 
         #endregion
 
-        public override void AwakeFromNib ()
+        public override void AwakeFromNib()
         {
-            base.AwakeFromNib ();
-            if (!string.IsNullOrWhiteSpace (Server))
-                this.ServerTxtField.StringValue = Server;
-
+            base.AwakeFromNib();
+            foreach (var obj in ServerArray)
+                this.ServerCombo.Add(NSObject.FromObject(obj));
+            this.UserNameTxtField.StringValue = "Administrator@vsphere.local";
             //Events
             this.OKButton.Activated += OnClickOKButton;
             this.CancelButton.Activated += OnClickCancelButton;
 
         }
 
-        public void OnClickOKButton (object sender, EventArgs e)
+        public void OnClickOKButton(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace (UserNameTxtField.StringValue) || string.IsNullOrWhiteSpace (PasswordTxtField.StringValue) || string.IsNullOrWhiteSpace (ServerTxtField.StringValue)) {
-                UIErrorHelper.ShowAlert ("", "Please enter values in the username and password");
-            } else {
+            if (string.IsNullOrWhiteSpace(UserNameTxtField.StringValue) || string.IsNullOrWhiteSpace(PasswordTxtField.StringValue) || string.IsNullOrWhiteSpace(ServerCombo.StringValue))
+            {
+                UIErrorHelper.ShowAlert("", "Please enter values in the host, username and password");
+            }
+            else
+            {
                 Upn = UserNameTxtField.StringValue;
-                String[] userAndDomain = Upn.Split ('@');
-                if (userAndDomain.Length != 2) {
-                    UIErrorHelper.ShowAlert ("", "Enter Valid User Principal Name");
-                } else {
-                    UserName = userAndDomain [0];
-                    DomainName = userAndDomain [1];
+                String[] userAndDomain = Upn.Split('@');
+				if (userAndDomain.Length != 2 || 
+					string.IsNullOrWhiteSpace(userAndDomain[0]) || 
+					string.IsNullOrEmpty(userAndDomain[0]) ||
+					string.IsNullOrWhiteSpace(userAndDomain[1]) ||
+					string.IsNullOrEmpty(userAndDomain[1]))
+                {
+                    UIErrorHelper.ShowAlert("", "Enter Valid UPN");
+                }
+                else
+                {
+                    UserName = userAndDomain[0];
+                    DomainName = userAndDomain[1];
                     Password = PasswordTxtField.StringValue;
-                    Server = ServerTxtField.StringValue;
+                    Server = ServerCombo.StringValue;
 
-                    this.Close ();
-                    NSApplication.SharedApplication.StopModalWithCode (1);
+                    this.Close();
+                    NSApplication.SharedApplication.StopModalWithCode(1);
                 }
             }
         }
 
-        public void OnClickCancelButton (object sender, EventArgs e)
+        public void OnClickCancelButton(object sender, EventArgs e)
         {
-            NSApplication.SharedApplication.StopModalWithCode (1);
-            this.Close ();
+            this.Close();
+            NSApplication.SharedApplication.StopModalWithCode(0);
         }
 
         //strongly typed window accessor
-        public new LoginWindow Window {
-            get {
+        public new LoginWindow Window
+        {
+            get
+            {
                 return (LoginWindow)base.Window;
             }
         }

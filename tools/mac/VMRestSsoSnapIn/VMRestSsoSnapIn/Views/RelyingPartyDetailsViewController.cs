@@ -24,7 +24,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn.DataSource;
 using Vmware.Tools.RestSsoAdminSnapIn;
-
+using VmIdentity.CommonUtils.Utilities;
 
 namespace RestSsoAdminSnapIn
 {
@@ -189,7 +189,7 @@ namespace RestSsoAdminSnapIn
 			if (RelyingPartyDto.SignatureAlgorithms!= null && RelyingPartyDto.SignatureAlgorithms.Count > 0) {
 				if (SignAlgorithmTableView.SelectedRows != null && SignAlgorithmTableView.SelectedRows.Count > 0) {
 					foreach (var row in SignAlgorithmTableView.SelectedRows) {
-						if (row >= 0 && (int)row < RelyingPartyDto.SignatureAlgorithms.Count)
+						if (row > 0 && (int)row < RelyingPartyDto.SignatureAlgorithms.Count)
 							RelyingPartyDto.SignatureAlgorithms.RemoveAt ((int)row);
 					}
 					var datasource = new SignatureAlgorithmDataSource { Entries = RelyingPartyDto.SignatureAlgorithms };
@@ -223,7 +223,7 @@ namespace RestSsoAdminSnapIn
 			   RelyingPartyDto.AssertionConsumerServices.Count > 0) {
 				if (AssertTableView.SelectedRows != null && AssertTableView.SelectedRows.Count > 0) {
 					foreach (var row in AssertTableView.SelectedRows) {
-						if (row >= 0 && (int)row < RelyingPartyDto.AssertionConsumerServices.Count)
+						if (row > 0 && (int)row < RelyingPartyDto.AssertionConsumerServices.Count)
 							RelyingPartyDto.AssertionConsumerServices.RemoveAt ((int)row);
 					}
 					var datasource = new AssertionConsumerServiceDataSource { Entries = RelyingPartyDto.AssertionConsumerServices };
@@ -238,7 +238,7 @@ namespace RestSsoAdminSnapIn
 			   RelyingPartyDto.AttributeConsumerServices.Count > 0) {
 				if (AttributeTableView.SelectedRows != null && AttributeTableView.SelectedRows.Count > 0) {
 					foreach (var row in AttributeTableView.SelectedRows) {
-						if (row >= 0 && (int)row < RelyingPartyDto.AttributeConsumerServices.Count)
+						if (row > 0 && (int)row < RelyingPartyDto.AttributeConsumerServices.Count)
 							RelyingPartyDto.AttributeConsumerServices.RemoveAt ((int)row);
 					}
 					var datasource = new AttributeConsumerServiceDataSource { Entries = RelyingPartyDto.AttributeConsumerServices };
@@ -253,7 +253,7 @@ namespace RestSsoAdminSnapIn
 			   RelyingPartyDto.SingleLogoutServices.Count > 0) {
 				if (SloServicesTableView.SelectedRows != null && SloServicesTableView.SelectedRows.Count > 0) {
 					foreach (var row in SloServicesTableView.SelectedRows) {
-						if (row >= 0 && (int)row < RelyingPartyDto.SingleLogoutServices.Count)
+						if (row > 0 && (int)row < RelyingPartyDto.SingleLogoutServices.Count)
 							RelyingPartyDto.SingleLogoutServices.RemoveAt ((int)row);
 					}
 					var datasource = new ServiceEndpointDataSource { Entries = RelyingPartyDto.SingleLogoutServices };
@@ -320,15 +320,7 @@ namespace RestSsoAdminSnapIn
 					UIErrorHelper.ShowAlert ("Please enter valid Url", "Alert");
 				} else if (string.IsNullOrEmpty (TxtCertificate.StringValue)) {
 					UIErrorHelper.ShowAlert ("Please enter valid Certificate path", "Alert");
-				} /*else if (RelyingPartyDto.SignatureAlgorithms.Count == 0) {
-					UIErrorHelper.ShowAlert ("Please add atleast one signature algorithm", "Alert");
-				} else if (RelyingPartyDto.AssertionConsumerServices.Count == 0) {
-					UIErrorHelper.ShowAlert ("Please add atleast one assertion consumer service", "Alert");
-				} else if (RelyingPartyDto.AttributeConsumerServices.Count == 0) {
-					UIErrorHelper.ShowAlert ("Please add atleast one attribute consumer service", "Alert");
-				} else if (RelyingPartyDto.SingleLogoutServices.Count == 0) {
-					UIErrorHelper.ShowAlert ("Please add atleast one single logout service", "Alert");
-				}*/ else if (!string.IsNullOrEmpty (TxtCertificate.StringValue) && TxtCertificate.StringValue != "Certificate"  
+				} else if (!string.IsNullOrEmpty (TxtCertificate.StringValue) && TxtCertificate.StringValue != "Certificate"  
 					&& !System.IO.File.Exists (TxtCertificate.StringValue.Replace ("file://", string.Empty))) {
 					UIErrorHelper.ShowAlert ("Certificate path is not valid", "Alert");
 				} else {
@@ -337,12 +329,12 @@ namespace RestSsoAdminSnapIn
 					ActionHelper.Execute (delegate() {
 						if(TxtCertificate.StringValue == "Certificate")
 						{
-							encoded = _certificate.ToPem ();
+							encoded = _certificate.ExportToPem ();
 						}
 						else 
 						{	
 							cert.Import (TxtCertificate.StringValue.Replace ("file://", string.Empty));
-							encoded = cert.ToPem ();
+							encoded = cert.ExportToPem ();
 						}
 					
 						RelyingPartyDto.Name = RelyingPartyDtoOriginal.Name;
@@ -360,13 +352,11 @@ namespace RestSsoAdminSnapIn
 
 		private void InitializeSignatureAlgorithm()
 		{
-			//_signatureAlgorithmView = new NSTableView ();
 			foreach(NSTableColumn column in SignAlgorithmTableView.TableColumns())
 			{
 				SignAlgorithmTableView.RemoveColumn (column);
 			}
 			SignAlgorithmTableView.Delegate = new TableDelegate ();
-			//this.LstSignatureAlgorithm.AddSubview (_signatureAlgorithmView);
 			var listView = new SignatureAlgorithmDataSource { Entries = RelyingPartyDto.SignatureAlgorithms };
 			var columnNames = new List<ColumnOptions> {
 				new ColumnOptions{ Id = "MaxKeySize", DisplayName = "Max Key Size", DisplayOrder = 1, Width = 80 },

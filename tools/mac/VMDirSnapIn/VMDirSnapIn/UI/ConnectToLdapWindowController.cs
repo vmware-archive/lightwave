@@ -64,7 +64,7 @@ namespace VMDirSnapIn.UI
         private void PrePopulateFields ()
         {
             ServerName.StringValue = _dto.Server ?? "";
-            BindDN.StringValue = "Administrator@lightwave.local";
+            BindDN.StringValue = "Administrator@vsphere.local";
             BaseDN.StringValue = "dc=local";
         }
 

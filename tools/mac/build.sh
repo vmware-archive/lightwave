@@ -53,6 +53,7 @@ buildSolution VMCASnapIn $BUILD_CONFIG
 buildSolution VMCertStoreSnapIn $BUILD_CONFIG
 buildSolution VMDirSnapIn $BUILD_CONFIG
 buildSolution VMRestSsoSnapIn $BUILD_CONFIG
+buildSolution VMPSCHighAvailabilitySnapIn $BUILD_CONFIG
 
 echo ''
 echo ''

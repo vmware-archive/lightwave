@@ -71,12 +71,10 @@ namespace RestSsoAdminSnapIn
 				}
 				else
 				{
-					//var controller = new AddNewServerController ();
 					var mainWindowController = new MainWindowController ();
 					mainWindowController.Window.MakeKeyAndOrderFront (null);
 				}
 				this.Window.IsVisible = false;
-				//this.Close ();
 			});
 		}
 		public new Welcome Window {

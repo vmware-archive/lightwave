@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="8191" systemVersion="14F27" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="9060" systemVersion="14F27" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="8191"/>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="9060"/>
     </dependencies>
     <objects>
-        <customObject id="-2" userLabel="File's Owner" customClass="WelcomeScreenController">
+        <customObject id="-2" userLabel="File's Owner" customClass="WelcomeScreenCommonController">
             <connections>
-                <outlet property="ConnectToServer" destination="147" id="0mU-Mh-dVu"/>
+                <outlet property="ConnectToServer" destination="jN1-TW-oqs" id="Vtx-At-GLf"/>
                 <outlet property="DescriptionField1" destination="125" id="2hw-VM-guB"/>
                 <outlet property="DescriptionField2" destination="129" id="Cbv-2J-Czc"/>
                 <outlet property="DescriptionField3" destination="127" id="Rg3-Lu-k7Q"/>
@@ -18,7 +19,7 @@
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <window title="Welcome" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" oneShot="NO" animationBehavior="default" id="2" customClass="WelcomeScreenCommon">
-            <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" unifiedTitleAndToolbar="YES"/>
+            <windowStyleMask key="styleMask" closable="YES" miniaturizable="YES"/>
             <rect key="contentRect" x="471" y="295" width="557" height="315"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="877"/>
             <value key="minSize" type="size" width="559" height="330"/>
@@ -27,35 +28,30 @@
                 <rect key="frame" x="0.0" y="0.0" width="557" height="315"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="51">
-                        <rect key="frame" x="9" y="97" width="188" height="18"/>
+                    <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" id="49">
+                        <rect key="frame" x="31" y="106" width="178" height="170"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" id="52">
-                            <font key="font" metaFont="system" size="15"/>
-                            <color key="textColor" name="controlDarkShadowColor" catalog="System" colorSpace="catalog"/>
-                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                        </textFieldCell>
-                    </textField>
-                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="47">
-                        <rect key="frame" x="145" y="178" width="441" height="53"/>
+                        <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" image="lightwave" id="50"/>
+                    </imageView>
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" setsMaxLayoutWidthAtFirstLayout="YES" id="157">
+                        <rect key="frame" x="209" y="195" width="338" height="77"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="center" allowsEditingTextAttributes="YES" id="48">
-                            <font key="font" size="28" name="HelveticaNeue"/>
+                        <textFieldCell key="cell" sendsActionOnEndEditing="YES" alignment="center" allowsEditingTextAttributes="YES" id="158">
+                            <font key="font" size="25" name="HelveticaNeue"/>
                             <color key="textColor" name="controlDarkShadowColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="123">
-                        <rect key="frame" x="240" y="170" width="313" height="17"/>
+                    <button verticalHuggingPriority="750" id="jN1-TW-oqs">
+                        <rect key="frame" x="241" y="29" width="175" height="32"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="One click away from a browser to" id="124">
+                        <buttonCell key="cell" type="push" title="Connect" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="re0-C2-IVg">
+                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="system"/>
-                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
-                        </textFieldCell>
-                    </textField>
+                        </buttonCell>
+                    </button>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="125">
-                        <rect key="frame" x="278" y="137" width="241" height="17"/>
+                        <rect key="frame" x="274" y="170" width="241" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" id="126">
                             <font key="font" metaFont="system"/>
@@ -64,7 +60,7 @@
                         </textFieldCell>
                     </textField>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="127">
-                        <rect key="frame" x="278" y="87" width="241" height="17"/>
+                        <rect key="frame" x="274" y="120" width="241" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" id="128">
                             <font key="font" metaFont="system"/>
@@ -73,7 +69,7 @@
                         </textFieldCell>
                     </textField>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="129">
-                        <rect key="frame" x="278" y="112" width="241" height="17"/>
+                        <rect key="frame" x="274" y="145" width="241" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" id="130">
                             <font key="font" metaFont="system"/>
@@ -82,49 +78,26 @@
                         </textFieldCell>
                     </textField>
                     <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" id="131">
-                        <rect key="frame" x="247" y="134" width="25" height="20"/>
+                        <rect key="frame" x="243" y="167" width="25" height="20"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" image="BulletBlackIcon" id="132"/>
                     </imageView>
                     <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" id="133">
-                        <rect key="frame" x="247" y="109" width="25" height="20"/>
+                        <rect key="frame" x="243" y="142" width="25" height="20"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" image="BulletBlackIcon" id="134"/>
                     </imageView>
                     <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" id="135">
-                        <rect key="frame" x="247" y="84" width="25" height="20"/>
+                        <rect key="frame" x="243" y="117" width="25" height="20"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" image="BulletBlackIcon" id="136"/>
                     </imageView>
-                    <popUpButton verticalHuggingPriority="750" id="147">
-                        <rect key="frame" x="247" y="42" width="144" height="25"/>
-                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <popUpButtonCell key="cell" type="roundTextured" bezelStyle="texturedRounded" alignment="center" lineBreakMode="truncatingTail" borderStyle="border" imageScaling="proportionallyDown" inset="2" arrowPosition="noArrow" preferredEdge="maxX" id="148">
-                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
-                            <font key="font" metaFont="menu"/>
-                            <menu key="menu" id="149"/>
-                        </popUpButtonCell>
-                    </popUpButton>
-                    <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" id="49">
-                        <rect key="frame" x="31" y="106" width="178" height="170"/>
-                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" image="lightwave" id="50"/>
-                    </imageView>
-                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="157">
-                        <rect key="frame" x="215" y="195" width="338" height="77"/>
-                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="center" allowsEditingTextAttributes="YES" id="158">
-                            <font key="font" size="25" name="HelveticaNeue"/>
-                            <color key="textColor" name="controlDarkShadowColor" catalog="System" colorSpace="catalog"/>
-                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
-                        </textFieldCell>
-                    </textField>
                 </subviews>
             </view>
             <connections>
-                <outlet property="delegate" destination="113" id="159"/>
+                <outlet property="delegate" destination="113" id="JVR-0A-4ui"/>
             </connections>
-            <point key="canvasLocation" x="308.5" y="315.5"/>
+            <point key="canvasLocation" x="365.5" y="324.5"/>
         </window>
         <customObject id="113" customClass="WelcomeScreenCommon"/>
     </objects>

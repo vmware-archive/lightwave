@@ -49,6 +49,18 @@ namespace VMCA
                 string.IsNullOrEmpty (Password);
             }
         }
+        public void CloseServer()
+        {
+            try
+            {
+                if (_serverContext != IntPtr.Zero)
+                    VMCAAdaptor.VMCACloseServer(_serverContext);
+            }
+            catch (Exception e) 
+            {
+                throw e;
+            }
+        }
 
         void EnsureServerContext ()
         {

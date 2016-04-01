@@ -47,6 +47,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         private RelyingPartyService _relyingParty;
         private HttpTransportService _httpTransport;
         private AdfService _adfService;
+        private SuperLoggingService _superLoggingService;
 
         public ServiceGateway()
         {
@@ -130,10 +131,10 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
             {
                 if (_externalIdentityProvider == null)
                 {
-					if (SystemHelper.IsWindows)
-                        _externalIdentityProvider = new Win.ExternalIdentityProviderService(_webRequestManager);
-                    else
+                    if (SystemHelper.IsMacOSX)
                         _externalIdentityProvider = new Mac.ExternalIdentityProviderService(_webRequestManager);
+                    else
+                        _externalIdentityProvider = new Win.ExternalIdentityProviderService(_webRequestManager);
                 }
                 return _externalIdentityProvider;
             }
@@ -166,6 +167,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
             get
             {
                 return _server ?? (_server = new ServerService(_webRequestManager));
+            }
+        }
+        public SuperLoggingService SuperLogging
+        {
+            get
+            {
+                return _superLoggingService ?? (_superLoggingService = new SuperLoggingService(_webRequestManager));
             }
         }
 

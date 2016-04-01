@@ -1,4 +1,17 @@
-
+/*
+ * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+ 
 using System;
 using System.Text;
 using System.Collections.Generic;
@@ -74,7 +87,6 @@ namespace RestSsoAdminSnapIn
 				TxtPasswordDaysUntilExpiry.StringValue = SecondsToDaysAndHours (UserDto.PasswordDetails.Lifetime);
 			}
 			ChDisabled.StringValue = UserDto.Disabled ? "0" : "1";
-			//Window.Title = UserDto.Name + "@" + UserDto.Domain + " Properties";
 			ChActAsUser.StringValue = UserDto.ActAsUsers ? "1" : "0";
 			ChIdpAdmin.StringValue = UserDto.IsIdpAdmin ? "1" : "0";
 			RdoRoleGroup.SelectCell (new NSCell (UserDto.Role.ToString ()));
@@ -97,10 +109,6 @@ namespace RestSsoAdminSnapIn
 			this.BtnSave.Activated += OnClickSaveButton;
 			this.BtnAddGroup.Activated += OnClickAddGroupButton;
 			this.BtnRemoveGroup.Activated += OnClickRemoveGroupButton;
-//			this.BtnClose.Activated += (object sender, EventArgs e) => {
-//				this.Close ();
-//				NSApplication.SharedApplication.StopModalWithCode (0);
-//			};
 		}
 
 		public void OnClickAddGroupButton (object sender, EventArgs e)
@@ -112,7 +120,6 @@ namespace RestSsoAdminSnapIn
 			form.DomainName = UserDto.Domain;
 			var result = NSApplication.SharedApplication.RunModalForWindow (form.Window);
 			if (result == VMIdentityConstants.DIALOGOK) {
-				//var datasource = (GroupsDataSource)lstGroups.DataSource;
 				foreach (var group in form.SelectedGroups) {
 					var principalName = group.GroupName + "@" + group.GroupDomain;
 					if (!Groups.Exists (x => (x.GroupName + "@" + x.GroupDomain) == principalName))

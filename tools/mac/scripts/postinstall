@@ -12,8 +12,8 @@ find . -name "*.xml" | xargs rm
 # Client libs soft links to libssl and libcrypto.
 # Todo - remove once we fix these in the client libraries.
 
-cd /usr/lib
-unlink libcrypto.1.0.1.dylib
-unlink libssl.1.0.1.dylib
-ln -s /opt/likewise/lib/libcrypto.1.0.1.dylib /usr/lib/libcrypto.1.0.1.dylib
-ln -s /opt/likewise/lib/libssl.1.0.1.dylib /usr/lib/libssl.1.0.1.dylib
+#cd /usr/lib
+#unlink libcrypto.1.0.1.dylib
+#unlink libssl.1.0.1.dylib
+#ln -s /opt/likewise/lib/libcrypto.1.0.1.dylib /usr/lib/libcrypto.1.0.1.dylib
+#ln -s /opt/likewise/lib/libssl.1.0.1.dylib /usr/lib/libssl.1.0.1.dylib

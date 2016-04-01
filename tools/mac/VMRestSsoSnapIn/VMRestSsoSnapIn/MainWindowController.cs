@@ -88,6 +88,7 @@ namespace RestSsoAdminSnapIn
             ADToolbarItem.Activated += ADToolbarItem_Activated;
             ComputerToolbarItem.Activated += ComputerToolbarItem_Activated;
             HttptransportToolbarItem.Activated += HttpTransportToolbarItem_Activated;
+			SuperLogToolbarItem.Activated += SuperLogToolbarItem_Activated;
             (NSApplication.SharedApplication.Delegate as AppDelegate).OpenConnectionMenuItem.Hidden = true;
 
 
@@ -103,7 +104,28 @@ namespace RestSsoAdminSnapIn
         {
             base.Close ();
         }
+		void SuperLogToolbarItem_Activated (object sender, EventArgs e)
+		{
+			TenantNode node;
+			if (CurrentSelectedNode is ServerNode)
+				node = (CurrentSelectedNode as ServerNode).Children [0] as TenantNode;
+			else
+				node = CurrentSelectedNode.GetTenantNode () as TenantNode;
 
+			if (node != null) {
+				var tenant = node.GetTenant ();
+				var form = new SuperLoggingController (){ ServerDto = _serverDto, TenantName = tenant };
+				NSApplication.SharedApplication.BeginSheet (form.Window, this.Window, () => {
+				});
+				try {
+					nint result = NSApplication.SharedApplication.RunModalForWindow (form.Window);
+				} finally {
+					Window.EndSheet (form.Window);
+					form.Close ();
+					form.Dispose ();
+				}
+			}
+		}
         void TokenWizardToolbarItem_Activated (object sender, EventArgs e)
         {	
             var serverNode = CurrentSelectedNode.GetServerNode () as ServerNode;
@@ -257,14 +279,11 @@ namespace RestSsoAdminSnapIn
                 splitViewController.MainOutlineView.OutlineTableColumn.DataCell = new NSBrowserCell ();
                 var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (Servernode.DisplayName);
                 this.TxtLogon.StringValue = "Logged in as " + auth.Login.User + "@" + auth.Login.DomainName;
-                //splitViewController.MainOutlineView.OutlineTableColumn.HeaderCell.Title = "Connected to " + Servernode.DisplayName;
-
                 InitialiseToolBar ();
 
                 splitViewController.MainOutlineView.Delegate = new OutlineDelegate (this);
                 splitViewController.MainTableView.Delegate = new TableDelegate (this);
                 CrumbTableView.Hidden = true;
-                //CrumbTableView.Delegate = new CrumbViewDelegate(this);
             });
         }
 
@@ -278,6 +297,7 @@ namespace RestSsoAdminSnapIn
             AddToolbarItem.Active = false;
 			DeleteToolbarItem.Active = enable;
             PropertiesToolbarItem.Active = true;
+			SuperLogToolbarItem.Active = true;
             RefreshToolbarItem.Active = true;
             TokenWizardToolbarItem.Active = true;
 			ADToolbarItem.Active = enable;
@@ -294,6 +314,7 @@ namespace RestSsoAdminSnapIn
             AddToolbarItem.Active = false;
             DeleteToolbarItem.Active = false;
             PropertiesToolbarItem.Active = false;
+			SuperLogToolbarItem.Active = false;
             RefreshToolbarItem.Active = false;
             TokenWizardToolbarItem.Active = false;
             ADToolbarItem.Active = false;
@@ -369,9 +390,6 @@ namespace RestSsoAdminSnapIn
             NSNotificationCenter.DefaultCenter.PostNotificationName ("ReloadTableView", this);
             ResetToolBarItems ();
             SetDefaultView ();
-//			while (CrumbTableView.ColumnCount > 0) {
-//				CrumbTableView.RemoveColumn (CrumbTableView.TableColumns () [0]);
-//			}
         }
 
         partial void SearchText (AppKit.NSSearchField sender)
@@ -496,9 +514,6 @@ namespace RestSsoAdminSnapIn
             if (row > (nint)0)
                 navigationController.AddPreviousSelectedRow ((int)row);
         }
-        //		public void OnMainTableSelectionChanged (object sender, EventArgs e)
-        //		{
-        //		}
         public void ReloadOutlineView (NSNotification notification)
         {
             splitViewController.MainOutlineView.ReloadData ();
@@ -817,80 +832,9 @@ namespace RestSsoAdminSnapIn
                         _controller.splitViewController.MainTableView.SelectRow (0, false);
                     if (previous == 0)
                         _controller.splitViewController.MainTableView.Delegate.SelectionDidChange (notification);
-
-                    //GetCrumb (_controller.CurrentSelectedNode, _controller.CrumbTableView);
                 }
             }
-
-            //			private void GetCrumb(ScopeNode node, NSTableView tableview)
-            //			{
-            //				while (tableview.ColumnCount > 0) {
-            //					tableview.RemoveColumn (tableview.TableColumns () [0]);
-            //				}
-            //				var chain = new List<string> ();
-            //
-            //				while (node.Parent != null) {
-            //					chain.Add (node.DisplayName);
-            //					node = node.Parent;
-            //				}
-            //				chain.Reverse();
-            //				int i = 0;
-            //				while (i < chain.Count) {
-            //					var column = new NSTableColumn ((i++).ToString()) {
-            //						DataCell = new NSBrowserCell (){Alignment = NSTextAlignment.Center, Font = NSFont.UserFontOfSize(10)},
-            //						MinWidth = 100,
-            //						ResizingMask = NSTableColumnResizing.UserResizingMask
-            //					};
-            //					tableview.AddColumn(column);
-            //				}
-            //				var datasource = new CrumbDataSource{ Entries = chain };
-            //				tableview.DataSource = datasource;
-            //				tableview.ReloadData ();
-            //			}
         }
-
-        //		class CrumbViewDelegate : NSTableViewDelegate
-        //		{
-        //			MainWindowController ob;
-        //
-        //			public CrumbViewDelegate (MainWindowController ob)
-        //			{
-        //				this.ob = ob;
-        //			}
-        //			public override void SelectionDidChange (NSNotification notification)
-        //			{
-        //				ActionHelper.Execute (delegate() {
-        //					var cell = ob.CrumbTableView.SelectedCell;
-        //
-        //					if(cell != null)
-        //					{
-        //						var node = ob.CurrentSelectedNode;
-        //						while(node != null)
-        //						{
-        //							if(node.DisplayName == cell.StringValue)
-        //							{
-        //								node.Refresh(this,EventArgs.Empty);
-        //								break;
-        //							}
-        //							node = node.Parent;
-        //						}
-        //					}
-        //				});
-        //			}
-
-        //			public override void WillDisplayCell (NSTableView tableView, NSObject cell,
-        //				NSTableColumn tableColumn, nint row)
-        //			{
-        //				try {
-        //					NSBrowserCell browserCell = cell as NSBrowserCell;
-        //					if (browserCell != null) {
-        //						browserCell.Leaf = true;
-        //
-        //					}
-        //				} catch (Exception exc) {
-        //				}
-        //			}
-        //		}
 
         class TableDelegate : NSTableViewDelegate
         {
@@ -983,7 +927,6 @@ namespace RestSsoAdminSnapIn
 								var tenant = node.GetTenant ();
 								var user = ((GroupsDataSource)ob.splitViewController.MainTableView.DataSource).Entries [row];
 								var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (ob._serverDto.ServerName);
-								//var groupMembership = SnapInContext.Instance.ServiceGateway.Group.GetMembers (ob._serverDto, tenant, user, Vmware.Tools.RestSsoAdminSnapIn.Service.Group.GroupMemberType.ALL, auth.Token);
 								var memberInfo = new GroupMembershipDto ();
 								var userInfo = SnapInContext.Instance.ServiceGateway.Group.GetMembers (ob._serverDto, tenant, user, GroupMemberType.USER, auth.Token);
 								memberInfo.Users = userInfo.Users == null ? new List<UserDto> () : new List<UserDto> (userInfo.Users);

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -33,6 +33,10 @@
     <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
+	<Reference Include="VmDirInterop, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\interop\lib64\VmDirInterop.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DTO\VMDirServerDTO.cs" />
@@ -56,11 +60,6 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\LDAPDefs.xml" />
   </ItemGroup>
+
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <ItemGroup>
-    <ProjectReference Include="..\..\..\vmdir\interop\csharp\VmDirInterop\VmDirInterop\VmDirInterop.csproj">
-      <Project>{CA2F370A-7C11-4173-8BDF-9FD143896E01}</Project>
-      <Name>VmDirInterop</Name>
-    </ProjectReference>
-  </ItemGroup>
 </Project>

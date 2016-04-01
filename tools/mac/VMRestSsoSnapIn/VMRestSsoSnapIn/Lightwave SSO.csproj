@@ -9,7 +9,7 @@
     <RootNamespace>VMRestSsoSnapIn</RootNamespace>
     <MonoMacResourcePrefix>Resources</MonoMacResourcePrefix>
     <AssemblyName>Lightwave SSO</AssemblyName>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -26,9 +26,10 @@
     <EnablePackageSigning>false</EnablePackageSigning>
     <CodeSigningKey>Mac Developer</CodeSigningKey>
     <EnableCodeSigning>false</EnableCodeSigning>
-    <CreatePackage>true</CreatePackage>
-    <XamMacArch>i386</XamMacArch>
+    <CreatePackage>false</CreatePackage>
+    <XamMacArch>x86_64</XamMacArch>
     <PackageSigningKey>Developer ID Installer</PackageSigningKey>
+    <Profiling>false</Profiling>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>full</DebugType>
@@ -40,11 +41,13 @@
     <UseRefCounting>true</UseRefCounting>
     <UseSGen>true</UseSGen>
     <IncludeMonoRuntime>true</IncludeMonoRuntime>
-    <CreatePackage>true</CreatePackage>
+    <CreatePackage>false</CreatePackage>
     <CodeSigningKey>Developer ID Application</CodeSigningKey>
     <EnableCodeSigning>false</EnableCodeSigning>
     <EnablePackageSigning>false</EnablePackageSigning>
     <XamMacArch>x86_64</XamMacArch>
+    <Profiling>false</Profiling>
+    <PackageSigningKey>Developer ID Installer</PackageSigningKey>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -316,6 +319,24 @@
     </Compile>
     <Compile Include="DataSources\DictionaryDataSource.cs" />
     <Compile Include="DataSources\HttpTransportDataSource.cs" />
+    <Compile Include="Views\SuperLogging.cs" />
+    <Compile Include="Views\SuperLogging.designer.cs">
+      <DependentUpon>SuperLogging.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SuperLoggingController.cs" />
+    <Compile Include="Views\SuperLoggingController.designer.cs">
+      <DependentUpon>SuperLoggingController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SuperLoggingFilter.cs" />
+    <Compile Include="Views\SuperLoggingFilter.designer.cs">
+      <DependentUpon>SuperLoggingFilter.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SuperLoggingFilterController.cs" />
+    <Compile Include="Views\SuperLoggingFilterController.designer.cs">
+      <DependentUpon>SuperLoggingFilterController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DataSources\SuperLogDataSource.cs" />
+    <Compile Include="DataSources\SuperLogFilterDataSource.cs" />
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="Views\AddExistingTenant.xib" />
@@ -353,6 +374,8 @@
     <InterfaceDefinition Include="Views\ShowHttpTransport.xib" />
     <InterfaceDefinition Include="Views\ExternalDomainAdvancedSettings.xib" />
     <InterfaceDefinition Include="Views\ExtenalIdpDetailsView.xib" />
+    <InterfaceDefinition Include="Views\SuperLogging.xib" />
+    <InterfaceDefinition Include="Views\SuperLoggingFilter.xib" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
   <ItemGroup>
@@ -406,6 +429,10 @@
     <ProjectReference Include="..\..\..\common\VMRestSso.Common\RestSsoAdminSnapIn.Service\RestSsoAdminSnapIn.Service.csproj">
       <Project>{CDA5E15B-2F8D-4FE4-86C5-36B614A2E069}</Project>
       <Name>RestSsoAdminSnapIn.Service</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
+      <Project>{CD959E2E-5B9C-4329-B085-352844CFDCDD}</Project>
+      <Name>VMIdentity.CommonUtils</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>

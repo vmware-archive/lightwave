@@ -53,27 +53,10 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 			NSNotificationCenter.DefaultCenter.PostNotificationName ("ReloadOutlineView", parent);
 		}
 
-//		public void OnLogin (object sender, EventArgs e)
-//		{
-//			ShowLogin ();
-//		}
-
 		public void Login ()
 		{
 			LoginAsync ();
 		}
-
-
-//		public void ShowLogin ()
-//		{
-//			var form = new LoginController (){ServerDto = _serverDto};
-//			var result = NSApplication.SharedApplication.RunModalForWindow (form.Window);
-//			if (result == VMIdentityConstants.DIALOGOK) {
-//				IsLoggedIn = false;
-//				_loginDto = form.LoginDto;
-//				Login ();
-//			}
-//		}
 
 		public void LoginAsync ()
 		{	
@@ -265,7 +248,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 				auth.Login = null;
 				IsLoggedIn = false;
 				SnapInContext.Instance.AuthTokenManager.SetAuthToken (auth, auth.ServerDto.ServerName);
-				//NSNotificationCenter.DefaultCenter.PostNotificationName ("ReloadOutlineView", this.Parent);
 			});
 		}
 

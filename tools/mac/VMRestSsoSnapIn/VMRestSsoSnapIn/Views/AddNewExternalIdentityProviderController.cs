@@ -24,6 +24,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions;
 using Vmware.Tools.RestSsoAdminSnapIn.DataSource;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn;
+using VmIdentity.CommonUtils.Utilities;
 
 namespace RestSsoAdminSnapIn
 {
@@ -130,7 +131,7 @@ namespace RestSsoAdminSnapIn
 					var cert = new X509Certificate2 ();
 					ActionHelper.Execute (delegate() {
 						cert.Import (filePath);
-						var certfificateDto = new CertificateDto { Encoded = cert.ToPem(), };
+						var certfificateDto = new CertificateDto { Encoded = cert.ExportToPem(), };
 						ExternalIdentityProviderDto.SigningCertificates.Certificates.Add(certfificateDto);
 						ReloadCertificates();
 					});
@@ -172,6 +173,7 @@ namespace RestSsoAdminSnapIn
 					UIErrorHelper.ShowAlert ("Please choose a certificate", "Alert");
 				} else {
 					ExternalIdentityProviderDto.EntityID = TxtUniqueId.StringValue;
+					ExternalIdentityProviderDto.Alias = TxtAlias.StringValue;
 					ExternalIdentityProviderDto.JitEnabled = ChkJit.StringValue == "1";
 
 					ActionHelper.Execute(delegate {
@@ -214,13 +216,13 @@ namespace RestSsoAdminSnapIn
 			tableView.Delegate = new TableDelegate ();
 			var columnNames = new List<ColumnOptions> {
 				new ColumnOptions{ Id = "Name", DisplayName = "Name", DisplayOrder = 1, Width = 80 },
-				new ColumnOptions{ Id = "Value", DisplayName = "Value", DisplayOrder = 2, Width = 200 }
+				new ColumnOptions{ Id = "Value", DisplayName = "Value", DisplayOrder = 1, Width = 200 }
 			};
 			var columns = ListViewHelper.ToNSTableColumns (columnNames);
 			foreach (var column in columns) {
 				tableView.AddColumn (column);
 			}
-			var listView = new DictionaryDataSource { Entries = datasource.Keys.ToList(), Datasource = datasource };
+			var listView = new DictionaryDataSource { Entries = datasource.Keys.ToList() };
 			tableView.DataSource = listView;
 			tableView.ReloadData ();
 		}
@@ -234,10 +236,10 @@ namespace RestSsoAdminSnapIn
 			var listView = new TrustedCertificatesDataSource { Entries = ExternalIdentityProviderDto.SigningCertificates.Certificates };
 			var columnNames = new List<ColumnOptions> {
 				new ColumnOptions{ Id = "SubjectDn", DisplayName = "Subject DN", DisplayOrder = 1, Width = 120 },
-				new ColumnOptions{ Id = "IssuedBy", DisplayName = "Issuer", DisplayOrder = 2, Width = 150 },
-				new ColumnOptions{ Id = "IssuedOn", DisplayName = "Valid From", DisplayOrder = 3, Width = 80 },
-				new ColumnOptions{ Id = "Expiration", DisplayName = "Valid To", DisplayOrder = 4, Width = 80 },
-				new ColumnOptions{ Id = "Fingerprint", DisplayName = "FingerPrint", DisplayOrder = 5, Width = 150 }
+				new ColumnOptions{ Id = "IssuedBy", DisplayName = "Issuer", DisplayOrder = 1, Width = 150 },
+				new ColumnOptions{ Id = "IssuedOn", DisplayName = "Valid From", DisplayOrder = 1, Width = 80 },
+				new ColumnOptions{ Id = "Expiration", DisplayName = "Valid To", DisplayOrder = 1, Width = 80 },
+				new ColumnOptions{ Id = "Fingerprint", DisplayName = "FingerPrint", DisplayOrder = 1, Width = 150 }
 			};
 			var columns = ListViewHelper.ToNSTableColumns (columnNames);
 			foreach (var column in columns) {

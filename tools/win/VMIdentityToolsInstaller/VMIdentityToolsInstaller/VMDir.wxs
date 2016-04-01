@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include Definitions.wxi ?>
+	<Fragment>
+		<!-- TODO: Put your code here. -->
+    <ComponentGroup Id="VMDir_comp_group" Directory="APPLICATIONFOLDER">
+      <Component Id="vmdir_msc_comp" Guid="{29803F09-07EA-42d0-B633-6261477C756C}" Win64="yes">
+        <File Id="vmdir_msc_file"
+              Name="VMDir.msc"
+              KeyPath="yes"
+              DiskId="1"
+              Source="$(var.Resources)/VMDir.msc" />
+      </Component>
+      <Component Id="VMDirSnapIn_Dll_Comp" Guid="{91504235-899C-B012-120A-DD37B4FB2D59}" Win64="yes">
+        <File Id="VMDirSnapIn_Dll_File"
+              Name="VMDirSnapIn.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMDirSnapIn_Dll_File"
+              AssemblyApplication="VMDirSnapIn_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\VMDirSnapIn.dll" />
+      </Component>
+      <Component Id="VMDirCommon_Dll_Comp" Guid="{450CC989-73FC-422d-8CF2-0DBF0FE25E83}" Win64="yes">
+        <File Id="VMDirCommon_Dll_File"
+              Name="VMDir.Common.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMDirCommon_Dll_File"
+              AssemblyApplication="VMDirCommon_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\VMDir.Common.dll" />
+      </Component>
+      <Component Id="VMDirInterop_Dll_Comp" Guid="{37533AF6-4E89-4116-8117-227EC73DBB02}" Win64="yes">
+        <File Id="VMDirInterop_Dll_File"
+              Name="VMDirInterop.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMDirInterop_Dll_File"
+              AssemblyApplication="VMDirInterop_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\VMDirInterop.dll" />
+      </Component>
+    </ComponentGroup>
+
+
+    <ComponentGroup Id="VMDir_reg_comp_group" Directory="TARGETDIR">
+      <Component Id="Reg_VMDir_Comp" Guid="{1A3C160A-91ED-42AD-B7ED-D9ED76F2F1DF}" Win64="yes">
+        <RegistryKey Id="Reg_VMDir_Key"
+                     Action="createAndRemoveOnUninstall"
+                     Key="Software\Microsoft\MMC\SnapIns\FX:{387738AF-C695-46f3-B178-9C9915364BD6}"
+                     Root="HKLM">
+          <RegistryKey Key="Standalone"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryKey Key="NodeTypes"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryValue Name="RuntimeVersion"
+                         Value="v2.0.50727"
+                         Type="string" />
+          <RegistryValue Name="UseCustomHelp"
+                         Value="0"
+                         Type="integer" />
+          <RegistryValue Name="ModuleName"
+                         Value="VMDirSnapIn.dll"
+                         Type="string"
+                         KeyPath="yes"/>
+          <RegistryValue Name="NameString"
+                         Value="VMDirectory Browser"
+                         Type="string" />
+          <RegistryValue Name="ApplicationBase"
+                         Value="[APPLICATIONFOLDER]"
+                         Type="expandable" />
+          <RegistryValue Name="About"
+                         Value="{00000000-0000-0000-0000-000000000000}"
+                         Type="string" />
+          <RegistryValue Name="Description"
+                         Value="VMDirectory Browser"
+                         Type="string"  />
+          <RegistryValue Name="FxVersion"
+                         Value="3.0.0.0"
+                         Type="string" />
+          <RegistryValue Name="Type"
+                         Value="VMDirSnapIn.VMDirSnapIn, VMDirSnapIn, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
+                         Type="string" />
+          <RegistryValue Name="AssemblyName"
+                         Value="VMDirSnapIn"
+                         Type="string" />
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+
+	</Fragment>
+</Wix>
