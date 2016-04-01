@@ -15,28 +15,24 @@
 package com.vmware.identity.openidconnect.common;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
-
-import com.nimbusds.jwt.SignedJWT;
-import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.ResponseType;
-import com.nimbusds.oauth2.sdk.Scope;
-import com.nimbusds.oauth2.sdk.SerializeException;
-import com.nimbusds.oauth2.sdk.id.ClientID;
-import com.nimbusds.oauth2.sdk.id.State;
-import com.nimbusds.openid.connect.sdk.Nonce;
-import com.nimbusds.openid.connect.sdk.OIDCResponseTypeValue;
-import com.nimbusds.openid.connect.sdk.ResponseMode;
 
 /**
  * @author Yehia Zayour
  */
-public class AuthenticationRequest extends com.nimbusds.openid.connect.sdk.AuthenticationRequest {
+public final class AuthenticationRequest extends ProtocolRequest {
+    private final URI uri;
+    private final ResponseType responseType;
     private final ResponseMode responseMode;
-    private final SignedJWT clientAssertion;
+    private final ClientID clientId;
+    private final URI redirectUri;
+    private final Scope scope;
+    private final State state;
+    private final Nonce nonce;
+    private final ClientAssertion clientAssertion;
     private final CorrelationID correlationId;
 
     public AuthenticationRequest(
@@ -48,10 +44,8 @@ public class AuthenticationRequest extends com.nimbusds.openid.connect.sdk.Authe
             Scope scope,
             State state,
             Nonce nonce,
-            SignedJWT clientAssertion,
+            ClientAssertion clientAssertion,
             CorrelationID correlationId) {
-        super(uri, responseType, scope, clientId, redirectUri, state, nonce);
-
         Validate.notNull(uri, "uri");
         Validate.notNull(responseType, "responseType");
         Validate.notNull(responseMode, "responseMode");
@@ -60,17 +54,50 @@ public class AuthenticationRequest extends com.nimbusds.openid.connect.sdk.Authe
         Validate.notNull(scope, "scope");
         Validate.notNull(state, "state");
         Validate.notNull(nonce, "nonce");
+        // nullable clientAssertion
+        // nullable correlationId
 
+        this.uri = uri;
+        this.responseType = responseType;
         this.responseMode = responseMode;
+        this.clientId = clientId;
+        this.redirectUri = redirectUri;
+        this.scope = scope;
+        this.state = state;
+        this.nonce = nonce;
         this.clientAssertion = clientAssertion;
         this.correlationId = correlationId;
+    }
+
+    public ResponseType getResponseType() {
+        return this.responseType;
     }
 
     public ResponseMode getResponseMode() {
         return this.responseMode;
     }
 
-    public SignedJWT getClientAssertion() {
+    public ClientID getClientID() {
+        return this.clientId;
+    }
+
+    public URI getRedirectURI() {
+        return this.redirectUri;
+    }
+
+    public Scope getScope() {
+        return this.scope;
+    }
+
+    public State getState() {
+        return this.state;
+    }
+
+    public Nonce getNonce() {
+        return this.nonce;
+    }
+
+    public ClientAssertion getClientAssertion() {
         return this.clientAssertion;
     }
 
@@ -79,15 +106,27 @@ public class AuthenticationRequest extends com.nimbusds.openid.connect.sdk.Authe
     }
 
     @Override
-    public Map<String, String> toParameters() throws SerializeException {
-        Map<String, String> result = super.toParameters();
+    public HttpRequest toHttpRequest() {
+        return HttpRequest.createGetRequest(this.uri, toParameters());
+    }
+
+    private Map<String, String> toParameters() {
+        Map<String, String> result = new HashMap<String, String>();
+
+        result.put("response_type", this.responseType.toString());
         result.put("response_mode", this.responseMode.getValue());
+        result.put("client_id", this.clientId.getValue());
+        result.put("redirect_uri", this.redirectUri.toString());
+        result.put("scope", this.scope.toString());
+        result.put("state", this.state.getValue());
+        result.put("nonce", this.nonce.getValue());
         if (this.clientAssertion != null) {
             result.put("client_assertion", this.clientAssertion.serialize());
         }
         if (this.correlationId != null) {
             result.put("correlation_id", this.correlationId.getValue());
         }
+
         return result;
     }
 
@@ -95,55 +134,121 @@ public class AuthenticationRequest extends com.nimbusds.openid.connect.sdk.Authe
         Validate.notNull(httpRequest, "httpRequest");
 
         Map<String, String> parameters = httpRequest.getParameters();
-        com.nimbusds.openid.connect.sdk.AuthenticationRequest nimbusAuthnRequest = com.nimbusds.openid.connect.sdk.AuthenticationRequest.parse(httpRequest.getRequestUri(), parameters);
 
-        String responseModeString = parameters.get("response_mode");
-        if (StringUtils.isBlank(responseModeString)) {
-            throw new ParseException("missing response_mode parameter");
-        }
+        ClientID clientId = null;
+        ResponseMode responseMode = null;
+        URI redirectUri = null;
+        State state = null;
 
-        ResponseMode responseMode = ResponseMode.parse(responseModeString);
-        if (responseMode.equals(ResponseMode.QUERY) && nimbusAuthnRequest.getResponseType().contains(OIDCResponseTypeValue.ID_TOKEN)) {
-            throw new ParseException("response_mode=query is not allowed for implicit flow");
-        }
-        if (responseMode.equals(ResponseMode.FRAGMENT) && nimbusAuthnRequest.getResponseType().contains(ResponseType.Value.CODE)) {
-            throw new ParseException("response_mode=fragment is not allowed for authz code flow");
-        }
+        try {
+            clientId = new ClientID(ParameterMapUtils.getString(parameters, "client_id"));
+            responseMode = ResponseMode.parse(ParameterMapUtils.getString(parameters, "response_mode"));
+            redirectUri = ParameterMapUtils.getURI(parameters, "redirect_uri");
+            state = State.parse(ParameterMapUtils.getString(parameters, "state"));
 
-        SignedJWT clientAssertion = null;
-        String clientAssertionString = parameters.get("client_assertion");
-        if (clientAssertionString != null) {
-            try {
-                clientAssertion = SignedJWT.parse(clientAssertionString);
-            } catch (java.text.ParseException e) {
-                throw new ParseException("failed to parse client_assertion parameter: " + e.getMessage());
+            ResponseType responseType = ResponseType.parse(ParameterMapUtils.getString(parameters, "response_type"));
+            Scope scope = Scope.parse(ParameterMapUtils.getString(parameters, "scope"));
+            Nonce nonce = new Nonce(ParameterMapUtils.getString(parameters, "nonce"));
+
+            ClientAssertion clientAssertion = null;
+            if (parameters.containsKey("client_assertion")) {
+                clientAssertion = ClientAssertion.parse(parameters);
             }
+
+            CorrelationID correlationId = null;
+            if (parameters.containsKey("correlation_id")) {
+                correlationId = new CorrelationID(ParameterMapUtils.getString(parameters, "correlation_id"));
+            }
+
+            validate(responseType, responseMode, clientId, scope, clientAssertion);
+
+            return new AuthenticationRequest(
+                    httpRequest.getURI(),
+                    responseType,
+                    responseMode,
+                    clientId,
+                    redirectUri,
+                    scope,
+                    state,
+                    nonce,
+                    clientAssertion,
+                    correlationId);
+        } catch (com.vmware.identity.openidconnect.common.ParseException e) {
+            throw new ParseException(e.getErrorObject(), clientId, responseMode, redirectUri, state, e);
+        }
+    }
+
+    private static void validate(
+            ResponseType responseType,
+            ResponseMode responseMode,
+            ClientID clientId,
+            Scope scope,
+            ClientAssertion clientAssertion) throws com.vmware.identity.openidconnect.common.ParseException {
+        if (responseMode == ResponseMode.QUERY && responseType.contains(ResponseTypeValue.ID_TOKEN)) {
+            throw new com.vmware.identity.openidconnect.common.ParseException("response_mode=query is not allowed for implicit flow");
         }
 
-        CorrelationID correlationId = null;
-        String correlationIdString = parameters.get("correlation_id");
-        if (!StringUtils.isBlank(correlationIdString)) {
-            correlationId = new CorrelationID(correlationIdString);
+        if (responseMode == ResponseMode.FRAGMENT && responseType.contains(ResponseTypeValue.AUTHORIZATION_CODE)) {
+            throw new com.vmware.identity.openidconnect.common.ParseException("response_mode=fragment is not allowed for authz code flow");
         }
 
-        if (nimbusAuthnRequest.getState() == null) {
-            throw new ParseException("missing state parameter");
+        if (responseType.contains(ResponseTypeValue.ID_TOKEN) && scope.contains(ScopeValue.OFFLINE_ACCESS)) {
+            String message = "refresh token (offline_access) is not allowed for this grant_type";
+            throw new com.vmware.identity.openidconnect.common.ParseException(ErrorObject.invalidScope(message));
         }
 
-        if (nimbusAuthnRequest.getNonce() == null) {
-            throw new ParseException("missing nonce parameter");
+        if (clientAssertion != null && !clientAssertion.getIssuer().getValue().equals(clientId.getValue())) {
+            throw new com.vmware.identity.openidconnect.common.ParseException(ErrorObject.invalidClient("client_assertion issuer must match client_id"));
+        }
+    }
+
+    public static class ParseException extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        private final ErrorObject errorObject;
+        private final ClientID clientId;
+        private final ResponseMode responseMode;
+        private final URI redirectUri;
+        private final State state;
+
+        private ParseException(
+                ErrorObject errorObject,
+                ClientID clientId,
+                ResponseMode responseMode,
+                URI redirectUri,
+                State state,
+                Throwable cause) {
+            super(errorObject.getDescription(), cause);
+            this.errorObject = errorObject;
+            this.clientId = clientId;
+            this.responseMode = responseMode;
+            this.redirectUri = redirectUri;
+            this.state = state;
         }
 
-        return new AuthenticationRequest(
-                nimbusAuthnRequest.getEndpointURI(),
-                nimbusAuthnRequest.getResponseType(),
-                responseMode,
-                nimbusAuthnRequest.getClientID(),
-                nimbusAuthnRequest.getRedirectionURI(),
-                nimbusAuthnRequest.getScope(),
-                nimbusAuthnRequest.getState(),
-                nimbusAuthnRequest.getNonce(),
-                clientAssertion,
-                correlationId);
+        public ErrorObject getErrorObject() {
+            return this.errorObject;
+        }
+
+        public ClientID getClientID() {
+            return this.clientId;
+        }
+
+        public URI getRedirectURI() {
+            return this.redirectUri;
+        }
+
+        public AuthenticationErrorResponse createAuthenticationErrorResponse(boolean isAjaxRequest) {
+            AuthenticationErrorResponse response = null;
+            if (this.responseMode != null && this.redirectUri != null && this.state != null) {
+                response = new AuthenticationErrorResponse(
+                        this.responseMode,
+                        this.redirectUri,
+                        this.state,
+                        isAjaxRequest,
+                        this.errorObject);
+            }
+            return response;
+        }
     }
 }

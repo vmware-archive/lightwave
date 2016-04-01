@@ -15,6 +15,7 @@ package com.vmware.identity;
 
 import java.io.IOException;
 import java.util.Locale;
+import java.util.UUID;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -56,7 +57,9 @@ public class MetadataController {
         logger.info("Welcome to Metadata handler! " +
                 "The client locale is "+ locale.toString() + ", tenant is " + tenant);
 
-        DefaultIdmAccessorFactory factory = new DefaultIdmAccessorFactory();
+        //TODO - check for correlation id in the headers PR1561606
+        String correlationId = UUID.randomUUID().toString();
+        DefaultIdmAccessorFactory factory = new DefaultIdmAccessorFactory(correlationId);
         try {
             IdmAccessor accessor = factory.getIdmAccessor();
             accessor.setTenant(tenant);

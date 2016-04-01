@@ -13,10 +13,16 @@
 
 package com.vmware.identity.interop.ldap;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
+import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.Validate;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
@@ -35,16 +41,34 @@ public class SaslInputStructNative extends Structure implements AutoCloseable{
     public int passwordLength;
     private NativeMemory[] nativeMemories;
 
-    public SaslInputStructNative(String userName, String password) {
-        Validate.notEmpty(userName, "userName");
-        Validate.notEmpty(password, "password");
+    private static final Log logger = LogFactory.getLog(SaslInputStructNative.class);
 
-        this.nativeMemories = new NativeMemory[2];
-        String normalizedUserName = userName.toLowerCase();
-        this.authName = this.nativeMemories[0] = allocateMemoryForString(normalizedUserName);
-        authNameLength = userName != null? userName.length(): 0;
-        this.password = this.nativeMemories[1] = allocateMemoryForString(password);
-        passwordLength = password != null? password.length(): 0;
+    public SaslInputStructNative(String userName, String pwd) {
+        Validate.notEmpty(userName, "userName");
+        Validate.notEmpty(pwd, "pwd");
+
+        try {
+            this.nativeMemories = new NativeMemory[2];
+
+            // Set the native memory for username.
+            String normalizedUserName = normalizeUserName(userName);
+            byte[] bytes = Native.toByteArray(normalizedUserName, "UTF-8");
+            nativeMemories[0] = new NativeMemory(bytes.length);
+            nativeMemories[0].write(0, bytes, 0, bytes.length);
+            authName = nativeMemories[0];
+            authNameLength = bytes.length - 1; // Not including the ending '\0'
+
+            // Set the native memory for password.
+            bytes = Native.toByteArray(pwd, "UTF-8");
+            nativeMemories[1] = new NativeMemory(bytes.length);
+            nativeMemories[1].write(0, bytes, 0, bytes.length);
+            password = nativeMemories[1];
+            passwordLength = bytes.length - 1; // Not including the ending '\0'
+        } catch (UnsupportedEncodingException e) {
+            // Should not reach here as "UTF-8" encoding is always supported in Linux and Windows.
+            logger.error("Error while trying to call Native.toByteArray", e);
+        }
+
         write();
     }
 
@@ -70,14 +94,17 @@ public class SaslInputStructNative extends Structure implements AutoCloseable{
         }
     }
 
-    private static NativeMemory allocateMemoryForString(String s){
-        NativeMemory m = null;
-        if(s!=null && s.length() > 0){
-            byte[] bytes = Native.toByteArray(s);
-            m = new NativeMemory(bytes.length + 1);
-            m.write(0, bytes, 0, bytes.length);
-            m.setByte(bytes.length, (byte)0);
+    // Normalize the username in the same way as vmdird. This is required in the SRP binding
+    // so that the secret/hash generated at client and server sides are consistent.
+    private static String normalizeUserName(String userName) {
+        StringBuffer sb = new StringBuffer();
+        for (int i=0; i<userName.length(); i++) {
+            char c = userName.charAt(i);
+            if (c >= 'A' && c <= 'Z') {
+                c += 32; // to lower case
+            }
+            sb.append(c);
         }
-        return m;
+        return sb.toString();
     }
 }

@@ -1,7 +1,7 @@
 package com.vmware.vmidentity.websso.client.test;
 
 /* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved.
+ * Copyright 2012 VMware, Inc. All rights reserved. 
  **********************************************************************************/
 
 /**
