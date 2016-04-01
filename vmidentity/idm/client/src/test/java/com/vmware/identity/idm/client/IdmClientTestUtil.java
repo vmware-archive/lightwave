@@ -438,6 +438,7 @@ class IdmClientTestUtil
                         adSPN,
                         adPwd,
                         attrMap,
+                        null,
                         null);
 
         return adStore;

@@ -32,10 +32,13 @@ import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.SearchResult;
 import com.vmware.identity.idm.SecurityDomain;
 import com.vmware.identity.idm.ValidateUtil;
+import com.vmware.identity.idm.server.performance.IIdmAuthStatRecorder;
+import com.vmware.identity.idm.server.performance.PerformanceMonitorFactory;
 import com.vmware.identity.interop.idm.AuthResult;
 import com.vmware.identity.interop.idm.AuthenticationContext;
 import com.vmware.identity.interop.idm.IIdmClientLibrary;
 import com.vmware.identity.interop.idm.IdmClientLibraryFactory;
+import com.vmware.identity.performanceSupport.IIdmAuthStat;
 
 public class GSSAuthProvider implements IGssAuthIdentityProvider {
 
@@ -141,14 +144,14 @@ public class GSSAuthProvider implements IGssAuthIdentityProvider {
     }
 
     @Override
-    public Set<Group> findDirectParentGroups(PrincipalId principalId)
+    public PrincipalGroupLookupInfo findDirectParentGroups(PrincipalId principalId)
             throws Exception {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public Set<Group> findNestedParentGroups(PrincipalId userId)
+    public PrincipalGroupLookupInfo findNestedParentGroups(PrincipalId userId)
             throws Exception {
         throw new UnsupportedOperationException();
     }
@@ -218,6 +221,16 @@ public class GSSAuthProvider implements IGssAuthIdentityProvider {
         ValidateUtil.validateNotEmpty(contextId, "Context Id");
         ValidateUtil.validateNotEmpty(gssTicket, "GSS Blob");
 
+        IIdmAuthStatRecorder recorder = PerformanceMonitorFactory.createIdmAuthStatRecorderInstance(
+                this.getName(),
+                this.getClass().getName(),
+                this.getName(),
+                0,
+                IIdmAuthStat.ActivityKind.AUTHENTICATE,
+                IIdmAuthStat.EventLevel.INFO,
+                contextId);
+        recorder.start();
+
         IIdmClientLibrary idmAdapter =
                             IdmClientLibraryFactory.getInstance().getLibrary();
 
@@ -242,12 +255,14 @@ public class GSSAuthProvider implements IGssAuthIdentityProvider {
                     context = _contextCache.remove(contextId);
                     context.close();
 
+                    recorder.end();
                     return new GSSAuthResult(
                                     contextId,
                                     userInfo);
 
                 case CONTINUE_NEEDED:
 
+                    recorder.end();
                     return new GSSAuthResult(contextId, result.getGssBLOB());
 
                 case ERROR:
@@ -267,5 +282,15 @@ public class GSSAuthProvider implements IGssAuthIdentityProvider {
 
             throw e;
         }
+    }
+
+    @Override
+    public PrincipalId findActiveUser(String attributeName, String attributeValue) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getStoreUPNAttributeName() {
+        throw new UnsupportedOperationException();
     }
 }

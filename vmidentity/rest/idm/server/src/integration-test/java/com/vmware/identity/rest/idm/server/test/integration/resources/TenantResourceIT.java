@@ -14,14 +14,14 @@
 package com.vmware.identity.rest.idm.server.test.integration.resources;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
 
 import java.util.Arrays;
 import java.util.Locale;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 
 import org.easymock.EasyMock;
 import org.junit.Before;
@@ -40,6 +40,7 @@ import com.vmware.identity.rest.idm.data.SearchResultDTO;
 import com.vmware.identity.rest.idm.data.TenantConfigurationDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
 import com.vmware.identity.rest.idm.data.TokenPolicyDTO;
+import com.vmware.identity.rest.idm.data.ProviderPolicyDTO;
 import com.vmware.identity.rest.idm.data.attributes.MemberType;
 import com.vmware.identity.rest.idm.data.attributes.SearchType;
 import com.vmware.identity.rest.idm.data.attributes.TenantConfigType;
@@ -68,13 +69,13 @@ public class TenantResourceIT extends TestBase {
     private final String LOGON_BANNER_CONTENT = "Welcome to Unit Tests arena of RESTful IDM server !!";
 
     private TenantResource tenantResource;
-    private HttpServletRequest request;
+    private ContainerRequestContext request;
 
     @Before
     public void setUp() {
-        request = EasyMock.createMock(HttpServletRequest.class);
-        EasyMock.expect(request.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        EasyMock.expect(request.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        request = EasyMock.createMock(ContainerRequestContext.class);
+        EasyMock.expect(request.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        EasyMock.expect(request.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
         EasyMock.replay(request);
 
         tenantResource = new TenantResource(request, null);
@@ -149,6 +150,8 @@ public class TenantResourceIT extends TestBase {
         assertEquals(Integer.valueOf(5), config.getPasswordPolicy().getProhibitedPreviousPasswordCount());
 
         assertEquals(DEFAULT_PROVIDER, config.getProviderPolicy().getDefaultProvider());
+        assertNull(config.getProviderPolicy().getDefaultProviderAlias());
+        assertFalse(config.getProviderPolicy().isProviderSelectionEnabled());
 
         // assert token policy related configs
         assertEquals(Long.valueOf(600000), config.getTokenPolicy().getClockToleranceMillis());
@@ -191,6 +194,11 @@ public class TenantResourceIT extends TestBase {
                                             .withMaxBearerTokenLifeTimeMillis(tokenBeforeUpdate.getMaxBearerTokenLifeTimeMillis() + 1)
                                             .withMaxBearerRefreshTokenLifeTimeMillis(tokenBeforeUpdate.getMaxBearerRefreshTokenLifeTimeMillis() + 1).build();
 
+            ProviderPolicyDTO providerPolicyToUpdate = ProviderPolicyDTO.builder()
+                    .withDefaultProviderAlias(VSPHERE_LOCAL)
+                    .withProviderSelectionEnabled(Boolean.TRUE)
+                    .build();
+
             BrandPolicyDTO brandPolicyToUpdate = BrandPolicyDTO.builder()
                     .withLogonBannerDisabled(true)
                     .withLogonBannerTitle(LOGON_BANNER_TITLE)
@@ -209,6 +217,7 @@ public class TenantResourceIT extends TestBase {
                                                                                 .withLockoutPolicy(lockoutPolicyToUpdate)
                                                                                 .withPasswordPolicy(pwdPolicyToUpdate)
                                                                                 .withTokenPolicy(tokenPolicyToUpdate)
+                                                                                .withProviderPolicy(providerPolicyToUpdate)
                                                                                 .withBrandPolicy(brandPolicyToUpdate)
                                                                                 .withAuthenticationPolicy(authenticationPolicyToUpdate)
                                                                                 .build();
@@ -238,6 +247,8 @@ public class TenantResourceIT extends TestBase {
             assertTrue(afterUpdate.getBrandPolicy().isLogonBannerCheckboxEnabled());
             assertTrue(afterUpdate.getBrandPolicy().isLogonBannerDisabled());
 
+            assertEquals(VSPHERE_LOCAL, afterUpdate.getProviderPolicy().getDefaultProviderAlias());
+            assertTrue(afterUpdate.getProviderPolicy().isProviderSelectionEnabled());
         } finally {
             tenantResource.updateConfig(DEFAULT_TENANT, beforeUpdate);
         }

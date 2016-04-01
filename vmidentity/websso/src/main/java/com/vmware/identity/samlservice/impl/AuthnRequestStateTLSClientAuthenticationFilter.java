@@ -18,6 +18,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -71,6 +72,20 @@ AuthenticationFilter<AuthnRequestState> {
                             WebSSOError.BAD_REQUEST, null);
             t.setValidationResult(vr);
             throw new SamlServiceException();
+        }
+
+        // check if logout cookie is present
+        Cookie[] cookies = request.getCookies();
+        String logoutCookieName = Shared.getLogoutCookieName(accessor.getTenant());
+        if (cookies != null && cookies.length > 0) {
+            for (Cookie cookie : cookies) {
+                if (cookie.getName().equalsIgnoreCase(logoutCookieName)) {
+                    ValidationResult vr = new ValidationResult(HttpServletResponse.SC_BAD_REQUEST,
+                            WebSSOError.UNAUTHORIZED, WebSSOError.LOGGED_OUT_TLS_SESSION);
+                    t.setValidationResult(vr);
+                    throw new SamlServiceException();
+                }
+            }
         }
     }
 

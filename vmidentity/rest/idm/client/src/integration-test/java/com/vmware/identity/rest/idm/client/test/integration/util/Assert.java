@@ -23,6 +23,7 @@ import com.vmware.identity.rest.idm.data.ExternalIDPDTO;
 import com.vmware.identity.rest.idm.data.GroupDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
+import com.vmware.identity.rest.idm.data.ResourceServerDTO;
 import com.vmware.identity.rest.idm.data.RelyingPartyDTO;
 import com.vmware.identity.rest.idm.data.SolutionUserDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
@@ -59,6 +60,17 @@ public class Assert {
         }
 
         fail("Unable to find the expected client");
+    }
+
+    public static void assertContainsResourceServer(ResourceServerDTO expected, List<ResourceServerDTO> actual) {
+        for (ResourceServerDTO rs : actual) {
+            if (expected.getName().equals(rs.getName())) {
+                assertResourceServersEqual(expected, rs);
+                return;
+            }
+        }
+
+        fail("Unable to find the expected resource server");
     }
 
     public static void assertContainsGroup(GroupDTO expected, List<GroupDTO> actual) {
@@ -114,6 +126,12 @@ public class Assert {
         assertEquals(expected.getPostLogoutRedirectUris(), actual.getPostLogoutRedirectUris());
         assertEquals(expected.getLogoutUri(), actual.getLogoutUri());
         assertEquals(expected.getCertSubjectDN(), actual.getCertSubjectDN());
+        assertEquals(expected.getAuthnRequestClientAssertionLifetimeMS(), actual.getAuthnRequestClientAssertionLifetimeMS());
+    }
+
+    public static void assertResourceServersEqual(ResourceServerDTO expected, ResourceServerDTO actual) {
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.getGroupFilter(), actual.getGroupFilter());
     }
 
     public static void assertRPsEqual(RelyingPartyDTO expected, RelyingPartyDTO actual) {
