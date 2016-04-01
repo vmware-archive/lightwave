@@ -8,7 +8,7 @@ License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
 Requires:  coreutils >= 8.22, openssl >= 1.0.1, krb5 >= 1.12, cyrus-sasl >= 2.1, likewise-open >= 6.2.9, vmware-directory-client >= 6.0.2, vmware-afd-client = %{version}, vmware-dns-client >= 6.0.0
-BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.1, krb5 >= 1.12, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.9, vmware-directory-client-devel >= 6.0.2, sqlite-autoconf, python2-devel >= 2.7.8, openjdk >= 1.8.0.45, apache-ant >= 1.9.4, ant-contrib >= 1.0b3, vmware-dns-client-devel >= 6.0.0
+BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.1, krb5 >= 1.12, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.9, vmware-directory-client-devel >= 6.0.2, sqlite-autoconf, python2-devel >= 2.7.8, openjdk >= 1.8.0.45, apache-ant >= 1.9.4, ant-contrib >= 1.0b3, vmware-dns-client-devel >= 6.0.0, apache-maven >= 3.3.9
 
 %define _dbdir %_localstatedir/lib/vmware/vmafd
 %define _vecsdir %{_dbdir}/vecs
@@ -66,7 +66,8 @@ autoreconf -mif .. &&
             --with-sqlite=/usr \
             --with-python=/usr \
             --with-jdk=%{_javahome} \
-            --with-ant=%{_anthome}
+            --with-ant=%{_anthome} \
+            --with-maven=%{_mavendir}
 
 %install
 
