@@ -141,4 +141,9 @@ public interface IIdentityStoreDataEx extends java.io.Serializable {
     * @return the certificate used for validation with ldaps connection
     */
    public Collection<X509Certificate> getCertificates();
+
+   /**
+    * @return the permissible authentication types on provider
+    */
+   public int[] getAuthnTypes();
 }

@@ -19,33 +19,31 @@ import java.util.Map;
 
 import org.apache.commons.lang3.Validate;
 
-import com.nimbusds.oauth2.sdk.AuthorizationGrant;
-import com.nimbusds.oauth2.sdk.GrantType;
-import com.nimbusds.oauth2.sdk.ParseException;
-
 /**
  * @author Yehia Zayour
  */
 public class SolutionUserCredentialsGrant extends AuthorizationGrant {
-    public static final GrantType GRANT_TYPE = new GrantType("urn:vmware:grant_type:solution_user_credentials");
+    private static final GrantType GRANT_TYPE = GrantType.SOLUTION_USER_CREDENTIALS;
 
     public SolutionUserCredentialsGrant() {
         super(GRANT_TYPE);
     }
 
     @Override
-    public Map<String,String> toParameters() {
-        Map<String,String> parameters = new HashMap<String, String>();
+    public Map<String, String> toParameters() {
+        Map<String, String> parameters = new HashMap<String, String>();
         parameters.put("grant_type", GRANT_TYPE.getValue());
         return parameters;
     }
 
-    public static SolutionUserCredentialsGrant parse(Map<String,String> parameters) throws ParseException {
+    public static SolutionUserCredentialsGrant parse(Map<String, String> parameters) throws ParseException {
         Validate.notNull(parameters, "parameters");
-        String grantTypeString = parameters.get("grant_type");
-        if (!GRANT_TYPE.getValue().equals(grantTypeString)) {
-            throw new IllegalArgumentException("unexpected grant_type: " + grantTypeString);
+
+        GrantType grantType = GrantType.parse(ParameterMapUtils.getString(parameters, "grant_type"));
+        if (grantType != GRANT_TYPE) {
+            throw new ParseException("unexpected grant_type: " + grantType.getValue());
         }
+
         return new SolutionUserCredentialsGrant();
     }
 }

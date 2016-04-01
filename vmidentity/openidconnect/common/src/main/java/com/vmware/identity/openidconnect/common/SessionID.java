@@ -14,28 +14,21 @@
 
 package com.vmware.identity.openidconnect.common;
 
-import com.nimbusds.oauth2.sdk.id.Identifier;
-
 /**
  * @author Yehia Zayour
  */
 public final class SessionID extends Identifier {
-    private static final long serialVersionUID = 2015_05_29L;
+    public SessionID() {
+    }
 
     public SessionID(String value) {
         super(value);
     }
 
-    public SessionID(int byteLength) {
-        super(byteLength);
-    }
-
-    public SessionID() {
-        super();
-    }
-
     @Override
-    public boolean equals(Object object) {
-        return object instanceof SessionID && this.toString().equals(object.toString());
+    public boolean equals(Object other) {
+        return
+                other instanceof SessionID &&
+                ((SessionID) other).getValue().equals(this.getValue());
     }
 }

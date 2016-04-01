@@ -3,13 +3,18 @@
 ############################################################################################################
 # A shell script to instantiate tomcat runtime instance for Secure Token Service (STS). This script        #
 # copies the necessary libraries and other configuration files from ${catalina.home} tp ${catalina.base}.  #
-# TODO : Add more documentation 	                                        
+# 													   #
+# Author : Balaji Boggaram Ramanarayan                                                                     #
+#				                                                                           # 	                                        
 ############################################################################################################
 
 VMWARE_STS_INSTANCE_NAME=vmware-sts
 VMWARE_HOME=@VMSTS_PREFIX_DIR@
+VMWARE_JARS=$VMWARE_HOME/jars
 VMWARE_WEBAPPS=$VMWARE_HOME/webapps
 VMWARE_STS_CONF=$VMWARE_HOME/share/config/sts
+VMWARE_VECS_CLI=$VMWARE_HOME/bin/vecs-cli
+OPENSSL=/usr/bin/openssl
 
 VMWARE_STS_INSTANCE=$VMWARE_HOME/$VMWARE_STS_INSTANCE_NAME
 VMWARE_STS_LOGS=/var/log/vmware/sso
@@ -40,6 +45,15 @@ mkdir $VMWARE_STS_INSTANCE_WEBAPPS
 mkdir $VMWARE_STS_INSTANCE_WORK
 
 # Configure tomcat runtime instance
+
+## Configure Tomcat SSL 
+### Integrate VECS based SSL certificate 
+cp $VMWARE_JARS/vmware-identity-tomcat-extensions.jar $VMWARE_STS_INSTANCE_BIN
+OUT=$?
+if [ ${OUT} -ne 0 ]; then
+        exception "Failed to copy vmware-identity-tomcat-extensions.jar to $VMWARE_STS_INSTANCE_BIN";
+fi
+
 ##  Copy configuration to conf
 declare -a catalinaConfFiles=("tomcat-users.xml" "context.xml" "catalina.policy")
 for i in "${catalinaConfFiles[@]}"

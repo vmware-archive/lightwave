@@ -12,8 +12,11 @@
 
     <c:choose>
         <c:when test="${loggedIn}">
-            <form:form id="command" method="POST" action="/openidconnect-sample-rp/logout">
-                <input type="submit" STYLE="background-color:#DF7401" value="log out"/>
+            <form:form id="command" method="POST" action="/openidconnect-sample-rp/logout_redirect">
+                <input type="submit" STYLE="background-color:#DF7401" value="log out using redirect"/>
+            </form:form>
+            <form:form id="command" method="POST" action="/openidconnect-sample-rp/logout_form_post">
+                <input type="submit" STYLE="background-color:#DF7401" value="log out using form post"/>
             </form:form>
             <form:form id="tokens">
                 <input type="hidden" name="id_token" value="${id_token}"/>
