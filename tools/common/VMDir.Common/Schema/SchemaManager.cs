@@ -41,22 +41,25 @@ namespace VMDir.Common.Schema
         public void RefreshSchema ()
         {
             const string baseDN = "cn=aggregate,cn=schemacontext";
-            var attribs = new string[]{ ATTRIBUTETYPES, OBJECTCLASSES, DITCONTENTRULES };
+            var attribs = new string[]{ ATTRIBUTETYPES, OBJECTCLASSES, DITCONTENTRULES};
             ILdapMessage ldMsg = null;
             try {
                 List<ILdapEntry> response = _conn.SearchAndGetEntries (baseDN, LdapScope.SCOPE_SUBTREE, "(objectClass=*)", attribs, 0, ref ldMsg);
                 if (response.Count == 0)
                     throw new Exception ("Failed to get schema");
-            
+
                 LdapEntry baseEntry = (LdapEntry)response [0];
                 var dict = CollectData (baseEntry);
                 ParseAttributes (dict [ATTRIBUTETYPES]);
                 ParseObjectClasses (dict [OBJECTCLASSES]);
                 ParseContentRules (dict [DITCONTENTRULES]);
+            } catch (Exception) {
+                throw;
+            }
+            finally
+            {
                 if (ldMsg != null)
-                    (ldMsg as LdapMessage).FreeMessage ();
-            } catch (Exception e) {
-                throw e;
+                    (ldMsg as LdapMessage).FreeMessage();
             }
 
         }

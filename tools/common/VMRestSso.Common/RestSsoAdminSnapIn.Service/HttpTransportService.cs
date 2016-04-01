@@ -69,7 +69,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.HttpTransport
                 message.Details.Contains("grant_type=password"))
             {
 
-                // Message payload will be like: grant_type=password&client_id={3}&username={0}%40{2}&password={1}&scope=openid+offline_access+id_groups+at_groups+rs_admin_server
                 string payload = message.Details;
                 var parts = payload.Split('&');
                 var builder = new StringBuilder();
@@ -90,8 +89,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.HttpTransport
             // Add New Tenant
             if (message.AbsolutePath.EndsWith(ServiceConfigManager.TenantString) && message.Method == "POST" && message.Details.Contains("credentials"))
             {
-                // Message payload will be like
-                // {"credentials":{"certificates":[{"encoded":"XXX"},{"encoded":"YYY"}],"privateKey":{"algorithm":"RSA","encoded":"ZZZ"}},"name":"{0}","pasword":"{1}","username":"{2}"}
                 var index = message.Details.IndexOf("password");
                 var end = message.Details.Substring(index).IndexOf(",");
                 var payload = message.Details.Substring(0, index) + "password\":\"XXXX\"" + message.Details.Substring(index + end);
@@ -101,9 +98,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.HttpTransport
             // Add New User
             if (message.AbsolutePath.EndsWith(ServiceConfigManager.UsersString) && message.Method == "POST" && message.Details.Contains("passwordDetails"))
             {
-                // Message payload will be like
-                // {"alias":{"domain":"vsphere.local","name":"xyz"},"details":{"description":"Testing 123","email":"def@gmaail.com",
-                // "firstName":"XYZ","lastName":"ABC","upn":"xyz@vsphere.local"},"domain":"vsphere.local","name":"xyz","passwordDetails":{"password":"XXXX"}}
                 var index = message.Details.IndexOf("passwordDetails");
                 var payload = message.Details.Substring(0, index) + "passwordDetails:{\"password\":\"XXXX\"}}";
                 return payload;
@@ -113,8 +107,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.HttpTransport
             if (message.AbsolutePath.EndsWith(ServiceConfigManager.ProvidersString) && message.Method == "POST" && !message.AbsolutePath.StartsWith("/idm/post"))
             {
                 // Message payload will be like
-                // {"alias":"","attributesMap":null,"authenticationType":"PASSWORD","connectionStrings":[""],"domainType":"EXTERNAL_DOMAIN","friendlyName":"","groupBaseDN":"","name":"",
-                // "password":"","schema":null,"searchTimeOutInSeconds":300,"servicePrincipalName":null,"type":"IDENTITY_STORE_TYPE_LDAP","userBaseDN":"","userMachineAccount":false,"username":""}
                 var index = message.Details.IndexOf("password");
                 var end = message.Details.Substring(index).IndexOf(",");
                 var payload = message.Details.Substring(0, index) + "\"password\"=\"XXXX\"" + message.Details.Substring(index + end);

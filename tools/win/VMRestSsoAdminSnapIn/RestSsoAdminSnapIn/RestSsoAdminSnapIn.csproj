@@ -1,0 +1,667 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{43F0B11B-DA0C-44AD-91AA-099B1398C1CE}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Vmware.Tools.RestSsoAdminSnapIn</RootNamespace>
+    <AssemblyName>Vmware.Tools.RestSsoAdminSnapIn</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Images\User.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>..\..\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>..\..\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="microsoft.managementconsole, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration.Install" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Helpers\KerberosHelper.cs" />
+    <Compile Include="Helpers\SsoSsspiInterop.cs" />
+    <Compile Include="Presenters\Nodes\OidcClientsNode.cs" />
+    <Compile Include="Presenters\Nodes\RelyingPartyNode.cs" />
+    <Compile Include="Presenters\Nodes\ExternalIdentityProvidersNode.cs" />
+    <Compile Include="SnapIn\AuthTokenManager.cs" />
+    <Compile Include="SnapIn\Bootstrapper.cs" />
+    <Compile Include="Helpers\ActionHelper.cs" />
+    <Compile Include="Helpers\ErrorMessageDisplayHelper.cs" />
+    <Compile Include="Helpers\ResourceHelper.cs" />
+    <Compile Include="Controller\NavigationController.cs" />
+    <Compile Include="Presenters\Nodes\ServerCertificatesNode.cs" />
+    <Compile Include="Presenters\Nodes\ExternalDomainNode.cs" />
+    <Compile Include="Presenters\Nodes\ExternalDomainsNode.cs" />
+    <Compile Include="Presenters\Nodes\GroupsNode.cs" />
+    <Compile Include="Presenters\Nodes\TrustedCertificatesNode.cs" />
+    <Compile Include="Presenters\PropertyManagers\ExternalDomain\ExternalDomainPropertyManager.cs" />
+    <Compile Include="Presenters\PropertyManagers\Groups\GroupPropertyDataManager.cs" />
+    <Compile Include="Presenters\PropertyManagers\IPropertyDataManager.cs" />
+    <Compile Include="Presenters\PropertyManagers\SolutionUser\SolutionUserPropertyManager.cs" />
+    <Compile Include="Presenters\PropertyManagers\User\AllGroupsPropertyManager.cs" />
+    <Compile Include="Presenters\PropertyManagers\User\UserGeneralPropertyManager.cs" />
+    <Compile Include="Presenters\PropertyManagers\User\UserGroupsPropertyManager.cs" />
+    <Compile Include="Presenters\PropertyManagers\User\UserRolesPropertyManager.cs" />
+    <Compile Include="Presenters\PropertyManagers\GenericPropertyPage.cs" />
+    <Compile Include="Presenters\ScopeNodeExtensions.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="SnapIn\RestSsoAdminSnapIn.cs" />
+    <Compile Include="SnapIn\Constants.cs" />
+    <Compile Include="Installer\RestSsoAdminInstaller.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Presenters\Nodes\SnapInNode.cs" />
+    <Compile Include="Presenters\Nodes\IdentityProviderNode.cs" />
+    <Compile Include="Presenters\Nodes\IdentityProvidersNode.cs" />
+    <Compile Include="Presenters\Nodes\ServerNode.cs" />
+    <Compile Include="Presenters\Nodes\SolutionUsersNode.cs" />
+    <Compile Include="Presenters\Nodes\TenantNode.cs" />
+    <Compile Include="Presenters\Nodes\UsersAndGroupsNode.cs" />
+    <Compile Include="Presenters\Nodes\UsersNode.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SnapIn\SnapInContext.cs" />
+    <Compile Include="SnapIn\SsoAdminSnapInException.cs" />
+    <Compile Include="TreeImageIndex.cs" />
+    <Compile Include="Views\AddExistingTenant.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\AddExistingTenant.designer.cs">
+      <DependentUpon>AddExistingTenant.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AddNameIdFormat.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\AddNameIdFormat.designer.cs">
+      <DependentUpon>AddNameIdFormat.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AddNewAssertionConsumerService.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\AddNewAssertionConsumerService.designer.cs">
+      <DependentUpon>AddNewAssertionConsumerService.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AddNewServiceEndpoints.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\AddNewServiceEndpoints.designer.cs">
+      <DependentUpon>AddNewServiceEndpoints.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AddNewAttributeConsumerService.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\AddNewAttributeConsumerService.designer.cs">
+      <DependentUpon>AddNewAttributeConsumerService.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AddNewSignatureAlgorithm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\AddNewSignatureAlgorithm.designer.cs">
+      <DependentUpon>AddNewSignatureAlgorithm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ComputersView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\ComputersView.designer.cs">
+      <DependentUpon>ComputersView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AdvancedExternalDomain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\AdvancedExternalDomain.designer.cs">
+      <DependentUpon>AdvancedExternalDomain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Probe.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\Probe.designer.cs">
+      <DependentUpon>Probe.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\OidcClientsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\OidcClientsControl.designer.cs">
+      <DependentUpon>OidcClientsControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\OidcClientsFormView.cs" />
+    <Compile Include="Views\NewOidcClient.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\NewOidcClient.designer.cs">
+      <DependentUpon>NewOidcClient.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\NewRelyingParty.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\NewRelyingParty.designer.cs">
+      <DependentUpon>NewRelyingParty.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\PropertyPages\ExternalDomainSchemaObjectMapProperty.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\PropertyPages\ExternalDomainSchemaObjectMapProperty.designer.cs">
+      <DependentUpon>ExternalDomainSchemaObjectMapProperty.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\PropertyPages\ExternalDomainGeneralPropertyIntegratedAuth.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\PropertyPages\ExternalDomainGeneralPropertyIntegratedAuth.designer.cs">
+      <DependentUpon>ExternalDomainGeneralPropertyIntegratedAuth.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SuperLogging.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\SuperLogging.Designer.cs">
+      <DependentUpon>SuperLogging.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SuperLoggingFilter.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\SuperLoggingFilter.Designer.cs">
+      <DependentUpon>SuperLoggingFilter.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\TenantConfiguration.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\TenantConfiguration.designer.cs">
+      <DependentUpon>TenantConfiguration.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\TokenWizard.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\TokenWizard.designer.cs">
+      <DependentUpon>TokenWizard.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\RelyingPartyFormView.cs" />
+    <Compile Include="Views\RelyingPartyControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\RelyingPartyControl.designer.cs">
+      <DependentUpon>RelyingPartyControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\FindSolutionUserByCertDN.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\FindSolutionUserByCertDN.designer.cs">
+      <DependentUpon>FindSolutionUserByCertDN.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SchemaObjectMappingView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\SchemaObjectMappingView.designer.cs">
+      <DependentUpon>SchemaObjectMappingView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\LeaveActiveDirectoryView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\LeaveActiveDirectoryView.designer.cs">
+      <DependentUpon>LeaveActiveDirectoryView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\JoinActiveDirectoryView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\JoinActiveDirectoryView.designer.cs">
+      <DependentUpon>JoinActiveDirectoryView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\NewExternalIdp.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\NewExternalIdp.designer.cs">
+      <DependentUpon>NewExternalIdp.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AddSubjectFormat.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\AddSubjectFormat.designer.cs">
+      <DependentUpon>AddSubjectFormat.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SearchByNameView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\SearchByNameView.designer.cs">
+      <DependentUpon>SearchByNameView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\TenantConfigurationView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\TenantConfigurationView.designer.cs">
+      <DependentUpon>TenantConfigurationView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\NewServerView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\NewServerView.designer.cs">
+      <DependentUpon>NewServerView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\CertificateDetailsListView.cs" />
+    <Compile Include="Views\HttpTransportFormView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\HttpTransportFormView.designer.cs">
+      <DependentUpon>HttpTransportFormView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\GenericWebForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\GenericWebForm.designer.cs">
+      <DependentUpon>GenericWebForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\GroupsControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\GroupsControl.designer.cs">
+      <DependentUpon>GroupsControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\GroupsFormView.cs" />
+    <Compile Include="Views\IView.cs" />
+    <Compile Include="Views\LoginForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\LoginForm.designer.cs">
+      <DependentUpon>LoginForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\NewExternalDomain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\NewExternalDomain.designer.cs">
+      <DependentUpon>NewExternalDomain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\NewGroupForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\NewGroupForm.designer.cs">
+      <DependentUpon>NewGroupForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\NewSignerIdentity.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\NewSignerIdentity.designer.cs">
+      <DependentUpon>NewSignerIdentity.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\NewSolutionUserForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\NewSolutionUserForm.designer.cs">
+      <DependentUpon>NewSolutionUserForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\NewUserForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\NewUserForm.designer.cs">
+      <DependentUpon>NewUserForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\PropertyPages\ExternalDomainAttributeMapProperty.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\PropertyPages\ExternalDomainAttributeMapProperty.designer.cs">
+      <DependentUpon>ExternalDomainAttributeMapProperty.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\PropertyPages\ExternalDomainAuthProperty.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\PropertyPages\ExternalDomainAuthProperty.designer.cs">
+      <DependentUpon>ExternalDomainAuthProperty.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\PropertyPages\ExternalDomainGeneralProperty.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\PropertyPages\ExternalDomainGeneralProperty.designer.cs">
+      <DependentUpon>ExternalDomainGeneralProperty.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\PropertyPages\GroupGeneralProperty.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\PropertyPages\GroupGeneralProperty.designer.cs">
+      <DependentUpon>GroupGeneralProperty.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\PropertyPages\SolutionUserCertProperty.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\PropertyPages\SolutionUserCertProperty.designer.cs">
+      <DependentUpon>SolutionUserCertProperty.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\PropertyPages\SolutionUserGeneralProperty.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\PropertyPages\SolutionUserGeneralProperty.designer.cs">
+      <DependentUpon>SolutionUserGeneralProperty.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\PropertyPages\UserGeneralProperty.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\PropertyPages\UserGeneralProperty.designer.cs">
+      <DependentUpon>UserGeneralProperty.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\PropertyPages\UserGroupsProperty.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\PropertyPages\UserGroupsProperty.designer.cs">
+      <DependentUpon>UserGroupsProperty.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\PropertyPages\UserRolesProperty.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\PropertyPages\UserRolesProperty.designer.cs">
+      <DependentUpon>UserRolesProperty.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SelectGroupMembers.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\SelectGroupMembers.designer.cs">
+      <DependentUpon>SelectGroupMembers.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SelectGroups.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\SelectGroups.designer.cs">
+      <DependentUpon>SelectGroups.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SetPassword.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\SetPassword.designer.cs">
+      <DependentUpon>SetPassword.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SolutionUsersControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\SolutionUsersControl.designer.cs">
+      <DependentUpon>SolutionUsersControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SolutionUsersFormView.cs" />
+    <Compile Include="Views\ExternalIdentityProvidersControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\ExternalIdentityProvidersControl.designer.cs">
+      <DependentUpon>ExternalIdentityProvidersControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\UsersControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\UsersControl.designer.cs">
+      <DependentUpon>UsersControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ExternalIdentityProviderFormView.cs" />
+    <Compile Include="Views\UsersFormView.cs" />
+    <Compile Include="Views\Wizard\AddExternalDomain.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\Wizard\AddExternalDomain.Designer.cs">
+      <DependentUpon>AddExternalDomain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\Wizard\HelpDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\Wizard\HelpDialog.Designer.cs">
+      <DependentUpon>HelpDialog.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Images\help.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\AddExistingTenant.resx">
+      <DependentUpon>AddExistingTenant.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\AddNameIdFormat.resx">
+      <DependentUpon>AddNameIdFormat.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\AddNewAssertionConsumerService.resx">
+      <DependentUpon>AddNewAssertionConsumerService.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\AddNewServiceEndpoints.resx">
+      <DependentUpon>AddNewServiceEndpoints.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\AddNewAttributeConsumerService.resx">
+      <DependentUpon>AddNewAttributeConsumerService.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\AddNewSignatureAlgorithm.resx">
+      <DependentUpon>AddNewSignatureAlgorithm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\ComputersView.resx">
+      <DependentUpon>ComputersView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\AdvancedExternalDomain.resx">
+      <DependentUpon>AdvancedExternalDomain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\Probe.resx">
+      <DependentUpon>Probe.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\OidcClientsControl.resx">
+      <DependentUpon>OidcClientsControl.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\NewOidcClient.resx">
+      <DependentUpon>NewOidcClient.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\NewRelyingParty.resx">
+      <DependentUpon>NewRelyingParty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\PropertyPages\ExternalDomainSchemaObjectMapProperty.resx">
+      <DependentUpon>ExternalDomainSchemaObjectMapProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\PropertyPages\ExternalDomainGeneralPropertyIntegratedAuth.resx">
+      <DependentUpon>ExternalDomainGeneralPropertyIntegratedAuth.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\SuperLogging.resx">
+      <DependentUpon>SuperLogging.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\SuperLoggingFilter.resx">
+      <DependentUpon>SuperLoggingFilter.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\TenantConfiguration.resx">
+      <DependentUpon>TenantConfiguration.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\TokenWizard.resx">
+      <DependentUpon>TokenWizard.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\RelyingPartyControl.resx">
+      <DependentUpon>RelyingPartyControl.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\FindSolutionUserByCertDN.resx">
+      <DependentUpon>FindSolutionUserByCertDN.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\SchemaObjectMappingView.resx">
+      <DependentUpon>SchemaObjectMappingView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\LeaveActiveDirectoryView.resx">
+      <DependentUpon>LeaveActiveDirectoryView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\JoinActiveDirectoryView.resx">
+      <DependentUpon>JoinActiveDirectoryView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\NewExternalIdp.resx">
+      <DependentUpon>NewExternalIdp.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\AddSubjectFormat.resx">
+      <DependentUpon>AddSubjectFormat.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\SearchByNameView.resx">
+      <DependentUpon>SearchByNameView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\TenantConfigurationView.resx">
+      <DependentUpon>TenantConfigurationView.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\NewServerView.resx">
+      <DependentUpon>NewServerView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\HttpTransportFormView.resx">
+      <DependentUpon>HttpTransportFormView.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\GenericWebForm.resx">
+      <DependentUpon>GenericWebForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\GroupsControl.resx">
+      <DependentUpon>GroupsControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\LoginForm.resx">
+      <DependentUpon>LoginForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\NewExternalDomain.resx">
+      <DependentUpon>NewExternalDomain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\NewGroupForm.resx">
+      <DependentUpon>NewGroupForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\NewSignerIdentity.resx">
+      <DependentUpon>NewSignerIdentity.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\NewSolutionUserForm.resx">
+      <DependentUpon>NewSolutionUserForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\NewUserForm.resx">
+      <DependentUpon>NewUserForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\PropertyPages\ExternalDomainAttributeMapProperty.resx">
+      <DependentUpon>ExternalDomainAttributeMapProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\PropertyPages\ExternalDomainAuthProperty.resx">
+      <DependentUpon>ExternalDomainAuthProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\PropertyPages\ExternalDomainGeneralProperty.resx">
+      <DependentUpon>ExternalDomainGeneralProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\PropertyPages\GroupGeneralProperty.resx">
+      <DependentUpon>GroupGeneralProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\PropertyPages\SolutionUserCertProperty.resx">
+      <DependentUpon>SolutionUserCertProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\PropertyPages\SolutionUserGeneralProperty.resx">
+      <DependentUpon>SolutionUserGeneralProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\PropertyPages\UserGeneralProperty.resx">
+      <DependentUpon>UserGeneralProperty.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\PropertyPages\UserGroupsProperty.resx">
+      <DependentUpon>UserGroupsProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\PropertyPages\UserRolesProperty.resx">
+      <DependentUpon>UserRolesProperty.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\HttpTransportReport.rdlc" />
+    <EmbeddedResource Include="Views\SelectGroupMembers.resx">
+      <DependentUpon>SelectGroupMembers.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\SelectGroups.resx">
+      <DependentUpon>SelectGroups.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\SetPassword.resx">
+      <DependentUpon>SetPassword.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\SolutionUsersControl.resx">
+      <DependentUpon>SolutionUsersControl.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\ExternalIdentityProvidersControl.resx">
+      <DependentUpon>ExternalIdentityProvidersControl.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\UsersControl.resx">
+      <DependentUpon>UsersControl.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\Wizard\AddExternalDomain.resx">
+      <DependentUpon>AddExternalDomain.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\Wizard\HelpDialog.resx">
+      <DependentUpon>HelpDialog.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="Properties\DataSources\Vmware.Tools.RestSsoAdminSnapIn.Dto.HttpTransportCollection.datasource" />
+    <None Include="Properties\DataSources\Vmware.Tools.RestSsoAdminSnapIn.Dto.HttpTransportDto.datasource" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Images\Toolbar.bmp" />
+    <EmbeddedResource Include="Images\User.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\common\VMRestSso.Common\RestSsoAdminSnapIn.Core\RestSsoAdminSnapIn.Core.csproj">
+      <Project>{b64d4a16-c162-4fcd-943a-aeb556769d3c}</Project>
+      <Name>RestSsoAdminSnapIn.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMRestSso.Common\RestSsoAdminSnapIn.Data\RestSsoAdminSnapIn.Data.csproj">
+      <Project>{36f56669-93e2-4647-8230-31b5e02f5bea}</Project>
+      <Name>RestSsoAdminSnapIn.Data</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMRestSso.Common\RestSsoAdminSnapIn.Dto\RestSsoAdminSnapIn.Dto.csproj">
+      <Project>{f826b9ef-3ae2-4186-8d57-bce8a72ea0b4}</Project>
+      <Name>RestSsoAdminSnapIn.Dto</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMRestSso.Common\RestSsoAdminSnapIn.Service\RestSsoAdminSnapIn.Service.csproj">
+      <Project>{cda5e15b-2f8d-4fe4-86c5-36b614a2e069}</Project>
+      <Name>RestSsoAdminSnapIn.Service</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\VMwareMMCIDP.UI.Common\VMwareMMCIDP.UI.Common.csproj">
+      <Project>{474831ab-37de-415c-b944-37e2d10d1e85}</Project>
+      <Name>VMwareMMCIDP.UI.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

@@ -1,23 +1,27 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="8191" systemVersion="14F27" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="9060" systemVersion="14F27" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
+        <deployment identifier="macosx"/>
         <development version="5000" identifier="xcode"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="8191"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="9060"/>
     </dependencies>
     <objects>
-        <customObject id="-2" userLabel="File's Owner" customClass="MainWindowController">
+        <customObject id="-2" userLabel="File's Owner" customClass="MainWindowCommonController">
             <connections>
                 <outlet property="AddGroupToolBarItem" destination="4N0-IB-VDY" id="cDt-o3-tJr"/>
                 <outlet property="AddObjectToolBarItem" destination="83" id="100"/>
                 <outlet property="AddUserToolBarItem" destination="jvu-kW-zSR" id="hjp-tR-3hn"/>
-                <outlet property="BackForwardToolBarItem" destination="wOM-jE-s3t" id="9hQ-VD-nwq"/>
+                <outlet property="BackForwardToolBarItem" destination="wOM-jE-s3t" id="H08-Vt-EXX"/>
                 <outlet property="ContainerView" destination="7" id="4QU-vy-GwR"/>
                 <outlet property="DeleteObjectToolBarItem" destination="79" id="103"/>
+                <outlet property="LoggedInLabel" destination="dUt-mC-ey0" id="EBB-Dy-a4o"/>
                 <outlet property="PropertiesToolBarItem" destination="82" id="101"/>
-                <outlet property="RefreshToolBarItem" destination="7cf-ae-wcN" id="ujb-3O-Gy0"/>
+                <outlet property="RefreshToolBarItem" destination="7cf-ae-wcN" id="rgx-Cl-lPb"/>
                 <outlet property="SchemaToolBarItem" destination="81" id="102"/>
-                <outlet property="SearchToolBarItem" destination="pv4-wM-hEg" id="DPi-Wr-AfG"/>
-                <outlet property="ServerToolBarItem" destination="84" id="99"/>
+                <outlet property="SearchFieldCell" destination="VFi-jK-eL0" id="cNZ-OG-red"/>
+                <outlet property="SearchRecordsField" destination="lzH-Bf-ecg" id="naN-3L-axZ"/>
+                <outlet property="SearchToolBarItem" destination="pv4-wM-hEg" id="dNd-pQ-4rh"/>
+                <outlet property="ServerToolBarItem" destination="84" id="9NI-PD-BnC"/>
                 <outlet property="StatusLabel" destination="dUt-mC-ey0" id="t3V-HG-bBo"/>
                 <outlet property="SuperLogToolBarItem" destination="V3d-Mz-kRb" id="hyX-yh-2JZ"/>
                 <outlet property="window" destination="2" id="6"/>
@@ -25,7 +29,7 @@
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
-        <window title="Window Title" autorecalculatesKeyViewLoop="NO" oneShot="NO" animationBehavior="default" id="2" customClass="MainWindowCommon">
+        <window title="Lightwave" autorecalculatesKeyViewLoop="NO" oneShot="NO" animationBehavior="default" id="2" customClass="MainWindowCommon">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
             <rect key="contentRect" x="351" y="220" width="820" height="607"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="877"/>
@@ -38,7 +42,7 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                     </customView>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="dUt-mC-ey0">
-                        <rect key="frame" x="5" y="2" width="349" height="17"/>
+                        <rect key="frame" x="5" y="2" width="394" height="17"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxX="YES" flexibleMaxY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" id="Qqe-0Z-YlT">
                             <font key="font" metaFont="system"/>
@@ -75,11 +79,7 @@
                             <action selector="AddObject:" target="-2" id="95"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="0F2D3DFA-B0A9-45C0-954F-7A86E9C87363" label="Connect" paletteLabel="ServerIcon" tag="-1" image="connect" id="84" customClass="ActivatableToolBarItem">
-                        <connections>
-                            <action selector="HandleConnection:" target="-2" id="4tk-eC-59p"/>
-                        </connections>
-                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="0F2D3DFA-B0A9-45C0-954F-7A86E9C87363" label="Connect" paletteLabel="ServerIcon" tag="-1" image="connect_32x32" id="84" customClass="ActivatableToolBarItem"/>
                     <toolbarItem implicitItemIdentifier="D698208C-F8E7-402D-A61B-4E30308FD28C" label="Add User" paletteLabel="AddUser" tag="-1" image="Add_User_64" id="jvu-kW-zSR" customClass="ActivatableToolBarItem">
                         <size key="minSize" width="20" height="20"/>
                         <size key="maxSize" width="20" height="20"/>
@@ -114,11 +114,11 @@
                     <toolbarItem implicitItemIdentifier="91324B58-CFA3-4176-9059-5FB9DF4BFF4E" label="" paletteLabel="SearchIcon" id="pv4-wM-hEg" customClass="ActivatableToolBarItem">
                         <nil key="toolTip"/>
                         <size key="minSize" width="96" height="22"/>
-                        <size key="maxSize" width="96" height="22"/>
+                        <size key="maxSize" width="120" height="22"/>
                         <searchField key="view" wantsLayer="YES" verticalHuggingPriority="750" id="lzH-Bf-ecg">
-                            <rect key="frame" x="0.0" y="14" width="96" height="22"/>
+                            <rect key="frame" x="0.0" y="14" width="120" height="22"/>
                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                            <searchFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" borderStyle="bezel" usesSingleLineMode="YES" bezelStyle="round" id="VFi-jK-eL0">
+                            <searchFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" borderStyle="bezel" placeholderString="Search" usesSingleLineMode="YES" bezelStyle="round" id="VFi-jK-eL0">
                                 <font key="font" metaFont="system"/>
                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                                 <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -150,11 +150,11 @@
             </toolbar>
             <contentBorderThickness minY="22"/>
             <connections>
-                <outlet property="delegate" destination="14" id="19"/>
+                <outlet property="delegate" destination="14" id="bcK-bP-qBp"/>
             </connections>
             <point key="canvasLocation" x="444" y="448.5"/>
         </window>
-        <customObject id="14" customClass="MainWindow"/>
+        <customObject id="14" customClass="MainWindowCommon"/>
     </objects>
     <resources>
         <image name="Add_Group_64" width="64" height="64"/>
@@ -164,7 +164,7 @@
         <image name="NSMultipleDocuments" width="32" height="32"/>
         <image name="NSRefreshTemplate" width="11" height="15"/>
         <image name="View_Schema_64" width="64" height="64"/>
-        <image name="connect" width="64" height="64"/>
+        <image name="connect_32x32" width="32" height="32"/>
         <image name="delete" width="64" height="64"/>
     </resources>
 </document>

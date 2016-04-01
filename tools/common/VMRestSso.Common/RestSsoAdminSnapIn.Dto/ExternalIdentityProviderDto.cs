@@ -32,6 +32,15 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
         }
 
         [DataMember(EmitDefaultValue = false)]
+        private String alias;
+
+        public String Alias
+        {
+            get { return alias; }
+            set { alias = value; }
+        }
+
+        [DataMember(EmitDefaultValue = false)]
         private List<String> nameIDFormats;
 
         public List<String> NameIDFormats

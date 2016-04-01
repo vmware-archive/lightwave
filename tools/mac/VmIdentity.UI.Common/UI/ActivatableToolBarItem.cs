@@ -42,7 +42,6 @@ namespace VmIdentity.UI.Common
         public override void Validate ()
         {
             base.Validate ();
-
             Enabled = Active;
         }
     }

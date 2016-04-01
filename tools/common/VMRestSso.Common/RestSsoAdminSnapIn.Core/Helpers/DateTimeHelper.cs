@@ -23,6 +23,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions
             DateTime start = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
             return start.AddSeconds(unixTimestamp).ToLocalTime();
         }
+
+        public static DateTime UnixToWindowsMilliSecs(long unixTimestamp)
+        {
+            DateTime start = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            return start.AddMilliseconds(unixTimestamp);
+        }
+
         public static long WindowsToUnix(DateTime windowsDate)
         {
             return (long)(windowsDate.Subtract(new DateTime(1970, 1, 1))).TotalSeconds;

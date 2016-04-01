@@ -239,14 +239,6 @@ namespace RestSsoAdminSnapIn
 			});
 		}
 
-
-		//strongly typed window accessor
-		//		public new ViewUserDetails Window {
-		//			get {
-		//				return (ViewUserDetails)base.Window;
-		//			}
-		//		}
-
 		private string SecondsToDaysAndHours (long seconds)
 		{
 			var hours = seconds / (60 * 60);

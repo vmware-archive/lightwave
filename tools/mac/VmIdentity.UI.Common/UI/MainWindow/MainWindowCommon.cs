@@ -16,23 +16,32 @@ using System;
 
 using Foundation;
 using AppKit;
+using VmIdentity.CommonUtils;
 
 namespace VmIdentity.UI.Common
 {
     public partial class MainWindowCommon : NSWindow
     {
-        public MainWindowCommon (IntPtr handle) : base (handle)
+        public MainWindowCommon(IntPtr handle)
+            : base(handle)
         {
         }
 
-        [Export ("initWithCoder:")]
-        public MainWindowCommon (NSCoder coder) : base (coder)
+        [Export("initWithCoder:")]	
+        public MainWindowCommon(NSCoder coder)
+            : base(coder)
         {
         }
 
-        public override void AwakeFromNib ()
+        public override void AwakeFromNib()
         {
-            base.AwakeFromNib ();
+            base.AwakeFromNib();
+        }
+
+        [Export("windowWillClose:")]
+        public void WindowWillClose(NSNotification notification)
+        {
+            NSNotificationCenter.DefaultCenter.PostNotificationName("CloseMainWindow", this);
         }
     }
 }

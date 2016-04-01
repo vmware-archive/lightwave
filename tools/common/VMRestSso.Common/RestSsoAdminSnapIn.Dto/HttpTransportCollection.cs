@@ -25,8 +25,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
     [Serializable]
     public class HttpTransportCollection : CollectionBase, ICustomTypeDescriptor, IXmlSerializable, IDataContext
     {
-        // Only recent N items (where N = capacity) will be persisted.
-        // todo: Replace it with session based strategy later i.e. only last N sessions will be persisted.
         private int _capacity = 5000;
 
         private readonly object _mutex = new object();

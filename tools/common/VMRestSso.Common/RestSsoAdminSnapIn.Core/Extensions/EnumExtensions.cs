@@ -41,15 +41,15 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions
             return enumerator.ToString();
         }
 
-        public static Dictionary<string, string> ToDictionary(this Enum enumerator)
-        {            
-            var dictionary = new Dictionary<string, string>();
-            
+        public static Dictionary<int, string> ToDictionary(this Enum enumerator)
+        {
+            var dictionary = new Dictionary<int, string>();
             Type type = enumerator.GetType();
+            int index = 0;
             foreach (Enum item in Enum.GetValues(type))
             {
                 var description = item.GetDescription();
-                dictionary.Add(item.ToString(), description);
+                dictionary.Add(index++, description);
             }
             return dictionary;
         }

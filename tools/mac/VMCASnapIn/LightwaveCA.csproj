@@ -31,6 +31,7 @@
     <CodeSigningKey>Mac Developer</CodeSigningKey>
     <PackageSigningKey>Developer ID Installer</PackageSigningKey>
     <XamMacArch>x86_64</XamMacArch>
+    <Profiling>false</Profiling>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>full</DebugType>
@@ -48,6 +49,7 @@
     <EnablePackageSigning>false</EnablePackageSigning>
     <XamMacArch>x86_64</XamMacArch>
     <PackageSigningKey>Developer ID Installer</PackageSigningKey>
+    <Profiling>false</Profiling>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'AppStore|AnyCPU' ">
     <DebugType>full</DebugType>
@@ -64,6 +66,7 @@
     <CodeSigningKey>3rd Party Mac Developer Application</CodeSigningKey>
     <EnableCodeSigning>true</EnableCodeSigning>
     <EnablePackageSigning>true</EnablePackageSigning>
+    <Profiling>false</Profiling>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -168,7 +171,6 @@
     </MonoDevelop>
   </ProjectExtensions>
   <ItemGroup>
-    <BundleResource Include="Resources\BulletBlackIcon.png" />
     <BundleResource Include="Resources\lightwave.png" />
     <BundleResource Include="Resources\directory-service-16.png" />
     <BundleResource Include="Resources\certificate_detail.png" />
@@ -183,6 +185,7 @@
     <BundleResource Include="Resources\KeyPair.png" />
     <BundleResource Include="Resources\object.png" />
     <BundleResource Include="Resources\info16x16.png" />
+    <BundleResource Include="Resources\bullet.png" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="vmca.icns" />

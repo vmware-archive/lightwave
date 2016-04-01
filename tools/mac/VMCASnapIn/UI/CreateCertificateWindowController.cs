@@ -131,23 +131,23 @@ namespace VMCASnapIn.UI
 
         public  DateTime NSDateToDateTime (NSDate date)
         {
-            // NSDate has a wider range than DateTime, so clip
+            //NSDate has a wider range than DateTime, so clip
             // the converted date to DateTime.Min|MaxValue.
             double secs = date.SecondsSinceReferenceDate;
             if (secs < -63113904000)
                 return DateTime.MinValue;
             if (secs > 252423993599)
                 return DateTime.MaxValue;
-            return (DateTime)date;
+            return ((DateTime)date).ToLocalTime ();
         }
 
         public  NSDate DateTimeToNSDate (DateTime date)
         {
             if (date.Kind == DateTimeKind.Unspecified)
-                date = DateTime.SpecifyKind (date, DateTimeKind.Local);//or DateTimeKind.Utc, this depends on each app */)
-            return (NSDate)date;
+                date = DateTime.SpecifyKind (date, DateTimeKind.Local);
+            return (NSDate)date.ToLocalTime ();
         }
-        
+
         //strongly typed window accessor
         public new CreateCertificateWindow Window {
             get {

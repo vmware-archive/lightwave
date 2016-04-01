@@ -20,7 +20,6 @@ using Vmware.Tools.RestSsoAdminSnapIn.Core.Web;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto.Attributes;
 using S=System.Runtime.Serialization.Formatters;
-using System.Web.Script.Serialization;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 {
@@ -125,9 +124,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
 			var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
-			response = CleanupJson (response);
-			var dto = typeof(IdentityProviderDto).Assembly;
-			return JsonConvert.Deserialize<List<IdentityProviderDto>>(response,"root", dto.GetTypes(), true);
+			return JsonConvert.JsonDeserialize<List<IdentityProviderDto>>(response);
 		}
 
 		public IdentityProviderDto Get(ServerDto server, string tenant, string provider, Token token)
@@ -143,12 +140,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
 			var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
-			//response = SerializationJsonHelper.JsonToDictionary("attributesMap",response);
-			//response = SchemaJsonToDictionary (response);
-//			response = CleanupSchemaJson(response);
-//			var dto = typeof(IdentityProviderDto).Assembly;
-//			return JsonConvert.Deserialize<IdentityProviderDto>(response,"root", dto.GetTypes(), true);
-			return DeSerialize(response);
+            return JsonConvert.JsonDeserialize <IdentityProviderDto>(response);
 		}
 
 		public IdentityProviderDto Create(ServerDto server, string tenant, IdentityProviderDto provider, Token token)
@@ -187,10 +179,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
 			json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
-			//response = SerializationJsonHelper.JsonToDictionary("attributesMap",response);
-			//response = CleanupSchemaJson (response);
-			//return JsonConvert.Deserialize<IdentityProviderDto>(response,"root", dto.GetTypes(), true);
-			return DeSerialize(response);
+            return JsonConvert.JsonDeserialize <IdentityProviderDto>(response);
 		}
 
 		public bool Delete(ServerDto server, string tenant, string provider, Token token)
@@ -247,10 +236,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
 			json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
-			return DeSerialize(response);
-//			response = SerializationJsonHelper.JsonToDictionary("attributesMap",response);
-//			response = CleanupSchemaJson (response);
-//			return JsonConvert.Deserialize<IdentityProviderDto>(response,"root", dto.GetTypes(), true);
+            return JsonConvert.JsonDeserialize <IdentityProviderDto>(response);
 		}
 
 		public IdentityProviderDto Probe(ServerDto server, string tenant, IdentityProviderDto provider, Token token)
@@ -324,13 +310,5 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 			}
 			return string.Empty;
 		}
-
-		private IdentityProviderDto DeSerialize(string json)
-		{
-			var serializer = new JavaScriptSerializer();
-			var result = serializer.Deserialize<IdentityProviderDto> (json);
-			return result;
-		}
 	}
-
 }

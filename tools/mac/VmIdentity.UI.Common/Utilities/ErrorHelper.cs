@@ -19,68 +19,87 @@ namespace VmIdentity.UI.Common.Utilities
 {
     public static class UIErrorHelper
     {
-        public static nint ShowAlert (String text, String caption)
+        public static nint ShowAlert(String text, String caption)
         {
-            var alert = new NSAlert ();
+            var alert = new NSAlert();
             alert.MessageText = caption;
             alert.InformativeText = text;
-            return alert.RunModal ();
+            return alert.RunModal();
         }
 
-        public static int CheckedExec (Action fn)
+        public static int CheckedExec(Action fn)
         {
-            try {
-                fn ();
-                return 1;
-            } catch (Exception exp) {
-                ShowAlert (exp.Message, "Operation could not complete successfully.");
-                return -1;
+            int ret = -1;
+            try
+            {
+                fn();
+                ret = 1;
+            }
+            catch (ArgumentNullException e)
+            {
+                ShowAlert(e.Message, "Warning");
+                ret = -1;
+            }
+            catch (Exception exp)
+            {
+                ShowAlert(exp.Message, "Operation could not complete successfully.");
+                ret = -1;
+            }
+            return ret;
+        }
+
+        public static void CatchAndThrow(Action fn)
+        {
+            try
+            {
+                fn();
+            }
+            catch (Exception exp)
+            {
+                throw;
             }
         }
 
-        public static void CatchAndThrow (Action fn)
+        public static bool ConfirmDeleteOperation(string confirmMessage)
         {
-            try {
-                fn ();
-            } catch (Exception exp) {
-                throw exp;
+            try
+            {
+                var oAlert = new NSAlert();
+
+                // Set the buttons
+                oAlert.AddButton("Yes");
+                oAlert.AddButton("No");
+
+                // Show the message box and capture
+                oAlert.MessageText = confirmMessage;
+                oAlert.InformativeText = "";
+                oAlert.AlertStyle = NSAlertStyle.Warning;
+                oAlert.Icon = NSImage.ImageNamed(NSImageName.Caution);
+                var responseAlert = oAlert.RunModal();
+                return (responseAlert == 1000); //returns 1001 for No and 1000 for Yes in this case
             }
-        }
-
-        public static bool ConfirmDeleteOperation (string confirmMessage)
-        {
-            try {
-				var oAlert = new NSAlert();
-
-				// Set the buttons
-				oAlert.AddButton("Yes");
-				oAlert.AddButton("No");
-
-				// Show the message box and capture
-				oAlert.MessageText = confirmMessage;
-				oAlert.InformativeText = "Confirmation";
-				oAlert.AlertStyle = NSAlertStyle.Warning;
-				oAlert.Icon = NSImage.ImageNamed (NSImageName.Caution);
-				var responseAlert = oAlert.RunModal();
-				return (responseAlert == 1000); //returns 1001 for No and 1000 for Yes in this case
-            } catch (Exception e) {
+            catch (Exception e)
+            {
                 throw e;
             }
         }
 
-		public static bool ConfirmOperation (string confirmMessage)
-		{
-			try {
-				ConfirmationDialogController cwc = new ConfirmationDialogController (confirmMessage);
-				nint result = NSApplication.SharedApplication.RunModalForWindow (cwc.Window);
-				if (result == (nint)VMIdentityConstants.DIALOGOK)
-					return true;
-				else
-					return false;
-			} catch (Exception e) {
-				throw e;
-			}
-		}
+        public static bool ConfirmOperation(string confirmMessage)
+        {
+            try
+            {
+                ConfirmationDialogController cwc = new ConfirmationDialogController(confirmMessage);
+                nint result = NSApplication.SharedApplication.RunModalForWindow(cwc.Window);
+                if (result == (nint)VMIdentityConstants.DIALOGOK)
+                    return true;
+                else
+                    return false;
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+        }
     }
 }
 

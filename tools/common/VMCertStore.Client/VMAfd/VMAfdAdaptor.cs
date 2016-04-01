@@ -207,5 +207,9 @@ namespace VMAfd
             string userName,
             string password,
             out IntPtr ppServer);
+
+        [DllImport(LIBNAME)]
+        public static extern UInt32
+        VmAfdCloseServer(IntPtr pServer);
     }
 }

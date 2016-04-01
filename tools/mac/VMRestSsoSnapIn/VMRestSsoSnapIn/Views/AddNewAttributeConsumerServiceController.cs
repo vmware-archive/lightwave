@@ -144,22 +144,6 @@ namespace RestSsoAdminSnapIn
 		}
 		private void InitializeAttributes()
 		{
-//			foreach(NSTableColumn column in AttributeTableView.TableColumns())
-//			{
-//				AttributeTableView.RemoveColumn (column);
-//			}
-
-//			AttributeTableView.Delegate = new TableDelegate ();
-//			var listView = new AttributeDataSource { Entries = _attributes };
-//			var columnNames = new List<ColumnOptions> {
-//				new ColumnOptions{ Id = "Name", DisplayName = "Name", DisplayOrder = 1, Width = 80 },
-//				new ColumnOptions{ Id = "FriendlyName", DisplayName = "Friendly Name", DisplayOrder = 2, Width = 150 },
-//				new ColumnOptions{ Id = "NameFormat", DisplayName = "Name Format", DisplayOrder = 3, Width = 150 }
-//			};
-//			var columns = ListViewHelper.ToNSTableColumns (columnNames);
-//			foreach (var column in columns) {
-//				AttributeTableView.AddColumn (column);
-//			}
 			AttributeTableView.Delegate = new TableDelegate (this);
 			AttributeTableView.DataSource = new AttributeDataSource { Entries = _attributes };
 			AttributeTableView.ReloadData ();
