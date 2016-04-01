@@ -77,6 +77,7 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_vmdns_prefix /opt/vmware" \
               --define "_javahome /var/opt/OpenJDK-1.8.0.72-bin" \
               --define "_anthome /var/opt/apache-ant-1.9.6" \
+              --define "_mavendir /var/opt/apache-maven-3.3.9" \
               --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
               SPECS/$(PKG_SPEC)
 

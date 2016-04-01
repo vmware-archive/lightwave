@@ -5,6 +5,9 @@
 <project name="vmaf-dist" default="build" basedir=".">
    <property name="MAINSRCROOT" value="${basedir}/../.." />
    <property name="buildRoot" location="${MAINSRCROOT}/build" />
+   <property name="PKGBASE" location="${buildRoot}/packages" />
+   <property name="GROUP_BASE" value="com.vmware.identity" />
+   <property name="AFD_VERSION" value="1.0" />
    <import file="${MAINSRCROOT}/build/ant/presets.xml" />
    <import file="${MAINSRCROOT}/build/ant/libraries.xml" />
 
@@ -22,6 +25,29 @@
 
    <target name="module.heartbeat" >
       <make-module dir="heartbeat" />
+   </target>
+
+   <target name="install.vmware-afd-dependencies" depends="module.af-client,module.vks, module.cdc, module.heartbeat">
+     <exec executable="${maven}" failonerror="true">
+       <env key="M2_HOME" value="${MavenHome}" />
+       <env key="JAVA_HOME" value="${JAVA_HOME}"/>
+       <arg line="install:install-file -Dfile=${PKGBASE}/authentication-framework.jar -DgroupId=${GROUP_BASE} -DartifactId=authentication-framework -Dversion=${AFD_VERSION} -Dpackaging=jar" />
+     </exec>
+     <exec executable="${maven}" failonerror="true">
+       <env key="M2_HOME" value="${MavenHome}" />
+       <env key="JAVA_HOME" value="${JAVA_HOME}"/>
+       <arg line="install:install-file -Dfile=${PKGBASE}/vmware-endpoint-certificate-store.jar -DgroupId=${GROUP_BASE} -DartifactId=vmware-endpoint-certificate-store -Dversion=${AFD_VERSION} -Dpackaging=jar" />
+     </exec>
+     <exec executable="${maven}" failonerror="true">
+       <env key="M2_HOME" value="${MavenHome}" />
+       <env key="JAVA_HOME" value="${JAVA_HOME}"/>
+       <arg line="install:install-file -Dfile=${PKGBASE}/client-domain-controller-cache.jar -DgroupId=${GROUP_BASE} -DartifactId=client-domain-controller-cache -Dversion=${AFD_VERSION} -Dpackaging=jar" />
+     </exec>
+     <exec executable="${maven}" failonerror="true">
+       <env key="M2_HOME" value="${MavenHome}" />
+       <env key="JAVA_HOME" value="${JAVA_HOME}"/>
+       <arg line="install:install-file -Dfile=${PKGBASE}/afd-heartbeat-service.jar -DgroupId=${GROUP_BASE} -DartifactId=afd-heartbeat-service -Dversion=${AFD_VERSION} -Dpackaging=jar" />
+     </exec>
    </target>
 
    <target name="build" depends="module.af-client, module.vks, module.cdc, module.heartbeat" />
