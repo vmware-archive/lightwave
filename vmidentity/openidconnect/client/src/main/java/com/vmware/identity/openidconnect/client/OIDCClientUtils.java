@@ -15,78 +15,73 @@
 package com.vmware.identity.openidconnect.client;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
+import net.minidev.json.JSONObject;
+
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpEntity;
-import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
 import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.JWSSigner;
-import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
-import com.nimbusds.jose.util.Base64;
-import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
-import com.nimbusds.oauth2.sdk.ErrorObject;
-import com.nimbusds.oauth2.sdk.OAuth2Error;
-import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.SerializeException;
-import com.nimbusds.oauth2.sdk.auth.PrivateKeyJWT;
-import com.nimbusds.oauth2.sdk.http.CommonContentTypes;
-import com.nimbusds.oauth2.sdk.http.HTTPRequest;
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
-import com.nimbusds.oauth2.sdk.id.JWTID;
+import com.vmware.identity.openidconnect.common.AuthorizationGrant;
+import com.vmware.identity.openidconnect.common.Base64Utils;
+import com.vmware.identity.openidconnect.common.ClientAssertion;
+import com.vmware.identity.openidconnect.common.ClientCredentialsGrant;
+import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.CorrelationID;
-import com.vmware.identity.openidconnect.common.TokenClass;
+import com.vmware.identity.openidconnect.common.ErrorCode;
+import com.vmware.identity.openidconnect.common.ErrorObject;
+import com.vmware.identity.openidconnect.common.GSSTicketGrant;
+import com.vmware.identity.openidconnect.common.HttpRequest;
+import com.vmware.identity.openidconnect.common.HttpResponse;
+import com.vmware.identity.openidconnect.common.JSONUtils;
+import com.vmware.identity.openidconnect.common.JWTID;
+import com.vmware.identity.openidconnect.common.ParseException;
+import com.vmware.identity.openidconnect.common.Scope;
+import com.vmware.identity.openidconnect.common.ScopeValue;
+import com.vmware.identity.openidconnect.common.SecureIDGrant;
+import com.vmware.identity.openidconnect.common.SolutionUserAssertion;
+import com.vmware.identity.openidconnect.common.SolutionUserCredentialsGrant;
+import com.vmware.identity.openidconnect.common.StatusCode;
 import com.vmware.identity.openidconnect.common.TokenErrorResponse;
 import com.vmware.identity.openidconnect.common.TokenRequest;
+import com.vmware.identity.openidconnect.common.TokenResponse;
 import com.vmware.identity.openidconnect.common.TokenSuccessResponse;
 
 /**
  * Utils for OIDC client library
  *
  * @author Jun Sun
+ * @author Yehia Zayour
  */
 class OIDCClientUtils {
     static final int DEFAULT_OP_PORT = 443;
     static final String DEFAULT_TENANT = "vsphere.local";
     static final int HTTP_CLIENT_TIMEOUT_MILLISECS = 60 * 1000; // set HTTP Client timeout to be 60 seconds.
 
-    static HTTPResponse sendSecureRequest(HTTPRequest httpRequest, KeyStore keyStore) throws OIDCClientException, SSLConnectionException {
+    static HttpResponse sendSecureRequest(HttpRequest httpRequest, KeyStore keyStore) throws OIDCClientException, SSLConnectionException {
         Validate.notNull(httpRequest, "httpRequest");
         Validate.notNull(keyStore, "keyStore");
 
@@ -104,7 +99,7 @@ class OIDCClientUtils {
         return sendSecureRequest(httpRequest, sslContext);
     }
 
-    static HTTPResponse sendSecureRequest(HTTPRequest httpRequest, SSLContext sslContext) throws OIDCClientException, SSLConnectionException {
+    static HttpResponse sendSecureRequest(HttpRequest httpRequest, SSLContext sslContext) throws OIDCClientException, SSLConnectionException {
         Validate.notNull(httpRequest, "httpRequest");
         Validate.notNull(sslContext, "sslContext");
 
@@ -121,70 +116,47 @@ class OIDCClientUtils {
 
         CloseableHttpResponse closeableHttpResponse = null;
 
-        if (httpRequest.getURL() == null) {
-            throw new OIDCClientException("URL is null in HTTP request.");
-        }
-
-        HTTPResponse httpResponse;
         try {
-            if (HTTPRequest.Method.GET.equals(httpRequest.getMethod())) {
-                StringBuilder sb = new StringBuilder(httpRequest.getURL().toString());
-                if (httpRequest.getQuery() != null) {
-                    sb.append('?');
-                    sb.append(httpRequest.getQuery());
-                }
-                HttpGet httpGet = new HttpGet(sb.toString());
-                httpGet.setHeader("Authorization", httpRequest.getAuthorization());
-                closeableHttpResponse = client.execute(httpGet);
-            } else if (HTTPRequest.Method.POST.equals(httpRequest.getMethod()) || HTTPRequest.Method.PUT.equals(httpRequest.getMethod())){
-                HttpEntityEnclosingRequestBase httpTask = null;
-                if (HTTPRequest.Method.POST.equals(httpRequest.getMethod())) {
-                    httpTask = new HttpPost(httpRequest.getURL().toString());
-                } else {
-                    httpTask = new HttpPut(httpRequest.getURL().toString());
-                }
-                httpTask.setHeader("Authorization", httpRequest.getAuthorization());
+            HttpRequestBase httpTask = httpRequest.toHttpTask();
+            closeableHttpResponse = client.execute(httpTask);
 
-                if (CommonContentTypes.APPLICATION_URLENCODED.match(httpRequest.getContentType())) {
-                    List<NameValuePair> urlParameters = new ArrayList<NameValuePair>();
-                    for (String key : httpRequest.getQueryParameters().keySet()) {
-                        urlParameters.add(new BasicNameValuePair(key, httpRequest.getQueryParameters().get(key)));
-                    }
-                    httpTask.setEntity(new UrlEncodedFormEntity(urlParameters, CommonContentTypes.APPLICATION_URLENCODED.getParameter("charset")));
-                } else if (CommonContentTypes.APPLICATION_JSON.match(httpRequest.getContentType())) {
-                    httpTask.setEntity(new StringEntity(httpRequest.getQuery(), CommonContentTypes.APPLICATION_JSON.getParameter("charset")));
-                } else {
-                    throw new OIDCClientException("Unsupported content type in HTTP request.");
-                }
-                httpTask.setHeader("Content-Type", httpRequest.getContentType().toString());
-
-                closeableHttpResponse = client.execute(httpTask);
-            } else if (HTTPRequest.Method.DELETE.equals(httpRequest.getMethod())){
-                HttpDelete httpDelete = new HttpDelete(httpRequest.getURL().toString());
-                httpDelete.setHeader("Authorization", httpRequest.getAuthorization());
-                closeableHttpResponse = client.execute(httpDelete);
-            } else {
-                throw new OIDCClientException("Unsupported HTTP method in HTTP request.");
+            int statusCodeInt = closeableHttpResponse.getStatusLine().getStatusCode();
+            StatusCode statusCode;
+            try {
+                statusCode = StatusCode.parse(statusCodeInt);
+            } catch (ParseException e) {
+                throw new OIDCClientException("failed to parse status code", e);
             }
-
-            httpResponse = new HTTPResponse(closeableHttpResponse.getStatusLine().getStatusCode());
+            JSONObject jsonContent = null;
             HttpEntity httpEntity = closeableHttpResponse.getEntity();
             if (httpEntity != null) {
+                ContentType contentType;
                 try {
-                    httpResponse.setContentType(ContentType.get(httpEntity).toString());
-                } catch (UnsupportedCharsetException | ParseException | org.apache.http.ParseException e) {
+                    contentType = ContentType.get(httpEntity);
+                } catch (UnsupportedCharsetException | org.apache.http.ParseException e) {
                     throw new OIDCClientException("Error in setting content type in HTTP response.");
                 }
-                httpResponse.setContent(EntityUtils.toString(httpEntity));
+                if (!StandardCharsets.UTF_8.equals(contentType.getCharset())) {
+                    throw new OIDCClientException("unsupported charset: " + contentType.getCharset());
+                }
+                if (!ContentType.APPLICATION_JSON.getMimeType().equalsIgnoreCase(contentType.getMimeType())) {
+                    throw new OIDCClientException("unsupported mime type: " + contentType.getMimeType());
+                }
+                String content = EntityUtils.toString(httpEntity);
+                try {
+                    jsonContent = JSONUtils.parseJSONObject(content);
+                } catch (ParseException e) {
+                    throw new OIDCClientException("failed to parse json response", e);
+                }
             }
 
             closeableHttpResponse.close();
             client.close();
+
+            return HttpResponse.createJsonResponse(statusCode, jsonContent);
         } catch (IOException e) {
             throw new OIDCClientException("IOException caught in HTTP communication:" + e.getMessage(), e);
         }
-
-        return httpResponse;
     }
 
     static RSAPublicKey convertJWKSetToRSAPublicKey(JWKSet jwkSet) throws OIDCClientException {
@@ -195,38 +167,49 @@ class OIDCClientUtils {
         try {
             RSAKey rsaKey = (RSAKey) jwkSet.getKeys().get(0);
             return rsaKey.toRSAPublicKey();
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+        } catch (JOSEException e) {
             throw new OIDCClientException("Extract RSA public key from RSA key failed: " + e.getMessage(), e);
         }
     }
 
-    static SignedJWT createAssertion(
+    static ClientAssertion createClientAssertion(
             ClientID clientId,
             HolderOfKeyConfig holderOfKeyConfig,
-            String tokenEndpoint) throws JOSEException {
+            URI endpointURI) throws OIDCClientException {
+        Validate.notNull(clientId, "clientId");
         Validate.notNull(holderOfKeyConfig, "holderOfKeyConfig");
-        Validate.notNull(tokenEndpoint, "tokenEndpoint");
+        Validate.notNull(endpointURI, "endpointURI");
 
-        final long jwtLifeTime = 2 * 60 * 1000L;
-        Date now = new Date();
+        try {
+            Date issueTime = new Date();
+            return new ClientAssertion(
+                    holderOfKeyConfig.getClientPrivateKey(),
+                    new JWTID(),
+                    clientId,
+                    endpointURI,
+                    issueTime);
+        } catch (JOSEException e) {
+            throw new OIDCClientException("failed to sign client_assertion", e);
+        }
+    }
 
-        String tokenClass = (clientId == null) ?  TokenClass.SOLUTION_ASSERTION.getName() : TokenClass.CLIENT_ASSERTION.getName();
-        String tokenIssuer = (clientId == null) ? holderOfKeyConfig.getClientCertificate().getSubjectDN().getName() : clientId.getValue();
+    static SolutionUserAssertion createSolutionUserAssertion(
+            HolderOfKeyConfig holderOfKeyConfig,
+            URI tokenEndpointURI) throws OIDCClientException {
+        Validate.notNull(holderOfKeyConfig, "holderOfKeyConfig");
+        Validate.notNull(tokenEndpointURI, "tokenEndpointURI");
 
-        JWTClaimsSet claimsSet = new JWTClaimsSet();
-        claimsSet.setClaim("token_class", tokenClass);
-        claimsSet.setClaim("token_type", com.vmware.identity.openidconnect.common.TokenType.BEARER.getName());
-        claimsSet.setJWTID((new JWTID()).toString());
-        claimsSet.setIssuer(tokenIssuer);
-        claimsSet.setSubject(tokenIssuer);
-        claimsSet.setAudience(tokenEndpoint);
-        claimsSet.setIssueTime(now);
-        claimsSet.setExpirationTime(new Date(now.getTime() + jwtLifeTime));
-
-        SignedJWT signedJwt = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), claimsSet);
-        JWSSigner signer = new RSASSASigner(holderOfKeyConfig.getClientPrivateKey());
-        signedJwt.sign(signer);
-        return signedJwt;
+        try {
+            Date issueTime = new Date();
+            return new SolutionUserAssertion(
+                    holderOfKeyConfig.getClientPrivateKey(),
+                    new JWTID(),
+                    holderOfKeyConfig.getClientCertificate().getSubjectDN().getName(),
+                    tokenEndpointURI,
+                    issueTime);
+        } catch (JOSEException e) {
+            throw new OIDCClientException("failed to sign solution_user_assertion", e);
+        }
     }
 
     static TokenRequest buildTokenRequest(
@@ -240,54 +223,36 @@ class OIDCClientUtils {
         Validate.notNull(tokenEndpointURI, "tokenEndpointURI");
 
         Scope scope = OIDCClientUtils.buildScopeFromTokenSpec(tokenSpec);
-        List<String> scopeList = scope.getScopeList();
 
-        SignedJWT solutionAssertion = null;
-        PrivateKeyJWT clientAssertion = null;
+        SolutionUserAssertion solutionUserAssertion = null;
+        ClientAssertion clientAssertion = null;
 
-        if (tokenSpec.getTokenType().equals(TokenType.HOK)) {
-            if (holderOfKeyConfig == null) {
-                throw new OIDCClientException("Holder of key configuation can not be null if HOK token is requested.");
-            }
-
-            try {
-                SignedJWT signedJWT = createAssertion(
-                        clientId,
-                        holderOfKeyConfig,
-                        tokenEndpointURI.toString());
-                if (clientId == null) {
-                    solutionAssertion = signedJWT;
-                } else {
-                    clientAssertion = new PrivateKeyJWT(signedJWT);
-                }
-            } catch (JOSEException e) {
-                throw new OIDCClientException("Build Assertion JWT token failed: " + e.getMessage(), e);
+        if (holderOfKeyConfig != null) {
+            if (clientId == null) {
+                solutionUserAssertion = createSolutionUserAssertion(holderOfKeyConfig, tokenEndpointURI);
+            } else {
+                clientAssertion = createClientAssertion(clientId, holderOfKeyConfig, tokenEndpointURI);
             }
         }
 
-        if (grant instanceof SolutionUserCredentialsGrant && solutionAssertion == null) {
-            throw new OIDCClientException("Solution user credentials grant requires an non-null solution assertion.");
+        if (grant instanceof SolutionUserCredentialsGrant && solutionUserAssertion == null) {
+            throw new OIDCClientException("Solution user credentials grant requires an non-null solution user assertion.");
         }
 
         if (grant instanceof ClientCredentialsGrant && clientAssertion == null) {
             throw new OIDCClientException("Client credentials grant requires an non-null client assertion.");
         }
 
-        if (grant instanceof RefreshTokenGrant || grant instanceof AuthorizationCodeGrant) {
-            // refresh token and authorization code grant requires a null scope
-            scopeList = null;
-        }
-
-        return TokenRequest.create(
+        return new TokenRequest(
                 tokenEndpointURI,
-                grant.toNimbusAuthorizationGrant(),
-                com.nimbusds.oauth2.sdk.Scope.parse(scopeList),
-                solutionAssertion,
+                grant,
+                tokenSpec == TokenSpec.EMPTY ? null : scope,
+                solutionUserAssertion,
                 clientAssertion,
                 new CorrelationID());
     }
 
-    static HTTPResponse buildAndSendTokenRequest(
+    static HttpResponse buildAndSendTokenRequest(
             AuthorizationGrant grant,
             TokenSpec tokenSpec,
             URI tokenEndpointURI,
@@ -306,101 +271,94 @@ class OIDCClientUtils {
                 clientId,
                 holderOfKeyConfig);
 
-        try {
-            return OIDCClientUtils.sendSecureRequest(tokenRequest.toHTTPRequest(), keyStore);
-        } catch (SerializeException e) {
-            throw new OIDCClientException("Convert token request to HTTP request failed: " + e.getMessage(), e);
-        }
+        return OIDCClientUtils.sendSecureRequest(tokenRequest.toHttpRequest(), keyStore);
     }
 
     static OIDCTokens parseTokenResponse(
-            HTTPResponse httpResponse,
-            TokenSpec tokenSpec,
+            HttpResponse httpResponse,
             RSAPublicKey providerPublicKey,
             ClientID clientId,
-            Issuer issuer) throws OIDCClientException, TokenValidationException, OIDCServerException {
+            long clockToleranceInSeconds) throws OIDCClientException, TokenValidationException, OIDCServerException {
         Validate.notNull(httpResponse, "httpResponse");
-        Validate.notNull(tokenSpec, "tokenSpec");
         Validate.notNull(providerPublicKey, "providerPublicKey");
-        Validate.notNull(issuer, "issuer");
 
-        if (httpResponse.getStatusCode() == 200) {
-            try {
-                TokenSuccessResponse response = TokenSuccessResponse.parse(httpResponse);
-                IDToken idToken = null;
-                RefreshToken refreshToken = null;
-                AccessToken accessToken = null;
+        TokenResponse tokenResponse;
+        try {
+            tokenResponse = TokenResponse.parse(httpResponse);
+        } catch (ParseException e) {
+            throw new OIDCClientException("Parse token response failed: " + e.getMessage(), e);
+        }
 
-                idToken = IDToken.build(
-                        response.getIDToken().getSignedJWT(),
-                        providerPublicKey,
-                        clientId,
-                        issuer);
-
-                if (response.getAccessToken() != null) {
-                    accessToken = new AccessToken(response.getAccessToken().getValue());
-                }
-
-                if (response.getRefreshToken() != null) {
-                    refreshToken = new RefreshToken(response.getRefreshToken().getValue());
-                }
-
-                return new OIDCTokens(
-                        accessToken,
-                        idToken,
-                        refreshToken);
-            } catch (ParseException e) {
-                throw new OIDCClientException("Parse token response failed: " + e.getMessage(), e);
-            }
+        if (tokenResponse instanceof TokenSuccessResponse) {
+            TokenSuccessResponse tokenSuccessResponse = (TokenSuccessResponse) tokenResponse;
+            ClientIDToken clientIdToken = ClientIDToken.build(
+                    tokenSuccessResponse.getIDToken(),
+                    providerPublicKey,
+                    clientId,
+                    clockToleranceInSeconds);
+            return new OIDCTokens(
+                    clientIdToken,
+                    tokenSuccessResponse.getAccessToken(),
+                    tokenSuccessResponse.getRefreshToken());
         } else {
-            try {
-                TokenErrorResponse response = TokenErrorResponse.parse(httpResponse);
-                ErrorObject errorObject = response.getErrorObject();
-                throw new OIDCServerException(errorObject.getCode(), errorObject.getDescription());
-            } catch (ParseException e) {
-                throw new OIDCClientException("Parse token response failed: " + e.getMessage(), e);
-            }
+            TokenErrorResponse tokenErrorResponse = (TokenErrorResponse) tokenResponse;
+            throw new OIDCServerException(tokenErrorResponse.getErrorObject());
         }
     }
 
     static Scope buildScopeFromTokenSpec(TokenSpec tokenSpec) throws OIDCClientException {
         Validate.notNull(tokenSpec, "tokenSpec");
 
-        List<String> scopeList = new ArrayList<String>();
-        scopeList.add("openid");
+        Set<ScopeValue> scopeValueSet = new HashSet<ScopeValue>();
+        scopeValueSet.add(ScopeValue.OPENID);
         if (tokenSpec.isRefreshTokenRequested()) {
-            scopeList.add("offline_access");
+            scopeValueSet.add(ScopeValue.OFFLINE_ACCESS);
         }
-        if (tokenSpec.isIdTokenGroupsRequested()) {
-            scopeList.add("id_groups");
+
+        if (tokenSpec.idTokenGroupsRequested() == GroupMembershipType.FULL) {
+            scopeValueSet.add(ScopeValue.ID_TOKEN_GROUPS);
+        } else if (tokenSpec.idTokenGroupsRequested() == GroupMembershipType.FILTERED) {
+            scopeValueSet.add(ScopeValue.ID_TOKEN_GROUPS_FILTERED);
         }
-        if (tokenSpec.isAccessTokenGroupsRequested()) {
-            scopeList.add("at_groups");
+
+        if (tokenSpec.accessTokenGroupsRequested() == GroupMembershipType.FULL) {
+            scopeValueSet.add(ScopeValue.ACCESS_TOKEN_GROUPS);
+        } else if (tokenSpec.accessTokenGroupsRequested() == GroupMembershipType.FILTERED) {
+            scopeValueSet.add(ScopeValue.ACCESS_TOKEN_GROUPS_FILTERED);
         }
-        if (tokenSpec.getResouceServers() != null) {
-            for (String resourceServer : tokenSpec.getResouceServers()) {
-                if (!resourceServer.startsWith("rs_")) {
-                    throw new OIDCClientException("Resource server name should start with prefix \"rs_\".");
+
+        if (tokenSpec.getResourceServers() != null) {
+            for (String resourceServer : tokenSpec.getResourceServers()) {
+                ScopeValue scopeValue;
+                try {
+                    scopeValue = ScopeValue.parse(resourceServer);
+                } catch (ParseException e) {
+                    throw new OIDCClientException("failed to parse scope value", e);
                 }
+                scopeValueSet.add(scopeValue);
             }
-            scopeList.addAll(tokenSpec.getResouceServers());
         }
-        if (tokenSpec.getAdditionalScopeValues() != null) {
-            scopeList.addAll(tokenSpec.getAdditionalScopeValues());
-        }
-        Scope scope = new Scope(scopeList);
-        return scope;
+
+        return new Scope(scopeValueSet);
     }
 
     static boolean isValidGssResponse(ErrorObject errorObject) {
         String[] parts = errorObject.getDescription().split(":");
-        return OAuth2Error.INVALID_GRANT.getCode().equals(errorObject.getCode())
+        return errorObject.getErrorCode() == ErrorCode.INVALID_GRANT
                 && parts.length == 3
                 && parts[0].equals("gss_continue_needed");
     }
 
-    static HTTPResponse negotiateGssResponse(
-            NegotiationHandler negotiationHandler,
+    static boolean isSecureIDNextPasscode(ErrorObject errorObject) {
+        String[] parts = errorObject.getDescription().split(":");
+        return
+                errorObject.getErrorCode() == ErrorCode.INVALID_GRANT &&
+                parts.length == 2 &&
+                parts[0].equals("secureid_next_code_required");
+    }
+
+    static HttpResponse negotiateGssResponse(
+            GSSNegotiationHandler gssNegotiationHandler,
             TokenSpec tokenSpec,
             URI tokenEndpointURI,
             ClientID clientId,
@@ -409,17 +367,17 @@ class OIDCClientUtils {
             String contextId) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
 
         // set initial gss ticket to null
-        byte[] gssTicket = negotiationHandler.negotiate(null);
+        byte[] gssTicket = gssNegotiationHandler.negotiate(null);
 
-        HTTPResponse httpResponse = OIDCClientUtils.buildAndSendTokenRequest(
-                new GssTicketGrant(contextId, gssTicket),
+        HttpResponse httpResponse = OIDCClientUtils.buildAndSendTokenRequest(
+                new GSSTicketGrant(contextId, gssTicket),
                 tokenSpec,
                 tokenEndpointURI,
                 clientId,
                 holderOfKeyConfig,
                 keyStore);
 
-        while (httpResponse.getStatusCode() != 200) {
+        while (httpResponse.getStatusCode() != StatusCode.OK) {
             try {
                 TokenErrorResponse response = TokenErrorResponse.parse(httpResponse);
                 ErrorObject errorObject = response.getErrorObject();
@@ -429,9 +387,9 @@ class OIDCClientUtils {
                     if (parts[1].equals(contextId)) {
                         // send a new gss ticket
                         httpResponse = OIDCClientUtils.buildAndSendTokenRequest(
-                                new GssTicketGrant(
+                                new GSSTicketGrant(
                                         parts[1],
-                                        negotiationHandler.negotiate(new Base64(parts[2]).decode())),
+                                        gssNegotiationHandler.negotiate(Base64Utils.decodeToBytes(parts[2]))),
                                 tokenSpec,
                                 tokenEndpointURI,
                                 clientId,
@@ -441,7 +399,7 @@ class OIDCClientUtils {
                         throw new OIDCClientException("Context Id received does not match.");
                     }
                 } else {
-                    throw new OIDCServerException(errorObject.getCode(), errorObject.getDescription());
+                    throw new OIDCServerException(errorObject);
                 }
             } catch (ParseException e) {
                 throw new OIDCClientException("Parse token response failed: " + e.getMessage(), e);
@@ -451,41 +409,45 @@ class OIDCClientUtils {
         return httpResponse;
     }
 
-    static URI changeUriHostComponent(URI uri, String host) throws OIDCClientException {
-        Validate.notNull(uri, "uri");
-        Validate.notEmpty(host, "host");
+    static HttpResponse handleSecureIDMultiLeggedGrant(
+            SecureIDRetriever secureIdRetriever,
+            TokenSpec tokenSpec,
+            URI tokenEndpointURI,
+            ClientID clientId,
+            HolderOfKeyConfig holderOfKeyConfig,
+            KeyStore keyStore) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
 
-        URI result;
-        try {
-            URL oldUrl = uri.toURL();
-            URL newUrl = new URL(oldUrl.getProtocol(), host, oldUrl.getPort(), oldUrl.getFile());
-            result = new URI(newUrl.toString());
-        } catch (MalformedURLException | URISyntaxException e) {
-            throw new OIDCClientException("uri/url syntax exception", e);
-        }
-        return result;
-    }
+        HttpResponse httpResponse = OIDCClientUtils.buildAndSendTokenRequest(
+                new SecureIDGrant(secureIdRetriever.getUsername(), secureIdRetriever.getNextPasscode(), null /* sessionId */),
+                tokenSpec,
+                tokenEndpointURI,
+                clientId,
+                holderOfKeyConfig,
+                keyStore);
 
-    static URL buildBaseUrl(String domainControllerFQDN, int domainControllerPort) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("https://");
-        sb.append(domainControllerFQDN);
-        sb.append(":");
-        sb.append(String.valueOf(domainControllerPort));
-        try {
-            return new URL(sb.toString());
-        } catch (MalformedURLException e) {
-            throw new IllegalArgumentException("Failed to build Admin server base URL: " + e.getMessage(), e);
+        while (httpResponse.getStatusCode() != StatusCode.OK) {
+            TokenErrorResponse response;
+            try {
+                response = TokenErrorResponse.parse(httpResponse);
+            } catch (ParseException e) {
+                throw new OIDCClientException("Parse token response failed: " + e.getMessage(), e);
+            }
+            ErrorObject errorObject = response.getErrorObject();
+            if (OIDCClientUtils.isSecureIDNextPasscode(errorObject)) {
+                String[] parts = errorObject.getDescription().split(":");
+                String sessionId = Base64Utils.decodeToString(parts[1]);
+                httpResponse = OIDCClientUtils.buildAndSendTokenRequest(
+                        new SecureIDGrant(secureIdRetriever.getUsername(), secureIdRetriever.getNextPasscode(), sessionId),
+                        tokenSpec,
+                        tokenEndpointURI,
+                        clientId,
+                        holderOfKeyConfig,
+                        keyStore);
+            } else {
+                throw new OIDCServerException(errorObject);
+            }
         }
-    }
 
-    static URL buildEndpointUrl(URL baseUrl, String path) {
-        StringBuilder sb = new StringBuilder(baseUrl.toString());
-        sb.append(path);
-        try {
-            return new URL(sb.toString());
-        } catch (MalformedURLException e) {
-            throw new IllegalArgumentException("Failed to build endpoint URL: " + e.getMessage(), e);
-        }
+        return httpResponse;
     }
 }

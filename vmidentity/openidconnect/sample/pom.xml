@@ -62,6 +62,36 @@
             <version>${vmware.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.vmware.identity.rest.core</groupId>
+            <artifactId>vmware-identity-rest-core-client</artifactId>
+            <version>${vmware.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vmware.identity.rest.afd</groupId>
+            <artifactId>vmware-identity-rest-afd-client</artifactId>
+            <version>${vmware.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vmware.identity.rest.idm</groupId>
+            <artifactId>vmware-identity-rest-idm-client</artifactId>
+            <version>${vmware.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.vmware.identity.rest.idm</groupId>
+            <artifactId>vmware-identity-rest-idm-common</artifactId>
+            <version>${vmware.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vmware.identity.rest.core</groupId>
+            <artifactId>vmware-identity-rest-core-common</artifactId>
+            <version>${vmware.version}</version>
+        </dependency>
+
         <!-- Compile Dependencies -->
         <dependency>
             <groupId>org.bouncycastle</groupId>

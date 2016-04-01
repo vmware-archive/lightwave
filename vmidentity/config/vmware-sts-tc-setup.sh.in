@@ -3,13 +3,17 @@
 ############################################################################################################
 # A shell script to instantiate tomcat runtime instance for Secure Token Service (STS). This script        #
 # copies the necessary libraries and other configuration files from ${catalina.home} tp ${catalina.base}.  #
-# TODO : Add more documentation 	                                        
+# 													   #
+# Author : Balaji Boggaram Ramanarayan                                                                     #
+#				                                                                           # 	                                        
 ############################################################################################################
 
 VMWARE_STS_INSTANCE_NAME=vmware-sts
 VMWARE_HOME=@VMSTS_PREFIX_DIR@
 VMWARE_WEBAPPS=$VMWARE_HOME/webapps
 VMWARE_STS_CONF=$VMWARE_HOME/share/config/sts
+VMWARE_VECS_CLI=$VMWARE_HOME/bin/vecs-cli
+OPENSSL=/usr/bin/openssl
 
 VMWARE_STS_INSTANCE=$VMWARE_HOME/$VMWARE_STS_INSTANCE_NAME
 VMWARE_STS_LOGS=/var/log/vmware/sso
@@ -40,6 +44,13 @@ mkdir $VMWARE_STS_INSTANCE_WEBAPPS
 mkdir $VMWARE_STS_INSTANCE_WORK
 
 # Configure tomcat runtime instance
+
+# Configure Tomcat SSL 
+$VMWARE_VECS_CLI entry getkey --store MACHINE_SSL_CERT --alias __MACHINE_CERT --output machine.key
+$VMWARE_VECS_CLI entry getcert --store MACHINE_SSL_CERT --alias __MACHINE_CERT --output machine.cer
+$OPENSSL pkcs12 -export -in machine.cer -inkey machine.key -out ssoserver.p12 -name ssoserver -passout pass:changeme
+cp ssoserver.p12 $VMWARE_STS_INSTANCE_CONF
+
 ##  Copy configuration to conf
 declare -a catalinaConfFiles=("tomcat-users.xml" "context.xml" "catalina.policy")
 for i in "${catalinaConfFiles[@]}"
@@ -62,6 +73,10 @@ do
         exception "Failed to copy : $VMWARE_STS_CONF/$i";
    fi
 done
+
+# Configure Tomcat SSL 
+$VMWARE_VECS_CLI entry getkey --store MACHINE_SSL_CERT --alias __MACHINE_CERT --output machine.key
+
 
 ## Deploy war files to webapps
 declare -a stsWebApps=("openidconnect.war" "websso.war" "sts.war" "idm.war" "afd.war")

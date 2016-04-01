@@ -19,7 +19,6 @@ import org.apache.commons.lang.Validate;
 
 import com.vmware.identity.authz.impl.RoleCheckBase;
 import com.vmware.vim.sso.PrincipalId;
-import com.vmware.vim.sso.admin.PrincipalDiscovery;
 
 /**
  * Factory that is producing {@link RoleCheck} instances.
@@ -27,12 +26,11 @@ import com.vmware.vim.sso.admin.PrincipalDiscovery;
 public final class RoleCheckFactory {
 
    public static <R extends Enum<R>> RoleCheck<R> createRoleCheck(
-      Map<PrincipalId, R> groupKeyRoleValue, PrincipalDiscovery pd) {
+      Map<PrincipalId, R> groupKeyRoleValue) {
 
       Validate.notEmpty(groupKeyRoleValue);
-      Validate.notNull(pd);
 
-      return new RoleCheckBase<R>(groupKeyRoleValue, pd);
+      return new RoleCheckBase<R>(groupKeyRoleValue);
    }
 
    private RoleCheckFactory() {
