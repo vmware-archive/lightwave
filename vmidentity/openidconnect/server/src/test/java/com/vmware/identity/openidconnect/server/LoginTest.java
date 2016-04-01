@@ -14,12 +14,35 @@
 
 package com.vmware.identity.openidconnect.server;
 
+import static com.vmware.identity.openidconnect.server.TestContext.CLIENT_CERT;
+import static com.vmware.identity.openidconnect.server.TestContext.GSS_CONTEXT_ID;
+import static com.vmware.identity.openidconnect.server.TestContext.NONCE;
+import static com.vmware.identity.openidconnect.server.TestContext.PASSWORD;
+import static com.vmware.identity.openidconnect.server.TestContext.SECUREID_PASSCODE;
+import static com.vmware.identity.openidconnect.server.TestContext.SESSION_COOKIE_NAME;
+import static com.vmware.identity.openidconnect.server.TestContext.SESSION_ID;
+import static com.vmware.identity.openidconnect.server.TestContext.STATE;
+import static com.vmware.identity.openidconnect.server.TestContext.TENANT_CERT;
+import static com.vmware.identity.openidconnect.server.TestContext.TENANT_NAME;
+import static com.vmware.identity.openidconnect.server.TestContext.USERNAME;
+import static com.vmware.identity.openidconnect.server.TestContext.authnController;
+import static com.vmware.identity.openidconnect.server.TestContext.authnRequestParameters;
+import static com.vmware.identity.openidconnect.server.TestContext.gssLoginString;
+import static com.vmware.identity.openidconnect.server.TestContext.idmClient;
+import static com.vmware.identity.openidconnect.server.TestContext.idmClientBuilder;
+import static com.vmware.identity.openidconnect.server.TestContext.initialize;
+import static com.vmware.identity.openidconnect.server.TestContext.passwordLoginString;
+import static com.vmware.identity.openidconnect.server.TestContext.secureIdLoginString;
+import static com.vmware.identity.openidconnect.server.TestContext.validateAuthnSuccessResponse;
+
+import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
 import javax.servlet.http.Cookie;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -28,130 +51,252 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.web.servlet.ModelAndView;
 
-import com.nimbusds.jose.util.Base64;
-import com.nimbusds.oauth2.sdk.Scope;
+import com.vmware.identity.idm.client.CasIdmClient;
+import com.vmware.identity.openidconnect.common.Base64Utils;
+import com.vmware.identity.openidconnect.common.Scope;
 
 /**
  * @author Yehia Zayour
  */
 public class LoginTest {
-    private static final Flow FLOW = Flow.AUTHZ_CODE;
-    private static final Scope SCOPE = new Scope("openid");
-
     @BeforeClass
-    public static void initialize() throws Exception {
-        TestContext.initialize();
+    public static void setup() throws Exception {
+        initialize();
     }
 
     @Test
     public void testPasswordLogin() throws Exception {
-        String loginString = TestContext.passwordLoginString();
+        String loginString = passwordLoginString();
         assertSuccessResponse(loginString);
     }
 
     @Test
     public void testPasswordLoginIncorrectCredentials() throws Exception {
-        String loginString = TestContext.passwordLoginString(TestContext.USERNAME + "_non_matching", TestContext.PASSWORD + "_non_matching");
-        assertErrorResponse(loginString, 401, "Unauthorized: Incorrect username/password", null);
+        String loginString = passwordLoginString(USERNAME + "_non_matching", PASSWORD + "_non_matching");
+        assertErrorResponse(loginString, "access_denied: incorrect username or password", null);
     }
 
     @Test
     public void testPasswordLoginInvalidLoginString() throws Exception {
-        String loginString = TestContext.passwordLoginString() + " extra";
-        assertErrorResponse(loginString, 400, "invalid_request: malformed password login string", null);
+        String loginString = passwordLoginString() + " extra";
+        assertErrorResponse(loginString, "access_denied: malformed password login string", null);
     }
 
     @Test
     public void testPasswordLoginInvalidUsernamePassword() throws Exception {
         String unp = "usernamepassword"; // should be username:password
-        String unp64 = Base64.encode(unp).toString();
+        String unp64 = Base64Utils.encodeToString(unp);
         String loginString = "Basic " + unp64;
-        assertErrorResponse(loginString, 400, "invalid_request: malformed username:password in login string", null);
+        assertErrorResponse(loginString, "access_denied: malformed username:password in login string", null);
+    }
+
+    @Test
+    public void testClientCertLoginUsingHeader() throws Exception {
+        String certString64 = Base64Utils.encodeToString(CLIENT_CERT.getEncoded());
+        assertSuccessResponse(certString64, null);
+    }
+
+    @Test
+    public void testClientCertLoginUsingAttribute() throws Exception {
+        assertSuccessResponse(null, new X509Certificate[] { CLIENT_CERT });
+    }
+
+    @Test
+    public void testClientCertLoginInvalidCert() throws Exception {
+        assertErrorResponse("ThisIsNotACert", null, (Cookie) null, "access_denied: failed to parse client cert");
+    }
+
+    @Test
+    public void testClientCertLoginIncorrectCert() throws Exception {
+        X509Certificate cert = TENANT_CERT;
+        byte[] certBytes = cert.getEncoded();
+        String certString64 = Base64Utils.encodeToString(certBytes);
+        assertErrorResponse(certString64, null, (Cookie) null, "access_denied: invalid client cert");
+    }
+
+    @Test
+    public void testClientCertLoginMissingCert() throws Exception {
+        assertErrorResponse(null, null, (Cookie) null, "access_denied: missing client cert");
+    }
+
+    @Test
+    public void testClientCertLoginReopenBrowserWindow() throws Exception {
+        Cookie cookie = new Cookie(SessionManager.getClientCertificateLoggedOutCookieName(TENANT_NAME), "");
+        assertErrorResponse(null, null, cookie, "access_denied: already logged in once on this browser session");
     }
 
     @Test
     public void testGssLoginOneLegged() throws Exception {
-        String loginString = TestContext.gssLoginString();
+        String loginString = gssLoginString();
         assertSuccessResponse(loginString);
     }
 
     @Test
     public void testGssLoginTwoLegged() throws Exception {
-        String contextId = TestContext.GSS_CONTEXT_ID;
-        String loginString = TestContext.gssLoginString(contextId);
-        IdmClient idmClient = TestContext.idmClientBuilder().gssServerLeg(new byte[1]).build();
-        assertErrorResponse(loginString, 401, "Unauthorized: continue Negotiate required", "Negotiate " + contextId, idmClient);
+        String contextId = GSS_CONTEXT_ID;
+        String loginString = gssLoginString(contextId);
+        CasIdmClient idmClient = idmClientBuilder().gssServerLeg(new byte[1]).build();
+        assertErrorResponse(loginString, "access_denied: gss_continue_needed", "Negotiate " + contextId, idmClient);
     }
 
     @Test
     public void testGssLoginInvalidTicket() throws Exception {
-        String contextId = TestContext.GSS_CONTEXT_ID + "non_matching";
-        String loginString = TestContext.gssLoginString(contextId);
-        assertErrorResponse(loginString, 401, "Unauthorized: invalid gss token", null);
+        String contextId = GSS_CONTEXT_ID + "non_matching";
+        String loginString = gssLoginString(contextId);
+        assertErrorResponse(loginString, "access_denied: invalid gss ticket", null);
     }
 
     @Test
     public void testGssLoginInvalidLoginString() throws Exception {
-        String loginString = TestContext.gssLoginString() + " extra";
-        assertErrorResponse(loginString, 400, "invalid_request: malformed gss login string", null);
+        String loginString = gssLoginString() + " extra";
+        assertErrorResponse(loginString, "access_denied: malformed gss login string", null);
+    }
+
+    @Test
+    public void testSecureIdLoginOneLeggedWithSessionId() throws Exception {
+        String loginString = secureIdLoginString(USERNAME, SECUREID_PASSCODE, "secureid_session_id");
+        assertSuccessResponse(loginString);
+    }
+
+    @Test
+    public void testSecureIdLoginOneLeggedWithoutSessionId() throws Exception {
+        String loginString = secureIdLoginString(USERNAME, SECUREID_PASSCODE, null);
+        assertSuccessResponse(loginString);
+    }
+
+    @Test
+    public void testSecureIdLoginTwoLeggedWithSessionId() throws Exception {
+        String sessionId = "secureid_session_id";
+        String sessionId64 = Base64Utils.encodeToString(sessionId);
+        String loginString = secureIdLoginString(USERNAME, SECUREID_PASSCODE, sessionId);
+        CasIdmClient idmClient = idmClientBuilder().secureIdSessionId(sessionId).build();
+        assertErrorResponse(loginString, "access_denied: secureid_next_code_required", "RSAAM " + sessionId64, idmClient);
+    }
+
+    @Test
+    public void testSecureIdLoginTwoLeggedWithoutSessionId() throws Exception {
+        String sessionId = "secureid_session_id";
+        String sessionId64 = Base64Utils.encodeToString(sessionId);
+        String loginString = secureIdLoginString(USERNAME, SECUREID_PASSCODE, null);
+        CasIdmClient idmClient = idmClientBuilder().secureIdSessionId(sessionId).build();
+        assertErrorResponse(loginString, "access_denied: secureid_next_code_required", "RSAAM " + sessionId64, idmClient);
+    }
+
+    @Test
+    public void testSecureIdLoginIncorrectCredentials() throws Exception {
+        String loginString = secureIdLoginString(USERNAME + "_non_matching", SECUREID_PASSCODE + "_non_matching", null);
+        assertErrorResponse(loginString, "access_denied: incorrect secureid username or passcode", null);
+    }
+
+    @Test
+    public void testSecureIdLoginInvalidLoginString() throws Exception {
+        String loginString = secureIdLoginString() + " extra";
+        assertErrorResponse(loginString, "access_denied: malformed secureid login string", null);
+    }
+
+    @Test
+    public void testSecureIdLoginInvalidUsernamePasscode() throws Exception {
+        String unp = "usernamepasscode"; // should be username:passcode
+        String unp64 = Base64Utils.encodeToString(unp);
+        String loginString = "RSAAM " + unp64;
+        assertErrorResponse(loginString, "access_denied: malformed username:passcode in secureid login string", null);
+    }
+
+    @Test
+    public void testSecureIdLoginNewPinRequired() throws Exception {
+        String loginString = secureIdLoginString();
+        CasIdmClient idmClient = idmClientBuilder().secureIdNewPinRequired(true).build();
+        assertErrorResponse(loginString, "access_denied: new secureid pin required", null, idmClient);
     }
 
     @Test
     public void testInvalidLoginMethod() throws Exception {
         String loginString = "invalid_method";
-        assertErrorResponse(loginString, 400, "invalid_request: invalid login method", null);
+        assertErrorResponse(loginString, "access_denied: invalid login method", null);
     }
 
     @Test
     public void testSessionLogin() throws Exception {
-        Cookie sessionCookie = new Cookie(TestContext.SESSION_COOKIE_NAME, TestContext.SESSION_ID);
-        Object[] result = doRequest(null /* loginString */, sessionCookie);
-        ModelAndView modelView = (ModelAndView) result[0];
-        MockHttpServletResponse response = (MockHttpServletResponse) result[1];
+        Cookie sessionCookie = new Cookie(SESSION_COOKIE_NAME, SESSION_ID);
+        Pair<ModelAndView, MockHttpServletResponse> result = doRequest(null /* loginString */, sessionCookie);
+        ModelAndView modelView = result.getLeft();
+        MockHttpServletResponse response = result.getRight();
         Assert.assertNull("modelView", modelView);
-        Assert.assertNull("sessionCookie", response.getCookie(TestContext.SESSION_COOKIE_NAME));
-        TestContext.validateAuthnSuccessResponse(FLOW, response, SCOPE);
+        validateAuthnSuccessResponse(response, Flow.AUTHZ_CODE, Scope.OPENID, false, false, STATE, NONCE);
+    }
+
+    @Test
+    public void testLoginStringWithSessionCookieMatching() throws Exception {
+        // if request has both a loginString and session cookie, then if the session cookie matches, use it and ignore the loginString
+        String loginString = passwordLoginString();
+        Cookie sessionCookie = new Cookie(SESSION_COOKIE_NAME, SESSION_ID);
+        Pair<ModelAndView, MockHttpServletResponse> result = doRequest(loginString, sessionCookie);
+        ModelAndView modelView = result.getLeft();
+        MockHttpServletResponse response = result.getRight();
+        Assert.assertNull("modelView", modelView);
+        boolean ajaxRequest = false; // it is actually an ajax request but then TestContext would expect a session cookie to be returned
+        validateAuthnSuccessResponse(response, Flow.AUTHZ_CODE, Scope.OPENID, false, ajaxRequest, STATE, NONCE);
+    }
+
+    @Test
+    public void testLoginStringWithSessionCookieNonMatching() throws Exception {
+        // if request has both a loginString and session cookie, then if the session cookie does not match, process the loginString
+        String loginString = passwordLoginString();
+        Cookie nonMatchingsessionCookie = new Cookie(SESSION_COOKIE_NAME, SESSION_ID + "_nonmatching");
+        Pair<ModelAndView, MockHttpServletResponse> result = doRequest(loginString, nonMatchingsessionCookie);
+        ModelAndView modelView = result.getLeft();
+        MockHttpServletResponse response = result.getRight();
+        Assert.assertNull("modelView", modelView);
+        validateAuthnSuccessResponse(response, Flow.AUTHZ_CODE, Scope.OPENID, false, true, STATE, NONCE);
     }
 
     @Test
     public void testMissingLogin() throws Exception {
-        Object[] result = doRequest(null /* loginString */, null /* sessionCookie */);
-        ModelAndView modelView = (ModelAndView) result[0];
-        MockHttpServletResponse response = (MockHttpServletResponse) result[1];
+        Pair<ModelAndView, MockHttpServletResponse> result = doRequest(null /* loginString */, null /* sessionCookie */);
+        ModelAndView modelView = result.getLeft();
+        MockHttpServletResponse response = result.getRight();
         Assert.assertNotNull("modelView", modelView); // logon form should be served
-        Assert.assertNull("sessionCookie", response.getCookie(TestContext.SESSION_COOKIE_NAME));
+        Assert.assertNull("sessionCookie", response.getCookie(SESSION_COOKIE_NAME));
         Assert.assertEquals("status", 200, response.getStatus());
     }
 
     private static void assertSuccessResponse(String loginString) throws Exception {
-        Object[] result = doRequest(loginString, null /* sessionCookie */);
-        ModelAndView modelView = (ModelAndView) result[0];
-        MockHttpServletResponse response = (MockHttpServletResponse) result[1];
+        Pair<ModelAndView, MockHttpServletResponse> result = doRequest(loginString, null /* sessionCookie */);
+        ModelAndView modelView = result.getLeft();
+        MockHttpServletResponse response = result.getRight();
         Assert.assertNull("modelView", modelView);
-        Assert.assertNotNull("sessionCookie", response.getCookie(TestContext.SESSION_COOKIE_NAME));
-        TestContext.validateAuthnSuccessResponse(FLOW, response, SCOPE, TestContext.STATE, TestContext.NONCE, false, true);
+        validateAuthnSuccessResponse(response, Flow.AUTHZ_CODE, Scope.OPENID, false, true, STATE, NONCE);
+    }
+
+    private static void assertSuccessResponse(
+            String certHeader,
+            Object certAttribute) throws Exception {
+        Pair<ModelAndView, MockHttpServletResponse> result = doRequest(certHeader, certAttribute, (Cookie) null);
+        ModelAndView modelView = result.getLeft();
+        MockHttpServletResponse response = result.getRight();
+
+        Assert.assertNull("modelView", modelView);
+        validateAuthnSuccessResponse(response, Flow.AUTHZ_CODE, Scope.OPENID, false /* redirectResponseMode */, true /* ajaxRequest */, STATE, NONCE);
     }
 
     private static void assertErrorResponse(
             String loginString,
-            int expectedStatusCode,
             String expectedError,
             String expectedAuthzResponseHeaderPrefix) throws Exception {
-        assertErrorResponse(loginString, expectedStatusCode, expectedError, expectedAuthzResponseHeaderPrefix, TestContext.idmClient());
+        assertErrorResponse(loginString, expectedError, expectedAuthzResponseHeaderPrefix, idmClient());
     }
 
     private static void assertErrorResponse(
             String loginString,
-            int expectedStatusCode,
             String expectedError,
             String expectedAuthzResponseHeaderPrefix,
-            IdmClient idmClient) throws Exception {
-        Object[] result = doRequest(loginString, null /* sessionCookie */, idmClient);
-        ModelAndView modelView = (ModelAndView) result[0];
-        MockHttpServletResponse response = (MockHttpServletResponse) result[1];
+            CasIdmClient idmClient) throws Exception {
+        Pair<ModelAndView, MockHttpServletResponse> result = doRequest(loginString, null /* sessionCookie */, idmClient);
+        ModelAndView modelView = result.getLeft();
+        MockHttpServletResponse response = result.getRight();
         Assert.assertNull("modelView", modelView);
-        Assert.assertNull("sessionCookie", response.getCookie(TestContext.SESSION_COOKIE_NAME));
-        Assert.assertEquals("status", expectedStatusCode, response.getStatus());
+        Assert.assertNull("sessionCookie", response.getCookie(SESSION_COOKIE_NAME));
+        Assert.assertEquals("status", 401, response.getStatus());
         Object errorResponseHeader = response.getHeader("CastleError");
         Assert.assertNotNull("errorResponseHeader", errorResponseHeader);
         Assert.assertEquals("errorMessage", expectedError, response.getErrorMessage());
@@ -165,17 +310,33 @@ public class LoginTest {
         }
     }
 
-    private static Object[] doRequest(
-            String loginString,
-            Cookie sessionCookie) throws Exception {
-        return doRequest(loginString, sessionCookie, TestContext.idmClient());
+    private static void assertErrorResponse(
+            String certHeader,
+            Object certAttribute,
+            Cookie cookie,
+            String expectedError) throws Exception {
+        Pair<ModelAndView, MockHttpServletResponse> result = doRequest(certHeader, certAttribute, cookie);
+        ModelAndView modelView = result.getLeft();
+        MockHttpServletResponse response = result.getRight();
+
+        Assert.assertNull("modelView", modelView);
+        Assert.assertNull("sessionCookie", response.getCookie(SESSION_COOKIE_NAME));
+        Assert.assertEquals("status", 401, response.getStatus());
+        Assert.assertNotNull("errorResponseHeader", response.getHeader("CastleError"));
+        Assert.assertEquals("errorMessage", expectedError, response.getErrorMessage());
     }
 
-    private static Object[] doRequest(
+    private static Pair<ModelAndView, MockHttpServletResponse> doRequest(
+            String loginString,
+            Cookie sessionCookie) throws Exception {
+        return doRequest(loginString, sessionCookie, idmClient());
+    }
+
+    private static Pair<ModelAndView, MockHttpServletResponse> doRequest(
             String loginString,
             Cookie sessionCookie,
-            IdmClient idmClient) throws Exception {
-        Map<String, String> queryParams = TestContext.authnRequestParameters(FLOW);
+            CasIdmClient idmClient) throws Exception {
+        Map<String, String> queryParams = authnRequestParameters(Flow.AUTHZ_CODE);
 
         MockHttpServletRequest request;
         if (loginString != null) {
@@ -184,14 +345,37 @@ public class LoginTest {
             request = TestUtil.createPostRequestWithQueryString(formParams, queryParams);
         } else {
             request = TestUtil.createGetRequest(queryParams);
-            if (sessionCookie != null) {
-                request.setCookies(sessionCookie);
-            }
+        }
+        if (sessionCookie != null) {
+            request.setCookies(sessionCookie);
         }
 
         MockHttpServletResponse response = new MockHttpServletResponse();
-        AuthorizationController authzEndpoint = TestContext.authzController(idmClient);
-        ModelAndView modelView = authzEndpoint.authorize(new ExtendedModelMap(), Locale.ENGLISH, request, response);
-        return new Object[] { modelView, response };
+        AuthenticationController controller = authnController(idmClient);
+        ModelAndView modelView = controller.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response);
+        return Pair.of(modelView, response);
+    }
+
+    private static Pair<ModelAndView, MockHttpServletResponse> doRequest(
+            String certHeader,
+            Object certAttribute,
+            Cookie cookie) throws Exception {
+        Map<String, String> queryParams = authnRequestParameters(Flow.AUTHZ_CODE);
+        Map<String, String> formParams = new HashMap<String, String>();
+        formParams.put("CastleAuthorization", "TLSClient ");
+        MockHttpServletRequest request = TestUtil.createPostRequestWithQueryString(formParams, queryParams);
+        if (certHeader != null) {
+            request.addHeader("X-SSL-Client-Certificate", certHeader);
+        }
+        if (certAttribute != null) {
+            request.setAttribute("javax.servlet.request.X509Certificate", certAttribute);
+        }
+        if (cookie != null) {
+            request.setCookies(cookie);
+        }
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        ModelAndView modelView = authnController().authenticateByClientCertificate(new ExtendedModelMap(), Locale.ENGLISH, request, response);
+        return Pair.of(modelView, response);
     }
 }

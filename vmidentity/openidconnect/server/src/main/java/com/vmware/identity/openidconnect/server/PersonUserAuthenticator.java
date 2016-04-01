@@ -15,25 +15,31 @@
 package com.vmware.identity.openidconnect.server;
 
 import java.security.cert.X509Certificate;
+import java.util.List;
 
 import org.apache.commons.lang3.Validate;
 
-import com.nimbusds.oauth2.sdk.OAuth2Error;
 import com.vmware.identity.idm.GSSResult;
+import com.vmware.identity.idm.IDMException;
 import com.vmware.identity.idm.IDMLoginException;
+import com.vmware.identity.idm.IDMSecureIDNewPinException;
 import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.idm.RSAAMResult;
+import com.vmware.identity.idm.client.CasIdmClient;
+import com.vmware.identity.openidconnect.common.ErrorObject;
 
 /**
  * @author Yehia Zayour
  */
 public class PersonUserAuthenticator {
-    private final IdmClient idmClient;
+    private final CasIdmClient idmClient;
 
-    public PersonUserAuthenticator(IdmClient idmClient) {
+    public PersonUserAuthenticator(CasIdmClient idmClient) {
+        Validate.notNull(idmClient, "idmClient");
         this.idmClient = idmClient;
     }
 
-    public PersonUser authenticate(
+    public PersonUser authenticateByPassword(
             String tenant,
             String username,
             String password) throws InvalidCredentialsException, ServerException {
@@ -47,29 +53,29 @@ public class PersonUserAuthenticator {
         } catch (IDMLoginException e) {
             throw new InvalidCredentialsException(e);
         } catch (Exception e) {
-            throw new ServerException(OAuth2Error.SERVER_ERROR.setDescription("idm error while authenticating username/password"), e);
+            throw new ServerException(ErrorObject.serverError("idm error while authenticating username/password"), e);
         }
         return new PersonUser(principalId, tenant);
     }
 
-    public PersonUser authenticate(
+    public PersonUser authenticateByClientCertificate(
             String tenant,
-            X509Certificate[] tlsCertChain) throws InvalidCredentialsException, ServerException {
+            List<X509Certificate> clientCertificateChain) throws InvalidCredentialsException, ServerException {
         Validate.notEmpty(tenant, "tenant");
-        Validate.notNull(tlsCertChain, "tlsCertChain");
+        Validate.notNull(clientCertificateChain, "clientCertificateChain");
 
         PrincipalId principalId;
         try {
-            principalId = this.idmClient.authenticate(tenant, tlsCertChain);
+            principalId = this.idmClient.authenticate(tenant, clientCertificateChain.toArray(new X509Certificate[0]));
         } catch (IDMLoginException e) {
             throw new InvalidCredentialsException(e);
         } catch (Exception e) {
-            throw new ServerException(OAuth2Error.SERVER_ERROR.setDescription("idm error while authenticationg tls cert"), e);
+            throw new ServerException(ErrorObject.serverError("idm error while authenticating client cert"), e);
         }
         return new PersonUser(principalId, tenant);
     }
 
-    public GSSResult authenticate(
+    public GSSResult authenticateByGssTicket(
             String tenant,
             String contextId,
             byte[] gssTicket) throws InvalidCredentialsException, ServerException {
@@ -83,8 +89,29 @@ public class PersonUserAuthenticator {
         } catch (IDMLoginException e) {
             throw new InvalidCredentialsException(e);
         } catch (Exception e) {
-            throw new ServerException(OAuth2Error.SERVER_ERROR.setDescription("idm error while authenticationg gss ticket"), e);
+            throw new ServerException(ErrorObject.serverError("idm error while authenticationg gss ticket"), e);
         }
         return result;
+    }
+
+    public RSAAMResult authenticateBySecureID(
+            String tenant,
+            String username,
+            String passcode,
+            String sessionId) throws InvalidCredentialsException, ServerException, IDMSecureIDNewPinException {
+        Validate.notEmpty(tenant, "tenant");
+        Validate.notEmpty(username, "username");
+        Validate.notEmpty(passcode, "passcode");
+        // nullable sessionId
+
+        try {
+            return this.idmClient.authenticateRsaSecurId(tenant, sessionId, username, passcode);
+        } catch (IDMSecureIDNewPinException e) {
+            throw e;
+        } catch (IDMException e) {
+            throw new InvalidCredentialsException(e);
+        } catch (Exception e) {
+            throw new ServerException(ErrorObject.serverError("idm error while authentication secureid token"), e);
+        }
     }
 }

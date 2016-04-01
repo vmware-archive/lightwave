@@ -32,7 +32,7 @@ public class ActiveDirectoryResourceIT {
     @Test
     public void testGetADJoinInfo() {
         /*
-         * FIXME : Currently, We do not have proper tools for joining target machine to AD and
+         * Currently, We do not have proper tools for joining target machine to AD and
          * rebooting. Revisit these tests once we figure out a way to do it.
          */
     }

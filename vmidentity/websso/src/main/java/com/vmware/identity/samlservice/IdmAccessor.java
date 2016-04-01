@@ -24,6 +24,8 @@ import java.util.Map;
 
 import com.vmware.identity.idm.AuthnPolicy;
 import com.vmware.identity.idm.GSSResult;
+import com.vmware.identity.idm.IDMSecureIDNewPinException;
+import com.vmware.identity.idm.RSAAMResult;
 import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.RelyingParty;
@@ -204,6 +206,20 @@ public interface IdmAccessor {
 	 * @return
 	 */
 	PrincipalId authenticate(X509Certificate[] tLSCertChain);
+
+	    /**
+     * Issue Authentication call for the current tenant with the specified
+     * username and passcode
+     *
+     * @param rsaSessionID
+     * @param username
+     * @param passcode
+     * @param
+     * @return
+     * @throws IDMSecureIDNewPinException  need new pin error
+     */
+    RSAAMResult authenticatebyPasscode(String rsaSessionID, String username,
+            String passcode) throws IDMSecureIDNewPinException;
 
 	/**
 	 * Returns underlying CasIdmClient object.

@@ -46,6 +46,7 @@ public class OIDCClientMetadataDTO extends DTO {
     private final List<String> postLogoutRedirectUris;
     private final String logoutUri;
     private final String certSubjectDN;
+    private final Long authnRequestClientAssertionLifetimeMS;
 
     /**
      * Construct an {@code OIDCClientMetadataDTO} with its various details.
@@ -55,14 +56,21 @@ public class OIDCClientMetadataDTO extends DTO {
      * @param postLogoutRedirectUris the list of post-logout redirect URIs.
      * @param logoutUri the logout URI.
      * @param certSubjectDN the certificate subject DN.
+     * @param authnRequestClientAssertionLifetimeMS lifetime of the client_assertion in authn requests
      */
-    public OIDCClientMetadataDTO(List<String> redirectUris, String tokenEndpointAuthMethod,
-            List<String> postLogoutRedirectUris, String logoutUri, String certSubjectDN) {
+    public OIDCClientMetadataDTO(
+            List<String> redirectUris,
+            String tokenEndpointAuthMethod,
+            List<String> postLogoutRedirectUris,
+            String logoutUri,
+            String certSubjectDN,
+            Long authnRequestClientAssertionLifetimeMS) {
         this.redirectUris = redirectUris;
         this.tokenEndpointAuthMethod = tokenEndpointAuthMethod;
         this.postLogoutRedirectUris = postLogoutRedirectUris;
         this.logoutUri = logoutUri;
         this.certSubjectDN = certSubjectDN;
+        this.authnRequestClientAssertionLifetimeMS = authnRequestClientAssertionLifetimeMS;
     }
 
     /**
@@ -110,6 +118,10 @@ public class OIDCClientMetadataDTO extends DTO {
         return this.certSubjectDN;
     }
 
+    public Long getAuthnRequestClientAssertionLifetimeMS() {
+        return this.authnRequestClientAssertionLifetimeMS;
+    }
+
     /**
      * Creates an instance of the {@link OIDCClientMetadataDTO.Builder} class.
      *
@@ -133,6 +145,7 @@ public class OIDCClientMetadataDTO extends DTO {
         private List<String> postLogoutRedirectUris;
         private String logoutUri;
         private String certSubjectDN;
+        private Long authnRequestClientAssertionLifetimeMS;
 
         public Builder withRedirectUris(List<String> redirectUris) {
             this.redirectUris = redirectUris;
@@ -159,9 +172,19 @@ public class OIDCClientMetadataDTO extends DTO {
             return this;
         }
 
+        public Builder withAuthnRequestClientAssertionLifetimeMS(Long authnRequestClientAssertionLifetimeMS) {
+            this.authnRequestClientAssertionLifetimeMS = authnRequestClientAssertionLifetimeMS;
+            return this;
+        }
+
         public OIDCClientMetadataDTO build() {
-            return new OIDCClientMetadataDTO(redirectUris, tokenEndpointAuthMethod,
-                    postLogoutRedirectUris, logoutUri, certSubjectDN);
+            return new OIDCClientMetadataDTO(
+                    redirectUris,
+                    tokenEndpointAuthMethod,
+                    postLogoutRedirectUris,
+                    logoutUri,
+                    certSubjectDN,
+                    authnRequestClientAssertionLifetimeMS);
         }
     }
 

@@ -126,71 +126,12 @@ public class SloControllerTest {
      */
     @Test
     public final void testSlo() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
+        testSlo(true);
+    }
 
-        // create a (fake) session for logout to succeed
-        Calendar calendar = new GregorianCalendar();
-        calendar.add(Calendar.MINUTE, Shared.TOKEN_LIFETIME_MINUTES);
-        Date endTime = calendar.getTime();
-
-        Session session = new Session(
-                new PrincipalId(TestConstants.USER, TestConstants.DOMAIN),
-                endTime,
-                AuthnMethod.KERBEROS);
-        sessionManager.add(session);
-
-        // add our relying party as participant
-        String tenantName = ServerConfig.getTenant(0);
-        String rpName = ServerConfig.getRelyingParty(tenantName, 0);
-        String issuerUrl = ServerConfig.getRelyingPartyUrl(rpName);
-        String participantSessionId = session.ensureSessionParticipant(issuerUrl);
-        sessionManager.update(session);
-
-        StringBuffer sbRequestUrl = new StringBuffer();
-        LogoutRequest logoutRequest =
-                SharedUtils.createSamlLogoutRequest("42", participantSessionId);
-        sbRequestUrl.append(logoutRequest.getDestination());
-        Model model = new BindingAwareModelMap();
-
-        String samlRequestParameter = SharedUtils.encodeRequest(logoutRequest);
-
-        // produce signature
-        SignatureAlgorithm algo = SignatureAlgorithm
-                .getSignatureAlgorithmForURI(TestConstants.SIGNATURE_ALGORITHM);
-        Signature sig = Signature.getInstance(algo.getAlgorithmName());
-        sig.initSign(privateKey);
-
-        String messageToSign = Shared.SAML_REQUEST_PARAMETER + "="
-                + URLEncoder.encode(samlRequestParameter, "UTF-8") + "&"
-                + Shared.SIGNATURE_ALGORITHM_PARAMETER + "="
-                + URLEncoder.encode(algo.toString(), "UTF-8");
-
-        byte[] messageBytes = messageToSign.getBytes();
-        sig.update(messageBytes);
-
-        byte[] sigBytes = sig.sign();
-        String signature = Shared.encodeBytes(sigBytes);
-
-        // print out complete GET url
-        SharedUtils.logUrl(log, sbRequestUrl, logoutRequest, null, null, null,
-                null);
-
-        // build mock request object
-        int tenantId = 0;
-        HttpServletRequest request = SharedUtils.buildMockRequestObject(
-                logoutRequest, null,
-                sigAlgParameter, signature, sbRequestUrl,
-                TestConstants.AUTHORIZATION, null,tenantId);
-
-        // build mock response object
-        Capture<String> captured = new Capture<String>();
-        HttpServletResponse response = buildMockResponseSuccessObject(captured, true);
-
-        assertSlo(model, request, response);
-
-        // parse response
-        String decodedSamlResponse = extractResponse(captured);
-        assertTrue(decodedSamlResponse.contains(OasisNames.SUCCESS));
+    @Test
+    public final void testSloNoIDPSLO() throws Exception {
+        testSlo(false);
     }
 
     /**
@@ -413,5 +354,82 @@ public class SloControllerTest {
         controller.slo(Locale.US, tenant, model, request, response);
         assertEquals(tenant, model.asMap().get("tenant"));
         assertNull(model.asMap().get("serverTime"));
+    }
+
+    private void testSlo(boolean isSPSupportSLO) throws Exception {
+        SharedUtils.bootstrap(false); // use real data
+
+        // create a (fake) session for logout to succeed
+        Calendar calendar = new GregorianCalendar();
+        calendar.add(Calendar.MINUTE, Shared.TOKEN_LIFETIME_MINUTES);
+        Date endTime = calendar.getTime();
+
+        Session session = new Session(
+                new PrincipalId(TestConstants.USER, TestConstants.DOMAIN),
+                endTime,
+                AuthnMethod.KERBEROS);
+        sessionManager.add(session);
+
+        // add our relying party as participant
+        String tenantName = ServerConfig.getTenant(0);
+        String rpName = ServerConfig.getRelyingParty(tenantName, 0);
+        String issuerUrl = ServerConfig.getRelyingPartyUrl(rpName);
+        String participantSessionId = session.ensureSessionParticipant(issuerUrl);
+        sessionManager.update(session);
+
+        StringBuffer sbRequestUrl = new StringBuffer();
+        LogoutRequest logoutRequest =
+                SharedUtils.createSamlLogoutRequest("42", participantSessionId);
+        sbRequestUrl.append(logoutRequest.getDestination());
+        Model model = new BindingAwareModelMap();
+
+        String samlRequestParameter = SharedUtils.encodeRequest(logoutRequest);
+
+        // produce signature
+        SignatureAlgorithm algo = SignatureAlgorithm
+                .getSignatureAlgorithmForURI(TestConstants.SIGNATURE_ALGORITHM);
+        Signature sig = Signature.getInstance(algo.getAlgorithmName());
+        sig.initSign(privateKey);
+
+        String messageToSign = Shared.SAML_REQUEST_PARAMETER + "="
+                + URLEncoder.encode(samlRequestParameter, "UTF-8") + "&"
+                + Shared.SIGNATURE_ALGORITHM_PARAMETER + "="
+                + URLEncoder.encode(algo.toString(), "UTF-8");
+
+        byte[] messageBytes = messageToSign.getBytes();
+        sig.update(messageBytes);
+
+        byte[] sigBytes = sig.sign();
+        String signature = Shared.encodeBytes(sigBytes);
+
+        // print out complete GET url
+        SharedUtils.logUrl(log, sbRequestUrl, logoutRequest, null, null, null,
+                null);
+
+        // build mock request object
+        int tenantId = 0;
+        HttpServletRequest request = SharedUtils.buildMockRequestObject(
+                logoutRequest, null,
+                sigAlgParameter, signature, sbRequestUrl,
+                TestConstants.AUTHORIZATION, null,tenantId);
+
+        // build mock response object
+        Capture<String> captured = new Capture<String>();
+        HttpServletResponse response = buildMockResponseSuccessObject(captured, true);
+
+        if (isSPSupportSLO) {
+            assertSlo(model, request, response);
+
+            // parse response
+            String decodedSamlResponse = extractResponse(captured);
+            assertTrue(decodedSamlResponse.contains(OasisNames.SUCCESS));
+        } else {
+            // Remove SLO setting in SP.
+            SharedUtils.removeSLOfromRelyingParties(SloControllerTest.tenant);
+            assertSlo(model, request, response);
+
+            // parse response, redirect should not happen and nothing should be captured.
+            assertTrue(!captured.hasCaptured());
+        }
     }
 }
