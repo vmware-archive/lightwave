@@ -37,6 +37,7 @@ import com.vmware.identity.session.Session;
 import com.vmware.identity.session.SessionManager;
 import com.vmware.identity.websso.client.IDPConfiguration;
 import com.vmware.identity.websso.client.MetadataSettings;
+import com.vmware.identity.websso.client.SamlUtils;
 import com.vmware.identity.websso.client.SloRequestSettings;
 import com.vmware.identity.websso.client.endpoint.SloRequestSender;
 
@@ -154,9 +155,14 @@ public class LogoutStateProcessingFilter implements
 	        logoutProcessorImpl.setLogoutState(t);
 
 	        String redirectUrl = getSloRequestSender().getRequestUrl(extSLORequestSettings);
-	        Validate.notEmpty(redirectUrl, "redirectUrl");
 
-	        t.getResponse().sendRedirect(redirectUrl);
+	        if (SamlUtils.isIdpSupportSLO(metadataSettings, extSLORequestSettings)) {
+	            Validate.notEmpty(redirectUrl, "redirectUrl");
+	            t.getResponse().sendRedirect(redirectUrl);
+	        } else {
+	            log.warn(String.format(
+	                    "SLO end point does not exist for external IDP: %s, SLO request is not sent.", extSLORequestSettings.getIDPAlias()));
+	        }
         } catch (Exception e) {
             // failed to authenticate with via proxying.
             log.debug("Caught exception in proxying logout request to external IDP: {}" , e.getMessage());
@@ -279,5 +285,4 @@ public class LogoutStateProcessingFilter implements
 	public void setSloRequestSender(SloRequestSender sloRequestSender) {
 		this.sloRequestSender = sloRequestSender;
 	}
-
 }

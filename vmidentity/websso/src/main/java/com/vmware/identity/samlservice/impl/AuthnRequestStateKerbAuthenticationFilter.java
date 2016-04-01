@@ -38,7 +38,7 @@ import com.vmware.identity.samlservice.Shared;
 
 /**
  * @author root
- * 
+ *
  */
 @Component
 public class AuthnRequestStateKerbAuthenticationFilter implements
@@ -112,6 +112,8 @@ public class AuthnRequestStateKerbAuthenticationFilter implements
                         .getServerLeg());
                 t.setWwwAuthenticate(Shared.KERB_AUTH_PREFIX + " " + contextId
                         + " " + encodedAuthData);
+                t.setValidationResult(new ValidationResult(
+                        HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", null));
                 throw new SamlServiceException();
             }
 

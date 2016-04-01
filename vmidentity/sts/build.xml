@@ -50,6 +50,7 @@
       <fileset refid="jar-set.opensaml" />
       <fileset refid="jar-set.velocity" />
       <fileset refid="jar-set.esapi" />
+      <fileset refid="jar-set.jaxb-core" />
       <fileset refid="jar-set.activation" />
       <fileset refid="jar-set.saaj-api" />
       <fileset refid="jar-set.jsr-173" />

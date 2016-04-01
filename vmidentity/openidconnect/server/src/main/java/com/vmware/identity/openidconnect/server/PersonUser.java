@@ -14,11 +14,10 @@
 
 package com.vmware.identity.openidconnect.server;
 
-import java.text.ParseException;
-
 import org.apache.commons.lang3.Validate;
 
 import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.openidconnect.common.ParseException;
 
 /**
  * @author Yehia Zayour
@@ -34,29 +33,12 @@ public class PersonUser extends User {
 
         String[] parts = username.split("@");
         if (parts.length != 2) {
-            throw new ParseException("username is not of the format name@domain", 0);
+            throw new ParseException("username is not of the format name@domain");
         }
 
         String name = parts[0];
         String domain = parts[1];
 
         return new PersonUser(new PrincipalId(name, domain), tenant);
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        boolean areEqual = false;
-        if (other instanceof PersonUser) {
-            PersonUser otherPersonUser = (PersonUser) other;
-            areEqual =
-                    super.getPrincipalId().equals(otherPersonUser.getPrincipalId()) &&
-                    super.getTenant().equals(otherPersonUser.getTenant());
-        }
-        return areEqual;
-    }
-
-    @Override
-    public int hashCode() {
-        return super.getPrincipalId().hashCode() + super.getTenant().hashCode();
     }
 }

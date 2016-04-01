@@ -37,14 +37,21 @@ ClientSupportApiFactory.registerApi("session", function(conn) {
  * @param clientBuild Build of the client app.
  * @param clientKeepAlive Set to true to support keep alive. (True by default)
  */
-SessionApi.prototype.init = function (args, callback) {
+SessionApi.prototype.init = function(args, callback) {
    if (args.clientKeepAlive === undefined) {
       args.clientKeepAlive = true;
    }
-   if (args.clientKeepAlive) {
-      this.__startKeepAlive__();
-   }
-   this.simpleApiCall("init", args, callback);
+   var me = this;
+   this.simpleApiCall("init", args, function(res, err) {
+      if (res) {
+         if (args.clientKeepAlive) {
+            me.__startKeepAlive__();
+         }
+      }
+      if (callback) {
+         callback(res, err);
+      }
+   });
 };
 
 /**
