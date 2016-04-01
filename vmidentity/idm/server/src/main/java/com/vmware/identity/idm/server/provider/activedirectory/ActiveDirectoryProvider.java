@@ -38,7 +38,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
+import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.login.LoginException;
 
@@ -72,11 +72,11 @@ import com.vmware.identity.idm.server.ServerUtils;
 import com.vmware.identity.idm.server.config.ServerIdentityStoreData;
 import com.vmware.identity.idm.server.performance.IIdmAuthStatRecorder;
 import com.vmware.identity.idm.server.performance.IdmAuthStatRecorder;
-import com.vmware.identity.idm.server.performance.NoopIdmAuthStatRecorder;
 import com.vmware.identity.idm.server.provider.BaseLdapProvider;
 import com.vmware.identity.idm.server.provider.IIdentityProvider;
 import com.vmware.identity.idm.server.provider.ILdapSchemaMapping;
 import com.vmware.identity.idm.server.provider.NoSuchGroupException;
+import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.interop.accountmanager.AccountAdapterFactory;
 import com.vmware.identity.interop.accountmanager.AccountInfo;
 import com.vmware.identity.interop.accountmanager.AccountManagerException;
@@ -96,13 +96,16 @@ import com.vmware.identity.interop.idm.UserInfo;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
 import com.vmware.identity.interop.ldap.ILdapEntry;
 import com.vmware.identity.interop.ldap.ILdapMessage;
+import com.vmware.identity.interop.ldap.ILdapPagedSearchResult;
 import com.vmware.identity.interop.ldap.LdapFilterString;
 import com.vmware.identity.interop.ldap.LdapScope;
 import com.vmware.identity.interop.ldap.LdapValue;
+import com.vmware.identity.interop.ldap.NoSuchObjectLdapException;
 import com.vmware.identity.interop.ldap.SaslBindFailLdapException;
 import com.vmware.identity.interop.ldap.ServerDownLdapException;
 import com.vmware.identity.interop.ldap.SizeLimitExceededLdapException;
 import com.vmware.identity.performanceSupport.IIdmAuthStat.ActivityKind;
+import com.vmware.identity.performanceSupport.IIdmAuthStat.EventLevel;
 import com.vmware.identity.performanceSupport.ILdapQueryStat;
 import com.vmware.identity.performanceSupport.LdapQueryStat;
 
@@ -120,6 +123,10 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
    private static final long INTVLS_100NS_1600TO1970 = 11644473600L*INTVLS_100NS_IN_SEC;
    private static final int DEFAULT_PAGE_SIZE = 1000;
    private static final int DEFAULT_RANGE_SIZE = 1000;
+   //Get groups from Foreign security principal --  keep in sync with sso-config tool
+   private static final int FLAG_FSP_GROUPS = 0x10;
+   // resolve groups by using tokenGroups attribute
+   public static final int FLAG_TOKEN_GROUPS = 0x20;
 
    private final Set<String> _specialAttributes;
    private PwdLifeTimeValue _defaultDomainPolicyPwdLifeTimeCache = null;
@@ -128,7 +135,9 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
    private final String ATTR_MEMBER_OF;
    private final String ATTR_PRIMARY_GROUP_ID;
    private final String ATTR_USER_PRINCIPAL_NAME;
+   private final String ATTR_NAME_ACCOUNT_FLAGS;
    private final String ATTR_OBJECT_SID;
+   private final String ATTR_DESCRIPTION;
 
    private static final AccountPacInfoCache _accountCache = new AccountPacInfoCache();
 
@@ -162,6 +171,8 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
       ATTR_PRIMARY_GROUP_ID = _adSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributePrimaryGroupId);
       ATTR_USER_PRINCIPAL_NAME = _adSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributePrincipalName);
       ATTR_OBJECT_SID = _adSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeObjectId);
+      ATTR_NAME_ACCOUNT_FLAGS = _adSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAcountControl);
+      ATTR_DESCRIPTION = _adSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeDescription);
    }
 
    @Override
@@ -260,7 +271,7 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
 
        IIdmAuthStatRecorder idmAuthStatRecorder = this.createIdmAuthStatRecorderInstance(
                DiagnosticsContextFactory.getCurrentDiagnosticsContext().getTenantName(),
-               ActivityKind.AUTHENTICATE, principal);
+               ActivityKind.AUTHENTICATE, EventLevel.INFO, principal);
        idmAuthStatRecorder.start();
 
        principal = this.normalizeAliasInPrincipalWithTrusts(principal, true);
@@ -421,7 +432,7 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
 
         IIdmAuthStatRecorder idmAuthStatRecorder = this.createIdmAuthStatRecorderInstance(
                 DiagnosticsContextFactory.getCurrentDiagnosticsContext().getTenantName(),
-                ActivityKind.GETATTRIBUTES, principalId);
+                ActivityKind.GETATTRIBUTES, EventLevel.INFO, principalId);
         idmAuthStatRecorder.start();
 
         principalId = normalizeAliasInPrincipalWithTrusts(principalId, true);
@@ -531,13 +542,14 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
 
    @Override
    public
-   Set<Group> findDirectParentGroups(PrincipalId principalId) throws Exception
+   PrincipalGroupLookupInfo findDirectParentGroups(PrincipalId principalId) throws Exception
    {
        Set<Group> groups = new HashSet<Group>();
        ValidateUtil.validateNotNull(principalId, "principalId");
        principalId = normalizeAliasInPrincipalWithTrusts(principalId, true);
 
        ILdapConnectionEx connection = this.getNonGcConnToDomain(principalId.getDomain());
+       PrincipalInfo principalInfo = null;
 
        try
        {
@@ -546,9 +558,10 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
           final String ATTR_OBJECT_SID = _adSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeObjectId);
            String[] attrNames = { ATTR_NAME_SAM_ACCOUNT, ATTR_DESCRIPTION, ATTR_OBJECT_SID };
 
+           principalInfo = this.getPrincipalDN(connection, principalId, ServerUtils.getDomainDN(principalId.getDomain()));
            String filter = String.format(
                _adSchemaMapping.getDirectParentGroupsQuery(),
-               LdapFilterString.encode(this.getPrincipalDN(connection, principalId, ServerUtils.getDomainDN(principalId.getDomain()))));
+               LdapFilterString.encode(principalInfo.getDn()));
 
            Collection<ILdapMessage> messages = connection.paged_search(
                       ServerUtils.getDomainDN(principalId.getDomain()),
@@ -588,8 +601,11 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                 connection.close();
             }
         }
-
-       return groups;
+        return new PrincipalGroupLookupInfo(
+           groups,
+           ( principalInfo != null) ?
+               principalInfo.getObjectId():
+               null);
    }
 
    @Override
@@ -610,9 +626,9 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
 
    @Override
    public
-   Set<Group> findNestedParentGroups(PrincipalId userId) throws Exception
+   PrincipalGroupLookupInfo findNestedParentGroups(PrincipalId userId) throws Exception
    {
-       Set<Group> groups = Collections.emptySet();
+       PrincipalGroupLookupInfo groups = null;
        ValidateUtil.validateNotNull(userId, "principalId");
        userId = normalizeAliasInPrincipalWithTrusts(userId, true);
 
@@ -699,64 +715,6 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
    ////////////////////////////////////////////
    // protected/private
    ////////////////////////////////////////////
-
-   protected
-   String
-   getPrimaryGroupDN(
-       ILdapConnectionEx connection,
-       String          searchBaseDn,
-       byte[]          userObjectSID,
-       int             groupRID,
-       IIdmAuthStatRecorder authStatRecorder) throws NoSuchGroupException
-   {
-      SecurityIdentifier sid = SecurityIdentifier.build(userObjectSID);
-
-      sid.setRID(groupRID);
-
-      String groupSidString = sid.toString();
-
-      String[] attrNames = { };
-
-      String filter = String.format(
-              _adSchemaMapping.getGroupQueryByObjectUniqueId(),
-              LdapFilterString.encode(groupSidString));
-
-      long startTime = System.currentTimeMillis();
-
-      ILdapMessage message = connection.search(
-            searchBaseDn,
-            LdapScope.SCOPE_SUBTREE,
-            filter,
-            attrNames,
-            true);
-
-      if (authStatRecorder != null) {
-          authStatRecorder.add(new LdapQueryStat(filter, searchBaseDn,
-                  getConnectionString(connection), System.currentTimeMillis() - startTime, 1));
-      }
-
-      try
-      {
-         ILdapEntry[] entries = message.getEntries();
-
-         if (entries == null || entries.length == 0)
-         {
-             throw new NoSuchGroupException(
-                     String.format( "Group was not found. GroupSID= '%s'.", groupSidString)
-                     );
-         }
-         else if (entries.length != 1)
-         {
-            throw new IllegalStateException("Entry length >1");
-         }
-
-         return entries[0].getDN();
-      }
-      finally
-      {
-          message.close();
-      }
-   }
 
    protected
    Collection<Group>
@@ -1118,21 +1076,61 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
        return new Group(gid, alias, resultObjectSid, new GroupDetail(description));
    }
 
+   private static String getObjectSid(ILdapEntry entry, String objectSidAttributeName)
+   {
+       String sidStr = null;
+       if ( ( entry != null ) && (ServerUtils.isNullOrEmpty(objectSidAttributeName) == false) )
+       {
+           byte[] resultObjectSID =
+                ServerUtils.getBinaryValue(entry
+                     .getAttributeValues(objectSidAttributeName));
+
+           if ((resultObjectSID != null) && (resultObjectSID.length != 0))
+           {
+               SecurityIdentifier sid = SecurityIdentifier.build(resultObjectSID);
+               sidStr = sid.toString();
+           }
+       }
+       return sidStr;
+   }
+
+   private class PrincipalInfo
+   {
+       private String _dn;
+       private String _objectId;
+       public PrincipalInfo(String dn, String objectId)
+       {
+           this._dn = dn;
+           this._objectId = objectId;
+       }
+       public String getDn()
+       {
+           return this._dn;
+       }
+
+       public String getObjectId()
+       {
+           return this._objectId;
+       }
+   }
+
+
    private
-   String
+   PrincipalInfo
    getPrincipalDN(
          ILdapConnectionEx connection,
          PrincipalId principalId,
          String searchBaseDn
          ) throws Exception
    {
-       String[] attrNames = { };
+       final String ATTR_OBJECT_SID = _adSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeObjectId);
+
+       String[] attrNames = { ATTR_OBJECT_SID };
        AccountLdapEntryInfo ldapEntryInfo = null;
 
        // search user/groups with samAccount first
        final String filter_by_acct = buildUserOrGroupFilterWithAccountNameByPrincipalId(principalId);
        final String filter_by_upn = buildUserQueryWithUpnByPrincipalId(principalId);
-
        try
        {
            ldapEntryInfo = findAccountLdapEntry(connection,
@@ -1140,10 +1138,13 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                    filter_by_acct,
                    searchBaseDn,
                    attrNames,
-                   true,
+                   false,
                    principalId);
 
-            return ldapEntryInfo.accountLdapEntry.getDN();
+            return new PrincipalInfo(
+                ldapEntryInfo.accountLdapEntry.getDN(),
+                getObjectSid(ldapEntryInfo.accountLdapEntry, ATTR_OBJECT_SID)
+            );
        }
        finally
        {
@@ -1154,256 +1155,19 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
        }
     }
 
-   private class LdapGroupInfo
-   {
-      private final String _groupName;
-      private final String _groupObjectSid;
-      private final String _groupDescription;
-      private final String[] _parentGroups;
-
-      LdapGroupInfo(String groupName, String groupObjectSid, String groupDescription, String[] parentGroups)
-      {
-         this._groupName = groupName;
-         this._groupObjectSid = groupObjectSid;
-         this._groupDescription = groupDescription;
-         this._parentGroups = parentGroups;
-      }
-
-      public String getGroupName()
-      {
-         return this._groupName;
-      }
-      public String getGroupSid()
-      {
-         return this._groupObjectSid;
-      }
-      public String getGroupDescription()
-      {
-         return this._groupDescription;
-      }
-      public String[] getParentGroups()
-      {
-         return this._parentGroups;
-      }
-   }
-
-   private LdapGroupInfo getGroupInfo(String groupDn, boolean getDescription, List<ILdapQueryStat> ldapQueries) throws Exception
-   {
-       ILdapConnectionEx connection = null;
-       LdapGroupInfo groupInfo = null;
-
-       try
-       {
-           connection = this.getNonGcConnToDomain(ServerUtils.getDomainFromDN(groupDn));
-
-           String[] ldapGroupAttributes = null;
-           final String ATTR_NAME_SAM_ACCOUNT = _adSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeAccountName);
-           final String ATTR_DESCRIPTION = _adSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeDescription);
-           final String ATTR_OBJECT_SID = _adSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeObjectId);
-           final String ATTR_MEMBER_OF = _adSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeMemberOf);
-
-           if( getDescription == true )
-           {
-               ldapGroupAttributes = new String[] { ATTR_NAME_SAM_ACCOUNT, ATTR_DESCRIPTION, ATTR_MEMBER_OF, ATTR_OBJECT_SID };
-           }
-           else
-           {
-               ldapGroupAttributes = new String[] { ATTR_NAME_SAM_ACCOUNT, ATTR_MEMBER_OF, ATTR_OBJECT_SID };
-           }
-
-           long startTime = System.currentTimeMillis();
-           String filter = _adSchemaMapping.getAllGroupsQuery();
-           ILdapMessage message = connection.search(
-                groupDn,
-                LdapScope.SCOPE_BASE,
-                filter,
-                ldapGroupAttributes,
-                false);
-
-           if (ldapQueries != null) {
-               ldapQueries.add(new LdapQueryStat(filter, groupDn,
-                       getConnectionString(connection),
-                       System.currentTimeMillis() - startTime, 1));
-           }
-
-           try
-           {
-               ILdapEntry[] entries = message.getEntries();
-               if((entries != null) && ( entries.length > 0 ) )
-               {
-                   String groupName = null;
-                   String groupDescription = null;
-                   String[] parentGroups = null;
-                   String groupObjectSid = null;
-
-                   groupName = ServerUtils.getStringValue(
-                      entries[0].getAttributeValues(ATTR_NAME_SAM_ACCOUNT)
-                      );
-
-                   byte[] groupObjectSID =
-                           ServerUtils.getBinaryValue(
-                               entries[0].getAttributeValues(ATTR_OBJECT_SID));
-
-                   if (groupObjectSID != null && groupObjectSID.length != 0)
-                   {
-                       SecurityIdentifier sid = SecurityIdentifier.build(groupObjectSID);
-                       groupObjectSid = sid.toString();
-                   }
-
-                   if( getDescription == true )
-                   {
-                       groupDescription = getOptionalLastStringValue(
-                             entries[0].getAttributeValues(ATTR_DESCRIPTION)
-                             );
-                }
-
-                parentGroups = ServerUtils.getMultiStringValue(
-                      entries[0].getAttributeValues(ATTR_MEMBER_OF)
-                      );
-
-                groupInfo = new LdapGroupInfo( groupName, groupObjectSid, groupDescription, parentGroups );
-             }
-          }
-          finally
-          {
-              message.close();
-          }
-      }
-       finally
-       {
-           if (connection != null)
-           {
-               connection.close();
-           }
-       }
-
-      return groupInfo;
-   }
-
-   private
-   Set<Group>
-   getNestedGroups(
-         String[]        userGroups,
-         boolean         groupNameOnly,
-         IIdmAuthStatRecorder authStatRecorder)
-   {
-      Set<Group> groups = new HashSet<Group>();
-
-      if( ( userGroups != null ) && (userGroups.length > 0) )
-      {
-         HashSet<String> groupsProcessed = new HashSet<String>();
-         Stack<String> groupsToProcess = new Stack<String>();
-
-         for(String groupDn : userGroups )
-         {
-            if(ServerUtils.isNullOrEmpty(groupDn) == false)
-            {
-               groupsToProcess.push( groupDn );
-            }
-         }
-
-         long startTimeForAllGrups = System.currentTimeMillis();
-         int numberOfLdapSearches = 0;
-         List<ILdapQueryStat> ldapQueries = null;
-         if(authStatRecorder != null &&
-            (authStatRecorder instanceof IdmAuthStatRecorder)){ // Set ldapQueries only if profiling is required.
-             ldapQueries = new LinkedList<ILdapQueryStat>();
-         }
-
-         while( groupsToProcess.isEmpty() == false )
-         {
-            String groupDn = groupsToProcess.pop();
-            if ( groupsProcessed.contains(groupDn) == false )
-            {
-                LdapGroupInfo gi = null;
-                try
-                {
-                    List<ILdapQueryStat> ldapQueriesToBeFilled = ldapQueries;
-                    if(authStatRecorder != null &&
-                       authStatRecorder.summarizeLdapQueries() &&
-                       numberOfLdapSearches > 1){ // Collect only one query if summarizeLdapQueries is set
-                        ldapQueriesToBeFilled = null;
-                    }
-
-                    gi = this.getGroupInfo( groupDn, !groupNameOnly, ldapQueriesToBeFilled);
-                    numberOfLdapSearches += 1;
-                }
-                catch (Exception e)
-                {
-                    log.warn(String.format("getGroupInfo failed with %s", e.getMessage()));
-                }
-
-                if( gi != null )
-                {
-                    String groupDomainName = ServerUtils.getDomainFromDN(groupDn);
-                    String groupDomainAlias = null;
-
-                    PrincipalId groupId = new PrincipalId( gi.getGroupName(), groupDomainName );
-                    PrincipalId groupAlias = null;
-                    GroupDetail groupDetail = null;
-
-                    if (groupNameOnly == false)
-                    {
-                        if (!this.isSameDomainUpn(groupDomainName))
-                        {
-                            DomainControllerInfo dcInfo = obtainDcInfo(groupDomainName);
-                            if (dcInfo != null)
-                            {
-                                groupDomainAlias = dcInfo.domainNetBiosName;
-                            }
-                        }
-                        else groupDomainAlias = this.getStoreDataEx().getAlias();
-
-                        groupAlias = ServerUtils.getPrincipalAliasId(gi.getGroupName(), groupDomainAlias);
-
-                        groupDetail = new GroupDetail(
-                               (gi.getGroupDescription() == null) ? "" : gi.getGroupDescription()
-                               );
-                     }
-
-                     Group g = new Group( groupId, groupAlias, gi.getGroupSid(), groupDetail );
-                     groups.add( g );
-
-                     if ( gi.getParentGroups() != null )
-                     {
-                         for(String gDn : gi.getParentGroups() )
-                         {
-                             if(ServerUtils.isNullOrEmpty(gDn) == false)
-                             {
-                                groupsToProcess.push( gDn );
-                             }
-                         }
-                     }
-
-                     groupsProcessed.add( groupDn );
-                 }
-             }
-         }
-
-         if (authStatRecorder != null) {
-             if(!authStatRecorder.summarizeLdapQueries()) {
-                 authStatRecorder.add(ldapQueries);
-             } else if (ldapQueries.size() > 0){
-                 authStatRecorder.add(
-                         new LdapQueryStat(
-                             ldapQueries.get(0).getQueryString(),
-                             ldapQueries.get(0).getBaseDN(),
-                             ldapQueries.get(0).getConnectionString(),
-                             System.currentTimeMillis() - startTimeForAllGrups,
-                             numberOfLdapSearches));
-             }
-         }
-     }
-
-     return groups;
-     }
-
    private long getPwdLifeTime(ILdapConnectionEx connection, String psoDn, String domainName) throws Exception
    {
 
       if (StringUtils.isNotEmpty(psoDn))
       {
-         return getPwdLifeTimeFromPSO(connection, psoDn);
+         try
+         {
+            return getPwdLifeTimeFromPSO(connection, psoDn);
+         }
+         catch (Exception e)
+         {
+            return getPwdLifeTimeFromDefaultDomainPolicy(connection, domainName);
+         }
       }
       else
       {
@@ -1727,8 +1491,7 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                    authStatRecorder);
 
            userLdapEntry = ldapEntryInfo.accountLdapEntry;
-           userName = this.getStringValue(userLdapEntry
-                   .getAttributeValues(ATTR_NAME_SAM_ACCOUNT));
+           userName = getStringValue(userLdapEntry.getAttributeValues(ATTR_NAME_SAM_ACCOUNT));
            String userSid = getUserSid(userLdapEntry, ATTR_OBJECT_SID);
 
            int iAttr = 0;
@@ -1748,7 +1511,6 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                pair.setAttrDefinition(attr);
 
                String attrName = attrs.attrNames.get(iAttr);
-               LdapValue[] values = null;
 
                if (attrName.equals(ATTR_USER_PRINCIPAL_NAME))
                {
@@ -1758,62 +1520,26 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                    upnVals.add(String.format(
                            "%s@%s", userName, userDomainName));
                }
-               else
+               else  if (attrName.equals(ATTR_MEMBER_OF))
                {
-                   values = userLdapEntry.getAttributeValues(attrName);
-               }
-
-               if (attrName.equals(ATTR_MEMBER_OF))
-               {
-                   int primaryGroupRID =
-                       ServerUtils.getIntValue(
-                               userLdapEntry.getAttributeValues(ATTR_PRIMARY_GROUP_ID));
-
-                   byte[] userObjectSID =
-                       ServerUtils.getBinaryValue(
-                               userLdapEntry.getAttributeValues(ATTR_OBJECT_SID));
-
-                   String groupSearchBaseDn = ServerUtils.getDomainDN(principalId.getDomain());
-                   String primaryGroupDN =
-                       this.getPrimaryGroupDN(
-                           connection, groupSearchBaseDn, userObjectSID, primaryGroupRID, authStatRecorder);
-
-                   if (ServerUtils.isNullOrEmpty(primaryGroupDN))
-                   {
-                       throw new IllegalStateException("Error: Found empty Primary Group DN");
-                   }
-
-                   List<String> curGroups = new ArrayList<String>();
-
-                   String[] userGroups = ServerUtils.getMultiStringValue(values);
-
-                   if (userGroups != null && userGroups.length > 0)
-                   {
-                       for (String groupName : userGroups)
-                       {
-                           curGroups.add(groupName);
-                       }
-                   }
-
-                   curGroups.add(primaryGroupDN);
-
-                   Set<Group> groups = this.getNestedGroups(
-                                            curGroups.toArray(new String[curGroups.size()]), true, authStatRecorder);
+                   Set<Group>  groups = new LdapGroupSearch(connection, userLdapEntry, principalId, authStatRecorder).getGroups(false /* excludeDescription */);
 
                    for (Group group : groups)
                    {
                        pair.getValues().add(group.getNetbios());
                        pairGroupSids.getValues().add(group.getObjectId());
                    }
-               } else if (values != null && values.length > 0)
+               } else
                {
-                   for (LdapValue value : values)
-                   {
-                       if (!value.isEmpty())
-                       {
-                           String val = value.toString();
-                           pair.getValues().add(val);
-                       }
+                   LdapValue[] values = userLdapEntry.getAttributeValues(attrName);
+
+                    if (values != null) {
+                        for (LdapValue value : values) {
+                            if (!value.isEmpty()) {
+                                String val = value.toString();
+                                pair.getValues().add(val);
+                            }
+                        }
                    }
                }
 
@@ -1854,7 +1580,7 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
    }
 
    private
-   Set<Group> findNestedParentGroupsByPac(UserInfoEx acctInfo) throws Exception
+   PrincipalGroupLookupInfo findNestedParentGroupsByPac(UserInfoEx acctInfo) throws Exception
    {
        Set<Group> groups = new HashSet<Group>();
 
@@ -1871,13 +1597,14 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
            }
        }
 
-       return groups;
+       return new PrincipalGroupLookupInfo(groups, (acctInfo != null) ? acctInfo.getUserSid() : null);
    }
 
    private
-   Set<Group> findNestedParentGroupsByLdap(PrincipalId userId) throws Exception
+   PrincipalGroupLookupInfo findNestedParentGroupsByLdap(PrincipalId userId) throws Exception
    {
       Set<Group> groups = Collections.emptySet();
+      String objectId = null;
 
       ILdapConnectionEx connection = this.getNonGcConnToDomain(userId.getDomain());
 
@@ -1887,8 +1614,8 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
          String baseDN = ServerUtils.getDomainDN(userId.getDomain());
 
          final String ATTR_MEMBER_OF = _adSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeMemberOf);
-         String attributes[] = { ATTR_MEMBER_OF };
-         String[] userGroups = null;
+         final String ATTR_OBJECT_SID = _adSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeObjectId);
+         String attributes[] = { ATTR_MEMBER_OF, ATTR_PRIMARY_GROUP_ID, ATTR_OBJECT_SID };
 
          // look up user by upn first (upn is unique in forest)
          final String filter_by_upn = this.buildUserQueryWithUpnByPrincipalId(userId);
@@ -1902,9 +1629,8 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                                               false,
                                               userId);
 
-         userGroups = ServerUtils.getMultiStringValue(ldapEntryInfo.accountLdapEntry.getAttributeValues( ATTR_MEMBER_OF ));
-
-         groups = this.getNestedGroups( userGroups, false, null );
+         groups = new LdapGroupSearch(connection, ldapEntryInfo.accountLdapEntry, userId).getGroups(true /* includeDescription */);
+         objectId = getObjectSid( ldapEntryInfo.accountLdapEntry, ATTR_OBJECT_SID );
       }
       finally
       {
@@ -1917,8 +1643,7 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
               connection.close();
           }
       }
-
-      return groups;
+      return new PrincipalGroupLookupInfo(groups, objectId);
    }
 
    // return the principal ID constructed using samAccountName and domainName
@@ -3324,19 +3049,511 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
       }
    }
 
-   // We may need to Filter out computer accounts in all user query
-   /*private String getAllUsersQuery()
-   {
-       String filter = _adSchemaMapping.getAllUsersQuery();
-       //return String.format("(&((!(objectClass=computer))(!(samAccountType=805306370))%s))", filter);
-       return String.format("(&(!(objectClass=computer))%s)", filter);
-   }
+    /* (non-Javadoc)
+     * @see com.vmware.identity.idm.server.provider.IIdentityProvider#findActiveUser(java.lang.String, java.lang.String)
+     */
+    @Override
+    public PrincipalId findActiveUser(String attributeName,
+       String attributeValue) throws IDMException
+    {
+        Validate.notEmpty(attributeName, "attributeName");
+        Validate.notEmpty(attributeValue, "attributeValue");
+        ILdapConnectionEx connection;
+        try
+        {
+            connection = this.getNonGcConnToDomain(this.getDomain());
+        }
+        catch (Exception ex)
+        {
+            throw new IDMException("Failed to establish server connection", ex);
+        }
 
-   private String getUsersQueryByCritera(String searchString)
-   {
-       String filter = String.format(
-                  _adSchemaMapping.getUserQueryByCriteria(),
-                  searchString);
-       return String.format("(&(!(objectClass=computer))%s)", filter);
-   }*/
+        String filter = null;
+        ILdapMessage message = null;
+        try
+        {
+             String[] attrNames =
+                    { ATTR_NAME_SAM_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_NAME_ACCOUNT_FLAGS};
+
+              String escapedsAttrName = LdapFilterString.encode(attributeName);
+              String escapedsAttrVal = LdapFilterString.encode(attributeValue);
+              filter = String.format(
+                    _adSchemaMapping.getUserQueryByAttribute(),
+                    escapedsAttrName, escapedsAttrVal);
+
+              message = connection.search(this.getStoreDataEx().getUserBaseDn(), LdapScope.SCOPE_SUBTREE,
+                    filter, attrNames, false);
+
+              ILdapEntry[] entries = message.getEntries();
+
+              if (entries == null || entries.length != 1)
+              {
+                 // Use doesn't exist or multiple user same name
+                  throw new InvalidPrincipalException(
+                       String.format(
+                             "user with attribute %s = %s doesn't exist or multiple users with same name",
+                             attributeName, attributeValue), attributeValue);
+              }
+
+              int accountFlags =
+                      this.getOptionalIntegerValue(
+                                  entries[0].getAttributeValues(
+                                          ATTR_NAME_ACCOUNT_FLAGS),
+                                  0);
+
+              String accountName =
+                      getStringValue(entries[0].getAttributeValues(ATTR_NAME_SAM_ACCOUNT));
+
+              String userPrincipalName =
+                      getOptionalStringValue(entries[0].getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+
+              if ( 0 == (USER_ACCT_LOCKED_FLAG & accountFlags) &&
+                      0 == (USER_ACCT_DISABLED_FLAG & accountFlags))
+              {
+                  return ServerUtils.getPrincipalId(userPrincipalName, accountName, this.getDomain());
+              }
+              else
+              {
+                  throw new InvalidPrincipalException(String.format(
+                          "User account '%s@%s' is not active. ",
+                          accountName, this.getDomain()), String.format(
+                          "%s@%s", accountName, getDomain()));
+              }
+
+        }
+        catch (Exception e)
+        {
+            log.debug(
+                String.format(
+                    "findActiveUser([%s], [%s]) failed with [%s]",
+                    ((attributeName!= null)? attributeName : "(NULL)"),
+                    ((attributeValue!=null)?attributeValue:"(NULL)"),
+                    e.getMessage()
+                ),
+                e
+            );
+            throw new InvalidPrincipalException(String.format(
+                "Failed to find active user with error [%s]", e.getMessage()), filter);
+        }
+        finally
+        {
+            connection.close();
+        }
+    }
+
+    private String getRootDomain(String domain)
+    {
+        String rootDomain = null;
+        String ATTR_ROOT_DOMAIN_NAMING_CONTEXT = "rootDomainNamingContext";
+
+        try (ILdapConnectionEx connection = getNonGcConnToDomain(domain)) {
+            String[] attrNames = new String[] { ATTR_ROOT_DOMAIN_NAMING_CONTEXT };
+
+            // Retrieve RootDSE object
+            ILdapMessage message = connection.search("", LdapScope.SCOPE_BASE, "(objectClass=*)", attrNames, false);
+
+            ILdapEntry[] entries = message.getEntries();
+            if (entries != null) {
+                if (entries.length == 0 || entries.length > 1) {
+                    String msg = String.format("%s RootDSE objects are found for domain: %s", entries.length == 0 ? "No" : "Multiple",  this.getDomain());
+                    log.warn(msg);
+                }
+                else {
+                    String rootDomainNamingContext = getStringValue(entries[0]
+                        .getAttributeValues(ATTR_ROOT_DOMAIN_NAMING_CONTEXT));
+
+                    rootDomain = ServerUtils.getDomainFromDN(rootDomainNamingContext);
+                }
+            }
+        } catch (Exception e) {
+            // Do not bail in case we cannot retrieve information from RootDSE
+            log.warn(String.format("Failed to retrieve information from RootDSE in AD provider %s", domain), e);
+        }
+
+        return rootDomain;
+    }
+
+    private boolean includeExternalForestGroups()
+    {
+        return ((this.getStoreDataEx().getFlags() & FLAG_FSP_GROUPS ) != 0);
+    }
+
+    private boolean useTokenGroups()
+    {
+        return (this.getStoreDataEx().getFlags() & FLAG_TOKEN_GROUPS ) != 0;
+    }
+
+    private boolean isInForest(String domain)
+    {
+        if (domain == null)
+            return false;
+
+        if (domain.equalsIgnoreCase(getDomain()))
+            return true;
+
+        DomainTrustInfo[] domainTrustInfo = IdmDomainState.getInstance().getDomainTrustInfo();
+
+        if (domainTrustInfo != null)
+        {
+            for (DomainTrustInfo trust : domainTrustInfo) {
+                if( domain.equalsIgnoreCase( trust.dcInfo.domainNetBiosName ) || domain.equalsIgnoreCase(trust.dcInfo.domainName))
+                {
+                    return trust.IsInforest;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public String getStoreUPNAttributeName() {
+        return ATTR_USER_PRINCIPAL_NAME;
+    }
+
+    class LdapGroupSearch
+    {
+        private final ILdapConnectionEx userConnection;
+        private final IIdmAuthStatRecorder authStatRecorder;
+        private final PrincipalId principalId;
+        private final ILdapEntry userLdapEntry;
+        private List<ILdapQueryStat> ldapQueries;
+        private long startTimeForAllGroups;
+        private int numberOfLdapSearches;
+
+        public LdapGroupSearch(ILdapConnectionEx userConnection, ILdapEntry userLdapEntry, PrincipalId principalId) {
+            this(userConnection, userLdapEntry, principalId, null);
+        }
+
+        public LdapGroupSearch(ILdapConnectionEx userConnection, ILdapEntry userLdapEntry, PrincipalId principalId,
+                IIdmAuthStatRecorder authStatRecorder) {
+
+            this.userConnection = userConnection;
+            this.authStatRecorder = authStatRecorder;
+            this.principalId = principalId;
+            this.userLdapEntry = userLdapEntry;
+        }
+
+        public Set<Group> getGroups(boolean populateDescription) throws Exception
+        {
+            List<ILdapEntry> userEntryList = new ArrayList<>();
+            ILdapConnectionEx gcConnection = null;
+
+            userEntryList.add(userLdapEntry);
+
+            try {
+                boolean isInForest = isInForest(principalId.getDomain());
+                gcConnection = getGCConnection(principalId.getDomain(), isInForest);
+
+                GroupSearchOptionStrategy groupSearchStrategy = getGroupSearchOptionStrategy(userConnection,
+                        gcConnection, principalId.getDomain(), userEntryList, true /* includePrimaryGroup */);
+                Set<Group> groups = getGroupsByLdap(populateDescription, groupSearchStrategy);
+
+                if (includeExternalForestGroups() && !isInForest) {
+                    String userSid = getUserSid(userLdapEntry, ATTR_OBJECT_SID);
+                    groups.addAll(getGroupsFromExternalForest(userLdapEntry.getDN(), userSid, groups, populateDescription, isInForest));
+                }
+
+                return groups;
+
+            } finally {
+                if (gcConnection != null)
+                    gcConnection.close();
+            }
+        }
+
+        private ILdapConnectionEx getGCConnection(String domain, boolean isInForest) throws Exception {
+            ILdapConnectionEx gcConnection = null;
+
+            if (useTokenGroups()) {
+
+                if (domain != getDomain() && isInForest) {
+                    String rootDomain = getRootDomain(principalId.getDomain());
+                    if (rootDomain != null)
+                        gcConnection = getGcConnForDomain(rootDomain);
+                }
+            }
+
+            return gcConnection;
+        }
+
+        // Get a strategy for groups search based on the flags of the Identity Source
+        private GroupSearchOptionStrategy getGroupSearchOptionStrategy(ILdapConnectionEx connection, ILdapConnectionEx gcConnection, String domain, List<ILdapEntry> userEntryList, boolean includePrimaryGroup) throws Exception {
+
+            GroupSearchOptionStrategy groupsSearchStrategy;
+            if (useTokenGroups()) {
+                groupsSearchStrategy = new GroupsSearchTokenGroupsStrategy(connection, gcConnection, userEntryList, domain,  getDomain(), _adSchemaMapping, authStatRecorder);
+            } else {
+                groupsSearchStrategy = new GroupsSearchMemberOfStrategy(connection, userEntryList, domain, getDomain(), includePrimaryGroup, _adSchemaMapping, authStatRecorder);
+            }
+            return groupsSearchStrategy;
+        }
+
+        private Group getGroup(GroupSearchOptionStrategy groupSearchStrategy, ILdapEntry entry, boolean populateDescription)
+        {
+            String groupObjectSid = null;
+            String domain = ServerUtils.getDomainFromDN(entry.getDN());
+
+            String groupName = ServerUtils.getStringValue(entry
+                    .getAttributeValues(ATTR_NAME_SAM_ACCOUNT));
+
+            byte[] groupObjectSIDBytes = ServerUtils.getBinaryValue(entry
+                    .getAttributeValues(ATTR_OBJECT_SID));
+
+            if (groupObjectSIDBytes != null && groupObjectSIDBytes.length != 0) {
+                SecurityIdentifier sid = SecurityIdentifier.build(groupObjectSIDBytes);
+                groupObjectSid = sid.toString();
+            }
+
+            if ( groupSearchStrategy.excludeGroup(entry, groupObjectSid))
+                return null;
+
+            PrincipalId groupAlias = null;
+            GroupDetail groupDetail = null;
+            if (populateDescription) {
+                String groupDomainAlias = null;
+                if (!isSameDomainUpn(domain)) {
+                    DomainControllerInfo dcInfo = obtainDcInfo(domain);
+                    if (dcInfo != null) {
+                        groupDomainAlias = dcInfo.domainNetBiosName;
+                    }
+                } else
+                    groupDomainAlias = getStoreDataEx().getAlias();
+
+                groupAlias = ServerUtils.getPrincipalAliasId(groupName, groupDomainAlias);
+                String groupDescription = getOptionalLastStringValue(entry
+                        .getAttributeValues(ATTR_DESCRIPTION));
+                groupDetail = new GroupDetail((groupDescription == null) ? "" : groupDescription);
+            }
+
+            return new Group(new PrincipalId(groupName, domain), groupAlias, groupObjectSid,
+                    groupDetail);
+        }
+
+        private Set<Group> getGroupsByLdap(boolean populateDescription, GroupSearchOptionStrategy groupSearchStrategy) throws Exception {
+            Set<Group> groups = new HashSet<>();
+
+            List<String> ldapGroupAttributes = groupSearchStrategy.getGroupSearchAttributes(populateDescription);
+
+            initializeAuthStat();
+
+            //groups can be added to groupsToProcess when the parents are searched by transitive group expansion
+            while (groupSearchStrategy.hasGroupsToProcess()) {
+                //filters are mapped by domain because groups from different domains can be found in groupsToProcess
+                //each domain can have multiple filters because these are split to a maximum number of clauses DEFAULT_FILTER_CLAUSE_COUNT
+                Map<String, List<String>> filterByGroupsBaseDn = groupSearchStrategy.getFilterByDomain();
+
+                for (String groupedBaseDn : filterByGroupsBaseDn.keySet()) {
+
+                    long startTime = System.nanoTime();
+
+                    ILdapPagedSearchResult prev_pagedResult = null;
+                    ILdapPagedSearchResult pagedResult = null;
+
+                    //get the connection for the specific domain
+                    ILdapConnectionEx connection = getConnection(groupedBaseDn, groupSearchStrategy);
+
+                    try {
+                        for (String filter : filterByGroupsBaseDn.get(groupedBaseDn))
+                        {
+                            boolean isSearchFinished = false;
+
+                            while (!isSearchFinished) {
+                                pagedResult = connection.search_one_page(groupedBaseDn, LdapScope.SCOPE_SUBTREE, filter,
+                                        ldapGroupAttributes, DEFAULT_PAGE_SIZE, prev_pagedResult);
+
+                                recordQueryStat(groupedBaseDn, startTime, System.nanoTime(), connection, filter);
+
+                                if (pagedResult != null) {
+
+                                    ILdapEntry[] entries = pagedResult.getEntries();
+                                    if (entries != null && entries.length > 0) {
+                                        for (ILdapEntry entry : entries) {
+                                            // get group attributes
+                                            Group group = getGroup(groupSearchStrategy, entry, populateDescription);
+                                            if (group != null)
+                                                groups.add(group);
+
+                                            groupSearchStrategy.addParents(entry);
+                                        }
+                                    }
+                                }
+                                isSearchFinished = pagedResult == null || pagedResult.isSearchFinished();
+                                if (prev_pagedResult != null) {
+                                    prev_pagedResult.close();
+                                    prev_pagedResult = null;
+                                }
+                                prev_pagedResult = pagedResult;
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        if (prev_pagedResult != null)
+                        {
+                            prev_pagedResult.close();
+                            prev_pagedResult = null;
+                        }
+                        if (pagedResult != null)
+                        {
+                            pagedResult.close();
+                            pagedResult = null;
+                        }
+                        if (connection != null)
+                            connection.close();
+                    }
+                }
+            }
+
+            recordAuthStat();
+
+            return groups;
+        }
+
+        private void recordAuthStat() {
+            if (authStatRecorder != null) {
+                if (!authStatRecorder.summarizeLdapQueries()) {
+                    authStatRecorder.add(ldapQueries);
+                } else if (ldapQueries.size() > 0) {
+                    authStatRecorder.add(new LdapQueryStat(ldapQueries.get(0).getQueryString(), ldapQueries.get(0)
+                            .getBaseDN(), ldapQueries.get(0).getConnectionString(), TimeUnit.NANOSECONDS.toMillis(System.nanoTime()
+                            - startTimeForAllGroups), numberOfLdapSearches));
+                }
+            }
+        }
+
+        private void recordQueryStat(String groupedBaseDn, long startTime, long endTime, ILdapConnectionEx connection, String filter) {
+            numberOfLdapSearches++;
+            if (ldapQueries != null) {
+                ldapQueries.add(new LdapQueryStat(filter, groupedBaseDn,
+                        getConnectionString(connection), TimeUnit.NANOSECONDS.toMillis(endTime - startTime), 1));
+            }
+        }
+
+        private void initializeAuthStat() {
+            startTimeForAllGroups = System.nanoTime();
+            ldapQueries = null;
+            if (authStatRecorder != null && (authStatRecorder instanceof IdmAuthStatRecorder)) {
+                ldapQueries = new LinkedList<ILdapQueryStat>();
+            }
+        }
+
+        private ILdapConnectionEx getConnection(String groupdBaseDn, GroupSearchOptionStrategy groupSearchStrategy) throws Exception
+        {
+            String domain = !groupdBaseDn.equalsIgnoreCase("") ? ServerUtils.getDomainFromDN(groupdBaseDn) :  groupSearchStrategy.getConnectionDomain();
+
+            if (groupSearchStrategy.useGCConnection())
+            {
+                String rootDomain = getRootDomain(domain);
+                if (rootDomain != null)
+                    return getGcConnForDomain(rootDomain);
+            }
+
+            return getNonGcConnToDomain(domain);
+        }
+
+        private Set<Group> getGroupsFromExternalForest(String userDn, String userSid, Set<Group> foundGroups, boolean includeDescription, boolean isInForest)
+                throws Exception {
+            Set<Group> groups = new HashSet<>();
+            String domain = getDomain();
+            String domainDn = ServerUtils.getDomainDN(domain);
+            String baseDn = String.format("CN=ForeignSecurityPrincipals,%s", domainDn);
+            List<ILdapEntry> groupEntries = new ArrayList<>();
+
+            initializeAuthStat();
+
+            try (ILdapConnectionEx connection = getNonGcConnToDomain(getDomain()); ILdapConnectionEx gcConnection = getGCConnection(domain, isInForest)) {
+
+                GroupSearchOptionStrategy groupsSearchStrategy = getGroupSearchOptionStrategy(connection, gcConnection, domain, null, false /* excludePrimaryGroup */);
+                List<String> filters = getForeignSecurityPrincipalFilters(groupsSearchStrategy, userSid, foundGroups);
+
+                for (String filter : filters) {
+                    List<String> dns =  getFspDistinguishedNames(baseDn, connection, filter);
+                    groupEntries = getGroupLdapEntriesByFsp(includeDescription, groups, domainDn, connection,
+                            groupsSearchStrategy, dns);
+                }
+
+                if (groupEntries.size() > 0) {
+                    groupsSearchStrategy.addLdapEntriesToProcess(groupEntries);
+                    groups.addAll(getGroupsByLdap(includeDescription, groupsSearchStrategy));
+                }
+            }
+
+            recordAuthStat();
+
+            return groups;
+        }
+
+        private List<ILdapEntry> getGroupLdapEntriesByFsp(boolean includeDescription, Set<Group> groups, String domainDn, ILdapConnectionEx connection, GroupSearchOptionStrategy groupsSearchStrategy, List<String> dns) {
+
+            List<String> fspMemberFilters = getMemberFilters(groupsSearchStrategy, dns);
+            List<ILdapEntry> groupEntries = new ArrayList<>();
+            List<String> fspAttributes = groupsSearchStrategy.getGroupSearchAttributes(includeDescription);
+
+            for (String fspFilter : fspMemberFilters) {
+                long startTime = System.nanoTime();
+                try (ILdapMessage fspMessage = connection.search(domainDn, LdapScope.SCOPE_SUBTREE, fspFilter,
+                        fspAttributes, false)) {
+
+                    recordQueryStat(domainDn, startTime, System.nanoTime(), connection, fspFilter);
+
+                    ILdapEntry[] fspEntries = fspMessage.getEntries();
+
+                    if (fspEntries != null) {
+                        for (ILdapEntry iLdapEntry : fspEntries) {
+                            groupsSearchStrategy.addProcessedGroup(iLdapEntry.getDN());
+                            Group group = getGroup(groupsSearchStrategy, iLdapEntry, includeDescription);
+                            if (group != null)
+                                groups.add(group);
+
+                            groupEntries.add(iLdapEntry);
+                        }
+                    }
+                }
+            }
+
+            return groupEntries;
+        }
+
+        private List<String> getFspDistinguishedNames(String baseDn, ILdapConnectionEx connection, String filter) {
+            List<String> dns = new ArrayList<String>();
+            long startTime = System.nanoTime();
+
+            try(ILdapMessage message = connection.search(baseDn, LdapScope.SCOPE_SUBTREE, filter, new String[] {}, false)) {
+
+                recordQueryStat(baseDn, startTime, System.nanoTime(), connection, filter);
+
+                ILdapEntry[] userEntries = message.getEntries();
+                if (userEntries != null) {
+                    for (ILdapEntry entry : userEntries) {
+                        dns.add(entry.getDN());
+                    }
+                }
+            } catch (NoSuchObjectLdapException e) {
+                log.debug(String.format("FSP not found %s", baseDn), e);
+            }
+
+            return dns;
+        }
+
+        private List<String> getForeignSecurityPrincipalFilters(GroupSearchOptionStrategy groupsSearchStrategy, String userSid, Set<Group> foundGroups) {
+            String suffix = "(objectClass=foreignSecurityPrincipal)";
+            String clauseAttribute = "(cn=";
+            List<String> clauseValues = new ArrayList<>();
+            clauseValues.add(userSid);
+            for (Group group : foundGroups) {
+                clauseValues.add(group.getObjectId());
+            }
+
+            return groupsSearchStrategy.getFilters(suffix, clauseValues, clauseAttribute);
+        }
+
+        private List<String> getMemberFilters(GroupSearchOptionStrategy groupsSearchStrategy, List<String> fspDns)
+        {
+            String suffix = "(objectClass=group)";
+            String clauseAttribute = "(member=";
+
+            return groupsSearchStrategy.getFilters(suffix, fspDns, clauseAttribute);
+        }
+    }
 }

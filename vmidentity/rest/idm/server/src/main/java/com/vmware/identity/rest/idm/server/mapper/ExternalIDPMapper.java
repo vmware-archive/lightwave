@@ -45,6 +45,7 @@ public class ExternalIDPMapper {
     public static ExternalIDPDTO getExternalIDPDTO(IDPConfig config) {
         ExternalIDPDTO.Builder builder = ExternalIDPDTO.builder();
         builder.withEntityID(config.getEntityID());
+        builder.withAlias(config.getAlias());
         builder.withNameIDFormats(config.getNameIDFormats());
         builder.withSsoServices(getServiceEndpointDTOs(config.getSsoServices()));
         builder.withSloServices(getServiceEndpointDTOs(config.getSloServices()));
@@ -172,6 +173,7 @@ public class ExternalIDPMapper {
         IDPConfig config = null;
         try {
             config = new IDPConfig(externalIDP.getEntityID());
+            config.setAlias(externalIDP.getAlias());
             config.setNameIDFormats(externalIDP.getNameIDFormats());
             config.setSsoServices(getServiceEndpoints(externalIDP.getSsoServices()));
             config.setSloServices(getServiceEndpoints(externalIDP.getSloServices()));

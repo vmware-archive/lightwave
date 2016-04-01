@@ -453,7 +453,7 @@ public class IdmServerConfig
       Integer val = regAdapter.getIntValue(rootKey, CONFIG_ROOT_KEY, CONFIG_SP_SYSTEM_DOMAIN_BACKCOMPAT_MODE, true);
       if ( val != null )
       {
-          this._isServiceProviderSystemDomainInBackCompatMode = (val.intValue() == 1);
+          this._isServiceProviderSystemDomainInBackCompatMode = (val.intValue() != 0);
       }
 
       if ( this._isServiceProviderSystemDomainInBackCompatMode )

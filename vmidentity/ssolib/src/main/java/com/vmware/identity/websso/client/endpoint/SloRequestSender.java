@@ -1,5 +1,5 @@
 /* *************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved.
+ * Copyright 2012 VMware, Inc. All rights reserved. VMware Confidential
  **************************************************************************/
 package com.vmware.identity.websso.client.endpoint;
 
@@ -9,6 +9,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.Validate;
 import org.opensaml.saml2.core.LogoutRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -23,9 +25,6 @@ import com.vmware.identity.websso.client.SamlNames;
 import com.vmware.identity.websso.client.SamlUtils;
 import com.vmware.identity.websso.client.SloRequestSettings;
 import com.vmware.identity.websso.client.SubjectData;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * SLO endpoint component responsible for constructing logout request to the
@@ -92,7 +91,12 @@ public class SloRequestSender {
         if (redirectUrl != null) {
             response.sendRedirect(redirectUrl);
         } else {
-            logger.error("Failed to send out the SLO request!");
+            if (SamlUtils.isIdpSupportSLO(getMetadataSettings(), requestSettings)) {
+                logger.error("Failed to send out the SLO request!");
+            } else {
+                logger.warn(String.format(
+                        "SLO end point does not exist for IDP: %s, SLO request is not sent.", requestSettings.getIDPAlias()));
+            }
         }
     }
 
@@ -235,7 +239,12 @@ public class SloRequestSender {
                     issuer);
 
             String destination = SamlUtils.getIdpSloLocation(idpConfig, SamlNames.HTTP_REDIRECT);
-            Validate.notEmpty(destination, "IDP SLO destination");
+
+            // if IDP's SLO end point does not exist, return null LogoutRequest.
+            if (destination == null) {
+                logger.warn(String.format("SLO end point does not exist for IDP: %s.", idpConfig.getAlias()));
+                return null;
+            }
 
             // 3. create openSaml LogoutRequest object
             request = samlUtils.createSamlLogoutRequest(
@@ -260,5 +269,4 @@ public class SloRequestSender {
 
         return request;
     }
-
 }

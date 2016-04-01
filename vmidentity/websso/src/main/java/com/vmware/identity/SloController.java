@@ -15,6 +15,7 @@ package com.vmware.identity;
 
 import java.io.IOException;
 import java.util.Locale;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -96,7 +97,12 @@ public final class SloController {
                 if (redirectUrl != null) {
                     response.sendRedirect(redirectUrl);
                 } else {
-                    SamlServiceImpl.sendLogoutError(locale, response, logoutState, messageSource);
+                    if (!logoutState.getValidationResult().isValid()) {
+                        SamlServiceImpl.sendLogoutError(locale, response, logoutState, messageSource);
+                    } else {
+                        // SLO end point does not exist, do nothing.
+                        logger.warn("SLO end point for initiating service provider does not exist, no logout response is sent.");
+                    }
                 }
             }
             else if (!logoutState.getValidationResult().isValid()) {

@@ -14,33 +14,36 @@
 
 package com.vmware.identity.openidconnect.common;
 
-import net.minidev.json.JSONObject;
-
 import org.apache.commons.lang3.Validate;
-
-import com.nimbusds.oauth2.sdk.ErrorObject;
-import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 
 /**
  * @author Yehia Zayour
  */
-public class TokenErrorResponse extends com.nimbusds.oauth2.sdk.TokenErrorResponse {
-    public TokenErrorResponse(ErrorObject error) {
-        super(error);
+public final class TokenErrorResponse extends TokenResponse {
+    private final ErrorObject errorObject;
+
+    public TokenErrorResponse(ErrorObject errorObject) {
+        Validate.notNull(errorObject, "errorObject");
+        this.errorObject = errorObject;
     }
 
-    public static TokenErrorResponse parse(HTTPResponse httpResponse) throws ParseException {
+    public ErrorObject getErrorObject() {
+        return this.errorObject;
+    }
+
+    @Override
+    public HttpResponse toHttpResponse() {
+        return HttpResponse.createJsonResponse(this.errorObject);
+    }
+
+    public static TokenErrorResponse parse(HttpResponse httpResponse) throws ParseException {
         Validate.notNull(httpResponse, "httpResponse");
 
-        httpResponse.ensureStatusCodeNotOK();
-        JSONObject jsonObject = httpResponse.getContentAsJSONObject();
-        return parse(jsonObject);
-    }
+        if (httpResponse.getStatusCode() == StatusCode.OK) {
+            throw new ParseException("expecting status code not OK");
+        }
 
-    public static TokenErrorResponse parse(JSONObject jsonObject) throws ParseException {
-        Validate.notNull(jsonObject, "jsonObject");
-        com.nimbusds.oauth2.sdk.TokenErrorResponse nimbusResponse = com.nimbusds.oauth2.sdk.TokenErrorResponse.parse(jsonObject);
-        return new TokenErrorResponse(nimbusResponse.getErrorObject());
+        ErrorObject errorObject = ErrorObject.parse(httpResponse);
+        return new TokenErrorResponse(errorObject);
     }
 }

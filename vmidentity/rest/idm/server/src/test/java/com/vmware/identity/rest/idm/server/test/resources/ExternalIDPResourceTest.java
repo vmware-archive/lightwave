@@ -21,14 +21,17 @@ import static org.easymock.EasyMock.isA;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Locale;
+import java.util.Scanner;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.container.ContainerRequestContext;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.w3c.dom.Document;
 
 import com.vmware.identity.idm.IDMException;
 import com.vmware.identity.idm.IDPConfig;
@@ -48,16 +51,17 @@ import com.vmware.identity.rest.idm.server.test.util.IDPConfigUtil;
 public class ExternalIDPResourceTest {
 
     private static final String TENANT = "test.tenant";
+    private static final String TEST_DATA_EXTERNAL_IDP_PATH = "src/test/resources/data/external_idp_config.xml";
 
     private ExternalIDPResource resource;
     private CasIdmClient client;
-    private HttpServletRequest request;
+    private ContainerRequestContext request;
 
     @Before
     public void setup() {
-        request = createMock(HttpServletRequest.class);
-        expect(request.getLocale()).andReturn(Locale.getDefault()).anyTimes();
-        expect(request.getHeader(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
+        request = createMock(ContainerRequestContext.class);
+        expect(request.getLanguage()).andReturn(Locale.getDefault()).anyTimes();
+        expect(request.getHeaderString(Config.CORRELATION_ID_HEADER)).andReturn("test").anyTimes();
         replay(request);
 
         client = createMock(CasIdmClient.class);
@@ -110,6 +114,40 @@ public class ExternalIDPResourceTest {
         verify(client);
 
         IDPConfigUtil.assertDTOEqual(config, idp);
+    }
+
+    @Test
+    public void testRegisterExternalIDP_WithMetadata() throws Exception {
+        IDPConfig config = IDPConfigUtil.createIDPConfig();
+        String entityId = "https://sc-rdops-vm06-dhcp-183-243.eng.vmware.com/websso/SAML2/Metadata/vsphere.local";
+        String externalIDPConfig = new Scanner(new File(TEST_DATA_EXTERNAL_IDP_PATH)).useDelimiter("\\Z").next();
+        expect(client.importExternalIDPConfiguration(eq(TENANT), isA(Document.class))).andReturn(entityId);
+        expect(client.getExternalIdpConfigForTenant(TENANT, entityId)).andReturn(config);
+
+        replay(client);
+
+        ExternalIDPDTO idp = resource.registerWithMetadata(externalIDPConfig);
+        IDPConfigUtil.assertDTOEqual(config, idp);
+    }
+
+    @Test(expected = NotFoundException.class)
+    public void testRegisterExternalIDPWithMetaData_NoSuchTenant() throws Exception {
+        expect(client.importExternalIDPConfiguration(eq(TENANT), isA(Document.class))).andThrow(new NoSuchTenantException("No such tenant"));
+        expectLastCall().andThrow(new NoSuchTenantException("No such tenant"));
+        replay(client);
+
+        resource.registerWithMetadata(new Scanner(new File(TEST_DATA_EXTERNAL_IDP_PATH)).useDelimiter("\\Z").next());
+        verify(client);
+    }
+
+    @Test(expected = InternalServerErrorException.class)
+    public void testRegisterExternalIDPWithMetadata_ThrowsInternalServerError() throws Exception {
+        expect(client.importExternalIDPConfiguration(eq(TENANT), isA(Document.class)));
+        expectLastCall().andThrow(new IDMException("IDM Error"));
+        replay(client);
+
+        resource.registerWithMetadata(new Scanner(new File(TEST_DATA_EXTERNAL_IDP_PATH)).useDelimiter("\\Z").next());
+        verify(client);
     }
 
     @Test(expected = NotFoundException.class)
