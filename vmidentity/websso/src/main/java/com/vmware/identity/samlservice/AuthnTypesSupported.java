@@ -19,12 +19,14 @@ public class AuthnTypesSupported {
 	private boolean passwordProtectTransport;
 	private boolean windowsSession;
 	private boolean tlsClientCert;
+	private boolean rsaSecureID;
 
-	public AuthnTypesSupported(boolean passwordProtectTransport, boolean windowsSession, boolean tlsClient)
+	public AuthnTypesSupported(boolean passwordProtectTransport, boolean windowsSession, boolean tlsClient, boolean rsaSecurID)
 	{
 		this.passwordProtectTransport = passwordProtectTransport;
 		this.windowsSession = windowsSession;
 		this.tlsClientCert = tlsClient;
+		this.rsaSecureID = rsaSecurID;
 	}
 
 	public boolean supportsWindowsSession() {
@@ -45,4 +47,12 @@ public class AuthnTypesSupported {
 	public void setPasswordProtectTransport(boolean passward) {
 		this.passwordProtectTransport = passward;
 	}
+
+    public boolean supportsRsaSecureID() {
+        return rsaSecureID;
+    }
+
+    public void setRsaSecureID(boolean rsaSecureID) {
+        this.rsaSecureID = rsaSecureID;
+    }
 }

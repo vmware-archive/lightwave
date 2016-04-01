@@ -14,11 +14,19 @@
 package com.vmware.identity.samlservice;
 
 import org.apache.commons.lang.Validate;
+import org.apache.commons.lang.StringUtils;
 
+import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
+import com.vmware.identity.diagnostics.IDiagnosticsContext;
+import com.vmware.identity.diagnostics.IDiagnosticsContextScope;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.IIdmServiceContext;
+import com.vmware.identity.idm.IdmServiceContextFactory;
 import com.vmware.identity.idm.client.CasIdmClient;
+import com.vmware.identity.idm.client.IServiceContextProvider;
 import com.vmware.identity.samlservice.impl.CasIdmAccessor;
+
 
 /**
  * Factory which gives you IdmAccessor interface
@@ -29,12 +37,21 @@ public class DefaultIdmAccessorFactory implements IdmAccessorFactory {
 
 	private CasIdmClient idmClient;
 
-	/**
+    /**
 	 * Create factory
 	 */
 	public DefaultIdmAccessorFactory() {
 		logger.debug("DefaultIdmAccessorFactory constructor");
 		idmClient = new CasIdmClient(Shared.IDM_HOSTNAME);
+		Validate.notNull(idmClient);
+	}
+
+    /**
+	 * Create factory with correlationID
+	 */
+	public DefaultIdmAccessorFactory(String correlationId) {
+		logger.debug("DefaultIdmAccessorFactory constructor with correlationId");
+		idmClient = new CasIdmClient(Shared.IDM_HOSTNAME, new IdmServiceContextProvider(correlationId, Shared.getDefaultTenant()));
 		Validate.notNull(idmClient);
 	}
 
@@ -46,5 +63,29 @@ public class DefaultIdmAccessorFactory implements IdmAccessorFactory {
 		logger.debug("DefaultIdmAccessorFactory getIdmAccessor");
 		Validate.notNull(idmClient);
 		return new CasIdmAccessor(idmClient);
+	}
+
+	private static class IdmServiceContextProvider extends IServiceContextProvider {
+		private String id;
+		private String tenant;
+
+	    public IdmServiceContextProvider(String id, String tenant) {
+	        this.id = id;
+	        this.tenant = tenant;
+	    }
+
+	    @Override
+	    public IIdmServiceContext getServiceContext()
+	    {
+	        IIdmServiceContext serviceContext = null;
+	        IDiagnosticsContextScope contextScope = DiagnosticsContextFactory.createContext(id, tenant);
+	        if(contextScope != null) {
+	            IDiagnosticsContext context = DiagnosticsContextFactory.getCurrentDiagnosticsContext();
+	            if (context != null && !StringUtils.isEmpty(context.getCorrelationId())) {
+	                serviceContext =  IdmServiceContextFactory.getIdmServiceContext(context.getCorrelationId());
+	            }
+	        }
+	        return serviceContext;
+	    }
 	}
 }

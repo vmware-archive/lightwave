@@ -1,5 +1,5 @@
 /* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved.
+ * Copyright 2012 VMware, Inc. All rights reserved. 
  **********************************************************************************/
 package com.vmware.identity.websso.client;
 
@@ -295,7 +295,6 @@ public class SamlUtils {
 
         Validate.notNull(where, "destination is null");
         Validate.notNull(nameID, "nameID is null");
-        Validate.notNull(getIssuer(), "Issuer is null");
 
         DateTime issueInstant = new DateTime();
         LogoutRequestBuilder logoutRequestBuilder = new LogoutRequestBuilder();
@@ -380,7 +379,6 @@ public class SamlUtils {
                 + getIssuer());
         log.info("Creating SAML Response status:" + status + ", substatus: " + substatus);
         Validate.notNull(where, "destination is null");
-        Validate.notNull(getIssuer(), "Issuer is null");
 
         if (status == null) {
             // assume success
@@ -937,5 +935,11 @@ public class SamlUtils {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private static <T> T create(Class<T> cls, QName qname) {
         return (T) Configuration.getBuilderFactory().getBuilder(qname).buildObject(qname);
+    }
+
+    // Helper function to check whether IDP has SLO end point defined.
+    public static boolean isIdpSupportSLO(MetadataSettings metadataSettings, SloRequestSettings requestSettings) {
+        IDPConfiguration idpConfig = metadataSettings.getIDPConfiguration(requestSettings.getIDPAlias());
+        return !(SamlUtils.getIdpSloLocation(idpConfig, SamlNames.HTTP_REDIRECT) == null);
     }
 }

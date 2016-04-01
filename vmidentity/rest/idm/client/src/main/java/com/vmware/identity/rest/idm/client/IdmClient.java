@@ -50,9 +50,11 @@ public class IdmClient extends BaseClient {
     private GroupResource group;
     private IdentityProviderResource providers;
     private OidcClientResource oidcClient;
+    private ResourceServerResource resourceServer;
     private RelyingPartyResource relyingParty;
     private SolutionUserResource solutionUser;
     private UserResource user;
+    private DiagnosticsResource diagnostics;
 
     /**
      * @see BaseClient#BaseClient(String)
@@ -195,6 +197,15 @@ public class IdmClient extends BaseClient {
     }
 
     /**
+     * Get the subresource containing all of the commands related to a tenant's resource servers.
+     *
+     * @return the subresource containing all of the resource servers commands.
+     */
+    public ResourceServerResource resourceServer() {
+        return resourceServer;
+    }
+
+    /**
      * Get the subresource containing all of the commands related to a tenant's
      * Secure Token Service (STS) relying parties.
      *
@@ -224,6 +235,16 @@ public class IdmClient extends BaseClient {
         return user;
     }
 
+    /**
+     * Get the subresource containing all of the commands related to a tenant's
+     * diagnostics.
+     *
+     * @return the subresource containing all of the diagnostics commands.
+     */
+    public DiagnosticsResource diagnostics() {
+        return diagnostics;
+    }
+
     private void initResources() {
         server = new ServerResource(this);
         tenant = new TenantResource(this);
@@ -232,9 +253,11 @@ public class IdmClient extends BaseClient {
         group = new GroupResource(this);
         providers = new IdentityProviderResource(this);
         oidcClient = new OidcClientResource(this);
+        resourceServer = new ResourceServerResource(this);
         relyingParty = new RelyingPartyResource(this);
         solutionUser = new SolutionUserResource(this);
         user = new UserResource(this);
+        diagnostics = new DiagnosticsResource(this);
     }
 
 }

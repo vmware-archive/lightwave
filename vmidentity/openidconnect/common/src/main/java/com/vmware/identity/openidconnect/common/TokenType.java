@@ -14,6 +14,11 @@
 
 package com.vmware.identity.openidconnect.common;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.lang3.Validate;
+
 /**
  * @author Yehia Zayour
  */
@@ -21,13 +26,29 @@ public enum TokenType {
     BEARER("Bearer"),
     HOK("hotk-pk");
 
-    private final String name;
-
-    private TokenType(String name) {
-        this.name = name;
+    private static final Map<String, TokenType> stringToEnumMap = new HashMap<String, TokenType>();
+    static {
+        for (TokenType v : TokenType.values()) {
+            stringToEnumMap.put(v.getValue(), v);
+        }
     }
 
-    public String getName() {
-        return this.name;
+    private final String value;
+
+    private TokenType(String value) {
+        this.value = value;
+    }
+
+    public String getValue() {
+        return this.value;
+    }
+
+    public static TokenType parse(String value) throws ParseException {
+        Validate.notEmpty(value, "value");
+        TokenType result = stringToEnumMap.get(value);
+        if (result == null) {
+            throw new ParseException("invalid token_type value");
+        }
+        return result;
     }
 }
