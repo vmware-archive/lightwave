@@ -20253,6 +20253,15 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     )
 
+attributeTypes: (
+    VMWare.OIDC.attribute.11
+    NAME 'vmwOidcAuthnRequestClientAssertionLifetimeMS'
+    DESC 'Authentication Request Client Assertion Lifetime MS'
+    EQUALITY integerMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
 objectClasses: (
     VMWare.OIDC.objectclass.1
     NAME 'vmwOidcRelyingParty'
@@ -20265,7 +20274,8 @@ objectClasses: (
           vmwOidcIDTokenJWSAlg $
           vmwOidcPostLogoutRedirectURI $
           vmwOidcLogoutURI $
-          vmwOidcCertSubDN )
+          vmwOidcCertSubDN $
+          vmwOidcAuthnRequestClientAssertionLifetimeMS )
     )
 
 objectClasses: (
