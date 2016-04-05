@@ -37,6 +37,10 @@ namespace VMwareMMCIDP.UI.Common.Utilities
         {
             MessageBox.Show(msg, "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
         }
+        public static bool ShowQuestion(string msg)
+        {
+            return MessageBox.Show(msg, "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes;
+        }
         public static void ShowException(Exception exp)
         {
             var msgParams = new MessageBoxParameters
@@ -61,7 +65,7 @@ namespace VMwareMMCIDP.UI.Common.Utilities
         }
         public static bool ShowForm(Form frm)
         {
-            return snapIn.Console.ShowDialog(frm)==DialogResult.OK;
+            return snapIn.Console.ShowDialog(frm) == DialogResult.OK;
         }
         public static void ShowMessage(string msg)
         {

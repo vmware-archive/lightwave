@@ -23,6 +23,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions;
 using Vmware.Tools.RestSsoAdminSnapIn.DataSource;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Helpers;
+using Vmware.Tools.RestSsoAdminSnapIn.Core.Web;
 
 namespace RestSsoAdminSnapIn
 {
@@ -74,6 +75,10 @@ namespace RestSsoAdminSnapIn
 				{
 					UIErrorHelper.ShowAlert ("Redirect Uri cannot be empty", "Alert");
 					return;
+				} else if(!WebUtil.IsValidHttpUrl(TxtRedirectUri.StringValue))
+				{
+					UIErrorHelper.ShowAlert ("Redirect Uri is invalid", "Alert");
+					return;
 				}
 				OidcClientDto.OidcClientMetadataDTO.RedirectUris.Add(TxtRedirectUri.StringValue);
 				ReloadTableView(RedirectUriTableView, OidcClientDto.OidcClientMetadataDTO.RedirectUris);
@@ -84,6 +89,10 @@ namespace RestSsoAdminSnapIn
 				if(string.IsNullOrEmpty(TxtPostLogoutRedirectUri.StringValue))
 				{
 					UIErrorHelper.ShowAlert ("Post logout redirect Uri cannot be empty", "Alert");
+					return;
+				} else if(!WebUtil.IsValidHttpUrl(TxtPostLogoutRedirectUri.StringValue))
+				{
+					UIErrorHelper.ShowAlert ("Post logout is invalid", "Alert");
 					return;
 				}
 				OidcClientDto.OidcClientMetadataDTO.PostLogoutRedirectUris.Add(TxtPostLogoutRedirectUri.StringValue);
@@ -120,7 +129,7 @@ namespace RestSsoAdminSnapIn
 			this.BtnSave.Activated += (object sender, EventArgs e) => {
 				if (string.IsNullOrEmpty (TxtCertificateDN.StringValue)) {
 					UIErrorHelper.ShowAlert ("Please choose a valid certificate", "Alert");
-				} else if (string.IsNullOrEmpty (TxtLogoutUri.StringValue)) {
+				} else if (string.IsNullOrEmpty (TxtLogoutUri.StringValue) || !WebUtil.IsValidHttpUrl(TxtLogoutUri.StringValue)) {
 					UIErrorHelper.ShowAlert ("Please enter valid logout uri", "Alert");
 				} else if (OidcClientDto.OidcClientMetadataDTO.RedirectUris.Count == 0) {
 					UIErrorHelper.ShowAlert ("Please enter a valid redirect URI", "Alert");

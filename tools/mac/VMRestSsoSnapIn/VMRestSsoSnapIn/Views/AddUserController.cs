@@ -70,14 +70,6 @@ namespace RestSsoAdminSnapIn
 		{
 			if (string.IsNullOrEmpty (TxtUserName.StringValue)) {
 				UIErrorHelper.ShowAlert ("Please enter valid username", "Alert");
-			} else if (string.IsNullOrEmpty (TxtFirstName.StringValue)) {
-				UIErrorHelper.ShowAlert ("Please enter valid First Name", "Alert");
-			} else if (string.IsNullOrEmpty (TxtLastName.StringValue)) {
-				UIErrorHelper.ShowAlert ("Please enter valid Last name", "Alert");
-			} else if (string.IsNullOrEmpty (TxtEmail.StringValue)) {
-				UIErrorHelper.ShowAlert ("Please enter valid Email", "Alert");
-			} else if (string.IsNullOrEmpty (TxtDescription.StringValue)) {
-				UIErrorHelper.ShowAlert ("Please enter valid Description", "Alert");
 			} else if (string.IsNullOrEmpty (TxtPassword.StringValue)) {
 				UIErrorHelper.ShowAlert ("Please enter valid Password", "Alert");
 			} else if (string.IsNullOrEmpty (TxtConfirmPassword.StringValue)) {
