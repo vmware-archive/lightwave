@@ -178,6 +178,16 @@ AC_SUBST(OPENSSL_BASE_PATH)
 AC_SUBST(OPENSSL_INCLUDES)
 AC_SUBST(OPENSSL_LDFLAGS)
 
+# Maven component
+
+AC_ARG_WITH([maven],
+    [AC_HELP_STRING([--with-maven=<dir>], [use Apache Maven  binaries rooted at prefix <dir> ])],
+    [
+        MAVEN_HOME="$withval"
+    ])
+
+AC_SUBST(MAVEN_HOME)
+
 # Java
 
 AC_ARG_WITH([jdk],
