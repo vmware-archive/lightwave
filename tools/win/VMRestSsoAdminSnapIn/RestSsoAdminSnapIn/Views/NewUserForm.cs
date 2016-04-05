@@ -12,8 +12,11 @@
  * under the License.
  */
 using System;
+using System.IO;
+using System.Net;
 using System.Net.Mail;
 using System.Windows.Forms;
+using Vmware.Tools.RestSsoAdminSnapIn.Core.Serialization;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 using VMwareMMCIDP.UI.Common.Utilities;
@@ -99,11 +102,35 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 ViewToDataContext();                
                 var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_serverDto, _tenantName);
                 ActionHelper.Execute(delegate
-                {   
-                    _userDto = SnapInContext.Instance.ServiceGateway.User.Create(_serverDto, _tenantName, _userDto, auth.Token);
-                    shouldClose = true;
-                    this.DialogResult = DialogResult.OK;
-                    Close();
+                {
+                    try
+                    {
+                        _userDto = SnapInContext.Instance.ServiceGateway.User.Create(_serverDto, _tenantName, _userDto, auth.Token);
+                        shouldClose = true;
+                        this.DialogResult = DialogResult.OK;
+                        Close();
+                    }
+                    catch (WebException exp)
+                    {
+                        if (exp.Response is HttpWebResponse)
+                        {
+                            var response = exp.Response as HttpWebResponse;
+                            if (response != null && response.StatusCode == HttpStatusCode.BadRequest && response.ContentType == "application/json")
+                            {
+                                var resp = new StreamReader(response.GetResponseStream()).ReadToEnd();
+                                var error = JsonConvert.Deserialize<AuthErrorDto>(resp);
+                                if (error.Cause == "Constraint violation")
+                                {
+                                    MMCDlgHelper.ShowError("Password does not match the password policy set on the tenant. Check tenant configuration for password policy or contact administrator");
+                                }
+                            }
+                            else
+                            {
+                                throw exp;
+                            }
+                        }
+                    }  
+
                 }, auth);
             }   
         }

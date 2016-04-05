@@ -102,10 +102,17 @@ namespace RestSsoAdminSnapIn
 			};
 			this.RdoDomainController.Activated += (object sender, EventArgs e) => 
 			{
-				if(RdoDomainController.SelectedTag == 1)
+				var anyDc = RdoDomainController.SelectedTag == 1;
+				if(anyDc)
+				{
 					SetConnectionString();
+				}
 				else
+				{
 					TxtLdapConnection.StringValue = (NSString) string.Empty;
+				}
+				ChkProtect.Enabled = anyDc;
+				EnableDisableConnectionString(!anyDc);
 			};
 			this.BtnRemoveCertificate.Activated += (object sender, EventArgs e) => {
 				if (LstCertificates.SelectedRows.Count > 0) {
@@ -180,7 +187,13 @@ namespace RestSsoAdminSnapIn
 			};
 			SetSpnControls ();
 		}
-
+		private void EnableDisableConnectionString(bool value)
+		{
+			TxtPrimaryConnection.Enabled = value;
+			TxtSecondaryConnection.Enabled = value;
+			BtnPrimaryImport.Enabled = value && TxtPrimaryConnection.StringValue.StartsWith("ldaps://");
+			BtnSecondaryImport.Enabled = value && TxtSecondaryConnection.StringValue.StartsWith("ldaps://");
+		}
 		private void SetSpnControls()
 		{
 			var isSpn = (RdoIdentitySource.SelectedTag == 1 &&  RdoSpn.SelectedRow == 1);
@@ -211,6 +224,7 @@ namespace RestSsoAdminSnapIn
 					return;
 				}
 				_certificates.Add(certfificateDto);
+				ReloadCertificates ();
 				UIErrorHelper.ShowAlert(string.Format("Certificate with subject {0} imported successfully", cert.Subject), "Information");
 			}
 			catch (Exception exception)
@@ -475,11 +489,14 @@ namespace RestSsoAdminSnapIn
 			TxtDomainName.StringValue = string.IsNullOrEmpty (IdentityProviderDto.Name) ? string.Empty : IdentityProviderDto.Name;
 			TxtBaseDnUser.StringValue = string.IsNullOrEmpty (IdentityProviderDto.UserBaseDN) ? string.Empty : IdentityProviderDto.UserBaseDN;
 			TxtBaseDnGroups.StringValue = string.IsNullOrEmpty (IdentityProviderDto.GroupBaseDN) ? string.Empty : IdentityProviderDto.GroupBaseDN;
-			if (IdentityProviderDto.SiteAffinityEnabled) {
+			if (tag == 2 && IdentityProviderDto.SiteAffinityEnabled) {
 				RdoDomainController.SelectCellWithTag (1);
 				ChkProtect.StringValue = "1";
-
+				EnableDisableConnectionString (false);
 			} else {
+				EnableDisableConnectionString (true);
+				ChkProtect.Enabled = false;
+				RdoDomainController.SelectCellWithTag (2);
 				if (IdentityProviderDto.ConnectionStrings.Count > 0) {
 					TxtPrimaryConnection.StringValue = IdentityProviderDto.ConnectionStrings [0];
 				}
@@ -552,14 +569,26 @@ namespace RestSsoAdminSnapIn
 			if (_currentStep == WizardSteps.One && RdoIdentitySource.SelectedRow == 0) {
 				_currentStep = WizardSteps.Four;
 			} else {	
-				_currentStep++;
+				if (_currentStep == WizardSteps.Two && IsUnsecuredConnection ()) {
+					_currentStep = WizardSteps.Four;
+				} else {
+					_currentStep++;
+				}
 			}
 		}
-
+		private bool IsUnsecuredConnection()
+		{
+			var connectionStrings = GetConnectionStrings();
+			return !connectionStrings.Exists(x=>x.StartsWith("ldaps"));
+		}
 		private void SetPreviousStep()
 		{
-			if (_currentStep == WizardSteps.Four && RdoIdentitySource.SelectedRow == 0) {
-				_currentStep = WizardSteps.One;
+			if (_currentStep == WizardSteps.Four) {
+				if (RdoIdentitySource.SelectedRow == 0) {
+					_currentStep = WizardSteps.One;
+				} else {
+						_currentStep = IsUnsecuredConnection() ? WizardSteps.Two : _currentStep - 1;
+				}
 			} else {	
 				_currentStep--;
 			}
@@ -589,6 +618,8 @@ namespace RestSsoAdminSnapIn
 				PnlProtect.Hidden = RdoIdentitySource.SelectedRow != 1;
 				PnlSpecificDomainController.Hidden = false;
 				SetConnectionString ();
+				var anyDc = RdoIdentitySource.SelectedTag == 2 && RdoDomainController.SelectedTag == 1;
+				EnableDisableConnectionString (!anyDc);
 			}
 
 			if (!PnlStep4.Hidden) {

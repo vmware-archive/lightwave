@@ -15,14 +15,15 @@
 using AppKit;
 using Foundation;
 using System;
+using System.IO;
+using System.Net;
 using System.Linq;
 using System.Collections.Generic;
 using RestSsoAdminSnapIn;
+using Vmware.Tools.RestSsoAdminSnapIn.Core.Serialization;
 using Vmware.Tools.RestSsoAdminSnapIn.Service;
 using Vmware.Tools.RestSsoAdminSnapIn.Service.Tenant;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
-
-
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
@@ -57,10 +58,26 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 				var form = new AddUserController ();
 				var result = NSApplication.SharedApplication.RunModalForWindow (form.Window);
 				if (result == VMIdentityConstants.DIALOGOK) {
-					var user = AddUser (form.UserDto);
-					if (user != null) {
-						UIErrorHelper.ShowAlert ("User " + user.Name + " created successfully", "Information");
-						Refresh (sender, e);
+					try {
+						var user = AddUser (form.UserDto);
+						if (user != null) {
+							UIErrorHelper.ShowAlert ("User " + user.Name + " created successfully", "Information");
+							Refresh (sender, e);
+						}
+					} catch (WebException exp) {
+						if (exp.Response is HttpWebResponse) {
+							var response = exp.Response as HttpWebResponse;
+							if (response != null && response.StatusCode == HttpStatusCode.BadRequest && response.ContentType == "application/json") {
+								var resp = new StreamReader (response.GetResponseStream ()).ReadToEnd ();
+								var error = JsonConvert.Deserialize<AuthErrorDto> (resp);
+								if(error.Cause == "Constraint violation")
+								{
+									UIErrorHelper.ShowAlert ("Password does not match the password policy set on the tenant. Check tenant configuration for password policy or contact administrator", "Error");
+								}
+							} else {
+								throw exp;
+							}
+						}
 					}
 				}
 			});

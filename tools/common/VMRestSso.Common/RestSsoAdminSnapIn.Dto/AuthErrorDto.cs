@@ -44,5 +44,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
             get { return error_description; }
             set { error_description = value; }
         }
+		[DataMember(EmitDefaultValue = false)]
+		private string cause;
+
+		public string Cause
+		{
+			get { return cause; }
+			set { cause = value; }
+		}
     }
 }
