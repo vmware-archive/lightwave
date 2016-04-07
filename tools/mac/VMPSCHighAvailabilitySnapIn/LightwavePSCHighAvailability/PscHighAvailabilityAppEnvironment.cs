@@ -22,6 +22,7 @@ using VmIdentity.CommonUtils;
 using VmIdentity.CommonUtils.Persistance;
 using VMPSCHighAvailability.UI;
 using VMPSCHighAvailability.Common;
+using VMIdentity.CommonUtils.Log;
 
 namespace VMPSCHighAvailability 
 {
@@ -34,6 +35,11 @@ namespace VMPSCHighAvailability
 		/// The instance.
 		/// </summary>
 		private static PscHighAvailabilityAppEnvironment _instance;
+
+		/// <summary>
+		/// Logger
+		/// </summary>
+		private ILogger _logger;
 
 		/// <summary>
 		/// Gets the file name path.
@@ -75,6 +81,22 @@ namespace VMPSCHighAvailability
 					_instance.SetSnapInDataFileName (Constants.LocalDataFileName);
 				}
 				return _instance;
+			}
+		}
+
+		/// <summary>
+		/// Logger instance
+		/// </summary>
+		public ILogger Logger
+		{
+			get
+			{
+				if (_logger == null)
+				{
+					var filePath = Path.Combine(GetApplicationPath(), Constants.PscLogFileName);
+					_logger = new FileLogger(filePath);
+				}
+				return _logger;
 			}
 		}
 	}

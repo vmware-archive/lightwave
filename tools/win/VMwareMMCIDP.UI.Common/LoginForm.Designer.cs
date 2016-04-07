@@ -66,7 +66,6 @@ namespace VMwareMMCIDP.UI.Common
             this.textServer.Size = new System.Drawing.Size(200, 20);
             this.textServer.TabIndex = 0;
             this.toolTip1.SetToolTip(this.textServer, "Please enter server");
-            this.textServer.TextChanged += new System.EventHandler(this.textServer_Changed);
             // 
             // textUser
             // 
@@ -75,7 +74,6 @@ namespace VMwareMMCIDP.UI.Common
             this.textUser.Size = new System.Drawing.Size(200, 20);
             this.textUser.TabIndex = 2;
             this.toolTip1.SetToolTip(this.textUser, "Please enter your username");
-            this.textUser.TextChanged += new System.EventHandler(this.textUser_Changed);
             // 
             // textPassword
             // 
@@ -85,7 +83,6 @@ namespace VMwareMMCIDP.UI.Common
             this.textPassword.TabIndex = 3;
             this.toolTip1.SetToolTip(this.textPassword, "Please enter your password");
             this.textPassword.UseSystemPasswordChar = true;
-            this.textPassword.TextChanged += new System.EventHandler(this.textPassword_Changed);
             // 
             // textTenant
             // 
@@ -95,7 +92,6 @@ namespace VMwareMMCIDP.UI.Common
             this.textTenant.TabIndex = 4;
             this.textTenant.Text = "vsphere.local";
             this.toolTip1.SetToolTip(this.textTenant, "Please enter the domain on the server to which the username belongs");
-            this.textTenant.TextChanged += new System.EventHandler(this.textTenant_Changed);
             // 
             // label1
             // 
@@ -137,7 +133,6 @@ namespace VMwareMMCIDP.UI.Common
             // 
             this.buttonOk.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.buttonOk.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.buttonOk.Enabled = false;
             this.buttonOk.Location = new System.Drawing.Point(190, 231);
             this.buttonOk.Name = "buttonOk";
             this.buttonOk.Size = new System.Drawing.Size(75, 23);
@@ -178,7 +173,8 @@ namespace VMwareMMCIDP.UI.Common
             this.toolTip1.ToolTipIcon = System.Windows.Forms.ToolTipIcon.Info;
             // 
             // LoginForm
-            //
+            // 
+            this.AcceptButton = buttonOk;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(378, 266);

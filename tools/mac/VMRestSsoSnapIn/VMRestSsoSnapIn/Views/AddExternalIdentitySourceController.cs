@@ -392,7 +392,7 @@ namespace RestSsoAdminSnapIn
 			var providerDto = new IdentityProviderDto
 			{
 				DomainType = DomainType.EXTERNAL_DOMAIN.ToString(),
-				IdentityStoreType = GetIdentitySourceType(RdoIdentitySource.SelectedTag),
+				Type = GetIdentitySourceType(RdoIdentitySource.SelectedTag),
 				Name = isAd ? _domainName : TxtDomainName.StringValue,
 				Alias = isAd ? null : TxtDomainAlias.StringValue,
 				FriendlyName = isAd ? null : TxtFriendlyName.StringValue,
@@ -480,7 +480,7 @@ namespace RestSsoAdminSnapIn
 
 		private void DtoToView()
 		{
-			var tag = GetIdFromIdentitySourceType (IdentityProviderDto.IdentityStoreType);
+			var tag = GetIdFromIdentitySourceType (IdentityProviderDto.Type);
 			RdoIdentitySource.SelectCellWithTag (tag);
 			RdoIdentitySource.Enabled = false;
 			TxtDomainName.Enabled = false;

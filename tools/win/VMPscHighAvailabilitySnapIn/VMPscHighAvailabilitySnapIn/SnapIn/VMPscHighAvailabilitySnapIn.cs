@@ -43,6 +43,7 @@ namespace VMPscHighAvailabilitySnapIn.SnapIn
         protected override void OnInitialize()
         {
             base.OnInitialize();
+
             PscHighAvailabilityAppEnvironment.Instance.LoadLocalData();
             this.SmallImages.AddStrip(ResourceHelper.GetToolbarImage());
             PscHighAvailabilityAppEnvironment.Instance.SnapIn = this;

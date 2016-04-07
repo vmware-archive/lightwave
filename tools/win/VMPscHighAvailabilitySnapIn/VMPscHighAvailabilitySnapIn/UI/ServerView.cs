@@ -118,11 +118,15 @@ namespace VMPscHighAvailabilitySnapIn.UI
                 var dto = serverNode.Hosts.FirstOrDefault(x => x.NodeType == NodeType.Infrastructure && x.Active);
                 if(dto == null)
                     txtDomainFunctionalLevel.Text = string.Empty;
-                var serverDto = new ServerDto { Server = dto.Name, Upn = serverNode.ServerDto.Upn, Password = serverNode.ServerDto.Password, DomainName = serverNode.ServerDto.DomainName };
-                txtDomainFunctionalLevel.Text = PscHighAvailabilityAppEnvironment.Instance.Service.GetDomainFunctionalLevel(serverDto);
+                if (serverNode != null && serverNode.ServerDto != null)
+                {
+                    var serverDto = new ServerDto { Server = dto.Name, Upn = serverNode.ServerDto.Upn, Password = serverNode.ServerDto.Password, DomainName = serverNode.ServerDto.DomainName };
+                    txtDomainFunctionalLevel.Text = PscHighAvailabilityAppEnvironment.Instance.Service.GetDomainFunctionalLevel(serverDto);
+                }
             }
             catch(Exception exc)
             {
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
                 MiscUtilsService.ShowError(exc);
             }
         }

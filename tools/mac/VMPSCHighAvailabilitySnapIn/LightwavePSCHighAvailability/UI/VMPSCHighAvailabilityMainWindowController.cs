@@ -98,8 +98,7 @@ namespace VMPSCHighAvailability.UI
 		public override void AwakeFromNib ()
 		{
 			base.AwakeFromNib ();
-			//_service = new MockService (new ServiceHelper());
-			_service = new PscHighAvailabilityService ();
+			_service = new PscHighAvailabilityService (PscHighAvailabilityAppEnvironment.Instance.Logger);
 			this.Window.MinSize = new CoreGraphics.CGSize (){Height = 607, Width= 820};
 			this.Window.Title = Constants.SuiteName + " " + Constants.ToolName;
 			ServerToolBarItem.Activated += OnServerToolBarItem_Activated;
@@ -674,7 +673,10 @@ namespace VMPSCHighAvailability.UI
 					_rootNode.OnCacheRefresh += OnCacheRefresh;
 				}
 				else
+				{
 					_rootNode.RefreshTopology (topologyRefresh);
+					InvokeOnMainThread (_rootNode.UpdateNodes);
+				}
 			}
 			catch(AggregateException exc) {
 				InvokeOnMainThread (() => {

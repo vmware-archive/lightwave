@@ -30,7 +30,7 @@ namespace VMPSCHighAvailability.Common
         public const string CompanyName = "Vmware Inc.";
         public const string DateFormat = "dd-MMM-yyyy hh:mm:ss";
         public const int MilliSecsMultiplier = 1000;
-        public const int TopologyTimeout = 60;
+        public const int TopologyTimeout = 120;
         public const int DefaultTimerRefreshInterval = 60;
         public const string DeleteServer = "Delete Server";
         public const string RootNodeDisplayName = "VMware Servers";
@@ -57,7 +57,7 @@ namespace VMPSCHighAvailability.Common
         public const string FailedLoadingTopologyDetails = "Failed to load topology details";
         public const int ServerTimeOut = 20000;
         public const string DisconnectLabel = "Disconnect";
-        public const string ConnectLabel = "Connect";
+        public const string ConnectLabel = "Connect";   
         public const string DisconnectIcon = "disconnect_64x.png";
         public const string ConnectIcon = "connect.png";
 
@@ -86,6 +86,7 @@ namespace VMPSCHighAvailability.Common
 
         public const string LocalDataFileName = "PSCHighAvailability.xml";
         public const string ToolsSuiteName = "LightwaveTools";
+		public const string PscLogFileName = "PscSiteManagement.log";
 
         #endregion
 
@@ -110,7 +111,7 @@ namespace VMPSCHighAvailability.Common
         public const string PscTableColumnLastResponseTimeId = "Last Response Time";
         public const string PscTableColumnLastErrorId = "Last Error";
         public const string PscTableColumnNodeTypeId = "Node Type";
-
+		public const string PscTableColumnSiteLocationId = "Site Location";
         #endregion
 
         #region Services Table Constants
@@ -135,8 +136,16 @@ namespace VMPSCHighAvailability.Common
         #region Service Status Constants
 
         public const string Active = "Active";
-        public const string InActive = "InActive";
+        public const string UnKnown = "Unknown";
+        public const string InActive = "Inactive";
 
+        #endregion
+
+        #region Multi-Site Constants
+
+        public const string SameSite = "Local";
+        public const string RemoteSite = "Remote";
+        
         #endregion
 
         #region State Constants
