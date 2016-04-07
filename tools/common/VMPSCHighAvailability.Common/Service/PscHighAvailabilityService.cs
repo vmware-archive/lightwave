@@ -28,11 +28,17 @@ using System.Collections.Concurrent;
 using VMIdentity.CommonUtils.Utilities;
 using VMDirInterop.LDAP;
 using VMDirInterop.Interfaces;
+using VMIdentity.CommonUtils.Log;
 
 namespace VMPSCHighAvailability.Common.Service
 {
     public class PscHighAvailabilityService : IPscHighAvailabilityService
     {
+        private ILogger _logger;
+        public PscHighAvailabilityService(ILogger logger)
+        {
+            _logger = logger;
+        }
         /// <summary>
         /// Gets the infrastructure nodes.
         /// </summary>
@@ -41,22 +47,39 @@ namespace VMPSCHighAvailability.Common.Service
         /// <param name="dcName">Dc name.</param>
         private List<NodeDto> GetInfrastructureNodes(ServerDto serverDto, string dcName)
         {
+            var message = "GetInfrastructureNodes method for Server: " + serverDto.Server; 
+            _logger.Log(message, LogLevel.Info);
+                
             var nodes = new List<NodeDto>();
 
             // Get Infrastructure nodes
-            var entries = vmdirClient.Client.VmDirGetDCInfos(dcName, serverDto.UserName, serverDto.Password);
-
-            foreach (vmdirClient.VmDirDCInfo entry in entries)
+            try
             {
-                var infraNode = new InfrastructureDto()
+                message = "VmDirGetDCInfos API call for Server: " + serverDto.Server;
+                _logger.Log(message, LogLevel.Info);
+                var entries = vmdirClient.Client.VmDirGetDCInfos(dcName, serverDto.UserName, serverDto.Password);
+
+                message = string.Format("VmDirGetDCInfos API Server: {0} complete. Entries retrieved: {1}", serverDto.Server, entries.Count.ToString());
+                _logger.Log(message, LogLevel.Info);
+
+                foreach (vmdirClient.VmDirDCInfo entry in entries)
                 {
-                    Name = entry.pszDCName,
-                    Sitename = entry.pszSiteName,
-                    Partners = entry.partners, 
-                    NodeType = NodeType.Infrastructure,
-                    Ip = Network.GetIpAddress(entry.pszDCName)
-                };
-                nodes.Add(infraNode);
+                    var infraNode = new InfrastructureDto()
+                    {
+                        Name = entry.pszDCName,
+                        Sitename = entry.pszSiteName,
+                        Partners = entry.partners,
+                        NodeType = NodeType.Infrastructure,
+                        Ip = Network.GetIpAddress(entry.pszDCName)
+                    };
+                    nodes.Add(infraNode);
+                }
+            }
+            catch(Exception exc)
+            {
+                message =  "VmDirGetDCInfos API returned error for Server: " + serverDto.Server;
+                _logger.Log(message, LogLevel.Error);
+                _logger.LogException(exc);
             }
             return nodes;
         }
@@ -70,45 +93,75 @@ namespace VMPSCHighAvailability.Common.Service
         /// <param name="siteName">Site name.</param>
         private List<NodeDto> GetManagementNodes(ServerDto serverDto, string dcName, string site)
         {
+            var message = "GetManagementNodes method for Server: " + serverDto.Server;
+            _logger.Log(message, LogLevel.Info);
+
             var nodes = new ConcurrentBag<NodeDto>();
 
-            // Get Management nodes
-            var mgmtNodes = vmdirClient.Client.VmDirGetComputers(dcName, serverDto.UserName, serverDto.Password);
-            
-            if (mgmtNodes != null && mgmtNodes.Count > 0)
+            try
             {
-                var tasks = new Task[mgmtNodes.Count];
-                var index = 0;
-                // Update management nodes with site name
-                foreach (var mgmt in mgmtNodes)
-                {
-                    tasks[index++] = Task.Factory.StartNew(() =>
-                    {
-                        var siteName = string.Empty;
-                        var s = new ServerDto
-                        {
-                            Server = mgmt,
-                            Upn = serverDto.Upn,
-                            Password = serverDto.Password,
-                            UserName = serverDto.UserName
-                        };
-                        //var client = CanConnect(s);
-                        using (Client client = new Client(s.Server, s.Upn, s.Password))
-                        {
-                            siteName = client.VmAfdGetSiteName();
-                        }
-                        var mgmtNode = new ManagementDto()
-                        {
-                            Name = mgmt,
-                            Sitename = siteName,
-                            NodeType = NodeType.Management,
-                            Ip = Network.GetIpAddress(mgmt)
-                        };
-                        nodes.Add(mgmtNode);
+                message = "VmDirGetComputers method for Server: " + serverDto.Server;
+                _logger.Log(message, LogLevel.Info);
 
-                    });
+                // Get Management nodes
+                var mgmtNodes = vmdirClient.Client.VmDirGetComputers(dcName, serverDto.UserName, serverDto.Password);
+
+                message = string.Format("VmDirGetComputers method for Server: {0} VC nodes:  {1}", serverDto.Server, mgmtNodes.Count);
+                _logger.Log(message, LogLevel.Info);
+
+                if (mgmtNodes != null && mgmtNodes.Count > 0)
+                {
+                    var tasks = new Task[mgmtNodes.Count];
+                    var index = 0;
+                    // Update management nodes with site name
+                    foreach (var mgmt in mgmtNodes)
+                    {
+                        tasks[index++] = Task.Factory.StartNew(() =>
+                        {
+                            var siteName = string.Empty;
+                            var s = new ServerDto
+                            {
+                                Server = mgmt,
+                                Upn = serverDto.Upn,
+                                Password = serverDto.Password,
+                                UserName = serverDto.UserName
+                            };
+
+                            try
+                            {
+                                message = string.Format("VmAfdGetSiteName API call for Server: {0} ", s.Server);
+                                _logger.Log(message, LogLevel.Info);
+
+                                using (Client client = new Client(s.Server, s.Upn, s.Password))
+                                {
+                                    siteName = client.VmAfdGetSiteName();
+                                }
+                                message = string.Format("VmAfdGetSiteName API call for Server: {0} succeeded.", s.Server);
+                                _logger.Log(message, LogLevel.Info);
+
+                                var mgmtNode = new ManagementDto()
+                                {
+                                    Name = mgmt,
+                                    Sitename = siteName,
+                                    NodeType = NodeType.Management,
+                                    Ip = Network.GetIpAddress(mgmt)
+                                };
+                                nodes.Add(mgmtNode);
+                            }
+                            catch (Exception exc)
+                            {
+                                message = string.Format("VmAfdGetSiteName returned error for Server: {0} ", s.Server);
+                                _logger.Log(message, LogLevel.Info);
+                                _logger.LogException(exc);
+                            }
+                        });
+                    }
+                    Task.WaitAll(tasks);
                 }
-                Task.WaitAll(tasks);
+            }
+            catch(Exception exc)
+            {
+                _logger.LogException(exc);
             }
             return nodes.ToList();
         }
@@ -162,13 +215,36 @@ namespace VMPSCHighAvailability.Common.Service
         /// <param name="serverDto">Management node details</param>
         public void SetLegacyMode(bool legacy, ServerDto serverDto)
         {
-
-            using (Client client = new Client(serverDto.Server, serverDto.Upn, serverDto.Password))
+            try
             {
-                if (legacy)
-                    client.CdcDisableClientAffinity();
-                else
-                    client.CdcEnableClientAffinity();
+                using (Client client = new Client(serverDto.Server, serverDto.Upn, serverDto.Password))
+                {
+                    if (legacy)
+                    {
+                        var message = string.Format("CdcDisableClientAffinity API call for Server: {0} ", serverDto.Server);
+                        _logger.Log(message, LogLevel.Info);
+
+                        client.CdcDisableClientAffinity();
+
+                        message = string.Format("CdcDisableClientAffinity API call for Server: {0} complete", serverDto.Server);
+                        _logger.Log(message, LogLevel.Info);
+                    }
+                    else
+                    {
+                        var message = string.Format("CdcEnableClientAffinity API call for Server: {0} ", serverDto.Server);
+                        _logger.Log(message, LogLevel.Info);
+
+                        client.CdcEnableClientAffinity();
+
+                        message = string.Format("CdcEnableClientAffinity API call for Server: {0} complete", serverDto.Server);
+                        _logger.Log(message, LogLevel.Info);
+                    }
+                }
+            }
+            catch(Exception exc)
+            {
+                _logger.LogException(exc);
+                throw;
             }
         }
 
@@ -204,7 +280,13 @@ namespace VMPSCHighAvailability.Common.Service
                 VMAFD_HEARTBEAT_STATUS status;
                 using (Client client = new Client(serverDto.Server, serverDto.Upn, serverDto.Password))
                 {
+                    var message = string.Format("VmAfdGetHeartbeatStatus API call for Server: {0}", serverDto.Server);
+                    _logger.Log(message, LogLevel.Info);
+
                     status = client.VmAfdGetHeartbeatStatus();
+
+                    message = string.Format("VmAfdGetHeartbeatStatus API call for Server: {0} complete", serverDto.Server);
+                    _logger.Log(message, LogLevel.Info);
                 }
                 dto.Active = status.bIsAlive == 1;
 
@@ -295,8 +377,14 @@ namespace VMPSCHighAvailability.Common.Service
 
             try
             {
+                var message = string.Format("Method: GetVmDirServiceStatus - VmDirGetDCInfos API call for Server: {0} complete", serverDto.Server);
+                _logger.Log(message, LogLevel.Info);
+
                 var entries = vmdirClient.Client.VmDirGetDCInfos(serverDto.Server, serverDto.UserName, serverDto.Password);
                 dto.Alive = true;
+
+                message = string.Format("Method: GetVmDirServiceStatus -  VmDirGetDCInfos API call for Server: {0} complete", serverDto.Server);
+                _logger.Log(message, LogLevel.Info);
             }
             catch (Exception exc)
             {
@@ -315,11 +403,30 @@ namespace VMPSCHighAvailability.Common.Service
             var dto = new ManagementDto { Name = serverDto.Server };
             try
             {
+                var message = string.Format("Method: Connect - new Client API call for Server: {0}", serverDto.Server);
+                _logger.Log(message, LogLevel.Info);
+
                 using (Client client = new Client(serverDto.Server, serverDto.Upn, serverDto.Password))
                 {
+                    message = string.Format("Method: Connect - new Client API call for Server: {0} complete", serverDto.Server);
+                    _logger.Log(message, LogLevel.Info);
+
+                    message = string.Format("Method: Connect - VmAfdGetSiteName API call for Server: {0}", serverDto.Server);
+                    _logger.Log(message, LogLevel.Info);
 
                     dto.Sitename = client.VmAfdGetSiteName();
+
+                    message = string.Format("Method: Connect - VmAfdGetSiteName API call for Server: {0} Sitename: {1}", serverDto.Server, dto.Sitename);
+                    _logger.Log(message, LogLevel.Info);
+
+                    message = string.Format("Method: Connect - CdcGetDCName API call for Server: {0}", serverDto.Server);
+                    _logger.Log(message, LogLevel.Info);
+
                     var domainController = client.CdcGetDCName(serverDto.DomainName, dto.Sitename, 0);
+
+                    message = string.Format("Method: Connect - CdcGetDCName API call for Server: {0} complete", serverDto.Server);
+                    _logger.Log(message, LogLevel.Info);
+
                     dto.DomainController = new InfrastructureDto
                     {
                         Name = domainController.pszDCName
@@ -328,6 +435,7 @@ namespace VMPSCHighAvailability.Common.Service
             }
             catch (Exception exc)
             {
+                _logger.LogException(exc);
                 dto = null;
             }
             return dto;
@@ -343,13 +451,28 @@ namespace VMPSCHighAvailability.Common.Service
             var dto = new ManagementDto() { State = new StateDescriptionDto(), Name = serverDto.Server, Domain = serverDto.DomainName };
             using (Client client = new Client(serverDto.Server, serverDto.Upn, serverDto.Password))
             {
+                var message = string.Format("Method: GetManagementNodeDetails - CdcGetCurrentState API call for Server: {0}", serverDto.Server);
+                _logger.Log(message, LogLevel.Info);
+
                 var state = client.CdcGetCurrentState();
+
+                message = string.Format("Method: GetManagementNodeDetails - CdcGetCurrentState API call for Server: {0} complete", serverDto.Server);
+                _logger.Log(message, LogLevel.Info);
+
                 dto.Legacy = (state == CDC_DC_STATE.CDC_DC_STATE_LEGACY);
                 dto.State = CdcDcStateHelper.GetStateDescription(state);
                 dto.Sitename = client.VmAfdGetSiteName();
                 dto.Active = true;
                 dto.Ip = Network.GetIpAddress(dto.Name);
+
+                message = string.Format("Method: GetManagementNodeDetails - CdcGetDCName API call for Server: {0}", serverDto.Server);
+                _logger.Log(message, LogLevel.Info);
+
                 var dcInfo = client.CdcGetDCName(serverDto.DomainName, dto.Sitename, 0);
+
+                message = string.Format("Method: GetManagementNodeDetails - CdcGetDCName API call for Server: {0} complete", serverDto.Server);
+                _logger.Log(message, LogLevel.Info);
+
                 dto.DomainController = new InfrastructureDto
                 {
                     Name = dcInfo.pszDCName,
@@ -363,7 +486,14 @@ namespace VMPSCHighAvailability.Common.Service
                 {
                     CDC_DC_STATUS_INFO info;
                     VMAFD_HEARTBEAT_STATUS hbStatus;
+
+                    message = string.Format("Method: GetManagementNodeDetails - CdcGetDCStatus API call for Server: {0}", serverDto.Server);
+                    _logger.Log(message, LogLevel.Info);
+
                     client.CdcGetDCStatus(entry, string.Empty, out info, out hbStatus);
+
+                    message = string.Format("Method: GetManagementNodeDetails - CdcGetDCStatus API call for Server: {0} complete", serverDto.Server);
+                    _logger.Log(message, LogLevel.Info);
 
                     var infraDto = new InfrastructureDto()
                     {
@@ -404,13 +534,26 @@ namespace VMPSCHighAvailability.Common.Service
         public string GetDomainFunctionalLevel(ServerDto serverDto)
         {
             var dfl = string.Empty;
-            var helper = new LdapSearchHelper(serverDto.Server, serverDto.Upn, serverDto.Password);
-            var searchDN = "DC=" + serverDto.DomainName.Replace(".", ", DC=");
-            Action<ILdapMessage, List<ILdapEntry>> action = delegate(ILdapMessage searchRequest, List<ILdapEntry> values)
+            try
             {
-                dfl = GetDomainFunctionalLevel(searchRequest, values);
-            };
-            helper.Search(searchDN, LdapScope.SCOPE_BASE, "(objectClass=*)", new[] { "+" }, true, action);
+                var message = string.Format("Method: GetDomainFunctionalLevel - LdapSearchHelper.Search API call for Server: {0} complete", serverDto.Server);
+                _logger.Log(message, LogLevel.Info);
+
+                var helper = new LdapSearchHelper(serverDto.Server, serverDto.Upn, serverDto.Password);
+                var searchDN = "DC=" + serverDto.DomainName.Replace(".", ", DC=");
+                Action<ILdapMessage, List<ILdapEntry>> action = delegate(ILdapMessage searchRequest, List<ILdapEntry> values)
+                {
+                    dfl = GetDomainFunctionalLevel(searchRequest, values);
+                };
+                helper.Search(searchDN, LdapScope.SCOPE_BASE, "(objectClass=*)", new[] { "+" }, true, action);
+
+                message = string.Format("Method: GetDomainFunctionalLevel - CdcGetDCStatus API call for Server: {0} complete", serverDto.Server);
+                _logger.Log(message, LogLevel.Info);
+            }
+            catch (Exception exc)
+            {
+                _logger.LogException(exc);               
+            }
             return dfl;
         }
 

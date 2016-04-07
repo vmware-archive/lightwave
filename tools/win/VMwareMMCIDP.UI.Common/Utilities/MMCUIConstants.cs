@@ -58,5 +58,9 @@ namespace VMwareMMCIDP.UI.Common.Utilities
         public const string CSR_FILTER = "CSR Files (*.csr)|*.csr|All Files (*.*)|*.*";
         public const string CERT_FILTER = "Certificate Files (*.crt)|*.crt|All Files (*.*)|*.*";
         public const string SAML_TOKEN_FILTER = "SAML Token Files (*.xml)|*.xml|All Files (*.*)|*.*";
+
+        // Log constants
+        public const string LOG_FOLDER = @"C:\ProgramData\VMware, Inc\VMware Identity Tools\Logs\";
+        public const string PSC_LOG_FILE = "VMPscSiteManagement.log";
     }
 }

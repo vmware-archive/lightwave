@@ -89,37 +89,37 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
                     foreach (var host in infras)
                     {
                         Task.Run(() =>
+                        {
+                            try
                             {
-                                try
-                                {
-                                    UpdateInfraNode(host, ServerDto);
-                                }
-                                catch (Exception exc)
-                                {
-                                    // do nothing
-                                }
+                                UpdateInfraNode(host, ServerDto);
                             }
+                            catch (Exception exc)
+                            {
+                                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                            }
+                        }
                             );
                     }
                 }
 
-                var mgmts =  Hosts.Where(x => x.NodeType == VMPSCHighAvailability.Common.NodeType.Management);
+                var mgmts = Hosts.Where(x => x.NodeType == VMPSCHighAvailability.Common.NodeType.Management);
 
                 if (mgmts != null)
                 {
                     foreach (var host in mgmts)
                     {
                         Task.Run(() =>
+                        {
+                            try
                             {
-                                try
-                                {
-                                    UpdateManagementNode(host, ServerDto);
-                                }
-                                catch (Exception exc)
-                                {
-                                    // do nothing
-                                }
+                                UpdateManagementNode(host, ServerDto);
                             }
+                            catch (Exception exc)
+                            {
+                                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                            }
+                        }
                             );
                     }
                 }
@@ -149,6 +149,7 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
             }
             catch (Exception exc)
             {
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
                 MMCDlgHelper.ShowException(exc);
             }
         }
@@ -167,10 +168,11 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
             }
             catch (Exception exc)
             {
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
                 MMCDlgHelper.ShowException(exc);
             }
         }
-        
+
         /// <summary>
         /// On refresh event handler
         /// </summary>
@@ -181,6 +183,7 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
             {
                 base.OnRefresh(status);
                 RefreshTopology(_dto);
+                RefreshNodeTree();
             }
             catch (AggregateException exc)
             {
@@ -190,11 +193,20 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
                     var message = string.Format(Constants.VMDirConnectFailure, msg);
                     MMCDlgHelper.ShowMessage(message);
                 }
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
             }
             catch (Exception exc)
             {
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
                 MMCDlgHelper.ShowException(exc);
             }
+        }
+
+        private void RefreshNodeTree()
+        {
+            UpdateNodes();
+            if (this.UserControl != null)
+                this.UserControl.LoadData();
         }
 
         /// <summary>
@@ -234,22 +246,22 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
         {
             if (this.Children != null)
             {
-                foreach(var child in this.Children)
+                foreach (var child in this.Children)
                 {
-                    if(child is ManagementNode)
+                    if (child is ManagementNode)
                     {
                         ((ManagementNode)child).Cleanup();
                     }
                 }
                 this.Children.Clear();
             }
-            
-            
+
+
             if (Hosts != null)
                 Hosts.Clear();
 
             if (this.UserControl != null)
-            this.UserControl.LoadData(false);
+                this.UserControl.LoadData(false);
 
             if (ServerDto != null)
             {
@@ -302,7 +314,7 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
         /// Add view description for the node
         /// </summary>
         void AddViewDescription()
-        {            
+        {
             var fvd = new FormViewDescription
             {
                 DisplayName = Constants.PscTableColumnNameId,
@@ -320,11 +332,11 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
         public void RefreshTopology(ManagementDto dto, bool refresh = false)
         {
             var service = PscHighAvailabilityAppEnvironment.Instance.Service;
-            
+
             // 0. For subsequent refresh fetch the affinitized dc for the management dto from the cache
-            if(Hosts != null)
+            if (Hosts != null)
             {
-                var mgmtDto = Hosts.FirstOrDefault(x=>x.Name == dto.Name || x.Ip == dto.Name) as ManagementDto;
+                var mgmtDto = Hosts.FirstOrDefault(x => x.Name == dto.Name || x.Ip == dto.Name) as ManagementDto;
 
                 if (mgmtDto != null)
                     dto.DomainController = mgmtDto.DomainController;
@@ -356,13 +368,13 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
                 host.Active = true;
                 var task = new Task(() => { UpdateManagementNode(host, ServerDto); });
                 task.Start();
-            }            
+            }
         }
 
         private void UpdateManagementNode(NodeDto host, ServerDto serverDto)
         {
             var service = PscHighAvailabilityAppEnvironment.Instance.Service;
-            var server = new ServerDto 
+            var server = new ServerDto
             {
                 Server = host.Name,
                 Upn = serverDto.Upn,
@@ -381,15 +393,16 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
         private void UpdateInfraNode(NodeDto host, ServerDto serverDto)
         {
             var service = PscHighAvailabilityAppEnvironment.Instance.Service;
-            var server = new ServerDto {
-                Server = host.Name, 
-                Upn = serverDto.Upn, 
-                UserName = serverDto.UserName, 
-                Password = serverDto.Password 
+            var server = new ServerDto
+            {
+                Server = host.Name,
+                Upn = serverDto.Upn,
+                UserName = serverDto.UserName,
+                Password = serverDto.Password
             };
             var dto = service.UpdateStatus(host, server);
             var index = Hosts.FindIndex(x => x.Name == dto.Name);
-            if(index > -1 && index < Hosts.Count)
+            if (index > -1 && index < Hosts.Count)
                 Hosts[index] = dto;
         }
 
@@ -407,7 +420,7 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
             foreach (var siteGroup in groupedHosts)
             {
                 // 3. Add a site node.
-                var siteNode = new SiteNode (siteGroup.Key);
+                var siteNode = new SiteNode(siteGroup.Key);
                 this.Children.Add(siteNode);
 
                 // 6. Add the leaf infrastucture nodes.
@@ -519,7 +532,7 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
             StartBackgroundRefresh();
 
             if (this.UserControl != null)
-            this.UserControl.LoadData();            
+                this.UserControl.LoadData();
         }
 
         public void StartBackgroundRefresh()
@@ -532,6 +545,6 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
         {
             if (_timer != null)
                 _timer.Enabled = false;
-        } 
+        }
     }
 }

@@ -14,6 +14,7 @@
 
 using Microsoft.ManagementConsole;
 using System;
+using System.Linq;
 using System.Windows.Forms;
 using VMPSCHighAvailability.Common;
 using VMPSCHighAvailability.Common.DTO;
@@ -98,8 +99,18 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
                     return true;
                 }
             }
+            catch (AggregateException exc)
+            {
+                if (exc.InnerExceptions.Count > 0)
+                {
+                    var msg = exc.InnerExceptions.Select(x => x.Message).Aggregate((x, y) => x + " , " + y);
+                    MMCDlgHelper.ShowMessage(msg);
+                }
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+            }
             catch (Exception exp)
             {
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exp);
                 MMCDlgHelper.ShowException(exp);
             }
             return false;
@@ -124,8 +135,18 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
                     return true;
                 }
             }
+            catch (AggregateException exc)
+            {
+                if (exc.InnerExceptions.Count > 0)
+                {
+                    var msg = exc.InnerExceptions.Select(x => x.Message).Aggregate((x, y) => x + " , " + y);
+                    MMCDlgHelper.ShowMessage(msg);
+                }
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+            }
             catch (Exception exp)
             {
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exp);
                 node.AddLoginActions();
                 MMCDlgHelper.ShowException(exp);
             }

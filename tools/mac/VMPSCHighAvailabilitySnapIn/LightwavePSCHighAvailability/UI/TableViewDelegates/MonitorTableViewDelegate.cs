@@ -75,10 +75,15 @@ namespace VMPSCHighAvailability.UI
 						if (collection != null) {
 							var item = collection [(int)row];
 
-							// Color Code -> Heartbeat IN-ACTIVE: Red | Heartbeat ACTIVE: GREEN | No Heartbeat: Black
-							textCell.TextColor = !item.Active
+							// Color Code -> Heartbeat: REMOTE: LightGray | IN-ACTIVE: Red | Heartbeat ACTIVE: GREEN | No Heartbeat: Black
+							textCell.TextColor = 
+								item.IsRemote 
+								? NSColor.LightGray
+								:
+								(!item.Active
 									? NSColor.Red
-								: NSColor.FromSrgb((nfloat)3.0/255,(nfloat)161/255,(nfloat)27/255,1);
+									: NSColor.FromSrgb((nfloat)3.0/255,(nfloat)161/255,(nfloat)27/255,1)
+								);
 						}
 					}
 				}

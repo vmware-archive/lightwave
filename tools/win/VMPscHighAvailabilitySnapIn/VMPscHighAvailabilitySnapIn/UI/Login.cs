@@ -14,6 +14,7 @@
 
 using Microsoft.ManagementConsole;
 using System;
+using System.Linq;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -22,6 +23,7 @@ using VMPSCHighAvailability.Common.DTO;
 using VMPscHighAvailabilitySnapIn.ScopeNodes;
 using VMPscHighAvailabilitySnapIn.SnapIn;
 using VMPscHighAvailabilitySnapIn.Utils;
+using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace VMPscHighAvailabilitySnapIn.UI
 {
@@ -82,6 +84,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
         {
             try
             {
+                btnOK.Enabled = false;
                 if (IsValid())
                 {
                     if (Server == null)
@@ -106,11 +109,24 @@ namespace VMPscHighAvailabilitySnapIn.UI
                     else
                     {
                         MiscUtilsService.ShowError(Constants.LoginError, "Error", MessageBoxButtons.OK);
+                        btnOK.Enabled = true;
                     }
+                }
+                else
+                    btnOK.Enabled = true;
+            }
+            catch (AggregateException exc)
+            {
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                if (exc.InnerExceptions.Count > 0)
+                {
+                    var msg = exc.InnerExceptions.Select(x => x.Message).Aggregate((x, y) => x + " , " + y);
+                    MMCDlgHelper.ShowError(msg);
                 }
             }
             catch (Exception exp)
             {
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exp);
                 MiscUtilsService.ShowError(exp);
             }
         }
