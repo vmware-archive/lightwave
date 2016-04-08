@@ -1,6 +1,6 @@
 Name:    vmware-dns
 Summary: DNS Service
-Version: 6.0.0
+Version: 6.5.0
 Release: 0
 Group:   Applications/System
 Vendor:  VMware, Inc.

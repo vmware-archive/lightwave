@@ -48,7 +48,7 @@
       <fileset refid="jar-set.asm" />
    </path>
 
-   <artifact:pom id="pom-wstauthz" groupId="com.vmware.identity" artifactId="wstauthz" version="6.0.2" name="VMwareIdentity-STS-wstauthz" >
+   <artifact:pom id="pom-wstauthz" groupId="com.vmware.identity" artifactId="wstauthz" version="6.5.0" name="VMwareIdentity-STS-wstauthz" >
        <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />
        <dependency groupId="org.apache.logging.log4j" artifactId="log4j-1.2-api" version="2.0.2" />
        <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />
@@ -56,9 +56,9 @@
        <dependency groupId="org.slf4j" artifactId="slf4j-api" version="1.7.10" />
        <dependency groupId="org.slf4j" artifactId="jcl-over-slf4j" version="1.7.10" />
        <dependency groupId="commons-lang" artifactId="commons-lang" version="2.5" />
-       <dependency groupId="com.vmware.identity" artifactId="diagnostics" version="6.0.2" />
-       <dependency groupId="com.vmware.identity" artifactId="samltoken" version="6.0.2" />
-       <dependency groupId="com.vmware.identity" artifactId="admin-interfaces" version="6.0.2" />
+       <dependency groupId="com.vmware.identity" artifactId="diagnostics" version="6.5.0" />
+       <dependency groupId="com.vmware.identity" artifactId="samltoken" version="6.5.0" />
+       <dependency groupId="com.vmware.identity" artifactId="admin-interfaces" version="6.5.0" />
    </artifact:pom>
 
    <artifact:writepom pomRefId="pom-wstauthz" file="pom.xml"/>
