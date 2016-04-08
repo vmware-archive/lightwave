@@ -1,14 +1,14 @@
 Name:    vmware-sts
 Summary: VMware Secure Token Service
-Version: 6.0.2
+Version: 6.5.0
 Release: 0
 Group:   Applications/System
 Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.1, likewise-open >= 6.2.9, vmware-directory >= 6.0.2, vmware-afd >= 6.0.2, vmware-ca >= 6.0.2, openjdk >= 1.8.0.45, commons-daemon >= 1.0.15, apache-tomcat >= 7.0.63, %{name}-client >= %{version}
-BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.1, likewise-open-devel >= 6.2.9, vmware-directory-client-devel >= 6.0.2, vmware-afd-client-devel >= 6.0.2, vmware-ca-client-devel >= 6.0.2, openjdk >= 1.8.0.45, apache-ant >= 1.9.4
+Requires:  coreutils >= 8.22, openssl >= 1.0.1, likewise-open >= 6.2.9, vmware-directory >= 6.5.0, vmware-afd >= 6.5.0, vmware-ca >= 6.5.0, openjdk >= 1.8.0.45, commons-daemon >= 1.0.15, apache-tomcat >= 7.0.63, %{name}-client >= %{version}
+BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.1, likewise-open-devel >= 6.2.9, vmware-directory-client-devel >= 6.5.0, vmware-afd-client-devel >= 6.5.0, vmware-ca-client-devel >= 6.5.0, openjdk >= 1.8.0.45, apache-ant >= 1.9.4
 
 %define _dbdir %_localstatedir/lib/vmware/vmsts
 %define _jarsdir %_prefix/jars
@@ -23,7 +23,7 @@ VMware Secure Token Server
 
 %package client
 Summary: VMware Secure Token Service Client
-Requires:  coreutils >= 8.22, openssl >= 1.0.1, openjdk >= 1.8.0.45, vmware-directory-client >= 6.0, likewise-open >= 6.2.9 
+Requires:  coreutils >= 8.22, openssl >= 1.0.1, openjdk >= 1.8.0.45, vmware-directory-client >= 6.5, likewise-open >= 6.2.9 
 %description client
 Client libraries to communicate with VMware Secure Token Service
 
