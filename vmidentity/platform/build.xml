@@ -29,7 +29,7 @@
       description="Instructs the 'package' task to use this manifest file" />
        
 
-   <artifact:pom id="pom-platform" groupId="com.vmware.identity" artifactId="platform" version="6.0.2" name="VMware Identity-STS-Platform" >
+   <artifact:pom id="pom-platform" groupId="com.vmware.identity" artifactId="platform" version="6.5.0" name="VMware Identity-STS-Platform" >
     <dependency groupId="net.java.dev.jna" artifactId="jna" version="3.5.1" scope="compile"/>
     <dependency groupId="net.java.dev.jna" artifactId="platform" version="3.5.1" scope="compile" />
     <dependency groupId="commons-logging" artifactId="commons-logging" version="1.1" />

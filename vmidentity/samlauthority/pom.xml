@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.vmware.identity</groupId>
   <artifactId>samlauthority</artifactId>
-  <version>6.0.2</version>
+  <version>6.5.0</version>
   <name>VMwareIdentity-STS-Samlauthority</name>
   <dependencies>
     <dependency>
@@ -60,27 +60,27 @@
     <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>diagnostics</artifactId>
-      <version>6.0.2</version>
+      <version>6.5.0</version>
     </dependency>
     <dependency>
       <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-interface</artifactId>
-      <version>6.0.2</version>
+      <version>6.5.0</version>
     </dependency>
     <dependency>
       <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-client</artifactId>
-      <version>6.0.2</version>
+      <version>6.5.0</version>
     </dependency>
     <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>samltoken</artifactId>
-      <version>6.0.2</version>
+      <version>6.5.0</version>
     </dependency>
     <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>diagnostics</artifactId>
-      <version>6.0.2</version>
+      <version>6.5.0</version>
     </dependency>
   </dependencies>
 </project>

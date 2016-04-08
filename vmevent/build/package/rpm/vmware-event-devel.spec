@@ -1,6 +1,6 @@
 Name:    vmware-event-devel
 Summary: VMware Event SDK
-Version: 1.0.0
+Version: 6.5.0
 Release: 0
 Group:   Applications/System
 Vendor:  VMware, Inc.
