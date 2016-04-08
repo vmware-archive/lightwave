@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.vmware.identity</groupId>
   <artifactId>admin-interfaces</artifactId>
-  <version>6.0.2</version>
+  <version>6.5.0</version>
   <name>VMwareIdentity-STS-admin-interfaces</name>
   <dependencies>
     <dependency>
@@ -45,12 +45,12 @@
     <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>samltoken</artifactId>
-      <version>6.0.2</version>
+      <version>6.5.0</version>
     </dependency>
     <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>wstclient</artifactId>
-      <version>6.0.2</version>
+      <version>6.5.0</version>
     </dependency>
   </dependencies>
 </project>
