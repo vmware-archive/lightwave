@@ -6,21 +6,14 @@
     <Property Id="System32Dir" Value="C:\Windows\System32" />
     <ComponentGroup Id="RestSSO_comp_group" Directory="APPLICATIONFOLDER">
 
-      <Component Id="BouncyCastle_Comp" Guid="{EF3C0483-3C13-4A7B-ABF1-036355DAB588}" Win64="yes">
+      <Component Id="BouncyCastle_Comp" Guid="{DD0C71F2-B1D1-46B6-89D1-8FE1838DA817}" Win64="yes">
         <File Id="BouncyCastle_Dll_File"
               Name="BouncyCastle.Crypto.dll"
               KeyPath="yes"
               DiskId="1"
               Source="$(var.VMIDPOutDir)/BouncyCastle.Crypto.dll" />
-      </Component>      
-      <Component Id="VMRest_Mmc_Exe_Config_Comp" Guid="{BE6CC10C-8FD7-4F67-B35F-37A760ADCB99}">
-        <File Id="VMRest_Mmc_Exe_Config_File"
-              Name="mmc.exe.config"
-              KeyPath="yes"
-              DiskId="1"
-              Source="$(var.Resources)/mmc.exe.config" />
       </Component>
-      <Component Id="VMRest_System_IdentityModel_Tokens_Jwt_Dll_Comp" Guid="{7B02F8F4-1750-47B7-9B44-E97A8C28A987}" Win64="yes">
+      <Component Id="VMRest_System_IdentityModel_Tokens_Jwt_Dll_Comp" Guid="{1AC7C596-662D-419E-964C-B626884B8115}" Win64="yes">
         <File Id="VMRest_System_IdentityModel_Tokens_Jwt_Dll_File"
               Name="System.IdentityModel.Tokens.Jwt.dll"
               KeyPath="yes"
@@ -30,14 +23,14 @@
               DiskId="1"
               Source="$(var.VMIDPOutDir)/System.IdentityModel.Tokens.Jwt.dll" />
       </Component>
-     <Component Id="Vmware_Rest_Sso_Msc_comp" Guid="{967F857F-1F3D-46C0-AC1F-657FA52C1412}" Win64="yes">
+     <Component Id="Vmware_Rest_Sso_Msc_comp" Guid="{CD6D1512-8539-414E-A4E8-D93E7B14AA72}" Win64="yes">
         <File Id="Vmware_Rest_Sso_Msc_file"
               Name="Lightwave SSO.msc"
               KeyPath="yes"
               DiskId="1"
               Source="$(var.Resources)/Lightwave SSO.msc" />
       </Component>
-      <Component Id="VMRestSSOAdminSnapIn_Dll_Comp" Guid="{E61BFD62-60C2-48E0-B9B3-D5175643CCBD}" Win64="yes">
+      <Component Id="VMRestSSOAdminSnapIn_Dll_Comp" Guid="{1A4BF6D7-F953-4132-A873-9ACDC88FB5EE}" Win64="yes">
         <File Id="VMRestSSOAdminSnapIn_Dll_File"
               Name="Vmware.Tools.RestSsoAdminSnapIn.dll"
               KeyPath="yes"
@@ -47,7 +40,7 @@
               DiskId="1"
               Source="$(var.VMIDPOutDir)\Vmware.Tools.RestSsoAdminSnapIn.dll" />
       </Component>
-      <Component Id="VMRestSSOAdminSnapIn_Core_Dll_Comp" Guid="{399B5C54-C4D2-45F7-98DD-B6DBACF3396F}" Win64="yes">
+      <Component Id="VMRestSSOAdminSnapIn_Core_Dll_Comp" Guid="{5F1B7E51-1C2A-4982-B671-A1DF0222925A}" Win64="yes">
         <File Id="VMRestSSOAdminSnapIn_Core_Dll_File"
               Name="Vmware.Tools.RestSsoAdminSnapIn.Core.dll"
               KeyPath="yes"
@@ -57,7 +50,7 @@
               DiskId="1"
               Source="$(var.VMIDPOutDir)\Vmware.Tools.RestSsoAdminSnapIn.Core.dll" />
       </Component>
-      <Component Id="VMRestSSOAdminSnapIn_Data_Dll_Comp" Guid="{7BE3126B-926A-4364-8489-E97C37B51FA4}" Win64="yes">
+      <Component Id="VMRestSSOAdminSnapIn_Data_Dll_Comp" Guid="{F1926C8A-4834-49D7-9616-34F6CD562AF1}" Win64="yes">
         <File Id="VMRestSSOAdminSnapIn_Data_Dll_File"
               Name="Vmware.Tools.RestSsoAdminSnapIn.Data.dll"
               KeyPath="yes"
@@ -67,7 +60,7 @@
               DiskId="1"
               Source="$(var.VMIDPOutDir)\Vmware.Tools.RestSsoAdminSnapIn.Data.dll" />
       </Component>
-      <Component Id="VMRestSSOAdminSnapIn_Dto_Dll_Comp" Guid="{6BF58B27-4D9C-4C07-8859-8FD320B833CF}" Win64="yes">
+      <Component Id="VMRestSSOAdminSnapIn_Dto_Dll_Comp" Guid="{96ECCF2F-6263-4C79-9992-E41B7792A8C8}" Win64="yes">
         <File Id="VMRestSSOAdminSnapIn_Dto_Dll_File"
               Name="Vmware.Tools.RestSsoAdminSnapIn.Dto.dll"
               KeyPath="yes"
@@ -77,7 +70,7 @@
               DiskId="1"
               Source="$(var.VMIDPOutDir)\Vmware.Tools.RestSsoAdminSnapIn.Dto.dll" />
       </Component>
-      <Component Id="VMRestSSOAdminSnapIn_Service_Dll_Comp" Guid="{45791E50-0D35-4D55-98D7-AC05579A5A9D}" Win64="yes">
+      <Component Id="VMRestSSOAdminSnapIn_Service_Dll_Comp" Guid="{B82DA0B1-44A1-437C-AE0F-5F6108D8CBAE}" Win64="yes">
         <File Id="VMRestSSOAdminSnapIn_Service_Dll_File"
               Name="Vmware.Tools.RestSsoAdminSnapIn.Service.dll"
               KeyPath="yes"
@@ -88,21 +81,12 @@
               Source="$(var.VMIDPOutDir)\Vmware.Tools.RestSsoAdminSnapIn.Service.dll" />
       </Component>
     </ComponentGroup>
-    <Component Id="VMRest_Mmc_Exe_Config_File_Copy_Comp" Guid="{7AF7E1A2-AA0E-4C31-A359-E12825BCA020}" Directory="TARGETDIR">
-      <RemoveFile Id="VMRest_Mmc_Exe_Config_File_Remove"
-                  Name="mmc.exe.config"
-                  On="install"
-                  Property="System32Dir"/>
-      <CopyFile Id="VMRest_Mmc_Exe_Config_File_Copy"
-                FileId="VMRest_Mmc_Exe_Config_File"
-                DestinationProperty="System32Dir" />
-    </Component>
 
     <ComponentGroup Id="RestSSO_reg_comp_group" Directory="TARGETDIR">
-      <Component Id="Reg_RestSSO_Comp" Guid="{7D1A16BA-1D05-4B7B-AD3D-F7EC192955C7}" Win64="yes">
+      <Component Id="Reg_RestSSO_Comp" Guid="{6A36ADCF-3CEF-450F-BC93-8DB373C62059}" Win64="yes">
         <RegistryKey Id="Reg_RestSSO_Key"
                      Action="createAndRemoveOnUninstall"
-                     Key="Software\Microsoft\MMC\SnapIns\FX:{1161EEC0-D33A-456B-B9D3-0CE204702B5A}"
+                     Key="Software\Microsoft\MMC\SnapIns\FX:{3E833CBA-48EF-4E0F-B5C0-0E2F6A6030C4}"
                      Root="HKLM">
           <RegistryKey Key="Standalone"
                        Action="createAndRemoveOnUninstall" />

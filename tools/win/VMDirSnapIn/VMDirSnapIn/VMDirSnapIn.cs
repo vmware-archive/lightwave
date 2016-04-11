@@ -10,9 +10,22 @@
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
  * License for the specific language governing permissions and limitations
  * under the License.
- */using System.ComponentModel;using System.Security.Permissions;using System.Text;using System.Windows.Forms;using Microsoft.ManagementConsole;using VMDirSnapIn.ScopeNodes;using VMDirSnapIn.Services;using System.Drawing;using VMDirSnapIn.UI;
+ */
+using System.ComponentModel;
+using System.Security.Permissions;
+using System.Text;
+using System.Windows.Forms;
+using Microsoft.ManagementConsole;
+using VMDirSnapIn.ScopeNodes;
+using VMDirSnapIn.Services;
+using System.Drawing;
+using VMDirSnapIn.UI;
 using VMwareMMCIDP.UI.Common.Utilities;
-[assembly: PermissionSetAttribute(SecurityAction.RequestMinimum, Unrestricted = true)]namespace VMDirSnapIn{    [RunInstaller(true)]    public class InstallUtilSupport : SnapInInstaller
+[assembly: PermissionSetAttribute(SecurityAction.RequestMinimum, Unrestricted = true)]
+namespace VMDirSnapIn
+{
+    [RunInstaller(true)]
+    public class InstallUtilSupport : SnapInInstaller
     {
 
         private void InitializeComponent()
@@ -20,8 +33,15 @@ using VMwareMMCIDP.UI.Common.Utilities;
 
         }
     }
-    [SnapInSettings("{387738AF-C695-46f3-B178-9C9915364BD6}", DisplayName = "VMDirectory Browser",         Description = "VMDirectory Browser")]    public class VMDirSnapIn : SnapIn    {        public VMDirSnapIn()        {            VMDirEnvironment.Instance.LoadLocalData();
-            InitConsole();        }
+    [SnapInSettings("{4262730D-8B69-4581-8E39-264225BA302B}", DisplayName = "Lightwave Directory Browser",
+         Description = "Lightwave Directory Browser")]
+    public class VMDirSnapIn : SnapIn
+    {
+        public VMDirSnapIn()
+        {
+            VMDirEnvironment.Instance.LoadLocalData();
+            InitConsole();
+        }
 
         protected override void OnInitialize()
         {
@@ -43,8 +63,10 @@ using VMwareMMCIDP.UI.Common.Utilities;
             this.SmallImages.AddStrip(VMDirEnvironment.Instance.GetToolbarImage());
             this.RootNode = new VMDirRootNode();
         }
-        protected override void OnShutdown(AsyncStatus status)        {
+        protected override void OnShutdown(AsyncStatus status)
+        {
             // saves data to local xml file
             VMDirEnvironment.Instance.SaveLocalData();
         }
-    }}
+    }
+}

@@ -23,8 +23,8 @@ namespace VMPscHighAvailabilitySnapIn.SnapIn
     /// <summary>
     /// Snapin
     /// </summary>
-    [SnapInSettings("{3D203C08-4574-4A05-9E74-ACFEAC0082FE}",
-         DisplayName = Constants.Company + " " + Constants.ToolName + " " + Constants.SnapIn,
+    [SnapInSettings("{467BA8A8-7EC4-423C-A84F-04F8AED36870}",
+         DisplayName = "Lightwave " + Constants.ToolName + " " + Constants.SnapIn,
          Description = Constants.ToolDescription,
          Vendor = Constants.CompanyName)]
     public class VMPscHighAvailabilitySnapIn : Microsoft.ManagementConsole.SnapIn

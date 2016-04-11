@@ -4,14 +4,14 @@
 	<Fragment>
 		<!-- TODO: Put your code here. -->
     <ComponentGroup Id="VMCert_comp_group" Directory="APPLICATIONFOLDER">
-      <Component Id="vmcertstore_msc_comp" Guid="{2645AB9B-3270-40ac-8974-DCECC77C01E3}" Win64="yes">
+      <Component Id="vmcertstore_msc_comp" Guid="{E1D6F9BB-E75C-4361-B89F-B643618B2FBB}" Win64="yes">
         <File Id="vmcertstore_msc_file"
               Name="Lightwave Certificate Store.msc"
               KeyPath="yes"
               DiskId="1"
               Source="$(var.Resources)/Lightwave Certificate Store.msc" />
       </Component>
-      <Component Id="VMCertStoreSnapIn_Dll_Comp" Guid="{792D34F5-FC52-4892-95C2-E9C6DEB1275A}" Win64="yes">
+      <Component Id="VMCertStoreSnapIn_Dll_Comp" Guid="{7A1D6C68-2820-409B-AC53-8949CD3D98F2}" Win64="yes">
         <File Id="VMCertStoreSnapIn_Dll_File"
               Name="VMCertStoreSnapIn.dll"
               KeyPath="yes"
@@ -21,7 +21,7 @@
               DiskId="1"
               Source="$(var.VMIDPOutDir)\VMCertStoreSnapIn.dll" />
       </Component>
-      <Component Id="VMCertStore_Client_Dll_Comp" Guid="{FA80461F-09FB-456a-A46B-DEA5C17C7B7A}" Win64="yes">
+      <Component Id="VMCertStore_Client_Dll_Comp" Guid="{5122FE97-5DC7-4F60-9DE4-BDED8DE7A0B3}" Win64="yes">
         <File Id="VMCertStore_Client_Dll_File"
               Name="VMCertStore.Client.dll"
               KeyPath="yes"
@@ -31,7 +31,7 @@
               DiskId="1"
               Source="$(var.VMIDPOutDir)\VMCertStore.Client.dll" />
       </Component>
-      <Component Id="VMCertStore_Common_Dll_Comp" Guid="{10A83548-EA01-432A-8563-DBC614298C87}" Win64="yes">
+      <Component Id="VMCertStore_Common_Dll_Comp" Guid="{02A414E6-284C-40A4-97DE-06AE03D74608}" Win64="yes">
         <File Id="VMCertStore_Common_Dll_File"
               Name="VMCertStore.Common.dll"
               KeyPath="yes"
@@ -44,10 +44,10 @@
     </ComponentGroup>
 
     <ComponentGroup Id="VMCert_reg_comp_group" Directory="TARGETDIR">
-      <Component Id="Reg_CertStore_Comp" Guid="{9699D823-BCF8-4A74-9E07-301B159B1C1E}" Win64="yes">
+      <Component Id="Reg_CertStore_Comp" Guid="{AF1A4960-2F75-4748-ACF5-896436D64461}" Win64="yes">
         <RegistryKey Id="Reg_CertStore_Key"
                      Action="createAndRemoveOnUninstall"
-                     Key="Software\Microsoft\MMC\SnapIns\FX:{01E67CB5-7A76-4ea4-99F7-FBF720C19A81}" 
+                     Key="Software\Microsoft\MMC\SnapIns\FX:{D78AF69F-58BC-4912-9961-055673BDF3F0}" 
                      Root="HKLM">
           <RegistryKey Key="Standalone"
                        Action="createAndRemoveOnUninstall" />

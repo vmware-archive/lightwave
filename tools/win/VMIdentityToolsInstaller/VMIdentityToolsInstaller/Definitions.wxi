@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Include>
 	<!-- TODO: Put your code here. -->
-  <?define Product="LightwaveTools" ?>
+  <?define Product="Lightwave Tools" ?>
   <?define Manufacturer="VMware, Inc." ?>
   <?define MajorVersion="1" ?>
   <?define MinorVersion="0" ?>
   <?define BuildVersion="0" ?>
   <?define Revision="0" ?>
   <?define VersionNumber="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion).$(var.Revision)" ?>
-  <?define UpgradeCode="{35B4AED8-00AE-4AF7-88A6-D0F51F7B6786}" ?>
+  <?define UpgradeCode="{53548109-AB39-491D-B7B6-7217955AD17C}" ?>
   <?define System32="C:\Windows\System32" ?>
   <?define VMIDPOutDir=$(sys.SOURCEFILEDIR)..\..\$(var.Platform)\$(var.Configuration) ?>
   <?define Resources="resources" ?>

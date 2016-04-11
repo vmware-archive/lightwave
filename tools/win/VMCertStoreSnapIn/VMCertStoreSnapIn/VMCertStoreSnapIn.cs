@@ -10,7 +10,8 @@
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
  * License for the specific language governing permissions and limitations
  * under the License.
- */using System.ComponentModel;
+ */
+using System.ComponentModel;
 using System.Security.Permissions;
 using System.Text;
 using System.Windows.Forms;
@@ -32,8 +33,8 @@ namespace VMCertStoreSnapIn
     {
     }
 
-    [SnapInSettings("{01E67CB5-7A76-4ea4-99F7-FBF720C19A81}", DisplayName = "VMware Local Authentication Service",
-         Description = "VMware Local Authentication Service")]
+    [SnapInSettings("{D78AF69F-58BC-4912-9961-055673BDF3F0}", DisplayName = "Lightwave Local Authentication Service",
+         Description = "Lightwave Local Authentication Service")]
     public class VMCertStoreSnapIn : SnapIn
     {
         public VMCertStoreSnapIn()
