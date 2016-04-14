@@ -26,6 +26,7 @@ using VMDirInterop.Interfaces;
 using VMDirInterop.LDAP;
 using VMIdentity.CommonUtils;
 using VMDir.Common.VMDirUtilities;
+using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace VMDirSnapIn.ScopeNodes
 {
@@ -157,7 +158,7 @@ namespace VMDirSnapIn.ScopeNodes
             ILdapMessage ldMsg = null;
             try
             {
-                string[] entries = ServerDTO.Connection.SearchAndGetDN(itemDN, LdapScope.SCOPE_ONE_LEVEL, "(objectClass=*)", null, 0, ref ldMsg);
+                string[] entries = ServerDTO.Connection.SearchAndGetDN(itemDN, LdapScope.SCOPE_ONE_LEVEL, "(objectClass=*)", new string[]{"entryDN"}, 0, ref ldMsg);
                 if (entries != null)
                 {
                     for (int i = 0; i < entries.Length; i++)
@@ -168,7 +169,7 @@ namespace VMDirSnapIn.ScopeNodes
             }
             catch (Exception exp)
             {
-                MiscUtilsService.ShowError(exp);
+                MMCDlgHelper.ShowException(exp);
             }
         }
 

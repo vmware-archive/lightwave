@@ -22,7 +22,7 @@ namespace Vecs
 
         public override string Message {
             get {
-                return string.Format ("Error Number: {0}, Error String: {1}", OriginalErrorCode, base.Message);
+                return string.Format ("Error({0}): {1}", OriginalErrorCode, base.Message);
             }
         }
 

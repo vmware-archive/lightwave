@@ -55,7 +55,6 @@ namespace VMCertStoreSnapIn.UI
                 return;
             }
             _DTO.StoreName = textBoxStoreName.Text;
-            _DTO.Password = textBoxPassword.Text;
 
             this.Close();
         }

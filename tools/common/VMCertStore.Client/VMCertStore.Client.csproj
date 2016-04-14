@@ -75,12 +75,6 @@
 
   -->
   <ItemGroup>
-    <ProjectReference Include="..\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
-      <Project>{CD959E2E-5B9C-4329-B085-352844CFDCDD}</Project>
-      <Name>VMIdentity.CommonUtils</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="VMCertStore.Client.dll.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
