@@ -47,8 +47,6 @@
             this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader4 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.btnAddSingle = new System.Windows.Forms.Button();
-            this.btnAddAll = new System.Windows.Forms.Button();
-            this.btnRemoveAll = new System.Windows.Forms.Button();
             this.btnRemoveSingle = new System.Windows.Forms.Button();
             this.btnOK = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
@@ -68,8 +66,6 @@
             this.lstNewAttributes.TabIndex = 5;
             this.lstNewAttributes.UseCompatibleStateImageBehavior = false;
             this.lstNewAttributes.View = System.Windows.Forms.View.Details;
-            this.lstNewAttributes.VirtualMode = true;
-            this.lstNewAttributes.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.lstNewAttributes_RetrieveVirtualItem);
             this.lstNewAttributes.SelectedIndexChanged += new System.EventHandler(this.lstNewAttributes_SelectedIndexChanged);
             this.lstNewAttributes.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.lstNewAttributes_OnKeyPress);
             this.lstNewAttributes.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.lstNewAttributes_MouseDoubleClick);
@@ -98,8 +94,6 @@
             this.lstExistingAttributes.TabIndex = 6;
             this.lstExistingAttributes.UseCompatibleStateImageBehavior = false;
             this.lstExistingAttributes.View = System.Windows.Forms.View.Details;
-            this.lstExistingAttributes.VirtualMode = true;
-            this.lstExistingAttributes.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.lstExistingAttributes_RetrieveVirtualItem);
             this.lstExistingAttributes.SelectedIndexChanged += new System.EventHandler(this.lstExistingAttributes_SelectedIndexChanged);
             this.lstExistingAttributes.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.lstExistingAttributes_MouseDoubleClick);
             // 
@@ -116,7 +110,7 @@
             // btnAddSingle
             // 
             this.btnAddSingle.Enabled = false;
-            this.btnAddSingle.Location = new System.Drawing.Point(339, 136);
+            this.btnAddSingle.Location = new System.Drawing.Point(339, 146);
             this.btnAddSingle.Name = "btnAddSingle";
             this.btnAddSingle.Size = new System.Drawing.Size(65, 23);
             this.btnAddSingle.TabIndex = 7;
@@ -124,32 +118,10 @@
             this.btnAddSingle.UseVisualStyleBackColor = true;
             this.btnAddSingle.Click += new System.EventHandler(this.btnAddSingle_Click);
             // 
-            // btnAddAll
-            // 
-            this.btnAddAll.Enabled = false;
-            this.btnAddAll.Location = new System.Drawing.Point(339, 168);
-            this.btnAddAll.Name = "btnAddAll";
-            this.btnAddAll.Size = new System.Drawing.Size(65, 23);
-            this.btnAddAll.TabIndex = 8;
-            this.btnAddAll.Text = ">>";
-            this.btnAddAll.UseVisualStyleBackColor = true;
-            this.btnAddAll.Click += new System.EventHandler(this.btnAddAll_Click);
-            // 
-            // btnRemoveAll
-            // 
-            this.btnRemoveAll.Enabled = false;
-            this.btnRemoveAll.Location = new System.Drawing.Point(339, 259);
-            this.btnRemoveAll.Name = "btnRemoveAll";
-            this.btnRemoveAll.Size = new System.Drawing.Size(65, 23);
-            this.btnRemoveAll.TabIndex = 10;
-            this.btnRemoveAll.Text = "<<";
-            this.btnRemoveAll.UseVisualStyleBackColor = true;
-            this.btnRemoveAll.Click += new System.EventHandler(this.btnRemoveAll_Click);
-            // 
             // btnRemoveSingle
             // 
             this.btnRemoveSingle.Enabled = false;
-            this.btnRemoveSingle.Location = new System.Drawing.Point(339, 227);
+            this.btnRemoveSingle.Location = new System.Drawing.Point(339, 211);
             this.btnRemoveSingle.Name = "btnRemoveSingle";
             this.btnRemoveSingle.Size = new System.Drawing.Size(65, 23);
             this.btnRemoveSingle.TabIndex = 9;
@@ -187,9 +159,7 @@
             this.ClientSize = new System.Drawing.Size(743, 447);
             this.Controls.Add(this.btnOK);
             this.Controls.Add(this.btnCancel);
-            this.Controls.Add(this.btnRemoveAll);
             this.Controls.Add(this.btnRemoveSingle);
-            this.Controls.Add(this.btnAddAll);
             this.Controls.Add(this.btnAddSingle);
             this.Controls.Add(this.lstExistingAttributes);
             this.Controls.Add(this.lstNewAttributes);
@@ -211,9 +181,8 @@
         private System.Windows.Forms.ListView lstExistingAttributes;
         private System.Windows.Forms.ColumnHeader columnHeader3;
         private System.Windows.Forms.ColumnHeader columnHeader4;
+
         private System.Windows.Forms.Button btnAddSingle;
-        private System.Windows.Forms.Button btnAddAll;
-        private System.Windows.Forms.Button btnRemoveAll;
         private System.Windows.Forms.Button btnRemoveSingle;
         private System.Windows.Forms.Button btnOK;
         private System.Windows.Forms.Button btnCancel;

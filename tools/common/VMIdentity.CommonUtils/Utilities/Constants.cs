@@ -2,6 +2,12 @@
     {        public const string VALUES_EMPTY = "One or more required values are empty";        public const string CONFIRM_DELETE = "Are you sure, you want to delete {0} {1} ?";        public const string UNABLE_TO_LOGIN = "Unable to login! One or more errors occured.";
         public const string CONFIRM_SELECTED_DELETE = "Are you sure, you want to delete selected {0} ({1}) ?";
 
+        // Error messages
+        public const string INVALID_CREDENTIAL = "Invalid Credentials.";
+        public const string SERVER_TIMEOUT = "Server timed out.";
+        public const int TEN_SEC = 10000;
+
+
         public static string GetDeleteMsg(string obj, string value)
         {
             return string.Format(CONFIRM_DELETE, obj, value);
@@ -11,6 +17,5 @@
         {
             return string.Format(CONFIRM_SELECTED_DELETE, obj, count);
         }
-
     }
 }

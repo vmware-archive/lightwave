@@ -105,6 +105,36 @@ namespace VMDir.Common.VMDirUtilities
             }
         }
 
+        public static Dictionary<string, VMDirBagItem> GetProperties(VMDirServerDTO serverDTO, List<ILdapEntry> entries)
+        {
+            var _properties = new Dictionary<string, VMDirBagItem>();
+            foreach (LdapEntry entry in entries)
+            {
+                string[] names = entry.getAttributeNames().ToArray();
+                foreach (string name in names)
+                {
+                    var key = name;
+                    var attribType = serverDTO.Connection.SchemaManager.GetAttributeType(key);
+                    bool readOnly = true;
+                    string desc = "";
+                    if (attribType != null)
+                    {
+                        readOnly = attribType.ReadOnly;
+                        desc = attribType.Description;
+                        LdapValue[] vals = entry.getAttributeValues(name).ToArray();
+                        _properties[key] = new VMDirBagItem
+                        {
+                            Value = vals,
+                            IsReadOnly = readOnly,
+                            Description = desc,
+                            IsRequired = true
+                        };
+                    }
+                }
+            }
+            return _properties;
+        }
+
         public static string[]  SearchItemCN (string itemName, string searchObjectClass, string searchName, string[] attribs, VMDirServerDTO serverDTO)
         {
             ILdapMessage ldMsg = null;

@@ -24,7 +24,7 @@ namespace VMCA.Client
 
         public override string Message {
             get {
-                return string.Format ("Error Number: {0}, Error Name: {1}, Error String: {2}", OriginalErrorCode, ErrorCode.ToString (), base.Message);
+                return string.Format("Error({0}): {1}", OriginalErrorCode,base.Message);
             }
         }
 
