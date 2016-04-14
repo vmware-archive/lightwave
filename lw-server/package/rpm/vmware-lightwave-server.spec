@@ -23,6 +23,20 @@ VMware Infrastructure Controller
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
+case "$1" in
+    1)
+        LINE='@include "lightwave.conf.d"'
+        FILE=/etc/syslog-ng/syslog-ng.conf
+        grep -q "$LINE" "$FILE"
+        if [ "$?" -ne 0 ]; then
+            echo "$LINE" >> "$FILE"
+            pid=$( pidof syslog-ng )
+            if [ -n "$pid" ]; then
+                kill -HUP $pid
+            fi
+        fi
+        ;;
+esac
 
 %preun
 

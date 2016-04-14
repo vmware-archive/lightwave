@@ -12,6 +12,8 @@ BuildRequires:  boost-devel >= 1.56, coreutils >= 8.22, openssl-devel >= 1.0.2, 
 
 %define _dbdir %_localstatedir/lib/vmware/vmca
 %define _jarsdir %{_prefix}/jars
+%define _logdir /var/log/lightwave
+%define _logconfdir /etc/syslog-ng/lightwave.conf.d
 
 %if 0%{?_likewise_open_prefix:1} == 0
 %define _likewise_open_prefix /opt/likewise
@@ -85,6 +87,13 @@ cd build && make install DESTDIR=%{buildroot}
     /sbin/ldconfig
 
     /bin/mkdir -m 700 -p %{_dbdir}
+
+    /bin/mkdir -m 755 -p %{_logdir}
+    /bin/mkdir -m 755 -p %{_logconfdir}
+    if [ -a %{_logconfdir}/vmcad-syslog-ng.conf ]; then
+        /bin/rm %{_logconfdir}/vmcad-syslog-ng.conf
+    fi
+    /bin/ln -s %{_datadir}/config/vmcad-syslog-ng.conf %{_logconfdir}/vmcad-syslog-ng.conf
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
@@ -192,6 +201,7 @@ cd build && make install DESTDIR=%{buildroot}
 %defattr(-,root,root)
 %{_sbindir}/*
 %{_datadir}/config/vmca.reg
+%{_datadir}/config/vmcad-syslog-ng.conf
 
 %files client
 %defattr(-,root,root)

@@ -14,6 +14,8 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-s
 %define _vecsdir %{_dbdir}/vecs
 %define _crlsdir %{_dbdir}/crl
 %define _jarsdir  %{_prefix}/jars
+%define _logdir /var/log/lightwave
+%define _logconfdir /etc/syslog-ng/lightwave.conf.d
 
 %if 0%{?_javahome:1} == 0
 %define _javahome %{_javahome}
@@ -96,6 +98,13 @@ cd build && make install DESTDIR=%{buildroot}
     /bin/mkdir -m 700 -p %{_dbdir}
     /bin/mkdir -m 700 -p %{_vecsdir}
     /bin/mkdir -m 700 -p %{_crlsdir}
+
+    /bin/mkdir -m 755 -p %{_logdir}
+    /bin/mkdir -m 755 -p %{_logconfdir}
+    if [ -a %{_logconfdir}/vmafdd-syslog-ng.conf ]; then
+        /bin/rm %{_logconfdir}/vmafdd-syslog-ng.conf
+    fi
+    /bin/ln -s %{_datadir}/config/vmafdd-syslog-ng.conf %{_logconfdir}/vmafdd-syslog-ng.conf
 
     case "$1" in
         1)
@@ -199,6 +208,7 @@ cd build && make install DESTDIR=%{buildroot}
 %defattr(-,root,root)
 %{_sbindir}/*
 %{_datadir}/config/vmafd.reg
+%{_datadir}/config/vmafdd-syslog-ng.conf
 
 %files client
 %defattr(-,root,root)

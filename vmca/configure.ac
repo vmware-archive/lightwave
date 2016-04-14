@@ -549,7 +549,7 @@ if test x"$IDL" = x"no"; then
 fi
 
 AS_AC_EXPAND(VMCA_INSTALL_DIR, $prefix)
-AC_DEFINE_UNQUOTED(VMCA_INSTALL_DIR, "$VMCA_INSTALL_DIR", [Install folder]")
+AC_DEFINE_UNQUOTED(VMCA_INSTALL_DIR, "$VMCA_INSTALL_DIR", [Install folder])
 
 vmcaconfdir="$datadir/config"
 AC_SUBST(vmcaconfdir)

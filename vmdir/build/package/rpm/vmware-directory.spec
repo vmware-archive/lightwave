@@ -33,6 +33,8 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-s
 %define _sasl2dir %{_sasl_prefix}/lib64/sasl2
 %define _krb5_lib_dir %{_krb5_prefix}/lib64
 %define _krb5_gss_conf_dir /etc/gss
+%define _logdir /var/log/lightwave
+%define _logconfdir /etc/syslog-ng/lightwave.conf.d
 
 %description
 VMware Directory Service
@@ -107,6 +109,13 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 
     # add vmdird.conf to sasl2 directory
     /bin/ln -s %{_datadir}/config/saslvmdird.conf %{_sasl2dir}/vmdird.conf
+
+    /bin/mkdir -m 755 -p %{_logdir}
+    /bin/mkdir -m 755 -p %{_logconfdir}
+    if [ -a %{_logconfdir}/vmdird-syslog-ng.conf ]; then
+        /bin/rm %{_logconfdir}/vmdird-syslog-ng.conf
+    fi
+    /bin/ln -s %{_datadir}/config/vmdird-syslog-ng.conf %{_logconfdir}/vmdird-syslog-ng.conf
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
@@ -361,6 +370,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_datadir}/config/saslvmdird.conf
 %{_datadir}/config/vmdir.reg
 %{_datadir}/config/vmdirschema.ldif
+%{_datadir}/config/vmdird-syslog-ng.conf
 
 %files client
 %defattr(-,root,root)
