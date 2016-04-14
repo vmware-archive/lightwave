@@ -132,6 +132,23 @@ namespace VMDir.Common.VMDirUtilities
             }
         }
 
+        public void Search(String searchDN, LdapScope scope, string filter, string[] attribsToReturn, int attrsOnly, Action<ILdapMessage, List<ILdapEntry>> fn)
+        {
+            List<ILdapEntry> entries;
+            ILdapMessage searchRequest = null;
+
+            MaintainSession(delegate()
+            {
+                searchRequest = ldConn.LdapSearchExtS(searchDN, (int)scope, filter, attribsToReturn, attrsOnly, IntPtr.Zero, 0);
+            });
+            if (searchRequest == null)
+                throw new Exception("Failed to do LDAP Search possibly due to lost connection. Close connection and try again");
+
+            entries = searchRequest.GetEntries();
+            if (fn != null)
+                fn(searchRequest, entries);
+        }
+
         public List<ILdapEntry> SearchAndGetEntries (String searchDN, LdapScope scope, string filter, string[] attribsToReturn, int attrsOnly, ref ILdapMessage ldMsg)
         {
             List<ILdapEntry> entries;

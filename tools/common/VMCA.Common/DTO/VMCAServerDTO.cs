@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using VMCA;
 using System.Threading.Tasks;
 using System.Security.Cryptography.X509Certificates;
+using VMIdentity.CommonUtils;
 
 namespace VMCASnapIn.DTO
 {
@@ -83,9 +84,10 @@ namespace VMCASnapIn.DTO
 
                 Task t = new Task (ServerConnect);
                 t.Start ();
-                if (await Task.WhenAny (t, Task.Delay (10000)) == t) {
-                } else { 
-                    throw new Exception ("Server timed out");
+                if (await Task.WhenAny (t, Task.Delay (CommonConstants.TEN_SEC)) == t) {
+                    await t;
+                } else {
+                    throw new Exception(CommonConstants.SERVER_TIMEOUT);
                 }
             } catch (Exception e) {
                 throw e;
@@ -93,7 +95,7 @@ namespace VMCASnapIn.DTO
         }
 
 
-        public async void ServerConnect ()
+        public void ServerConnect ()
         {
             try {
                 VMCAClient.RefreshServerContext (UserName, Password);
@@ -103,6 +105,7 @@ namespace VMCASnapIn.DTO
                     IsLoggedIn = true;
             } catch (Exception) {
                 IsLoggedIn = false;
+                throw;
             }
 
         }

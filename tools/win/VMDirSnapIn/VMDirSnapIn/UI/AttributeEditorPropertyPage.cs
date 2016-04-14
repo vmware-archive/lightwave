@@ -47,7 +47,7 @@ namespace VMDirSnapIn.UI
 
         private Dictionary<string, VMDirBagItem> _properties;
         private List<KeyValuePair<string, string>> _kvData;
-        private Dictionary<string, string> _pendingMods;
+        private HashSet<string> _pendingMods;
 
         public AttributeEditorPropertyPage(string dn, VMDirServerDTO serverDTO)
         {
@@ -57,7 +57,7 @@ namespace VMDirSnapIn.UI
             MMCInit();
             _properties = new Dictionary<string, VMDirBagItem>();
             _kvData = new List<KeyValuePair<string, string>>();
-            _pendingMods = new Dictionary<string, string>();
+            _pendingMods = new HashSet<string>();
             Bind();
         }
 
@@ -74,19 +74,35 @@ namespace VMDirSnapIn.UI
             {
                 if (_properties.Count > 0 && _pendingMods.Count > 0)
                 {
-                    LdapMod[] user = new LdapMod[_pendingMods.Count];
-                    int i = 0;
-                    foreach (var entry in _pendingMods)
+
+                    var finalMods = new Dictionary<string, List<string>>();
+
+                    foreach (var kv in _kvData)
                     {
-                        string[] entries = entry.Value.Split(',');
-                        string[] values = new string[entries.Length + 1];
-                        entries.CopyTo(values, 0);
-                        values[entries.Length] = null;
-                        user[i] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_REPLACE, entry.Key, values);
+                        if (_pendingMods.Contains(kv.Key))
+                        {
+                            if (finalMods.ContainsKey(kv.Key))
+                            {
+                                finalMods[kv.Key].Add(kv.Value);
+                            }
+                            else
+                            {
+                                finalMods.Add(kv.Key, new List<string>() { kv.Value });
+                            }
+                        }
+                    }
+                    LdapMod[] user = new LdapMod[finalMods.Count];
+                    int i = 0;
+                    foreach (var m in finalMods)
+                    {
+                        var values = m.Value.ToArray();
+                        Array.Resize(ref values, values.Count() + 1);
+                        user[i] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_REPLACE, m.Key, values);
                         i++;
                     }
                     ServerDTO.Connection.ModifyObject(_dn, user);
                     _pendingMods.Clear();
+                    Bind();
                 }
             }
             catch (Exception exp)
@@ -106,9 +122,14 @@ namespace VMDirSnapIn.UI
                 RefreshView();
             });
         }
+
         void RefreshView()
         {
             listView1.Items.Clear();
+            _kvData.Sort(delegate(KeyValuePair<string, string> x, KeyValuePair<string, string> y)
+            {
+                return x.Key.CompareTo(y.Key);
+            });
             foreach (var item in _kvData)
             {
                 ListViewItem lvi = new ListViewItem(item.Key);
@@ -119,8 +140,7 @@ namespace VMDirSnapIn.UI
 
         IEnumerable<KeyValuePair<string, string>> GetCurrentOptionalProperties()
         {
-            return _properties.Where(x => !x.Value.IsRequired)
-                .Select(x => new KeyValuePair<string, string>(x.Key, x.Value.Description));
+            return _properties.Select(x => new KeyValuePair<string, string>(x.Key, x.Value.Description));
         }
 
         private void btnManageAttributes_Click(object sender, EventArgs e)
@@ -142,17 +162,8 @@ namespace VMDirSnapIn.UI
                 var frm = new AddOrRemoveAttributes(cn, optionalProps, ServerDTO);
                 if (frm.ShowDialog() == DialogResult.OK)
                 {
-                    var retainList = frm.OptionalAttributes.Intersect(optionalProps);
-                    var removeList = optionalProps.Except(retainList).ToList();
-                    foreach (var item in removeList)
+                    foreach (var item in frm.NewOptionalAttributes)
                     {
-                        _properties.Remove(item.Key);
-                    }
-                    var addList = frm.OptionalAttributes.Except(retainList);
-                    foreach (var item in addList)
-                    {
-                        var dto = ServerDTO.Connection.SchemaManager.GetAttributeType(item.Key);
-                        _properties.Add(item.Key, new VMDirBagItem { Description = dto.Description, IsReadOnly = dto.ReadOnly, Value = null });
                         _kvData.Add(new KeyValuePair<string, string>(item.Key, null));
                     }
                     RefreshView();
@@ -173,12 +184,15 @@ namespace VMDirSnapIn.UI
                         var frm = new EditAttribute(attr, val);
                         if (frm.ShowDialog() == DialogResult.OK)
                         {
-                            _properties[attr].Value = frm.value;
                             listView1.SelectedItems[0].SubItems[1].Text = frm.value;
-                            if (_pendingMods.ContainsKey(attr))
-                                _pendingMods[attr] = frm.value;
+                            int indx = listView1.SelectedIndices[0];
+                            _kvData.RemoveAt(indx);
+
+                            if (string.IsNullOrWhiteSpace(frm.value))
+                                _kvData.Insert(indx, new KeyValuePair<string, string>(attr, null));
                             else
-                                this._pendingMods.Add(attr, frm.value);
+                                _kvData.Insert(indx, new KeyValuePair<string, string>(attr, frm.value));
+                            this._pendingMods.Add(attr);
                             _parent.Dirty = true;
                         }
                     }

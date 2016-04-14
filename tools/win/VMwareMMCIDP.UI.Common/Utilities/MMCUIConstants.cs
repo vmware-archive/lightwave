@@ -51,6 +51,7 @@ namespace VMwareMMCIDP.UI.Common.Utilities
         public const string IDP_ADMIN_USER_ENT = "Please enter IDP admin user";
         public const string IDP_ADMIN_PWD_ENT = "Please enter IDP admin password";
         public const string PRI_KEY_NOT_FOUND = "Private key file not found";
+        public const string UPN_ENT = "Please enter UPN";
         
         // File type filters
         public const string PRI_KEY_FILTER="Private Key Files (*.pem)|*.pem|All Files (*.*)|*.*";

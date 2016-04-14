@@ -106,7 +106,7 @@ namespace VMDirSnapIn.ScopeNodes
             this.ActionsPaneItems.Clear();
             this.ActionsPaneItems.Add(new Microsoft.ManagementConsole.Action("Login",
                                         "Login", -1, ACTION_LOGIN));
-           
+
         }
         private void Logout()
         {
@@ -117,6 +117,8 @@ namespace VMDirSnapIn.ScopeNodes
                 _serverDTO.Connection = null;
                 Children.Clear();
                 isLoggedIn = false;
+                _serverDTO.BaseDN = string.Empty;
+                _serverDTO.BindDN = string.Empty;
                 LoggedOutServerActions();
             });
         }
@@ -139,6 +141,25 @@ namespace VMDirSnapIn.ScopeNodes
                     {
                         isLoggedIn = true;
                         this.DisplayName = ServerDTO.Server;
+
+                        if (string.IsNullOrWhiteSpace(_serverDTO.BaseDN))
+                        {
+
+                            ServerDTO.Connection.Search("", LdapScope.SCOPE_BASE, "(objectClass=*)", new string[] { "rootDomainNamingContext" }, 0,
+                                delegate(ILdapMessage searchRequest, List<ILdapEntry> entries)
+                                {
+                                    _serverDTO.BaseDN = GetRootDomainNamingContext(entries);
+                                });
+                        }
+                        else
+                        {
+                            ServerDTO.Connection.Search(_serverDTO.BaseDN, LdapScope.SCOPE_BASE, "(objectClass=*)", new string[] { "entryDN" }, 0,
+                                delegate(ILdapMessage searchRequest, List<ILdapEntry> entries)
+                                {
+                                });
+                        }
+                        if (string.IsNullOrWhiteSpace(_serverDTO.BaseDN))
+                            throw new Exception("Failed to retrieve base dn.");
                         this.Children.Add(new DirectoryNode(_serverDTO.BaseDN, ServerDTO));
                         LoggedInServerActions();
                     }
@@ -155,9 +176,20 @@ namespace VMDirSnapIn.ScopeNodes
             }
         }
 
+        private string GetRootDomainNamingContext(List<ILdapEntry> entries)
+        {
+            if (entries != null)
+            {
+                var value = entries[0].getAttributeValues("rootDomainNamingContext");
+                if (value != null && value.Count > 0)
+                    return value[0].StringValue;
+            }
+            return string.Empty;
+        }
+
         void RemoveServer()
         {
-            if (MiscUtilsService.Confirm(CommonConstants.GetDeleteMsg("server",ServerDTO.Server)))
+            if (MiscUtilsService.Confirm(CommonConstants.GetDeleteMsg("server", ServerDTO.Server)))
             {
                 VMDirEnvironment.Instance.LocalData.RemoveServer(ServerDTO.GUID);
                 if (ServerDTO.Connection != null)
@@ -165,7 +197,7 @@ namespace VMDirSnapIn.ScopeNodes
 
                 var parent = this.Parent as VMDirRootNode;
                 if (parent != null)
-                    this.SnapIn.BeginInvoke(parent.RefreshDelegate, new object[] {ServerDTO, this });
+                    this.SnapIn.BeginInvoke(parent.RefreshDelegate, new object[] { ServerDTO, this });
             }
         }
     }
