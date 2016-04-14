@@ -20,6 +20,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace VMwareMMCIDP.UI.Common
 {
@@ -40,37 +41,39 @@ namespace VMwareMMCIDP.UI.Common
             this.Password = password;
             this.DomainName = domain;
         }
+        public bool ValidateForm()
+        {
+            string msg = null;
+            if (string.IsNullOrWhiteSpace(textServer.Text))
+                msg = MMCUIConstants.SERVER_ENT;
+            else if (string.IsNullOrWhiteSpace(textUser.Text))
+                msg = MMCUIConstants.USERNAME_ENT;
+            else if (string.IsNullOrWhiteSpace(textPassword.Text))
+                msg = MMCUIConstants.PASSWORD_ENT;
+            else if (string.IsNullOrWhiteSpace(textTenant.Text))
+                msg = MMCUIConstants.TENANT_ENT;
+            if (msg != null)
+            {
+                MMCDlgHelper.ShowWarning(msg);
+                return false;
+            }
+            return true;
+        }
 
         private void buttonOk_Click(object sender, EventArgs e)
         {
-            Server = textServer.Text;
-            UserName = textUser.Text;
+            if (!ValidateForm())
+            {
+                this.DialogResult = DialogResult.None;
+                return;
+            }
+            Server = (textServer.Text).Trim();
+            UserName = (textUser.Text).Trim();
             Password = textPassword.Text;
-            DomainName = textTenant.Text;
+            DomainName = (textTenant.Text).Trim();
             this.Close();
         }
 
-        void EnableOk()
-        {
-            buttonOk.Enabled = textServer.Text.Length * textUser.Text.Length * textPassword.Text.Length * textTenant .Text.Length > 0;
-        }
-
-        private void textServer_Changed(object sender, EventArgs e)
-        {
-            EnableOk();
-        }
-        private void textUser_Changed(object sender, EventArgs e)
-        {
-            EnableOk();
-        }
-        private void textPassword_Changed(object sender, EventArgs e)
-        {
-            EnableOk();
-        }
-        private void textTenant_Changed(object sender, EventArgs e)
-        {
-            EnableOk();
-        }
         private void LoginForm_Load(object sender, EventArgs e)
         {
             this.textServer.Text = Server;

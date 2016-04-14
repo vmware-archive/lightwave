@@ -50,7 +50,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 DomainType = DomainType.EXTERNAL_DOMAIN.ToString(),
                 Name = txtDomainName.Text,
                 Alias = isAd ? null : txtDomainAlias.Text,
-                IdentityStoreType = cbIdentitySourceType.SelectedValue.ToString(),
+                Type = cbIdentitySourceType.SelectedValue.ToString(),
                 AuthenticationType = cboAuthenticationType.Text.ToUpper(),
                 FriendlyName = isAd ? null : txtFriendlyName.Text,
                 SearchTimeOutInSeconds = isAd ? 0 : (long)txtSearchTimeoutSeconds.Value,

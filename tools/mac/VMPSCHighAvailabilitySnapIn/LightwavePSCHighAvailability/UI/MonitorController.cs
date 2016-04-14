@@ -258,8 +258,14 @@ namespace VMPSCHighAvailability.UI
 		/// </summary>
 		void RefreshPscTableView ()
 		{
-			var infraNodes = RootNode.FilterInfrastructureNodes (SiteName);
-
+			var serverDto = new ServerDto{
+				Server = _mgmtDto.Name, 
+				UserName = ServerDto.UserName, 
+				Upn = ServerDto.Upn, 
+				Password = ServerDto.Password 
+			};
+			var mgmtDto = _service.GetManagementNodeDetails (serverDto);
+			var infraNodes = FilterBySiteName(mgmtDto.DomainControllers);
 			if (_mgmtDto.DomainController != null) {
 				DomainControllerTextField.StringValue = _mgmtDto.DomainController.Name;
 
@@ -284,6 +290,18 @@ namespace VMPSCHighAvailability.UI
 			}
 			SiteAffinityButton.Title = "Enable " + (_mgmtDto.Legacy ? Constants.HA : Constants.Legacy);
 			LoadServices ();
+		}
+
+		private List<InfrastructureDto> FilterBySiteName(List<InfrastructureDto> allDcs)
+		{
+			if(allDcs != null)
+			{
+				foreach(var dc in allDcs)
+				{	
+					dc.IsRemote = !RootNode.Hosts.Exists (x => x.Sitename == _mgmtDto.Sitename && x.Name == dc.Name);
+				}
+			}
+			return allDcs;
 		}
 
 		/// <summary>

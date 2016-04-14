@@ -77,7 +77,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.PropertyPages
 
         private void ExternalDomainAuthProperty_Load(object sender, EventArgs e)
         {
-            var isADWithWindowsAuth = _providerDto.IdentityStoreType == "IDENTITY_STORE_TYPE_ACTIVE_DIRECTORY";
+            var isADWithWindowsAuth = _providerDto.Type == "IDENTITY_STORE_TYPE_ACTIVE_DIRECTORY";
             txtSPN.Visible = isADWithWindowsAuth;
             lblSPN.Visible = isADWithWindowsAuth;
         }

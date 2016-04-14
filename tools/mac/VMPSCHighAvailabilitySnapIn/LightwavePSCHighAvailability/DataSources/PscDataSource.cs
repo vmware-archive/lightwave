@@ -70,7 +70,8 @@ namespace VMPSCHighAvailability.DataSources
 		/// <param name="obj">Object.</param>
 		private static string GetServicesStatus (InfrastructureDto obj)
 		{
-			return (obj.Services != null && obj.Services.Count > 0
+			return obj.IsRemote ? string.Empty :
+				(obj.Services != null && obj.Services.Count > 0
 				? string.Format ("{0} of {1} " + Constants.Active,
 					obj.Services.Count(x=>x.Alive),
 					obj.Services.Count())
@@ -107,13 +108,16 @@ namespace VMPSCHighAvailability.DataSources
 						value = (NSString)obj.Name;
 						break;
 					case Constants.PscTableColumnStatusId:
-							value = (NSString)(obj.Active ? Constants.Active : Constants.InActive);
+						value = (NSString) (obj.IsRemote ? Constants.UnKnown : (obj.Active ? Constants.Active : Constants.InActive));
 						break;
 					case Constants.PscTableColumnAffinitizedId:
 						value = (NSString) (obj.IsAffinitized ? "Yes" : string.Empty);
 						break;
 					case Constants.PscTableColumnServicesId:
 						value = (NSString)GetServicesStatus (obj) ;
+						break;
+					case Constants.PscTableColumnSiteLocationId:
+						value = (NSString)(obj.IsRemote ? Constants.RemoteSite : Constants.SameSite) ;
 						break;
 					default:
 						break;

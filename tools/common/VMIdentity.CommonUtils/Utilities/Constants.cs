@@ -11,6 +11,5 @@
         {
             return string.Format(CONFIRM_SELECTED_DELETE, obj, count);
         }
-
     }
-}
+}

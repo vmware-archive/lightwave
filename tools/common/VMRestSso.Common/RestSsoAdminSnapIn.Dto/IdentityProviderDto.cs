@@ -50,7 +50,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
         [DataMember]
         private string type;
 
-        public string IdentityStoreType
+        public string Type
         {
             get { return type; }
             set { type = value; }
@@ -206,7 +206,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
                 DomainType = this.DomainType,
                 Name = this.Name,
                 Alias = this.Alias,
-                IdentityStoreType = this.IdentityStoreType,
+                Type = this.Type,
                 AuthenticationType = this.AuthenticationType,
                 FriendlyName = this.FriendlyName,
                 SearchTimeOutInSeconds = this.SearchTimeOutInSeconds,
@@ -232,7 +232,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
             return DomainType == this.DomainType &&
                Name == this.Name &&
                Alias == this.Alias &&
-               IdentityStoreType == this.IdentityStoreType &&
+               Type == this.Type &&
                AuthenticationType == this.AuthenticationType &&
                FriendlyName == this.FriendlyName &&
                SearchTimeOutInSeconds == this.SearchTimeOutInSeconds &&

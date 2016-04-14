@@ -44,7 +44,7 @@
 
     <!--shortcuts component group-->
     <ComponentGroup Id="ApplicationShortcut" Directory="ApplicationProgramsFolder">
-      <Component Id="CMP_VMCertShortcut" Guid="{513A5F2F-2E0D-4D0F-B734-41D7BAAA2D40}" Win64="yes">
+      <Component Id="CMP_VMCertShortcut" Guid="{77F95B9A-EF6E-42B1-8D2B-307842D000A6}" Win64="yes">
         <Shortcut Id="VMRestSingleSignOnAdminShortcut"
                   Name="Lightwave SSO"
                   Description="MMC Console for Lightwave SSO"
@@ -82,6 +82,7 @@
              Level="1">
       <ComponentGroupRef Id="ApplicationShortcut"/>
       <ComponentGroupRef Id="VM_common_comp_group"/>
+      <ComponentRef Id="VM_Mmc_Exe_Config_File_Copy_Comp"/>
 
       <ComponentGroupRef Id="VMCert_comp_group"/>
       <ComponentGroupRef Id="VMCert_reg_comp_group"/>
@@ -93,7 +94,6 @@
       <ComponentGroupRef Id="VMDir_reg_comp_group"/>
 
       <ComponentGroupRef Id="RestSSO_comp_group"/>
-      <ComponentRef Id="VMRest_Mmc_Exe_Config_File_Copy_Comp"/>
       <ComponentGroupRef Id="RestSSO_reg_comp_group"/>
       
       <ComponentGroupRef Id="VMPscHighAvailability_comp_group"/>

@@ -16,6 +16,7 @@ using Microsoft.ManagementConsole;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using VMAFD.Client;
@@ -71,7 +72,8 @@ namespace VMPscHighAvailabilitySnapIn.UI
         private Label label7;
         private TextBox txtIpAddress;
         private ColumnHeader columnHeader4;
-        private Label label2;       
+        private ColumnHeader columnHeader7;
+        private Label label2;
 
         private void InitializeComponent()
         {
@@ -112,6 +114,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lblName = new System.Windows.Forms.TextBox();
             this.label7 = new System.Windows.Forms.Label();
             this.txtIpAddress = new System.Windows.Forms.TextBox();
+            this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pcHealth)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
@@ -119,11 +122,12 @@ namespace VMPscHighAvailabilitySnapIn.UI
             // 
             // lstdcs
             // 
-            this.lstdcs.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.lstdcs.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lstdcs.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader1,
             this.columnHeader5,
+            this.columnHeader7,
             this.columnHeader2,
             this.columnHeader3});
             this.lstdcs.FullRowSelect = true;
@@ -143,7 +147,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             // columnHeader1
             // 
             this.columnHeader1.Text = "Host name";
-            this.columnHeader1.Width = 240;
+            this.columnHeader1.Width = 200;
             // 
             // columnHeader5
             // 
@@ -151,12 +155,15 @@ namespace VMPscHighAvailabilitySnapIn.UI
             // 
             // columnHeader2
             // 
+            this.columnHeader2.DisplayIndex = 2;
             this.columnHeader2.Text = "Status of Services";
-            this.columnHeader2.Width = 220;
+            this.columnHeader2.Width = 200;
             // 
             // columnHeader3
             // 
+            this.columnHeader3.DisplayIndex = 3;
             this.columnHeader3.Text = "Status";
+            this.columnHeader3.Width = 50;
             // 
             // btnHA
             // 
@@ -233,7 +240,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             // 
             // lstServices
             // 
-            this.lstServices.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.lstServices.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lstServices.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader6,
@@ -299,7 +306,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             // 
             // groupBox1
             // 
-            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox1.Location = new System.Drawing.Point(3, 77);
             this.groupBox1.Name = "groupBox1";
@@ -455,6 +462,11 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.txtIpAddress.TabStop = false;
             this.txtIpAddress.Text = "192.168.255.255";
             // 
+            // columnHeader7
+            // 
+            this.columnHeader7.Text = "Site Location";
+            this.columnHeader7.Width = 80;
+            // 
             // ManagementViewControl
             // 
             this.Controls.Add(this.txtIpAddress);
@@ -503,7 +515,6 @@ namespace VMPscHighAvailabilitySnapIn.UI
         private ServerDto _serverDto;
         private ManagementDto _dto;
         private IEnumerable<NodeDto> _infraDtos;
-        
 
         public ManagementViewControl()
         {
@@ -532,11 +543,12 @@ namespace VMPscHighAvailabilitySnapIn.UI
         void timer_Tick(object sender, EventArgs e)
         {
             try
-            { 
+            {
                 RefreshView();
             }
             catch (Exception exc)
             {
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
                 MiscUtilsService.ShowError(exc);
                 _timer.Enabled = false;
                 chkAutoRefresh.Checked = false;
@@ -546,11 +558,12 @@ namespace VMPscHighAvailabilitySnapIn.UI
         public void RefreshDataSource()
         {
             try
-            { 
+            {
                 RefreshView();
             }
             catch (Exception exc)
             {
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
                 MiscUtilsService.ShowError(exc);
             }
         }
@@ -565,6 +578,8 @@ namespace VMPscHighAvailabilitySnapIn.UI
             //_infraDtos = serverNode.Hosts.Where(x => x.NodeType == NodeType.Infrastructure && x.Sitename == siteName);
             _serverDto = new ServerDto { Server = node.DisplayName, Upn = node.ServerDto.Upn, Password = node.ServerDto.Password, DomainName = node.ServerDto.DomainName };
             _dto = serverNode.Hosts.First(x => x.Name == node.DisplayName) as ManagementDto;
+
+            _dto.DomainControllers = GetInfraNodesForTheSite(_dto.DomainControllers, siteName);
             _infraDtos = _dto.DomainControllers;
             txtIpAddress.Text = _dto.Ip;
             if (_dto.State == null)
@@ -575,13 +590,12 @@ namespace VMPscHighAvailabilitySnapIn.UI
             foreach (InfrastructureDto dc in _infraDtos)
             {
                 var affinitized = _dto.DomainController.Name == dc.Name ? "Yes" : string.Empty;
-                var services = CdcDcStateHelper.GetActiveServiceDesc(dc);
-                var status = dc.Active
-                    ? Constants.Active
-                    : Constants.InActive;
-                var values = new string[] { dc.Name, affinitized, services, status };
+                var services = GetServiceDescription(dc);
+                var status = GetStatus(dc);
+                var location = GetLocation(dc);
+                var values = new string[] { dc.Name, affinitized, location, services, status };
                 ListViewItem item = new ListViewItem(values) { Tag = dc, ImageIndex = (int)ImageIndex.Infrastructure };
-                item.BackColor = dc.Active ? Color.LightGreen : Color.Pink;
+                item.BackColor = GetRowColor(dc);
                 lstdcs.Items.Add(item);
             }
             lblLastRefreshed.Text = DateTime.Now.ToString(Constants.DateFormat);
@@ -592,38 +606,74 @@ namespace VMPscHighAvailabilitySnapIn.UI
             UpdateServices();
         }
 
+        private static Color GetRowColor(InfrastructureDto dc)
+        {
+            return dc.IsRemote ? Color.LightGray : (dc.Active ? Color.LightGreen : Color.Pink);
+        }
+
+        private static string GetServiceDescription(InfrastructureDto dc)
+        {
+            return dc.IsRemote ? string.Empty : CdcDcStateHelper.GetActiveServiceDesc(dc);
+        }
+
+        private static string GetLocation(InfrastructureDto dc)
+        {
+            return dc.IsRemote ? Constants.RemoteSite : Constants.SameSite;
+        }
+
+        private static string GetStatus(InfrastructureDto dc)
+        {
+            return dc.IsRemote ? Constants.UnKnown
+                                : (dc.Active
+                                ? Constants.Active
+                                : Constants.InActive);
+        }
+
+        private List<InfrastructureDto> GetInfraNodesForTheSite(List<InfrastructureDto> allDcs, string siteName)
+        {
+            var node = _formView.ScopeNode as ManagementNode;
+            var serverNode = node.GetServerNode();
+            var colocatedHosts = serverNode.Hosts.Where(x => x.NodeType == NodeType.Infrastructure && x.Sitename == siteName).ToList();
+            foreach (var dc in allDcs)
+            {
+                dc.IsRemote = !colocatedHosts.Exists(x => x.Name == dc.Name);
+            }
+            return allDcs;
+        }
+
         private void RefreshView()
         {
-                var node = _formView.ScopeNode as ManagementNode;
-                var serverNode = node.GetServerNode();
-                var siteName = node.GetSiteName();
-                if (serverNode!= null && serverNode.Hosts != null)
-                {
-                    _dto = serverNode.Hosts.First(x => x.Name == node.DisplayName) as ManagementDto;
-                    _infraDtos = _dto.DomainControllers;
-                    UpdateState();
+            var node = _formView.ScopeNode as ManagementNode;
+            var serverNode = node.GetServerNode();
+            var siteName = node.GetSiteName();
+            if (serverNode != null && serverNode.Hosts != null)
+            {
+                _dto = serverNode.Hosts.First(x => x.Name == node.DisplayName) as ManagementDto;
+                _dto.DomainControllers = GetInfraNodesForTheSite(_dto.DomainControllers, siteName);
+                _infraDtos = _dto.DomainControllers;
+                UpdateState();
 
-                    foreach (ListViewItem item in lstdcs.Items)
-                    {
-                        var infDto = item.Tag as InfrastructureDto;
-                        var dto = _infraDtos.First(x => x.Name == infDto.Name);
-                        item.Tag = dto;
-                        item.BackColor = dto.Active ? Color.LightGreen : Color.Pink;
-                        var status = dto.Active
-                        ? Constants.Active
-                        : Constants.InActive;
-                        var services = CdcDcStateHelper.GetActiveServiceDesc((InfrastructureDto)dto);
-                        item.SubItems[2].Text = services;
-                        item.SubItems[3].Text = status;
-                        item.SubItems[1].Text = (item.SubItems[0].Text == _dto.DomainController.Name) ? "Yes" : string.Empty;
-                        item.Tag = dto;
-                    }
-                    if (lstdcs.Items.Count > 0)
-                    {
-                        lstdcs.Items[node.SelectedInfrastructureItem].Selected = true;
-                    }
-                    UpdateServices();
+                foreach (ListViewItem item in lstdcs.Items)
+                {
+                    var infDto = item.Tag as InfrastructureDto;
+                    var dto = _infraDtos.First(x => x.Name == infDto.Name) as InfrastructureDto;
+                    item.Tag = dto;
+                    item.BackColor = GetRowColor(dto);
+                    var status = GetStatus(dto);
+                    var services = GetServiceDescription(dto);
+                    var location = GetLocation(dto);
+                    item.SubItems[3].Text = services;
+                    item.SubItems[4].Text = status;
+                    item.SubItems[2].Text = location;
+                    item.SubItems[1].Text = (item.SubItems[0].Text == _dto.DomainController.Name) ? "Yes" : string.Empty;
+                    item.Tag = dto;
                 }
+                if (lstdcs.Items.Count > 0)
+                {
+                    lstdcs.Items[node.SelectedInfrastructureItem].Selected = true;
+                }
+                UpdateServices();
+            }
         }
 
         private void UpdateState()
@@ -638,7 +688,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             btnHA.Text = _dto.Legacy ? Constants.EnableDefaultHA : Constants.EnableLegacy;
             legacyMode = _dto.Legacy;
             txtDomainControllerName.Text = _dto.DomainController.Name;
-        }       
+        }
 
         void IFormViewControl.Initialize(FormView parentSelectionFormView)
         {
@@ -659,14 +709,15 @@ namespace VMPscHighAvailabilitySnapIn.UI
                 var state = _dto.Legacy ? CDC_DC_STATE.CDC_DC_STATE_LEGACY : CDC_DC_STATE.CDC_DC_STATE_NO_DC_LIST;
                 _dto.State = CdcDcStateHelper.GetStateDescription(state);
             }
-            catch(Exception exc)
+            catch (Exception exc)
             {
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
                 MiscUtilsService.ShowError(exc);
             }
             UpdateState();
         }
         private void UpdateServices()
-        {   
+        {
             lstServices.Items.Clear();
 
             if (lstdcs.SelectedItems != null && lstdcs.SelectedItems.Count > 0)
@@ -678,13 +729,13 @@ namespace VMPscHighAvailabilitySnapIn.UI
                     var status = service.Alive ? Constants.Active : Constants.InActive;
                     var hb = DateTimeConverter.ToDurationAgo(service.LastHeartbeat);
                     var port = service.Port == 0 ? string.Empty : service.Port.ToString();
-                    var values = new string[] { service.ServiceName,service.Description, port, status, hb };
+                    var values = new string[] { service.ServiceName, service.Description, port, status, hb };
                     ListViewItem item = new ListViewItem(values) { ImageIndex = (int)ImageIndex.Service };
                     item.BackColor = service.Alive ? Color.LightGreen : Color.Pink;
                     lstServices.Items.Add(item);
                 }
             }
-           lstServices.Refresh();
+            lstServices.Refresh();
         }
         private void lstdcs_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -708,7 +759,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             if (cbInterval.SelectedIndex > -1 && cbInterval.SelectedItem != null)
             {
                 var interval = int.Parse(cbInterval.SelectedItem.ToString());
-                _timer.Interval =  interval* Constants.MilliSecsMultiplier;
+                _timer.Interval = interval * Constants.MilliSecsMultiplier;
             }
         }
 
@@ -717,7 +768,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             var mode = legacyMode ? Constants.HA : Constants.Legacy;
             var result = MessageBox.Show(Constants.ModeChange + mode + "?", Constants.Confirm, MessageBoxButtons.YesNo);
 
-            if(result == DialogResult.Yes)
+            if (result == DialogResult.Yes)
                 ChangeMode();
         }
 
@@ -729,12 +780,13 @@ namespace VMPscHighAvailabilitySnapIn.UI
             }
             catch (Exception exc)
             {
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
                 MiscUtilsService.ShowError(exc);
             }
         }
 
         private void lstdcs_ColumnClick(object sender, ColumnClickEventArgs e)
-        {            
+        {
         }
 
         private void ManagementViewControl_Load(object sender, EventArgs e)
@@ -743,7 +795,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
 
         internal void Cleanup()
         {
-            if(_timer!= null)
+            if (_timer != null)
             {
                 _timer.Enabled = false;
                 _timer = null;

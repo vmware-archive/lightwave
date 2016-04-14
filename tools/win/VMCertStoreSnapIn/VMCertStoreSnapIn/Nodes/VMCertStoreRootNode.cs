@@ -38,7 +38,7 @@ namespace VMCertStoreSnapIn.Nodes
         public VMCertStoreRootNode()
             : base()
         {
-            DisplayName = "VMware Certificate Stores";
+            DisplayName = "Lightwave Certificate Stores";
 
             RefreshDelegate = new Refresh(RefreshMethod);
 

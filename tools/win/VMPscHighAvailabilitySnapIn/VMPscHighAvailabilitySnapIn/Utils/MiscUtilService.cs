@@ -15,6 +15,7 @@
 using System;
 using System.IO;
 using System.Windows.Forms;
+using VMPscHighAvailabilitySnapIn.SnapIn;
 
 namespace VMPscHighAvailabilitySnapIn.Utils
 {
@@ -35,6 +36,7 @@ namespace VMPscHighAvailabilitySnapIn.Utils
             }
             catch (Exception exp)
             {
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exp);
                 ShowError(exp);
             }
         }

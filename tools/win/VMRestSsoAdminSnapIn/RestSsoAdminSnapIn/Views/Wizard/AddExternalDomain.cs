@@ -80,7 +80,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
 
         private void DtoToView()
         {
-            SetSourceType(IdentityProviderDto.IdentityStoreType);
+            SetSourceType(IdentityProviderDto.Type);
             rdoADWindowsAuth.Enabled = false;
             rdoADLdap.Enabled = false;
             rdoopenLdap.Enabled = false;
@@ -186,7 +186,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
                     }
                     else
                     {
-                        var result = MMCDlgHelper.ShowConfirm("The server needs to be joined to the Active Directory, Do you wish to join now?");
+                        var result = MMCDlgHelper.ShowQuestion("The server needs to be joined to the Active Directory, Do you wish to join now?");
                         if (result)
                         {
                             var form = new JoinActiveDirectoryView(ServerDto);
@@ -325,7 +325,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
                 Name = isAd ? radioButton1.Checked ? _domainName : txtSPN.Text.Substring(txtSPN.Text.LastIndexOf("/") + 1) : txtDomainName.Text,
                 Alias = isAd ? null : txtDomainAlias.Text,
                 FriendlyName = isAd ? null : txtFriendlyName.Text,
-                IdentityStoreType = GetSourceType(),
+                Type = GetSourceType(),
                 AuthenticationType = isAd ? "USE_KERBEROS" : "PASSWORD",
                 Username = isAd && radioButton1.Checked ? null : txtUsername.Text,
                 Password = isAd && radioButton1.Checked ? null : txtPassword.Text,
@@ -355,7 +355,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
         private List<string> GetConnectionString(bool isAd)
         {
             var ldap = (rdoopenLdap.Checked || rdoADLdap.Checked && rdoSpecificDomain.Checked);
-            var isEmpty = (string.IsNullOrEmpty(txtSecondaryConnectionString.Text) || txtSecondaryConnectionString.Text.Trim() == "ldap://constoso.com");
+            var isEmpty = (string.IsNullOrEmpty(txtSecondaryConnectionString.Text) || txtSecondaryConnectionString.Text.Trim() == "ldap://contoso.com:389 or ldaps://contoso.com:3268");
             return isAd ? null : ldap ? (isEmpty ?
                 new List<string> { txtPrimaryConnectionString.Text } :
                 new List<string> { txtPrimaryConnectionString.Text, txtSecondaryConnectionString.Text }) :
@@ -548,7 +548,12 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
 
         private void txtDomainName_Enter(object sender, EventArgs e)
         {
-
+            if (txtDomainName.Text.Equals("contoso.com", StringComparison.InvariantCulture)
+              && txtDomainName.ForeColor == Color.Gray)
+            {
+                txtDomainName.Text = string.Empty;
+                txtDomainName.ForeColor = Color.Black;
+            }
         }
 
         private void button12_Click(object sender, EventArgs e)
@@ -718,6 +723,167 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             _help.Title = "Help";
             _help.Content = "Contains the list of certificates added either by establishing a connection with the target server or manually. To enable connection to any domain controller, add a valid LDAP certificate for each of the domain controllers in the domain.";
             _help.ShowDialog();
+        }
+
+        private void txtSPN_Enter(object sender, EventArgs e)
+        {
+            if (txtSPN.Text.Equals("sts/contoso.com", StringComparison.InvariantCulture)
+                && txtFriendlyName.ForeColor == Color.Gray)
+            {
+                txtSPN.Text = string.Empty;
+                txtSPN.ForeColor = Color.Black;
+            }
+        }
+
+        private void txtSPN_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtSPN.Text))
+            {
+                txtSPN.Text = "sts/contoso.com";
+                txtSPN.ForeColor = Color.Gray;
+            }
+        }
+
+        private void txtFriendlyName_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtFriendlyName.Text))
+            {
+                txtFriendlyName.Text = "Contoso Domain";
+                txtFriendlyName.ForeColor = Color.Gray;
+            }
+        }
+
+        private void txtFriendlyName_Enter(object sender, EventArgs e)
+        {
+            if (txtFriendlyName.Text.Equals("Contoso Domain", StringComparison.InvariantCulture)
+                && txtFriendlyName.ForeColor == Color.Gray)
+            {
+                txtFriendlyName.Text = string.Empty;
+                txtFriendlyName.ForeColor = Color.Black;
+            }
+        }
+
+        private void txtUsername_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtUsername.Text))
+            {
+                txtUsername.Text = "CN=Administrator,CN=users,DC=contoso,DC=com";
+                txtUsername.ForeColor = Color.Gray;
+            }
+        }
+
+        private void txtUsername_Enter(object sender, EventArgs e)
+        {
+            if (txtUsername.Text.Equals("CN=Administrator,CN=users,DC=contoso,DC=com", StringComparison.InvariantCulture)
+               && txtUsername.ForeColor == Color.Gray)
+            {
+                txtUsername.Text = string.Empty;
+                txtUsername.ForeColor = Color.Black;
+            }
+        }
+
+        private void txtDomainName_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtDomainName.Text))
+            {
+                txtDomainName.Text = "contoso.com";
+                txtDomainName.ForeColor = Color.Gray;
+            }
+        }
+
+        private void txtDomainAlias_Enter(object sender, EventArgs e)
+        {
+            if (txtDomainAlias.Text.Equals("Contoso", StringComparison.InvariantCulture)
+               && txtDomainAlias.ForeColor == Color.Gray)
+            {
+                txtDomainAlias.Text = string.Empty;
+                txtDomainAlias.ForeColor = Color.Black;
+            }
+        }
+
+        private void txtDomainAlias_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtDomainAlias.Text))
+            {
+                txtDomainAlias.Text = "Contoso";
+                txtDomainAlias.ForeColor = Color.Gray;
+            }
+        }
+
+        private void txtUserDN_Enter(object sender, EventArgs e)
+        {
+            if (txtUserDN.Text.Equals("CN=users, CN=Configuration, DC=contoso, DC=com", StringComparison.InvariantCulture)
+               && txtUserDN.ForeColor == Color.Gray)
+            {
+                txtUserDN.Text = string.Empty;
+                txtUserDN.ForeColor = Color.Black;
+            }
+        }
+
+        private void txtUserDN_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtUserDN.Text))
+            {
+                txtUserDN.Text = "CN=users, CN=Configuration, DC=contoso, DC=com";
+                txtUserDN.ForeColor = Color.Gray;
+            }
+        }
+
+        private void txtGroupDN_Enter(object sender, EventArgs e)
+        {
+            if (txtGroupDN.Text.Equals("CN=groups, CN=Configuration, DC=contoso, DC=com", StringComparison.InvariantCulture)
+               && txtGroupDN.ForeColor == Color.Gray)
+            {
+                txtGroupDN.Text = string.Empty;
+                txtGroupDN.ForeColor = Color.Black;
+            }
+        }
+
+        private void txtGroupDN_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtGroupDN.Text))
+            {
+                txtGroupDN.Text = "CN=groups, CN=Configuration, DC=contoso, DC=com";
+                txtGroupDN.ForeColor = Color.Gray;
+            }
+        }
+
+        private void txtPrimaryConnectionString_Enter(object sender, EventArgs e)
+        {
+            if (txtPrimaryConnectionString.Text.Equals("ldap://contoso.com:389 or ldaps://contoso.com:3268", StringComparison.InvariantCulture)
+               && txtPrimaryConnectionString.ForeColor == Color.Gray)
+            {
+                txtPrimaryConnectionString.Text = string.Empty;
+                txtPrimaryConnectionString.ForeColor = Color.Black;
+            }
+        }
+
+        private void txtPrimaryConnectionString_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtPrimaryConnectionString.Text))
+            {
+                txtPrimaryConnectionString.Text = "ldap://contoso.com:389 or ldaps://contoso.com:3268";
+                txtPrimaryConnectionString.ForeColor = Color.Gray;
+            }
+        }
+
+        private void txtSecondaryConnectionString_Enter(object sender, EventArgs e)
+        {
+            if (txtSecondaryConnectionString.Text.Equals("ldap://contoso.com:389 or ldaps://contoso.com:3268", StringComparison.InvariantCulture)
+               && txtSecondaryConnectionString.ForeColor == Color.Gray)
+            {
+                txtSecondaryConnectionString.Text = string.Empty;
+                txtSecondaryConnectionString.ForeColor = Color.Black;
+            }
+        }
+
+        private void txtSecondaryConnectionString_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtSecondaryConnectionString.Text))
+            {
+                txtSecondaryConnectionString.Text = "ldap://contoso.com:389 or ldaps://contoso.com:3268";
+                txtSecondaryConnectionString.ForeColor = Color.Gray;
+            }
         }
     }
 }

@@ -15,8 +15,10 @@
 using System.IO;
 using System.Reflection;
 using VmIdentity.CommonUtils;
+using VMIdentity.CommonUtils.Log;
 using VMPSCHighAvailability.Common;
 using VMPSCHighAvailability.Common.Service;
+using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace VMPscHighAvailabilitySnapIn.SnapIn
 {
@@ -25,6 +27,11 @@ namespace VMPscHighAvailabilitySnapIn.SnapIn
     /// </summary>
     public class PscHighAvailabilityAppEnvironment : VMBaseSnapInEnvironment
     {
+        /// <summary>
+        /// Logger
+        /// </summary>
+        private ILogger _logger;
+
         /// <summary>
         /// The instance.
         /// </summary>
@@ -89,9 +96,25 @@ namespace VMPscHighAvailabilitySnapIn.SnapIn
             {
                 if (_service == null)
                 {
-                    _service = new PscHighAvailabilityService();
+                    _service = new PscHighAvailabilityService(Logger);
                 }
                 return _service;
+            }
+        }
+
+        /// <summary>
+        /// Logger instance
+        /// </summary>
+        public ILogger Logger
+        {
+            get
+            {
+                if (_logger == null)
+                {
+                    var filePath = string.Format("{0}{1}", MMCUIConstants.LOG_FOLDER, MMCUIConstants.PSC_LOG_FILE);
+                    _logger = new FileLogger(filePath);
+                }
+                return _logger;
             }
         }
     }

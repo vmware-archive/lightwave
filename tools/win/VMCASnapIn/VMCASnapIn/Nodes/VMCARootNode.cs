@@ -31,7 +31,7 @@ namespace VMCASnapIn.Nodes
 
         public VMCARootNode():base()
         {
-            DisplayName = "VMware CA Servers";
+            DisplayName = "Lightwave CA Servers";
 
             RefreshDelegate = new Refresh(RefreshMethod);
 

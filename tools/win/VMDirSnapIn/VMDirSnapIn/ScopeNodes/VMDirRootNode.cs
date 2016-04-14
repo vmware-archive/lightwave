@@ -35,7 +35,7 @@ namespace VMDirSnapIn.ScopeNodes
 
         public VMDirRootNode()
         {
-            DisplayName = "VMware Directory";
+            DisplayName = "Lightwave Directory Servers";
 
             ImageIndex = SelectedImageIndex = (int)VMDirImageIndex.Directory;
 
