@@ -185,9 +185,9 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.label5.ForeColor = System.Drawing.SystemColors.HotTrack;
             this.label5.Location = new System.Drawing.Point(4, 25);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(371, 13);
+            this.label5.Size = new System.Drawing.Size(364, 13);
             this.label5.TabIndex = 45;
-            this.label5.Text = "After Join a manually reboot of the node is needed for changes to take effect.";
+            this.label5.Text = "After join, a manual reboot of the node is needed for changes to take effect.";
             // 
             // JoinActiveDirectoryView
             // 

@@ -16,6 +16,7 @@ using System;
 using VMCertStore.Client;
 using System.Xml.Serialization;
 using System.Threading.Tasks;
+using VMIdentity.CommonUtils;
 
 namespace VMCertStore.Common.DTO
 {
@@ -127,9 +128,10 @@ namespace VMCertStore.Common.DTO
             try {
                 Task t = new Task (ResetUserPass);
                 t.Start ();
-                if (await Task.WhenAny (t, Task.Delay (20000)) == t) {
+                if (await Task.WhenAny (t, Task.Delay (2*CommonConstants.TEN_SEC)) == t) {
+                    await t;
                 } else { 
-                    throw new Exception ("Server timed out");
+                    throw new Exception (CommonConstants.SERVER_TIMEOUT);
                 }
 
             } catch (Exception e) {
@@ -137,7 +139,7 @@ namespace VMCertStore.Common.DTO
             }
         }
 
-        public async void ResetUserPass ()
+        public void ResetUserPass ()
         {
             try {
                 VecsClient.RefreshServerContext (UserName, Password);
@@ -146,6 +148,7 @@ namespace VMCertStore.Common.DTO
                     IsLoggedIn = true;
             } catch (Exception) {
                 IsLoggedIn = false;
+                throw;
             }
         }
 

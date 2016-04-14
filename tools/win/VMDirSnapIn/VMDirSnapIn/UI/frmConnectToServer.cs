@@ -10,41 +10,59 @@
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
  * License for the specific language governing permissions and limitations
  * under the License.
- */using System;using System.Windows.Forms;
+ */
+using System;
+using System.Windows.Forms;
 using VMDir.Common.DTO;
 using VMDirSnapIn.Services;
 using VMDir.Common.VMDirUtilities;
-namespace VMDirSnapIn.UI{    public partial class frmConnectToServer : Form    {        VMDirServerDTO _dto = null;
-        public VMDirServerDTO ServerDTO { get { return _dto; } }
-        public frmConnectToServer()        {            InitializeComponent();
+using VMwareMMCIDP.UI.Common.Utilities;
 
-            txtBaseDN.Text = "dc=local";
-            txtBindUPN.Text = "Administrator@vsphere.local";        }
+namespace VMDirSnapIn.UI
+{
+    public partial class frmConnectToServer : Form
+    {
+        VMDirServerDTO _dto = null;
+
+        public VMDirServerDTO ServerDTO { get { return _dto; } }
+
+        public frmConnectToServer()
+        {
+            InitializeComponent();
+
+            txtBaseDN.Text = "dc=vsphere,dc=local";
+            txtBindUPN.Text = "Administrator@vsphere.local";
+        }
 
         public frmConnectToServer(VMDirServerDTO dto)
             : this()
         {
             _dto = dto;
-
             txtDirectoryServer.Text = dto.Server;
-            txtBaseDN.Text = dto.BaseDN;
-            txtBindUPN.Text = dto.BindDN;
         }
-        private void btnOK_Click(object sender, EventArgs e)        {
+
+        private void btnOK_Click(object sender, EventArgs e)
+        {
             try
             {
+                if (!ValidateForm())
+                {
+                    this.DialogResult = DialogResult.None;
+                    return;
+                }
+
                 if (_dto == null)
                     _dto = VMDirServerDTO.CreateInstance();
 
-                _dto.Server = txtDirectoryServer.Text;
-                _dto.BaseDN = txtBaseDN.Text;
-                _dto.BindDN = txtBindUPN.Text;
+                _dto.Server = (txtDirectoryServer.Text).Trim();
+                _dto.BaseDN = (txtBaseDN.Text).Trim();
+                _dto.BindDN = (txtBindUPN.Text).Trim();
                 _dto.Password = txtPassword.Text;
 
                 _dto.Connection = new LdapConnectionService(_dto.Server, _dto.BindDN, _dto.Password);
                 _dto.Connection.CreateConnection();
 
-                this.DialogResult = DialogResult.OK;
+                this.Close();
             }
             catch (Exception exp)
             {
@@ -52,8 +70,28 @@ namespace VMDirSnapIn.UI{    public partial class frmConnectToServer : Form  
             }
         }
 
+        private bool ValidateForm()
+        {
+            string msg = null;
+            if (string.IsNullOrWhiteSpace(txtDirectoryServer.Text))
+                msg = MMCUIConstants.SERVER_ENT;
+            else if (string.IsNullOrWhiteSpace(txtBindUPN.Text))
+                msg = MMCUIConstants.UPN_ENT;
+            else if (string.IsNullOrWhiteSpace(txtPassword.Text))
+                msg = MMCUIConstants.PASSWORD_ENT;
+
+            if (msg != null)
+            {
+                MMCDlgHelper.ShowWarning(msg);
+                return false;
+            }
+            return true;
+        }
+
         private void frmConnectToServer_Load(object sender, EventArgs e)
         {
             if (!String.IsNullOrEmpty(txtDirectoryServer.Text))
                 this.txtDirectoryServer.Enabled = false;
-        }    }}
+        }
+    }
+}

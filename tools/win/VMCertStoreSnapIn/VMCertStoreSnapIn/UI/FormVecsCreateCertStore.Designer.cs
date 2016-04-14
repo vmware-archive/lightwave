@@ -43,9 +43,7 @@ namespace VMCertStoreSnapIn.UI
         {
             this.buttonCancel = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.textBoxPassword = new System.Windows.Forms.TextBox();
             this.textBoxStoreName = new System.Windows.Forms.TextBox();
-            this.labelPassword = new System.Windows.Forms.Label();
             this.labelStoreName = new System.Windows.Forms.Label();
             this.btnCreate = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
@@ -54,7 +52,7 @@ namespace VMCertStoreSnapIn.UI
             // buttonCancel
             // 
             this.buttonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.buttonCancel.Location = new System.Drawing.Point(325, 154);
+            this.buttonCancel.Location = new System.Drawing.Point(325, 118);
             this.buttonCancel.Name = "buttonCancel";
             this.buttonCancel.Size = new System.Drawing.Size(75, 23);
             this.buttonCancel.TabIndex = 12;
@@ -63,24 +61,14 @@ namespace VMCertStoreSnapIn.UI
             // 
             // groupBox1
             // 
-            this.groupBox1.Controls.Add(this.textBoxPassword);
             this.groupBox1.Controls.Add(this.textBoxStoreName);
-            this.groupBox1.Controls.Add(this.labelPassword);
             this.groupBox1.Controls.Add(this.labelStoreName);
             this.groupBox1.Location = new System.Drawing.Point(6, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(394, 125);
+            this.groupBox1.Size = new System.Drawing.Size(394, 87);
             this.groupBox1.TabIndex = 11;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "New Store";
-            // 
-            // textBoxPassword
-            // 
-            this.textBoxPassword.Location = new System.Drawing.Point(102, 79);
-            this.textBoxPassword.Name = "textBoxPassword";
-            this.textBoxPassword.PasswordChar = '*';
-            this.textBoxPassword.Size = new System.Drawing.Size(264, 20);
-            this.textBoxPassword.TabIndex = 6;
             // 
             // textBoxStoreName
             // 
@@ -88,15 +76,6 @@ namespace VMCertStoreSnapIn.UI
             this.textBoxStoreName.Name = "textBoxStoreName";
             this.textBoxStoreName.Size = new System.Drawing.Size(264, 20);
             this.textBoxStoreName.TabIndex = 5;
-            // 
-            // labelPassword
-            // 
-            this.labelPassword.AutoSize = true;
-            this.labelPassword.Location = new System.Drawing.Point(34, 79);
-            this.labelPassword.Name = "labelPassword";
-            this.labelPassword.Size = new System.Drawing.Size(56, 13);
-            this.labelPassword.TabIndex = 4;
-            this.labelPassword.Text = "Password:";
             // 
             // labelStoreName
             // 
@@ -110,7 +89,7 @@ namespace VMCertStoreSnapIn.UI
             // btnCreate
             // 
             this.btnCreate.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btnCreate.Location = new System.Drawing.Point(241, 154);
+            this.btnCreate.Location = new System.Drawing.Point(241, 118);
             this.btnCreate.Name = "btnCreate";
             this.btnCreate.Size = new System.Drawing.Size(75, 23);
             this.btnCreate.TabIndex = 8;
@@ -124,7 +103,7 @@ namespace VMCertStoreSnapIn.UI
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.buttonCancel;
-            this.ClientSize = new System.Drawing.Size(412, 190);
+            this.ClientSize = new System.Drawing.Size(412, 158);
             this.Controls.Add(this.buttonCancel);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.btnCreate);
@@ -144,9 +123,7 @@ namespace VMCertStoreSnapIn.UI
 
         private System.Windows.Forms.Button buttonCancel;
         private System.Windows.Forms.GroupBox groupBox1;
-        private System.Windows.Forms.TextBox textBoxPassword;
         private System.Windows.Forms.TextBox textBoxStoreName;
-        private System.Windows.Forms.Label labelPassword;
         private System.Windows.Forms.Label labelStoreName;
         private System.Windows.Forms.Button btnCreate;
 

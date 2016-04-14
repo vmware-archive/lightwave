@@ -47,7 +47,11 @@ namespace VMDirSnapIn.ScopeNodes.ListViews
             {
                 var node = this.ScopeNode as DirectoryNode;
                 var _properties = new Dictionary<string, VMDirBagItem>();
-                VMDir.Common.VMDirUtilities.Utilities.GetItemProperties(node._name, node.ServerDTO, _properties);
+                node.ServerDTO.Connection.Search(node._name, LdapScope.SCOPE_BASE, "(objectClass=*)", new string[] { "+" }, 0,
+                                delegate(ILdapMessage searchRequest, List<ILdapEntry> entries)
+                                {
+                                    _properties = VMDir.Common.VMDirUtilities.Utilities.GetProperties(node.ServerDTO, entries);
+                                });
                 MiscUtilsService.ConvertToKVData(_properties, _kvData);
                 FillNodes();
             });
@@ -56,16 +60,9 @@ namespace VMDirSnapIn.ScopeNodes.ListViews
         void FillNodes()
         {
             this.ResultNodes.Clear();
-
-            var node=this.ScopeNode as DirectoryNode;
-            var resultNode = new ResultNode { DisplayName = "dn" };
-            resultNode.SubItemDisplayNames.Add(node._name);
-            resultNode.ImageIndex = (int)VMDirImageIndex.Object;
-            this.ResultNodes.Add(resultNode);
-
             foreach (var entry in _kvData)
             {
-                resultNode = new ResultNode { DisplayName = entry.Key };
+                var resultNode = new ResultNode { DisplayName = entry.Key };
                 resultNode.SubItemDisplayNames.Add(entry.Value);
                 resultNode.ImageIndex = (int)VMDirImageIndex.Object;
                 this.ResultNodes.Add(resultNode);

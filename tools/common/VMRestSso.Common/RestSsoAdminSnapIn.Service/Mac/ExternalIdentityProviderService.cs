@@ -41,47 +41,43 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Mac
             var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
             var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
-            response = CleanupJson(response);
-            var dto = typeof(IdentityProviderDto).Assembly;
-            return JsonConvert.Deserialize<List<ExternalIdentityProviderDto>>(response, "root", dto.GetTypes(), true);
+			return JsonConvert.JsonDeserialize<List<ExternalIdentityProviderDto>> (response);
         }
         public ExternalIdentityProviderDto Get(ServerDto serverDto, string tenantName, ExternalIdentityProviderDto externalIdentityProvider, Token token)
-        {
-            var name = Uri.EscapeDataString(externalIdentityProvider.EntityID);
-            tenantName = Uri.EscapeDataString(tenantName);
-            var url = string.Format(ServiceConfigManager.GetExternalIdentityProviderPostEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName, externalIdentityProvider.EntityID);
-            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-            var requestConfig = new RequestSettings
-            {
-                Method = HttpMethod.Post,
-            };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
-            var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
-            var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
-            response = SerializationJsonHelper.JsonToDictionary("subjectFormats", response);
-            var dto = typeof(ExternalIdentityProviderDto).Assembly;
-            return JsonConvert.Deserialize<ExternalIdentityProviderDto>(response, "root", dto.GetTypes(), true);
-        }
+		{
+			var name = Uri.EscapeDataString (externalIdentityProvider.EntityID);
+			tenantName = Uri.EscapeDataString (tenantName);
+			var url = string.Format (ServiceConfigManager.GetExternalIdentityProviderPostEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName, externalIdentityProvider.EntityID);
+			ServicePointManager.ServerCertificateValidationCallback = delegate {
+				return true;
+			};
+			var requestConfig = new RequestSettings {
+				Method = HttpMethod.Post,
+			};
+			var headers = ServiceHelper.AddHeaders (ServiceConfigManager.JsonContentType);
+			var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString ().ToLower ();
+			var response = _webRequestManager.GetResponse (url, requestConfig, headers, null, postData);
+			return JsonConvert.JsonDeserialize<ExternalIdentityProviderDto> (response);
+		}
         public ExternalIdentityProviderDto Create(ServerDto server, string tenantName, ExternalIdentityProviderDto externalIdentityProvider, Token token)
-        {
-            tenantName = Uri.EscapeDataString(tenantName);
-            var url = string.Format(ServiceConfigManager.ExternalIdentityProvidersEndPoint, server.Protocol, server.ServerName, server.Port, tenantName);
-            var dto = typeof(ExternalIdentityProviderDto).Assembly;
-            var json = JsonConvert.Serialize(externalIdentityProvider, "root", dto.GetTypes(), true);
-            json = SerializationJsonHelper.Cleanup(json);
-            json = Cleanup(json);
-
-            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-            var requestConfig = new RequestSettings
-            {
-                Method = HttpMethod.Post,
-            };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
-            json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
-            var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
-            response = SerializationJsonHelper.JsonToDictionary("subjectFormats", response);
-            return JsonConvert.Deserialize<ExternalIdentityProviderDto>(response, "root", dto.GetTypes(), true);
-        }
+		{
+			tenantName = Uri.EscapeDataString (tenantName);
+			var url = string.Format (ServiceConfigManager.ExternalIdentityProvidersEndPoint, server.Protocol, server.ServerName, server.Port, tenantName);
+			var dto = typeof(ExternalIdentityProviderDto).Assembly;
+			var json = JsonConvert.Serialize (externalIdentityProvider, "root", dto.GetTypes (), true);
+			json = SerializationJsonHelper.Cleanup (json);
+            
+			ServicePointManager.ServerCertificateValidationCallback = delegate {
+				return true;
+			};
+			var requestConfig = new RequestSettings {
+				Method = HttpMethod.Post,
+			};
+			var headers = ServiceHelper.AddHeaders (ServiceConfigManager.JsonContentType);
+			json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString ().ToLower () + "&" + json;
+			var response = _webRequestManager.GetResponse (url, requestConfig, headers, null, json);
+			return JsonConvert.JsonDeserialize<ExternalIdentityProviderDto> (response);
+		}
 
         public bool Delete(ServerDto serverDto, string tenant, ExternalIdentityProviderDto externalIdentityProvider, Token token)
         {
@@ -97,48 +93,20 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Mac
             return string.IsNullOrEmpty(response);
         }
         public ExternalIdentityProviderDto Update(ServerDto serverDto, string tenant, ExternalIdentityProviderDto externalIdentityProvider, Token token)
-        {
-            var url = string.Format(ServiceConfigManager.ExternalIdentityProviderEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, externalIdentityProvider.EntityID);
-            var json = JsonConvert.Serialize(externalIdentityProvider);
-            json = SerializationJsonHelper.Cleanup(json);
-            json = Cleanup(json);
-            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-            var requestConfig = new RequestSettings
-            {
-                Method = HttpMethod.Put,
-            };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
-            json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
-            var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
-            response = SerializationJsonHelper.JsonToDictionary("subjectFormats", response);
-            var dto = typeof(IdentityProviderDto).Assembly;
-            return JsonConvert.Deserialize<ExternalIdentityProviderDto>(response, "root", dto.GetTypes(), true);
-        }
-
-        private string Cleanup(string json)
-        {
-            var startIndex = json.IndexOf("\"subjectFormats\":");
-            var orig = json.Substring(0, startIndex);
-            var subStr1 = json.Substring(startIndex);
-            var newSubStr = subStr1.Replace("{", string.Empty).Replace("}", string.Empty).Replace("[", "{").Replace("]", "}") + "}";
-            return orig + newSubStr;
-        }
-        static string CleanupJson(string response)
-        {
-            var startIndex = 0;
-            var subStr = response;
-            while (startIndex >= 0)
-            {
-                startIndex = subStr.IndexOf("\"subjectFormats\":");
-                if (startIndex < 0)
-                    break;
-                var endIndex = subStr.Substring(startIndex).IndexOf("\"jitEnabled");
-                if (endIndex < 0)
-                    break;
-                var subStr1 = subStr.Substring(startIndex, endIndex);
-                subStr = subStr.Replace(subStr1, string.Empty);
-            }
-            return subStr;
-        }
+		{
+			var url = string.Format (ServiceConfigManager.ExternalIdentityProviderEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, externalIdentityProvider.EntityID);
+			var json = JsonConvert.JsonSerialize (externalIdentityProvider);
+			json = SerializationJsonHelper.Cleanup (json);
+			ServicePointManager.ServerCertificateValidationCallback = delegate {
+				return true;
+			};
+			var requestConfig = new RequestSettings {
+				Method = HttpMethod.Put,
+			};
+			var headers = ServiceHelper.AddHeaders (ServiceConfigManager.JsonContentType);
+			json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString ().ToLower () + "&" + json;
+			var response = _webRequestManager.GetResponse (url, requestConfig, headers, null, json);
+			return JsonConvert.JsonDeserialize<ExternalIdentityProviderDto> (response);
+		}
     }
 }

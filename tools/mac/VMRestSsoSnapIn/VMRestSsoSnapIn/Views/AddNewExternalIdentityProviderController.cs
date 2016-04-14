@@ -215,14 +215,14 @@ namespace RestSsoAdminSnapIn
 			}
 			tableView.Delegate = new TableDelegate ();
 			var columnNames = new List<ColumnOptions> {
-				new ColumnOptions{ Id = "Name", DisplayName = "Name", DisplayOrder = 1, Width = 80 },
+				new ColumnOptions{ Id = "Name", DisplayName = "Name", DisplayOrder = 0, Width = 80 },
 				new ColumnOptions{ Id = "Value", DisplayName = "Value", DisplayOrder = 1, Width = 200 }
 			};
 			var columns = ListViewHelper.ToNSTableColumns (columnNames);
 			foreach (var column in columns) {
 				tableView.AddColumn (column);
 			}
-			var listView = new DictionaryDataSource { Entries = datasource.Keys.ToList() };
+			var listView = new DictionaryDataSource { Entries = datasource.Keys.ToList(), Datasource = datasource };
 			tableView.DataSource = listView;
 			tableView.ReloadData ();
 		}

@@ -109,7 +109,7 @@ namespace RestSsoAdminSnapIn
 			foreach (var column in columns) {
 				tableView.AddColumn (column);
 			}
-			var listView = new DictionaryDataSource { Entries = datasource.Keys.ToList() };
+			var listView = new DictionaryDataSource { Entries = datasource.Keys.ToList(), Datasource = datasource };
 			tableView.DataSource = listView;
 			tableView.ReloadData ();
 		}

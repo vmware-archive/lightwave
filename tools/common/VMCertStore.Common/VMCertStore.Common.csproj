@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -46,6 +46,10 @@
     <ProjectReference Include="..\VMCertStore.Client\VMCertStore.Client.csproj">
       <Project>{24B08641-C034-4A2C-8F18-705F001CD43F}</Project>
       <Name>VMCertStore.Client</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
+      <Project>{cd959e2e-5b9c-4329-b085-352844cfdcdd}</Project>
+      <Name>VMIdentity.CommonUtils</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>
