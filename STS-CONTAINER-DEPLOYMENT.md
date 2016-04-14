@@ -61,6 +61,7 @@ hostname=<Host IP address>
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 bash-4.3# docker run -d --name <name> --privileged --net=host \
+                     -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
                      -v /var/lib/vmware/config:/var/lib/vmware/config \
                      vmware/lightwave-sts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
