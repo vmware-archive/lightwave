@@ -20,6 +20,9 @@ RUN tdnf install -y openssh; tdnf install -y sed
 RUN mkdir -p /var/run/sshd; chmod -rx /var/run/sshd
 RUN ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key
 
+# configure journald
+RUN sed -i 's/#Storage=auto/Storage=persistent/' /etc/systemd/journald.conf
+
 # install lightwave
 RUN tdnf install -y procps-ng; tdnf install -y openjdk-1.8.0.72; tdnf install -y commons-daemon; tdnf install -y apache-tomcat; tdnf install -y likewise-open-6.2.9; tdnf install -y boost; tdnf install -y gawk
 
