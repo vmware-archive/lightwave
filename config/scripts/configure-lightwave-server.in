@@ -164,6 +164,19 @@ if [ -x /etc/init.d/vmware-license ]; then
      /etc/init.d/vmware-license stop
 fi
 
+# Configure syslog-ng
+LINE='@include "lightwave.conf.d"'
+FILE=/etc/syslog-ng/syslog-ng.conf
+if [ -f "$FILE" ]; then
+    grep -qs "$LINE" "$FILE"
+    if [ "$?" -ne 0 ]; then
+        echo "$LINE" >> "$FILE"
+        pid=$( pidof syslog-ng )
+        if [ -n "$pid" ]; then
+            kill -HUP $pid
+        fi
+    fi
+fi
 
 # Setup vmafd, vmdir and SSO STS server.
 JAVA_HOME=@JAVA_HOME@
