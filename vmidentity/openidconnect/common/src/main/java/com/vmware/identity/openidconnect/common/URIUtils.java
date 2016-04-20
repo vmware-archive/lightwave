@@ -140,7 +140,7 @@ public class URIUtils {
         }
 
         String[] allowedSchemes = { "https" };
-        UrlValidator urlValidator = new UrlValidator(allowedSchemes);
+        UrlValidator urlValidator = new UrlValidator(allowedSchemes, UrlValidator.ALLOW_LOCAL_URLS);
         if (!urlValidator.isValid(uri.toString())) {
             throw new ParseException("uri is not a valid https url");
         }
