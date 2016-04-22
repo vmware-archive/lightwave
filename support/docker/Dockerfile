@@ -24,7 +24,14 @@ RUN ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key
 RUN sed -i 's/#Storage=auto/Storage=persistent/' /etc/systemd/journald.conf
 
 # install lightwave
-RUN tdnf install -y procps-ng; tdnf install -y openjdk-1.8.0.72; tdnf install -y commons-daemon; tdnf install -y apache-tomcat; tdnf install -y likewise-open-6.2.9; tdnf install -y boost; tdnf install -y gawk
+RUN tdnf install -y procps-ng; \
+    tdnf install -y openjdk-1.8.0.72; \
+    tdnf install -y commons-daemon; \
+    tdnf install -y apache-tomcat; \
+    tdnf install -y likewise-open-6.2.9; \
+    tdnf install -y boost; \
+    tdnf install -y gawk; \
+    tdnf install -y net-tools
 
 RUN rpm -i /tmp/lightwave_rpms/*.rpm; rm -rf /tmp/lightwave_rpms /var/run/lwregd.pid
 
