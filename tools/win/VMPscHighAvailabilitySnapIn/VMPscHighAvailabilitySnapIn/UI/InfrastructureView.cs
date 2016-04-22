@@ -24,6 +24,7 @@ using VMPscHighAvailabilitySnapIn.ScopeNodes;
 using VMPscHighAvailabilitySnapIn.SnapIn;
 using VMPscHighAvailabilitySnapIn.Utils;
 using VMPSCHighAvailability.Common.Helpers;
+using VMIdentity.CommonUtils.Log;
 
 namespace VMPscHighAvailabilitySnapIn.UI
 {
@@ -72,7 +73,11 @@ namespace VMPscHighAvailabilitySnapIn.UI
             foreach (ServiceDto service in dto.Services)
             {
                 var status = service.Alive ? Constants.Active : Constants.InActive;
+                var message = string.Format("Last Heartbeat for server {0} service {1} is {2}, UTC: {3}", dto.Name, service.ServiceName, service.LastHeartbeat.ToString("dd-MMM-yyyy HH:mm:ss"), DateTime.UtcNow.ToString("dd-MMM-yyyy HH:mm:ss"));
+                PscHighAvailabilityAppEnvironment.Instance.Logger.Log(message, LogLevel.Info);
                 var hb = DateTimeConverter.ToDurationAgo(service.LastHeartbeat);
+                message = string.Format("Last Heartbeat shown on UI for server {0} service {1} is {2}",dto.Name,service.ServiceName,hb);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.Log(message, LogLevel.Info);
                 var port = service.Port == 0 ? string.Empty : service.Port.ToString();
                 var values = new string[] { service.ServiceName,service.Description, port, status, hb };
                 ListViewItem item = new ListViewItem(values) { ImageIndex = (int)ImageIndex.Service };

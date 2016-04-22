@@ -78,7 +78,7 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
                                        ServiceName = x.pszServiceName,
                                        Port = x.dwPort,
                                        Alive = x.bIsAlive == 1,
-                                       LastHeartbeat = DateTimeConverter.FromUnixToLocalDateTime(x.dwLastHeartbeat)
+                                       LastHeartbeat = DateTimeConverter.FromUnixToDateTime(x.dwLastHeartbeat)
                                    }).ToList();
         }
 

@@ -55,11 +55,11 @@ namespace RestSsoAdminSnapIn
 							addNewTenant.Image.Size = new CGSize{ Width = (float)16.0, Height = (float)16.0 };
 							menu.AddItem (addNewTenant);
 
-							NSMenuItem activeDirectory = new NSMenuItem ("Active Directory", serverNode.OnShowActiveDirectory);
-							image = NSImage.ImageNamed ("NSNetwork");
-							activeDirectory.Image = image;
-							activeDirectory.Image.Size = new CGSize{ Width = (float)16.0, Height = (float)16.0 };
-							menu.AddItem (activeDirectory);
+//							NSMenuItem activeDirectory = new NSMenuItem ("Active Directory", serverNode.OnShowActiveDirectory);
+//							image = NSImage.ImageNamed ("NSNetwork");
+//							activeDirectory.Image = image;
+//							activeDirectory.Image.Size = new CGSize{ Width = (float)16.0, Height = (float)16.0 };
+//							menu.AddItem (activeDirectory);
 
 							NSMenuItem getComputers = new NSMenuItem ("Computers", serverNode.OnShowComputers);
 							image = NSImage.ImageNamed ("NSComputer");

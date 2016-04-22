@@ -10,38 +10,38 @@
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
  * License for the specific language governing permissions and limitations
  * under the License.
- */using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.ManagementConsole;
-using System.ComponentModel;
-
-namespace VMDirSnapIn.UI.PropertyPageMgmt
-{
-    public class VMDirPropertyPage : PropertyPage
-    {
-        public event CancelEventHandler Apply;
-        protected override bool OnApply()
-        {
-            if(Apply != null)
-            {
-                var eventArgs = new CancelEventArgs();
-                Apply(this, eventArgs);
-                return eventArgs.Cancel == false;
-            }
-            return false;
-        }
-
-        protected override bool OnOK()
-        {
-            if (Apply != null)
-            {
-                var eventArgs = new CancelEventArgs();
-                Apply(this, eventArgs);
-                return eventArgs.Cancel == false;
-            }
-            return false;
-        }
-    }
-}
+ */using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Microsoft.ManagementConsole;
+using System.ComponentModel;
+
+namespace VMDirSnapIn.UI.PropertyPageMgmt
+{
+    public class VMDirPropertyPage : PropertyPage
+    {
+        public event CancelEventHandler Apply;
+        protected override bool OnApply()
+        {
+            if(Apply != null)
+            {
+                var eventArgs = new CancelEventArgs();
+                Apply(this, eventArgs);
+                return eventArgs.Cancel == false;
+            }
+            return false;
+        }
+
+        protected override bool OnOK()
+        {
+            if (Apply != null)
+            {
+                var eventArgs = new CancelEventArgs();
+                Apply(this, eventArgs);
+                return eventArgs.Cancel == false;
+            }
+            return false;
+        }
+    }
+}

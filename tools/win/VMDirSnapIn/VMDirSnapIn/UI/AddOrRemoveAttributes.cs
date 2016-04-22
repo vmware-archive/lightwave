@@ -12,222 +12,138 @@
  * under the License.
  */
 using System;
-
 using System.Collections.Generic;
-
 using System.Linq;
-
 using System.Windows.Forms;
-
 using VMDir.Common.DTO;
-
 using VMDirSnapIn.Utilities;
+using VMDir.Common.Schema;
 
 namespace VMDirSnapIn.UI
 {
     public partial class AddOrRemoveAttributes : Form
     {
         string _objectClass;
+
         VMDirServerDTO _serverDTO;
 
         List<KeyValuePair<string, string>> rhsList = new List<KeyValuePair<string, string>>();
+
         List<KeyValuePair<string, string>> lhsList = new List<KeyValuePair<string, string>>();
 
-        public List<KeyValuePair<string, string>> OptionalAttributes { get { return rhsList; } }
+        Dictionary<string, AttributeTypeDTO> attrDict = new Dictionary<string, AttributeTypeDTO>();
 
+        public List<KeyValuePair<string, string>> NewOptionalAttributes { get { return rhsList; } }
 
         public AddOrRemoveAttributes(string objectClass, IEnumerable<KeyValuePair<string, string>> existingAttributes, VMDirServerDTO serverDTO)
         {
-
             _objectClass = objectClass;
-
             _serverDTO = serverDTO;
-
-
-
             InitializeComponent();
-
             Text = "Manage attributes for " + _objectClass;
-
-
-
             Bind(existingAttributes);
-
         }
-
-
 
         int ListSort(KeyValuePair<string, string> lhs, KeyValuePair<string, string> rhs)
         {
-
             return lhs.Key.CompareTo(rhs.Key);
-
         }
 
-
-
-        void Bind(IEnumerable<KeyValuePair<string, string>> currentAttributes)
+        void Bind(IEnumerable<KeyValuePair<string, string>> existingAttributes)
         {
-
-            rhsList = currentAttributes.ToList();
-
-            lhsList = _serverDTO.Connection.SchemaManager.GetOptionalAttributes(_objectClass)
-
-                .Select(x => new KeyValuePair<string, string>(x.Name, x.Description)).ToList();
-
-            foreach (var item in rhsList)
+            var attrList = _serverDTO.Connection.SchemaManager.GetOptionalAttributes(_objectClass);
+            foreach (var item in attrList)
             {
-
-                lhsList.Remove(item);
-
+                if (!attrDict.ContainsKey(item.Name))
+                {
+                    attrDict.Add(item.Name, item);
+                }
+            }
+            lhsList = attrDict.Select(x => new KeyValuePair<string, string>(x.Key, x.Value.Description)).ToList();
+            var currentAttributes = existingAttributes.ToList();
+            foreach (var item in currentAttributes)
+            {
+                if (isSingleValue(item.Key))
+                    lhsList.Remove(item);
             }
 
             lhsList.Sort(ListSort);
-
-
-
-            RefreshData();
-
+            bindListView();
         }
 
-
-
-        void RefreshData()
+        private bool isSingleValue(string key)
         {
-
-            lstNewAttributes.VirtualListSize = lhsList.Count;
-
-            lstExistingAttributes.VirtualListSize = rhsList.Count;
-
+            if (attrDict.ContainsKey(key))
+                return attrDict[key].SingleValue;
+            else
+                return false;
         }
 
-
+        private void bindListView()
+        {
+            lstNewAttributes.Items.Clear();
+            lstExistingAttributes.Items.Clear();
+            foreach (var item in lhsList)
+            {
+                ListViewItem lvi = new ListViewItem(new[] { item.Key, item.Value });
+                lstNewAttributes.Items.Add(lvi);
+            }
+            foreach (var item in rhsList)
+            {
+                ListViewItem lvi = new ListViewItem(new[] { item.Key, item.Value });
+                lstExistingAttributes.Items.Add(lvi);
+            }
+        }
 
         private void lstNewAttributes_SelectedIndexChanged(object sender, EventArgs e)
         {
-
             btnAddSingle.Enabled = lstNewAttributes.SelectedIndices.Count > 0;
-
         }
-
-
 
         private void lstExistingAttributes_SelectedIndexChanged(object sender, EventArgs e)
         {
-
             btnRemoveSingle.Enabled = lstExistingAttributes.SelectedIndices.Count > 0;
-
         }
-
-
-
-        private void lstNewAttributes_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
-        {
-
-            var dto = lhsList[e.ItemIndex];
-
-            e.Item = new ListViewItem(new string[] { dto.Key, dto.Value });
-
-        }
-
-
-
-        private void lstExistingAttributes_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
-        {
-
-            var dto = rhsList[e.ItemIndex];
-
-            e.Item = new ListViewItem(new string[] { dto.Key, dto.Value });
-
-        }
-
-
 
         private void btnAddSingle_Click(object sender, EventArgs e)
         {
-
-            foreach (int index in lstNewAttributes.SelectedIndices)
+            foreach (ListViewItem item in lstNewAttributes.SelectedItems)
             {
+                var kv = new KeyValuePair<string, string>(item.SubItems[0].Text, item.SubItems[1].Text);
+                rhsList.Add(kv);
 
-                rhsList.Add(lhsList[index]);
-
-                lhsList.RemoveAt(index);
-
+                if (isSingleValue(kv.Key))
+                    lhsList.Remove(kv);
             }
-
-            RefreshData();
-
+            bindListView();
         }
-
-
-
-        private void btnAddAll_Click(object sender, EventArgs e)
-        {
-
-            rhsList.AddRange(lhsList);
-
-            lhsList.Clear();
-
-            RefreshData();
-
-        }
-
-
 
         private void btnRemoveSingle_Click(object sender, EventArgs e)
         {
-
-            foreach (int index in lstExistingAttributes.SelectedIndices)
+            foreach (ListViewItem item in lstExistingAttributes.SelectedItems)
             {
-
-                lhsList.Add(rhsList[index]);
-
-                rhsList.RemoveAt(index);
-
+                var kv = new KeyValuePair<string, string>(item.SubItems[0].Text, item.SubItems[1].Text);
+                if (isSingleValue(kv.Key))
+                    lhsList.Add(kv);
+                rhsList.Remove(kv);
             }
-
-            RefreshData();
-
+            bindListView();
         }
-
-
-
-        private void btnRemoveAll_Click(object sender, EventArgs e)
-        {
-
-            lhsList.AddRange(rhsList);
-
-            rhsList.Clear();
-
-            RefreshData();
-
-        }
-
-
 
         private void btnOK_Click(object sender, EventArgs e)
         {
-
             DialogResult = DialogResult.OK;
-
             this.Close();
-
         }
-
-
 
         private void lstNewAttributes_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-
             btnAddSingle_Click(lstNewAttributes, EventArgs.Empty);
-
         }
 
         private void lstExistingAttributes_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-
             btnRemoveSingle_Click(lstExistingAttributes, EventArgs.Empty);
-
         }
 
         private void lstNewAttributes_OnKeyPress(object sender, KeyPressEventArgs e)
@@ -235,4 +151,4 @@ namespace VMDirSnapIn.UI
             SearchListByKeyPress.findAndSelect((ListView)sender, e.KeyChar);
         }
     }
-}
+}

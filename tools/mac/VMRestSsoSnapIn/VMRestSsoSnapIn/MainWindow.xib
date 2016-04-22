@@ -7,7 +7,6 @@
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="MainWindowController">
             <connections>
-                <outlet property="ADToolbarItem" destination="136" id="173"/>
                 <outlet property="AddToolbarItem" destination="131" id="132"/>
                 <outlet property="BackForwardToolbarItem" destination="16" id="43"/>
                 <outlet property="BackToolbarItem" destination="19" id="47"/>
@@ -204,7 +203,6 @@
                     <toolbarItem implicitItemIdentifier="7716E71D-2D50-438D-8012-3966493E8CE9" label="Tenant Config" paletteLabel="Tenant Config" tag="-1" image="NSAdvanced" id="130" customClass="ActivatableToolBarItem"/>
                     <toolbarItem implicitItemIdentifier="5695B215-163A-49F3-9ADB-927AD8D2E33D" label="Add" paletteLabel="Add" tag="-1" image="Add_Object_64" id="131" customClass="ActivatableToolBarItem"/>
                     <toolbarItem implicitItemIdentifier="44DE760C-B4CD-4F45-B0E8-1B6AD01B1F45" label="Delete" paletteLabel="Delete" tag="-1" image="Delete_Object_64" id="134" customClass="ActivatableToolBarItem"/>
-                    <toolbarItem implicitItemIdentifier="7B5448C8-E102-4C28-A214-0C0A48768F3B" label="AD" paletteLabel="AD" tag="-1" image="NSNetwork" id="136" customClass="ActivatableToolBarItem"/>
                     <toolbarItem implicitItemIdentifier="085E51BF-FE74-43A0-B01A-AE8FFA3CEF57" label="Computers" paletteLabel="Computers" tag="-1" image="NSComputer" id="137" customClass="ActivatableToolBarItem"/>
                     <toolbarItem implicitItemIdentifier="3A15CA52-87C8-4F7E-A8D7-DCC818F0AE94" label="Refresh" paletteLabel="Refresh" tag="-1" image="NSRefreshTemplate" id="139" customClass="ActivatableToolBarItem"/>
                     <toolbarItem implicitItemIdentifier="D8136DCA-9552-4EEB-BB79-B9EF878D1CE6" label="Diagnostics" paletteLabel="Diagnostics" tag="-1" image="NSRevealFreestandingTemplate" id="144" customClass="ActivatableToolBarItem"/>
@@ -223,7 +221,6 @@
                     <toolbarItem reference="131"/>
                     <toolbarItem reference="139"/>
                     <toolbarItem reference="130"/>
-                    <toolbarItem reference="136"/>
                     <toolbarItem reference="137"/>
                     <toolbarItem reference="174"/>
                     <toolbarItem reference="144"/>
@@ -250,7 +247,6 @@
         <image name="NSAdvanced" width="32" height="32"/>
         <image name="NSComputer" width="32" height="32"/>
         <image name="NSMultipleDocuments" width="32" height="32"/>
-        <image name="NSNetwork" width="32" height="32"/>
         <image name="NSRefreshTemplate" width="11" height="15"/>
         <image name="NSRevealFreestandingTemplate" width="14" height="14"/>
         <image name="connect" width="64" height="64"/>

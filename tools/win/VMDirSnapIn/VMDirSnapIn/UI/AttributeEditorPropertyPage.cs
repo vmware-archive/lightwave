@@ -95,7 +95,7 @@ namespace VMDirSnapIn.UI
                     int i = 0;
                     foreach (var m in finalMods)
                     {
-                        var values = m.Value.ToArray();
+                        var values = m.Value.Where(x=>!string.IsNullOrWhiteSpace(x)).ToArray();
                         Array.Resize(ref values, values.Count() + 1);
                         user[i] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_REPLACE, m.Key, values);
                         i++;
@@ -116,6 +116,7 @@ namespace VMDirSnapIn.UI
         {
             MiscUtilsService.CheckedExec(delegate
             {
+                _properties.Clear();
                 VMDir.Common.VMDirUtilities.Utilities.GetItemProperties(_dn, ServerDTO, _properties);
                 VMDir.Common.VMDirUtilities.Utilities.RemoveDontShowAttributes(_properties);
                 MiscUtilsService.ConvertToKVData(_properties,_kvData);

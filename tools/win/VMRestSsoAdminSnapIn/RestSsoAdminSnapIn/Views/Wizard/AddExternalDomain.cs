@@ -62,7 +62,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             _createNew = IdentityProviderDto == null;
             if (_createNew)
             {
-                rdoADWindowsAuth.Checked = true;
+                rdoADWindowsAuth.Checked = false;
+                rdoADLdap.Checked = true;
                 rdoAnyDomain.Checked = true;
                 IdentityProviderDto = new IdentityProviderDto();
             }

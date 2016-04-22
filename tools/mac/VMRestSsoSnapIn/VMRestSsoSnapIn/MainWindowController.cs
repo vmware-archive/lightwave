@@ -85,7 +85,7 @@ namespace RestSsoAdminSnapIn
             PropertiesToolbarItem.Activated += PropertiesToolbarItem_Activated;
             RefreshToolbarItem.Activated += RefreshToolbarItem_Activated;
             TokenWizardToolbarItem.Activated += TokenWizardToolbarItem_Activated;
-            ADToolbarItem.Activated += ADToolbarItem_Activated;
+            //ADToolbarItem.Activated += ADToolbarItem_Activated;
             ComputerToolbarItem.Activated += ComputerToolbarItem_Activated;
             HttptransportToolbarItem.Activated += HttpTransportToolbarItem_Activated;
 			SuperLoggingToolbarItem.Activated += SuperLogToolbarItem_Activated;
@@ -290,7 +290,7 @@ namespace RestSsoAdminSnapIn
         public void InitialiseToolBar ()
         {
 			var enable = Servernode != null && Servernode.Children.Count > 0 && ((TenantNode)Servernode.Children [0]).IsSystemTenant;
-            SearchToolbarItem.Active = true;
+			SearchToolbarItem.Active = true;
             ConectToolbarItem.Label = "Disconnect";
             ConectToolbarItem.Active = true;
             BackForwardToolbarItem.Active = true;
@@ -300,9 +300,10 @@ namespace RestSsoAdminSnapIn
 			SuperLoggingToolbarItem.Active = true;
             RefreshToolbarItem.Active = true;
             TokenWizardToolbarItem.Active = true;
-			ADToolbarItem.Active = enable;
+			//ADToolbarItem.Active = false;
             ComputerToolbarItem.Active = true;
             HttptransportToolbarItem.Active = true;
+
         }
 
         private void ResetToolBarItems ()
@@ -317,7 +318,7 @@ namespace RestSsoAdminSnapIn
 			SuperLoggingToolbarItem.Active = false;
             RefreshToolbarItem.Active = false;
             TokenWizardToolbarItem.Active = false;
-            ADToolbarItem.Active = false;
+            //ADToolbarItem.Active = false;
             ComputerToolbarItem.Active = false;
             HttptransportToolbarItem.Active = false;
         }

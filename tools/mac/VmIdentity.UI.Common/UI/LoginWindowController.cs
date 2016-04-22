@@ -69,7 +69,7 @@ namespace VmIdentity.UI.Common
             base.AwakeFromNib();
             foreach (var obj in ServerArray)
                 this.ServerCombo.Add(NSObject.FromObject(obj));
-            this.UserNameTxtField.StringValue = "Administrator@vsphere.local";
+            this.UserNameTxtField.StringValue = "Administrator@lightwave.local";
             //Events
             this.OKButton.Activated += OnClickOKButton;
             this.CancelButton.Activated += OnClickCancelButton;
@@ -86,11 +86,11 @@ namespace VmIdentity.UI.Common
             {
                 Upn = UserNameTxtField.StringValue;
                 String[] userAndDomain = Upn.Split('@');
-				if (userAndDomain.Length != 2 || 
-					string.IsNullOrWhiteSpace(userAndDomain[0]) || 
-					string.IsNullOrEmpty(userAndDomain[0]) ||
-					string.IsNullOrWhiteSpace(userAndDomain[1]) ||
-					string.IsNullOrEmpty(userAndDomain[1]))
+                if (userAndDomain.Length != 2 ||
+                    string.IsNullOrWhiteSpace(userAndDomain[0]) ||
+                    string.IsNullOrEmpty(userAndDomain[0]) ||
+                    string.IsNullOrWhiteSpace(userAndDomain[1]) ||
+                    string.IsNullOrEmpty(userAndDomain[1]))
                 {
                     UIErrorHelper.ShowAlert("", "Enter Valid UPN");
                 }

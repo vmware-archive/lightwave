@@ -46,7 +46,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes{    public class Gr
                 var action = new Action("New Group", "New Group", (int)TreeImageIndex.UserAdd, GroupsNodeAction.ActionNewGroup);
                 ActionsPaneItems.Add(action);
             }
-            ActionsPaneItems.Add(new Action("Search", "Searches for group(s) by group name", (int)TreeImageIndex.Search, GroupsNodeAction.ActionFindByGroupName));            AddViewDescription();        }
+            ActionsPaneItems.Add(new Action("Search", "Searches for group(s) by group name", (int)TreeImageIndex.Search, GroupsNodeAction.ActionFindByGroupName));            AddViewDescription();        }
         protected override void OnAction(Action action, AsyncStatus status)        {            base.OnAction(action, status);            switch ((GroupsNodeAction)(int)action.Tag)            {
                 case GroupsNodeAction.ActionNewGroup:                    AddNewGroup();                    break;
                 case GroupsNodeAction.ActionFindByGroupName:
@@ -64,7 +64,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes{    public class Gr
                     this.GroupsControl.RefreshGroups(form.SearchString);
                 }
             }, null);
-        }
+        }
         void AddNewGroup()        {
             var service = this.GetServiceGateway();
             var authTokenDto = SnapInContext.Instance.AuthTokenManager.GetAuthToken(ServerDto, _tenantName);
@@ -78,7 +78,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes{    public class Gr
                     var success = service.Group.Create(ServerDto, TenantName, @group, authTokenDto.Token);
                     GroupsControl.RefreshGroups(string.Empty);
                 }
-            }, authTokenDto);        }
+            }, authTokenDto);        }
         void AddViewDescription()        {
             var fvd = new FormViewDescription
             {

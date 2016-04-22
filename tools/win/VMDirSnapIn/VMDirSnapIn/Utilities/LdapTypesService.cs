@@ -18,9 +18,9 @@ using VMDir.Common.Schema;
 using VMDirSnapIn.Utilities;using VMDirInterop.LDAP;
 using VMDir.Common.VMDirUtilities;
 
-namespace VMDirSnapIn.Services{    public static class LdapTypesService    {        public static string DATE_FORMAT = "yyyyMMddHHmmss.fZ";
-        public static int AttributeTypeSort(AttributeTypeDTO lhs, AttributeTypeDTO rhs)        {            return lhs.Name.CompareTo(rhs.Name);        }
-        public static int ObjectClassDTOSort(ObjectClassDTO lhs, ObjectClassDTO rhs)        {            return lhs.Name.CompareTo(rhs.Name);        }
+namespace VMDirSnapIn.Services{    public static class LdapTypesService    {        public static string DATE_FORMAT = "yyyyMMddHHmmss.fZ";
+        public static int AttributeTypeSort(AttributeTypeDTO lhs, AttributeTypeDTO rhs)        {            return lhs.Name.CompareTo(rhs.Name);        }
+        public static int ObjectClassDTOSort(ObjectClassDTO lhs, ObjectClassDTO rhs)        {            return lhs.Name.CompareTo(rhs.Name);        }
         public static LdapMod MakeAttribute(KeyValuePair<string, VMDirBagItem> entry)        {
             object val = null;
             object entryVal = entry.Value.Value;
@@ -58,7 +58,7 @@ namespace VMDirSnapIn.Services{    public static class LdapTypesService    {
                     break;
             }
             return result;
-        }
+        }
         public static object GetInstanceWithVal(string type, List<LdapValue> ldapValue)        {            object returnVal = "";            bool hasMultiple = ldapValue.Count > 1;            if (!hasMultiple)            {                returnVal = MiscUtilsService.GetInstanceFromType(type);                switch(type)                {                    case "System.DateTime":
                         var str = ldapValue[0].StringValue;                        returnVal = DateTime.ParseExact(str, DATE_FORMAT, CultureInfo.InvariantCulture);                        break;                    default:
                         returnVal = ConvertVal(ldapValue[0].StringValue);

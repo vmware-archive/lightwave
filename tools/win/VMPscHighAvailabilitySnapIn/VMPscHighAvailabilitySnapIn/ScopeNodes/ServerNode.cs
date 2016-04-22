@@ -29,6 +29,7 @@ using System.Threading.Tasks;
 using System;
 using System.IO;
 using VMwareMMCIDP.UI.Common.Utilities;
+using VMIdentity.CommonUtils.Log;
 
 namespace VMPscHighAvailabilitySnapIn.ScopeNodes
 {
@@ -67,7 +68,7 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
             DisplayName = GetDisplayName(dto);
             ImageIndex = SelectedImageIndex = (int)VMPSCHighAvailability.Common.ImageIndex.Server;
             AddViewDescription();
-            _timer = new Timer() { Enabled = false, Interval = Constants.TopologyTimeout * Constants.MilliSecsMultiplier };
+            _timer = new Timer() { Enabled = false, Interval = Constants.CacheCycleRefreshInterval * Constants.MilliSecsMultiplier };
             _timer.Tick += _timer_Tick;
         }
 
@@ -373,6 +374,9 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
 
         private void UpdateManagementNode(NodeDto host, ServerDto serverDto)
         {
+            var message = string.Format("Method: UpdateManagementNode refresh cache cycle start for Server: {0}", host.Name);
+            var logger = PscHighAvailabilityAppEnvironment.Instance.Logger;
+            logger.Log(message, LogLevel.Info);
             var service = PscHighAvailabilityAppEnvironment.Instance.Service;
             var server = new ServerDto
             {
@@ -385,9 +389,18 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
             var dto = service.GetManagementNodeDetails(server);
             dto.Name = server.Server;
             dto.Domain = server.DomainName;
+            message = string.Format("Method: UpdateManagementNode - for Server: {0}", host.Name);
+            logger.Log(message, LogLevel.Info);
             var index = Hosts.FindIndex(x => x.Name == dto.Name);
             if (index > -1 && index < Hosts.Count)
+            {
                 Hosts[index] = dto;
+
+                message = string.Format("Method: UpdateManagementNode updated VC Server: {0}", host.Name);
+                logger.Log(message, LogLevel.Info);
+            }
+            message = string.Format("Method: UpdateManagementNode refresh cache cycle end for Server: {0}", host.Name);
+            logger.Log(message, LogLevel.Info);
         }
 
         private void UpdateInfraNode(NodeDto host, ServerDto serverDto)

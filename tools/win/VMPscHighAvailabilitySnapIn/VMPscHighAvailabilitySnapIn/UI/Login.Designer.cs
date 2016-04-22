@@ -60,7 +60,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.txtBindUPN.Name = "txtBindUPN";
             this.txtBindUPN.Size = new System.Drawing.Size(228, 20);
             this.txtBindUPN.TabIndex = 2;
-            this.txtBindUPN.Text = "Administrator@vsphere.local";
+            this.txtBindUPN.Text = "Administrator@lightwave.local";
             this.toolTip1.SetToolTip(this.txtBindUPN, "Enter UPN of the form username@domain");
             // 
             // txtPassword

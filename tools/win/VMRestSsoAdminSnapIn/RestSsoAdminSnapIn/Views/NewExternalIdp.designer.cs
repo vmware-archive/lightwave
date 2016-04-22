@@ -63,6 +63,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.btnRemoveSubjectFormat = new System.Windows.Forms.Button();
             this.btnAddSubjectFormat = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
+            this.txtAlias = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.label7 = new System.Windows.Forms.Label();
             this.lblSsoServices = new System.Windows.Forms.Label();
@@ -74,7 +75,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.label1 = new System.Windows.Forms.Label();
             this.lstCertificateChain = new System.Windows.Forms.ListView();
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.txtAlias = new System.Windows.Forms.TextBox();
             this.label4 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
@@ -340,6 +340,17 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
+            // txtAlias
+            // 
+            this.helpProvider1.SetHelpKeyword(this.txtAlias, "NewTenantName");
+            this.helpProvider1.SetHelpString(this.txtAlias, "Displays the alias of the external identity provider");
+            this.txtAlias.Location = new System.Drawing.Point(73, 37);
+            this.txtAlias.Name = "txtAlias";
+            this.helpProvider1.SetShowHelp(this.txtAlias, true);
+            this.txtAlias.Size = new System.Drawing.Size(302, 20);
+            this.txtAlias.TabIndex = 2;
+            this.toolTip1.SetToolTip(this.txtAlias, "Alias");
+            // 
             // toolTip1
             // 
             this.toolTip1.AutoPopDelay = 2000;
@@ -425,6 +436,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.columnHeader1});
             this.lstCertificateChain.FullRowSelect = true;
             this.lstCertificateChain.GridLines = true;
+            this.lstCertificateChain.HideSelection = false;
             this.lstCertificateChain.Location = new System.Drawing.Point(9, 468);
             this.lstCertificateChain.MultiSelect = false;
             this.lstCertificateChain.Name = "lstCertificateChain";
@@ -440,17 +452,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             // 
             this.columnHeader1.Text = "Certificate";
             this.columnHeader1.Width = 320;
-            // 
-            // txtAlias
-            // 
-            this.helpProvider1.SetHelpKeyword(this.txtAlias, "NewTenantName");
-            this.helpProvider1.SetHelpString(this.txtAlias, "Displays the alias of the external identity provider");
-            this.txtAlias.Location = new System.Drawing.Point(73, 37);
-            this.txtAlias.Name = "txtAlias";
-            this.helpProvider1.SetShowHelp(this.txtAlias, true);
-            this.txtAlias.Size = new System.Drawing.Size(302, 20);
-            this.txtAlias.TabIndex = 2;
-            this.toolTip1.SetToolTip(this.txtAlias, "Alias");
             // 
             // label4
             // 

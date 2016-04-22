@@ -46,7 +46,7 @@ namespace VMCASnapIn.Nodes
             nint result = NSApplication.SharedApplication.RunModalForWindow (cwc.Window);
             try {
                 if (result == (nint)Constants.DIALOGOK) {
-                    UIErrorHelper.ShowAlert ("", "Key Pair Created");
+                    UIErrorHelper.ShowAlert ("", Constants.CREATED_KEY_PAIR);
                     this.ServerDTO.KeyPairs.Add (cwc.DTO);
                     NSNotificationCenter.DefaultCenter.PostNotificationName ("ReloadTableView", this);
                 }
@@ -59,23 +59,22 @@ namespace VMCASnapIn.Nodes
         public  static void SaveKeyData (KeyPairData data)
         {
             UIErrorHelper.CheckedExec (delegate () {
-                
                 var save = NSSavePanel.SavePanel;
                 save.AllowedFileTypes = new string[] { "key" };
-                save.Title = "Save Private Key";
+                save.Title = Constants.SAVE_PUBLIC_KEY;
                 nint result = save.RunModal ();
                 if (result == (int)1) {
                     string path = save.Url.Path;
                     File.WriteAllText (path, data.PrivateKey);
-                    UIErrorHelper.ShowAlert ("", "Private Key Saved");
+                    UIErrorHelper.ShowAlert ("", Constants.SAVED_PUBLIC_KEY);
                 }
 
-                save.Title = "Save Public Key";
+                save.Title = Constants.SAVE_PRIVATE_KEY;
                 result = save.RunModal ();
                 if (result == (int)1) {
                     string path = save.Url.Path;
                     File.WriteAllText (path, data.PublicKey);
-                    UIErrorHelper.ShowAlert ("", "Public Key Saved");
+                    UIErrorHelper.ShowAlert ("", Constants.SAVED_PRIVATE_KEY);
                 }
             });
         }

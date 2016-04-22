@@ -17,118 +17,118 @@ using System.Linq;
 using System.Text;
 using System.ComponentModel;
 using System.Windows.Forms;
-using VMDir.Common.VMDirUtilities;
-
-namespace VMDirSnapIn.Utilities
-{
-     //Provides a way to create a property grid friendly dynamic key value bag.
-    [TypeDescriptionProvider(typeof(KeyValueBagTypeDescriptionProvider))]
-    public class KeyValueBag : Dictionary<string, VMDirBagItem>
-    {
-        public long Ticks = DateTime.Now.Ticks;
-    }
-
-    //With caching so the multitude of GetTypeDescriptor calls do not keep creating
-    //new objects. Guid might be better than ticks.
-    public class KeyValueBagTypeDescriptionProvider : TypeDescriptionProvider
-    {
-        private static TypeDescriptionProvider defaultProvider = TypeDescriptor.GetProvider(typeof(KeyValueBag));
-        Dictionary<long, KeyValueBagTypeDescriptor> _providerCache = new Dictionary<long, KeyValueBagTypeDescriptor>();
-
-        public KeyValueBagTypeDescriptionProvider() : base(defaultProvider) { }
-
-        public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
-        {
-            ICustomTypeDescriptor defaultDescriptor = base.GetTypeDescriptor(objectType, instance);
-            if (instance == null)
-                return defaultDescriptor;
-            var bag = instance as KeyValueBag;
-            if (bag == null)
-                return defaultDescriptor;
-            KeyValueBagTypeDescriptor descriptor = null;
-            if (_providerCache.TryGetValue(bag.Ticks, out descriptor))
-            {
-                if (descriptor.GetProperties().Count == bag.Count)
-                    return descriptor;
-                else
-                    _providerCache.Remove(bag.Ticks);
-            }
-            descriptor = new KeyValueBagTypeDescriptor(defaultDescriptor, instance);
-            _providerCache[bag.Ticks] = descriptor;
-            return descriptor;
-        }
-    }
-
-    class KeyValueBagTypeDescriptor : CustomTypeDescriptor
-    {
-        PropertyDescriptorCollection _descriptorCollection;
-        public KeyValueBagTypeDescriptor(ICustomTypeDescriptor parent, object instance)
-            : base(parent)
-        {
-            var bag = instance as KeyValueBag;
-            var propDescriptorArray = bag.Select(x => new KeyValuePropertyDescriptor(x)).ToArray();
-            _descriptorCollection = new PropertyDescriptorCollection(propDescriptorArray);
-        }
-
-        public override PropertyDescriptorCollection GetProperties()
-        {
-            return _descriptorCollection;
-        }
-
-        public override PropertyDescriptorCollection GetProperties(Attribute[] attributes)
-        {
-            return _descriptorCollection;
-        }
-    }
-
-    class KeyValuePropertyDescriptor : PropertyDescriptor
-    {
-        Type _type;
-        bool _readOnly = false;
-        public bool IsRequired { get; protected set; }
-        public KeyValuePropertyDescriptor(KeyValuePair<string, VMDirBagItem> entry)
-            : base(entry.Key, new Attribute[]{new DescriptionAttribute(entry.Value.Description)})
-        {
-            var item = entry.Value;
+using VMDir.Common.VMDirUtilities;
+
+namespace VMDirSnapIn.Utilities
+{
+     //Provides a way to create a property grid friendly dynamic key value bag.
+    [TypeDescriptionProvider(typeof(KeyValueBagTypeDescriptionProvider))]
+    public class KeyValueBag : Dictionary<string, VMDirBagItem>
+    {
+        public long Ticks = DateTime.Now.Ticks;
+    }
+
+    //With caching so the multitude of GetTypeDescriptor calls do not keep creating
+    //new objects. Guid might be better than ticks.
+    public class KeyValueBagTypeDescriptionProvider : TypeDescriptionProvider
+    {
+        private static TypeDescriptionProvider defaultProvider = TypeDescriptor.GetProvider(typeof(KeyValueBag));
+        Dictionary<long, KeyValueBagTypeDescriptor> _providerCache = new Dictionary<long, KeyValueBagTypeDescriptor>();
+
+        public KeyValueBagTypeDescriptionProvider() : base(defaultProvider) { }
+
+        public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
+        {
+            ICustomTypeDescriptor defaultDescriptor = base.GetTypeDescriptor(objectType, instance);
+            if (instance == null)
+                return defaultDescriptor;
+            var bag = instance as KeyValueBag;
+            if (bag == null)
+                return defaultDescriptor;
+            KeyValueBagTypeDescriptor descriptor = null;
+            if (_providerCache.TryGetValue(bag.Ticks, out descriptor))
+            {
+                if (descriptor.GetProperties().Count == bag.Count)
+                    return descriptor;
+                else
+                    _providerCache.Remove(bag.Ticks);
+            }
+            descriptor = new KeyValueBagTypeDescriptor(defaultDescriptor, instance);
+            _providerCache[bag.Ticks] = descriptor;
+            return descriptor;
+        }
+    }
+
+    class KeyValueBagTypeDescriptor : CustomTypeDescriptor
+    {
+        PropertyDescriptorCollection _descriptorCollection;
+        public KeyValueBagTypeDescriptor(ICustomTypeDescriptor parent, object instance)
+            : base(parent)
+        {
+            var bag = instance as KeyValueBag;
+            var propDescriptorArray = bag.Select(x => new KeyValuePropertyDescriptor(x)).ToArray();
+            _descriptorCollection = new PropertyDescriptorCollection(propDescriptorArray);
+        }
+
+        public override PropertyDescriptorCollection GetProperties()
+        {
+            return _descriptorCollection;
+        }
+
+        public override PropertyDescriptorCollection GetProperties(Attribute[] attributes)
+        {
+            return _descriptorCollection;
+        }
+    }
+
+    class KeyValuePropertyDescriptor : PropertyDescriptor
+    {
+        Type _type;
+        bool _readOnly = false;
+        public bool IsRequired { get; protected set; }
+        public KeyValuePropertyDescriptor(KeyValuePair<string, VMDirBagItem> entry)
+            : base(entry.Key, new Attribute[]{new DescriptionAttribute(entry.Value.Description)})
+        {
+            var item = entry.Value;
             _readOnly = item.IsReadOnly;
-			_type = item.Value.GetType();
-            IsRequired = entry.Value.IsRequired;
-        }
-
-        public override bool CanResetValue(object component) { return false; }
-        public override Type ComponentType { get { return typeof(KeyValueBag); } }
-        public override bool IsReadOnly { get { return _readOnly; } }
-        public override Type PropertyType { get { return _type; } }
-        public override bool ShouldSerializeValue(object component) { return false; }
-
-        public override void ResetValue(object component)
+			_type = item.Value.GetType();
+            IsRequired = entry.Value.IsRequired;
+        }
+
+        public override bool CanResetValue(object component) { return false; }
+        public override Type ComponentType { get { return typeof(KeyValueBag); } }
+        public override bool IsReadOnly { get { return _readOnly; } }
+        public override Type PropertyType { get { return _type; } }
+        public override bool ShouldSerializeValue(object component) { return false; }
+
+        public override void ResetValue(object component)
         {
-			var bag = component as KeyValueBag;
-            bag[Name].Value = GetDefaultValue(_type);
-        }
-
-        public override object GetValue(object component)
-        {
-            var bag = component as KeyValueBag;
-            return bag[Name].Value;
+			var bag = component as KeyValueBag;
+            bag[Name].Value = GetDefaultValue(_type);
+        }
+
+        public override object GetValue(object component)
+        {
+            var bag = component as KeyValueBag;
+            return bag[Name].Value;
         }        
-
-        public override void SetValue(object component, object value)
-        {
-            var bag = component as KeyValueBag;
-            bag[Name].Value = value;
-        }
-
-        public object GetDefaultValue(Type t)
-        {
-            if (t.IsValueType)
-            {
-                return Activator.CreateInstance(t);
-            }
-            else
-            {
-                return null;
-            }
-        }
-    }
-}
+
+        public override void SetValue(object component, object value)
+        {
+            var bag = component as KeyValueBag;
+            bag[Name].Value = value;
+        }
+
+        public object GetDefaultValue(Type t)
+        {
+            if (t.IsValueType)
+            {
+                return Activator.CreateInstance(t);
+            }
+            else
+            {
+                return null;
+            }
+        }
+    }
+}

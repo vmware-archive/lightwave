@@ -16,6 +16,7 @@ using System.Windows.Forms;
 using VMCertStore.Common.DTO;
 using VMCertStoreSnapIn.Utilities;
 using VMwareMMCIDP.UI.Common.Utilities;
+using System.IO;
 
 namespace VMCertStoreSnapIn.UI
 {
@@ -57,6 +58,15 @@ namespace VMCertStoreSnapIn.UI
                 return false;
             }
             return true;
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+             var keyFile= MMCMiscUtil.SelectFile("Select Secret key", MMCUIConstants.PRI_KEY_FILTER);
+             try{
+                 this.txtSecretKey.Text = File.ReadAllText(keyFile);
+             }
+            catch(Exception){}
         }
 
     }

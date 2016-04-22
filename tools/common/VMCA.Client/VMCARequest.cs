@@ -47,7 +47,7 @@ namespace VMCA
 
         public VMCAClient Client{ get; protected set; }
 
-        public VMCARequest (VMCAClient client)
+        public VMCARequest(VMCAClient client)
         {
             Client = Client;
             DomainName = client.DomainName;
@@ -55,32 +55,31 @@ namespace VMCA
 
         #region IDisposable Members
 
-        public void Dispose ()
+        public void Dispose()
         {
         }
 
         #endregion
 
-        public VMCACertificate GetSelfSignedCertificate (string privateKey, DateTime notBefore, DateTime notAfter)
+        public VMCACertificate GetSelfSignedCertificate(string privateKey, DateTime notBefore, DateTime notAfter)
         {
-            IntPtr pCert = new IntPtr ();
+            IntPtr pCert = new IntPtr();
 
-            var requestData = GetRequestData ();
-            long nBefore = notBefore.ToTime_t ();
-            long nAfter = notAfter.ToTime_t ();
-            UInt32 result = VMCAAdaptor.VMCACreateSelfSignedCertificate (requestData, privateKey, "", nBefore, nAfter, out pCert);
-            VMCAError.Check (result);
+            var requestData = GetRequestData();
+            long nBefore = notBefore.ToTime_t();
+            long nAfter = notAfter.ToTime_t();
+            UInt32 result = VMCAAdaptor.VMCACreateSelfSignedCertificate(requestData, privateKey, "", nBefore, nAfter, out pCert);
+            VMCAError.Check(result);
 
-            string cert = Marshal.PtrToStringAnsi (pCert);
-            result = VMCAAdaptor.VMCAFreeCertificate (pCert);
-            VMCAError.Check (result);
+            string cert = Marshal.PtrToStringAnsi(pCert);
+            VMCAAdaptor.VMCAFreeCertificate(pCert);
 
-            return new VMCACertificate (Client, cert);
+            return new VMCACertificate(Client, cert);
         }
 
-        public VMCAAdaptor.VMCA_PKCS_10_REQ_DATA GetRequestData ()
+        public VMCAAdaptor.VMCA_PKCS_10_REQ_DATA GetRequestData()
         {
-            var req = new VMCAAdaptor.VMCA_PKCS_10_REQ_DATA ();
+            var req = new VMCAAdaptor.VMCA_PKCS_10_REQ_DATA();
             req.pszName = Name;
             req.pszDomainName = DomainName;
             req.pszCountry = Country;
@@ -97,18 +96,16 @@ namespace VMCA
             return req;
         }
 
-        public string GetCSR (string privateKey)
+        public string GetCSR(string privateKey)
         {
-            IntPtr pCSR = new IntPtr ();
+            IntPtr pCSR = new IntPtr();
 
-            var requestData = GetRequestData ();
-            UInt32 result = VMCAAdaptor.VMCACreateSigningRequest (requestData, privateKey, "", out pCSR);
-            VMCAError.Check (result);
+            var requestData = GetRequestData();
+            UInt32 result = VMCAAdaptor.VMCACreateSigningRequest(requestData, privateKey, "", out pCSR);
+            VMCAError.Check(result);
 
-            string csr = Marshal.PtrToStringAnsi (pCSR);
-            result = VMCAAdaptor.VMCAFreeCSR (pCSR);
-            VMCAError.Check (result);
-
+            string csr = Marshal.PtrToStringAnsi(pCSR);
+            VMCAAdaptor.VMCAFreeCSR(pCSR);
             return csr;
         }
     }

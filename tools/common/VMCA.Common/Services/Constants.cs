@@ -25,6 +25,12 @@ namespace VMCASnapIn.Services
         public const string CERT_INTENDED_PURPOSES = "IntendedPurposes";
         public const string CERT_STATUS = "Status";
         public const string CERT_ISSUED_TO = "IssuedTo";
+        public const string SAVE_PUBLIC_KEY = "Save Public Key";
+        public const string SAVE_PRIVATE_KEY = "Save Private Key";
+        public const string SAVED_PUBLIC_KEY = "Public Key Saved";
+        public const string SAVED_PRIVATE_KEY = "Private Key Saved";
+        public const string CREATED_KEY_PAIR = "Key Pair Created";
+
 
     }
 }

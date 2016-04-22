@@ -186,7 +186,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.txtDefaultTenant.Name = "txtDefaultTenant";
             this.txtDefaultTenant.Size = new System.Drawing.Size(314, 20);
             this.txtDefaultTenant.TabIndex = 2;
-            this.txtDefaultTenant.Text = "vsphere.local";
+            this.txtDefaultTenant.Text = "lightwave.local";
             this.txtDefaultTenant.TextChanged += new System.EventHandler(this.txtDefaultTenant_TextChanged);
             // 
             // txtDomainName

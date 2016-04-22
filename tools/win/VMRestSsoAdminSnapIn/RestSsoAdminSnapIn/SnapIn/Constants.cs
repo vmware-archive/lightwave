@@ -17,7 +17,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn
     public static class Constants
     {
         public static string ClientId = "rp_client_id_A";
-        public static string DefaultDomainName = "vsphere.local";
+        public static string DefaultDomainName = "lightwave.local";
         public static string LocalStorageFileName = "RestSsoAdminSnapInData.xml";
         public static string HttpTransportLocalStorageFileName = "RestSsoAdminSnapInHttpTransport.xml";
     }

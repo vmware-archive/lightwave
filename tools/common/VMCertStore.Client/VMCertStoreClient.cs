@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 namespace VMCertStore.Client
 {    public class VMCertStoreClient
     {
@@ -13,6 +13,6 @@ namespace VMCertStore.Client
         }		
         public string GetVersion()
         {            return "1.0.0";
-        }
-    }
-}
+        }
+    }
+}

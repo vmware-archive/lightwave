@@ -97,6 +97,7 @@ namespace VMCertStoreSnapIn
             splitViewController.MainOutlineView = new OutlineView();
             splitViewController.MainTableView = new VMCertStoreTableView();
             this.CustomView.AddSubview(splitViewController.View);
+            SearchFieldCell.CancelButtonCell.Activated += OnCloseSearch;
 
             //Notifications for OutlineView and Tableview to reload
             NSNotificationCenter.DefaultCenter.AddObserver((NSString)"ReloadOutlineView", ReloadOutlineView);
@@ -446,8 +447,15 @@ namespace VMCertStoreSnapIn
             }
         }
 
+        public void OnCloseSearch(object sender, EventArgs e)
+        {
+            SearchFieldCell.StringValue = String.Empty;
+            RefreshTableViewsBasedOnSelection(splitViewController.MainOutlineView.SelectedRow);
+        }
+
         partial void StartSearch(AppKit.NSSearchField sender)
         {
+            RefreshTableViewsBasedOnSelection(splitViewController.MainOutlineView.SelectedRow);
             SearchCertificates(sender.StringValue);
         }
 
