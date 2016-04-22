@@ -24,51 +24,50 @@ namespace VMCA.Client
         VMCAClient _client;
         string _certificate;
 
-        public VMCACertificate (VMCAClient client, string certificate)
+        public VMCACertificate(VMCAClient client, string certificate)
         {
             _client = client;
             _certificate = certificate;
         }
 
-        public VMCACertificate (VMCAClient client, X509Certificate2 certificate)
+        public VMCACertificate(VMCAClient client, X509Certificate2 certificate)
         {
             _client = client;
-            _certificate = certificate.ExportToPem ();
+            _certificate = certificate.ExportToPem();
         }
 
-        public void Revoke ()
+        public void Revoke()
         {
-            UInt32 result = VMCAAdaptor.VMCARevokeCertificate (_client.ServerName, _certificate);
-            VMCAError.Check (result);
+            UInt32 result = VMCAAdaptor.VMCARevokeCertificate(_client.ServerName, _certificate);
+            VMCAError.Check(result);
         }
 
-        public X509Certificate2 GetX509Certificate2 ()
+        public X509Certificate2 GetX509Certificate2()
         {
-            return VMCACertificate.GetX509Certificate (_certificate);
+            return VMCACertificate.GetX509Certificate(_certificate);
         }
 
-        public static X509Certificate2 GetX509Certificate (string certificate)
+        public static X509Certificate2 GetX509Certificate(string certificate)
         {
-            var bytes = Convert.FromBase64String (certificate.StripToBase64String ());
-            return new X509Certificate2 (bytes);
+            var bytes = Convert.FromBase64String(certificate.StripToBase64String());
+            return new X509Certificate2(bytes);
         }
 
-        public static bool Validate (string certificate)
+        public static bool Validate(string certificate)
         {
-            UInt32 result = VMCAAdaptor.VMCAValidateCACertificate (certificate);
-            VMCAError.Check (result);
+            UInt32 result = VMCAAdaptor.VMCAValidateCACertificate(certificate);
+            VMCAError.Check(result);
             return true;
         }
 
-        public static string GetCertificateAsString (X509Certificate2 cert)
+        public static string GetCertificateAsString(X509Certificate2 cert)
         {
-            var certStringPtr = new IntPtr ();
-            UInt32 result = VMCAAdaptor.VMCAGetCertificateAsString (cert.ExportToPem (), out certStringPtr);
-            VMCAError.Check (result);
+            var certStringPtr = new IntPtr();
+            UInt32 result = VMCAAdaptor.VMCAGetCertificateAsString(cert.ExportToPem(), out certStringPtr);
+            VMCAError.Check(result);
 
-            var certString = Marshal.PtrToStringAnsi (certStringPtr);
-            result = VMCAAdaptor.VMCAFreeString (certStringPtr);
-            VMCAError.Check (result);
+            var certString = Marshal.PtrToStringAnsi(certStringPtr);
+            VMCAAdaptor.VMCAFreeString(certStringPtr);
 
             return certString;
         }

@@ -312,7 +312,7 @@ namespace VMPSCHighAvailability.Common.Service
                     ServiceName = Constants.AuthFrameworkServiceName,
                     Description = Constants.AuthFrameworkServiceDesc,
                     Alive = false,
-                    LastHeartbeat = System.DateTime.Now
+                    LastHeartbeat = System.DateTime.UtcNow
                 };
                 AddService(infra, afdService);
                 var vmdirService = GetVmDirServiceStatus(serverDto);
@@ -330,7 +330,7 @@ namespace VMPSCHighAvailability.Common.Service
                 ServiceName = Constants.AuthFrameworkServiceName,
                 Description = Constants.AuthFrameworkServiceDesc,
                 Alive = false,
-                LastHeartbeat = System.DateTime.Now
+                LastHeartbeat = System.DateTime.UtcNow
             };
 
             AddService(infra, afdService);
@@ -346,14 +346,14 @@ namespace VMPSCHighAvailability.Common.Service
                 ServiceName = Constants.AuthFrameworkServiceName,
                 Description = Constants.AuthFrameworkServiceDesc,
                 Alive = false,
-                LastHeartbeat = System.DateTime.Now
+                LastHeartbeat = System.DateTime.UtcNow
             };
             var vmdirService = new ServiceDto
             {
                 HostName = serverDto.Server,
                 ServiceName = Constants.DirectoryServiceName,
                 Description = Constants.DirectoryServiceDesc,
-                LastHeartbeat = System.DateTime.Now,
+                LastHeartbeat = System.DateTime.UtcNow,
                 Alive = false
             };
             AddService(infra, afdService);
@@ -372,7 +372,7 @@ namespace VMPSCHighAvailability.Common.Service
                 HostName = serverDto.Server,
                 ServiceName = Constants.DirectoryServiceName,
                 Description = Constants.DirectoryServiceDesc,
-                LastHeartbeat = System.DateTime.Now
+                LastHeartbeat = System.DateTime.UtcNow
             };
 
             try
@@ -454,73 +454,145 @@ namespace VMPSCHighAvailability.Common.Service
                 var message = string.Format("Method: GetManagementNodeDetails - CdcGetCurrentState API call for Server: {0}", serverDto.Server);
                 _logger.Log(message, LogLevel.Info);
 
-                var state = client.CdcGetCurrentState();
+                try
+                {
+                    var state = client.CdcGetCurrentState();
+                    dto.Legacy = (state == CDC_DC_STATE.CDC_DC_STATE_LEGACY);
+                    dto.State = CdcDcStateHelper.GetStateDescription(state);
+                    message = string.Format("Method: GetManagementNodeDetails - CdcGetCurrentState API call for Server: {0} complete", serverDto.Server);
+                    _logger.Log(message, LogLevel.Info);
+                }
+                catch (Exception exc)
+                {
+                    message = string.Format("Method: GetManagementNodeDetails - CdcGetCurrentState API call for Server: {0} failed", serverDto.Server);
+                    _logger.Log(message, LogLevel.Error);
+                    _logger.LogException(exc);
+                }
+                
+                try
+                {
+                    message = string.Format("Method: GetManagementNodeDetails - VmAfdGetSiteName API call for Server: {0}", serverDto.Server);
+                    _logger.Log(message, LogLevel.Info);
 
-                message = string.Format("Method: GetManagementNodeDetails - CdcGetCurrentState API call for Server: {0} complete", serverDto.Server);
-                _logger.Log(message, LogLevel.Info);
+                    dto.Sitename = client.VmAfdGetSiteName();
 
-                dto.Legacy = (state == CDC_DC_STATE.CDC_DC_STATE_LEGACY);
-                dto.State = CdcDcStateHelper.GetStateDescription(state);
-                dto.Sitename = client.VmAfdGetSiteName();
+                    message = string.Format("Method: GetManagementNodeDetails - VmAfdGetSiteName API call for Server: {0} complete", serverDto.Server);
+                    _logger.Log(message, LogLevel.Info);
+                }
+                catch (Exception exc)
+                {
+                    message = string.Format("Method: GetManagementNodeDetails - VmAfdGetSiteName API call for Server: {0} failed", serverDto.Server);
+                    _logger.Log(message, LogLevel.Error);
+                    _logger.LogException(exc);
+                }
                 dto.Active = true;
                 dto.Ip = Network.GetIpAddress(dto.Name);
 
                 message = string.Format("Method: GetManagementNodeDetails - CdcGetDCName API call for Server: {0}", serverDto.Server);
                 _logger.Log(message, LogLevel.Info);
 
-                var dcInfo = client.CdcGetDCName(serverDto.DomainName, dto.Sitename, 0);
-
-                message = string.Format("Method: GetManagementNodeDetails - CdcGetDCName API call for Server: {0} complete", serverDto.Server);
-                _logger.Log(message, LogLevel.Info);
-
-                dto.DomainController = new InfrastructureDto
+                try
                 {
-                    Name = dcInfo.pszDCName,
-                    NodeType = NodeType.Infrastructure,
-                    Domain = dcInfo.pszDomainName
-                };
+                    var dcInfo = client.CdcGetDCName(serverDto.DomainName, dto.Sitename, 0);
+
+                    message = string.Format("Method: GetManagementNodeDetails - CdcGetDCName API call for Server: {0} complete", serverDto.Server);
+                    _logger.Log(message, LogLevel.Info);
+
+                    dto.DomainController = new InfrastructureDto
+                    {
+                        Name = dcInfo.pszDCName,
+                        NodeType = NodeType.Infrastructure,
+                        Domain = dcInfo.pszDomainName
+                    };
+                    
+                }
+                catch(Exception exc)
+                {
+                    message = string.Format("Method: GetManagementNodeDetails - CdcGetDCName API call for Server: {0} failed", serverDto.Server);
+                    _logger.Log(message, LogLevel.Error);
+                    _logger.LogException(exc);
+                    dto.DomainController = new InfrastructureDto
+                    {
+                        Name = string.Empty,
+                        NodeType = NodeType.Infrastructure,
+                        Domain = string.Empty
+                    };
+                }
                 dto.DomainControllers = new List<InfrastructureDto>();
 
-                IList<string> entries = client.CdcEnumDCEntries();
-                foreach (var entry in entries)
+                try
                 {
-                    CDC_DC_STATUS_INFO info;
-                    VMAFD_HEARTBEAT_STATUS hbStatus;
-
-                    message = string.Format("Method: GetManagementNodeDetails - CdcGetDCStatus API call for Server: {0}", serverDto.Server);
+                    message = string.Format("Method: GetManagementNodeDetails - CdcEnumDCEntries API call for Server: {0}", serverDto.Server);
                     _logger.Log(message, LogLevel.Info);
-
-                    client.CdcGetDCStatus(entry, string.Empty, out info, out hbStatus);
-
-                    message = string.Format("Method: GetManagementNodeDetails - CdcGetDCStatus API call for Server: {0} complete", serverDto.Server);
+                    IList<string> entries = client.CdcEnumDCEntries();
+                    message = string.Format("Method: GetManagementNodeDetails - CdcEnumDCEntries API call for Server: {0} complete. DCs returned: {1}", serverDto.Server, entries.Count());
                     _logger.Log(message, LogLevel.Info);
-
-                    var infraDto = new InfrastructureDto()
+                    foreach (var entry in entries)
                     {
-                        Name = entry,
-                        Active = info.bIsAlive == 1,
-                        Sitename = info.pszSiteName,
-                        LastPing = DateTimeConverter.FromUnixToLocalDateTime(info.dwLastPing),
-                        Services = new List<ServiceDto>()
+                        CDC_DC_STATUS_INFO info;
+                        VMAFD_HEARTBEAT_STATUS hbStatus;
 
-                    };
-
-                    if (hbStatus.info != null)
-                    {
-                        foreach (var serviceInfo in hbStatus.info)
+                        try
                         {
-                            var service = new ServiceDto
+                            message = string.Format("Method: GetManagementNodeDetails - CdcGetDCStatus API call for Server: {0}", serverDto.Server);
+                            _logger.Log(message, LogLevel.Info);
+
+                            client.CdcGetDCStatus(entry, string.Empty, out info, out hbStatus);
+                            message = string.Format("Method: GetManagementNodeDetails - CdcGetDCStatus API call for Server: {0} complete", serverDto.Server);
+                            _logger.Log(message, LogLevel.Info);
+
+                            var infraDto = new InfrastructureDto()
                             {
-                                ServiceName = ServiceHelper.GetServiceName(serviceInfo.pszServiceName),
-                                Description = ServiceHelper.GetServiceDescription(serviceInfo.pszServiceName),
-                                Alive = serviceInfo.bIsAlive == 1,
-                                LastHeartbeat = DateTimeConverter.FromUnixToLocalDateTime(serviceInfo.dwLastHeartbeat),
-                                Port = serviceInfo.dwPort,
+                                Name = entry,
+                                Active = info.bIsAlive == 1,
+                                Sitename = info.pszSiteName,
+                                LastPing = DateTimeConverter.FromUnixToDateTime(info.dwLastPing),
+                                Services = new List<ServiceDto>()
+
                             };
-                            infraDto.Services.Add(service);
+
+                            if (hbStatus.info != null)
+                            {
+                                foreach (var serviceInfo in hbStatus.info)
+                                {
+                                    var service = new ServiceDto
+                                    {
+                                        ServiceName = ServiceHelper.GetServiceName(serviceInfo.pszServiceName),
+                                        Description = ServiceHelper.GetServiceDescription(serviceInfo.pszServiceName),
+                                        Alive = serviceInfo.bIsAlive == 1,
+                                        LastHeartbeat = DateTimeConverter.FromUnixToDateTime(serviceInfo.dwLastHeartbeat),
+                                        Port = serviceInfo.dwPort,
+                                    };
+                                    infraDto.Services.Add(service);
+                                }
+                            }
+                            dto.DomainControllers.Add(infraDto);
+                        }
+                        catch (Exception exc)
+                        {
+                            message = string.Format("Method: GetManagementNodeDetails - CdcGetDCStatus API call for Server: {0} failed", serverDto.Server);
+                            _logger.Log(message, LogLevel.Error);
+                            _logger.LogException(exc);
+                            dto.DomainController = new InfrastructureDto
+                            {
+                                Name = string.Empty,
+                                NodeType = NodeType.Infrastructure,
+                                Domain = string.Empty
+                            };
                         }
                     }
-                    dto.DomainControllers.Add(infraDto);
+                }
+                catch (Exception exc)
+                {
+                    message = string.Format("Method: GetManagementNodeDetails - CdcEnumDCEntries API call for Server: {0} failed", serverDto.Server);
+                    _logger.Log(message, LogLevel.Error);
+                    _logger.LogException(exc);
+                    dto.DomainController = new InfrastructureDto
+                    {
+                        Name = string.Empty,
+                        NodeType = NodeType.Infrastructure,
+                        Domain = string.Empty
+                    };
                 }
             }
             return dto;

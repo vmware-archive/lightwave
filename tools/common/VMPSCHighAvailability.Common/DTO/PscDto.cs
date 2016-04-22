@@ -10,15 +10,15 @@
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
  * License for the specific language governing permissions and limitations
  * under the License.
- */
+ */
 using System;
 using System.Collections.Generic;
-using VMAFD.Client;
+using VMAFD.Client;
 namespace VMPSCHighAvailability.Common.DTO
 {
 	/// <summary>
 	/// Infrastucture dto.
-	/// </summary>
+	/// </summary>
 	public class InfrastructureDto : NodeDto
 	{
 		public InfrastructureDto()
@@ -26,28 +26,28 @@ namespace VMPSCHighAvailability.Common.DTO
 			Sitename = string.Empty;
 			IsAffinitized = false;
             Services = new List<ServiceDto>();
-		}
+		}
         /// <summary>
         /// Gets or sets a value indicating whether this instance is affinitized.
         /// </summary>
         /// <value><c>true</c> if this instance is affinitized; otherwise, <c>false</c>.</value>
-        public bool IsAffinitized { get; set; }
+        public bool IsAffinitized { get; set; }
         /// <summary>
         /// List of the services and their status
         /// </summary>
-        public List<ServiceDto> Services { get; set; }
+        public List<ServiceDto> Services { get; set; }
         /// <summary>
         /// Last ping date time
         /// </summary>
-        public DateTime LastPing { get; set; }
+        public DateTime LastPing { get; set; }
         /// <summary>
         /// Last response time
         /// </summary>
-        public DateTime LastResponseTime { get; set; }
+        public DateTime LastResponseTime { get; set; }
         /// <summary>
         /// Last error details
         /// </summary>
-        public ErrorDto LastError { get; set; }
+        public ErrorDto LastError { get; set; }
         /// <summary>
         /// Partners
         /// </summary>

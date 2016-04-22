@@ -73,6 +73,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             lstSsoServices.Enabled = false;            
             chkJit.Enabled = false;
             DtoToView(_externalIdentityProviderDtoOrig);
+            if (lstCertificateChain.Items.Count > 0)
+                lstCertificateChain.Items[0].Selected = true;
             Text = "External Identity Provider";
             btnCreate.Text = "Update";
         }
@@ -114,7 +116,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 {
                     // do nothing
                 }
-            }
+            }            
         }
         private void btnSelectCertFile_Click(object sender, EventArgs e)
         {

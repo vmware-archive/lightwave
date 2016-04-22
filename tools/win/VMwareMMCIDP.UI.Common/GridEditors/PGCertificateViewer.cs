@@ -14,5 +14,5 @@
 using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace VMwareMMCIDP.UI.Common.GridEditors
-{    public class PGCertificateViewer : UITypeEditor    {        public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext context)        {            return UITypeEditorEditStyle.Modal;        }
+{    public class PGCertificateViewer : UITypeEditor    {        public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext context)        {            return UITypeEditorEditStyle.Modal;        }
         public override object EditValue(ITypeDescriptorContext context, IServiceProvider provider, object value)        {            var svc = (IWindowsFormsEditorService)provider.GetService(typeof(IWindowsFormsEditorService));            if (svc != null)            {                (value as string).ShowX509Certificate();            }            return value;        }    }}

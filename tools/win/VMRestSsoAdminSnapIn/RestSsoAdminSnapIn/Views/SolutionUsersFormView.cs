@@ -18,7 +18,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn.Presenters;
 using Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes;
 
-namespace Vmware.Tools.RestSsoAdminSnapIn.Views{    public class SolutionUsersFormView : FormView    {               protected override void OnInitialize(AsyncStatus status)        {            // Call the parent method.            base.OnInitialize(status);
+namespace Vmware.Tools.RestSsoAdminSnapIn.Views{    public class SolutionUsersFormView : FormView    {               protected override void OnInitialize(AsyncStatus status)        {            // Call the parent method.            base.OnInitialize(status);
             // Get a typed reference to the hosted control            // that is set up by the form view description.            var userControl = (SolutionUsersControl)Control;
             var ssoSolutionUsersNode = ScopeNode as SolutionUsersNode;
             if (ssoSolutionUsersNode != null)

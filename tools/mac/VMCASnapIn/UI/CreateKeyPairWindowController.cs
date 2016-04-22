@@ -64,7 +64,7 @@ namespace VMCASnapIn.UI
             var numKeyLength = KeyLengthOptions.SelectedValue;
             if (numKeyLength != null) {
                 var keyPair = VMCAKeyPair.Create (Convert.ToUInt32 (numKeyLength.ToString ()));
-                DTO.CreatedDateTime = DateTime.Now;
+                DTO.CreatedDateTime = DateTime.UtcNow;
                 DTO.KeyLength = (int)Convert.ToUInt32 (numKeyLength.ToString ());
                 DTO.PrivateKey = keyPair.PrivateKey;
                 DTO.PublicKey = keyPair.PublicKey;

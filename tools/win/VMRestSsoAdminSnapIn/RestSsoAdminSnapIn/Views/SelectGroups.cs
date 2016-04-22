@@ -44,7 +44,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                     lstParentGroups.Items.Add(item);
                 }
             }
-        }
+        }
         private void btnAdd_Click(object sender, EventArgs e)
         {
             _dataMgr.Apply(GetSelectedGroups());

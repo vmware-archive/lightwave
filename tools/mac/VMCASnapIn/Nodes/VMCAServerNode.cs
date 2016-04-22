@@ -92,8 +92,7 @@ namespace VMCASnapIn.Nodes
             NoOfExpiredCerts = ExpiredCertsList.Count;
             NoOfRevokedCerts = RevokedCertsList.Count;
             foreach (var cert in ActiveCertsList) {
-                DateTime now = DateTime.Now;
-                if (DateTime.Compare (cert.NotAfter, DateTime.Now.AddDays (60)) < 0)
+                if (DateTime.Compare (cert.NotAfter, DateTime.UtcNow.AddDays (60)) < 0)
                     NoOfExpiringCert60days++;
             }
         }

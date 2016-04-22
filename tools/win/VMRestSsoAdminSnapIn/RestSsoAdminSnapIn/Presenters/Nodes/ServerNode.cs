@@ -320,8 +320,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
             ActionsPaneItems.Add(addTenant);
             var addExistingTenant = new Action("Add Existing Tenant", "Add Existing Tenant", (int)TreeImageIndex.Tenant, ServerNodeAction.ActionAddExistingTenant);
             ActionsPaneItems.Add(addExistingTenant);
-            var adInfo = new Action("Active Directory", "Shows the active directory information (if any) associated with the server", (int)TreeImageIndex.Settings, ServerNodeAction.ActionViewActiveDirectory);
-            ActionsPaneItems.Add(adInfo);
+            //var adInfo = new Action("Active Directory", "Shows the active directory information (if any) associated with the server", (int)TreeImageIndex.Settings, ServerNodeAction.ActionViewActiveDirectory);
+            //ActionsPaneItems.Add(adInfo);
             var computer = new Action("Get Computers", "Shows the computers associated with the server", (int)TreeImageIndex.Computers, ServerNodeAction.ActionGetComputers);
             ActionsPaneItems.Add(computer);
             ActionsPaneItems.Add(new Action("Diagnostics", "Diagnostics", (int)TreeImageIndex.TrustedCertificate, ServerNodeAction.ActionTokenWizard));

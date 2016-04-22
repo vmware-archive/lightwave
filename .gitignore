@@ -49,4 +49,7 @@ tools/win/VMPscHighAvailabilitySnapIn/VMPscHighAvailabilitySnapIn/obj/
 tools/win/VMRestSsoAdminSnapIn/RestSsoAdminSnapIn.v12.suo
 tools/win/VMRestSsoAdminSnapIn/RestSsoAdminSnapIn/obj/
 tools/win/x64/
-
+tools/common/VMRestSso.Common/RestSsoAdminSnapIn.Dto/RestSsoAdminSnapIn.Dto.csproj.user
+tools/win/VMIdentityToolsPrerequisite/VMIdentityToolsPrerequisite/bin/
+tools/win/VMIdentityToolsPrerequisite/VMIdentityToolsPrerequisite/obj/
+tools/win/VMPscHighAvailabilitySnapIn/VMPscHighAvailabilitySnapIn/VMPscHighAvailabilitySnapIn.csproj.user

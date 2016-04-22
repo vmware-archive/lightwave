@@ -20,5 +20,5 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes{    public class Se
             : base(false)        {            InitConsole();            
             this.Children.Add(new TrustedCertificatesNode());
             ImageIndex = SelectedImageIndex = (int)TreeImageIndex.ServerCertificates;
-        }
+        }
         void InitConsole()        {            DisplayName = "Server Certificates";        }          }}

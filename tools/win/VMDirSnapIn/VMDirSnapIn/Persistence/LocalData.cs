@@ -10,38 +10,38 @@
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
  * License for the specific language governing permissions and limitations
  * under the License.
- */using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using VMDir.Common.DTO;
-namespace VMDirSnapIn.Persistence
-{
-    public class LocalData
-    {
-        List<VMDirServerDTO> _servers = new List<VMDirServerDTO>();
-        public List<VMDirServerDTO> ServerList { get { return _servers; } set { _servers = value; } }
-
-        public LocalData()
-        {
-        }
-
-        public void AddServer(VMDirServerDTO dto)
-        {
-            ServerList.Add(dto);
-        }
-
-        public bool RemoveServer(string guid)
-        {
-            int index = ServerList.FindIndex(x => x.GUID == guid);
-            if (index > -1)
-                ServerList.RemoveAt(index);
-            return index > -1;
-        }
-
-        public VMDirServerDTO GetServerByGuid(string guid)
-        {
-            return ServerList.Find(x => x.GUID == guid);
-        }
-    }
-}
+ */using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using VMDir.Common.DTO;
+namespace VMDirSnapIn.Persistence
+{
+    public class LocalData
+    {
+        List<VMDirServerDTO> _servers = new List<VMDirServerDTO>();
+        public List<VMDirServerDTO> ServerList { get { return _servers; } set { _servers = value; } }
+
+        public LocalData()
+        {
+        }
+
+        public void AddServer(VMDirServerDTO dto)
+        {
+            ServerList.Add(dto);
+        }
+
+        public bool RemoveServer(string guid)
+        {
+            int index = ServerList.FindIndex(x => x.GUID == guid);
+            if (index > -1)
+                ServerList.RemoveAt(index);
+            return index > -1;
+        }
+
+        public VMDirServerDTO GetServerByGuid(string guid)
+        {
+            return ServerList.Find(x => x.GUID == guid);
+        }
+    }
+}

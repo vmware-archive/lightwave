@@ -49,7 +49,7 @@ namespace VMCASnapIn.Nodes
                         dto.FillRequest (request);
                         string csr = request.GetCSR (dto.PrivateKey.ToString ());
                         this.ServerDTO.SigningRequests.Add (new SigningRequestDTO {
-                            CreatedDateTime = DateTime.Now,
+                            CreatedDateTime = DateTime.UtcNow,
                             CSR = csr
                         });
                         GenericTextViewWindowController gwc = new GenericTextViewWindowController (csr);

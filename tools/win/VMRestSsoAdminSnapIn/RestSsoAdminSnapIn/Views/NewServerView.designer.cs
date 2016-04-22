@@ -164,7 +164,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.addNewServerHelp.SetShowHelp(this.txtDefaultTenant, true);
             this.txtDefaultTenant.Size = new System.Drawing.Size(227, 20);
             this.txtDefaultTenant.TabIndex = 20;
-            this.txtDefaultTenant.Text = "vsphere.local";
+            this.txtDefaultTenant.Text = "lightwave.local";
             this.addNewServerTooltip.SetToolTip(this.txtDefaultTenant, "Default system tenant for the server");
             this.txtDefaultTenant.TextChanged += new System.EventHandler(this.txtDefaultTenant_TextChanged);
             // 

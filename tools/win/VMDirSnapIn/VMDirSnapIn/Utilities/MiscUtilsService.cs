@@ -39,7 +39,7 @@ namespace VMDirSnapIn.Services
             {
                 ShowError(exp);
             }
-        }
+        }
         public static object GetInstanceFromType(string t)
         {
             var type = Type.GetType(t);

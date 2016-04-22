@@ -28,48 +28,55 @@ namespace VMDirSnapIn.DataSource
 
         public List<KeyValuePair<string,string>> data { get; set; }
 
-        public Dictionary<string,string> PendingMod { get; set; }
+        public List<KeyValuePair<string,string>> PendingMod { get; set; }
 
 
-        public PropertiesTableViewDataSource ()
+        public PropertiesTableViewDataSource()
         {
-            Entries = new Dictionary<string,VMDirBagItem> ();
-            PendingMod = new Dictionary<string,string> ();
+            Entries = new Dictionary<string,VMDirBagItem>();
+            PendingMod = new List<KeyValuePair<string,string>>();
         }
 
-        public PropertiesTableViewDataSource (Dictionary<string,VMDirBagItem>  classList)
+        public PropertiesTableViewDataSource(Dictionary<string,VMDirBagItem>  classList)
         {
-            PendingMod = new Dictionary<string,string> ();
+            PendingMod = new List<KeyValuePair<string,string>>();
             Entries = classList;
-            data = new List<KeyValuePair<string,string>> ();
-            FillData ();
+            data = new List<KeyValuePair<string,string>>();
+            FillData();
         }
 
-        public void FillData ()
+        public void FillData()
         {
-            data.Clear ();
-            foreach (var entry in Entries) {
+            data.Clear();
+            foreach (var entry in Entries)
+            {
                 object value = entry.Value.Value;
-                if (value != null) {
-                    Type valueType = value.GetType ();
-                    if (valueType.IsArray) {
+                if (value != null)
+                {
+                    Type valueType = value.GetType();
+                    if (valueType.IsArray)
+                    {
                         LdapValue[] arr = value as LdapValue[];
-                        foreach (var arrayElement in arr) {
-                            data.Add (new KeyValuePair<string, string> (entry.Key, arrayElement.StringValue));
+                        foreach (var arrayElement in arr)
+                        {
+                            data.Add(new KeyValuePair<string, string>(entry.Key, arrayElement != null ? arrayElement.StringValue : string.Empty));
                         }
 
-                    } else {
-                        var LdapEntry = (LdapValue)value;
-                        data.Add (new KeyValuePair<string, string> (entry.Key, LdapEntry.StringValue));
                     }
-                } else
-                    data.Add (new KeyValuePair<string, string> (entry.Key, string.Empty));
+                    else
+                    {
+                        var LdapEntry = (LdapValue)value;
+                        data.Add(new KeyValuePair<string, string>(entry.Key, LdapEntry.StringValue));
+                    }
+                }
+                else
+                    data.Add(new KeyValuePair<string, string>(entry.Key, string.Empty));
             }
         }
 
         // This method will be called by the NSTableView control to learn the number of rows to display.
-        [Export ("numberOfRowsInTableView:")]
-        public int NumberOfRowsInTableView (NSTableView table)
+        [Export("numberOfRowsInTableView:")]
+        public int NumberOfRowsInTableView(NSTableView table)
         {
             if (data != null)
                 return data.Count;
@@ -78,37 +85,47 @@ namespace VMDirSnapIn.DataSource
         }
 
         // This method will be called by the control for each column and each row.
-        [Export ("tableView:objectValueForTableColumn:row:")]
-        public NSObject ObjectValueForTableColumn (NSTableView table, NSTableColumn col, int row)
+        [Export("tableView:objectValueForTableColumn:row:")]
+        public NSObject ObjectValueForTableColumn(NSTableView table, NSTableColumn col, int row)
         {
-            try {
-                if (data != null) {
-                    if (col.Identifier.Equals ("Key"))
-                        return (NSString)data [row].Key;
+            try
+            {
+                if (data != null)
+                {
+                    if (col.Identifier.Equals("Key"))
+                        return (NSString)data[row].Key;
                     else
-                        return (NSString)data [row].Value;
+                        return (NSString)data[row].Value;
                 }
-            } catch (Exception e) {
-                System.Diagnostics.Debug.WriteLine ("Error in List Operation " + e.Message);
+            }
+            catch (Exception e)
+            {
+                System.Diagnostics.Debug.WriteLine("Error in List Operation " + e.Message);
             }
             return null;
         }
 
-        [Export ("tableView:setObjectValue:forTableColumn:row:")]
-        public override void SetObjectValue (NSTableView tableView, NSObject editedVal, NSTableColumn col, nint row)
+        [Export("tableView:setObjectValue:forTableColumn:row:")]
+        public override void SetObjectValue(NSTableView tableView, NSObject editedVal, NSTableColumn col, nint row)
         {
-            try {
-                if (data != null && !string.IsNullOrEmpty (editedVal.ToString ())) {
-                    if (col.Identifier == "Value") {
-                        string currKey = this.data [(int)row].Key;
-                        if (currKey != "objectClass") {
-                            this.data [(int)row] = new KeyValuePair<string, string> (currKey, (NSString)editedVal);
-                            this.PendingMod.Add (currKey, this.data [(int)row].Value);
+            try
+            {
+                if (data != null && !string.IsNullOrEmpty(editedVal.ToString()))
+                {
+                    if (col.Identifier == "Value")
+                    {
+                        string currKey = this.data[(int)row].Key;
+                        if (currKey != "objectClass")
+                        {
+                            this.data[(int)row] = new KeyValuePair<string, string>(currKey, (NSString)editedVal);
+                            this.PendingMod.Add(new KeyValuePair<string, string>(currKey, this.data[(int)row].Value));
                         }
                     }
                 }
-            } catch (Exception e) {
-                System.Diagnostics.Debug.WriteLine ("Error in List Operation " + e.Message);
+            }
+            catch (Exception e)
+            {
+                System.Diagnostics.Debug.WriteLine("Error in List Operation " + e.Message);
             }
 
         }

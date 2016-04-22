@@ -114,15 +114,21 @@ namespace VMPscHighAvailabilitySnapIn.UI
         {
             try
             {
+                var domainFucntionalLevel = string.Empty;
                 var serverNode = _formView.ScopeNode as ServerNode;
-                var dto = serverNode.Hosts.FirstOrDefault(x => x.NodeType == NodeType.Infrastructure && x.Active);
-                if(dto == null)
-                    txtDomainFunctionalLevel.Text = string.Empty;
-                if (serverNode != null && serverNode.ServerDto != null)
+                if (serverNode != null)
                 {
-                    var serverDto = new ServerDto { Server = dto.Name, Upn = serverNode.ServerDto.Upn, Password = serverNode.ServerDto.Password, DomainName = serverNode.ServerDto.DomainName };
-                    txtDomainFunctionalLevel.Text = PscHighAvailabilityAppEnvironment.Instance.Service.GetDomainFunctionalLevel(serverDto);
+                    var dto = serverNode.Hosts.FirstOrDefault(x => x.NodeType == NodeType.Infrastructure && x.Active);
+                    if (dto != null)
+                    {
+                        if (serverNode.ServerDto != null)
+                        {
+                            var serverDto = new ServerDto { Server = dto.Name, Upn = serverNode.ServerDto.Upn, Password = serverNode.ServerDto.Password, DomainName = serverNode.ServerDto.DomainName };
+                            domainFucntionalLevel = PscHighAvailabilityAppEnvironment.Instance.Service.GetDomainFunctionalLevel(serverDto);
+                        }
+                    }
                 }
+                txtDomainFunctionalLevel.Text  = domainFucntionalLevel;
             }
             catch(Exception exc)
             {

@@ -14,6 +14,6 @@
  using System;using System.Runtime.InteropServices;using System.Text;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Helpers.Interop{
-    public class SsoSsspiInterop    {        const string LIBRARY_PATH = @"SSOSSPI.dll";
-        [DllImport(LIBRARY_PATH)]        public static extern IntPtr InitSecurityContext(IntPtr spn, IntPtr user, IntPtr pass, IntPtr domain, StringBuilder error);
+    public class SsoSsspiInterop    {        const string LIBRARY_PATH = @"SSOSSPI.dll";
+        [DllImport(LIBRARY_PATH)]        public static extern IntPtr InitSecurityContext(IntPtr spn, IntPtr user, IntPtr pass, IntPtr domain, StringBuilder error);
         [DllImport(LIBRARY_PATH)]        public static extern bool CloseSecurityContext(long id, StringBuilder error);    }}

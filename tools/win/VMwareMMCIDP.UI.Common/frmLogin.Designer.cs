@@ -68,7 +68,7 @@ namespace VMwareMMCIDP.UI
             this.txtUser.Size = new System.Drawing.Size(189, 20);
             this.txtUser.TabIndex = 1;
             this.txtUser.TextChanged += new System.EventHandler(this.txtUser_TextChanged);
-            this.txtUser.Text = "Administrator@vsphere.local";
+            this.txtUser.Text = "Administrator@lightwave.local";
             // 
             // txtPass
             // 

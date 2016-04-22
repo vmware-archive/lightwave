@@ -52,16 +52,29 @@ namespace VMwareMMCIDP.UI.Common.Utilities
         public const string IDP_ADMIN_PWD_ENT = "Please enter IDP admin password";
         public const string PRI_KEY_NOT_FOUND = "Private key file not found";
         public const string UPN_ENT = "Please enter UPN";
-        
+
+        //Invalid data messages
+        public const string INVALID_IP = "Please enter a valid IP address.";
+        public const string INVALID_EMAIL = "Please enter a valid email address.";
+
         // File type filters
-        public const string PRI_KEY_FILTER="Private Key Files (*.pem)|*.pem|All Files (*.*)|*.*";
+        public const string PRI_KEY_FILTER = "Private Key Files (*.pem)|*.pem|All Files (*.*)|*.*";
         public const string PUB_KEY_FILTER = "Public Key Files (*.pem)|*.pem|All Files (*.*)|*.*";
         public const string CSR_FILTER = "CSR Files (*.csr)|*.csr|All Files (*.*)|*.*";
         public const string CERT_FILTER = "Certificate Files (*.crt)|*.crt|All Files (*.*)|*.*";
         public const string SAML_TOKEN_FILTER = "SAML Token Files (*.xml)|*.xml|All Files (*.*)|*.*";
 
         // Log constants
-        public const string LOG_FOLDER = @"C:\ProgramData\VMware, Inc\VMware Identity Tools\Logs\";
+        private const string LOG_FOLDER = @"C:\Users\{0}\AppData\Local\VMware, Inc\VMware Identity Tools\Logs\";
         public const string PSC_LOG_FILE = "VMPscSiteManagement.log";
+
+        //Pattern constants
+        public const string EmailPattern = @"^(?("")("".+?(?<!\\)""@)|(([0-9a-z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)(?<=[0-9a-z])@))"
+            + @"(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-z][-\w]*[0-9a-z]*\.)+[a-z0-9][\-a-z0-9]{0,22}[a-z0-9]))$";
+
+        public static string GetLogFolder(string windowsLogonName)
+        {
+            return string.Format(LOG_FOLDER, windowsLogonName);
+        }
     }
 }
