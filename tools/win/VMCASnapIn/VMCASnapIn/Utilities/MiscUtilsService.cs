@@ -18,6 +18,8 @@ using System.Windows.Forms;
 using Microsoft.ManagementConsole.Advanced;
 using VMCASnapIn.DTO;
 using VMwareMMCIDP.UI.Common.Utilities;
+using System.Net;
+using System.Text.RegularExpressions;
 
 namespace VMCASnapIn.Utilities
 {
@@ -49,6 +51,20 @@ namespace VMCASnapIn.Utilities
                 msg = MMCUIConstants.NAME_ENT;
             else if (!dto.PrivateKey.HasData)
                 msg = MMCUIConstants.PRI_KEY_SEL;
+
+            if (msg==null && !string.IsNullOrWhiteSpace(dto.Email))
+            {
+                if (!Regex.IsMatch(dto.Email, MMCUIConstants.EmailPattern))
+                    msg = MMCUIConstants.INVALID_EMAIL;
+            }
+            if (msg == null && !string.IsNullOrWhiteSpace(dto.IPAddress))
+            {
+                IPAddress address;
+                if (!IPAddress.TryParse(dto.IPAddress, out address))
+                    msg = MMCUIConstants.INVALID_IP;
+            }
+
+
             if (msg != null)
             {
                 MMCDlgHelper.ShowWarning(msg);

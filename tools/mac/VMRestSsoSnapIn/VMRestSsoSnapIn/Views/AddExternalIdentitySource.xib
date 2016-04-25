@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="9059" systemVersion="14F27" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
+        <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="9059"/>
     </dependencies>
     <objects>
@@ -63,17 +64,17 @@
             </connections>
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
-        <customObject id="-3" userLabel="Application"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <window title="External Domain" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" oneShot="NO" animationBehavior="default" id="7" customClass="AddExternalIdentitySource">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES"/>
-            <rect key="contentRect" x="131" y="74" width="552" height="516"/>
+            <rect key="contentRect" x="131" y="74" width="554" height="520"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="877"/>
             <view key="contentView" id="8">
-                <rect key="frame" x="0.0" y="0.0" width="552" height="516"/>
+                <rect key="frame" x="0.0" y="0.0" width="554" height="520"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <button verticalHuggingPriority="750" id="16">
-                        <rect key="frame" x="269" y="78" width="89" height="32"/>
+                        <rect key="frame" x="269" y="82" width="89" height="32"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <buttonCell key="cell" type="push" title="Next" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="48">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -84,7 +85,7 @@ DQ
                         </buttonCell>
                     </button>
                     <button verticalHuggingPriority="750" id="15">
-                        <rect key="frame" x="189" y="78" width="89" height="32"/>
+                        <rect key="frame" x="189" y="82" width="89" height="32"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <buttonCell key="cell" type="push" title="Back" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="49">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -95,7 +96,7 @@ CA
                         </buttonCell>
                     </button>
                     <customView id="298">
-                        <rect key="frame" x="35" y="120" width="480" height="368"/>
+                        <rect key="frame" x="35" y="124" width="480" height="368"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <subviews>
                             <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="306">
@@ -115,7 +116,7 @@ CA
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" columnSelection="YES" multipleSelection="NO" autosaveColumns="NO" headerView="324" id="322">
-                                            <rect key="frame" x="0.0" y="0.0" width="466" height="259"/>
+                                            <rect key="frame" x="0.0" y="0.0" width="466" height="19"/>
                                             <autoresizingMask key="autoresizingMask"/>
                                             <size key="intercellSpacing" width="3" height="2"/>
                                             <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -176,7 +177,7 @@ CA
                         </subviews>
                     </customView>
                     <customView id="213">
-                        <rect key="frame" x="35" y="119" width="480" height="368"/>
+                        <rect key="frame" x="36" y="123" width="480" height="368"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <subviews>
                             <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="19">
@@ -224,11 +225,11 @@ CA
                                 </buttonCell>
                                 <cells>
                                     <column>
-                                        <buttonCell type="radio" title="Microsoft Active Directory (R) using Windows Integrated Authentication)" imagePosition="left" alignment="left" state="on" tag="1" inset="2" id="206">
+                                        <buttonCell type="radio" title="Microsoft Active Directory (R) using Windows Integrated Authentication)" imagePosition="left" alignment="left" enabled="NO" tag="1" inset="2" id="206">
                                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                             <font key="font" metaFont="system"/>
                                         </buttonCell>
-                                        <buttonCell type="radio" title="Microsoft Active Directory (R) as an LDAP server" imagePosition="left" alignment="left" tag="2" inset="2" id="205">
+                                        <buttonCell type="radio" title="Microsoft Active Directory (R) as an LDAP server" imagePosition="left" alignment="left" state="on" tag="2" inset="2" id="205">
                                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                                             <font key="font" metaFont="system"/>
                                         </buttonCell>
@@ -242,11 +243,11 @@ CA
                         </subviews>
                     </customView>
                     <levelIndicator focusRingType="none" verticalHuggingPriority="750" id="244">
-                        <rect key="frame" x="35" y="53" width="481" height="18"/>
+                        <rect key="frame" x="35" y="57" width="481" height="18"/>
                         <levelIndicatorCell key="cell" focusRingType="none" alignment="left" doubleValue="1" maxValue="4" warningValue="2" criticalValue="2" id="245"/>
                     </levelIndicator>
                     <customView id="73">
-                        <rect key="frame" x="35" y="120" width="480" height="368"/>
+                        <rect key="frame" x="36" y="124" width="480" height="368"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <subviews>
                             <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="86">
@@ -466,7 +467,7 @@ CA
                         </subviews>
                     </customView>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="383">
-                        <rect key="frame" x="72" y="29" width="50" height="17"/>
+                        <rect key="frame" x="72" y="33" width="50" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="STEP 1" id="384">
                             <font key="font" metaFont="system"/>
@@ -475,7 +476,7 @@ CA
                         </textFieldCell>
                     </textField>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="385">
-                        <rect key="frame" x="193" y="29" width="50" height="17"/>
+                        <rect key="frame" x="193" y="33" width="50" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="STEP 2" id="386">
                             <font key="font" metaFont="system"/>
@@ -484,7 +485,7 @@ CA
                         </textFieldCell>
                     </textField>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="387">
-                        <rect key="frame" x="314" y="29" width="50" height="17"/>
+                        <rect key="frame" x="314" y="33" width="50" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="STEP 3" id="388">
                             <font key="font" metaFont="system"/>
@@ -493,7 +494,7 @@ CA
                         </textFieldCell>
                     </textField>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="389">
-                        <rect key="frame" x="439" y="29" width="50" height="17"/>
+                        <rect key="frame" x="439" y="33" width="50" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="STEP 4" id="390">
                             <font key="font" metaFont="system"/>
@@ -502,7 +503,7 @@ CA
                         </textFieldCell>
                     </textField>
                     <customView id="166">
-                        <rect key="frame" x="36" y="120" width="478" height="368"/>
+                        <rect key="frame" x="37" y="124" width="478" height="368"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <subviews>
                             <matrix verticalHuggingPriority="750" allowsEmptySelection="NO" autosizesCells="NO" id="168">
@@ -630,7 +631,7 @@ CA
             <connections>
                 <outlet property="delegate" destination="211" id="379"/>
             </connections>
-            <point key="canvasLocation" x="309" y="304"/>
+            <point key="canvasLocation" x="310" y="306"/>
         </window>
         <customObject id="211" customClass="AddExternalIdentitySource"/>
     </objects>

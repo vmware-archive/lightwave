@@ -72,7 +72,7 @@ namespace VMCASnapIn.DTO
         public CertRequestDTO ()
         {
             Country = "US";
-            NotBefore = DateTime.Now;
+            NotBefore = DateTime.UtcNow;
             NotAfter = NotBefore.AddYears (10);
             PrivateKey = new PrivateKeyDTO ();
         }

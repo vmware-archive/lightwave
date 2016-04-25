@@ -10,35 +10,35 @@
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
  * License for the specific language governing permissions and limitations
  * under the License.
- */namespace VMDirSnapIn.UI
-{
-    partial class AddOrRemoveAttributes
-    {
-        /// <summary>
-        /// Required designer variable.
-        /// </summary>
-        private System.ComponentModel.IContainer components = null;
-
-        /// <summary>
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && (components != null))
-            {
-                components.Dispose();
-            }
-            base.Dispose(disposing);
-        }
-
-        #region Windows Form Designer generated code
-
-        /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
-        /// </summary>
-        private void InitializeComponent()
+ */namespace VMDirSnapIn.UI
+{
+    partial class AddOrRemoveAttributes
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
         {
             this.lstNewAttributes = new System.Windows.Forms.ListView();
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -171,20 +171,20 @@
             this.Text = "Manage attributes";
             this.ResumeLayout(false);
 
-        }
-
-        #endregion
-
-        private System.Windows.Forms.ListView lstNewAttributes;
-        private System.Windows.Forms.ColumnHeader columnHeader1;
-        private System.Windows.Forms.ColumnHeader columnHeader2;
-        private System.Windows.Forms.ListView lstExistingAttributes;
-        private System.Windows.Forms.ColumnHeader columnHeader3;
+        }
+
+        #endregion
+
+        private System.Windows.Forms.ListView lstNewAttributes;
+        private System.Windows.Forms.ColumnHeader columnHeader1;
+        private System.Windows.Forms.ColumnHeader columnHeader2;
+        private System.Windows.Forms.ListView lstExistingAttributes;
+        private System.Windows.Forms.ColumnHeader columnHeader3;
         private System.Windows.Forms.ColumnHeader columnHeader4;
 
-        private System.Windows.Forms.Button btnAddSingle;
-        private System.Windows.Forms.Button btnRemoveSingle;
-        private System.Windows.Forms.Button btnOK;
-        private System.Windows.Forms.Button btnCancel;
-    }
+        private System.Windows.Forms.Button btnAddSingle;
+        private System.Windows.Forms.Button btnRemoveSingle;
+        private System.Windows.Forms.Button btnOK;
+        private System.Windows.Forms.Button btnCancel;
+    }
 }

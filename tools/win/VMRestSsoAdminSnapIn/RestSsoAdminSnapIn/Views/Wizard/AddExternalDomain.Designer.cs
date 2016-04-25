@@ -53,6 +53,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             this.rdoADWindowsAuth = new System.Windows.Forms.RadioButton();
             this.lblCaption = new System.Windows.Forms.Label();
             this.pnlStep2 = new System.Windows.Forms.Panel();
+            this.txtFriendlyName = new System.Windows.Forms.TextBox();
+            this.label6 = new System.Windows.Forms.Label();
             this.pnlConnectionString = new System.Windows.Forms.Panel();
             this.txtPrimaryConnectionString = new System.Windows.Forms.TextBox();
             this.txtSecondaryConnectionString = new System.Windows.Forms.TextBox();
@@ -108,8 +110,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             this.label13 = new System.Windows.Forms.Label();
             this.helpProvider1 = new System.Windows.Forms.HelpProvider();
             this.restSsoAdminInstaller1 = new Vmware.Tools.RestSsoAdminSnapIn.Installer.RestSsoAdminInstaller();
-            this.txtFriendlyName = new System.Windows.Forms.TextBox();
-            this.label6 = new System.Windows.Forms.Label();
             this.pnlStep1.SuspendLayout();
             this.pnlStep2.SuspendLayout();
             this.pnlConnectionString.SuspendLayout();
@@ -139,9 +139,9 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             this.pnlStep1.Controls.Add(this.btnNext);
             this.pnlStep1.Controls.Add(this.rdoADWindowsAuth);
             this.pnlStep1.Controls.Add(this.lblCaption);
-            this.pnlStep1.Location = new System.Drawing.Point(7, 5);
+            this.pnlStep1.Location = new System.Drawing.Point(6, 2);
             this.pnlStep1.Name = "pnlStep1";
-            this.pnlStep1.Size = new System.Drawing.Size(491, 317);
+            this.pnlStep1.Size = new System.Drawing.Size(483, 317);
             this.pnlStep1.TabIndex = 2;
             // 
             // button14
@@ -219,6 +219,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             // rdoADWindowsAuth
             // 
             this.rdoADWindowsAuth.AutoSize = true;
+            this.rdoADWindowsAuth.Enabled = false;
             this.rdoADWindowsAuth.Location = new System.Drawing.Point(22, 99);
             this.rdoADWindowsAuth.Name = "rdoADWindowsAuth";
             this.rdoADWindowsAuth.Size = new System.Drawing.Size(360, 17);
@@ -255,11 +256,32 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             this.pnlStep2.Controls.Add(this.label3);
             this.pnlStep2.Controls.Add(this.txtDomainName);
             this.pnlStep2.Controls.Add(this.label2);
-            this.pnlStep2.Location = new System.Drawing.Point(6, 5);
+            this.pnlStep2.Location = new System.Drawing.Point(5, 5);
             this.pnlStep2.Name = "pnlStep2";
-            this.pnlStep2.Size = new System.Drawing.Size(491, 317);
+            this.pnlStep2.Size = new System.Drawing.Size(492, 317);
             this.pnlStep2.TabIndex = 10;
             this.pnlStep2.Paint += new System.Windows.Forms.PaintEventHandler(this.pnlStep2_Paint);
+            // 
+            // txtFriendlyName
+            // 
+            this.txtFriendlyName.ForeColor = System.Drawing.Color.Gray;
+            this.txtFriendlyName.Location = new System.Drawing.Point(124, 5);
+            this.txtFriendlyName.Name = "txtFriendlyName";
+            this.txtFriendlyName.Size = new System.Drawing.Size(350, 20);
+            this.txtFriendlyName.TabIndex = 30;
+            this.txtFriendlyName.Text = "Contoso Domain";
+            this.txtFriendlyName.Enter += new System.EventHandler(this.txtFriendlyName_Enter);
+            this.txtFriendlyName.Leave += new System.EventHandler(this.txtFriendlyName_Leave);
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label6.Location = new System.Drawing.Point(40, 8);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(75, 13);
+            this.label6.TabIndex = 29;
+            this.label6.Text = "Friendly name:";
             // 
             // pnlConnectionString
             // 
@@ -276,21 +298,27 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             // 
             // txtPrimaryConnectionString
             // 
+            this.txtPrimaryConnectionString.ForeColor = System.Drawing.Color.Gray;
             this.txtPrimaryConnectionString.Location = new System.Drawing.Point(159, 6);
             this.txtPrimaryConnectionString.Name = "txtPrimaryConnectionString";
             this.txtPrimaryConnectionString.Size = new System.Drawing.Size(228, 20);
             this.txtPrimaryConnectionString.TabIndex = 11;
-            this.txtPrimaryConnectionString.Text = "ldap://contoso.com";
+            this.txtPrimaryConnectionString.Text = "ldap://contoso.com:389 or ldaps://contoso.com:3268";
             this.txtPrimaryConnectionString.TextChanged += new System.EventHandler(this.txtPrimaryConnectionString_TextChanged);
+            this.txtPrimaryConnectionString.Enter += new System.EventHandler(this.txtPrimaryConnectionString_Enter);
+            this.txtPrimaryConnectionString.Leave += new System.EventHandler(this.txtPrimaryConnectionString_Leave);
             // 
             // txtSecondaryConnectionString
             // 
+            this.txtSecondaryConnectionString.ForeColor = System.Drawing.Color.Gray;
             this.txtSecondaryConnectionString.Location = new System.Drawing.Point(159, 31);
             this.txtSecondaryConnectionString.Name = "txtSecondaryConnectionString";
             this.txtSecondaryConnectionString.Size = new System.Drawing.Size(228, 20);
             this.txtSecondaryConnectionString.TabIndex = 22;
-            this.txtSecondaryConnectionString.Text = "ldap://contoso.com";
+            this.txtSecondaryConnectionString.Text = "ldap://contoso.com:389 or ldaps://contoso.com:3268";
             this.txtSecondaryConnectionString.TextChanged += new System.EventHandler(this.txtSecondaryConnectionString_TextChanged);
+            this.txtSecondaryConnectionString.Enter += new System.EventHandler(this.txtSecondaryConnectionString_Enter);
+            this.txtSecondaryConnectionString.Leave += new System.EventHandler(this.txtSecondaryConnectionString_Leave);
             // 
             // label8
             // 
@@ -439,11 +467,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             // 
             // txtGroupDN
             // 
+            this.txtGroupDN.ForeColor = System.Drawing.Color.Gray;
             this.txtGroupDN.Location = new System.Drawing.Point(124, 113);
             this.txtGroupDN.Name = "txtGroupDN";
             this.txtGroupDN.Size = new System.Drawing.Size(350, 20);
             this.txtGroupDN.TabIndex = 17;
             this.txtGroupDN.Text = "CN=groups, CN=Configuration, DC=contoso, DC=com";
+            this.txtGroupDN.Enter += new System.EventHandler(this.txtGroupDN_Enter);
+            this.txtGroupDN.Leave += new System.EventHandler(this.txtGroupDN_Leave);
             // 
             // label5
             // 
@@ -457,11 +488,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             // 
             // txtUserDN
             // 
+            this.txtUserDN.ForeColor = System.Drawing.Color.Gray;
             this.txtUserDN.Location = new System.Drawing.Point(124, 86);
             this.txtUserDN.Name = "txtUserDN";
             this.txtUserDN.Size = new System.Drawing.Size(350, 20);
             this.txtUserDN.TabIndex = 15;
             this.txtUserDN.Text = "CN=users, CN=Configuration, DC=contoso, DC=com";
+            this.txtUserDN.Enter += new System.EventHandler(this.txtUserDN_Enter);
+            this.txtUserDN.Leave += new System.EventHandler(this.txtUserDN_Leave);
             // 
             // label4
             // 
@@ -475,11 +509,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             // 
             // txtDomainAlias
             // 
+            this.txtDomainAlias.ForeColor = System.Drawing.Color.Gray;
             this.txtDomainAlias.Location = new System.Drawing.Point(124, 58);
             this.txtDomainAlias.Name = "txtDomainAlias";
             this.txtDomainAlias.Size = new System.Drawing.Size(350, 20);
             this.txtDomainAlias.TabIndex = 13;
             this.txtDomainAlias.Text = "Contoso";
+            this.txtDomainAlias.Enter += new System.EventHandler(this.txtDomainAlias_Enter);
+            this.txtDomainAlias.Leave += new System.EventHandler(this.txtDomainAlias_Leave);
             // 
             // label3
             // 
@@ -493,6 +530,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             // 
             // txtDomainName
             // 
+            this.txtDomainName.ForeColor = System.Drawing.Color.Gray;
             this.txtDomainName.Location = new System.Drawing.Point(124, 31);
             this.txtDomainName.Name = "txtDomainName";
             this.txtDomainName.Size = new System.Drawing.Size(350, 20);
@@ -500,6 +538,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             this.txtDomainName.Text = "contoso.com";
             this.txtDomainName.TextChanged += new System.EventHandler(this.txtDomainName_TextChanged);
             this.txtDomainName.Enter += new System.EventHandler(this.txtDomainName_Enter);
+            this.txtDomainName.Leave += new System.EventHandler(this.txtDomainName_Leave);
             // 
             // label2
             // 
@@ -521,7 +560,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             this.pnlStep3.Controls.Add(this.btnRemoveCert);
             this.pnlStep3.Controls.Add(this.label11);
             this.pnlStep3.Controls.Add(this.btnAddCert);
-            this.pnlStep3.Location = new System.Drawing.Point(6, 6);
+            this.pnlStep3.Location = new System.Drawing.Point(6, 4);
             this.pnlStep3.Name = "pnlStep3";
             this.pnlStep3.Size = new System.Drawing.Size(491, 317);
             this.pnlStep3.TabIndex = 21;
@@ -691,11 +730,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             // 
             // txtSPN
             // 
+            this.txtSPN.ForeColor = System.Drawing.Color.Gray;
             this.txtSPN.Location = new System.Drawing.Point(83, 138);
             this.txtSPN.Name = "txtSPN";
             this.txtSPN.Size = new System.Drawing.Size(249, 20);
             this.txtSPN.TabIndex = 31;
             this.txtSPN.Text = "sts/contoso.com";
+            this.txtSPN.Enter += new System.EventHandler(this.txtSPN_Enter);
+            this.txtSPN.Leave += new System.EventHandler(this.txtSPN_Leave);
             // 
             // lblSPN
             // 
@@ -792,11 +834,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             // 
             // txtUsername
             // 
+            this.txtUsername.ForeColor = System.Drawing.Color.Gray;
             this.txtUsername.Location = new System.Drawing.Point(83, 168);
             this.txtUsername.Name = "txtUsername";
             this.txtUsername.Size = new System.Drawing.Size(249, 20);
             this.txtUsername.TabIndex = 11;
             this.txtUsername.Text = "CN=Administrator,CN=users,DC=contoso,DC=com";
+            this.txtUsername.Enter += new System.EventHandler(this.txtUsername_Enter);
+            this.txtUsername.Leave += new System.EventHandler(this.txtUsername_Leave);
             // 
             // label13
             // 
@@ -808,29 +853,11 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             this.label13.TabIndex = 10;
             this.label13.Text = "Username:";
             // 
-            // txtFriendlyName
-            // 
-            this.txtFriendlyName.Location = new System.Drawing.Point(124, 5);
-            this.txtFriendlyName.Name = "txtFriendlyName";
-            this.txtFriendlyName.Size = new System.Drawing.Size(350, 20);
-            this.txtFriendlyName.TabIndex = 30;
-            this.txtFriendlyName.Text = "Contoso Domain";
-            // 
-            // label6
-            // 
-            this.label6.AutoSize = true;
-            this.label6.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label6.Location = new System.Drawing.Point(40, 8);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(75, 13);
-            this.label6.TabIndex = 29;
-            this.label6.Text = "Friendly name:";
-            // 
             // AddExternalDomain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(506, 330);
+            this.ClientSize = new System.Drawing.Size(506, 331);
             this.Controls.Add(this.pnlStep2);
             this.Controls.Add(this.pnlStep3);
             this.Controls.Add(this.pnlStep1);

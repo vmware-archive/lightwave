@@ -43,7 +43,7 @@ namespace VMIdentity.CommonUtils.Log
             {
                 lock (_mutex)
                 {
-                    File.AppendText(_filePath);
+                    File.WriteAllText(_filePath,string.Empty);
                 }
             }
             Start();

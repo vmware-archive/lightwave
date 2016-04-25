@@ -21,6 +21,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using VMwareMMCIDP.UI.Common.Utilities;
+using System.Net;
 
 namespace VMwareMMCIDP.UI.Common
 {
@@ -52,6 +53,14 @@ namespace VMwareMMCIDP.UI.Common
                 msg = MMCUIConstants.PASSWORD_ENT;
             else if (string.IsNullOrWhiteSpace(textTenant.Text))
                 msg = MMCUIConstants.TENANT_ENT;
+
+            if (msg == null && !string.IsNullOrWhiteSpace(textServer.Text))
+            {
+                IPAddress address;
+                if (!IPAddress.TryParse(textServer.Text, out address))
+                    msg = MMCUIConstants.INVALID_IP;
+            }
+
             if (msg != null)
             {
                 MMCDlgHelper.ShowWarning(msg);

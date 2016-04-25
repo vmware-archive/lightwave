@@ -12,6 +12,7 @@
  * under the License.
  */
 
+using System;
 using System.IO;
 using System.Reflection;
 using VmIdentity.CommonUtils;
@@ -111,7 +112,8 @@ namespace VMPscHighAvailabilitySnapIn.SnapIn
             {
                 if (_logger == null)
                 {
-                    var filePath = string.Format("{0}{1}", MMCUIConstants.LOG_FOLDER, MMCUIConstants.PSC_LOG_FILE);
+                    var logFolder = MMCUIConstants.GetLogFolder(Environment.UserName);
+                    var filePath = string.Format("{0}{1}", logFolder, MMCUIConstants.PSC_LOG_FILE);
                     _logger = new FileLogger(filePath);
                 }
                 return _logger;

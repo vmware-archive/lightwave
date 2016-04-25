@@ -195,7 +195,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
                 txtDirectoryServer.Text = _serverDTO.Server;
                 txtDirectoryServer.Enabled = false;
                 txtBindUPN.Text = string.IsNullOrEmpty(_serverDTO.Upn) 
-                    ? "Administrator@vsphere.local"
+                    ? "Administrator@lightwave.local"
                     : _serverDTO.Upn;
             }
         }

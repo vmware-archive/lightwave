@@ -32,6 +32,7 @@ namespace VMPSCHighAvailability.Common
         public const int MilliSecsMultiplier = 1000;
         public const int TopologyTimeout = 120;
         public const int DefaultTimerRefreshInterval = 60;
+        public const int CacheCycleRefreshInterval = 60;
         public const string DeleteServer = "Delete Server";
         public const string RootNodeDisplayName = "Lightwave Servers";
         public const string SnapIn = "SnapIn";

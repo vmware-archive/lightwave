@@ -1,102 +1,49 @@
 #!/bin/bash
+#  build.sh
+#
+#
+#  Created by sumalathaa on 6/24/15.
+#
 
-#Allow build config from cmd line
-if [ -z "$1" ]; then
-  BUILD_CONFIG="Debug"
-else
-  BUILD_CONFIG=$1
-fi
+# This script generates the pkg build and product archives for Lightwave Tools installers. 
 
-#check pre-requisites (Xcode, Xamarin Studio, Mono.framework, Xamarin.Mac.framework)
-#check if Xcode is installed
-if [ ! -d /Applications/Xcode.app ]; then
-  echo 'Xcode is required to do a build. Please install Xcode 6.4 or later.'
-  exit 1
-fi
+# Generate required directories
+mkdir x64/Installers
+mkdir x64/Installers/Debug
+mkdir x64/Installers/Release
 
-#check if Xamarin Studio is installed
-if [ ! -d /Applications/Xamarin\ Studio.app ]; then
-  echo 'Xamarin Studio is required to do a Xamarin.Mac build. Please install Xamarin Studio 5.9.4.5 or later.'
-  exit 1
-fi
+#create lotus client libraries package. Remove this once VMCA has a GoBuild pkg component.
+pkgbuild --identifier LightwaveLibraries --root MacClientLibraries --scripts scripts --install-location "/usr/lib" "x64/Installers/Debug/LikewiseClientLibraries.pkg"
 
-#check if Mono.framework is installed
-if [ ! -d /Library/Frameworks/Mono.framework ]; then
-  echo 'Mono.framework is required. Please install Mono.framework version 4.0.3 or later.'
-  exit 1
-fi
+# DEBUG BUILD
+pkgbuild --component "x64/Debug/Lightwave Directory.app" --install-location "/Applications/LightwaveTools/" "x64/Installers/Debug/LightwaveDirectory.pkg"
 
-#check if Xamarin.Mac.framework is installed
-if [ ! -d /Library/Frameworks/Xamarin.Mac.framework ]; then
-  echo 'Xamarin.Mac.framework is required. Please install Xamarin.Mac.framework version 2.0.2 or later.'
-  exit 1
-fi
+pkgbuild --component "x64/Debug/LightwaveCA.app" --install-location "/Applications/LightwaveTools/" "x64/Installers/Debug/LightwaveCA.pkg"
 
-buildSolution() {
-  pushd $1
-  /Applications/Xamarin\ Studio.app/Contents/MacOS/mdtool build -c:"$2" -t:Clean
-  /Applications/Xamarin\ Studio.app/Contents/MacOS/mdtool build -c:"$2"
+pkgbuild --component "x64/Debug/LightwaveCertStore.app" --install-location "/Applications/LightwaveTools/" "x64/Installers/Debug/LightwaveCertStore.pkg"
 
-  #check result and exit if not successful
-  if [ $? -ne 0 ];then
-     echo "Failed building $1"
-     exit 1
-  fi
+pkgbuild --component "x64/Debug/tdnfv 2.app" --install-location "/Applications/LightwaveTools/" "x64/Installers/Debug/tdnfv2.pkg"
 
-  popd
-}
-# pre-build
-nuget restore "VMRestSsoSnapIn/Lightwave SSO.sln"
+pkgbuild --component "x64/Debug/Lightwave SSO.app" --scripts scripts --install-location "/Applications/LightwaveTools/" "x64/Installers/Debug/Lightwave SSO-1.0.0.pkg"
 
-mkdir -p -m 777 'x64'
-cd 'x64'
-mkdir -p -m 777 $BUILD_CONFIG
-cd ..
+#generate distribution xml
+productbuild --synthesize --package "x64/Installers/Debug/LikewiseClientLibraries.pkg" --package "x64/Installers/Debug/LightwaveDirectory.pkg" --package "x64/Installers/Debug/LightwaveCA.pkg" --package "x64/Installers/Debug/LightwaveCertStore.pkg" --package "x64/Installers/Debug/tdnfv2.pkg" --package "x64/Installers/Debug/Lightwave SSO-1.0.0.pkg" "x64/Installers/Debug/Distribution.xml"
 
-# build
-buildSolution VMCASnapIn $BUILD_CONFIG
-buildSolution VMCertStoreSnapIn $BUILD_CONFIG
-buildSolution VMDirSnapIn $BUILD_CONFIG
-buildSolution VMRestSsoSnapIn $BUILD_CONFIG
-buildSolution VMPSCHighAvailabilitySnapIn $BUILD_CONFIG
+#generate installer
+productbuild --distribution "x64/Installers/Debug/Distribution.xml" --package-path "x64/Installers/Debug/"  "x64/Installers/Debug/LightwaveToolsInstaller.pkg"
 
-echo ''
-echo ''
-echo 'Checking for environment issues...'
-echo ''
+# RELEASE BUILD
+pkgbuild --component "x64/Release/Lightwave Directory.app" --install-location "/Applications/LightwaveTools" "x64/Installers/Release/LightwaveDirectory.pkg"
 
-ENV_ISSUES=0
-#post build checks to ensure the apps can be run
-#check for likewise-open
-if [ ! -d /opt/likewise/bin ]; then
-  ENV_ISSUES=1
-  echo 'likewise-open mac package is not installed.'
-fi
+pkgbuild --component "x64/Release/LightwaveCA.app" --install-location "/Applications/LightwaveTools" "x64/Installers/Release/LightwaveCA.pkg"
 
-#check for vmca mac interop
-if [ ! -d /usr/lib/vmware-vmca ]; then
-  ENV_ISSUES=1
-  echo 'certificate client package is not installed.'
-fi
+pkgbuild --component "x64/Release/LightwaveCertStore.app" --install-location "/Applications/LightwaveTools" "x64/Installers/Release/LightwaveCertStore.pkg"
 
-#check for vmcertstore mac interop
-if [ ! -d /usr/lib/vmware-vmafd ]; then
-  ENV_ISSUES=1
-  echo 'afd client package is not installed.'
-fi
+pkgbuild --component "x64/Release/Lightwave SSO.app" --install-location "/Applications/LightwaveTools" "x64/Installers/Release/Lightwave SSO-1.0.0.pkg"
 
-#check for vmdir mac interop
-if [ ! -d /usr/lib/vmware-vmdir ]; then
-  ENV_ISSUES=1
-  echo 'directory client package is not installed.'
-fi
+#generate distribution xml
+productbuild --synthesize --package "x64/Installers/Release/LightwaveDirectory.pkg" --package "x64/Installers/Release/LightwaveCA.pkg" --package "x64/Installers/Release/LightwaveCertStore.pkg" --package "x64/Installers/Release/Lightwave SSO-1.0.0.pkg" "x64/Installers/Release/Distribution.xml"
 
+#generate installer
+productbuild --distribution "x64/Installers/Release/Distribution.xml" --package-path "x64/Installers/Release/"  "x64/Installers/Release/LightwaveToolsInstaller.pkg"
 
-if [ $ENV_ISSUES -eq 1 ]; then
-  echo ''
-  echo 'WARNING!!'
-  echo 'Some pre-requisites are missing.'
-  echo 'Refer README file and install the pre-built binaries before running apps.'
-else
-  echo 'All pre-requisites are installed. No issues detected.'
-fi

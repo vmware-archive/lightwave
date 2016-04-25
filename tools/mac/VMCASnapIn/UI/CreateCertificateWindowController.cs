@@ -20,6 +20,7 @@ using VMCASnapIn.DTO;
 using VMCASnapIn.Services;
 using VMCASnapIn.UI;
 using VmIdentity.UI.Common.Utilities;
+using VMIdentity.CommonUtils.Utilities;
 
 namespace VMCASnapIn.UI
 {
@@ -53,8 +54,8 @@ namespace VMCASnapIn.UI
             base.AwakeFromNib ();
 
             //Prepopulate fields
-            NotBefore.DateValue = DateTimeToNSDate (DateTime.Now);
-            NotAfter.DateValue = DateTimeToNSDate (DateTime.Now.AddYears (1));
+            NotBefore.DateValue = DateTimeToNSDate (DateTime.UtcNow);
+            NotAfter.DateValue = DateTimeToNSDate (DateTime.UtcNow.AddYears (1));
 
             string[] countries = NSLocale.ISOCountryCodes;
             CountryPopUpButton.AddItems (countries);
@@ -75,12 +76,16 @@ namespace VMCASnapIn.UI
 
         public void ValidateControls ()
         {
-            if (string.IsNullOrEmpty (dto.Country))
+            if (string.IsNullOrWhiteSpace (dto.Country))
                 throw new Exception ("Please enter a country");
-            if (string.IsNullOrEmpty (dto.Name))
+            if (string.IsNullOrWhiteSpace (dto.Name))
                 throw new Exception ("Please enter a name");
             if (!dto.PrivateKey.HasData)
                 throw new Exception ("Please enter a private key");
+            if (!string.IsNullOrWhiteSpace (dto.Email) && !Network.IsValidEmail (dto.Email))
+                throw new Exception ("Please enter a valid Email");
+            if (!string.IsNullOrWhiteSpace (dto.IPAddress) && !Network.IsValidIP (dto.IPAddress))
+                throw new Exception ("Please enter a valid IP");
         }
 
         public void OnClickSelectPriKey (object sender, EventArgs eventargs)
@@ -138,14 +143,14 @@ namespace VMCASnapIn.UI
                 return DateTime.MinValue;
             if (secs > 252423993599)
                 return DateTime.MaxValue;
-            return ((DateTime)date).ToLocalTime ();
+            return ((DateTime)date).ToUniversalTime ();
         }
 
         public  NSDate DateTimeToNSDate (DateTime date)
         {
             if (date.Kind == DateTimeKind.Unspecified)
-                date = DateTime.SpecifyKind (date, DateTimeKind.Local);
-            return (NSDate)date.ToLocalTime ();
+                date = DateTime.SpecifyKind (date, DateTimeKind.Utc);
+            return (NSDate)date.ToUniversalTime ();
         }
 
         //strongly typed window accessor

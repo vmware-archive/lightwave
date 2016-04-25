@@ -70,7 +70,7 @@ namespace VMCASnapIn.UI
             0,
             0});
             this.numKeyLength.Minimum = new decimal(new int[] {
-            1024,
+            2048,
             0,
             0,
             0});
@@ -78,7 +78,7 @@ namespace VMCASnapIn.UI
             this.numKeyLength.Size = new System.Drawing.Size(120, 20);
             this.numKeyLength.TabIndex = 10;
             this.numKeyLength.Value = new decimal(new int[] {
-            1024,
+            2048,
             0,
             0,
             0});

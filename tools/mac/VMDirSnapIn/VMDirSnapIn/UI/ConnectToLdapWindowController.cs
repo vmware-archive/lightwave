@@ -29,76 +29,80 @@ namespace VMDirSnapIn.UI
         #region Constructors
 
         // Called when created from unmanaged code
-        public ConnectToLdapWindowController (IntPtr handle) : base (handle)
+        public ConnectToLdapWindowController(IntPtr handle)
+            : base(handle)
         {
         }
-        
+
         // Called when created directly from a XIB file
-        [Export ("initWithCoder:")]
-        public ConnectToLdapWindowController (NSCoder coder) : base (coder)
+        [Export("initWithCoder:")]
+        public ConnectToLdapWindowController(NSCoder coder)
+            : base(coder)
         {
         }
-        
+
         // Call to load from the XIB/NIB file
-        public ConnectToLdapWindowController (VMDirServerDTO dto) : base ("ConnectToLdapWindow")
+        public ConnectToLdapWindowController(VMDirServerDTO dto)
+            : base("ConnectToLdapWindow")
         {
-            Initialize (dto);
+            Initialize(dto);
         }
-        
+
         // Shared initialization code
-        void Initialize (VMDirServerDTO dto)
+        void Initialize(VMDirServerDTO dto)
         {
             _dto = dto;
         }
 
         #endregion
 
-        public override void AwakeFromNib ()
+        public override void AwakeFromNib()
         {
-            base.AwakeFromNib (); 
+            base.AwakeFromNib();
 
-            PrePopulateFields ();
-            AddEventListeners ();
+            PrePopulateFields();
+            AddEventListeners();
         }
 
-        private void PrePopulateFields ()
+        private void PrePopulateFields()
         {
             ServerName.StringValue = _dto.Server ?? "";
-            BindDN.StringValue = "Administrator@vsphere.local";
-            BaseDN.StringValue = "dc=vsphere,dc=local";
+            BindDN.StringValue = "Administrator@lightwave.local";
+            BaseDN.StringValue = "dc=lightwave,dc=local";
         }
 
-        private void AddEventListeners ()
+        private void AddEventListeners()
         {
             OKButton.Activated += OnClickOKButton;
             CancelButton.Activated += OnClickCancelButton;
         }
 
         //Event Handlers
-        private void OnClickCancelButton (object sender, EventArgs e)
+        private void OnClickCancelButton(object sender, EventArgs e)
         {
-            this.Close ();
-            NSApplication.SharedApplication.StopModalWithCode (0);
+            this.Close();
+            NSApplication.SharedApplication.StopModalWithCode(0);
         }
 
-        private void OnClickOKButton (object sender, EventArgs e)
+        private void OnClickOKButton(object sender, EventArgs e)
         {
-            FillDtoFromUIFields ();
+            FillDtoFromUIFields();
 
-            UIErrorHelper.CheckedExec (delegate() {
-                ValidateDto ();
-                this.Close ();
-                NSApplication.SharedApplication.StopModalWithCode (VmIdentity.UI.Common.VMIdentityConstants.DIALOGOK);
-            });
+            UIErrorHelper.CheckedExec(delegate()
+                {
+                    ValidateDto();
+                    this.Close();
+                    NSApplication.SharedApplication.StopModalWithCode(VmIdentity.UI.Common.VMIdentityConstants.DIALOGOK);
+                });
         }
 
-        private void ValidateDto ()
+        private void ValidateDto()
         {
-            if (string.IsNullOrEmpty (_dto.BaseDN) || string.IsNullOrEmpty (_dto.BindDN) || string.IsNullOrEmpty (_dto.Server) || string.IsNullOrEmpty (_dto.Password))
-                throw new Exception ("Please enter values in the fields");
+            if (string.IsNullOrEmpty(_dto.BaseDN) || string.IsNullOrEmpty(_dto.BindDN) || string.IsNullOrEmpty(_dto.Server) || string.IsNullOrEmpty(_dto.Password))
+                throw new Exception("Please enter values in the fields");
         }
 
-        private void FillDtoFromUIFields ()
+        private void FillDtoFromUIFields()
         {
             _dto.BaseDN = BaseDN.StringValue;
             _dto.BindDN = BindDN.StringValue;
@@ -107,8 +111,10 @@ namespace VMDirSnapIn.UI
         }
 
         //strongly typed window accessor
-        public new ConnectToLdapWindow Window {
-            get {
+        public new ConnectToLdapWindow Window
+        {
+            get
+            {
                 return (ConnectToLdapWindow)base.Window;
             }
         }

@@ -30,8 +30,8 @@ namespace VMDirSnapIn.UI
         {
             InitializeComponent();
 
-            txtBaseDN.Text = "dc=vsphere,dc=local";
-            txtBindUPN.Text = "Administrator@vsphere.local";
+            txtBaseDN.Text = "dc=lightwave,dc=local";
+            txtBindUPN.Text = "Administrator@lightwave.local";
         }
 
         public frmConnectToServer(VMDirServerDTO dto)

@@ -62,7 +62,7 @@ namespace VMPSCHighAvailability.Common.Service
 						Description = GetServiceDescription(info.pszServiceName),
 						Port = info.dwPort,
 						Alive = info.bIsAlive == 1,
-						LastHeartbeat = DateTimeConverter.FromUnixToLocalDateTime(info.dwLastHeartbeat)
+                        LastHeartbeat = DateTimeConverter.FromUnixToDateTime(info.dwLastHeartbeat)
 					};
 					services.Add (service);
 				}
@@ -72,7 +72,7 @@ namespace VMPSCHighAvailability.Common.Service
 					ServiceName = Constants.AuthFrameworkServiceName,
 					Description = Constants.AuthFrameworkServiceDesc,
 					Alive = true,
-					LastHeartbeat = System.DateTime.Now
+					LastHeartbeat = System.DateTime.UtcNow
 				};
 				services.Add (afdService);
 			}

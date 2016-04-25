@@ -34,7 +34,7 @@ namespace VMCA
 
     public class VMCAAdaptor
     {
-        [StructLayout (LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         public class VMCA_PKCS_10_REQ_DATA
         {
             public string pszName;
@@ -55,9 +55,9 @@ namespace VMCA
         public const UInt32 VMCA_ENUM_END = 1;
         const string LIBNAME = @"libvmcaclient.dll";
 
-        [DllImportAttribute (LIBNAME)]
+        [DllImportAttribute(LIBNAME)]
         public static extern UInt32
-            VMCAOpenServerA (
+            VMCAOpenServerA(
             string serverName,
             string userName,
             string domainName,
@@ -67,66 +67,66 @@ namespace VMCA
             out IntPtr ppServerContext
         );
 
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32
-            VMCACloseServer (
+            VMCACloseServer(
             IntPtr pServerContext
         );
 
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32
-            VMCAAddRootCertificate (
+            VMCAAddRootCertificate(
             string pszServerName,
             string pszRootCertificate,
             string pszPassPhrase,
             string pszPrivateKey
         );
 
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32
-            VMCAGetRootCACertificateHA (
+            VMCAGetRootCACertificateHA(
             IntPtr pServerContext,
             string argServerName,
             out IntPtr pCert);
 
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32
-            VMCAOpenEnumContextHA (
+            VMCAOpenEnumContextHA(
             IntPtr pServerContext,
             string argServerName, 
             Int32 dwStatus, 
             out IntPtr pContext);
 
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32 
-            VMCAGetNextCertificate (
+            VMCAGetNextCertificate(
             IntPtr pContext, 
             out IntPtr pCertificate,
             out Int32 currIndex, 
             out Int32 enumStatus);
 
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32
-            VMCACloseEnumContext (
+            VMCACloseEnumContext(
             IntPtr pContext);
 
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32
-            VMCARevokeCertificate (
+            VMCARevokeCertificate(
             string argServerName, 
             string cert);
 
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32
-            VMCACreatePrivateKey (
+            VMCACreatePrivateKey(
             string pszPassPhrase, 
             UInt32 uiKeyLength, 
             out IntPtr ppPrivateKey, 
             out IntPtr ppPublicKey);
 
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32
-        VMCACreateSelfSignedCertificate (
+        VMCACreateSelfSignedCertificate(
             VMCA_PKCS_10_REQ_DATA pCertRequest, 
             string pszPrivateKey, 
             string pszPassPhrase, 
@@ -135,82 +135,82 @@ namespace VMCA
             out IntPtr ppCertificate
         );
 
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32
-        VMCACreateSigningRequest (
+        VMCACreateSigningRequest(
             VMCA_PKCS_10_REQ_DATA pCertRequest,
             string pPrivateKey,
             string pszPassPhrase,
             out IntPtr ppCSR
         );
 
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32
-        VMCACreateSubjectDN (
+        VMCACreateSubjectDN(
             IntPtr pCertRequestData
         );
 
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32
-        VMCAGetCertificateAsString (
+        VMCAGetCertificateAsString(
             string pCertificate,
             out IntPtr ppszCertString
         );
 
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32
-        VMCAGetServerVersionHA (
+        VMCAGetServerVersionHA(
             IntPtr pServerContext,
             string pszServerName,
             out IntPtr ppszServerVersionString
         );
 
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32
-            VMCAValidateCACertificate (
+            VMCAValidateCACertificate(
             string pszCertificate
         );
         //Free
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32
-        VMCAAllocatePKCS10Data (
+        VMCAAllocatePKCS10Data(
             out IntPtr ppCertRequestData
         );
 
-        [DllImport (LIBNAME)]
-        public static extern UInt32
-            VMCAFreeCertificate (
+        [DllImport(LIBNAME)]
+        public static extern void
+            VMCAFreeCertificate(
             IntPtr pString);
 
-        [DllImport (LIBNAME)]
-        public static extern UInt32
-            VMCAFreeCSR (
+        [DllImport(LIBNAME)]
+        public static extern void
+            VMCAFreeCSR(
             IntPtr pString);
 
-        [DllImport (LIBNAME)]
-        public static extern UInt32
-            VMCAFreeKey (
+        [DllImport(LIBNAME)]
+        public static extern void
+            VMCAFreeKey(
             IntPtr pString);
 
-        [DllImport (LIBNAME)]
-        public static extern UInt32
-            VMCAFreePKCS10Data (
+        [DllImport(LIBNAME)]
+        public static extern void
+            VMCAFreePKCS10Data(
             IntPtr pString);
 
-        [DllImport (LIBNAME)]
+        [DllImport(LIBNAME)]
         public static extern UInt32
-        VMCAGetErrorString (
+        VMCAGetErrorString(
             UInt32 dwErrorCode,
             out IntPtr errorMsg);
 
-        public static UInt32 VMCAFreeString (IntPtr pString)
+        public static void VMCAFreeString(IntPtr pString)
         {
-            return VMCAFreeKey (pString);
+            VMCAFreeKey(pString);
         }
 
-        public static UInt32 VMCAFreeVersion (IntPtr pString)
+        public static void VMCAFreeVersion(IntPtr pString)
         {
-            return VMCAFreeKey (pString);
+            VMCAFreeKey(pString);
         }
     }
 }

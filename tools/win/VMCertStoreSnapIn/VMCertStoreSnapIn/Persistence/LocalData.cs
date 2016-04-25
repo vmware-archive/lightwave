@@ -11,9 +11,9 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */using System;using System.Collections.Generic;using System.Linq;using System.Text;
-using VMCertStore.Common.DTO;
-namespace VMCertStoreSnapIn.Persistence{    public class LocalData    {        List<VMCertStoreServerDTO> _servers = new List<VMCertStoreServerDTO>();        public List<VMCertStoreServerDTO> ServerList { get { return _servers; } set { _servers = value; } }
-        public LocalData()        {        }
-        public void AddServer(VMCertStoreServerDTO dto)        {            ServerList.Add(dto);        }
-        public bool RemoveServer(string guid)        {            int index = ServerList.FindIndex(x => x.GUID == guid);            if (index > -1)                ServerList.RemoveAt(index);            return index > -1;        }
+using VMCertStore.Common.DTO;
+namespace VMCertStoreSnapIn.Persistence{    public class LocalData    {        List<VMCertStoreServerDTO> _servers = new List<VMCertStoreServerDTO>();        public List<VMCertStoreServerDTO> ServerList { get { return _servers; } set { _servers = value; } }
+        public LocalData()        {        }
+        public void AddServer(VMCertStoreServerDTO dto)        {            ServerList.Add(dto);        }
+        public bool RemoveServer(string guid)        {            int index = ServerList.FindIndex(x => x.GUID == guid);            if (index > -1)                ServerList.RemoveAt(index);            return index > -1;        }
         public VMCertStoreServerDTO GetServerByGuid(string guid)        {            return ServerList.Find(x => x.GUID == guid);        }    }}

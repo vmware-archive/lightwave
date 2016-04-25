@@ -138,13 +138,13 @@ namespace VMDirSnapIn.UI
             var frm = new AddOrRemoveAttributes(_objectClass, optionalProps, _serverDTO);
             if (frm.ShowDialog() == DialogResult.OK)
             {
-                var retainList = frm.OptionalAttributes.Intersect(optionalProps);
+                var retainList = frm.NewOptionalAttributes.Intersect(optionalProps);
                 var removeList = optionalProps.Except(retainList).ToList();
                 foreach (var item in removeList)
                 {
                     _properties.Remove(item.Key);
                 }
-                var addList = frm.OptionalAttributes.Except(retainList);
+                var addList = frm.NewOptionalAttributes.Except(retainList);
                 foreach (var item in addList)
                 {
                     var dto = _serverDTO.Connection.SchemaManager.GetAttributeType(item.Key);

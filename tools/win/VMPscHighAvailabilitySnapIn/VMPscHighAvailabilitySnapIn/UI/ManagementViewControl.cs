@@ -21,6 +21,7 @@ using System.Linq;
 using System.Windows.Forms;
 using VMAFD.Client;
 using VMIdentity.CommonUtils;
+using VMIdentity.CommonUtils.Log;
 using VMPSCHighAvailability.Common;
 using VMPSCHighAvailability.Common.DTO;
 using VMPSCHighAvailability.Common.Helpers;
@@ -53,7 +54,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
         private ColumnHeader columnHeader11;
         private ColumnHeader columnHeader9;
         private ColumnHeader columnHeader10;
-        private Label label1;
+        private Label lblServices;
         private GroupBox groupBox1;
         private Label label4;
         private TextBox txtDomainControllerName;
@@ -73,7 +74,8 @@ namespace VMPscHighAvailabilitySnapIn.UI
         private TextBox txtIpAddress;
         private ColumnHeader columnHeader4;
         private ColumnHeader columnHeader7;
-        private Label label2;
+        private Label lblLegacyWarning;
+        private Label lblDcs;
 
         private void InitializeComponent()
         {
@@ -82,6 +84,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lstdcs = new System.Windows.Forms.ListView();
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.btnHA = new System.Windows.Forms.Button();
@@ -96,8 +99,8 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.columnHeader11 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader9 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader10 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.label1 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
+            this.lblServices = new System.Windows.Forms.Label();
+            this.lblDcs = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.label4 = new System.Windows.Forms.Label();
             this.txtDomainControllerName = new System.Windows.Forms.TextBox();
@@ -114,7 +117,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lblName = new System.Windows.Forms.TextBox();
             this.label7 = new System.Windows.Forms.Label();
             this.txtIpAddress = new System.Windows.Forms.TextBox();
-            this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.lblLegacyWarning = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pcHealth)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox3)).BeginInit();
@@ -122,7 +125,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             // 
             // lstdcs
             // 
-            this.lstdcs.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.lstdcs.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lstdcs.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader1,
@@ -133,10 +136,10 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lstdcs.FullRowSelect = true;
             this.lstdcs.GridLines = true;
             this.lstdcs.HideSelection = false;
-            this.lstdcs.Location = new System.Drawing.Point(13, 235);
+            this.lstdcs.Location = new System.Drawing.Point(13, 257);
             this.lstdcs.MultiSelect = false;
             this.lstdcs.Name = "lstdcs";
-            this.lstdcs.Size = new System.Drawing.Size(596, 191);
+            this.lstdcs.Size = new System.Drawing.Size(596, 182);
             this.lstdcs.Sorting = System.Windows.Forms.SortOrder.Ascending;
             this.lstdcs.TabIndex = 0;
             this.lstdcs.UseCompatibleStateImageBehavior = false;
@@ -153,15 +156,18 @@ namespace VMPscHighAvailabilitySnapIn.UI
             // 
             this.columnHeader5.Text = "Affinitized";
             // 
+            // columnHeader7
+            // 
+            this.columnHeader7.Text = "Site Location";
+            this.columnHeader7.Width = 80;
+            // 
             // columnHeader2
             // 
-            this.columnHeader2.DisplayIndex = 2;
             this.columnHeader2.Text = "Status of Services";
             this.columnHeader2.Width = 200;
             // 
             // columnHeader3
             // 
-            this.columnHeader3.DisplayIndex = 3;
             this.columnHeader3.Text = "Status";
             this.columnHeader3.Width = 50;
             // 
@@ -192,7 +198,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lblLastRefreshed.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblLastRefreshed.AutoSize = true;
             this.lblLastRefreshed.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblLastRefreshed.Location = new System.Drawing.Point(496, 211);
+            this.lblLastRefreshed.Location = new System.Drawing.Point(496, 233);
             this.lblLastRefreshed.Name = "lblLastRefreshed";
             this.lblLastRefreshed.Size = new System.Drawing.Size(35, 13);
             this.lblLastRefreshed.TabIndex = 3;
@@ -202,7 +208,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             // 
             this.chkAutoRefresh.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.chkAutoRefresh.AutoSize = true;
-            this.chkAutoRefresh.Location = new System.Drawing.Point(162, 209);
+            this.chkAutoRefresh.Location = new System.Drawing.Point(162, 231);
             this.chkAutoRefresh.Name = "chkAutoRefresh";
             this.chkAutoRefresh.Size = new System.Drawing.Size(88, 17);
             this.chkAutoRefresh.TabIndex = 4;
@@ -221,7 +227,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             "120",
             "300",
             "600"});
-            this.cbInterval.Location = new System.Drawing.Point(248, 207);
+            this.cbInterval.Location = new System.Drawing.Point(248, 229);
             this.cbInterval.Name = "cbInterval";
             this.cbInterval.Size = new System.Drawing.Size(36, 21);
             this.cbInterval.TabIndex = 5;
@@ -232,7 +238,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lblSeconds.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblSeconds.AutoSize = true;
             this.lblSeconds.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblSeconds.Location = new System.Drawing.Point(284, 211);
+            this.lblSeconds.Location = new System.Drawing.Point(284, 233);
             this.lblSeconds.Name = "lblSeconds";
             this.lblSeconds.Size = new System.Drawing.Size(47, 13);
             this.lblSeconds.TabIndex = 6;
@@ -240,7 +246,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             // 
             // lstServices
             // 
-            this.lstServices.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.lstServices.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lstServices.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader6,
@@ -284,29 +290,29 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.columnHeader10.Text = "Last Heartbeat";
             this.columnHeader10.Width = 140;
             // 
-            // label1
+            // lblServices
             // 
-            this.label1.AutoSize = true;
-            this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(15, 458);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(120, 13);
-            this.label1.TabIndex = 8;
-            this.label1.Text = "Services hosted on ";
+            this.lblServices.AutoSize = true;
+            this.lblServices.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblServices.Location = new System.Drawing.Point(15, 458);
+            this.lblServices.Name = "lblServices";
+            this.lblServices.Size = new System.Drawing.Size(120, 13);
+            this.lblServices.TabIndex = 8;
+            this.lblServices.Text = "Services hosted on ";
             // 
-            // label2
+            // lblDcs
             // 
-            this.label2.AutoSize = true;
-            this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(15, 210);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(117, 13);
-            this.label2.TabIndex = 9;
-            this.label2.Text = "Domain Controllers:";
+            this.lblDcs.AutoSize = true;
+            this.lblDcs.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblDcs.Location = new System.Drawing.Point(15, 232);
+            this.lblDcs.Name = "lblDcs";
+            this.lblDcs.Size = new System.Drawing.Size(117, 13);
+            this.lblDcs.TabIndex = 9;
+            this.lblDcs.Text = "Domain Controllers:";
             // 
             // groupBox1
             // 
-            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox1.Location = new System.Drawing.Point(3, 77);
             this.groupBox1.Name = "groupBox1";
@@ -336,7 +342,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             // btnRefresh
             // 
             this.btnRefresh.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnRefresh.Location = new System.Drawing.Point(337, 203);
+            this.btnRefresh.Location = new System.Drawing.Point(337, 225);
             this.btnRefresh.Name = "btnRefresh";
             this.btnRefresh.Size = new System.Drawing.Size(64, 25);
             this.btnRefresh.TabIndex = 14;
@@ -410,7 +416,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.label5.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label5.AutoSize = true;
             this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label5.Location = new System.Drawing.Point(425, 211);
+            this.label5.Location = new System.Drawing.Point(425, 233);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(71, 13);
             this.label5.TabIndex = 22;
@@ -462,13 +468,20 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.txtIpAddress.TabStop = false;
             this.txtIpAddress.Text = "192.168.255.255";
             // 
-            // columnHeader7
+            // lblLegacyWarning
             // 
-            this.columnHeader7.Text = "Site Location";
-            this.columnHeader7.Width = 80;
+            this.lblLegacyWarning.AutoSize = true;
+            this.lblLegacyWarning.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblLegacyWarning.ForeColor = System.Drawing.SystemColors.HotTrack;
+            this.lblLegacyWarning.Location = new System.Drawing.Point(15, 201);
+            this.lblLegacyWarning.Name = "lblLegacyWarning";
+            this.lblLegacyWarning.Size = new System.Drawing.Size(325, 13);
+            this.lblLegacyWarning.TabIndex = 39;
+            this.lblLegacyWarning.Text = "WARNING! No service detection when in Legacy Mode.";
             // 
             // ManagementViewControl
             // 
+            this.Controls.Add(this.lblLegacyWarning);
             this.Controls.Add(this.txtIpAddress);
             this.Controls.Add(this.label7);
             this.Controls.Add(this.cbInterval);
@@ -486,8 +499,8 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.Controls.Add(this.txtDomainControllerName);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.groupBox1);
-            this.Controls.Add(this.label2);
-            this.Controls.Add(this.label1);
+            this.Controls.Add(this.lblDcs);
+            this.Controls.Add(this.lblServices);
             this.Controls.Add(this.lstServices);
             this.Controls.Add(this.lblSeconds);
             this.Controls.Add(this.chkAutoRefresh);
@@ -589,14 +602,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             UpdateState();
             foreach (InfrastructureDto dc in _infraDtos)
             {
-                var affinitized = _dto.DomainController.Name == dc.Name ? "Yes" : string.Empty;
-                var services = GetServiceDescription(dc);
-                var status = GetStatus(dc);
-                var location = GetLocation(dc);
-                var values = new string[] { dc.Name, affinitized, location, services, status };
-                ListViewItem item = new ListViewItem(values) { Tag = dc, ImageIndex = (int)ImageIndex.Infrastructure };
-                item.BackColor = GetRowColor(dc);
-                lstdcs.Items.Add(item);
+                AddNewDomainController(dc);
             }
             lblLastRefreshed.Text = DateTime.Now.ToString(Constants.DateFormat);
             if (lstdcs.Items.Count > 0)
@@ -604,6 +610,18 @@ namespace VMPscHighAvailabilitySnapIn.UI
                 lstdcs.Items[node.SelectedInfrastructureItem].Selected = true;
             }
             UpdateServices();
+        }
+
+        private void AddNewDomainController(InfrastructureDto dc)
+        {
+            var affinitized = _dto.DomainController.Name == dc.Name ? "Yes" : string.Empty;
+            var services = GetServiceDescription(dc);
+            var status = GetStatus(dc);
+            var location = GetLocation(dc);
+            var values = new string[] { dc.Name, affinitized, location, services, status };
+            ListViewItem item = new ListViewItem(values) { Tag = dc, ImageIndex = (int)ImageIndex.Infrastructure };
+            item.BackColor = GetRowColor(dc);
+            lstdcs.Items.Add(item);
         }
 
         private static Color GetRowColor(InfrastructureDto dc)
@@ -648,36 +666,68 @@ namespace VMPscHighAvailabilitySnapIn.UI
             var siteName = node.GetSiteName();
             if (serverNode != null && serverNode.Hosts != null)
             {
-                _dto = serverNode.Hosts.First(x => x.Name == node.DisplayName) as ManagementDto;
-                _dto.DomainControllers = GetInfraNodesForTheSite(_dto.DomainControllers, siteName);
-                _infraDtos = _dto.DomainControllers;
-                UpdateState();
+                var host = serverNode.Hosts.FirstOrDefault(x => x.Name == node.DisplayName);
+                if (host != null)
+                {
+                    _dto = host as ManagementDto;
+                    _dto.DomainControllers = GetInfraNodesForTheSite(_dto.DomainControllers, siteName);
+                    _infraDtos = _dto.DomainControllers;
+                    UpdateState();
 
-                foreach (ListViewItem item in lstdcs.Items)
-                {
-                    var infDto = item.Tag as InfrastructureDto;
-                    var dto = _infraDtos.First(x => x.Name == infDto.Name) as InfrastructureDto;
-                    item.Tag = dto;
-                    item.BackColor = GetRowColor(dto);
-                    var status = GetStatus(dto);
-                    var services = GetServiceDescription(dto);
-                    var location = GetLocation(dto);
-                    item.SubItems[3].Text = services;
-                    item.SubItems[4].Text = status;
-                    item.SubItems[2].Text = location;
-                    item.SubItems[1].Text = (item.SubItems[0].Text == _dto.DomainController.Name) ? "Yes" : string.Empty;
-                    item.Tag = dto;
+                    foreach (InfrastructureDto dto in _infraDtos)
+                    {
+                        bool found = false;
+                        for (var i = lstdcs.Items.Count - 1; i >= 0; i--)
+                        {
+                            ListViewItem item = lstdcs.Items[i];
+                            var infDto = item.Tag as InfrastructureDto;
+                            if (infDto.Name == dto.Name)
+                            {
+                                found = true;
+                                item.Tag = dto;
+                                item.BackColor = GetRowColor(dto);
+                                var status = GetStatus(dto);
+                                var services = GetServiceDescription(dto);
+                                var location = GetLocation(dto);
+                                item.SubItems[3].Text = services;
+                                item.SubItems[4].Text = status;
+                                item.SubItems[2].Text = location;
+                                item.SubItems[1].Text = (item.SubItems[0].Text == _dto.DomainController.Name) ? "Yes" : string.Empty;
+                                item.Tag = dto;
+                            }
+                        }
+                        if (!found)
+                        {
+                            AddNewDomainController(dto);
+                        }
+                    }
+
+                    for (var i = lstdcs.Items.Count - 1; i >= 0; i--)
+                    {
+                        if (_infraDtos.Count(x => x.Name == lstdcs.Items[i].SubItems[0].Text) == 0)
+                        {
+                            lstdcs.Items.RemoveAt(i);
+                        }
+                    }
+                    if (lstdcs.Items.Count > 0)
+                    {
+                        if (node.SelectedInfrastructureItem < lstdcs.Items.Count)
+                        {
+                            lstdcs.Items[node.SelectedInfrastructureItem].Selected = true;
+                        }
+                        else
+                        {
+                            lstdcs.Items[0].Selected = true;
+                        }
+                    }
+                    UpdateServices();
                 }
-                if (lstdcs.Items.Count > 0)
-                {
-                    lstdcs.Items[node.SelectedInfrastructureItem].Selected = true;
-                }
-                UpdateServices();
             }
         }
 
         private void UpdateState()
         {
+            SetLegacyControlStatus();
             lblState.Text = _dto.State.Description;
             var health = CdcDcStateHelper.GetHealth(_dto.State, _infraDtos);
             lblStatus.Text = health.ToString().ToUpper();
@@ -688,6 +738,11 @@ namespace VMPscHighAvailabilitySnapIn.UI
             btnHA.Text = _dto.Legacy ? Constants.EnableDefaultHA : Constants.EnableLegacy;
             legacyMode = _dto.Legacy;
             txtDomainControllerName.Text = _dto.DomainController.Name;
+        }
+
+        private void SetLegacyControlStatus()
+        {
+            lblLegacyWarning.Visible = _dto.Legacy;
         }
 
         void IFormViewControl.Initialize(FormView parentSelectionFormView)
@@ -727,7 +782,10 @@ namespace VMPscHighAvailabilitySnapIn.UI
                 foreach (ServiceDto service in dto.Services)
                 {
                     var status = service.Alive ? Constants.Active : Constants.InActive;
+                    var message = string.Format("Last Heartbeat for server {0} service {1} is {2}, UTC: {3}", dto.Name, service.ServiceName, service.LastHeartbeat.ToString("dd-MMM-yyyy HH:mm:ss"), DateTime.UtcNow.ToString("dd-MMM-yyyy HH:mm:ss"));
+                    PscHighAvailabilityAppEnvironment.Instance.Logger.Log(message, LogLevel.Info);
                     var hb = DateTimeConverter.ToDurationAgo(service.LastHeartbeat);
+                    message = string.Format("Last Heartbeat shown on UI for server {0} service {1} is {2}",dto.Name,service.ServiceName,hb);
                     var port = service.Port == 0 ? string.Empty : service.Port.ToString();
                     var values = new string[] { service.ServiceName, service.Description, port, status, hb };
                     ListViewItem item = new ListViewItem(values) { ImageIndex = (int)ImageIndex.Service };

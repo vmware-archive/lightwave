@@ -71,7 +71,7 @@ namespace RestSsoAdminSnapIn
 				TxtIssuer.StringValue = _certificate.Issuer;
 				TxtValidFrom.StringValue = _certificate.NotBefore.ToShortDateString ();
 				TxtValidTo.StringValue = _certificate.NotAfter.ToShortDateString ();
-				TxtDn.StringValue = _certificate.IssuerName.Format (true);
+				TxtDn.StringValue = _certificate.Subject;
 			});
 		}
 		#endregion

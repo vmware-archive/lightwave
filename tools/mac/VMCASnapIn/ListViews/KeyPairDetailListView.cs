@@ -54,7 +54,7 @@ namespace VMCASnapIn.ListViews
             try {
                 if (_entries != null) {
                     if (col.Identifier == "CreatedDate")
-                        return (NSString)this._entries [row].CreatedDateTime.ToString ();
+                        return (NSString)this._entries [row].CreatedDateTime.ToLocalTime ().ToString ();
                     else
                         return (NSString)this._entries [row].KeyLength.ToString ();
                 }

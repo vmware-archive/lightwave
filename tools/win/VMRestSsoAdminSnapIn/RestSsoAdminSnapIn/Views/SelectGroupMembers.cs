@@ -33,7 +33,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
 
             var il = new ImageList();
             il.Images.AddStrip(ResourceHelper.GetToolbarImage());
-            lstGroupMembers.SmallImageList = il;
+            lstGroupMembers.SmallImageList = il;
             BindData();
         }
 
@@ -68,7 +68,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                     lstGroupMembers.Items.Add(item);
                 }
             }
-        }
+        }
         private void btnAdd_Click(object sender, EventArgs e)
         {
             GetSelectedMembers();

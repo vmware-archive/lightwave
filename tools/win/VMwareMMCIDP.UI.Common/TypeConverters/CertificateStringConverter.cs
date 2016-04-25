@@ -11,6 +11,6 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */using System;using System.Collections.Generic;using System.Linq;using System.Text;using System.ComponentModel;using System.Globalization;using System.Windows.Forms;
-using VMwareMMCIDP.UI.Common.Utilities;
-namespace VMwareMMCIDP.UI.Common.GridEditors{    public class CertificateStringConverter : ExpandableObjectConverter    {        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)        {            if (destinationType == typeof(string))            {                return value.ToString().GetDisplayString();            }
+using VMwareMMCIDP.UI.Common.Utilities;
+namespace VMwareMMCIDP.UI.Common.GridEditors{    public class CertificateStringConverter : ExpandableObjectConverter    {        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)        {            if (destinationType == typeof(string))            {                return value.ToString().GetDisplayString();            }
             return base.ConvertTo(context, culture, value,                destinationType);        }    }}
