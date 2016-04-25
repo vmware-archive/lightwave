@@ -587,6 +587,7 @@ VmDnsZoneDeleteRecord(
     DWORD                   dwError = 0;
     PVMDNS_ZONE             pZone = NULL;
     PVMDNS_NAME_ENTRY       pNameEntry = NULL;
+    PVMDNS_NAME_ENTRY       pNameEntryRemoved = NULL;
     BOOL                    bZoneLocked = FALSE;
     BOOL                    bZoneListLocked = FALSE;
     PVMDNS_RECORD           pQueryRecord = NULL;
@@ -609,8 +610,8 @@ VmDnsZoneDeleteRecord(
     {
         BAIL_ON_VMDNS_ERROR(dwError);
         dwError = VmDnsZoneFindNameEntry(pZone,
-            pQueryRecord->pszName,
-            &pNameEntry);
+                        pQueryRecord->pszName,
+                        &pNameEntry);
         BAIL_ON_VMDNS_ERROR(dwError);
 
         dwError = VmDnsNameEntryDeleteRecord(pNameEntry, pQueryRecord, bDirSync);
@@ -620,6 +621,24 @@ VmDnsZoneDeleteRecord(
                         pRecord->pszName,
                         pRecord->dwType,
                         pszZone);
+
+        if (!pNameEntry->Records.Next)
+        {
+            VMDNS_LOG_INFO("Removing the empty name entry %s from zone %s",
+                            pNameEntry->pszName,
+                            pszZone);
+
+            dwError = VmDnsZoneRemoveNameEntry(
+                            pZone,
+                            pNameEntry->pszName,
+                            &pNameEntryRemoved);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            dwError = VmDnsDeleteNameEntry(
+                            pNameEntryRemoved,
+                            FALSE);
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
     }
 
 cleanup:

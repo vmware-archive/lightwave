@@ -191,7 +191,6 @@ VmDnsHashTableInsert(
     }
 
     ulDigest = VmDnsGetHash(pszKey);
-    dwIdx = ulDigest % pTable->ulSize;
 
     dwFindError = VmDnsGetNode(
                     pTable,
@@ -222,6 +221,7 @@ VmDnsHashTableInsert(
                 &(pNewNode->pKey));
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    dwIdx = ulDigest % pTable->ulSize;
     pNewNode->ulDigest = ulDigest;
     pNewNode->pData = pValue;
     pTable->ulCount++;
