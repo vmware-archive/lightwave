@@ -10,7 +10,7 @@
       </Policies>
       <DefaultRolloverStrategy max="5"/>
     </RollingFile>
-
+  </Appenders>
   <Loggers>
     <Logger name="com.vmware.identity.interop.ldap.OpenLdapClientLibrary" level="info"/>
     <Root level="info">
