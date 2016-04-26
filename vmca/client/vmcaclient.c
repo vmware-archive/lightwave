@@ -4,7 +4,6 @@
 
 #include "includes.h"
 
-#define JAVA_DEBUG 0
 #define BUFSIZE 1024
 #define ENUM_CERT_SIZE 20
 #define VMCA_RPC_MAX_RETRY 5

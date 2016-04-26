@@ -129,9 +129,6 @@ case "$LOTUS_DEPLOYMENT" in
            echo $USAGE
            exit 1
         fi
-
-        replication-partner-hostname=$LOTUS_PARTNER_HOSTNAME
-
         ;;
     *)
         echo "Invalid deployment type : $LOTUS_DEPLOYMENT"
