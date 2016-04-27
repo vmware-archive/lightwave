@@ -13,6 +13,7 @@
  */
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
@@ -23,10 +24,12 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
     public partial class ComputersView : Form
     {
         private readonly ServerDto _serverDto;
-        public ComputersView(ServerDto serverDto)
+        private string _systemTenant;
+        public ComputersView(ServerDto serverDto, string systemTenant)
         {
             InitializeComponent();
             _serverDto = serverDto;
+            _systemTenant = systemTenant;
         }
 
         private void btnClose_Click(object sender, EventArgs e)
@@ -40,8 +43,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             il.Images.AddStrip(ResourceHelper.GetToolbarImage());
             lstComputers.SmallImageList = il;
             var auths = SnapInContext.Instance.AuthTokenManager.GetAuthTokens(_serverDto);
-            var auth = auths[0];
-                
+            var auth = auths.FirstOrDefault(x=>x.ServerDto.Tenant == _systemTenant);
+            
             ActionHelper.Execute(delegate()
             {
                 var computers = SnapInContext.Instance.ServiceGateway.Server.GetComputers(_serverDto, auth.Token);

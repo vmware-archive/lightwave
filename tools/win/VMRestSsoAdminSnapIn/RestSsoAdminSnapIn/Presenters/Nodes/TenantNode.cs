@@ -12,34 +12,61 @@
  * under the License.
  */
 
+using System.Linq;
 using Microsoft.ManagementConsole;
 using System.Windows.Forms;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn.Views;
+using Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
 {
     public class TenantNode : ScopeNode
     {
+        public bool IsSystemTenant;
+        private ServerDto _serverDto;
+        private string _tenantName;
         public enum TenantNodeAction
         {
             ActionConfiguration = 1,
             ActionSuperLogging = 2
         }
-        public TenantNode()
+        public TenantNode(ServerDto dto, string tenantName)
             : base(false)
         {
+            _serverDto = dto;
+            _tenantName = tenantName;
             EnabledStandardVerbs = StandardVerbs.Refresh;
             EnabledStandardVerbs = StandardVerbs.Delete;
             ImageIndex = SelectedImageIndex = (int)TreeImageIndex.Tenant;
-            ActionsPaneItems.Add(new Action("Configuration", "Configuration", (int)TreeImageIndex.Settings, TenantNodeAction.ActionConfiguration));
+
+            if (IsSystemTenant)
+            {
+                ActionsPaneItems.Add(new Action("Configuration", "Configuration", (int)TreeImageIndex.Settings, TenantNodeAction.ActionConfiguration));
+            }
             ActionsPaneItems.Add(new Action("Super Log", "Super Log", (int)TreeImageIndex.Settings, TenantNodeAction.ActionSuperLogging));
             Children.Add(new IdentityProvidersNode());
             Children.Add(new ExternalIdentityProvidersNode());
             Children.Add(new RelyingPartyNode());
             Children.Add(new OidcClientsNode());
             Children.Add(new ServerCertificatesNode());
+            IsSystemTenant = CheckSystemTenant();
+        }
+
+        private bool CheckSystemTenant()
+        {
+            bool isSystemTenant = false;
+            var service = this.GetServiceGateway();
+            var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_serverDto, _tenantName);
+            ActionHelper.Execute(delegate
+            {
+                var identityProviders = service.IdentityProvider.GetAll(_serverDto, _tenantName, auth.Token);
+                var localOsDomains = identityProviders.Where(x => x.DomainType == DomainType.LOCAL_OS_DOMAIN.ToString());
+                isSystemTenant = localOsDomains != null && localOsDomains.Count() > 0;
+                   
+            }, auth);
+            return isSystemTenant;
         }
         protected override void OnAction(Action action, AsyncStatus status)
         {

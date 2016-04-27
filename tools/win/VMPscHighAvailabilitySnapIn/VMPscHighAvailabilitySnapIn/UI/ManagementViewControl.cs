@@ -652,11 +652,17 @@ namespace VMPscHighAvailabilitySnapIn.UI
             var node = _formView.ScopeNode as ManagementNode;
             var serverNode = node.GetServerNode();
             var colocatedHosts = serverNode.Hosts.Where(x => x.NodeType == NodeType.Infrastructure && x.Sitename == siteName).ToList();
-            foreach (var dc in allDcs)
+
+            if (allDcs != null)
             {
-                dc.IsRemote = !colocatedHosts.Exists(x => x.Name == dc.Name);
+                foreach (var dc in allDcs)
+                {
+                    dc.IsRemote = !colocatedHosts.Exists(x => x.Name == dc.Name);
+                }
+                return allDcs;
             }
-            return allDcs;
+            else
+                return new List<InfrastructureDto>();            
         }
 
         private void RefreshView()
@@ -673,7 +679,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
                     _dto.DomainControllers = GetInfraNodesForTheSite(_dto.DomainControllers, siteName);
                     _infraDtos = _dto.DomainControllers;
                     UpdateState();
-
+                    
                     foreach (InfrastructureDto dto in _infraDtos)
                     {
                         bool found = false;

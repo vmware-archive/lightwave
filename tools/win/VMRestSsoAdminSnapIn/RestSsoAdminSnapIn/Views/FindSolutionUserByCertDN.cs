@@ -35,22 +35,25 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
 
         private void btnSelectCertFile_Click(object sender, EventArgs e)
         {
-            using (var ofd = new OpenFileDialog())
+            ActionHelper.Execute(delegate()
             {
-                ofd.Filter = "Certificate Files (*.crt)|*.crt|All Files (*.*)|*.*";
-                if (ofd.ShowDialog() == DialogResult.OK)
+                using (var ofd = new OpenFileDialog())
                 {
-                    txtCertDN.Text = ofd.FileName;
-                    PopulateCertDN();
+                    ofd.Filter = "Certificate Files (*.crt)|*.crt|All Files (*.*)|*.*";
+                    if (ofd.ShowDialog() == DialogResult.OK)
+                    {
+                        txtCertFile.Text = ofd.FileName;
+                        PopulateCertDN();
+                    }
                 }
-            }
+            }, null);
         }
 
         void PopulateCertDN()
         {
             if (rdoUseFile.Checked)
             {
-                var cert = new X509Certificate2(txtCertDN.Text);
+                var cert = new X509Certificate2(txtCertFile.Text);
                 txtCertDN.Text = cert.Subject;
             }
             CertDn = txtCertDN.Text;
@@ -60,9 +63,9 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
         {
             ActionHelper.Execute(delegate()
             {
-                if (string.IsNullOrEmpty(txtCertDN.Text) && string.IsNullOrEmpty(txtCertFile.Text))
+                if (string.IsNullOrWhiteSpace(txtCertDN.Text) && string.IsNullOrWhiteSpace(txtCertFile.Text))
                     throw new Exception("Please select a certificate file or enter Certificate DN");
-                if (string.IsNullOrEmpty(txtCertDN.Text))
+                if (!string.IsNullOrWhiteSpace(txtCertDN.Text))
                     PopulateCertDN();
                 DialogResult = DialogResult.OK;
                 Close();
