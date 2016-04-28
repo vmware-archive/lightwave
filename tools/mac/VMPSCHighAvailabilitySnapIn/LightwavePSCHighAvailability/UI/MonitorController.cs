@@ -19,6 +19,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AppKit;
 using Foundation;
+using System.Net.NetworkInformation;
 using VmIdentity.UI.Common;
 using VmIdentity.UI.Common.Utilities;
 using VMIdentity.CommonUtils;
@@ -62,11 +63,6 @@ namespace VMPSCHighAvailability.UI
 		private string lastRefreshTimestamp;
 
 		/// <summary>
-		/// Tracks the list of pscs for the node.
-		/// </summary>
-		//public List<InfrastructureDto> InfrastructureNodes{ get; set;}
-
-		/// <summary>
 		/// The management dto.
 		/// </summary>
 		private ManagementDto _mgmtDto;
@@ -106,6 +102,11 @@ namespace VMPSCHighAvailability.UI
 		/// </summary>
 		private IPscHighAvailabilityService _service;
 
+		/// <summary>
+		/// The is connected.
+		/// </summary>
+		private bool _isConnected;
+
 		#region Constructors
 
 		// Called when created from unmanaged code
@@ -144,10 +145,14 @@ namespace VMPSCHighAvailability.UI
 		public override void AwakeFromNib ()
 		{
 			base.AwakeFromNib ();
+			NetworkChange.NetworkAvailabilityChanged += (object sender, NetworkAvailabilityEventArgs e) => {
+				_isConnected = e.IsAvailable;
+			};
 			Initialize ();
 			HostnameHeader.StringValue = ServerDto.Server;
 			SitenameTextField.StringValue = SiteName;
 			RefreshState ();
+
 		}
 
 		/// <summary>
@@ -264,32 +269,40 @@ namespace VMPSCHighAvailability.UI
 				Upn = ServerDto.Upn, 
 				Password = ServerDto.Password 
 			};
-			var mgmtDto = _service.GetManagementNodeDetails (serverDto);
-			var infraNodes = FilterBySiteName(mgmtDto.DomainControllers);
-			if (_mgmtDto.DomainController != null) {
-				DomainControllerTextField.StringValue = _mgmtDto.DomainController.Name;
 
-				foreach (var node in infraNodes) {
-					node.IsAffinitized = (node.Name == _mgmtDto.DomainController.Name);
+			if (_isConnected) {
+				var mgmtDto = _service.GetManagementNodeDetails (serverDto);
+				//var mgmtDto = RootNode.Hosts.FirstOrDefault(x => x.Sitename == _mgmtDto.Sitename && x.Name == _mgmtDto.Name) as ManagementDto;
+
+				if (mgmtDto != null) {
+					var infraNodes = FilterBySiteName (mgmtDto.DomainControllers);
+					if (_mgmtDto.DomainController != null) {
+						DomainControllerTextField.StringValue = _mgmtDto.DomainController.Name;
+
+						foreach (var node in infraNodes) {
+							node.IsAffinitized = (node.Name == _mgmtDto.DomainController.Name);
+						}
+					}
+					PscTableView.Delegate = new MonitorTableViewDelegate (this);
+					PscDataSource = new PscDataSource (infraNodes);
+					PscTableView.DataSource = PscDataSource;
+					PscTableView.ReloadData ();
+
+					if (infraNodes != null && infraNodes.Count > 0 && PscTableView.SelectedRowCount <= 0) {
+						PscTableView.SelectRow (0, true);
+					}
+
+					if (_mgmtDto.State != null) {
+						Health health = CdcDcStateHelper.GetHealth (_mgmtDto.State, infraNodes);
+						CurrentStatusTextField.StringValue = health.ToString ().ToUpper ();
+						CurrentStatusTextField.TextColor = GetHealthColor (health);
+						CurrentStatusTextField.ToolTip = CdcDcStateHelper.GetHealthDescription (health);
+					}
+					SiteAffinityButton.Title = "Enable " + (_mgmtDto.Legacy ? Constants.HA : Constants.Legacy);
+					LegacyModeWarning.Hidden = !_mgmtDto.Legacy;
+					LoadServices ();
 				}
 			}
-				PscTableView.Delegate = new MonitorTableViewDelegate (this);
-				PscDataSource = new PscDataSource (infraNodes);
-				PscTableView.DataSource = PscDataSource;
-				PscTableView.ReloadData ();
-
-				if (infraNodes.Count > 0 && PscTableView.SelectedRowCount <= 0) {
-					PscTableView.SelectRow (0, true);
-				}
-
-			if (_mgmtDto.State != null) {
-				Health health = CdcDcStateHelper.GetHealth (_mgmtDto.State, infraNodes);
-				CurrentStatusTextField.StringValue = health.ToString ().ToUpper ();
-				CurrentStatusTextField.TextColor = GetHealthColor (health);
-				CurrentStatusTextField.ToolTip = CdcDcStateHelper.GetHealthDescription (health);
-			}
-			SiteAffinityButton.Title = "Enable " + (_mgmtDto.Legacy ? Constants.HA : Constants.Legacy);
-			LoadServices ();
 		}
 
 		private List<InfrastructureDto> FilterBySiteName(List<InfrastructureDto> allDcs)
@@ -372,11 +385,15 @@ namespace VMPSCHighAvailability.UI
 		/// </summary>
 		private void RefreshState()
 		{
-			_mgmtDto = (ManagementDto)RootNode.Hosts.First (x => x.Name == ServerDto.Server);
-			LastRefreshTextField.StringValue = DateTime.Now.ToString (Constants.DateFormat);
-			SetHostStateAndStatusControls ();
-			SetAutoRefreshControls ();
-			RefreshPscTableView ();
+			var mgmtDto = (ManagementDto)RootNode.Hosts.FirstOrDefault (x => x.Name == ServerDto.Server);
+
+			if (mgmtDto != null) {
+				_mgmtDto = mgmtDto;
+				LastRefreshTextField.StringValue = DateTime.Now.ToString (Constants.DateFormat);
+				SetHostStateAndStatusControls ();
+				SetAutoRefreshControls ();
+				RefreshPscTableView ();
+			}
 		}
 
 		/// <summary>

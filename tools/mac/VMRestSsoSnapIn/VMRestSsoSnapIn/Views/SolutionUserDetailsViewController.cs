@@ -76,7 +76,7 @@ namespace RestSsoAdminSnapIn
 				TxtIssuer.StringValue = _certificate.Issuer;
 				TxtValidFrom.StringValue = _certificate.NotBefore.ToShortDateString ();
 				TxtValidTo.StringValue = _certificate.NotAfter.ToShortDateString ();
-				TxtDn.StringValue = _certificate.IssuerName.Format (true);
+				TxtDn.StringValue = _certificate.Subject;
 			});
 
 			//Events
@@ -98,7 +98,7 @@ namespace RestSsoAdminSnapIn
 						TxtIssuer.StringValue =  cert1.Issuer;
 						TxtValidFrom.StringValue = cert1.NotBefore.ToShortDateString();
 						TxtValidTo.StringValue = cert1.NotAfter.ToShortDateString();
-						TxtDn.StringValue = cert1.IssuerName.Format(true);
+						TxtDn.StringValue = cert1.Subject;
 						_certificate = cert1;
 					});
 					SolutionUserDto.Certificate.Encoded = _certificate.ExportToPem();

@@ -15,6 +15,7 @@
 using System;
 using Foundation;
 using AppKit;
+using System.Net.NetworkInformation;
 
 namespace VmIdentity.UI.Common
 {
@@ -39,6 +40,14 @@ namespace VmIdentity.UI.Common
         public override void AwakeFromNib ()
         {
             base.AwakeFromNib ();
+			NetworkChange.NetworkAvailabilityChanged 
+			+= (object sender, NetworkAvailabilityEventArgs e) =>
+			{
+				NetworkStatus.StringValue = e.IsAvailable ? "Connected" : "Disconnected";
+				NetworkStatus.TextColor = e.IsAvailable
+					? NSColor.FromSrgb((nfloat)3.0/255,(nfloat)161/255,(nfloat)27/255,1)
+					: NSColor.Red;
+			};
         }
 
         public virtual void InitialiseViews ()

@@ -125,16 +125,24 @@ namespace VMDirSnapIn.UI
             try
             {
                 DoValidate();
-                if (_properties.Count > 0 && ds.PendingMod.Count > 0)
+                if (_properties.Count > 0)
                 {
-                    LdapMod[] user = new LdapMod[ds.PendingMod.Count];
+                    LdapMod[] user = new LdapMod[ds.PendingMod.Count + ds.DeleteMod.Count];
                     int i = 0;
                     foreach (var entry in ds.PendingMod)
                     {
                         string[] values = new string[2];
                         values[0] = entry.Value;
-                        values[1] = null; 
+                        values[1] = null;
                         user[i] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_REPLACE, entry.Key, values);
+                        i++;
+                    }
+                    foreach (var entry in ds.DeleteMod)
+                    {
+                        string[] values = new string[2];
+                        values[0] = entry.Value;
+                        values[1] = null;
+                        user[i] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_DELETE, entry.Key, values);
                         i++;
                     }
                     serverDTO.Connection.ModifyObject(itemName, user);

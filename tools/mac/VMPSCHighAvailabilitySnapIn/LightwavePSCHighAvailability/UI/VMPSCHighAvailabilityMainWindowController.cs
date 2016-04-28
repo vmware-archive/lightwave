@@ -789,8 +789,9 @@ namespace VMPSCHighAvailability.UI
 			{
 				_serverState = ServerState.Disconnected;
 				_isLoggedIn = false;
-				if(_rootNode != null)
+				if (_rootNode != null) {
 					_rootNode.OnCacheRefresh -= OnCacheRefresh;
+				}
 				_rootNode = null;
 				_managementDto = null;
 				ServerToolBarItem.Image = NSImage.ImageNamed (Constants.ConnectIcon);

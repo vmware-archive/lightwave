@@ -5,7 +5,7 @@
   <?define Manufacturer="VMware, Inc." ?>
   <?define MajorVersion="1" ?>
   <?define MinorVersion="0" ?>
-  <?define BuildVersion="0" ?>
+  <?define BuildVersion="1" ?>
   <?define Revision="0" ?>
   <?define VersionNumber="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion).$(var.Revision)" ?>
   <?define UpgradeCode="D6546C19-9633-4567-8642-E81CD2FBB811" ?>
