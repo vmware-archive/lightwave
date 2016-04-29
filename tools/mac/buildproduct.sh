@@ -25,25 +25,39 @@ makePkg() {
   pkgbuild \
     --component "x64/$1/$2" \
     --install-location "/Applications/LightwaveTools/" \
+	--identifier "$4" \
     "x64/$1/$3"
   if [ $? -ne 0 ];then
      exit 1
   fi
 }
 
-makePkg $CONFIG 'Lightwave CA.app' 'LightwaveCA.pkg'
-makePkg $CONFIG 'Lightwave Certificate Store.app' 'LightwaveCertStore.pkg'
-makePkg $CONFIG 'Lightwave Directory.app' 'LightwaveDirectory.pkg'
-makePkg $CONFIG 'Lightwave SSO.app' 'LightwaveSSO.pkg'
-makePkg $CONFIG 'Lightwave PSC Site Management.app' 'LightwavePSCSiteManagement.pkg'
+makePkgWithScript() {
+  pkgbuild \
+    --component "x64/$1/$2" \
+    --install-location "/Applications/LightwaveTools/" \
+	--identifier "$4" \
+	--scripts "$5" \
+    "x64/$1/$3"
+  if [ $? -ne 0 ];then
+     exit 1
+  fi
+}
+
+
+makePkg $CONFIG 'Lightwave CA.app' 'LightwaveCA.pkg' 'com.vmware.LightwaveCA'
+makePkg $CONFIG 'Lightwave Certificate Store.app' 'LightwaveCertStore.pkg' 'com.vmware.LightwaveCertStore'
+makePkg $CONFIG 'Lightwave Directory.app' 'LightwaveDirectory.pkg' 'com.vmware.LightwaveDirectory'
+makePkg $CONFIG 'Lightwave PSC Site Management.app' 'LightwavePSCSiteManagement.pkg' 'com.vmware.LightwavePSCSiteManagement'
+makePkgWithScript $CONFIG 'Lightwave SSO.app' 'LightwaveSSO.pkg' 'com.vmware.LightwaveSSO' 'scripts'
 
 #generate distribution xml
 productbuild --synthesize \
   --package "x64/$CONFIG/LightwaveCA.pkg"  \
   --package "x64/$CONFIG/LightwaveCertStore.pkg" \
   --package "x64/$CONFIG/LightwaveDirectory.pkg" \
-  --package "x64/$CONFIG/LightwaveSSO.pkg" \
   --package "x64/$CONFIG/LightwavePSCSiteManagement.pkg" \
+  --package "x64/$CONFIG/LightwaveSSO.pkg" \
   "x64/$CONFIG/Distribution.xml"
 
 #generate installer
