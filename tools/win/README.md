@@ -83,17 +83,18 @@ https://vmware.bintray.com/lightwave_ui/
 ```
 Perform following steps to build the Lightwave UI installer for windows using the build script:
 
- * Download and install .net framework 4.5 (in case it is not present on your machine) from https://www.microsoft.com/en-in/download/details.aspx?id=30653
- * Download and extract wix v3.8 (stable) binaries from http://wixtoolset.org/
- * Run the command to set the WIXPATH environment variable: set WIXPATH= <path to folder where wix binaries are extracted>\ wix38-binaries
- * Download and install git client from https://git-scm.com/
- * Open git bash shell and run the command: git clone https://github.com/vmware/lightwave.git
- * Go to lightwave windows folder: cd lightwave\tools\win
- * Run the windows build script: build-lw-win-ui.cmd
- 
-```
+* Download and install .net framework 4.5 (in case it is not present on your machine) from https://www.microsoft.com/en-in/download/details.aspx?id=30653. To confirm whether .net framework 4.5 is installed in your machine please use  this link https://msdn.microsoft.com/en-in/library/hh925568(v=vs.110).aspx#net_b .
+* Download and install git client from https://git-scm.com/
+* Open git bash shell and run the command: git clone https://github.com/vmware/lightwave.git
+* Download and extract wix v3.8 (stable) binaries from http://wixtoolset.org/. Please download zip file wix32-binaries.zip and extract that. Do not use any installer binary.
+* Run the command to set the WIXPATH environment variable: set WIXPATH=<path to folder where wix binaries are extracted>\ wix38-binaries
+* Go to lightwave windows folder using same command prompt: cd lightwave\tools\win
+* Run the windows build script: build-lw-win-ui.cmd
 
+```
+ 
 Lightwave UI windows installer msi will be genrated in win\x64\Debug and win\x64\Release folders.
+You can find installer log in win\logs folder.
 
 
 ## Known Issues
@@ -105,15 +106,9 @@ Lightwave UI windows installer msi will be genrated in win\x64\Debug and win\x64
 	1. Cannot search the solution user by certificate since some special characters are not supported. 
 	2. The tools allows user to add expired certificate for STS signing.
 
-
-* Lightwave Directory Tool : 
-
-	1. To refresh the tree node just collapse and expand it. The right-click refresh option does not refresh the tree or attributes table.
-
-
 * Lightwave PSC Site Management Tool :  
 
 	1. No support for partial topology load.
-	2. The UI refresh cycle is set to 60 seconds. There would be 2 minute (worst case) lag between the server state and its reflection on the UI.
+	2. The UI refresh cycle is set to 60 seconds. There may be a 2 minute (worst case) lag between the server state and its reflection on the UI.
 
 ```
