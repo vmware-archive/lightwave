@@ -25,7 +25,6 @@ RUN sed -i 's/#Storage=auto/Storage=persistent/' /etc/systemd/journald.conf
 
 # install lightwave
 RUN tdnf install -y procps-ng; \
-    tdnf install -y openjdk-1.8.0.72; \
     tdnf install -y commons-daemon; \
     tdnf install -y apache-tomcat; \
     tdnf install -y likewise-open-6.2.9; \
