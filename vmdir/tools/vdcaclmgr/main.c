@@ -96,7 +96,7 @@ HandleUserNameParameterCallback(
     PCSTR pValue
     )
 {
-    PCOMMAND_LINE_PARAMETER_STATE pContext = (PCOMMAND_LINE_PARAMETER_STATE)pContext;
+    PCOMMAND_LINE_PARAMETER_STATE pContext = (PCOMMAND_LINE_PARAMETER_STATE)pContextPointer;
 
     if (pContext->pszUserName != NULL)
     {
