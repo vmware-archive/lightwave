@@ -68,41 +68,45 @@ distribution.
 4.  As part of a successful build, the following RPMs should be created in the
     [workspace root]/stage folder
 
-    1.  vmware-event-devel-1.0.0-0.x86\_64.rpm
+    1.  vmware-event-devel-6.5.0-0.x86\_64.rpm
 
-    2.  vmware-directory-client-6.0.2-0.x86\_64.rpm
+    2.  vmware-directory-client-6.5.0-0.x86\_64.rpm
 
-    3.  vmware-directory-6.0.2-0.x86\_64.rpm
+    3.  vmware-directory-6.5.0-0.x86\_64.rpm
 
-    4.  vmware-directory-client-devel-6.0.2-0.x86\_64.rpm
+    4.  vmware-directory-client-devel-6.5.0-0.x86\_64.rpm
 
-    5.  vmware-dns-client-6.0.0-0.x86\_64.rpm
+    5.  vmware-dns-client-6.5.0-0.x86\_64.rpm
 
-    6.  vmware-dns-6.0.0-0.x86\_64.rpm
+    6.  vmware-dns-6.5.0-0.x86\_64.rpm
 
-    7.  vmware-dns-client-devel-6.0.0-0.x86\_64.rpm
+    7.  vmware-dns-client-devel-6.5.0-0.x86\_64.rpm
 
-    8.  vmware-afd-client-6.0.2-0.x86\_64.rpm
+    8.  vmware-afd-client-6.5.0-0.x86\_64.rpm
 
-    9.  vmware-afd-6.0.2-0.x86\_64.rpm
+    9.  vmware-afd-6.5.0-0.x86\_64.rpm
 
-    10. vmware-afd-client-devel-6.0.2-0.x86\_64.rpm
+    10. vmware-afd-client-devel-6.5.0-0.x86\_64.rpm
 
-    11. vmware-ca-6.0.2-0.x86\_64.rpm
+    11. vmware-ca-6.5.0-0.x86\_64.rpm
 
-    12. vmware-ca-client-6.0.2-0.x86\_64.rpm
+    12. vmware-ca-client-6.5.0-0.x86\_64.rpm
 
-    13. vmware-ca-client-devel-6.0.2-0.x86\_64.rpm
+    13. vmware-ca-client-devel-6.5.0-0.x86\_64.rpm
 
-    14. vmware-sts-6.0.2-0.x86\_64.rpm
+    14. vmware-sts-6.5.0-0.x86\_64.rpm
 
-    15. vmware-sts-client-6.0.2-0.x86\_64.rpm
+    15. vmware-sts-client-6.5.0-0.x86\_64.rpm
 
-    16. vmware-ic-config-1.0.2-0.x86\_64.rpm
+    16. vmware-ic-config-6.5.0-0.x86\_64.rpm
 
-    17. vmware-lightwave-clients-6.0.2-0.x86\_64.rpm
+    17. vmware-lightwave-clients-6.5.0-0.x86\_64.rpm
 
-    18. vmware-lightwave-server-6.0.2-0.x86\_64.rpm
+    18. vmware-lightwave-server-6.5.0-0.x86\_64.rpm
+
+    19. vmware-sts-6.5.0-0.x86\_64.rpm
+
+    20. vmware-sts-client-6.5.0-0.x86\_64.rpm
 
 Deployment
 ----------
@@ -158,25 +162,29 @@ skip_if_unavailable=True
 
 You must first install the following packages on your Photon instance
 
-1.  vmware-directory-client-6.0.2-0.x86\_64.rpm
+1.  vmware-directory-client-6.5.0-0.x86\_64.rpm
 
-2.  vmware-directory-6.0.2-0.x86\_64.rpm
+2.  vmware-directory-6.5.0-0.x86\_64.rpm
 
-3.  vmware-dns-client-6.0.0-0.x86\_64.rpm
+3.  vmware-dns-client-6.5.0-0.x86\_64.rpm
 
-4.  vmware-dns-6.0.0-0.x86\_64.rpm
+4.  vmware-dns-6.5.0-0.x86\_64.rpm
 
-5.  vmware-afd-client-6.0.2-0.x86\_64.rpm
+5.  vmware-afd-client-6.5.2-0.x86\_64.rpm
 
-6.  vmware-afd-6.0.2-0.x86\_64.rpm
+6.  vmware-afd-6.5.0-0.x86\_64.rpm
 
-7.  vmware-ca-client-6.0.2-0.x86\_64.rpm
+7.  vmware-ca-client-6.5.0-0.x86\_64.rpm
 
-8.  vmware-ca-6.0.2-0.x86\_64.rpm
+8.  vmware-ca-6.5.0-0.x86\_64.rpm
 
-9.  vmware-ic-config-1.0.2-0.x86\_64.rpm
+9.  vmware-ic-config-6.5.0-0.x86\_64.rpm
 
-Alternately, you can install the vmware-lightwave-server-6.0.2-0.x86\_64.rpm
+10. vmware-sts-client-6.5.0-0.x86\_64.rpm
+
+11. vmware-sts-6.5.0-0.x86\_64.rpm
+
+Alternately, you can install the vmware-lightwave-server-6.5.0-0.x86\_64.rpm
 which is a meta RPM with dependencies on all the above RPMs.
 
 If using the YUM repositories for the pre-built binaries, install the Lightwave
@@ -187,13 +195,14 @@ Domain Controller using "tdnf install vmware-lightwave-server".
 ##### Standalone mode (this is the first replica in a new domain)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/opt/vmware/bin/ic-promote
+/opt/vmware/bin/configure-lightwave-server --password <password>
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ##### Partner mode (this is a new replica in an existing domain)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/opt/vmware/bin/ic-promote --partner <hostname or ip-address of partner instance>
+/opt/vmware/bin/configure-lightwave-server --password <password> \
+ --server <hostname or ip-address of partner instance>
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Notes:
@@ -210,19 +219,21 @@ Notes:
 The following packages are required to join the Photon system to the Lightwave
 Domain.
 
-1.  vmware-directory-client-6.0.2-0.x86\_64.rpm
+1.  vmware-directory-client-6.5.0-0.x86\_64.rpm
 
-2.  vmware-dns-client-6.0.0-0.x86\_64.rpm
+2.  vmware-dns-client-6.5.0-0.x86\_64.rpm
 
-3.  vmware-afd-client-6.0.2-0.x86\_64.rpm
+3.  vmware-afd-client-6.5.0-0.x86\_64.rpm
 
-4.  vmware-afd-6.0.2-0.x86\_64.rpm
+4.  vmware-afd-6.5.0-0.x86\_64.rpm
 
-5.  vmware-ca-client-6.0.2-0.x86\_64.rpm
+5.  vmware-ca-client-6.5.0-0.x86\_64.rpm
 
-6.  vmware-ic-config-1.0.2-0.x86\_64.rpm
+6.  vmware-sts-client-6.5.0-0.x86\_64.rpm
 
-Alternately, you can install the vmware-lightwave-clients-6.0.2-0.x86\_64.rpm
+7.  vmware-ic-config-6.5.0-0.x86\_64.rpm
+
+Alternately, you can install the vmware-lightwave-clients-6.5.0-0.x86\_64.rpm
 which is a meta RPM with dependencies on all the above RPMs.
 
 If using the YUM repositories for the pre-built binaries, install the Lightwave
@@ -231,5 +242,5 @@ Domain Client using "tdnf install vmware-lightwave-clients".
 #### Joining a system to a Lightwave domain
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/opt/vmware/bin/ic-join --domain-controller <hostname or ip-address of domain controller>
+/opt/vmware/bin/domainjoin join <domain hostname>
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
