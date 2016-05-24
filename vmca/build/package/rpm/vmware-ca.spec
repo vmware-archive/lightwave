@@ -1,14 +1,14 @@
 Name:    vmware-ca
 Summary: VMware Certificate Authority Service
 Version: 6.5.0
-Release: 0
+Release: 1
 Group:   Applications/System
 Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
 Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.9, vmware-directory-client >= 6.5.0, vmware-afd-client >= 6.5.0, boost >= 1.56
-BuildRequires:  boost-devel >= 1.56, coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.9, vmware-directory-client-devel >= 6.5.0, vmware-afd-client-devel >= 6.5.0, sqlite-autoconf, boost >= 1.56
+BuildRequires:  boost-devel >= 1.60, coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.9, vmware-directory-client-devel >= 6.5.0, vmware-afd-client-devel >= 6.5.0, sqlite-autoconf, boost >= 1.60
 
 %define _dbdir %_localstatedir/lib/vmware/vmca
 %define _jarsdir %{_prefix}/jars
