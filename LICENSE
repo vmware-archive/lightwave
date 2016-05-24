@@ -209,7 +209,7 @@ Lightwave v1.0 Technical Preview 2
 Lightwave v1.0 includes a number of components with separate copyright notices and license terms.  This product does not necessarily use all the open source  components referred to below. Your use of the source code for these components is subject to the terms and conditions of the following licenses.
 
 SECTION 1: BSD-STYLE, MIT-STYLE, OR SIMILAR STYLE LICENSES
-   >>> boost-1.56.0-1
+   >>> boost-1.60.0-1
    >>> csrp-6a
    >>> cyrus-sasl-2.1.26-1
    >>> heimdal-1.5.2
@@ -382,7 +382,7 @@ limitations under the License.
 
 > Public Domain
 
-boost_1_56_0.tar.bz2\boost_1_56_0.tar\boost_1_56_0\libs\mpl\doc\style.css
+boost_1_60_0.tar.bz2\boost_1_60_0.tar\boost_1_60_0\libs\mpl\doc\style.css
 
 Author: David Goodger
 Author: Aleksey Gurtovoy
