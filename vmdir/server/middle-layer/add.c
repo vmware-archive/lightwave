@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -26,10 +26,10 @@ _VmDirEntryDupAttrValueCheck(
 static
 int
 _VmDirGenerateAttrMetaData(
-    PVDIR_ENTRY    pEntry,
+    PVDIR_ENTRY         pEntry,
     /* OPTIONAL, if specified, only generate metaData for that particular attribute
      * Otherwise, generate for all attributes*/
-    PSTR           pszAttributeName
+    PSTR                pszAttributeName
     );
 
 static
@@ -73,6 +73,13 @@ VmDirMLAdd(
 
     dwError = VmDirInternalAddEntry(pOperation);
     BAIL_ON_VMDIR_ERROR( dwError );
+
+    if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
+    {
+        pOperation->pBEIF->pfnBESetMaxOriginatingUSN(pOperation->pBECtx,
+                                                     pOperation->pBECtx->wTxnUSN);
+    }
+
 
 cleanup:
     VmDirSendLdapResult( pOperation );
@@ -463,10 +470,10 @@ error:
 static
 int
 _VmDirGenerateAttrMetaData(
-    PVDIR_ENTRY    pEntry,
+    PVDIR_ENTRY         pEntry,
     /* OPTIONAL, if specified, only generate metaData for that particular attribute
      * Otherwise, generate for all attributes*/
-    PSTR           pszAttributeName
+    PSTR                 pszAttributeName
     )
 {
     int              retVal = LDAP_SUCCESS;
@@ -669,7 +676,8 @@ _VmDirAddPrepareObjectSD(
     BAIL_ON_VMDIR_ERROR(dwError);
     pObjectSdAttr = NULL;
 
-    dwError = _VmDirGenerateAttrMetaData(pEntry, ATTR_OBJECT_SECURITY_DESCRIPTOR);
+    dwError = _VmDirGenerateAttrMetaData(pEntry,
+                                         ATTR_OBJECT_SECURITY_DESCRIPTOR);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:

@@ -39,7 +39,7 @@ VmDirCleanupGlobals(
 VOID
 VmDirShutdown(
     PBOOLEAN pbWaitTimeOut
-)
+    )
 {
     PVDIR_BACKEND_INTERFACE pBE = NULL;
 
@@ -111,6 +111,10 @@ VmDirShutdown(
 
     VmDirCleanupGlobals();
 
+    (VOID)VmDirSetRegKeyValueDword(
+            VMDIR_CONFIG_PARAMETER_KEY_PATH,
+            VMDIR_REG_KEY_DIRTY_SHUTDOWN,
+            FALSE);
 done:
     return;
 }

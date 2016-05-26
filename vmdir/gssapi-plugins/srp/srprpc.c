@@ -94,37 +94,22 @@ long cli_rpc_srp_verifier_new(
     int ret_len_B = 0;
     int ret_len_s = 0;
     int ret_MDA_value_len = 0;
-    int rpc_retry = 0;
 
     bytes_cont_A.len_B = len_A;
     bytes_cont_A.bytes_B = (unsigned char *) bytes_A;
 
-    /*
-     * Reference: BUG 1315106
-     * Work-around for failure seen in some W2k12 systems. The failure mode is
-     * vmdir Srv_rpc_srp_verifier_new() RPC is called, succeeds, but
-     * the returned RPC fails with an error status rpc_s_connection_closed.
-     * This happens only once, and only in some W2K12 deployed environments.
-     */
-    do {
-        DO_RPC(rpc_srp_verifier_new(
-                  hServer,
-                  alg,
-                  ng_type,
-                  username,
-                  &bytes_cont_A, /* in */
-                  &bytes_cont_B, /* out */
-                  &bytes_cont_s, /* out */
-                  &MDA_cont,
-                  n_hex,
-                  g_hex,
-                  &hRetSrp), sts);
-        if (sts == rpc_s_connection_closed)
-        {
-            sleep(1);
-            rpc_retry++;
-        }
-    } while (sts == rpc_s_connection_closed && rpc_retry < 5);
+    DO_RPC(rpc_srp_verifier_new(
+              hServer,
+              alg,
+              ng_type,
+              username,
+              &bytes_cont_A, /* in */
+              &bytes_cont_B, /* out */
+              &bytes_cont_s, /* out */
+              &MDA_cont,
+              n_hex,
+              g_hex,
+              &hRetSrp), sts);
     if (sts)
     {
         goto error;
@@ -189,19 +174,11 @@ long cli_rpc_srp_verifier_get_session_key(
     rpc_p_srp_bytes_container key_cont = NULL;
     unsigned char *ret_key = NULL;
     int ret_key_len = 0;
-    int rpc_retry = 0;
 
-    do {
-        DO_RPC(rpc_srp_verifier_get_session_key(
-                  hServer,
-                  hSrp,
-                  &key_cont), sts);
-        if (sts == rpc_s_connection_closed)
-        {
-            sleep(1);
-            rpc_retry++;
-        }
-    } while (sts == rpc_s_connection_closed && rpc_retry < 5);
+    DO_RPC(rpc_srp_verifier_get_session_key(
+              hServer,
+              hSrp,
+              &key_cont), sts);
     if (sts)
     {
         goto error;
@@ -235,19 +212,11 @@ long cli_rpc_srp_verifier_get_session_key_length(
 {
     long sts = 0;
     idl_long_int key_length = 0;
-    int rpc_retry = 0;
 
-    do {
-        DO_RPC(rpc_srp_verifier_get_session_key_length(
-                  hServer,
-                  hSrp,
-                  &key_length), sts);
-        if (sts == rpc_s_connection_closed)
-        {
-            sleep(1);
-            rpc_retry++;
-        }
-    } while (sts == rpc_s_connection_closed && rpc_retry < 5);
+    DO_RPC(rpc_srp_verifier_get_session_key_length(
+              hServer,
+              hSrp,
+              &key_length), sts);
     if (sts)
     {
         goto error;
@@ -269,23 +238,15 @@ long cli_rpc_srp_verifier_verify_session(
     rpc_p_srp_bytes_container bytes_HAMK_cont = NULL;
     unsigned char *ret_bytes_HAMK = NULL;
     int ret_bytes_HAMK_len = 0;
-    int rpc_retry = 0;
 
     user_M_cont.len_B = user_M_len;
     user_M_cont.bytes_B = (unsigned char *) user_M;
 
-    do {
-        DO_RPC(rpc_srp_verifier_verify_session(
-                  hServer,
-                  hSrp,
-                  &user_M_cont,
-                  &bytes_HAMK_cont), sts);
-        if (sts == rpc_s_connection_closed)
-        {
-            sleep(1);
-            rpc_retry++;
-        }
-    } while (sts == rpc_s_connection_closed && rpc_retry < 5);
+    DO_RPC(rpc_srp_verifier_verify_session(
+              hServer,
+              hSrp,
+              &user_M_cont,
+              &bytes_HAMK_cont), sts);
     if (sts)
     {
         goto error;
@@ -323,20 +284,12 @@ long cli_rpc_srp_verifier_delete(
         srp_verifier_handle_t *phSrp)
 {
     long sts = 0;
-    int rpc_retry = 0;
 
     if (hServer && phSrp)
     {
-        do {
-            DO_RPC(rpc_srp_verifier_delete(
-                      hServer,
-                      phSrp), sts);
-            if (sts == rpc_s_connection_closed)
-            {
-                sleep(1);
-                rpc_retry++;
-            }
-        } while (sts == rpc_s_connection_closed && rpc_retry < 5);
+        DO_RPC(rpc_srp_verifier_delete(
+                  hServer,
+                  phSrp), sts);
     }
     return sts;
 }

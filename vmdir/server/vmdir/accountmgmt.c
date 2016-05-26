@@ -28,7 +28,7 @@ VmDirCreateAccount(
     PCSTR   pszUPNName,
     PCSTR   pszUserName,
     PCSTR   pszPassword,        // optional?
-    PCSTR   pszEntryDN          // optional
+    PCSTR   pszEntryDN
     )
 {
     DWORD   dwError = 0;
@@ -43,7 +43,6 @@ VmDirCreateAccount(
     };
 
     PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
-    PSTR                pszAccountDN = NULL;
 
     if (    IsNullOrEmptyString(pszUPNName)                 ||
             IsNullOrEmptyString(pszUserName)
@@ -56,24 +55,16 @@ VmDirCreateAccount(
     dwError = VmDirSchemaCtxAcquire( &pSchemaCtx );
     BAIL_ON_VMDIR_ERROR( dwError );
 
-    if (pszEntryDN == NULL)
-    {
-        dwError = VmDirUPNToAccountDN(pszUPNName, ATTR_CN, pszUserName, &pszAccountDN);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
     dwError = VmDirSimpleEntryCreate(
                     pSchemaCtx,
                     ppszAttributes,
-                    pszEntryDN ? (PSTR)pszEntryDN : pszAccountDN,
+                    (PSTR)pszEntryDN,
                     0);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
 
     VmDirSchemaCtxRelease(pSchemaCtx);
-
-    VMDIR_SAFE_FREE_MEMORY(pszAccountDN);
 
     return dwError;
 

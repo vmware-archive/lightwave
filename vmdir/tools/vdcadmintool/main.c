@@ -23,7 +23,7 @@ int _tmain(int argc, TCHAR *targv[])
 {
     while (1)
     {
-        CHAR pszChoice[3] = { '\0' };
+        CHAR pszChoice[16] = { '\0' };
         int choice = -1;
 
         VmDirReadString(

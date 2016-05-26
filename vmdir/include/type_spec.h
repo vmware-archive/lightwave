@@ -186,6 +186,20 @@ typedef struct _VMW_TYPE_SPEC_
     }\
 }
 
+#define GET_SERVER_STATE_OUTPUT_PARAMS \
+{\
+    {\
+        "Return Code",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+    {\
+        "Server State",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+}
+
 #define SET_SRP_SECRET_INPUT_PARAMS \
 {\
     {\

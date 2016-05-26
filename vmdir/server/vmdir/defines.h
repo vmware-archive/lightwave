@@ -103,6 +103,8 @@
 
 #endif
 
+#define SUPPORTED_STATUS_COUNT    7
+
 #define VMDIR_RPC_FLAG_ALLOW_NCALRPC         0x01
 #define VMDIR_RPC_FLAG_ALLOW_TCPIP           0x02
 #define VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC  0x04
@@ -123,21 +125,22 @@
  *
  */
 
-#define VMDIR_REG_KEY_LDAP_PORT             "LdapPort"
-#define VMDIR_REG_KEY_ALLOW_INSECURE_AUTH   "AllowInsecureAuthentication"
-#define VMDIR_REG_KEY_ADMIN_PASSWD          "AdministratorPassword"
-#define VMDIR_REG_KEY_LDAP_LISTEN_PORTS     "LdapListenPorts"
-#define VMDIR_REG_KEY_LDAPS_LISTEN_PORTS    "LdapsListenPorts"
-#define VMDIR_REG_KEY_LDAP_CONNECT_PORTS    "LdapConnectPorts"
-#define VMDIR_REG_KEY_LDAPS_CONNECT_PORTS   "LdapsConnectPorts"
-#define VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC "LdapRecvTimeoutSec"
-#define VMDIR_REG_KEY_ALLOW_ADMIN_LOCKOUT   "AllowAdminLockout"
-#define VMDIR_REG_KEY_MAX_OP_THREADS        "MaxLdapOpThrs"
-#define VMDIR_REG_KEY_DISABLE_VECS          "DisableVECSIntegration"
-#define VMDIR_REG_KEY_MAX_INDEX_SCAN        "MaxIndexScan"
-#define VMDIR_REG_KEY_SMALL_CANDIDATE_SET   "SmallCandidateSet"
-#define VMDIR_REG_KEY_MAX_SIZELIMIT_SCAN    "MaxSizeLimitScan"
-#define VMDIR_REG_KEY_ALLOW_IMPORT_OP_ATTR  "AllowImportOperationalAttrs"
+#define VMDIR_REG_KEY_LDAP_PORT               "LdapPort"
+#define VMDIR_REG_KEY_ALLOW_INSECURE_AUTH     "AllowInsecureAuthentication"
+#define VMDIR_REG_KEY_ADMIN_PASSWD            "AdministratorPassword"
+#define VMDIR_REG_KEY_LDAP_LISTEN_PORTS       "LdapListenPorts"
+#define VMDIR_REG_KEY_LDAPS_LISTEN_PORTS      "LdapsListenPorts"
+#define VMDIR_REG_KEY_LDAP_CONNECT_PORTS      "LdapConnectPorts"
+#define VMDIR_REG_KEY_LDAPS_CONNECT_PORTS     "LdapsConnectPorts"
+#define VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC   "LdapRecvTimeoutSec"
+#define VMDIR_REG_KEY_ALLOW_ADMIN_LOCKOUT     "AllowAdminLockout"
+#define VMDIR_REG_KEY_MAX_OP_THREADS          "MaxLdapOpThrs"
+#define VMDIR_REG_KEY_DISABLE_VECS            "DisableVECSIntegration"
+#define VMDIR_REG_KEY_MAX_INDEX_SCAN          "MaxIndexScan"
+#define VMDIR_REG_KEY_SMALL_CANDIDATE_SET     "SmallCandidateSet"
+#define VMDIR_REG_KEY_MAX_SIZELIMIT_SCAN      "MaxSizeLimitScan"
+#define VMDIR_REG_KEY_ALLOW_IMPORT_OP_ATTR    "AllowImportOperationalAttrs"
+#define VMDIR_REG_KEY_LDAP_SEARCH_TIMEOUT_SEC "LdapSearchTimeoutSec"
 
 #define VMDIR_CONFIG_INIT_TABLE_INITIALIZER                      \
 {                                                                \
@@ -283,4 +286,15 @@
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_LDAP_SEARCH_TIMEOUT_SEC,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 65535,                            \
+        /*.dwDefault      = */ 120,                              \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    }                                                            \
 }

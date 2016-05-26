@@ -149,7 +149,8 @@ typedef enum
     VMDIRD_STATE_STARTUP,
     VMDIRD_STATE_READ_ONLY,   // Process only read/search requests. Originating and replication updates fail with UNWILLING_TO_PERFORM error
     VMDIRD_STATE_NORMAL,      // Process read-write requests. The normal mode
-    VMDIRD_STATE_SHUTDOWN
+    VMDIRD_STATE_SHUTDOWN,
+    VMDIRD_STATE_FAILURE      // Server has failed in unrecoverable manner
 
 } VDIR_SERVER_STATE;
 
