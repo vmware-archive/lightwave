@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -71,6 +71,7 @@ VmDirParseArgs(
         || pbVerbose       == NULL
         || pbTwoWayRepl    == NULL
 
+
         )
     {
         dwError = ERROR_INVALID_PARAMETER;
@@ -129,39 +130,57 @@ VmDirParseArgs(
     {
         if (VmDirIsCmdLineOption(argv[i]) != FALSE)
         {
-            if (VmDirStringCompareA(VDCREPADMIN_OPTION_SOURCE_HOSTNAME, argv[i], TRUE) == 0)
+            if (VmDirStringCompareA(VDCREPADMIN_OPTION_SOURCE_HOSTNAME,
+                                    argv[i],
+                                    TRUE) == 0)
             {
                 VmDirGetCmdLineOption(argc, argv, &i, &pszSrcHostName);
             }
-            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_SOURCE_PORT, argv[i], TRUE) == 0)
+            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_SOURCE_PORT,
+                                         argv[i],
+                                         TRUE) == 0)
             {
                 VmDirGetCmdLineOption(argc, argv, &i, &pszSrcPort);
             }
-            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_SOURCE_USERNAME, argv[i], TRUE) == 0)
+            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_SOURCE_USERNAME,
+                                         argv[i],
+                                         TRUE) == 0)
             {
                 VmDirGetCmdLineOption(argc, argv, &i, &pszSrcUserName);
             }
-            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_SOURCE_PASSWORD, argv[i], TRUE) == 0)
+            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_SOURCE_PASSWORD,
+                                         argv[i],
+                                         TRUE) == 0)
             {
                 VmDirGetCmdLineOption(argc, argv, &i, &pszSrcPassword);
             }
-            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_TARGET_HOSTNAME, argv[i], TRUE) == 0)
+            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_TARGET_HOSTNAME,
+                                         argv[i],
+                                         TRUE) == 0)
             {
                 VmDirGetCmdLineOption(argc, argv, &i, &pszTgtHostName);
             }
-            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_TARGET_PORT, argv[i], TRUE) == 0)
+            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_TARGET_PORT,
+                                         argv[i],
+                                         TRUE) == 0)
             {
                 VmDirGetCmdLineOption(argc, argv, &i, &pszTgtPort);
             }
-            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_VERBOSE, argv[i], TRUE) == 0)
+            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_VERBOSE,
+                                         argv[i],
+                                         TRUE) == 0)
             {
                 bVerbose = TRUE;
             }
-            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_TWO_WAY_REPL, argv[i], TRUE) == 0)
+            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_TWO_WAY_REPL,
+                                         argv[i],
+                                         TRUE) == 0)
             {
                 bTwoWayRepl = TRUE;
             }
-            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_FEATURE_SET, argv[i], TRUE) == 0)
+            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_FEATURE_SET,
+                                         argv[i],
+                                         TRUE) == 0)
             {
                 VmDirGetCmdLineOption(argc, argv, &i, &pszFeatureSet);
             }
@@ -175,7 +194,9 @@ VmDirParseArgs(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-    else if ( VmDirStringCompareA(VDCREPADMIN_QUERY_IS_FIRST_CYCLE_DONE, pszFeatureSet, TRUE) == 0 )
+    else if ( VmDirStringCompareA(VDCREPADMIN_QUERY_IS_FIRST_CYCLE_DONE,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
     {
         if (
                pszSrcHostName == NULL
@@ -187,7 +208,9 @@ VmDirParseArgs(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
-    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_PARTNERS, pszFeatureSet, TRUE) == 0 )
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_PARTNERS,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
     {
         if (
                pszSrcHostName == NULL
@@ -199,7 +222,9 @@ VmDirParseArgs(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
-    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_PARTNER_STATUS, pszFeatureSet, TRUE) == 0 )
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_PARTNER_STATUS,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
     {
         if (
                pszSrcHostName == NULL
@@ -211,7 +236,9 @@ VmDirParseArgs(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
-    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_FEDERATION_STATUS, pszFeatureSet, TRUE) == 0 )
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_FEDERATION_STATUS,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
     {
         if (
                pszSrcHostName == NULL
@@ -223,7 +250,9 @@ VmDirParseArgs(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
-    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_SERVER_ATTRIBUTE, pszFeatureSet, TRUE) == 0 )
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_SERVER_ATTRIBUTE,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
     {
         if (
                pszSrcHostName == NULL
@@ -235,7 +264,9 @@ VmDirParseArgs(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
-    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_CREATE_AGREEMENT, pszFeatureSet, TRUE) == 0 )
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_CREATE_AGREEMENT,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
     {
         if (
                pszSrcHostName == NULL
@@ -249,7 +280,9 @@ VmDirParseArgs(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
-    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_REMOVE_AGREEMENT, pszFeatureSet, TRUE) == 0 )
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_REMOVE_AGREEMENT,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
     {
         if (
                pszSrcHostName == NULL
@@ -257,6 +290,20 @@ VmDirParseArgs(
             || pszSrcUserName == NULL
             || pszTgtHostName == NULL
             || pszTgtPort     == NULL
+           )
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_DUMMY_DOMAIN_WRITE,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
+    {
+        if (
+               pszSrcHostName == NULL
+            || pszSrcPort     == NULL
+            || pszSrcUserName == NULL
            )
         {
             dwError = ERROR_INVALID_PARAMETER;
@@ -319,5 +366,9 @@ ShowUsage(
         "       vdcrepadmin -f isfirstcycledone\n"
         "                   -h <source_hostname> [-p <source_portnumber>]\n"
         "                   -u <source_username> [-w <source_password>]\n"
+        "       vdcrepadmin -f dummydomainwrite\n"
+        "                   -h <fully-qualified-domain-name>\n"
+        "                   -u <admin UPN, e.g. Administrator@vsphere.local>\n"
+        "                   [-w <password>]\n"
       );
 }

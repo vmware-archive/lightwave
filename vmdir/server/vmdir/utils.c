@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -355,8 +355,6 @@ VmDirServerStatusEntry(
     PVDIR_ENTRY*    ppEntry
     )
 {
-#define SUPPORTED_STATUS_COUNT    6
-
     DWORD           dwError = 0;
     int             iNumAttrs = 1 + 1 + SUPPORTED_STATUS_COUNT;     // cn/oc/6 ops
     PSTR            pszAry[SUPPORTED_STATUS_COUNT + 1] = {0};
@@ -444,8 +442,6 @@ VmDirReplicationStatusEntry(
     PVDIR_ENTRY*    ppEntry
     )
 {
-#define SUPPORTED_STATUS_COUNT    6 //servername+maxUSN+cycleCount+invocationId+utdvector+processedUSN
-
     DWORD               dwError = 0;
     DWORD               dwNumAttrs = 1 + 1 + SUPPORTED_STATUS_COUNT;     // cn/oc/
     PSTR*               ppszAttrList = NULL;
@@ -459,6 +455,8 @@ VmDirReplicationStatusEntry(
     PSTR                pszInvocationID = NULL;
     PSTR                pszUtdVector = NULL;
     PSTR                pszLocalProcessedUSN = NULL;
+    USN                 maxOriginatingUSN = 0;
+    PSTR                pszMaxOriginatingUSN = NULL;
     CHAR*               pAtSign = NULL;
 
     assert( ppEntry );
@@ -477,11 +475,24 @@ VmDirReplicationStatusEntry(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     backendCtx.pBE = VmDirBackendSelect("");
+
     maxPartnerVisibleUSN = backendCtx.pBE->pfnBEGetLeastOutstandingUSN( &backendCtx, FALSE ) - 1;
-    dwError = VmDirAllocateStringAVsnprintf( &pszPartnerVisibleUSN,"%u",maxPartnerVisibleUSN);
+
+    maxOriginatingUSN = backendCtx.pBE->pfnBEGetMaxOriginatingUSN( &backendCtx );
+
+    dwError = VmDirAllocateStringAVsnprintf( &pszPartnerVisibleUSN,
+                                             "%u",
+                                             maxPartnerVisibleUSN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszCycleCount,"%u",VmDirGetReplCycleCounter());
+    dwError = VmDirAllocateStringAVsnprintf( &pszCycleCount,
+                                             "%u",
+                                             VmDirGetReplCycleCounter());
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringAVsnprintf( &pszMaxOriginatingUSN,
+                                             "%u",
+                                             maxOriginatingUSN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pszInvocationID = gVmdirServerGlobals.invocationId.lberbv_val;  // this global never change.
@@ -496,14 +507,15 @@ VmDirReplicationStatusEntry(
     // construct ppszAttrList from table.
     {
         PSTR    ppszArray[] = {
-                ATTR_CN,                    NULL,                               REPLICATION_STATUS_CN,
-                ATTR_OBJECT_CLASS,          NULL,                               OC_SERVER_STATUS,
-                ATTR_SERVER_RUNTIME_STATUS, REPL_STATUS_SERVER_NAME,            pszServerName,
-                ATTR_SERVER_RUNTIME_STATUS, REPL_STATUS_VISIBLE_USN,            pszPartnerVisibleUSN,
-                ATTR_SERVER_RUNTIME_STATUS, REPL_STATUS_CYCLE_COUNT,            pszCycleCount,
-                ATTR_SERVER_RUNTIME_STATUS, REPL_STATUS_INVOCATION_ID,          pszInvocationID,
-                ATTR_SERVER_RUNTIME_STATUS, REPL_STATUS_UTDVECTOR,              pszUtdVector,
-                ATTR_SERVER_RUNTIME_STATUS, REPL_STATUS_PROCESSED_USN_VECTOR,   pszLocalProcessedUSN,
+                ATTR_CN,                    NULL,                             REPLICATION_STATUS_CN,
+                ATTR_OBJECT_CLASS,          NULL,                             OC_SERVER_STATUS,
+                ATTR_SERVER_RUNTIME_STATUS, REPL_STATUS_SERVER_NAME,          pszServerName,
+                ATTR_SERVER_RUNTIME_STATUS, REPL_STATUS_VISIBLE_USN,          pszPartnerVisibleUSN,
+                ATTR_SERVER_RUNTIME_STATUS, REPL_STATUS_CYCLE_COUNT,          pszCycleCount,
+                ATTR_SERVER_RUNTIME_STATUS, REPL_STATUS_INVOCATION_ID,        pszInvocationID,
+                ATTR_SERVER_RUNTIME_STATUS, REPL_STATUS_UTDVECTOR,            pszUtdVector,
+                ATTR_SERVER_RUNTIME_STATUS, REPL_STATUS_PROCESSED_USN_VECTOR, pszLocalProcessedUSN,
+                ATTR_SERVER_RUNTIME_STATUS, REPL_STATUS_ORIGINATING_USN,      pszMaxOriginatingUSN,
                 NULL };
         DWORD   dwCnt = 0;
         DWORD   dwIndex = 0;
@@ -539,6 +551,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY( pszUtdVector );
     VMDIR_SAFE_FREE_MEMORY( pszPartnerVisibleUSN );
     VMDIR_SAFE_FREE_MEMORY( pszCycleCount );
+    VMDIR_SAFE_FREE_MEMORY( pszMaxOriginatingUSN );
     VmDirBackendCtxContentFree( &backendCtx );
 
     if (ppszAttrList != NULL)

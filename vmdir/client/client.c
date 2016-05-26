@@ -896,6 +896,9 @@ VmDirDemote(
     dwError = VmDirLeaveFederation( NULL, (PSTR)pszUserName, (PSTR)pszPassword );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // destroy default cred cache.
+    (VOID) VmDirDestroyDefaultKRB5CC();
+
     // This stop vmdir, destroy db then start vmdir in uninitialized state.
     dwError = VmDirResetVmdir();
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1041,10 +1044,11 @@ VmDirJoin(
                                     pszLotusServerNameCanon );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-	VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirJoin (%s)(%s)(%s) passed",
-                                        VDIR_SAFE_STRING(pszPartnerHostName),
-                                        VDIR_SAFE_STRING(pszSiteName),
-                                        VDIR_SAFE_STRING(pszLotusServerNameCanon) );
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+                    "VmDirJoin (%s)(%s)(%s) passed",
+                    VDIR_SAFE_STRING(pszPartnerHostName),
+                    VDIR_SAFE_STRING(pszSiteName),
+                    VDIR_SAFE_STRING(pszLotusServerNameCanon) );
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszDomainName);
@@ -2094,7 +2098,8 @@ VmDirAddReplicationAgreement(
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszDomainName);
-
+    VMDIR_SAFE_FREE_MEMORY(pszSrcServerName);
+    VMDIR_SAFE_FREE_MEMORY(pszTgtServerName);
     return dwError;
 
 error:
@@ -4181,6 +4186,7 @@ _VmDirLdapCheckVmDirStatus(
     DWORD       i = 0;
     BOOLEAN     bFirst = TRUE;
     DWORD       dwTimeout = 15; //wait 2.5 minutes for 1st Ldu
+    VDIR_SERVER_STATE vmdirState = VMDIRD_STATE_UNDEFINED;
 
     if (!IsNullOrEmptyString(pszPartnerHostName))
     {
@@ -4219,6 +4225,20 @@ _VmDirLdapCheckVmDirStatus(
         i++;
         VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "LDAP connect (%s) failed (%u), %d seconds passed",
                            VDIR_SAFE_STRING(pszLocalServerReplURI), dwError, i * SLEEP_INTERVAL_IN_SECS);
+
+        if( !bFirst )
+        {
+	    dwError = VmDirLocalGetServerState( (UINT32*)&vmdirState );
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            if(vmdirState == VMDIRD_STATE_FAILURE)
+            {
+                dwError = VMDIR_ERROR_SERVER_DOWN;
+                VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                                 "VmDirLdapCheckVmDirStatus: Server in unrecoverable state");
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+        }
     }
     printf("\n");
     BAIL_ON_VMDIR_ERROR(dwError);

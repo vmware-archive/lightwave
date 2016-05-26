@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -501,6 +501,54 @@ error:
     }
 
     return dwError;
+}
+
+DWORD
+VmDirStringToTokenList(
+    PCSTR pszStr,
+    PCSTR pszDelimiter,
+    PVMDIR_STRING_LIST *ppStrList
+    )
+{
+    DWORD       dwError = 0;
+    PSTR        pszToken = NULL;
+    PSTR        pszLocal = NULL;
+    PSTR        pszSavePtr = NULL;
+    PVMDIR_STRING_LIST  pList = NULL;
+
+    if ( IsNullOrEmptyString(pszStr) || IsNullOrEmptyString(pszDelimiter) || ppStrList == NULL )
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirStringListInitialize(&pList, 10);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // make a local copy
+    dwError = VmDirAllocateStringA(
+                pszStr,
+                &pszLocal);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for ( pszToken = VmDirStringTokA(pszLocal, pszDelimiter, &pszSavePtr);
+          pszToken;
+          pszToken=VmDirStringTokA(NULL, pszDelimiter, &pszSavePtr))
+    {
+        dwError = VmDirStringListAddStrClone (pszToken, pList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppStrList = pList;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocal);
+
+    return dwError;
+
+error:
+    VmDirStringListFree(pList);
+    goto cleanup;
 }
 
 #endif //#ifndef _WIN32

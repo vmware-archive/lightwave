@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -574,6 +574,97 @@ error:
 
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                      "VmDirIpcSetSRPSecret failed (%u)",
+                     dwError);
+
+    dwError = 0;
+    goto cleanup;
+}
+
+DWORD
+VmDirIpcGetServerState(
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    )
+{
+    DWORD dwError = 0;
+    UINT32 uResult = 0;
+    UINT32 apiType = VMDIR_IPC_GET_SERVER_STATE;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    PBYTE pResponse = NULL;
+    DWORD dwResponseSize = 0;
+    UINT32 uServerState = 0;
+    VMW_TYPE_SPEC output_spec[] = GET_SERVER_STATE_OUTPUT_PARAMS;
+
+    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Entering VmDirIpcGetServerState ");
+
+    if (!pSecurityContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR (dwError);
+    }
+
+    //
+    // Unmarshall the request buffer to the format
+    // that the API actually has
+    //
+    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+
+    dwError = VmDirUnMarshal (
+                    apiType,
+                    VER1_INPUT,
+                    noOfArgsIn,
+                    pRequest,
+                    dwRequestSize,
+                    NULL);
+    BAIL_ON_VMDIR_ERROR (dwError);
+
+    if (!VmDirIsRootSecurityContext(pSecurityContext))
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                         "%s: Access Denied",
+                         __FUNCTION__);
+        dwError = ERROR_ACCESS_DENIED;
+        BAIL_ON_VMDIR_ERROR (dwError);
+    }
+
+    uResult = VmDirSrvGetServerState(&uServerState);
+
+    output_spec[0].data.pUint32 = &uResult;
+    output_spec[1].data.pUint32 = &uServerState;
+
+    dwError = VmDirMarshalResponse (
+                    apiType,
+                    output_spec,
+                    noOfArgsOut,
+                    &pResponse,
+                    &dwResponseSize);
+    BAIL_ON_VMDIR_ERROR (dwError);
+
+    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Exiting VmDirIpcGetServerState");
+
+cleanup:
+
+    *ppResponse = pResponse;
+    *pdwResponseSize = dwResponseSize;
+
+    return dwError;
+
+error:
+    VmDirHandleError(
+            apiType,
+            dwError,
+            output_spec,
+            noOfArgsOut,
+            &pResponse,
+            &dwResponseSize
+            );
+
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                     "VmDirIpcGetServerState failed (%u)",
                      dwError);
 
     dwError = 0;
