@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -27,110 +27,119 @@
 
 #include "includes.h"
 
-#ifndef _WIN32
-
-DWORD
-VmDirParseArgs(
-    int     argc,
-    char*   argv[],
-    PSTR*   ppszHostURI,
-    PSTR*   ppszLoginUserDN,
-    PSTR*   ppszLoginPassword,
-    PSTR*   ppszNewPassword,
-    PSTR*   ppszUserDN
-    )
-{
-    DWORD   dwError = ERROR_SUCCESS;
-    int     opt = 0;
-    PSTR    pszHostURI = NULL;
-    PSTR    pszLoginUserDN = NULL;
-    PSTR    pszLoginPassword = NULL;
-    PSTR    pszNewPassword = NULL;
-    PSTR    pszUserDN = NULL;
-
-    if (ppszHostURI == NULL || ppszLoginUserDN == NULL || ppszLoginPassword == NULL || ppszNewPassword == NULL || ppszUserDN == NULL)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    while ( (opt = getopt( argc, argv, VMDIR_OPTIONS_VALID)) != EOF )
-    {
-        switch ( opt )
-        {
-            case VMDIR_OPTION_HOST:
-                pszHostURI = optarg;
-                break;
-
-            case VMDIR_OPTION_USER_LOGIN:
-                pszLoginUserDN = optarg;
-                break;
-
-            case VMDIR_OPTION_PASSWORD_LOGIN:
-                pszLoginPassword = optarg;
-                break;
-
-            case VMDIR_OPTION_PASSWORD_CHANGE:
-                pszNewPassword = optarg;
-                break;
-
-            case VMDIR_OPTION_USER_CHANGE:
-                pszUserDN = optarg;
-                break;
-
-            default:
-                dwError = ERROR_INVALID_PARAMETER;
-                BAIL_ON_VMDIR_ERROR(dwError);
-                break;
-        }
-    }
-
-    if (pszHostURI == NULL || pszLoginUserDN == NULL || pszNewPassword ==NULL)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    *ppszHostURI = pszHostURI;
-    *ppszLoginUserDN = pszLoginUserDN;
-    *ppszLoginPassword = pszLoginPassword;
-    *ppszNewPassword = pszNewPassword;
-    *ppszUserDN = pszUserDN;
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-#else
-
-DWORD
-VmDirParseArgs(
-    int     argc,
-    char*   argv[],
-    PSTR*   ppszHostURI,
-    PSTR*   ppszLoginUserDN,
-    PSTR*   ppszLoginPassword,
-    PSTR*   ppszNewPassword,
-    PSTR*   ppszUserDN
-    )
-{
-    DWORD dwError = ERROR_SUCCESS;
-    //TBD
-    return dwError;
-}
-
-#endif
-
+static
 VOID
 ShowUsage(
-    VOID
+    PVOID pvContext
     )
 {
     printf(
-      "Usage: vdcmerge -h <host URI> -u <user DN> -w <user password> -W <new password>\n"
-      "    [-U <user DN for password change>]\n"
+      "Usage: vdcpass -h <hostname> -u <user UPN> -w <user password> -W <new password>\n"
+      "    [-U <user UPN for password change>]\n"
       "Note: change password needs administrator privilege.\n");
 }
+
+static
+DWORD
+HandleServerParameterCallback(
+    PVOID pvContext,
+    PCSTR pValue
+    )
+{
+    PCOMMAND_LINE_STATE pContext = (PCOMMAND_LINE_STATE)pvContext;
+
+    pContext->pszHostName = pValue;
+
+    return VMDIR_SUCCESS;
+}
+
+static
+DWORD
+HandleUserNameParameterCallback(
+    PVOID pvContext,
+    PCSTR pValue
+    )
+{
+    PCOMMAND_LINE_STATE pContext = (PCOMMAND_LINE_STATE)pvContext;
+
+    pContext->pszLoginUserUPN = pValue;
+
+    return VMDIR_SUCCESS;
+}
+
+static
+DWORD
+HandlePasswordParameterCallback(
+    PVOID pvContext,
+    PCSTR pValue
+    )
+{
+    PCOMMAND_LINE_STATE pContext = (PCOMMAND_LINE_STATE)pvContext;
+
+    pContext->pszLoginPassword = pValue;
+
+    return VMDIR_SUCCESS;
+}
+
+static
+DWORD
+HandleNewPassParameterCallback(
+    PVOID pvContext,
+    PCSTR pValue
+    )
+{
+    PCOMMAND_LINE_STATE pContext = (PCOMMAND_LINE_STATE)pvContext;
+
+    pContext->pszNewPassword = pValue;
+
+    return VMDIR_SUCCESS;
+}
+
+static
+DWORD
+HandleNewLoginParameterCallback(
+    PVOID pvContext,
+    PCSTR pValue
+    )
+{
+    PCOMMAND_LINE_STATE pContext = (PCOMMAND_LINE_STATE)pvContext;
+
+    pContext->pszUserUPN = pValue;
+
+    return VMDIR_SUCCESS;
+}
+
+static
+DWORD
+PostValidationRoutine(
+    PVOID pvContext
+    )
+{
+     PCOMMAND_LINE_STATE pContext = (PCOMMAND_LINE_STATE)pvContext;
+
+     //
+     // These parameters are all required.
+     //
+     if (pContext->pszHostName == NULL ||
+         pContext->pszLoginUserUPN == NULL ||
+         pContext->pszNewPassword == NULL)
+    {
+        return VMDIR_ERROR_INVALID_PARAMETER;
+    }
+
+    return VMDIR_SUCCESS;
+}
+
+VMDIR_COMMAND_LINE_OPTIONS CommandLineOptions =
+{
+    ShowUsage,
+    PostValidationRoutine,
+    {
+        {'h', "host", CL_STRING_PARAMETER, HandleServerParameterCallback},
+        {'u', "username", CL_STRING_PARAMETER, HandleUserNameParameterCallback},
+        {'U', "newuser", CL_STRING_PARAMETER, HandleNewLoginParameterCallback},
+        {'w', "password", CL_STRING_PARAMETER, HandlePasswordParameterCallback},
+        {'W', "newpass", CL_STRING_PARAMETER, HandleNewPassParameterCallback},
+        {0, 0, 0, 0}
+    }
+};

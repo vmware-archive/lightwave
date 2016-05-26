@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -232,6 +232,36 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSrvForceResetPassword failed (%u)(%u)(%s)",
                                       dwError, dwAPIError, VDIR_SAFE_STRING(pszTargetUPN) );
 
+    goto cleanup;
+}
+
+DWORD
+VmDirSrvGetServerState(
+    PDWORD   pdwServerState      // [out]
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwState = 0;
+
+    if ( !pdwServerState )
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwState = (DWORD)VmDirdState();
+
+    *pdwServerState = dwState;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+		     "VmDirSrvGetServerState failed (%u)",
+		     dwError );
     goto cleanup;
 }
 
@@ -1126,7 +1156,7 @@ _VmDirRemoteDBCopyWhiteList(
 #ifdef _WIN32
     CHAR    pszFilePath[VMDIR_MAX_PATH_LEN] = {0};
 #else
-    CHAR    pszFilePath[VMDIR_MAX_PATH_LEN] = VMDIR_DB_DIR;
+    CHAR    pszFilePath[VMDIR_MAX_PATH_LEN] = VMDIR_LINUX_DB_PATH;
 #endif
 
 #ifdef _WIN32

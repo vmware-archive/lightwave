@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -12,22 +12,4 @@
  * under the License.
  */
 
-
-
-/*prototypes.h*/
-
-DWORD
-VmDirParseArgs(
-    int     argc,
-    char*   argv[],
-    PSTR*   ppszHostURI,
-    PSTR*   ppszLoginUserDN,
-    PSTR*   ppszLoginPassword,
-    PSTR*   ppszNewPassword,
-    PSTR*   ppszUserDN
-    );
-
-VOID
-ShowUsage(
-    VOID
-    );
+extern VMDIR_COMMAND_LINE_OPTIONS CommandLineOptions;

@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -185,6 +185,12 @@ VmDirMLModify(
 
     dwError = VmDirInternalModifyEntry( pOperation);
     BAIL_ON_VMDIR_ERROR( dwError );
+
+    if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
+    {
+        pOperation->pBEIF->pfnBESetMaxOriginatingUSN(pOperation->pBECtx,
+                                                     pOperation->pBECtx->wTxnUSN);
+    }
 
 cleanup:
 
@@ -848,6 +854,7 @@ VmDirGenerateModsNewMetaData(
                              "%s:%d:%s:%s:%s", pUsnChangedMod->attr.vals[0].lberbv.bv_val, currentVersion + 1,
                              gVmdirServerGlobals.invocationId.lberbv.bv_val,
                              origTimeStamp, pUsnChangedMod->attr.vals[0].lberbv.bv_val );
+
     }
 
 cleanup:
@@ -995,6 +1002,14 @@ _VmDirExternalModsSanityCheck(
                     retVal = VMDIR_ERROR_BAD_ATTRIBUTE_DATA;
                     BAIL_ON_VMDIR_ERROR(retVal);
                 }
+            }
+        }
+        else if (pLocalMod->operation == MOD_OP_DELETE)
+        {
+            if (VmDirStringCompareA(pLocalMod->attr.type.lberbv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE) == 0)
+            {
+                retVal = VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
+                BAIL_ON_VMDIR_ERROR(retVal);
             }
         }
     }

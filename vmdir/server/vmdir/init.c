@@ -248,6 +248,55 @@ error:
     goto cleanup;
 }
 
+
+/*
+ * This function provides a mechanism to determine if vmdird shutdown cleanly.
+ * The logic is:
+ * (1) At startup we check for a registry value called "DirtyShutdown". If
+ * that value doesn't exist then this must be the first time we've started
+ * up (so obviously we didn't experience a dirty shutdown previously).
+ * (2) If the value exists then if its value is non-zero then we didn't
+ * previously shutdown cleanly (because when we get to the end of our cleanup
+ * code we'll set the value to zero explicitly before exiting).
+ */
+static
+DWORD
+VmDirCheckForDirtyShutdown(
+    PBOOLEAN pbDirtyShutdown
+    )
+{
+    DWORD dwDirtyShutdown = 0;
+    DWORD dwError = 0;
+    BOOLEAN bDirtyShutdown = FALSE;
+
+    /*
+     * Get the DirtyShutdown value (if it doesn't exist it's not dirty).
+     */
+    (VOID)VmDirGetRegKeyValueDword(
+            VMDIR_CONFIG_PARAMETER_KEY_PATH,
+            VMDIR_REG_KEY_DIRTY_SHUTDOWN,
+            &dwDirtyShutdown,
+            FALSE);
+    bDirtyShutdown = !!dwDirtyShutdown;
+
+    /*
+     * Assume the worst and write out that we had a dirty shutdown. When we
+     * cleanly shutdown we'll update this value.
+     */
+    dwError = VmDirSetRegKeyValueDword(
+                VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                VMDIR_REG_KEY_DIRTY_SHUTDOWN,
+                TRUE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *pbDirtyShutdown = bDirtyShutdown;
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
 /*
  * Initialize vmdird components
  */
@@ -260,6 +309,10 @@ VmDirInit(
     BOOLEAN bWriteInvocationId = FALSE;
     BOOLEAN bWaitTimeOut = FALSE;
     VMDIR_RUNMODE runMode = VmDirdGetRunMode();
+    BOOLEAN bDirtyShutdown = FALSE;
+
+    dwError = VmDirCheckForDirtyShutdown(&bDirtyShutdown);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = InitializeGlobalVars();
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -372,6 +425,11 @@ VmDirInit(
             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: all LDAP ports are ready for accepting services.", __func__);
         }
     }
+    else
+    {
+        // node not yet promoted, make sure no cred cache exists.
+        (VOID) VmDirDestroyDefaultKRB5CC();
+    }
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Config MaxLdapOpThrs (%d)", gVmdirGlobals.dwMaxFlowCtrlThr );
 
@@ -451,6 +509,8 @@ _VmDirRestoreInstance(VOID)
     PSTR                    pszDCAccount = NULL;
     PSTR*                   pServerInfo = NULL;
     size_t                  dwInfoCount = 0;
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Restore Lotus Instance.");
 
     dwError = VmDirRegReadDCAccount(&pszDCAccount);
     BAIL_ON_VMDIR_ERROR(dwError);

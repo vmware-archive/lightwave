@@ -33,6 +33,22 @@ extern "C" {
 // accountmgmt.c
 
 DWORD
+VmDirCreateAccount(
+    PCSTR   pszUPNName,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword,            // optional
+    PCSTR   pszEntryDN
+    );
+
+DWORD
+VmDirUPNToAccountDN(
+    PCSTR       pszUPNName,
+    PCSTR       pszAccountRDNAttr,
+    PCSTR       pszAccountRDNValue,
+    PSTR*       ppszContainerDN
+    );
+
+DWORD
 VmDirCreateAccountEx(
     PVMDIR_SRV_ACCESS_TOKEN       pAccessToken,
     PVMDIR_USER_CREATE_PARAMS_RPC pCreateParams
@@ -266,6 +282,10 @@ VmDirSrvSetSRPSecret(
     PWSTR       pwszSecret
     );
 
+DWORD
+VmDirSrvGetServerState(
+    PDWORD   pServerState
+    );
 
 #ifndef _WIN32
 
@@ -409,6 +429,15 @@ VmDirLocalAPIHandler(
 
 DWORD
 VmDirIpcInitializeHost(
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+DWORD
+VmDirIpcGetServerState(
     PVM_DIR_SECURITY_CONTEXT pSecurityContext,
     PBYTE pRequest,
     DWORD dwRequestSize,

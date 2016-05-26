@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -89,8 +89,7 @@ _VmDirQueryReplStateUSN(
     LDAP*   pLd,
     PCSTR   pszInvocationId,
     USN     currentUSN,
-    USN*    maxConsumableUSN,
-    USN*    maxOriginatingUSN
+    USN*    maxConsumableUSN
     );
 
 static
@@ -1138,6 +1137,13 @@ _VmDirRAsToStruct(
     PVMDIR_REPL_REPL_AGREEMENT  pRA = NULL;
     PVMDIR_REPL_REPL_AGREEMENT  pTmpRA = NULL;
 
+    // No RA processed USN
+    if( VmDirStringCompareA(pszStr, "Unknown", FALSE) == 0 )
+    {
+        *ppRA = pRA;
+        goto cleanup;
+    }
+
     dwError = _VmDirStrToToken(pszStr, ',', &pStrList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -1185,6 +1191,13 @@ _VmDirUTDVectorToStruct(
     PVMDIR_REPL_UTDVECTOR   pVector = NULL;
     PVMDIR_REPL_UTDVECTOR   pTmpVector = NULL;
 
+    // No UTD Vector.
+    if( VmDirStringCompareA(pszStr, "Unknown", FALSE) == 0 )
+    {
+        *ppVector = pVector;
+        goto cleanup;
+    }
+
     dwError = _VmDirStrToToken(pszStr, ',', &pStrList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -1223,7 +1236,6 @@ error:
  * Search the last MAX_REPL_STATE_USN_SEARCH of entries based on USNChanged.
  * Best effort to derive:
  *  maxConsumable  USN
- *  maxOriginating USN
  */
 static
 DWORD
@@ -1231,12 +1243,11 @@ _VmDirQueryReplStateUSN(
     LDAP*   pLd,
     PCSTR   pszInvocationId,
     USN     currentUSN,
-    USN*    maxConsumableUSN,
-    USN*    maxOriginatingUSN
+    USN*    maxConsumableUSN
     )
 {
     DWORD   dwError = 0;
-    int     i = 0, j=0;
+    int     i = 0;
     PSTR    pszFilter = NULL;
     PCSTR   pszUSNChanged = ATTR_USN_CHANGED;
     PCSTR   pszMetadata = ATTR_ATTR_META_DATA;
@@ -1246,7 +1257,6 @@ _VmDirQueryReplStateUSN(
     struct berval** ppMetadataValues = NULL;
     struct berval** ppObjectClassValues = NULL;
     USN     consumableUSN = 0;
-    USN     originatingUSN = 0;
 
     LDAPMessage *pResult = NULL;
     LDAPMessage *pEntry = NULL;
@@ -1312,24 +1322,10 @@ _VmDirQueryReplStateUSN(
         {
             USN thisUSN = atol( ppUSNValues[0] ? ppUSNValues[0]->bv_val:"0" );
             consumableUSN = VMDIR_MAX(thisUSN, consumableUSN);
-
-            for (j=0; ppMetadataValues[j] != NULL; j++)
-            {
-                if ( VmDirStringStrA(ppMetadataValues[j]->bv_val, ATTR_USN_CHANGED) != NULL  &&
-                     VmDirStringStrA(ppMetadataValues[j]->bv_val, pszInvocationId)  != NULL
-                   )
-                {
-                    USN thisUSN = atol( ppUSNValues[0] ? ppUSNValues[0]->bv_val:"0" );
-                    originatingUSN = VMDIR_MAX(thisUSN, originatingUSN);
-
-                    break;
-                }
-            }
         }
     }
 
     *maxConsumableUSN = consumableUSN;
-    *maxOriginatingUSN = originatingUSN;
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszFilter);
@@ -1410,6 +1406,15 @@ _VmDirEntryToReplState(
                                         &pReplState->pReplRA);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
+        else if (VmDirStringNCompareA(ppValues[iCnt]->bv_val,
+                                      REPL_STATUS_ORIGINATING_USN,
+                                      REPL_STATUS_ORIGINATING_USN_LEN,
+                                      FALSE) == 0)
+        {
+            pReplState->maxOriginatingUSN =
+                atoi(ppValues[iCnt]->bv_val+REPL_STATUS_ORIGINATING_USN_LEN);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
     }
 
     if (pReplState->maxVisibleUSN > 0)
@@ -1417,8 +1422,7 @@ _VmDirEntryToReplState(
         dwError = _VmDirQueryReplStateUSN( pLd,
                                            pReplState->pszInvocationId,
                                            pReplState->maxVisibleUSN,
-                                           &pReplState->maxConsumableUSN,
-                                           &pReplState->maxOriginatingUSN);
+                                           &pReplState->maxConsumableUSN);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
