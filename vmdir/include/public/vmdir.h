@@ -280,6 +280,8 @@ extern "C" {
 #define ATTR_ACL_STRING                     "vmwAclString"
 #define ATTR_ACL_STRING_LEN                 sizeof(ATTR_ACL_STRING)-1
 
+#define ATTR_COMMENT                        "comment"
+#define ATTR_COMMENT_LEN                    sizeof(ATTR_COMMENT)-1
 
 // Object classes
 #define OC_TOP                              "top"
@@ -353,6 +355,8 @@ extern "C" {
 #define REPL_STATUS_UTDVECTOR_LEN       sizeof(REPL_STATUS_UTDVECTOR)-1
 #define REPL_STATUS_PROCESSED_USN_VECTOR        "RAProcessedUSN Vector: "
 #define REPL_STATUS_PROCESSED_USN_VECTOR_LEN    sizeof(REPL_STATUS_PROCESSED_USN_VECTOR)-1
+#define REPL_STATUS_ORIGINATING_USN     "MaxOriginatingUSN: "
+#define REPL_STATUS_ORIGINATING_USN_LEN  sizeof(REPL_STATUS_ORIGINATING_USN)-1
 
 #define VMDIR_REPL_AGRS_CONTAINER_NAME  "Replication Agreements"
 #define VMDIR_SERVERS_CONTAINER_NAME    "Servers"

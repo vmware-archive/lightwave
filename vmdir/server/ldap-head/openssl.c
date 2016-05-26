@@ -37,7 +37,8 @@
 /*
  * https://wiki.eng.vmware.com/Security_Best_Practices#Encryption
  */
-#define VMDIR_SSL_STRONG_CIPHER_SUITE "HIGH:!ADH:!EXP:!MD5:!3DES:!CAMELLIA:!PSK:!SRP:@STRENGTH"
+// inherit 6.0U2 value.
+#define VMDIR_SSL_STRONG_CIPHER_SUITE "!aNULL:kECDH+AES:ECDH+AES:RSA+AES:@STRENGTH"
 
 static
 ber_slen_t
@@ -96,6 +97,18 @@ static
 unsigned long
 _VmDirOpensslIdFunc(
     VOID
+    );
+
+static
+DWORD
+_VmDirCtxSetCipherSuite(
+    SSL_CTX*    pSslCtx
+    );
+
+static
+VOID
+_VmDirCtxSetOptions(
+    SSL_CTX*    pSslCtx
     );
 
 /*
@@ -346,6 +359,7 @@ VmDirOpensslInit(
     int         iSslRet = 0;
     PCSTR       pszCaller = NULL;
     DWORD       dwSize = 0;
+    EC_KEY*     pEcdhKey = NULL;
 
     dwError = VmDirAllocateMemory( CRYPTO_num_locks() * sizeof(pthread_mutex_t),
                                    (PVOID*) &(gVmdirOpensslGlobals.pMutexBuf) );
@@ -375,21 +389,34 @@ VmDirOpensslInit(
     // load error strings for ssl and crypto API
     SSL_load_error_strings();
 
-    // support TLS v1 compatible context
-    pSslCtx = SSL_CTX_new(TLSv1_method());
+    // support SSLV23 and above context.  We disable SSLv23 optoin in _VmDirCtxSetOptions later.
+    pSslCtx = SSL_CTX_new(SSLv23_method());
     if (!pSslCtx)
     {
         dwError = ERROR_INVALID_CONFIGURATION;
         BAIL_ON_OPENSSL_ERROR( TRUE, "SSL_CTX_new");
     }
 
-    // only allow strong cipher suite
-    iSslRet = SSL_CTX_set_cipher_list( pSslCtx, VMDIR_SSL_STRONG_CIPHER_SUITE );
-    if (iSslRet != 1)
+    (VOID)_VmDirCtxSetOptions(pSslCtx);
+
+    pEcdhKey = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1);
+    if (NULL != pEcdhKey)
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SSL_Ctx_set_cipher_list failed. (%d)", iSslRet );
-        dwError = VMDIR_ERROR_INVALID_CONFIGURATION;
-        BAIL_ON_OPENSSL_ERROR( TRUE, "SSL_CTX_set_cipher_list");
+        if (SSL_CTX_set_tmp_ecdh(pSslCtx, pEcdhKey) != 1)
+        {
+            VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "SSL_CTX_set_tmp_ecdh call failed");
+        }
+
+        EC_KEY_free(pEcdhKey);
+        pEcdhKey = NULL;
+    }
+
+    dwError = _VmDirCtxSetCipherSuite(pSslCtx);
+    if (dwError)
+    {
+        // soft fail - Lotus will not listen on LDAPs port.
+        dwError = 0;
+        goto error;
     }
 
     // let ssl layer handle possible retry
@@ -420,6 +447,11 @@ error:
     if (pSslCtx)
     {
         SSL_CTX_free(pSslCtx);
+    }
+
+    if (gVmdirOpensslGlobals.bSSLInitialized == FALSE)
+    {
+        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "SSL port init failed.");
     }
 
     goto cleanup;
@@ -773,4 +805,108 @@ _VmDirOpensslIdFunc(
 #else
     return ((unsigned long) pthread_self());
 #endif
+}
+
+static
+VOID
+_VmDirCtxSetOptions(
+    SSL_CTX*    pSslCtx
+    )
+{
+    CHAR    szSslDisabledProtocols[VMDIR_SSL_DISABLED_PROTOCOL_LEN] = {0};
+    long    sslOptions = SSL_OP_NO_SSLv2|SSL_OP_NO_SSLv3;
+    PSTR    pProtocol = NULL;
+    PSTR    pSep = " ,";
+    PSTR    pRest = NULL;
+
+    struct
+    {
+        PCSTR  pszProtocol;
+        long   disableOpt;
+    }
+    optTable[] =
+    {
+        { "SSLv2",   SSL_OP_NO_SSLv2 },
+        { "SSLv3",   SSL_OP_NO_SSLv3 },
+        { "TLSv1",   SSL_OP_NO_TLSv1 },
+        { "TLSv1.1", SSL_OP_NO_TLSv1_1 },
+        { "TLSv1.2", SSL_OP_NO_TLSv1_2 },
+    };
+
+    // use registry key value if exists
+    if (VmDirGetRegKeyValue( VMDIR_CONFIG_PARAMETER_V1_KEY_PATH, // vmdir/parameters
+                             VMDIR_REG_KEY_SSL_DISABLED_PROTOCOLS,
+                             szSslDisabledProtocols,
+                             VMDIR_SSL_DISABLED_PROTOCOL_LEN - 1 ) == 0
+        ||
+        VmDirGetRegKeyValue( VMDIR_CONFIG_PARAMETER_KEY_PATH, // 6.0 b/c key location
+                             VMDIR_REG_KEY_SSL_DISABLED_PROTOCOLS,
+                             szSslDisabledProtocols,
+                             VMDIR_SSL_DISABLED_PROTOCOL_LEN - 1 ) == 0
+       )
+    {
+        for ( pProtocol = VmDirStringTokA(szSslDisabledProtocols, pSep, &pRest);
+              pProtocol;
+              pProtocol = VmDirStringTokA(NULL, pSep, &pRest) )
+        {
+            DWORD iValue = 0;
+
+            for (; iValue < sizeof(optTable)/sizeof(optTable[0]); iValue++)
+            {
+                if (VmDirStringCompareA(pProtocol, optTable[iValue].pszProtocol, FALSE) == 0)
+                {
+                    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Openssl Ctx disable protocol (%s)", pProtocol);
+                    sslOptions |= optTable[iValue].disableOpt;
+                    break;
+                }
+            }
+
+            if (iValue >= sizeof(optTable)/sizeof(optTable[0]))
+            {
+                VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                                 "Invalid protocol set for SslDisabledProtocol: (%s)",
+                                 VDIR_SAFE_STRING(pProtocol));
+            }
+        }
+    }
+
+    SSL_CTX_set_options(pSslCtx, sslOptions); // ignore return options bitmask
+
+    return;
+}
+
+static
+DWORD
+_VmDirCtxSetCipherSuite(
+    SSL_CTX*    pSslCtx
+    )
+{
+    DWORD   dwError = 0;
+    int     iSslRet = 0;
+    CHAR    szSslCipherSuite[VMDIR_SSL_CIPHER_SUITE_LEN] = {0};
+    PCSTR   pszCipherSuite = VMDIR_SSL_STRONG_CIPHER_SUITE;
+
+    // use registry key value if exists
+    if (VmDirGetRegKeyValue( VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                             VMDIR_REG_KEY_SSL_CIPHER_SUITE,
+                             szSslCipherSuite,
+                             VMDIR_SSL_CIPHER_SUITE_LEN - 1) == 0
+       )
+    {
+        pszCipherSuite = szSslCipherSuite;
+    }
+
+    iSslRet = SSL_CTX_set_cipher_list( pSslCtx, pszCipherSuite );
+    if (iSslRet != 1)
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SSL_Ctx_set_cipher_list failed. (%s)(%d)",
+                                             VDIR_SAFE_STRING(pszCipherSuite), iSslRet );
+        dwError = VMDIR_ERROR_INVALID_CONFIGURATION;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "SSL cipher list (%s).", VDIR_SAFE_STRING(pszCipherSuite));
+
+error:
+    return dwError;
 }

@@ -331,6 +331,13 @@ typedef USN (*PFN_BACKEND_GET_LEAST_OUTSTANDING_USN)(
 typedef USN (*PFN_BACKEND_GET_HIGHEST_COMMITTED_USN)(
                     PVDIR_BACKEND_CTX);
 
+typedef USN (*PFN_BACKEND_GET_MAX_ORIGINATING_USN)(
+                    PVDIR_BACKEND_CTX);
+
+
+typedef VOID (*PFN_BACKEND_SET_MAX_ORIGINATING_USN)(
+                    PVDIR_BACKEND_CTX, USN);
+
 typedef struct _VDIR_BACKEND_USN_LIST*   PVDIR_BACKEND_USN_LIST;
 
 /*******************************************************************************
@@ -490,6 +497,22 @@ typedef struct _VDIR_BACKEND_INTERFACE
     PFN_BACKEND_GET_HIGHEST_COMMITTED_USN   pfnBEGetHighestCommittedUSN;
 
     //////////////////////////////////////////////////////////////////////
+    // function to get the maximum originating USN
+    //////////////////////////////////////////////////////////////////////
+    /*
+     * Get Max Originating USN
+     */
+    PFN_BACKEND_GET_MAX_ORIGINATING_USN   pfnBEGetMaxOriginatingUSN;
+
+    //////////////////////////////////////////////////////////////////////
+    // function to set the maximum originating USN
+    //////////////////////////////////////////////////////////////////////
+    /*
+     * Set Max Originating USN
+     */
+    PFN_BACKEND_SET_MAX_ORIGINATING_USN   pfnBESetMaxOriginatingUSN;
+
+    //////////////////////////////////////////////////////////////////////
     // Structure to hold all outstanding USNs
     //////////////////////////////////////////////////////////////////////
     PVDIR_BACKEND_USN_LIST                  pBEUSNList;
@@ -554,6 +577,17 @@ VOID
 VmDirBackendRemoveOutstandingUSN(
     PVDIR_BACKEND_CTX      pBECtx
     );
+
+DWORD
+VmDirBackendAddOriginatingUSN(
+    PVDIR_BACKEND_CTX      pBECtx
+    );
+
+VOID
+VmDirBackendRemoveOriginatingUSN(
+    PVDIR_BACKEND_CTX      pBECtx
+    );
+
 
 // util.c
 DWORD

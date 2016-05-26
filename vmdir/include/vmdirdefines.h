@@ -558,6 +558,9 @@ extern "C" {
 #define LDAP_DEBUG_TRACE (1)
 #endif
 
+#define METADATA_TOKEN_COUNT 6
+#define HIGHWATER_USN_STEP   100
+#define HIGHWATER_USN_REPL_BUFFER 10000
 
 #define VMDIR_ASCII_aTof(c)     ( (c) >= 'a' && (c) <= 'f' )
 #define VMDIR_ASCII_AToF(c)     ( (c) >= 'A' && (c) <= 'F' )
@@ -673,6 +676,7 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 //#define VMDIR_IPC_GET_SRP_SECRET       3
 #define VMDIR_IPC_SET_SRP_SECRET       4
 #define VMDIR_IPC_GENERATE_PASSWORD    5
+#define VMDIR_IPC_GET_SERVER_STATE     6
 
 //VERSIONS
 #define VER1_INPUT 0

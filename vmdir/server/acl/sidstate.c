@@ -17,7 +17,7 @@
 
 DWORD
 VmDirSyncRIDSeqToDB(
-    PSTR    pszDomainDN,
+    PCSTR   pszDomainDN,
     DWORD   dwRID
     )
 {
@@ -65,12 +65,12 @@ VmDirSyncRIDSeqToDB(
     pMod->operation = MOD_OP_REPLACE;
 
     // Prepare pOrgConfigOp->request.modifyReq
-    domainOp.request.modifyReq.dn.lberbv.bv_val = pszDomainDN;
+    domainOp.request.modifyReq.dn.lberbv.bv_val = (PSTR)pszDomainDN;
     domainOp.request.modifyReq.dn.lberbv.bv_len = VmDirStringLenA(pszDomainDN);
     domainOp.request.modifyReq.numMods = 1;
 
     // Prepare Operation for the current domain object
-    domainOp.reqDn.lberbv.bv_val = pszDomainDN;
+    domainOp.reqDn.lberbv.bv_val = (PSTR)pszDomainDN;
     domainOp.reqDn.lberbv.bv_len = VmDirStringLenA(pszDomainDN);
 
     dwError = VmDirInternalModifyEntry(&domainOp);

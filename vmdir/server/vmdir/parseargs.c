@@ -95,6 +95,12 @@ VmDirParseArgs(
                     dwError = ERROR_INVALID_PARAMETER;
                     BAIL_ON_VMDIR_ERROR(dwError);
                 }
+
+                if ( pbEnableSysLog != NULL )
+                {
+                    *pbEnableSysLog = TRUE;
+                }
+
                 break;
 
             default:
@@ -189,6 +195,11 @@ VmDirParseArgs(
                 {
                     dwError = ERROR_INVALID_PARAMETER;
                     BAIL_ON_VMDIR_ERROR(dwError);
+                }
+
+                if ( pbEnableSysLog != NULL )
+                {
+                    *pbEnableSysLog = TRUE;
                 }
             }
             else

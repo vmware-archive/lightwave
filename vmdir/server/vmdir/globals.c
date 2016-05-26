@@ -84,6 +84,7 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwSmallCandidateSet,32),
         VMDIR_SF_INIT(.dwMaxSizelimitScan,0),
         VMDIR_SF_INIT(.bAllowImportOpAttrs, FALSE),
+        VMDIR_SF_INIT(.dwLdapSearchTimeoutSec, 0),
     };
 
 VMDIR_KRB_GLOBALS gVmdirKrbGlobals =
@@ -128,7 +129,8 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.pszSiteName, NULL),
         VMDIR_SF_INIT(.isIPV4AddressPresent, FALSE),
         VMDIR_SF_INIT(.isIPV6AddressPresent, FALSE),
-        VMDIR_SF_INIT(.initialNextUSN, 0)
+        VMDIR_SF_INIT(.initialNextUSN, 0),
+        VMDIR_SF_INIT(.maxOriginatingUSN, 0)
     };
 
 VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs = NULL;

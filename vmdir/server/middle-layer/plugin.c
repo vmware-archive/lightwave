@@ -1707,7 +1707,10 @@ _VmDirPluginLockoutCachePostModifyCommit(
     if ( pOperation->opType != VDIR_OPERATION_TYPE_INTERNAL)
     {
         pUserActCtlAttr = VmDirFindAttrByName(pEntry, ATTR_USER_ACCOUNT_CONTROL);
-        if (pUserActCtlAttr && pUserActCtlAttr->vals)
+        // In general, we do not expect an attribute w/o value(s).
+        // To work around bad data in deleted container observed in CME SR case 15820658212 (PR 1644319),
+        //   make sure attibute does have value by numVals check before accessing it.
+        if (pUserActCtlAttr && (pUserActCtlAttr->numVals > 0) )
         {
             userAccountCtrlFlags = VmDirStringToLA(pUserActCtlAttr->vals[0].lberbv.bv_val, NULL, 10);
 

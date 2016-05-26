@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -434,10 +434,26 @@ vdirReplicationThrFun(
             retVal = _VmDirReplicationConnect(&sContext, replAgr, &sCreds, &sConnection);
             if (retVal || sConnection.pLd == NULL)
             {
+                // Bail on first cycle only
+                if ( sContext.bFirstReplicationCycle )
+                {
+                    if( !retVal )
+                    {
+                        retVal = VMDIR_ERROR_UNAVAILABLE;
+                    }
+
+                    BAIL_ON_VMDIR_ERROR( retVal );
+                }
+
                 continue;
             }
 
             retVal = _VmDirConsumePartner(&sContext, replAgr, &sConnection);
+            // Bail on first cycle only
+            if ( sContext.bFirstReplicationCycle )
+            {
+                BAIL_ON_VMDIR_ERROR( retVal );
+            }
             _VmDirReplicationDisconnect(&sConnection);
         }
         VMDIR_LOG_DEBUG(VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: Done executing the replication cycle.");
@@ -497,6 +513,9 @@ cleanup:
     return 0;
 
 error:
+    VmDirdStateSet( VMDIRD_STATE_FAILURE );
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                    "vdirReplicationThrFun: Replication has failed with unrecoverable error." );
     goto cleanup;
 }
 
@@ -2609,6 +2628,10 @@ _VmDirConsumePartner(
         }
         pContext->bFirstReplicationCycle = FALSE;
     }
+    else if (pContext->bFirstReplicationCycle)
+    {
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+    }
 
 cleanup:
     if (pPage)
@@ -2695,6 +2718,14 @@ _VmDirFetchReplicationPage(
     LDAPControl **ctrls = NULL;
     PVMDIR_REPLICATION_PAGE pPage = NULL;
     LDAP *pLd = NULL;
+    struct timeval tv = {0};
+    struct timeval *pTv = NULL;
+
+    if (gVmdirGlobals.dwLdapSearchTimeoutSec > 0)
+    {
+        tv.tv_sec =  gVmdirGlobals.dwLdapSearchTimeoutSec;
+        pTv = &tv;
+    }
 
     pLd = pConnection->pLd;
 
@@ -2726,7 +2757,7 @@ _VmDirFetchReplicationPage(
     srvCtrls[1] = NULL;
 
     retVal = ldap_search_ext_s(pLd, "", LDAP_SCOPE_SUBTREE, pPage->pszFilter, NULL, FALSE,
-                               srvCtrls, NULL, NULL, pPage->iEntriesRequested,
+                               srvCtrls, NULL, pTv, pPage->iEntriesRequested,
                                &(pPage->searchRes) );
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 

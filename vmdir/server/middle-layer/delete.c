@@ -58,6 +58,12 @@ VmDirMLDelete(
     dwError = VmDirInternalDeleteEntry( pOperation );
     BAIL_ON_VMDIR_ERROR( dwError );
 
+    if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
+    {
+        pOperation->pBEIF->pfnBESetMaxOriginatingUSN(pOperation->pBECtx,
+                                                     pOperation->pBECtx->wTxnUSN);
+    }
+
 cleanup:
 
     VmDirSendLdapResult( pOperation );

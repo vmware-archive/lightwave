@@ -125,6 +125,7 @@ VmDirRegisterRpcServer(
     VMDIR_IF_HANDLE_T pSuperLogInterfaceSpec = vmdirsuperlog_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_IF_HANDLE_T pVmDirDbcpInterfaceSpec = vmdirdbcp_v1_0_s_ifspec; // IDL compiler will generate Srv_ prefix
     VMDIR_RPC_BINDING_VECTOR_P_T pServerBinding = NULL;
+    BOOLEAN bEndpointsRegistered = TRUE;
 
     ulError = VmDirRpcServerRegisterIf(pVmDirInterfaceSpec);
     BAIL_ON_VMDIR_ERROR(ulError);
@@ -150,16 +151,28 @@ VmDirRegisterRpcServer(
 
 #if !defined(HAVE_DCERPC_WIN32)
     ulError = VmDirRpcEpRegister( pServerBinding, pVmDirInterfaceSpec, "VMware Directory Service");
-    BAIL_ON_VMDIR_ERROR(ulError);
+    if (ulError)
+    {
+        bEndpointsRegistered = FALSE;
+    }
 
     ulError = VmDirRpcEpRegister( pServerBinding, pVmDirFtpInterfaceSpec, "VMware Directory Service FTP");
-    BAIL_ON_VMDIR_ERROR(ulError);
+    if (ulError)
+    {
+        bEndpointsRegistered = FALSE;
+    }
 
     ulError = VmDirRpcEpRegister( pServerBinding, pVmDirDbcpInterfaceSpec, "VMware Directory Service dbcp");
-    BAIL_ON_VMDIR_ERROR(ulError);
-#endif
+    if (ulError)
+    {
+        bEndpointsRegistered = FALSE;
+    }
 
-    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "RPC Endpoints registered successfully.");
+    if (bEndpointsRegistered)
+    {
+        VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "RPC Endpoints registered successfully.");
+    }
+#endif
 
     ulError = VmDirRpcServerRegisterAuthInfo();
     BAIL_ON_VMDIR_ERROR(ulError);
