@@ -25,14 +25,14 @@ VmDirFindSidGenStateWithDN_inlock(
 static
 DWORD
 _VmDirGenerateDomainGuid(
-    PSTR    pszGuid, /* optional */
+    PCSTR   pszGuid, /* optional */
     uuid_t* pDomainGuid
     );
 
 static
 DWORD
 VmDirGenerateDomainGuidSid_inlock(
-    PSTR    pszGuid, /* optional, if given used directly after check to make sure it is unique*/
+    PCSTR   pszGuid, /* optional, if given used directly after check to make sure it is unique*/
     PSTR*   ppszDomainSid
     );
 
@@ -119,7 +119,9 @@ VmDirAdvanceDomainRID(
             if ( pAttr )
             {
                 dwOrgRidSeq = VmDirStringToIA( (PCSTR)pAttr->vals[0].lberbv.bv_val );
-                dwRidSeq = dwOrgRidSeq + dwCnt;
+                // dwOrgRidSeq is current DB value, it is most likely NOT in sync with the cache value
+                // when the backup was taken.  Thus, advance a full batch of RID +1 for safety.
+                dwRidSeq = dwOrgRidSeq + dwCnt + MAX_COUNT_PRIOR_WRITE + 1;
 
                 if ( dwRidSeq < dwOrgRidSeq )
                 {
@@ -129,7 +131,7 @@ VmDirAdvanceDomainRID(
                     BAIL_ON_VMDIR_ERROR(dwError);
                 }
 
-                dwError = VmDirStringNPrintFA( buf9, sizeof(buf9), sizeof(buf9)-1, "%lu", dwRidSeq );
+                dwError = VmDirStringNPrintFA( buf9, sizeof(buf9), sizeof(buf9)-1, "%u", dwRidSeq );
                 BAIL_ON_VMDIR_ERROR(dwError);
 
                 bvRID.lberbv_val = buf9;
@@ -215,7 +217,7 @@ VmDirGenerateObjectSid(
         BAIL_ON_VMDIR_ERROR(dwError);
 
         VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,
-                           "allocate objectsid: (%s)(%lu)(%lu)(%lu)",
+                           "allocate objectsid: (%s)(%u)(%u)(%u)",
                            VDIR_SAFE_STRING(pSidGenState->pszDomainSid),
                            gVmdirServerGlobals.serverId,
                            dwObjectRid,
@@ -246,7 +248,7 @@ VmDirGenerateObjectSid(
 
         dwError = VmDirAllocateStringPrintf(
                         &pszObjectSid,
-                        "%s-%lu-%lu",
+                        "%s-%u-%u",
                         pSidGenState->pszDomainSid,
                         gVmdirServerGlobals.serverId,
                         dwObjectRid
@@ -455,15 +457,9 @@ VmDirGenerateWellknownSid(
 
     dwError = VmDirAllocateStringAVsnprintf(
                     &pszWellKnownSid,
-                    "%s-%lu",
+                    "%s-%u",
                     pSidGenState->pszDomainSid,
-                    //TODO: pgu
-// Clean this up. ObjectRid should be 64 bit.
-#ifndef _WIN32
-                        dwWellKnowRid
-#else
-                        (long long)dwWellKnowRid
-#endif
+                    dwWellKnowRid
                     );
 
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -510,7 +506,7 @@ error:
 DWORD
 VmDirGetSidGenStateIfDomain_inlock(
     PCSTR                       pszObjectDN,
-    PSTR                        pszGuid,
+    PCSTR                       pszGuid,
     PVDIR_DOMAIN_SID_GEN_STATE* ppDomainState
     )
 {
@@ -520,7 +516,7 @@ VmDirGetSidGenStateIfDomain_inlock(
     BOOLEAN                     IsDomainObject = FALSE;
     PVDIR_ATTRIBUTE             pObjSidAttr = NULL;
     PVDIR_ATTRIBUTE             pRidSeqAttr = NULL;
-    DWORD                       dwDomainRidSequence = VMDIR_DOMAIN_USER_RID_MAX + 1;
+    DWORD                       dwDomainRidSequence = VMDIR_ACL_RID_BASE;
     PSTR                        pszLocalErrorMsg = NULL;
 
     pOrgState = VmDirFindSidGenStateWithDN_inlock(pszObjectDN);
@@ -639,7 +635,7 @@ error:
 static
 DWORD
 _VmDirGenerateDomainGuid(
-    PSTR    pszGuid, /* optional */
+    PCSTR   pszGuid, /* optional */
     uuid_t* pDomainGuid
     )
 {
@@ -669,7 +665,7 @@ _VmDirGenerateDomainGuid(
 static
 DWORD
 VmDirGenerateDomainGuidSid_inlock(
-    PSTR    pszGuid, /* optional, if given used directly. caller should only use a unique Guid once.*/
+    PCSTR   pszGuid, /* optional, if given used directly. caller should only use a unique Guid once.*/
     PSTR*   ppszDomainSid
     )
 {
@@ -800,7 +796,7 @@ _VmDirSynchronizeRidSequence(
     {
         dwError = VmDirAllocateStringPrintf(
                         &pszObjectSid,
-                        "%s-%lu-%lu",
+                        "%s-%u-%u",
                         pDomainSidState->pszDomainSid,
                         gVmdirServerGlobals.serverId,
                         dwCnt);
@@ -831,9 +827,9 @@ _VmDirSynchronizeRidSequence(
         if  (gFirstReplCycleMode == FIRST_REPL_CYCLE_MODE_COPY_DB)
         {
                //The database is just copied from its partner, reset RID
-               dwCnt = VMDIR_DOMAIN_USER_RID_MAX + 1;
+               dwCnt = VMDIR_ACL_RID_BASE;
         }
-        dwError = VmDirStringPrintFA( buf64, sizeof(buf64), "%lu", dwCnt );
+        dwError = VmDirStringPrintFA( buf64, sizeof(buf64), "%u", dwCnt );
         BAIL_ON_VMDIR_ERROR(dwError);
 
         bvRID.lberbv_val = buf64;

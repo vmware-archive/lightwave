@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -103,6 +103,8 @@ typedef struct _VMDIR_SERVER_GLOBALS
     BOOLEAN              isIPV4AddressPresent;
     BOOLEAN              isIPV6AddressPresent;
     USN                  initialNextUSN; // used for server restore only
+    USN                  maxOriginatingUSN;  // Cache value to prevent
+                                             // excessive searching
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;
@@ -198,6 +200,7 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwMaxSizelimitScan;
 
     BOOLEAN                         bAllowImportOpAttrs;
+    DWORD                           dwLdapSearchTimeoutSec;
 } VMDIR_GLOBALS, *PVMDIR_GLOBALSS;
 
 extern VMDIR_GLOBALS gVmdirGlobals;
@@ -213,23 +216,6 @@ typedef struct _VMDIR_KRB_GLOBALS
 } VMDIR_KRB_GLOBALS, *PVMDIR_KRB_GLOBALS;
 
 extern VMDIR_KRB_GLOBALS gVmdirKrbGlobals;
-
-// accountmgmt.c
-DWORD
-VmDirCreateAccount(
-    PCSTR   pszUPNName,
-    PCSTR   pszUserName,
-    PCSTR   pszPassword,            // optional
-    PCSTR   pszEntryDN              // optional
-    );
-
-DWORD
-VmDirUPNToAccountDN(
-    PCSTR       pszUPNName,
-    PCSTR       pszAccountRDNAttr,
-    PCSTR       pszAccountRDNValue,
-    PSTR*       ppszContainerDN
-    );
 
 // krb.c
 DWORD

@@ -26,11 +26,6 @@
  * Definitions
  *
  */
-
-#define MIN_NODE_SEQUENCE 0
-#define MAX_NODE_SEQUENCE 255  // 2^8-1
-
-#define MIN_RID_SEQUENCE 0
 #define MAX_RID_SEQUENCE 0xFFFFFFFE
 
 #define MAX_COUNT_PRIOR_WRITE 100
@@ -41,6 +36,13 @@
 #define SECURITY_VMWARE_AUTHORITY { 0, 0, 0, 0, 0, 7 }
 #define SECURITY_SUBAUTHORITY_ORGANIZATION 21
 
-#define VMDIR_ACL_MIN(m, n) (((m) < (n)) ? (m) : (n))
-#define VMDIR_ACL_MAX(m, n) (((m) > (n)) ? (m) : (n))
+/*
+ * Default starting allocation size for security descriptors (will grow as
+ * needed).
+ */
+#define VMDIR_DEFAULT_SD_RELATIVE_SIZE     512
 
+/*
+ * RIDs below this are for well-known / pre-defined users.
+ */
+#define VMDIR_ACL_RID_BASE 1000

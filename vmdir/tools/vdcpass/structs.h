@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -12,26 +12,11 @@
  * under the License.
  */
 
-
-
-/*
- * Module Name: Directory backend
- *
- * Filename: structs.h
- *
- * Abstract:
- *
- * Private Structures among all backends
- *
- */
-
-typedef struct _VDIR_BACKEND_USN_LIST
+typedef struct
 {
-    PVMDIR_MUTEX        pMutex;
-    size_t              iSize;
-    USN*                pUSNAry;
-    USN                 maxOutstandingUSN;  // max Outstanding USN
-    USN                 maxUsedMainUSN;     // max USN used (BECtx.wTxnUSN in pUSNAry list)
-    USN                 maxOriginatingUSN;  // max Originating USN
-
-} VDIR_BACKEND_USN_LIST;
+    PCSTR pszHostName;
+    PCSTR pszLoginUserUPN;
+    PCSTR pszUserUPN;
+    PCSTR pszLoginPassword;
+    PCSTR pszNewPassword;
+} COMMAND_LINE_STATE, *PCOMMAND_LINE_STATE;

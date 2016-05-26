@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -27,6 +27,19 @@ static
 USN
 VmDirBackendHighestCommittedUSN(
     PVDIR_BACKEND_CTX   pBECtx
+    );
+
+static
+USN
+VmDirBackendGetMaxOriginatingUSN(
+    PVDIR_BACKEND_CTX   pBECtx
+    );
+
+static
+VOID
+VmDirBackendSetMaxOriginatingUSN(
+    PVDIR_BACKEND_CTX   pBECtx,
+    USN                 maxOriginatingUSN
     );
 
 static
@@ -69,7 +82,12 @@ VmDirBackendConfig(
 #endif
 
     gVdirBEGlobals.pBE->pfnBEGetLeastOutstandingUSN = VmDirBackendLeastOutstandingUSN;
+
     gVdirBEGlobals.pBE->pfnBEGetHighestCommittedUSN = VmDirBackendHighestCommittedUSN;
+
+    gVdirBEGlobals.pBE->pfnBEGetMaxOriginatingUSN = VmDirBackendGetMaxOriginatingUSN;
+
+    gVdirBEGlobals.pBE->pfnBESetMaxOriginatingUSN = VmDirBackendSetMaxOriginatingUSN;
 
     dwError = VmDirAllocateUSNList(&pUSNList);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -444,6 +462,54 @@ VmDirBackendHighestCommittedUSN(
     VMDIR_UNLOCK_MUTEX(bInLock, pUSNList->pMutex);
 
     return ((minPendingUSN > 0) ? minPendingUSN - 1 : maxOutstandingUSN - 1);
+}
+
+static
+VOID
+VmDirBackendSetMaxOriginatingUSN(
+    PVDIR_BACKEND_CTX   pBECtx,
+    USN                 maxOriginatingUSN
+    )
+{
+    BOOLEAN     bInLock = FALSE;
+
+    assert( pBECtx && pBECtx->pBE && pBECtx->pBE->pBEUSNList);
+
+    VMDIR_LOCK_MUTEX(bInLock, pBECtx->pBE->pBEUSNList->pMutex);
+
+    pBECtx->pBE->pBEUSNList->maxOriginatingUSN = maxOriginatingUSN;
+
+    VMDIR_UNLOCK_MUTEX(bInLock, pBECtx->pBE->pBEUSNList->pMutex);
+
+    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE,
+                     "Set max originating USN (%u)",
+                     maxOriginatingUSN);
+
+    return;
+}
+
+static
+USN
+VmDirBackendGetMaxOriginatingUSN(
+    PVDIR_BACKEND_CTX   pBECtx
+    )
+{
+    BOOLEAN     bInLock = FALSE;
+    USN maxOriginatingUSN = 0;
+
+    assert( pBECtx && pBECtx->pBE && pBECtx->pBE->pBEUSNList);
+
+    VMDIR_LOCK_MUTEX(bInLock, pBECtx->pBE->pBEUSNList->pMutex);
+
+    maxOriginatingUSN = pBECtx->pBE->pBEUSNList->maxOriginatingUSN;
+
+    VMDIR_UNLOCK_MUTEX(bInLock, pBECtx->pBE->pBEUSNList->pMutex);
+
+    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE,
+                     "Get max originating USN (%u)",
+                     maxOriginatingUSN);
+
+    return maxOriginatingUSN;
 }
 
 static
