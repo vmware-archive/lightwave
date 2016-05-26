@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="9060" systemVersion="14F27" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="9059" systemVersion="14F27" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
         <deployment identifier="macosx"/>
         <development version="5000" identifier="xcode"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="9060"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="9059"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="MainWindowCommonController">
@@ -15,6 +15,7 @@
                 <outlet property="ContainerView" destination="7" id="4QU-vy-GwR"/>
                 <outlet property="DeleteObjectToolBarItem" destination="79" id="103"/>
                 <outlet property="LoggedInLabel" destination="dUt-mC-ey0" id="EBB-Dy-a4o"/>
+                <outlet property="NetworkStatus" destination="thM-Bl-xhi" id="WGx-ap-aqZ"/>
                 <outlet property="PropertiesToolBarItem" destination="82" id="101"/>
                 <outlet property="RefreshToolBarItem" destination="7cf-ae-wcN" id="rgx-Cl-lPb"/>
                 <outlet property="SchemaToolBarItem" destination="81" id="102"/>
@@ -50,6 +51,20 @@
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="thM-Bl-xhi">
+                        <rect key="frame" x="719" y="2" width="93" height="17"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxY="YES"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="Label" id="EGz-p5-bVY">
+                            <font key="font" metaFont="cellTitle"/>
+                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" id="Mzc-hM-XCM">
+                        <rect key="frame" x="698" y="2" width="22" height="17"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxY="YES"/>
+                        <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyUpOrDown" image="NSNetwork" id="atA-VE-zcV"/>
+                    </imageView>
                 </subviews>
             </view>
             <toolbar key="toolbar" implicitIdentifier="FE36DD6A-C84E-4D20-A045-B50F20A3B5C4" autosavesConfiguration="NO" displayMode="iconAndLabel" sizeMode="regular" id="8">
@@ -162,6 +177,7 @@
         <image name="Add_User_64" width="64" height="64"/>
         <image name="Edit_Properties_64" width="128" height="128"/>
         <image name="NSMultipleDocuments" width="32" height="32"/>
+        <image name="NSNetwork" width="32" height="32"/>
         <image name="NSRefreshTemplate" width="11" height="15"/>
         <image name="View_Schema_64" width="64" height="64"/>
         <image name="connect_32x32" width="32" height="32"/>

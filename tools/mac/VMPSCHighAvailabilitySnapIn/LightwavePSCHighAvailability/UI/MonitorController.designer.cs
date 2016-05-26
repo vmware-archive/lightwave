@@ -40,6 +40,9 @@ namespace VMPSCHighAvailability.UI
 		AppKit.NSTextField LastRefreshTextField { get; set; }
 
 		[Outlet]
+		AppKit.NSTextField LegacyModeWarning { get; set; }
+
+		[Outlet]
 		public AppKit.NSTableView PscTableView { get; private set; }
 
 		[Outlet]
@@ -62,9 +65,9 @@ namespace VMPSCHighAvailability.UI
 		
 		void ReleaseDesignerOutlets ()
 		{
-			if (SitenameTextField != null) {
-				SitenameTextField.Dispose ();
-				SitenameTextField = null;
+			if (LegacyModeWarning != null) {
+				LegacyModeWarning.Dispose ();
+				LegacyModeWarning = null;
 			}
 
 			if (AutoRefreshButton != null) {
@@ -135,6 +138,11 @@ namespace VMPSCHighAvailability.UI
 			if (SiteAffinityButton != null) {
 				SiteAffinityButton.Dispose ();
 				SiteAffinityButton = null;
+			}
+
+			if (SitenameTextField != null) {
+				SitenameTextField.Dispose ();
+				SitenameTextField = null;
 			}
 
 			if (StatusTextField != null) {

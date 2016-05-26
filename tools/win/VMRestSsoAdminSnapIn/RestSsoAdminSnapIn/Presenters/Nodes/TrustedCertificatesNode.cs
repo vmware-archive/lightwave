@@ -106,14 +106,17 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto, tenantName);
 
             ActionHelper.Execute(delegate
-            {   
-                var chains = service.Certificate.GetCertificates(serverDto, tenantName, CertificateScope.TENANT, auth.Token);
-                var chainId = 1;
-                foreach (var chain in chains)
+            {
+                if (auth.Token != null)
                 {
+                    var chains = service.Certificate.GetCertificates(serverDto, tenantName, CertificateScope.TENANT, auth.Token);
+                    var chainId = 1;
+                    foreach (var chain in chains)
+                    {
 
-                    result.AddRange(chain.Certificates.Select(x => new CertificateDto { Encoded = x.Encoded, Chain = "Chain-" + chainId, IsSigner = (chainId == chains.Count) }));
-                    chainId++;
+                        result.AddRange(chain.Certificates.Select(x => new CertificateDto { Encoded = x.Encoded, Chain = "Chain-" + chainId, IsSigner = (chainId == chains.Count) }));
+                        chainId++;
+                    }
                 }
             }, auth);
 

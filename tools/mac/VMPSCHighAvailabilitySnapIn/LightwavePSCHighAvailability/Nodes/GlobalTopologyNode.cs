@@ -17,6 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using VMPSCHighAvailability.Common.DTO;
 using VmIdentity.UI.Common.Utilities;
 using VMPSCHighAvailability.Common;
@@ -33,6 +34,7 @@ namespace VMPSCHighAvailability.Nodes
 		private IPscHighAvailabilityService _service;
 		public List<NodeDto> Hosts { get; private set;}
 		public event CacheRefreshEventHandler OnCacheRefresh;
+		public bool IsConnected;
 
 		/// <summary>
 		/// Timer for auto-refresh.
@@ -46,10 +48,15 @@ namespace VMPSCHighAvailability.Nodes
 			_serverDto = serverDto;
 			_service = service;
 			Hosts = new List<NodeDto> ();
+			IsConnected = true;
+			NetworkChange.NetworkAvailabilityChanged += (object sender, NetworkAvailabilityEventArgs e) => {
+				IsConnected = e.IsAvailable;
+			};
 			RefreshTopology ();
 			UpdateNodes ();
-			var interval = Constants.DefaultTimerRefreshInterval * Constants.MilliSecsMultiplier;
+			var interval = Constants.CacheCycleRefreshInterval * Constants.MilliSecsMultiplier;
 			timer = new Timer (timerAutoRefresh_Tick, null, 0, interval);
+
 		}
 
 		/// <summary>
@@ -59,20 +66,18 @@ namespace VMPSCHighAvailability.Nodes
 		private void timerAutoRefresh_Tick(Object state)
 		{
 			if (Hosts != null) {
-				var tasks = new Task[Hosts.Count];
-				int count = 0;
-				foreach (var host in Hosts.Where(x => x.NodeType == VMPSCHighAvailability.Common.NodeType.Infrastructure)) {
-					tasks[count++] = Task.Factory.StartNew(() => UpdateInfraNode (host, _serverDto));
-				}
 
-				foreach (var host in Hosts.Where(x => x.NodeType == VMPSCHighAvailability.Common.NodeType.Management)) {
-					tasks[count++] = Task.Factory.StartNew(() => UpdateManagementNode (host, _serverDto));
-				}
-			
-				//Task.WaitAll (tasks);
+				if (IsConnected) {
+					var tasks = new Task[Hosts.Count];
+					int count = 0;
+					foreach (var host in Hosts.Where(x => x.NodeType == VMPSCHighAvailability.Common.NodeType.Infrastructure)) {
+						tasks [count++] = Task.Factory.StartNew (() => UpdateInfraNode (host, _serverDto));
+					}
 
-//				if (OnCacheRefresh != null)
-//					OnCacheRefresh (this, EventArgs.Empty);
+					foreach (var host in Hosts.Where(x => x.NodeType == VMPSCHighAvailability.Common.NodeType.Management)) {
+						tasks [count++] = Task.Factory.StartNew (() => UpdateManagementNode (host, _serverDto));
+					}
+				}
 			}
 		}
 
@@ -130,45 +135,50 @@ namespace VMPSCHighAvailability.Nodes
 		/// <param name="refresh">If set to <c>true</c> refresh.</param>
 		public void RefreshTopology (bool refresh = false)
 		{
-			// 1. Fetech all the nodes
-			var nodes = _service.GetTopology (_managementDto, _serverDto);
+			if (IsConnected) {
+				
+				// 1. Fetech all the nodes
+				var nodes = _service.GetTopology (_managementDto, _serverDto);
 
-			if (!refresh) {
+				if (!refresh) {
 
-				// 2. Cached hosts list
-				Hosts = new List<NodeDto> (nodes);
+					// 2. Cached hosts list
 
-				// 3. Update infrastructure node
-				foreach (var host in nodes.Where(x => x.NodeType == VMPSCHighAvailability.Common.NodeType.Infrastructure)) {
-					host.Active = true;
-					var task = new Task (() => {
-						UpdateInfraNode (host, _serverDto);
-					});
-					task.Start ();
+					Hosts = nodes == null ? new List<NodeDto> () : new List<NodeDto> (nodes);
+
+					// 3. Update infrastructure node
+					foreach (var host in nodes.Where(x => x.NodeType == VMPSCHighAvailability.Common.NodeType.Infrastructure)) {
+						host.Active = true;
+						var task = new Task (() => {
+							UpdateInfraNode (host, _serverDto);
+						});
+						task.Start ();
+					}
+
+					// 4. Update management nodes 
+					foreach (var host in nodes.Where(x => x.NodeType == VMPSCHighAvailability.Common.NodeType.Management)) {
+						host.Active = true;
+						var task = new Task (() => {
+							UpdateManagementNode (host, _serverDto);
+						});
+						task.Start ();
+					}
+				} else {
+
+					var newNodes = nodes.Where (x => Hosts.Count (y => y.Name == x.Name) == 0);
+
+					if (newNodes != null && newNodes.Count () > 0)
+						Hosts.AddRange (newNodes);
+
+					var deleteNodes = Hosts.Where (x => nodes.Count (y => y.Name == x.Name) == 0);
+
+					if (deleteNodes != null) {
+						foreach (var node in deleteNodes)
+							Hosts.Remove (node);
+					}
 				}
-
-				// 4. Update management nodes 
-				foreach (var host in nodes.Where(x => x.NodeType == VMPSCHighAvailability.Common.NodeType.Management)) {
-					host.Active = true;
-					var task = new Task (() => {
-						UpdateManagementNode (host, _serverDto);
-					});
-					task.Start ();
-				}
-			} else {
-
-				var newNodes = nodes.Where (x => Hosts.Count(y => y.Name == x.Name) == 0);
-
-				if(newNodes != null && newNodes.Count() > 0)
-					Hosts.AddRange (newNodes);
-
-				var deleteNodes = Hosts.Where (x => nodes.Count (y => y.Name == x.Name) == 0);
-
-				if (deleteNodes != null) {
-					foreach (var node in deleteNodes)
-						Hosts.Remove (node);
-				}
-			}
+			} else
+				throw new Exception ("Please check your network connection. Network is not available to refresh the topology");
 		}
 
 		/// <summary>

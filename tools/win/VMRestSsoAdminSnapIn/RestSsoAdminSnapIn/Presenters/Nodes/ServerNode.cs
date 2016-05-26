@@ -125,7 +125,20 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
         {
             ActionHelper.Execute(delegate()
             {
-                var form = new ComputersView(_serverDto);
+                var systemTenant = string.Empty;
+
+                if(Children != null)
+                {
+                    foreach(TenantNode child in Children)
+                    {
+                        if(child.IsSystemTenant)
+                        {
+                            systemTenant = child.DisplayName;
+                            break;
+                        }
+                    }
+                }
+                var form = new ComputersView(_serverDto, systemTenant);
                 SnapIn.Console.ShowDialog(form);
             }, null);
         }
@@ -181,12 +194,12 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
         private void AddTenantNode(AuthTokenDto tokenDto, string tenantName)
         {
             var tenantDto = new TenantDto { Name = tenantName };
-            var node = new TenantNode() { DisplayName = tenantName, Tag = tenantName };
+            var node = new TenantNode(_serverDto , tenantName) { DisplayName = tenantName, Tag = tenantName };
             AddTenantNode(node);
         }
         private void AddTenantNode(AuthTokenDto tokenDto, TenantDto tenant)
         {
-            var node = new TenantNode() { DisplayName = tenant.Name, Tag = tenant.Guid };
+            var node = new TenantNode(_serverDto, tenant.Name) { DisplayName = tenant.Name, Tag = tenant.Guid };
             AddTenantNode(node);
         }
 
@@ -210,7 +223,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
         }
         private void LoginUser(AuthTokenDto auth, bool hasSessionExpired = false)
         {
-            if (auth.Token != null) return;
+            if (auth.Token != null && !hasSessionExpired) return;
             ActionHelper.Execute(delegate
             {
                 var text = hasSessionExpired ? "Re-login - Credentials expired or changed" : "Login";
@@ -224,7 +237,12 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
                     try
                     {
                         var authToken = service.Authentication.Login(auth.ServerDto, loginDto, Constants.ClientId);
-                        Tag = authToken;
+                        Tag = new AuthTokenDto
+                        {
+                            Login = new LoginDto { User = authToken.Login.User, TenantName = authToken.Login.TenantName, Pass = authToken.Login.Pass, DomainName = authToken.Login.DomainName },
+                            ServerDto = authToken.ServerDto,
+                            Token = authToken.Token
+                        };
                         SnapInContext.Instance.AuthTokenManager.SetAuthToken(authToken);
                         AddTenantNode(authToken, loginDto.TenantName);
                     }
@@ -292,7 +310,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
         public void Login(bool sessionExpired)
         {
             var auth = Tag as AuthTokenDto;
-            auth.Token = null;
+            //auth.Token = null;
             LoginUser(auth, sessionExpired);
         }
 
@@ -322,9 +340,29 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
             ActionsPaneItems.Add(addExistingTenant);
             //var adInfo = new Action("Active Directory", "Shows the active directory information (if any) associated with the server", (int)TreeImageIndex.Settings, ServerNodeAction.ActionViewActiveDirectory);
             //ActionsPaneItems.Add(adInfo);
-            var computer = new Action("Get Computers", "Shows the computers associated with the server", (int)TreeImageIndex.Computers, ServerNodeAction.ActionGetComputers);
-            ActionsPaneItems.Add(computer);
+
+            var isSystemTenantPresent = CheckSystemTenantIsPresent();
+
+            if (isSystemTenantPresent)
+            {
+                var computer = new Action("Get Computers", "Shows the computers associated with the server", (int)TreeImageIndex.Computers, ServerNodeAction.ActionGetComputers);
+                ActionsPaneItems.Add(computer);
+            }
             ActionsPaneItems.Add(new Action("Diagnostics", "Diagnostics", (int)TreeImageIndex.TrustedCertificate, ServerNodeAction.ActionTokenWizard));
+        }
+
+        private bool CheckSystemTenantIsPresent()
+        {
+            bool present = false;
+            if(Children != null)
+            {
+                foreach(TenantNode child in Children)
+                {
+                    if (child.IsSystemTenant)
+                        present = true;
+                }
+            }
+            return present;
         }
     }
 }

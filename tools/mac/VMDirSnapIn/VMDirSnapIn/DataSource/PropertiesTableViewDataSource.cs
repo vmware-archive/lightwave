@@ -30,16 +30,20 @@ namespace VMDirSnapIn.DataSource
 
         public List<KeyValuePair<string,string>> PendingMod { get; set; }
 
+        public List<KeyValuePair<string,string>> DeleteMod { get; set; }
+
 
         public PropertiesTableViewDataSource()
         {
             Entries = new Dictionary<string,VMDirBagItem>();
             PendingMod = new List<KeyValuePair<string,string>>();
+            DeleteMod = new List<KeyValuePair<string,string>>();
         }
 
         public PropertiesTableViewDataSource(Dictionary<string,VMDirBagItem>  classList)
         {
             PendingMod = new List<KeyValuePair<string,string>>();
+            DeleteMod = new List<KeyValuePair<string,string>>();
             Entries = classList;
             data = new List<KeyValuePair<string,string>>();
             FillData();
@@ -110,18 +114,27 @@ namespace VMDirSnapIn.DataSource
         {
             try
             {
-                if (data != null && !string.IsNullOrEmpty(editedVal.ToString()))
+                if (data != null)
                 {
                     if (col.Identifier == "Value")
                     {
                         string currKey = this.data[(int)row].Key;
                         if (currKey != "objectClass")
                         {
-                            this.data[(int)row] = new KeyValuePair<string, string>(currKey, (NSString)editedVal);
-                            this.PendingMod.Add(new KeyValuePair<string, string>(currKey, this.data[(int)row].Value));
+                            if (!string.IsNullOrEmpty(editedVal.ToString()))
+                            {
+                                this.data[(int)row] = new KeyValuePair<string, string>(currKey, (NSString)editedVal);
+                                this.PendingMod.Add(new KeyValuePair<string, string>(currKey, this.data[(int)row].Value));
+                            }
+                            else
+                            {
+                                this.DeleteMod.Add(new KeyValuePair<string, string>(currKey, this.data[(int)row].Value));
+                                this.data[(int)row] = new KeyValuePair<string, string>(currKey, (NSString)editedVal);
+                            }
                         }
                     }
                 }
+
             }
             catch (Exception e)
             {

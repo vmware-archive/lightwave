@@ -151,7 +151,7 @@ namespace VMPSCHighAvailability.UI
 						{
 							var datasource = (_controller.MainTableView.DataSource) as NodeDataSource;
 							var collection = datasource.Entries;
-							if (collection != null) {
+							if (collection != null && (((int)row) < collection.Count)) {
 								var item = collection [(int)row];
 
 								// Color Code -> Heartbeat IN-ACTIVE: Red | Heartbeat ACTIVE: GREEN | No Heartbeat: Black
@@ -162,7 +162,7 @@ namespace VMPSCHighAvailability.UI
 						{
 							var datasource = (_controller.MainTableView.DataSource) as PscDataSource;
 							var collection = datasource.Entries;
-							if (collection != null) {
+							if (collection != null && (((int)row) < collection.Count)) {
 								var item = collection [(int)row];
 
 								// Color Code -> Heartbeat IN-ACTIVE: Red | Heartbeat ACTIVE: GREEN | No Heartbeat: Black
@@ -172,7 +172,7 @@ namespace VMPSCHighAvailability.UI
 						{
 							var datasource = (_controller.MainTableView.DataSource) as ServiceDataSource;
 							var collection = datasource.Entries;
-							if (collection != null) {
+							if (collection != null  && (((int)row) < collection.Count)) {
 								var item = collection [(int)row];
 
 								// Color Code -> Heartbeat IN-ACTIVE: Red | Heartbeat ACTIVE: GREEN | No Heartbeat: Black

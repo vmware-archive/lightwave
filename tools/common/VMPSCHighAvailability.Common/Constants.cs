@@ -30,8 +30,8 @@ namespace VMPSCHighAvailability.Common
         public const string CompanyName = "Vmware Inc.";
         public const string DateFormat = "dd-MMM-yyyy hh:mm:ss";
         public const int MilliSecsMultiplier = 1000;
-        public const int TopologyTimeout = 120;
-        public const int DefaultTimerRefreshInterval = 60;
+        public const int TopologyTimeout = 90;
+        public const int DefaultTimerRefreshInterval = 30;
         public const int CacheCycleRefreshInterval = 60;
         public const string DeleteServer = "Delete Server";
         public const string RootNodeDisplayName = "Lightwave Servers";
