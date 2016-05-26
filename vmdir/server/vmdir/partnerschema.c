@@ -101,6 +101,14 @@ _GetSchemaEntryFromPartner(
     PCSTR pcszFilter = "(objectclass=*)";
     LDAPMessage *pResult = NULL;
     LDAPMessage *pEntry = NULL;
+    struct timeval tv = {0};
+    struct timeval *pTv = NULL;
+
+    if (gVmdirGlobals.dwLdapSearchTimeoutSec > 0)
+    {
+        tv.tv_sec =  gVmdirGlobals.dwLdapSearchTimeoutSec;
+        pTv = &tv;
+    }
 
     dwError = ldap_search_ext_s(
             pLd,
@@ -111,7 +119,7 @@ _GetSchemaEntryFromPartner(
             FALSE, /* get values      */
             NULL,  /* server controls */
             NULL,  /* client controls */
-            NULL,  /* timeout         */
+            pTv,  /* timeout         */
             0,     /* size limit      */
             &pResult);
     BAIL_ON_VMDIR_ERROR(dwError);

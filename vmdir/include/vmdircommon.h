@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -60,6 +60,8 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 #define MAX_INSTALL_PARAMETER_LEN 260
 
 #define VMDIR_GUID_STR_LEN             (32 + 4 /* -s */ + 1 /* \0 */) // "%08x-%04x-%04x-%04x-%04x%08x"
+#define VMDIR_SSL_DISABLED_PROTOCOL_LEN 64
+#define VMDIR_SSL_CIPHER_SUITE_LEN     256
 #define VMDIR_MAX_DN_LEN               1024 // including \0
 #define VMDIR_MAX_PASSWORD_LEN         128 /* As specified in schema for userPassword and replBindPassword attributes */
 #define VMDIR_MAX_I64_ASCII_STR_LEN     (19 + 1 /* null byte terminator */) /* Max value for i64_t is 9,223,372,036,854,775,807 */
@@ -912,6 +914,9 @@ typedef enum
 #define VMDIR_REG_KEY_MAXIMUM_LOG_SIZE      "MaximumLogSize"
 #define VMDIR_REG_KEY_MAXIMUM_DB_SIZE_MB    "MaximumDbSizeMb"
 #define VMDIR_REG_KEY_DISABLE_VECS_INTEGRATION    "DisableVECSIntegration"
+#define VMDIR_REG_KEY_SSL_DISABLED_PROTOCOLS "SslDisabledProtocols"
+#define VMDIR_REG_KEY_SSL_CIPHER_SUITE       "SslCipherSuite"
+#define VMDIR_REG_KEY_DIRTY_SHUTDOWN         "DirtyShutdown"
 
 #define VMAFD_REG_KEY_KRB5_CONF             "Krb5Conf"
 
@@ -1240,22 +1245,31 @@ VmDirGetLotusServerName(
     );
 
 DWORD
-VmDirStoreDCAccountPassword(
-    PBYTE   pPassword,
-    DWORD   dwPasswordSize
+VmDirWriteDCAccountPassword(
+    PCSTR pszPassword,
+    DWORD dwLength /* Length of the string, not including null */
+    );
+
+DWORD
+VmDirWriteDCAccountOldPassword(
+    PCSTR pszPassword,
+    DWORD dwLength /* Length of the string, not including null */
     );
 
 DWORD
 VmDirReadDCAccountPassword(
-    PSTR* ppszPassword);
+    PSTR* ppszPassword
+    );
 
 DWORD
 VmDirReadDCAccountOldPassword(
-    PSTR* ppszPassword);
+    PSTR* ppszPassword
+    );
 
 DWORD
 VmDirValidateDCAccountPassword(
-    PSTR pszPassword);
+    PSTR pszPassword
+    );
 
 DWORD
 VmDirRegReadDCAccount(
@@ -1299,6 +1313,14 @@ VmDirSetRegKeyValueDword(
     PCSTR pszConfigParamKeyPath,
     PCSTR pszKey,
     DWORD dwValue
+    );
+
+DWORD
+VmDirSetRegKeyValueString(
+    PCSTR pszConfigParamKeyPath,
+    PCSTR pszKey,
+    PCSTR pszValue,
+    DWORD dwLength /* Should not include +1 for terminating null */
     );
 
 DWORD
@@ -1379,6 +1401,12 @@ VmDirKeyTabMakeRecord(
     PVMDIR_KEYTAB_ENTRY pKtEntry,
     PBYTE *ppKtRecord,
     PDWORD pdwRecordLen);
+
+
+DWORD
+VmDirDestroyDefaultKRB5CC(
+    VOID
+    );
 
 DWORD
 VmDirAllocASCIILowerToUpper(
@@ -2147,6 +2175,35 @@ VmDirGetCfgPath(
 DWORD
 VmDirGetDefaultSchemaFile(
     PSTR*   ppszSchemaFile
+    );
+
+DWORD
+VmDirGetSingleAttributeFromEntry(
+    LDAP*        pLd,
+    LDAPMessage* pEntry,
+    PCSTR        pszAttribute,
+    BOOL         bOptional,
+    PSTR*        ppszOut
+    );
+
+DWORD
+VmDirGetDCDNList(
+    LDAP* pLd,
+    PCSTR pszDomainDN,
+    PVMDIR_STRING_LIST*  ppDCList
+    );
+
+DWORD
+VmDirDnLastRDNToCn(
+    PCSTR   pszDN,
+    PSTR*   ppszCN
+    );
+
+DWORD
+VmDirStringToTokenList(
+    PCSTR pszStr,
+    PCSTR pszDelimiter,
+    PVMDIR_STRING_LIST *ppStrList
     );
 
 #ifdef __cplusplus

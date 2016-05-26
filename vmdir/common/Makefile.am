@@ -30,6 +30,7 @@ libcommon_la_SOURCES = \
     tsstack.c \
     ldapbind.c \
     krbutil.c \
+    krbmisc.c \
     parsearguments.c \
     superlogutil.c
 

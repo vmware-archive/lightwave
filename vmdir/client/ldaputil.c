@@ -472,99 +472,6 @@ error:
 
 static
 DWORD
-VmDirCopyResultAttributeString(
-    LDAP*        pLotus,
-    LDAPMessage* pCAResult,
-    PCSTR        pszAttribute,
-    BOOL         bOptional,
-    PSTR*        ppszOut
-)
-{
-    DWORD   dwError = 0;
-    struct berval** ppValues = NULL;
-    PSTR   pszOut = NULL;
-
-    ppValues = ldap_get_values_len(
-                                pLotus,
-                                pCAResult,
-                                pszAttribute);
-    if (ppValues && ppValues[0])
-    {
-        dwError = VmDirAllocateMemory(
-                        sizeof(CHAR) * ppValues[0]->bv_len + 1,
-                        (PVOID)&pszOut);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirStringNCpyA(
-                    pszOut,
-                    ppValues[0]->bv_len + 1,
-                    ppValues[0]->bv_val,
-                    ppValues[0]->bv_len);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else if (!bOptional)
-    {
-        dwError = ERROR_INVALID_DATA;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    *ppszOut = pszOut;
-
-cleanup:
-
-    if (ppValues)
-    {
-        ldap_value_free_len(ppValues);
-        ppValues = NULL;
-    }
-    return dwError;
-
-error:
-
-    VMDIR_SAFE_FREE_MEMORY(pszOut);
-    if (ppszOut)
-    {
-        *ppszOut = NULL;
-    }
-    goto cleanup;
-}
-
-/*
- * assume pszDN : cn=xxx,.....
- * return *ppszCN=xxx
- */
-DWORD
-VmDirDnLastRDNToCn(
-    PCSTR   pszDN,
-    PSTR*   ppszCN
-    )
-{
-    DWORD   dwError = 0;
-    PSTR    pszCN = NULL;
-    int     i = 0;
-
-    while (pszDN[i] !=',' && pszDN[i] != '\0')
-    {
-        i++;
-    }
-
-    dwError = VmDirAllocateMemory(i+1, (VOID*)&pszCN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirStringNCpyA(pszCN, i, pszDN+3, i-3);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppszCN = pszCN;
-cleanup:
-    return dwError;
-error:
-    VMDIR_SAFE_FREE_MEMORY(pszCN);
-    printf("VmDirDnToCn failed. Error[%d]\n", dwError);
-    goto cleanup;
-}
-
-static
-DWORD
 VmDirMergeGroup(
     LDAP*   pSourceLd,
     LDAP*   pTargetLd,
@@ -1562,7 +1469,7 @@ VmDirLdapSetupRemoteHostRA(
     PSTR        pszReplURI = NULL;
     PSTR        pszReplHostNameDN = NULL;
     PSTR        pszReplAgrDN = NULL;
-
+    PSTR        pszLastLocalUsn = NULL;
     LDAP*       pLd = NULL;
     PSTR        pszDomainDN = NULL;
 
@@ -1607,6 +1514,7 @@ VmDirLdapSetupRemoteHostRA(
         LDAPMod replAgreement = {0};
         LDAPMod replURI = {0};
         LDAPMod replUSN = {0};
+        USN     lastLocalUsn = 0;
 
         LDAPMod* pReplAgrObjAttrs[] =
         {
@@ -1624,6 +1532,23 @@ VmDirLdapSetupRemoteHostRA(
         replURI.mod_type = ATTR_LABELED_URI;
         replURI.mod_values = modv_uri;
 
+        dwError = VmDirLdapGetHighWatermark(pLd,
+                                            pszHostName,
+                                            pszReplHostName,
+                                            pszDomainName,
+                                            pszUsername,
+                                            pszPassword,
+                                            &lastLocalUsn);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirAllocateStringAVsnprintf(
+                                        &pszLastLocalUsn,
+                                        "%u",
+                                        lastLocalUsn);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        modv_usn[0] = pszLastLocalUsn;
+
         replUSN.mod_op = LDAP_MOD_ADD;
         replUSN.mod_type = ATTR_LAST_LOCAL_USN_PROCESSED;
         replUSN.mod_values = modv_usn;
@@ -1638,6 +1563,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszReplHostNameDN);
     VMDIR_SAFE_FREE_MEMORY(pszReplAgrDN);
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
+    VMDIR_SAFE_FREE_MEMORY(pszLastLocalUsn);
 
     VmDirLdapUnbind(&pLd);
 
@@ -4406,13 +4332,12 @@ VmDirGetObjectAttribute(
               pEntry != NULL;
               pEntry = ldap_next_entry(pLd, pEntry), ++idx)
         {
-            dwError = VmDirCopyResultAttributeString(
-                pLd,
-                pEntry,
-                pszAttribute,
-                FALSE,
-                &ppszValues[idx]
-                );
+            dwError = VmDirGetSingleAttributeFromEntry(
+                        pLd,
+                        pEntry,
+                        pszAttribute,
+                        FALSE,
+                        &ppszValues[idx]);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }

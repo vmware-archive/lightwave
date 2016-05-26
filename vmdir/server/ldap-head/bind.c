@@ -124,6 +124,7 @@ VmDirPerformBind(
     }
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
+
     VMDIR_LOG_INFO(LDAP_DEBUG_AUTH,
             "Bind Request Succeeded (%s) Bind DN: \"%s\", Method: %ld",
             pOperation->conn->szClientIP,

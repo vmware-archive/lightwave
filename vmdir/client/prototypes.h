@@ -562,6 +562,11 @@ VmDirLocalInitializeHost(
 );
 
 DWORD
+VmDirLocalGetServerState(
+    UINT32  *pServerState
+    );
+
+DWORD
 VmDirLocalInitializeTenant(
     PWSTR   pwszNamingContext,
     PWSTR   pwszUserName,
@@ -678,3 +683,26 @@ VmDirSchemaUpgradeInternal(
     BOOLEAN             bDryRun,
     PSTR*               ppszErrMsg
     );
+
+DWORD
+VmDirParseMetadata(
+    PCSTR  pszMetadata,
+    PVMDIR_METADATA *ppMetadata
+    );
+
+VOID
+VmDirFreeMetadata(
+    PVMDIR_METADATA pMetadata
+    );
+
+DWORD
+VmDirLdapGetHighWatermark(
+    LDAP*      pLocalLd,
+    PCSTR      pszLocalHost,
+    PCSTR      pszPartnerHost,
+    PCSTR      pszDomainName,
+    PCSTR      pszUsername,
+    PCSTR      pszPassword,
+    USN*       pLastLocalUsn
+    );
+

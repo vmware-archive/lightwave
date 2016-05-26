@@ -23,7 +23,9 @@
 #define VDCREPADMIN_FEATURE_SHOW_SERVER_ATTRIBUTE      "showservers"
 #define VDCREPADMIN_FEATURE_CREATE_AGREEMENT           "createagreement"
 #define VDCREPADMIN_FEATURE_REMOVE_AGREEMENT           "removeagreement"
+#define VDCREPADMIN_FEATURE_DUMMY_DOMAIN_WRITE         "dummydomainwrite"
 #define VDCREPADMIN_QUERY_IS_FIRST_CYCLE_DONE          "isfirstcycledone"
+
 
 #ifndef _WIN32
 
@@ -39,7 +41,6 @@
 #define VDCREPADMIN_OPTIONS_VALID             "2h:H:p:P:D:u:w:vf:"
 
 #else
-
 #define VDCREPADMIN_OPTION_SOURCE_HOSTNAME    "-h"
 #define VDCREPADMIN_OPTION_TARGET_HOSTNAME    "-H"
 #define VDCREPADMIN_OPTION_SOURCE_PORT        "-p"
