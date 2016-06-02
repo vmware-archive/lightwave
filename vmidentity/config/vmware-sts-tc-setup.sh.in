@@ -105,6 +105,9 @@ if [ ${OUT} -ne 0 ]; then
         exception "Failed to copy tomcat-juli.jar to $VMWARE_STS_INSTANCE_BIN";
 fi
 
+## Create symbolic link for web application logs to sso logs
+ln -s $VMWARE_STS_INSTANCE_LOGS/* $VMWARE_STS_LOGS
+
 function exception() {
   echo $1;
 }
