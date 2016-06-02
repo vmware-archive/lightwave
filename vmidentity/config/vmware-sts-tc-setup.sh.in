@@ -89,6 +89,9 @@ do
    fi
 done
 
+## Create symbolic link for web application logs to sso logs 
+ln -s $VMWARE_STS_INSTANCE_LOGS/* $VMWARE_STS_LOGS
+
 ## Set tomcat environmental properties
 ### Copy setenv.sh to bin 
 cp $VMWARE_STS_CONF/setenv.sh $VMWARE_STS_INSTANCE_BIN
