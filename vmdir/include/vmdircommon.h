@@ -878,7 +878,7 @@ typedef enum
 #ifndef _WIN32
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH     "Services\\Vmdir"
 #define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "Services\\Vmdir\\Parameters"
-#define VMDIR_LINUX_DB_PATH                 "/storage/db/vmware-vmdir/"
+#define VMDIR_LINUX_DB_PATH                 VMDIR_DB_DIR "/"
 #else
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH     "SYSTEM\\CurrentControlSet\\services\\VMWareDirectoryService"
 #define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "SYSTEM\\CurrentControlSet\\services\\VMWareDirectoryService\\Parameters"
