@@ -67,9 +67,13 @@ extern "C" {
 #define VDIR_FOREST_FUNCTIONAL_LEVEL    "1"
 #define VDIR_DOMAIN_FUNCTIONAL_LEVEL	"2"  // This value is the DFL for the current version
 
+// Keys for backend funtion pfnBEStrkeyGet/SetValues to access attribute IDs
+#define ATTR_ID_MAP_KEY   "1VmdirAttrIDToNameTb"
+
 typedef struct _VDIR_CFG_ATTR_INDEX_DESC*   PVDIR_CFG_ATTR_INDEX_DESC;
 typedef struct _VDIR_BACKEND_INTERFACE*     PVDIR_BACKEND_INTERFACE;
 typedef struct _VDIR_SCHEMA_CTX*            PVDIR_SCHEMA_CTX;
+typedef struct _VDIR_SCHEMA_DIFF*           PVDIR_SCHEMA_DIFF;
 typedef struct _VDIR_ACL_CTX*               PVDIR_ACL_CTX;
 
 typedef struct _VDIR_BERVALUE
@@ -214,18 +218,11 @@ typedef struct _ATTRIBUTE_META_DATA_NODE
     char    metaData[VMDIR_MAX_ATTR_META_DATA_LEN];
 } ATTRIBUTE_META_DATA_NODE, *PATTRIBUTE_META_DATA_NODE;
 
-typedef enum _VDIR_MOD_OPERATION_TYPE
-{
-    MOD_OP_ADD = 0,
-    MOD_OP_DELETE,
-    MOD_OP_REPLACE
-} VDIR_MOD_OPERATION_TYPE;
-
 #define VDIR_DEFAULT_FORCE_VERSION_GAP  512
 
 typedef struct _VDIR_MODIFICATION
 {
-    VDIR_MOD_OPERATION_TYPE     operation;
+    VDIR_LDAP_MOD_OP            operation;
     VDIR_ATTRIBUTE              attr;
     BOOLEAN                     ignore; // Used internally, e.g. to skip processing a Delete modification when the attribute
                                   // does not exist in the entry
@@ -494,9 +491,9 @@ typedef struct _VDIR_LDAP_CONTROL
 
 typedef enum
 {
-    VDIR_OPERATION_TYPE_EXTERNAL = 0,
-    VDIR_OPERATION_TYPE_INTERNAL,
-    VDIR_OPERATION_TYPE_REPL,
+    VDIR_OPERATION_TYPE_EXTERNAL = 1,
+    VDIR_OPERATION_TYPE_INTERNAL = 2,
+    VDIR_OPERATION_TYPE_REPL = 4,
 } VDIR_OPERATION_TYPE;
 
 typedef struct _VDIR_OPERATION
@@ -518,7 +515,7 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
-
+    BOOLEAN             bSchemaWriteOp;  // this operation is schema modification
 
     ///////////////////////////////////////////////////////////////////////////
     // fields valid for both INTERNAL and EXTERNAL operations
@@ -606,19 +603,19 @@ VmDirInitializeEntry(
    int                          nVals);
 
 /*
- * release contents of an entry (but not entry itself, e.g. stack entry)
- */
-void
-VmDirFreeEntryContent(
-    PVDIR_ENTRY pEntry
-    );
-
-/*
  * Convert entry allocType from ENTRY_FROM_DB to ENTRY_FROM_WIRE
  */
 DWORD
 VmDirEntryUnpack(
     PVDIR_ENTRY  pEntry
+    );
+
+/*
+ * release contents of an entry (but not entry itself, e.g. stack entry)
+ */
+void
+VmDirFreeEntryContent(
+    PVDIR_ENTRY pEntry
     );
 
 /*
@@ -629,6 +626,16 @@ VmDirFreeEntry(
     PVDIR_ENTRY pEntry
     );
 
+void
+VmDirFreeEntryArrayContent(
+    PVDIR_ENTRY_ARRAY   pArray
+    );
+
+void
+VmDirFreeEntryArray(
+    PVDIR_ENTRY_ARRAY   pEntryAry
+    );
+
 /*
  * if success, pEntry takes ownership of pAttr.
  */
@@ -636,6 +643,17 @@ DWORD
 VmDirEntryAddAttribute(
     PVDIR_ENTRY        pEntry,
     PVDIR_ATTRIBUTE    pAttr
+    );
+
+/*
+ * Add an array of bervalue attribute values into an entry.
+ */
+DWORD
+VmDirEntryAddBervArrayAttribute(
+    PVDIR_ENTRY     pEntry,
+    PCSTR           pszAttrName,
+    VDIR_BERVARRAY  attrVals,
+    USHORT          usNumVals
     );
 
 /*
@@ -1040,7 +1058,22 @@ VmDirInitStackOperation(
     PVDIR_SCHEMA_CTX        pSchemaCtx
     );
 
+void
+VmDirFreeOperationContent(
+    PVDIR_OPERATION     pOp
+    );
+
 // middle-layer search.c
+DWORD
+VmDirSimpleEqualFilterInternalSearch(
+    PCSTR               pszBaseDN,
+    int                 searchScope,
+    PCSTR               pszAttrName,
+    PCSTR               pszAttrValue,
+    PVDIR_ENTRY_ARRAY   pEntryArray
+    );
+
+// middle-layer result.c
 int
 VmDirSendSearchEntry(
    PVDIR_OPERATION     pOperation,

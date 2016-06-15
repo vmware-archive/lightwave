@@ -210,6 +210,21 @@ VmDirSendLdapResult(
        }
    }
 
+   /* Send controls only if local write succeeds - strong consistency write */
+   if (op->reqControls != NULL &&
+       !IsNullOrEmptyString(op->reqControls->type) &&
+       !VmDirStringCompareA(op->reqControls->type, LDAP_CONTROL_CONSISTENT_WRITE, TRUE) &&
+       op->ldapResult.errCode == LDAP_SUCCESS)
+   {
+       VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirSendLdapResult: Write consistency done Control value");
+
+       if (WriteConsistencyWriteDoneControl(op, ber) != LDAP_SUCCESS)
+       {
+          VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirSendLdapResult: WriteConsistencyWriteDoneControl failed");
+          goto done;
+       }
+   }
+
    if (ber_printf( ber, "N}" ) == -1)
    {
       VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SendLdapResult: ber_printf (to print msgId ...) failed" );
@@ -763,14 +778,14 @@ WriteAttributes(
                     }
                 }
                 else if (((iSearchReqSpecialChars & LDAP_SEARCH_REQUEST_CHAR_USER) != 0)                   &&
-                         pAttr->pATDesc->usage == VDIR_ATTRIBUTETYPE_USER_APPLICATIONS)
+                         pAttr->pATDesc->usage == VDIR_LDAP_USER_APPLICATIONS_ATTRIBUTE)
                 {
                     bSendAttribute = TRUE;   // return all user attributes - "*"
                 }
                 else if (((iSearchReqSpecialChars & LDAP_SEARCH_REQUEST_CHAR_OP) != 0)                     &&
-                         (pAttr->pATDesc->usage == VDIR_ATTRIBUTETYPE_DIRECTORY_OPERATION ||
-                          pAttr->pATDesc->usage == VDIR_ATTRIBUTETYPE_DSA_OPERATION       ||
-                          pAttr->pATDesc->usage == VDIR_ATTRIBUTETYPE_DISTRIBUTED_OPERATION))
+                         (pAttr->pATDesc->usage == VDIR_LDAP_DIRECTORY_OPERATION_ATTRIBUTE ||
+                          pAttr->pATDesc->usage == VDIR_LDAP_DSA_OPERATION_ATTRIBUTE       ||
+                          pAttr->pATDesc->usage == VDIR_LDAP_DISTRIBUTED_OPERATION_ATTRIBUTE))
                 {
                     bSendAttribute = TRUE;   // return all operational attributes - "+"
                 }

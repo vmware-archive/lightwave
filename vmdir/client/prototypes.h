@@ -677,14 +677,6 @@ VmDirFreeReplicationStateInternal(
     );
 
 DWORD
-VmDirSchemaUpgradeInternal(
-    PVMDIR_CONNECTION   pConnection,
-    PCSTR               pszSchemaFile,
-    BOOLEAN             bDryRun,
-    PSTR*               ppszErrMsg
-    );
-
-DWORD
 VmDirParseMetadata(
     PCSTR  pszMetadata,
     PVMDIR_METADATA *ppMetadata

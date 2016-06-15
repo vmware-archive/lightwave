@@ -37,5 +37,3 @@ VDIR_ATTR_INDEX_GLOBALS gVdirAttrIndexGlobals =
         VMDIR_SF_INIT(.pCaches, {0}),
         VMDIR_SF_INIT(.pNewCache, NULL)
     };
-
-PVDIR_CFG_ATTR_INDEX_DESC   pBootStrapIdxAttrDesc = NULL;

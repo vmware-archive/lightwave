@@ -628,23 +628,6 @@ VmDirFreeSuperLogTable(
     );
 
 DWORD
-VmDirCompareSchema (
-    PSTR     pszBaseHostName ,
-    PSTR     pszUPN ,
-    PSTR     pszPassword ,
-    PVMDIR_SCHEMA_DIFF*  ppSchemaDiff ,
-    DWORD*   pdwInfoCount
-    );
-
-DWORD
-VmDirSyncVersionsInFederation(
-    PSTR    pszHostName,
-    PSTR    pszUPN,
-    PSTR    pszPassword,
-    PSTR*   ppszResult
-    );
-
-DWORD
 VmDirGetDomainFunctionalLevel(
     PCSTR       pszHostName,
     PCSTR       pszUPN,
@@ -709,14 +692,6 @@ VmDirCloseDatabaseFile(
     PVMDIR_SERVER_CONTEXT   hBinding,
     FILE **                 ppFileHandle
 );
-
-DWORD
-VmDirSchemaUpgrade(
-    PVMDIR_CONNECTION   pConnection,
-    PCSTR               pszSchemaFile,
-    BOOLEAN             bDryRun,
-    PSTR*               ppszErrMsg
-    );
 
 #ifdef __cplusplus
 }

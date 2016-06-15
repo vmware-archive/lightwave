@@ -77,8 +77,8 @@ namespace VMDirInterop.LDAP
             string filter,
             string[] attrs,
             int attrsonly,
-            int sctrls,
-            int cctrls,
+            IntPtr[] sctrls,
+            IntPtr[] cctrls,
             IntPtr timeout,
             int sizelimit,
             ref IntPtr res
@@ -189,6 +189,44 @@ namespace VMDirInterop.LDAP
         );
 
         [DllImport(LDAP_DLL)]
+        public static extern int ldap_create_page_control(
+            IntPtr ld,
+            int pagesize,
+            IntPtr cookie,
+            int iscritical,
+            out IntPtr controlPage
+        );
+
+        [DllImport(LDAP_DLL)]
+        public static extern int ldap_parse_result(
+            IntPtr ld,
+            IntPtr msg,
+            out int errcode,
+            string matcheddnp,
+            string errmsgp,
+            string[] referralsp,
+            ref IntPtr serverctrlsp,
+            int freeit
+        );
+
+        [DllImport(LDAP_DLL)]
+        public static extern int ldap_parse_page_control(
+            IntPtr ld,
+            IntPtr controls,
+            out ulong count,
+            ref IntPtr cookie);
+
+        [DllImport(LDAP_DLL)]
+        public static extern int ldap_controls_free(
+            IntPtr controls
+        );
+
+        [DllImport(LDAP_DLL)]
+        public static extern int ldap_control_free(
+            IntPtr control
+        );
+
+        [DllImport(LDAP_DLL)]
         public static extern int ldap_memfree(
             IntPtr ldapPointer
         );
@@ -197,6 +235,11 @@ namespace VMDirInterop.LDAP
         public static extern int ber_free(
             IntPtr berElement,
             int freeBuffer
+        );
+
+        [DllImport(LBER_DLL)]
+        public static extern int ber_bvfree(
+            IntPtr bv
         );
 
         [DllImport(LDAP_DLL)]

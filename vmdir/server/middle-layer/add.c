@@ -26,10 +26,10 @@ _VmDirEntryDupAttrValueCheck(
 static
 int
 _VmDirGenerateAttrMetaData(
-    PVDIR_ENTRY         pEntry,
+    PVDIR_ENTRY    pEntry,
     /* OPTIONAL, if specified, only generate metaData for that particular attribute
      * Otherwise, generate for all attributes*/
-    PSTR                pszAttributeName
+    PSTR           pszAttributeName
     );
 
 static
@@ -132,15 +132,19 @@ VmDirInternalAddEntry(
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
                                   retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)) );
 
+    // Acquire schema modification mutex
+    retVal = VmDirSchemaModMutexAcquire(pOperation);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Failed to lock schema mod mutex", retVal );
+
     // Parse Parent DN
     retVal = VmDirGetParentDN( &pEntry->dn, &pEntry->pdn );
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Get ParentDn failed - (%u)",  retVal );
 
+    retVal = VmDirExecutePreAddPlugins(pOperation, pEntry, retVal);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreAdd plugin failed - (%u)",  retVal );
+
     if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
     {
-        retVal = VmDirExecutePreAddPlugins(pOperation, pEntry, retVal);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreAdd plugin failed - (%u)",  retVal );
-
         // Entry schema check
         retVal = VmDirSchemaCheck(pEntry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "schema error - (%u)(%s)",
@@ -305,24 +309,23 @@ txnretry:
 
 cleanup:
 
-    if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
     {
-        if (retVal == LDAP_SUCCESS)
-        {
-            int iPostCommitPluginRtn  = 0;
+        int iPostCommitPluginRtn = 0;
 
-            // Execute post Add commit plugin logic
-            iPostCommitPluginRtn = VmDirExecutePostAddCommitPlugins(pOperation, pEntry, retVal);
-            if ( iPostCommitPluginRtn != LDAP_SUCCESS
-                 &&
-                 iPostCommitPluginRtn != pOperation->ldapResult.errCode    // pass through
-               )
-            {
-                VmDirLog( LDAP_DEBUG_ANY, "InternalAddEntry: VdirExecutePostAddCommitPlugins - code(%d)",
-                          iPostCommitPluginRtn);
-            }
+        // Execute post Add commit plugin logic
+        iPostCommitPluginRtn = VmDirExecutePostAddCommitPlugins(pOperation, pEntry, retVal);
+        if ( iPostCommitPluginRtn != LDAP_SUCCESS
+                &&
+                iPostCommitPluginRtn != pOperation->ldapResult.errCode    // pass through
+        )
+        {
+            VmDirLog( LDAP_DEBUG_ANY, "InternalAddEntry: VdirExecutePostAddCommitPlugins - code(%d)",
+                    iPostCommitPluginRtn);
         }
     }
+
+    // Release schema modification mutex
+    (VOID)VmDirSchemaModMutexRelease(pOperation);
 
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
 
@@ -470,10 +473,10 @@ error:
 static
 int
 _VmDirGenerateAttrMetaData(
-    PVDIR_ENTRY         pEntry,
+    PVDIR_ENTRY    pEntry,
     /* OPTIONAL, if specified, only generate metaData for that particular attribute
      * Otherwise, generate for all attributes*/
-    PSTR                 pszAttributeName
+    PSTR           pszAttributeName
     )
 {
     int              retVal = LDAP_SUCCESS;

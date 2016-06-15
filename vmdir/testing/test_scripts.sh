@@ -38,6 +38,9 @@ ldapadd -c -h $host -p $port -x -D "cn=administrator,cn=users,dc=vmware,dc=com" 
 chmod +x $TESTING_PATH/search_tests/test_script1.sh
 $TESTING_PATH/search_tests/test_script1.sh -h $host -p $port > $RESULT_PATH/search_tests_output.txt 2>&1
 diff $TESTING_PATH/search_tests/good_output.txt  $RESULT_PATH/search_tests_output.txt > $RESULT_DIFF_PATH/diff_search.output
+chmod +x $TESTING_PATH/search_tests/test_matching_rule.sh
+$TESTING_PATH/search_tests/test_matching_rule.sh -h $host -p $port > $RESULT_PATH/search_matching_rule_tests_output.txt 2>&1
+diff $TESTING_PATH/search_tests/good_output_matching_rule.txt  $RESULT_PATH/search_matching_rule_tests_output.txt > $RESULT_DIFF_PATH/diff_search_matching_rule.output
 # Delete 100 objects
 echo "Running delete_test after search"
 cd $TESTING_PATH/delete_tests
@@ -85,6 +88,20 @@ echo "Running passwords_test"
 chmod +x $TESTING_PATH/password_tests/test_script1.sh
 $TESTING_PATH/password_tests/test_script1.sh -h $host -p $port > $RESULT_PATH/password_tests_output.txt 2>&1
 diff $TESTING_PATH/password_tests/good_output.txt  $RESULT_PATH/password_tests_output.txt > $RESULT_DIFF_PATH/diff_password.output
+
+
+echo "Running schema_test (first boot)"
+# Schema test scripts (first boot)
+chmod +x $TESTING_PATH/schema_tests/test_script1.sh
+$TESTING_PATH/schema_tests/test_script1.sh -h $host -p $port > $RESULT_PATH/schema_firstboot_tests_output.txt 2>&1
+diff $TESTING_PATH/schema_tests/good_output_firstboot.txt  $RESULT_PATH/schema_firstboot_tests_output.txt > $RESULT_DIFF_PATH/diff_schema_firstboot.output
+# Restart vmdir
+/opt/likewise/bin/lwsm restart vmdir
+echo "Running schema_test (subsequent boot)"
+# Schema test scripts (subsequent boot)
+chmod +x $TESTING_PATH/schema_tests/test_script1.sh
+$TESTING_PATH/schema_tests/test_script1.sh -h $host -p $port > $RESULT_PATH/schema_subsequentboot_tests_output.txt 2>&1
+diff $TESTING_PATH/schema_tests/good_output_subsequentboot.txt  $RESULT_PATH/schema_subsequentboot_tests_output.txt > $RESULT_DIFF_PATH/diff_schema_subsequentboot.output
 
 
 # Clean up

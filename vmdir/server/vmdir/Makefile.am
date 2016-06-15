@@ -4,34 +4,34 @@ idl_srcdir=$(top_srcdir)/idl
 
 vmdird_SOURCES = \
     accountmgmt.c \
-    auth.c        \
-    globals.c     \
-    init.c        \
-    instance.c    \
-    ipcserver.c   \
+    auth.c \
+    globals.c \
+    init.c \
+    instance.c \
+    ipcserver.c \
     ipclocalapi.c \
     ipcapihandler.c \
-    parseargs.c   \
-    main.c        \
-    regconfig.c   \
-    rpcserv.c     \
-    rpcsrpserv.c  \
-    rpcstring.c   \
-    rpc.c         \
-    service.c     \
-    shutdown.c    \
-    signal.c      \
-    srvthr.c      \
+    parseargs.c \
+    main.c \
+    regconfig.c \
+    rpcserv.c \
+    rpcsrpserv.c \
+    rpcstring.c \
+    rpc.c \
+    schema.c \
+    service.c \
+    shutdown.c \
+    signal.c \
+    srvthr.c \
     superlogging.c \
-    utils.c       \
-    krb.c       \
+    utils.c \
+    krb.c \
     vmdir_sstub.c \
     vmdirftp_sstub.c \
     vmdirdbcp_sstub.c \
     srp_verifier_sstub.c \
     vmdirsuperlog_sstub.c \
-    vmevent.c \
-    partnerschema.c
+    vmevent.c
 
 if HAVE_MDB_STORE
 VMDIRD_BACKEND_INCLUDES=

@@ -15,6 +15,7 @@ libmdb_store_la_SOURCES = \
     attrindexing.c  \
     config.c        \
     entry.c         \
+    generic.c       \
     globals.c       \
     indexer.c       \
     init.c          \

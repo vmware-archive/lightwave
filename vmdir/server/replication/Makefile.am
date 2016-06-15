@@ -4,6 +4,7 @@ noinst_LTLIBRARIES = libreplication.la
 libreplication_la_SOURCES = \
     libmain.c \
     firstreplcycle.c \
+    replentry.c \
     thread.c
 
 libreplication_la_CPPFLAGS = \

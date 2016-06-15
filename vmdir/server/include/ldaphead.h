@@ -108,6 +108,12 @@ WriteSyncStateControl(
    PSTR*              ppszErrorMsg
    );
 
+int
+WriteConsistencyWriteDoneControl(
+    VDIR_OPERATION *       pOp,
+    BerElement *           pBer
+    );
+
 // delete.c
 int
 VmDirPerformDelete(
@@ -165,7 +171,7 @@ VmDirOpensslShutdown(
 
 // operation.c
 int
-VmDirNewOperation(
+VmDirExternalOperationCreate(
     BerElement*       ber,
     ber_int_t         msgId,
     ber_tag_t         reqCode,
@@ -176,16 +182,6 @@ VmDirNewOperation(
 void
 VmDirFreeOperation(
     PVDIR_OPERATION pOperation
-    );
-
-void
-VmDirFreeOperationContent(
-    PVDIR_OPERATION op
-    );
-
-void
-VmDirFreeEntryArrayContent(
-    PVDIR_ENTRY_ARRAY   pArray
     );
 
 // result.c

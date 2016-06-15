@@ -28,8 +28,26 @@
 #include "includes.h"
 
 static
+DWORD
+VdirEqualityMatchingRuleLoad(
+    VOID
+    );
+
+static
+DWORD
+VdirOrderingMatchingRuleLoad(
+    VOID
+    );
+
+static
+DWORD
+VdirSubstrMatchingRuleLoad(
+    VOID
+    );
+
+static
 int
-matchingrulePNameCmp(
+matchingrulePSyntaxOidCmp(
     const void *p1,
     const void *p2
     );
@@ -95,146 +113,263 @@ VdirMatchingRuleLoad(
     )
 {
     DWORD    dwError = 0;
+
+    dwError = VdirEqualityMatchingRuleLoad();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VdirOrderingMatchingRuleLoad();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VdirSubstrMatchingRuleLoad();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
+static
+DWORD
+VdirEqualityMatchingRuleLoad(
+    VOID
+    )
+{
+    DWORD    dwError = 0;
     DWORD    dwCnt = 0;
 
-    static VDIR_MATCHING_RULE_DESC gMatchingRuleTbl[] = VDIR_MATCHING_RULE_INIT_TABLE_INITIALIZER;
+    static VDIR_MATCHING_RULE_DESC gEqualityMatchingRuleTbl[] =
+            VDIR_EQAULITY_MATCHING_RULE_INIT_TABLE_INITIALIZER;
 
-    if (gVdirMatchingRuleGlobals.pMatchingRule)
+    if (gVdirMatchingRuleGlobals.pEqualityMatchingRule)
     {
         return 0;
     }
 
-    gVdirMatchingRuleGlobals.pMatchingRule = &gMatchingRuleTbl[0];
-    gVdirMatchingRuleGlobals.usSize = sizeof(gMatchingRuleTbl)/sizeof(gMatchingRuleTbl[0]);
+    gVdirMatchingRuleGlobals.pEqualityMatchingRule = &gEqualityMatchingRuleTbl[0];
+    gVdirMatchingRuleGlobals.usEqualityMRSize = sizeof(gEqualityMatchingRuleTbl)/sizeof(gEqualityMatchingRuleTbl[0]);
 
-    qsort(gVdirMatchingRuleGlobals.pMatchingRule,
-            gVdirMatchingRuleGlobals.usSize,
+    qsort(gVdirMatchingRuleGlobals.pEqualityMatchingRule,
+            gVdirMatchingRuleGlobals.usEqualityMRSize,
             sizeof(VDIR_MATCHING_RULE_DESC),
-            matchingrulePNameCmp);
+            matchingrulePSyntaxOidCmp);
 
-    for (dwCnt = 0; dwCnt < gVdirMatchingRuleGlobals.usSize; dwCnt++)
+    for (dwCnt = 0; dwCnt < gVdirMatchingRuleGlobals.usEqualityMRSize; dwCnt++)
     {
         PVDIR_SYNTAX_DESC pSyntax = VdirSyntaxLookupByOid(
-                gVdirMatchingRuleGlobals.pMatchingRule[dwCnt].pszSyntaxOid);
+                gVdirMatchingRuleGlobals.pEqualityMatchingRule[dwCnt].pszSyntaxOid);
 
         if (!pSyntax)
         {
             dwError = ERROR_INVALID_SCHEMA;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
-        gVdirMatchingRuleGlobals.pMatchingRule[dwCnt].pSyntax = pSyntax;
+        gVdirMatchingRuleGlobals.pEqualityMatchingRule[dwCnt].pSyntax = pSyntax;
     }
 
 #ifdef LDAP_DEBUG
-    VmDirLog( LDAP_DEBUG_TRACE, "Supported MatchingRules" );
+    VmDirLog( LDAP_DEBUG_TRACE, "Supported Equality MatchingRules" );
     for (dwCnt=0; dwCnt<gVdirMatchingRuleGlobals.usSize; dwCnt++)
     {
         VmDirLog( LDAP_DEBUG_TRACE, "[%3d][%28s](%s)\n", dwCnt,
-                gVdirMatchingRuleGlobals.pMatchingRule[dwCnt].pszName,
-                gVdirMatchingRuleGlobals.pMatchingRule[dwCnt].pszOid);
+                gVdirMatchingRuleGlobals.pEqualityMatchingRule[dwCnt].pszName,
+                gVdirMatchingRuleGlobals.pEqualityMatchingRule[dwCnt].pszOid);
     }
 #endif
 
 cleanup:
-
     return dwError;
 
 error:
+    goto cleanup;
+}
 
+static
+DWORD
+VdirOrderingMatchingRuleLoad(
+    VOID
+    )
+{
+    DWORD    dwError = 0;
+    DWORD    dwCnt = 0;
+
+    static VDIR_MATCHING_RULE_DESC gOrderingMatchingRuleTbl[] =
+            VDIR_ORDERING_MATCHING_RULE_INIT_TABLE_INITIALIZER;
+
+    if (gVdirMatchingRuleGlobals.pOrderingMatchingRule)
+    {
+        return 0;
+    }
+
+    gVdirMatchingRuleGlobals.pOrderingMatchingRule = &gOrderingMatchingRuleTbl[0];
+    gVdirMatchingRuleGlobals.usOrderingMRSize = sizeof(gOrderingMatchingRuleTbl)/sizeof(gOrderingMatchingRuleTbl[0]);
+
+    qsort(gVdirMatchingRuleGlobals.pOrderingMatchingRule,
+            gVdirMatchingRuleGlobals.usOrderingMRSize,
+            sizeof(VDIR_MATCHING_RULE_DESC),
+            matchingrulePSyntaxOidCmp);
+
+    for (dwCnt = 0; dwCnt < gVdirMatchingRuleGlobals.usOrderingMRSize; dwCnt++)
+    {
+        PVDIR_SYNTAX_DESC pSyntax = VdirSyntaxLookupByOid(
+                gVdirMatchingRuleGlobals.pOrderingMatchingRule[dwCnt].pszSyntaxOid);
+
+        if (!pSyntax)
+        {
+            dwError = ERROR_INVALID_SCHEMA;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        gVdirMatchingRuleGlobals.pOrderingMatchingRule[dwCnt].pSyntax = pSyntax;
+    }
+
+#ifdef LDAP_DEBUG
+    VmDirLog( LDAP_DEBUG_TRACE, "Supported Ordering MatchingRules" );
+    for (dwCnt=0; dwCnt<gVdirMatchingRuleGlobals.usOrderingMRSize; dwCnt++)
+    {
+        VmDirLog( LDAP_DEBUG_TRACE, "[%3d][%28s](%s)\n", dwCnt,
+                gVdirMatchingRuleGlobals.pOrderingMatchingRule[dwCnt].pszName,
+                gVdirMatchingRuleGlobals.pOrderingMatchingRule[dwCnt].pszOid);
+    }
+#endif
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+VdirSubstrMatchingRuleLoad(
+    VOID
+    )
+{
+    DWORD    dwError = 0;
+    DWORD    dwCnt = 0;
+
+    static VDIR_MATCHING_RULE_DESC gSubstrMatchingRuleTbl[] =
+            VDIR_SUBSTR_MATCHING_RULE_INIT_TABLE_INITIALIZER;
+
+    if (gVdirMatchingRuleGlobals.pSubstrMatchingRule)
+    {
+        return 0;
+    }
+
+    gVdirMatchingRuleGlobals.pSubstrMatchingRule = &gSubstrMatchingRuleTbl[0];
+    gVdirMatchingRuleGlobals.usSubstrMRSize = sizeof(gSubstrMatchingRuleTbl)/sizeof(gSubstrMatchingRuleTbl[0]);
+
+    qsort(gVdirMatchingRuleGlobals.pSubstrMatchingRule,
+            gVdirMatchingRuleGlobals.usSubstrMRSize,
+            sizeof(VDIR_MATCHING_RULE_DESC),
+            matchingrulePSyntaxOidCmp);
+
+    for (dwCnt = 0; dwCnt < gVdirMatchingRuleGlobals.usSubstrMRSize; dwCnt++)
+    {
+        PVDIR_SYNTAX_DESC pSyntax = VdirSyntaxLookupByOid(
+                gVdirMatchingRuleGlobals.pSubstrMatchingRule[dwCnt].pszSyntaxOid);
+
+        if (!pSyntax)
+        {
+            dwError = ERROR_INVALID_SCHEMA;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        gVdirMatchingRuleGlobals.pSubstrMatchingRule[dwCnt].pSyntax = pSyntax;
+    }
+
+#ifdef LDAP_DEBUG
+    VmDirLog( LDAP_DEBUG_TRACE, "Supported Substr MatchingRules" );
+    for (dwCnt=0; dwCnt<gVdirMatchingRuleGlobals.usSubstrMRSize; dwCnt++)
+    {
+        VmDirLog( LDAP_DEBUG_TRACE, "[%3d][%28s](%s)\n", dwCnt,
+                gVdirMatchingRuleGlobals.pSubstrMatchingRule[dwCnt].pszName,
+                gVdirMatchingRuleGlobals.pSubstrMatchingRule[dwCnt].pszOid);
+    }
+#endif
+
+cleanup:
+    return dwError;
+
+error:
     goto cleanup;
 }
 
 PVDIR_MATCHING_RULE_DESC
-VdirMatchingRuleLookupByName(
-    PCSTR    pszName
+VdirEqualityMRLookupBySyntaxOid(
+    PCSTR    pszSyntaxOid
     )
 {
     PVDIR_MATCHING_RULE_DESC pMatchingRule = NULL;
     VDIR_MATCHING_RULE_DESC  key = {0};
 
-    if (!pszName)
+    if (!pszSyntaxOid)
     {
         return NULL;
     }
 
-    key.pszName = (PSTR)pszName;
+    key.pszSyntaxOid = (PSTR)pszSyntaxOid;
 
     pMatchingRule = (PVDIR_MATCHING_RULE_DESC) bsearch(
             &key,
-            gVdirMatchingRuleGlobals.pMatchingRule,
-            gVdirMatchingRuleGlobals.usSize,
+            gVdirMatchingRuleGlobals.pEqualityMatchingRule,
+            gVdirMatchingRuleGlobals.usEqualityMRSize,
             sizeof(VDIR_MATCHING_RULE_DESC),
-            matchingrulePNameCmp);
+            matchingrulePSyntaxOidCmp);
 
     return pMatchingRule;
 }
 
-/*
- * Get syntax definitions
- *
- * (*pppszOutStr) is an array of PSTR ends with a NULL
- */
-DWORD
-VdirMatchingRuleGetDefinition(
-    PSTR**    pppszOutStr,
-    USHORT*   pdwSize
+PVDIR_MATCHING_RULE_DESC
+VdirOrderingMRLookupBySyntaxOid(
+    PCSTR    pszSyntaxOid
     )
 {
-    DWORD dwError = 0;
-    DWORD dwCnt = 0;
-    PSTR*  ppszBuf = NULL;
+    PVDIR_MATCHING_RULE_DESC pMatchingRule = NULL;
+    VDIR_MATCHING_RULE_DESC  key = {0};
 
-    if (!pppszOutStr || !pdwSize)
+    if (!pszSyntaxOid)
     {
-        return ERROR_INVALID_PARAMETER;
+        return NULL;
     }
 
-    dwError = VmDirAllocateMemory(
-            sizeof(PSTR) * (gVdirMatchingRuleGlobals.usSize + 1),
-            (PVOID*)&ppszBuf);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    key.pszSyntaxOid = (PSTR)pszSyntaxOid;
 
-    for (dwCnt = 0; dwCnt < gVdirMatchingRuleGlobals.usSize; dwCnt++)
+    pMatchingRule = (PVDIR_MATCHING_RULE_DESC) bsearch(
+            &key,
+            gVdirMatchingRuleGlobals.pOrderingMatchingRule,
+            gVdirMatchingRuleGlobals.usOrderingMRSize,
+            sizeof(VDIR_MATCHING_RULE_DESC),
+            matchingrulePSyntaxOidCmp);
+
+    return pMatchingRule;
+}
+
+PVDIR_MATCHING_RULE_DESC
+VdirSubstrMRLookupBySyntaxOid(
+    PCSTR    pszSyntaxOid
+    )
+{
+    PVDIR_MATCHING_RULE_DESC pMatchingRule = NULL;
+    VDIR_MATCHING_RULE_DESC  key = {0};
+
+    if (!pszSyntaxOid)
     {
-        char pszTmp[256] = {0};
-
-        dwError = VmDirStringNPrintFA(
-            pszTmp, 256, 255, "( %s DESC '%s' )",
-            gVdirMatchingRuleGlobals.pMatchingRule[dwCnt].pszOid,
-            gVdirMatchingRuleGlobals.pMatchingRule[dwCnt].pszName
-        );
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirAllocateStringA(
-                pszTmp,
-                &ppszBuf[dwCnt]);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        return NULL;
     }
 
-    *pppszOutStr = ppszBuf;
-    *pdwSize = gVdirMatchingRuleGlobals.usSize;
+    key.pszSyntaxOid = (PSTR)pszSyntaxOid;
 
-cleanup:
+    pMatchingRule = (PVDIR_MATCHING_RULE_DESC) bsearch(
+            &key,
+            gVdirMatchingRuleGlobals.pSubstrMatchingRule,
+            gVdirMatchingRuleGlobals.usSubstrMRSize,
+            sizeof(VDIR_MATCHING_RULE_DESC),
+            matchingrulePSyntaxOidCmp);
 
-    return dwError;
-
-error:
-
-    *pppszOutStr = NULL;
-    *pdwSize = 0;
-
-    if (ppszBuf)
-    {
-        VmDirFreeStringArrayA(ppszBuf);
-        VMDIR_SAFE_FREE_MEMORY(ppszBuf);
-    }
-
-    goto cleanup;
+    return pMatchingRule;
 }
 
 static
 int
-matchingrulePNameCmp(
+matchingrulePSyntaxOidCmp(
     const void *p1,
     const void *p2
     )
@@ -242,23 +377,23 @@ matchingrulePNameCmp(
     PVDIR_MATCHING_RULE_DESC pDesc1 = (PVDIR_MATCHING_RULE_DESC) p1;
     PVDIR_MATCHING_RULE_DESC pDesc2 = (PVDIR_MATCHING_RULE_DESC) p2;
 
-    if ((pDesc1 == NULL || pDesc1->pszName == NULL) &&
-        (pDesc2 == NULL || pDesc2->pszName == NULL))
+    if ((pDesc1 == NULL || pDesc1->pszSyntaxOid == NULL) &&
+        (pDesc2 == NULL || pDesc2->pszSyntaxOid == NULL))
     {
         return 0;
     }
 
-    if (pDesc1 == NULL || pDesc1->pszName == NULL)
+    if (pDesc1 == NULL || pDesc1->pszSyntaxOid == NULL)
     {
         return -1;
     }
 
-    if (pDesc2 == NULL || pDesc2->pszName == NULL)
+    if (pDesc2 == NULL || pDesc2->pszSyntaxOid == NULL)
     {
         return 1;
     }
 
-    return VmDirStringCompareA(pDesc1->pszName, pDesc2->pszName, TRUE);
+    return VmDirStringCompareA(pDesc1->pszSyntaxOid, pDesc2->pszSyntaxOid, TRUE);
 }
 
 /*
@@ -450,7 +585,7 @@ error:
 
 DWORD
 VmDirNormalizeDNWrapper(
-    PVDIR_BERVALUE             pBerv
+    PVDIR_BERVALUE      pBerv
     )
 {
     return VmDirNormalizeDN(pBerv, NULL);

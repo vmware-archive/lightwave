@@ -102,6 +102,8 @@ extern "C" {
 #define ATTR_SN_LEN                         sizeof(ATTR_SN)-1
 #define ATTR_GIVEN_NAME                     "givenName"
 #define ATTR_GIVEN_NAME_LEN                 sizeof(ATTR_GIVEN_NAME)-1
+#define ATTR_DESCRIPTION                    "description"
+#define ATTR_DESCRIPTION_LEN                sizeof(ATTR_DESCRIPTION)-1
 #define ATTR_DN                             "entryDN"
 #define ATTR_DN_LEN                         sizeof(ATTR_DN)-1
 #define ATTR_EID                            "entryid"
@@ -246,6 +248,7 @@ extern "C" {
 #define ATTR_FOREST_FUNCTIONAL_LEVEL        "vmwForestFunctionalLevel"
 #define ATTR_SERVER_VERSION                 "vmwServerVersion"
 #define ATTR_PSC_VERSION                    "vmwPlatformServicesControllerVersion"
+#define ATTR_PSC_VERSION_LEN                sizeof(ATTR_PSC_VERSION)-1
 
 #define ATTR_OU                             "ou"
 #define ATTR_DC_ACCOUNT_DN                  "vmwDCAccountDN"
@@ -282,6 +285,43 @@ extern "C" {
 
 #define ATTR_COMMENT                        "comment"
 #define ATTR_COMMENT_LEN                    sizeof(ATTR_COMMENT)-1
+
+// Attribute schema objects
+#define ATTR_IS_SINGLE_VALUED               "issinglevalued"
+#define ATTR_IS_SINGLE_VALUED_LEN           sizeof(ATTR_IS_SINGLE_VALUED)-1
+#define ATTR_ATTRIBUTE_SYNTAX               "attributesyntax"
+#define ATTR_ATTRIBUTE_SYNTAX_LEN           sizeof(ATTR_ATTRIBUTE_SYNTAX)-1
+#define ATTR_LDAP_DISPLAYNAME               "ldapdisplayname"
+#define ATTR_LDAP_DISPLAYNAME_LEN           sizeof(ATTR_LDAP_DISPLAYNAME)-1
+#define ATTR_ATTRIBUTE_ID                   "attributeid"
+#define ATTR_ATTRIBUTE_ID_LEN               sizeof(ATTR_ATTRIBUTE_ID)-1
+#define ATTR_OMSYNTAX                       "omsyntax"
+#define ATTR_OMSYNTAX_LEN                   sizeof(ATTR_OMSYNTAX)-1
+#define ATTR_SCHEMAID_GUID                  "schemaidguid"
+#define ATTR_SCHEMAID_GUID_LEN              sizeof(ATTR_SCHEMAID_GUID)-1
+#define ATTR_VMW_ATTRIBUTE_USAGE            "vmwattributeusage"
+#define ATTR_VMW_ATTRIBUTE_USAGE_LEN        sizeof(ATTR_VMW_ATTRIBUTE_USAGE)-1
+
+#define ATTR_SUBCLASSOF                     "subclassof"
+#define ATTR_SUBCLASSOF_LEN                 sizeof(ATTR_SUBCLASSOF)-1
+#define ATTR_GOVERNSID                      "governsid"
+#define ATTR_GOVERNSID_LEN                  sizeof(ATTR_GOVERNSID)-1
+#define ATTR_OBJECTCLASS_CATEGORY           "objectclasscategory"
+#define ATTR_OBJECTCLASS_CATEGORY_LEN       sizeof(ATTR_OBJECTCLASS_CATEGORY)-1
+#define ATTR_DEFAULT_OBJECT_CATEGORY        "defaultobjectcategory"
+#define ATTR_DEFAULT_OBJECT_CATEGORY_LEN    sizeof(ATTR_DEFAULT_OBJECT_CATEGORY)-1
+#define ATTR_SYSTEMMUSTCONTAIN              "systemmustcontain"
+#define ATTR_SYSTEMMUSTCONTAIN_LEN           sizeof(ATTR_SYSTEMMUSTCONTAIN)-1
+#define ATTR_SYSTEMMAYCONTAIN               "systemmaycontain"
+#define ATTR_SYSTEMMAYCONTAIN_LEN            sizeof(ATTR_SYSTEMMAYCONTAIN)-1
+#define ATTR_SYSTEMAUXILIARY_CLASS          "systemauxiliaryclass"
+#define ATTR_SYSTEMAUXILIARY_CLASS_LEN      sizeof(ATTR_SYSTEMAUXILIARY_CLASS)-1
+#define ATTR_MUSTCONTAIN                    "mustcontain"
+#define ATTR_MUSTCONTAIN_LEN                sizeof(ATTR_MUSTCONTAIN)-1
+#define ATTR_MAYCONTAIN                     "maycontain"
+#define ATTR_MAYCONTAIN_LEN                 sizeof(ATTR_MAYCONTAIN)-1
+#define ATTR_AUXILIARY_CLASS                "auxiliaryclass"
+#define ATTR_AUXILIARY_CLASS_LEN            sizeof(ATTR_AUXILIARY_CLASS)-1
 
 // Object classes
 #define OC_TOP                              "top"
@@ -328,6 +368,10 @@ extern "C" {
 #define OC_MANAGED_SERVICE_ACCOUNT       "msDS-ManagedServiceAccount"
 #define OC_GROUP                         "group"
 #define OC_GROUP_LEN                     sizeo(OC_GROUP)-1
+#define OC_ATTRIBUTE_SCHEMA             "attributeschema"
+#define OC_ATTRIBUTE_SCHEMA_LEN         sizeof(OC_ATTRIBUTE_SCHEMA)-1
+#define OC_CLASS_SCHEMA                 "classschema"
+#define OC_CLASS_SCHEMA_LEN             sizeof(OC_CLASS_SCHEMA)-1
 
 #define CM_COMPONENTMANAGER             "ComponentManager"
 #define CM_SITE                         "CMSites"
@@ -367,7 +411,7 @@ extern "C" {
 #define VMDIR_BUILTIN_CONTAINER_NAME    "Builtin"
 
 #define VDIR_SERVER_VERSION             "1.0"
-#define VDIR_PSC_VERSION                "6.5.0"
+#define VDIR_PSC_VERSION                "7.0.0"
 
 #define SASL_MECH                       "GSSAPI SRP"
 
@@ -388,6 +432,10 @@ extern "C" {
 
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096
+
+/*  LDAP_CONTROL_CONSISTENT_WRITE value is temporary
+    - actual value will be finalized later and define also will be moved to appropriate file */
+#define LDAP_CONTROL_CONSISTENT_WRITE                  "2.16.840.1.113730.3.4.5"
 
 #ifndef _WIN32
 #define VMDIR_NCALRPC_END_POINT "vmdirsvc"

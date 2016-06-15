@@ -397,6 +397,7 @@ _VmDirSwapDB(
     PVDIR_BACKEND_INTERFACE pBE = NULL;
     PSTR                    pszLocalErrorMsg = NULL;
     int                     errorCode = 0;
+    BOOLEAN                 bLegacyDataLoaded = FALSE;
 
 #ifndef _WIN32
     const char   fileSeperator = '/';
@@ -461,8 +462,17 @@ _VmDirSwapDB(
 
     VmDirdStateSet(VMDIRD_STATE_STARTUP);
 
-    retVal = VmDirInitBackend();
+    retVal = VmDirInitBackend(&bLegacyDataLoaded);
     BAIL_ON_VMDIR_ERROR(retVal);
+
+    if (bLegacyDataLoaded)
+    {
+        retVal = VmDirPatchLocalSubSchemaSubEntry();
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        retVal = VmDirWriteSchemaObjects();
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
 
     VmDirdStateSet(VMDIRD_STATE_NORMAL);
 
@@ -655,6 +665,11 @@ _VmDirPatchDSERoot(
     retVal = VmDirAppendAMod( &op, MOD_OP_REPLACE, ATTR_SITE_NAME, ATTR_SITE_NAME_LEN,
                               gVmdirServerGlobals.pszSiteName,
                               VmDirStringLenA(gVmdirServerGlobals.pszSiteName) );
+    BAIL_ON_VMDIR_ERROR( retVal );
+
+    retVal = VmDirAppendAMod( &op, MOD_OP_REPLACE, ATTR_PSC_VERSION, ATTR_PSC_VERSION_LEN,
+                              VDIR_PSC_VERSION,
+                              VmDirStringLenA(VDIR_PSC_VERSION) );
     BAIL_ON_VMDIR_ERROR( retVal );
 
     if ((retVal = VmDirInternalModifyEntry( &op )) != 0)

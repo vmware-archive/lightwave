@@ -133,6 +133,18 @@ VmDirParseEntry(
         pAttr = NULL;
     }
 
+    /* StrongConsistencyWrite Parse LDAP write controls (if any) in the request. */
+    retVal = ParseRequestControls(op, pResult);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
+                                 "write request control parsing failed");
+
+    if (op->reqControls != NULL &&
+        !IsNullOrEmptyString(op->reqControls->type) &&
+        !VmDirStringCompareA(op->reqControls->type, LDAP_CONTROL_CONSISTENT_WRITE, TRUE))
+    {
+       VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Write Request Control value: (%s)", op->reqControls->type);
+    }
+
     if ( ber_scanf( op->ber, "}") == LBER_ERROR )
     {
         VMDIR_LOG_ERROR( LDAP_DEBUG_ARGS, "ParseEntry: ber_scanf failed" );

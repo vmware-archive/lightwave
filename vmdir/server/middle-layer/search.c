@@ -40,7 +40,9 @@ VmDirMLSearch(
     pOperation->pBEIF = VmDirBackendSelect(pOperation->reqDn.lberbv.bv_val);
     assert(pOperation->pBEIF);
 
-    if (pOperation->conn->bIsAnonymousBind && !VmDirIsSearchForDseRootEntry( pOperation ))
+    if (pOperation->conn->bIsAnonymousBind &&
+            !(VmDirIsSearchForDseRootEntry(pOperation) ||
+              VmDirIsSearchForSchemaEntry(pOperation)))
     {
         retVal = LDAP_INSUFFICIENT_ACCESS;
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Not bind/authenticate yet" );

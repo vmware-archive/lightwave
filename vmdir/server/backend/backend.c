@@ -124,6 +124,7 @@ VmDirBackendContentFree(
     if (pBE)
     {
         VmDirFreeUSNList(pBE->pBEUSNList);
+        pBE->pBEUSNList = NULL;
     }
 }
 

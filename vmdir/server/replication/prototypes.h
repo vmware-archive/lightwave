@@ -56,6 +56,28 @@ VmDirCacheKrb5Creds(
     PSTR  *ppszErrorMsg
     );
 
+// replentry.c
+int
+ReplAddEntry(
+    PVDIR_SCHEMA_CTX    pSchemaCtx,
+    LDAPMessage *       entry,
+    PVDIR_SCHEMA_CTX*   ppOutSchemaCtx,
+    BOOLEAN             bFirstReplicationCycle
+    );
+
+int
+ReplDeleteEntry(
+    PVDIR_SCHEMA_CTX    pSchemaCtx,
+    LDAPMessage *       entry
+    );
+
+int
+ReplModifyEntry(
+    PVDIR_SCHEMA_CTX    pSchemaCtx,
+    LDAPMessage *       entry,
+    PVDIR_SCHEMA_CTX*   ppOutSchemaCtx
+    );
+
 #ifdef __cplusplus
 }
 #endif

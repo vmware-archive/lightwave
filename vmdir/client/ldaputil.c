@@ -1751,11 +1751,7 @@ VmDirLdapSetupDCAccountOnPartner(
     modPSCVersion.mod_values = modv_PSCVersion;
     modv_PSCVersion[0]= VDIR_PSC_VERSION;
 
-    dwError = VmDirAllocateMemory( VMDIR_GUID_STR_LEN,
-                                   (PVOID*)&pszMachineGUID );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirGenerateGUID(pszMachineGUID);
+    dwError = VmDirGenerateGUID(&pszMachineGUID);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     modv_machine[0] = pszMachineGUID;
@@ -2025,11 +2021,7 @@ VmDirLdapSetupComputerAccount(
 
     modv_site[0] = pszSiteGUID;
 
-    dwError = VmDirAllocateMemory( VMDIR_GUID_STR_LEN,
-                                   (PVOID*)&pszMachineGUID );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirGenerateGUID(pszMachineGUID);
+    dwError = VmDirGenerateGUID(&pszMachineGUID);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     modv_machine[0] = pszMachineGUID;

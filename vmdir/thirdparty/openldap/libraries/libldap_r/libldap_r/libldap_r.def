@@ -195,6 +195,8 @@ EXPORTS
     ldap_modrdn2
     ldap_modrdn2_s
     ldap_modrdn_s
+    ldap_nameform2str
+    ldap_nameform_free
     ldap_objectclass2name
     ldap_objectclass2str
     ldap_objectclass_free
@@ -211,10 +213,14 @@ EXPORTS
     ldap_sort_strcasecmp
     ldap_sort_values
     ldap_str2attributetype
-    ldap_str2matchingrule
-    ldap_str2objectclass
     ldap_str2contentrule
+    ldap_str2matchingrule
+    ldap_str2nameform
+    ldap_str2objectclass
+    ldap_str2structurerule
     ldap_str2syntax
+    ldap_structurerule2str
+    ldap_structurerule_free
     ldap_syntax2name
     ldap_syntax2str
     ldap_syntax_free

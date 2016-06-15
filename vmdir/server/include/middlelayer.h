@@ -142,15 +142,6 @@ VmDirInternalSearch(
     );
 
 DWORD
-VmDirSimpleEqualFilterInternalSearch(
-    PCSTR               pszBaseDN,
-    int                 searchScope,
-    PCSTR               pszAttrName,
-    PCSTR               pszAttrValue,
-    PVDIR_ENTRY_ARRAY   pEntryArray
-    );
-
-DWORD
 VmDirIsDirectMemberOf(
     PSTR                pszBindDN,
     UINT32              getAccessInfo,

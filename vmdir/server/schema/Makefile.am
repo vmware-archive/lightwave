@@ -2,18 +2,23 @@
 noinst_LTLIBRARIES = libschema.la
 
 libschema_la_SOURCES = \
-    adcompatibleschema.c \
-    api.c           \
-    attr2idmap.c    \
-    check.c         \
-    globals.c       \
-    init.c          \
-    libmain.c       \
-    load.c          \
-    matchingrule.c  \
-    parse.c         \
-    syntax.c        \
-    verify.c
+    api.c \
+    check.c \
+    globalmutex.c \
+    globals.c \
+    head.c \
+    idmap.c \
+    instance.c \
+    libmain.c \
+    matchingrule.c \
+    parse.c \
+    patch.c \
+    syntax.c \
+    util.c \
+    legacy/legacylibmain.c \
+    legacy/legacyload.c \
+    legacy/legacypatch.c \
+    legacy/legacyutil.c
 
 libschema_la_CPPFLAGS = \
     -I$(top_srcdir)/include \
