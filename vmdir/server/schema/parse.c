@@ -12,1136 +12,549 @@
  * under the License.
  */
 
-
-
-/*
- * Module Name: Directory Schema
- *
- * Filename: parse.c
- *
- * Abstract: parse string into schema descriptors
- *
- * Globals
- *
- */
-
 #include "includes.h"
 
-static
 DWORD
-schemaParseParenthesisItems(
-    PSTR**       pppszList,
-    PSTR*        ppRest,
-    PUSHORT      pusSize
-    );
-
-VOID
-VmDirSchemaATDescContentFree(
-    PVDIR_SCHEMA_AT_DESC pATDesc
+VmDirSchemaATDescCreate(
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pLdapAt,
+    PVDIR_SCHEMA_AT_DESC*       ppATDesc
     )
 {
-    if ( pATDesc )
+    DWORD dwError = 0;
+    PVDIR_SCHEMA_AT_DESC pATDesc = NULL;
+
+    if (!pLdapAt || !ppATDesc)
     {
-        VMDIR_SAFE_FREE_STRINGA(pATDesc->pszDefinition);
-        VMDIR_SAFE_FREE_STRINGA(pATDesc->pszName);
-        VMDIR_SAFE_FREE_STRINGA(pATDesc->pszOid);
-        VMDIR_SAFE_FREE_STRINGA(pATDesc->pszDesc);
-        VMDIR_SAFE_FREE_STRINGA(pATDesc->pszSup);
-        VMDIR_SAFE_FREE_STRINGA(pATDesc->pszSyntaxName);
-        VMDIR_SAFE_FREE_STRINGA(pATDesc->pszEqualityMRName);
-        VMDIR_SAFE_FREE_STRINGA(pATDesc->pszOrderingMRName);
-        VMDIR_SAFE_FREE_STRINGA(pATDesc->pszSubStringMRName);
-
-        if (pATDesc->ppszAliases)
-        {
-            VmDirFreeStringArrayA(pATDesc->ppszAliases);
-            VMDIR_SAFE_FREE_MEMORY(pATDesc->ppszAliases);
-        }
-
-        if (pATDesc->pADAttributeSchemaEntry)
-        {
-            VmDirFreeEntry(pATDesc->pADAttributeSchemaEntry);
-        }
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    return;
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_SCHEMA_AT_DESC),
+            (PVOID*)&pATDesc);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pATDesc->pszName = pLdapAt->pszName;
+    pATDesc->pszOid = pLdapAt->pszOid;
+    pATDesc->pszSyntaxOid = pLdapAt->pszSyntaxOid;
+    pATDesc->bSingleValue = pLdapAt->bSingleValue;
+    pATDesc->bCollective = pLdapAt->bCollective;
+    pATDesc->bNoUserModifiable = pLdapAt->bNoUserMod;
+    pATDesc->bObsolete = pLdapAt->bObsolete;
+    pATDesc->usage = pLdapAt->usage;
+    pATDesc->pLdapAt = pLdapAt;
+
+    pATDesc->pSyntax =
+            VdirSyntaxLookupByOid(pATDesc->pszSyntaxOid);
+    pATDesc->pEqualityMR =
+            VdirEqualityMRLookupBySyntaxOid(pATDesc->pszSyntaxOid);
+    pATDesc->pOrderingMR =
+            VdirOrderingMRLookupBySyntaxOid(pATDesc->pszSyntaxOid);
+    pATDesc->pSubStringMR =
+            VdirSubstrMRLookupBySyntaxOid(pATDesc->pszSyntaxOid);
+
+    *ppATDesc = pATDesc;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pATDesc);
+    goto cleanup;
 }
-
-VOID
-VmDirSchemaOCDescContentFree(
-    PVDIR_SCHEMA_OC_DESC pOCDesc
-    )
-{
-    if ( pOCDesc )
-    {
-        VMDIR_SAFE_FREE_STRINGA(pOCDesc->pszDefinition);
-        VMDIR_SAFE_FREE_STRINGA(pOCDesc->pszName);
-        VMDIR_SAFE_FREE_STRINGA(pOCDesc->pszOid);
-        VMDIR_SAFE_FREE_STRINGA(pOCDesc->pszDesc);
-
-        if (pOCDesc->ppszSupOCs)
-        {
-            VmDirFreeStringArrayA(pOCDesc->ppszSupOCs);
-            VMDIR_SAFE_FREE_MEMORY(pOCDesc->ppszSupOCs);
-        }
-
-        if (pOCDesc->ppszMustATs)
-        {
-            VmDirFreeStringArrayA(pOCDesc->ppszMustATs);
-            VMDIR_SAFE_FREE_MEMORY(pOCDesc->ppszMustATs);
-        }
-
-        if (pOCDesc->ppszMayATs)
-        {
-            VmDirFreeStringArrayA(pOCDesc->ppszMayATs);
-            VMDIR_SAFE_FREE_MEMORY(pOCDesc->ppszMayATs);
-        }
-
-        if (pOCDesc->ppszAuxOCs)
-        {
-            VmDirFreeStringArrayA(pOCDesc->ppszAuxOCs);
-            VMDIR_SAFE_FREE_MEMORY(pOCDesc->ppszAuxOCs);
-        }
-
-        if (pOCDesc->ppszAllowedParentOCs)
-        {
-            VmDirFreeStringArrayA(pOCDesc->ppszAllowedParentOCs);
-            VMDIR_SAFE_FREE_MEMORY(pOCDesc->ppszAllowedParentOCs);
-        }
-        if (pOCDesc->ppszAllowedChildOCs)
-        {
-            VmDirFreeStringArrayA(pOCDesc->ppszAllowedChildOCs);
-            VMDIR_SAFE_FREE_MEMORY(pOCDesc->ppszAllowedChildOCs);
-        }
-
-        if (pOCDesc->ppszMustRDNs)
-        {
-            VmDirFreeStringArrayA(pOCDesc->ppszMustRDNs);
-            VMDIR_SAFE_FREE_MEMORY(pOCDesc->ppszMustRDNs);
-        }
-
-        if (pOCDesc->ppszMayRDNs)
-        {
-            VmDirFreeStringArrayA(pOCDesc->ppszMayRDNs);
-            VMDIR_SAFE_FREE_MEMORY(pOCDesc->ppszMayRDNs);
-        }
-
-        VMDIR_SAFE_FREE_MEMORY(pOCDesc->ppSupOCs);
-        VMDIR_SAFE_FREE_MEMORY(pOCDesc->ppMustATs);
-        VMDIR_SAFE_FREE_MEMORY(pOCDesc->ppMayATs);
-        VMDIR_SAFE_FREE_MEMORY(pOCDesc->ppAllMayATs);
-        VMDIR_SAFE_FREE_MEMORY(pOCDesc->ppAllMustATs);
-        VMDIR_SAFE_FREE_MEMORY(pOCDesc->ppAllNotATs);
-        VMDIR_SAFE_FREE_MEMORY(pOCDesc->ppAllowedAuxOCs);
-
-        if (pOCDesc->pADClassSchemaEntry)
-        {
-            VmDirFreeEntry(pOCDesc->pADClassSchemaEntry);
-        }
-    }
-
-    return;
-}
-
-VOID
-VmDirSchemaContentDescContentFree(
-    PVDIR_SCHEMA_CR_DESC pContentDesc
-    )
-{
-    if ( pContentDesc )
-    {
-        VMDIR_SAFE_FREE_STRINGA(pContentDesc->pszDefinition);
-        VMDIR_SAFE_FREE_STRINGA(pContentDesc->pszName);
-        VMDIR_SAFE_FREE_STRINGA(pContentDesc->pszOid);
-        VMDIR_SAFE_FREE_STRINGA(pContentDesc->pszDesc);
-
-        if (pContentDesc->ppszAuxOCs)
-        {
-            VmDirFreeStringArrayA(pContentDesc->ppszAuxOCs);
-            VMDIR_SAFE_FREE_MEMORY(pContentDesc->ppszAuxOCs);
-        }
-
-        if (pContentDesc->ppszMustATs)
-        {
-            VmDirFreeStringArrayA(pContentDesc->ppszMustATs);
-            VMDIR_SAFE_FREE_MEMORY(pContentDesc->ppszMustATs);
-        }
-
-        if (pContentDesc->ppszMayATs)
-        {
-            VmDirFreeStringArrayA(pContentDesc->ppszMayATs);
-            VMDIR_SAFE_FREE_MEMORY(pContentDesc->ppszMayATs);
-        }
-
-        if (pContentDesc->ppszNotATs)
-        {
-            VmDirFreeStringArrayA(pContentDesc->ppszNotATs);
-            VMDIR_SAFE_FREE_MEMORY(pContentDesc->ppszNotATs);
-        }
-    }
-
-    return;
-}
-
-VOID
-VmDirSchemaStructureDescContentFree(
-    PVDIR_SCHEMA_SR_DESC pStructureDesc
-    )
-{
-    if ( pStructureDesc )
-    {
-        VMDIR_SAFE_FREE_STRINGA(pStructureDesc->pszRuleID);
-        VMDIR_SAFE_FREE_STRINGA(pStructureDesc->pszName);
-        VMDIR_SAFE_FREE_STRINGA(pStructureDesc->pszOid);
-        VMDIR_SAFE_FREE_STRINGA(pStructureDesc->pszDesc);
-        VMDIR_SAFE_FREE_STRINGA(pStructureDesc->pszNameform);
-
-        if (pStructureDesc->ppszSupRulesID)
-        {
-            VmDirFreeStringArrayA(pStructureDesc->ppszSupRulesID);
-            VMDIR_SAFE_FREE_MEMORY(pStructureDesc->ppszSupRulesID);
-        }
-    }
-
-    return;
-}
-
-VOID
-VmDirSchemaNameformDescContentFree(
-    PVDIR_SCHEMA_NF_DESC pNameformDesc
-    )
-{
-    if ( pNameformDesc )
-    {
-        VMDIR_SAFE_FREE_STRINGA(pNameformDesc->pszName);
-        VMDIR_SAFE_FREE_STRINGA(pNameformDesc->pszOid);
-        VMDIR_SAFE_FREE_STRINGA(pNameformDesc->pszDesc);
-        VMDIR_SAFE_FREE_STRINGA(pNameformDesc->pszStructOC);
-
-        if (pNameformDesc->ppszMustATs)
-        {
-            VmDirFreeStringArrayA(pNameformDesc->ppszMustATs);
-            VMDIR_SAFE_FREE_MEMORY(pNameformDesc->ppszMustATs);
-        }
-
-        if (pNameformDesc->ppszMayATs)
-        {
-            VmDirFreeStringArrayA(pNameformDesc->ppszMayATs);
-            VMDIR_SAFE_FREE_MEMORY(pNameformDesc->ppszMayATs);
-        }
-    }
-
-    return;
-}
-
 
 DWORD
-VmDirSchemaParseStrToATDesc(
-    const char*             pStr,
-    PVDIR_SCHEMA_AT_DESC    pATDesc
+VmDirSchemaOCDescCreate(
+    PVDIR_LDAP_OBJECT_CLASS pLdapOc,
+    PVDIR_SCHEMA_OC_DESC*   ppOCDesc
+    )
+{
+    DWORD dwError = 0;
+    PVDIR_SCHEMA_OC_DESC pOCDesc = NULL;
+
+    if (!pLdapOc || !ppOCDesc)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_SCHEMA_OC_DESC),
+            (PVOID*)&pOCDesc);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pOCDesc->pszName = pLdapOc->pszName;
+    pOCDesc->pszOid = pLdapOc->pszOid;
+    pOCDesc->pszSup = pLdapOc->pszSup;
+    pOCDesc->ppszMustATs = pLdapOc->ppszMust;
+    pOCDesc->ppszMayATs = pLdapOc->ppszMay;
+    pOCDesc->bObsolete = pLdapOc->bObsolete;
+    pOCDesc->type = pLdapOc->type;
+    pOCDesc->pLdapOc = pLdapOc;
+
+    *ppOCDesc = pOCDesc;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pOCDesc);
+    goto cleanup;
+}
+
+DWORD
+VmDirSchemaCRDescCreate(
+    PVDIR_LDAP_CONTENT_RULE pLdapCr,
+    PVDIR_SCHEMA_CR_DESC*   ppCRDesc
+    )
+{
+    DWORD dwError = 0;
+    PVDIR_SCHEMA_CR_DESC pCRDesc = NULL;
+
+    if (!pLdapCr || !ppCRDesc)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_SCHEMA_CR_DESC),
+            (PVOID*)&pCRDesc);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pCRDesc->pszName = pLdapCr->pszName;
+    pCRDesc->pszOid = pLdapCr->pszOid;
+    pCRDesc->ppszMustATs = pLdapCr->ppszMust;
+    pCRDesc->ppszMayATs = pLdapCr->ppszMay;
+    pCRDesc->ppszNotATs = pLdapCr->ppszNot;
+    pCRDesc->ppszAuxOCs = pLdapCr->ppszAux;
+    pCRDesc->bObsolete = pLdapCr->bObsolete;
+    pCRDesc->pLdapCr = pLdapCr;
+
+    *ppCRDesc = pCRDesc;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pCRDesc);
+    goto cleanup;
+}
+
+DWORD
+VmDirSchemaSRDescCreate(
+    PVDIR_LDAP_STRUCTURE_RULE   pLdapSr,
+    PVDIR_SCHEMA_SR_DESC*       ppSRDesc
+    )
+{
+    DWORD dwError = 0;
+    PVDIR_SCHEMA_SR_DESC pSRDesc = NULL;
+
+    if (!pLdapSr || !ppSRDesc)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_SCHEMA_SR_DESC),
+            (PVOID*)&pSRDesc);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pSRDesc->pszName = pLdapSr->pszName;
+    // TODO
+    pSRDesc->pLdapSr = pLdapSr;
+
+    *ppSRDesc = pSRDesc;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pSRDesc);
+    goto cleanup;
+}
+
+DWORD
+VmDirSchemaNFDescCreate(
+    PVDIR_LDAP_NAME_FORM    pLdapNf,
+    PVDIR_SCHEMA_NF_DESC*   ppNFDesc
+    )
+{
+    DWORD dwError = 0;
+    PVDIR_SCHEMA_NF_DESC pNFDesc = NULL;
+
+    if (!pLdapNf || !ppNFDesc)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_SCHEMA_NF_DESC),
+            (PVOID*)&pNFDesc);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pNFDesc->pszName = pLdapNf->pszName;
+    // TODO
+    pNFDesc->pLdapNf = pLdapNf;
+
+    *ppNFDesc = pNFDesc;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pNFDesc);
+    goto cleanup;
+}
+
+DWORD
+VmDirLdapAtParseVdirEntry(
+    PVDIR_ENTRY                 pEntry,
+    PVDIR_LDAP_ATTRIBUTE_TYPE*  ppAt
     )
 {
     DWORD   dwError = 0;
-    BOOLEAN bHasOID = FALSE;
-    PSTR    pToken = NULL;
-    PSTR    pRest = NULL;
-    char*   pBuf = NULL;
+    PVDIR_ATTRIBUTE     pAttr = NULL;
+    LDAPAttributeType*  pSource = NULL;
 
-    if ( !pStr || !pATDesc )
+    if (!pEntry || !ppAt)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateStringA(pStr, &pBuf);
+    dwError = VmDirAllocateMemory(
+            sizeof(LDAPAttributeType), (PVOID*)&pSource);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmdDirSchemaParseNormalizeElement( pBuf );
-
-    pToken = VmDirStringTokA(pBuf, SCHEMA_GEN_TOKEN_SEP, &pRest);
-    if (!pToken)
+    pAttr = pEntry->attrs;
+    while (pAttr)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (VmDirStringCompareA(ATTR_IS_SINGLE_VALUED,
+                pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            pSource->at_single_value =
+                    VmDirStringCompareA(
+                            "TRUE", pAttr->vals[0].lberbv_val, FALSE)
+                            == 0;
+        }
+        else if (VmDirStringCompareA(ATTR_VMW_ATTRIBUTE_USAGE,
+                pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            DWORD dwVmwAttrUsage = VmDirStringToIA(pAttr->vals[0].lberbv_val);
+
+            pSource->at_no_user_mod = dwVmwAttrUsage & 0x8 ? 1 : 0;
+
+            pSource->at_usage = 0;
+            dwVmwAttrUsage &= 0x7;
+            while (dwVmwAttrUsage)
+            {
+                pSource->at_usage++;
+                dwVmwAttrUsage >>= 1;
+            }
+        }
+        else if (VmDirStringCompareA(ATTR_CN,
+                pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*) * 2,
+                    (PVOID*)&pSource->at_names);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirAllocateStringA(
+                    pAttr->vals[0].lberbv_val,
+                    &pSource->at_names[0]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (VmDirStringCompareA(ATTR_ATTRIBUTE_SYNTAX,
+                pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            dwError = VmDirAllocateStringA(
+                    pAttr->vals[0].lberbv_val,
+                    &pSource->at_syntax_oid);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (VmDirStringCompareA(ATTR_ATTRIBUTE_ID,
+                pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            dwError = VmDirAllocateStringA(
+                    pAttr->vals[0].lberbv_val,
+                    &pSource->at_oid);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (VmDirStringCompareA(ATTR_DESCRIPTION,
+                pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            dwError = VmDirAllocateStringA(
+                    pAttr->vals[0].lberbv_val,
+                    &pSource->at_desc);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        pAttr = pAttr->next;
     }
 
-    if (VmDirStringCompareA(pToken, ATTRIBUTETYPS_TAG, FALSE) == 0)
-    {    // ignore starting "attributetypes:" if exists
-        GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-    }
-
-    if (! IS_L_PARENTHESIS_STR(pToken))
-    {
-        dwError = ERROR_INVALID_ATTRIBUTETYPES;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringAVsnprintf( &pATDesc->pszDefinition, "( %s", pRest );
+    dwError = VmDirLdapAtCreate(pSource, ppAt);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (pToken = VmDirStringTokA(NULL, SCHEMA_GEN_TOKEN_SEP, &pRest);
-         pToken;
-         pToken = VmDirStringTokA(NULL, SCHEMA_GEN_TOKEN_SEP, &pRest))
-    {
-        VDIR_BERVALUE bv = VDIR_BERVALUE_INIT;
-        bv.lberbv.bv_val = pToken;
-        bv.lberbv.bv_len = VmDirStringLenA(pToken);
-
-        if (!bHasOID && syntaxOID(&bv))
-        {
-            bHasOID = TRUE;
-            dwError = VmDirAllocateStringA(pToken, &pATDesc->pszOid);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "NAME", FALSE) == 0)
-        {
-            GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-
-            if (IS_EMPTY_PARENTHESIS_STR(pToken))
-            {
-                dwError = ERROR_INVALID_ATTRIBUTETYPES;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-            else if (! IS_L_PARENTHESIS_STR(pToken))
-            { // NAME 'cn'
-                dwError = VmDirAllocateStringA(pToken, &pATDesc->pszName);
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-            else
-            { // NAME ( 'cn' 'commonName'....)
-                int iCnt = 0;
-                size_t iSize = 5;
-
-                dwError = VmDirAllocateMemory(
-                        sizeof(PSTR) * (iSize+1),
-                        (PVOID*)&pATDesc->ppszAliases);
-                BAIL_ON_VMDIR_ERROR(dwError);
-
-                for (pToken=VmDirStringTokA(NULL, SCHEMA_GEN_TOKEN_SEP, &pRest),iCnt=0;
-                     pToken && !IS_R_PARENTHESIS_STR(pToken);
-                     pToken=VmDirStringTokA(NULL, SCHEMA_GEN_TOKEN_SEP, &pRest),iCnt++)
-                {
-                    if (iCnt == iSize)
-                    {
-                        size_t iOldSize = iSize;
-                        iSize = iSize * 2;
-                        dwError = VmDirReallocateMemoryWithInit(
-                                pATDesc->ppszAliases,
-                                (PVOID*)&pATDesc->ppszAliases,
-                                (iSize+1) * sizeof(PSTR),
-                                (iOldSize) * sizeof(PSTR));
-                        BAIL_ON_VMDIR_ERROR(dwError);
-                    }
-
-                    dwError = VmDirAllocateStringA(pToken,
-                            &pATDesc->ppszAliases[iCnt]);
-                    BAIL_ON_VMDIR_ERROR(dwError);
-                }
-
-                if (!pToken || iCnt < 1)
-                {
-                    dwError = ERROR_INVALID_ATTRIBUTETYPES;
-                    BAIL_ON_VMDIR_ERROR(dwError);
-                }
-
-                // move pATDesc->ppszAliases[0] to pATDecs->pszName
-                pATDesc->pszName = pATDesc->ppszAliases[0];
-                pATDesc->ppszAliases[0] = NULL;
-
-                // move pATDesc->ppszAliases[last] to pATDesc->ppszAliases[0]
-                if (pATDesc->ppszAliases[iCnt-1])
-                {
-                    pATDesc->ppszAliases[0] = pATDesc->ppszAliases[iCnt-1];
-                    pATDesc->ppszAliases[iCnt-1] = NULL;
-                }
-            }
-        }
-        else if (VmDirStringCompareA(pToken, "DESC", FALSE) == 0)
-        {
-            GET_NEXT_TOKEN(pToken, SCHEMA_DESC_TOKEN_SEP, pRest);
-            dwError = VmDirAllocateStringA(pToken, &pATDesc->pszDesc);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "OBSOLETE", FALSE) == 0)
-        {   //TODO, semantics not supported yet.
-            pATDesc->bObsolete = TRUE;
-        }
-        else if (VmDirStringCompareA(pToken, "SUP", FALSE) == 0)
-        {
-            GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-            dwError = VmDirAllocateStringA(pToken,
-                    &pATDesc->pszSup);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "EQUALITY", FALSE) == 0)
-        {
-            GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-            dwError = VmDirAllocateStringA(pToken,
-                    &pATDesc->pszEqualityMRName);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "ORDERING", FALSE) == 0)
-        {
-            GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-            dwError = VmDirAllocateStringA(pToken,
-                    &pATDesc->pszOrderingMRName);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "SUBSTR", FALSE) == 0)
-        {
-            GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-            dwError = VmDirAllocateStringA(pToken,
-                    &pATDesc->pszSubStringMRName);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "SYNTAX", FALSE) == 0)
-        { // SYNTAX 1.2.3.4.5{512}  size limit is optional
-            PSTR ptrLeft = NULL;
-            PSTR ptrRight = NULL;
-
-            GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-            ptrLeft  = VmDirStringChrA(pToken, '{');
-            ptrRight = VmDirStringChrA(pToken, '}');
-
-            if ((ptrLeft == NULL && ptrRight != NULL) ||
-                (ptrLeft != NULL && ptrRight == NULL) )
-            {
-                dwError = ERROR_INVALID_ATTRIBUTETYPES;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-
-            if (ptrLeft == NULL)
-            {
-                dwError = VmDirAllocateStringA(pToken,
-                        &pATDesc->pszSyntaxName);
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-            else
-            {
-                *ptrLeft = '\0';
-                *ptrRight = '\0';
-
-                dwError = VmDirAllocateStringA(pToken,
-                        &pATDesc->pszSyntaxName);
-                BAIL_ON_VMDIR_ERROR(dwError);
-
-                pATDesc->uiMaxSize = atoi(ptrLeft+1);
-
-                *ptrLeft = '{';
-                *ptrRight = '}';
-            }
-        }
-        else if (VmDirStringCompareA(pToken, "SINGLE-VALUE", FALSE) == 0)
-        {
-            pATDesc->bSingleValue = TRUE;
-        }
-        else if (VmDirStringCompareA(pToken, "COLLECTIVE", FALSE) == 0)
-        {
-            pATDesc->bCollective = TRUE;
-        }
-        else if (VmDirStringCompareA(pToken, "NO-USER-MODIFICATION", FALSE) == 0)
-        {   //TODO, semantic not supported yet.
-            pATDesc->bNoUserModifiable = TRUE;
-        }
-        else if (VmDirStringCompareA(pToken, "USAGE", FALSE) == 0)
-        {
-            GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            if (VmDirStringCompareA(pToken, "userApplications", FALSE) == 0)
-            {
-                pATDesc->usage = VDIR_ATTRIBUTETYPE_USER_APPLICATIONS;
-            }
-            else if (VmDirStringCompareA(pToken, "directoryOperation", FALSE) == 0)
-            {
-                pATDesc->usage = VDIR_ATTRIBUTETYPE_DIRECTORY_OPERATION;
-            }
-            else if (VmDirStringCompareA(pToken, "distributedOperation", FALSE) == 0)
-            {
-                pATDesc->usage = VDIR_ATTRIBUTETYPE_DISTRIBUTED_OPERATION;
-            }
-            else if (VmDirStringCompareA(pToken, "dSAOperation", FALSE) == 0)
-            {
-                pATDesc->usage =    VDIR_ATTRIBUTETYPE_DSA_OPERATION;
-            }
-            else
-            {
-                dwError = ERROR_INVALID_ATTRIBUTETYPES;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-        }
-        else if (IS_R_PARENTHESIS_STR(pToken))
-        {
-            ;
-        }
-        else
-        {
-            dwError = ERROR_INVALID_ATTRIBUTETYPES;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
 
 cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pBuf);
-
     return dwError;
 
 error:
-
-    VmDirLog( LDAP_DEBUG_ANY, "VdirSchemaParseStrToATDesc:(%s)(%s)",
-              VDIR_SAFE_STRING(pToken), VDIR_SAFE_STRING(pStr) );
-
-    VmDirSchemaATDescContentFree(pATDesc);
-
+    if (pSource)
+    {
+        ldap_attributetype_free(pSource);
+    }
     goto cleanup;
 }
 
 DWORD
-VmDirSchemaParseStrToOCDesc(
-    const char*             pStr,
-    PVDIR_SCHEMA_OC_DESC    pOCDesc
+VmDirLdapOcParseVdirEntry(
+    PVDIR_ENTRY                 pEntry,
+    PVDIR_LDAP_OBJECT_CLASS*    ppOc
     )
 {
-    DWORD dwError = 0;
-    BOOLEAN bHasOID = FALSE;
-    PSTR  pToken = NULL;
-    PSTR  pRest = NULL;
-    BOOLEAN bHasType = FALSE;
-    char*  pBuf = NULL;
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PVDIR_ATTRIBUTE     pAttr = NULL;
+    LDAPObjectClass*    pSource = NULL;
 
-    if ( !pStr || !pOCDesc )
+    if (!pEntry || !ppOc)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateStringA(pStr, &pBuf);
+    dwError = VmDirAllocateMemory(
+            sizeof(LDAPObjectClass), (PVOID*)&pSource);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmdDirSchemaParseNormalizeElement( pBuf );
-
-    pToken = VmDirStringTokA(pBuf, SCHEMA_GEN_TOKEN_SEP, &pRest);
-    if (!pToken)
+    pAttr = pEntry->attrs;
+    while (pAttr)
     {
-        dwError = ERROR_INVALID_OBJECTCLASSES;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (VmDirStringCompareA(ATTR_SUBCLASSOF,
+                pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*) * 2,
+                    (PVOID*)&pSource->oc_sup_oids);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirAllocateStringA(
+                    pAttr->vals[0].lberbv_val,
+                    &pSource->oc_sup_oids[0]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (VmDirStringCompareA(ATTR_CN,
+                pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*) * 2,
+                    (PVOID*)&pSource->oc_names);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirAllocateStringA(
+                    pAttr->vals[0].lberbv_val,
+                    &pSource->oc_names[0]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (VmDirStringCompareA(ATTR_GOVERNSID,
+                pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            dwError = VmDirAllocateStringA(
+                    pAttr->vals[0].lberbv_val,
+                    &pSource->oc_oid);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (VmDirStringCompareA(ATTR_DESCRIPTION,
+                pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            dwError = VmDirAllocateStringA(
+                    pAttr->vals[0].lberbv_val,
+                    &pSource->oc_desc);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else if (VmDirStringCompareA(ATTR_OBJECTCLASS_CATEGORY,
+                pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            pSource->oc_kind = VmDirStringToIA(pAttr->vals[0].lberbv_val);
+        }
+        else if (VmDirStringCompareA(ATTR_SYSTEMMUSTCONTAIN,
+                pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*)*(pAttr->numVals+1),
+                    (PVOID*)&pSource->oc_at_oids_must);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            for (i = 0; i < pAttr->numVals; i++)
+            {
+                dwError = VmDirAllocateStringA(
+                        pAttr->vals[i].lberbv_val,
+                        &pSource->oc_at_oids_must[i]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+        }
+        else if (VmDirStringCompareA(ATTR_SYSTEMMAYCONTAIN,
+                pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*)*(pAttr->numVals+1),
+                    (PVOID*)&pSource->oc_at_oids_may);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            for (i = 0; i < pAttr->numVals; i++)
+            {
+                dwError = VmDirAllocateStringA(
+                        pAttr->vals[i].lberbv_val,
+                        &pSource->oc_at_oids_may[i]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+        }
+        pAttr = pAttr->next;
     }
 
-    if (VmDirStringCompareA(pToken, OBJECTCLASSES_TAG, FALSE) == 0)
-    {    // ignore leading "objectclasses:" if exists
-        GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-    }
-
-    if (! IS_L_PARENTHESIS_STR(pToken))
-    {
-        dwError = ERROR_INVALID_OBJECTCLASSES;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringAVsnprintf( &pOCDesc->pszDefinition, "( %s", pRest );
+    dwError = VmDirLdapOcCreate(pSource, ppOc);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (pToken=VmDirStringTokA(NULL, SCHEMA_GEN_TOKEN_SEP, &pRest);
-        pToken;
-        pToken=VmDirStringTokA(NULL, SCHEMA_GEN_TOKEN_SEP, &pRest))
-    {
-
-        VDIR_BERVALUE bv = VDIR_BERVALUE_INIT;
-        bv.lberbv.bv_val = pToken;
-        bv.lberbv.bv_len = VmDirStringLenA(pToken);
-
-        if (!bHasOID && syntaxOID(&bv))
-        {
-            bHasOID = TRUE;
-            dwError = VmDirAllocateStringA(pToken, &pOCDesc->pszOid);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "NAME", FALSE) == 0)
-        {
-            //TODO, handle ( ) case?
-            GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-            dwError = VmDirAllocateStringA(pToken, &pOCDesc->pszName);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "DESC", FALSE) == 0)
-        {
-            GET_NEXT_TOKEN(pToken, SCHEMA_DESC_TOKEN_SEP, pRest);
-            dwError = VmDirAllocateStringA(pToken, &pOCDesc->pszDesc);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "OBSOLETE", FALSE) == 0)
-        {   //TODO, semantics not supported yet.
-            pOCDesc->bObsolete = TRUE;
-        }
-        else if (VmDirStringCompareA(pToken, "SUP", FALSE) == 0)
-        {
-            dwError = schemaParseParenthesisItems(
-                    &pOCDesc->ppszSupOCs,
-                    &pRest,
-                    &pOCDesc->usNumSupOCs);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "ABSTRACT", FALSE) == 0)
-        {
-            if (bHasType)
-            {
-                dwError = ERROR_INVALID_OBJECTCLASSES;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-
-            pOCDesc->type = VDIR_OC_ABSTRACT;
-            bHasType = TRUE;
-        }
-        else if (VmDirStringCompareA(pToken, "STRUCTURAL", FALSE) == 0)
-        {
-            if (bHasType)
-            {
-                dwError = ERROR_INVALID_OBJECTCLASSES;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-
-            pOCDesc->type = VDIR_OC_STRUCTURAL;
-            bHasType = TRUE;
-        }
-        else if (VmDirStringCompareA(pToken, "AUXILIARY", FALSE) == 0)
-        {
-            if (bHasType)
-            {
-                dwError = ERROR_INVALID_OBJECTCLASSES;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-
-            pOCDesc->type = VDIR_OC_AUXILIARY;
-            bHasType = TRUE;
-        }
-        else if (VmDirStringCompareA(pToken, "MUST", FALSE) == 0)
-        {
-            dwError = schemaParseParenthesisItems(
-                    &pOCDesc->ppszMustATs,
-                    &pRest,
-                    &pOCDesc->usNumMustATs);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "MAY", FALSE) == 0)
-        {
-            dwError = schemaParseParenthesisItems(
-                    &pOCDesc->ppszMayATs,
-                    &pRest,
-                    &pOCDesc->usNumMayATs);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (IS_R_PARENTHESIS_STR(pToken))
-        {
-            ;
-        }
-        else
-        {
-            dwError = ERROR_INVALID_OBJECTCLASSES;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-    }
-
-    if (! bHasType)
-    {   // default to STRUCTURAL
-        pOCDesc->type = VDIR_OC_STRUCTURAL;
-    }
-
-    if (pOCDesc->type == VDIR_OC_STRUCTURAL && pOCDesc->usNumSupOCs == 0)
-    {   // default top as parent to structural objectclass
-        dwError = VmDirAllocateMemory(sizeof(PSTR) * 2, (PVOID*)&pOCDesc->ppszSupOCs);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirAllocateStringA(OC_TOP, &pOCDesc->ppszSupOCs[0]);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        pOCDesc->usNumSupOCs = 1;
-    }
 
 cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pBuf);
-
     return dwError;
 
 error:
-
-    VmDirLog( LDAP_DEBUG_ANY, "VdirSchemaParseStrToOCDesc:(%s)(%s)",
-              VDIR_SAFE_STRING(pToken), VDIR_SAFE_STRING(pStr) );
-
-    VmDirSchemaOCDescContentFree(pOCDesc);
-
+    if (pSource)
+    {
+        ldap_objectclass_free(pSource);
+    }
     goto cleanup;
 }
 
 DWORD
-VmDirSchemaParseStrToContentDesc(
-    const char*            pStr,
-    PVDIR_SCHEMA_CR_DESC   pContentDesc
+VmDirLdapCrParseVdirEntry(
+    PVDIR_ENTRY                 pEntry,
+    PVDIR_LDAP_CONTENT_RULE*    ppCr
     )
 {
-    DWORD dwError = 0;
-    BOOLEAN bHasOID = FALSE;
-    PSTR  pToken = NULL;
-    PSTR  pRest = NULL;
-    char*  pBuf = NULL;
+    BOOLEAN             bHasCr = FALSE;
+    DWORD               dwError = 0;
+    DWORD               i = 0, dwAux = 0;
+    PVDIR_ATTRIBUTE     pAttr = NULL;
+    LDAPContentRule*    pSource = NULL;
 
-    if ( !pStr || !pContentDesc )
+    if (!pEntry || !ppCr)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateStringA(pStr, &pBuf);
+    dwError = VmDirAllocateMemory(
+            sizeof(LDAPContentRule), (PVOID*)&pSource);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmdDirSchemaParseNormalizeElement( pBuf );
-
-    pToken = VmDirStringTokA(pBuf, SCHEMA_GEN_TOKEN_SEP, &pRest);
-    if (!pToken)
+    pAttr = pEntry->attrs;
+    while (pAttr)
     {
-        dwError = ERROR_INVALID_DITCONTENTRULES;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    if (VmDirStringCompareA(pToken, "ditcontentrules:", FALSE) == 0)
-    {    // ignore leading ditcontentrules:
-        GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-    }
-
-    if (! IS_L_PARENTHESIS_STR(pToken))
-    {
-        dwError = ERROR_INVALID_DITCONTENTRULES;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringAVsnprintf( &pContentDesc->pszDefinition, "( %s", pRest );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (pToken=VmDirStringTokA(NULL, SCHEMA_GEN_TOKEN_SEP, &pRest);
-        pToken;
-        pToken=VmDirStringTokA(NULL, SCHEMA_GEN_TOKEN_SEP, &pRest))
-    {
-
-        VDIR_BERVALUE bv = VDIR_BERVALUE_INIT;
-        bv.lberbv.bv_val = pToken;
-        bv.lberbv.bv_len = VmDirStringLenA(pToken);
-
-        if (!bHasOID && syntaxOID(&bv))
+        if (VmDirStringCompareA(ATTR_CN,
+                pAttr->type.lberbv_val, FALSE) == 0)
         {
-            bHasOID = TRUE;
-            dwError = VmDirAllocateStringA(pToken, &pContentDesc->pszOid);
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*) * 2,
+                    (PVOID*)&pSource->cr_names);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirAllocateStringA(
+                    pAttr->vals[0].lberbv_val,
+                    &pSource->cr_names[0]);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
-        else if (VmDirStringCompareA(pToken, "NAME", FALSE) == 0)
+        else if (VmDirStringCompareA(ATTR_GOVERNSID,
+                pAttr->type.lberbv_val, FALSE) == 0)
         {
-            //TODO, handle ( ) case?
-            GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-            dwError = VmDirAllocateStringA(pToken, &pContentDesc->pszName);
+            dwError = VmDirAllocateStringA(
+                    pAttr->vals[0].lberbv_val,
+                    &pSource->cr_oid);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
-        else if (VmDirStringCompareA(pToken, "DESC", FALSE) == 0)
+        else if (VmDirStringCompareA(ATTR_MUSTCONTAIN,
+                pAttr->type.lberbv_val, FALSE) == 0)
         {
-            GET_NEXT_TOKEN(pToken, SCHEMA_DESC_TOKEN_SEP, pRest);
-            dwError = VmDirAllocateStringA(pToken, &pContentDesc->pszDesc);
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*)*(pAttr->numVals+1),
+                    (PVOID*)&pSource->cr_at_oids_must);
             BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "OBSOLETE", FALSE) == 0)
-        {   //TODO, semantic not supported yet.
-            pContentDesc->bObsolete = TRUE;
-        }
-        else if (VmDirStringCompareA(pToken, "AUX", FALSE) == 0)
-        {
-            dwError = schemaParseParenthesisItems(
-                    &pContentDesc->ppszAuxOCs,
-                    &pRest,
-                    &pContentDesc->usNumAuxOCs);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "MUST", FALSE) == 0)
-        {
-            dwError = schemaParseParenthesisItems(
-                    &pContentDesc->ppszMustATs,
-                    &pRest,
-                    &pContentDesc->usNumMustATs);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "MAY", FALSE) == 0)
-        {
-            dwError = schemaParseParenthesisItems(
-                    &pContentDesc->ppszMayATs,
-                    &pRest,
-                    &pContentDesc->usNumMayATs);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "NOT", FALSE) == 0)
-        {   //TODO, semantic not supported yet.
-            dwError = schemaParseParenthesisItems(
-                    &pContentDesc->ppszNotATs,
-                    &pRest,
-                    &pContentDesc->usNumNotATs);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (IS_R_PARENTHESIS_STR(pToken))
-        {
-            ;
-        }
-        else
-        {
-            dwError = ERROR_INVALID_DITCONTENTRULES;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
 
-    }
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pBuf);
-
-    return dwError;
-
-error:
-
-    VmDirLog( LDAP_DEBUG_ANY, "VdirSchemaParseStrToContentDesc:(%s)(%s)",
-              VDIR_SAFE_STRING(pToken), VDIR_SAFE_STRING(pStr) );
-
-    VmDirSchemaContentDescContentFree(pContentDesc);
-
-    goto cleanup;
-}
-
-DWORD
-VmDirSchemaParseStrToStructureDesc(
-    const char*            pStr,
-    PVDIR_SCHEMA_SR_DESC   pStructureDesc
-    )
-{
-    DWORD dwError = 0;
-    BOOLEAN bHasRuleID = FALSE;
-    PSTR  pToken = NULL;
-    PSTR  pRest = NULL;
-    char*  pBuf = NULL;
-
-    if ( !pStr || !pStructureDesc )
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringA(pStr, &pBuf);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VmdDirSchemaParseNormalizeElement( pBuf );
-
-    pToken = VmDirStringTokA(pBuf, SCHEMA_GEN_TOKEN_SEP, &pRest);
-    if (!pToken)
-    {
-        dwError = ERROR_INVALID_DITSTRUCTURERULES;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    if (VmDirStringCompareA(pToken, "ditstructurerules:", FALSE) == 0)
-    {    // ignore leading ditstructurerules:
-        GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-    }
-
-    if (! IS_L_PARENTHESIS_STR(pToken))
-    {
-        dwError = ERROR_INVALID_DITCONTENTRULES;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    for (pToken=VmDirStringTokA(NULL, SCHEMA_GEN_TOKEN_SEP, &pRest);
-        pToken;
-        pToken=VmDirStringTokA(NULL, SCHEMA_GEN_TOKEN_SEP, &pRest))
-    {
-
-
-        if (!bHasRuleID)
-        {
-            bHasRuleID = TRUE;
-            dwError = VmDirAllocateStringA(pToken, &pStructureDesc->pszRuleID);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "NAME", FALSE) == 0)
-        {
-            //TODO, handle ( ) case?
-            GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-            dwError = VmDirAllocateStringA(pToken, &pStructureDesc->pszName);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "DESC", FALSE) == 0)
-        {
-            GET_NEXT_TOKEN(pToken, SCHEMA_DESC_TOKEN_SEP, pRest);
-            dwError = VmDirAllocateStringA(pToken, &pStructureDesc->pszDesc);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "OBSOLETE", FALSE) == 0)
-        {   //TODO, semantic not supported yet.
-            pStructureDesc->bObsolete = TRUE;
-        }
-        else if (VmDirStringCompareA(pToken, "FORM", FALSE) == 0)
-        {
-            GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-            dwError = VmDirAllocateStringA(pToken, &pStructureDesc->pszNameform);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "SUP", FALSE) == 0)
-        {
-            dwError = schemaParseParenthesisItems(
-                    &pStructureDesc->ppszSupRulesID,
-                    &pRest,
-                    &pStructureDesc->usNumSupRulesID);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (IS_R_PARENTHESIS_STR(pToken))
-        {
-            ;
-        }
-        else
-        {
-            dwError = ERROR_INVALID_DITSTRUCTURERULES;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-    }
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pBuf);
-
-    return dwError;
-
-error:
-
-    VmDirLog( LDAP_DEBUG_ANY, "VdirSchemaParseStrToStructureDesc:(%s)(%s)",
-              VDIR_SAFE_STRING(pToken), VDIR_SAFE_STRING(pStr) );
-
-    VmDirSchemaStructureDescContentFree(pStructureDesc);
-
-    goto cleanup;
-}
-
-/*
- * convert nameform string into VDIR_SCHEMA_NAMEFORM_DESC
- NameFormDescription = "(" whsp
-          numericoid whsp  ; NameForm identifier
-          [ "NAME" qdescrs ]
-          [ "DESC" qdstring ]
-          [ "OBSOLETE" whsp ]
-          "OC" woid         ; Structural ObjectClass
-          "MUST" oids       ; AttributeTypes
-          [ "MAY" oids ]    ; AttributeTypes
-          whsp ")"
- */
-DWORD
-VmDirSchemaParseStrToNameformDesc(
-    const char*                 pStr,
-    PVDIR_SCHEMA_NF_DESC  pNameformDesc
-    )
-{
-    DWORD       dwError = 0;
-    BOOLEAN     bHasOID = FALSE;
-    PSTR        pToken = NULL;
-    PSTR        pRest = NULL;
-    char*       pBuf = NULL;
-
-    if ( !pStr || !pNameformDesc )
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringA(pStr, &pBuf);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VmdDirSchemaParseNormalizeElement( pBuf );
-
-    pToken = VmDirStringTokA(pBuf, SCHEMA_GEN_TOKEN_SEP, &pRest);
-    if (!pToken)
-    {
-        dwError = ERROR_INVALID_NAMEFORMS;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    if (VmDirStringCompareA(pToken, NAMEFORM_TAG, FALSE) == 0)
-    {
-        GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-    }
-
-    if (! IS_L_PARENTHESIS_STR(pToken))
-    {
-        dwError = ERROR_INVALID_NAMEFORMS;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    for ( pToken=VmDirStringTokA(NULL, SCHEMA_GEN_TOKEN_SEP, &pRest);
-          pToken;
-          pToken=VmDirStringTokA(NULL, SCHEMA_GEN_TOKEN_SEP, &pRest)
-        )
-    {
-
-        VDIR_BERVALUE bv = VDIR_BERVALUE_INIT;
-        bv.lberbv.bv_val = pToken;
-        bv.lberbv.bv_len = VmDirStringLenA(pToken);
-
-        if (!bHasOID && syntaxOID(&bv))
-        {
-            bHasOID = TRUE;
-            dwError = VmDirAllocateStringA(pToken, &pNameformDesc->pszOid);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "NAME", FALSE) == 0)
-        {
-            GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-            dwError = VmDirAllocateStringA(pToken, &pNameformDesc->pszName);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "DESC", FALSE) == 0)
-        {
-            GET_NEXT_TOKEN(pToken, SCHEMA_DESC_TOKEN_SEP, pRest);
-            dwError = VmDirAllocateStringA(pToken, &pNameformDesc->pszDesc);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "OBSOLETE", FALSE) == 0)
-        {   //TODO, semantic not supported yet.
-            pNameformDesc->bObsolete = TRUE;
-        }
-        else if (VmDirStringCompareA(pToken, "OC", FALSE) == 0)
-        {
-            GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, pRest);
-            dwError = VmDirAllocateStringA(pToken, &pNameformDesc->pszStructOC);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "MUST", FALSE) == 0)
-        {
-            dwError = schemaParseParenthesisItems(  &pNameformDesc->ppszMustATs,
-                                                    &pRest,
-                                                    &pNameformDesc->usNumMustATs);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (VmDirStringCompareA(pToken, "MAY", FALSE) == 0)
-        {
-            dwError = schemaParseParenthesisItems(  &pNameformDesc->ppszMayATs,
-                                                    &pRest,
-                                                    &pNameformDesc->usNumMayATs);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (IS_R_PARENTHESIS_STR(pToken))
-        {
-            ;
-        }
-        else
-        {
-            dwError = ERROR_INVALID_NAMEFORMS;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pBuf);
-
-    return dwError;
-
-error:
-
-    VmDirLog( LDAP_DEBUG_ANY, "VmDirSchemaParseStrToNameformDesc:(%s)(%s) failed",
-              VDIR_SAFE_STRING(pToken), VDIR_SAFE_STRING(pStr) );
-
-    VmDirSchemaNameformDescContentFree(pNameformDesc);
-
-    goto cleanup;
-}
-
-static
-DWORD
-schemaParseParenthesisItems(
-    PSTR**       pppszList,
-    PSTR*        ppRest,
-    PUSHORT      pusSize
-    )
-{
-    DWORD       dwError = 0;
-    USHORT      usCnt = 0;
-    size_t      iSize = 5;
-    PSTR        pToken = NULL;
-    PSTR*       ppszLocalList = NULL;
-
-    dwError = VmDirAllocateMemory(sizeof(PSTR) * (iSize+1),
-            (PVOID*) &ppszLocalList);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    GET_NEXT_TOKEN(pToken, SCHEMA_GEN_TOKEN_SEP, *ppRest);
-
-    if (IS_EMPTY_PARENTHESIS_STR(pToken))
-    {   //TODO, is () allowed?
-        dwError = ERROR_INVALID_SCHEMA;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else if (! IS_L_PARENTHESIS(pToken))
-    {
-        dwError = VmDirAllocateStringA( pToken,
-                                        &(ppszLocalList[0]) );
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        usCnt++;
-    }
-    else
-    {
-        usCnt = 0;
-
-        if (! IS_L_PARENTHESIS_STR(pToken))
-        {
-            dwError = VmDirAllocateStringA( &(pToken[1]),
-                                            &(ppszLocalList[usCnt++]) );
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        for (pToken=VmDirStringTokA(NULL, SCHEMA_GEN_TOKEN_SEP, ppRest);
-             pToken && !IS_R_PARENTHESIS_STR(pToken);
-             pToken=VmDirStringTokA(NULL, SCHEMA_GEN_TOKEN_SEP, ppRest))
-        {
-            if (usCnt == iSize)
+            for (i = 0; i < pAttr->numVals; i++)
             {
-                size_t iOldSize = iSize;
-                iSize = iSize * 2;
-                dwError = VmDirReallocateMemoryWithInit(    ppszLocalList,
-                                                            (PVOID*) &ppszLocalList,
-                                                            (iSize+1) * sizeof(PSTR),
-                                                            (iOldSize) * sizeof(PSTR));
+                dwError = VmDirAllocateStringA(
+                        pAttr->vals[i].lberbv_val,
+                        &pSource->cr_at_oids_must[i]);
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
 
-            dwError = VmDirAllocateStringA( pToken,
-                                            &(ppszLocalList)[usCnt++]);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            bHasCr = TRUE;
         }
-
-        if (!pToken)
+        else if (VmDirStringCompareA(ATTR_MAYCONTAIN,
+                pAttr->type.lberbv_val, FALSE) == 0)
         {
-            dwError = ERROR_INVALID_SCHEMA;
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*)*(pAttr->numVals+1),
+                    (PVOID*)&pSource->cr_at_oids_may);
             BAIL_ON_VMDIR_ERROR(dwError);
+
+            for (i = 0; i < pAttr->numVals; i++)
+            {
+                dwError = VmDirAllocateStringA(
+                        pAttr->vals[i].lberbv_val,
+                        &pSource->cr_at_oids_may[i]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+
+            bHasCr = TRUE;
         }
+        else if (VmDirStringCompareA(ATTR_AUXILIARY_CLASS,
+                    pAttr->type.lberbv_val, FALSE) == 0 ||
+                 VmDirStringCompareA(ATTR_SYSTEMAUXILIARY_CLASS,
+                    pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            dwError = VmDirReallocateMemoryWithInit(
+                    (PVOID)pSource->cr_oc_oids_aux,
+                    (PVOID*)&pSource->cr_oc_oids_aux,
+                    sizeof(char*) * (dwAux + pAttr->numVals + 1),
+                    dwAux ? sizeof(char*) * (dwAux + 1) : 0);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            for (i = 0; i < pAttr->numVals; i++, dwAux++)
+            {
+                dwError = VmDirAllocateStringA(
+                        pAttr->vals[i].lberbv_val,
+                        &pSource->cr_oc_oids_aux[dwAux]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+
+            bHasCr = TRUE;
+        }
+        pAttr = pAttr->next;
     }
 
-    if ( usCnt == 0 && ppszLocalList )
+    if (!bHasCr)
     {
-        VMDIR_SAFE_FREE_MEMORY( ppszLocalList );
+        goto error;
     }
 
-    *pppszList = ppszLocalList;
-    *pusSize = usCnt;
+    dwError = VmDirLdapCrCreate(pSource, ppCr);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-
     return dwError;
 
 error:
-
-    VmDirFreeStringArrayA( ppszLocalList);
-    VMDIR_SAFE_FREE_MEMORY( ppszLocalList );
-
+    if (pSource)
+    {
+        ldap_contentrule_free(pSource);
+    }
+    if (ppCr)
+    {
+        *ppCr = NULL;
+    }
     goto cleanup;
 }

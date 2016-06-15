@@ -728,7 +728,7 @@ ProcessAConnection(
          BAIL_ON_VMDIR_ERROR( retVal );
       }
 
-      retVal = VmDirNewOperation(ber, msgid, tag, pConn, &pOperation);
+      retVal = VmDirExternalOperationCreate(ber, msgid, tag, pConn, &pOperation);
       if (retVal)
       {
           VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessAConnection: NewOperation() call failed." );

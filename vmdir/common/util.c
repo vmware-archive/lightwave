@@ -2710,658 +2710,15 @@ error:
     goto cleanup;
 }
 
-DWORD
-VmDirUPNToUserName(
-    PCSTR pszUPN,
-    PSTR* ppszSrcUserName
-    )
-{
-    DWORD   dwError         = 0;
-    PSTR    pszSrcUserName  = NULL;
-
-    dwError = VmDirUPNToNameAndDomain(pszUPN, &pszSrcUserName, NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppszSrcUserName=pszSrcUserName;
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_SAFE_FREE_MEMORY(pszSrcUserName);
-    goto cleanup;
-}
-
-/* Function to extract attributeMetaData Type from attributeMetaDataValue  */
-DWORD
-VmDirGetSubstringBeforeToken(
-    PCSTR  pszMetaDataValue ,
-    PSTR*  ppszMetaDataType ,
-    CHAR   delimiter
-)
-{
-
-    DWORD   dwError          = 0;
-    PSTR    pszMetaDataType  = NULL;
-    DWORD   dwLen            = 0;
-
-    pszMetaDataType = VmDirStringChrA(pszMetaDataValue,delimiter);
-
-    dwLen = pszMetaDataType-pszMetaDataValue;
-
-    if(!pszMetaDataType || !dwLen)
-        return VMDIR_ERROR_INVALID_PARAMETER;
-
-    pszMetaDataType = NULL;
-
-    dwError = VmDirAllocateAndCopyMemory((void*)pszMetaDataValue,
-                                         dwLen,
-                                         (void*)&pszMetaDataType);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppszMetaDataType=pszMetaDataType;
-
-cleanup:
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirGetSubstringBeforeToken for (%s) failed (%u)", pszMetaDataValue, dwError);
-    VMDIR_SAFE_FREE_MEMORY(pszMetaDataType);
-
-    goto cleanup;
-}
-
-/* Utility Function for VmDirCompareSchema API  */
-DWORD
-VmDirGetSchemaEntry (
-    LDAP**  ppLd ,
-    PSTR    pszHostName ,
-    PSTR    pszUPN ,
-    PSTR    pszPassword ,
-    PSTR    pszAttrs[],
-    LDAPMessage**  ppEntry ,
-    LDAPMessage**  ppResult
-    )
-{
-
-    DWORD          dwError    = 0 ;
-    LDAP*          pLd        = NULL ;
-    LDAPMessage*   pEntry     = NULL ;
-    LDAPMessage*   pResult    = NULL;
-
-    /*  Do a Safe LDAP Bind for getting a Handle */
-    dwError = VmDirSafeLDAPBind (
-            &pLd  ,
-            pszHostName ,
-            pszUPN ,
-            pszPassword
-            ) ;
-    BAIL_ON_VMDIR_ERROR (dwError) ;
-
-    dwError = ldap_search_ext_s(
-            pLd,
-            SUB_SCHEMA_SUB_ENTRY_DN,
-            LDAP_SCOPE_BASE,
-            "objectclass=*",
-            pszAttrs,
-            FALSE, /* get values      */
-            NULL,  /* server controls */
-            NULL,  /* client controls */
-            NULL,  /* timeout         */
-            0,     /* size limit      */
-            &pResult);
-
-    BAIL_ON_VMDIR_ERROR (dwError ) ;
-
-    if( ldap_count_entries(pLd,pResult) == 1 )
-    {
-        pEntry = ldap_first_entry(pLd, pResult) ;
-    }
-
-     *ppLd = pLd ;
-    *ppEntry = pEntry ;
-    *ppResult = pResult ;
-
-    VMDIR_LOG_INFO (VMDIR_LOG_MASK_ALL, "VmdirGetSchemaEntry function execution completed succesfully for host %s ", pszHostName) ;
-
-cleanup:
-    return dwError;
-
-error:
-
-    if (pLd)
-    {
-        ldap_unbind_ext_s(pLd, NULL, NULL);
-        pLd = NULL ;
-    }
-
-    if ( pResult )
-    {
-        ldap_msgfree (pResult);
-        pResult = NULL ;
-
-    }
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmdirGetSchemaEntry failed for host %s. Error[%d] ", pszHostName , dwError);
-    goto cleanup;
-}
-
-DWORD
-VmDirGetSchemaAttributeValue (
-    LDAP*        pLd   ,
-    LDAPMessage* pEntry ,
-    PSTR         pszAttributeName ,
-    DWORD        dwAttributeIndex ,
-    PSTR*        pszAttributeValues[],
-    DWORD*       pdwValueCount,
-    BOOLEAN      bNormalizeValue
-    )
-{
-    DWORD          i               =  0 ;
-    DWORD          dwError         =  0 ;
-    DWORD          dwValueCount    =  0 ;
-    BerValue**     ppBerValues     = NULL;
-
-    ppBerValues = ldap_get_values_len (pLd , pEntry , pszAttributeName ) ;
-    BAIL_ON_VMDIR_ERROR ( dwError );
-
-    dwValueCount = ldap_count_values_len (ppBerValues) ;
-
-    dwError = VmDirAllocateMemory(
-            (dwValueCount*sizeof(PSTR*)),
-            (PVOID*)&pszAttributeValues[dwAttributeIndex]
-            );
-
-    BAIL_ON_VMDIR_ERROR (dwError);
-
-    if (ppBerValues != NULL && dwValueCount  > 0)
-    {
-        for (i=0;i< dwValueCount ; i++)
-        {
-            dwError = VmDirAllocateStringA(
-                    ppBerValues[i][0].bv_val,
-                    &pszAttributeValues[dwAttributeIndex][i]);
-
-            BAIL_ON_VMDIR_ERROR (dwError) ;
-
-            if ( bNormalizeValue )
-            {
-                VmdDirSchemaParseNormalizeElement(pszAttributeValues[dwAttributeIndex][i]);
-            }
-        }
-
-        // Sort Here
-        qsort (pszAttributeValues[dwAttributeIndex],dwValueCount,sizeof(PSTR),VmDirQsortCaseExactCompareString) ;
-    }
-
-    *pdwValueCount = dwValueCount ;
-
-cleanup:
-    if (ppBerValues)
-    {
-        ldap_value_free_len(ppBerValues);
-    }
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirGetSchemaAttributeValue failed. Error[%d] ",  dwError);
-    goto cleanup;
-
-}
-
-DWORD
-VmDirExtractSchemaValues (
-    PSTR       pszHostName ,
-    PSTR       pszUPN ,
-    PSTR       pszPassword,
-    PSTR       pszAttributes[],
-    DWORD      dwAttributeCount,
-    PSTR*      pszAttributeValues[] ,
-    DWORD      dwValueCount[],
-    BOOLEAN    bNormalizeValue
-    )
-{
-
-    DWORD            dwError = 0 ;
-    DWORD            j =  0 ;
-    DWORD            dwNumAttributes = 0 ;
-    LDAP*            pLd  = NULL ;
-    LDAPMessage*     pEntry  = NULL ;
-    LDAPMessage*     pResult = NULL ;
-
-
-
-    dwError = VmDirGetSchemaEntry (
-                &pLd ,
-                pszHostName ,
-                pszUPN ,
-                pszPassword ,
-                pszAttributes ,
-                &pEntry ,
-                &pResult
-                )  ;
-
-    BAIL_ON_VMDIR_ERROR (dwError) ;
-
-    dwNumAttributes = dwAttributeCount ;
-
-    /*  Get All Required Attributes value required for correct schema comparsion  */
-   for (j=0 ; j < dwNumAttributes  ; j++)
-   {
-       dwError =  VmDirGetSchemaAttributeValue (
-                pLd ,
-                pEntry ,
-                pszAttributes [j] ,
-                j ,
-                pszAttributeValues ,
-                &dwValueCount[j],
-                bNormalizeValue
-                );
-       BAIL_ON_VMDIR_ERROR (dwError) ;
-   }
-
-cleanup:
-
-    if ( pResult )
-    {
-        ldap_msgfree (pResult);
-        pResult = NULL ;
-    }
-
-    if (pLd)
-    {
-        ldap_unbind_ext_s(pLd, NULL, NULL);
-        pLd = NULL ;
-    }
-
-    return dwError ;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirExtractSchemaValues failed. Error[%d] ",  dwError);
-    goto cleanup;
-
-}
-
-// Function to Compare Attributes Value  1 by 1
-DWORD
-VmDirCompareSchemaValues (
-    PSTR*    pszBaseAttributeValues[] ,
-    PSTR*    pszPartnerAttributeValues[] ,
-    DWORD    dwIndex ,
-    DWORD    dwBaseValueCount,
-    DWORD    dwPartnerValueCount,
-    PVMDIR_SCHEMA_DIFF  pSchemaDiff ,
-    DWORD    dwHostNumber
-    )
-{
-
-    DWORD      dwError = 0 ;
-    DWORD           i  = 0 ;
-    DWORD           j  = 0 ;
-    DWORD      dwState = 0 ;
-    DWORD      dwBaseDiffCount = 0;
-    DWORD      dwPartnerDiffCount = 0;
-
-
-    dwBaseDiffCount =  pSchemaDiff[dwHostNumber].dwBaseHostDiffCount ;
-    dwPartnerDiffCount = pSchemaDiff[dwHostNumber].dwPartnerHostDiffCount;
-
-    while (i < dwBaseValueCount  && j < dwPartnerValueCount )
-    {
-
-       if ( strcmp ( pszBaseAttributeValues[dwIndex][i], pszPartnerAttributeValues[dwIndex][j] ) == 0 )
-        {
-            i++ ;
-            j++ ;
-        }
-        else if ( strcmp ( pszBaseAttributeValues[dwIndex][i], pszPartnerAttributeValues[dwIndex][j] ) < 0 )
-        {
-            dwState = ERROR_SCHEMA_MISMATCH ;
-
-            dwError = VmDirAllocateStringA(
-                    pszBaseAttributeValues[dwIndex][i],
-                    &pSchemaDiff[dwHostNumber].partnerHostDiffList[dwPartnerDiffCount++]);
-
-            BAIL_ON_VMDIR_ERROR (dwError) ;
-
-            i++ ;
-        }
-        else
-        {
-            dwState = ERROR_SCHEMA_MISMATCH ;
-
-            dwError = VmDirAllocateStringA(
-                    pszPartnerAttributeValues[dwIndex][j],
-                    &pSchemaDiff[dwHostNumber].baseHostDiffList[dwBaseDiffCount++]);
-            BAIL_ON_VMDIR_ERROR (dwError) ;
-
-            j++ ;
-        }
-    }
-
-
-    if (i!= dwBaseValueCount || j!= dwPartnerValueCount)
-    {
-        dwState = ERROR_SCHEMA_MISMATCH ;
-    }
-
-
-/* Add all remaning  attributes from base host to to partner host diff list   */
-    if (i != dwBaseValueCount)
-    {
-        for ( ;i < dwBaseValueCount ; i++ )
-        {
-            dwError = VmDirAllocateStringA(
-                    pszBaseAttributeValues[dwIndex][i],
-                    &pSchemaDiff[dwHostNumber].partnerHostDiffList[dwPartnerDiffCount++]);
-            BAIL_ON_VMDIR_ERROR (dwError) ;
-        }
-    }
-
-
-/* Add all remaning  attributes from partner host to to base host diff list   */
-    if (j != dwPartnerValueCount)
-    {
-        for ( ; j < dwPartnerValueCount ; j++ )
-        {
-            dwError = VmDirAllocateStringA(
-                    pszPartnerAttributeValues[dwIndex][j],
-                    &pSchemaDiff[dwHostNumber].baseHostDiffList[dwBaseDiffCount++]);
-            BAIL_ON_VMDIR_ERROR (dwError) ;
-        }
-    }
-
-    pSchemaDiff[dwHostNumber].dwBaseHostDiffCount =  dwBaseDiffCount ;
-    pSchemaDiff[dwHostNumber].dwPartnerHostDiffCount = dwPartnerDiffCount ;
-
-    if (dwState == ERROR_SCHEMA_MISMATCH )
-    {
-        dwError = ERROR_SCHEMA_MISMATCH ;
-    }
-
-    BAIL_ON_VMDIR_ERROR (dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirCompareAttributeValues failed. Error[%d] ",  dwError);
-    goto cleanup;
-
-}
-
-/*
-  Version check is required for attribute metadata value only.
-  Format of Attribute metadata value is
-  objectClasses:102:1:369b48da-1a29-4bdb-8cc3-cfdd99991abc:20150505015610.943:102
-  dITStructureRules:102:1:369b48da-1a29-4bdb-8cc3-cfdd99991abc:20150505015610.943:102
-
-  Version is present after two ':' chars.So ignore everything before 2nd ':' char,then to do a byte by byte comparison.
-*/
-DWORD
-VmDirCheckSchemaAttrVersion (
-    PSTR*   pszBaseAttributeValues[] ,
-    PSTR*   pszPartnerAttributeValues[] ,
-    DWORD   dwIndex ,
-    DWORD   dwValueCount,
-    PVMDIR_SCHEMA_DIFF  pSchemaDiff,
-    DWORD   dwHostNumber
-    )
-{
-    DWORD           i =  0 ;
-    DWORD           j =  0 ;
-    DWORD           dwState = 0 ;
-    DWORD           dwError = 0 ;
-    PSTR            pszMetaDataType = NULL ;
-    CHAR            delimiter = ':' ;
-    PSTR            pszBaseToken = NULL;
-    PSTR            pszPartnerToken = NULL;
-    PSTR            pszMetadataVersion[3] = {0};
-    DWORD           dwMetadataVersionCnt = 0;
-
-    for (i =0 ; i< dwValueCount ;i++)
-    {
-        VMDIR_SAFE_FREE_MEMORY(pszMetaDataType);
-        dwError = VmDirGetSubstringBeforeToken(pszBaseAttributeValues[dwIndex][i], &pszMetaDataType, delimiter );
-        BAIL_ON_VMDIR_ERROR (dwError) ;
-
-        if ( VmDirStringCompareA( pszMetaDataType ,"attributeTypes" , TRUE ) == 0 ||
-             VmDirStringCompareA( pszMetaDataType ,"objectClasses" , TRUE ) == 0  ||
-             VmDirStringCompareA( pszMetaDataType ,"dITContentRules" , TRUE ) == 0
-           )
-        {
-            /*
-             * pszBaseAttributeValues[3][*] and pszPartnerAttibuteValues[3][*] are in sorted order
-             */
-
-            VMDIR_SAFE_FREE_MEMORY( pszBaseToken );
-            VMDIR_SAFE_FREE_MEMORY( pszPartnerToken );
-            dwError = VmDirStringGetTokenByIdx( pszBaseAttributeValues[dwIndex][i], ":", 3, &pszBaseToken );
-            BAIL_ON_VMDIR_ERROR(dwError);
-            dwError = VmDirStringGetTokenByIdx( pszPartnerAttributeValues[dwIndex][i], ":", 3, &pszPartnerToken );
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            if ( VmDirStringCompareA( pszBaseToken, pszPartnerToken, FALSE ) != 0 )
-            {
-                dwState = 1;
-            }
-
-            dwError = VmDirAllocateStringPrintf(
-                                &(pszMetadataVersion[dwMetadataVersionCnt++]),
-                                "%s %s/%s",
-                                pszMetaDataType,pszBaseToken,pszPartnerToken );
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-    }
-
-    dwError = VmDirAllocateStringPrintf(
-                &(pSchemaDiff[dwHostNumber].pszMetadataVerison),
-                "Metadata version base/partner: %s, %s, %s",
-                pszMetadataVersion[0],pszMetadataVersion[1],pszMetadataVersion[2]);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if ( dwState != 0 )
-    {
-        dwError = ERROR_SCHEMA_MISMATCH ;
-        pSchemaDiff[dwHostNumber].bIsMetadataVersionOutofSync = TRUE;
-    }
-
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-
-    for ( j = 0; j < dwMetadataVersionCnt; j++ )
-    {
-        VMDIR_SAFE_FREE_MEMORY( pszMetadataVersion[j] );
-    }
-    VMDIR_SAFE_FREE_MEMORY( pszBaseToken );
-    VMDIR_SAFE_FREE_MEMORY( pszPartnerToken );
-    VMDIR_SAFE_FREE_MEMORY( pszMetaDataType );
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirCheckVersion failed. Error[%d] ",  dwError);
-
-    goto cleanup;
-
-}
-
-// Function to extract Hostname from ServerName ..
-DWORD
-VmDirCnFromRdn (
-    PSTR  pszURI ,
-    PSTR* ppszHostName
-    )
-{
-    DWORD   i = 0 ;
-    DWORD   dwLen = 0 ;
-    DWORD   dwError = 0 ;
-    PSTR    pszHostName = NULL ;
-
-    dwLen = strlen (pszURI) ;
-
-    dwError = VmDirAllocateMemory(dwLen+1, (PVOID*)&pszHostName );
-    BAIL_ON_VMDIR_ERROR (dwError);
-
-    /* Ignore First 3 characters i.e "cn."   */
-    i= i+3 ;
-    while (i < dwLen )
-    {
-        if (pszURI[i] == '.')
-            break ;
-        pszHostName[i-3] = pszURI[i];
-        i++ ;
-    }
-
-    pszHostName[i] = '\0' ;
-
-    *ppszHostName = pszHostName ;
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_SAFE_FREE_MEMORY(pszHostName);
-    *ppszHostName = NULL ;
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirCnFromRdn failed. Error[%d] ",  dwError);
-    goto cleanup;
-
-}
-
-DWORD
-VmDirNormalizeHostName(
-    PSTR   pszHostName,
-    PSTR*  ppszNormalisedName
-)
-{
-    DWORD     dwError = 0 ;
-    PSTR      pszTempHostName =NULL ;
-    PSTR      pszNormalisedName = NULL ;
-    CHAR      pszLocalHostName[VMDIR_MAX_HOSTNAME_LEN] = {0};
-
-
-    if ( VmDirIsIPAddrFormat(pszHostName))
-    {
-        dwError = VmDirGetCanonicalHostName( pszHostName , &pszTempHostName );
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirGetSubstringBeforeToken(pszTempHostName , &pszNormalisedName , '.' ) ;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else if ( VmDirStringCompareA( pszHostName, "localhost", false) == 0 )
-    {
-        dwError = VmDirGetHostName(pszLocalHostName, sizeof(pszLocalHostName)-1);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirAllocateMemory(VMDIR_MAX_HOSTNAME_LEN+1, (PVOID *)&pszNormalisedName);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirStringCpyA(pszNormalisedName, VMDIR_MAX_HOSTNAME_LEN, pszLocalHostName);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-    }
-    else if ( VmDirStringChrA(pszHostName,'.') != NULL )
-    {
-        dwError = VmDirGetSubstringBeforeToken(pszHostName, &pszNormalisedName, '.' );
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-    {
-        dwError = VmDirAllocateMemory(VMDIR_MAX_HOSTNAME_LEN+1, (PVOID *)&pszNormalisedName);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirStringCpyA(pszNormalisedName, VMDIR_MAX_HOSTNAME_LEN, pszHostName);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-
-
-cleanup:
-    *ppszNormalisedName = pszNormalisedName ;
-    VMDIR_SAFE_FREE_MEMORY(pszTempHostName);
-    return dwError ;
-
-error:
-    goto cleanup;
-
-}
-
-
-VOID
-VmDirSchemaDiffFree (
-    PVMDIR_SCHEMA_DIFF  pSchemaDiff ,
-    DWORD  dwSchemaDiffSize
-)
-{
-
-   DWORD          i  = 0 ;
-   DWORD          j  = 0 ;
-
-   for (i=0 ; i < dwSchemaDiffSize ; i++ )
-   {
-
-       if (pSchemaDiff == NULL)
-           return ;
-       VMDIR_SAFE_FREE_MEMORY(pSchemaDiff[i].pszBaseHostName) ;
-       VMDIR_SAFE_FREE_MEMORY(pSchemaDiff[i].pszPartnerHostName) ;
-       VMDIR_SAFE_FREE_MEMORY(pSchemaDiff[i].pszMetadataVerison);
-
-       for (j=0 ; j< pSchemaDiff[i].dwBaseHostDiffCount ; j++ )
-       {
-           VMDIR_SAFE_FREE_MEMORY ( pSchemaDiff[i].baseHostDiffList[j]) ;
-       }
-
-       VMDIR_SAFE_FREE_MEMORY (pSchemaDiff[i].baseHostDiffList);
-
-       for (j=0 ; j< pSchemaDiff[i].dwPartnerHostDiffCount ; j++ )
-       {
-          VMDIR_SAFE_FREE_MEMORY ( pSchemaDiff[i].partnerHostDiffList[j] ) ;
-       }
-
-       VMDIR_SAFE_FREE_MEMORY ( pSchemaDiff[i].partnerHostDiffList ) ;
-   }
-
-   VMDIR_SAFE_FREE_MEMORY  ( pSchemaDiff );
-
-}
-
-VOID
-VmDirSchemaAttributesFree (
-   PSTR**   pszAttributeValues ,
-   DWORD    dwValueCount[] ,
-   DWORD    dwNumAttributes
-)
-{
-    DWORD         i = 0 ;
-    DWORD         j = 0 ;
-
-    if(pszAttributeValues == NULL)
-        return ;
-
-    for (i=0 ; i<dwNumAttributes ; i++ )
-    {
-        for(j=0 ; j< dwValueCount[i] ; j++)
-        {
-            VMDIR_SAFE_FREE_MEMORY(pszAttributeValues[i][j]);
-        }
-        VMDIR_SAFE_FREE_MEMORY (pszAttributeValues[i]);
-    }
-}
-
 /*
  * Qsort comparison function
  */
 int
 VmDirQsortCaseExactCompareString(
-    const void*             ppStr1,
-    const void*             ppStr2
+    const void* ppStr1,
+    const void* ppStr2
     )
 {
-
     if ((ppStr1 == NULL || *(char * const *)ppStr1 == NULL) &&
             (ppStr2 == NULL || *(char * const *)ppStr2 == NULL))
     {
@@ -3383,11 +2740,10 @@ VmDirQsortCaseExactCompareString(
 
 int
 VmDirQsortCaseIgnoreCompareString(
-    const void*             ppStr1,
-    const void*             ppStr2
+    const void* ppStr1,
+    const void* ppStr2
     )
 {
-
     if ((ppStr1 == NULL || *(char * const *)ppStr1 == NULL) &&
         (ppStr2 == NULL || *(char * const *)ppStr2 == NULL))
     {
@@ -3407,262 +2763,274 @@ VmDirQsortCaseIgnoreCompareString(
     return VmDirStringCompareA(* (char * const *) ppStr1, * (char * const *) ppStr2, FALSE);
 }
 
+/*
+ *  ppszArray1 and ppszArray2 are NULL terminated PSTR arrays.
+ *  pppszOutArray is ppszArray1 UNION ppszArray2.
+ */
 DWORD
-VmDirSynchSchemaAttrMetadataVersion(
-    PSTR   pszBaseHostName ,
-    PSTR   pszUPN ,
-    PSTR   pszPassword ,
-    PSTR   pszAttributeName
+VmDirMergeStrArray(
+    PSTR*   ppszArray1,
+    PSTR*   ppszArray2,
+    PSTR**  pppszOutArray
     )
 {
+    DWORD   dwError = 0;
+    PSTR*   ppszArray = NULL;
+    int     iIdx = 0;
+    int     iSize1 = 0, iSize2 = 0, iCnt1 = 0, iCnt2 = 0;
 
-    DWORD      i = 0 ;
-    DWORD      dwError = 0 ;
-    DWORD      dwLength = 0 ;
-    DWORD      dwAttributeCount ;
-    DWORD      dwValueCount[1] = {0} ;
-    PSTR       pszVal = NULL ;
-    PSTR       pszAttrs[] = {pszAttributeName, NULL} ;
-    PSTR*      pszAttributeValues[1] = {NULL} ;
-    PSTR       pszDeleteValues[2]= {NULL};
-    PSTR       pszAddValues[2]= {NULL};
-    LDAP*      pLd = NULL ;
-    LDAPMod    modReplace = {0};
-    LDAPMod    modAdd = {0};
-    LDAPMod*   mods[3] = {&modReplace,&modAdd, NULL};
+    if (!pppszOutArray)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
+    for (iSize1=0; ppszArray1 && ppszArray1[iSize1]; iSize1++);
+    for (iSize2=0; ppszArray2 && ppszArray2[iSize2]; iSize2++);
 
-    modReplace.mod_op = LDAP_MOD_DELETE;
-    modReplace.mod_type = (PSTR)pszAttributeName;
+    if (iSize1 == 0 && iSize2 == 0)
+    {
+        goto cleanup;
+    }
 
-    modAdd.mod_op = LDAP_MOD_ADD;
-    modAdd.mod_type = (PSTR)pszAttributeName;
+    if (iSize1 > 0)
+    {
+        qsort(ppszArray1, iSize1, sizeof(*ppszArray1), VmDirQsortCaseIgnoreCompareString);
+    }
+    if (iSize2 > 0)
+    {
+        qsort(ppszArray2, iSize2, sizeof(*ppszArray2), VmDirQsortCaseIgnoreCompareString);
+    }
 
-    dwAttributeCount = (sizeof(pszAttrs)/sizeof(PSTR)) -1 ;
-
-    dwError = VmDirExtractSchemaValues(
-                           pszBaseHostName,
-                           pszUPN,
-                           pszPassword,
-                           pszAttrs,
-                           dwAttributeCount,
-                           pszAttributeValues,
-                           dwValueCount,
-                           FALSE
-                           );
-
+    dwError = VmDirAllocateMemory(sizeof(PSTR)*(iSize1+iSize2+1), (PVOID*)&ppszArray);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pszDeleteValues[0] = pszAttributeValues[0][0]; //  Get First Value of pszAttributeName attribute type.
-    pszDeleteValues[1]= NULL ;
+    for (iCnt1=0, iCnt2=0, iIdx=0; iCnt1<iSize1 || iCnt2<iSize2; iIdx++)
+    {
+        PSTR pszTmp = NULL;
 
-    modReplace.mod_vals.modv_strvals  = pszDeleteValues ;
+        if (iCnt1<iSize1 && iCnt2<iSize2)
+        {
+            LONG i = VmDirStringCompareA(ppszArray1[iCnt1], ppszArray2[iCnt2], FALSE);
 
-    dwLength = VmDirStringLenA( pszDeleteValues[0]);
+            if (i == 0)
+            {
+                pszTmp = ppszArray1[iCnt1];
+                iCnt1++;
+                iCnt2++;
+            }
+            else if (i < 0)
+            {
+                pszTmp = ppszArray1[iCnt1];
+                iCnt1++;
+            }
+            else
+            {
+                pszTmp = ppszArray2[iCnt2];
+                iCnt2++;
+            }
+        }
+        else if (iCnt1<iSize1 && iCnt2>=iSize2)
+        {
+            pszTmp = ppszArray1[iCnt1];
+            iCnt1++;
+        }
+        else if (iCnt1>=iSize1 && iCnt2<iSize2)
+        {
+            pszTmp = ppszArray2[iCnt2];
+            iCnt2++;
+        }
 
-    dwError = VmDirAllocateMemory(dwLength+2 , (PVOID)&pszVal);
-    BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = VmDirAllocateStringA(pszTmp, (ppszArray+iIdx));
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
-    pszVal[0] = pszDeleteValues[0][0] ;
-    pszVal[1] = ' '; // Insert a space char.
-
-    dwError = VmDirStringCpyA( pszVal+2 ,(size_t)dwLength+10 , (pszDeleteValues[0]+1) );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-
-    pszAddValues[0] = pszVal ;
-    pszAddValues[1] = NULL ;
-
-    modAdd.mod_vals.modv_strvals = pszAddValues ;
-
-    dwError = VmDirSafeLDAPBind (
-            &pLd  ,
-            pszBaseHostName ,
-            pszUPN ,
-            pszPassword
-            ) ;
-    BAIL_ON_VMDIR_ERROR (dwError) ;
-
-    dwError = ldap_modify_ext_s(
-                            pLd,
-                            SUB_SCHEMA_SUB_ENTRY_DN,
-                            mods,
-                            NULL,
-                            NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Force sync schema %s metadata version at host %s",
-                    pszAttributeName, pszBaseHostName );
-
+    *pppszOutArray = ppszArray;
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY( pszVal );
-
-    if (pLd)
-    {
-        ldap_unbind_ext_s(pLd, NULL, NULL);
-    }
-
-    for (i=0 ; i<dwValueCount[0] ; i++)
-    {
-       VMDIR_SAFE_FREE_MEMORY(  pszAttributeValues[0][i] ) ;
-    }
-
-    return dwError ;
+    return dwError;
 
 error:
+    VmDirFreeStrArray(ppszArray);
     goto cleanup;
 }
 
-
-
 DWORD
-VmDirFindMostUpdatedNodeWithAttribute(
-    PVMDIR_SERVER_INFO pServerInfo,
-    DWORD  dwNumServer,
-    PSTR   pszAttributeName,
-    PSTR   pszUPN,
-    PSTR   pszPassword,
-    PSTR*  ppszResultHostName
-)
+VmDirGetStrArrayDiffs(
+    PSTR*   ppszArray1,
+    PSTR*   ppszArray2,
+    PSTR**  pppszNotArray1,
+    PSTR**  pppszNotArray2
+    )
 {
+    DWORD   dwError = 0;
+    PSTR*   ppszNotArray1 = NULL;
+    PSTR*   ppszNotArray2 = NULL;
+    int     iSize1 = 0, iSize2 = 0, i = 0, j = 0, x = 0, y = 0;
 
-    DWORD     dwError  = 0 ;
-    DWORD     i        = 0 ;
-    DWORD     dwVersion = 0 ;
-    DWORD     dwMaxVersion = 0 ;
-    PSTR      pszHostName = NULL ;
-    PSTR      pszResultHostName = NULL ;
-    BOOLEAN   bNeedVersionUpdate = FALSE;
+    for (iSize1=0; ppszArray1 && ppszArray1[iSize1]; iSize1++);
+    for (iSize2=0; ppszArray2 && ppszArray2[iSize2]; iSize2++);
 
-    //  Iterate through all  hosts in pServerInfo list.
-    for (i=0 ; i< dwNumServer ; i++ )
+    if (iSize1 > 0)
     {
-        dwError = VmDirCnFromRdn ( pServerInfo[i].pszServerDN , &pszHostName ) ;
-        BAIL_ON_VMDIR_ERROR (dwError);
+        qsort(ppszArray1, iSize1, sizeof(*ppszArray1),
+                VmDirQsortCaseIgnoreCompareString);
 
-        dwError = VmDirGetMetaDataVersionForAttribute(
-                      pszHostName,
-                      pszUPN,
-                      pszPassword,
-                      pszAttributeName,
-                      &dwVersion) ;
-        BAIL_ON_VMDIR_ERROR (dwError);
-
-        if ( i > 0 && dwVersion != dwMaxVersion )
+        if (pppszNotArray2)
         {
-            bNeedVersionUpdate = TRUE;
+            dwError = VmDirAllocateMemory(
+                    sizeof(PSTR) * (iSize1 + 1),
+                    (PVOID*)&ppszNotArray2);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    if (iSize2 > 0)
+    {
+        qsort(ppszArray2, iSize2, sizeof(*ppszArray2),
+                VmDirQsortCaseIgnoreCompareString);
+
+        if (pppszNotArray1)
+        {
+            dwError = VmDirAllocateMemory(
+                    sizeof(PSTR) * (iSize2 + 1),
+                    (PVOID*)&ppszNotArray1);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    while (i < iSize1 || j < iSize2)
+    {
+        LONG cmp = 0;
+        if (i < iSize1 && j < iSize2)
+        {
+            cmp = VmDirStringCompareA(ppszArray1[i], ppszArray2[j], FALSE);
         }
 
-        if ( i == 0 || dwVersion > dwMaxVersion )
+        if (cmp > 0 || i == iSize1)
         {
-            VMDIR_SAFE_FREE_MEMORY (pszResultHostName);
-            pszResultHostName = pszHostName ;
-            dwMaxVersion = dwVersion ;
+            if (ppszNotArray1)
+            {
+                dwError = VmDirAllocateStringA(
+                        ppszArray2[j], &ppszNotArray1[x++]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            j++;
+        }
+        else if (cmp < 0 || j == iSize2)
+        {
+            if (ppszNotArray2)
+            {
+                dwError = VmDirAllocateStringA(
+                        ppszArray1[i], &ppszNotArray2[y++]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            i++;
         }
         else
         {
-            VMDIR_SAFE_FREE_MEMORY(pszHostName);
+            i++;
+            j++;
         }
     }
 
-    if ( bNeedVersionUpdate )
-    {
-        *ppszResultHostName = pszResultHostName ;
-        pszResultHostName = NULL;
-    }
-
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY( pszResultHostName );
+    if (x == 0)
+    {
+        VmDirFreeStrArray(ppszNotArray1);
+        ppszNotArray1 = NULL;
+    }
+    if (y == 0)
+    {
+        VmDirFreeStrArray(ppszNotArray2);
+        ppszNotArray2 = NULL;
+    }
+    if (pppszNotArray1)
+    {
+        *pppszNotArray1 = ppszNotArray1;
+    }
+    if (pppszNotArray2)
+    {
+        *pppszNotArray2 = ppszNotArray2;
+    }
     return dwError;
 
 error:
+    x = y = 0;
     goto cleanup;
 }
 
-DWORD
-VmDirGetMetaDataVersionForAttribute(
-    PSTR     pszHostName,
-    PSTR     pszUPN,
-    PSTR     pszPassword,
-    PSTR     pszAttributeName,
-    DWORD*   pdwVersion
-)
+/*
+ * valid super/sub set relationship.
+ * if super >= sub, return true; otherwise, return false;
+ *
+ * ppszSuper/ppszSub set could be NULL.
+ */
+BOOLEAN
+VmDirIsStrArraySuperSet(
+    PSTR*   ppszSuper,
+    PSTR*   ppszSub
+    )
 {
-    DWORD     dwError     = 0 ;
-    DWORD     i           = 0 ;
-    DWORD     j           = 0 ;
-    DWORD     dwVersion   = 0 ;
-    DWORD     dwNumAttributes = 0 ;
-    DWORD     dwValueCount[1]= {0};
-    CHAR      delimiter = ':' ;
-    CHAR      pszVersionString[20] = {0};
-    PSTR      pszMetaDataType = NULL ;
-    PSTR      pszMetaDataIterator = NULL ;
-    PSTR      pszAttributes[]= { "attributemetadata", NULL};
-    PSTR*     pszAttributeMetaDataValues[1] = {NULL};
+    BOOLEAN bRtn = FALSE;
+    PSTR*   ppszNotSuper = NULL;
 
+    VmDirGetStrArrayDiffs(ppszSuper, ppszSub, &ppszNotSuper, NULL);
+    bRtn = ppszNotSuper == NULL;
 
-    /* Extract Attribute Metadata Values for pszHostName   */
+    VmDirFreeStrArray(ppszNotSuper);
+    return bRtn;
+}
 
-    dwNumAttributes = 1 ;
+/*
+ * ppszArray could be NULL
+ */
+BOOLEAN
+VmDirIsStrArrayIdentical(
+    PSTR*   ppszArray1,
+    PSTR*   ppszArray2
+    )
+{
+    BOOLEAN bRtn = FALSE;
+    PSTR*   ppszNotArray1 = NULL;
+    PSTR*   ppszNotArray2 = NULL;
 
-    dwError =  VmDirExtractSchemaValues(
-               pszHostName ,
-               pszUPN ,
-               pszPassword ,
-               pszAttributes ,
-               dwNumAttributes,
-               pszAttributeMetaDataValues ,
-               dwValueCount,
-               TRUE
-               );
-    BAIL_ON_VMDIR_ERROR(dwError) ;
+    VmDirGetStrArrayDiffs(ppszArray1, ppszArray2,
+            &ppszNotArray1, &ppszNotArray2);
+    bRtn = ppszNotArray1 == NULL && ppszNotArray2 == NULL;
 
-    /* Iterate through all Metadata Values */
-    for(i=0 ;i < dwValueCount[0] ; i++ )
+    VmDirFreeStrArray(ppszNotArray1);
+    VmDirFreeStrArray(ppszNotArray2);
+    return bRtn;
+}
+
+VOID
+VmDirFreeStrArray(
+    PSTR*   ppszArray
+    )
+{
+    int i = 0;
+
+    if (ppszArray)
     {
-        dwError = VmDirGetSubstringBeforeToken( pszAttributeMetaDataValues[0][i], &pszMetaDataType, delimiter );
-        BAIL_ON_VMDIR_ERROR (dwError) ;
-
-        if ( VmDirStringCompareA( pszMetaDataType ,pszAttributeName , false ) == 0  )
+        for (i = 0; ppszArray[i]; i++)
         {
-            pszMetaDataIterator = pszAttributeMetaDataValues[0][i];
-
-            pszMetaDataIterator = VmDirStringChrA(pszMetaDataIterator,delimiter) ;
-            pszMetaDataIterator++ ;
-
-            pszMetaDataIterator = VmDirStringChrA(pszMetaDataIterator,delimiter) ;
-            pszMetaDataIterator++ ;
-
-            while( pszMetaDataIterator[j] != delimiter )
-            {
-                pszVersionString[j] = pszMetaDataIterator[j];
-                j++;
-            }
-
-            pszVersionString[j] = '\0';
-            break ;
+            VMDIR_SAFE_FREE_MEMORY(ppszArray[i]);
         }
-
-        VMDIR_SAFE_FREE_MEMORY(pszMetaDataType);
+        VMDIR_SAFE_FREE_MEMORY(ppszArray);
     }
+}
 
-    dwVersion = VmDirStringToIA(pszVersionString);
-
-cleanup:
-    *pdwVersion = dwVersion ;
-    VMDIR_SAFE_FREE_MEMORY(pszMetaDataType);
-
-    for (i=0 ; i<dwValueCount[0] ; i++ )
-    {
-        VMDIR_SAFE_FREE_MEMORY( pszAttributeMetaDataValues[0][i]);
-    }
-
-    return dwError;
-
-error:
-    goto cleanup;
+/*
+ * when hash map does not own key and value pair.
+ */
+VOID
+VmDirNoopHashMapPairFree(
+    PLW_HASHMAP_PAIR pPair,
+    LW_PVOID pUnused
+    )
+{
+    return;
 }
 
 /*
@@ -3670,40 +3038,38 @@ error:
  * compact consecutive spaces into a single one
  */
 VOID
-VmdDirSchemaParseNormalizeElement(
-    PSTR        pszElement
+VmdDirNormalizeString(
+    PSTR    pszString
     )
 {
-    size_t     iSize = 0;
-    size_t     iCnt = 0;
-    size_t     iLast = 0;
+    size_t  iSize = 0;
+    size_t  iCnt = 0;
+    size_t  iLast = 0;
 
-    if ( pszElement )
+    if (pszString)
     {
-        iSize = VmDirStringLenA( pszElement );
+        iSize = VmDirStringLenA(pszString);
 
         for (iCnt = 0, iLast = 0; iCnt < iSize; iCnt++)
         {
-            if ( pszElement[iCnt] == ' '
-                 &&
-                 (iCnt == 0 || pszElement[iCnt-1] == ' ')
-               )
+            if (pszString[iCnt] == ' ' &&
+                    (iCnt == 0 || pszString[iCnt-1] == ' '))
             {   // skip leading/trailing spaces and multiple spaces
                 continue;
             }
 
-            pszElement[iLast] = pszElement[iCnt];
+            pszString[iLast] = pszString[iCnt];
             iLast++;
         }
 
         // handle last space if exists
-        if ( iLast > 0 && pszElement[ iLast - 1 ] == ' ' )
+        if (iLast > 0 && pszString[ iLast - 1 ] == ' ')
         {
-            pszElement[ iLast - 1 ] = '\0';
+            pszString[iLast - 1] = '\0';
         }
         else
         {
-            pszElement[iLast] = '\0';
+            pszString[iLast] = '\0';
         }
     }
 
@@ -3757,48 +3123,6 @@ VmDirGetCfgPath(
 }
 
 #endif
-
-DWORD
-VmDirGetDefaultSchemaFile(
-    PSTR*   ppszSchemaFile
-    )
-{
-    DWORD   dwError = 0;
-    PSTR    pszSchemaFile = NULL;
-#ifdef _WIN32
-    PSTR    pszCfgPath = NULL;
-#else
-    PCSTR   pszLinuxFile = VMDIR_CONFIG_DIR "/vmdirschema.ldif";
-#endif
-
-    if ( ppszSchemaFile==NULL)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-#ifdef _WIN32
-    dwError = VmDirGetCfgPath(&pszCfgPath);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringPrintf(&pszSchemaFile,"%s\\vmdirschema.ldif", pszCfgPath);
-    BAIL_ON_VMDIR_ERROR(dwError);
-#else
-    dwError = VmDirAllocateStringA(pszLinuxFile, &pszSchemaFile);
-    BAIL_ON_VMDIR_ERROR(dwError);
-#endif
-
-    *ppszSchemaFile = pszSchemaFile;
-
-cleanup:
-    return dwError;
-error:
-#ifdef _WIN32
-    VMDIR_SAFE_FREE_MEMORY(pszCfgPath);
-#endif
-    VMDIR_SAFE_FREE_MEMORY(pszSchemaFile);
-    goto cleanup;
-}
 
 DWORD
 VmDirGetSingleAttributeFromEntry(

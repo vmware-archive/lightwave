@@ -17,7 +17,6 @@ libvmdirclient_la_SOURCES = \
     krb5login.c \
     ldaputil.c \
     libmain.c \
-    ldapschema.c \
     registry.c \
     repadmin.c \
     replication.c \
@@ -32,7 +31,13 @@ libvmdirclient_la_SOURCES = \
     vmdirdbcp_cstub.c \
     vmdirlocalclient.c \
     srp_verifier_cstub.c \
-    vmdirsuperlog_cstub.c
+    vmdirsuperlog_cstub.c \
+    schema/load.c \
+    schema/parse.c \
+    schema/patch.c \
+    schema/legacy/legacyload.c \
+    schema/legacy/legacypatch.c \
+    schema/legacy/legacyutil.c
 
 libvmdirclient_la_LIBADD = \
     @top_builddir@/common/libcommon.la \

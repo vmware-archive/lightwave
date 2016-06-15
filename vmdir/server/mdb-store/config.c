@@ -68,3 +68,27 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+VmDirMDBConfigureFsync(
+    BOOLEAN bFsyncOn
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = mdb_env_set_flags(gVdirMdbGlobals.mdbEnv, MDB_NOSYNC, !bFsyncOn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = mdb_env_sync(gVdirMdbGlobals.mdbEnv, 1);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, mdb error (%d)", __FUNCTION__, dwError );
+
+    VMDIR_SET_BACKEND_ERROR(dwError);
+    goto cleanup;
+}

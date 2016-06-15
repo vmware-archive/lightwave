@@ -238,8 +238,42 @@ VmDirFreeEntry(
     PVDIR_ENTRY pEntry
     )
 {
-    VmDirFreeEntryContent(pEntry);
-    VMDIR_SAFE_FREE_MEMORY(pEntry);
+    if (pEntry)
+    {
+        VmDirFreeEntryContent(pEntry);
+        VMDIR_SAFE_FREE_MEMORY(pEntry);
+    }
+}
+
+void
+VmDirFreeEntryArrayContent(
+    PVDIR_ENTRY_ARRAY   pEntryAry
+    )
+{
+    size_t  iCnt = 0;
+
+    if ( pEntryAry )
+    {
+        for (iCnt = 0; iCnt < pEntryAry->iSize; iCnt++)
+        {
+            VmDirFreeEntryContent((pEntryAry->pEntry)+iCnt);
+        }
+
+        VMDIR_SAFE_FREE_MEMORY(pEntryAry->pEntry);
+        pEntryAry->iSize = 0;
+    }
+}
+
+void
+VmDirFreeEntryArray(
+    PVDIR_ENTRY_ARRAY   pEntryAry
+    )
+{
+    if (pEntryAry)
+    {
+        VmDirFreeEntryArrayContent(pEntryAry);
+        VMDIR_SAFE_FREE_MEMORY(pEntryAry);
+    }
 }
 
 /* ***************************************************
@@ -295,6 +329,55 @@ cleanup:
 
 error:
 
+    goto cleanup;
+}
+
+/*
+ * Add an array of bervalue attribute values into an entry.
+ */
+DWORD
+VmDirEntryAddBervArrayAttribute(
+    PVDIR_ENTRY     pEntry,
+    PCSTR           pszAttrName,
+    VDIR_BERVARRAY  attrVals,
+    USHORT          usNumVals
+    )
+{
+    DWORD           dwError = 0;
+    PVDIR_ATTRIBUTE pAttr = NULL;
+    USHORT          usCnt = 0;
+
+    if (!pEntry || !pEntry->pSchemaCtx || !pszAttrName || !attrVals)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (usNumVals)
+    {
+        dwError = VmDirAttributeAllocate(
+                pszAttrName,
+                usNumVals,
+                pEntry->pSchemaCtx,
+                &pAttr);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        for (usCnt=0; usCnt < usNumVals; usCnt++)
+        {
+            dwError = VmDirBervalContentDup(
+                    &attrVals[usCnt], &pAttr->vals[usCnt]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        dwError = VmDirEntryAddAttribute(pEntry, pAttr);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VmDirFreeAttribute(pAttr);
     goto cleanup;
 }
 

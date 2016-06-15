@@ -296,4 +296,9 @@ VmDirIsSearchForDseRootEntry(
     PVDIR_OPERATION     pOp
     );
 
+BOOLEAN
+VmDirIsSearchForSchemaEntry(
+    PVDIR_OPERATION     pOp
+    );
+
 #endif /* ML_H_ */

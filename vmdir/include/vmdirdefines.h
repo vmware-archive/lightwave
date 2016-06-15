@@ -269,22 +269,26 @@ extern "C" {
         }                                           \
     } while(0)
 
-#define VMDIR_LOCK_MUTEX(bInLock, mutex) \
-    do {                                 \
-        if (!(bInLock))                  \
-        {                                \
-            VmDirLockMutex(mutex);       \
-            (bInLock) = TRUE;            \
-        }                                \
+#define VMDIR_LOCK_MUTEX(bInLock, mutex)        \
+    do {                                        \
+        if (!(bInLock))                         \
+        {                                       \
+            if (VmDirLockMutex(mutex) == 0)     \
+            {                                   \
+                (bInLock) = TRUE;               \
+            }                                   \
+        }                                       \
     } while (0)
 
-#define VMDIR_UNLOCK_MUTEX(bInLock, mutex) \
-    do {                                  \
-        if ((bInLock))                    \
-        {                                 \
-            VmDirUnLockMutex(mutex);      \
-            (bInLock) = FALSE;            \
-        }                                 \
+#define VMDIR_UNLOCK_MUTEX(bInLock, mutex)      \
+    do {                                        \
+        if ((bInLock))                          \
+        {                                       \
+            if (VmDirUnLockMutex(mutex) == 0)   \
+            {                                   \
+                (bInLock) = FALSE;              \
+            }                                   \
+        }                                       \
     } while (0)
 
 #define BAIL_WITH_VMDIR_ERROR(dwError, ERROR_CODE)                          \

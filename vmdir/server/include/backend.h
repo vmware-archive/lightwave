@@ -338,6 +338,19 @@ typedef USN (*PFN_BACKEND_GET_MAX_ORIGINATING_USN)(
 typedef VOID (*PFN_BACKEND_SET_MAX_ORIGINATING_USN)(
                     PVDIR_BACKEND_CTX, USN);
 
+typedef DWORD (*PFN_BACKEND_STRKEY_GET_VALUES)(
+                    PVDIR_BACKEND_CTX,
+                    PCSTR,
+                    PVMDIR_STRING_LIST*);
+
+typedef DWORD (*PFN_BACKEND_STRKEY_SET_VALUES)(
+                    PVDIR_BACKEND_CTX,
+                    PCSTR,
+                    PVMDIR_STRING_LIST);
+
+typedef DWORD (*PFN_BACKEND_CONFIGURE_FSYNC)(
+                    BOOLEAN);
+
 typedef struct _VDIR_BACKEND_USN_LIST*   PVDIR_BACKEND_USN_LIST;
 
 /*******************************************************************************
@@ -478,6 +491,29 @@ typedef struct _VDIR_BACKEND_INTERFACE
      * Get next USN from a backend sequence
      */
     PFN_BACKEND_GET_NEXT_USN        pfnBEGetNextUSN;
+
+    //////////////////////////////////////////////////////////////////////
+    // generic read/write functions
+    //////////////////////////////////////////////////////////////////////
+    /*
+     * Use a generic db to serve key/value pair storage
+     * This db allows dup key.
+     * This db compare key lexically.
+     */
+    PFN_BACKEND_STRKEY_GET_VALUES           pfnBEStrkeyGetValues;
+
+    /*
+     * Use a generic db to serve key/value pair storage
+     */
+    PFN_BACKEND_STRKEY_SET_VALUES           pfnBEStrKeySetValues;
+
+    //////////////////////////////////////////////////////////////////////
+    // configuration functions
+    //////////////////////////////////////////////////////////////////////
+    /*
+     * Turn fsync on/off
+     */
+    PFN_BACKEND_CONFIGURE_FSYNC             pfnBEConfigureFsync;
 
     //////////////////////////////////////////////////////////////////////
     // function to get the least outstanding USN in BACKEND_USN_LIST

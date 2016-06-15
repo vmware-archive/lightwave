@@ -28,6 +28,8 @@
 #ifndef __VIDRSCHEMA_H__
 #define __VIDRSCHEMA_H__
 
+#include <ldap_schema.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -43,51 +45,30 @@ typedef enum
 
 } VDIR_SCHEMA_MATCH_TYPE;
 
-typedef enum
-{
-    VDIR_ATTRIBUTETYPE_USER_APPLICATIONS = 0,
-    VDIR_ATTRIBUTETYPE_DIRECTORY_OPERATION,
-    VDIR_ATTRIBUTETYPE_DISTRIBUTED_OPERATION,
-    VDIR_ATTRIBUTETYPE_DSA_OPERATION,
-    VDIR_ATTRIBUTETYPE_VMDIR_EXTENSION
-
-} VDIR_ATTRIBUTETYPE_USAGE;
-
 typedef struct _VDIR_MATCHING_RULE_DESC*    PVDIR_MATCHING_RULE_DESC;
 typedef struct _VDIR_SYNTAX_DESC*           PVDIR_SYNTAX_DESC;
 
 typedef struct _VDIR_SCHEMA_AT_DESC
 {
-    PVDIR_SCHEMA_AT_DESC    pSup;
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pLdapAt;
 
-    PSTR        pszDefinition;  // original definition used to create this descriptor
     USHORT      usAttrID;     // internal id stored in database
-    UINT        uiMaxSize;    // optional attribute length constrain
 
     PSTR        pszName;
     PSTR        pszOid;
-    PSTR        pszDesc;
-    PSTR        pszSup;
-    PSTR*       ppszAliases;        // ends with NULL PSTR
-    PSTR        pszSyntaxName;
-    PSTR        pszEqualityMRName;
-    PSTR        pszOrderingMRName;
-    PSTR        pszSubStringMRName;
+    PSTR        pszSyntaxOid;
 
     BOOLEAN     bSingleValue;
     BOOLEAN     bCollective;
     BOOLEAN     bNoUserModifiable;
     BOOLEAN     bObsolete;
 
-    VDIR_ATTRIBUTETYPE_USAGE    usage;
+    VDIR_LDAP_ATTRIBUTE_TYPE_USAGE  usage;
 
     PVDIR_SYNTAX_DESC           pSyntax;
     PVDIR_MATCHING_RULE_DESC    pEqualityMR;
     PVDIR_MATCHING_RULE_DESC    pOrderingMR;
     PVDIR_MATCHING_RULE_DESC    pSubStringMR;
-
-    // Entry to simulate AD AttributeSchema
-    PVDIR_ENTRY    pADAttributeSchemaEntry;
 
 } VDIR_SCHEMA_AT_DESC;
 
@@ -98,8 +79,6 @@ typedef BOOLEAN (*PFN_VDIR_COMPARE_FUNCTION)(VDIR_SCHEMA_MATCH_TYPE type, PVDIR_
 typedef struct _VDIR_MATCHING_RULE_DESC
 {
     // NOTE: order of fields MUST stay in sync with struct initializer...
-    PSTR                        pszName;
-    PSTR                        pszOid;
     PSTR                        pszSyntaxOid;
     PVDIR_SYNTAX_DESC           pSyntax;
     PFN_VDIR_NORMALIZE_FUNCTION pNormalizeFunc;
@@ -108,11 +87,10 @@ typedef struct _VDIR_MATCHING_RULE_DESC
 } VDIR_MATCHING_RULE_DESC;
 
 ///////////////////////////////////////////////////////////////////////////////
-// Schema library initialize / shutdown
-// Schema cache instantiation
+// Schema library initialize / update / shutdown
 ///////////////////////////////////////////////////////////////////////////////
 /*
- * Initialize schema library
+ * Initializes schema library
  */
 DWORD
 VmDirSchemaLibInit(
@@ -120,26 +98,75 @@ VmDirSchemaLibInit(
     );
 
 /*
- * Should call initialize function once during server startup
- * (i.e. force load schema from a file - this is potentially dangerous
- *  operation as it could cause internal id to attribute mapping corruption.
- *  Should use in extreme caution.)
- *  The only valid use case is - some how schema entry gone bad or
- *  can not be read from data store.  In this case, we can use this feature
- *  to force load a copy of schema dump file from the last schema modification.
+ * Reads schema file and loads definitions into schema library.
+ * The function will fail if the definitions from the file are
+ * not compatible with the current definitions in the library.
+ *
+ * Should be called once during server startup / schema patch.
+ *
+ * New schema changes from this function is not effective until
+ * VmDirSchemaLibUpdate() is called.
  */
 DWORD
-VmDirSchemaInitializeViaFile(
-    PCSTR pszSchemaFilePath
+VmDirSchemaLibPrepareUpdateViaFile(
+    PCSTR   pszSchemaFilePath
     );
 
 /*
- * Should call initialize function once during server startup
- * (i.e. read schema entry from data store and pass it here)
+ * Reads schema objects entries from data store and loads them
+ * into schema library.
+ *
+ * Should be called once during server startup.
+ *
+ * New schema changes from this function is not effective until
+ * VmDirSchemaLibUpdate() is called.
  */
 DWORD
-VmDirSchemaInitializeViaEntry(
-    PVDIR_ENTRY    pEntry
+VmDirSchemaLibPrepareUpdateViaEntries(
+    PVDIR_ENTRY_ARRAY   pAtEntries,
+    PVDIR_ENTRY_ARRAY   pOcEntries
+    );
+
+/*
+ * Before an operation modifies an schema object, makes sure
+ * the change is valid.
+ *
+ * Should be called when pOperation is on a schema object.
+ *
+ * Not needed to be called if pOperation is internal.
+ * Schema objects are only modified internally during bootstrap/patch,
+ * and the cache is already complete at this stage of bootstrap/patch.
+ *
+ * New schema changes from this function is not effective until
+ * VmDirSchemaLibUpdate() is called.
+ */
+DWORD
+VmDirSchemaLibPrepareUpdateViaModify(
+    PVDIR_OPERATION      pOperation,
+    PVDIR_ENTRY          pSchemaEntry
+    );
+
+/*
+ * Will update live schema context with prepared updates from
+ * above three functions.
+ */
+DWORD
+VmDirSchemaLibUpdate(
+    DWORD   dwPriorResult
+    );
+
+/*
+ * If schema is modified concurrently, use the following mutex functions
+ * to protect schema from race condition.
+ */
+DWORD
+VmDirSchemaModMutexAcquire(
+    PVDIR_OPERATION pOperation
+    );
+
+DWORD
+VmDirSchemaModMutexRelease(
+    PVDIR_OPERATION pOperation
     );
 
 /*
@@ -148,6 +175,74 @@ VmDirSchemaInitializeViaEntry(
 void
 VmDirSchemaLibShutdown(
     void
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+// Schema storage read and write
+///////////////////////////////////////////////////////////////////////////////
+DWORD
+VmDirReadSchemaObjects(
+    PVDIR_ENTRY_ARRAY*  ppAtEntries,
+    PVDIR_ENTRY_ARRAY*  ppOcEntries
+    );
+
+DWORD
+VmDirPatchLocalSchemaObjects(
+    PVDIR_SCHEMA_CTX    pOldCtx,
+    PVDIR_SCHEMA_CTX    pNewCtx
+    );
+
+DWORD
+VmDirWriteSchemaObjects(
+    VOID
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+// Schema head query
+///////////////////////////////////////////////////////////////////////////////
+/*
+ * Build subschema subentry from schema cache
+ */
+DWORD
+VmDirSubSchemaSubEntry(
+    PVDIR_ENTRY*    ppEntry
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+// Schema legacy support for 6.0u3 and 6.5
+///////////////////////////////////////////////////////////////////////////////
+/*
+ * Auxiliary function to tune schema library compatible with legacy data
+ */
+DWORD
+VmDirSchemaLibInitLegacy(
+    VOID
+    );
+
+/*
+ * Reads subschema subentry from legacy data store and loads it
+ * into schema library.
+ *
+ * Should be called once and only once in the node's lifetime when
+ * 1) join to legacy partner.
+ * 2) upgrade a legacy node.
+ *
+ * New schema changes from this function is not effective until
+ * VmDirSchemaLibUpdate() is called.
+ */
+DWORD
+VmDirSchemaLibPrepareUpdateViaSubSchemaSubEntry(
+    PVDIR_ENTRY pSchemaEntry
+    );
+
+DWORD
+VmDirReadSubSchemaSubEntry(
+    PVDIR_ENTRY*    ppSubSchemaSubEntry
+    );
+
+DWORD
+VmDirPatchLocalSubSchemaSubEntry(
+    VOID
     );
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -194,29 +289,6 @@ BOOLEAN
 VmDirSchemaCtxIsBootStrap(
     PVDIR_SCHEMA_CTX    pCtx
     );
-
-///////////////////////////////////////////////////////////////////////////////
-// Schema cache modification
-///////////////////////////////////////////////////////////////////////////////
-/*
- * Before modify schema cache, make sure new schema is valid.
- */
-DWORD
-VmDirSchemaCacheModifyPrepare(
-    PVDIR_OPERATION      pOperation,
-    PVDIR_MODIFICATION   pMods,
-    PVDIR_ENTRY          pEntry
-    );
-
-/*
- * Commit schema modification into cache.
- * Do we need two calls here to modify schema?
- */
-VOID
-VmDirSchemaCacheModifyCommit(
-    PVDIR_ENTRY  pEntry
-    );
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Schema lookup
@@ -293,7 +365,7 @@ VmDirSchemaIsNameEntryLeafStructureOC(
  */
 DWORD
 VmDirSchemaCheck(
-    PVDIR_ENTRY           pEntry
+    PVDIR_ENTRY     pEntry
     );
 
 /*
@@ -301,9 +373,9 @@ VmDirSchemaCheck(
  */
 DWORD
 VmDirSchemaCheckDITStructure(
-    PVDIR_SCHEMA_CTX pCtx,
-    PVDIR_ENTRY           pParentEntry,
-    PVDIR_ENTRY           pEntry
+    PVDIR_SCHEMA_CTX    pCtx,
+    PVDIR_ENTRY         pParentEntry,
+    PVDIR_ENTRY         pEntry
     );
 
 /*
@@ -313,19 +385,9 @@ DWORD
 VmDirSchemaBervalSyntaxCheck(
     PVDIR_SCHEMA_CTX        pCtx,
     PVDIR_SCHEMA_AT_DESC    pATDesc,
-    PVDIR_BERVALUE                 pBerv
+    PVDIR_BERVALUE          pBerv
     );
-/*
- *
 
-DWORD
-VmDirSchemaBervalArraySyntaxCheck(
-    PVDIR_SCHEMA_CTX        pCtx,
-    PVDIR_SCHEMA_AT_DESC    pATDesc,
-    DWORD                   dwNumBervs,
-    PBERVAL*                ppBervs
-    );
- */
 /*
  * Berval value normalization
  * pBerv->bvnorm_val and len will be set if normalize yield different value;
@@ -336,30 +398,20 @@ DWORD
 VmDirSchemaBervalNormalize(
     PVDIR_SCHEMA_CTX        pCtx,
     PVDIR_SCHEMA_AT_DESC    pATDesc,
-    PVDIR_BERVALUE                 pBerv
+    PVDIR_BERVALUE          pBerv
     );
 
 DWORD
 VmDirNormalizeDNWrapper(
-    PVDIR_BERVALUE             pBerv
+    PVDIR_BERVALUE      pBerv
     );
 
 DWORD
 VmDirNormalizeDN(
-    PVDIR_BERVALUE             pBerv,
+    PVDIR_BERVALUE      pBerv,
     PVDIR_SCHEMA_CTX    pSchemaCtx
     );
-/*
- *
 
-DWORD
-VmdirSchemaBervalArrayNormalize(
-    PVDIR_SCHEMA_CTX        pCtx,
-    PVDIR_SCHEMA_AT_DESC    pATDesc,
-    DWORD                   dwNumBervs,
-    PBERVAL*                ppBervs
-    );
- */
 /*
  * Berval value comparison
  */
@@ -372,20 +424,13 @@ VmDirSchemaBervalCompare(
     PVDIR_BERVALUE          pNormBerv
     );
 
-DWORD
-VmDirSchemaGetComputedAttribute(
-    PCSTR               pszComputedAttrName,
-    PVDIR_ENTRY         pEntry,
-    PVDIR_ATTRIBUTE*    ppOutAttr
-    );
-
 /*
  * Set Attribute.pATDesc
  */
 DWORD
 VmDirSchemaCheckSetAttrDesc(
-    PVDIR_SCHEMA_CTX pCtx,
-    PVDIR_ENTRY           pEntry
+    PVDIR_SCHEMA_CTX    pCtx,
+    PVDIR_ENTRY         pEntry
     );
 
 /*
@@ -393,38 +438,7 @@ VmDirSchemaCheckSetAttrDesc(
  */
 BOOLEAN
 VmDirIsLiveSchemaCtx(
-    PVDIR_SCHEMA_CTX        pCtx
-    );
-
-///////////////////////////////////////////////////////////////////////////////
-// AD compatible schema search
-///////////////////////////////////////////////////////////////////////////////
-/*
- * caller does NOT own *ppEntry.  it is a cached entry in schema.
- */
-DWORD
-VmDirADCompatibleSearchClassSchema(
-    PVDIR_SCHEMA_CTX    pSchemaCtx,
-    PCSTR               pszName,
-    PVDIR_ENTRY*        ppEntry
-    );
-
-/*
- * caller does NOT own *ppEntry.  it is a cached entry in schema.
- */
-DWORD
-VmDirADCompatibleSearchAttributeSchema(
-    PVDIR_SCHEMA_CTX    pSchemaCtx,
-    PCSTR               pszName,
-    PVDIR_ENTRY*        ppEntry
-    );
-
-/*
- * send all AD compatible attributeschema entries back.
- */
-DWORD
-VmDirADCompatibleSendAllAttributeSchema(
-    PVDIR_OPERATION     pOp
+    PVDIR_SCHEMA_CTX    pCtx
     );
 
 #ifdef __cplusplus

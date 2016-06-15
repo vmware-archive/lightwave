@@ -116,11 +116,6 @@ VmDirInit(
     );
 
 DWORD
-VmDirSchemaPatchViaFile(
-    PCSTR       pszSchemaFilePath
-    );
-
-DWORD
 VmDirAllocateBerValueAVsnprintf(
     PVDIR_BERVALUE pbvValue,
     PCSTR pszFormat,
@@ -166,6 +161,28 @@ VmDirRpcAllocateStringW(
     PWSTR* ppwszDst
     );
 
+// schema.c
+
+DWORD
+InitializeSchema(
+    PBOOLEAN    pbWriteSchemaEntry,
+    PBOOLEAN    pbLegacyDataLoaded
+    );
+
+DWORD
+InitializeSchemaEntries(
+    PVDIR_SCHEMA_CTX    pSchemaCtx
+    );
+
+DWORD
+VmDirSchemaPatchViaFile(
+    PCSTR       pszSchemaFilePath
+    );
+
+DWORD
+VmDirSchemaPatchLegacyViaFile(
+    PCSTR       pszSchemaFilePath
+    );
 
 /* service.c */
 
@@ -499,22 +516,6 @@ VmDirInitializeSuperLogging(
 DWORD
 VmDirLoadEventLogLibrary(
     PFEVENTLOG_ADD *ppfEventLogAdd
-    );
-
-// partnerschema.c
-DWORD
-VmDirCopyPartnerSchema(
-    PCSTR pszFQDomainName,
-    PCSTR pszUsername,
-    PCSTR pszPassword,
-    PCSTR pszReplURI
-    );
-
-DWORD
-VmDirSchemaPatchSetOPMod(
-    PVDIR_OPERATION     pOperation,
-    PVDIR_ENTRY         pEntry,
-    PCSTR               pszSchemaFile
     );
 
 #ifdef __cplusplus

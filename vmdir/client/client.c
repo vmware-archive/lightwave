@@ -4887,349 +4887,6 @@ error:
     goto cleanup;
 }
 
-/* API for schema comparison of nodes in the federation */
-DWORD VmDirCompareSchema (
-    PSTR                 pszHostName ,
-    PSTR                 pszUPN ,
-    PSTR                 pszPassword ,
-    PVMDIR_SCHEMA_DIFF*  ppSchemaDiff ,
-    DWORD*               pdwInfoCount
-)
-{
-    DWORD        dwError         = 0 ;
-    DWORD        i               = 0 ;
-    DWORD        j               = 0 ;
-    DWORD        dwState         = 0 ;
-    DWORD        dwNumServer     = 0 ;
-    DWORD        dwNumAttributes = 0 ;
-    DWORD        dwCurrentDiffCount = 0 ;
-    DWORD        dwMaxBaseValueCount  = 0 ;
-    DWORD        dwMaxPartnerValueCount = 0;
-    DWORD        dwBaseValueCount[VMDIR_MAX_SCHEMACHECK_ATTR_COUNT]  = {0};
-    DWORD        dwPartnerValueCount[VMDIR_MAX_SCHEMACHECK_ATTR_COUNT] = {0};
-    PSTR         pszSrcUserName  = NULL ;
-    PSTR         pszBaseHostName = NULL ;
-    PSTR         pszServerName = NULL ;
-    PSTR         pszCurrentHost =  NULL ;
-    PSTR*        pszBaseAttributeValues[VMDIR_MAX_SCHEMACHECK_ATTR_COUNT] = {NULL};
-    PSTR*        pszPartnerAttributeValues[VMDIR_MAX_SCHEMACHECK_ATTR_COUNT] = {NULL};
-    PSTR         pszAttributes[]   = {  "attributetypes",
-                                        "objectclasses" ,
-                                        "ditcontentrules",
-                                        "attributemetadata"} ;
-    PVMDIR_SCHEMA_DIFF pSchemaDiff = NULL ;
-    PVMDIR_SERVER_INFO pServerInfo = NULL ;
-
-
-    dwError = VmDirUPNToUserName(pszUPN, &pszSrcUserName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirGetServerName( pszHostName, &pszServerName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirNormalizeHostName(pszServerName,&pszBaseHostName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    /* Get All servers in the federation. */
-    dwError =VmDirGetServers(
-            pszBaseHostName,
-            pszSrcUserName,
-            pszPassword,
-            &pServerInfo,
-            &dwNumServer
-            ) ;
-    BAIL_ON_VMDIR_ERROR (dwError);
-
-    if (dwNumServer ==  1)
-    {
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Only one host %s, in the federation. ", pszBaseHostName );
-    }
-
-    else
-    {
-
-/* Extract Schema Attribute Values for the Base Host  */
-    dwError = VmDirExtractSchemaValues(
-                               pszBaseHostName ,
-                               pszUPN ,
-                               pszPassword ,
-                               pszAttributes ,
-                               VMDIR_MAX_SCHEMACHECK_ATTR_COUNT ,
-                               pszBaseAttributeValues ,
-                               dwBaseValueCount,
-                               TRUE
-                               ) ;
-
-    if ( dwError == VMDIR_ERROR_SERVER_DOWN )
-    {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Base host %s is down.Closing application. Error[%d] ", pszBaseHostName , dwError);
-    }
-
-    BAIL_ON_VMDIR_ERROR (dwError);
-
-    dwError = VmDirAllocateMemory (sizeof(VMDIR_SCHEMA_DIFF)*(dwNumServer-1),(PVOID*)&pSchemaDiff) ;
-    BAIL_ON_VMDIR_ERROR (dwError);
-
-    dwNumAttributes = VMDIR_MAX_SCHEMACHECK_ATTR_COUNT ;
-
-     /*  Iterate Through Every single Host And Extract And Compare Attribute Values */
-    for (i=0; i < dwNumServer; i++)
-    {
-
-        dwError = VmDirCnFromRdn ( pServerInfo[i].pszServerDN , &pszCurrentHost ) ;
-        BAIL_ON_VMDIR_ERROR (dwError);
-
-        if( VmDirStringCompareA(pszCurrentHost , pszBaseHostName, false ) == 0 )
-        {
-            VMDIR_SAFE_FREE_MEMORY (pszCurrentHost);
-            continue ;
-        }
-
-        pSchemaDiff[dwCurrentDiffCount].dwBaseHostDiffCount = 0 ;
-        pSchemaDiff[dwCurrentDiffCount].dwPartnerHostDiffCount = 0 ;
-
-        pSchemaDiff[dwCurrentDiffCount].baseHostDiffList = NULL ;
-        pSchemaDiff[dwCurrentDiffCount].partnerHostDiffList = NULL;
-
-        dwError = VmDirAllocateStringA(
-                     pszBaseHostName ,
-                    &pSchemaDiff[dwCurrentDiffCount].pszBaseHostName);
-        BAIL_ON_VMDIR_ERROR (dwError) ;
-
-        dwError = VmDirAllocateStringA(
-                     pszCurrentHost ,
-                    &pSchemaDiff[dwCurrentDiffCount].pszPartnerHostName);
-        BAIL_ON_VMDIR_ERROR (dwError) ;
-
-        dwError = VmDirExtractSchemaValues(
-                               pszCurrentHost ,
-                               pszUPN ,
-                               pszPassword ,
-                               pszAttributes ,
-                               VMDIR_MAX_SCHEMACHECK_ATTR_COUNT ,
-                               pszPartnerAttributeValues ,
-                               dwPartnerValueCount,
-                               TRUE
-                               ) ;
-
-
-        if ( dwError == VMDIR_ERROR_SERVER_DOWN )
-        {
-            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Partner host %s is down.Moving on to other nodes in federation. Error[%d] ", pszCurrentHost, dwError);
-            VMDIR_SAFE_FREE_MEMORY (pszCurrentHost);
-            pSchemaDiff[dwCurrentDiffCount].bIsServerDown = TRUE ;
-            dwCurrentDiffCount++;
-            dwState= 1;
-            dwError = 0 ;
-            continue ;
-        }
-        else
-        {
-            BAIL_ON_VMDIR_ERROR (dwError) ;
-            pSchemaDiff[dwCurrentDiffCount].bIsServerDown = FALSE ;
-        }
-
-
-        BAIL_ON_VMDIR_ERROR (dwError) ;
-
-        dwMaxBaseValueCount = dwBaseValueCount[0]+ dwBaseValueCount[1] + dwBaseValueCount[2] ;
-        dwMaxPartnerValueCount = dwPartnerValueCount[0] + dwPartnerValueCount[1] + dwPartnerValueCount[2] ;
-
-        dwError = VmDirAllocateMemory((dwMaxPartnerValueCount*sizeof(PSTR*)), (PVOID*)&pSchemaDiff[dwCurrentDiffCount].baseHostDiffList) ;
-        BAIL_ON_VMDIR_ERROR (dwError);
-
-        dwError = VmDirAllocateMemory((dwMaxBaseValueCount*sizeof(PSTR*)), (PVOID*)&pSchemaDiff[dwCurrentDiffCount].partnerHostDiffList);
-        BAIL_ON_VMDIR_ERROR (dwError);
-
-         // Compare All Schema Attributes of both Nodes one by one
-        for (j=0 ;  j < dwNumAttributes-1 ; j++ )
-        {
-            dwError = VmDirCompareSchemaValues (
-                    pszBaseAttributeValues,
-                    pszPartnerAttributeValues,
-                    j,
-                    dwBaseValueCount[j],
-                    dwPartnerValueCount[j],
-                    pSchemaDiff,
-                    dwCurrentDiffCount
-                   );
-            if (dwError == ERROR_SCHEMA_MISMATCH)
-            {
-                dwState = ERROR_SCHEMA_MISMATCH ;
-            }
-        }
-
-        // Check for Attribute metaData Version Value
-
-        dwError = VmDirCheckSchemaAttrVersion(
-                pszBaseAttributeValues,
-                pszPartnerAttributeValues,
-                j,
-                dwBaseValueCount[j],
-                pSchemaDiff,
-                dwCurrentDiffCount
-                ) ;
-
-        //  Increase the count of SchemaDiff Allocate for avoiding memory leaks.
-        dwCurrentDiffCount++;
-
-        if ( dwError == ERROR_SCHEMA_MISMATCH )
-        {
-            dwState = ERROR_SCHEMA_MISMATCH ;
-        }
-
-        //  Free Memory for This Server
-
-        VMDIR_SAFE_FREE_MEMORY (pszCurrentHost);
-
-        VmDirSchemaAttributesFree(pszPartnerAttributeValues, dwPartnerValueCount, dwNumAttributes );
-    }
-
-    if (dwState != 0)
-    {
-        dwError = ERROR_SCHEMA_MISMATCH ;
-    }
-
-    *ppSchemaDiff = pSchemaDiff ;
-    *pdwInfoCount = dwNumServer-1 ;
-
-    BAIL_ON_VMDIR_ERROR (dwError) ;
-    }
-
-cleanup:
-     for (i=0; i<dwNumServer; i++)
-     {
-         VMDIR_SAFE_FREE_MEMORY(pServerInfo[i].pszServerDN);
-     }
-
-     VMDIR_SAFE_FREE_MEMORY(pServerInfo) ;
-
-     VMDIR_SAFE_FREE_MEMORY(pszBaseHostName);
-
-     VMDIR_SAFE_FREE_MEMORY(pszSrcUserName);
-
-     VmDirSchemaAttributesFree(pszBaseAttributeValues, dwBaseValueCount, dwNumAttributes );
-
-    return dwError;
-
-error:
-    if (dwError != ERROR_SCHEMA_MISMATCH )
-    {
-         if (pSchemaDiff != NULL )
-         {
-             VmDirSchemaDiffFree (pSchemaDiff, dwCurrentDiffCount ) ;
-             *ppSchemaDiff = NULL ;
-         }
-    }
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirCompareSchema failed. Error[%d] ",  dwError);
-    goto cleanup;
-}
-
-DWORD
-VmDirSyncVersionsInFederation(
-    PSTR    pszHostName,
-    PSTR    pszUPN,
-    PSTR    pszPassword,
-    PSTR*   ppszResult
-    )
-{
-    DWORD       dwError = 0 ;
-    DWORD       i       = 0 ;
-    DWORD       dwNumServer = 0;
-    DWORD       dwNumAttributes = 0 ;
-    PSTR        pszLocalResult = NULL;
-    CHAR        pszTmp[VMDIR_MAX_LOG_OUTPUT_LEN+1] = {0};
-    size_t      iLogLen = 0;
-    PSTR        pszSrcUserName     = NULL ;
-    PSTR        pszCurrentHost     = NULL ;
-    PSTR        pszAttributeName   = NULL ;
-    PSTR        pszAttributes[]   = { "attributetypes", "objectclasses", "ditcontentrules"} ;
-    PVMDIR_SERVER_INFO pServerInfo = NULL ;
-
-
-    dwError = VmDirUPNToUserName(pszUPN , &pszSrcUserName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirGetServers(
-                 pszHostName,
-                 pszSrcUserName,
-                 pszPassword,
-                 &pServerInfo,
-                 &dwNumServer
-                 ) ;
-    BAIL_ON_VMDIR_ERROR (dwError);
-
-    if ( dwNumServer == 1 )
-    {
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Only one host %s, in the federation. ", pszHostName );
-    }
-    else
-    {
-        dwNumAttributes = VMDIR_MAX_SCHEMACHECK_ATTR_COUNT-1 ; //  Check for attributetype,objectclasses and ditcontentrules.
-
-        for( i= 0 ; i<dwNumAttributes; i++)
-        {
-            pszAttributeName = pszAttributes[i];
-
-            dwError = VmDirFindMostUpdatedNodeWithAttribute(
-                          pServerInfo,
-                          dwNumServer,
-                          pszAttributeName,
-                          pszUPN,
-                          pszPassword,
-                          &pszCurrentHost
-                          );
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            if ( pszCurrentHost )
-            {
-                dwError = VmDirSynchSchemaAttrMetadataVersion(
-                              pszCurrentHost,
-                              pszUPN,
-                              pszPassword,
-                              pszAttributeName
-                              );
-                BAIL_ON_VMDIR_ERROR(dwError);
-
-                if ( VMDIR_MAX_LOG_OUTPUT_LEN > iLogLen )
-                {
-                    dwError = VmDirStringPrintFA( pszTmp + iLogLen,
-                                                  VMDIR_MAX_LOG_OUTPUT_LEN - iLogLen,
-                                                  "Force sync schema %s metadata version at host %s\n",
-                                                  pszAttributeName, pszCurrentHost);
-                    BAIL_ON_VMDIR_ERROR(dwError);
-
-                    iLogLen = VmDirStringLenA(pszTmp);
-                }
-            }
-
-            VMDIR_SAFE_FREE_MEMORY(pszCurrentHost);
-
-        }
-
-    }
-
-    dwError = VmDirAllocateStringA( pszTmp ? pszTmp:"No metadata version synchronization required.", &pszLocalResult );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppszResult = pszLocalResult;
-    pszLocalResult = NULL;
-
-cleanup:
-    for (i=0 ; i<dwNumServer ; i++)
-    {
-        VMDIR_SAFE_FREE_MEMORY(pServerInfo[i].pszServerDN);
-    }
-    VMDIR_SAFE_FREE_MEMORY(pServerInfo);
-    VMDIR_SAFE_FREE_MEMORY(pszSrcUserName);
-    VMDIR_SAFE_FREE_MEMORY(pszLocalResult);
-
-    return dwError ;
-
-error:
-    goto cleanup;
-}
-
 DWORD
 VmDirGetDomainFunctionalLevel(
     PCSTR       pszHostName,
@@ -5898,77 +5555,6 @@ VmDirFreeStringArray(
 }
 
 /*
- * Upgrade federation schema to a new version.
- *
- * Started from 6.5, we support down and up level partner join from schema point of view.
- * This funtion upgrades partner schema if needed before the joining process.
- *
- * Join 6.5 and after to a 5.5/6.0 partner returns VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE error.
- */
-DWORD
-VmDirSchemaUpgrade(
-    PVMDIR_CONNECTION   pConnection,
-    PCSTR               pszSchemaFile,
-    BOOLEAN             bDryRun,
-    PSTR*               ppszErrMsg
-    )
-{
-    DWORD   dwError = 0;
-    DWORD   dwCurDfl = 0;
-    PSTR    pszVersion = NULL;
-    PSTR    pszErrMsg = NULL;
-
-    if (pConnection==NULL || pszSchemaFile==NULL || ppszErrMsg == NULL)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirGetPSCVersionInternal(pConnection->pLd, &pszVersion);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = _VmDirMapVersionToDFL(pszVersion, &dwCurDfl);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (bDryRun == TRUE || dwCurDfl >= 2)
-    {
-        // Should do this only if federation/partner has lotus-main CLN 3755238 (PR 1499013).
-        // I.e. DFL>=2 (6.5.0 and after)
-        dwError = VmDirSchemaUpgradeInternal(pConnection, pszSchemaFile, bDryRun, &pszErrMsg);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-    {
-        dwError = VmDirAllocateStringAVsnprintf( &pszErrMsg,
-                    "Partner version %s < 6.5.0.  Join time schema upgrade is not supported", pszVersion);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "[%s][%d] Join time schema upgrade passed. Dryrun(%d)",
-                    __FUNCTION__, __LINE__, bDryRun);
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszVersion);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "[%s][%d] Dryrun(%d), error (%d), msg (%s)",
-                     __FUNCTION__, __LINE__, bDryRun, dwError, VDIR_SAFE_STRING(pszErrMsg));
-
-    if (ppszErrMsg && pszErrMsg)
-    {
-        *ppszErrMsg = pszErrMsg;
-        pszErrMsg = NULL;
-    }
-    VMDIR_SAFE_FREE_MEMORY(pszErrMsg);
-    goto    cleanup;
-}
-
-/*
-
  * Schema requirements:
  *     Update existing schema to my expected definition if necessary.
  *
@@ -5985,11 +5571,15 @@ _VmDirJoinPreCondition(
     PSTR*       ppszErrMsg
     )
 {
-    DWORD               dwError = 0;
-    PVMDIR_CONNECTION   pConnection;
-    PSTR                pszDefaultSchemaFile = NULL;
-    PSTR                pszErrMsg = NULL;
+    DWORD   dwError = 0;
+    DWORD   dwDfl = 0;
+    PSTR    pszVersion = NULL;
+    PSTR    pszSchemaFile = NULL;
+    PVMDIR_CONNECTION   pConnection = NULL;
+    PVDIR_LDAP_SCHEMA   pFileSchema = NULL;
+    PSTR    pszErrMsg = NULL;
 
+    // open connection to remote node
     dwError = VmDirConnectionOpenByHost(
                 pszHostName,
                 pszDomainName,
@@ -5998,20 +5588,58 @@ _VmDirJoinPreCondition(
                 &pConnection);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirGetDefaultSchemaFile(&pszDefaultSchemaFile);
+    // get file schema
+    dwError = VmDirGetDefaultSchemaFile(&pszSchemaFile);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSchemaUpgrade(pConnection, pszDefaultSchemaFile, FALSE, &pszErrMsg);
+    dwError = VmDirLdapSchemaInit(&pFileSchema);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapSchemaLoadFile(pFileSchema, pszSchemaFile);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // determine DFL version of remote node
+    dwError = VmDirGetPSCVersionInternal(pConnection->pLd, &pszVersion);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirMapVersionToDFL(pszVersion, &dwDfl);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // patch remote node so its schema is union of itself and file
+    if (dwDfl < 2)
+    {
+        dwError = VmDirAllocateStringAVsnprintf(&pszErrMsg,
+                "Partner version %s < 6.5.0. "
+                "Join time schema upgrade is not supported",
+                pszVersion);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else if (dwDfl < 3)
+    {
+        dwError = VmDirPatchRemoteSubSchemaSubEntry(
+                pConnection->pLd, pFileSchema);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmDirPatchRemoteSchemaObjects(
+                pConnection->pLd, pFileSchema);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszDefaultSchemaFile);
     VmDirConnectionClose(pConnection);
+    VMDIR_SAFE_FREE_MEMORY(pszSchemaFile);
+    VMDIR_SAFE_FREE_MEMORY(pszVersion);
+    VmDirFreeLdapSchema(pFileSchema);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "[%s][%d] error (%d), msg (%s)",
-                     __FUNCTION__, __LINE__, dwError, VDIR_SAFE_STRING(pszErrMsg));
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "[%s] error (%d), msg (%s)",
+            __FUNCTION__, dwError, VDIR_SAFE_STRING(pszErrMsg) );
 
     if (ppszErrMsg && pszErrMsg)
     {
