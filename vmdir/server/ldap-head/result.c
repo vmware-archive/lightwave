@@ -763,14 +763,14 @@ WriteAttributes(
                     }
                 }
                 else if (((iSearchReqSpecialChars & LDAP_SEARCH_REQUEST_CHAR_USER) != 0)                   &&
-                         pAttr->pATDesc->usage == VDIR_ATTRIBUTETYPE_USER_APPLICATIONS)
+                         pAttr->pATDesc->usage == VDIR_LDAP_USER_APPLICATIONS_ATTRIBUTE)
                 {
                     bSendAttribute = TRUE;   // return all user attributes - "*"
                 }
                 else if (((iSearchReqSpecialChars & LDAP_SEARCH_REQUEST_CHAR_OP) != 0)                     &&
-                         (pAttr->pATDesc->usage == VDIR_ATTRIBUTETYPE_DIRECTORY_OPERATION ||
-                          pAttr->pATDesc->usage == VDIR_ATTRIBUTETYPE_DSA_OPERATION       ||
-                          pAttr->pATDesc->usage == VDIR_ATTRIBUTETYPE_DISTRIBUTED_OPERATION))
+                         (pAttr->pATDesc->usage == VDIR_LDAP_DIRECTORY_OPERATION_ATTRIBUTE ||
+                          pAttr->pATDesc->usage == VDIR_LDAP_DSA_OPERATION_ATTRIBUTE       ||
+                          pAttr->pATDesc->usage == VDIR_LDAP_DISTRIBUTED_OPERATION_ATTRIBUTE))
                 {
                     bSendAttribute = TRUE;   // return all operational attributes - "+"
                 }

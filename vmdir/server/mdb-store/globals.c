@@ -35,5 +35,6 @@ VDIR_MDB_GLOBALS gVdirMdbGlobals =
         VMDIR_SF_INIT(.mdbEntryDB, {0}),
         VMDIR_SF_INIT(.mdbIndexDBs, VMDIR_STRUCT_INIT( VMDIR_SF_INIT(.usNumIndexAttribute, 0), VMDIR_SF_INIT(.usMaxSize, BE_DB_MAX_INDEX_ATTRIBUTE), VMDIR_SF_INIT(.pIndexDBs, NULL) ) ),
         VMDIR_SF_INIT(.mdbEnv, NULL),
-        VMDIR_SF_INIT(.mdbSeqDBi, 0)
+        VMDIR_SF_INIT(.mdbSeqDBi, 0),
+        VMDIR_SF_INIT(.mdbGenericDBi, 0)
     };

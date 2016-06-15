@@ -151,6 +151,22 @@ DWORD
 VmDirMDBGlobalIndexStructAdd( // MDBIndexAdd
     PVDIR_CFG_ATTR_INDEX_DESC   pIndexDesc);
 
+
+// generic.c
+DWORD
+VmDirMDBStrkeyGetValues(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PCSTR               pszKey,
+    PVMDIR_STRING_LIST* ppStrList
+    );
+
+DWORD
+VmDirMDBStrkeySetValues(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PCSTR               pszKey,
+    PVMDIR_STRING_LIST  pStrList
+    );
+
 // attrindexing.c
 
 /*
@@ -171,4 +187,11 @@ VmDirSetMdbBackendState(
     DWORD               *pdwDbMapSizeMb,
     char                *pDbPath,
     DWORD               dwDbPathSize);
+
+// config.c
+DWORD
+VmDirMDBConfigureFsync(
+    BOOLEAN bFsyncOn
+    );
+
 #endif /* MDB_STORE_INTERFACE_H_ */

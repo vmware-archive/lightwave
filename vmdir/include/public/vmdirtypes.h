@@ -113,20 +113,6 @@ typedef struct _VMDIR_SERVER_INFO
     CHAR*       pszServerDN;
 } VMDIR_SERVER_INFO, *PVMDIR_SERVER_INFO;
 
-typedef struct _VMDIR_SCHEMA_DIFF
-{
-    PSTR*       baseHostDiffList;
-    PSTR*       partnerHostDiffList;
-    DWORD       dwBaseHostDiffCount;
-    DWORD       dwPartnerHostDiffCount;
-    PSTR        pszBaseHostName ;
-    PSTR        pszPartnerHostName ;
-    BOOLEAN     bIsServerDown ;
-    BOOLEAN     bIsMetadataVersionOutofSync;
-    PSTR        pszMetadataVerison ;
-
-} VMDIR_SCHEMA_DIFF, *PVMDIR_SCHEMA_DIFF;
-
 typedef struct VMDIR_DC_VERSION_INFO
 {
     DWORD dwSize;

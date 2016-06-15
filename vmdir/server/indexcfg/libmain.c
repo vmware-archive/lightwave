@@ -36,10 +36,6 @@ VmDirAttrIndexLibInit(
     )
 {
     DWORD       dwError = 0;
-    VDIR_ENTRY       indiceEntry = {0};
-    PVDIR_BACKEND_INTERFACE pBE = NULL;
-
-    VmDirLog( LDAP_DEBUG_TRACE, "InitializeAttrIndex: Begin" );
 
     // Initialize gVdirAttrIndexGlobals
     dwError = VmDirAllocateMutex( &gVdirAttrIndexGlobals.mutex );
@@ -48,37 +44,11 @@ VmDirAttrIndexLibInit(
     dwError = VmDirAllocateCondition(&gVdirAttrIndexGlobals.condition);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pBE = VmDirBackendSelect(CFG_INDEX_ENTRY_DN);
-    assert(pBE);
-
-    dwError = pBE->pfnBESimpleIdToEntry(
-            CFG_INDEX_ENTRY_ID,
-            &indiceEntry);
-    if (dwError == 0)
-    {
-        dwError = VdirAttrIndexInitViaEntry(&indiceEntry);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else if (dwError == ERROR_BACKEND_ENTRY_NOTFOUND)
-    {
-        dwError = 0;  // no indices entry yet, lets continue.
-    }
-    else
-    {
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-#if 0
-    // fire up indexing thread
-    dwError = InitializeIndexingThread();
+    // init via static list VDIR_CFG_INDEX_INITIALIZER
+    dwError = VmDirAttrIndexBootStrap();
     BAIL_ON_VMDIR_ERROR(dwError);
-#endif
 
 cleanup:
-
-    VmDirFreeEntryContent(&indiceEntry);
-
-    VmDirLog( LDAP_DEBUG_TRACE, "InitializeAttrIndex: End" );
 
     return dwError;
 
@@ -100,6 +70,7 @@ VmDirAttrIndexLibShutdown(
     for (iCnt = 0; iCnt <= gVdirAttrIndexGlobals.usLive; iCnt++)
     {
         VdirAttrIdxCacheFree(gVdirAttrIndexGlobals.pCaches[iCnt]);
+        gVdirAttrIndexGlobals.pCaches[iCnt] = NULL;
     }
     if (gVdirAttrIndexGlobals.pNewCache)
     {

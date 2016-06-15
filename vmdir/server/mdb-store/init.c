@@ -34,6 +34,12 @@ MDBOpenSequence(
     VOID
     );
 
+static
+DWORD
+MDBOpenGeneric(
+    VOID
+    );
+
 #ifdef _WIN32
 typedef UINT32 u_int32_t;
 #endif
@@ -117,7 +123,10 @@ VmDirMDBBEInterface (
         VMDIR_SF_INIT(.pfnBEMaxEntryId, VmDirMDBMaxEntryId),
         VMDIR_SF_INIT(.pfnBEGetAttrMetaData, VmDirMDBGetAttrMetaData),
         VMDIR_SF_INIT(.pfnBEGetAllAttrsMetaData, VmDirMDBGetAllAttrsMetaData),
-        VMDIR_SF_INIT(.pfnBEGetNextUSN, VmDirMDBGetNextUSN)
+        VMDIR_SF_INIT(.pfnBEGetNextUSN, VmDirMDBGetNextUSN),
+        VMDIR_SF_INIT(.pfnBEStrkeyGetValues, VmDirMDBStrkeyGetValues),
+        VMDIR_SF_INIT(.pfnBEStrKeySetValues, VmDirMDBStrkeySetValues),
+        VMDIR_SF_INIT(.pfnBEConfigureFsync, VmDirMDBConfigureFsync),
     };
 
     return &mdbBEInterface;
@@ -253,6 +262,10 @@ VmDirMDBInitializeDB(
     dwError = MDBOpenSequence();
     BAIL_ON_VMDIR_ERROR( dwError );
 
+    /* Open Generic */
+    dwError = MDBOpenGeneric();
+    BAIL_ON_VMDIR_ERROR( dwError );
+
     VmDirLogDBStats();
 
 cleanup:
@@ -352,7 +365,6 @@ VmDirBDBGlobalIndexStructAdd(
 {
     DWORD                    dwError = 0;
     PVDIR_SCHEMA_CTX         pSchemaCtx = NULL;
-    PVDIR_SCHEMA_AT_DESC     pATDesc = NULL;
     PVDIR_MDB_INDEX_DATABASE pIndexDB = NULL;
     unsigned int             iDbFlags = 0;
 
@@ -383,10 +395,7 @@ VmDirBDBGlobalIndexStructAdd(
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if ((pATDesc = VmDirSchemaAttrNameToDesc(pSchemaCtx, pIndexDesc->pszAttrName)) != NULL &&
-        pATDesc->pszOrderingMRName != NULL &&
-        VmDirStringCompareA( pATDesc->pszOrderingMRName, "integerOrderingMatch", TRUE
-                /* SJ-TBD should use VDIR_MATCHING_RULE_INTEGER_ORDERING_MATCH */ ) == 0)
+    if (VmDirSchemaAttrHasIntegerMatchingRule(pSchemaCtx, pIndexDesc->pszAttrName))
     {
         pIndexDB->btKeyCmpFcn = MDBIntegerCompareFunction;
     }
@@ -601,6 +610,39 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+MDBOpenGeneric(
+    VOID
+    )
+{
+    DWORD           dwError = 0;
+    unsigned int    iDbFlags = 0;
+    VDIR_DB         mdbDBi = 0;
+
+    iDbFlags |= MDB_CREATE;
+    iDbFlags |= MDB_DUPSORT; // allow dup keys
+
+    dwError = MDBOpenDB( &mdbDBi,
+                        BE_MDB_GENERIC_DB_NAME,
+                        gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].pszDBFile, // use same file as Entry DB
+                        NULL,
+                        iDbFlags);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    gVdirMdbGlobals.mdbGenericDBi = mdbDBi;
+
+cleanup:
+
+    VmDirLog( LDAP_DEBUG_TRACE, "MDBOpenGeneric: End" );
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
 /* The bt_compare_fcn function must return an integer value less than, equal to, or greater than zero if the first key
  * parameter is considered to be respectively less than, equal to, or greater than the second key parameter. In
  * addition, the comparison function must cause the keys in the database to be well-ordered. The comparison function
@@ -664,6 +706,9 @@ MDBCloseDBs()
     // close sequence db
     mdb_close(gVdirMdbGlobals.mdbEnv, gVdirMdbGlobals.mdbSeqDBi);
 
+    // close generic db
+    mdb_close(gVdirMdbGlobals.mdbEnv, gVdirMdbGlobals.mdbGenericDBi);
+
     VmDirLog( LDAP_DEBUG_TRACE, "MdbCloseDBs: End" );
 }
 
@@ -685,15 +730,10 @@ MDBGlobalIndexStructCreate(
     int         iCnt = 0;
     USHORT      usSize = 0;
     PVDIR_CFG_ATTR_INDEX_DESC   pIndexDesc = NULL;
-    PVDIR_SCHEMA_CTX            pSchemaCtx = NULL;
-    PVDIR_SCHEMA_AT_DESC        pATDesc = NULL;
 
     dwError = VmDirAttrIndexDescList(
             &usSize,
             &pIndexDesc);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaCtxAcquire( &pSchemaCtx );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (iCnt=0; iCnt < usSize; iCnt++)
@@ -736,10 +776,7 @@ MDBGlobalIndexStructCreate(
 
         pIndexDB->pMdbDataFiles[0].bIsUnique = pIndexDesc[iCnt].bIsUnique;
 
-        if ((pATDesc = VmDirSchemaAttrNameToDesc( pSchemaCtx, pIndexDesc[iCnt].pszAttrName )) != NULL &&
-            pATDesc->pszOrderingMRName != NULL &&
-            VmDirStringCompareA( pATDesc->pszOrderingMRName, "integerOrderingMatch", TRUE
-                    /* SJ-TBD should use VDIR_MATCHING_RULE_INTEGER_ORDERING_MATCH */ ) == 0)
+        if (pIndexDesc[iCnt].bIsNumeric)
         {
             pIndexDB->btKeyCmpFcn = MDBIntegerCompareFunction;
         }
@@ -748,11 +785,6 @@ MDBGlobalIndexStructCreate(
     gVdirMdbGlobals.mdbIndexDBs.usNumIndexAttribute = usSize;
 
 cleanup:
-
-    if (pSchemaCtx)
-    {
-        VmDirSchemaCtxRelease(pSchemaCtx);
-    }
 
     return dwError;
 

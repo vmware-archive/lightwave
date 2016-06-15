@@ -32,8 +32,6 @@
 extern "C" {
 #endif
 
-extern PVDIR_CFG_ATTR_INDEX_DESC    pBootStrapIdxAttrDesc;
-
 typedef enum
 {
     VDIR_CFG_ATTR_INDEX_ENABLED = 0,
@@ -88,29 +86,6 @@ VmDirAttrIndexLibShutdown(
  */
 DWORD
 VmDirAttrIndexBootStrap(
-    VOID
-    );
-
-///////////////////////////////////////////////////////////////////////////////
-// Attribute index cache modification
-//
-// NOTE, cache modify check and commit calls are serialized at the entry modify level.
-///////////////////////////////////////////////////////////////////////////////
-/*
- * 1. Verify modify contents
- * 2. Create new cache version including new attribute with building flag
- *    (but not yet make this version of cache live)
- */
-DWORD
-VmDirCFGAttrIndexModifyPrepare(
-    VDIR_MODIFICATION*   pMods,
-    PVDIR_ENTRY          pEntry
-    );
-/*
- * Commit attribute index modification into cache. (i.e. make it live version)
- */
-VOID
-VmDirCFGAttrIndexModifyCommit(
     VOID
     );
 

@@ -28,14 +28,6 @@
 #include "includes.h"
 
 static
-DWORD
-vdirIndexModifyContentCheck(
-    VDIR_MODIFICATION*               pMods,
-    PVDIR_CFG_ATTR_INDEX_DESC*  ppIndexDesc,
-    USHORT*                     pdwSize
-    );
-
-static
 PVDIR_CFG_ATTR_INDEX_DESC
 vdirAttrNameToIndexDesc(
     PCSTR       pszName,        // name of the attribute
@@ -61,8 +53,6 @@ VmDirAttrIndexBootStrap(
     USHORT  usCnt = 0;
     PVDIR_ATTR_INDEX_INSTANCE   pAttrIdxCache = NULL;
     USHORT usLive = gVdirAttrIndexGlobals.usLive;
-
-    pBootStrapIdxAttrDesc = idxTbl;
 
     dwError = VdirAttrIndexCacheAllocate(
             &pAttrIdxCache,
@@ -156,7 +146,7 @@ VmDirAttrIndexDescList(
 
     assert(pusSize || ppAttrIdxDesc);
 
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirAttrIndexGlobals.mutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVdirAttrIndexGlobals.mutex);
     usLive = gVdirAttrIndexGlobals.usLive;
 
     if (vmdirState != VMDIRD_STATE_STARTUP && vmdirState != VMDIRD_STATE_SHUTDOWN)
@@ -179,207 +169,6 @@ error:
 
     *pusSize = 0;
     *ppAttrIdxDesc = NULL;
-
-    goto cleanup;
-}
-
-
-
-/*
- * 1. Verify modify contents
- * 2. Create new cache version including new attribute with building flag
- *    (but not yet make this version of cache live)
- * 3. if existing job out standing (i.e. live cache has building flag), reject modify
- */
-DWORD
-VmDirCFGAttrIndexModifyPrepare(
-    VDIR_MODIFICATION*   pMods,
-    PVDIR_ENTRY          pEntry
-    )
-{
-    DWORD   dwError = 0;
-    USHORT  usModSize = 0;
-    DWORD   dwCnt = 0;
-    USHORT  usVersion = 0;
-
-    PVDIR_ATTR_INDEX_INSTANCE pCache = NULL;
-    PVDIR_CFG_ATTR_INDEX_DESC pIndexDesc = NULL;
-
-    // have free cache slot? have out standing indexing job?
-    dwError = VdirIndexingPreCheck(&pCache);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // verify pMods has good contents
-    dwError = vdirIndexModifyContentCheck(
-            pMods,
-            &pIndexDesc,  // owns pIndexDesc and its contents
-            &usModSize);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // verify pMods does not contain existing index
-    for (dwCnt = 0; dwCnt < usModSize; dwCnt++)
-    {
-        PVDIR_CFG_ATTR_INDEX_DESC pCheckDesc = vdirAttrNameToIndexDesc(
-                pIndexDesc[dwCnt].pszAttrName,
-                usVersion,
-                &usVersion,
-                VDIR_CFG_ATTR_INDEX_ALL);
-
-        //TODO, need to allow user to re-modify indices entry in case the first
-        // modify failed (e.g. constrain violation).  Currently, those failed attribute
-        // has status ABORT. so subsequent try to add same attribute will bail here.
-        if (pCheckDesc)
-        {
-            dwError = LDAP_UNWILLING_TO_PERFORM;
-            //TODO, log reason at least
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-
-    // append building flag to the end of attribute values
-    dwError = VdirIndexingEntryAppendFlag(
-            pMods,
-            pEntry);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // create new cache (but not yet make it live)
-    dwError = VdirAttrIndexInitViaCacheAndDescs(
-            pCache,
-            pIndexDesc,
-            usModSize);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-
-    for (dwCnt = 0; dwCnt < usModSize; dwCnt++)
-    {
-        VMDIR_SAFE_FREE_MEMORY(pIndexDesc[dwCnt].pszAttrName);
-    }
-    VMDIR_SAFE_FREE_MEMORY(pIndexDesc);
-
-    return dwError;
-
-error:
-
-    goto cleanup;
-}
-
-/*
- * Make new version of cache live
- *
- * NOTE, Modify check and commit calls are serialized at the entry modify level.
- */
-VOID
-VmDirCFGAttrIndexModifyCommit(
-    VOID
-    )
-{
-    BOOLEAN bInLock = FALSE;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVdirAttrIndexGlobals.mutex);
-
-    gVdirAttrIndexGlobals.bIndexInProgress = TRUE;
-    // wake up indexing thread, which will enable new cache after necessary db setup
-    VmDirConditionSignal(gVdirAttrIndexGlobals.condition);
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirAttrIndexGlobals.mutex);
-}
-
-/*
- * allow modify with
- *  - MOD_OP_ADD (i.e. only add new value)
- *  - attribute must be ATTR_INEX_DESC only
- */
-static
-DWORD
-vdirIndexModifyContentCheck(
-    VDIR_MODIFICATION*               pMods,
-    PVDIR_CFG_ATTR_INDEX_DESC*  ppIndexDesc,
-    USHORT*                      pdwSize
-    )
-{
-    DWORD   dwError = 0;
-    DWORD   dwCnt = 0;
-    PVDIR_CFG_ATTR_INDEX_DESC pIndexDesc = NULL;
-    PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
-    VDIR_MODIFICATION * pIndexMod = NULL;
-    VDIR_MODIFICATION * pMod = NULL;
-
-    assert(pMods && ppIndexDesc && pdwSize);
-
-	dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
-	BAIL_ON_VMDIR_ERROR(dwError);
-
-    // Make it very restrictive to modify indices entry. Look for THE ONLY index mod
-    for (pMod = pMods; pMod != NULL; pMod = pMod->next)
-    {
-        if (pMod->operation == MOD_OP_ADD && (0 == VmDirStringCompareA(pMod->attr.type.lberbv.bv_val, ATTR_INDEX_DESC, FALSE)))
-        {
-            if (pIndexMod != NULL)
-            {
-                dwError = LDAP_UNWILLING_TO_PERFORM;
-                //TODO, log reason at least
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-            else
-            {
-                pIndexMod = pMod;
-            }
-        }
-    }
-
-    if (pIndexMod == NULL)
-    {
-        dwError = LDAP_UNWILLING_TO_PERFORM;
-        //TODO, log reason at least
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateMemory(
-            sizeof(VDIR_CFG_ATTR_INDEX_DESC) * (pIndexMod->attr.numVals),
-            (PVOID)&pIndexDesc);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (dwCnt = 0; dwCnt < pIndexMod->attr.numVals; dwCnt++)
-    {
-        // convert value to VDIR_CFG_ATTR_INDEX_DESC
-        dwError = VdirstrToAttrIndexDesc(
-                pIndexMod->attr.vals[dwCnt].lberbv.bv_val,
-                &pIndexDesc[dwCnt]);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        // set status to building
-        pIndexDesc[dwCnt].status = VDIR_CFG_ATTR_INDEX_BUILDING;
-
-        if (!VmDirSchemaAttrNameToDesc(pSchemaCtx, pIndexDesc[dwCnt].pszAttrName))
-        {
-            dwError = ERROR_NO_SUCH_ATTRIBUTE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-
-    *ppIndexDesc = pIndexDesc;
-    *pdwSize = pIndexMod->attr.numVals;
-
-cleanup:
-
-    if (pSchemaCtx)
-    {
-        VmDirSchemaCtxRelease(pSchemaCtx);
-    }
-
-    return dwError;
-
-error:
-
-    if (pIndexMod)
-    {
-        for (dwCnt = 0; dwCnt < pIndexMod->attr.numVals; dwCnt++)
-        {
-            VMDIR_SAFE_FREE_MEMORY(pIndexDesc[dwCnt].pszAttrName);
-        }
-    }
-    VMDIR_SAFE_FREE_MEMORY(pIndexDesc);
 
     goto cleanup;
 }

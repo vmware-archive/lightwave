@@ -212,17 +212,6 @@ VmDirSrvSetupHostInstance(
         pszSiteContainerName = pszSiteName;
     }
 
-    // If joining another node, copy schema from the partner first.
-    if (!IsNullOrEmptyString(pszReplURI))
-    {
-        dwError = VmDirCopyPartnerSchema(
-                pszFQDomainName,
-                pszUsername,
-                pszPassword,
-                pszReplURI);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
     dwError = VmDirSchemaCtxAcquire( &pSchemaCtx );
     BAIL_ON_VMDIR_ERROR(dwError);
 

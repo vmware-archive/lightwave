@@ -32,14 +32,6 @@
  *    Not a full schema as ones that initialize from file or entry,
  *    but with limited information that we can bootstrap schema entry from
  *    data store or file.
- *    1.  pSchema->ats.pSortName (in sort order)
- *    1.1 pSchema->ats.pSortName(pszName, usIdMap)
- *    2.  pSchema->ats.dwNumATs
- *    3.  pSchema->ats.ppSortIdMap (in sort order)
- *    4.  pSchema-> bIsBootStrapSchema = TRUE
- *    5.  pSchema->usNextId = 100
- *
- *    gVdirSchemaGlobals.pInstances[0] = bootstrap schema
  *
  */
 DWORD
@@ -47,54 +39,13 @@ VmDirSchemaLibInit(
     VOID
     )
 {
-    BOOLEAN bInLock = FALSE;
     DWORD   dwError = 0;
-    DWORD   dwCnt = 0;
-    PVDIR_SCHEMA_INSTANCE pSchema = NULL;
 
-    PSTR OCTable[] = VDIR_SCHEMA_BOOTSTRP_OC_INITIALIZER;
-    VDIR_SCHEMA_BOOTSTRAP_TABLE ATTable[] = VDIR_SCHEMA_BOOTSTRP_ATTR_INITIALIZER;
-
-    // initialize gVdirSchemaGlobals
-    dwError = VmDirAllocateMutex(&gVdirSchemaGlobals.mutex);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VdirSchemaInstanceAllocate(   &pSchema,
-                                            sizeof(ATTable)/sizeof(ATTable[0]),
-                                            sizeof(OCTable)/sizeof(OCTable[0]),
-                                            0,  // no content rule in bootstrap
-                                            0,  // no structure rule in bootstrap
-                                            0); // no fnameforma in bootstrap
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (dwCnt = 0 ; dwCnt < sizeof(ATTable)/sizeof(ATTable[0]); dwCnt++)
-    {
-        dwError = VmDirSchemaParseStrToATDesc(
-                ATTable[dwCnt].pszDesc,
-                pSchema->ats.pATSortName+dwCnt);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        pSchema->ats.pATSortName[dwCnt].usAttrID = ATTable[dwCnt].usAttrID;
-    }
-
-    qsort(pSchema->ats.pATSortName,
-          pSchema->ats.usNumATs,
-          sizeof(VDIR_SCHEMA_AT_DESC),
-          VdirSchemaPATNameCmp);
-
-    dwError = VmDirAllocateMemory(
-            sizeof(PVDIR_SCHEMA_AT_DESC) * pSchema->ats.usNumATs,
-            (PVOID*)&pSchema->ats.ppATSortIdMap);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (dwCnt = 0 ; dwCnt < sizeof(ATTable)/sizeof(ATTable[0]); dwCnt++)
-    {
-        pSchema->ats.ppATSortIdMap[pSchema->ats.pATSortName[dwCnt].usAttrID -1] =
-                &pSchema->ats.pATSortName[dwCnt];
-    }
-
-    pSchema-> bIsBootStrapSchema = TRUE;
-    pSchema->ats.usNextId = MAX_RESERVED_ATTR_ID_MAP + 1;
+    // legacy support
+    // - replace with VDIR_SCHEMA_BOOTSTRP_ATTR_INITIALIZER
+    //   when legacy support is no longer required
+    VDIR_SCHEMA_BOOTSTRAP_TABLE ATTable[] =
+            VDIR_LEGACY_SCHEMA_BOOTSTRP_ATTR_INITIALIZER;
 
     dwError = VdirSyntaxLoad();
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -102,156 +53,400 @@ VmDirSchemaLibInit(
     dwError = VdirMatchingRuleLoad();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
-
-    gVdirSchemaGlobals.pSchema = pSchema;
-    dwError = VdirSchemaCtxAcquireInLock(TRUE, &gVdirSchemaGlobals.pCtx); // add self reference
+    dwError = VmDirAllocateMutex(&gVdirSchemaGlobals.ctxMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    assert(gVdirSchemaGlobals.pCtx);
+    dwError = VmDirAllocateMutex(&gVdirSchemaGlobals.cacheModMutex);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Startup bootstrap schema instance (%p)", gVdirSchemaGlobals.pSchema);
+    dwError = VmDirLdapSchemaInit(&gVdirSchemaGlobals.pPendingLdapSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSchemaAttrIdMapInit(&gVdirSchemaGlobals.pAttrIdMap);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // read attribute Ids from DB
+    dwError = VmDirSchemaAttrIdMapReadDB(gVdirSchemaGlobals.pAttrIdMap);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // read attributes from bootstrap table
+    dwError = VmDirSchemaLibLoadBootstrapTable(ATTable);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSchemaLibUpdate(0);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
-
     return dwError;
 
 error:
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSchemaLibInit failed (%d)", dwError);
-
-    gVdirSchemaGlobals.pSchema = NULL;
-
-    if (pSchema)
-    {
-        VdirSchemaInstanceFree(pSchema);
-    }
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
 
     goto cleanup;
 }
 
-/*
- * This always call in single thread mode during startup or from tools.
- */
 DWORD
-VmDirSchemaInitializeViaFile(
-    PCSTR pszSchemaFilePath
+VmDirSchemaLibLoadBootstrapTable(
+    VDIR_SCHEMA_BOOTSTRAP_TABLE bootstrapTable[]
     )
 {
-    DWORD     dwError = 0;
-    PVDIR_ENTRY    pEntry = NULL;
-    BOOLEAN   bInLock = FALSE;
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PVDIR_LDAP_SCHEMA   pLdapSchema = NULL;
+    PVDIR_SCHEMA_ATTR_ID_MAP    pAttrIdMap = NULL;
 
-    if (IsNullOrEmptyString(pszSchemaFilePath))
+    pLdapSchema = gVdirSchemaGlobals.pPendingLdapSchema;
+    pAttrIdMap = gVdirSchemaGlobals.pAttrIdMap;
+
+    assert(pLdapSchema && pAttrIdMap);
+
+    for (i = 0 ; bootstrapTable[i].usAttrID; i++)
+    {
+        PVDIR_LDAP_ATTRIBUTE_TYPE pAt = NULL;
+
+        dwError = VmDirLdapAtParseStr(bootstrapTable[i].pszDesc, &pAt);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLdapSchemaAddAt(pLdapSchema, pAt);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (VmDirSchemaAttrIdMapGetAttrId(pAttrIdMap, pAt->pszName, NULL) != 0)
+        {
+            dwError = VmDirSchemaAttrIdMapAddNewAttr(
+                    pAttrIdMap, pAt->pszName, bootstrapTable[i].usAttrID);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    goto cleanup;
+}
+
+DWORD
+VmDirSchemaLibPrepareUpdateViaFile(
+    PCSTR   pszSchemaFilePath
+    )
+{
+    DWORD   dwError = 0;
+    PVDIR_LDAP_SCHEMA   pCurLdapSchema = NULL;
+    PVDIR_LDAP_SCHEMA   pTmpLdapSchema = NULL;
+    PVDIR_LDAP_SCHEMA   pNewLdapSchema = NULL;
+    LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
+    LW_HASHMAP_PAIR pair = {NULL, NULL};
+
+    pCurLdapSchema = gVdirSchemaGlobals.pLdapSchema;
+
+    dwError = VmDirLdapSchemaInit(&pTmpLdapSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapSchemaLoadFile(pTmpLdapSchema, pszSchemaFilePath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapSchemaMerge(
+            pCurLdapSchema, pTmpLdapSchema, &pNewLdapSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapSchemaRemoveNoopData(pNewLdapSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    while (LwRtlHashMapIterate(pNewLdapSchema->attributeTypes, &iter, &pair))
+    {
+        PVDIR_LDAP_ATTRIBUTE_TYPE pAt = (PVDIR_LDAP_ATTRIBUTE_TYPE)pair.pValue;
+
+        if (VmDirSchemaAttrIdMapGetAttrId(
+                gVdirSchemaGlobals.pAttrIdMap, pAt->pszName, NULL) != 0)
+        {
+            dwError = VmDirSchemaAttrIdMapAddNewAttr(
+                    gVdirSchemaGlobals.pAttrIdMap, pAt->pszName, 0);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    gVdirSchemaGlobals.pPendingLdapSchema = pNewLdapSchema;
+
+cleanup:
+    VmDirFreeLdapSchema(pTmpLdapSchema);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    VmDirFreeLdapSchema(pNewLdapSchema);
+    goto cleanup;
+}
+
+DWORD
+VmDirSchemaLibPrepareUpdateViaEntries(
+    PVDIR_ENTRY_ARRAY   pAtEntries,
+    PVDIR_ENTRY_ARRAY   pOcEntries
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PVDIR_LDAP_SCHEMA   pCurLdapSchema = NULL;
+    PVDIR_LDAP_SCHEMA   pNewLdapSchema = NULL;
+
+    if (!pAtEntries || !pOcEntries)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSchemaInitalizeFileToEntry(
-            pszSchemaFilePath,
-            &pEntry);
+    pCurLdapSchema = gVdirSchemaGlobals.pLdapSchema;
+
+    dwError = VmDirLdapSchemaCopy(pCurLdapSchema, &pNewLdapSchema);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSchemaInitializeViaEntry(pEntry);
+    for (i = 0; i < pAtEntries->iSize; i++)
+    {
+        PVDIR_LDAP_ATTRIBUTE_TYPE pAt = NULL;
+
+        dwError = VmDirLdapAtParseVdirEntry(&pAtEntries->pEntry[i], &pAt);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLdapSchemaAddAt(pNewLdapSchema, pAt);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    for (i = 0; i < pOcEntries->iSize; i++)
+    {
+        PVDIR_LDAP_OBJECT_CLASS pOc = NULL;
+        PVDIR_LDAP_CONTENT_RULE pCr = NULL;
+
+        dwError = VmDirLdapOcParseVdirEntry(&pOcEntries->pEntry[i], &pOc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLdapCrParseVdirEntry(&pOcEntries->pEntry[i], &pCr);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLdapSchemaAddOc(pNewLdapSchema, pOc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (pCr)
+        {
+            dwError = VmDirLdapSchemaAddCr(pNewLdapSchema, pCr);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    dwError = VmDirLdapSchemaResolveAndVerifyAll(pNewLdapSchema);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
-    // globals takes over pEntry, use to write to db later
-    gVdirSchemaGlobals.pLoadFromFileEntry = pEntry;
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
+    gVdirSchemaGlobals.pPendingLdapSchema = pNewLdapSchema;
 
 cleanup:
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
-
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
 
-    if (pEntry)
-    {
-        VmDirFreeEntry(pEntry);
-    }
-
+    VmDirFreeLdapSchema(pNewLdapSchema);
     goto cleanup;
 }
 
-/*
- * Create a new schema cache via pEntry, then active this cache.
- */
 DWORD
-VmDirSchemaInitializeViaEntry(
-    PVDIR_ENTRY    pEntry
+VmDirSchemaLibPrepareUpdateViaModify(
+    PVDIR_OPERATION      pOperation,
+    PVDIR_ENTRY          pSchemaEntry
     )
 {
-    BOOLEAN  bLoadOk = TRUE;
-    BOOLEAN  bInLock = FALSE;
-    DWORD    dwError = 0;
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PSTR    pszLocalErrMsg = NULL;
+    PVDIR_ATTRIBUTE pClassAttr = NULL;
+    PSTR            pszClass = NULL;
+    PVDIR_LDAP_SCHEMA   pCurLdapSchema = NULL;
+    PVDIR_LDAP_SCHEMA   pNewLdapSchema = NULL;
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pAt = NULL;
+    PVDIR_LDAP_OBJECT_CLASS     pOc = NULL;
+    PVDIR_LDAP_CONTENT_RULE     pCr = NULL;
 
-    PVDIR_SCHEMA_CTX pLiveCtx = NULL;
-    PVDIR_SCHEMA_INSTANCE pInstance = NULL;
-    PVDIR_SCHEMA_INSTANCE pLiveInstance = NULL;
+    if (!pSchemaEntry || !pOperation)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
-    VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
+    pClassAttr = VmDirFindAttrByName(pSchemaEntry, ATTR_OBJECT_CLASS);
+    if (!pClassAttr)
+    {
+        dwError = ERROR_INVALID_ENTRY;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
+                "missing objectclass attribute");
+    }
 
-    // get reference to current schema, to clean up later
-    pLiveInstance = gVdirSchemaGlobals.pSchema;
-    pLiveCtx      = gVdirSchemaGlobals.pCtx;
+    pCurLdapSchema = gVdirSchemaGlobals.pLdapSchema;
 
-    // instantiate a schema cache - pInstance
-    dwError = VdirSchemaInstanceInitViaEntry(
-            pEntry,
-            &pInstance);
+    dwError = VmDirLdapSchemaCopy(pCurLdapSchema, &pNewLdapSchema);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    gVdirSchemaGlobals.pSchema = pInstance;
+    for (i = 0; i < pClassAttr->numVals; i ++)
+    {
+        pszClass = pClassAttr->vals[i].lberbv.bv_val;
+        if (VmDirStringCompareA(pszClass, OC_ATTRIBUTE_SCHEMA, FALSE) == 0)
+        {
+            dwError = VmDirLdapAtParseVdirEntry(pSchemaEntry, &pAt);
+            BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VdirSchemaCtxAcquireInLock(TRUE, &gVdirSchemaGlobals.pCtx); // add self reference
+            dwError = VmDirLdapAtVerify(pAt);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            if (VmDirSchemaAttrIdMapGetAttrId(
+                    gVdirSchemaGlobals.pAttrIdMap, pAt->pszName, NULL) != 0)
+            {
+                dwError = VmDirSchemaAttrIdMapAddNewAttr(
+                        gVdirSchemaGlobals.pAttrIdMap, pAt->pszName, 0);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+
+            dwError = VmDirLdapSchemaAddAt(pNewLdapSchema, pAt);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            pAt = NULL;
+
+            goto updatelib;
+        }
+        else if (VmDirStringCompareA(pszClass, OC_CLASS_SCHEMA, FALSE) == 0)
+        {
+            dwError = VmDirLdapOcParseVdirEntry(pSchemaEntry, &pOc);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirLdapCrParseVdirEntry(pSchemaEntry, &pCr);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirLdapOcResolveSup(pNewLdapSchema, pOc);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirLdapOcVerify(pNewLdapSchema, pOc);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirLdapSchemaAddOc(pNewLdapSchema, pOc);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            pOc = NULL;
+
+            if (pCr)
+            {
+                dwError = VmDirLdapCrVerify(pNewLdapSchema, pCr);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                dwError = VmDirLdapSchemaAddCr(pNewLdapSchema, pCr);
+                BAIL_ON_VMDIR_ERROR(dwError);
+                pCr = NULL;
+            }
+
+            goto updatelib;
+        }
+        else
+        {
+            // We don't handle other types yet
+        }
+    }
+
+    dwError = ERROR_INVALID_ENTRY;
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
+            "Not a schema object entry");
+
+updatelib:
+    gVdirSchemaGlobals.pPendingLdapSchema = pNewLdapSchema;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d) (%s)",
+            __FUNCTION__, dwError, pszLocalErrMsg );
+
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult,
+            dwError, pszLocalErrMsg);
+
+    VmDirFreeLdapAt(pAt);
+    VmDirFreeLdapOc(pOc);
+    VmDirFreeLdapCr(pCr);
+    VmDirFreeLdapSchema(pNewLdapSchema);
+    goto cleanup;
+}
+
+DWORD
+VmDirSchemaLibUpdate(
+    DWORD   dwPriorResult
+    )
+{
+    BOOLEAN bInLock = FALSE;
+    DWORD   dwError = dwPriorResult;
+    PVDIR_SCHEMA_CTX        pLiveCtx = NULL;
+    PVDIR_LDAP_SCHEMA       pNewLdapSchema = NULL;
+    PVDIR_SCHEMA_INSTANCE   pNewVdirSchema = NULL;
+
+    // no schema definition change, just pass through.
+    if (!gVdirSchemaGlobals.pPendingLdapSchema)
+    {
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Schema cache update pass through");
+        goto error;
+    }
+
+    VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.ctxMutex);
+
+    // take ownership of pending LdapSchema
+    pNewLdapSchema = gVdirSchemaGlobals.pPendingLdapSchema;
+    gVdirSchemaGlobals.pPendingLdapSchema = NULL;
+
+    // get reference to current schema context, to clean up later
+    pLiveCtx = gVdirSchemaGlobals.pCtx;
+
+    // clean up if there was a prior error
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // create a new pVdirSchema and add self reference
+    dwError = VmDirSchemaInstanceCreate(pNewLdapSchema,
+            gVdirSchemaGlobals.pAttrIdMap,
+            &pNewVdirSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    gVdirSchemaGlobals.pLdapSchema = pNewLdapSchema;
+    gVdirSchemaGlobals.pVdirSchema = pNewVdirSchema;
+
+    dwError = VdirSchemaCtxAcquireInLock(TRUE, &gVdirSchemaGlobals.pCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     assert(gVdirSchemaGlobals.pCtx);
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Startup schema instance (%p)", gVdirSchemaGlobals.pSchema);
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+            "New schema instance (%p)",
+            gVdirSchemaGlobals.pVdirSchema);
 
 cleanup:
+    // release global ctxMutex before updating IdMap DB
+    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.ctxMutex);
+    VmDirSchemaCtxRelease(pLiveCtx);
 
-    if (bLoadOk)
-    {
-        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,
-            "Schema - AttributeTypes:(size=%d, nextid=%d) Objectclasses:(size=%d)",
-            pEntry->pSchemaCtx->pSchema->ats.usNumATs,
-            pEntry->pSchemaCtx->pSchema->ats.usNextId,
-            pEntry->pSchemaCtx->pSchema->ocs.usNumOCs);
-    }
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
-
-    if (pLiveCtx)
-    {
-        VmDirSchemaCtxRelease(pLiveCtx);
-    }
-
+    // no cleanup can be done if IdMapUpdateDB fails
+    (VOID)VmDirSchemaAttrIdMapUpdateDB(gVdirSchemaGlobals.pAttrIdMap);
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
 
-    if (pInstance)
+    VmDirSchemaAttrIdMapRemoveAllPending(gVdirSchemaGlobals.pAttrIdMap);
+    VmDirFreeSchemaInstance(pNewVdirSchema);
+    VmDirFreeLdapSchema(pNewLdapSchema);
+    if (pLiveCtx)
     {
-        VdirSchemaInstanceFree(pInstance);
+        gVdirSchemaGlobals.pVdirSchema = pLiveCtx->pVdirSchema;
+        gVdirSchemaGlobals.pLdapSchema = pLiveCtx->pLdapSchema;
+        gVdirSchemaGlobals.pCtx = pLiveCtx;
+        pLiveCtx = NULL;
     }
-
-    gVdirSchemaGlobals.pSchema = pLiveInstance;
-    gVdirSchemaGlobals.pCtx = pLiveCtx;
-    pLiveCtx = NULL;
-
-    bLoadOk = FALSE;
-
     goto cleanup;
 }
 
@@ -262,14 +457,20 @@ VmDirSchemaLibShutdown(
 {
     BOOLEAN bInLock = FALSE;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.ctxMutex);
 
     // release live context and live schema
     VmDirSchemaCtxRelease(gVdirSchemaGlobals.pCtx);
-    VMDIR_SAFE_FREE_MEMORY(gVdirSchemaGlobals.pszDN);
+    gVdirSchemaGlobals.pCtx = NULL;
 
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
+    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.ctxMutex);
 
-    VMDIR_SAFE_FREE_MUTEX( gVdirSchemaGlobals.mutex );
+    VMDIR_SAFE_FREE_MUTEX(gVdirSchemaGlobals.ctxMutex);
+    gVdirSchemaGlobals.ctxMutex = NULL;
+
+    VMDIR_SAFE_FREE_MUTEX(gVdirSchemaGlobals.cacheModMutex);
+    gVdirSchemaGlobals.cacheModMutex = NULL;
+
+    VmDirFreeSchemaAttrIdMap(gVdirSchemaGlobals.pAttrIdMap);
+    gVdirSchemaGlobals.pAttrIdMap = NULL;
 }
-

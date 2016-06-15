@@ -27,68 +27,7 @@
  *
  */
 
-#define SCHEMA_SIZE_5  5
-
-#define ATTRIBUTETYPS_TAG           "attributetypes:"
-#define ATTRIBUTETYPS_TAG_LEN       sizeof(ATTRIBUTETYPS_TAG)-1
-#define IS_ATTRIBUTETYPES_TAG(tag)    \
-    (VmDirStringNCompareA(tag, ATTRIBUTETYPS_TAG,  ATTRIBUTETYPS_TAG_LEN, FALSE) == 0)
-
-#define OBJECTCLASSES_TAG           "objectclasses:"
-#define OBJECTCLASSES_TAG_LEN       sizeof(OBJECTCLASSES_TAG)-1
-#define IS_OBJECTCLASSES_TAG(tag)    \
-    (VmDirStringNCompareA(tag, OBJECTCLASSES_TAG, OBJECTCLASSES_TAG_LEN, FALSE) == 0)
-
-#define CONTENTRULES_TAG           "ditcontentrules:"
-#define CONTENTRULES_TAG_LEN       sizeof(CONTENTRULES_TAG)-1
-#define IS_CONTENTRULES_TAG(tag)    \
-    (VmDirStringNCompareA(tag, CONTENTRULES_TAG, CONTENTRULES_TAG_LEN, FALSE) == 0)
-
-#define STRUCTURERULES_TAG           "ditstructurerules:"
-#define STRUCTURERULES_TAG_LEN       sizeof(STRUCTURERULES_TAG)-1
-#define IS_STRUCTURERULES_TAG(tag)    \
-    (VmDirStringNCompareA(tag, STRUCTURERULES_TAG, STRUCTURERULES_TAG_LEN, FALSE) == 0)
-
-#define NAMEFORM_TAG                "nameforms:"
-#define NAMEFORM_TAG_LEN            sizeof(NAMEFORM_TAG)-1
-#define IS_NAMEFORM_TAG(tag)    \
-    (VmDirStringNCompareA(tag, NAMEFORM_TAG, NAMEFORM_TAG_LEN, FALSE) == 0)
-
-#define ATTRIBUTETOIDMAP_TAG        "vmwAttributeToIdMap:"
-#define ATTRIBUTETOIDMAP_TAG_LEN    sizeof(ATTRIBUTETOIDMAP_TAG)-1
-#define IS_ATTRIBUTETOIDMAP_TAG(tag)    \
-    (VmDirStringNCompareA(tag, ATTRIBUTETOIDMAP_TAG, ATTRIBUTETOIDMAP_TAG_LEN, FALSE) == 0)
-
-#define SCHEMA_GEN_TOKEN_SEP                " '$"
-#define SCHEMA_DESC_TOKEN_SEP               "'"
-#define SCHEMA_ATTRIBUTE_ID_MAP_TOKEN_SEP   ":"
-#define SCHEMA_ATTRIBUTE_ID_MAP_SEP_CHAR    '='
-
-#define LEFT_PARENTHESIS                    "("
-#define RIGHT_PARENTHESIS                   ")"
-
-#define IS_EMPTY_PARENTHESIS_STR(pToken) \
-    (pToken[0] == '(' && pToken[1] == ')' && pToken[2] == '\0')
-
-#define IS_L_PARENTHESIS(pToken) \
-    (pToken[0] == '(' )
-
-#define IS_R_PARENTHESIS(pToken) \
-    (pToken[0] == ')' )
-
-#define IS_L_PARENTHESIS_STR(pToken) \
-    (pToken[0] == '(' && pToken[1] == '\0')
-
-#define IS_R_PARENTHESIS_STR(pToken) \
-    (pToken[0] == ')' && pToken[1] == '\0')
-
-#define GET_NEXT_TOKEN(pToken, pSep, pRest) \
-    (pToken) = VmDirStringTokA(NULL, (pSep), &(pRest));     \
-    if (!(pToken))                                          \
-    {                                                       \
-        dwError = ERROR_INVALID_PARAMETER;                  \
-        BAIL_ON_VMDIR_ERROR(dwError);                       \
-    }
+#define SCHEMA_ATTR_ID_MAP_SEP         "="
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -208,7 +147,7 @@
 #define VDIR_SYNTAX_IA5_STRING            "IA5 String"
 #define VDIR_SYNTAX_INTERGER              "INTEGER"
 #define VDIR_SYNTAX_NUMERIC_STRING        "Numeric String"
-#define VDIR_SYNTAX_OBJECTCLASS_DESC      "bject Class Description"
+#define VDIR_SYNTAX_OBJECTCLASS_DESC      "Object Class Description"
 #define VDIR_SYNTAX_OCTET_STRING          "Octet String"
 #define VDIR_SYNTAX_OID                   "OID"
 #define VDIR_SYNTAX_POSTAL_ADDRESS        "Postal Address"
@@ -349,198 +288,132 @@
 };
 
 /*  TODO, only support string type matching rule now.
-   ( 2.5.13.0 NAME 'objectIdentifierMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.38 )
-   ( 2.5.13.1 NAME 'distinguishedNameMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 )
-   ( 2.5.13.2 NAME 'caseIgnoreMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
-   ( 2.5.13.3 NAME 'caseIgnoreOrderingMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
-   ( 2.5.13.4 NAME 'caseIgnoreSubstringsMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.58 )
-   ( 2.5.13.5 NAME 'caseExactMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
-   ( 2.5.13.6 NAME 'caseExactOrderingMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
-   ( 2.5.13.7 NAME 'caseExactSubstringsMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.58 )
-   ( 2.5.13.16 NAME 'bitStringMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.6 )
-   ( 2.5.13.13 NAME 'booleanMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 )
-   ( 2.5.13.30 NAME 'objectIdentifierFirstComponentMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.38 )
-   ( 1.3.6.1.4.1.1466.109.114.1 NAME 'caseExactIA5Match' SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
-   ( 1.3.6.1.4.1.1466.109.114.2 NAME 'caseIgnoreIA5Match' SYNTAX 1.3.6.1.4.1.1466.115.121.1.26 )
-   ( 1.3.6.1.4.1.1466.109.114.3 NAME 'caseIgnoreIA5SubstringsMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.58 )
-   ( 2.5.13.8 NAME 'numericStringMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.36 )
-   ( 2.5.13.9 NAME 'numericStringOrderingMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.36 )
-   ( 2.5.13.10 NAME 'numericStringSubstringsMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.58 )
-   ( 2.5.13.14 NAME 'integerMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 )
-   ( 2.5.13.15 NAME 'integerOrderingMatch' SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 )
  */
 
-#define VDIR_MATCHING_RULE_BITSTRING_MATCH                  "bitStringMatch"
-#define VDIR_MATCHING_RULE_BOOLEAN_MATCH                    "booleanMatch"
-#define VDIR_MATCHING_RULE_OBJID_FIRST_COMPONENT_MATCH      "objectIdentifierFirstComponentMatch"
-#define VDIR_MATCHING_RULE_OBJID_MATCH                      "objectIdentifierMatch"
-#define VDIR_MATCHING_RULE_DN_MATCH                         "distinguishedNameMatch"
-
-#define VDIR_MATCHING_RULE_CASEEXACT_MATCH                  "caseExactMatch"
-#define VDIR_MATCHING_RULE_CASEEXACT_ORDERING_MATCH         "caseExactOrderingMatch"
-#define VDIR_MATCHING_RULE_CASEEXACT_SUBSTR_MATCH           "caseExactSubstringsMatch"
-
-#define VDIR_MATCHING_RULE_CASEIGNORE_MATCH                 "caseIgnoreMatch"
-#define VDIR_MATCHING_RULE_CASEIGNORE_ORDERING_MATCH        "caseIgnoreOrderingMatch"
-#define VDIR_MATCHING_RULE_CASEIGNORE_SUBSTR_MATCH          "caseIgnoreSubstringsMatch"
-
-#define VDIR_MATCHING_RULE_CASEEXATCH_IA5_MATCH             "caseExactIA5Match"
-#define VDIR_MATCHING_RULE_CASEIGNORE_IA5_MATCH             "caseIgnoreIA5Match"
-#define VDIR_MATCHING_RULE_CASEIGNORE_IA5_SUBSTR_MATCH      "caseIgnoreIA5SubstringsMatch"
-
-#define VDIR_MATCHING_RULE_NUMERIC_STRING_MATCH             "numericStringMatch"
-#define VDIR_MATCHING_RULE_NUMERIC_STRING_ORDERING_MATCH    "numericStringOrderingMatch"
-#define VDIR_MATCHING_RULE_NUMERIC_STRING_SUBSTR_MATCH      "numericStringSubstringsMatch"
-
-#define VDIR_MATCHING_RULE_INTEGER_MATCH                    "integerMatch"
-#define VDIR_MATCHING_RULE_INTEGER_ORDERING_MATCH           "integerOrderingMatch"
-
 // NOTE: order of fields MUST stay in sync with struct definition...
-#define VDIR_MATCHING_RULE_INIT_TABLE_INITIALIZER                                  \
+#define VDIR_EQAULITY_MATCHING_RULE_INIT_TABLE_INITIALIZER                         \
 {                                                                                  \
     {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_DN_MATCH),                      \
-        VMDIR_SF_INIT(.pszOid, "2.5.13.1"),                                        \
         VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_DN),                                 \
         VMDIR_SF_INIT(.pSyntax, NULL),                                             \
         VMDIR_SF_INIT(.pNormalizeFunc, VmDirNormalizeDNWrapper),                   \
         VMDIR_SF_INIT(.pCompareFunc, compareString)                                \
     },                                                                             \
     {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_BITSTRING_MATCH),               \
-        VMDIR_SF_INIT(.pszOid, "2.5.13.16"),                                       \
         VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_BIT_STRING),                         \
         VMDIR_SF_INIT(.pSyntax, NULL),                                             \
         VMDIR_SF_INIT(.pNormalizeFunc, NULL),                                      \
         VMDIR_SF_INIT(.pCompareFunc, NULL)                                         \
     },                                                                             \
     {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_OBJID_FIRST_COMPONENT_MATCH),   \
-        VMDIR_SF_INIT(.pszOid, "2.5.13.30"),                                       \
         VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_OID),                                \
         VMDIR_SF_INIT(.pSyntax, NULL),                                             \
-        VMDIR_SF_INIT(.pNormalizeFunc, NULL),                                      \
-        VMDIR_SF_INIT(.pCompareFunc, NULL)                                         \
-    },                                                                             \
-    {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_OBJID_MATCH),                   \
-        VMDIR_SF_INIT(.pszOid, "2.5.13.0"),                                        \
-        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_OID),                                \
-        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
-        VMDIR_SF_INIT(.pNormalizeFunc, NULL),                                      \
-        VMDIR_SF_INIT(.pCompareFunc, NULL)                                         \
-    },                                                                             \
-    {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_CASEEXACT_MATCH),               \
-        VMDIR_SF_INIT(.pszOid, "2.5.13.5"),                                        \
-        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_DIRECTORY_STRING),                   \
-        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
-        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseExact),                        \
+        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseIgnore),                       \
         VMDIR_SF_INIT(.pCompareFunc, compareString)                                \
     },                                                                             \
     {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_CASEEXACT_ORDERING_MATCH),      \
-        VMDIR_SF_INIT(.pszOid, "2.5.13.6"),                                        \
-        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_DIRECTORY_STRING),                   \
-        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
-        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseExact),                        \
-        VMDIR_SF_INIT(.pCompareFunc, compareString)                                \
-    },                                                                             \
-    {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_CASEEXACT_SUBSTR_MATCH),        \
-        VMDIR_SF_INIT(.pszOid, "2.5.13.7"),                                        \
-        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_DIRECTORY_STRING),                   \
-        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
-        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseExact),                        \
-        VMDIR_SF_INIT(.pCompareFunc, compareSubString)                             \
-    },                                                                             \
-    {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_CASEIGNORE_MATCH),              \
-        VMDIR_SF_INIT(.pszOid, "2.5.13.2"),                                        \
         VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_DIRECTORY_STRING),                   \
         VMDIR_SF_INIT(.pSyntax, NULL),                                             \
         VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseIgnore),                       \
         VMDIR_SF_INIT(.pCompareFunc, compareString)                                \
     },                                                                             \
     {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_CASEIGNORE_ORDERING_MATCH),     \
-        VMDIR_SF_INIT(.pszOid, "2.5.13.3"),                                        \
-        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_DIRECTORY_STRING),                   \
-        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
-        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseIgnore),                       \
-        VMDIR_SF_INIT(.pCompareFunc, compareString)                                \
-    },                                                                             \
-    {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_CASEIGNORE_SUBSTR_MATCH),       \
-        VMDIR_SF_INIT(.pszOid, "2.5.13.4"),                                        \
-        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_DIRECTORY_STRING),                   \
-        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
-        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseIgnore),                       \
-        VMDIR_SF_INIT(.pCompareFunc, compareSubString)                             \
-    },                                                                             \
-    {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_CASEEXATCH_IA5_MATCH),          \
-        VMDIR_SF_INIT(.pszOid, "1.3.6.1.4.1.1466.109.114.1"),                      \
         VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_IA5_STRING),                         \
         VMDIR_SF_INIT(.pSyntax, NULL),                                             \
         VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseExact),                        \
         VMDIR_SF_INIT(.pCompareFunc, compareString)                                \
     },                                                                             \
     {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_CASEIGNORE_IA5_MATCH),          \
-        VMDIR_SF_INIT(.pszOid, "1.3.6.1.4.1.1466.109.114.2"),                      \
-        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_IA5_STRING),                         \
+        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_PRINTABLE_STRING),                   \
         VMDIR_SF_INIT(.pSyntax, NULL),                                             \
-        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseIgnore),                       \
+        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseExact),                        \
         VMDIR_SF_INIT(.pCompareFunc, compareString)                                \
     },                                                                             \
     {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_CASEIGNORE_IA5_SUBSTR_MATCH),   \
-        VMDIR_SF_INIT(.pszOid, "1.3.6.1.4.1.1466.109.114.3"),                      \
-        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_IA5_STRING),                         \
-        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
-        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseIgnore),                       \
-        VMDIR_SF_INIT(.pCompareFunc, compareSubString)                             \
-    },                                                                             \
-    {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_NUMERIC_STRING_MATCH),          \
-        VMDIR_SF_INIT(.pszOid, "2.5.13.8"),                                        \
         VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_NUMERIC_STRING),                     \
         VMDIR_SF_INIT(.pSyntax, NULL),                                             \
         VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseExact),                        \
         VMDIR_SF_INIT(.pCompareFunc, compareString)                                \
     },                                                                             \
     {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_NUMERIC_STRING_ORDERING_MATCH), \
-        VMDIR_SF_INIT(.pszOid, "2.5.13.9"),                                        \
-        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_NUMERIC_STRING),                     \
-        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
-        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseExact),                        \
-        VMDIR_SF_INIT(.pCompareFunc, compareString)                                \
-    },                                                                             \
-    {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_NUMERIC_STRING_SUBSTR_MATCH),   \
-        VMDIR_SF_INIT(.pszOid, "2.5.13.10"),                                       \
-        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_NUMERIC_STRING),                     \
-        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
-        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseExact),                        \
-        VMDIR_SF_INIT(.pCompareFunc, compareSubString)                             \
-    },                                                                             \
-    {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_INTEGER_MATCH),                 \
-        VMDIR_SF_INIT(.pszOid, "2.5.13.14"),                                       \
         VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_INTERGER),                           \
         VMDIR_SF_INIT(.pSyntax, NULL),                                             \
         VMDIR_SF_INIT(.pNormalizeFunc, NULL),                                      \
         VMDIR_SF_INIT(.pCompareFunc, compareIntegerString)                         \
     },                                                                             \
+};
+
+#define VDIR_ORDERING_MATCHING_RULE_INIT_TABLE_INITIALIZER                         \
+{                                                                                  \
     {                                                                              \
-        VMDIR_SF_INIT(.pszName, VDIR_MATCHING_RULE_INTEGER_ORDERING_MATCH),        \
-        VMDIR_SF_INIT(.pszOid, "2.5.13.15"),                                       \
+        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_OID),                                \
+        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
+        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseIgnore),                       \
+        VMDIR_SF_INIT(.pCompareFunc, compareString)                                \
+    },                                                                             \
+    {                                                                              \
+        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_DIRECTORY_STRING),                   \
+        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
+        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseIgnore),                       \
+        VMDIR_SF_INIT(.pCompareFunc, compareString)                                \
+    },                                                                             \
+    {                                                                              \
+        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_IA5_STRING),                         \
+        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
+        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseExact),                        \
+        VMDIR_SF_INIT(.pCompareFunc, compareString)                                \
+    },                                                                             \
+    {                                                                              \
+        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_PRINTABLE_STRING),                   \
+        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
+        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseExact),                        \
+        VMDIR_SF_INIT(.pCompareFunc, compareString)                                \
+    },                                                                             \
+    {                                                                              \
+        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_NUMERIC_STRING),                     \
+        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
+        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseExact),                        \
+        VMDIR_SF_INIT(.pCompareFunc, compareString)                                \
+    },                                                                             \
+    {                                                                              \
         VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_INTERGER),                           \
         VMDIR_SF_INIT(.pSyntax, NULL),                                             \
         VMDIR_SF_INIT(.pNormalizeFunc, NULL),                                      \
         VMDIR_SF_INIT(.pCompareFunc, compareIntegerString)                         \
+    },                                                                             \
+};
+
+#define VDIR_SUBSTR_MATCHING_RULE_INIT_TABLE_INITIALIZER                           \
+{                                                                                  \
+    {                                                                              \
+        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_OID),                                \
+        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
+        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseIgnore),                       \
+        VMDIR_SF_INIT(.pCompareFunc, compareSubString)                             \
+    },                                                                             \
+    {                                                                              \
+        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_DIRECTORY_STRING),                   \
+        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
+        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseIgnore),                       \
+        VMDIR_SF_INIT(.pCompareFunc, compareSubString)                             \
+    },                                                                             \
+    {                                                                              \
+        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_IA5_STRING),                         \
+        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
+        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseExact),                        \
+        VMDIR_SF_INIT(.pCompareFunc, compareSubString)                             \
+    },                                                                             \
+    {                                                                              \
+        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_PRINTABLE_STRING),                   \
+        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
+        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseExact),                        \
+        VMDIR_SF_INIT(.pCompareFunc, compareSubString)                             \
+    },                                                                             \
+    {                                                                              \
+        VMDIR_SF_INIT(.pszSyntaxOid, VDIR_OID_NUMERIC_STRING),                     \
+        VMDIR_SF_INIT(.pSyntax, NULL),                                             \
+        VMDIR_SF_INIT(.pNormalizeFunc, normalizeCaseExact),                        \
+        VMDIR_SF_INIT(.pCompareFunc, compareSubString)                             \
     },                                                                             \
 };
 
@@ -550,158 +423,388 @@
 #define NO_ATTR_ID_MAP               0
 #define MAX_RESERVED_ATTR_ID_MAP    99
 
-#define VDIR_SCHEMA_BOOTSTRAP_ENTRY_OBJECTCLASS_INITIALIZER  \
-{                                                            \
-    "subentry",                                              \
-    "subschema",                                             \
-};
-
-// Supported attributetypes in bootstrap schema entry
-#define VDIR_ATTRIBUTE_OBJECT_CLASSES        "objectClasses"
-#define VDIR_ATTRIBUTE_ATTRIBUTE_TYPES       "attributeTypes"
-#define VDIR_ATTRIBUTE_LADPSYNTAXES          "ldapSyntaxes"
-#define VDIR_ATTRIBUTE_MATCHINGRULEUSE       "matchingRuleUse"
-#define VDIR_ATTRIBUTE_MATCHINGRULES         "matchingRules"
-#define VDIR_ATTRIBUTE_SUBSCHEMA_SUBENTRY    "subschemaSubentry"
-#define VDIR_ATTRIBUTE_STRUCTURAL_OBJECTCLASS "structuralObjectClass"
-#define VDIR_ATTRIBUTE_ENTRYDN                "entryDN"
-#define VDIR_ATTRIBUTE_OBJECTCLASS            "objectClass"
-#define VDIR_ATTRIBUTE_DIT_STRUCTURERULES     "dITStructureRules"
-#define VDIR_ATTRIBUTE_DIT_CONTENTRULES       "dITContentRules"
-#define VDIR_ATTRIBUTE_NAMEFORMS              "nameForms"
-#define VDIR_ATTRIBUTE_EXTENSIBLE_OBJECT      "extensibleObject"
-#define VDIR_ATTRIBUTE_CREATE_TIMESTAMP       "createTimestamp"
-#define VDIR_ATTRIBUTE_MODIFY_TIMESTAMP       "modifyTimestamp"
-#define VDIR_ATTRIBUTE_ATTRIBUTETOIDMAP       "vmwAttributeToIdMap"
-#define VDIR_ATTRIBUTE_CN                     "cn"
-
-
-#define VDIR_MUTABLE_SCHEMA_ELEMENT_INITIALIZER              \
-{                                                            \
-    VDIR_ATTRIBUTE_OBJECT_CLASSES,                           \
-    VDIR_ATTRIBUTE_ATTRIBUTE_TYPES,                          \
-    VDIR_ATTRIBUTE_DIT_CONTENTRULES,                         \
-}
-
-#define VDIR_IMMUTABLE_SCHEMA_ELEMENT_INITIALIZER            \
-{                                                            \
-    VDIR_ATTRIBUTE_LADPSYNTAXES,                             \
-    VDIR_ATTRIBUTE_MATCHINGRULEUSE,                          \
-    VDIR_ATTRIBUTE_MATCHINGRULES,                            \
-    VDIR_ATTRIBUTE_DIT_STRUCTURERULES,                       \
-    VDIR_ATTRIBUTE_NAMEFORMS,                                \
-}
-
-// index into fix map VDIR_SCHEMA_BOOTSTRP_ATTR_INITIALIZER below
-#define VDIR_ATTRIBUTE_OBJECTCLASS_INDEX    8
-
-// The only thing we need to bootstrap schema is id and name
 // NOTE: order of fields MUST stay in sync with struct definition...
-#define VDIR_SCHEMA_BOOTSTRP_ATTR_INITIALIZER                                                           \
-{                                                                                                       \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 1),                                                                        \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 2.5.21.6 NAME 'objectClasses' )")                        \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 2),                                                                        \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 2.5.21.5 NAME 'attributeTypes' )")                       \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 3),                                                                        \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 1.3.6.1.4.1.1466.101.120.16 NAME 'ldapSyntaxes' )")      \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 4),                                                                        \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 2.5.21.8 NAME 'matchingRuleUse' )")                      \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 5),                                                                        \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 2.5.21.4 NAME 'matchingRules' )")                        \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 6),                                                                        \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 2.5.18.10 NAME 'subschemaSubentry' )")                   \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 7),                                                                        \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 2.5.21.9 NAME 'structuralObjectClass' )")                \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 8),                                                                        \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 1.3.6.1.1.20 NAME 'entryDN' )")                          \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 9),                                                                        \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 2.5.4.0 NAME 'objectClass' )")                           \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 10),                                                                       \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 2.5.21.1 NAME 'dITStructureRules' )")                    \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 11),                                                                       \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 2.5.21.2 NAME 'dITContentRules' )")                      \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 12),                                                                       \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 2.5.21.7 NAME 'nameForms' )")                            \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 13),                                                                       \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 1.3.6.1.4.1.1466.101.120.111 NAME 'extensibleObject' )") \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 14),                                                                       \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 2.5.18.1 NAME 'createTimestamp' )")                      \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 15),                                                                       \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 2.5.18.2 NAME 'modifyTimestamp' )")                      \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 16),                                                                       \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 999.999.0.1 NAME 'vmwAttributeToIdMap' )")               \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 17),                                                                       \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 2.5.4.3 NAME 'cn' )")                                    \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 18),                                                                       \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 999.999.0.4 NAME 'uSNCreated' )")                        \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 19),                                                                       \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 999.999.0.5 NAME 'uSNChanged' )")                        \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 20),                                                                       \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 999.999.0.9 NAME 'dn' )")                                \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 21),                                                                       \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 999.999.0.29 NAME 'vmwSecurityDescriptor' )")            \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, SCHEMA_BOOTSTRAP_EID_SEQ_ATTRID_22),                                       \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 999.999.0.32 NAME 'vmwEntryIdSequenceNumber' DESC 'ID NEEDS TO BE 22' )")  \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, SCHEMA_BOOTSTRAP_USN_SEQ_ATTRID_23),                                       \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 999.999.0.33 NAME 'vmwUSNSequenceNumber' DESC 'ID NEEDS TO BE 23' )") \
-    },                                                                                                  \
-    {                                                                                                   \
-    VMDIR_SF_INIT(.usAttrID, 24),                                                                       \
-    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ( 999.999.0.7 NAME 'objectGUID' DESC 'ID NEEDS TO BE 24' )")        \
-    },\
-}
-
-
-#define VDIR_SCHEMA_BOOTSTRP_OC_INITIALIZER                      \
-{                                                                \
-    "objectClasses: ( 2.5.20.1 NAME 'subschema' DESC 'RFC4512: controlling subschema (sub)entry' " \
-            "AUXILIARY MAY ( dITStructureRules $ nameForms $ ditContentRules $ ldapSyntaxes $ "\
-            "objectClasses $ attributeTypes $ matchingRules $ matchingRuleUse $ vmwAttributeToIdMap ) )",    \
-    "objectClasses: ( 2.5.17.0 NAME 'subentry' DESC 'RFC3672: subentry' SUP top STRUCTURAL MUST ( cn ) )" \
+#define VDIR_SCHEMA_BOOTSTRP_ATTR_INITIALIZER                           \
+{                                                                       \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 1),                                        \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.21.6"                                                 \
+            " NAME 'objectClasses'"                                     \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.15"                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 2),                                        \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.21.5 "                                                \
+            " NAME 'attributeTypes' "                                   \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.15"                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 3),                                        \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.3.6.1.4.1.1466.101.120.16"                              \
+            " NAME 'ldapSyntaxes'"                                      \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.5"                      \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 4),                                        \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.21.8"                                                 \
+            " NAME 'matchingRuleUse'"                                   \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.5"                      \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 5),                                        \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.21.4"                                                 \
+            " NAME 'matchingRules'"                                     \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.5"                      \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 6),                                        \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.18.10"                                                \
+            " NAME 'subSchemaSubentry'"                                 \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.12"                     \
+            " NO-USER-MODIFICATION )")                                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 7),                                        \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.21.9"                                                 \
+            " NAME 'structuralObjectClass'"                             \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.38 )")                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 8),                                        \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.3.6.1.1.20"                                             \
+            " NAME 'entryDN'"                                           \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.12"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION"                                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 9),                                        \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.4.0"                                                  \
+            " NAME 'objectClass'"                                       \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.38 )")                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 10),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.21.1"                                                 \
+            " NAME 'dITStructureRules'"                                 \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.17"                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 11),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.21.2"                                                 \
+            " NAME 'dITContentRules'"                                   \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.15"                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 12),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.21.7"                                                 \
+            " NAME 'nameForms'"                                         \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.35"                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 13),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.18.3"                                                 \
+            " NAME 'creatorsName'"                                      \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.12"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION"                                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 14),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.18.1"                                                 \
+            " NAME 'createTimeStamp'"                                   \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.24"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION"                                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 15),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.18.2"                                                 \
+            " NAME 'modifyTimeStamp'"                                   \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.24"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION"                                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 16),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " VMWare.DIR.attribute.0.1"                                 \
+            " NAME 'vmwAttributeToIdMap'"                               \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.15"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION"                                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 17),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.4.3"                                                  \
+            " NAME 'cn'"                                                \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.15"                     \
+            " SINGLE-VALUE )")                                          \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 18),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " VMWare.DIR.attribute.1.1"                                 \
+            " NAME 'uSNCreated'"                                        \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.27"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION"                                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 19),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " VMWare.DIR.attribute.1.2"                                 \
+            " NAME 'uSNChanged'"                                        \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.27"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION"                                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 20),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 999.999.0.9"                                              \
+            " NAME 'dn'"                                                \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 )")                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 21),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " VMWare.DIR.attribute.0.20"                                \
+            " NAME 'vmwSecurityDescriptor'"                             \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.40 )")                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, SCHEMA_BOOTSTRAP_EID_SEQ_ATTRID_22),       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " VMWare.DIR.attribute.0.23"                                \
+            " NAME 'vmwEntryIdSequenceNumber'"                          \
+            " DESC 'ID NEEDS TO BE 22'"                                 \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.27"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION"                                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, SCHEMA_BOOTSTRAP_USN_SEQ_ATTRID_23),       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " VMWare.DIR.attribute.0.24"                                \
+            " NAME 'vmwUSNSequenceNumber'"                              \
+            " DESC 'ID NEEDS TO BE 23'"                                 \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.27"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION"                                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 24),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " VMWare.DIR.attribute.1.4"                                 \
+            " NAME 'objectGUID'"                                        \
+            " DESC 'ID NEEDS TO BE 24'"                                 \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.15"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION"                                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 25),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.18.4"                                                 \
+            " NAME 'modifiersName'"                                     \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.12"                     \
+            " NO-USER-MODIFICATION"                                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 26),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.2.33"                                    \
+            " NAME 'isSingleValued'"                                    \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.7"                      \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION )")                                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 27),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.2.32"                                    \
+            " NAME 'attributeSyntax'"                                   \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.38"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION )")                                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 28),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.2.460"                                   \
+            " NAME 'lDAPDisplayName'"                                   \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.15"                     \
+            " SINGLE-VALUE )")                                          \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 29),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.2.30"                                    \
+            " NAME 'attributeID'"                                       \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.38"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION )")                                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 30),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.2.231"                                   \
+            " NAME 'oMSyntax'"                                          \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.27"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION )")                                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 31),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.4.148"                                   \
+            " NAME 'schemaIDGUID'"                                      \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.40"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION )")                                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 32),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.2.21"                                    \
+            " NAME 'subClassOf'"                                        \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.38"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION )")                                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 33),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.2.22"                                    \
+            " NAME 'governsID'"                                         \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.38"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION )")                                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 34),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.2.370"                                   \
+            " NAME 'objectClassCategory'"                               \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.27"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION )")                                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 35),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.4.783"                                   \
+            " NAME 'defaultObjectCategory'"                             \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.12"                     \
+            " SINGLE-VALUE )")                                          \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 36),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.4.197"                                   \
+            " NAME 'systemMustContain'"                                 \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.38"                     \
+            " NO-USER-MODIFICATION )")                                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 37),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.4.196"                                   \
+            " NAME 'systemMayContain'"                                  \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.38"                     \
+            " NO-USER-MODIFICATION )")                                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 38),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.4.198"                                   \
+            " NAME 'systemAuxiliaryClass'"                              \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.38"                     \
+            " NO-USER-MODIFICATION )")                                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 39),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.2.24"                                    \
+            " NAME 'mustContain'"                                       \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.38 )")                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 40),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.2.25"                                    \
+            " NAME 'mayContain'"                                        \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.38 )")                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 41),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.2.351"                                   \
+            " NAME 'auxiliaryClass'"                                    \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.38 )")                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 42),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.4.661"                                   \
+            " NAME 'isDefunct'"                                         \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.7"                      \
+            " SINGLE-VALUE )")                                          \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 43),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " VMWare.DIR.attribute.0.58"                                \
+            " NAME 'vmwAttributeUsage'"                                 \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.27"                     \
+            " SINGLE-VALUE"                                             \
+            " NO-USER-MODIFICATION )")                                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 44),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 2.5.4.13"                                                 \
+            " NAME 'description'"                                       \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )")                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 0),                                        \
+    VMDIR_SF_INIT(.pszDesc, NULL)                                       \
+    },                                                                  \
 }

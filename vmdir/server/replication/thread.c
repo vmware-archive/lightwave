@@ -36,6 +36,7 @@ static int
 ReplAddEntry(
     PVDIR_SCHEMA_CTX    pSchemaCtx,
     LDAPMessage *       entry,
+    PVDIR_SCHEMA_CTX*   ppOutSchemaCtx,
     BOOLEAN             bFirstReplicationCycle);
 
 static int
@@ -788,6 +789,7 @@ static int
 ReplAddEntry(
     PVDIR_SCHEMA_CTX    pSchemaCtx,
     LDAPMessage *       ldapMsg,
+    PVDIR_SCHEMA_CTX*   ppOutSchemaCtx,
     BOOLEAN             bFirstReplicationCycle)
 {
     int                 retVal = LDAP_SUCCESS;
@@ -800,6 +802,7 @@ ReplAddEntry(
     int                 dbRetVal = 0;
     PVDIR_ATTRIBUTE     pAttrAttrMetaData = NULL;
     int                 i = 0;
+    PVDIR_SCHEMA_CTX    pUpdateSchemaCtx = NULL;
 
     retVal = VmDirInitStackOperation( &op,
                                       VDIR_OPERATION_TYPE_REPL,
@@ -920,6 +923,22 @@ ReplAddEntry(
         BAIL_ON_VMDIR_ERROR( retVal );
     }
 
+    if (pEntry->dn.bvnorm_val)
+    {
+        VDIR_BERVALUE dn = pEntry->dn;
+        size_t offset = dn.bvnorm_len - (SCHEMA_NAMING_CONTEXT_DN_LEN);
+        if (VmDirStringCompareA(
+                dn.bvnorm_val + offset, SCHEMA_NAMING_CONTEXT_DN, FALSE) == 0)
+        {   // schema entry updated, refresh replication schema ctx.
+            assert( ppOutSchemaCtx );
+            retVal = VmDirSchemaCtxAcquire(&pUpdateSchemaCtx);
+            BAIL_ON_VMDIR_ERROR(retVal);
+            *ppOutSchemaCtx = pUpdateSchemaCtx;
+
+            VmDirSchemaCtxRelease(pSchemaCtx);
+        }
+    }
+
 cleanup:
     // pAttrAttrMetaData is local, needs to be freed within the call
     VmDirFreeAttribute( pAttrAttrMetaData );
@@ -929,6 +948,7 @@ cleanup:
     return retVal;
 
 error:
+    VmDirSchemaCtxRelease(pUpdateSchemaCtx);
 
     goto cleanup;
 } // Replicate Add Entry operation
@@ -1175,15 +1195,20 @@ txnretry:
     // ************************************************************************************
     }
 
-    if ((modOp.request.modifyReq.dn.bvnorm_val != NULL)     &&
-        VmDirStringCompareA(modOp.request.modifyReq.dn.bvnorm_val, SUB_SCHEMA_SUB_ENTRY_DN, FALSE) == 0)
-    {   // schema entry updated, refresh replication schema ctx.
-        assert( ppOutSchemaCtx );
-        retVal = VmDirSchemaCtxAcquire(&pUpdateSchemaCtx);
-        BAIL_ON_VMDIR_ERROR(retVal);
-        *ppOutSchemaCtx = pUpdateSchemaCtx;
+    if (modOp.request.modifyReq.dn.bvnorm_val)
+    {
+        VDIR_BERVALUE dn = modOp.request.modifyReq.dn;
+        size_t offset = dn.bvnorm_len - (SCHEMA_NAMING_CONTEXT_DN_LEN);
+        if (VmDirStringCompareA(
+                dn.bvnorm_val + offset, SCHEMA_NAMING_CONTEXT_DN, FALSE) == 0)
+        {   // schema entry updated, refresh replication schema ctx.
+            assert( ppOutSchemaCtx );
+            retVal = VmDirSchemaCtxAcquire(&pUpdateSchemaCtx);
+            BAIL_ON_VMDIR_ERROR(retVal);
+            *ppOutSchemaCtx = pUpdateSchemaCtx;
 
-        VmDirSchemaCtxRelease(pSchemaCtx);
+            VmDirSchemaCtxRelease(pSchemaCtx);
+        }
     }
 
 cleanup:
@@ -2925,7 +2950,10 @@ _VmDirProcessReplicationPage(
 
         if (entryState == LDAP_SYNC_ADD)
         {
-            errVal = ReplAddEntry( pSchemaCtx, entry, pContext->bFirstReplicationCycle );
+            errVal = ReplAddEntry( pSchemaCtx, entry, &pSchemaCtx,
+                    pContext->bFirstReplicationCycle );
+            pContext->pSchemaCtx = pSchemaCtx ;
+
             if (errVal == LDAP_NO_SUCH_OBJECT)
             {
                 // - out-of-sequence parent-child updates OR
@@ -2952,14 +2980,33 @@ _VmDirProcessReplicationPage(
             pPage->iEntriesProcessed++;
         }
 
-        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "_VmDirProcessReplicationPage: %s -> %d\n", pPage->pEntries[i].pszDn, pPage->pEntries[i].errVal);
+        if (errVal)
+        {
+            // TODO Consolidate error log and move this to internal operations
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                    "%s: sync_state = (%d) dn = (%s) error = (%d)",
+                    __FUNCTION__,
+                    entryState,
+                    pPage->pEntries[i].pszDn,
+                    pPage->pEntries[i].errVal);
+        }
+        else
+        {
+            VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
+                    "%s: sync_state = (%d) dn = (%s) error = (%d)",
+                    __FUNCTION__,
+                    entryState,
+                    pPage->pEntries[i].pszDn,
+                    pPage->pEntries[i].errVal);
+        }
     }
 
     VMDIR_LOG_INFO(
         LDAP_DEBUG_REPL,
-        "_VmDirProcessReplicationPage: error %d "
+        "%s: error %d "
         "filter: '%s' requested: %d received: %d last usn: %llu "
         "processed: %d nosuchobject: %d ",
+        __FUNCTION__,
         retVal,
         VDIR_SAFE_STRING(pPage->pszFilter),
         pPage->iEntriesRequested,

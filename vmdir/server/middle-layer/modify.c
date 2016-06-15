@@ -56,13 +56,6 @@ RemoveAttrVals(
 
 static
 int
-ModifyEntryStructureRuleCheck(
-    PVDIR_OPERATION      pOperation,
-    VDIR_MODIFICATION*   pMods,
-    PVDIR_ENTRY          pEntry);
-
-static
-int
 _VmDirExternalModsSanityCheck(
     PVDIR_OPERATION     pOp,
     PVDIR_MODIFICATION  pMods
@@ -115,10 +108,6 @@ VmDirModifyEntryCoreLogic(
         retVal = VmDirSchemaCheck(pEntry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Schema check failed - (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)));
-
-        // Schema structure rule check
-        retVal = ModifyEntryStructureRuleCheck(pOperation, modReq->mods, pEntry);
-        BAIL_ON_VMDIR_ERROR( retVal );
 
         // check and read lock dn referenced entries
         retVal = pOperation->pBEIF->pfnBEChkDNReference( pOperation->pBECtx, pEntry );
@@ -242,12 +231,13 @@ VmDirInternalModifyEntry(
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
                                   retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)) );
 
-    if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
-    {
-        // Execute pre modify plugin logic
-        retVal = VmDirExecutePreModApplyModifyPlugins(pOperation, NULL, retVal);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreModApplyModify plugin failed - (%u)",  retVal );
-    }
+    // Acquire schema modification mutex
+    retVal = VmDirSchemaModMutexAcquire(pOperation);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Failed to lock schema mod mutex", retVal );
+
+    // Execute pre modify plugin logic
+    retVal = VmDirExecutePreModApplyModifyPlugins(pOperation, NULL, retVal);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreModApplyModify plugin failed - (%u)",  retVal );
 
     // Normalize attribute values in mods
     retVal = VmDirNormalizeMods( pOperation->pSchemaCtx, modReq->mods, &pszLocalErrMsg );
@@ -351,7 +341,7 @@ txnretry:
 cleanup:
 
     {
-        int iPostCommitPluginRtn  = 0;
+        int iPostCommitPluginRtn = 0;
 
         // Execute post modify plugin logic
         iPostCommitPluginRtn = VmDirExecutePostModifyCommitPlugins(pOperation, &entry, retVal);
@@ -364,6 +354,9 @@ cleanup:
                       iPostCommitPluginRtn);
         }
     }
+
+    // Release schema modification mutex
+    (VOID)VmDirSchemaModMutexRelease(pOperation);
 
     VmDirFreeEntryContent ( &entry );
     VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
@@ -1342,48 +1335,4 @@ RemoveAttrVals(
     memset( &(eAttr->vals[k]), 0, sizeof(VDIR_BERVALUE) ); // set last BerValue.lberbv.bv_val to NULL;
 
     return;
-}
-
-/*
- * if pMods contain objectclass, verify structure rule integrity.
- * *
- * *********************************************************************************************
- * BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG - this is NOT complete
- * Correct logic is -
- * 1. check if structure objectclass is been modified
- * 2. check new structure objectclass is ok by its parent
- * 3. check new structure objectclass is ok by its children
- *
- * For now, only allow ADD new auxiliary objectclass.
- * Reject REPLACE and DELETE objectclass mod.
- * *********************************************************************************************
- *
- * RETURN:
- * LDAP_OPERATIONS_ERROR    - all other errors
- */
-static
-int
-ModifyEntryStructureRuleCheck(
-    PVDIR_OPERATION      pOperation,
-    VDIR_MODIFICATION*   pMods,
-    PVDIR_ENTRY          pEntry)
-{
-    int     iRetVal = 0;
-    VDIR_MODIFICATION*   pTmpMods = NULL;
-
-    assert(pOperation && pEntry);
-
-    for (pTmpMods = pMods; pTmpMods != NULL; pTmpMods = pTmpMods->next)
-    {
-        if (VmDirStringCompareA(pTmpMods->attr.type.lberbv.bv_val, "objectclass", FALSE) == 0)
-        {
-            if (pTmpMods->operation != MOD_OP_ADD)
-            {
-                iRetVal = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-                break;
-            }
-        }
-    }
-
-    return iRetVal;
 }

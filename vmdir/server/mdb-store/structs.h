@@ -76,6 +76,7 @@ typedef struct _VDIR_MDB_GLOBALS
     VDIR_MDB_INDEX_DB_COLLECTION    mdbIndexDBs;
     MDB_env *                       mdbEnv;
     MDB_dbi                         mdbSeqDBi;
+    MDB_dbi                         mdbGenericDBi;
 
 } VDIR_MDB_GLOBALS, *PVDIR_MDB_GLOBALS;
 

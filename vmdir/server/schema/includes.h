@@ -33,25 +33,10 @@
 // OpenLDAP ber library include files
 #include <lber.h>
 #include <ldap.h>
+#include <ldap_schema.h>
 #include <ldap_log.h>
 #include <lber_pvt.h>
 #include <lber-int.h>
-
-#include <vmdir.h>
-#include <vmdirtypes.h>
-#include <vmdirdefines.h>
-#include <vmdirerrors.h>
-#include <vmdirerrorcode.h>
-
-#include <vmdircommon.h>
-#include <srvcommon.h>
-
-#include <schema.h>
-
-#include "defines.h"
-#include "structs.h"
-#include "prototypes.h"
-#include "externs.h"
 
 #else
 
@@ -73,6 +58,7 @@
 // OpenLDAP ber library include files
 #include <lber.h>
 #include <ldap.h>
+#include <ldap_schema.h>
 #include <ldap_log.h>
 #include <lber_pvt.h>
 #include <lber-int.h>
@@ -82,6 +68,10 @@
 #include <lw/hash.h>
 #include <lw/security-types.h>
 
+#include "banned.h"
+
+#endif
+
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>
@@ -90,14 +80,12 @@
 
 #include <vmdircommon.h>
 #include <srvcommon.h>
-
+#include <backend.h>
 #include <schema.h>
+#include <middlelayer.h>
 
 #include "defines.h"
 #include "structs.h"
 #include "prototypes.h"
 #include "externs.h"
-
-#include "banned.h"
-
-#endif
+#include "legacy/defines.h"

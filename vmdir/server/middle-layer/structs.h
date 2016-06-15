@@ -29,8 +29,11 @@
 typedef struct _VDIR_OP_PLUGIN_INFO
 {
     // NOTE: order of fields MUST stay in sync with struct initializer...
-    BOOLEAN                         bCallAlways;
-    // call if bCallAlways == TRUE or prior pPluginFunc call return 0/SUCCESS
+    USHORT                          usOpMask;
+    BOOLEAN                         bSkipOnError;
+    // call if
+    // 1) usOpMask & pOperation->opType == TRUE and
+    // 2) bSkipOnError == FALSE or prior pPluginFunc call return 0/SUCCESS
     VDIR_OP_PLUGIN_FUNCTION         pPluginFunc;
     struct _VDIR_OP_PLUGIN_INFO*    pNext;
 
@@ -104,7 +107,7 @@ typedef struct _VDIR_LOCKOUT_CACHE
 {
     // NOTE: order of fields MUST stay in sync with struct initializer...
     PVMDIR_MUTEX        mutex;
-    PLW_HASHTABLE    pHashTbl;
+    PLW_HASHTABLE       pHashTbl;
 
 } VDIR_LOCKOUT_CACHE, *PVDIR_LOCKOUT_CACHE;
 

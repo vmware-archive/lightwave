@@ -12,5 +12,4 @@ SUBDIRS = \
     vdcupgrade \
     vdcleavefed \
     vdcresetMachineActCred \
-    vdcmetric \
-    vdcschemaadmin
+    vdcmetric

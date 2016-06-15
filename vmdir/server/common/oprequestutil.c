@@ -22,11 +22,12 @@ VmDirModificationFree(
     PVDIR_MODIFICATION pMod
     )
 {
-    if (pMod != NULL)
+    if (pMod)
     {
-        VmDirFreeBervalArrayContent( pMod->attr.vals, pMod->attr.numVals );
-        VMDIR_SAFE_FREE_MEMORY( pMod->attr.vals );
-        VMDIR_SAFE_FREE_MEMORY( pMod );
+        VmDirFreeBervalContent(&pMod->attr.type);
+        VmDirFreeBervalArrayContent(pMod->attr.vals, pMod->attr.numVals);
+        VMDIR_SAFE_FREE_MEMORY(pMod->attr.vals);
+        VMDIR_SAFE_FREE_MEMORY(pMod);
     }
 }
 
