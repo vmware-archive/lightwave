@@ -433,6 +433,10 @@ extern "C" {
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096
 
+/*  LDAP_CONTROL_CONSISTENT_WRITE value is temporary
+    - actual value will be finalized later and define also will be moved to appropriate file */
+#define LDAP_CONTROL_CONSISTENT_WRITE                  "2.16.840.1.113730.3.4.5"
+
 #ifndef _WIN32
 #define VMDIR_NCALRPC_END_POINT "vmdirsvc"
 #else

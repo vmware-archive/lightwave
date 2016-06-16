@@ -210,6 +210,21 @@ VmDirSendLdapResult(
        }
    }
 
+   /* Send controls only if local write succeeds - strong consistency write */
+   if (op->reqControls != NULL &&
+       !IsNullOrEmptyString(op->reqControls->type) &&
+       !VmDirStringCompareA(op->reqControls->type, LDAP_CONTROL_CONSISTENT_WRITE, TRUE) &&
+       op->ldapResult.errCode == LDAP_SUCCESS)
+   {
+       VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirSendLdapResult: Write consistency done Control value");
+
+       if (WriteConsistencyWriteDoneControl(op, ber) != LDAP_SUCCESS)
+       {
+          VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirSendLdapResult: WriteConsistencyWriteDoneControl failed");
+          goto done;
+       }
+   }
+
    if (ber_printf( ber, "N}" ) == -1)
    {
       VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SendLdapResult: ber_printf (to print msgId ...) failed" );

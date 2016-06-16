@@ -661,11 +661,21 @@ error:
 
 DWORD
 VmDirGenerateGUID(
-    PSTR pszGuid
+    PSTR*   ppszGuid
     )
 {
-    DWORD       dwError = 0;
-    uuid_t      guid;
+    DWORD   dwError = 0;
+    uuid_t  guid;
+    PSTR    pszGuid = NULL;
+
+    if (!ppszGuid)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(VMDIR_GUID_STR_LEN, (PVOID*)&pszGuid);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirUuidGenerate(&guid);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -673,10 +683,13 @@ VmDirGenerateGUID(
     dwError = VmDirUuidToStringLower( &guid, pszGuid, VMDIR_GUID_STR_LEN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    *ppszGuid = pszGuid;
+
 cleanup:
     return dwError;
 error:
     VmDirLog( LDAP_DEBUG_TRACE, "VmDirGenerateGUID failed. Error(%u)", dwError);
+    VMDIR_SAFE_FREE_MEMORY(pszGuid);
     goto cleanup;
 }
 

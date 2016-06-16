@@ -1,5 +1,4 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using VMDirInterop;
 using VMDirInterop.Interfaces;
@@ -7,18 +6,13 @@ using VMDirInterop.LDAP;
 
 namespace LdapTest
 {
-    [TestClass]
-    public class LdapDelete
+    public class LdapDeleteTest
     {
-
         static string myDN;
         static string hostName;
         static string password;
-        static string dllPath;
         static int portNumber;
         static string upn;
-        static string basedn;
-        static string basedn2;
 
         static string myDN_F;
         static string hostName_F;
@@ -27,19 +21,15 @@ namespace LdapTest
         static string upn_F;
         static string basedn_F;
 
-
-        [ClassInitialize()]
-        public static void MyClassInitialize(TestContext testContext)
+        public static void RunTests(Credentials cred)
         {
-            var path = @"..\..\..\input.xml";
-            Credentials cred = Input.ReadXML(path);
+            System.Console.WriteLine("Running delete tests ...");
+
             myDN = cred.myDN;
             hostName = cred.hostName;
             upn = cred.upn;
             password = cred.password;
             portNumber = cred.portNumber;
-            basedn = "cn=ExampleAdd,cn=Users,dc=vsphere,dc=local";
-            basedn2 = "cn=ExampleAddSasl,cn=Users,dc=vsphere,dc=local";
 
             //False credentials
             myDN_F = cred.myDN_F;
@@ -49,24 +39,22 @@ namespace LdapTest
             portNumber_F = cred.portNumber_F;
             basedn_F = "cn=Cap150,cn=Users,dc=vsphere,dc=local";
 
-            dllPath = @"C:\Users\aalokr\workspaces_new\aalokr_lotus_ws_2k8_dev_new\lotus\lotus-main\vmdir\interop\csharp\VmDirInterop\LdapTest\";        //put all the dll in the LdapTest Folder
-
-            Dll.SetDllDirectory(dllPath);
+            Ldap_Delete_Success();
+            Ldap_Delete_SASL_Success();
+            Ldap_Delete_Failure();
+            Ldap_Delete_SASL_Failure();
         }
 
-
-
-        [TestMethod]
-        public void Ldap_Delete_Success()
+        public static void Ldap_Delete_Success()
         {
             ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
-            Assert.IsNotNull(ldapConnection);
-
             ldapConnection.LdapSimpleBindS(myDN, password);
 
+            LdapUser user = LdapUser.CreateRandomUser(ldapConnection);
+
             try
             {
-                ldapConnection.DeleteObject(basedn);
+                ldapConnection.DeleteObject(user.DN);
             }
             catch
             {
@@ -74,17 +62,16 @@ namespace LdapTest
             }
         }
 
-        [TestMethod]
-        public void Ldap_Delete_SASL_Success()
+        public static void Ldap_Delete_SASL_Success()
         {
             ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
-            Assert.IsNotNull(ldapConnection);
-
             ldapConnection.VmDirSafeLDAPBind(hostName, upn, password);
+
+            LdapUser user = LdapUser.CreateRandomUser(ldapConnection);
 
             try
             {
-                ldapConnection.DeleteObject(basedn2);
+                ldapConnection.DeleteObject(user.DN);
             }
             catch
             {
@@ -92,9 +79,7 @@ namespace LdapTest
             }
         }
 
-
-        [TestMethod]
-        public void Ldap_Delete_Failure()
+        public static void Ldap_Delete_Failure()
         {
             ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
             Assert.IsNotNull(ldapConnection);
@@ -121,8 +106,7 @@ namespace LdapTest
 
         }
 
-        [TestMethod]
-        public void Ldap_Delete_SASL_Failure()
+        public static void Ldap_Delete_SASL_Failure()
         {
             ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
             Assert.IsNotNull(ldapConnection);

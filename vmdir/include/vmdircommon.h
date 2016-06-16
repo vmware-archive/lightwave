@@ -1130,7 +1130,7 @@ VmDirAllocateStringFromSocket(
 
 DWORD
 VmDirGenerateGUID(
-    PSTR pszGuid
+    PSTR*   ppszGuid
     );
 
 VOID

@@ -170,11 +170,6 @@ VmDirLdapAtGetDiff(
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = _LdapSchemaObjectDiffAddMod(pAtDiff, MOD_OP_ADD,
-                ATTR_LDAP_DISPLAYNAME,
-                pNewAt->pszName, NULL);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = _LdapSchemaObjectDiffAddMod(pAtDiff, MOD_OP_ADD,
                 ATTR_VMW_ATTRIBUTE_USAGE,
                 pszVmwAttrUsage, NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -187,11 +182,6 @@ VmDirLdapAtGetDiff(
         dwError = _LdapSchemaObjectDiffAddMod(pAtDiff, MOD_OP_ADD,
                 ATTR_OMSYNTAX,
                 "1", NULL);                     // TBD
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = _LdapSchemaObjectDiffAddMod(pAtDiff, MOD_OP_ADD,
-                ATTR_SCHEMAID_GUID,
-                "schemaguiddefault", NULL);     // TBD
         BAIL_ON_VMDIR_ERROR(dwError);
 
         if (pNewAt->pszDesc)
@@ -286,16 +276,6 @@ VmDirLdapOcGetDiff(
         dwError = _LdapSchemaObjectDiffAddMod(pOcDiff, MOD_OP_ADD,
                 ATTR_OBJECT_CLASS,
                 OC_CLASS_SCHEMA, NULL);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = _LdapSchemaObjectDiffAddMod(pOcDiff, MOD_OP_ADD,
-                ATTR_DEFAULT_OBJECT_CATEGORY,
-                SCHEMA_NAMING_CONTEXT_DN, NULL);    // TBD
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = _LdapSchemaObjectDiffAddMod(pOcDiff, MOD_OP_ADD,
-                ATTR_SCHEMAID_GUID,
-                "schemaguiddefault", NULL);         // TBD
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = _LdapSchemaObjectDiffAddMod(pOcDiff, MOD_OP_ADD,

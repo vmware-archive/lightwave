@@ -32,7 +32,7 @@ VmDirSetupLdu(
     LDAP*       pLd = NULL;
     PSTR        pszDN = NULL;
     PSTR        pszSiteGuid = NULL;
-    CHAR        pszLduGuid[VMDIR_GUID_STR_LEN];
+    PSTR        pszLduGuid = NULL;
 
     if (IsNullOrEmptyString(pszHostURI) ||
         IsNullOrEmptyString(pszDomain) ||
@@ -43,7 +43,7 @@ VmDirSetupLdu(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (VmDirGenerateGUID(pszLduGuid))
+    if (VmDirGenerateGUID(&pszLduGuid))
     {
         dwError = LDAP_OPERATIONS_ERROR;
         VmDirLog( LDAP_DEBUG_ANY, "VmDirSetupLdu: VmDirGenerateGUID() failed.");
@@ -82,6 +82,7 @@ cleanup:
 
     VMDIR_SAFE_FREE_MEMORY(pszDN);
     VMDIR_SAFE_FREE_MEMORY(pszSiteGuid);
+    VMDIR_SAFE_FREE_MEMORY(pszLduGuid);
 
     if (pLd)
     {
