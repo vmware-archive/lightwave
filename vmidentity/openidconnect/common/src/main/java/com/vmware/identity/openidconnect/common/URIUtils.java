@@ -31,7 +31,7 @@ import org.apache.http.message.BasicNameValuePair;
 /**
  * @author Yehia Zayour
  */
-public class URIUtils {
+public final class URIUtils {
     private URIUtils() {
     }
 

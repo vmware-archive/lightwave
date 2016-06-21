@@ -63,23 +63,23 @@ import com.vmware.identity.openidconnect.client.ResourceServerAccessToken;
 import com.vmware.identity.openidconnect.client.SSLConnectionException;
 import com.vmware.identity.openidconnect.client.TokenSpec;
 import com.vmware.identity.openidconnect.client.TokenValidationException;
-import com.vmware.identity.openidconnect.common.AccessToken;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.AuthorizationCodeGrant;
 import com.vmware.identity.openidconnect.common.ClientID;
-import com.vmware.identity.openidconnect.common.IDToken;
 import com.vmware.identity.openidconnect.common.Nonce;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.ProviderMetadata;
-import com.vmware.identity.openidconnect.common.RefreshToken;
 import com.vmware.identity.openidconnect.common.RefreshTokenGrant;
 import com.vmware.identity.openidconnect.common.ResponseMode;
 import com.vmware.identity.openidconnect.common.ResponseType;
 import com.vmware.identity.openidconnect.common.ResponseTypeValue;
-import com.vmware.identity.openidconnect.common.ServerIssuedToken;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.State;
 import com.vmware.identity.openidconnect.common.TokenType;
+import com.vmware.identity.openidconnect.protocol.AccessToken;
+import com.vmware.identity.openidconnect.protocol.IDToken;
+import com.vmware.identity.openidconnect.protocol.RefreshToken;
+import com.vmware.identity.openidconnect.protocol.ServerIssuedToken;
 import com.vmware.identity.rest.afd.client.AfdClient;
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.provider.VecsLoadStoreParameter;
@@ -143,8 +143,8 @@ public class RelyingPartyController {
             modelMap.addAttribute("displayText", String.format("welcome %s, you are now logged in!", getDisplayName(tokens.getClientIDToken())));
             modelMap.addAttribute("clientId", clientId);
             modelMap.addAttribute("id_token", tokens.getClientIDToken().serialize());
-            modelMap.addAttribute("access_token", tokens.getAccessToken().serialize());
-            modelMap.addAttribute("refresh_token", (tokens.getRefreshToken() == null) ? null : tokens.getRefreshToken().serialize());
+            modelMap.addAttribute("access_token", tokens.getAccessToken().getValue());
+            modelMap.addAttribute("refresh_token", (tokens.getRefreshToken() == null) ? null : tokens.getRefreshToken().getValue());
         } else {
             modelMap.addAttribute("loggedIn", false);
             modelMap.addAttribute("displayText", "");
@@ -158,19 +158,20 @@ public class RelyingPartyController {
     public void loginAuthzCodeFlowFormResponse(
             HttpServletRequest request,
             HttpServletResponse response) throws OIDCClientException {
-        login(request, response, ResponseType.authorizationCode(), ResponseMode.FORM_POST, URI.create(redirectEndpointUrlAuthzCodeFlowFormResponse));
+        login(request, response, TokenType.HOK, ResponseType.authorizationCode(), ResponseMode.FORM_POST, URI.create(redirectEndpointUrlAuthzCodeFlowFormResponse));
     }
 
     @RequestMapping(value = "/login_authz_code_flow_query_response", method = RequestMethod.POST)
     public void loginAuthzCodeFlowQueryResponse(
             HttpServletRequest request,
             HttpServletResponse response) throws OIDCClientException {
-        login(request, response, ResponseType.authorizationCode(), ResponseMode.QUERY, URI.create(redirectEndpointUrlAuthzCodeFlowQueryResponse));
+        login(request, response, TokenType.HOK, ResponseType.authorizationCode(), ResponseMode.QUERY, URI.create(redirectEndpointUrlAuthzCodeFlowQueryResponse));
     }
 
     private void login(
             HttpServletRequest request,
             HttpServletResponse response,
+            TokenType tokenType,
             ResponseType responseType,
             ResponseMode responseMode,
             URI redirectUri) throws OIDCClientException {
@@ -182,7 +183,7 @@ public class RelyingPartyController {
 
         boolean requestRefreshToken = responseType.contains(ResponseTypeValue.AUTHORIZATION_CODE);
 
-        TokenSpec tokenSpec = new TokenSpec.Builder().
+        TokenSpec tokenSpec = new TokenSpec.Builder(tokenType).
                 refreshToken(requestRefreshToken).
                 idTokenGroups(GroupMembershipType.FULL).
                 accessTokenGroups(GroupMembershipType.FILTERED).
@@ -201,14 +202,14 @@ public class RelyingPartyController {
     public void loginImplicitFlowFormResponse(
             HttpServletRequest request,
             HttpServletResponse response) throws OIDCClientException {
-        login(request, response, ResponseType.idTokenAccessToken(), ResponseMode.FORM_POST, URI.create(redirectEndpointUrlImplicitFlowFormResponse));
+        login(request, response, TokenType.BEARER, ResponseType.idTokenAccessToken(), ResponseMode.FORM_POST, URI.create(redirectEndpointUrlImplicitFlowFormResponse));
     }
 
     @RequestMapping(value = "/login_implicit_flow_fragment_response", method = RequestMethod.POST)
     public void loginImplicitFlowFragmentResponse(
             HttpServletRequest request,
             HttpServletResponse response) throws OIDCClientException {
-        login(request, response, ResponseType.idTokenAccessToken(), ResponseMode.FRAGMENT, URI.create(redirectEndpointUrlImplicitFlowFragmentResponse));
+        login(request, response, TokenType.BEARER, ResponseType.idTokenAccessToken(), ResponseMode.FRAGMENT, URI.create(redirectEndpointUrlImplicitFlowFragmentResponse));
     }
 
     @RequestMapping(value = "/redirect_authz_code_flow_form_response", method = RequestMethod.POST)
@@ -242,12 +243,13 @@ public class RelyingPartyController {
         assert Objects.equals(tokens.getClientIDToken().getNonce(), nonce);
 
         ResourceServerAccessToken.build(
-                tokens.getAccessToken().serialize(),
+                tokens.getAccessToken().getValue(),
                 providerRSAPublicKey,
+                providerMetadata.getIssuer(),
                 resourceServers[0],
                 CLOCK_TOLERANCE_SECONDS);
 
-        OIDCTokens tokensNotUsed = client.acquireTokens(new RefreshTokenGrant(tokens.getRefreshToken()), TokenSpec.EMPTY);
+        OIDCTokens tokensNotUsed = client.acquireTokens(new RefreshTokenGrant(tokens.getRefreshToken().getValue()), TokenSpec.EMPTY);
         validateTokenResponse(tokensNotUsed, TokenType.HOK);
 
         SessionID sessionId = new SessionID();
@@ -264,6 +266,7 @@ public class RelyingPartyController {
         AuthenticationTokensResponse authnTokensResponse = ListenerHelper.parseAuthenticationTokensResponse(
                 request,
                 clientConfig.getConnectionConfig().getProviderPublicKey(),
+                clientConfig.getConnectionConfig().getIssuer(),
                 clientConfig.getClientId(),
                 clientConfig.getClockToleranceInSeconds());
         State state = authnTokensResponse.getState();
@@ -276,8 +279,9 @@ public class RelyingPartyController {
         assert Objects.equals(tokens.getClientIDToken().getNonce(), nonce);
 
         ResourceServerAccessToken.build(
-                tokens.getAccessToken().serialize(),
+                tokens.getAccessToken().getValue(),
                 providerRSAPublicKey,
+                providerMetadata.getIssuer(),
                 resourceServers[0],
                 CLOCK_TOLERANCE_SECONDS);
 
@@ -435,15 +439,19 @@ public class RelyingPartyController {
 
     private void validateTokenResponse(OIDCTokens tokens, TokenType expectedTokenType) {
         IDToken idToken;
+        AccessToken accessToken;
+        RefreshToken refreshToken;
         try {
             idToken = IDToken.parse(tokens.getClientIDToken().serialize());
+            accessToken = AccessToken.parse(tokens.getAccessToken().getValue());
+            refreshToken = tokens.getRefreshToken() == null ? null : RefreshToken.parse(tokens.getRefreshToken().getValue());
         } catch (ParseException e) {
             throw new IllegalStateException(e);
         }
         validateIdToken(idToken, expectedTokenType);
-        validateAccessToken(tokens.getAccessToken(), expectedTokenType);
-        if (tokens.getRefreshToken() != null) {
-            validateRefreshToken(tokens.getRefreshToken(), expectedTokenType);
+        validateAccessToken(accessToken, expectedTokenType);
+        if (refreshToken != null) {
+            validateRefreshToken(refreshToken, expectedTokenType);
         }
     }
 

@@ -31,13 +31,13 @@ import java.util.UUID;
 
 import org.junit.AfterClass;
 
-import com.vmware.identity.openidconnect.common.AccessToken;
 import com.vmware.identity.openidconnect.common.ClientAuthenticationMethod;
 import com.vmware.identity.openidconnect.common.ClientCredentialsGrant;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.PasswordGrant;
 import com.vmware.identity.openidconnect.common.ProviderMetadata;
 import com.vmware.identity.openidconnect.common.SolutionUserCredentialsGrant;
+import com.vmware.identity.openidconnect.common.TokenType;
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.idm.client.IdmClient;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
@@ -108,7 +108,7 @@ public class OIDCClientITBase {
         passwordGrant = new PasswordGrant(
                 username,
                 password);
-        TokenSpec tokenSpec = new TokenSpec.Builder().resourceServers(Arrays.asList("rs_admin_server")).build();
+        TokenSpec tokenSpec = new TokenSpec.Builder(TokenType.BEARER).resourceServers(Arrays.asList("rs_admin_server")).build();
         OIDCTokens oidcTokens = nonRegNoHOKConfigClient.acquireTokens(passwordGrant, tokenSpec);
         accessToken = oidcTokens.getAccessToken();
 
@@ -182,16 +182,16 @@ public class OIDCClientITBase {
         clientConfig = new ClientConfig(connectionConfig, clientId, holderOfKeyConfig, haConfig);
         regClientWithHA = new OIDCClient(clientConfig);
 
-        withRefreshSpec = new TokenSpec.Builder().
+        withRefreshSpec = new TokenSpec.Builder(TokenType.BEARER).
                 refreshToken(true).
                 idTokenGroups(GroupMembershipType.FULL).
                 accessTokenGroups(GroupMembershipType.FULL).
                 resourceServers(Arrays.asList("rs_admin_server")).build();
-        withoutRefreshSpec = new TokenSpec.Builder().
+        withoutRefreshSpec = new TokenSpec.Builder(TokenType.BEARER).
                 idTokenGroups(GroupMembershipType.FULL).
                 accessTokenGroups(GroupMembershipType.FULL).
                 resourceServers(Arrays.asList("rs_admin_server")).build();
-        groupFilteringSpec = new TokenSpec.Builder().
+        groupFilteringSpec = new TokenSpec.Builder(TokenType.BEARER).
                 idTokenGroups(GroupMembershipType.NONE).
                 accessTokenGroups(GroupMembershipType.FILTERED).
                 resourceServers(Arrays.asList(RESOURCE_SERVER_NAME)).build();

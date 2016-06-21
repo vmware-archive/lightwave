@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuite tests="4" failures="0" name="com.vmware.identity.openidconnect.protocol.AuthenticationErrorResponseTest" time="0.009" errors="0" skipped="0">
+  <properties>
+    <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
+    <property name="sun.boot.library.path" value="/var/opt/OpenJDK-1.8.0.92-bin/jre/lib/amd64"/>
+    <property name="java.vm.version" value="25.92-b14"/>
+    <property name="java.vm.vendor" value="Oracle Corporation"/>
+    <property name="maven.multiModuleProjectDirectory" value="/root/workspaces/github/lightwave-dev/vmidentity/build/rpmbuild/BUILD/openidconnect"/>
+    <property name="java.vendor.url" value="http://java.oracle.com/"/>
+    <property name="path.separator" value=":"/>
+    <property name="guice.disable.misplaced.annotation.check" value="true"/>
+    <property name="java.vm.name" value="OpenJDK 64-Bit Server VM"/>
+    <property name="file.encoding.pkg" value="sun.io"/>
+    <property name="user.country" value="US"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="sun.os.patch.level" value="unknown"/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="user.dir" value="/root/workspaces/github/lightwave-dev/vmidentity/openidconnect"/>
+    <property name="java.runtime.version" value="1.8.0_92-BLFS-b14"/>
+    <property name="java.awt.graphicsenv" value="sun.awt.X11GraphicsEnvironment"/>
+    <property name="java.endorsed.dirs" value="/var/opt/OpenJDK-1.8.0.92-bin/jre/lib/endorsed"/>
+    <property name="os.arch" value="amd64"/>
+    <property name="java.io.tmpdir" value="/tmp"/>
+    <property name="line.separator" value="
+"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="os.name" value="Linux"/>
+    <property name="classworlds.conf" value="/var/opt/apache-maven-3.3.9/bin/m2.conf"/>
+    <property name="sun.jnu.encoding" value="ANSI_X3.4-1968"/>
+    <property name="java.library.path" value="/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="java.class.version" value="52.0"/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="os.version" value="4.2.0"/>
+    <property name="user.home" value="/root"/>
+    <property name="user.timezone" value="UTC"/>
+    <property name="java.awt.printerjob" value="sun.print.PSPrinterJob"/>
+    <property name="file.encoding" value="ANSI_X3.4-1968"/>
+    <property name="java.specification.version" value="1.8"/>
+    <property name="user.name" value="root"/>
+    <property name="java.class.path" value="/var/opt/apache-maven-3.3.9/boot/plexus-classworlds-2.5.2.jar"/>
+    <property name="java.vm.specification.version" value="1.8"/>
+    <property name="sun.arch.data.model" value="64"/>
+    <property name="java.home" value="/var/opt/OpenJDK-1.8.0.92-bin/jre"/>
+    <property name="sun.java.command" value="org.codehaus.plexus.classworlds.launcher.Launcher -s settings.xml clean install"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="user.language" value="en"/>
+    <property name="awt.toolkit" value="sun.awt.X11.XToolkit"/>
+    <property name="java.vm.info" value="mixed mode"/>
+    <property name="java.version" value="1.8.0_92-BLFS"/>
+    <property name="java.ext.dirs" value="/var/opt/OpenJDK-1.8.0.92-bin/jre/lib/ext:/usr/java/packages/lib/ext"/>
+    <property name="securerandom.source" value="file:/dev/./urandom"/>
+    <property name="sun.boot.class.path" value="/var/opt/OpenJDK-1.8.0.92-bin/jre/lib/resources.jar:/var/opt/OpenJDK-1.8.0.92-bin/jre/lib/rt.jar:/var/opt/OpenJDK-1.8.0.92-bin/jre/lib/sunrsasign.jar:/var/opt/OpenJDK-1.8.0.92-bin/jre/lib/jsse.jar:/var/opt/OpenJDK-1.8.0.92-bin/jre/lib/jce.jar:/var/opt/OpenJDK-1.8.0.92-bin/jre/lib/charsets.jar:/var/opt/OpenJDK-1.8.0.92-bin/jre/lib/jfr.jar:/var/opt/OpenJDK-1.8.0.92-bin/jre/classes"/>
+    <property name="java.vendor" value="Oracle Corporation"/>
+    <property name="maven.home" value="/var/opt/apache-maven-3.3.9"/>
+    <property name="file.separator" value="/"/>
+    <property name="java.vendor.url.bug" value="http://bugreport.sun.com/bugreport/"/>
+    <property name="sun.cpu.endian" value="little"/>
+    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
+    <property name="sun.cpu.isalist" value=""/>
+  </properties>
+  <testcase classname="com.vmware.identity.openidconnect.protocol.AuthenticationErrorResponseTest" name="testParseError" time="0.002"/>
+  <testcase classname="com.vmware.identity.openidconnect.protocol.AuthenticationErrorResponseTest" name="testSerialize" time="0.005"/>
+  <testcase classname="com.vmware.identity.openidconnect.protocol.AuthenticationErrorResponseTest" name="testParseErrorInvalidState" time="0.001"/>
+  <testcase classname="com.vmware.identity.openidconnect.protocol.AuthenticationErrorResponseTest" name="testParseSuccess" time="0.001"/>
+</testsuite>

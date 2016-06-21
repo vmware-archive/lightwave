@@ -1,0 +1,11 @@
+com/vmware/identity/openidconnect/protocol/LogoutErrorResponseTest.class
+com/vmware/identity/openidconnect/protocol/TokenRequestTest.class
+com/vmware/identity/openidconnect/protocol/TokenRequestTest$1.class
+com/vmware/identity/openidconnect/protocol/TokenSuccessResponseTest.class
+com/vmware/identity/openidconnect/protocol/TokenErrorResponseTest.class
+com/vmware/identity/openidconnect/protocol/AuthenticationSuccessResponseTest.class
+com/vmware/identity/openidconnect/protocol/LogoutSuccessResponseTest.class
+com/vmware/identity/openidconnect/protocol/AuthenticationRequestTest.class
+com/vmware/identity/openidconnect/protocol/TestContext.class
+com/vmware/identity/openidconnect/protocol/LogoutRequestTest.class
+com/vmware/identity/openidconnect/protocol/AuthenticationErrorResponseTest.class

@@ -16,15 +16,12 @@ package com.vmware.identity.openidconnect.client;
 
 import org.apache.commons.lang3.Validate;
 
-import com.vmware.identity.openidconnect.common.AccessToken;
-import com.vmware.identity.openidconnect.common.RefreshToken;
-
 /**
  * OIDC Tokens, contain all tokens
  *
  * @author Jun Sun
  */
-public class OIDCTokens {
+public final class OIDCTokens {
 
     private final ClientIDToken clientIdToken;
     private final AccessToken accessToken;
@@ -36,7 +33,7 @@ public class OIDCTokens {
      * @param accessToken       access token
      * @param refreshToken      refresh token
      */
-    public OIDCTokens(ClientIDToken clientIdToken, AccessToken accessToken, RefreshToken refreshToken) {
+    OIDCTokens(ClientIDToken clientIdToken, AccessToken accessToken, RefreshToken refreshToken) {
         Validate.notNull(clientIdToken, "clientIdToken");
 
         this.clientIdToken = clientIdToken;

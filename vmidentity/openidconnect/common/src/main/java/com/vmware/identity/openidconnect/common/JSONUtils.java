@@ -26,7 +26,7 @@ import com.nimbusds.jwt.SignedJWT;
 /**
  * @author Yehia Zayour
  */
-public class JSONUtils {
+public final class JSONUtils {
     private JSONUtils() {
     }
 

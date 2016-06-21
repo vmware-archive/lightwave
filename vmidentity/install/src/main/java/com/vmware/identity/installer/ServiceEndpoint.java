@@ -1,5 +1,5 @@
 /* **********************************************************************
- * Copyright 2010 VMware, Inc.  All rights reserved. 
+ * Copyright 2010 VMware, Inc.  All rights reserved. VMware Confidential
  * **********************************************************************/
 package com.vmware.identity.installer;
 

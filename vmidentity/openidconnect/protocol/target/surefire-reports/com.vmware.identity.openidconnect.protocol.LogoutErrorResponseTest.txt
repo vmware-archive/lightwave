@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.vmware.identity.openidconnect.protocol.LogoutErrorResponseTest
+-------------------------------------------------------------------------------
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.091 sec

@@ -41,7 +41,7 @@
  * S-1-5-80-0
  */
 static
-IDM_WELL_KNOWN_SID SpecialSidPrefixes[] = 
+IDM_WELL_KNOWN_SID SpecialSidPrefixes[] =
 {
     { "S-1-5-5-X-Y",
       "Logon Session" },

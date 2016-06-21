@@ -21,7 +21,7 @@
  *
  *        Identity Manager - Common utilities
  *
- *        Common Definitions 
+ *        Common Definitions
  *
  * Authors: Sriram Nambakam (snambakam@vmware.com)
  *

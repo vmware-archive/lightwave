@@ -22,7 +22,7 @@ import org.apache.commons.lang3.Validate;
 /**
  * @author Yehia Zayour
  */
-public class GSSTicketGrant extends AuthorizationGrant {
+public final class GSSTicketGrant extends AuthorizationGrant {
     private static final GrantType GRANT_TYPE = GrantType.GSS_TICKET;
 
     private final String contextId;

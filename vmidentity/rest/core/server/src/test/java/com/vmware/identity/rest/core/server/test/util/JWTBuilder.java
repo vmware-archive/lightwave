@@ -60,7 +60,7 @@ public class JWTBuilder {
     }
 
     public JWTBuilder(TokenType type, PrivateKey privateKey) {
-        this(ACCESS_TOKEN_CLASS, TokenType.BEARER, privateKey);
+        this(ACCESS_TOKEN_CLASS, type, privateKey);
     }
 
     public JWTBuilder(String tokenClass, TokenType type, PrivateKey privateKey) {

@@ -1,5 +1,5 @@
 /* **********************************************************************
- * Copyright 2015 VMware, Inc.  All rights reserved. 
+ * Copyright 2015 VMware, Inc.  All rights reserved. VMware Confidential
  * *********************************************************************/
 
 package com.vmware.identity.configure;
@@ -15,8 +15,6 @@ public interface InstallerHelper {
     public String getVmcaSvcChkCommand(String hostname);
 
     public String getConfigFolderPath();
-
-    public String getInitTcInstancePath();
 
     public String getReverseProxyServiceLog();
 
@@ -38,8 +36,6 @@ public interface InstallerHelper {
 
     public String getLogPaths();
 
-    public String getTCSetenvName();
-
     public String getTCBase();
 
     public String getConfigureStsPath();
@@ -47,10 +43,6 @@ public interface InstallerHelper {
     public String getConfigureStsFileName();
 
     public void setPermissions(Path path) throws IOException;
-
-    public String getGcLogFile();
-
-    public String getSetEnvReplacement();
 
     public String getSSOHomePath();
 

@@ -247,12 +247,12 @@ public class ServerUtils
               continue;   //skip unsupported protocol
            }
 
-           logger.debug("start creating connection {}", uri);
+           logger.trace("start creating connection {}", uri);
            try {
               result = getLdapConnection(uri, userName, password, authType, useGcPort, certValidationsettings);
               if (null != result)
               {
-                 logger.debug("done creating connection");
+                 logger.trace("done creating connection");
 
                  return result;   //done
               }

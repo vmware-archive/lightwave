@@ -21,7 +21,7 @@ import org.apache.commons.lang3.Validate;
 /**
  * @author Yehia Zayour
  */
-public abstract class Identifier {
+abstract class Identifier {
     private static final int BYTE_LENGTH = 32;
     private static final SecureRandom secureRandom = new SecureRandom();
 

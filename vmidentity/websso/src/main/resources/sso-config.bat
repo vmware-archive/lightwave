@@ -8,4 +8,7 @@ set CLASSPATH="
  )
 set CLASSPATH=!CLASSPATH!%VMWARE_CIS_HOME%\vmware-sso\commonlib\commons-cli-1.2.jar"
 echo ***** Loaded JARs successfully *****
-"%VMWARE_JAVA_HOME%\bin\java" -cp %CLASSPATH% com.vmware.identity.ssoconfig.SsoConfig %*
+"%VMWARE_JAVA_HOME%\bin\java" -cp %CLASSPATH% ^
+    -Dlog4j.configurationFile=file://"%VMWARE_IDENTITY_SERVICES_HOME%"\ssoconfig.log4j2.xml ^
+    -Dvmware.log.dir=%VMWARE_LOG_HOME%\sso\ ^
+    com.vmware.identity.ssoconfig.SsoConfig %*

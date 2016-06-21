@@ -23,18 +23,18 @@ import java.util.List;
 import org.apache.commons.lang3.Validate;
 
 import com.nimbusds.jose.JOSEException;
-import com.vmware.identity.openidconnect.common.AccessToken;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.IDToken;
 import com.vmware.identity.openidconnect.common.JWTID;
 import com.vmware.identity.openidconnect.common.Nonce;
-import com.vmware.identity.openidconnect.common.RefreshToken;
 import com.vmware.identity.openidconnect.common.Scope;
 import com.vmware.identity.openidconnect.common.ScopeValue;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.Subject;
 import com.vmware.identity.openidconnect.common.TokenType;
+import com.vmware.identity.openidconnect.protocol.AccessToken;
+import com.vmware.identity.openidconnect.protocol.IDToken;
+import com.vmware.identity.openidconnect.protocol.RefreshToken;
 
 /**
  * @author Yehia Zayour

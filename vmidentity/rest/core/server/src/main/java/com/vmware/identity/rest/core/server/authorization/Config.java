@@ -31,6 +31,7 @@ public class Config {
     public static final String TOKEN_TYPE_PARAMETER = "token_type";
     public static final String TOKEN_SIGNATURE_PARAMETER = "token_signature";
 
+    public static final String JWT_TYPE_FIELD = "token_type";
     public static final String JWT_ROLE_FIELD = "admin_server_role";
     public static final String JWT_GROUPS_FIELD = "groups";
     public static final String JWT_HOK_FIELD = "hotk";

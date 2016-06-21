@@ -64,7 +64,7 @@ public class TenantCache
 
         try
         {
-            return _tenantLookup.get(name);
+            return _tenantLookup.get(name.toLowerCase());
         }
         finally
         {
@@ -81,7 +81,7 @@ public class TenantCache
         try
         {
             if (null != tenantInfo) {
-                _tenantLookup.put(tenantInfo.getTenant().getName(), tenantInfo);
+                _tenantLookup.put(tenantInfo.getTenant().getName().toLowerCase(), tenantInfo);
             }
         }
         finally
@@ -98,7 +98,7 @@ public class TenantCache
 
         try
         {
-            _tenantLookup.remove(name);
+            _tenantLookup.remove(name.toLowerCase());
 
             // reset the _defaultTenant
             // no need to do this for _systemTenant, since it should never be removed
@@ -213,7 +213,7 @@ public class TenantCache
 
         try
         {
-            return _extRsaAgentConfigLookup.get(name);
+            return _extRsaAgentConfigLookup.get(name.toLowerCase());
         }
         finally
         {
@@ -230,7 +230,7 @@ public class TenantCache
         try
         {
             if (null != config && null != tenantName && !tenantName.isEmpty()) {
-                _extRsaAgentConfigLookup.put(tenantName, config);
+                _extRsaAgentConfigLookup.put(tenantName.toLowerCase(), config);
             }
         }
         finally
@@ -247,7 +247,7 @@ public class TenantCache
 
         try
         {
-            _extRsaAgentConfigLookup.remove(name);
+            _extRsaAgentConfigLookup.remove(name.toLowerCase());
         }
         finally
         {

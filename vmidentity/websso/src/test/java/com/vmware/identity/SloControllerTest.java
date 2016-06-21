@@ -326,6 +326,9 @@ public class SloControllerTest {
             boolean expectCookie) throws IOException {
         HttpServletResponse response = createMock(HttpServletResponse.class);
         if (expectCookie) {
+            //sso session cookie
+            response.addCookie(isA(Cookie.class));
+            //IWA context id cookie
             response.addCookie(isA(Cookie.class));
         }
         response.sendRedirect(capture(request));
@@ -341,6 +344,9 @@ public class SloControllerTest {
             boolean expectCookie) throws IOException {
         HttpServletResponse response = createMock(HttpServletResponse.class);
         if (expectCookie) {
+            //sso session cookie
+            response.addCookie(isA(Cookie.class));
+            //IWA context id cookie
             response.addCookie(isA(Cookie.class));
         }
         response.sendRedirect(capture(capturedRequest));

@@ -43,7 +43,7 @@ public class SAMLTokenVerifierTest {
     private static final String TEST_SAML_HOK_FILENAME = "samltoken_hok.xml";
     private static final long SKEW_TIME = 10 * 60 * 1000;
 
-   // @Test
+    @Test
     public void testVerification_Bearer() throws Exception {
         SAMLToken token = new SAMLToken(SAMLTokenTestUtil.getSAMLToken(TEST_SAML_BEARER_FILENAME));
 
@@ -51,7 +51,7 @@ public class SAMLTokenVerifierTest {
         verifier.verify(token);
     }
 
-    //@Test
+    @Test
     public void testVerification_HOK() throws Exception {
         SAMLToken token = new SAMLToken(SAMLTokenTestUtil.getSAMLToken(TEST_SAML_HOK_FILENAME));
         SAMLTokenTestUtil.setConfirmationCertificate(token.getSAMLToken(), SAMLTokenTestUtil.getCertificate());

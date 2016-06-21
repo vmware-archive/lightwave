@@ -47,28 +47,29 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.vmware.identity.openidconnect.common.AuthorizationGrant;
 import com.vmware.identity.openidconnect.common.Base64Utils;
-import com.vmware.identity.openidconnect.common.ClientAssertion;
 import com.vmware.identity.openidconnect.common.ClientCredentialsGrant;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.CorrelationID;
 import com.vmware.identity.openidconnect.common.ErrorCode;
 import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.common.GSSTicketGrant;
-import com.vmware.identity.openidconnect.common.HttpRequest;
-import com.vmware.identity.openidconnect.common.HttpResponse;
+import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.JSONUtils;
 import com.vmware.identity.openidconnect.common.JWTID;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.Scope;
 import com.vmware.identity.openidconnect.common.ScopeValue;
 import com.vmware.identity.openidconnect.common.SecureIDGrant;
-import com.vmware.identity.openidconnect.common.SolutionUserAssertion;
 import com.vmware.identity.openidconnect.common.SolutionUserCredentialsGrant;
 import com.vmware.identity.openidconnect.common.StatusCode;
-import com.vmware.identity.openidconnect.common.TokenErrorResponse;
-import com.vmware.identity.openidconnect.common.TokenRequest;
-import com.vmware.identity.openidconnect.common.TokenResponse;
-import com.vmware.identity.openidconnect.common.TokenSuccessResponse;
+import com.vmware.identity.openidconnect.protocol.ClientAssertion;
+import com.vmware.identity.openidconnect.protocol.HttpRequest;
+import com.vmware.identity.openidconnect.protocol.HttpResponse;
+import com.vmware.identity.openidconnect.protocol.SolutionUserAssertion;
+import com.vmware.identity.openidconnect.protocol.TokenErrorResponse;
+import com.vmware.identity.openidconnect.protocol.TokenRequest;
+import com.vmware.identity.openidconnect.protocol.TokenResponse;
+import com.vmware.identity.openidconnect.protocol.TokenSuccessResponse;
 
 /**
  * Utils for OIDC client library
@@ -277,10 +278,12 @@ class OIDCClientUtils {
     static OIDCTokens parseTokenResponse(
             HttpResponse httpResponse,
             RSAPublicKey providerPublicKey,
+            Issuer issuer,
             ClientID clientId,
             long clockToleranceInSeconds) throws OIDCClientException, TokenValidationException, OIDCServerException {
         Validate.notNull(httpResponse, "httpResponse");
         Validate.notNull(providerPublicKey, "providerPublicKey");
+        Validate.notNull(issuer, "issuer");
 
         TokenResponse tokenResponse;
         try {
@@ -294,12 +297,14 @@ class OIDCClientUtils {
             ClientIDToken clientIdToken = ClientIDToken.build(
                     tokenSuccessResponse.getIDToken(),
                     providerPublicKey,
+                    issuer,
                     clientId,
                     clockToleranceInSeconds);
-            return new OIDCTokens(
-                    clientIdToken,
-                    tokenSuccessResponse.getAccessToken(),
-                    tokenSuccessResponse.getRefreshToken());
+            AccessToken accessToken = new AccessToken(tokenSuccessResponse.getAccessToken().serialize());
+            RefreshToken refreshToken = tokenSuccessResponse.getRefreshToken() == null ?
+                    null :
+                    new RefreshToken(tokenSuccessResponse.getRefreshToken().serialize());
+            return new OIDCTokens(clientIdToken, accessToken, refreshToken);
         } else {
             TokenErrorResponse tokenErrorResponse = (TokenErrorResponse) tokenResponse;
             throw new OIDCServerException(tokenErrorResponse.getErrorObject());

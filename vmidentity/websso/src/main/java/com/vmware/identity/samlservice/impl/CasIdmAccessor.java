@@ -103,7 +103,7 @@ public class CasIdmAccessor implements IdmAccessor {
             Validate.notNull(defaultTenant);
             setTenant(defaultTenant);
         } catch (Exception e) {
-            logger.debug("setDefaultTenant: Caught exception {}", e.toString());
+            logger.error("setDefaultTenant: Caught exception {}", e.toString());
             throw new IllegalStateException("BadRequest", e);
         }
     }
@@ -144,7 +144,7 @@ public class CasIdmAccessor implements IdmAccessor {
         try {
             retval = client.getEntityID(tenant);
         } catch (Exception e) {
-            logger.debug("Caught exception ", e);
+            logger.error("Caught exception ", e);
             throw new IllegalStateException("BadRequest", e);
         }
 
@@ -237,10 +237,10 @@ public class CasIdmAccessor implements IdmAccessor {
                 }
             }
         } catch (IllegalStateException e) {
-            logger.debug("Caught illegal state exception {}", e.toString());
+            logger.error("Caught illegal state exception {}", e.toString());
             throw e;
         } catch (Exception e) {
-            logger.debug("Caught exception ", e);
+            logger.error("Caught exception ", e);
             throw new IllegalStateException("BadRequest", e);
         }
 
@@ -271,7 +271,7 @@ public class CasIdmAccessor implements IdmAccessor {
                 Validate.notNull(c);
                 certificates.add((X509Certificate) c);
             } catch (Exception e) {
-                logger.debug("Caught exception ", e);
+                logger.error("Caught exception ", e);
             }
         }
         try {
@@ -280,7 +280,7 @@ public class CasIdmAccessor implements IdmAccessor {
             CertPath certPath = certFactory.generateCertPath(certificates);
             return certPath;
         } catch (Exception e) {
-            logger.debug("Caught exception ", e);
+            logger.error("Caught exception ", e);
             throw new IllegalStateException(e);
         }
     }
@@ -292,7 +292,7 @@ public class CasIdmAccessor implements IdmAccessor {
         try {
             certs = client.getTenantCertificate(tenant);
         } catch (Exception e) {
-            logger.debug("Caught exception ", e);
+            logger.error("Caught exception ", e);
         }
         Validate.notEmpty(certs);
         return certs;
@@ -305,7 +305,7 @@ public class CasIdmAccessor implements IdmAccessor {
         try {
             allChains = client.getTenantCertificates(tenant);
         } catch (Exception e) {
-            logger.debug("Caught exception ", e);
+            logger.error("Caught exception ", e);
         }
         Validate.notEmpty(allChains);
         return allChains;
@@ -318,7 +318,7 @@ public class CasIdmAccessor implements IdmAccessor {
         try {
             return client.getTenantPrivateKey(tenant);
         } catch (Exception e) {
-            logger.debug("Caught exception ", e);
+            logger.error("Caught exception ", e);
             throw new IllegalStateException(e);
         }
     }
@@ -413,7 +413,7 @@ public class CasIdmAccessor implements IdmAccessor {
         try {
             return client.authenticate(tenant, contextId, decodedAuthData);
         } catch (Exception e) {
-            logger.debug("Caught exception ", e);
+            logger.error("Caught exception ", e);
             throw new IllegalStateException(e);
         }
 
@@ -453,7 +453,7 @@ public class CasIdmAccessor implements IdmAccessor {
             Validate.notNull(rp);
             retval = rp.isAuthnRequestsSigned();
         } catch (Exception e) {
-            logger.debug("Caught exception ", e);
+            logger.error("Caught exception ", e);
             throw new IllegalStateException(e);
         }
         return retval;
@@ -466,7 +466,7 @@ public class CasIdmAccessor implements IdmAccessor {
         try {
             return client.authenticate(tenant, username, password);
         } catch (Exception e) {
-            logger.debug("Caught exception ", e);
+            logger.error("Caught exception. ", e);
             throw new IllegalStateException(e);
         }
 
@@ -477,7 +477,7 @@ public class CasIdmAccessor implements IdmAccessor {
         try {
             return client.authenticate(tenant, tLSCertChain);
         } catch (Exception e) {
-            logger.debug("Caught exception ", e);
+            logger.error("Caught exception. ", e);
             throw new IllegalStateException(e);
         }
 	}
@@ -491,10 +491,10 @@ public class CasIdmAccessor implements IdmAccessor {
             return client.authenticateRsaSecurId(tenant, rsaSessionId,
                     username, passcode);
         } catch (IDMSecureIDNewPinException e) {
-            logger.debug("New pin required.");
+            logger.error("New pin required.", e);
             throw e;
         } catch (Exception e) {
-            logger.debug("Caught exception ", e);
+            logger.error("Caught exception. ", e);
             throw new IllegalStateException(e);
         }
     }
@@ -561,7 +561,7 @@ public class CasIdmAccessor implements IdmAccessor {
         try {
             retval = client.getEntityID(tenant).replace("/Metadata", "/SSO");
         } catch (Exception e) {
-            logger.debug("Caught exception ", e);
+            logger.error("Caught exception ", e);
             throw new IllegalStateException("BadRequest", e);
         }
 
@@ -576,7 +576,7 @@ public class CasIdmAccessor implements IdmAccessor {
         try {
             retval = client.getEntityID(tenant).replace("/Metadata", "/SLO");
         } catch (Exception e) {
-            logger.debug("Caught exception ", e);
+            logger.error("Caught exception ", e);
             throw new IllegalStateException("BadRequest", e);
         }
 
@@ -598,7 +598,7 @@ public class CasIdmAccessor implements IdmAccessor {
             // change to SSO endpoint
             retval = retval.replace("/Metadata", "/SSO");
         } catch (Exception e) {
-            logger.debug("Caught exception ", e);
+            logger.error("Caught exception ", e);
             throw new IllegalStateException("BadRequest", e);
         }
 
@@ -705,7 +705,7 @@ public class CasIdmAccessor implements IdmAccessor {
         try {
             return client.getServerSPN();
         } catch (Exception e) {
-            logger.debug("Caught exception ", e);
+            logger.error("Caught exception ", e);
             throw new IllegalStateException("Failed to get server SPN", e);
         }
 
@@ -879,4 +879,25 @@ public class CasIdmAccessor implements IdmAccessor {
 
         }
 	}
+
+    @Override
+    public Collection<String> getAllTenants() throws Exception {
+        try {
+            return client.getAllTenants();
+        }catch (Exception e) {
+            throw new IllegalStateException(
+                    "Failed to return all tenant names.", e);
+        }
+    }
+
+    @Override
+    public Collection<RelyingParty> getRelyingParties(String tenant) {
+
+        try {
+            return client.getRelyingParties(tenant);
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "Failed to return relying part configurations for the tenant.", e);
+        }
+    }
 }

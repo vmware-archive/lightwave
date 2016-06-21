@@ -40,7 +40,7 @@ public class ProviderPolicyMapper {
         }
 
         return ProviderPolicyDTO.builder().withDefaultProvider(defaultProvider)
-                                          .withDefaultProvider(defaultProviderAlias)
+                                          .withDefaultProviderAlias(defaultProviderAlias)
                                           .withProviderSelectionEnabled(new Boolean(providerSelectionEnabled)).build();
     }
 

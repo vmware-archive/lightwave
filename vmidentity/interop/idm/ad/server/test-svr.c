@@ -188,7 +188,7 @@ int process_connection(int s)
                        pszPackageName,
                        &pAuthContext);
     free(pszPackageName);
-    if (!pAuthContext)
+    if (bAuthContext || !pAuthContext)
     {
         printf("IDMCreateAuthContext: failed \n");
         return -1;

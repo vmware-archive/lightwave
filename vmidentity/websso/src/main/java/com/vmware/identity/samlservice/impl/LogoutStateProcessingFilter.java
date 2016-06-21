@@ -125,7 +125,7 @@ public class LogoutStateProcessingFilter implements
 	        Validate.notEmpty(spAlias, "spAlias");
 
 	        if (null == metadataSettings.getIDPConfigurationByEntityID(extIDPConfig.getEntityID())
-	                || null == metadataSettings.getSPConfigurationByEntityID(spAlias)) {
+	                || null == metadataSettings.getSPConfiguration(spAlias)) {
 	            SamlServiceImpl.initMetadataSettings(metadataSettings,extIDPConfig,t.getIdmAccessor() );
 	        }
 

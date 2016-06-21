@@ -27,6 +27,7 @@ import com.vmware.identity.rest.core.server.authorization.Config;
 import com.vmware.identity.rest.core.server.authorization.exception.InvalidRequestException;
 import com.vmware.identity.rest.core.server.authorization.exception.InvalidTokenException;
 import com.vmware.identity.rest.core.server.authorization.token.AccessToken;
+import com.vmware.identity.rest.core.server.authorization.token.TokenType;
 import com.vmware.identity.rest.core.server.authorization.token.jwt.hok.JWTHoKToken;
 import com.vmware.identity.rest.core.server.authorization.verifier.jwt.bearer.JWTBearerTokenVerifier;
 import com.vmware.identity.rest.core.server.exception.ServerException;
@@ -55,7 +56,7 @@ public class JWTHoKTokenVerifier extends JWTBearerTokenVerifier {
 
     @Override
     public void verify(AccessToken token) throws InvalidTokenException, InvalidRequestException, ServerException {
-        super.verify(token);
+        super.verify(token, TokenType.HOK);
 
         if (!(token instanceof JWTHoKToken)) {
             throw new IllegalArgumentException("Access token expected to be JWTHoKToken. Was " + token.getClass());

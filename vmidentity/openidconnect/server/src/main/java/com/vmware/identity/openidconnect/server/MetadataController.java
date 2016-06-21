@@ -30,12 +30,12 @@ import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.HttpResponse;
 import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.ProviderMetadata;
 import com.vmware.identity.openidconnect.common.StatusCode;
 import com.vmware.identity.openidconnect.common.URIUtils;
+import com.vmware.identity.openidconnect.protocol.HttpResponse;
 
 /**
  * @author Jun Sun

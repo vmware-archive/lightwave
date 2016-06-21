@@ -29,7 +29,7 @@ import org.apache.commons.lang3.Validate;
 /**
  * @author Yehia Zayour
  */
-public class ClientCertificateGrant extends AuthorizationGrant {
+public final class ClientCertificateGrant extends AuthorizationGrant {
     private static final GrantType GRANT_TYPE = GrantType.CLIENT_CERTIFICATE;
 
     private final List<X509Certificate> clientCertificateChain;

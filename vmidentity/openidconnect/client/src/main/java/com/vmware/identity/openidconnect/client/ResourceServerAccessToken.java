@@ -22,7 +22,6 @@ import java.util.List;
 import org.apache.commons.lang3.Validate;
 
 import com.nimbusds.jose.JOSEException;
-import com.vmware.identity.openidconnect.common.AccessToken;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.JWTID;
@@ -33,6 +32,7 @@ import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.Subject;
 import com.vmware.identity.openidconnect.common.TokenClass;
 import com.vmware.identity.openidconnect.common.TokenType;
+import com.vmware.identity.openidconnect.protocol.AccessToken;
 
 /**
  * @author Yehia Zayour
@@ -50,6 +50,7 @@ public final class ResourceServerAccessToken {
      *
      * @param value                             Opaque access token string.
      * @param providerPublicKey                 public key retrieved from Authorization Server jwks endpoint
+     * @param issuer                            OIDC issuer.
      * @param resourceServer                    Name of resource server.
      * @param clockToleranceInSeconds           Clock tolerance in seconds.
      * @return                                  Access token including claims.
@@ -58,11 +59,13 @@ public final class ResourceServerAccessToken {
     public static ResourceServerAccessToken build(
             String value,
             RSAPublicKey providerPublicKey,
+            Issuer issuer,
             String resourceServer,
             long clockToleranceInSeconds) throws TokenValidationException {
         Validate.notEmpty(value, "value");
         Validate.notNull(providerPublicKey, "providerPublicKey");
-        Validate.notNull(resourceServer, "resourceServer");
+        Validate.notNull(issuer, "issuer");
+        Validate.notEmpty(resourceServer, "resourceServer");
 
         AccessToken accessToken;
         try {

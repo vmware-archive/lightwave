@@ -158,6 +158,20 @@ public final class ValidateUtil {
         }
     }
 
+    /**
+     * Checks validity of the given certificate.
+     * @throws IllegalArgumentException
+     *            on validation failure
+     */
+    public static void validateCertificate(X509Certificate cert)
+    {
+        try {
+            cert.checkValidity();
+        } catch (Exception e) {
+            logAndThrow(String.format("Certificate is not valid: %s", e.getMessage()));
+        }
+    }
+
    /**
     * Check whether given object value is empty. Depending on argument runtime
     * type <i>empty</i> means:

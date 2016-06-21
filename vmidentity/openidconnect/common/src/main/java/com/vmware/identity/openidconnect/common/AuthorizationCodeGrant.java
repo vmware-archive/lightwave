@@ -23,7 +23,7 @@ import org.apache.commons.lang3.Validate;
 /**
  * @author Yehia Zayour
  */
-public class AuthorizationCodeGrant extends AuthorizationGrant {
+public final class AuthorizationCodeGrant extends AuthorizationGrant {
     private static final GrantType GRANT_TYPE = GrantType.AUTHORIZATION_CODE;
 
     private final AuthorizationCode authzCode;

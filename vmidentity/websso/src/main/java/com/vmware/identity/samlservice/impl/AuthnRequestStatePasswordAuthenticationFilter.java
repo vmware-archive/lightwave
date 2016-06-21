@@ -59,7 +59,7 @@ public class AuthnRequestStatePasswordAuthenticationFilter implements
         String authData = getAuthData(request);
         if (authData == null) {
             // authentication not possible
-            log.debug(Shared.REQUEST_AUTH_HEADER + " is missing, requesting "
+            log.debug(Shared.REQUEST_AUTH_PARAM + " is missing, requesting "
                     + Shared.PASSWORD_AUTH_PREFIX);
             t.setWwwAuthenticate(Shared.PASSWORD_AUTH_PREFIX);
             throw new SamlServiceException();
@@ -114,7 +114,7 @@ public class AuthnRequestStatePasswordAuthenticationFilter implements
         String authData = null;
 
         // extract auth data
-        String authHeader = request.getParameter(Shared.REQUEST_AUTH_HEADER);
+        String authHeader = request.getParameter(Shared.REQUEST_AUTH_PARAM);
 
         if (authHeader != null
                 && authHeader.startsWith(Shared.PASSWORD_AUTH_PREFIX)) {

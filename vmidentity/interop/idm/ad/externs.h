@@ -31,5 +31,8 @@
 
 extern PIDM_KRB_CONTEXT pgIdmKrbContext;
 
+//extern pthread_mutex_t gIdmAuthMutex;
+extern PIDM_AUTH_MUTEX pgIdmAuthMutex;
+
 #endif
 

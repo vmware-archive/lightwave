@@ -26,7 +26,7 @@ public final class AuthenticationTokensResponse {
     private final State state;
     private final OIDCTokens tokens;
 
-    public AuthenticationTokensResponse(State state, OIDCTokens tokens) {
+    AuthenticationTokensResponse(State state, OIDCTokens tokens) {
         Validate.notNull(state, "state");
         Validate.notNull(tokens, "tokens");
         this.state = state;
