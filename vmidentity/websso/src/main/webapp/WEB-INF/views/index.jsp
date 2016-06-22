@@ -15,15 +15,13 @@
  <body>
   <div id="header"><img src="./resources/img/header-logo.png" width="586" height="42" alt="VMware vSphere 6" /></div>
   <div class="information">
-   <p><script type="text/javascript">document.write(ID_WelcomePsc);</script></p>
-   <h1><script type="text/javascript">document.write(ID_GettingStarted);</script></h1>
    <p><script type="text/javascript">document.write(ID_VC_GettingStartedDesc);</script></p>
-   <p><script type="text/javascript">document.write(ID_PSC_link_title);</script></p>
-   <p><a href="/psc"><script type="text/javascript">document.write(ID_PSC_link_message);</script></a></p><br />
+   <p><a href="/psc"><script type="text/javascript">document.write(ID_PSC_link_title);</script></a></p>
+   <p><script type="text/javascript">document.write(ID_PSC_link_message);</script></p><br />
+   <p><script type="text/javascript">document.write(ID_VC_Desc);</script></p><br />
    <p><script type="text/javascript">document.write(ID_DocDesc);</script></p>
-   <p><a href="http://www.vmware.com/info?id=1320"><script type="text/javascript">document.write(ID_DownloadDoc);</script></a></p>
+   <p><a href="http://pubs.vmware.com/vsphere-65/index.jsp"><script type="text/javascript">document.write(ID_DownloadDoc);</script></a></p>
   </div> <!--/GETTING STARTED TEXT-->
-  </div>
   <div class="GSimage"></div>
   <div id="copyRight">
    <script type="text/javascript">document.write(ID_CopyrightText);</script>

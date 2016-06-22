@@ -36,8 +36,9 @@ public class IdmLoginManager implements ILoginManager {
 
     private static final String SECRET_FILE = "idmlogin.txt";
     private static final String WIN_REG_PATH = "SOFTWARE\\VMware, Inc.\\VMware Identity Services";
-    private static final String WIN_REG_KEY = "InstallPath";
-    private static final String LINUX_FILE_PATH = "/opt/vmware/lib64/";
+    private static final String WIN_REG_KEY = "ConfigPath";
+    private static final String KEYS = "\\keys\\";
+    private static final String LINUX_FILE_PATH = "/etc/vmware-sso/keys/";
     private IdentityManager server = null;
     private final String serverHash;
 
@@ -81,7 +82,7 @@ public class IdmLoginManager implements ILoginManager {
         try {
             String configPath = regAdapter.getStringValue(rootKey, WIN_REG_PATH,
                     WIN_REG_KEY, false);
-            return new File(configPath.concat(SECRET_FILE));
+            return new File(configPath.concat(KEYS).concat(SECRET_FILE));
         } finally {
             if(rootKey != null)
             rootKey.close();

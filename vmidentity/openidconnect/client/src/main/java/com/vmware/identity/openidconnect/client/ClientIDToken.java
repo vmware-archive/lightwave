@@ -23,7 +23,6 @@ import org.apache.commons.lang3.Validate;
 
 import com.nimbusds.jose.JOSEException;
 import com.vmware.identity.openidconnect.common.ClientID;
-import com.vmware.identity.openidconnect.common.IDToken;
 import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.JWTID;
 import com.vmware.identity.openidconnect.common.Nonce;
@@ -33,6 +32,7 @@ import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.Subject;
 import com.vmware.identity.openidconnect.common.TokenClass;
 import com.vmware.identity.openidconnect.common.TokenType;
+import com.vmware.identity.openidconnect.protocol.IDToken;
 
 /**
  * @author Yehia Zayour
@@ -48,10 +48,12 @@ public final class ClientIDToken {
     public static ClientIDToken build(
             String value,
             RSAPublicKey providerPublicKey,
+            Issuer issuer,
             ClientID clientId,
             long clockToleranceInSeconds) throws TokenValidationException {
         Validate.notEmpty(value, "value");
         Validate.notNull(providerPublicKey, "providerPublicKey");
+        Validate.notNull(issuer, "issuer");
 
         IDToken idToken;
         try {
@@ -60,16 +62,18 @@ public final class ClientIDToken {
             throw new TokenValidationException(TokenValidationError.PARSE_ERROR, "Token parsing failed." + e.getMessage(), e);
         }
 
-        return build(idToken, providerPublicKey, clientId, clockToleranceInSeconds);
+        return build(idToken, providerPublicKey, issuer, clientId, clockToleranceInSeconds);
     }
 
     /* internal */ static ClientIDToken build(
             IDToken idToken,
             RSAPublicKey providerPublicKey,
+            Issuer issuer,
             ClientID clientId,
             long clockToleranceInSeconds) throws TokenValidationException {
         Validate.notNull(idToken, "idToken");
         Validate.notNull(providerPublicKey, "providerPublicKey");
+        Validate.notNull(issuer, "issuer");
 
         try {
             if (!idToken.hasValidSignature(providerPublicKey)) {

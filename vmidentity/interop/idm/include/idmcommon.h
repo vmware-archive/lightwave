@@ -21,7 +21,7 @@
  *
  *        Identity Manager - Common utilities
  *
- *        Public header for common utilities 
+ *        Public header for common utilities
  *
  * Authors: Sriram Nambakam (snambakam@vmware.com)
  *

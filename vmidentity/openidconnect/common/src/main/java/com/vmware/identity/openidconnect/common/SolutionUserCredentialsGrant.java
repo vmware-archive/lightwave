@@ -22,7 +22,7 @@ import org.apache.commons.lang3.Validate;
 /**
  * @author Yehia Zayour
  */
-public class SolutionUserCredentialsGrant extends AuthorizationGrant {
+public final class SolutionUserCredentialsGrant extends AuthorizationGrant {
     private static final GrantType GRANT_TYPE = GrantType.SOLUTION_USER_CREDENTIALS;
 
     public SolutionUserCredentialsGrant() {

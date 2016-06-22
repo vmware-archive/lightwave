@@ -260,8 +260,9 @@ public class OIDCClientIT extends OIDCClientITBase {
     public void testGroupFiltering() throws Exception {
         OIDCTokens tokens = nonRegNoHOKConfigClient.acquireTokens(passwordGrant, groupFilteringSpec);
         ResourceServerAccessToken accessToken = ResourceServerAccessToken.build(
-                tokens.getAccessToken().serialize(),
+                tokens.getAccessToken().getValue(),
                 connectionConfig.getProviderPublicKey(),
+                connectionConfig.getIssuer(),
                 RESOURCE_SERVER_NAME,
                 0L /* clockTolerance */);
         Collection<String> actualGroups = accessToken.getGroups();

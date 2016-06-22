@@ -60,6 +60,12 @@ public interface IdmAccessor {
 	 */
 	String getTenant();
 
+    /**
+     * Returns all tenants
+     * @return
+     */
+    Collection<String> getAllTenants() throws Exception;
+
 	/**
 	 * Returns entity id of the IdP (we can use it as myId parameter when generating SAML Responses)
 	 * @return
@@ -285,7 +291,7 @@ public interface IdmAccessor {
       */
     List<Certificate> getTenantCertificate();
 
-	IDPConfig getExternalIdpConfigForTenant(String tenant, String providerID);
+    IDPConfig getExternalIdpConfigForTenant(String tenant, String providerID);
 
      /**
       * Search a relying party by url (emtityID).
@@ -332,7 +338,23 @@ public interface IdmAccessor {
 	 */
 	AuthnPolicy getAuthnPolicy(String tenantName);
 
+    /**
+     * @return if the tenant turned on IDPSelection dialog
+     * @param tenantName
+     */
 	boolean getTenantIDPSelectionFlag(String tenantName);
 
+    /**
+     * @return IDP alias name of the IDP
+     * @param tenantName
+     * @param entityId
+     */
 	String getIDPAlias(String tenantName, String entityId);
+
+    /**
+     * @return relying parties for the tenant
+     * @param tenant
+     */
+    Collection<RelyingParty> getRelyingParties(String tenant);
+
 }

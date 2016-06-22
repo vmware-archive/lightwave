@@ -32,18 +32,19 @@ import com.vmware.identity.idm.RSAAMResult;
 import com.vmware.identity.openidconnect.common.Base64Utils;
 import com.vmware.identity.openidconnect.common.ErrorCode;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.Header;
-import com.vmware.identity.openidconnect.common.HttpRequest;
-import com.vmware.identity.openidconnect.common.HttpResponse;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.StatusCode;
+import com.vmware.identity.openidconnect.protocol.Header;
+import com.vmware.identity.openidconnect.protocol.HttpRequest;
+import com.vmware.identity.openidconnect.protocol.HttpResponse;
 
 /**
  * @author Yehia Zayour
  */
 public class LoginProcessor {
     private static final String REQUEST_LOGIN_PARAMETER = "CastleAuthorization";
+    private static final String RESPONSE_AUTHZ_HEADER   = "CastleAuthorization";
 
     private final PersonUserAuthenticator personUserAuthenticator;
     private final SessionManager sessionManager;
@@ -175,17 +176,30 @@ public class LoginProcessor {
     }
 
     private PersonUser processGssTicketLogin(String loginString) throws LoginException {
-        // CastleAuthorization=Negotiate contextId base64(token)
+        String contextId;
+        String gssTicketString;
+        boolean clientIntegrationPlugin = false; // Client Integration Plugin impl or built-in browser impl?
+
         String[] parts = loginString.split(" ");
-        if (parts.length != 3) {
+        if (parts.length == 2) {
+            String authzHeaderValue = this.httpRequest.getHeaderValue("Authorization");
+            if (StringUtils.isEmpty(authzHeaderValue)) {
+                Header serverLegHeader = new Header("WWW-Authenticate", LoginMethod.GSS_TICKET.getValue());
+                throw new LoginException("authorization_header_needed", localize(ErrorMessage.UNAUTHORIZED), serverLegHeader);
+            }
+            contextId = parts[1];
+            gssTicketString = authzHeaderValue.replaceFirst(LoginMethod.GSS_TICKET.getValue(), "").trim();
+        } else if (parts.length == 3) {
+            clientIntegrationPlugin = true;
+            contextId = parts[1];
+            gssTicketString = parts[2];
+        } else {
             throw new LoginException("malformed gss login string", localize(ErrorMessage.BAD_REQUEST));
         }
-        String contextId = parts[1];
-        byte[] gssTicketBytes = Base64Utils.decodeToBytes(parts[2]);
 
         GSSResult result;
         try {
-            result = this.personUserAuthenticator.authenticateByGssTicket(this.tenant, contextId, gssTicketBytes);
+            result = this.personUserAuthenticator.authenticateByGssTicket(this.tenant, contextId, Base64Utils.decodeToBytes(gssTicketString));
         } catch (InvalidCredentialsException e) {
             throw new LoginException("invalid gss ticket", localize(ErrorMessage.UNAUTHORIZED), e);
         } catch (ServerException e) {
@@ -196,8 +210,17 @@ public class LoginProcessor {
             return new PersonUser(result.getPrincipalId(), this.tenant);
         } else {
             String serverLeg64 = Base64Utils.encodeToString(result.getServerLeg());
-            String responseAuthzHeaderValue = String.format("%s %s %s", LoginMethod.GSS_TICKET.getValue(), contextId, serverLeg64);
-            throw new LoginException("gss_continue_needed", localize(ErrorMessage.UNAUTHORIZED), responseAuthzHeaderValue);
+            Header serverLegHeader;
+            if (clientIntegrationPlugin) {
+                serverLegHeader = new Header(
+                        RESPONSE_AUTHZ_HEADER,
+                        String.format("%s %s %s", LoginMethod.GSS_TICKET.getValue(), contextId, serverLeg64));
+            } else {
+                serverLegHeader = new Header(
+                        "WWW-Authenticate",
+                        String.format("%s %s", LoginMethod.GSS_TICKET.getValue(), serverLeg64));
+            }
+            throw new LoginException("gss_continue_needed", localize(ErrorMessage.UNAUTHORIZED), serverLegHeader);
         }
     }
 
@@ -239,8 +262,10 @@ public class LoginProcessor {
             return new PersonUser(result.getPrincipalId(), this.tenant);
         } else {
             String sessionId64 = Base64Utils.encodeToString(result.getRsaSessionID());
-            String responseAuthzHeaderValue = String.format("%s %s", LoginMethod.SECUREID.getValue(), sessionId64);
-            throw new LoginException("secureid_next_code_required", localize(ErrorMessage.SECUREID_NEXT_CODE), responseAuthzHeaderValue);
+            Header serverLegHeader = new Header(
+                    RESPONSE_AUTHZ_HEADER,
+                    String.format("%s %s", LoginMethod.SECUREID.getValue(), sessionId64));
+            throw new LoginException("secureid_next_code_required", localize(ErrorMessage.SECUREID_NEXT_CODE), serverLegHeader);
         }
     }
 
@@ -249,31 +274,30 @@ public class LoginProcessor {
     }
 
     public static class LoginException extends Exception {
-        private static final String RESPONSE_AUTHZ_HEADER = "CastleAuthorization";
         private static final String RESPONSE_ERROR_HEADER = "CastleError";
         private static final long serialVersionUID = 1L;
 
         private final ErrorObject errorObject;
         private final String localizedErrorMessage;
-        private final String authorizationError;
+        private final Header serverLegHeader;
 
         private LoginException(String errorMessage, String localizedErrorMessage) {
-            this(errorMessage, localizedErrorMessage, (String) null, (Throwable) null);
-        }
-
-        private LoginException(String errorMessage, String localizedErrorMessage, String authorizationError) {
-            this(errorMessage, localizedErrorMessage, authorizationError, (Throwable) null);
+            this(errorMessage, localizedErrorMessage, (Throwable) null, (Header) null);
         }
 
         private LoginException(String errorMessage, String localizedErrorMessage, Throwable cause) {
-            this(errorMessage, localizedErrorMessage, (String) null, cause);
+            this(errorMessage, localizedErrorMessage, cause, (Header) null);
         }
 
-        private LoginException(String errorMessage, String localizedErrorMessage, String authorizationError, Throwable cause) {
+        private LoginException(String errorMessage, String localizedErrorMessage, Header serverLegHeader) {
+            this(errorMessage, localizedErrorMessage, (Throwable) null, serverLegHeader);
+        }
+
+        private LoginException(String errorMessage, String localizedErrorMessage, Throwable cause, Header serverLegHeader) {
             super(cause);
             this.errorObject = new ErrorObject(ErrorCode.ACCESS_DENIED, errorMessage, StatusCode.UNAUTHORIZED);
             this.localizedErrorMessage = localizedErrorMessage;
-            this.authorizationError = authorizationError;
+            this.serverLegHeader = serverLegHeader;
         }
 
         public ErrorObject getErrorObject() {
@@ -283,8 +307,8 @@ public class LoginProcessor {
         public HttpResponse toHttpResponse() {
             HttpResponse httpResponse = HttpResponse.createErrorResponse(this.errorObject);
             httpResponse.addHeader(new Header(RESPONSE_ERROR_HEADER, Base64Utils.encodeToString(this.localizedErrorMessage)));
-            if (this.authorizationError != null) {
-                httpResponse.addHeader(new Header(RESPONSE_AUTHZ_HEADER, this.authorizationError));
+            if (this.serverLegHeader != null) {
+                httpResponse.addHeader(this.serverLegHeader);
             }
             return httpResponse;
         }

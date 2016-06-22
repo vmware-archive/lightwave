@@ -78,7 +78,7 @@ import com.vmware.identity.session.impl.SessionManagerImpl;
 @SuppressWarnings("unchecked")
 public class SsoControllerTest {
     private static final String SIGNATURE = "bogus";
-    private static final String AUTH_HEADER = Shared.REQUEST_AUTH_HEADER;
+    private static final String AUTH_HEADER = Shared.IWA_AUTH_RESPONSE_HEADER;
     private static final String AUTH_VALUE = Shared.KERB_AUTH_PREFIX;
 
     private static SsoController controller;

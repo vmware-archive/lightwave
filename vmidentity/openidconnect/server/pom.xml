@@ -140,6 +140,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.vmware.identity</groupId>
+            <artifactId>openidconnect-protocol</artifactId>
+            <version>${vmware.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.vmware.identity.idm</groupId>
             <artifactId>vmware-identity-idm-client</artifactId>
             <version>${vmware.version}</version>

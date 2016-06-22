@@ -1,5 +1,5 @@
 /* *************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved. 
+ * Copyright 2012 VMware, Inc. All rights reserved. VMware Confidential
  **************************************************************************/
 package com.vmware.identity.websso.client.endpoint;
 
@@ -261,7 +261,8 @@ public class SsoRequestSender {
                     null, // substatus
                     null, // session index
                     null, // MessageDatda
-                    null); // tag
+                    null, // tag
+                    false); //isIdpInitiated
             getMessageStore().add(authnMessage);
         } catch (Exception e) {
             logonProcessor.internalError(e, null, null);

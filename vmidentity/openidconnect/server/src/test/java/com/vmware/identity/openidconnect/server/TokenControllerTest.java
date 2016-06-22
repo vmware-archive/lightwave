@@ -74,10 +74,8 @@ import com.nimbusds.jwt.SignedJWT;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.ResourceServer;
 import com.vmware.identity.idm.client.CasIdmClient;
-import com.vmware.identity.openidconnect.common.AuthenticationRequest;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.Base64Utils;
-import com.vmware.identity.openidconnect.common.ClientAssertion;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.CorrelationID;
 import com.vmware.identity.openidconnect.common.Nonce;
@@ -86,6 +84,8 @@ import com.vmware.identity.openidconnect.common.ResponseType;
 import com.vmware.identity.openidconnect.common.Scope;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.State;
+import com.vmware.identity.openidconnect.protocol.AuthenticationRequest;
+import com.vmware.identity.openidconnect.protocol.ClientAssertion;
 
 /**
  * @author Yehia Zayour
@@ -567,8 +567,8 @@ public class TokenControllerTest {
         Flow flow = Flow.REFRESH_TOKEN;
         Map<String, String> params = tokenRequestParameters(flow);
         params.put("refresh_token", "this is not a valid jwt");
-        String expectedErrorMessage = "failed to parse refresh_token parameter";
-        assertErrorResponse(flow, params, "invalid_request", expectedErrorMessage);
+        String expectedErrorMessage = "failed to parse refresh_token";
+        assertErrorResponse(flow, params, "invalid_grant", expectedErrorMessage);
     }
 
     @Test
@@ -623,8 +623,8 @@ public class TokenControllerTest {
         Map<String, String> params = tokenRequestParameters(flow);
         JWTClaimsSet.Builder claimsBuilder = refreshTokenClaims();
         params.put("refresh_token", (new PlainJWT(claimsBuilder.build())).serialize());
-        String expectedErrorMessage = "failed to parse refresh_token parameter";
-        assertErrorResponse(flow, params, "invalid_request", expectedErrorMessage);
+        String expectedErrorMessage = "failed to parse refresh_token";
+        assertErrorResponse(flow, params, "invalid_grant", expectedErrorMessage);
     }
 
     @Test
@@ -660,7 +660,7 @@ public class TokenControllerTest {
         JWTClaimsSet.Builder claimsBuilder = refreshTokenClaims();
         claimsBuilder = claimsBuilder.claim("token_class", "id_token");
         params.put("refresh_token", TestUtil.sign(claimsBuilder.build(), TENANT_PRIVATE_KEY).serialize());
-        assertErrorResponse(flow, params, "invalid_request", "refresh_token has incorrect token_class claim");
+        assertErrorResponse(flow, params, "invalid_grant", "failed to parse refresh_token");
     }
 
     @Test
@@ -680,7 +680,7 @@ public class TokenControllerTest {
         JWTClaimsSet.Builder claimsBuilder = refreshTokenClaims();
         claimsBuilder = claimsBuilder.audience(new ArrayList<String>());
         params.put("refresh_token", TestUtil.sign(claimsBuilder.build(), TENANT_PRIVATE_KEY).serialize());
-        assertErrorResponse(flow, params, "invalid_request", "refresh_token is missing aud claim");
+        assertErrorResponse(flow, params, "invalid_grant", "failed to parse refresh_token");
     }
 
     @Test
@@ -690,7 +690,7 @@ public class TokenControllerTest {
         JWTClaimsSet.Builder claimsBuilder = refreshTokenClaims();
         claimsBuilder = claimsBuilder.claim("scope", null);
         params.put("refresh_token", TestUtil.sign(claimsBuilder.build(), TENANT_PRIVATE_KEY).serialize());
-        assertErrorResponse(flow, params, "invalid_request", "refresh_token is missing scope claim");
+        assertErrorResponse(flow, params, "invalid_grant", "failed to parse refresh_token");
     }
 
     @Test
@@ -700,7 +700,7 @@ public class TokenControllerTest {
         JWTClaimsSet.Builder claimsBuilder = refreshTokenClaims();
         claimsBuilder = claimsBuilder.claim("scope", "openid abc");
         params.put("refresh_token", TestUtil.sign(claimsBuilder.build(), TENANT_PRIVATE_KEY).serialize());
-        assertErrorResponse(flow, params, "invalid_request", "refresh_token has invalid scope claim");
+        assertErrorResponse(flow, params, "invalid_grant", "failed to parse refresh_token");
     }
 
     @Test
@@ -724,7 +724,7 @@ public class TokenControllerTest {
         claimsBuilder = claimsBuilder.issueTime(new Date(now.getTime() + 2*1000L));
         claimsBuilder = claimsBuilder.expirationTime(now);
         params.put("refresh_token", TestUtil.sign(claimsBuilder.build(), TENANT_PRIVATE_KEY).serialize());
-        assertErrorResponse(flow, params, "invalid_request", "refresh_token iat must be before exp");
+        assertErrorResponse(flow, params, "invalid_grant", "failed to parse refresh_token");
     }
 
     @Test

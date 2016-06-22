@@ -1,15 +1,19 @@
 
 sbin_SCRIPTS = \
     @top_builddir@/config/vmware-idmd.sh \
-    @top_builddir@/config/vmware-stsd.sh \
-    @top_builddir@/config/vmware-sts-tc-setup.sh
+    @top_builddir@/config/vmware-stsd.sh
 
 vmstsconf_DATA = \
     @top_builddir@/config/server.xml \
     @top_builddir@/config/catalina.properties \
     @top_builddir@/config/web.xml \
-    @top_builddir@/config/setenv.sh \
-    @top_builddir@/config/logging.properties
+    @top_builddir@/config/logging.properties \
+    @top_builddir@/config/catalina.policy \
+    @top_builddir@/config/context.xml \
+    @top_builddir@/config/tomcat-users.xml
+
+vmstsbin_DATA = \
+    @top_builddir@/config/setenv.sh
 
 systemd_DATA = \
     @top_builddir@/config/vmware-idmd.service \

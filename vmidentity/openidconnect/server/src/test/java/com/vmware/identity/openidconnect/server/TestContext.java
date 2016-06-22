@@ -53,7 +53,6 @@ import com.vmware.identity.idm.AuthnPolicy;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.ResourceServer;
 import com.vmware.identity.idm.client.CasIdmClient;
-import com.vmware.identity.openidconnect.common.AuthenticationRequest;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.Base64Utils;
 import com.vmware.identity.openidconnect.common.ClientID;
@@ -66,6 +65,7 @@ import com.vmware.identity.openidconnect.common.Scope;
 import com.vmware.identity.openidconnect.common.ScopeValue;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.State;
+import com.vmware.identity.openidconnect.protocol.AuthenticationRequest;
 
 /**
  * @author Yehia Zayour
@@ -368,12 +368,16 @@ public class TestContext {
         return "Basic " + unp64;
     }
 
-    public static String gssLoginString() {
-        return gssLoginString(GSS_CONTEXT_ID);
+    public static String gssCIPLoginString() {
+        return gssCIPLoginString(GSS_CONTEXT_ID);
     }
 
-    public static String gssLoginString(String contextId) {
+    public static String gssCIPLoginString(String contextId) {
         return String.format("Negotiate %s _gss_ticket__xyz_", contextId);
+    }
+
+    public static String gssBrowserLoginString() {
+        return String.format("Negotiate %s", GSS_CONTEXT_ID);
     }
 
     public static String secureIdLoginString() {

@@ -15,13 +15,21 @@
 package com.vmware.identity.proxyservice;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 
+import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.Validate;
-import org.opensaml.saml2.core.Response;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -30,67 +38,116 @@ import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.idm.RelyingParty;
 import com.vmware.identity.idm.client.SAMLNames;
 import com.vmware.identity.saml.DefaultSamlAuthorityFactory;
+import com.vmware.identity.saml.InvalidSignatureException;
 import com.vmware.identity.saml.InvalidTokenException;
+import com.vmware.identity.saml.SamlAuthorityFactory;
+import com.vmware.identity.saml.SignatureAlgorithm;
+import com.vmware.identity.saml.SystemException;
 import com.vmware.identity.saml.SamlTokenSpec.AuthenticationData.AuthnMethod;
 import com.vmware.identity.saml.ServerValidatableSamlToken;
 import com.vmware.identity.saml.ServerValidatableSamlToken.SubjectValidation;
+import com.vmware.identity.saml.idm.IdmPrincipalAttributesExtractorFactory;
 import com.vmware.identity.saml.ServerValidatableSamlTokenFactory;
 import com.vmware.identity.saml.TokenValidator;
-import com.vmware.identity.samlservice.AuthenticationFilter;
 import com.vmware.identity.samlservice.AuthnRequestState;
+import com.vmware.identity.samlservice.DefaultIdmAccessorFactory;
+import com.vmware.identity.samlservice.IdmAccessor;
 import com.vmware.identity.samlservice.OasisNames;
+import com.vmware.identity.samlservice.SAMLResponseSender;
+import com.vmware.identity.samlservice.SAMLResponseSenderFactory;
 import com.vmware.identity.samlservice.SamlServiceException;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
+import com.vmware.identity.samlservice.impl.ConfigExtractorFactoryImpl;
+import com.vmware.identity.samlservice.impl.SAMLAuthnResponseSenderFactory;
 import com.vmware.identity.samlservice.Shared;
+import com.vmware.identity.session.Session;
+import com.vmware.identity.session.SessionManager;
 import com.vmware.identity.websso.client.AuthnData;
-import com.vmware.identity.websso.client.LogonProcessor;
+import com.vmware.identity.websso.client.LogonProcessorEx;
 import com.vmware.identity.websso.client.Message;
 
 /**
  * Proxying service  Logon Processor Implementation
  *
  */
-public class LogonProcessorImpl implements LogonProcessor {
+public class LogonProcessorImpl implements LogonProcessorEx {
+
+    @Autowired
+    private MessageSource messageSource;
+
+    @Autowired
+    private SessionManager sessionManager;
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory
             .getLogger(LogonProcessorImpl.class);
 
+    private static final String RPSelectionParam_RPNameList = "rp_display_name_list";
+    private static final String RPSelectionParam_RPEntityIDList = "rp_entity_id_list";
+    private static final String RPSelectionJSP = "/WEB-INF/views/chooseRP.jsp";
+    private static final String RPSelectionParam_SAMLResponse = "trusted_saml_response";
+    private static final String RPSelectionParam_DialogTittle = "tittle";
+    private static final String ExternalIDPErrorMessageName = "ExternalIDPErrorMessage";
+
     private final ServerValidatableSamlTokenFactory tokenFactory =
             new ServerValidatableSamlTokenFactory();
-    private AuthenticationFilter<AuthnRequestState> authenticator;
+
+    private final SamlAuthorityFactory samlAuthFactory = new DefaultSamlAuthorityFactory(
+            SignatureAlgorithm.RSA_SHA256,
+            new IdmPrincipalAttributesExtractorFactory(Shared.IDM_HOSTNAME),
+            new ConfigExtractorFactoryImpl());
+
     private AuthnRequestState requestState;
 
-    /* (non-Javadoc)
+    /*
+     * WebSSO client library authn error handler.
+     * At failure of authentication by IDP, SSO server should notify the initiating service provider or client browser.
      * @see com.vmware.identity.websso.client.LogonProcessor#authenticationError(com.vmware.identity.websso.client.Message, javax.servlet.http.HttpServletResponse)
      */
     @Override
-    public void authenticationError(Message arg0, HttpServletRequest request,
+    public void authenticationError(Message arg0, Locale locale,  String tenant, HttpServletRequest request,
             HttpServletResponse response) {
-        Validate.notNull(requestState, "requestState");
+
+        Validate.notNull(arg0, "arg0");
+        Validate.notNull(response, "response");
         try {
-            if (requestState.getValidationResult().isValid())
-                setSPValidationResultFromIDPValidationResult(arg0);
 
-            Locale locale = requestState.getLocale();
-            Validate.notNull(locale);
+            ValidationResult vrExtIdpSsoResponse = retrieveValidationResult(arg0);
 
-            //HttpServletResponse.SC_UNAUTHORIZED
+            //retrieve current VR
+            if (!arg0.isIdpInitiated() && requestState != null ) {
+                ValidationResult vr =  requestState.getValidationResult();
+                if ( !( null != vr && !vr.isValid())) {
+                    requestState.setValidationResult(vrExtIdpSsoResponse);
+                }
+            } else {
+                Validate.notEmpty(tenant, "tenant");
+                Validate.notNull(locale, "locale");
 
-            ValidationResult vr = requestState.getValidationResult();
+              }
 
-            int responseCode = vr.getResponseCode();
+            //retrieve browser locale
+            if (null == locale) {
+                locale = requestState == null? Locale.getDefault():requestState.getLocale();
+            }
+
+            int responseCode = vrExtIdpSsoResponse.getResponseCode();
 
             //default code is  HttpServletResponse.SC_UNAUTHORIZED
             if (responseCode == HttpServletResponse.SC_OK) {
-            	responseCode = HttpServletResponse.SC_UNAUTHORIZED;
+                responseCode = HttpServletResponse.SC_UNAUTHORIZED;
             }
 
-            String message = vr.getMessage(requestState.getMessageSource(), locale);
-            response.addHeader(Shared.RESPONSE_ERROR_HEADER, message);
+            String message = vrExtIdpSsoResponse.getMessage(messageSource, locale);
+
+            if (OasisNames.RESPONDER.equals(vrExtIdpSsoResponse.getStatus()) ) {
+                message = messageSource.getMessage(ExternalIDPErrorMessageName, null, locale) + message;
+            }
+            response.addHeader(Shared.RESPONSE_ERROR_HEADER, Shared.encodeString(message));
             response.sendError(responseCode, message);
-            log.info("Responded with ERROR {} message {}",vr.getResponseCode(), message);
+            log.info("External IDP responded with ERROR {} message {}",vrExtIdpSsoResponse.getResponseCode(), message);
 
         } catch (Exception e) {
             log.error("Caught unexpect exception in processing authentication error {}", e.toString());
@@ -99,111 +156,253 @@ public class LogonProcessorImpl implements LogonProcessor {
         }
     }
 
+    @Override
+    public void authenticationError(Message message,  HttpServletRequest request, HttpServletResponse response) {
+        authenticationError(message, null, null, request, response);
+    }
+
+    @Override
+    public void authenticationSuccess(Message message, HttpServletRequest request, HttpServletResponse response) {
+        authenticationSuccess(message, null,null, request, response);
+    }
+
     /* (non-Javadoc)
      * @see com.vmware.identity.websso.client.LogonProcessor#authenticationSuccess(com.vmware.identity.websso.client.Message, javax.servlet.http.HttpServletResponse)
      *
-     * We got a validated external token from client lib. Now validate the subject in lotus,
-     * issue our own token. Send response to ACS of SP.
-     *
+     * We got a validated external token from client lib.  This function does the following:
+     * 1. validate the subject in lotus,
+     * 2. create session.
+     * 3. a) issue response to requesting SP (in SP-initiated request) or
+     *    b) redirect to resource URI (in IDP-Initiated request)
      *
      */
     @Override
-    public void authenticationSuccess(Message arg0, HttpServletRequest request,
+    public void authenticationSuccess(Message arg0, Locale locale, String tenant, HttpServletRequest request,
             HttpServletResponse response) {
-        Validate.notNull(requestState, "requestState");
 
         try {
-
-            MessageSource messageSource = requestState.getMessageSource();
-            Locale locale = requestState.getLocale();
-            //HttpServletResponse responseToSP = requestState.getResponse();
-            String tenant = requestState.getIdmAccessor().getTenant();
-
-            Validate.notNull(locale, "locale");
-            Validate.notNull(messageSource, "messageSource");
+            Validate.notNull(arg0, "arg0");
             Validate.notNull(response, "response obj for service provider");
+            Validate.notNull(request, "request obj for service provider");
             Validate.notEmpty(tenant, "tenant");
 
-            PrincipalId subjectUpn = validateExternalUser(tenant, arg0);
-            if (subjectUpn == null) {
-				authenticationError(arg0, request, response);
-				return;
-            }
+            SAMLResponseSenderFactory responseSenderFactory =
+                    new SAMLAuthnResponseSenderFactory();
 
-            requestState.setPrincipalId(subjectUpn);
-            requestState.setAuthnMethod(AuthnMethod.ASSERTION);
-            requestState.createSession(arg0.getSessionIndex());
+            IdmAccessor idmAccessor = new DefaultIdmAccessorFactory().getIdmAccessor();
+            idmAccessor.setTenant(tenant);
 
-            //Generate token
-            Document token = requestState.createToken();
-            requestState.addResponseHeaders(response); // set response headers
+            if (arg0.isIdpInitiated()) {
+                log.debug("IDP-Initiated: Begin processing authentication response.");
+                Validate.notNull(locale, "locale");
 
-            Response samlResponse = requestState.generateResponseForTenant(
-            tenant, token);
-            if (samlResponse == null) {
-                // use validation result code to return redirect or error to
-                // client
-                ValidationResult vr = requestState.getValidationResult();
-                if (vr.isRedirect()) {
-                    response.sendRedirect(vr.getStatus());
-                    log.info("Responded with REDIRECT {} target {}",vr.getResponseCode(), vr.getStatus());
-                } else {
-                    String message = vr.getMessage(messageSource, locale);
-                    response.addHeader(Shared.RESPONSE_ERROR_HEADER, message);
-                    response.sendError(vr.getResponseCode(), message);
-                    log.info("Responded with ERROR {} message {}",vr.getResponseCode(), message);
+                PrincipalId principal = validateExternalUser(idmAccessor, arg0);
+                if (principal == null) {
+                    authenticationError(arg0, locale, tenant, request, response);
+                    return;
                 }
+
+                Session currentSession = Shared.getSession(sessionManager, request, tenant);
+                if (currentSession == null) {
+                    currentSession = this.sessionManager.createSession(
+                            principal,AuthnMethod.ASSERTION,
+                            arg0.getSessionIndex(),arg0.getSource());
+
+                    String tenantSessionCookieName = Shared.getTenantSessionCookieName(tenant);
+                    log.trace("Setting cookie " + tenantSessionCookieName
+                            + " value " + currentSession.getId());
+
+                    Shared.addSessionCookie( tenantSessionCookieName,currentSession.getId(),response);
+                }
+
+                String rpID = chooseSignInRPSite( idmAccessor, request, response, locale);
+
+                if (null == rpID) {
+                    //skip for this request. There will be a new request with RP selected.
+                    log.debug("No Relying party was selected yet. Skip sending the SAML response!");
+                } else {
+                    SAMLResponseSender responseSender = responseSenderFactory.buildResponseSender
+                            (tenant, response, locale,
+                            null,  //for IDP initiated, no relay state in post Response to SP
+                            null,  //no request
+                            currentSession.getAuthnMethod(),
+                            currentSession.getId(),
+                            currentSession.getPrincipalId(),
+                            messageSource,sessionManager);
+
+                    Document token = responseSender.generateTokenForResponse(rpID);
+
+                    responseSender.sendResponseToRP(rpID, token);
+                }
+
+                log.info("IDP-Initiated: End processing authentication response. Session was created.");
             } else {
-                String samlResponseForm = requestState
-                .generateResponseFormForTenant(samlResponse, tenant);
-                log.info("SAML Response Form is {}", samlResponseForm);
-                // write response
-                Shared.sendResponse(response, Shared.HTML_CONTENT_TYPE, samlResponseForm);
+
+                log.debug("SP-Initiated: Begin processing authentication response.");
+                Validate.notNull(requestState, "requestState");
+                locale = requestState.getLocale();
+                Validate.notNull(locale, "locale");
+
+                tenant = requestState.getIdmAccessor().getTenant();
+
+                PrincipalId principal = validateExternalUser(idmAccessor, arg0);
+                if (principal == null) {
+                    authenticationError(arg0, locale, tenant, request, response);
+                    return;
+                }
+
+                //send response to initiating relying party
+                requestState.addResponseHeaders(response); // set response headers
+                requestState.setPrincipalId(principal);
+                requestState.setAuthnMethod(AuthnMethod.ASSERTION);
+                requestState.createSession(arg0.getSessionIndex(), arg0.getSource());
+
+                String tenantSessionCookieName = Shared.getTenantSessionCookieName(tenant);
+                log.trace("Setting cookie " + tenantSessionCookieName
+                        + " value " + requestState.getSessionId());
+
+                Shared.addSessionCookie( tenantSessionCookieName,requestState.getSessionId(),response);
+
+                SAMLResponseSender responseSender = responseSenderFactory.buildResponseSender
+                        (tenant, response, locale,
+                        null,  //for IDP initiated, no relay state in post Response to SP
+                        requestState,
+                        AuthnMethod.ASSERTION,
+                        requestState.getSessionId(),
+                        principal,
+                        messageSource,sessionManager);
+
+                String rpID = requestState.getAuthnRequest()
+                        .getIssuer().getValue();
+
+                Validate.notEmpty(rpID, "No Relying party ID in SAML authentication request!");
+                Document token = responseSender.generateTokenForResponse(rpID);
+                responseSender.sendResponseToRP(rpID, token);
+
+                log.info("SP-Initiated: End processing  Authentication response. Session was created.");
             }
         }
         catch (InvalidTokenException f) {
             log.error("Caught InvalidTokenException in validating external token {}", f.toString());
-            // Failed in creating our own token.  Report authentication error
             com.vmware.identity.websso.client.ValidationResult extResponseVr = new com.vmware.identity.websso.client.ValidationResult(HttpServletResponse.SC_NOT_ACCEPTABLE,
-                    OasisNames.REQUEST_DENIED,"Unable to validate token issued by external IDP");
+                    OasisNames.RESPONDER,"Unable to validate token issued by external IDP");
             arg0.setValidationResult(extResponseVr);
-            authenticationError(arg0,request,response);
+            authenticationError(arg0, locale, tenant, request, response);
 
         } catch (SamlServiceException e) {
-            log.error("Caught Saml Service Exception in creating native token after validagted via external IDP {}", e.toString());
-            requestState.setValidationResult( new ValidationResult(OasisNames.RESPONDER)); // indicate
-                                                                                // unexpected
-                                                                                // error
-
-            // Failed in creating our own token.  Report authentication error
-            authenticationError(arg0,request,response);                                                                 // server
+            log.error("Caught Saml Service Exception in creating WebSSO session or issuring token. ", e.toString());
+            if (!arg0.isIdpInitiated() && requestState != null) {
+                requestState.setValidationResult( new ValidationResult(OasisNames.RESPONDER, e.getMessage()));
+            }
+            authenticationError(arg0,locale, tenant, request,response);                                                                 // server
         }
         catch (IOException g) {
-            log.error("Caught IOException in sending out response to relying party {}", g.toString());
-            internalError(g, request, response);
+            log.error("Caught IOException in sending out response or redirecting to relying party {}", g.toString());
+            internalError(g, locale,tenant, request, response);
         }
     }
 
-    /* (non-Javadoc)
+    /**
+     * Choose a relying party site to send the assertion.
+     *  1. Check RelayState
+     *  2. Check if the selection is made by user.
+     *  3. If not promp user for selection and return null from this function. The user selection of RP will come in as
+     *      a new request.
+     *
+     * @param tenant
+     * @param request
+     * @param response
+     * @param locale
+     * @return EntityID string of the selected RP. Null if Choose RP dialog is called.
+     * @throws SamlServiceException not able to dispatch request to RP selection jsp.
+     */
+    private String chooseSignInRPSite(IdmAccessor idmAccessor, HttpServletRequest request, HttpServletResponse response, Locale locale)
+            throws SamlServiceException {
+
+        Validate.notNull(idmAccessor, "idmAccessor");
+        Validate.notNull(request, "request");
+        Validate.notNull(response, "response");
+
+        String tenant = idmAccessor.getTenant();
+        Validate.notNull(tenant, "tenant");
+
+        //Use RelayState if available.
+        String rp_selected = request.getParameter(Shared.RELAY_STATE_PARAMETER);
+        if (rp_selected != null && !rp_selected.isEmpty()) {
+            String rpID;
+            try {
+                rpID = URLDecoder.decode(rp_selected, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                throw new SamlServiceException("Failed in URL-decoding RelayState: "+rp_selected, e);
+            }
+            log.debug("IDP_Initiated response has relay state which will be used for" +
+                    " identifying Relying Party. RelyingPartyID: "+rpID);
+            return rpID;
+        }
+
+        //Check "CastleRPSelection" header
+        rp_selected =request.getHeader(Shared.RP_SELECTION_ENTITYID);
+
+        if (rp_selected != null && !rp_selected.isEmpty()) {
+            log.debug("IDP_Initiated response has \"CastleRPSelection\" header which will be used for identifying Relying Party.");
+            return rp_selected;
+        }
+
+        Collection<RelyingParty> rpCollection = idmAccessor.getRelyingParties(tenant);
+
+        //Prepare lists of RP URL and name for the selection dialog
+        Iterator<RelyingParty> it = rpCollection.iterator();
+
+        //Skip the Relying party selection if only one RP is registered
+        if (rpCollection.size() == 1) {
+            return it.next().getUrl();
+        }
+
+        List<String> rpEntityIdList = new ArrayList<String>();
+        List<String> rpNameList = new ArrayList<String>();
+        while (it.hasNext()) {
+            RelyingParty rp = it.next();
+            rpEntityIdList.add(rp.getUrl());
+            rpNameList.add(rp.getName());
+        }
+
+        //dispatch selection form
+        request.setAttribute(RPSelectionParam_RPNameList, rpNameList);
+        request.setAttribute(RPSelectionParam_RPEntityIDList, rpEntityIdList);
+
+        String samlResponseStr = request.getParameter(Shared.SAML_RESPONSE_PARAMETER);
+        request.setAttribute(RPSelectionParam_SAMLResponse,StringEscapeUtils.escapeJavaScript( samlResponseStr));
+        request.setAttribute(RPSelectionParam_DialogTittle, messageSource.getMessage("ChooseService.Title", null, locale));
+        RequestDispatcher dispatcher = request.getRequestDispatcher(RPSelectionJSP);
+        try {
+            dispatcher.forward(request, response);
+        } catch (Exception e) {
+            throw new SamlServiceException("Failed in dispatch request to RPSelection.jsp", e);
+        }
+
+        return null;
+    }
+
+    /*
+     * Error condition that we are not able notify SP. This error tipically encountered during sending response to SP.
+     * So all we can do is send browser error message.
+     *
+     * (non-Javadoc)
      * @see com.vmware.identity.websso.client.LogonProcessor#internalError(java.lang.Exception, javax.servlet.http.HttpServletRequest)
      */
     @Override
-    public void internalError(Exception internalError,
+    public void internalError(Exception error, Locale locale, String tenant,
             HttpServletRequest request, HttpServletResponse response){
-        log.error("Caught internalError in authenticating with external IDP! {}" , internalError.toString());
-        Validate.notNull(requestState, "requestState");
+        log.error("Caught internalError in authenticating with external IDP! {}" , error.toString());
+        Validate.notNull(response, "response");
         try {
-            ValidationResult vr = requestState.getValidationResult();
-            MessageSource messageSource = requestState.getMessageSource();
-            Locale locale = requestState.getLocale();
-            Validate.notNull(locale);
-            Validate.notNull(messageSource);
 
-            String message = vr.getMessage(requestState.getMessageSource(), locale);
-            response.addHeader(Shared.RESPONSE_ERROR_HEADER, message);
-            response.sendError(vr.getResponseCode(), message);
-            log.info("Responded with ERROR " + vr.getResponseCode()
-                    + ", message " + message);
+            int httpErrorCode = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+            String messageStr = error.getMessage();
+            response.addHeader(Shared.RESPONSE_ERROR_HEADER, Shared.encodeString(messageStr));
+            response.sendError(httpErrorCode, messageStr);
+            log.info("Send client browser error: " + httpErrorCode
+                    + ", message: " + messageStr);
 
         }
         catch (IOException e) {
@@ -211,7 +410,32 @@ public class LogonProcessorImpl implements LogonProcessor {
         }
     }
 
-    private PrincipalId validateExternalUser(String tenant, Message arg0) {
+    @Override
+    public void internalError(Exception internalError, HttpServletRequest request, HttpServletResponse response) {
+        internalError(internalError, null, null, request, response);
+    }
+
+    /**
+     * Validate principal being asserted by IDP. Provision and update JIT user as needed.
+     *  1. Validate external token from the response.
+     *  2. Provision JIT user if the feature is on and the subject not found.
+     *  3. Update JIT user attributes if it is existing JIT user.
+     *
+     * @param tenant
+     * @param arg0
+     * @return  PrincipalId or null if not able to link account to the incoming token
+     * @throws InvalidSignatureException
+     * @throws InvalidTokenException
+     * @throws SystemException
+     */
+    private PrincipalId validateExternalUser(IdmAccessor idmAccessor, Message arg0)
+            throws InvalidSignatureException, InvalidTokenException, SystemException {
+
+        Validate.notNull(idmAccessor, "idmAccessor");
+        Validate.notNull(arg0, "Message");
+        String tenant = idmAccessor.getTenant();
+        Validate.notNull(tenant, "tenant");
+
         AuthnData authnData = (AuthnData) arg0.getMessageData();
         Validate.notNull(authnData, "authnData");
 
@@ -219,15 +443,12 @@ public class LogonProcessorImpl implements LogonProcessor {
                 SAMLNames.ASSERTION).item(0);
         ServerValidatableSamlToken servToken = tokenFactory.parseToken(tokenEle);
 
-        DefaultSamlAuthorityFactory samlAuthFactory = requestState.getSamlAuthFactory();
-        Validate.notNull(samlAuthFactory, "samlAuthFactory");
-
         final TokenValidator authnOnlyTokenValidator = samlAuthFactory.createAuthnOnlyTokenValidator(tenant);
         final ServerValidatableSamlToken validatedToken = authnOnlyTokenValidator.validate(servToken);
 
         Validate.isTrue(validatedToken.isExternal());
 
-        IDPConfig extIdp = requestState.getExtIDPToUse();
+        IDPConfig extIdp = getIssuerIDPConfig(arg0, idmAccessor);
         boolean isJitEnabled = extIdp.getJitAttribute();
         PrincipalId subjectUpn = validatedToken.getSubject().subjectUpn();
         boolean isSubjectValidated = subjectUpn != null && validatedToken.getSubject().subjectValidation() != SubjectValidation.None;
@@ -246,7 +467,7 @@ public class LogonProcessorImpl implements LogonProcessor {
 
         if (isJitEnabled && !isSubjectValidated) {
             try {
-                subjectUpn = requestState.getIdmAccessor().createUserAccountJustInTime(servToken.getSubject(), tenant, extIdp);
+                subjectUpn = idmAccessor.createUserAccountJustInTime(servToken.getSubject(), tenant, extIdp);
             } catch (Exception e) {
                 log.error("Failure to create a temporary user.", e);
                 com.vmware.identity.websso.client.ValidationResult extResponseVr = new com.vmware.identity.websso.client.ValidationResult(
@@ -255,13 +476,13 @@ public class LogonProcessorImpl implements LogonProcessor {
                         null);
                 arg0.setValidationResult(extResponseVr);
                 return null;
-			}
+            }
         }
 
         if (isJitEnabled) {
             // update or add group information based on attribute info in new token
             try {
-                requestState.getIdmAccessor().updateJitUserGroups(subjectUpn, tenant, extIdp.getTokenClaimGroupMappings(), authnData.getAttributes());
+                idmAccessor.updateJitUserGroups(subjectUpn, tenant, extIdp.getTokenClaimGroupMappings(), authnData.getAttributes());
             } catch (Exception e){
                 log.error("Encountered an error while updating Jit user groups", e);
                 com.vmware.identity.websso.client.ValidationResult extResponseVr = new com.vmware.identity.websso.client.ValidationResult(
@@ -276,6 +497,31 @@ public class LogonProcessorImpl implements LogonProcessor {
         return subjectUpn;
     }
 
+
+    /**
+     *
+     * @param arg0  Message object from successful validation of SAML response message
+     * @return IDPConfig for the issuer of the message, null if not found.
+     */
+    private IDPConfig getIssuerIDPConfig( Message arg0, IdmAccessor accessor) {
+
+        Validate.notNull(arg0, "arg0");
+        Validate.notNull(accessor, "accessor.");
+
+        IDPConfig idpConfig = null;
+        Collection<IDPConfig> extIdps = accessor.getExternalIdps();
+
+        Validate.notEmpty(extIdps, "No IDP registration found.");
+
+        for (IDPConfig entry : extIdps) {
+            if (entry.getEntityID().equals(arg0.getSource())) {
+                idpConfig = entry;
+            }
+        }
+
+        return idpConfig;
+    }
+
     /**
      * Propagate authentication status to websso client requestState.
      * check IDP side returned status first. If succeeded, check our validation status of the
@@ -283,24 +529,25 @@ public class LogonProcessorImpl implements LogonProcessor {
      * @param arg0 Message object passed in to the error callback.
      */
 
-    private void setSPValidationResultFromIDPValidationResult(Message arg0) {
+    private ValidationResult retrieveValidationResult(Message arg0) {
         Validate.notNull(arg0, "Message object");
+
         com.vmware.identity.websso.client.ValidationResult extResponseVr = arg0.getValidationResult();
         Validate.notNull(extResponseVr);
         ValidationResult vr = null;
 
 
         if (arg0.getStatus() != null && !arg0.getStatus().equals(OasisNames.SUCCESS)) {
-        	//If it is external IDP authentication error, popogated the error back to RP.
+            //If it is external IDP authentication error, popogated the error back to RP.
             vr = new ValidationResult(extResponseVr.getResponseCode()
                     ,arg0.getStatus(),arg0.getSubstatus());
 
         } else {
-        	//Else send the validation error to RP
+            //Else send the validation error to RP
             vr = new ValidationResult(extResponseVr.getResponseCode()
                         ,extResponseVr.getStatus(),extResponseVr.getSubstatus());
         }
-        requestState.setValidationResult(vr);
+        return vr;
     }
 
     /**
@@ -315,19 +562,5 @@ public class LogonProcessorImpl implements LogonProcessor {
      */
     public void setRequestState(AuthnRequestState requestState) {
         this.requestState = requestState;
-    }
-
-    /**
-     * @return the authenticator
-     */
-    public AuthenticationFilter<AuthnRequestState> getAuthenticator() {
-        return authenticator;
-    }
-
-    /**
-     * @param authenticator the authenticator to set
-     */
-    public void setAuthenticator(AuthenticationFilter<AuthnRequestState> authenticator) {
-        this.authenticator = authenticator;
     }
 }

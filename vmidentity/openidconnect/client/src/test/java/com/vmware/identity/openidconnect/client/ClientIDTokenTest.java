@@ -56,7 +56,7 @@ public class ClientIDTokenTest {
     public void testBuildIdToken() throws Exception {
 
         String idTokenString = TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getValue(), providerPrivateKey, tokenLifeTime);
-        ClientIDToken clientIdToken = ClientIDToken.build(idTokenString, providerPublicKey, clientID, 0L);
+        ClientIDToken clientIdToken = ClientIDToken.build(idTokenString, providerPublicKey, issuer, clientID, 0L);
         Assert.assertTrue(clientIdToken.getAudience().contains(clientID.getValue()));
         Assert.assertEquals(issuer.getValue(), clientIdToken.getIssuer().getValue());
     }
@@ -71,7 +71,7 @@ public class ClientIDTokenTest {
 
         String idTokenString = TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getValue(), providerPrivateKey, tokenLifeTime);
         try {
-            ClientIDToken.build(idTokenString, anotherProviderPublicKey, clientID, 0L);
+            ClientIDToken.build(idTokenString, anotherProviderPublicKey, issuer, clientID, 0L);
         } catch (TokenValidationException e) {
             Assert.assertEquals(TokenValidationError.INVALID_SIGNATURE, e.getTokenValidationError());
         }
@@ -84,7 +84,7 @@ public class ClientIDTokenTest {
 
         String idTokenString = TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getValue(), providerPrivateKey, tokenLifeTime);
         try {
-            ClientIDToken.build(idTokenString, providerPublicKey, anotherClientID, 0L);
+            ClientIDToken.build(idTokenString, providerPublicKey, issuer, anotherClientID, 0L);
         } catch (TokenValidationException e) {
             Assert.assertEquals(TokenValidationError.INVALID_AUDIENCE, e.getTokenValidationError());
         }
@@ -95,7 +95,7 @@ public class ClientIDTokenTest {
 
         String idTokenString = TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getValue(), providerPrivateKey, -tokenLifeTime);
         try {
-            ClientIDToken.build(idTokenString, providerPublicKey, clientID, 0L);
+            ClientIDToken.build(idTokenString, providerPublicKey, issuer, clientID, 0L);
         } catch (TokenValidationException e) {
             Assert.assertEquals(TokenValidationError.PARSE_ERROR, e.getTokenValidationError());
         }
@@ -106,7 +106,7 @@ public class ClientIDTokenTest {
 
         String idTokenString = TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ACCESS_TOKEN.getValue(), providerPrivateKey, tokenLifeTime);
         try {
-            ClientIDToken.build(idTokenString, providerPublicKey, clientID, 0L);
+            ClientIDToken.build(idTokenString, providerPublicKey, issuer, clientID, 0L);
         } catch (TokenValidationException e) {
             Assert.assertEquals(TokenValidationError.PARSE_ERROR, e.getTokenValidationError());
         }
@@ -116,7 +116,7 @@ public class ClientIDTokenTest {
     public void testBuildIdTokenValidWithTolerance() throws Exception {
 
         String idTokenString = TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getValue(), providerPrivateKey, tokenLifeTime);
-        ClientIDToken clientIdToken = ClientIDToken.build(idTokenString, providerPublicKey, clientID, tokenLifeTime);
+        ClientIDToken clientIdToken = ClientIDToken.build(idTokenString, providerPublicKey, issuer, clientID, tokenLifeTime);
         Assert.assertTrue(clientIdToken.getAudience().contains(clientID.getValue()));
         Assert.assertEquals(issuer.getValue(), clientIdToken.getIssuer().getValue());
     }

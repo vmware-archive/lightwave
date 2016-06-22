@@ -1,5 +1,5 @@
 /* **********************************************************************
- * Copyright 2015 VMware, Inc.  All rights reserved. 
+ * Copyright 2015 VMware, Inc.  All rights reserved. VMware Confidential
  * *********************************************************************/
 
 package com.vmware.identity.configure;
@@ -84,16 +84,23 @@ public class IdentityManagerUtil {
 
 		char[] CHARSET_AZ_09 = PSCConstants.CHARSET_ALPHANUMERIC
 				.toCharArray();
-
 		String idmFile = InstallerUtils.joinPath(InstallerUtils
 				.getInstallerHelper().getIdmLoginPath(),
 				PSCConstants.IDM_LOGIN_FILE);
-		Path idmLoginPath = Paths.get(idmFile);
 		try {
+			File file = new File(InstallerUtils
+					.getInstallerHelper().getIdmLoginPath());
+			if(!file.exists()){
+				file.mkdirs();
+			}
+
+			file= new File(idmFile);
 			BufferedWriter bw = new BufferedWriter(
-					new FileWriter(idmFile));
+					new FileWriter(file));
 			String ranString = randomString(CHARSET_AZ_09, 70);
 			bw.write(ranString, 0, ranString.length());
+
+			Path idmLoginPath = Paths.get(idmFile);
 			InstallerUtils.getInstallerHelper().setPermissions(idmLoginPath);
 
 		} catch (FileNotFoundException ex) {

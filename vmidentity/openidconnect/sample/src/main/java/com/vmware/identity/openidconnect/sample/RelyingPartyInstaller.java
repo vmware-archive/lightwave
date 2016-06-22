@@ -54,17 +54,18 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
+import com.vmware.identity.openidconnect.client.AccessToken;
 import com.vmware.identity.openidconnect.client.ClientConfig;
 import com.vmware.identity.openidconnect.client.ConnectionConfig;
 import com.vmware.identity.openidconnect.client.MetadataHelper;
 import com.vmware.identity.openidconnect.client.OIDCClient;
 import com.vmware.identity.openidconnect.client.OIDCTokens;
 import com.vmware.identity.openidconnect.client.TokenSpec;
-import com.vmware.identity.openidconnect.common.AccessToken;
 import com.vmware.identity.openidconnect.common.Base64Utils;
 import com.vmware.identity.openidconnect.common.ClientAuthenticationMethod;
 import com.vmware.identity.openidconnect.common.PasswordGrant;
 import com.vmware.identity.openidconnect.common.ProviderMetadata;
+import com.vmware.identity.openidconnect.common.TokenType;
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.idm.client.IdmClient;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
@@ -112,7 +113,7 @@ class RelyingPartyInstaller {
         PasswordGrant passwordGrant = new PasswordGrant(
                 this.relyingPartyConfig.getAdminUsername(),
                 this.relyingPartyConfig.getAdminPassword());
-        TokenSpec tokenSpec = new TokenSpec.Builder().resourceServers(Arrays.asList("rs_admin_server")).build();
+        TokenSpec tokenSpec = new TokenSpec.Builder(TokenType.BEARER).resourceServers(Arrays.asList("rs_admin_server")).build();
         OIDCTokens oidcTokens = nonRegisteredClient.acquireTokens(passwordGrant, tokenSpec);
 
         // create a private/public key pair, generate a certificate and assign it to a solution user name.
@@ -270,7 +271,7 @@ class RelyingPartyInstaller {
         sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
         IdmClient idmClient = new IdmClient(domainControllerFQDN, domainControllerPort, new DefaultHostnameVerifier(), sslContext);
         com.vmware.identity.rest.core.client.AccessToken restAccessToken =
-                new com.vmware.identity.rest.core.client.AccessToken(accessToken.serialize(),
+                new com.vmware.identity.rest.core.client.AccessToken(accessToken.getValue(),
                         com.vmware.identity.rest.core.client.AccessToken.Type.JWT);
         idmClient.setToken(restAccessToken);
         return idmClient;

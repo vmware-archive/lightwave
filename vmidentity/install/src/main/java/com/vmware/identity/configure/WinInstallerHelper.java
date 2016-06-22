@@ -1,5 +1,5 @@
 /* **********************************************************************
- * Copyright 2015 VMware, Inc.  All rights reserved. 
+ * Copyright 2015 VMware, Inc.  All rights reserved. VMware Confidential
  * *********************************************************************/
 
 package com.vmware.identity.configure;
@@ -29,11 +29,15 @@ public class WinInstallerHelper implements InstallerHelper {
 
     private static final String VMCA_ROOT_KEY = "SOFTWARE\\VMware, Inc.\\VMware Certificate Services";
     private static final String VMIDM_ROOT_KEY = "SOFTWARE\\VMware, Inc.\\VMware Identity Services";
+    private static final String VM_TOMCAT_ROOT_KEY = "SOFTWARE\\VMware, Inc.\\vtcServer";
     private static final String INSTALL_PATH = "InstallPath";
+    private static final String CONFIG_PATH = "ConfigPath";
+    private static final String LOGS_PATH = "LogsPath";
+    private static final String TCSERVER = "tcServer";
 
     @Override
     public String getConfigFolderPath() {
-        return getConfiguredPath("ConfigPath");
+        return getConfiguredPath(VMIDM_ROOT_KEY, CONFIG_PATH);
     }
 
     @Override
@@ -49,7 +53,7 @@ public class WinInstallerHelper implements InstallerHelper {
 
     @Override
     public String getLogPaths() {
-        return getConfiguredPath("LogsPath");
+        return getConfiguredPath(VMIDM_ROOT_KEY, LOGS_PATH);
     }
 
     @Override
@@ -60,12 +64,7 @@ public class WinInstallerHelper implements InstallerHelper {
     @Override
     public String getVMIdentityInstallPath() {
 
-        return getConfiguredPath("InstallPath");
-    }
-
-    @Override
-    public String getTCSetenvName() {
-        return "setenv.bat";
+        return getConfiguredPath(VMIDM_ROOT_KEY, INSTALL_PATH);
     }
 
     @Override
@@ -73,20 +72,6 @@ public class WinInstallerHelper implements InstallerHelper {
         String tcRoot = joinPath(System.getenv("ProgramData"),
                 "VMware\\CIS\\runtime\\");
         return joinPath(tcRoot, "VMwareSTSService");
-    }
-
-    private String getConfiguredPath(String configName) {
-        IRegistryAdapter registryAdapter = RegistryAdapterFactory.getInstance()
-                .getRegistryAdapter();
-        IRegistryKey rootKey = registryAdapter
-                .openRootKey((int) RegKeyAccess.KEY_ALL_ACCESS);
-
-        String subkey = "SOFTWARE\\VMware, Inc.\\VMware Identity Services";
-
-        String installPath = registryAdapter.getStringValue(rootKey, subkey,
-                configName, false);
-
-        return installPath;
     }
 
     @Override
@@ -97,11 +82,7 @@ public class WinInstallerHelper implements InstallerHelper {
 
     @Override
     public String[] getSTSServiceStartCommand() {
-        String wrapperBin = InstallerUtils.joinPath(getVMIdentityInstallPath(),
-                "wrapper", "bin");
-        // on windows use the script provided by TC. Windows service name is
-        // generated from TC's STS instance name.
-        return new String[] { joinPath(wrapperBin, "StartApp-NT.bat") };
+        return new String[] { "sc.exe", "start", "VMwareSTS" };
     }
 
     @Override
@@ -193,21 +174,12 @@ public class WinInstallerHelper implements InstallerHelper {
 
     @Override
     public String getConfigureStsPath() {
-        return joinPath(getLogPaths(), "configure-sts.bat");
+        return"";
     }
 
     @Override
     public String getConfigureStsFileName() {
-        return "configure-sts.bat";
-    }
-
-    public String joinPath(String path1, String path2) {
-        return String.format("%s%s%s", path1, File.separator, path2);
-    }
-
-    public String joinPath(String path1, String path2, String path3) {
-        return String.format("%s%s%s%s%s", path1, File.separator, path2,
-                File.separator, path3);
+        return "";
     }
 
     @Override
@@ -279,11 +251,6 @@ public class WinInstallerHelper implements InstallerHelper {
         aclView.setAcl(securityDesc);
     }
 
-    @Override
-    public String getGcLogFile() {
-        return "gc.log";
-    }
-
     private String getIDMServiceName() {
         return "VMwareIdentityMgmtService";
     }
@@ -298,8 +265,28 @@ public class WinInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String getSetEnvReplacement() {
-        return "set ";
+    public String getIdmLoginPath(){
+
+        return readRegEdit(VMIDM_ROOT_KEY, INSTALL_PATH);
+    }
+
+    public String joinPath(String path1, String path2) {
+        return String.format("%s%s%s", path1, File.separator, path2);
+    }
+
+    public String joinPath(String path1, String path2, String path3) {
+        return String.format("%s%s%s%s%s", path1, File.separator, path2,
+                File.separator, path3);
+    }
+
+    public String getTcRootPath() {
+
+        return joinPath(getConfiguredPath(VM_TOMCAT_ROOT_KEY, INSTALL_PATH), TCSERVER);
+    }
+
+    public String getWrapperBinPath() {
+
+        return joinPath(joinPath(getTcRootPath(), "templates","base"), "bin", "winx86_64");
     }
 
     public static String readRegEdit(String rootPath, String param) {
@@ -320,26 +307,15 @@ public class WinInstallerHelper implements InstallerHelper {
         return regValue;
     }
 
-    @Override
-    public String getInitTcInstancePath() {
-        return joinPath(getLogPaths(), "configure-tcInstance.bat");
-    }
-
-    @Override
-    public String getIdmLoginPath(){
-        IRegistryAdapter regAdapter = RegistryAdapterFactory.getInstance()
+    private static String getConfiguredPath(String subkey, String configName) {
+        IRegistryAdapter registryAdapter = RegistryAdapterFactory.getInstance()
                 .getRegistryAdapter();
+        IRegistryKey rootKey = registryAdapter
+                .openRootKey((int) RegKeyAccess.KEY_ALL_ACCESS);
 
-        IRegistryKey rootKey = regAdapter
-                .openRootKey((int) RegKeyAccess.KEY_READ);
+        String path = registryAdapter.getStringValue(rootKey, subkey,
+                configName, false);
 
-        String regValue = null;
-        try {
-            regValue = regAdapter.getStringValue(rootKey, VMIDM_ROOT_KEY, INSTALL_PATH,
-                    false);
-        } finally {
-            rootKey.close();
-        }
-        return regValue;
+        return path;
     }
 }

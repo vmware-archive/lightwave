@@ -28,7 +28,6 @@ import com.vmware.identity.idm.GSSResult;
 import com.vmware.identity.idm.IDMSecureIDNewPinException;
 import com.vmware.identity.idm.RSAAMResult;
 import com.vmware.identity.idm.client.CasIdmClient;
-import com.vmware.identity.openidconnect.common.AccessToken;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.AuthorizationCodeGrant;
 import com.vmware.identity.openidconnect.common.Base64Utils;
@@ -38,22 +37,23 @@ import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.common.GSSTicketGrant;
 import com.vmware.identity.openidconnect.common.GrantType;
-import com.vmware.identity.openidconnect.common.HttpRequest;
-import com.vmware.identity.openidconnect.common.HttpResponse;
-import com.vmware.identity.openidconnect.common.IDToken;
 import com.vmware.identity.openidconnect.common.Nonce;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.PasswordGrant;
-import com.vmware.identity.openidconnect.common.RefreshToken;
 import com.vmware.identity.openidconnect.common.RefreshTokenGrant;
 import com.vmware.identity.openidconnect.common.Scope;
 import com.vmware.identity.openidconnect.common.ScopeValue;
 import com.vmware.identity.openidconnect.common.SecureIDGrant;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.SolutionUserCredentialsGrant;
-import com.vmware.identity.openidconnect.common.TokenErrorResponse;
-import com.vmware.identity.openidconnect.common.TokenRequest;
-import com.vmware.identity.openidconnect.common.TokenSuccessResponse;
+import com.vmware.identity.openidconnect.protocol.AccessToken;
+import com.vmware.identity.openidconnect.protocol.HttpRequest;
+import com.vmware.identity.openidconnect.protocol.HttpResponse;
+import com.vmware.identity.openidconnect.protocol.IDToken;
+import com.vmware.identity.openidconnect.protocol.RefreshToken;
+import com.vmware.identity.openidconnect.protocol.TokenErrorResponse;
+import com.vmware.identity.openidconnect.protocol.TokenRequest;
+import com.vmware.identity.openidconnect.protocol.TokenSuccessResponse;
 
 /**
  * @author Yehia Zayour
@@ -325,7 +325,14 @@ public class TokenRequestProcessor {
 
     private TokenSuccessResponse processRefreshTokenGrant(SolutionUser solutionUser) throws ServerException {
         RefreshTokenGrant refreshTokenGrant = (RefreshTokenGrant) this.tokenRequest.getAuthorizationGrant();
-        RefreshToken refreshToken = refreshTokenGrant.getRefreshToken();
+        String refreshTokenString = refreshTokenGrant.getRefreshToken();
+
+        RefreshToken refreshToken;
+        try {
+            refreshToken = RefreshToken.parse(refreshTokenString);
+        } catch (ParseException e) {
+            throw new ServerException(ErrorObject.invalidGrant("failed to parse refresh_token"), e);
+        }
 
         validateRefreshToken(refreshToken, solutionUser);
 

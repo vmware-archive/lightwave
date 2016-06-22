@@ -74,6 +74,7 @@ CLEAN_OBJECTS = \
     $(SRCROOT)/openidconnect/client/target \
     $(SRCROOT)/openidconnect/sample/target \
     $(SRCROOT)/openidconnect/common/target \
+    $(SRCROOT)/openidconnect/protocol/target \
     $(SRCROOT)/openidconnect/server/src/main/resources/css \
     $(SRCROOT)/openidconnect/server/src/main/resources/img \
     $(SRCROOT)/openidconnect/server/src/main/resources/js \

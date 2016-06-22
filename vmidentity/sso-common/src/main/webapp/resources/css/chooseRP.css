@@ -1,0 +1,115 @@
+/*
+ *  Copyright (c) 2012-2016 VMware, Inc.  All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License.  You may obtain a copy
+ *  of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, without
+ *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ *  License for the specific language governing permissions and limitations
+ *  under the License.
+ */
+@charset "utf-8";
+/* CSS Document chooseRP.css */
+
+.base-app-style {
+   min-width: 1024px;
+   min-height: 612px;
+   position: relative;
+   height: 100%;
+   width: 100%;
+}
+
+body {
+   background: #3075ab; /* Old browsers */
+   background: -moz-linear-gradient(top,  #3a8dc8 0%, #183a62 100%); /* FF3.6+ */
+   background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#3a8dc8), color-stop(100%,#183a62)); /* Chrome,Safari4+ */
+   background: -webkit-linear-gradient(top,  #3a8dc8 0%,#183a62 100%); /* Chrome10+,Safari5.1+ */
+   background: -o-linear-gradient(top,  #3a8dc8 0%,#183a62 100%); /* Opera 11.10+ */
+   background: -ms-linear-gradient(top,  #3a8dc8 0%,#183a62 100%); /* IE10+ */
+   background: linear-gradient(to bottom,  #3a8dc8 0%,#183a62 100%); /* W3C */
+   filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#3a8dc8', endColorstr='#183a62',GradientType=0 ); /* IE6-9 */
+
+   background-repeat:no-repeat;
+   margin: 0;
+   font-size:12px;
+   font-family:Arial, Helvetica, sans-serif;
+   color: #87ceff;
+}
+
+
+.validation-message-text {
+   margin-left: 25px;
+   display: block;
+   font-weight: bold;
+   font-size: 11px;
+}
+
+#topSplash {
+   position: absolute;
+   top:0;
+   left:0;
+   z-index:1;
+}
+
+.button {
+   display: inline-block;
+   zoom: 1; /* zoom and *display = ie7 hack for display:inline-block */
+   *display: inline;
+   vertical-align: baseline;
+   margin: 0 2px;
+   outline: none;
+   cursor: pointer;
+   text-align: center;
+   text-decoration: none;
+   padding: 0px 30px;
+   height:24px;
+   font-size:12px;
+}
+.button:hover {
+   text-decoration: none;
+}
+.button:active {
+   position: relative;
+   top: 1px;
+}
+
+.blue {
+   color: #fff;
+   border: solid 2px #1d4772;
+   background: #0095cd;
+   background: -webkit-gradient(linear, left top, left bottom, from(#0c6fb9), to(#014781));
+   background: -moz-linear-gradient(top,  #0c6fb9,  #014781);
+   filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#0c6fb9', endColorstr='#014781');
+}
+.blue:hover {
+   background: #007ead;
+   background: -webkit-gradient(linear, left top, left bottom, from(#0d84dc), to(#004d88));
+   background: -moz-linear-gradient(top,  #0d84dc,  #004d88);
+   filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#0d84dc', endColorstr='#004d88');
+}
+.blue:active {
+   color: #fff;
+   background: -webkit-gradient(linear, left top, left bottom, from(#035a9d), to(#086fba));
+   background: -moz-linear-gradient(top,  #035a9d,  #086fba);
+   filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#035a9d', endColorstr='#086fba');
+}
+
+#chooseRPForm {
+   position: absolute;
+   top: 250px;
+   left: 44px;
+   z-index:2;
+   font-size:15px;
+}
+
+#pageTitle {
+   position: absolute;
+   top: 155px;
+   left: 44px;
+   z-index:2;
+   color:#FFF;
+   font-size:40px;
+}

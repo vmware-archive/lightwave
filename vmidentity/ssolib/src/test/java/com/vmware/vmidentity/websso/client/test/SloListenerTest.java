@@ -1,5 +1,5 @@
 /* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved. 
+ * Copyright 2012 VMware, Inc. All rights reserved. VMware Confidential
  **********************************************************************************/
 package com.vmware.vmidentity.websso.client.test;
 
@@ -36,7 +36,7 @@ import com.vmware.identity.websso.client.endpoint.SloListener;
 
 /**
  * @author root
- * 
+ *
  */
 public class SloListenerTest {
 
@@ -81,7 +81,8 @@ public class SloListenerTest {
     }
 
     /**
-     * Test receiving a valid logout request. Approach of testing: Construct a
+     * Test receiving a valid logout request - The slo request from IDP is same whether in SP or IDP-initiated SLO workflow.
+     * Approach of testing: Construct a
      * valid httpservletRequest that carry a legal logout request. Then setup a
      * mock HttpServeletResponse object specifying expected message. Pass the
      * reqeust to the receiving interface. Any exceptions or unexpected messages
@@ -89,7 +90,7 @@ public class SloListenerTest {
      * requested created signing: signed nameIDFormat: persistant
      */
     @Test
-    public final void logoutRequestSuccessSigned() {
+    public final void logoutRequestSuccess() {
         log.info("\nlogoutRequestSuccessSigned : ");
         try {
             StringBuffer sbResponseUrl = new StringBuffer();
@@ -127,7 +128,7 @@ public class SloListenerTest {
     }
 
     /**
-     * Test receiving a valid logout request unsigned. Approach of testing:
+     * Test disallow an unsigned logout request. Approach of testing:
      * Construct a valid httpservletRequest that carry a legal logout request.
      * Then setup a mock HttpServeletResponse object specifying expected
      * message. Pass the reqeust to the receiving interface. Any exceptions or
@@ -136,7 +137,7 @@ public class SloListenerTest {
      * persistant
      */
     @Test
-    public final void logoutRequestSuccessUnsigned() {
+    public final void logoutRequestFailUnsigned() {
         log.info("\nlogoutRequestSuccessUnsigned: ");
         try {
             StringBuffer sbResponseUrl = new StringBuffer();
@@ -155,8 +156,7 @@ public class SloListenerTest {
                     null, sbResponseUrl);
 
             // 5. build mock HttpServletResponse.
-            Capture<String> capturedUrl = new Capture<String>();
-            HttpServletResponse response = buildMockResponseForSuccess(capturedUrl);
+            HttpServletResponse response = buildMockResponseForError(400, "Invalid signature.");
 
             // 6. send the mock request to the API.
             controller.slo(TestConfig.tenantName, request, response);
@@ -258,14 +258,15 @@ public class SloListenerTest {
             // 1. Add a slo request message entry in the message store
             // so the slo response validation process can match it.
 
-            Message ssoMessage = new Message(MessageType.LOGOUT_RESPONSE, SloListenerTest.ssoRequestID, null, // relay
+            Message ssoMessage = new Message(MessageType.LOGOUT_REQUEST, SloListenerTest.ssoRequestID, null, // relay
                                                                                                               // state
                     null, TestConfig.spEntityID, TestConfig.IdpSloService_loc, // target
                     null, // status
                     null, // substatus
                     this.sessionIndex, // session index
                     null, // MessageDatda
-                    null); // tag
+                    null, // tag
+                    false); //IdpInitiated;
             SloListenerTest.controller.getMessageStore().add(ssoMessage);
 
             // 2. Construct simulated LogoutRequest to be received.
@@ -324,7 +325,8 @@ public class SloListenerTest {
                     null, // substatus
                     this.sessionIndex, // session index
                     null, // MessageDatda
-                    null); // tag
+                    null, // tag
+                    false); //IdpInitiated;
             SloListenerTest.controller.getMessageStore().add(ssoMessage);
 
             // 2 Construct simulated LogoutRequest to be received.
@@ -352,6 +354,7 @@ public class SloListenerTest {
         }
     }
 
+
     private HttpServletResponse buildMockResponseForSuccess(Capture<String> capturedStr) throws IOException {
         HttpServletResponse httpResponse = createMock(HttpServletResponse.class);
         httpResponse.sendRedirect(capture(capturedStr));
@@ -362,12 +365,12 @@ public class SloListenerTest {
     /**
      * Return a mocked HttpServletResponse for error cases in which it is
      * expected to send error response.
-     * 
+     *
      * @param errorCode
      *            error code in HttpServletResponse.sendError call.
      * @param errorMessage
      *            error message in HttpServletResponse.sendError call.
-     * 
+     *
      */
     private HttpServletResponse buildMockResponseForError(int errorCode, String errorMessage) throws IOException {
         HttpServletResponse response = createMock(HttpServletResponse.class);

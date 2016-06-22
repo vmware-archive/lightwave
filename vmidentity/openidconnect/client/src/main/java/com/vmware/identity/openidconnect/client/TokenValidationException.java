@@ -19,7 +19,7 @@ package com.vmware.identity.openidconnect.client;
  *
  * @author Jun Sun
  */
-public class TokenValidationException extends Exception {
+public final class TokenValidationException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
