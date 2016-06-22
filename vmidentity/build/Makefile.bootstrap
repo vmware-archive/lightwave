@@ -1,3 +1,7 @@
+SRCROOT := ../../
+MAKEROOT=$(SRCROOT)/support/make
+include $(MAKEROOT)/makedefs.mk
+
 MKDIR=/bin/mkdir
 RM=/bin/rm
 CP=/bin/cp
@@ -102,12 +106,12 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_datadir /opt/vmware/share" \
               --define "_includedir /opt/vmware/include" \
               --define "_likewise_open_prefix /opt/likewise" \
-              --define "_commons_daemondir /var/opt/commons-daemon-1.0.15/" \
-              --define "_javahome /var/opt/OpenJDK-1.8.0.92-bin" \
-              --define "_antdir /var/opt/apache-ant-1.9.6" \
-              --define "_tomcatdir /var/opt/apache-tomcat-8.0.35" \
-              --define "_jaxwsdir /opt/jaxws-ri-2.2.10" \
-              --define "_mavendir /var/opt/apache-maven-3.3.9" \
+              --define "_commons_daemondir ${COMMONS_DAEMON}" \
+              --define "_javahome ${JAVA_HOME}" \
+              --define "_antdir ${ANT_HOME}" \
+              --define "_tomcatdir ${TOMCAT_HOME}" \
+              --define "_jaxwsdir ${JAXWS_HOME}" \
+              --define "_mavendir ${MAVEN_HOME}" \
               --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
               SPECS/$(PKG_SPEC)
 
