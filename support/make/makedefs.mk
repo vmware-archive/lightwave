@@ -139,3 +139,10 @@ CFG_RPM=$(CFG_PKG_NAME)-$(CFG_VERSION).$(ARCH).rpm
 DOCKER_SRCROOT=$(SRCROOT)/support/docker
 DOCKER_BUILDER=$(DOCKER_SRCROOT)/build-lightwave-container.sh
 DOCKER_IMAGE=$(LIGHTWAVE_STAGE_DIR)/vmware-lightwave-sts.tar
+
+JAVA_HOME=/var/opt/OpenJDK-1.8.0.92-bin
+COMMONS_DAEMON=/var/opt/commons-daemon-1.0.15
+ANT_HOME=/var/opt/apache-ant-1.9.6
+TOMCAT_HOME=/var/opt/apache-tomcat-8.0.35
+JAXWS_HOME=/opt/jaxws-ri-2.2.10
+MAVEN_HOME=/var/opt/apache-maven-3.3.9
