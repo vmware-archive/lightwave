@@ -21,7 +21,7 @@
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
-			InheritedPropertySheets="..\..\vmdird\vs2008CommonProjectProperty.vsprops"
+			InheritedPropertySheets="..\..\vs2008CommonProjectProperty.vsprops"
 			CharacterSet="1"
 			>
 			<Tool
@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\LogonService\include&quot;;&quot;$(SolutionDir)\include&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\Include&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\include&quot;;&quot;$(SolutionDir)\include&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\Include&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\VC\Include&quot;"
 				PreprocessorDefinitions="WIN32;WIN32_LEAN_AND_MEAN;_DEBUG;_WINDOWS;_USRDLL;IDM_EXPORTS;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -101,7 +101,7 @@
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="2"
-			InheritedPropertySheets="..\..\vmdird\vs2008CommonProjectProperty.vsprops"
+			InheritedPropertySheets="..\..\vs2008CommonProjectProperty.vsprops"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -125,7 +125,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\LogonService\include&quot;;&quot;$(SolutionDir)\include&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\Include&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\..\include&quot;;&quot;$(SolutionDir)\include&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\Include&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\VC\Include&quot;"
 				PreprocessorDefinitions="WIN32;WIN32_LEAN_AND_MEAN;NDEBUG;_WINDOWS;_USRDLL;IDM_EXPORTS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -197,10 +197,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\memory.c"
-				>
-			</File>
-			<File
 				RelativePath=".\sidcache.c"
 				>
 			</File>
@@ -220,6 +216,14 @@
 			>
 			<File
 				RelativePath=".\defines.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\idmcommon.h"
+				>
+			</File>
+			<File
+				RelativePath=".\includes.h"
 				>
 			</File>
 			<File

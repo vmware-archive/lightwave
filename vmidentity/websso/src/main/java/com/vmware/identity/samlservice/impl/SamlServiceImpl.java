@@ -205,6 +205,7 @@ public class SamlServiceImpl implements SamlService {
         if (status == null) {
             // assume success
             status = OasisNames.SUCCESS;
+            Validate.notNull(token, "token");
         }
 
         Response response = create(Response.class,
@@ -687,7 +688,6 @@ public class SamlServiceImpl implements SamlService {
      }
 
     static public IDPConfiguration generateIDPConfiguration(IDPConfig idmIdpConfig) {
-        log.debug("AuthnRequestStateExternalAuthenticationFilter.generateIDPConfiguration is called");
 
         Validate.notNull(idmIdpConfig, "IDPConfig for the external IDP is not intialized");
 

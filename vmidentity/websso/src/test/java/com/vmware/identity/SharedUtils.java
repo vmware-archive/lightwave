@@ -200,12 +200,14 @@ public class SharedUtils {
             expect(request.getParameter(Shared.SAML_REQUEST_PARAMETER))
                     .andReturn(null).anyTimes();
         } else {
+            expect(request.getHeader(Shared.IWA_AUTH_REQUEST_HEADER)).andReturn(null).anyTimes();
             expect(request.getParameter(Shared.SAML_REQUEST_PARAMETER))
                     .andReturn(SharedUtils.encodeRequest(samlObject))
                     .anyTimes();
             expect(request.getParameter(Shared.SAML_RESPONSE_PARAMETER))
                     .andReturn(null).anyTimes();
         }
+
         expect(request.getParameter(Shared.RELAY_STATE_PARAMETER)).andReturn(
                 relayStateParameter).anyTimes();
         expect(request.getParameter(Shared.SIGNATURE_ALGORITHM_PARAMETER))
@@ -213,7 +215,7 @@ public class SharedUtils {
         expect(request.getParameter(Shared.SIGNATURE_PARAMETER)).andReturn(
                 signature).anyTimes();
         expect(request.getRequestURL()).andReturn(sbRequestUrl).anyTimes();
-        expect(request.getParameter(Shared.REQUEST_AUTH_HEADER)).andReturn(authorization)
+        expect(request.getParameter(Shared.REQUEST_AUTH_PARAM)).andReturn(authorization)
                 .anyTimes();
         String queryString = Shared.SAML_REQUEST_PARAMETER + "="
                 + SharedUtils.encodeRequest(samlObject);
@@ -482,7 +484,7 @@ public class SharedUtils {
         expect(request.getParameter(Shared.SIGNATURE_PARAMETER)).andReturn(
                 signatureParameter).anyTimes();
         expect(request.getRequestURL()).andReturn(sbRequestUrl).anyTimes();
-        expect(request.getParameter(Shared.REQUEST_AUTH_HEADER)).andReturn(
+        expect(request.getParameter(Shared.REQUEST_AUTH_PARAM)).andReturn(
                 TestConstants.AUTHORIZATION).anyTimes();
         String queryString = Shared.SAML_REQUEST_PARAMETER + "="
                 + samlRequestParameter;

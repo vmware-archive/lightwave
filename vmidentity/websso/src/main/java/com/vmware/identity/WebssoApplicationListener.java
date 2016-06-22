@@ -24,7 +24,7 @@ import com.vmware.identity.heartbeat.VmAfdHeartbeat;
 
 public class WebssoApplicationListener implements ApplicationListener<ApplicationContextEvent> {
 
-    private static final int port = 7444;
+    private static final int port = 443;
     private static final String serviceName = "Websso";
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory
             .getLogger(WebssoApplicationListener.class);

@@ -21,14 +21,11 @@ import java.util.UUID;
 
 import org.apache.commons.lang3.Validate;
 
-import com.vmware.identity.openidconnect.common.AuthenticationRequest;
 import com.vmware.identity.openidconnect.common.AuthorizationCodeGrant;
 import com.vmware.identity.openidconnect.common.AuthorizationGrant;
-import com.vmware.identity.openidconnect.common.ClientAssertion;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.CorrelationID;
-import com.vmware.identity.openidconnect.common.HttpResponse;
-import com.vmware.identity.openidconnect.common.LogoutRequest;
+import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.Nonce;
 import com.vmware.identity.openidconnect.common.RefreshTokenGrant;
 import com.vmware.identity.openidconnect.common.ResponseMode;
@@ -37,6 +34,10 @@ import com.vmware.identity.openidconnect.common.ResponseTypeValue;
 import com.vmware.identity.openidconnect.common.Scope;
 import com.vmware.identity.openidconnect.common.State;
 import com.vmware.identity.openidconnect.common.URIUtils;
+import com.vmware.identity.openidconnect.protocol.AuthenticationRequest;
+import com.vmware.identity.openidconnect.protocol.ClientAssertion;
+import com.vmware.identity.openidconnect.protocol.HttpResponse;
+import com.vmware.identity.openidconnect.protocol.LogoutRequest;
 
 /**
  * OIDC Client
@@ -44,12 +45,13 @@ import com.vmware.identity.openidconnect.common.URIUtils;
  * @author Jun Sun
  * @author Yehia Zayour
  */
-public class OIDCClient {
+public final class OIDCClient {
 
     private final URI authorizationEndpointURI;
     private final URI tokenEndpointURI;
     private final URI endSessionEndpointURI;
     private final RSAPublicKey providerPublicKey;
+    private final Issuer issuer;
 
     private final ClientID clientId;
     private final HolderOfKeyConfig holderOfKeyConfig;
@@ -69,6 +71,7 @@ public class OIDCClient {
         this.tokenEndpointURI = clientConfig.getConnectionConfig().getTokenEndpointURI();
         this.endSessionEndpointURI = clientConfig.getConnectionConfig().getEndSessionEndpointURI();
         this.providerPublicKey = clientConfig.getConnectionConfig().getProviderPublicKey();
+        this.issuer = clientConfig.getConnectionConfig().getIssuer();
 
         this.clientId = clientConfig.getClientId();
         this.holderOfKeyConfig = clientConfig.getHolderOfKeyConfig();
@@ -177,6 +180,7 @@ public class OIDCClient {
         return OIDCClientUtils.parseTokenResponse(
                 httpResponse,
                 this.providerPublicKey,
+                this.issuer,
                 this.clientId,
                 this.clockToleranceInSeconds);
     }
@@ -210,6 +214,7 @@ public class OIDCClient {
         return OIDCClientUtils.parseTokenResponse(
                 httpResponse,
                 this.providerPublicKey,
+                this.issuer,
                 this.clientId,
                 this.clockToleranceInSeconds);
     }
@@ -242,6 +247,7 @@ public class OIDCClient {
         return OIDCClientUtils.parseTokenResponse(
                 httpResponse,
                 this.providerPublicKey,
+                this.issuer,
                 this.clientId,
                 this.clockToleranceInSeconds);
     }

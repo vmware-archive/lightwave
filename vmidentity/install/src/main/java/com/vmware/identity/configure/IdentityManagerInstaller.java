@@ -47,7 +47,8 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
         InstallerUtils.getInstallerHelper().configRegistry();
 
         log.info("Configuring Identity Manager");
-
+        
+        Thread.sleep(20000);
         configureIDM();
     }
 

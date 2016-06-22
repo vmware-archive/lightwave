@@ -103,6 +103,7 @@ public final class ErrorObject {
 
     public static ErrorObject parse(Map<String, String> parameters, StatusCode statusCode) throws ParseException {
         Validate.notNull(parameters, "parameters");
+        Validate.notNull(statusCode, "statusCode");
 
         ErrorCode errorCode = ErrorCode.parse(ParameterMapUtils.getString(parameters, "error"));
         String description = ParameterMapUtils.getString(parameters, "error_description");
@@ -110,21 +111,13 @@ public final class ErrorObject {
         return new ErrorObject(errorCode, description, statusCode);
     }
 
-    public static ErrorObject parse(HttpResponse httpResponse) throws ParseException {
-        Validate.notNull(httpResponse, "httpResponse");
-
-        if (httpResponse.getStatusCode() == StatusCode.OK) {
-            throw new ParseException("expecting status code not OK");
-        }
-
-        JSONObject jsonObject = httpResponse.getJsonContent();
-        if (jsonObject == null) {
-            throw new ParseException("expecting json http response");
-        }
+    public static ErrorObject parse(JSONObject jsonObject, StatusCode statusCode) throws ParseException {
+        Validate.notNull(jsonObject, "jsonObject");
+        Validate.notNull(statusCode, "statusCode");
 
         ErrorCode errorCode = ErrorCode.parse(JSONUtils.getString(jsonObject, "error"));
         String description = JSONUtils.getString(jsonObject, "error_description");
 
-        return new ErrorObject(errorCode, description, httpResponse.getStatusCode());
+        return new ErrorObject(errorCode, description, statusCode);
     }
 }

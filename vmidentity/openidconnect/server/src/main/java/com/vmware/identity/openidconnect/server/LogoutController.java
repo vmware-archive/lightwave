@@ -32,8 +32,8 @@ import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.CorrelationID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.HttpRequest;
-import com.vmware.identity.openidconnect.common.HttpResponse;
+import com.vmware.identity.openidconnect.protocol.HttpRequest;
+import com.vmware.identity.openidconnect.protocol.HttpResponse;
 
 /**
  * @author Yehia Zayour
@@ -79,7 +79,7 @@ public class LogoutController {
 
         try {
             HttpRequest httpRequest = HttpRequest.from(request);
-            context = DiagnosticsContextFactory.createContext(CorrelationID.get(httpRequest).getValue(), tenant);
+            context = DiagnosticsContextFactory.createContext(CorrelationID.get(httpRequest.getParameters()).getValue(), tenant);
 
             LogoutRequestProcessor p = new LogoutRequestProcessor(
                     this.idmClient,

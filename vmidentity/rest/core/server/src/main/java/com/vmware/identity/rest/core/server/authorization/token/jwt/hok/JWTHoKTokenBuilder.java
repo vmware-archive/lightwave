@@ -36,8 +36,8 @@ public class JWTHoKTokenBuilder extends JWTBearerTokenBuilder {
 
     private String hokField;
 
-    public JWTHoKTokenBuilder(String roleField, String groupsField, String hokField) {
-        super(roleField, groupsField);
+    public JWTHoKTokenBuilder(String tokenTypeField, String roleField, String groupsField, String hokField) {
+        super(tokenTypeField, roleField, groupsField);
         this.hokField = hokField;
     }
 
@@ -61,7 +61,7 @@ public class JWTHoKTokenBuilder extends JWTBearerTokenBuilder {
             RSAKey rsaKey = RSAKey.parse(jwkset.getKeys().get(0).toJSONObject());
             PublicKey key = rsaKey.toRSAPublicKey();
 
-            return new JWTHoKToken(jwt, getRoleField(), getGroupsField(), jwkset, key);
+            return new JWTHoKToken(jwt, getTokenTypeField(), getRoleField(), getGroupsField(), jwkset, key);
         } catch (ParseException | NoSuchAlgorithmException | InvalidKeySpecException e) {
             log.error("Error parsing the JWT HOK Token", e);
             throw new InvalidTokenException(sm.getString("auth.ite.parse.malformed"));

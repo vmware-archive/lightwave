@@ -22,19 +22,19 @@ import org.apache.commons.lang3.Validate;
 /**
  * @author Yehia Zayour
  */
-public class RefreshTokenGrant extends AuthorizationGrant {
+public final class RefreshTokenGrant extends AuthorizationGrant {
     private static final GrantType GRANT_TYPE = GrantType.REFRESH_TOKEN;
 
-    private final RefreshToken refreshToken;
+    private final String refreshToken;
 
-    public RefreshTokenGrant(RefreshToken refreshToken) {
+    public RefreshTokenGrant(String refreshToken) {
         super(GRANT_TYPE);
 
-        Validate.notNull(refreshToken, "refreshToken");
+        Validate.notEmpty(refreshToken, "refreshToken");
         this.refreshToken = refreshToken;
     }
 
-    public RefreshToken getRefreshToken() {
+    public String getRefreshToken() {
         return this.refreshToken;
     }
 
@@ -42,7 +42,7 @@ public class RefreshTokenGrant extends AuthorizationGrant {
     public Map<String, String> toParameters() {
         Map<String, String> parameters = new HashMap<String, String>();
         parameters.put("grant_type", GRANT_TYPE.getValue());
-        parameters.put("refresh_token", this.refreshToken.serialize());
+        parameters.put("refresh_token", this.refreshToken);
         return parameters;
     }
 
@@ -54,6 +54,6 @@ public class RefreshTokenGrant extends AuthorizationGrant {
             throw new ParseException("unexpected grant_type: " + grantType.getValue());
         }
 
-        return new RefreshTokenGrant(RefreshToken.parse(parameters));
+        return new RefreshTokenGrant(ParameterMapUtils.getString(parameters, "refresh_token"));
     }
 }

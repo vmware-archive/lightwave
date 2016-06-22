@@ -12,7 +12,8 @@ BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >=
 
 %define _dbdir %_localstatedir/lib/vmware/vmsts
 %define _jarsdir %_prefix/jars
-%define _webappsdir %_prefix/webapps
+%define _binsdir %_prefix/bin
+%define _webappsdir %_prefix/vmware-sts/webapps
 
 %if 0%{?_javahome:1} == 0
 %define _javahome %_javahome
@@ -130,10 +131,13 @@ fi
 /lib/systemd/system/vmware-stsd.service
 %{_sbindir}/vmware-idmd.sh
 %{_sbindir}/vmware-stsd.sh
-%{_sbindir}/vmware-sts-tc-setup.sh
 %{_lib64dir}/*.so*
+%{_binsdir}/test-ldapbind
+%{_binsdir}/test-logon
+%{_binsdir}/test-svr
 %{_jarsdir}/openidconnect-client-lib.jar
 %{_jarsdir}/openidconnect-common.jar
+%{_jarsdir}/openidconnect-protocol.jar
 %{_jarsdir}/samlauthority.jar
 %{_jarsdir}/vmware-identity-diagnostics.jar
 %{_jarsdir}/vmware-identity-idm-server.jar
@@ -141,14 +145,22 @@ fi
 %{_jarsdir}/vmware-identity-rest-core-server.jar
 %{_jarsdir}/vmware-identity-rest-idm-server.jar
 %{_jarsdir}/vmware-identity-install.jar
-%{_jarsdir}/vmware-identity-tomcat-extensions.jar
 %{_webappsdir}/idm.war
 %{_webappsdir}/afd.war
 %{_webappsdir}/openidconnect.war
 %{_webappsdir}/sts.war
 %{_webappsdir}/websso.war
 %{_datadir}/config/idm/*
-%{_datadir}/config/sts/*
+%config %attr(600, root, root) %{_prefix}/vmware-sts/bin/setenv.sh
+%config %attr(600, root, root) %{_prefix}/vmware-sts/bin/vmware-identity-tomcat-extensions.jar
+
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/catalina.policy
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/catalina.properties
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/context.xml
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/logging.properties
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/server.xml
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/web.xml
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/tomcat-users.xml
 
 %exclude %{_lib64dir}/*.la
 %exclude %{_lib64dir}/*.a

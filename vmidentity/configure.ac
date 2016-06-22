@@ -364,11 +364,14 @@ AC_SUBST(VMSTS_SBIN_DIR)
 vmstsjarsdir="$prefix/jars"
 AC_SUBST(vmstsjarsdir)
 
-vmstswebappsdir="$prefix/webapps"
+vmstswebappsdir="$prefix/vmware-sts/webapps"
 AC_SUBST(vmstswebappsdir)
 
-vmstsconfdir="$datadir/config/sts"
+vmstsconfdir="$prefix/vmware-sts/conf"
 AC_SUBST(vmstsconfdir)
+
+vmstsbindir="$prefix/vmware-sts/bin"
+AC_SUBST(vmstsbindir)
 
 vmidmconfdir="$datadir/config/idm"
 AC_SUBST(vmidmconfdir)
@@ -380,7 +383,6 @@ AC_CONFIG_FILES([Makefile
                  admin-interfaces/Makefile
                  config/Makefile
                  config/setenv.sh
-                 config/vmware-sts-tc-setup.sh
                  config/vmware-idmd.sh
                  config/vmware-idmd.service
                  config/vmware-stsd.sh
@@ -390,9 +392,10 @@ AC_CONFIG_FILES([Makefile
                  tomcat-extensions/Makefile
                  interop/Makefile
                  interop/idm/Makefile
+                 interop/idm/ad/Makefile
+                 interop/idm/ad/server/Makefile
                  interop/idm/common/Makefile
                  interop/idm/localos/Makefile
-                 interop/idm/ad/Makefile
                  jdepends/Makefile
                  openidconnect/Makefile
                  platform/Makefile

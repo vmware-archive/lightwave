@@ -376,15 +376,23 @@ public class LogoutState {
         if (getSessionId() != null && response != null) {
             // session identified, remove session cookie
             String cookieName = Shared.getTenantSessionCookieName(this.getIdmAccessor().getTenant());
-            log.debug("Removing cookie " + cookieName
-                    + " value " + getSessionId());
-            Cookie sessionCookie = new Cookie(cookieName, "");
-            sessionCookie.setPath("/");
-            sessionCookie.setSecure(true);
-            sessionCookie.setHttpOnly(true);
-            sessionCookie.setMaxAge(0);
-            response.addCookie(sessionCookie);
+            removeSessionCookie(cookieName, response);
         }
+    }
+
+    private void removeSessionCookie(String cookieName, HttpServletResponse response) {
+        Validate.notNull(response);
+        if (cookieName == null || cookieName.isEmpty() ) {
+            log.warn("Cookie name is null or empty. Ignoring.");
+            return;
+        }
+        log.debug("Removing cookie " + cookieName);
+        Cookie sessionCookie = new Cookie(cookieName, "");
+        sessionCookie.setPath("/");
+        sessionCookie.setSecure(true);
+        sessionCookie.setHttpOnly(true);
+        sessionCookie.setMaxAge(0);
+        response.addCookie(sessionCookie);
     }
 
     /**

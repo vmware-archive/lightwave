@@ -40,7 +40,7 @@ import com.nimbusds.jwt.SignedJWT;
 /**
  * @author Yehia Zayour
  */
-public class JWTUtils {
+public final class JWTUtils {
     private JWTUtils() {
     }
 

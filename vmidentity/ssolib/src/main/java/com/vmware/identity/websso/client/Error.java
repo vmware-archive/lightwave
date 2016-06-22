@@ -1,5 +1,5 @@
 /* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved. 
+ * Copyright 2012 VMware, Inc. All rights reserved. VMware Confidential
  **********************************************************************************/
 package com.vmware.identity.websso.client;
 
@@ -20,8 +20,8 @@ public class Error {
     /*
      * Minor status. Detailed error message
      */
-    public static final String IN_RESPONSE_TO = "No matching request found.";
-    public static final String ISSUER = "Issuer not recognized.";
+    public static final String IN_RESPONSE_TO = "No authentication request found matching InResponseTo attribute of SAML Response from IDP.";
+    public static final String ISSUER = "Issuer not trusted: ";
     public static final String CONDITION = "Invalid condition value in token. If this is issued by legitimate IDP, it is possibly caused by clock skew or slow response due to network issues.";
     public static final String SIGNATURE = "Invalid signature.";
     public static final String NOT_SIGNED = "Assertion not signed.";

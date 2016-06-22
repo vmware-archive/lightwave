@@ -1,5 +1,5 @@
 /* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved. 
+ * Copyright 2012 VMware, Inc. All rights reserved. VMware Confidential
  **********************************************************************************/
 package com.vmware.identity.websso.client;
 
@@ -62,8 +62,14 @@ public class MetadataSettingsImpl implements MetadataSettings {
     @Override
     public void updateSPConfiguration(SPConfiguration spConfiguration) throws WebssoClientException {
 
-        removeSPConfiguration(spConfiguration.getAlias());
-        addSPConfiguration(spConfiguration);
+        this.writeLock_SP.lock();
+        try {
+            removeSPConfiguration(spConfiguration.getAlias());
+            addSPConfiguration(spConfiguration);
+        } finally {
+            this.writeLock_SP.unlock();
+        }
+
     }
 
     /*
@@ -306,6 +312,18 @@ public class MetadataSettingsImpl implements MetadataSettings {
             this.writeLock_SP.unlock();
             this.writeLock_IDP.unlock();
         }
+    }
+
+    @Override
+    public void StartRebuilding() {
+        this.writeLock_SP.lock();
+        this.writeLock_IDP.lock();
+    }
+
+    @Override
+    public void EndRebuilding() {
+        this.writeLock_SP.unlock();
+        this.writeLock_IDP.unlock();
     }
 
 }

@@ -54,10 +54,13 @@ int main(int argc, char *argv[])
     PSTR  ppszAttrs[] = { "sAMAccountName", NULL };
     LDAPMessage* pSearchRes = NULL;
     BOOLEAN bIDMInitialized = FALSE;
+    PWSTR pwstrUser = NULL;
+    PWSTR pwstrDomain = NULL;
+    PWSTR pwstrPassword = NULL;
 
     if (argc < 2)
     {
-        printf("Usage: test-ldapbind <ldap-server-hostname>\n");
+        printf("Usage: test-ldapbind <ldap-server-hostname> [user] [domain] [password]\n");
 
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_ERROR(dwError);
@@ -79,7 +82,22 @@ int main(int argc, char *argv[])
     dwError = ldap_set_option(pLd, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
     BAIL_ON_ERROR(dwError);
 
-    dwError = IDMLdapSaslBind(pLd);
+    if(argc > 2) {
+        dwError = LwRtlWC16StringAllocateFromCString(&pwstrUser, argv[2]);
+        BAIL_ON_ERROR(dwError);
+    }
+
+    if(argc > 3) {
+        dwError = LwRtlWC16StringAllocateFromCString(&pwstrDomain, argv[3]);
+        BAIL_ON_ERROR(dwError);
+    }
+
+    if(argc > 4) {
+        dwError = LwRtlWC16StringAllocateFromCString(&pwstrPassword, argv[4]);
+        BAIL_ON_ERROR(dwError);
+    }
+
+    dwError = IDMLdapSaslBind(pLd, pwstrUser, pwstrDomain, pwstrPassword);
     BAIL_ON_ERROR(dwError);
 
     dwError = ldap_search_ext_s(
@@ -100,6 +118,7 @@ int main(int argc, char *argv[])
 
 cleanup:
 
+    printf("IDMLdapSaslBind returns %d\n", dwError);
     if (pSearchRes)
     {
         ldap_msgfree(pSearchRes);

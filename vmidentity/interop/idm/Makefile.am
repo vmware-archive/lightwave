@@ -1,4 +1,5 @@
 SUBDIRS = \
     common \
     localos \
-    ad
+    ad \
+    ad/server

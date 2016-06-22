@@ -47,7 +47,6 @@ import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.vmware.identity.openidconnect.common.AccessToken;
 import com.vmware.identity.openidconnect.common.AuthorizationGrant;
 import com.vmware.identity.openidconnect.common.Base64Utils;
 import com.vmware.identity.openidconnect.common.Issuer;
@@ -115,7 +114,7 @@ class TestUtils {
         Assert.assertNotNull(oidcTokens.getClientIDToken());
         Assert.assertNotNull(oidcTokens.getRefreshToken());
 
-        RefreshTokenGrant refreshTokenGrant = new RefreshTokenGrant(oidcTokens.getRefreshToken());
+        RefreshTokenGrant refreshTokenGrant = new RefreshTokenGrant(oidcTokens.getRefreshToken().getValue());
         oidcTokens = oidclient.acquireTokens(refreshTokenGrant, TokenSpec.EMPTY);
         Assert.assertNotNull(oidcTokens.getAccessToken());
         Assert.assertNotNull(oidcTokens.getClientIDToken());
@@ -131,7 +130,7 @@ class TestUtils {
         Assert.assertNotNull(oidcTokens.getClientIDToken());
         Assert.assertNotNull(oidcTokens.getRefreshToken());
 
-        RefreshTokenGrant refreshTokenGrant = new RefreshTokenGrant(oidcTokens.getRefreshToken());
+        RefreshTokenGrant refreshTokenGrant = new RefreshTokenGrant(oidcTokens.getRefreshToken().getValue());
         oidcTokens = oidclient.acquireTokens(refreshTokenGrant, TokenSpec.EMPTY);
         Assert.assertNotNull(oidcTokens.getAccessToken());
         Assert.assertNotNull(oidcTokens.getClientIDToken());
@@ -246,7 +245,7 @@ class TestUtils {
                 new DefaultHostnameVerifier(),
                 sslContext);
         com.vmware.identity.rest.core.client.AccessToken restAccessToken =
-                new com.vmware.identity.rest.core.client.AccessToken(accessToken.serialize(),
+                new com.vmware.identity.rest.core.client.AccessToken(accessToken.getValue(),
                         com.vmware.identity.rest.core.client.AccessToken.Type.JWT);
         idmClient.setToken(restAccessToken);
         return idmClient;

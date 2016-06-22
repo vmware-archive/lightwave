@@ -22,19 +22,19 @@ import org.apache.commons.lang3.Validate;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.HttpRequest;
-import com.vmware.identity.openidconnect.common.HttpResponse;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.ProviderMetadata;
 import com.vmware.identity.openidconnect.common.StatusCode;
 import com.vmware.identity.openidconnect.common.URIUtils;
+import com.vmware.identity.openidconnect.protocol.HttpRequest;
+import com.vmware.identity.openidconnect.protocol.HttpResponse;
 
 /**
  * OIDC Metadata helper class
  *
  * @author Jun Sun
  */
-public class MetadataHelper {
+public final class MetadataHelper {
     private final URI metadataURI;
     private final KeyStore keyStore;
 
@@ -207,7 +207,7 @@ public class MetadataHelper {
         if (httpResponse.getStatusCode() != StatusCode.OK) {
             ErrorObject errorObject;
             try {
-                errorObject = ErrorObject.parse(httpResponse);
+                errorObject = ErrorObject.parse(httpResponse.getJsonContent(), httpResponse.getStatusCode());
             } catch (ParseException e) {
                 throw new OIDCClientException("failed to parse ErrorObject", e);
             }

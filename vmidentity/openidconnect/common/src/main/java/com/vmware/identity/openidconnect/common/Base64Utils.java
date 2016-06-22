@@ -21,7 +21,7 @@ import com.nimbusds.jose.util.Base64;
 /**
  * @author Yehia Zayour
  */
-public class Base64Utils {
+public final class Base64Utils {
     private Base64Utils() {
         // to prevent instantiation
     }

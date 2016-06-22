@@ -19,7 +19,7 @@ package com.vmware.identity.openidconnect.client;
  *
  * @author Jun Sun
  */
-public class SSLConnectionException extends Exception {
+public final class SSLConnectionException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
@@ -33,7 +33,7 @@ public class SSLConnectionException extends Exception {
      * @param message                   Error message
      * @param cause                     Throwable cause
      */
-    public SSLConnectionException(String message, Throwable cause) {
+    SSLConnectionException(String message, Throwable cause) {
         super(message, cause);
     }
 }

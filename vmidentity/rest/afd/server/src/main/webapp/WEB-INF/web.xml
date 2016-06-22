@@ -10,7 +10,7 @@
       <filter-class>org.glassfish.jersey.servlet.ServletContainer</filter-class>
       <init-param>
          <param-name>javax.ws.rs.Application</param-name>
-         <param-value>com.vmware.identity.rest.afd.server.RestApplication</param-value>
+         <param-value>com.vmware.identity.rest.afd.server.AfdRestApplication</param-value>
       </init-param>
 
       <init-param>
@@ -29,7 +29,7 @@
     </filter-mapping>
 
     <listener>
-        <listener-class>com.vmware.identity.rest.afd.server.log.SLF4JListener</listener-class>
+        <listener-class>com.vmware.identity.rest.core.server.util.SLF4JListener</listener-class>
     </listener>
 
 </web-app>

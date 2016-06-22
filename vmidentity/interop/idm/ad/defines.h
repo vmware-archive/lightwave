@@ -31,6 +31,10 @@
 #ifndef _WIN32
 typedef SIZE_T size_t;
 
+#ifndef IDM_ERROR_USER_INVALID_CREDENTIAL
+#define IDM_ERROR_USER_INVALID_CREDENTIAL 9234
+#endif
+
 #else
 
 #define pthread_mutex_lock(pCriticalSection)    EnterCriticalSection(pCriticalSection)
@@ -38,10 +42,6 @@ typedef SIZE_T size_t;
 #define pthread_mutex_init(mutex, defaults)     InitializeCriticalSection((mutex))
 #define pthread_mutex_destroy(mutex)            DeleteCriticalSection((mutex))
 
-#endif
-
-#ifndef VMDIR_ERROR_USER_INVALID_CREDENTIAL
-#define VMDIR_ERROR_USER_INVALID_CREDENTIAL 9234
 #endif
 
 #define BAIL_ON_ERROR(dwError) \
@@ -106,6 +106,32 @@ typedef SIZE_T size_t;
     do { \
         if ((mutex) && locked) { \
             DWORD dwErrorLock = pthread_rwlock_unlock(mutex); \
+            if (dwErrorLock) { \
+                (dwError) = LwErrnoToWin32Error(dwErrorLock); \
+            } else { \
+                (locked) = FALSE; \
+                (dwError) = 0; \
+            } \
+        } \
+    } while(0)
+
+#define IDM_MUTEX_LOCK(mutex, locked, dwError) \
+    do { \
+        if ((mutex) && !(locked)) { \
+            DWORD dwErrorLock = pthread_mutex_lock(mutex); \
+            if (dwErrorLock) { \
+                (dwError) = LwErrnoToWin32Error(dwErrorLock); \
+            } else { \
+                (locked) = TRUE; \
+                (dwError) = 0; \
+            } \
+        } \
+    } while(0)
+
+#define IDM_MUTEX_UNLOCK(mutex, locked, dwError) \
+    do { \
+        if ((mutex) && locked) { \
+            DWORD dwErrorLock = pthread_mutex_unlock(mutex); \
             if (dwErrorLock) { \
                 (dwError) = LwErrnoToWin32Error(dwErrorLock); \
             } else { \

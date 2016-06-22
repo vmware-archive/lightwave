@@ -1,5 +1,5 @@
 /* *************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved. 
+ * Copyright 2012 VMware, Inc. All rights reserved. VMware Confidential
  **************************************************************************/
 package com.vmware.identity.websso.client.endpoint;
 
@@ -42,8 +42,8 @@ import com.vmware.identity.websso.client.WebssoClientException;
 /**
  * SloListener is a @Controller which is used to receive HTTP Redirect logout
  * requests and responses from the IDP.
- * 
- * 
+ *
+ *
  */
 @Controller
 public class SloListener {
@@ -93,7 +93,7 @@ public class SloListener {
      * to notify the client code. With logout request received, the method
      * validate notify client code via callback "logoutRequest" and post a
      * response via redirect back to the issuer of the request.
-     * 
+     *
      * @param tenant
      *            service provider alias that can be use to identify
      *            SPConfiguration.
@@ -146,7 +146,7 @@ public class SloListener {
      * Helper function handle SAML LogoutRequest only. A response is send out as
      * result of successful processing of the request and a return from client
      * callback.
-     * 
+     *
      * @param request
      *            httprequest sent to this URL
      * @param response
@@ -212,7 +212,7 @@ public class SloListener {
 
     /**
      * Return response URL for redirecting.
-     * 
+     *
      * @param inResponseTo
      * @param idpUrl
      * @return url string. return null if failed
@@ -240,7 +240,7 @@ public class SloListener {
 
     /**
      * create signed response URL from LougoutResponse
-     * 
+     *
      * @param samlResponse
      *            LougoutResponse object where the url is create from.
      * @param idpUrl
@@ -311,7 +311,7 @@ public class SloListener {
 
     /**
      * Construct and initialize a LogoutResponse object.
-     * 
+     *
      * @param inResponseTo
      *            slo request ID.
      * @param idpUrl
@@ -387,7 +387,7 @@ public class SloListener {
 
     /**
      * Helper function process slo LogoutResponse only
-     * 
+     *
      * @param request
      *            http request captured
      * @param httpResponse
@@ -438,17 +438,17 @@ public class SloListener {
         String status = validator.getStatus();
         String substatus = validator.getSubStatus();
         String relayState = validator.getRelayState();
-        String sessionInd = validator.getSessionIndex();
+        String sessionId = validator.getSessionIndex();
         Message message = new Message(isResponse ? MessageType.LOGOUT_RESPONSE
                 : MessageType.LOGOUT_REQUEST, validator.getMessageID(),
                 relayState, validator.getIssueInstant(),
                 validator.getIssuerVal(), validator.getDestination(), status,
-                substatus, sessionInd, validator.getMessageData(), null);
+                substatus, sessionId, validator.getMessageData(), null, validator.isIdpInitiated());
         message.setValidationResult(validator.getValidationResult());
         logger.info("Logout response/request validation result:");
         logger.info(
                 "Status: %s  Substatus: %s SessionIndex:%s RelayState:%s  ",
-                status, substatus, sessionInd, relayState);
+                status, substatus, sessionId, relayState);
         return message;
 
     }

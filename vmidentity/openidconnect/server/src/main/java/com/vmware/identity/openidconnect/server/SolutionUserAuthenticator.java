@@ -13,7 +13,6 @@
  */
 
 package com.vmware.identity.openidconnect.server;
-
 import java.net.URI;
 import java.util.Date;
 import java.util.Objects;
@@ -22,11 +21,12 @@ import org.apache.commons.lang3.Validate;
 
 import com.nimbusds.jose.JOSEException;
 import com.vmware.identity.idm.client.CasIdmClient;
-import com.vmware.identity.openidconnect.common.ClientAssertion;
-import com.vmware.identity.openidconnect.common.ClientIssuedAssertion;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.SolutionUserAssertion;
 import com.vmware.identity.openidconnect.common.URIUtils;
+import com.vmware.identity.openidconnect.protocol.ClientAssertion;
+import com.vmware.identity.openidconnect.protocol.ClientIssuedAssertion;
+import com.vmware.identity.openidconnect.protocol.SolutionUserAssertion;
+
 
 /**
  * @author Yehia Zayour

@@ -58,6 +58,7 @@ import com.vmware.identity.saml.SystemException;
 import com.vmware.identity.saml.TokenAuthority;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
 import com.vmware.identity.samlservice.impl.AuthnRequestStateCookieWrapper;
+import com.vmware.identity.samlservice.impl.AuthnRequestStateKerbAuthenticationFilter.KerbAuthnType;
 import com.vmware.identity.samlservice.impl.AuthnRequestStateRsaAmAuthenticationFilter;
 import com.vmware.identity.samlservice.impl.AuthnRequestStateValidator;
 import com.vmware.identity.session.Session;
@@ -93,6 +94,7 @@ public class AuthnRequestState {
     private ProcessingState processingState;
     private ValidationResult validationResult;
     private String wwwAuthenticate;
+    private KerbAuthnType kerbAuthnType;
     private PrincipalId principalId;
     private String identityFormat;
     private String issuerValue;
@@ -234,7 +236,7 @@ public class AuthnRequestState {
                 Shared.getTenantIDPCookieName(idmAccessor.getTenant()), null);
     }
 
-    public String getTenatIDPSelectHeader() {
+    public String getTenantIDPSelectHeader() {
         return this.request.getHeader(Shared.IDP_SELECTION_HEADER);
     }
 
@@ -566,7 +568,7 @@ public class AuthnRequestState {
         TimePeriod lifespan = new TimePeriod(startTime, endTime);
         Confirmation confirmation =
             new Confirmation(inResponseTo, recipient);
-        Collection<String> attributeList = this.buildAttributeList(identityFormat);
+        Collection<String> attributeList = Shared.buildTokenAttributeList(identityFormat);
 
         // ensure participant session here
         String participantSessionId = null;
@@ -606,25 +608,6 @@ public class AuthnRequestState {
         return spec;
     }
 
-    // build a collection of attributes we need
-    private Collection<String> buildAttributeList(String identityFormat) {
-        log.debug("building Attribute Definition collection, identity format is "
-                + identityFormat);
-        // TODO refactor to get the attributes off AttributeConsumerService
-        // configuration
-        final String ATTRIBUTE_GROUPS = "http://rsa.com/schemas/attr-names/2009/01/GroupIdentity";
-        final String ATTRIBUTE_FIRST_NAME = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname";
-        final String ATTRIBUTE_LAST_NAME = "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname";
-        final String ATTRIBUTE_SUBJECT_TYPE = "http://vmware.com/schemas/attr-names/2011/07/isSolution";
-
-        Validate.notNull(identityFormat);
-
-        Collection<String> attributeNames = Arrays.asList(new String[] {
-                ATTRIBUTE_FIRST_NAME, ATTRIBUTE_LAST_NAME, ATTRIBUTE_GROUPS,
-                ATTRIBUTE_SUBJECT_TYPE, identityFormat });
-
-        return attributeNames;
-    }
 
     // create saml token authority object
     private TokenAuthority createTokenAuthorityForTenant(String tenant)
@@ -634,103 +617,27 @@ public class AuthnRequestState {
         return this.getSamlAuthFactory().createTokenAuthority(tenant);
     }
 
-    /**
-     * Creates Response object corresponding to SAMLResponse message. In case of
-     * failing to create Response, set ValidationResult reflecting the error.
-     *
-     * @return Response or null if unable to.
-     */
-    public Response generateResponseForTenant(String tenant,
-             Document token) {
-        Response retval = null;
-
-        log.debug("generateResponseForTenant, tenant " + tenant);
-
-        Validate.notNull(this.validationResult);
-
-        if (this.validationResult.getResponseCode() == HttpServletResponse.SC_OK) {
-            try {
-                // we should reply with Saml response
-                Validate.notNull(this.idmAccessor, "idmAccessor");
-                Validate.notNull(this.authnRequest, "authnResquest");
-                Validate.notNull(this.authnRequest.getIssuer(), ".authnRequest.issuer");
-
-                this.idmAccessor.setTenant(tenant);
-                String relyingParty = this.authnRequest.getIssuer().getValue();
-                SamlService service = this.createSamlServiceForTenant(tenant,
-                        relyingParty);
-                String translatedMessage = this.validationResult.getMessage(messageSource,
-                        locale);
-
-                retval = service
-                        .createSamlResponse(
-                                this.authnRequest.getID(),
-                        this.getAcsUrl(),
-                                this.validationResult.getStatus(),
-                                this.validationResult.getSubstatus(),
-                                translatedMessage, token);
-            } catch (Exception e) {
-                log.error("Caught exception while generating response "
-                        + ", will respond with error 500",e);
-                this.validationResult = new ValidationResult(
-                        HttpServletResponse.SC_INTERNAL_SERVER_ERROR, OasisNames.RESPONDER, null);
-                return null;
-            }
-        }
-        return retval;
-    }
-
-    public String generateResponseFormForTenant(Response samlResponse,
-            String tenant) {
-
-        Validate.notNull(samlResponse);
-        Validate.notNull(this.idmAccessor);
-        Validate.notNull(this.authnRequest);
-        Validate.notNull(this.authnRequest.getIssuer());
-
-        this.idmAccessor.setTenant(tenant);
-        String relyingParty = this.authnRequest.getIssuer().getValue();
-        SamlService service = this.createSamlServiceForTenant(tenant, relyingParty);
-
-        return service.buildPostResponseForm(samlResponse, this.relayState,
-                this.getAcsUrl());
-    }
-
     public void addResponseHeaders(HttpServletResponse response) {
         if (this.wwwAuthenticate != null) {
             // add WWW-Authenticate header
-            log.debug("Adding header " + Shared.RESPONSE_AUTH_HEADER);
-            response.addHeader(Shared.RESPONSE_AUTH_HEADER, this.wwwAuthenticate);
+            if (this.kerbAuthnType == KerbAuthnType.CIP) {
+                response.addHeader(Shared.RESPONSE_AUTH_HEADER, this.wwwAuthenticate);
+            } else {
+               response.addHeader(Shared.IWA_AUTH_RESPONSE_HEADER, this.wwwAuthenticate);
+            }
         }
         if (this.getSessionId() != null) {
             // set session cookie
             String tenantSessionCookieName = Shared.getTenantSessionCookieName(this.getIdmAccessor().getTenant());
-            log.debug("Setting cookie " + tenantSessionCookieName
-                    + " value " + this.getSessionId());
-            Cookie sessionCookie = new Cookie(tenantSessionCookieName,
-                    this.getSessionId());
-            sessionCookie.setPath("/");
-            sessionCookie.setSecure(true);
-            sessionCookie.setHttpOnly(true);
-            response.addCookie(sessionCookie);
+            Shared.addSessionCookie(tenantSessionCookieName, this.getSessionId(), response);
         }
     }
 
     public void addTenantIDPCookie(String cookieValue, HttpServletResponse response) {
-        Validate.notNull(response);
-        if (cookieValue == null || cookieValue.isEmpty()) {
-            log.warn("Cookie value for tenant IDP is null or empty. Ignoring.");
-            return;
-        }
         String tenantIDPCookieName = Shared.getTenantIDPCookieName(this.getIdmAccessor().getTenant());
-        log.debug("Setting cookie " + tenantIDPCookieName
-                + " value " + cookieValue);
-        Cookie sessionCookie = new Cookie(tenantIDPCookieName, cookieValue);
-        sessionCookie.setPath("/");
-        sessionCookie.setSecure(true);
-        sessionCookie.setHttpOnly(true);
-        response.addCookie(sessionCookie);
+        Shared.addSessionCookie(tenantIDPCookieName, cookieValue, response);
     }
+
 
     // create SamlService object
     private SamlService createSamlServiceForTenant(String tenant,
@@ -766,6 +673,13 @@ public class AuthnRequestState {
         this.wwwAuthenticate = wwwAuthenticate;
     }
 
+    public KerbAuthnType getKerbAuthnType() {
+        return this.kerbAuthnType;
+    }
+
+    public void setKerbAuthnType(KerbAuthnType kerbAuthnType) {
+        this.kerbAuthnType = kerbAuthnType;
+    }
     /**
      * @return the identityFormat
      */
@@ -1037,38 +951,6 @@ public class AuthnRequestState {
         this.samlAuthFactory = samlAuthFactory;
     }
 
-    /**
-     * createSession() create a new session if a pricipal is validated and
-     *  there no session exist for it.
-     * @param externalIDPSessionId  -  optional external idp session id,
-     * 	only used for external authentication workflow.
-     * @throws SamlServiceException
-     */
-    public void createSession(String externalIDPSessionId) throws SamlServiceException {
-        if ( this.getPrincipalId() != null && this.getSessionManager() != null) {
-            // create a new session here
-            Calendar calendar = new GregorianCalendar();
-            calendar.add(Calendar.MINUTE, Shared.SESSION_LIFETIME_MINUTES);
-            Date sessionEndTime = calendar.getTime();
-            try {
-                Session currentSession =
-                    new Session(this.getPrincipalId(), sessionEndTime
-                            , this.getAuthnMethod());
-                if (this.isProxying) {
-                	Validate.notEmpty(externalIDPSessionId, "externalIDPSessionId");
-	                currentSession.setUsingExtIDP(true);
-	                currentSession.setExtIDPToUsed(this.extIDPToUse);
-	                currentSession.setExtIDPSessionID(externalIDPSessionId);
-                }
-                this.getSessionManager().add(currentSession);
-                this.setSessionId(currentSession.getId());
-
-            } catch (NoSuchAlgorithmException e) {
-                throw new SamlServiceException(e);
-            }
-        }
-    }
-
 	public AuthnTypesSupported getAuthTypesSupportecd() {
 		return authnTypesSupported;
 	}
@@ -1089,6 +971,18 @@ public class AuthnRequestState {
      */
     public void setAcsUrl(String acsUrl) {
         this.acsUrl = acsUrl;
+    }
+
+    /**
+     * @param externalIDPsessionIndex   optional, need with external authentication only.
+     * @param externalIdpId     optional, need with external authentication only.
+     * @throws SamlServiceException
+     */
+    public void createSession(String externalIDPsessionIndex, String externalIdpId) throws SamlServiceException {
+
+        Session currentSession = this.sessionManager.createSession(
+                this.principalId,this.authnMethod, externalIDPsessionIndex,externalIdpId);
+        this.setSessionId(currentSession.getId());
     }
 
 }

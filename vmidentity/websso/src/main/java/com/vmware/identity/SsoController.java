@@ -139,7 +139,8 @@ public class SsoController extends BaseSsoController {
 
         if (request != null) {
             String castleAuthType = request
-                    .getParameter(Shared.REQUEST_AUTH_HEADER);
+                    .getParameter(Shared.REQUEST_AUTH_PARAM);
+
             if (castleAuthType != null) {
                 if (castleAuthType.startsWith(Shared.KERB_AUTH_PREFIX)) {
                     retval = this.getKerbAuthenticator();
@@ -169,7 +170,6 @@ public class SsoController extends BaseSsoController {
             HttpServletRequest request, HttpServletResponse response)
                     throws IOException {
         logger.info("Welcome to ssoSSLDummy handler! "
-                + "The client locale is " + locale.toString()
                 + tenant);
 
         try {
@@ -207,9 +207,6 @@ public class SsoController extends BaseSsoController {
       public void ssoSSLDummyDefault(Locale locale, Model model,
               HttpServletRequest request, HttpServletResponse response)
                       throws IOException {
-          logger.info("Welcome to ssoSSLDummy handler! "
-                  + "The client locale is " + locale.toString()
-                  + ", DEFAULT tenant");
           ssoSSLDummy(locale,model, Shared.getDefaultTenant(), request, response);
       }
 
@@ -281,7 +278,8 @@ public class SsoController extends BaseSsoController {
                 sso(locale, tenant, model, request, response);
                 return null;
             }
-
+            model.addAttribute("tenant", tenant);
+            model.addAttribute("protocol", "websso");
             setupAuthenticationModel(model,locale, tenant, null);
         } catch (Exception e) {
             logger.error("Found exception while populating model object ", e);
@@ -293,6 +291,8 @@ public class SsoController extends BaseSsoController {
      }
 
     private void setupChooseIDPModel(Model model, Locale locale, String tenant, AuthnRequestState requestState) {
+        model.addAttribute("tenant", tenant);
+        model.addAttribute("protocol", "websso");
         model.addAttribute("tenant_brandname", StringEscapeUtils.escapeJavaScript(getBrandName(tenant)));
         List<String> entityIdList = requestState.getIDPSelectionEntityIdList();
         model.addAttribute("idp_entity_id_list", entityIdList);
@@ -356,7 +356,6 @@ public class SsoController extends BaseSsoController {
             model.addAttribute("rsaam_reminder",
                     StringEscapeUtils.escapeJavaScript(getRsaSecurIDLoginGuide(tenant)));
         }
-
     }
 
     /**
@@ -553,7 +552,7 @@ public class SsoController extends BaseSsoController {
         // use validation result code to return error to client
         ValidationResult vr = new ValidationResult(HttpServletResponse.SC_BAD_REQUEST, "BadRequest", subStatus);
         String message = vr.getMessage(messageSource, locale);
-        response.sendError(vr.getResponseCode(), message);
+        response.sendError(vr.getResponseCode(), Shared.encodeString(message));
         logger.info("Responded with ERROR " + vr.getResponseCode() + ", message " + message);
     }
 

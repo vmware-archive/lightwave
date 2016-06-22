@@ -25,7 +25,7 @@ import com.nimbusds.jwt.SignedJWT;
 /**
  * @author Yehia Zayour
  */
-public class ParameterMapUtils {
+public final class ParameterMapUtils {
     private ParameterMapUtils() {
     }
 

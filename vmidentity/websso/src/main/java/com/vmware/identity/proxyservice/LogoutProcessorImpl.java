@@ -48,7 +48,7 @@ public class LogoutProcessorImpl implements LogoutProcessor {
     private SessionManager sessionManager;
 
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(LogoutProcessorImpl.class);
-	private LogoutState logoutState;
+    private LogoutState logoutState;
 
     /**
      * Error callback in processing logout response or request from external IDP.

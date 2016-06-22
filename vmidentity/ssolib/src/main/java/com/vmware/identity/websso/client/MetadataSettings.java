@@ -1,7 +1,7 @@
 /* ****************************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved. 
+ * Copyright 2012 VMware, Inc. All rights reserved. VMware Confidential
  * ****************************************************************************************/
- 
+
 package com.vmware.identity.websso.client;
 
 import java.util.Collection;
@@ -14,7 +14,7 @@ public interface MetadataSettings {
 
  	/**
      *  Store a service provider configuration entry
-     * 
+     *
      *@param spConfiguration
      * 		service provider configuration entry.
      */
@@ -39,7 +39,7 @@ public interface MetadataSettings {
      *   @param	alias
      *   		alias of the configuration
      *   @return	service provider configuration entry.
-     * 
+     *
      */
 	SPConfiguration getSPConfiguration (String alias);
 
@@ -57,7 +57,7 @@ public interface MetadataSettings {
 
 	/**
      *  Store a IDPr configuration entry
-     * 
+     *
      *@param idp Configuration
      * 		idp configuration entry.
      */
@@ -100,9 +100,22 @@ public interface MetadataSettings {
 
 	/**
      *  Clear all configurations at once.
-     * 
+     *
      */
 	void clear();
 
+	/**
+	 * Starting a rebuild process that could involve multiple options such as clear and add.
+	 * Must pair with EndRebuilding call when all sub-operations finished.
+	 * This allows thread-safety between operations.
+	 */
+	void StartRebuilding();
+
+	   /**
+     * Ending a rebuild process that could involve multiple options such as clear and add.
+     * Must pair with StartRebuilding call when all sub-operations finished.
+     * This allows thread-safety between operations.
+     */
+	void EndRebuilding();
 
 }

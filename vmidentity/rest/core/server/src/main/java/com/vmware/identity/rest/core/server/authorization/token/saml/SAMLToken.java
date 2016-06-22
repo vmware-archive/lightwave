@@ -18,6 +18,7 @@ import java.util.Date;
 import java.util.List;
 
 import com.vmware.identity.rest.core.server.authorization.token.AccessToken;
+import com.vmware.identity.rest.core.server.authorization.token.TokenType;
 import com.vmware.identity.rest.core.server.util.PrincipalUtil;
 import com.vmware.identity.token.impl.SamlTokenImpl;
 import com.vmware.vim.sso.PrincipalId;
@@ -72,6 +73,11 @@ public class SAMLToken implements AccessToken {
     @Override
     public String getSubject() {
         return PrincipalUtil.createUPN(saml.getSubject());
+    }
+
+    @Override
+    public String getTokenType() {
+        return TokenType.SAML.getJsonName();
     }
 
     private static List<String> getNetBiosGroupList(List<PrincipalId> principals) {

@@ -29,13 +29,13 @@ import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.HttpRequest;
-import com.vmware.identity.openidconnect.common.HttpResponse;
-import com.vmware.identity.openidconnect.common.IDToken;
-import com.vmware.identity.openidconnect.common.LogoutErrorResponse;
-import com.vmware.identity.openidconnect.common.LogoutRequest;
-import com.vmware.identity.openidconnect.common.LogoutSuccessResponse;
 import com.vmware.identity.openidconnect.common.SessionID;
+import com.vmware.identity.openidconnect.protocol.HttpRequest;
+import com.vmware.identity.openidconnect.protocol.HttpResponse;
+import com.vmware.identity.openidconnect.protocol.IDToken;
+import com.vmware.identity.openidconnect.protocol.LogoutErrorResponse;
+import com.vmware.identity.openidconnect.protocol.LogoutRequest;
+import com.vmware.identity.openidconnect.protocol.LogoutSuccessResponse;
 
 /**
  * @author Yehia Zayour

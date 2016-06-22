@@ -8,7 +8,7 @@ libidm_la_SOURCES = \
     sidcache.c
 
 libidm_la_CPPFLAGS = \
-    -I$(top_srcdir)/include/public \
+    -I$(top_srcdir)/interop/include \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/interop/idm/include \
     @OPENSSL_INCLUDES@ \

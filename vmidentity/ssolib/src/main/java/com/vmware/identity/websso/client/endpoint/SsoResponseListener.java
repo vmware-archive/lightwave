@@ -1,9 +1,10 @@
 /* *************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved. 
+ * Copyright 2012 VMware, Inc. All rights reserved. VMware Confidential
  **************************************************************************/
 package com.vmware.identity.websso.client.endpoint;
 
 import java.io.IOException;
+import java.util.Locale;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import com.vmware.identity.websso.client.Error;
 import com.vmware.identity.websso.client.LogonProcessor;
+import com.vmware.identity.websso.client.LogonProcessorEx;
 import com.vmware.identity.websso.client.Message;
 import com.vmware.identity.websso.client.MessageStore;
 import com.vmware.identity.websso.client.MessageType;
@@ -49,12 +51,41 @@ public class SsoResponseListener {
     private boolean assertionMustBeSigned = true;
 
     /**
+     * Deprecated mapping point without locale parameter. Will remove once NGC changes to call the
+     * new locale-capable function directly.
+     *
+     *
+     *
      * Process SAML Authentication Response from IDP. It maps to http 'post'
      * request with response embedded in the post. The following information is
      * returned: base 64 coded response decoded response NameIDFormat used
      * decoded relay state. It also log a message in the message store and
      * notify callbacks.
-     * 
+     *
+     * @param request
+     *            http request passed into the call
+     * @param ssoResponseMapping
+     *            client defined string bean
+     * @return void
+     * @throws IOException
+     */
+    @Deprecated
+    public void consumeResponse( @PathVariable(value = "tenant") final String tenant, /*
+                                                                                      * make
+                                                                                      * compiler
+                                                                                      * happy
+                                                                                      */
+            HttpServletRequest request, HttpServletResponse httpResponse) {
+        consumeResponse(null, tenant,request, httpResponse);
+    }
+    /**
+     * Process SAML Authentication Response from IDP. It maps to http 'post'
+     * request with response embedded in the post. The following information is
+     * returned: base 64 coded response decoded response NameIDFormat used
+     * decoded relay state. It also log a message in the message store and
+     * notify callbacks.
+     * @Locale locale
+     *           Client machine Browser locale
      * @param request
      *            http request passed into the call
      * @param ssoResponseMapping
@@ -63,7 +94,7 @@ public class SsoResponseListener {
      * @throws IOException
      */
     @RequestMapping(value = "/SsoClient/SSO/{tenant:.*}", method = RequestMethod.POST)
-    public void consumeResponse(@PathVariable(value = "tenant") final String tenant, /*
+    public void consumeResponse(Locale locale, @PathVariable(value = "tenant") final String tenant, /*
                                                                                       * make
                                                                                       * compiler
                                                                                       * happy
@@ -71,8 +102,6 @@ public class SsoResponseListener {
             HttpServletRequest request, HttpServletResponse httpResponse) {
 
         logger.info("You have POST'ed to " + "Websso client library!");
-        LogonProcessor processor = this.getLogonProcessor();
-        Validate.notNull(processor, "Null LogonProcessor");
         Validate.notNull(request);
         ValidationState validator = new SsoValidationState(request, this);
 
@@ -85,9 +114,9 @@ public class SsoResponseListener {
 
             // send the message via callback functions.
             if (validator.getStatus().equals(StatusCode.SUCCESS_URI)) {
-                processor.authenticationSuccess(message, request, httpResponse);
+                authenticationSuccess(message, locale, tenant, request, httpResponse);
             } else {
-                processor.authenticationError(message, request, httpResponse);
+                authenticationError(message, locale,tenant, request, httpResponse);
             }
 
         } catch (Exception e) {
@@ -95,10 +124,35 @@ public class SsoResponseListener {
             if (validator.getValidationResult().isValid()) {
                 validator.setValidationResult(new ValidationResult(HttpServletResponse.SC_BAD_REQUEST,
                         Error.BAD_RESPONSE, e.getMessage()));
+                internalError(e,locale,tenant,request,httpResponse);
+            } else {
+                Message errorMessage = this.createMessage(validator);
+                authenticationError(errorMessage, locale, tenant, request, httpResponse);
             }
-            Message errorMessage = this.createMessage(validator);
-            processor.authenticationError(errorMessage, request, httpResponse);
 
+        }
+    }
+
+    private void authenticationError(Message message, Locale locale, String tenant, HttpServletRequest request, HttpServletResponse httpResponse) {
+        if ((this.logonProcessor instanceof LogonProcessorEx) ) {
+            ((LogonProcessorEx) this.logonProcessor).authenticationError(message,locale, tenant, request,httpResponse);
+        } else {
+            this.logonProcessor.authenticationError(message,request,httpResponse);
+        }
+    }
+    private void internalError(Exception exception, Locale locale, String tenant, HttpServletRequest request, HttpServletResponse httpResponse) {
+        if ((this.logonProcessor instanceof LogonProcessorEx) ) {
+            ((LogonProcessorEx) this.logonProcessor).internalError(exception,locale, tenant, request,httpResponse);
+        } else {
+            this.logonProcessor.internalError(exception,request,httpResponse);
+        }
+    }
+
+    private void authenticationSuccess(Message message, Locale locale, String tenant, HttpServletRequest request, HttpServletResponse httpResponse) {
+        if ((this.logonProcessor instanceof LogonProcessorEx) ) {
+            ((LogonProcessorEx) this.logonProcessor).authenticationSuccess(message,locale, tenant, request,httpResponse);
+        } else {
+            this.logonProcessor.authenticationSuccess(message,request,httpResponse);
         }
     }
 
@@ -107,7 +161,7 @@ public class SsoResponseListener {
         Message message = new Message(MessageType.AUTHN_RESPONSE, validator.getMessageID(), validator.getRelayState(),
                 validator.getIssueInstant(), validator.getIssuerVal(), validator.getDestination(),
                 validator.getStatus(), validator.getSubStatus(), validator.getSessionIndex(),
-                validator.getMessageData(), null);
+                validator.getMessageData(), null, validator.isIdpInitiated());
         message.setValidationResult(validator.getValidationResult());
         return message;
 
@@ -133,10 +187,6 @@ public class SsoResponseListener {
         this.logonProcessor = logonProcessor;
     }
 
-    public LogonProcessor getLogonProcessor() {
-        return this.logonProcessor;
-    }
-
     /**
      * @return the assertionMustBeSigned
      */
@@ -146,7 +196,8 @@ public class SsoResponseListener {
 
     /**
      * The default value is true.
-     * 
+     * Note: In production deployment we always sign assertion. This setter allows testing code to test without signing.
+     *
      * @param assertionMustBeSigned
      *            the assertionMustBeSigned to set
      */
