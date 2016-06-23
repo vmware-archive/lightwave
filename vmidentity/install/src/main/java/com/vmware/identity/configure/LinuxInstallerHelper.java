@@ -1,5 +1,5 @@
 /* **********************************************************************
- * Copyright 2015 VMware, Inc.  All rights reserved. VMware Confidential
+ * Copyright 2015 VMware, Inc.  All rights reserved.
  * *********************************************************************/
 
 package com.vmware.identity.configure;
@@ -34,7 +34,6 @@ public class LinuxInstallerHelper implements InstallerHelper {
 
     @Override
     public String[] getIDMServiceStartCommand() {
-        //return new String[] { "/etc/init.d/vmware-sts-idmd", "restart" };
         return new String[] { "systemctl", "restart", "vmware-idmd" };
 
     }
@@ -57,7 +56,6 @@ public class LinuxInstallerHelper implements InstallerHelper {
 
     @Override
     public String[] getSTSServiceStartCommand() {
-        //return new String[] { "/etc/init.d/vmware-stsd", "restart" };
         return new String[] { "systemctl", "restart", "vmware-stsd" };
     }
 
