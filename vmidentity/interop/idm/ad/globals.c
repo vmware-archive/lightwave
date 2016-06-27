@@ -52,7 +52,5 @@ IDM_AUTH_MUTEX gIdmAuthMutex =
 
 PIDM_AUTH_MUTEX pgIdmAuthMutex = &gIdmAuthMutex;
 
-//pthread_mutex_t gIdmAuthMutex = PTHREAD_MUTEX_INITIALIZER;
-
 #endif /* !_WIN32 */
 
