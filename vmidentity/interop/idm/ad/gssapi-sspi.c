@@ -558,7 +558,6 @@ IDMAuthenticateUser(
         domain_name_uppercase[i] = toupper((int) domain_name_uppercase[i]);
     }
 
-//    IDM_MUTEX_LOCK(&gIdmAuthMutex, bMutexObtained, dwError);
     IDM_MUTEX_LOCK(&pgIdmAuthMutex->mutex, bMutexObtained, dwError);
 
     BAIL_ON_ERROR(dwError);
@@ -592,7 +591,6 @@ IDMAuthenticateUser(
     dwError = idm_logon_gssapi(pAuthContext);
     BAIL_ON_ERROR(dwError);
 
-    //IDM_MUTEX_UNLOCK(&gIdmAuthMutex, bMutexObtained, dwError);
     IDM_MUTEX_UNLOCK(&pgIdmAuthMutex->mutex, bMutexObtained, dwError);
     BAIL_ON_ERROR(dwError);
 
@@ -613,7 +611,6 @@ error:
     IDM_SAFE_FREE_MEMORY(princ_name);
     IDM_SAFE_FREE_MEMORY(pwd);
     IDMFreeAuthContext(pAuthContext);
-    //IDM_MUTEX_UNLOCK(&gIdmAuthMutex, bMutexObtained, dwError);
     IDM_MUTEX_UNLOCK(&pgIdmAuthMutex->mutex, bMutexObtained, dwError);
 
     return krb_err;
