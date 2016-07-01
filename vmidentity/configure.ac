@@ -380,7 +380,6 @@ systemddir="/lib/systemd/system"
 AC_SUBST(systemddir)
 
 AC_CONFIG_FILES([Makefile
-                 admin-interfaces/Makefile
                  config/Makefile
                  config/setenv.sh
                  config/vmware-idmd.sh
@@ -403,7 +402,6 @@ AC_CONFIG_FILES([Makefile
                  commons/Makefile
                  ssolib/Makefile
                  websso/Makefile
-                 wstauthz/Makefile
                  wsTrustClient/Makefile
                  sts/Makefile
                  rest/Makefile

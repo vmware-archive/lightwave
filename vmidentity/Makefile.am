@@ -12,8 +12,6 @@ SUBDIRS = \
     samlauthority \
     ssolib \
     websso \
-    admin-interfaces \
-    wstauthz \
     sts \
     wsTrustClient \
     install \

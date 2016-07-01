@@ -79,7 +79,7 @@ import com.vmware.identity.sts.Request.Signature;
 import com.vmware.identity.sts.auth.Authenticator;
 import com.vmware.identity.sts.auth.Result;
 import com.vmware.identity.sts.auth.Result.AuthnMethod;
-import com.vmware.identity.sts.authz.RoleCheck;
+import com.vmware.identity.sts.idm.InvalidPrincipalException;
 import com.vmware.identity.sts.idm.PrincipalDiscovery;
 import com.vmware.identity.sts.idm.STSConfigExtractor;
 import com.vmware.identity.sts.idm.STSConfiguration;
@@ -89,8 +89,6 @@ import com.vmware.identity.sts.impl.STSImpl;
 import com.vmware.identity.sts.util.PrincipalIdConvertor;
 import com.vmware.identity.sts.ws.WsConstants;
 import com.vmware.identity.util.TimePeriod;
-import com.vmware.vim.sso.admin.RoleManagement.WSTrustRole;
-import com.vmware.vim.sso.admin.exception.InvalidPrincipalException;
 
 public class STSImplTest {
 
@@ -106,6 +104,8 @@ public class STSImplTest {
    private final Collection<String> attributeNames = Arrays
       .asList(new String[] { FIRST_NAME, LAST_NAME, GROUPS, SUBJECT_TYPE });
 
+   private static final String actAsGroupName = "ActAsUsers";
+   
    private STS sts;
    private TokenAuthority tokenAuthority;
    private TokenValidator tokenValidator;
@@ -113,7 +113,6 @@ public class STSImplTest {
    private Authenticator authenticator;
    private DelegationParser delegationHandler;
    private PrincipalDiscovery principalDiscovery;
-   private RoleCheck roleCheck;
    private SsoStatisticsService ssoStatistics;
    private Date createdTime;
    private Date expiresTime;
@@ -128,14 +127,13 @@ public class STSImplTest {
       authenticator = createMock(Authenticator.class);
       principalDiscovery = createMock(PrincipalDiscovery.class);
       delegationHandler = new DelegationParser(principalDiscovery);
-      roleCheck = createMock(RoleCheck.class);
       ssoStatistics = createMock(SsoStatisticsService.class);
       STSConfiguration config = new STSConfiguration(0);
       configExtractor = createMock(STSConfigExtractor.class);
       expect(configExtractor.getConfig()).andReturn(config).anyTimes();
       replay(configExtractor);
       sts = new STSImpl(tokenAuthority, tokenValidator, authOnlyTokenValidator, authenticator,
-         delegationHandler, configExtractor, roleCheck, ssoStatistics);
+         delegationHandler, configExtractor, principalDiscovery, ssoStatistics);
 
       Calendar cal = Calendar.getInstance();
       createdTime = cal.getTime();
@@ -371,7 +369,7 @@ public class STSImplTest {
          builder.setSignatureAlgorithm(desiredSigningAlgorithmInRequest);
       }
       if (actAsReq) {
-         expect(roleCheck.hasRole(principalToBeAuth, WSTrustRole.ActAsUser))
+         expect(principalDiscovery.isMemberOfSystemGroup(principalToBeAuthnIdm, actAsGroupName))
             .andReturn(actAsPermission);
       }
       SamlTokenSpec spec = builder.createSpec();
@@ -389,7 +387,7 @@ public class STSImplTest {
       expect(assertion.getDocumentElement()).andReturn(assertionElement);
 
       replay(authenticator, tokenAuthority, principalDiscovery,
-         signingCertificate, assertion, assertionElement, roleCheck);
+         signingCertificate, assertion, assertionElement);
 
       // act
       RequestSecurityTokenResponseCollectionType issuedResponse = sts
@@ -418,7 +416,7 @@ public class STSImplTest {
       }
 
       verify(authenticator, tokenAuthority, principalDiscovery,
-         signingCertificate, assertion, assertionElement, roleCheck);
+         signingCertificate, assertion, assertionElement);
       if (actAsToken != null) {
          verify(actAsTokSubject, actAsToken);
       }

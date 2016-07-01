@@ -173,8 +173,6 @@ fi
 %{_jarsdir}/vmware-identity-websso-client.jar
 %{_jarsdir}/vmware-identity-platform.jar
 %{_jarsdir}/vmware-identity-wsTrustClient.jar
-%{_jarsdir}/admin-interfaces.jar
-%{_jarsdir}/wstauthz.jar
 %{_jarsdir}/vmware-identity-rest-afd-common.jar
 %{_jarsdir}/openidconnect-common.jar
 %{_jarsdir}/vmware-identity-depends.jar

@@ -27,8 +27,6 @@ import com.vmware.identity.sts.RequestFailedException;
 import com.vmware.identity.sts.STS;
 import com.vmware.identity.sts.STSFactory;
 import com.vmware.identity.sts.auth.AuthenticatorFactory;
-import com.vmware.identity.sts.authz.Factory;
-import com.vmware.identity.sts.authz.RoleCheck;
 import com.vmware.identity.sts.idm.IdmTenantServices;
 import com.vmware.identity.sts.idm.PrincipalDiscovery;
 import com.vmware.identity.sts.idm.SsoStatisticsService;
@@ -93,12 +91,10 @@ public final class STSFactoryImpl implements STSFactory {
          .principalDiscovery(tenantName);
       final SsoStatisticsService ssoStatisticsService = idm
          .ssoStatisticsService(tenantName);
-      final RoleCheck roleCheck = Factory
-         .createRoleCheck(new PrincipalMembershipImpl(principalDiscovery));
       return new STSImpl(tokenServices.getAuthority(),
          tokenServices.getValidator(), tokenServices.getAuthnOnlyValidator(), authenticatorFactory.getAuthenticator(
             tenantName, tokenServices.getAuthnOnlyValidator()), new DelegationParser(
-            principalDiscovery), idm.stsConfigService(tenantName), roleCheck, ssoStatisticsService);
+            principalDiscovery), idm.stsConfigService(tenantName), principalDiscovery, ssoStatisticsService);
    }
 
    private static final class Cache {
