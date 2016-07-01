@@ -105,7 +105,7 @@ public class STSImplTest {
       .asList(new String[] { FIRST_NAME, LAST_NAME, GROUPS, SUBJECT_TYPE });
 
    private static final String actAsGroupName = "ActAsUsers";
-   
+
    private STS sts;
    private TokenAuthority tokenAuthority;
    private TokenValidator tokenValidator;

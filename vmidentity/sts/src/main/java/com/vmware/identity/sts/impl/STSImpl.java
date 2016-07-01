@@ -64,7 +64,7 @@ public final class STSImpl implements STS {
    private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(STSImpl.class);
 
    private static final String actAsGroupName = "ActAsUsers";
-   
+ 
    // TODO [848560] make the number of max simultaneous session configurable
    private final LRURequests spnegoSessions = new LRURequests(1024);
    private final TokenAuthority tokenAuthority;
