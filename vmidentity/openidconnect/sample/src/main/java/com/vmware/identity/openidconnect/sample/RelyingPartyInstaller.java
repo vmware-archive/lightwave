@@ -61,11 +61,9 @@ import com.vmware.identity.openidconnect.client.MetadataHelper;
 import com.vmware.identity.openidconnect.client.OIDCClient;
 import com.vmware.identity.openidconnect.client.OIDCTokens;
 import com.vmware.identity.openidconnect.client.TokenSpec;
-import com.vmware.identity.openidconnect.common.Base64Utils;
-import com.vmware.identity.openidconnect.common.ClientAuthenticationMethod;
-import com.vmware.identity.openidconnect.common.PasswordGrant;
 import com.vmware.identity.openidconnect.common.ProviderMetadata;
 import com.vmware.identity.openidconnect.common.TokenType;
+import com.vmware.identity.openidconnect.protocol.Base64Utils;
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.idm.client.IdmClient;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
@@ -110,11 +108,11 @@ class RelyingPartyInstaller {
         ConnectionConfig connectionConfig = new ConnectionConfig(providerMetadata, providerPublicKey, this.keyStore);
         ClientConfig clientConfig = new ClientConfig(connectionConfig, null, null);
         OIDCClient nonRegisteredClient = new OIDCClient(clientConfig);
-        PasswordGrant passwordGrant = new PasswordGrant(
-                this.relyingPartyConfig.getAdminUsername(),
-                this.relyingPartyConfig.getAdminPassword());
         TokenSpec tokenSpec = new TokenSpec.Builder(TokenType.BEARER).resourceServers(Arrays.asList("rs_admin_server")).build();
-        OIDCTokens oidcTokens = nonRegisteredClient.acquireTokens(passwordGrant, tokenSpec);
+        OIDCTokens oidcTokens = nonRegisteredClient.acquireTokensByPassword(
+                this.relyingPartyConfig.getAdminUsername(),
+                this.relyingPartyConfig.getAdminPassword(),
+                tokenSpec);
 
         // create a private/public key pair, generate a certificate and assign it to a solution user name.
         Security.addProvider(new BouncyCastleProvider());
@@ -150,7 +148,7 @@ class RelyingPartyInstaller {
                 withRedirectUris(Arrays.asList(redirectEndpointUrls)).
                 withPostLogoutRedirectUris(Arrays.asList(postLogoutRedirectUrls)).
                 withLogoutUri(logoutUrl).
-                withTokenEndpointAuthMethod(ClientAuthenticationMethod.PRIVATE_KEY_JWT.getValue()).
+                withTokenEndpointAuthMethod("private_key_jwt").
                 withCertSubjectDN(clientCertificate.getSubjectDN().getName()).
                 withAuthnRequestClientAssertionLifetimeMS(2 * 60 * 1000L).
                 build();

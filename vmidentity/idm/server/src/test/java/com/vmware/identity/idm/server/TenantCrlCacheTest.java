@@ -1,19 +1,3 @@
-/*
- *
- *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
- *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
- *  use this file except in compliance with the License.  You may obtain a copy
- *  of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS, without
- *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
- *  License for the specific language governing permissions and limitations
- *  under the License.
- *
- */
-
 package com.vmware.identity.idm.server;
 
 import static org.junit.Assert.fail;
@@ -57,20 +41,19 @@ public class TenantCrlCacheTest {
     public void testCacheCreated() {
 
         Calendar currentDate = new GregorianCalendar();
-        if (currentDate.after(testUtil.boeingCertExpireDate)) {
+        if (currentDate.after(testUtil.dodCertExpireDate)) {
             return;
         }
         try {
-            System.out.print("running testBoeingCRLDP");
-            KeyStore trustStore = testUtil.getTrustStore_BOE();
+            System.out.print("running testCacheCreated");
+            KeyStore trustStore = testUtil.getTrustStore();
             ClientCertPolicy certPolicy = ClientCertTestUtils.intializeCertPolicy();
-            X509Certificate[] certs = testUtil.getValidCert_BOE1();
-
+            X509Certificate[] certs = testUtil.getDodValidCert1();
             certPolicy.setRevocationCheckEnabled(true);
             certPolicy.setUseCertCRL(true);
 
             IdmCertificatePathValidator validator = new IdmCertificatePathValidator(
-                            trustStore, certPolicy, ClientCertTestUtils.tenant1);
+                            trustStore, certPolicy, ClientCertTestUtils.tenant1,null);
 
             //creating cache
             validator.validate(certs[0], new Hashtable<String, String>());
@@ -79,7 +62,7 @@ public class TenantCrlCacheTest {
             IdmCrlCache crlCache = TenantCrlCache.get().get(ClientCertTestUtils.tenant1);
 
             Assert.assertNotNull(crlCache);
-            Assert.assertTrue(crlCache.containsKey(testUtil.boeingCRLDistributionPoint));
+            Assert.assertTrue(crlCache.containsKey(testUtil.dodCRLDistributionPointEMAILCA_29));
             return;
         } catch (CertRevocationStatusUnknownException e) {
             fail("revocation check status unkown");

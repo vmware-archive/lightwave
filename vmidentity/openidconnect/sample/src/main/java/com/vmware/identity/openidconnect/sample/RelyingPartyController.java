@@ -48,11 +48,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import com.vmware.identity.openidconnect.client.AuthenticationCodeResponse;
 import com.vmware.identity.openidconnect.client.AuthenticationTokensResponse;
 import com.vmware.identity.openidconnect.client.ClientConfig;
-import com.vmware.identity.openidconnect.client.ClientIDToken;
 import com.vmware.identity.openidconnect.client.ConnectionConfig;
 import com.vmware.identity.openidconnect.client.GroupMembershipType;
 import com.vmware.identity.openidconnect.client.HighAvailabilityConfig;
 import com.vmware.identity.openidconnect.client.HolderOfKeyConfig;
+import com.vmware.identity.openidconnect.client.IDToken;
 import com.vmware.identity.openidconnect.client.ListenerHelper;
 import com.vmware.identity.openidconnect.client.MetadataHelper;
 import com.vmware.identity.openidconnect.client.OIDCClient;
@@ -64,21 +64,16 @@ import com.vmware.identity.openidconnect.client.SSLConnectionException;
 import com.vmware.identity.openidconnect.client.TokenSpec;
 import com.vmware.identity.openidconnect.client.TokenValidationException;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
-import com.vmware.identity.openidconnect.common.AuthorizationCodeGrant;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.Nonce;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.ProviderMetadata;
-import com.vmware.identity.openidconnect.common.RefreshTokenGrant;
 import com.vmware.identity.openidconnect.common.ResponseMode;
 import com.vmware.identity.openidconnect.common.ResponseType;
 import com.vmware.identity.openidconnect.common.ResponseTypeValue;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.State;
 import com.vmware.identity.openidconnect.common.TokenType;
-import com.vmware.identity.openidconnect.protocol.AccessToken;
-import com.vmware.identity.openidconnect.protocol.IDToken;
-import com.vmware.identity.openidconnect.protocol.RefreshToken;
 import com.vmware.identity.openidconnect.protocol.ServerIssuedToken;
 import com.vmware.identity.rest.afd.client.AfdClient;
 import com.vmware.identity.rest.core.data.CertificateDTO;
@@ -140,9 +135,9 @@ public class RelyingPartyController {
 
         if (tokens != null) {
             modelMap.addAttribute("loggedIn", true);
-            modelMap.addAttribute("displayText", String.format("welcome %s, you are now logged in!", getDisplayName(tokens.getClientIDToken())));
+            modelMap.addAttribute("displayText", String.format("welcome %s, you are now logged in!", getDisplayName(tokens.getIDToken())));
             modelMap.addAttribute("clientId", clientId);
-            modelMap.addAttribute("id_token", tokens.getClientIDToken().serialize());
+            modelMap.addAttribute("id_token", tokens.getIDToken().serialize());
             modelMap.addAttribute("access_token", tokens.getAccessToken().getValue());
             modelMap.addAttribute("refresh_token", (tokens.getRefreshToken() == null) ? null : tokens.getRefreshToken().getValue());
         } else {
@@ -237,10 +232,10 @@ public class RelyingPartyController {
         Nonce nonce = this.authnRequestTracker.remove(state);
         assert nonce != null;
 
-        OIDCTokens tokens = client.acquireTokens(new AuthorizationCodeGrant(authzCode, redirectUri), TokenSpec.EMPTY);
+        OIDCTokens tokens = client.acquireTokensByAuthorizationCode(authzCode, redirectUri);
         validateTokenResponse(tokens, TokenType.HOK);
 
-        assert Objects.equals(tokens.getClientIDToken().getNonce(), nonce);
+        assert Objects.equals(tokens.getIDToken().getNonce(), nonce);
 
         ResourceServerAccessToken.build(
                 tokens.getAccessToken().getValue(),
@@ -249,7 +244,7 @@ public class RelyingPartyController {
                 resourceServers[0],
                 CLOCK_TOLERANCE_SECONDS);
 
-        OIDCTokens tokensNotUsed = client.acquireTokens(new RefreshTokenGrant(tokens.getRefreshToken().getValue()), TokenSpec.EMPTY);
+        OIDCTokens tokensNotUsed = client.acquireTokensByRefreshToken(tokens.getRefreshToken());
         validateTokenResponse(tokensNotUsed, TokenType.HOK);
 
         SessionID sessionId = new SessionID();
@@ -276,7 +271,7 @@ public class RelyingPartyController {
         assert nonce != null;
 
         validateTokenResponse(tokens, TokenType.BEARER);
-        assert Objects.equals(tokens.getClientIDToken().getNonce(), nonce);
+        assert Objects.equals(tokens.getIDToken().getNonce(), nonce);
 
         ResourceServerAccessToken.build(
                 tokens.getAccessToken().getValue(),
@@ -312,11 +307,11 @@ public class RelyingPartyController {
         assert tokens != null;
 
         State logoutState = new State();
-        this.logoutRequestTracker.add(logoutState, tokens.getClientIDToken());
+        this.logoutRequestTracker.add(logoutState, tokens.getIDToken());
 
         URI logoutRequestURI = client.buildLogoutRequestURI(
                 URI.create(postLogoutRedirectUrl),
-                tokens.getClientIDToken(),
+                tokens.getIDToken(),
                 logoutState);
 
         response.addCookie(logoutSessionCookie());
@@ -337,11 +332,11 @@ public class RelyingPartyController {
         assert tokens != null;
 
         State logoutState = new State();
-        this.logoutRequestTracker.add(logoutState, tokens.getClientIDToken());
+        this.logoutRequestTracker.add(logoutState, tokens.getIDToken());
 
         String logoutRequestForm = client.buildLogoutRequestHtmlForm(
                 URI.create(postLogoutRedirectUrl),
-                tokens.getClientIDToken(),
+                tokens.getIDToken(),
                 logoutState);
 
         response.addCookie(logoutSessionCookie());
@@ -365,7 +360,7 @@ public class RelyingPartyController {
         assert tokens != null;
 
         SessionID sloSid = ListenerHelper.parseSLORequest(request);
-        assert Objects.equals(sloSid, tokens.getClientIDToken().getSessionID());
+        assert Objects.equals(sloSid, tokens.getIDToken().getSessionID());
 
         response.addCookie(logoutSessionCookie());
     }
@@ -375,8 +370,8 @@ public class RelyingPartyController {
             HttpServletRequest request,
             HttpServletResponse response) throws OIDCClientException, OIDCServerException {
         State logoutState = ListenerHelper.parseLogoutResponse(request);
-        ClientIDToken clientIdToken = this.logoutRequestTracker.remove(logoutState);
-        assert clientIdToken != null;
+        IDToken idToken = this.logoutRequestTracker.remove(logoutState);
+        assert idToken != null;
         sendRedirect(response, rootUrl);
     }
 
@@ -397,12 +392,12 @@ public class RelyingPartyController {
         return sessionCookie;
     }
 
-    private static String getDisplayName(ClientIDToken clientIdToken) {
+    private static String getDisplayName(IDToken idToken) {
         String result;
 
-        String subject    = clientIdToken.getSubject().getValue();
-        String givenName  = clientIdToken.getGivenName();
-        String familyName = clientIdToken.getFamilyName();
+        String subject    = idToken.getSubject().getValue();
+        String givenName  = idToken.getGivenName();
+        String familyName = idToken.getFamilyName();
 
         if (StringUtils.isNotBlank(givenName)) {
             if (StringUtils.isNotBlank(familyName)) {
@@ -438,13 +433,13 @@ public class RelyingPartyController {
     }
 
     private void validateTokenResponse(OIDCTokens tokens, TokenType expectedTokenType) {
-        IDToken idToken;
-        AccessToken accessToken;
-        RefreshToken refreshToken;
+        com.vmware.identity.openidconnect.protocol.IDToken idToken;
+        com.vmware.identity.openidconnect.protocol.AccessToken accessToken;
+        com.vmware.identity.openidconnect.protocol.RefreshToken refreshToken;
         try {
-            idToken = IDToken.parse(tokens.getClientIDToken().serialize());
-            accessToken = AccessToken.parse(tokens.getAccessToken().getValue());
-            refreshToken = tokens.getRefreshToken() == null ? null : RefreshToken.parse(tokens.getRefreshToken().getValue());
+            idToken = com.vmware.identity.openidconnect.protocol.IDToken.parse(tokens.getIDToken().serialize());
+            accessToken = com.vmware.identity.openidconnect.protocol.AccessToken.parse(tokens.getAccessToken().getValue());
+            refreshToken = tokens.getRefreshToken() == null ? null : com.vmware.identity.openidconnect.protocol.RefreshToken.parse(tokens.getRefreshToken().getValue());
         } catch (ParseException e) {
             throw new IllegalStateException(e);
         }
@@ -455,7 +450,7 @@ public class RelyingPartyController {
         }
     }
 
-    private static void validateIdToken(IDToken idToken, TokenType expectedTokenType) {
+    private static void validateIdToken(com.vmware.identity.openidconnect.protocol.IDToken idToken, TokenType expectedTokenType) {
         validateToken(idToken, expectedTokenType);
 
         String error = null;
@@ -473,7 +468,7 @@ public class RelyingPartyController {
         }
     }
 
-    private static void validateAccessToken(AccessToken accessToken, TokenType expectedTokenType) {
+    private static void validateAccessToken(com.vmware.identity.openidconnect.protocol.AccessToken accessToken, TokenType expectedTokenType) {
         validateToken(accessToken, expectedTokenType);
 
         String error = null;
@@ -505,7 +500,7 @@ public class RelyingPartyController {
         }
     }
 
-    private static void validateRefreshToken(RefreshToken refreshToken, TokenType expectedTokenType) {
+    private static void validateRefreshToken(com.vmware.identity.openidconnect.protocol.RefreshToken refreshToken, TokenType expectedTokenType) {
         validateToken(refreshToken, expectedTokenType);
     }
 

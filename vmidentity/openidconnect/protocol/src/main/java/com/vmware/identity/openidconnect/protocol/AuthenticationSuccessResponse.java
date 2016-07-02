@@ -21,7 +21,6 @@ import java.util.Map;
 import org.apache.commons.lang3.Validate;
 
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
-import com.vmware.identity.openidconnect.common.ParameterMapUtils;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.ResponseMode;
 import com.vmware.identity.openidconnect.common.State;

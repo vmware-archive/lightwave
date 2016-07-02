@@ -15,14 +15,12 @@
 package com.vmware.identity.openidconnect.server;
 import java.net.URI;
 import java.util.Date;
-import java.util.Objects;
 
 import org.apache.commons.lang3.Validate;
 
 import com.nimbusds.jose.JOSEException;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.URIUtils;
 import com.vmware.identity.openidconnect.protocol.ClientAssertion;
 import com.vmware.identity.openidconnect.protocol.ClientIssuedAssertion;
 import com.vmware.identity.openidconnect.protocol.SolutionUserAssertion;
@@ -73,7 +71,10 @@ public class SolutionUserAuthenticator {
             ClientInfo clientInfo) throws ServerException {
         SolutionUser solutionUser;
 
-        validateAssertion(assertion, assertionLifetimeMs, requestUri, tenantInfo);
+        String errorDescription = assertion.validate(assertionLifetimeMs, requestUri, tenantInfo.getClockToleranceMs());
+        if (errorDescription != null) {
+            throw new ServerException(ErrorObject.invalidClient(errorDescription));
+        }
 
         String certSubjectDn;
         if (assertion instanceof ClientAssertion) {
@@ -120,31 +121,5 @@ public class SolutionUserAuthenticator {
         }
 
         return new SolutionUser(idmSolutionUser.getId(), tenant, idmSolutionUser.getCert());
-    }
-
-    private static void validateAssertion(
-            ClientIssuedAssertion assertion,
-            long assertionLifetimeMs,
-            URI requestUri,
-            TenantInfo tenantInfo) throws ServerException {
-        // if we are behind rhttp proxy, the requestUri will have http scheme instead of https
-        URI httpsRequestUri = URIUtils.changeSchemeComponent(requestUri, "https");
-        boolean validAudience =
-                assertion.getAudience().size() == 1 &&
-                Objects.equals(assertion.getAudience().get(0), httpsRequestUri.toString());
-        if (!validAudience) {
-            throw new ServerException(ErrorObject.invalidClient(String.format("%s audience does not match request URI", assertion.getTokenClass().getValue())));
-        }
-
-        Date now = new Date();
-        Date issueTime = assertion.getIssueTime();
-        Date lowerBound = new Date(now.getTime() - tenantInfo.getClockToleranceMs() - assertionLifetimeMs);
-        Date upperBound = new Date(now.getTime() + tenantInfo.getClockToleranceMs());
-        if (issueTime.before(lowerBound) || issueTime.after(upperBound)) {
-            String message = (assertion instanceof ClientAssertion) ?
-                    "stale_client_assertion" :
-                    "stale_solution_user_assertion";
-            throw new ServerException(ErrorObject.invalidClient(message));
-        }
     }
 }

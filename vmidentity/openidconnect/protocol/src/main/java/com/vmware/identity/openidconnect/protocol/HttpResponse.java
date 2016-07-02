@@ -72,7 +72,7 @@ public final class HttpResponse {
         return new HttpResponse(
                 errorObject.getStatusCode(),
                 null, // htmlContent
-                errorObject.toJSONObject(),
+                ErrorObjectMapper.toJSONObject(errorObject),
                 (URI) null,
                 (ErrorObject) null);
     }

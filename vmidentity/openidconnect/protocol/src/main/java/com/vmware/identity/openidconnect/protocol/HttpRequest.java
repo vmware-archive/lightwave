@@ -35,8 +35,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.message.BasicNameValuePair;
 
-import com.vmware.identity.openidconnect.common.URIUtils;
-
 /**
  * @author Yehia Zayour
  */

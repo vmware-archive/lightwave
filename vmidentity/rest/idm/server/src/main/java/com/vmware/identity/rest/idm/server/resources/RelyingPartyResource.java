@@ -13,6 +13,8 @@
  */
 package com.vmware.identity.rest.idm.server.resources;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.Collection;
 
 import javax.ws.rs.Consumes;
@@ -27,6 +29,12 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -82,6 +90,50 @@ public class RelyingPartyResource extends BaseSubResource {
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         }
     }
+
+    /**
+     * Register relying party via XML
+     */
+    @POST
+    @Consumes(MediaType.APPLICATION_XML)
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role=Role.ADMINISTRATOR)
+    public void add(String relyingPartyXMLString) throws Exception {
+        try{
+            Document xmlDoc = parseToDocument(relyingPartyXMLString);
+            getIDMClient().importTenantConfiguration(tenant, xmlDoc);
+        }  catch (NoSuchTenantException e) {
+            log.debug("Failed to add a relying party for tenant '{}' due to missing tenant", tenant, e);
+            throw new NotFoundException(sm.getString("ec.404"), e);
+        } catch (DTOMapperException | InvalidArgumentException e) {
+            log.debug("Failed to add a relying party for tenant '{}' due to a client side error", tenant, e);
+            throw new BadRequestException(sm.getString("res.relyingparty.create.failed", tenant), e);
+        } catch (Exception e) {
+            log.error("Failed to add a relying party for tenant '{}' due to a server side error", tenant, e);
+            throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        }
+    }
+
+    public static Document parseToDocument(String relyingPartyConfigXML)
+            throws IOException, SAXException {
+
+            assert relyingPartyConfigXML != null;
+
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setNamespaceAware(true);
+            dbf.setValidating(false);
+
+            DocumentBuilder builder;
+            try {
+               builder = dbf.newDocumentBuilder();
+
+            } catch (ParserConfigurationException e) {
+               throw new IllegalStateException(e);
+            }
+            ByteArrayInputStream strIn = new ByteArrayInputStream(relyingPartyConfigXML.getBytes()); // No need to close this stream!
+
+            return builder.parse(strIn);
+         }
 
     /**
      * Get the details of all relying parties on requested tenant.

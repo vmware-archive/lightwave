@@ -21,12 +21,10 @@ import java.util.Set;
 
 import org.apache.commons.lang3.Validate;
 
-import com.vmware.identity.openidconnect.common.ParameterMapUtils;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.State;
 import com.vmware.identity.openidconnect.common.StatusCode;
-import com.vmware.identity.openidconnect.common.URIUtils;
 
 /**
  * @author Yehia Zayour

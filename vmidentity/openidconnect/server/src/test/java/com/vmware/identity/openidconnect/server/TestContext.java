@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -54,10 +55,8 @@ import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.ResourceServer;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
-import com.vmware.identity.openidconnect.common.Base64Utils;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.JWTID;
-import com.vmware.identity.openidconnect.common.JWTUtils;
 import com.vmware.identity.openidconnect.common.Nonce;
 import com.vmware.identity.openidconnect.common.ResponseMode;
 import com.vmware.identity.openidconnect.common.ResponseType;
@@ -66,6 +65,8 @@ import com.vmware.identity.openidconnect.common.ScopeValue;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.State;
 import com.vmware.identity.openidconnect.protocol.AuthenticationRequest;
+import com.vmware.identity.openidconnect.protocol.Base64Utils;
+import com.vmware.identity.openidconnect.protocol.JWTUtils;
 
 /**
  * @author Yehia Zayour
@@ -81,7 +82,7 @@ public class TestContext {
     public static final String AUTHZ_CODE = "_authz_code_xyz_";
     public static final String USERNAME = "_username_xyz_";
     public static final String PASSWORD = "_password_xyz_";
-    public static final String SECUREID_PASSCODE = "_secureid_passcode_xyz_";
+    public static final String SECURID_PASSCODE = "_securid_passcode_xyz_";
     public static final String SESSION_ID = "_session_id_xyz_";
     public static final String SOLUTION_USERNAME = "_solution_username_xyz_";
     public static final String CLIENT_CERT_SUBJECT_DN = "OU=abc,C=US,DC=local,DC=vsphere,CN=_solution_username_xyz_";
@@ -191,7 +192,7 @@ public class TestContext {
 
                 username(USERNAME).
                 password(PASSWORD).
-                secureIdPasscode(SECUREID_PASSCODE).
+                securIdPasscode(SECURID_PASSCODE).
                 gssContextId(GSS_CONTEXT_ID).
                 personUserEnabled(true).
 
@@ -252,6 +253,14 @@ public class TestContext {
         ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
         messageSource.setBasename("messages");
         return messageSource;
+    }
+
+    public static Set<String> qualifyGroupMembership(List<String> groups) {
+        Set<String> result = new HashSet<String>();
+        for (String group : groups) {
+            result.add(String.format("%s\\%s", TENANT_NAME, group));
+        }
+        return result;
     }
 
     public static JWTClaimsSet.Builder idTokenClaims() {
@@ -328,7 +337,21 @@ public class TestContext {
         return claimsBuilder;
     }
 
-    public static JWTClaimsSet.Builder sltnAssertionClaims() {
+    public static JWTClaimsSet.Builder personUserAssertionClaims() {
+        Date now = new Date();
+
+        JWTClaimsSet.Builder claimsBuilder = new JWTClaimsSet.Builder();
+        claimsBuilder = claimsBuilder.claim("token_class", "person_user_assertion");
+        claimsBuilder = claimsBuilder.claim("token_type", "Bearer");
+        claimsBuilder = claimsBuilder.jwtID((new JWTID()).getValue());
+        claimsBuilder = claimsBuilder.issuer(CLIENT_CERT_SUBJECT_DN);
+        claimsBuilder = claimsBuilder.subject(CLIENT_CERT_SUBJECT_DN);
+        claimsBuilder = claimsBuilder.audience("https://localhost");
+        claimsBuilder = claimsBuilder.issueTime(now);
+        return claimsBuilder;
+    }
+
+    public static JWTClaimsSet.Builder solutionUserAssertionClaims() {
         Date now = new Date();
 
         JWTClaimsSet.Builder claimsBuilder = new JWTClaimsSet.Builder();
@@ -339,7 +362,6 @@ public class TestContext {
         claimsBuilder = claimsBuilder.subject(CLIENT_CERT_SUBJECT_DN);
         claimsBuilder = claimsBuilder.audience("https://localhost");
         claimsBuilder = claimsBuilder.issueTime(now);
-        claimsBuilder = claimsBuilder.expirationTime(new Date(now.getTime() + 356 * 24 * 60 * 60 * 1000L));
         return claimsBuilder;
     }
 
@@ -354,7 +376,6 @@ public class TestContext {
         claimsBuilder = claimsBuilder.subject(CLIENT_ID);
         claimsBuilder = claimsBuilder.audience("https://localhost");
         claimsBuilder = claimsBuilder.issueTime(now);
-        claimsBuilder = claimsBuilder.expirationTime(new Date(now.getTime() + 2 * 60 * 1000L));
         return claimsBuilder;
     }
 
@@ -380,11 +401,11 @@ public class TestContext {
         return String.format("Negotiate %s", GSS_CONTEXT_ID);
     }
 
-    public static String secureIdLoginString() {
-        return secureIdLoginString(USERNAME, SECUREID_PASSCODE, null);
+    public static String securIdLoginString() {
+        return securIdLoginString(USERNAME, SECURID_PASSCODE, null);
     }
 
-    public static String secureIdLoginString(String username, String passcode, String sessionId) {
+    public static String securIdLoginString(String username, String passcode, String sessionId) {
         String unp = username + ":" + passcode;
         String unp64 = Base64Utils.encodeToString(unp);
         String sessionId64 = (sessionId == null) ? null : Base64Utils.encodeToString(sessionId);
@@ -433,14 +454,14 @@ public class TestContext {
     }
 
     public static Map<String, String> tokenRequestParametersSltn(Flow flow) throws Exception {
-        return tokenRequestParametersSltn(flow, sltnAssertionClaims().build());
+        return tokenRequestParametersSltn(flow, solutionUserAssertionClaims().build());
     }
 
-    public static Map<String, String> tokenRequestParametersSltn(Flow flow, JWTClaimsSet sltnAssertionClaims) throws Exception {
+    public static Map<String, String> tokenRequestParametersSltn(Flow flow, JWTClaimsSet solutionUserAssertionClaims) throws Exception {
         assert flow.isTokenEndpointFlow();
         assert flow != Flow.AUTHZ_CODE && flow != Flow.CLIENT_CREDS;
         Map<String, String> params = tokenRequestParameters(flow, refreshTokenClaimsSltn().build());
-        params.put("solution_user_assertion", TestUtil.sign(sltnAssertionClaims, CLIENT_PRIVATE_KEY).serialize());
+        params.put("solution_user_assertion", TestUtil.sign(solutionUserAssertionClaims, CLIENT_PRIVATE_KEY).serialize());
         return params;
     }
 
@@ -646,7 +667,7 @@ public class TestContext {
 
         boolean refreshTokenShouldExist =
                 scope.contains(ScopeValue.OFFLINE_ACCESS) &&
-                (flow == Flow.AUTHZ_CODE || flow == Flow.PASSWORD || flow == Flow.GSS_TICKET || flow == Flow.CLIENT_CERT || flow == Flow.SECUREID);
+                (flow == Flow.AUTHZ_CODE || flow == Flow.PASSWORD || flow == Flow.GSS_TICKET || flow == Flow.PERSON_USER_CERT || flow == Flow.SECURID);
         assertEquals("refreshTokenShouldExist", refreshTokenShouldExist, refreshToken != null);
         if (refreshTokenShouldExist) {
             validateToken(
@@ -914,9 +935,10 @@ public class TestContext {
                 params.put("grant_type", "client_credentials");
                 params.put("scope", "openid");
                 break;
-            case CLIENT_CERT:
-                params.put("grant_type", "urn:vmware:grant_type:client_certificate");
-                params.put("client_certificate_chain", Base64Utils.encodeToString(CLIENT_CERT.getEncoded()));
+            case PERSON_USER_CERT:
+                params.put("grant_type", "urn:vmware:grant_type:person_user_certificate");
+                params.put("person_user_certificate", Base64Utils.encodeToString(CLIENT_CERT.getEncoded()));
+                params.put("person_user_assertion", TestUtil.sign(personUserAssertionClaims().build(), CLIENT_PRIVATE_KEY).serialize());
                 params.put("scope", "openid offline_access");
                 break;
             case SOLUTION_USER_CREDS:
@@ -929,10 +951,10 @@ public class TestContext {
                 params.put("gss_ticket", "===");
                 params.put("scope", "openid offline_access");
                 break;
-            case SECUREID:
-                params.put("grant_type", "urn:vmware:grant_type:secureid");
+            case SECURID:
+                params.put("grant_type", "urn:vmware:grant_type:securid");
                 params.put("username", USERNAME);
-                params.put("passcode", SECUREID_PASSCODE);
+                params.put("passcode", SECURID_PASSCODE);
                 params.put("session_id", "_session_id_xyz_");
                 params.put("scope", "openid offline_access");
                 break;

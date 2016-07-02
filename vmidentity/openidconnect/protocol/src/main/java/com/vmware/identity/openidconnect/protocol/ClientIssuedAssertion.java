@@ -55,4 +55,28 @@ public abstract class ClientIssuedAssertion extends JWTToken {
                 Arrays.asList(endpoint.toString()),
                 issueTime);
     }
+
+    public String validate(
+            long assertionLifetimeMs,
+            URI requestUri,
+            long clockToleranceMS) {
+        // if we are behind rhttp proxy, the requestUri will have http scheme instead of https
+        URI httpsRequestUri = URIUtils.changeSchemeComponent(requestUri, "https");
+        boolean validAudience =
+                this.getAudience().size() == 1 &&
+                Objects.equals(this.getAudience().get(0), httpsRequestUri.toString());
+        if (!validAudience) {
+            return String.format("%s audience does not match request URI", this.getTokenClass().getValue());
+        }
+
+        Date now = new Date();
+        Date issueTime = this.getIssueTime();
+        Date lowerBound = new Date(now.getTime() - clockToleranceMS - assertionLifetimeMs);
+        Date upperBound = new Date(now.getTime() + clockToleranceMS);
+        if (issueTime.before(lowerBound) || issueTime.after(upperBound)) {
+            return String.format("stale_%s", this.getTokenClass().getValue());
+        }
+
+        return null;
+    }
 }

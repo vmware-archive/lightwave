@@ -18,7 +18,7 @@ import static com.vmware.identity.openidconnect.server.TestContext.CLIENT_CERT;
 import static com.vmware.identity.openidconnect.server.TestContext.GSS_CONTEXT_ID;
 import static com.vmware.identity.openidconnect.server.TestContext.NONCE;
 import static com.vmware.identity.openidconnect.server.TestContext.PASSWORD;
-import static com.vmware.identity.openidconnect.server.TestContext.SECUREID_PASSCODE;
+import static com.vmware.identity.openidconnect.server.TestContext.SECURID_PASSCODE;
 import static com.vmware.identity.openidconnect.server.TestContext.SESSION_COOKIE_NAME;
 import static com.vmware.identity.openidconnect.server.TestContext.SESSION_ID;
 import static com.vmware.identity.openidconnect.server.TestContext.STATE;
@@ -33,7 +33,7 @@ import static com.vmware.identity.openidconnect.server.TestContext.idmClient;
 import static com.vmware.identity.openidconnect.server.TestContext.idmClientBuilder;
 import static com.vmware.identity.openidconnect.server.TestContext.initialize;
 import static com.vmware.identity.openidconnect.server.TestContext.passwordLoginString;
-import static com.vmware.identity.openidconnect.server.TestContext.secureIdLoginString;
+import static com.vmware.identity.openidconnect.server.TestContext.securIdLoginString;
 import static com.vmware.identity.openidconnect.server.TestContext.validateAuthnSuccessResponse;
 
 import java.security.cert.X509Certificate;
@@ -53,8 +53,8 @@ import org.springframework.ui.ExtendedModelMap;
 import org.springframework.web.servlet.ModelAndView;
 
 import com.vmware.identity.idm.client.CasIdmClient;
-import com.vmware.identity.openidconnect.common.Base64Utils;
 import com.vmware.identity.openidconnect.common.Scope;
+import com.vmware.identity.openidconnect.protocol.Base64Utils;
 
 /**
  * @author Yehia Zayour
@@ -92,38 +92,38 @@ public class LoginTest {
     }
 
     @Test
-    public void testClientCertLoginUsingHeader() throws Exception {
+    public void testPersonUserCertLoginUsingHeader() throws Exception {
         String certString64 = Base64Utils.encodeToString(CLIENT_CERT.getEncoded());
-        assertSuccessResponseUsingClientCert(certString64, null);
+        assertSuccessResponseUsingPersonUserCert(certString64, null);
     }
 
     @Test
-    public void testClientCertLoginUsingAttribute() throws Exception {
-        assertSuccessResponseUsingClientCert(null, new X509Certificate[] { CLIENT_CERT });
+    public void testPersonUserCertLoginUsingAttribute() throws Exception {
+        assertSuccessResponseUsingPersonUserCert(null, new X509Certificate[] { CLIENT_CERT });
     }
 
     @Test
-    public void testClientCertLoginInvalidCert() throws Exception {
-        assertErrorResponseUsingClientCert("ThisIsNotACert", null, (Cookie) null, "access_denied: failed to parse client cert");
+    public void testPersonUserCertLoginInvalidCert() throws Exception {
+        assertErrorResponseUsingPersonUserCert("ThisIsNotACert", null, (Cookie) null, "access_denied: failed to parse person user cert");
     }
 
     @Test
-    public void testClientCertLoginIncorrectCert() throws Exception {
+    public void testPersonUserCertLoginIncorrectCert() throws Exception {
         X509Certificate cert = TENANT_CERT;
         byte[] certBytes = cert.getEncoded();
         String certString64 = Base64Utils.encodeToString(certBytes);
-        assertErrorResponseUsingClientCert(certString64, null, (Cookie) null, "access_denied: invalid client cert");
+        assertErrorResponseUsingPersonUserCert(certString64, null, (Cookie) null, "access_denied: invalid person user cert");
     }
 
     @Test
-    public void testClientCertLoginMissingCert() throws Exception {
-        assertErrorResponseUsingClientCert(null, null, (Cookie) null, "access_denied: missing client cert");
+    public void testPersonUserCertLoginMissingCert() throws Exception {
+        assertErrorResponseUsingPersonUserCert(null, null, (Cookie) null, "access_denied: missing person user cert");
     }
 
     @Test
-    public void testClientCertLoginReopenBrowserWindow() throws Exception {
-        Cookie cookie = new Cookie(SessionManager.getClientCertificateLoggedOutCookieName(TENANT_NAME), "");
-        assertErrorResponseUsingClientCert(null, null, cookie, "access_denied: already logged in once on this browser session");
+    public void testPersonUserCertLoginReopenBrowserWindow() throws Exception {
+        Cookie cookie = new Cookie(SessionManager.getPersonUserCertificateLoggedOutCookieName(TENANT_NAME), "");
+        assertErrorResponseUsingPersonUserCert(null, null, cookie, "access_denied: already logged in once on this browser session");
     }
 
     @Test
@@ -179,60 +179,60 @@ public class LoginTest {
     }
 
     @Test
-    public void testSecureIdLoginOneLeggedWithSessionId() throws Exception {
-        String loginString = secureIdLoginString(USERNAME, SECUREID_PASSCODE, "secureid_session_id");
+    public void testSecurIdLoginOneLeggedWithSessionId() throws Exception {
+        String loginString = securIdLoginString(USERNAME, SECURID_PASSCODE, "securid_session_id");
         assertSuccessResponse(loginString);
     }
 
     @Test
-    public void testSecureIdLoginOneLeggedWithoutSessionId() throws Exception {
-        String loginString = secureIdLoginString(USERNAME, SECUREID_PASSCODE, null);
+    public void testSecurIdLoginOneLeggedWithoutSessionId() throws Exception {
+        String loginString = securIdLoginString(USERNAME, SECURID_PASSCODE, null);
         assertSuccessResponse(loginString);
     }
 
     @Test
-    public void testSecureIdLoginTwoLeggedWithSessionId() throws Exception {
-        String sessionId = "secureid_session_id";
+    public void testSecurIdLoginTwoLeggedWithSessionId() throws Exception {
+        String sessionId = "securid_session_id";
         String sessionId64 = Base64Utils.encodeToString(sessionId);
-        String loginString = secureIdLoginString(USERNAME, SECUREID_PASSCODE, sessionId);
-        CasIdmClient idmClient = idmClientBuilder().secureIdSessionId(sessionId).build();
-        assertErrorResponse(loginString, "access_denied: secureid_next_code_required", "RSAAM " + sessionId64, idmClient);
+        String loginString = securIdLoginString(USERNAME, SECURID_PASSCODE, sessionId);
+        CasIdmClient idmClient = idmClientBuilder().securIdSessionId(sessionId).build();
+        assertErrorResponse(loginString, "access_denied: securid_next_code_required", "RSAAM " + sessionId64, idmClient);
     }
 
     @Test
-    public void testSecureIdLoginTwoLeggedWithoutSessionId() throws Exception {
-        String sessionId = "secureid_session_id";
+    public void testSecurIdLoginTwoLeggedWithoutSessionId() throws Exception {
+        String sessionId = "securid_session_id";
         String sessionId64 = Base64Utils.encodeToString(sessionId);
-        String loginString = secureIdLoginString(USERNAME, SECUREID_PASSCODE, null);
-        CasIdmClient idmClient = idmClientBuilder().secureIdSessionId(sessionId).build();
-        assertErrorResponse(loginString, "access_denied: secureid_next_code_required", "RSAAM " + sessionId64, idmClient);
+        String loginString = securIdLoginString(USERNAME, SECURID_PASSCODE, null);
+        CasIdmClient idmClient = idmClientBuilder().securIdSessionId(sessionId).build();
+        assertErrorResponse(loginString, "access_denied: securid_next_code_required", "RSAAM " + sessionId64, idmClient);
     }
 
     @Test
-    public void testSecureIdLoginIncorrectCredentials() throws Exception {
-        String loginString = secureIdLoginString(USERNAME + "_non_matching", SECUREID_PASSCODE + "_non_matching", null);
-        assertErrorResponse(loginString, "access_denied: incorrect secureid username or passcode", null);
+    public void testSecurIdLoginIncorrectCredentials() throws Exception {
+        String loginString = securIdLoginString(USERNAME + "_non_matching", SECURID_PASSCODE + "_non_matching", null);
+        assertErrorResponse(loginString, "access_denied: incorrect securid username or passcode", null);
     }
 
     @Test
-    public void testSecureIdLoginInvalidLoginString() throws Exception {
-        String loginString = secureIdLoginString() + " extra";
-        assertErrorResponse(loginString, "access_denied: malformed secureid login string", null);
+    public void testSecurIdLoginInvalidLoginString() throws Exception {
+        String loginString = securIdLoginString() + " extra";
+        assertErrorResponse(loginString, "access_denied: malformed securid login string", null);
     }
 
     @Test
-    public void testSecureIdLoginInvalidUsernamePasscode() throws Exception {
+    public void testSecurIdLoginInvalidUsernamePasscode() throws Exception {
         String unp = "usernamepasscode"; // should be username:passcode
         String unp64 = Base64Utils.encodeToString(unp);
         String loginString = "RSAAM " + unp64;
-        assertErrorResponse(loginString, "access_denied: malformed username:passcode in secureid login string", null);
+        assertErrorResponse(loginString, "access_denied: malformed username:passcode in securid login string", null);
     }
 
     @Test
-    public void testSecureIdLoginNewPinRequired() throws Exception {
-        String loginString = secureIdLoginString();
-        CasIdmClient idmClient = idmClientBuilder().secureIdNewPinRequired(true).build();
-        assertErrorResponse(loginString, "access_denied: new secureid pin required", null, idmClient);
+    public void testSecurIdLoginNewPinRequired() throws Exception {
+        String loginString = securIdLoginString();
+        CasIdmClient idmClient = idmClientBuilder().securIdNewPinRequired(true).build();
+        assertErrorResponse(loginString, "access_denied: new securid pin required", null, idmClient);
     }
 
     @Test
@@ -298,10 +298,10 @@ public class LoginTest {
         validateAuthnSuccessResponse(response, Flow.AUTHZ_CODE, Scope.OPENID, false, true, STATE, NONCE);
     }
 
-    private static void assertSuccessResponseUsingClientCert(
+    private static void assertSuccessResponseUsingPersonUserCert(
             String certHeader,
             Object certAttribute) throws Exception {
-        Pair<ModelAndView, MockHttpServletResponse> result = doRequestUsingClientCert(certHeader, certAttribute, (Cookie) null);
+        Pair<ModelAndView, MockHttpServletResponse> result = doRequestUsingPersonUserCert(certHeader, certAttribute, (Cookie) null);
         ModelAndView modelView = result.getLeft();
         MockHttpServletResponse response = result.getRight();
 
@@ -354,12 +354,12 @@ public class LoginTest {
         }
     }
 
-    private static void assertErrorResponseUsingClientCert(
+    private static void assertErrorResponseUsingPersonUserCert(
             String certHeader,
             Object certAttribute,
             Cookie cookie,
             String expectedError) throws Exception {
-        Pair<ModelAndView, MockHttpServletResponse> result = doRequestUsingClientCert(certHeader, certAttribute, cookie);
+        Pair<ModelAndView, MockHttpServletResponse> result = doRequestUsingPersonUserCert(certHeader, certAttribute, cookie);
         ModelAndView modelView = result.getLeft();
         MockHttpServletResponse response = result.getRight();
 
@@ -404,7 +404,7 @@ public class LoginTest {
         return Pair.of(modelView, response);
     }
 
-    private static Pair<ModelAndView, MockHttpServletResponse> doRequestUsingClientCert(
+    private static Pair<ModelAndView, MockHttpServletResponse> doRequestUsingPersonUserCert(
             String certHeader,
             Object certAttribute,
             Cookie cookie) throws Exception {
@@ -423,7 +423,7 @@ public class LoginTest {
         }
 
         MockHttpServletResponse response = new MockHttpServletResponse();
-        ModelAndView modelView = authnController().authenticateByClientCertificate(new ExtendedModelMap(), Locale.ENGLISH, request, response);
+        ModelAndView modelView = authnController().authenticateByPersonUserCertificate(new ExtendedModelMap(), Locale.ENGLISH, request, response);
         return Pair.of(modelView, response);
     }
 }

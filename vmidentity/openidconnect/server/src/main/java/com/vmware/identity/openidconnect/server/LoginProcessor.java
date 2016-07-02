@@ -29,12 +29,12 @@ import org.springframework.context.MessageSource;
 import com.vmware.identity.idm.GSSResult;
 import com.vmware.identity.idm.IDMSecureIDNewPinException;
 import com.vmware.identity.idm.RSAAMResult;
-import com.vmware.identity.openidconnect.common.Base64Utils;
 import com.vmware.identity.openidconnect.common.ErrorCode;
 import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.StatusCode;
+import com.vmware.identity.openidconnect.protocol.Base64Utils;
 import com.vmware.identity.openidconnect.protocol.Header;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
@@ -100,14 +100,14 @@ public class LoginProcessor {
             case PASSWORD:
                 personUser = processPasswordLogin(loginString);
                 break;
-            case CLIENT_CERTIFICATE:
-                personUser = processClientCertificateLogin();
+            case PERSON_USER_CERTIFICATE:
+                personUser = processPersonUserCertificateLogin();
                 break;
             case GSS_TICKET:
                 personUser = processGssTicketLogin(loginString);
                 break;
-            case SECUREID:
-                personUser = processSecureIDLogin(loginString);
+            case SECURID:
+                personUser = processSecurIDLogin(loginString);
                 break;
             default:
                 throw new IllegalStateException("unexpected login method: " + loginMethod);
@@ -140,12 +140,12 @@ public class LoginProcessor {
         }
     }
 
-    private PersonUser processClientCertificateLogin() throws LoginException {
-        if (this.httpRequest.getCookieValue(SessionManager.getClientCertificateLoggedOutCookieName(this.tenant)) != null) {
+    private PersonUser processPersonUserCertificateLogin() throws LoginException {
+        if (this.httpRequest.getCookieValue(SessionManager.getPersonUserCertificateLoggedOutCookieName(this.tenant)) != null) {
             throw new LoginException("already logged in once on this browser session", localize(ErrorMessage.LOGGED_OUT_TLS_SESSION));
         }
 
-        List<X509Certificate> clientCertChain;
+        List<X509Certificate> personUserCertificateChain;
 
         String certString64 = this.httpRequest.getHeaderValue("X-SSL-Client-Certificate");
 
@@ -155,23 +155,23 @@ public class LoginProcessor {
             try {
                 CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
                 X509Certificate cert = (X509Certificate) certFactory.generateCertificate(inputStream);
-                clientCertChain = Arrays.asList(cert);
+                personUserCertificateChain = Arrays.asList(cert);
             } catch (CertificateException e) {
-                throw new LoginException("failed to parse client cert", localize(ErrorMessage.INVALID_CREDENTIAL), e);
+                throw new LoginException("failed to parse person user cert", localize(ErrorMessage.INVALID_CREDENTIAL), e);
             }
         } else {
-            clientCertChain = this.httpRequest.getClientCertificateChain();
-            if (clientCertChain == null || clientCertChain.size() == 0) {
-                throw new LoginException("missing client cert", localize(ErrorMessage.NO_CLIENT_CERT));
+            personUserCertificateChain = this.httpRequest.getClientCertificateChain();
+            if (personUserCertificateChain == null || personUserCertificateChain.size() == 0) {
+                throw new LoginException("missing person user cert", localize(ErrorMessage.NO_CLIENT_CERT));
             }
         }
 
         try {
-            return this.personUserAuthenticator.authenticateByClientCertificate(this.tenant, clientCertChain);
+            return this.personUserAuthenticator.authenticateByPersonUserCertificate(this.tenant, personUserCertificateChain);
         } catch (InvalidCredentialsException e) {
-            throw new LoginException("invalid client cert", localize(ErrorMessage.INVALID_CREDENTIAL), e);
+            throw new LoginException("invalid person user cert", localize(ErrorMessage.INVALID_CREDENTIAL), e);
         } catch (ServerException e) {
-            throw new LoginException("error while authenticating client cert", localize(ErrorMessage.RESPONDER), e);
+            throw new LoginException("error while authenticating person user cert", localize(ErrorMessage.RESPONDER), e);
         }
     }
 
@@ -224,7 +224,7 @@ public class LoginProcessor {
         }
     }
 
-    private PersonUser processSecureIDLogin(String loginString) throws LoginException {
+    private PersonUser processSecurIDLogin(String loginString) throws LoginException {
         // CastleAuthorization=RSAAM base64(username:passcode)
         // CastleAuthorization=RSAAM sessionId base64(username:passcode)
         String[] parts = loginString.split(" ");
@@ -237,25 +237,25 @@ public class LoginProcessor {
             sessionId = Base64Utils.decodeToString(parts[1]);
             unp = Base64Utils.decodeToString(parts[2]);
         } else {
-            throw new LoginException("malformed secureid login string", localize(ErrorMessage.BAD_REQUEST));
+            throw new LoginException("malformed securid login string", localize(ErrorMessage.BAD_REQUEST));
         }
 
         int index = unp.indexOf(':');
         if (!(0 < index && index < unp.length() - 1)) {
-            throw new LoginException("malformed username:passcode in secureid login string", localize(ErrorMessage.BAD_REQUEST));
+            throw new LoginException("malformed username:passcode in securid login string", localize(ErrorMessage.BAD_REQUEST));
         }
         String username = unp.substring(0, index);
         String passcode = unp.substring(index + 1);
 
         RSAAMResult result;
         try {
-            result = this.personUserAuthenticator.authenticateBySecureID(this.tenant, username, passcode, sessionId);
+            result = this.personUserAuthenticator.authenticateBySecurID(this.tenant, username, passcode, sessionId);
         } catch (InvalidCredentialsException e) {
-            throw new LoginException("incorrect secureid username or passcode", localize(ErrorMessage.UNAUTHORIZED), e);
+            throw new LoginException("incorrect securid username or passcode", localize(ErrorMessage.UNAUTHORIZED), e);
         } catch (IDMSecureIDNewPinException e) {
-            throw new LoginException("new secureid pin required", localize(ErrorMessage.SECUREID_NEW_PIN_REQUIRED), e);
+            throw new LoginException("new securid pin required", localize(ErrorMessage.SECURID_NEW_PIN_REQUIRED), e);
         } catch (ServerException e) {
-            throw new LoginException("error while doing secureid authn", localize(ErrorMessage.RESPONDER), e);
+            throw new LoginException("error while doing securid authn", localize(ErrorMessage.RESPONDER), e);
         }
 
         if (result.complete()) {
@@ -264,8 +264,8 @@ public class LoginProcessor {
             String sessionId64 = Base64Utils.encodeToString(result.getRsaSessionID());
             Header serverLegHeader = new Header(
                     RESPONSE_AUTHZ_HEADER,
-                    String.format("%s %s", LoginMethod.SECUREID.getValue(), sessionId64));
-            throw new LoginException("secureid_next_code_required", localize(ErrorMessage.SECUREID_NEXT_CODE), serverLegHeader);
+                    String.format("%s %s", LoginMethod.SECURID.getValue(), sessionId64));
+            throw new LoginException("securid_next_code_required", localize(ErrorMessage.SECURID_NEXT_CODE), serverLegHeader);
         }
     }
 

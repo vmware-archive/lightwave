@@ -54,6 +54,8 @@ import sun.misc.BASE64Encoder;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.AlternativeOCSP;
+import com.vmware.identity.idm.AlternativeOCSPList;
 import com.vmware.identity.idm.AssertionConsumerService;
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeConfig;
@@ -3332,6 +3334,7 @@ public class DirectoryConfigStore implements IConfigStore
        return removed;
     }
 
+
     @Override
     public ClientCertPolicy getClientCertPolicy(String tenantName) throws Exception {
         ValidateUtil.validateNotEmpty(tenantName, "tenantName");
@@ -3347,9 +3350,11 @@ public class DirectoryConfigStore implements IConfigStore
                     new IObjectProcessedCallback<TenantClientCertPolicy>() {
                         @Override
                         public void processObjectSaved(
-                                ILdapConnectionEx connection, String objectDn,
+                                ILdapConnectionEx connection, String certPolicyDn,
                                 TenantClientCertPolicy policy) {
+                            policy.getClientCertPolicy().set_siteOCSPMap(retrieveSiteOCSPMap(connection, certPolicyDn));
                         }
+
                     });
             ClientCertPolicy certPolicy = null;
             if (certPolicies != null && certPolicies.size() > 0) {
@@ -3373,6 +3378,7 @@ public class DirectoryConfigStore implements IConfigStore
                         certPolicy.setTrustedCAs(chain.getCertificateChain().toArray(new Certificate[chain.getCertificateChain().size()]));
                     }
                 }
+
             } else {
                 certPolicy = new ClientCertPolicy();
             }
@@ -3380,6 +3386,67 @@ public class DirectoryConfigStore implements IConfigStore
         } finally {
             connection.close();
         }
+    }
+
+    private static HashMap<String, AlternativeOCSPList> retrieveSiteOCSPMap(ILdapConnectionEx connection, String certPolicyDn) {
+        ValidateUtil.validateNotEmpty(certPolicyDn, "certPolicyDn");
+
+        AlternativeOCSPListLdapObject ocspListLdapObj = AlternativeOCSPListLdapObject.getInstance();
+
+        Collection<AlternativeOCSPList> altOCSPListColection = retrieveObjectsCollection(connection, certPolicyDn,
+                ContainerLdapObject.CONTAINER_CLIENT_CERT_OCSP_LISTS,
+                ocspListLdapObj,
+                new IObjectProcessedCallback<AlternativeOCSPList>() {
+                    @Override
+                    public void processObjectSaved(
+                            ILdapConnectionEx connection, String altOcspListDn,
+                            AlternativeOCSPList altOCSPList) {
+                        //retrieve OCSP responders for AlternativeOCSPList object.
+                        altOCSPList.set_ocspList(retrieveAlternativeOCSPsForSite(connection, altOcspListDn));
+                    }
+
+                });
+
+        //Create HashMap to be returned.
+        HashMap<String, AlternativeOCSPList> retMap = new HashMap<String, AlternativeOCSPList>();
+        if (altOCSPListColection!=null && !altOCSPListColection.isEmpty()) {
+            for (AlternativeOCSPList altOcspList : altOCSPListColection) {
+                retMap.put(altOcspList.get_siteID(), altOcspList);
+            }
+        }
+        return retMap;
+    }
+    /**
+     * retrieve ordered AlternativeOCSP list
+     * @param connection
+     * @param altOcspListDn
+     * @return
+     */
+    protected static List<AlternativeOCSP> retrieveAlternativeOCSPsForSite(ILdapConnectionEx connection, String altOcspListDn) {
+        Collection<TenantAlternativeOCSP> tOcspCollection = retrieveObjectsCollection(connection, altOcspListDn,
+                ContainerLdapObject.CONTAINER_OCSPs,
+                TenantAlternativeOCSPLdapObject.getInstance(), null);
+
+        ArrayList<AlternativeOCSP> ocspArray = new ArrayList<AlternativeOCSP> (tOcspCollection.size() );
+        for(TenantAlternativeOCSP tAlternativeOCSP : tOcspCollection) {
+            ocspArray.add(tAlternativeOCSP.getAlternativeOCSP());
+        }
+
+        //verify the order by cn
+        int index=0;
+        for(TenantAlternativeOCSP tAlternativeOCSP : tOcspCollection) {
+            int cn = Integer.parseInt(tAlternativeOCSP.getCn());
+            if (cn < tOcspCollection.size() ) {
+                if (cn != index) {
+                    ocspArray.set(cn,tAlternativeOCSP.getAlternativeOCSP());
+                }
+            } else {
+                throw new IllegalArgumentException("Unexpected TenantAlternativeOCSP object has cn value out of index range of the collection.");
+            }
+            index++;
+        }
+
+        return ocspArray;
     }
 
     @Override
@@ -3395,6 +3462,7 @@ public class DirectoryConfigStore implements IConfigStore
                             ContainerLdapObject.getInstance(),
                             ContainerLdapObject.CONTAINER_CLIENT_CERT_POLICIES,
                             true);
+
             String filter = String
                     .format("(cn=%s)",
                             ClientCertPolicyLdapObject.ClientCertificatePolicyDefaultName);
@@ -3443,6 +3511,7 @@ public class DirectoryConfigStore implements IConfigStore
                 String trustedCAsDn = String.format("cn=%s,%s",
                         ClientCertPolicyLdapObject.CLIENT_CERT_TRUSTED_CA_CERTIFICATES_DEFAULT_NAME,
                         trustedCAContainerDn);
+
                 // Set the trustedCAs
                 if(policy.getTrustedCAs() != null &&
                         policy.getTrustedCAs().length > 0){
@@ -3467,6 +3536,11 @@ public class DirectoryConfigStore implements IConfigStore
                     TenantTrustedCertChainLdapObject.getInstance().deleteObject(
                             connection, trustedCAsDn);
                 }
+
+                //set OCSP list
+                setOCSPLists(certPolicyDn,  connection,
+                        policy.get_siteOCSPList());
+
             } else if (certPolicies != null && certPolicies.size() > 0) {
                 // Delete the current certPolicy
                 ClientCertPolicyLdapObject.getInstance().deleteObject(
@@ -3475,6 +3549,164 @@ public class DirectoryConfigStore implements IConfigStore
         } finally {
             connection.close();
         }
+    }
+
+
+    /**
+     * Save a hashmap <site,AlternativeOCSPList>
+     * if the provided instance is not empty, this function does update and add entries.
+     *
+     * Note: we ignore null siteOcspMap (i.e. do not clean the corresponding directory objects) for API backward compatibility.
+     *
+     * @param certPolicyDn
+     * @param connection
+     * @param siteOcspMap
+     */
+    private void setOCSPLists(String certPolicyDn, ILdapConnectionEx connection, HashMap<String, AlternativeOCSPList> siteOcspMap) {
+        ValidateUtil.validateNotEmpty(certPolicyDn, "certPolicyDn");
+
+        ContainerLdapObject instContainer =
+                ContainerLdapObject.getInstance();
+        String ocspListContainerDn =
+                DirectoryConfigStore
+                .ensureObjectExists(
+                        connection,
+                        certPolicyDn,
+                        instContainer,
+                        ContainerLdapObject.CONTAINER_CLIENT_CERT_OCSP_LISTS,
+                        true);
+
+        if (siteOcspMap != null && siteOcspMap.size() > 0) {
+
+            AlternativeOCSPListLdapObject altOcspListLdap =
+                    AlternativeOCSPListLdapObject.getInstance();
+            Collection<AlternativeOCSPList> existingOcspLists = retrieveObjectsCollection(
+                    connection, certPolicyDn,
+                    ContainerLdapObject.CONTAINER_CLIENT_CERT_OCSP_LISTS, null,
+                    altOcspListLdap,
+                    new IObjectProcessedCallback<AlternativeOCSPList>() {
+                        @Override
+                        public void processObjectSaved(
+                                ILdapConnectionEx connection, String objectDn,
+                                AlternativeOCSPList instInfo) {
+                        }
+                    });
+
+            if (siteOcspMap.size() != existingOcspLists.size()) {
+                AlternativeOCSPListLdapObject.getInstance().deleteObject(
+                        connection, ocspListContainerDn);
+
+                //recreate empty DN
+                ocspListContainerDn =
+                        DirectoryConfigStore
+                        .ensureObjectExists(
+                                connection,
+                                certPolicyDn,
+                                instContainer,
+                                ContainerLdapObject.CONTAINER_CLIENT_CERT_OCSP_LISTS,
+                                true);
+                existingOcspLists = null;
+            }
+            //Note: this does not guarantee remove old site config if site ID is changed. But this is okay. CLI is capable to clean all sites
+            for (String siteID : siteOcspMap.keySet()) {
+                AlternativeOCSPList ocspList = siteOcspMap.get(siteID);
+
+                updateOCSPList( ocspListContainerDn, connection,existingOcspLists, ocspList);
+            }
+        } else {
+            if (siteOcspMap != null) {
+                AlternativeOCSPListLdapObject.getInstance().deleteObject(
+                    connection, ocspListContainerDn);
+            }
+            //else null siteOcspMap. Ignore for API backward compatibility.
+        }
+
+    }
+
+
+
+    /**
+     * Add/update a list of alternative OCSP responders for a site
+     * @param ocspListContainerDn
+     * @param connection
+     * @param ocspLists
+     * @param ocspList
+     */
+    private void updateOCSPList(String ocspListContainerDn, ILdapConnectionEx connection,
+            Collection<AlternativeOCSPList> existingOcspLists,
+            AlternativeOCSPList ocspList) {
+
+        AlternativeOCSPListLdapObject ocspListObj = AlternativeOCSPListLdapObject.getInstance();
+
+        String listDn = ocspListObj.getDnFromCn(
+                ocspListContainerDn,
+                ocspList.get_siteID());
+
+        if (existingOcspLists == null || !existingOcspLists.contains(ocspList)) {
+              //go ahead update
+            if (ocspList != null ) {
+                if (isOCSPListSiteExist(existingOcspLists, ocspList.get_siteID()) ) {
+                    AlternativeOCSPListLdapObject.getInstance().deleteObject(
+                            connection, listDn);
+                }
+                ocspListObj.createObject(connection, listDn, ocspList);
+
+                //save AlternativeOCSP objects
+                ContainerLdapObject ocspContainer =
+                        ContainerLdapObject.getInstance();
+                String ocspContainerDn =
+                        DirectoryConfigStore
+                        .ensureObjectExists(
+                                connection,
+                                listDn,
+                                ocspContainer,
+                                ContainerLdapObject.CONTAINER_OCSPs,
+                                true);
+
+                List<AlternativeOCSP> altOCSPs = ocspList.get_ocspList();
+
+                int ind = 0;
+                for (AlternativeOCSP altOCSP : altOCSPs)
+                {
+                    String indStr = String.valueOf(ind++);
+                    String ocspDn = ocspListObj.getDnFromCn(
+                            ocspContainerDn,
+                             indStr);
+                    TenantAlternativeOCSP tenantAltOCSP= new TenantAlternativeOCSP(indStr, altOCSP);
+                    addOCSP( ocspDn, connection, tenantAltOCSP);
+                }
+            }
+        }
+        // else exact same object exist
+    }
+
+    private void addOCSP(String ocspDn, ILdapConnectionEx connection, TenantAlternativeOCSP altOCSP) {
+        TenantAlternativeOCSPLdapObject ocspLdapObj = TenantAlternativeOCSPLdapObject.getInstance();
+        ocspLdapObj.createObject(connection, ocspDn, altOCSP);
+
+    }
+
+    /**
+     * Check if a site was already created for the given site-id.
+     * @param existingOcspLists
+     * @param siteID
+     * @return
+     */
+    private boolean isOCSPListSiteExist(Collection<AlternativeOCSPList> existingOcspLists, String siteID) {
+        boolean retVal = false;
+
+        ValidateUtil.validateNotNull(siteID, "siteID");
+        if (existingOcspLists == null || existingOcspLists.isEmpty()) {
+            retVal = false;
+        } else {
+            for (AlternativeOCSPList list : existingOcspLists) {
+                if (list.get_siteID().equals(siteID)) {
+                    retVal = true;
+                }
+            }
+        }
+        return retVal;
+
     }
 
     @Override

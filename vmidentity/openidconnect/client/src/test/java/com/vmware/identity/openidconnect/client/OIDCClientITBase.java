@@ -31,13 +31,12 @@ import java.util.UUID;
 
 import org.junit.AfterClass;
 
-import com.vmware.identity.openidconnect.common.ClientAuthenticationMethod;
-import com.vmware.identity.openidconnect.common.ClientCredentialsGrant;
 import com.vmware.identity.openidconnect.common.ClientID;
-import com.vmware.identity.openidconnect.common.PasswordGrant;
 import com.vmware.identity.openidconnect.common.ProviderMetadata;
-import com.vmware.identity.openidconnect.common.SolutionUserCredentialsGrant;
 import com.vmware.identity.openidconnect.common.TokenType;
+import com.vmware.identity.openidconnect.protocol.ClientCredentialsGrant;
+import com.vmware.identity.openidconnect.protocol.PasswordGrant;
+import com.vmware.identity.openidconnect.protocol.SolutionUserCredentialsGrant;
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.idm.client.IdmClient;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
@@ -125,7 +124,7 @@ public class OIDCClientITBase {
         KeyPair clientKeyPair = keyGen.generateKeyPair();
         RSAPrivateKey clientPrivateKey = (RSAPrivateKey) clientKeyPair.getPrivate();
         solutionUserName = properties.getProperty("oidc.rp.prefix") + UUID.randomUUID().toString();
-        X509Certificate clientCertificate = TestUtils.generateCertificate(clientKeyPair, solutionUserName);
+        X509Certificate clientCertificate = TestUtils.generateCertificate(clientKeyPair, solutionUserName, null);
 
         // create a solution user
         CertificateDTO certificateDTO = new CertificateDTO.Builder()
@@ -150,7 +149,7 @@ public class OIDCClientITBase {
         .withRedirectUris(redirectURIs)
         .withPostLogoutRedirectUris(postLogoutRedirectURIs)
         .withLogoutUri(logoutURI)
-        .withTokenEndpointAuthMethod(ClientAuthenticationMethod.PRIVATE_KEY_JWT.getValue())
+        .withTokenEndpointAuthMethod("private_key_jwt")
         .withCertSubjectDN(clientCertificate.getSubjectDN().getName())
         .build();
         OIDCClientDTO oidcClientDTO = idmClient.oidcClient().register(tenant, oidcClientMetadataDTO);

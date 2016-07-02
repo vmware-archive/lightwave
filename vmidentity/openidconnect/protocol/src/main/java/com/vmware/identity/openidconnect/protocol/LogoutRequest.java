@@ -22,9 +22,7 @@ import org.apache.commons.lang3.Validate;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.CorrelationID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.ParameterMapUtils;
 import com.vmware.identity.openidconnect.common.State;
-
 
 /**
  * @author Yehia Zayour

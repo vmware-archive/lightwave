@@ -27,9 +27,9 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.GSSTicketGrant;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.protocol.AccessToken;
+import com.vmware.identity.openidconnect.protocol.GSSTicketGrant;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
 import com.vmware.identity.openidconnect.protocol.IDToken;
 import com.vmware.identity.openidconnect.protocol.RefreshToken;
@@ -56,7 +56,7 @@ public class NegotiateGssResponseTest {
     private static HttpResponse httpResponseError;
     private static TokenSpec tokenSpec = TokenSpec.EMPTY;
     private static URI tokenEndpointURI = URI.create("https://abc.com/token");
-    private static ClientID clientId = new ClientID();
+    private static ClientID clientId = new ClientID("__client_id__");
     private static HolderOfKeyConfig holderOfKeyConfig = null;
     private static KeyStore keyStore = PowerMock.createMock(KeyStore.class);
     private static String contextId = "abcd1234";

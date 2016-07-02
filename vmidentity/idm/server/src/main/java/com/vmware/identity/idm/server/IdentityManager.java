@@ -3267,10 +3267,8 @@ implements IIdentityManager
      *             any other exceptions
      */
     private PrincipalId authenticate(String tenantName,
- X509Certificate[] tlsCertChain) throws IDMLoginException,
-                    CertificateRevocationCheckException,
-                    InvalidArgumentException, IdmCertificateRevokedException,
-                    IDMException {
+                X509Certificate[] tlsCertChain) throws IDMLoginException,CertificateRevocationCheckException,
+                InvalidArgumentException, IdmCertificateRevokedException, IDMException{
 
         TenantInformation info;
 
@@ -3323,7 +3321,14 @@ implements IIdentityManager
 
         Map<String, String> authStatsExtension = new HashMap<String, String> ();
         recorder.add(authStatsExtension);
-        certValidator.validateCertificatePath(tlsCertChain[0], authStatsExtension);
+        String clusterID;
+
+        try {
+            clusterID = this.getClusterId();
+        } catch (Exception e1) {
+            throw new IDMException("Failed to retrieve PSC cluster ID.");
+        }
+        certValidator.validateCertificatePath(tlsCertChain[0], clusterID, authStatsExtension);
 
         long startTime = System.nanoTime();
         String upn = certValidator.extractUPN(tlsCertChain[0]);

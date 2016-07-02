@@ -21,16 +21,16 @@ import static com.vmware.identity.openidconnect.protocol.TestContext.CLIENT_ASSE
 import static com.vmware.identity.openidconnect.protocol.TestContext.GSS_CONTEXT_ID;
 import static com.vmware.identity.openidconnect.protocol.TestContext.GSS_TICKET;
 import static com.vmware.identity.openidconnect.protocol.TestContext.PASSWORD;
+import static com.vmware.identity.openidconnect.protocol.TestContext.PERSON_USER_ASSERTION;
 import static com.vmware.identity.openidconnect.protocol.TestContext.REDIRECT_URI;
 import static com.vmware.identity.openidconnect.protocol.TestContext.REFRESH_TOKEN;
 import static com.vmware.identity.openidconnect.protocol.TestContext.REQUEST_URI;
 import static com.vmware.identity.openidconnect.protocol.TestContext.SCOPE;
-import static com.vmware.identity.openidconnect.protocol.TestContext.SECUREID_PASSCODE;
-import static com.vmware.identity.openidconnect.protocol.TestContext.SECUREID_SESSION_ID;
+import static com.vmware.identity.openidconnect.protocol.TestContext.SECURID_PASSCODE;
+import static com.vmware.identity.openidconnect.protocol.TestContext.SECURID_SESSION_ID;
 import static com.vmware.identity.openidconnect.protocol.TestContext.SOLUTION_USER_ASSERTION;
 import static com.vmware.identity.openidconnect.protocol.TestContext.USERNAME;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,19 +38,10 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.vmware.identity.openidconnect.common.AuthorizationCodeGrant;
-import com.vmware.identity.openidconnect.common.Base64Utils;
-import com.vmware.identity.openidconnect.common.ClientCertificateGrant;
-import com.vmware.identity.openidconnect.common.ClientCredentialsGrant;
 import com.vmware.identity.openidconnect.common.CorrelationID;
-import com.vmware.identity.openidconnect.common.GSSTicketGrant;
 import com.vmware.identity.openidconnect.common.GrantType;
 import com.vmware.identity.openidconnect.common.ParseException;
-import com.vmware.identity.openidconnect.common.PasswordGrant;
-import com.vmware.identity.openidconnect.common.RefreshTokenGrant;
 import com.vmware.identity.openidconnect.common.Scope;
-import com.vmware.identity.openidconnect.common.SecureIDGrant;
-import com.vmware.identity.openidconnect.common.SolutionUserCredentialsGrant;
 
 /**
  * @author Yehia Zayour
@@ -129,7 +120,7 @@ public class TokenRequestTest {
         Map<String, String> parameters = parameters(GrantType.REFRESH_TOKEN);
         TokenRequest tokenRequest = new TokenRequest(
                 REQUEST_URI,
-                new RefreshTokenGrant(REFRESH_TOKEN.serialize()),
+                new RefreshTokenGrant(REFRESH_TOKEN),
                 (Scope) null,
                 (SolutionUserAssertion) null,
                 (ClientAssertion) null,
@@ -143,7 +134,7 @@ public class TokenRequestTest {
         TokenRequest tokenRequest = TokenRequest.parse(HttpRequest.createPostRequest(REQUEST_URI, parameters));
         Assert.assertTrue("grant_type", tokenRequest.getAuthorizationGrant() instanceof RefreshTokenGrant);
         RefreshTokenGrant grant = (RefreshTokenGrant) tokenRequest.getAuthorizationGrant();
-        Assert.assertEquals("refresh_token", grant.getRefreshToken(), REFRESH_TOKEN.serialize());
+        Assert.assertEquals("refresh_token", grant.getRefreshToken().serialize(), REFRESH_TOKEN.serialize());
         Assert.assertEquals("scope", tokenRequest.getScope(), null);
     }
 
@@ -244,11 +235,11 @@ public class TokenRequestTest {
     }
 
     @Test
-    public void testClientCertGrantSerialize() {
-        Map<String, String> parameters = parameters(GrantType.CLIENT_CERTIFICATE);
+    public void testPersonUserCertGrantSerialize() {
+        Map<String, String> parameters = parameters(GrantType.PERSON_USER_CERTIFICATE);
         TokenRequest tokenRequest = new TokenRequest(
                 REQUEST_URI,
-                new ClientCertificateGrant(Arrays.asList(CERT)),
+                new PersonUserCertificateGrant(CERT, PERSON_USER_ASSERTION),
                 SCOPE,
                 (SolutionUserAssertion) null,
                 (ClientAssertion) null,
@@ -257,28 +248,28 @@ public class TokenRequestTest {
     }
 
     @Test
-    public void testClientCertGrantParseSuccess() throws ParseException {
-        Map<String, String> parameters = parameters(GrantType.CLIENT_CERTIFICATE);
+    public void testPersonUserCertGrantParseSuccess() throws ParseException {
+        Map<String, String> parameters = parameters(GrantType.PERSON_USER_CERTIFICATE);
         TokenRequest tokenRequest = TokenRequest.parse(HttpRequest.createPostRequest(REQUEST_URI, parameters));
-        Assert.assertTrue("grant_type", tokenRequest.getAuthorizationGrant() instanceof ClientCertificateGrant);
-        ClientCertificateGrant grant = (ClientCertificateGrant) tokenRequest.getAuthorizationGrant();
-        Assert.assertEquals("client_certificate_chain", grant.getClientCertificateChain(), Arrays.asList(CERT));
+        Assert.assertTrue("grant_type", tokenRequest.getAuthorizationGrant() instanceof PersonUserCertificateGrant);
+        PersonUserCertificateGrant grant = (PersonUserCertificateGrant) tokenRequest.getAuthorizationGrant();
+        Assert.assertEquals("person_user_certificate", grant.getPersonUserCertificate(), CERT);
         Assert.assertEquals("scope", tokenRequest.getScope(), SCOPE);
     }
 
     @Test
-    public void testClientCertGrantParseError() {
-        Map<String, String> parameters = parameters(GrantType.CLIENT_CERTIFICATE);
-        parameters.remove("client_certificate_chain");
-        assertParseError(parameters, "missing client_certificate_chain parameter");
+    public void testPersonUserCertGrantParseError() {
+        Map<String, String> parameters = parameters(GrantType.PERSON_USER_CERTIFICATE);
+        parameters.remove("person_user_certificate");
+        assertParseError(parameters, "missing person_user_certificate parameter");
     }
 
     @Test
-    public void testSecureIdGrantSerialize() {
-        Map<String, String> parameters = parameters(GrantType.SECUREID);
+    public void testSecurIdGrantSerialize() {
+        Map<String, String> parameters = parameters(GrantType.SECURID);
         TokenRequest tokenRequest = new TokenRequest(
                 REQUEST_URI,
-                new SecureIDGrant(USERNAME, SECUREID_PASSCODE, SECUREID_SESSION_ID),
+                new SecurIDGrant(USERNAME, SECURID_PASSCODE, SECURID_SESSION_ID),
                 SCOPE,
                 (SolutionUserAssertion) null,
                 (ClientAssertion) null,
@@ -287,20 +278,20 @@ public class TokenRequestTest {
     }
 
     @Test
-    public void testSecureIdGrantParseSuccess() throws ParseException {
-        Map<String, String> parameters = parameters(GrantType.SECUREID);
+    public void testSecurIdGrantParseSuccess() throws ParseException {
+        Map<String, String> parameters = parameters(GrantType.SECURID);
         TokenRequest tokenRequest = TokenRequest.parse(HttpRequest.createPostRequest(REQUEST_URI, parameters));
-        Assert.assertTrue("grant_type", tokenRequest.getAuthorizationGrant() instanceof SecureIDGrant);
-        SecureIDGrant grant = (SecureIDGrant) tokenRequest.getAuthorizationGrant();
+        Assert.assertTrue("grant_type", tokenRequest.getAuthorizationGrant() instanceof SecurIDGrant);
+        SecurIDGrant grant = (SecurIDGrant) tokenRequest.getAuthorizationGrant();
         Assert.assertEquals("username", grant.getUsername(), USERNAME);
-        Assert.assertEquals("passcode", grant.getPasscode(), SECUREID_PASSCODE);
-        Assert.assertEquals("session_id", grant.getSessionID(), SECUREID_SESSION_ID);
+        Assert.assertEquals("passcode", grant.getPasscode(), SECURID_PASSCODE);
+        Assert.assertEquals("session_id", grant.getSessionID(), SECURID_SESSION_ID);
         Assert.assertEquals("scope", tokenRequest.getScope(), SCOPE);
     }
 
     @Test
-    public void testSecureIdGrantParseError() {
-        Map<String, String> parameters = parameters(GrantType.SECUREID);
+    public void testSecurIdGrantParseError() {
+        Map<String, String> parameters = parameters(GrantType.SECURID);
         parameters.remove("passcode");
         assertParseError(parameters, "missing passcode parameter");
     }
@@ -343,16 +334,17 @@ public class TokenRequestTest {
                 parameters.put("gss_ticket", Base64Utils.encodeToString(GSS_TICKET));
                 parameters.put("scope", SCOPE.toString());
                 break;
-            case CLIENT_CERTIFICATE:
-                parameters.put("grant_type", "urn:vmware:grant_type:client_certificate");
-                parameters.put("client_certificate_chain", CERT_ENCODED);
+            case PERSON_USER_CERTIFICATE:
+                parameters.put("grant_type", "urn:vmware:grant_type:person_user_certificate");
+                parameters.put("person_user_certificate", CERT_ENCODED);
+                parameters.put("person_user_assertion", PERSON_USER_ASSERTION.serialize());
                 parameters.put("scope", SCOPE.toString());
                 break;
-            case SECUREID:
-                parameters.put("grant_type", "urn:vmware:grant_type:secureid");
+            case SECURID:
+                parameters.put("grant_type", "urn:vmware:grant_type:securid");
                 parameters.put("username", USERNAME);
-                parameters.put("passcode", SECUREID_PASSCODE);
-                parameters.put("session_id", Base64Utils.encodeToString(SECUREID_SESSION_ID));
+                parameters.put("passcode", SECURID_PASSCODE);
+                parameters.put("session_id", Base64Utils.encodeToString(SECURID_SESSION_ID));
                 parameters.put("scope", SCOPE.toString());
                 break;
             default:

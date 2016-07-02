@@ -102,7 +102,7 @@ public class ListenerHelperTest {
         parameterMap.put("state", state);
 
         AuthenticationTokensResponse response = ListenerHelper.parseAuthenticationTokensResponse(parameterMap, providerPublicKey, issuer, clientID, 0L);
-        Assert.assertNotNull(response.getTokens().getClientIDToken());
+        Assert.assertNotNull(response.getTokens().getIDToken());
         Assert.assertNull(response.getTokens().getAccessToken());
         Assert.assertEquals(state, response.getState().getValue());
     }

@@ -17,6 +17,10 @@
         <include name="tomcat-coyote-7.0.26.jar"/>
    </fileset>
 
+   <fileset id="jar-set.tomcat-catalina" dir="${MAINSRCROOT}/build/depends">
+        <include name="tomcat-catalina-7.0.25.jar"/>
+   </fileset>
+   
    <fileset id="jar-set.apache-httpclient" dir="${MAINSRCROOT}/build/depends">
         <include name="httpclient-4.3.3.jar"/>
         <include name="httpcore-4.3.2.jar"/>

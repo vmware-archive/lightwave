@@ -27,7 +27,7 @@ import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.common.ParseException;
-import com.vmware.identity.openidconnect.common.URIUtils;
+import com.vmware.identity.openidconnect.protocol.URIUtils;
 
 /**
  * @author Yehia Zayour

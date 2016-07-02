@@ -22,7 +22,6 @@ import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.ResponseMode;
 import com.vmware.identity.openidconnect.common.State;
 import com.vmware.identity.openidconnect.common.StatusCode;
-import com.vmware.identity.openidconnect.common.URIUtils;
 
 /**
  * @author Yehia Zayour
