@@ -37,8 +37,6 @@ import com.vmware.identity.idm.ClientCertPolicy;
 
 public class ClientCertTestUtils {
 
-    private static final String caStoreNameBOE = "boeingCAStore";
-
     public static final String tenant1 = "TestTenant1";
 
     private static final String STS_STORE_PASS = "idm.server.stskey-store.pass";
@@ -60,6 +58,7 @@ public class ClientCertTestUtils {
 
     public final String caStoreName = "clientCAstore";
     public final String storePass = "changeme";
+    public final String signingCACertAlias = "dod_jitc_email_ca-29__0x01a5__dod_jitc_root_ca_2.cer";
 
     // Keystore that keeps the test client cert
     public final String clientStoreName = "clientCertStore";
@@ -72,7 +71,6 @@ public class ClientCertTestUtils {
     public final String dodCRLCacheROOTCA2 = "DODJITCROOTCA2.crl";
     public final String dodCRLCacheEMAILCA_29 = "DODJITCEMAILCA_29.crl";
     public final String dodCRLDistributionPointEMAILCA_29 = "http://crl.nit.disa.mil/crl/DODJITCEMAILCA_29.crl";
-    public final String boeingCRLDistributionPoint = "http://crl.boeing.com/crl/Boeing%20Basic%20PREPROD%20CA.crl";
 
     // DOD test client cert stored in clientCertStore
     public final String validDodCertAlias1 = "bill.preston.s.9301000121.email_sig.cer";// expire
@@ -81,9 +79,6 @@ public class ClientCertTestUtils {
     public final String dodValidCert1UPN = "9301000121@mil";
     public final Calendar dodCertExpireDate = new GregorianCalendar(
                     2017, 3, 10);
-
-    public final Calendar boeingCertExpireDate = new GregorianCalendar(
-            2020, 6, 20);
 
     // More DOD test certs store. In P12 format
     //
@@ -205,23 +200,6 @@ public class ClientCertTestUtils {
 
     }
 
-    public KeyStore getTrustStore_BOE() {
-        KeyStore ts = loadKeyStore(caStoreNameBOE, storePass);
-        return ts;
-    }
-
-    public X509Certificate[] getValidCert_BOE1() throws KeyStoreException {
-        String certAlias = "boeingSmartCard.cer";
-        KeyStore ks = loadKeyStore(clientStoreName, storePass);
-        if (!ks.isCertificateEntry(certAlias)) {
-            throw new KeyStoreException("Cert not in the store");
-        }
-        X509Certificate leaf = (X509Certificate) ks
-                        .getCertificate(certAlias);
-        X509Certificate[] certs = { leaf };
-        return certs;
-    }
-
     public PrivateKey getTenantCredentialPrivateKey(String keyAlias) throws Exception
     {
         Properties props = getTestProperties();
@@ -261,5 +239,4 @@ public class ClientCertTestUtils {
 
         return testProps;
      }
-
 }

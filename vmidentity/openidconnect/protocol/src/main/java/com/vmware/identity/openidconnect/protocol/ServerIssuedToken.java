@@ -13,7 +13,6 @@
  */
 
 package com.vmware.identity.openidconnect.protocol;
-
 import java.security.interfaces.RSAPublicKey;
 import java.util.Date;
 import java.util.List;
@@ -29,7 +28,6 @@ import com.nimbusds.jwt.SignedJWT;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.JWTID;
-import com.vmware.identity.openidconnect.common.JWTUtils;
 import com.vmware.identity.openidconnect.common.Nonce;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.Scope;
@@ -37,6 +35,7 @@ import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.Subject;
 import com.vmware.identity.openidconnect.common.TokenClass;
 import com.vmware.identity.openidconnect.common.TokenType;
+
 
 /**
  * @author Yehia Zayour

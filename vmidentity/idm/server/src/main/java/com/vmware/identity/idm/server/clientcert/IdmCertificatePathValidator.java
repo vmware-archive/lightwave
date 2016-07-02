@@ -41,6 +41,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -57,6 +58,8 @@ import sun.security.x509.X509CertImpl;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.AlternativeOCSP;
+import com.vmware.identity.idm.AlternativeOCSPList;
 import com.vmware.identity.idm.CertRevocationStatusUnknownException;
 import com.vmware.identity.idm.CertificatePathBuildingException;
 import com.vmware.identity.idm.CertificateRevocationCheckException;
@@ -76,11 +79,8 @@ public class IdmCertificatePathValidator {
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(IdmCertificatePathValidator.class);
     private static final String PREFIX_URI_NAME = "URIName: ";
     private final KeyStore trustStore;
-    private CertificateFactory certFactory;
     private String tenantName;
-
-    // collection containing certificates for certificate path building and CRLimpl for CRL checking
-    // ivate final Collection<Object> crlCollection = new ArrayList<Object>();
+    private String siteID;          //for alternative OCSP responder collection.
 
     private final ClientCertPolicy certPolicy;
 
@@ -90,19 +90,16 @@ public class IdmCertificatePathValidator {
      * @param tenantName
      * @throws CertificateRevocationCheckException
      */
-    public IdmCertificatePathValidator(KeyStore trustStore, ClientCertPolicy certPolicy, String tenantName) throws CertificateRevocationCheckException{
+    public IdmCertificatePathValidator(KeyStore trustStore, ClientCertPolicy certPolicy, String tenantName, String siteID) {
         this.trustStore = trustStore;
-        try {
-            Validate.notNull(certPolicy, "Cert Policy");
-            Validate.notNull(trustStore, "Trust Store");
-            Validate.notEmpty(tenantName, "tenantName");
+        this.siteID = siteID;
 
-            this.tenantName = tenantName;
-            this.certPolicy = certPolicy;
-            this.certFactory = CertificateFactory.getInstance("X.509");
-        } catch (CertificateException e) {
-            throw new CertificateRevocationCheckException("Unable to initialize CertificateFactory: ", e);
-        }
+        Validate.notNull(certPolicy, "Cert Policy");
+        Validate.notNull(trustStore, "Trust Store");
+        Validate.notEmpty(tenantName, "tenantName");
+
+        this.tenantName = tenantName;
+        this.certPolicy = certPolicy;
     }
 
     /**
@@ -307,9 +304,103 @@ public class IdmCertificatePathValidator {
     private void validateCertPath(CertPath certPath)
                     throws CertificateRevocationCheckException, IdmCertificateRevokedException {
 
+        //loop each alternative OCSP configured for the site
+
+        HashMap<String, AlternativeOCSPList> ocspSiteMap = this.certPolicy.get_siteOCSPList();
+
+        AlternativeOCSPList altOCSPList = null;
+        if (null != ocspSiteMap) {
+            Validate.notEmpty(this.siteID, "siteID");
+            altOCSPList = ocspSiteMap.get(this.siteID);
+        }
+
+        List<AlternativeOCSP> ocspCollection = null;
+        if (null != altOCSPList) {
+            ocspCollection = altOCSPList.get_ocspList();
+        }
+
         Collection<Object> crlCollection = new ArrayList<Object>();
-        setupValidateOptions(crlCollection, certPath);
+        setupCRLOptions(crlCollection, certPath);
+
+        //Creates CertStore that contains all alternative OCSP responder signing certificates for PKIXParameter to consume.
+        CertStore certStore = createCertStoreForRevChecking(ocspCollection);
+        if (null != ocspCollection && ocspCollection.size() > 0 && this.certPolicy.useOCSP()) {
+
+            Iterator<AlternativeOCSP> iter = ocspCollection.iterator();
+            while (iter.hasNext()) {
+                AlternativeOCSP altOCSP = iter.next();
+                try {
+                    validateCertPath(certPath, crlCollection, certStore, altOCSP);
+                    break;  //certificate is validated.
+                }
+                catch (CertRevocationStatusUnknownException e) {
+                    if (!iter.hasNext()) {
+                        throw e;  //rethrow if no more alternative responder in the collection.
+                    }
+                    //else continue
+                }
+            }
+        } else {
+            validateCertPath(certPath, crlCollection, certStore, null);
+        }
+
+    }
+
+
+    /**
+     * Add alternative OCSP signing certs to the give collection.
+     * @param certCollection
+     * @param ocspCollection
+     * @throws CertificateRevocationCheckException
+     */
+    private CertStore createCertStoreForRevChecking( Collection<AlternativeOCSP> ocspCollection) throws CertificateRevocationCheckException {
+
+        Collection<Object> certCollection = new ArrayList<Object>();
+        if (null != ocspCollection) {
+            for (AlternativeOCSP altOCSP : ocspCollection) {
+                X509Certificate cert = altOCSP.get_responderSigningCert();
+                if (null != cert) {
+                    certCollection.add(cert);
+                }
+            }
+        } else {
+            //look for old place
+            X509Certificate cert = this.certPolicy.getOCSPResponderSigningCert();
+            if (null != cert) {
+                certCollection.add(cert);
+            }
+        }
+
+        try {
+            return CertStore.getInstance("Collection",
+                    new CollectionCertStoreParameters(certCollection));
+        } catch (Exception e) {
+            throw new CertificateRevocationCheckException("Unable to create cert store."
+                    + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Validate the certificate path using a provided OCSP responder configuration.
+     *
+     * @param certPath      required
+     * @param crlCollection
+     * @param certStore     null possible cert store for PKIX param
+     * @param altOCSP       null possible
+     * @throws CertificateRevocationCheckException
+     * @throws IdmCertificateRevokedException
+     */
+    private void validateCertPath(CertPath certPath, Collection<Object> crlCollection, CertStore certStore,
+            AlternativeOCSP altOCSP)
+        throws CertificateRevocationCheckException,  IdmCertificateRevokedException {
+
+
+        setupOCSPOptions(certPath, altOCSP);
         PKIXParameters params = createPKIXParameters(crlCollection);
+
+        if (null != certStore) {
+            params.addCertStore(certStore);
+        }
 
         CertPathValidator certPathValidator;
         try {
@@ -347,48 +438,68 @@ public class IdmCertificatePathValidator {
                             + e.getMessage(), e);
         }
 
+
     }
 
-
     /**
-     * Set up sun validator options for revocation checking.
+     * Set up sun validator OCSP options for revocation checking.
      *
      * The following options will be set here:
-     *  "com.sun.security.enableCRLDP"
      *  "ocsp.enable"
      *  "ocsp.responderURL"
+     *  "ocsp.responderCertIssuerName"
+     *  "ocsp.responderCertSerialNumber"
+     *
+     *
      *  The ocsp controls currently are not thread-safe in the sense that multi-tenant usage of the feature could override
      *  each other. Note: DOD does not ask for multitenancy. PR 1417152.
-     * @param certCollection   extra crl to be used in validating the status of the certificate.
      * @param CertPath  target certificate path for validation.
+     * @param AlternativeOCSP alternative responder replacing default certificate OCSP.
+     *
      * @throws CertificateRevocationCheckException
      */
-    private void setupValidateOptions(Collection<Object> crlCollection, CertPath certPath)
+    private void setupOCSPOptions(CertPath certPath,AlternativeOCSP altOcsp)
                     throws CertificateRevocationCheckException {
-        /**
-         * Extract in-cert CRLs and adding them to working list of CRLimpl Setup
-         * up revocation check related java property
-         */
 
         if (this.certPolicy.revocationCheckEnabled()) {
-            // setup ocsp
-            boolean enableCRLChecking = false;
 
             if (this.certPolicy.useOCSP()) {
                 Security.setProperty("ocsp.enable", "true");
 
-                if (this.certPolicy.useCRLAsFailOver()) {
-                    enableCRLChecking = true;
+                if (altOcsp != null) {
+                    setupOCSPResonderConfig(altOcsp.get_responderURL(), altOcsp.get_responderSigningCert());
                 }
-
-                URL ocspURL = this.certPolicy.getOCSPUrl();
-                if (ocspURL != null) {
-                    Security.setProperty("ocsp.responderURL", ocspURL.toString());
+                else {  //backward compatibility handling
+                    setupOCSPResonderConfig(this.certPolicy.getCRLUrl(), this.certPolicy.getOCSPResponderSigningCert());
                 }
             } else {
                 Security.setProperty("ocsp.enable", "false");
-                enableCRLChecking = true;
             }
+
+        }
+        //else none of these setting matters.
+    }
+
+    /**
+     * Set up sun validator CRL options for revocation checking.
+     *
+     * If revocation is turned on, the following options will be set here:
+     *  "com.sun.security.enableCRLDP" to false. Also this function adds CRL's to the provided collection.
+     *
+     * @param certCollection   in/out. CRL to be set up for validating the status of the certificate.
+     * @param CertPath          target certificate path for validation.
+      *
+     * @throws CertificateRevocationCheckException
+     */
+    private void setupCRLOptions(Collection<Object> crlCollection, CertPath certPath)
+                    throws CertificateRevocationCheckException {
+        /**
+         * Extract or add CRLs to working list of CRLimpl Setup
+         * up revocation check related java property
+         */
+
+        if (this.certPolicy.revocationCheckEnabled()) {
+            boolean enableCRLChecking = (this.certPolicy.useOCSP() && !this.certPolicy.useCRLAsFailOver())? false : true;
 
             //get custom CRL
             URL customCrlUri = this.certPolicy.getCRLUrl();
@@ -421,13 +532,27 @@ public class IdmCertificatePathValidator {
                    }
                }
             }
-
-            setThreadLocalSystemProperty("com.sun.security.enableCRLDP", "false");
-
-        } else {
             setThreadLocalSystemProperty("com.sun.security.enableCRLDP", "false");
         }
+        //else none of these setting matters.
 
+    }
+
+    private void setupOCSPResonderConfig(URL ocspURL, X509Certificate signingCert) {
+
+        if (ocspURL != null) {
+            Security.setProperty("ocsp.responderURL", ocspURL.toString());
+        }
+
+        if (signingCert != null) {
+            //Setup ocsp.responderCertSubjectName
+
+            if (null != signingCert) {
+                String subjectDN = signingCert.getSubjectX500Principal().getName();
+                Validate.notEmpty(subjectDN, "Null or empty SubjectX500Principal name extracted from alternative OCSP responder signing cert.");
+                Security.setProperty("ocsp.responderCertSubjectName", subjectDN);
+            }
+        }
     }
 
     /**

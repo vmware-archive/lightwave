@@ -19,6 +19,8 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,9 +32,12 @@ import org.apache.commons.lang3.Validate;
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeValuePair;
 import com.vmware.identity.idm.AuthnPolicy;
+import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.GSSResult;
 import com.vmware.identity.idm.IDMLoginException;
 import com.vmware.identity.idm.IDMSecureIDNewPinException;
+import com.vmware.identity.idm.IIdentityStoreData;
+import com.vmware.identity.idm.IdentityStoreData;
 import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.NoSuchOIDCClientException;
 import com.vmware.identity.idm.NoSuchResourceServerException;
@@ -69,9 +74,9 @@ public class MockIdmClient extends CasIdmClient {
 
     private final String username;
     private final String password;
-    private final String secureIdPasscode;
-    private final String secureIdSessionId;
-    private final boolean secureIdNewPinRequired;
+    private final String securIdPasscode;
+    private final String securIdSessionId;
+    private final boolean securIdNewPinRequired;
     private final String gssContextId;
     private final byte[] gssServerLeg;
     private final boolean personUserEnabled;
@@ -110,9 +115,9 @@ public class MockIdmClient extends CasIdmClient {
 
         this.username                = builder.username;
         this.password                = builder.password;
-        this.secureIdPasscode        = builder.secureIdPasscode;
-        this.secureIdSessionId       = builder.secureIdSessionId;
-        this.secureIdNewPinRequired  = builder.secureIdNewPinRequired;
+        this.securIdPasscode        = builder.securIdPasscode;
+        this.securIdSessionId       = builder.securIdSessionId;
+        this.securIdNewPinRequired  = builder.securIdNewPinRequired;
         this.gssContextId            = builder.gssContextId;
         this.gssServerLeg            = builder.gssServerLeg;
         this.personUserEnabled       = builder.personUserEnabled;
@@ -209,17 +214,17 @@ public class MockIdmClient extends CasIdmClient {
 
         boolean match =
                 Objects.equals(principal, this.username) &&
-                Objects.equals(passcode, this.secureIdPasscode);
+                Objects.equals(passcode, this.securIdPasscode);
         if (!match) {
             throw new IDMLoginException("invalid credentials");
         }
 
-        if (this.secureIdNewPinRequired) {
+        if (this.securIdNewPinRequired) {
             throw new IDMSecureIDNewPinException("new pin required");
         }
 
-        return (this.secureIdSessionId != null) ?
-                new RSAAMResult(this.secureIdSessionId) :
+        return (this.securIdSessionId != null) ?
+                new RSAAMResult(this.securIdSessionId) :
                 new RSAAMResult(new PrincipalId(this.username, this.tenantName));
     }
 
@@ -282,6 +287,15 @@ public class MockIdmClient extends CasIdmClient {
         pair.setAttrDefinition(attributes.iterator().next());
         pair.getValues().addAll(this.groupMembership);
         return Arrays.asList(pair);
+    }
+
+    @Override
+    public Collection<IIdentityStoreData> getProviders(
+            String tenantName,
+            EnumSet<DomainType> domains) throws Exception {
+        validateTenant(tenantName);
+        Validate.notEmpty(domains, "domains");
+        return Collections.singletonList((IIdentityStoreData) IdentityStoreData.CreateSystemIdentityStoreData(this.tenantName));
     }
 
     @Override
@@ -440,9 +454,9 @@ public class MockIdmClient extends CasIdmClient {
 
         private String username;
         private String password;
-        private String secureIdPasscode;
-        private String secureIdSessionId;
-        private boolean secureIdNewPinRequired;
+        private String securIdPasscode;
+        private String securIdSessionId;
+        private boolean securIdNewPinRequired;
         private String gssContextId;
         private byte[] gssServerLeg;
         private boolean personUserEnabled;
@@ -539,18 +553,18 @@ public class MockIdmClient extends CasIdmClient {
             return this;
         }
 
-        public Builder secureIdPasscode(String secureIdPasscode) {
-            this.secureIdPasscode = secureIdPasscode;
+        public Builder securIdPasscode(String securIdPasscode) {
+            this.securIdPasscode = securIdPasscode;
             return this;
         }
 
-        public Builder secureIdSessionId(String secureIdSessionId) {
-            this.secureIdSessionId = secureIdSessionId;
+        public Builder securIdSessionId(String securIdSessionId) {
+            this.securIdSessionId = securIdSessionId;
             return this;
         }
 
-        public Builder secureIdNewPinRequired(boolean secureIdNewPinRequired) {
-            this.secureIdNewPinRequired = secureIdNewPinRequired;
+        public Builder securIdNewPinRequired(boolean securIdNewPinRequired) {
+            this.securIdNewPinRequired = securIdNewPinRequired;
             return this;
         }
 

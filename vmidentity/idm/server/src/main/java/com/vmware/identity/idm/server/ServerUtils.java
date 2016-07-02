@@ -316,7 +316,7 @@ public class ServerUtils
 	    // When doing GSSAPI authentication, LDAP SASL binding by default does reverse DNS lookup to validate the
 	    // target name, this causes authentication failures because Most DNS servers in AD do not have PTR records
 	    // registered for all DCs, any of which could be the binding target.
-	    if (!SystemUtils.IS_OS_WINDOWS && authType == AuthenticationType.USE_KERBEROS) {
+	    if (!SystemUtils.IS_OS_WINDOWS && authType == AuthenticationType.USE_KERBEROS || authType == AuthenticationType.SRP) {
 	       settings.add(new LdapSetting(LdapOption.LDAP_OPT_X_SASL_NOCANON, LdapConstants.LDAP_OPT_ON));
 	    }
 

@@ -51,7 +51,7 @@ public final class TokenErrorResponse extends TokenResponse {
             throw new ParseException("expecting status code not OK");
         }
 
-        ErrorObject errorObject = ErrorObject.parse(httpResponse.getJsonContent(), httpResponse.getStatusCode());
+        ErrorObject errorObject = ErrorObjectMapper.parse(httpResponse.getJsonContent(), httpResponse.getStatusCode());
         return new TokenErrorResponse(errorObject);
     }
 }

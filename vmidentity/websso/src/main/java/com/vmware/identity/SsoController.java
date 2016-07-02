@@ -38,7 +38,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
-import com.vmware.identity.idm.AuthnPolicy;
 import com.vmware.identity.idm.RSAAgentConfig;
 import com.vmware.identity.idm.RelyingParty;
 import com.vmware.identity.samlservice.AuthenticationFilter;
@@ -107,7 +106,7 @@ public class SsoController extends BaseSsoController {
                 setupChooseIDPModel(model,locale, tenant, requestState);
                 return "chooseidp";
             } else if (requestState.isLoginViewRequired() != null && requestState.isLoginViewRequired()) {
-                setupAuthenticationModel(model,locale, tenant, requestState);
+                setupAuthenticationModel(model,locale, tenant, request, requestState);
                 return "unpentry";
             }
         } catch (Exception e) {
@@ -118,10 +117,21 @@ public class SsoController extends BaseSsoController {
     }
 
     /**
-     * Handle SAML AuthnRequest for CAC - i.e. requesting client side cert
+     * Reverse proxy is expected to challenge for the client certificate with the request.
      */
     @RequestMapping(value = "/SAML2/SSOCAC/{tenant:.*}", method = {RequestMethod.GET, RequestMethod.POST})
     public String cacSso(Locale locale, @PathVariable(value = "tenant") String tenant,
+            Model model, HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        return this.sso( locale, tenant, model, request, response );
+    }
+
+    /**
+     * Client sending request to this endpoint will be challenged to submit certificate by SSL protocal.
+     * Thus a reverse proxy is not expected in between browser and this server.
+     */
+    @RequestMapping(value = "/SAML2/SmartcardRealm/{tenant:.*}", method = {RequestMethod.GET, RequestMethod.POST})
+    public String smartcardRealmSso(Locale locale, @PathVariable(value = "tenant") String tenant,
             Model model, HttpServletRequest request,
             HttpServletResponse response) throws IOException {
         return this.sso( locale, tenant, model, request, response );
@@ -225,10 +235,21 @@ public class SsoController extends BaseSsoController {
     }
 
     /**
-     * Handle SAML AuthnRequest for default tenant for CAC - i.e. requesting client side cert
+     * Reverse proxy is expected to challenge for the client certificate with the request of default tenant.
      */
     @RequestMapping(value = "/SAML2/SSOCAC", method = {RequestMethod.GET, RequestMethod.POST})
     public void cacSsoDefaultTenant(Locale locale, Model model,
+        HttpServletRequest request, HttpServletResponse response)
+        throws IOException {
+        ssoDefaultTenant(locale, model, request, response);
+    }
+
+    /**
+     * Client sending request of default tenant to this endpoint will be challenged to submit certificate by SSL protocal.
+     * Thus a reverse proxy is not expected in between browser and this server.
+     */
+    @RequestMapping(value = "/SAML2/SmartcardRealm", method = {RequestMethod.GET, RequestMethod.POST})
+    public void smartcardRealmSsoDefaultTenant(Locale locale, Model model,
         HttpServletRequest request, HttpServletResponse response)
         throws IOException {
         ssoDefaultTenant(locale, model, request, response);
@@ -280,7 +301,7 @@ public class SsoController extends BaseSsoController {
             }
             model.addAttribute("tenant", tenant);
             model.addAttribute("protocol", "websso");
-            setupAuthenticationModel(model,locale, tenant, null);
+            setupAuthenticationModel(model,locale, tenant, request, null);
         } catch (Exception e) {
             logger.error("Found exception while populating model object ", e);
             sendError(locale, response, e.getLocalizedMessage());
@@ -301,7 +322,7 @@ public class SsoController extends BaseSsoController {
                 messageSource.getMessage("ChooseIDP.Title", null, locale));
     }
 
-    private void setupAuthenticationModel(Model model, Locale locale, String tenant, AuthnRequestState requestState) {
+    private void setupAuthenticationModel(Model model, Locale locale, String tenant, HttpServletRequest request, AuthnRequestState requestState) {
         model.addAttribute("spn", StringEscapeUtils.escapeJavaScript(getServerSPN()));
         model.addAttribute("tenant_brandname", StringEscapeUtils.escapeJavaScript(getBrandName(tenant)));
         model.addAttribute("username",
@@ -349,7 +370,9 @@ public class SsoController extends BaseSsoController {
                         messageSource.getMessage("LoginForm.Smartcard", null, locale));
         model.addAttribute("rsaam", messageSource.getMessage("LoginForm.RsaSecurID", null, locale));
 
-        model.addAttribute("cac_endpoint", Shared.ssoCACEndpoint);
+        String cacEndpoint = request.getAuthType() == SecurityRequestWrapper.VMWARE_CLIENT_CERT_AUTH ? Shared.ssoCACEndpoint : Shared.ssoSmartcardRealmEndpoint;
+        model.addAttribute("cac_endpoint", cacEndpoint);
+
         model.addAttribute("sso_endpoint", Shared.ssoEndpoint);
 
         if (supportedAuthnTypes.supportsRsaSecureID()) {

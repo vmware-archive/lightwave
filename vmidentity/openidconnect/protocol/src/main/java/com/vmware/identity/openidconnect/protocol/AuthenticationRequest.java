@@ -24,7 +24,6 @@ import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.CorrelationID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.common.Nonce;
-import com.vmware.identity.openidconnect.common.ParameterMapUtils;
 import com.vmware.identity.openidconnect.common.ResponseMode;
 import com.vmware.identity.openidconnect.common.ResponseType;
 import com.vmware.identity.openidconnect.common.ResponseTypeValue;

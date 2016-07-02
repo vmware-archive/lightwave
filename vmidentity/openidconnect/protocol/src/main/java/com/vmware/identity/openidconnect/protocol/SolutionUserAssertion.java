@@ -25,8 +25,6 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.vmware.identity.openidconnect.common.JWTID;
-import com.vmware.identity.openidconnect.common.JWTUtils;
-import com.vmware.identity.openidconnect.common.ParameterMapUtils;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.TokenClass;
 

@@ -13,7 +13,6 @@
  */
 
 package com.vmware.identity.openidconnect.server;
-
 import java.io.IOException;
 import java.net.URI;
 
@@ -34,8 +33,9 @@ import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.ProviderMetadata;
 import com.vmware.identity.openidconnect.common.StatusCode;
-import com.vmware.identity.openidconnect.common.URIUtils;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
+import com.vmware.identity.openidconnect.protocol.ProviderMetadataMapper;
+import com.vmware.identity.openidconnect.protocol.URIUtils;
 
 /**
  * @author Jun Sun
@@ -91,7 +91,7 @@ public class MetadataController {
                     endSessionEndpoint,
                     jwkSetURI);
 
-            httpResponse = HttpResponse.createJsonResponse(StatusCode.OK, providerMetadata.toJSONObject());
+            httpResponse = HttpResponse.createJsonResponse(StatusCode.OK, ProviderMetadataMapper.toJSONObject(providerMetadata));
         } catch (ParseException e) {
             ErrorObject errorObject = e.getErrorObject();
             LoggerUtils.logFailedRequest(logger, errorObject, e);

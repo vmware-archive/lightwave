@@ -14,10 +14,6 @@
 
 package com.vmware.identity.openidconnect.common;
 
-import java.util.Map;
-
-import net.minidev.json.JSONObject;
-
 import org.apache.commons.lang3.Validate;
 
 /**
@@ -92,32 +88,5 @@ public final class ErrorObject {
 
     public StatusCode getStatusCode() {
         return this.statusCode;
-    }
-
-    public JSONObject toJSONObject() {
-        JSONObject json = new JSONObject();
-        json.put("error", this.errorCode.getValue());
-        json.put("error_description", this.description);
-        return json;
-    }
-
-    public static ErrorObject parse(Map<String, String> parameters, StatusCode statusCode) throws ParseException {
-        Validate.notNull(parameters, "parameters");
-        Validate.notNull(statusCode, "statusCode");
-
-        ErrorCode errorCode = ErrorCode.parse(ParameterMapUtils.getString(parameters, "error"));
-        String description = ParameterMapUtils.getString(parameters, "error_description");
-
-        return new ErrorObject(errorCode, description, statusCode);
-    }
-
-    public static ErrorObject parse(JSONObject jsonObject, StatusCode statusCode) throws ParseException {
-        Validate.notNull(jsonObject, "jsonObject");
-        Validate.notNull(statusCode, "statusCode");
-
-        ErrorCode errorCode = ErrorCode.parse(JSONUtils.getString(jsonObject, "error"));
-        String description = JSONUtils.getString(jsonObject, "error_description");
-
-        return new ErrorObject(errorCode, description, statusCode);
     }
 }

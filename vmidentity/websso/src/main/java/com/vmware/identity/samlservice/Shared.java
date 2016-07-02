@@ -122,6 +122,7 @@ public final class Shared {
 
     //Endpoint path constants
     public final static String ssoCACEndpoint = "/websso/SAML2/SSOCAC";
+    public final static String ssoSmartcardRealmEndpoint = "/websso/SAML2/SmartcardRealm";
     public final static String ssoEndpoint = "/websso/SAML2/SSO";
 
     /**

@@ -18,20 +18,20 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.Validate;
 
-import com.vmware.identity.openidconnect.client.ClientIDToken;
+import com.vmware.identity.openidconnect.client.IDToken;
 import com.vmware.identity.openidconnect.common.State;
 
 /**
  * @author Yehia Zayour
  */
 public class LogoutRequestTracker {
-    private final ConcurrentHashMap<State, ClientIDToken> map;
+    private final ConcurrentHashMap<State, IDToken> map;
 
     public LogoutRequestTracker() {
-        this.map = new ConcurrentHashMap<State, ClientIDToken>();
+        this.map = new ConcurrentHashMap<State, IDToken>();
     }
 
-    public void add(State state, ClientIDToken subject) {
+    public void add(State state, IDToken subject) {
         Validate.notNull(state, "state");
         Validate.notNull(subject, "subject");
         if (this.map.contains(state)) {
@@ -40,12 +40,12 @@ public class LogoutRequestTracker {
         this.map.put(state, subject);
     }
 
-    public ClientIDToken remove(State state) {
+    public IDToken remove(State state) {
         Validate.notNull(state, "state");
         return this.map.remove(state);
     }
 
-    public ClientIDToken get(State state) {
+    public IDToken get(State state) {
         Validate.notNull(state, "state");
         return this.map.get(state);
     }

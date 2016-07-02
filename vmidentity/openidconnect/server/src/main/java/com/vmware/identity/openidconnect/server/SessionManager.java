@@ -73,9 +73,9 @@ public class SessionManager {
         return String.format("oidc_session_id-%s", tenant);
     }
 
-    public static String getClientCertificateLoggedOutCookieName(String tenant) {
+    public static String getPersonUserCertificateLoggedOutCookieName(String tenant) {
         Validate.notEmpty(tenant, "tenant");
-        return String.format("oidc_client_certificate_logged_out-%s", tenant);
+        return String.format("oidc_person_user_certificate_logged_out-%s", tenant);
     }
 
     public static class Entry {

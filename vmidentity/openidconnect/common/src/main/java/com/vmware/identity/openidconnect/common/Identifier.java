@@ -16,6 +16,7 @@ package com.vmware.identity.openidconnect.common;
 
 import java.security.SecureRandom;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.Validate;
 
 /**
@@ -30,7 +31,7 @@ abstract class Identifier {
     public Identifier() {
         byte[] randomBytes = new byte[BYTE_LENGTH];
         Identifier.secureRandom.nextBytes(randomBytes);
-        this.value = Base64Utils.encodeToURLSafeString(randomBytes);
+        this.value = Base64.encodeBase64URLSafeString(randomBytes);
     }
 
     public Identifier(String value) {

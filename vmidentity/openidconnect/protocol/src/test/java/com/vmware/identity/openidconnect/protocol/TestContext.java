@@ -44,12 +44,12 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
-import com.vmware.identity.openidconnect.common.Base64Utils;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ErrorCode;
 import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.JWTID;
 import com.vmware.identity.openidconnect.common.Nonce;
+import com.vmware.identity.openidconnect.common.PersonUserAssertionSigner;
 import com.vmware.identity.openidconnect.common.Scope;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.State;
@@ -63,8 +63,8 @@ import com.vmware.identity.openidconnect.common.TokenType;
 public class TestContext {
     public static final String USERNAME = "un";
     public static final String PASSWORD = "pw";
-    public static final String SECUREID_PASSCODE = "secureid_pc";
-    public static final String SECUREID_SESSION_ID = "secureid_session_id";
+    public static final String SECURID_PASSCODE = "securid_pc";
+    public static final String SECURID_SESSION_ID = "securid_session_id";
     public static final String GSS_CONTEXT_ID = "_gss_context_id_";
     public static final byte[] GSS_TICKET = new byte[1];
 
@@ -73,7 +73,7 @@ public class TestContext {
     public static final URI POST_LOGOUT_REDIRECT_URI = URI.create("https://client.com/openidconnect/post_logout_redirect");
 
     public static final Scope SCOPE = Scope.OPENID;
-    public static final ClientID CLIENT_ID = new ClientID();
+    public static final ClientID CLIENT_ID = new ClientID("__client_id__");
     public static final State STATE = new State();
     public static final Nonce NONCE = new Nonce();
     public static final AuthorizationCode AUTHZ_CODE = new AuthorizationCode();
@@ -87,6 +87,7 @@ public class TestContext {
     public static RefreshToken REFRESH_TOKEN;
     public static ClientAssertion CLIENT_ASSERTION;
     public static SolutionUserAssertion SOLUTION_USER_ASSERTION;
+    public static PersonUserAssertion PERSON_USER_ASSERTION;
 
     public static final String CERT_SUBJECT_DN = "OU=abc,C=US,DC=local,DC=vsphere,CN=_solution_username_xyz_";
     public static X509Certificate CERT;
@@ -166,12 +167,26 @@ public class TestContext {
         CLIENT_ASSERTION = new ClientAssertion(
                 privateKey,
                 new JWTID(),
-                new ClientID(),
+                CLIENT_ID,
                 URI.create("https://a.com"),
                 issueTime);
 
         SOLUTION_USER_ASSERTION = new SolutionUserAssertion(
                 privateKey,
+                new JWTID(),
+                CERT_SUBJECT_DN,
+                URI.create("https://a.com"),
+                issueTime);
+
+        PersonUserAssertionSigner testSigner = new PersonUserAssertionSigner() {
+            @Override
+            public byte[] signUsingRS256(byte[] data) {
+                return null;
+            }
+        };
+
+        PERSON_USER_ASSERTION = new PersonUserAssertion(
+                testSigner,
                 new JWTID(),
                 CERT_SUBJECT_DN,
                 URI.create("https://a.com"),

@@ -23,20 +23,20 @@ import org.apache.commons.lang3.Validate;
  */
 public final class OIDCTokens {
 
-    private final ClientIDToken clientIdToken;
+    private final IDToken idToken;
     private final AccessToken accessToken;
     private final RefreshToken refreshToken;
 
     /**
      * Constructor
-     * @param clientIdToken     id token
+     * @param idToken           id token
      * @param accessToken       access token
      * @param refreshToken      refresh token
      */
-    OIDCTokens(ClientIDToken clientIdToken, AccessToken accessToken, RefreshToken refreshToken) {
-        Validate.notNull(clientIdToken, "clientIdToken");
+    OIDCTokens(IDToken idToken, AccessToken accessToken, RefreshToken refreshToken) {
+        Validate.notNull(idToken, "idToken");
 
-        this.clientIdToken = clientIdToken;
+        this.idToken = idToken;
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
     }
@@ -46,8 +46,8 @@ public final class OIDCTokens {
      *
      * @return                  id token
      */
-    public ClientIDToken getClientIDToken() {
-        return this.clientIdToken;
+    public IDToken getIDToken() {
+        return this.idToken;
     }
 
     /**

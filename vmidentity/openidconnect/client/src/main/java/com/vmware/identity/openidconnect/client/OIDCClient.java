@@ -16,28 +16,39 @@ package com.vmware.identity.openidconnect.client;
 
 import java.net.URI;
 import java.security.KeyStore;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
+import java.util.Date;
 import java.util.UUID;
 
 import org.apache.commons.lang3.Validate;
 
-import com.vmware.identity.openidconnect.common.AuthorizationCodeGrant;
-import com.vmware.identity.openidconnect.common.AuthorizationGrant;
+import com.nimbusds.jose.JOSEException;
+import com.vmware.identity.openidconnect.common.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.CorrelationID;
 import com.vmware.identity.openidconnect.common.Issuer;
+import com.vmware.identity.openidconnect.common.JWTID;
 import com.vmware.identity.openidconnect.common.Nonce;
-import com.vmware.identity.openidconnect.common.RefreshTokenGrant;
+import com.vmware.identity.openidconnect.common.PersonUserAssertionSigner;
 import com.vmware.identity.openidconnect.common.ResponseMode;
 import com.vmware.identity.openidconnect.common.ResponseType;
 import com.vmware.identity.openidconnect.common.ResponseTypeValue;
 import com.vmware.identity.openidconnect.common.Scope;
 import com.vmware.identity.openidconnect.common.State;
-import com.vmware.identity.openidconnect.common.URIUtils;
 import com.vmware.identity.openidconnect.protocol.AuthenticationRequest;
+import com.vmware.identity.openidconnect.protocol.AuthorizationCodeGrant;
+import com.vmware.identity.openidconnect.protocol.AuthorizationGrant;
 import com.vmware.identity.openidconnect.protocol.ClientAssertion;
+import com.vmware.identity.openidconnect.protocol.ClientCredentialsGrant;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
 import com.vmware.identity.openidconnect.protocol.LogoutRequest;
+import com.vmware.identity.openidconnect.protocol.PasswordGrant;
+import com.vmware.identity.openidconnect.protocol.PersonUserAssertion;
+import com.vmware.identity.openidconnect.protocol.PersonUserCertificateGrant;
+import com.vmware.identity.openidconnect.protocol.RefreshTokenGrant;
+import com.vmware.identity.openidconnect.protocol.SolutionUserCredentialsGrant;
+import com.vmware.identity.openidconnect.protocol.URIUtils;
 
 /**
  * OIDC Client
@@ -146,21 +157,7 @@ public final class OIDCClient {
         return authenticationRequest.toHttpRequest().getURI();
     }
 
-    /**
-     * Get tokens by grant
-     *
-     * @param authorizationGrant        Authorization grant. It can be one of the following:
-     *                                  PasswordGrant, SolutionUserCredentialsGrant,
-     *                                  ClientCredentialsGrant, RefreshTokenGrant, AuthorizationCodeGrant, ClientCertificateGrant
-     *                                  for GssTicketGrant and SecureIDGrant use the below overrides which will handle multi-legged exchanges
-     * @param tokenSpec                 Specification of tokens requested.
-     * @return                          OIDC Tokens.
-     * @throws OIDCClientException      Client side exception.
-     * @throws OIDCServerException      Server side exception.
-     * @throws TokenValidationException Token validation exception.
-     * @throws SSLConnectionException   SSL connection exception.
-     */
-    public OIDCTokens acquireTokens(
+    OIDCTokens acquireTokens(
             AuthorizationGrant authorizationGrant,
             TokenSpec tokenSpec) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
         Validate.notNull(authorizationGrant, "authorizationGrant");
@@ -186,6 +183,39 @@ public final class OIDCClient {
     }
 
     /**
+     * tokens by smart card certificate that represents a PersonUser
+     *
+     * @param personUserCertificate     smart card cert
+     * @param signer                    client-implemented interface that signs an object with the smart card private key
+     * @param tokenSpec                 Specification of tokens requested.
+     */
+    public OIDCTokens acquireTokensByPersonUserCertificate(
+            X509Certificate personUserCertificate,
+            PersonUserAssertionSigner signer,
+            TokenSpec tokenSpec) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
+        Validate.notNull(personUserCertificate, "personUserCertificate");
+        Validate.notNull(signer, "signer");
+        Validate.notNull(tokenSpec, "tokenSpec");
+
+        Date issueTime = new Date(); // now
+        URI tokenEndpointURI = getTokenEndpointURI();
+
+        PersonUserAssertion personUserAssertion;
+        try {
+            personUserAssertion = new PersonUserAssertion(
+                    signer,
+                    new JWTID(),
+                    personUserCertificate.getSubjectDN().getName(),
+                    tokenEndpointURI,
+                    issueTime);
+        } catch (JOSEException e) {
+            throw new OIDCClientException("failed to construct PersonUserAssertion", e);
+        }
+
+        return acquireTokens(new PersonUserCertificateGrant(personUserCertificate, personUserAssertion), tokenSpec);
+    }
+
+    /**
      * Get tokens by GSSNegotiationHandler which handles multi-legged GSSTicketGrant
      *
      * @param gssNegotiationHandler     client-implemented interface that provides us with the next gss ticket
@@ -196,7 +226,7 @@ public final class OIDCClient {
      * @throws TokenValidationException Token validation exception.
      * @throws SSLConnectionException   SSL connection exception.
      */
-    public OIDCTokens acquireTokens(
+    public OIDCTokens acquireTokensByGSS(
             GSSNegotiationHandler gssNegotiationHandler,
             TokenSpec tokenSpec) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
         Validate.notNull(gssNegotiationHandler, "gssNegotiationHandler");
@@ -220,9 +250,11 @@ public final class OIDCClient {
     }
 
     /**
-     * Get tokens by SecureIDRetriever which handles multi-legged SecureIDGrant
+     * Get tokens by SecurIDRetriever which handles multi-legged SecurIDGrant
      *
-     * @param secureIdRetriever         client-implemented class that provides us with the next RSA SecurID passcode
+     * @param usename
+     * @param passcode
+     * @param securIdRetriever          client-implemented class that provides us with the next RSA SecurID passcode
      * @param tokenSpec                 Specification of tokens requested.
      * @return                          OIDC Tokens.
      * @throws OIDCClientException      Client side exception.
@@ -230,14 +262,20 @@ public final class OIDCClient {
      * @throws TokenValidationException Token validation exception.
      * @throws SSLConnectionException   SSL connection exception.
      */
-    public OIDCTokens acquireTokens(
-            SecureIDRetriever secureIdRetriever,
+    public OIDCTokens acquireTokensBySecurID(
+            String username,
+            String passcode,
+            SecurIDRetriever securIdRetriever,
             TokenSpec tokenSpec) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
-        Validate.notNull(secureIdRetriever, "secureIdRetriever");
+        Validate.notEmpty(username, "username");
+        Validate.notEmpty(passcode, "passcode");
+        Validate.notNull(securIdRetriever, "securIdRetriever");
         Validate.notNull(tokenSpec, "tokenSpec");
 
-        HttpResponse httpResponse = OIDCClientUtils.handleSecureIDMultiLeggedGrant(
-                secureIdRetriever,
+        HttpResponse httpResponse = OIDCClientUtils.handleSecurIDMultiLeggedGrant(
+                username,
+                passcode,
+                securIdRetriever,
                 tokenSpec,
                 getTokenEndpointURI(),
                 this.clientId,
@@ -252,23 +290,62 @@ public final class OIDCClient {
                 this.clockToleranceInSeconds);
     }
 
+    public OIDCTokens acquireTokensByPassword(
+            String username,
+            String password,
+            TokenSpec tokenSpec) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
+        Validate.notEmpty(username, "username");
+        Validate.notEmpty(password, "password");
+        Validate.notNull(tokenSpec, "tokenSpec");
+        return acquireTokens(new PasswordGrant(username, password), tokenSpec);
+    }
+
+    public OIDCTokens acquireTokensByRefreshToken(
+            RefreshToken refreshToken) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
+        Validate.notNull(refreshToken, "refreshToken");
+        return acquireTokens(new RefreshTokenGrant(refreshToken.getRefreshToken()), TokenSpec.EMPTY);
+    }
+
+    public OIDCTokens acquireTokensByAuthorizationCode(
+            AuthorizationCode code,
+            URI redirectUri) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
+        Validate.notNull(code, "code");
+        Validate.notNull(redirectUri, "redirectUri");
+        return acquireTokens(new AuthorizationCodeGrant(code, redirectUri), TokenSpec.EMPTY);
+    }
+
+    public OIDCTokens acquireTokensBySolutionUserCredentials(
+            TokenSpec tokenSpec) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
+        Validate.notNull(tokenSpec, "tokenSpec");
+        Validate.notNull(this.holderOfKeyConfig, "this.holderOfKeyConfig");
+        return acquireTokens(new SolutionUserCredentialsGrant(), tokenSpec);
+    }
+
+    public OIDCTokens acquireTokensByClientCredentials(
+            TokenSpec tokenSpec) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
+        Validate.notNull(tokenSpec, "tokenSpec");
+        Validate.notNull(this.holderOfKeyConfig, "this.holderOfKeyConfig");
+        Validate.notNull(this.clientId, "this.clientId");
+        return acquireTokens(new ClientCredentialsGrant(), tokenSpec);
+    }
+
     /**
      * Build a logout request URI
      *
      * @param postLogoutRedirectEndpointURI     Post logout URI.
-     * @param clientIdToken                     ID token received from a previous request.
+     * @param idToken                           ID token received from a previous request.
      * @param state                             State value used in a logout request, it is optional.
      * @return                                  Logout request URI.
      * @throws OIDCClientException              Client side exception.
      */
     public URI buildLogoutRequestURI(
             URI postLogoutRedirectEndpointURI,
-            ClientIDToken clientIdToken,
+            IDToken idToken,
             State state) throws OIDCClientException {
         Validate.notNull(postLogoutRedirectEndpointURI, "postLogoutRedirectEndpointURI");
-        Validate.notNull(clientIdToken, "clientIdToken");
+        Validate.notNull(idToken, "idToken");
 
-        LogoutRequest logoutRequest = buildLogoutRequest(postLogoutRedirectEndpointURI, clientIdToken, state);
+        LogoutRequest logoutRequest = buildLogoutRequest(postLogoutRedirectEndpointURI, idToken, state);
         return logoutRequest.toHttpRequest().getURI();
     }
 
@@ -276,25 +353,25 @@ public final class OIDCClient {
      * Build a logout request html form (client returns form that is auto-submitted to the Authorization Server)
      *
      * @param postLogoutRedirectEndpointURI     Post logout URI.
-     * @param clientIdToken                     ID token received from a previous request.
+     * @param idToken                           ID token received from a previous request.
      * @param state                             State value used in a logout request, it is optional.
      * @return                                  Logout request html form.
      * @throws OIDCClientException              Client side exception.
      */
     public String buildLogoutRequestHtmlForm(
             URI postLogoutRedirectEndpointURI,
-            ClientIDToken clientIdToken,
+            IDToken idToken,
             State state) throws OIDCClientException {
         Validate.notNull(postLogoutRedirectEndpointURI, "postLogoutRedirectEndpointURI");
-        Validate.notNull(clientIdToken, "clientIdToken");
+        Validate.notNull(idToken, "idToken");
 
-        LogoutRequest logoutRequest = buildLogoutRequest(postLogoutRedirectEndpointURI, clientIdToken, state);
+        LogoutRequest logoutRequest = buildLogoutRequest(postLogoutRedirectEndpointURI, idToken, state);
         return logoutRequest.toHtmlForm();
     }
 
     private LogoutRequest buildLogoutRequest(
             URI postLogoutRedirectEndpointURI,
-            ClientIDToken clientIdToken,
+            IDToken idToken,
             State state) throws OIDCClientException {
         URI endSessionEndpointURI = this.endSessionEndpointURI;
         if (highAvailabilityEnabled()) {
@@ -309,7 +386,7 @@ public final class OIDCClient {
 
         return new LogoutRequest(
                 endSessionEndpointURI,
-                clientIdToken.getIDToken(),
+                idToken.getIDToken(),
                 postLogoutRedirectEndpointURI,
                 state,
                 clientAssertion,

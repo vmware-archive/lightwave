@@ -28,7 +28,6 @@ import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.State;
-import com.vmware.identity.openidconnect.common.URIUtils;
 import com.vmware.identity.openidconnect.protocol.AuthenticationErrorResponse;
 import com.vmware.identity.openidconnect.protocol.AuthenticationResponse;
 import com.vmware.identity.openidconnect.protocol.AuthenticationSuccessResponse;
@@ -36,6 +35,7 @@ import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.LogoutErrorResponse;
 import com.vmware.identity.openidconnect.protocol.LogoutResponse;
 import com.vmware.identity.openidconnect.protocol.LogoutSuccessResponse;
+import com.vmware.identity.openidconnect.protocol.URIUtils;
 
 /**
  * OIDC listener helper class for parsing data in response
@@ -154,9 +154,9 @@ public final class ListenerHelper {
         if (authnResponse instanceof AuthenticationSuccessResponse) {
             AuthenticationSuccessResponse authnSuccessResponse = (AuthenticationSuccessResponse) authnResponse;
             if (authnSuccessResponse.getIDToken() != null) {
-                ClientIDToken clientIdToken = ClientIDToken.build(authnSuccessResponse.getIDToken(), publicKey, issuer, clientId, clockToleranceSeconds);
+                IDToken idToken = IDToken.build(authnSuccessResponse.getIDToken(), publicKey, issuer, clientId, clockToleranceSeconds);
                 AccessToken accessToken = authnSuccessResponse.getAccessToken() == null ? null : new AccessToken(authnSuccessResponse.getAccessToken().serialize());
-                OIDCTokens tokens = new OIDCTokens(clientIdToken, accessToken, (RefreshToken) null);
+                OIDCTokens tokens = new OIDCTokens(idToken, accessToken, (RefreshToken) null);
                 return new AuthenticationTokensResponse(authnSuccessResponse.getState(), tokens);
             } else {
                 throw new OIDCClientException("response is missing id_token");

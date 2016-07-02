@@ -21,7 +21,6 @@ import java.util.Map;
 import org.apache.commons.lang3.Validate;
 
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.ParameterMapUtils;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.ResponseMode;
 import com.vmware.identity.openidconnect.common.State;
@@ -89,7 +88,7 @@ public final class AuthenticationErrorResponse extends AuthenticationResponse {
         Map<String, String> parameters = httpRequest.getParameters();
 
         State state = State.parse(ParameterMapUtils.getString(parameters, "state"));
-        ErrorObject errorObject = ErrorObject.parse(parameters, StatusCode.OK /* we do not know and it doesn't matter */);
+        ErrorObject errorObject = ErrorObjectMapper.parse(parameters, StatusCode.OK /* we do not know and it doesn't matter */);
 
         return new AuthenticationErrorResponse(
                 ResponseMode.FORM_POST, // we don't really know but it doesn't matter

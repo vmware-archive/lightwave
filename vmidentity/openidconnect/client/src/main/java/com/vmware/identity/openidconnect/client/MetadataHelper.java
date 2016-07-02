@@ -25,9 +25,11 @@ import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.ProviderMetadata;
 import com.vmware.identity.openidconnect.common.StatusCode;
-import com.vmware.identity.openidconnect.common.URIUtils;
+import com.vmware.identity.openidconnect.protocol.ErrorObjectMapper;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
+import com.vmware.identity.openidconnect.protocol.ProviderMetadataMapper;
+import com.vmware.identity.openidconnect.protocol.URIUtils;
 
 /**
  * OIDC Metadata helper class
@@ -177,7 +179,7 @@ public final class MetadataHelper {
         try {
             verifyHttpResponse(httpResponse);
 
-            ProviderMetadata providerMetadata = ProviderMetadata.parse(httpResponse.getJsonContent());
+            ProviderMetadata providerMetadata = ProviderMetadataMapper.parse(httpResponse.getJsonContent());
             return providerMetadata;
         } catch (ParseException e) {
             throw new OIDCClientException("Metadata response parse failed: " + e.getMessage(), e);
@@ -207,7 +209,7 @@ public final class MetadataHelper {
         if (httpResponse.getStatusCode() != StatusCode.OK) {
             ErrorObject errorObject;
             try {
-                errorObject = ErrorObject.parse(httpResponse.getJsonContent(), httpResponse.getStatusCode());
+                errorObject = ErrorObjectMapper.parse(httpResponse.getJsonContent(), httpResponse.getStatusCode());
             } catch (ParseException e) {
                 throw new OIDCClientException("failed to parse ErrorObject", e);
             }

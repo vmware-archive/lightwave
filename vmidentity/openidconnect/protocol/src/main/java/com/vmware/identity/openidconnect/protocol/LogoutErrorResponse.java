@@ -13,7 +13,6 @@
  */
 
 package com.vmware.identity.openidconnect.protocol;
-
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,11 +20,9 @@ import java.util.Map;
 import org.apache.commons.lang3.Validate;
 
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.ParameterMapUtils;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.State;
 import com.vmware.identity.openidconnect.common.StatusCode;
-import com.vmware.identity.openidconnect.common.URIUtils;
 
 /**
  * @author Yehia Zayour
@@ -66,7 +63,7 @@ public final class LogoutErrorResponse extends LogoutResponse {
         Map<String, String> parameters = httpRequest.getParameters();
 
         State state = State.parse(ParameterMapUtils.getString(parameters, "state"));
-        ErrorObject errorObject = ErrorObject.parse(parameters, StatusCode.OK);
+        ErrorObject errorObject = ErrorObjectMapper.parse(parameters, StatusCode.OK);
 
         return new LogoutErrorResponse(httpRequest.getURI(), state, errorObject);
     }

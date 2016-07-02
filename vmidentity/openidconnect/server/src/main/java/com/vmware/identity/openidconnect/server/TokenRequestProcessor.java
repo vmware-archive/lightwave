@@ -17,7 +17,6 @@ package com.vmware.identity.openidconnect.server;
 import java.net.URI;
 import java.security.cert.X509Certificate;
 import java.util.Date;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -29,28 +28,29 @@ import com.vmware.identity.idm.IDMSecureIDNewPinException;
 import com.vmware.identity.idm.RSAAMResult;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
-import com.vmware.identity.openidconnect.common.AuthorizationCodeGrant;
-import com.vmware.identity.openidconnect.common.Base64Utils;
-import com.vmware.identity.openidconnect.common.ClientCertificateGrant;
-import com.vmware.identity.openidconnect.common.ClientCredentialsGrant;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.GSSTicketGrant;
 import com.vmware.identity.openidconnect.common.GrantType;
 import com.vmware.identity.openidconnect.common.Nonce;
 import com.vmware.identity.openidconnect.common.ParseException;
-import com.vmware.identity.openidconnect.common.PasswordGrant;
-import com.vmware.identity.openidconnect.common.RefreshTokenGrant;
 import com.vmware.identity.openidconnect.common.Scope;
 import com.vmware.identity.openidconnect.common.ScopeValue;
-import com.vmware.identity.openidconnect.common.SecureIDGrant;
 import com.vmware.identity.openidconnect.common.SessionID;
-import com.vmware.identity.openidconnect.common.SolutionUserCredentialsGrant;
 import com.vmware.identity.openidconnect.protocol.AccessToken;
+import com.vmware.identity.openidconnect.protocol.AuthorizationCodeGrant;
+import com.vmware.identity.openidconnect.protocol.Base64Utils;
+import com.vmware.identity.openidconnect.protocol.ClientCredentialsGrant;
+import com.vmware.identity.openidconnect.protocol.GSSTicketGrant;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
 import com.vmware.identity.openidconnect.protocol.IDToken;
+import com.vmware.identity.openidconnect.protocol.PasswordGrant;
+import com.vmware.identity.openidconnect.protocol.PersonUserAssertion;
+import com.vmware.identity.openidconnect.protocol.PersonUserCertificateGrant;
 import com.vmware.identity.openidconnect.protocol.RefreshToken;
+import com.vmware.identity.openidconnect.protocol.RefreshTokenGrant;
+import com.vmware.identity.openidconnect.protocol.SecurIDGrant;
+import com.vmware.identity.openidconnect.protocol.SolutionUserCredentialsGrant;
 import com.vmware.identity.openidconnect.protocol.TokenErrorResponse;
 import com.vmware.identity.openidconnect.protocol.TokenRequest;
 import com.vmware.identity.openidconnect.protocol.TokenSuccessResponse;
@@ -155,14 +155,14 @@ public class TokenRequestProcessor {
             case CLIENT_CREDENTIALS:
                 tokenSuccessResponse = processClientCredentialsGrant(solutionUser);
                 break;
-            case CLIENT_CERTIFICATE:
-                tokenSuccessResponse = processClientCertificateGrant(solutionUser);
+            case PERSON_USER_CERTIFICATE:
+                tokenSuccessResponse = processPersonUserCertificateGrant(solutionUser);
                 break;
             case GSS_TICKET:
                 tokenSuccessResponse = processGssTicketGrant(solutionUser);
                 break;
-            case SECUREID:
-                tokenSuccessResponse = processSecureIDGrant(solutionUser);
+            case SECURID:
+                tokenSuccessResponse = processSecurIDGrant(solutionUser);
                 break;
             case REFRESH_TOKEN:
                 tokenSuccessResponse = processRefreshTokenGrant(solutionUser);
@@ -237,15 +237,22 @@ public class TokenRequestProcessor {
                 false /* refreshTokenAllowed */);
     }
 
-    private TokenSuccessResponse processClientCertificateGrant(SolutionUser solutionUser) throws ServerException {
-        ClientCertificateGrant clientCertificateGrant = (ClientCertificateGrant) this.tokenRequest.getAuthorizationGrant();
-        List<X509Certificate> clientCertificateChain = clientCertificateGrant.getClientCertificateChain();
+    private TokenSuccessResponse processPersonUserCertificateGrant(SolutionUser solutionUser) throws ServerException {
+        PersonUserCertificateGrant personUserCertificateGrant = (PersonUserCertificateGrant) this.tokenRequest.getAuthorizationGrant();
+        X509Certificate personUserCertificate = personUserCertificateGrant.getPersonUserCertificate();
+        PersonUserAssertion personUserAssertion = personUserCertificateGrant.getPersonUserAssertion();
 
         PersonUser personUser;
         try {
-            personUser = this.personUserAuthenticator.authenticateByClientCertificate(this.tenant, clientCertificateChain);
+            personUser = this.personUserAuthenticator.authenticateByPersonUserCertificate(
+                    this.tenant,
+                    personUserCertificate,
+                    personUserAssertion,
+                    ASSERTION_LIFETIME_MS,
+                    this.httpRequest.getURI(),
+                    this.tenantInfo.getClockToleranceMs());
         } catch (InvalidCredentialsException e) {
-            throw new ServerException(ErrorObject.invalidGrant("invalid client cert"), e);
+            throw new ServerException(ErrorObject.invalidGrant("invalid person user cert"), e);
         }
 
         return process(
@@ -289,19 +296,19 @@ public class TokenRequestProcessor {
                 true /* refreshTokenAllowed */);
     }
 
-    private TokenSuccessResponse processSecureIDGrant(SolutionUser solutionUser) throws ServerException {
-        SecureIDGrant secureIdGrant = (SecureIDGrant) this.tokenRequest.getAuthorizationGrant();
-        String username = secureIdGrant.getUsername();
-        String passcode = secureIdGrant.getPasscode();
-        String sessionId = secureIdGrant.getSessionID();
+    private TokenSuccessResponse processSecurIDGrant(SolutionUser solutionUser) throws ServerException {
+        SecurIDGrant securIdGrant = (SecurIDGrant) this.tokenRequest.getAuthorizationGrant();
+        String username = securIdGrant.getUsername();
+        String passcode = securIdGrant.getPasscode();
+        String sessionId = securIdGrant.getSessionID();
 
         RSAAMResult result;
         try {
-            result = this.personUserAuthenticator.authenticateBySecureID(this.tenant, username, passcode, sessionId);
+            result = this.personUserAuthenticator.authenticateBySecurID(this.tenant, username, passcode, sessionId);
         } catch (InvalidCredentialsException e) {
-            throw new ServerException(ErrorObject.invalidGrant("incorrect secureid username or passcode"));
+            throw new ServerException(ErrorObject.invalidGrant("incorrect securid username or passcode"));
         } catch (IDMSecureIDNewPinException e) {
-            throw new ServerException(ErrorObject.invalidGrant("new secureid pin required"));
+            throw new ServerException(ErrorObject.invalidGrant("new securid pin required"));
         }
 
         PersonUser personUser;
@@ -309,7 +316,7 @@ public class TokenRequestProcessor {
             personUser = new PersonUser(result.getPrincipalId(), this.tenant);
         } else {
             String base64OfSessionId = Base64Utils.encodeToString(result.getRsaSessionID());
-            String message = String.format("secureid_next_code_required:%s", base64OfSessionId);
+            String message = String.format("securid_next_code_required:%s", base64OfSessionId);
             throw new ServerException(ErrorObject.invalidGrant(message));
         }
 
@@ -325,14 +332,7 @@ public class TokenRequestProcessor {
 
     private TokenSuccessResponse processRefreshTokenGrant(SolutionUser solutionUser) throws ServerException {
         RefreshTokenGrant refreshTokenGrant = (RefreshTokenGrant) this.tokenRequest.getAuthorizationGrant();
-        String refreshTokenString = refreshTokenGrant.getRefreshToken();
-
-        RefreshToken refreshToken;
-        try {
-            refreshToken = RefreshToken.parse(refreshTokenString);
-        } catch (ParseException e) {
-            throw new ServerException(ErrorObject.invalidGrant("failed to parse refresh_token"), e);
-        }
+        RefreshToken refreshToken = refreshTokenGrant.getRefreshToken();
 
         validateRefreshToken(refreshToken, solutionUser);
 

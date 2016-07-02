@@ -16,18 +16,33 @@ package com.vmware.identity.openidconnect.client;
 
 import org.apache.commons.lang3.Validate;
 
+import com.vmware.identity.openidconnect.common.ParseException;
+
 /**
  * @author Yehia Zayour
  */
 public final class RefreshToken {
-    private final String value;
+    private final com.vmware.identity.openidconnect.protocol.RefreshToken refreshToken;
 
-    RefreshToken(String value) {
-        Validate.notEmpty(value, "value");
-        this.value = value;
+    RefreshToken(com.vmware.identity.openidconnect.protocol.RefreshToken refreshToken) {
+        Validate.notNull(refreshToken, "refreshToken");
+        this.refreshToken = refreshToken;
     }
 
     public String getValue() {
-        return this.value;
+        return this.refreshToken.serialize();
+    }
+
+    com.vmware.identity.openidconnect.protocol.RefreshToken getRefreshToken() {
+        return this.refreshToken;
+    }
+
+    public static RefreshToken parse(String refreshTokenString) throws OIDCClientException {
+        Validate.notNull(refreshTokenString, "refreshTokenString");
+        try {
+            return new RefreshToken(com.vmware.identity.openidconnect.protocol.RefreshToken.parse(refreshTokenString));
+        } catch (ParseException e) {
+            throw new OIDCClientException("failed to parse refresh token", e);
+        }
     }
 }
