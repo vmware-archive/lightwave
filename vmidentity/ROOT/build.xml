@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="ROOT" default="build" >
+  <property name="MAINSRCROOT" value="${basedir}/../.." />
+  <import file="${MAINSRCROOT}/ant/defaults.xml" />
+
+  <target name="build">
+    <exec executable="${maven}" failonerror="true">
+      <env key="M2_HOME" value="${tcRoot}/noarch/apache-maven-3.0.3"/>
+      <arg line=" -s ../settings.xml -Dskip.unit.tests=true clean compile install" />
+    </exec>
+  </target>
+
+</project>
+

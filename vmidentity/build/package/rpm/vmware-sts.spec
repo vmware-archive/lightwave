@@ -150,6 +150,7 @@ fi
 %{_webappsdir}/openidconnect.war
 %{_webappsdir}/sts.war
 %{_webappsdir}/websso.war
+%{_webappsdir}/ROOT.war
 %{_datadir}/config/idm/*
 %config %attr(600, root, root) %{_prefix}/vmware-sts/bin/setenv.sh
 %config %attr(600, root, root) %{_prefix}/vmware-sts/bin/vmware-identity-tomcat-extensions.jar
