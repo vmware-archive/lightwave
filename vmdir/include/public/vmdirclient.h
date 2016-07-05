@@ -565,6 +565,24 @@ VmDirFreeReplicationState(
     );
 
 DWORD
+VmDirGetAttributeMetadata(
+    PVMDIR_CONNECTION pConnection,
+    PCSTR pszEntryDn,
+    PCSTR pszAttribute,
+    PVMDIR_METADATA_LIST* ppMetadataList
+    );
+
+VOID
+VmDirFreeMetadata(
+    PVMDIR_METADATA pMetadata
+    );
+
+VOID
+VmDirFreeMetadataList(
+    PVMDIR_METADATA_LIST pMetadataList
+    );
+
+DWORD
 VmDirSuperLogQueryServerData(
     PVMDIR_SERVER_CONTEXT pContext,
     PVMDIR_SUPERLOG_SERVER_DATA *ppServerData);
@@ -692,6 +710,19 @@ VmDirCloseDatabaseFile(
     PVMDIR_SERVER_CONTEXT   hBinding,
     FILE **                 ppFileHandle
 );
+
+DWORD
+VmDirUrgentReplicationRequest(
+    PCSTR pszRemoteServerName
+    );
+
+DWORD
+VmDirUrgentReplicationResponse(
+    PCSTR    pszRemoteServerName,
+    PCSTR    pszUtdVector,
+    PCSTR    pszInvocationId,
+    PCSTR    pszHostName
+    );
 
 #ifdef __cplusplus
 }

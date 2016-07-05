@@ -179,6 +179,11 @@ ParseRequestControls(
                 op->showMasterKeyCtrl = *control;
             }
 
+            if (VmDirStringCompareA((*control)->type, LDAP_CONTROL_CONSISTENT_WRITE, TRUE ) == 0)
+            {
+                op->strongConsistencyWriteCtrl = *control;
+            }
+
             if (VmDirStringCompareA( (*control)->type, LDAP_CONTROL_PAGEDRESULTS, TRUE ) == 0)
             {
                 retVal = _ParsePagedResultControlVal( op,
@@ -863,6 +868,8 @@ WriteConsistencyWriteDoneControl(
     BerElementBuffer    ctrlValBerbuf;
     BerElement *        pCtrlValBer = (BerElement *) &ctrlValBerbuf;
     VDIR_BERVALUE       bvCtrlVal = VDIR_BERVALUE_INIT;
+    DWORD               dwStatus = 0;
+    PSTR                pControlsString = NULL;
 
     if (pOp == NULL || pBer == NULL)
     {
@@ -873,9 +880,10 @@ WriteConsistencyWriteDoneControl(
     (void) memset((char *)&ctrlValBerbuf, '\0', sizeof(BerElementBuffer));
     ber_init2(pCtrlValBer, NULL, LBER_USE_DER);
 
-    /* Hard code a dummy non-zero return value for now -- 3 - indicates success and if local write fails, then
-       no control will be returned */
-    if (ber_printf(pCtrlValBer, "{i}", 3) == -1)
+    dwStatus = pOp->strongConsistencyWriteCtrl->value.scwDoneCtrlVal.status;
+    pControlsString = pOp->strongConsistencyWriteCtrl->type;
+
+    if (ber_printf(pCtrlValBer, "{i}", dwStatus) == -1)
     {
        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "WriteConsistencyWriteDoneControl: ber_printf (to print status...) failed");
        BAIL_ON_VMDIR_ERROR(retVal);
@@ -884,7 +892,7 @@ WriteConsistencyWriteDoneControl(
     bvCtrlVal.lberbv.bv_val = pCtrlValBer->ber_buf;
     bvCtrlVal.lberbv.bv_len = pCtrlValBer->ber_ptr - pCtrlValBer->ber_buf;
 
-    if (ber_printf(pBer, "t{{sO}}", LDAP_TAG_CONTROLS, LDAP_CONTROL_CONSISTENT_WRITE, &bvCtrlVal.lberbv) == -1)
+    if (ber_printf(pBer, "t{{sO}}", LDAP_TAG_CONTROLS, pControlsString, &bvCtrlVal.lberbv) == -1)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "WriteConsistencyWriteDoneControl: ber_printf (to print ldapControl...) failed");
 	BAIL_ON_VMDIR_ERROR(retVal);

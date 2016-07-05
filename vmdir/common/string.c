@@ -153,38 +153,6 @@ VmDirStringCompareA(
     return LwRtlCStringCompare(pszStr1, pszStr2, bIsCaseSensitive);
 }
 
-/* a fixed time string comparision function */
-BOOLEAN
-VmDirIsValidSecret(
-    PCSTR pszTheirs,
-    PCSTR pszOurs
-    )
-{
-    ULONG ret = 0;
-    int  len = 0;
-    int  i = 0;
-    PCSTR p = NULL;
-
-    if (pszOurs == NULL)
-    {
-        return FALSE;
-    }
-
-    len = VmDirStringLenA(pszOurs);
-    if (pszTheirs == NULL || VmDirStringLenA(pszTheirs) != len)
-    {
-        ret = 1;
-        p = pszOurs;
-    } else
-    {
-        p = pszTheirs;
-    }
-
-    for (i = len - 1; i >= 0; i--)
-       ret |= p[i] ^ pszOurs[i];
-    return ret == 0;
-}
-
 LONG
 VmDirStringNCompareA(
     PCSTR pszStr1,
@@ -201,6 +169,39 @@ VmDirStringNCompareA(
     {
         return strncasecmp(pszStr1, pszStr2, n) ;
     }
+}
+
+BOOLEAN
+VmDirStringEndsWith(
+    PCSTR   pszStr,
+    PCSTR   pszSuffix,
+    BOOLEAN bIsCaseSensitive
+    )
+{
+    BOOLEAN bEndsWith = FALSE;
+
+    if (IsNullOrEmptyString(pszSuffix))
+    {
+        bEndsWith = TRUE;
+    }
+    else if (!IsNullOrEmptyString(pszStr))
+    {
+        size_t strlen = VmDirStringLenA(pszStr);
+        size_t suffixlen = VmDirStringLenA(pszSuffix);
+
+        if (strlen >= suffixlen)
+        {
+            size_t offset = strlen - suffixlen;
+
+            if (VmDirStringCompareA(
+                    pszStr + offset, pszSuffix, bIsCaseSensitive) == 0)
+            {
+                bEndsWith = TRUE;
+            }
+        }
+    }
+
+    return bEndsWith;
 }
 
 SIZE_T

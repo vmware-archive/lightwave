@@ -379,6 +379,12 @@ VmDirInit(
 
             dwError = VmDirReplicationLibInit();
             BAIL_ON_VMDIR_ERROR(dwError);
+
+            if (gVmdirGlobals.bTrackLastLoginTime)
+            {
+                dwError = VmDirInitTrackLastLoginThread();
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
         }
         else if (runMode == VMDIR_RUNMODE_RESTORE)
         {
@@ -800,6 +806,7 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
     VDIR_BERVALUE       serverGuid = VDIR_BERVALUE_INIT;
     PSTR                pszLocalErrMsg = NULL;
     PSTR                pszDcAccountPwd = NULL;
+    PSTR                pszServerName = NULL;
 
     dwError = VmDirInitStackOperation( &op,
                                        VDIR_OPERATION_TYPE_INTERNAL,
@@ -913,6 +920,19 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
                 dwError = VMDIR_ERROR_GENERIC;
                 BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
                                               "VmDirNormalizeDN failed for server object DN.");
+            }
+
+            if (VmDirDnLastRDNToCn(attr->vals[0].lberbv_val, &pszServerName) != 0)
+            {
+                dwError = VMDIR_ERROR_GENERIC;
+                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
+                                              "%s: VmDirDnLastRDNToCn failed", __func__);
+            }
+            if (VmDirStringToBervalContent(pszServerName, &gVmdirServerGlobals.bvServerObjName) != 0)
+            {
+                dwError = VMDIR_ERROR_GENERIC;
+                BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
+                                              "%s: VmDirStringToBervalContent failed", __func__);
             }
             continue;
         }
@@ -1105,6 +1125,7 @@ cleanup:
 
     VMDIR_SECURE_FREE_STRINGA(pszDcAccountPwd);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+    VMDIR_SAFE_FREE_MEMORY(pszServerName);
     VmDirFreeEntryContent( &dseRoot );
     VmDirFreeEntryContent( &serverObj );
     VmDirFreeBervalContent(&serverGuid);
@@ -1273,6 +1294,9 @@ InitializeGlobalVars(
     dwError = VmDirAllocateMutex(&gVmdirGlobals.replAgrsMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirAllocateMutex(&gVmdirUrgentRepl.pUrgentReplMutex);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirAllocateCondition(&gVmdirGlobals.replAgrsCondition);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -1286,6 +1310,24 @@ InitializeGlobalVars(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateCondition(&gVmdirKrbGlobals.pcond);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateCondition(&gVmdirUrgentRepl.pUrgentReplResponseRecvCondition);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMutex(&gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateCondition(&gVmdirUrgentRepl.pUrgentReplThreadCondition);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMutex(&gVmdirUrgentRepl.pUrgentReplThreadMutex);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMutex(&gVmdirUrgentRepl.pUrgentReplDoneMutex);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateCondition(&gVmdirUrgentRepl.pUrgentReplDoneCondition);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // LDAP operation threads shutdown synchronization, shutdown continue
@@ -1302,6 +1344,18 @@ InitializeGlobalVars(
     dwError = VmDirAllocateMutex(&gVmdirGlobals.pFlowCtrlMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+
+    if (gVmdirGlobals.bTrackLastLoginTime)
+    {
+        dwError = VmDirAllocateMutex(&gVmdirTrackLastLoginTime.pMutex);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirAllocateCondition(&gVmdirTrackLastLoginTime.pCond);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirAllocateTSStack(8, &(gVmdirTrackLastLoginTime.pTSStack));
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
 

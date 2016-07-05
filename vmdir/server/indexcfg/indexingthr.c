@@ -167,16 +167,12 @@ InitializeIndexingThread(
     DWORD       dwError = 0;
     PVDIR_THREAD_INFO   pThrInfo = NULL;
 
-    dwError = VmDirAllocateMemory(
-            sizeof(*pThrInfo),
-            (PVOID)&pThrInfo);
+    dwError = VmDirSrvThrInit(
+                &pThrInfo,
+                gVdirAttrIndexGlobals.mutex,
+                gVdirAttrIndexGlobals.condition,
+                TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    VmDirSrvThrInit(
-            pThrInfo,
-            gVdirAttrIndexGlobals.mutex,       // alternative mutex
-            gVdirAttrIndexGlobals.condition,   // alternative cond
-            TRUE);                              // join by main thr
 
     dwError = VmDirCreateThread(
             &pThrInfo->tid,
@@ -193,10 +189,7 @@ cleanup:
 
 error:
 
-    if (pThrInfo)
-    {
-        VmDirSrvThrFree(pThrInfo);
-    }
+    VmDirSrvThrFree(pThrInfo);
 
     goto cleanup;
 }

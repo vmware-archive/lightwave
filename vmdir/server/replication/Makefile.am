@@ -5,7 +5,8 @@ libreplication_la_SOURCES = \
     libmain.c \
     firstreplcycle.c \
     replentry.c \
-    thread.c
+    thread.c \
+    urgentreplthread.c
 
 libreplication_la_CPPFLAGS = \
     -I$(top_srcdir)/include \

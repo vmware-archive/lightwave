@@ -78,6 +78,12 @@ ReplModifyEntry(
     PVDIR_SCHEMA_CTX*   ppOutSchemaCtx
     );
 
+// urgentreplthread.c
+DWORD
+InitializeUrgentReplCoordinatorThread(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif

@@ -213,6 +213,13 @@ VmDirSrvUpdateConfig(
         {
             gVmdirGlobals.dwLdapSearchTimeoutSec = pEntry->dwValue;
         }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_TRACK_LAST_LOGIN_TIME,
+                    TRUE))
+        {
+            gVmdirGlobals.bTrackLastLoginTime = pEntry->dwValue ? TRUE : FALSE;
+        }
     }
 
 cleanup:

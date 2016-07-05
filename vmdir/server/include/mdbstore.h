@@ -70,6 +70,12 @@ VmDirMDBDNToEntryId(
     ENTRYID*            pEId);
 
 DWORD
+VmDirMDBObjectGUIDToEntryId(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PCSTR               pszObjectGUID,
+    ENTRYID*            pEId);
+
+DWORD
 VmDirMDBEIdToEntry(
     PVDIR_BACKEND_CTX           pBECtx,
     PVDIR_SCHEMA_CTX            pSchemaCtx,

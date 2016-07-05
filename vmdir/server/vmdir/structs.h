@@ -81,3 +81,12 @@ typedef struct _VMDIR_SRV_ACCESS_TOKEN
 
 } VMDIR_SRV_ACCESS_TOKEN, *PVMDIR_SRV_ACCESS_TOKEN;
 
+typedef struct _VMDIR_LOGIN_TIME
+{
+    time_t  loginTime;
+
+    PSTR    pszDN;
+
+} VMDIR_LOGIN_TIME, *PVMDIR_LOGIN_TIME;
+
+

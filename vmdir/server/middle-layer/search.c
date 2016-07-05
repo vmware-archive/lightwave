@@ -305,6 +305,111 @@ error:
 }
 
 /*
+ * This generic search with pagination is new and isn't mature. Please be
+ * careful with the * scope, base, and use an indexed filter.
+ * Note that ulPageSize == 0 will ignore paging.
+ */
+DWORD
+VmDirFilterInternalSearch(
+        PCSTR               pszBaseDN,
+        int                 searchScope,
+        PCSTR               pszFilter,
+        unsigned long       ulPageSize,
+        PSTR                *ppszPageCookie,
+        PVDIR_ENTRY_ARRAY   pEntryArray
+    )
+{
+    DWORD           dwError = 0;
+    VDIR_OPERATION  searchOP = {0};
+    VDIR_BERVALUE   bervDN = VDIR_BERVALUE_INIT;
+    PVDIR_FILTER    pFilter = NULL;
+    PVDIR_LDAP_CONTROL showPagedResultsCtrl = NULL;
+    PSTR pszPageCookie = NULL;
+
+    if ( !pszBaseDN || !pszFilter || !pEntryArray ||
+        (ulPageSize != 0 && ppszPageCookie == NULL))
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (ulPageSize != 0)
+    {
+        dwError = VmDirAllocateMemory( sizeof(VDIR_LDAP_CONTROL), (PVOID *)&showPagedResultsCtrl );
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        showPagedResultsCtrl->value.pagedResultCtrlVal.pageSize = ulPageSize;
+        if (ppszPageCookie && *ppszPageCookie)
+        {
+            VmDirStringNCpyA(showPagedResultsCtrl->value.pagedResultCtrlVal.cookie, VMDIR_MAX_I64_ASCII_STR_LEN, *ppszPageCookie, VMDIR_MAX_I64_ASCII_STR_LEN-1);
+        }
+        else
+        {
+            showPagedResultsCtrl->value.pagedResultCtrlVal.cookie[0] = '\0';
+        }
+    }
+
+    dwError = VmDirInitStackOperation( &searchOP,
+                                       VDIR_OPERATION_TYPE_INTERNAL,
+                                       LDAP_REQ_SEARCH,
+                                       NULL );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    bervDN.lberbv.bv_val = (PSTR)pszBaseDN;
+    bervDN.lberbv.bv_len = VmDirStringLenA(pszBaseDN);
+
+    searchOP.pBEIF = VmDirBackendSelect( pszBaseDN );
+    assert(searchOP.pBEIF);
+
+    dwError = VmDirBervalContentDup( &bervDN, &searchOP.reqDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    searchOP.request.searchReq.scope = searchScope;
+
+    dwError = StrFilterToFilter(pszFilter, &pFilter);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    searchOP.request.searchReq.filter = pFilter;
+    pFilter  = NULL; // search request takes over pFilter
+
+    searchOP.showPagedResultsCtrl = showPagedResultsCtrl;
+
+    dwError = VmDirInternalSearch( &searchOP );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // caller takes over searchOP.internalSearchEntryArray contents
+    pEntryArray->iSize = searchOP.internalSearchEntryArray.iSize;
+    pEntryArray->pEntry = searchOP.internalSearchEntryArray.pEntry;
+    searchOP.internalSearchEntryArray.iSize = 0;
+    searchOP.internalSearchEntryArray.pEntry = NULL;
+
+    if (showPagedResultsCtrl)
+    {
+        dwError = VmDirAllocateStringA(showPagedResultsCtrl->value.pagedResultCtrlVal.cookie, &pszPageCookie);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        *ppszPageCookie = pszPageCookie;
+        pszPageCookie = NULL;
+    }
+
+cleanup:
+
+    VMDIR_SAFE_FREE_MEMORY(showPagedResultsCtrl);
+
+    VmDirFreeOperationContent(&searchOP);
+
+    if (pFilter)
+    {
+        DeleteFilter(pFilter);
+    }
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+/*
  *      Searches the direct group entry to confirm membership
  *      Set pAccessRoleBitmap based on getAccessInfo to avoid redundent internal search.
  */
@@ -811,6 +916,8 @@ ProcessCandidateList(
 
             if (retVal == 0)
             {
+                ENTRYID eId = pSrEntry->eId;
+
                 if (CheckIfEntryPassesFilter( pOperation, pSrEntry, pOperation->request.searchReq.filter) == FILTER_RES_TRUE)
                 {
                     retVal = VmDirBuildComputedAttribute( pOperation, pSrEntry );
@@ -820,6 +927,7 @@ ProcessCandidateList(
                     {
                         pOperation->internalSearchEntryArray.iSize++;
                         pSrEntry = NULL;    // EntryArray takes over *pSrEntry content
+                        numSentEntries++;
                     }
                     else
                     {
@@ -847,7 +955,7 @@ ProcessCandidateList(
                             pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie,
                             VMDIR_MAX_I64_ASCII_STR_LEN,
                             "%u",
-                            pSrEntry->eId);
+                            eId);
                     BAIL_ON_VMDIR_ERROR( retVal );
                     break;
                 }

@@ -592,6 +592,81 @@ error:
 }
 
 /*
+ * BdbObjectGUIDToEntryId(). Given an ObjectGUID, get the entryId from DN DB.
+ *
+ * Return values:
+ *     On Success: 0
+ *     On Error: BE error - BACKEND_ERROR, BACKEND_ENTRY_NOTFOUND
+ */
+DWORD
+VmDirMDBObjectGUIDToEntryId(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PCSTR               pszObjectGUID,
+    ENTRYID*            pEId)
+{
+    DWORD                 dwError = 0;
+    VDIR_BERVALUE         guidAttr = { {ATTR_OBJECT_GUID_LEN, ATTR_OBJECT_GUID}, 0, 0, NULL };
+    VDIR_DB_DBT           key = {0};
+    char *                pKeyData = NULL;
+    VDIR_DB_DBT           value = {0};
+    VDIR_DB               mdbDBi = 0;
+    ber_len_t             Len = 0;
+    VDIR_DB_TXN*          pTxn = NULL;
+    PSTR                  pszLocalErrMsg = NULL;
+
+    PVDIR_CFG_ATTR_INDEX_DESC   pIdxDesc = NULL;
+    USHORT                      usVersion = 0;
+
+    assert(pBECtx && pBECtx->pBEPrivate && pszObjectGUID && pEId);
+
+    Len = VmDirStringLenA(pszObjectGUID);
+
+    pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
+
+    pIdxDesc = VmDirAttrNameToWriteIndexDesc(guidAttr.lberbv.bv_val, usVersion, &usVersion);
+    assert( pIdxDesc );
+
+    mdbDBi = gVdirMdbGlobals.mdbIndexDBs.pIndexDBs[pIdxDesc->iId].pMdbDataFiles[0].mdbDBi;
+
+    dwError = VmDirAllocateMemory( Len + 1, (PVOID *)&pKeyData );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    key.mv_data = pKeyData;
+    *(char *)(key.mv_data) = BE_INDEX_KEY_TYPE_FWD;
+    dwError = VmDirCopyMemory(((char *)key.mv_data + 1), Len, pszObjectGUID, Len);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    key.mv_size = Len + 1;
+
+    if ((dwError = mdb_get(pTxn, mdbDBi, &key, &value)) != 0)
+    {
+        DWORD   dwTmp = dwError;
+        dwError = MDBToBackendError(dwError, MDB_NOTFOUND, ERROR_BACKEND_ENTRY_NOTFOUND, pBECtx,
+                                    VDIR_SAFE_STRING(pszObjectGUID));
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
+                        "BdbObjectGUIDToEntryId: failed for ObjectGUID: %s, with error code: %d, error string: %s",
+                        VDIR_SAFE_STRING(pszObjectGUID), dwTmp, VDIR_SAFE_STRING(pBECtx->pszBEErrorMsg) );
+    }
+
+    MDBDBTToEntryId( &value, pEId);
+
+cleanup:
+
+    VMDIR_SAFE_FREE_MEMORY( pKeyData );
+    VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
+
+    return dwError;
+
+error:
+
+    VMDIR_LOG_ERROR( LDAP_DEBUG_BACKEND, VDIR_SAFE_STRING(pszLocalErrMsg) );
+
+    VMDIR_SET_BACKEND_ERROR(dwError);
+
+    goto cleanup;
+}
+
+/*
  * CreateParentIdIndex(): In parentid.db, create parentId => entryId index. => mainly used in one-level searches.
  *
  * Return values:

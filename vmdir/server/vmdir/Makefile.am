@@ -31,7 +31,9 @@ vmdird_SOURCES = \
     vmdirdbcp_sstub.c \
     srp_verifier_sstub.c \
     vmdirsuperlog_sstub.c \
-    vmevent.c
+    vmevent.c \
+    urgentrepl.c \
+    tracklastlogin.c
 
 if HAVE_MDB_STORE
 VMDIRD_BACKEND_INCLUDES=

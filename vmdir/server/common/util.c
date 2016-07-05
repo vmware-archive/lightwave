@@ -677,6 +677,54 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirFindMemberOfAttribute(
+    PVDIR_ENTRY pEntry,
+    PVDIR_ATTRIBUTE* ppMemberOfAttr
+    )
+{
+    DWORD               dwError = ERROR_SUCCESS;
+    PVDIR_ATTRIBUTE     pMemberOfAttr = NULL;
+    VDIR_OPERATION      searchOp = {0};
+    BOOLEAN             bHasTxn = FALSE;
+
+    if ( pEntry == NULL || ppMemberOfAttr == NULL )
+    {
+        dwError =  VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirInitStackOperation( &searchOp, VDIR_OPERATION_TYPE_INTERNAL,
+LDAP_REQ_SEARCH, NULL );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    searchOp.pBEIF = VmDirBackendSelect(NULL);
+
+    // start txn
+    dwError = searchOp.pBEIF->pfnBETxnBegin( searchOp.pBECtx, VDIR_BACKEND_TXN_READ );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    bHasTxn = TRUE;
+
+    dwError = VmDirBuildMemberOfAttribute( &searchOp, pEntry, &pMemberOfAttr );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppMemberOfAttr = pMemberOfAttr;
+
+cleanup:
+    if (bHasTxn)
+    {
+        searchOp.pBEIF->pfnBETxnCommit( searchOp.pBECtx);
+    }
+    VmDirFreeOperationContent(&searchOp);
+
+    return dwError;
+
+error:
+    VmDirFreeAttribute(pMemberOfAttr);
+    goto cleanup;
+}
+
 /* BuildMemberOfAttribute: For the given DN (dn), find out to which groups it belongs (appears in the member attribute),
  * including nested memberships. Return these group DNs as memberOf attribute (memberOfAttr).
  */
@@ -1104,5 +1152,61 @@ error:
         pszLocalErrMsg = NULL;
     }
 
+    goto cleanup;
+}
+
+/*
+ * Determine domain functional level
+ */
+DWORD
+VmDirSrvGetDomainFunctionalLevel(
+    PDWORD pdwLevel
+    )
+{
+    DWORD               dwError = 0;
+    VDIR_ENTRY_ARRAY    entryArray = {0};
+    PVDIR_ATTRIBUTE     pAttrDomainLevel = NULL;
+    DWORD               dwLevel = 0;
+
+    if (gVmdirServerGlobals.systemDomainDN.bvnorm_val == NULL)
+    {
+        dwError = ERROR_NOT_JOINED;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirFilterInternalSearch(gVmdirServerGlobals.systemDomainDN.bvnorm_val, LDAP_SCOPE_BASE, "(objectclass=*)", 0, NULL, &entryArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if ( entryArray.iSize == 1)
+    {
+        pAttrDomainLevel = VmDirEntryFindAttribute(ATTR_DOMAIN_FUNCTIONAL_LEVEL,
+&entryArray.pEntry[0]);
+        if (!pAttrDomainLevel)
+        {
+            dwError = VMDIR_ERROR_NO_SUCH_ATTRIBUTE;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        dwLevel = atoi(pAttrDomainLevel->vals[0].lberbv_val);
+    }
+    else if ( entryArray.iSize == 0)
+    {
+        dwError = VMDIR_ERROR_ENTRY_NOT_FOUND;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *pdwLevel = dwLevel;
+
+cleanup:
+
+    VmDirFreeEntryArrayContent(&entryArray);
+    return dwError;
+
+error:
     goto cleanup;
 }

@@ -52,16 +52,6 @@ VmDirLdapAtMerge(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
-        if (VmDirStringCompareA(pOldAt->pszOid, pNewAt->pszOid, FALSE))
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: %s oid mismatch (%s) (%s).",
-                    __FUNCTION__, pOldAt->pszName,
-                    pOldAt->pszOid, pNewAt->pszOid);
-            dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
         if (VmDirStringCompareA(
                 pOldAt->pszSyntaxOid, pNewAt->pszSyntaxOid, FALSE))
         {
@@ -204,16 +194,6 @@ VmDirLdapOcMerge(
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
                     "%s: name mismatch (%s) (%s).",
                     __FUNCTION__, pOldOc->pszName, pNewOc->pszName);
-            dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        if (VmDirStringCompareA(pOldOc->pszOid, pNewOc->pszOid, FALSE))
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "%s: %s oid mismatch (%s) (%s).",
-                    __FUNCTION__, pOldOc->pszName,
-                    pOldOc->pszOid, pNewOc->pszOid);
             dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
             BAIL_ON_VMDIR_ERROR(dwError);
         }

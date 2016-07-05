@@ -197,6 +197,9 @@ VmDirFreeModifyRequest(
         VDIR_MODIFICATION * tmpMod = NULL;
 
         VmDirFreeBervalContent( &(mr->dn) );
+        VmDirFreeBervalContent( &(mr->newrdn) );
+        VmDirFreeBervalContent( &(mr->newSuperior) );
+        VmDirFreeBervalContent( &(mr->newdn) );
 
         for (currMod = mr->mods; currMod != NULL; )
         {

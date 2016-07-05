@@ -449,10 +449,10 @@ TestVmDirLdapAddGetResults(
             break;
 
          case 0:
-	    if (time(NULL) - startTime > SECONDS_IN_MINUTE)/* time out */
+	    if (time(NULL) - startTime > SECONDS_IN_MINUTE * 3)/* time out */
 	    {
                completed = TRUE;
-               printf("\n TestVmDirLdapAddGetResults: Not able to obtain result for 60 seconds - Timed out ");
+               printf("\n TestVmDirLdapAddGetResults: Not able to obtain result for 3 mins - Timed out ");
                dwError = -1;
 	       BAIL_ON_VMDIR_ERROR(dwError);
 	    }

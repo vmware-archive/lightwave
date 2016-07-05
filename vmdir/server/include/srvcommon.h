@@ -236,6 +236,13 @@ typedef enum _VDIR_ENTRY_ALLOCATION_TYPE
     ENTRY_STORAGE_FORMAT_NORMAL
 } VDIR_ENTRY_ALLOCATION_TYPE;
 
+//SCW - strong consistency write
+typedef enum _VDIR_ENTRY_SCW_STATUS
+{
+    VDIR_SCW_SUCCEEDED,
+    VDIR_SCW_FAILED
+} VDIR_ENTRY_SCW_STATUS;
+
 typedef struct _VDIR_ENTRY
 {
 
@@ -248,6 +255,8 @@ typedef struct _VDIR_ENTRY
    VDIR_BERVALUE                dn;
    // pdn.bv_val is in-place into dn.bv_val.  pdn.bvnrom_val follows BerValue rule
    VDIR_BERVALUE                pdn;
+   // pdnnew is set during rename operations if the entry is being re-parented
+   VDIR_BERVALUE                newpdn;
 
    // FORMAT_PACK, savedAttrsPtr is array of Attribute from one heap allocate
    // FORMAT_NORMAL, attrs (and next...) are individually heap allocated
@@ -360,8 +369,8 @@ struct _VDIR_FILTER
     VDIR_FILTER_COMPUTE_RESULT  computeResult;
     int                         iMaxIndexScan;  // limit scan to qualify for good filter. 0 means unlimited.
     BOOLEAN                     bAncestorGotPositiveCandidateSet;  // any of ancestor filters got a positive candidate set
-    VDIR_CANDIDATES *           candidates;    // Entry IDs candidate list that matches this filter, maintained for internal
-                                        // operation.
+    VDIR_CANDIDATES *           candidates;    // Entry IDs candidate list that matches this filter, maintained for internal Ber operation.
+    BerElement *                pBer; // If this filter was built by the server, then 'ber' must be deallocated when the filter is deallocated and this will not be NULL. Otherwise the filter components are 'owned' by the operation / client connection.
 };
 
 typedef struct AddReq
@@ -378,7 +387,9 @@ typedef struct _BindReq
 
 typedef struct DeleteReq
 {
-    VDIR_BERVALUE          dn;
+    VDIR_BERVALUE           dn;
+    PVDIR_MODIFICATION      mods;
+    unsigned                numMods;
 } DeleteReq;
 
 typedef struct ModifyReq
@@ -387,6 +398,10 @@ typedef struct ModifyReq
     PVDIR_MODIFICATION      mods;
     unsigned                numMods;
     BOOLEAN                 bPasswordModify;
+    VDIR_BERVALUE           newrdn;
+    BOOLEAN                 bDeleteOldRdn;
+    VDIR_BERVALUE           newSuperior;
+    VDIR_BERVALUE           newdn;
 } ModifyReq;
 
 typedef struct SearchReq
@@ -474,11 +489,18 @@ typedef struct _VDIR_PAGED_RESULT_CONTROL_VALUE
     CHAR                    cookie[VMDIR_MAX_I64_ASCII_STR_LEN];
 } VDIR_PAGED_RESULT_CONTROL_VALUE;
 
+//SCW - Strong Consistency Write
+typedef struct _VMDIR_SCW_DONE_CONTROL_VALUE
+{
+    DWORD    status;
+} VMDIR_SCW_DONE_CONTROL_VALUE;
+
 typedef union LdapControlValue
 {
-    SyncRequestControlValue             syncReqCtrlVal;
-    SyncDoneControlValue                syncDoneCtrlVal;
-    VDIR_PAGED_RESULT_CONTROL_VALUE     pagedResultCtrlVal;
+    SyncRequestControlValue            syncReqCtrlVal;
+    SyncDoneControlValue               syncDoneCtrlVal;
+    VDIR_PAGED_RESULT_CONTROL_VALUE    pagedResultCtrlVal;
+    VMDIR_SCW_DONE_CONTROL_VALUE       scwDoneCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -513,6 +535,7 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       showDeletedObjectsCtrl; // points in reqControls list.
     VDIR_LDAP_CONTROL *       showMasterKeyCtrl;
     VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
+    VDIR_LDAP_CONTROL *       strongConsistencyWriteCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
     BOOLEAN             bSchemaWriteOp;  // this operation is schema modification
@@ -585,6 +608,23 @@ typedef struct _VMDIR_OPERATION_STATISTIC
 } VMDIR_OPERATION_STATISTIC, *PVMDIR_OPERATION_STATISTIC;
 
 extern VMDIR_FIRST_REPL_CYCLE_MODE   gFirstReplCycleMode;
+
+typedef struct _VMDIR_URGENT_REPL_SERVER_LIST
+{
+    PSTR    pInitiatorServerName;
+    struct _VMDIR_URGENT_REPL_SERVER_LIST *next;
+} VMDIR_URGENT_REPL_SERVER_LIST, *PVMDIR_URGENT_REPL_SERVER_LIST;
+
+typedef struct _VMDIR_STRONG_WRITE_PARTNER_CONTENT
+{
+    PSTR     pInvocationId;
+    PSTR     pServerName;
+    BOOLEAN  isDeleted;
+    USN      lastConfirmedUSN;
+    char     lastNotifiedTimeStamp[VMDIR_ORIG_TIME_STR_LEN];
+    char     lastConfirmedTimeStamp[VMDIR_ORIG_TIME_STR_LEN];
+    struct _VMDIR_STRONG_WRITE_PARTNER_CONTENT   *next;
+} VMDIR_STRONG_WRITE_PARTNER_CONTENT, *PVMDIR_STRONG_WRITE_PARTNER_CONTENT;
 
 DWORD
 VmDirInitBackend();
@@ -723,6 +763,12 @@ VmDirAttributeDup(
     PVDIR_ATTRIBUTE* ppDupAttr
     );
 
+DWORD
+VmDirStringToBervalContent(
+    PSTR               pszBerval,
+    PVDIR_BERVALUE     pDupBerval
+    );
+
 VOID
 VmDirFreeBervalArrayContent(
     PVDIR_BERVALUE pBervs,
@@ -759,6 +805,12 @@ DWORD
 VmDirBervalContentDup(
     PVDIR_BERVALUE     pBerval,
     PVDIR_BERVALUE     pDupBerval
+    );
+
+DWORD
+VmDirNewEntry(
+    PCSTR pszDn,
+    PVDIR_ENTRY* ppEntry
     );
 
 DWORD
@@ -886,6 +938,12 @@ VmDirSrvCreateDomain(
     );
 
 DWORD
+VmDirFindMemberOfAttribute(
+    PVDIR_ENTRY pEntry,
+    PVDIR_ATTRIBUTE* ppMemberOfAttr
+    );
+
+DWORD
 VmDirBuildMemberOfAttribute(
     PVDIR_OPERATION     pOperation,
     PVDIR_ENTRY         pEntry,
@@ -925,6 +983,11 @@ DWORD
 VmDirValidatePrincipalName(
     PVDIR_ATTRIBUTE pAttr,
     PSTR*           ppErrMsg
+    );
+
+DWORD
+VmDirSrvGetDomainFunctionalLevel(
+    PDWORD pdwLevel
     );
 
 // candidates.c
@@ -1009,9 +1072,9 @@ DWORD
 VmDirAppendAMod(
     PVDIR_OPERATION   pOperation,
     int          modOp,
-    char *       attrName,
+    const char*  attrName,
     int          attrNameLen,
-    char *       attrVal,
+    const char*  attrVal,
     size_t       attrValLen
     );
 
@@ -1071,6 +1134,16 @@ VmDirSimpleEqualFilterInternalSearch(
     PCSTR               pszAttrName,
     PCSTR               pszAttrValue,
     PVDIR_ENTRY_ARRAY   pEntryArray
+    );
+
+DWORD
+VmDirFilterInternalSearch(
+        PCSTR               pszBaseDN,
+        int                 searchScope,
+        PCSTR               pszFilter,
+        unsigned long       ulPageSize,
+        PSTR                *ppszPageCookie,
+        PVDIR_ENTRY_ARRAY   pEntryArray
     );
 
 // middle-layer result.c
@@ -1272,6 +1345,17 @@ VmDirSRPCreateSecret(
     PVDIR_BERVALUE   pUPN,
     PVDIR_BERVALUE   pClearTextPasswd,
     PVDIR_BERVALUE   pSecretResult
+    );
+
+//server/common/urgentrepl.c
+VOID
+VmDirPerformUrgentReplication(
+    PVDIR_OPERATION pOperation
+    );
+
+VOID
+VmDirRetryUrgentReplication(
+    VOID
     );
 
 #ifdef __cplusplus

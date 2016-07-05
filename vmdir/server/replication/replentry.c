@@ -56,6 +56,11 @@ _VmDirAssignEntryIdIfSpecialInternalEntry(
     PVDIR_ENTRY pEntry
     );
 
+int
+ReplFixUpEntryDn(
+    PVDIR_ENTRY pEntry
+    );
+
 /*
  * _VmDirAssignEntryIdIfSpecialInternalEntry()
  *
@@ -309,6 +314,9 @@ ReplDeleteEntry(
     retVal = VmDirParseEntry( &tmpAddOp );
     BAIL_ON_VMDIR_ERROR( retVal );
 
+    retVal = ReplFixUpEntryDn(tmpAddOp.request.addReq.pEntry);
+    BAIL_ON_VMDIR_ERROR( retVal );
+
     if (VmDirBervalContentDup( &tmpAddOp.reqDn, &mr->dn ) != 0)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplDeleteEntry: BervalContentDup failed." );
@@ -388,13 +396,13 @@ ReplModifyEntry(
     PVDIR_SCHEMA_CTX*   ppOutSchemaCtx)
 {
     int                 retVal = LDAP_SUCCESS;
-    VDIR_OPERATION      tmpAddOp = {0};
     VDIR_OPERATION      modOp = {0};
     ModifyReq *         mr = &(modOp.request.modifyReq);
     int                 dbRetVal = 0;
     BOOLEAN             bHasTxn = FALSE;
     int                 deadLockRetries = 0;
     PVDIR_SCHEMA_CTX    pUpdateSchemaCtx = NULL;
+    VDIR_ENTRY          e = {0};
 
     retVal = VmDirInitStackOperation( &modOp,
                                       VDIR_OPERATION_TYPE_REPL,
@@ -402,18 +410,13 @@ ReplModifyEntry(
                                       pSchemaCtx );
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    retVal = VmDirInitStackOperation( &tmpAddOp,
-                                      VDIR_OPERATION_TYPE_REPL,
-                                      LDAP_REQ_ADD,
-                                      pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR(retVal);
-
-    tmpAddOp.ber = ldapMsg->lm_ber;
-
-    retVal = VmDirParseEntry( &tmpAddOp );
+    retVal = VmDirParseBerToEntry(ldapMsg->lm_ber, &e, NULL, NULL);
     BAIL_ON_VMDIR_ERROR( retVal );
 
-    if (VmDirBervalContentDup( &tmpAddOp.reqDn, &mr->dn ) != 0)
+    retVal = ReplFixUpEntryDn(&e);
+    BAIL_ON_VMDIR_ERROR( retVal );
+
+    if (VmDirBervalContentDup( &e.dn, &mr->dn ) != 0)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "SetupReplModifyRequest: BervalContentDup failed." );
         retVal = LDAP_OPERATIONS_ERROR;
@@ -452,7 +455,7 @@ txnretry:
     }
     bHasTxn = TRUE;
 
-    if ((retVal = SetupReplModifyRequest( &modOp, tmpAddOp.request.addReq.pEntry)) != LDAP_SUCCESS)
+    if ((retVal = SetupReplModifyRequest( &modOp, &e)) != LDAP_SUCCESS)
     {
         switch (retVal)
         {
@@ -461,8 +464,8 @@ txnretry:
                           "ReplModifyEntry/SetupReplModifyRequest: %d (Object does not exist). "
                           "DN: %s, first attribute: %s, it's meta data: '%s'. "
                           "Possible replication CONFLICT. Object will get deleted from the system.",
-                          retVal, tmpAddOp.reqDn.lberbv.bv_val, tmpAddOp.request.addReq.pEntry->attrs[0].type.lberbv.bv_val,
-                          tmpAddOp.request.addReq.pEntry->attrs[0].metaData );
+                          retVal, e.dn.lberbv.bv_val, e.attrs[0].type.lberbv.bv_val,
+                          e.attrs[0].metaData );
                 break;
 
             case LDAP_LOCK_DEADLOCK:
@@ -537,8 +540,7 @@ txnretry:
 
 cleanup:
     VmDirFreeOperationContent(&modOp);
-    VmDirFreeOperationContent(&tmpAddOp);
-
+    VmDirFreeEntryContent(&e);
     return retVal;
 
 error:
@@ -550,6 +552,78 @@ error:
 
     goto cleanup;
 } // Replicate Modify Entry operation
+
+
+/*
+ * pEntry is off the wire from the supplier and the object it
+ * represents may not have the same DN on this consumer.
+ * The object GUID will be used to search the local system and
+ * determine the local DN that is being used and adjust pEntry
+ * to use the same local DN.
+ */
+int
+ReplFixUpEntryDn(
+    PVDIR_ENTRY pEntry
+    )
+{
+    int                 retVal = LDAP_SUCCESS;
+    VDIR_ENTRY_ARRAY    entryArray = {0};
+    PVDIR_ATTRIBUTE     currAttr = NULL;
+    PVDIR_ATTRIBUTE     prevAttr = NULL;
+    PVDIR_ATTRIBUTE     pAttrObjectGUID = NULL;
+
+    // Remove object GUID from list of attributes
+    for (prevAttr = NULL, currAttr = pEntry->attrs; currAttr;
+         prevAttr = currAttr, currAttr = currAttr->next)
+    {
+        if (VmDirStringCompareA( currAttr->type.lberbv.bv_val, ATTR_OBJECT_GUID, FALSE ) == 0)
+        {
+            if (prevAttr == NULL)
+            {
+                pEntry->attrs = currAttr->next;
+            }
+            else
+            {
+                prevAttr->next = currAttr->next;
+            }
+            pAttrObjectGUID = currAttr;
+            break;
+        }
+    }
+
+    if (!pAttrObjectGUID)
+    {
+        // Older replication partner does not send object GUID, no fixup needed
+        goto cleanup;
+    }
+
+    retVal = VmDirSimpleEqualFilterInternalSearch("", LDAP_SCOPE_SUBTREE, ATTR_OBJECT_GUID, pAttrObjectGUID->vals[0].lberbv.bv_val, &entryArray);
+    BAIL_ON_VMDIR_ERROR( retVal );
+
+    if (entryArray.iSize != 1)
+    {
+        retVal = VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    if (VmDirStringCompareA(entryArray.pEntry[0].dn.lberbv_val, pEntry->dn.lberbv_val, FALSE) == 0)
+    {
+        // Remote and local object have same DN, no fixup needed
+        goto cleanup;
+    }
+
+    retVal = VmDirBervalContentDup(&entryArray.pEntry[0].dn, &pEntry->dn);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+cleanup:
+    VmDirFreeAttribute( pAttrObjectGUID );
+    VmDirFreeEntryArrayContent(&entryArray);
+    return retVal;
+
+error:
+
+    goto cleanup;
+}
 
 /* Detect and resolve attribute level conflicts.
  *
@@ -659,6 +733,13 @@ DetectAndResolveAttrsConflicts(
         {
             VmDirFreeAttribute( pAttr );
             pAttr = NULL;
+        }
+
+        if (VmDirStringCompareA(pAttrAttrSupplierMetaData->vals[i].lberbv.bv_val, ATTR_OBJECT_GUID, FALSE) == 0)
+        {
+            // Skipping metadata processing for ObjectGUID which should
+            // never change.
+            continue;
         }
         retVal = VmDirAttributeAllocate( pAttrAttrSupplierMetaData->vals[i].lberbv.bv_val, 0, pOperation->pSchemaCtx, &pAttr );
         *(metaData - 1) = ':';
@@ -853,7 +934,7 @@ error:
 
 /*
  * Find the attribute that holds attribute meta data.
- * Attributes for usnCreated/usnChagned are updated with current local USN
+ * Attributes for usnCreated/usnChanged are updated with current local USN
  * If we are doing a modify, attribute meta data is checked to see what wins.
  *    If supplier attribute won, update its meta data with current local USN.
  * If no attribute meta data exists, create it.
@@ -932,7 +1013,12 @@ SetAttributesNewMetaData(
         {
             // Format is: <attr name>:<local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
             char * metaData = VmDirStringChrA( pAttrAttrMetaData->vals[i].lberbv.bv_val, ':');
-            assert( metaData != NULL);
+            if (metaData == NULL)
+            {
+                // Skipping metadata processing for ObjectGUID which should
+                // never change.
+                continue;
+            }
 
             // metaData now points to <local USN>..., if meta data present, otherwise '\0'
             metaData++;
@@ -1092,6 +1178,13 @@ SetupReplModifyRequest(
             continue;
         }
 
+        if (VmDirStringCompareA(currAttr->type.lberbv.bv_val, ATTR_OBJECT_GUID, FALSE) == 0)
+        {
+            // Skipping metadata processing for ObjectGUID which should
+            // never change.
+            continue;
+        }
+
         if (VmDirAllocateMemory( sizeof(VDIR_MODIFICATION), (PVOID *)&mod ) != 0)
         {
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "SetupReplModifyRequest: VmDirAllocateMemory error" );
@@ -1140,7 +1233,11 @@ SetupReplModifyRequest(
         }
 
         metaData = VmDirStringChrA( pAttrAttrMetaData->vals[i].lberbv.bv_val, ':');
-        assert( metaData != NULL);
+        if (metaData == NULL)
+        {
+            // Skipped metadata processing for ObjectGUID
+            continue;
+        }
 
         // Skip loser meta data (i.e. it's empty)
         if (*(metaData + 1 /* skip ':' */) == '\0')
@@ -1150,6 +1247,12 @@ SetupReplModifyRequest(
 
         // => over-write ':', pAttrAttrMetaData->vals[i].lberbv.bv_val points to be attribute name now
         *metaData++ = '\0';
+
+        if (VmDirStringCompareA(pAttrAttrMetaData->vals[i].lberbv.bv_val, ATTR_OBJECT_GUID, FALSE) == 0)
+        {
+            // ObjectGUID is never modified
+            continue;
+        }
 
         if (VmDirAllocateMemory( sizeof(VDIR_MODIFICATION), (PVOID *)&mod ) != 0)
         {

@@ -159,6 +159,21 @@ typedef DWORD (*PFN_BACKEND_DN_TO_ENTRY_ID)(
                     VDIR_BERVALUE*              pDn,
                     ENTRYID*                    pEId
                     );
+
+/*
+ * ObjectGUID to entry id lookup
+ * return error -
+ * ERROR_BACKEND_ENTRY_NOT_FOUND:   entry not found
+ * ERROR_BACKEND_DEADLOCK:          deadlock
+ * ERROR_BACKEND_ERROR:             all others
+ */
+typedef DWORD (*PFN_BACKEND_OBJECTGUID_TO_ENTRY_ID)(
+                    PVDIR_BACKEND_CTX           pBECtx,
+                    PCSTR                       pszObjectGUID,
+                    ENTRYID*                    pEId
+                    );
+
+
 /*
  * Add entry
  * return error -
@@ -430,6 +445,10 @@ typedef struct _VDIR_BACKEND_INTERFACE
      * get ID with DN
      */
     PFN_BACKEND_DN_TO_ENTRY_ID        pfnBEDNToEntryId;
+    /*
+     * get ID with ObjectGUID
+     */
+    PFN_BACKEND_OBJECTGUID_TO_ENTRY_ID pfnBEObjectGUIDToEntryId;
     /*
      * verify DN referenced attribute integrity, i.e. referred DN exists
      */

@@ -291,7 +291,8 @@ txnretry:
         BAIL_ON_VMDIR_ERROR( retVal );
 
         // Apply modify operations to the current entry in the DB.
-        retVal = VmDirApplyModsToEntryStruct( pOperation->pSchemaCtx, modReq, pEntry, &pszLocalErrMsg );
+        retVal = VmDirApplyModsToEntryStruct( pOperation->pSchemaCtx, modReq,
+pEntry, NULL, &pszLocalErrMsg );
         BAIL_ON_VMDIR_ERROR( retVal );
 
         // Update DBs

@@ -145,4 +145,18 @@ cpp_quote("#endif")
 	[in]				handle_t	hBinding,
 	[in]				UINT32	        vmdirLogMask
         );
+
+    UINT32
+    RpcVmDirUrgentReplicationRequest(
+        [in]                            handle_t  hBinding,
+        [in, string, unique]            PWSTR     pwszServer
+        );
+
+    UINT32
+    RpcVmDirUrgentReplicationResponse(
+        [in]                             handle_t  hBinding,
+        [in, string, unique]             PWSTR     pwszServerName,
+        [in, string, unique]             PWSTR     pwszUtdVector,
+        [in, string, unique]             PWSTR     pwszHostName
+    );
 }

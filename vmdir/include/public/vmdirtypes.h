@@ -121,6 +121,20 @@ typedef struct VMDIR_DC_VERSION_INFO
     DWORD dwMaxDomainFuncLvl;
 } VMDIR_DC_VERSION_INFO, * PVMDIR_DC_VERSION_INFO;
 
+typedef struct _VMDIR_METADATA {
+    PSTR  pszAttribute;
+    USN   localUsn;
+    DWORD dwVersion;
+    PSTR  pszOriginatingId;
+    PSTR  pszOriginatingTime;
+    USN   originatingUsn;
+} VMDIR_METADATA, *PVMDIR_METADATA;
+
+typedef struct _VMDIR_METADATA_LIST {
+    PVMDIR_METADATA *ppMetadataArray;
+    DWORD dwCount;
+} VMDIR_METADATA_LIST, *PVMDIR_METADATA_LIST;
+
 // opaque type PVMDIR_LOG_CTX
 typedef struct _VMDIR_LOG_CTX* PVMDIR_LOG_CTX;
 

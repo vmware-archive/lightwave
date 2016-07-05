@@ -113,6 +113,7 @@ VmDirMDBBEInterface (
         VMDIR_SF_INIT(.pfnBEIdToEntry, VmDirMDBEIdToEntry),
         VMDIR_SF_INIT(.pfnBEDNToEntry, VmDirMDBDNToEntry),
         VMDIR_SF_INIT(.pfnBEDNToEntryId, VmDirMDBDNToEntryId),
+        VMDIR_SF_INIT(.pfnBEObjectGUIDToEntryId, VmDirMDBObjectGUIDToEntryId),
         VMDIR_SF_INIT(.pfnBEChkDNReference, VmDirMDBCheckRefIntegrity),
         VMDIR_SF_INIT(.pfnBEChkIsLeafEntry, VmDirMDBCheckIfALeafNode),
         VMDIR_SF_INIT(.pfnBEGetCandidates, VmDirMDBGetCandidates),

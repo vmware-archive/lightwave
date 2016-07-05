@@ -152,6 +152,14 @@
     },                                                                   \
     {                                                                    \
         VMDIR_SF_INIT(.status, VDIR_CFG_ATTR_INDEX_ENABLED),             \
+        VMDIR_SF_INIT(.pszAttrName, ATTR_OBJECT_GUID),                   \
+        VMDIR_SF_INIT(.iTypes, INDEX_TYPE_EQUALITY),                     \
+        VMDIR_SF_INIT(.bIsUnique, TRUE),                                 \
+        VMDIR_SF_INIT(.bIsNumeric, FALSE),                               \
+        VMDIR_SF_INIT(.iId, 0)                                           \
+    },                                                                   \
+    {                                                                    \
+        VMDIR_SF_INIT(.status, VDIR_CFG_ATTR_INDEX_ENABLED),             \
         VMDIR_SF_INIT(.pszAttrName, NULL),                               \
         VMDIR_SF_INIT(.iTypes, INDEX_TYPE_EQUALITY),                     \
         VMDIR_SF_INIT(.bIsUnique, FALSE),                                \

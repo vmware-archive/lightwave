@@ -643,6 +643,7 @@
             " 2.5.18.4"                                                 \
             " NAME 'modifiersName'"                                     \
             " SYNTAX 1.3.6.1.4.1.1466.115.121.1.12"                     \
+            " SINGLE-VALUE"                                             \
             " NO-USER-MODIFICATION"                                     \
             " USAGE directoryOperation )")                              \
     },                                                                  \

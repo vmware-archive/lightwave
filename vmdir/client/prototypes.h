@@ -683,8 +683,21 @@ VmDirParseMetadata(
     );
 
 VOID
-VmDirFreeMetadata(
+VmDirFreeMetadataInternal(
     PVMDIR_METADATA pMetadata
+    );
+
+VOID
+VmDirFreeMetadataListInternal(
+    PVMDIR_METADATA_LIST pMetadataList
+    );
+
+DWORD
+VmDirGetAttributeMetadataInternal(
+    PVMDIR_CONNECTION   pConnection,
+    PCSTR               pszEntryDn,
+    PCSTR               pszAttribute,
+    PVMDIR_METADATA_LIST*    ppMetadataList
     );
 
 DWORD

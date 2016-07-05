@@ -518,6 +518,13 @@ VmDirLoadEventLogLibrary(
     PFEVENTLOG_ADD *ppfEventLogAdd
     );
 
+// tracklastlogin.c
+
+DWORD
+VmDirInitTrackLastLoginThread(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif
