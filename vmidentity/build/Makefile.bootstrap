@@ -48,6 +48,7 @@ CLEAN_OBJECTS = \
     vmware-sts \
     websso \
     ssolib \
+    ROOT \
     sts \
     wsTrustClient \
     install \
@@ -83,7 +84,8 @@ CLEAN_OBJECTS = \
     $(SRCROOT)/openidconnect/server/src/main/webapp/views \
     $(SRCROOT)/openidconnect/server/src/main/resources/locale \
     $(SRCROOT)/openidconnect/server/src/main/resources/messages.properties \
-    $(SRCROOT)/openidconnect/server/src/main/resources/locale
+    $(SRCROOT)/openidconnect/server/src/main/resources/locale \
+    $(SRCROOT)/ROOT/target
 
 
 PKG_SPEC=vmware-sts.spec
