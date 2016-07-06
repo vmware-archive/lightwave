@@ -4,6 +4,7 @@ SUBDIRS = \
     config \
     jdepends \
     tomcat-extensions \
+    ROOT \
     interop \
     diagnostics \
     platform \

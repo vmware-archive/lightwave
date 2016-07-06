@@ -389,6 +389,7 @@ AC_CONFIG_FILES([Makefile
                  diagnostics/Makefile
                  idm/Makefile
                  tomcat-extensions/Makefile
+                 ROOT/Makefile
                  interop/Makefile
                  interop/idm/Makefile
                  interop/idm/ad/Makefile
