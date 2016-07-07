@@ -220,6 +220,13 @@ VmDirSrvUpdateConfig(
         {
             gVmdirGlobals.bTrackLastLoginTime = pEntry->dwValue ? TRUE : FALSE;
         }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_URGENT_REPL_TIMEOUT_MSEC,
+                    TRUE))
+        {
+            gVmdirUrgentRepl.dwUrgentReplTimeout = pEntry->dwValue;
+        }
     }
 
 cleanup:

@@ -1350,12 +1350,19 @@ VmDirSRPCreateSecret(
 //server/common/urgentrepl.c
 VOID
 VmDirPerformUrgentReplication(
-    PVDIR_OPERATION pOperation
+    PVDIR_OPERATION pOperation,
+    USN currentTxnUSN
     );
 
 VOID
 VmDirRetryUrgentReplication(
     VOID
+    );
+
+VOID
+VmDirPerformUrgentReplIfRequired(
+    PVDIR_OPERATION pOperation,
+    USN currentTxnUSN
     );
 
 #ifdef __cplusplus

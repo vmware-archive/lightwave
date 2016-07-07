@@ -1935,7 +1935,9 @@ Srv_RpcVmDirUrgentReplicationResponse(
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
     PVMDIR_REPL_UTDVECTOR   pUtdVector = NULL;
 
-    if (IsNullOrEmptyString(pwszInvocationId) || IsNullOrEmptyString(pwszUtdVector))
+    if (IsNullOrEmptyString(pwszInvocationId) ||
+        IsNullOrEmptyString(pwszUtdVector) ||
+        IsNullOrEmptyString(pwszHostName))
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);

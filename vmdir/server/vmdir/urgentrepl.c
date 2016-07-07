@@ -789,26 +789,30 @@ VmDirUrgentReplUpdateConsensus(
     VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     pUrgentReplPartnerTable = VmDirReplGetUrgentReplCoordinatorTable_InLock();
-    minUSN = pUrgentReplPartnerTable->lastConfirmedUSN;
 
-    while (pUrgentReplPartnerTable != NULL)
+    if (pUrgentReplPartnerTable != NULL)
     {
-        if (pUrgentReplPartnerTable->isDeleted == FALSE &&
-            minUSN > pUrgentReplPartnerTable->lastConfirmedUSN)
+        minUSN = pUrgentReplPartnerTable->lastConfirmedUSN;
+
+        while (pUrgentReplPartnerTable != NULL)
         {
-            minUSN = pUrgentReplPartnerTable->lastConfirmedUSN;
+            if (pUrgentReplPartnerTable->isDeleted == FALSE &&
+                minUSN > pUrgentReplPartnerTable->lastConfirmedUSN)
+            {
+                minUSN = pUrgentReplPartnerTable->lastConfirmedUSN;
+            }
+            pUrgentReplPartnerTable = pUrgentReplPartnerTable->next;
         }
-        pUrgentReplPartnerTable = pUrgentReplPartnerTable->next;
-    }
 
-    VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
-		    "%s: minUSN: %lld gVmdirUrgentRepl.ConsensusUSN: %lld",
-                     __func__, minUSN, gVmdirUrgentRepl.consensusUSN);
+        VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
+		        "%s: minUSN: %lld gVmdirUrgentRepl.ConsensusUSN: %lld",
+                         __func__, minUSN, gVmdirUrgentRepl.consensusUSN);
 
-    if (gVmdirUrgentRepl.consensusUSN < minUSN)
-    {
-        gVmdirUrgentRepl.consensusUSN = minUSN;
-        bUpdated = TRUE;
+        if (gVmdirUrgentRepl.consensusUSN < minUSN)
+        {
+            gVmdirUrgentRepl.consensusUSN = minUSN;
+            bUpdated = TRUE;
+        }
     }
 
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);

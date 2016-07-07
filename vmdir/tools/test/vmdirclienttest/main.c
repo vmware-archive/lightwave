@@ -24,7 +24,7 @@ VmDirCreateBindingHandleA(
     );
 
 DWORD
-TestVmDirLdapAddGetResults(
+TestVmDirLdapGetResults(
     LDAP    *pLd,
     int      msgid
     );
@@ -394,10 +394,11 @@ TestVmDirCreateUserWithControls(
    printf("\n ldap_add_ext to add the new entry to the database with controls");
    dwError = ldap_add_ext(pLd, pszNewDN, pAttributes, pSrvctrl, NULL, &msgid);
    BAIL_ON_VMDIR_ERROR(dwError);
-   printf("\n Added new user to the database successfully ");
 
-   dwError = TestVmDirLdapAddGetResults(pLd, msgid);
+   dwError = TestVmDirLdapGetResults(pLd, msgid);
    BAIL_ON_VMDIR_ERROR(dwError);
+
+   printf("\n Added new user to the database successfully ");
 
 cleanup:
    VMDIR_SAFE_FREE_MEMORY(pszLDAPHostName);
@@ -419,7 +420,7 @@ error:
 }
 
 DWORD
-TestVmDirLdapAddGetResults(
+TestVmDirLdapGetResults(
     LDAP    *pLd,
     int      msgid
     )
@@ -452,7 +453,7 @@ TestVmDirLdapAddGetResults(
 	    if (time(NULL) - startTime > SECONDS_IN_MINUTE * 3)/* time out */
 	    {
                completed = TRUE;
-               printf("\n TestVmDirLdapAddGetResults: Not able to obtain result for 3 mins - Timed out ");
+               printf("\n TestVmDirLdapGetResults: Not able to obtain result for 3 mins - Timed out ");
                dwError = -1;
 	       BAIL_ON_VMDIR_ERROR(dwError);
 	    }
@@ -463,7 +464,7 @@ TestVmDirLdapAddGetResults(
 
             if (pResult == NULL)
             {
-               printf("\n TestVmDirLdapAddGetResults: pResult is NULL ");
+               printf("\n TestVmDirLdapGetResults: pResult is NULL ");
                dwError = -1;
 	       BAIL_ON_VMDIR_ERROR(dwError);
             }
@@ -472,7 +473,7 @@ TestVmDirLdapAddGetResults(
 
             if (parse_rc != 0)
             {
-               printf("\n TestVmDirLdapAddGetResults: ldap_parse_result failed with status: %d ", parse_rc);
+               printf("\n TestVmDirLdapGetResults: ldap_parse_result failed with status: %d ", parse_rc);
                dwError = parse_rc;
 	       BAIL_ON_VMDIR_ERROR(parse_rc);
             }
@@ -480,9 +481,9 @@ TestVmDirLdapAddGetResults(
             BAIL_ON_VMDIR_ERROR(dwError);
 	    printf("\n LDAP Add succeeded ");
 
-            if (ppServerctrls[0] == NULL)
+            if (ppServerctrls == NULL || ppServerctrls[0] == NULL)
             {
-               printf("\n TestVmDirLdapAddGetResults: Serverctrls is NULL failed to obtain controls ");
+               printf("\n TestVmDirLdapGetResults: Serverctrls is NULL failed to obtain controls ");
                dwError = -1;
 	       BAIL_ON_VMDIR_ERROR(dwError);
             }
@@ -493,14 +494,14 @@ TestVmDirLdapAddGetResults(
 
                if (ber == NULL)
                {
-                  printf("\n TestVmDirLdapAddGetResults: ber_init failed (returned NULL) ");
+                  printf("\n TestVmDirLdapGetResults: ber_init failed (returned NULL) ");
                   dwError = -1;
 	          BAIL_ON_VMDIR_ERROR(dwError);
                }
 
                if (ber_scanf(ber, "{i}", &status ) == LBER_ERROR)
                {
-                  printf("\n TestVmDirLdapAddGetResults: Not able to read status from berElement ");
+                  printf("\n TestVmDirLdapGetResults: Not able to read status from berElement ");
                   dwError = -1;
 	          BAIL_ON_VMDIR_ERROR(dwError);
                }
@@ -519,17 +520,173 @@ TestVmDirLdapAddGetResults(
    }
 
 cleanup:
-   if (ppServerctrls[0] != NULL)
+   if (ppServerctrls && ppServerctrls[0] != NULL)
    {
       ldap_controls_free(ppServerctrls);
    }
    return dwError;
 
 error:
-   printf("\n TestVmDirLdapAddGetResults: failed ");
+   printf("\n TestVmDirLdapGetResults: failed ");
    goto cleanup;
 }
 
+VOID
+TestVmDirModifyUserWithControls(
+    VOID
+    )
+{
+    int     msgid = 0;
+    char    serverName[SIZE_256] = {0};
+    char    modifydn[SIZE_256] = {0};
+    char    adminUPN[SIZE_256] = {0};
+    char    pwd[SIZE_256] = {0};
+    char    attrName[SIZE_256] = {0};
+    char    value[SIZE_256] = {0};
+    DWORD   dwError = 0;
+    LDAP    *pLd = NULL;
+    char    *pvalues[2] = { value,
+                            NULL };
+    LDAPMod attribute = {0};
+    LDAPMod *pAttributes[2] = { &attribute,
+                                NULL };
+    LDAPControl *pCtrl = NULL;
+    LDAPControl *pSrvctrl[2] = { NULL,
+                                 NULL };
+
+    printf("\n hostname: (example: hostname or Ip addr): ");
+    scanf("%s", serverName);
+    printf("\n admin UPN (example: Administrator@vsphere.local): ");
+    scanf("%s", adminUPN);
+    printf("\n password: ");
+    scanf("%s", pwd);
+    printf("\n modify dn (example: cn=newuser,cn=users,dc=vsphere,dc=local): ");
+    scanf("%s", modifydn);
+    printf("\n attribute name (example: cn) ");
+    scanf("%s", attrName);
+    printf("\n value (example: newuser) ");
+    scanf("%s", value);
+
+    if (IsNullOrEmptyString(serverName) ||
+        IsNullOrEmptyString(adminUPN) ||
+        IsNullOrEmptyString(pwd) ||
+        IsNullOrEmptyString(modifydn) ||
+        IsNullOrEmptyString(attrName) ||
+        IsNullOrEmptyString(value))
+    {
+       printf("\n Invalid input parameter, empty or null string found ");
+       return;
+    }
+
+    printf("\n TestVmDirModifyUserWithControls ldap initiating bind!!!! ");
+    dwError = VmDirSafeLDAPBind(&pLd, serverName, adminUPN, pwd);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    printf("\n TestVmDirModifyUserWithControls ldap bind succeeded!!!! ");
+
+    attribute.mod_op = LDAP_MOD_REPLACE;
+    attribute.mod_type = attrName;
+    attribute.mod_values = pvalues;
+
+    dwError = TestVmDirCreateConsistentWriteControl(&pCtrl);
+    if (dwError != LDAP_SUCCESS  || pCtrl == NULL)
+    {
+       printf("\n not able to create control !!");
+       BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    pSrvctrl[0] = pCtrl;
+
+    printf("\n ldap_modify_ext to modify entry in the database with controls");
+    dwError = ldap_modify_ext(pLd, modifydn, pAttributes, pSrvctrl, NULL, &msgid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = TestVmDirLdapGetResults(pLd, msgid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    printf("\n Modified user successfully");
+
+cleanup:
+    if (pLd)
+    {
+        dwError = ldap_unbind_ext_s(pLd, NULL, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        printf(" \n TestVmDirModifyUserWithControls ldap unbind succeeded ");
+    }
+    return;
+
+error:
+    printf(" \nTestVmDirModifyUserWithControls failed. (%d)\n", dwError);
+    goto cleanup;
+}
+
+VOID
+TestVmDirDeleteUserWithControls(
+    VOID
+    )
+{
+    int     msgid = 0;
+    char    serverName[SIZE_256] = {0};
+    char    deleteDN[SIZE_256] = {0};
+    char    adminUPN[SIZE_256] = {0};
+    char    pwd[SIZE_256] = {0};
+    DWORD   dwError = 0;
+    LDAP    *pLd = NULL;
+    LDAPControl *pCtrl = NULL;
+    LDAPControl *pSrvctrl[2] = { NULL,
+                                 NULL };
+
+    printf("\n hostname: (example: hostname or Ip addr): ");
+    scanf("%s", serverName);
+    printf("\n admin UPN (example: Administrator@vsphere.local): ");
+    scanf("%s", adminUPN);
+    printf("\n password: ");
+    scanf("%s", pwd);
+    printf("\n delete dn (example: cn=newuser,cn=users,dc=vsphere,dc=local): ");
+    scanf("%s", deleteDN);
+
+    if (IsNullOrEmptyString(serverName) ||
+        IsNullOrEmptyString(adminUPN) ||
+        IsNullOrEmptyString(pwd) ||
+        IsNullOrEmptyString(deleteDN))
+    {
+       printf("\n Invalid input parameter, empty or null string found ");
+       return;
+    }
+
+    printf("\n TestVmDirDeleteUserWithControls ldap initiating bind!!!! ");
+    dwError = VmDirSafeLDAPBind(&pLd, serverName, adminUPN, pwd);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    printf("\n TestVmDirDeleteUserWithControls ldap bind succeeded!!!! ");
+
+    dwError = TestVmDirCreateConsistentWriteControl(&pCtrl);
+    if (dwError != LDAP_SUCCESS  || pCtrl == NULL)
+    {
+       printf("\n not able to create control !!");
+       BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    pSrvctrl[0] = pCtrl;
+
+    printf("\n ldap_delete_ext to delete entry in the database with controls");
+    dwError = ldap_delete_ext(pLd, deleteDN, pSrvctrl, NULL, &msgid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = TestVmDirLdapGetResults(pLd, msgid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    printf("\n deleted user successfully");
+
+cleanup:
+    if (pLd)
+    {
+        dwError = ldap_unbind_ext_s(pLd, NULL, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        printf(" \n TestVmDirDeleteUserWithControls ldap unbind succeeded");
+    }
+    return;
+
+error:
+    printf(" \nTestVmDirDeleteUserWithControls failed. (%d)\n", dwError);
+    goto cleanup;
+}
 /*  StrongConsistentWrite end */
 
 #ifndef _WIN32
@@ -557,6 +714,8 @@ int _tmain(int argc, TCHAR *targv[])
         printf( "8. TestVmDirSetLogParameters\n");
         printf( "9. TestVmDirCreateUserEx\n");
         printf( "10. TestVmDirCreateUserWithControls\n");
+        printf( "11. TestVmDirModifyUserWithControls\n");
+        printf( "12. TestVmDirDeleteUserWithControls\n");
         printf( "==================\n\n");
         scanf("%d", &choice);
 
@@ -607,6 +766,14 @@ int _tmain(int argc, TCHAR *targv[])
 
           case 10:
               TestVmDirCreateUserWithControls();
+              break;
+
+          case 11:
+              TestVmDirModifyUserWithControls();
+              break;
+
+          case 12:
+              TestVmDirDeleteUserWithControls();
               break;
 
           default:

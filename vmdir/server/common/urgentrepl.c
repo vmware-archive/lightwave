@@ -19,21 +19,16 @@
 
 VOID
 VmDirPerformUrgentReplication(
-    PVDIR_OPERATION pOperation
+    PVDIR_OPERATION pOperation,
+    USN currentTxnUSN
     )
 {
     BOOLEAN   bSuccess = FALSE;
     DWORD     dwError = 0;
     UINT64    timeout = 0;
     UINT64    newTimeout = 0;
-    USN       currentTxnUSN = 0;
     UINT64    startTime = 0;
     UINT64    endTime = 0;
-    PVDIR_ATTRIBUTE   pAttrUSNCreated = NULL;
-
-    pAttrUSNCreated = VmDirEntryFindAttribute(ATTR_USN_CHANGED, pOperation->request.addReq.pEntry);
-    assert( pAttrUSNCreated != NULL );
-    currentTxnUSN = VmDirStringToLA(pAttrUSNCreated->vals[0].lberbv.bv_val, NULL, 10);
 
     /*
      * If urgent replication request is already active then set this boolean
@@ -42,8 +37,6 @@ VmDirPerformUrgentReplication(
     VmDirSetUrgentReplicationPending(TRUE);
     VmDirUrgentReplSignalUrgentReplCoordinatorThreadStart();
 
-    //TODO: populate time out value via registry and move the timeout init to appropriate place
-    VmDirSetUrgentReplTimeout(60000); // 60 seconds
     newTimeout = timeout = VmDirGetUrgentReplTimeout();
     startTime = VmDirGetTimeInMilliSec();
 
@@ -70,7 +63,7 @@ VmDirPerformUrgentReplication(
         {
             bSuccess = TRUE;
         }
-        else if((startTime + timeout) > endTime)
+        else if((startTime + timeout) > endTime && VmDirdState() != VMDIRD_STATE_SHUTDOWN)
         {
             // Retry until it times out or succeeds
             VmDirRetryUrgentReplication();
@@ -100,4 +93,31 @@ VmDirRetryUrgentReplication(
 {
     VmDirSetUrgentReplicationPending(TRUE);
     VmDirUrgentReplSignalUrgentReplCoordinatorThreadStart();
+}
+
+VOID
+VmDirPerformUrgentReplIfRequired(
+    PVDIR_OPERATION pOperation,
+    USN currentTxnUSN
+    )
+{
+   if (pOperation->strongConsistencyWriteCtrl != NULL &&
+       pOperation->ldapResult.errCode == LDAP_SUCCESS)
+   {
+       /*
+        * If backend context is not freed here, then maxoutstandingUSN will
+        * not be updated. If maxoutstandingUSN is not updated then corresponding USN will be
+        * considered as lowestPendingUnCommittedUSN and will be skipped from the current
+        * replication cycle.
+        */
+        VmDirBackendCtxFree(pOperation->pBECtx);
+        pOperation->pBECtx = NULL;
+       /*
+        * Wait for urgent replication to complete
+        * signalled by urgentReplCoordinator thread
+        * read the consensus and make a decision
+        */
+       VmDirPerformUrgentReplication(pOperation, currentTxnUSN);
+   }
+
 }

@@ -369,7 +369,7 @@ VmDirWaitForUrgentReplResponse(
         /*
          * Total time out is 60 seconds, but in the case of server shutdown
          * we might have to exit execution as soon as possible. In order to accomplish that
-         * for every 10 seconds resume execution and check for director state.
+         * for every 3 seconds resume execution and check for director state.
          */
         if (dwError != 0)
         {

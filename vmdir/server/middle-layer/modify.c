@@ -220,6 +220,8 @@ VmDirMLModify(
                                                      pOperation->pBECtx->wTxnUSN);
     }
 
+    VmDirPerformUrgentReplIfRequired(pOperation, pOperation->pBECtx->wTxnUSN);
+
 cleanup:
 
     VmDirSendLdapResult( pOperation );

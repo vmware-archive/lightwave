@@ -80,24 +80,7 @@ VmDirMLAdd(
                                                      pOperation->pBECtx->wTxnUSN);
     }
 
-   if (pOperation->strongConsistencyWriteCtrl != NULL &&
-       pOperation->ldapResult.errCode == LDAP_SUCCESS)
-   {
-       /*
-        * If backend context is not freed here, then maxoutstandingUSN will
-        * not be updated. If maxoutstandingUSN is not updated then corresponding USN will be
-        * considered as lowestPendingUnCommittedUSN and will be skipped from the current
-        * replication cycle.
-        */
-        VmDirBackendCtxFree(pOperation->pBECtx);
-        pOperation->pBECtx = NULL;
-       /*
-        * Wait for urgent replication to complete
-        * signalled by urgentReplCoordinator thread
-        * read the consensus and make a decision
-        */
-       VmDirPerformUrgentReplication(pOperation);
-   }
+    VmDirPerformUrgentReplIfRequired(pOperation, pOperation->pBECtx->wTxnUSN);
 
 cleanup:
     VmDirSendLdapResult( pOperation );
