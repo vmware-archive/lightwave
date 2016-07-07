@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -139,18 +139,41 @@ typedef struct _CDC_THREAD_CONTEXT
     BOOLEAN         bShutdown;
 } CDC_THREAD_CONTEXT, *PCDC_THREAD_CONTEXT;
 
+typedef enum
+{
+    CDC_UPDATE_THREAD_STATE_UNDEFINED = 0,
+    CDC_UPDATE_THREAD_STATE_SIGNALLED,
+    CDC_UPDATE_THREAD_STATE_POLLING,
+    CDC_UPDATE_THREAD_STATE_UPDATED
+} CDC_UPDATE_THREAD_STATE;
+
 typedef struct _CDC_CACHE_UPDATE_CONTEXT
 {
-    PCDC_THREAD_CONTEXT pUpdateThrContext;
-    BOOLEAN             bRefreshCache;
-    BOOLEAN             bActiveAlive;
-    DWORD               dwOffsiteRefresh;
+    PCDC_THREAD_CONTEXT     pUpdateThrContext;
+    BOOLEAN                 bRefreshCache;
+    BOOLEAN                 bActiveAlive;
+    DWORD                   dwOffsiteRefresh;
+    CDC_UPDATE_THREAD_STATE cdcThrState;
+    pthread_mutex_t         update_mutex;
+    pthread_cond_t          update_cond;
 } CDC_CACHE_UPDATE_CONTEXT, *PCDC_CACHE_UPDATE_CONTEXT;
+
+typedef enum
+{
+    CDC_STATE_THREAD_STATE_UNDEFINED = 0,
+    CDC_STATE_THREAD_STATE_SIGNALLED,
+    CDC_STATE_THREAD_STATE_RUNNING,
+    CDC_STATE_THREAD_STATE_UPDATED
+} CDC_STATE_THREAD_STATE;
 
 typedef struct _CDC_STATE_MACHINE_CONTEXT
 {
     PCDC_THREAD_CONTEXT       pStateThrContext;
     pthread_mutex_t           state_mutex;
+    CDC_STATE_THREAD_STATE    cdcThrState;
+    pthread_mutex_t           update_mutex;
+    pthread_cond_t            update_cond;
+    volatile UINT32           bFirstRun;
 } CDC_STATE_MACHINE_CONTEXT, *PCDC_STATE_MACHINE_CONTEXT;
 
 typedef struct _CDC_CONTEXT
@@ -159,6 +182,15 @@ typedef struct _CDC_CONTEXT
     PCDC_CACHE_UPDATE_CONTEXT  pCdcCacheUpdateContext;
     pthread_mutex_t            context_mutex;
 } CDC_CONTEXT, *PCDC_CONTEXT;
+
+typedef struct _DDNS_CONTEXT
+{
+    pthread_t       thread;
+    DWORD           flag;
+    DWORD           netLinkFd;
+    DWORD           eventFd;
+    pthread_mutex_t ddnsMutex;
+} DDNS_CONTEXT, *PDDNS_CONTEXT;
 
 typedef struct _VMAFD_GLOBALS
 {
@@ -177,6 +209,8 @@ typedef struct _VMAFD_GLOBALS
     pthread_mutex_t                 pCertUpdateMutex;
     PVMAFD_THREAD                   pPassRefreshThr;
     PCDC_CONTEXT                    pCdcContext;
+
+    PDDNS_CONTEXT                   pDdnsContext;
 
     // following fields are protected by mutex
     pthread_t                       thread;
@@ -229,7 +263,6 @@ typedef struct _VMAFD_REG_ARG {
     PSTR pszAccount;        // dc/machine account name
     PSTR pszAccountDN;
     PSTR pszPassword;
-    PSTR pszDCName;         // domain controller hostname
     PSTR pszDomain;
     PSTR pszAccountUPN;
 }VMAFD_REG_ARG, *PVMAFD_REG_ARG;

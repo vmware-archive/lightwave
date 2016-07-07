@@ -14,6 +14,7 @@ vmafdd_SOURCES = \
     cdcthread.c \
     cdcupdate.c \
     dcfinder.c    \
+    ddns.c	\
     dns.c         \
     globals.c     \
     heartbeat.c     \

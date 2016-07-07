@@ -319,7 +319,7 @@ VmAfSrvPromoteVmDir(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfSrvSetDomainNameA(pszDomainName);
+    dwError = VmAfSrvSetDomainName(pwszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_CONTROLLER);
@@ -338,13 +338,13 @@ VmAfSrvPromoteVmDir(
                     );
     BAIL_ON_VMAFD_ERROR(dwError);
 
-#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
-    dwError = VmAfSrvSignalVmdirProvider();
-    BAIL_ON_VMAFD_ERROR(dwError);
-#endif
-
     dwError = VmAfSrvGetPNID(&pwszPNID);
     BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdRegSetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                           VMAFD_REG_KEY_DC_NAME,
+                           pwszLotusServerName);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
     dwError = VmAfSrvConfigureDNSW(
                       pwszPNID,
@@ -368,16 +368,6 @@ VmAfSrvPromoteVmDir(
             __FUNCTION__);
     }
 
-    dwError = VmAfdInitCertificateThread(&gVmafdGlobals.pCertUpdateThr);
-    if (dwError)
-    {
-        VmAfdLog(
-            VMAFD_DEBUG_ANY,
-            "%s failed to initiate certificate thread. Error(%u)",
-            __FUNCTION__,
-            dwError);
-        dwError = 0;
-    }
 
 #if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
     dwError = VmAfSrvSignalVmdirProvider();
@@ -487,12 +477,6 @@ VmAfSrvDemoteVmDir(
 
     /* TODO: remove KrbConfig entries */
 
-    if (gVmafdGlobals.pCertUpdateThr)
-    {
-        VmAfdShutdownCertificateThread(gVmafdGlobals.pCertUpdateThr);
-        gVmafdGlobals.pCertUpdateThr = NULL;
-    }
-
 cleanup:
 
     VMAFD_SAFE_FREE_STRINGW(pwszDomainName);
@@ -601,20 +585,17 @@ VmAfSrvJoinVmDir(
     dwError = VmAfSrvSetSiteName(pwszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    dwError = VmAfdRegSetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                           VMAFD_REG_KEY_DC_NAME,
+                           pwszServerName);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
     VmAfdLog(VMAFD_DEBUG_ANY,
              "%s: joined Vmdir.",
              __FUNCTION__);
 
-    dwError = VmAfdInitCertificateThread(&gVmafdGlobals.pCertUpdateThr);
-    if (dwError)
-    {
-        VmAfdLog(
-            VMAFD_DEBUG_ANY,
-            "%s failed to initiate certificate thread. Error(%u)",
-            __FUNCTION__,
-            dwError);
-        dwError = 0;
-    }
+    dwError = VmDdnsInitThread(&gVmafdGlobals.pDdnsContext);
+    BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = CdcSrvInitDefaultHAMode(gVmafdGlobals.pCdcContext);
     if (dwError)
@@ -840,17 +821,6 @@ VmAfSrvJoinVmDir2(
              "%s: joined Vmdir.",
              __FUNCTION__);
 
-    dwError = VmAfdInitCertificateThread(&gVmafdGlobals.pCertUpdateThr);
-    if (dwError)
-    {
-        VmAfdLog(
-            VMAFD_DEBUG_ANY,
-            "%s failed to initiate certificate thread. Error(%u)",
-            __FUNCTION__,
-            dwError);
-        dwError = 0;
-    }
-
 cleanup:
 
     VMAFD_SAFE_FREE_STRINGA(pszUserName);
@@ -925,6 +895,10 @@ VmAfSrvLeaveVmDir(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
+
+    VmDdnsShutdown(gVmafdGlobals.pDdnsContext);
+    //BAIL_ON_VMAFD_ERROR(dwError);
+
     // Machine credentials will be used if the user name and password are NULL.
     dwError = VmDirClientLeave(pszServerName, pszUserName, pszPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -959,12 +933,6 @@ VmAfSrvLeaveVmDir(
     dwError = DJUnconfigureSSH();
     BAIL_ON_VMAFD_ERROR(dwError);
 #endif
-
-    if (gVmafdGlobals.pCertUpdateThr)
-    {
-        VmAfdShutdownCertificateThread(gVmafdGlobals.pCertUpdateThr);
-        gVmafdGlobals.pCertUpdateThr = NULL;
-    }
 
     if (gVmafdGlobals.pCdcContext)
     {
