@@ -94,12 +94,8 @@ main(
     dwError = VmAfSrvGetDomainState(&domainState);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (domainState == VMAFD_DOMAIN_STATE_CONTROLLER ||
-        domainState == VMAFD_DOMAIN_STATE_CLIENT)
-    {
-        dwError = VmAfdInitCertificateThread(&gVmafdGlobals.pCertUpdateThr);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
+    dwError = VmAfdInitCertificateThread(&gVmafdGlobals.pCertUpdateThr);
+    BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdInitPassRefreshThread(&gVmafdGlobals.pPassRefreshThr);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -107,8 +103,10 @@ main(
     dwError = CdcInitCdcService(&gVmafdGlobals.pCdcContext);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "vmafdd: started!" );
+    dwError = VmDdnsInitThread(&gVmafdGlobals.pDdnsContext);
+    BAIL_ON_VMAFD_ERROR(dwError);
 
+    VmAfdLog(VMAFD_DEBUG_ANY, "vmafdd: started!" );
     /*
      * Start the init loop which initializes configuration and
      * then waits until signaled to reinitialize.  It returns
@@ -118,15 +116,15 @@ main(
     BAIL_ON_VMAFD_ERROR(dwError);
 
 
-cleanup:
+  cleanup:
 
-   VmAfdLog(VMAFD_DEBUG_ANY, "vmafdd: stop");
-   VmAfdServerShutdown();
-   VmAfdLogTerminate();
+    VmAfdLog(VMAFD_DEBUG_ANY, "vmafdd: stop");
+    VmAfdServerShutdown();
+    VmAfdLogTerminate();
 
-   return dwError;
+    return dwError;
 
-error:
+  error:
 
     goto cleanup;
 }
