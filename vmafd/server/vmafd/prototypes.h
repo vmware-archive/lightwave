@@ -602,12 +602,10 @@ VmAfdSrvGetDomainState(
     PVMAFD_DOMAIN_STATE
     );
 
-
 DWORD
-VmAfdGetRegArgs(
+VmAfdGetMachineInfo(
     PVMAFD_REG_ARG *ppArgs
     );
-
 
 VOID
 VmAfdFreeRegArgs(
@@ -2064,8 +2062,14 @@ CdcSrvEnableLegacyModeHA(
     );
 
 DWORD
+CdcSrvForceRefreshCache(
+    PCDC_CONTEXT pContext
+    );
+
+DWORD
 CdcSrvGetDCName(
     PCWSTR pszDomain,
+    DWORD  dwFlags,
     PCDC_DC_INFO_W *ppAffinitizedDC
     );
 
@@ -2141,7 +2145,8 @@ CdcShutdownStateMachine(
 
 DWORD
 CdcWakeupStateMachine(
-      PCDC_STATE_MACHINE_CONTEXT pStateMachine
+      PCDC_STATE_MACHINE_CONTEXT pStateMachine,
+      BOOLEAN                    bWaitForCompletion
       );
 
 
@@ -2160,7 +2165,8 @@ CdcShutdownCdcCacheUpdate(
 DWORD
 CdcWakeupCdcCacheUpdate(
       PCDC_CACHE_UPDATE_CONTEXT pDCCaching,
-      BOOLEAN                   bPurgeRefresh
+      BOOLEAN                   bPurgeRefresh,
+      BOOLEAN                   bWaitForRefresh
       );
 
 //heartbeat.c
@@ -2196,7 +2202,20 @@ VmAfdRpcFreeHeartbeatStatus(
     PVMAFD_HB_STATUS_W pHeartbeatStatus
     );
 
+//ddns.c
+
+DWORD
+VmDdnsInitThread(
+        PDDNS_CONTEXT* ppDdnsContext
+    );
+
+VOID
+VmDdnsShutdown(
+        PDDNS_CONTEXT pDdnsContext
+    );
+
+
+
 #ifdef __cplusplus
 }
 #endif
-

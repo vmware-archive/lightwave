@@ -47,7 +47,7 @@ VmAfdSrvGetStatus(
 }
 
 DWORD
-VmAfdGetRegArgs(
+VmAfdGetMachineInfo(
     PVMAFD_REG_ARG *ppArgs
     )
 {
@@ -56,7 +56,6 @@ VmAfdGetRegArgs(
     PWSTR pwszPassword = NULL;
     PWSTR pwszAccountDN = NULL;
     PWSTR pwszDomain = NULL;
-    PWSTR pwszDCName = NULL;
     PWSTR pwszAccount = NULL;
     PVMAFD_REG_ARG pArgs = NULL;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE ;
@@ -70,9 +69,6 @@ VmAfdGetRegArgs(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfSrvGetAffinitizedDC(&pwszDCName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
     dwError = VmAfSrvGetMachineAccountInfo(
                     &pwszAccount,
                     &pwszPassword,
@@ -83,11 +79,6 @@ VmAfdGetRegArgs(
     dwError =  VmAfdAllocateMemory(
                     sizeof(VMAFD_REG_ARG),
                     (PVOID*)&pArgs);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfdAllocateStringAFromW(
-                    pwszDCName,
-                    &pArgs->pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdAllocateStringAFromW(
@@ -117,12 +108,6 @@ VmAfdGetRegArgs(
                                          pArgs->pszAccount, pArgs->pszDomain);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (IsNullOrEmptyString(pArgs->pszDCName))
-    {
-        dwError = VECS_MISSING_DC_NAME;
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
     if (IsNullOrEmptyString(pArgs->pszAccountDN) ||
         IsNullOrEmptyString(pArgs->pszPassword))
     {
@@ -138,7 +123,6 @@ cleanup:
     VMAFD_SAFE_FREE_MEMORY(pwszPassword);
     VMAFD_SAFE_FREE_MEMORY(pwszAccountDN);
     VMAFD_SAFE_FREE_MEMORY(pwszDomain);
-    VMAFD_SAFE_FREE_MEMORY(pwszDCName);
     VMAFD_SAFE_FREE_MEMORY(pwszAccount);
 
     return dwError;
@@ -170,7 +154,7 @@ error :
 
             VmAfdLog(
                 VMAFD_DEBUG_ANY,
-                "Error [%d] fetching registry args",
+                "Error [%d] getting machine Info",
                 dwError);
 
             break;
@@ -189,7 +173,6 @@ VmAfdFreeRegArgs(
 		VMAFD_SAFE_FREE_MEMORY(pArgs->pszAccount);
 		VMAFD_SAFE_FREE_MEMORY(pArgs->pszAccountDN);
 		VMAFD_SAFE_FREE_MEMORY(pArgs->pszPassword);
-		VMAFD_SAFE_FREE_MEMORY(pArgs->pszDCName);
 		VMAFD_SAFE_FREE_MEMORY(pArgs->pszDomain);
 		VMAFD_SAFE_FREE_MEMORY(pArgs->pszAccountUPN);
 		VmAfdFreeMemory(pArgs);
@@ -497,9 +480,8 @@ VmAfdConnectLdapWithMachineAccount(
     PVMAFD_REG_ARG pArgs = NULL;
     PWSTR pwszDCName = NULL;
     PSTR pszDCName = NULL;
-    PCDC_DC_INFO_W pAffinitizedDC = NULL;
 
-    dwError = VmAfdGetRegArgs(&pArgs);
+    dwError = VmAfdGetMachineInfo(&pArgs);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvGetAffinitizedDC(&pwszDCName);
@@ -513,9 +495,6 @@ VmAfdConnectLdapWithMachineAccount(
                 "%s@%s",
                 pArgs->pszAccount,
                 pArgs->pszDomain);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = CdcSrvGetDCName(NULL, &pAffinitizedDC);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdLDAPConnect(
@@ -586,6 +565,7 @@ cleanup:
     {
         VmAfdLdapClose(pLotus);
     }
+    VMAFD_SAFE_FREE_MEMORY(pszDomainFunctionalLevel);
     return dwError;
 error:
 
@@ -593,6 +573,5 @@ error:
     VmAfdLog(VMAFD_DEBUG_ANY,
              "WARNING: HA functionality will revert to legacy mode behavior until DFL is updated"
              );
-    VMAFD_SAFE_FREE_MEMORY(pszDomainFunctionalLevel);
     goto cleanup;
 }
