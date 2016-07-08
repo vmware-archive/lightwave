@@ -29,3 +29,4 @@
 extern PVDIR_PASSWORD_HASH_SCHEME gpVdirPasswdSchemeGlobals;
 
 extern VDIR_LOCKOUT_CACHE         gVdirLockoutCache;
+extern VDIR_PAGED_SEARCH_CACHE    gPagedSearchCache;

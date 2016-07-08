@@ -39,7 +39,9 @@ MdbScanIndex(
     PVDIR_DB_DBT        pKey,
     VDIR_FILTER *       pFilter,
     int                 maxScanForSizeLimit,
-    int *               partialCandidates);
+    int *               partialCandidates,
+    ENTRYID             eStartingId
+    );
 
 static
 DWORD
@@ -344,7 +346,9 @@ error:
 DWORD
 VmDirMDBGetCandidates(
     PVDIR_BACKEND_CTX   pBECtx,
-    VDIR_FILTER*        pFilter)
+    VDIR_FILTER*        pFilter,
+    ENTRYID             eStartingId
+    )
 {
     DWORD           dwError = 0;
     VDIR_DB_DBT     key = {0};
@@ -352,7 +356,7 @@ VmDirMDBGetCandidates(
     ENTRYID         parentId = 0;
     PVDIR_DB_TXN    pTxn = NULL;
 
-    assert (pBECtx && pBECtx->pBEPrivate && pFilter);
+    assert(pBECtx && pBECtx->pBEPrivate && pFilter);
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
@@ -379,7 +383,7 @@ VmDirMDBGetCandidates(
 
             key.mv_size = normValLen + 1;
 
-            dwError = MdbScanIndex( pTxn, &(pFilter->filtComp.ava.type), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates);
+            dwError = MdbScanIndex(pTxn, &(pFilter->filtComp.ava.type), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates, eStartingId);
             if ( pFilter->candidates )
             {
                 VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), bad filter (%d)",
@@ -444,7 +448,7 @@ VmDirMDBGetCandidates(
                 assert( FALSE );
             }
 
-            dwError = MdbScanIndex( pTxn, &(pFilter->filtComp.subStrings.type), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates);
+            dwError = MdbScanIndex(pTxn, &(pFilter->filtComp.subStrings.type), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates, eStartingId);
             if ( pFilter->candidates )
             {
                 VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), bad filter (%d)",
@@ -469,7 +473,7 @@ VmDirMDBGetCandidates(
             key.mv_data = &parentEIdBytes[0];
             MDBEntryIdToDBT(parentId, &key);
 
-            dwError = MdbScanIndex( pTxn, &(parentIdAttr), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates);
+            dwError = MdbScanIndex(pTxn, &(parentIdAttr), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates, eStartingId);
             if ( pFilter->candidates )
             {
                 VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), bad filter (%d)",
@@ -1150,7 +1154,9 @@ MdbScanIndex(
     PVDIR_DB_DBT        pKey,
     VDIR_FILTER *       pFilter,
     int                 maxScanForSizeLimit,
-    int *               partialCandidates)
+    int *               partialCandidates,
+    ENTRYID             eStartingId
+    )
 {
     DWORD               dwError = 0;
     VDIR_DB             mdbDBi = 0;
@@ -1208,10 +1214,12 @@ MdbScanIndex(
         dwError = mdb_get( pLocalTxn, mdbDBi, pKey, &value);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        // assert(value.mv_size == sizeof(ENTRYID));  meta data has different size value
         MDBDBTToEntryId( &value, &eId);
-        dwError = VmDirAddToCandidates( pFilter->candidates, eId);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (eId >= eStartingId)
+        {
+            dwError = VmDirAddToCandidates(pFilter->candidates, eId);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
     }
     else
     {
@@ -1259,8 +1267,11 @@ MdbScanIndex(
             }
 
             MDBDBTToEntryId( &value, &eId);
-            dwError = VmDirAddToCandidates( pFilter->candidates, eId);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            if (eId >= eStartingId)
+            {
+                dwError = VmDirAddToCandidates(pFilter->candidates, eId);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
 
             if ( pFilter->iMaxIndexScan > 0 &&
                  pFilter->candidates->size > pFilter->iMaxIndexScan

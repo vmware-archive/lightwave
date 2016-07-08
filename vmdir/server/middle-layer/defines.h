@@ -64,3 +64,10 @@
         VmDirLog( LDAP_DEBUG_TRACE, "[%s,%d]",__FILE__, __LINE__);  \
         goto sasl_error;                                            \
     }
+
+//
+// The timeout for a client thread waiting for more data from the worker
+// thread (we'll loop until more data's available, but we wake up periodically
+// to check if the server's shutting down).
+//
+#define VMDIR_PSCACHE_READ_TIMEOUT 1000

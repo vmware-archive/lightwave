@@ -22,6 +22,7 @@ libmiddle_layer_la_SOURCES = \
     modify.c	\
     password.c	\
     plugin.c	\
+    pscache.c   \
     sasl.c      \
     saslsockbuf.c \
     search.c	\

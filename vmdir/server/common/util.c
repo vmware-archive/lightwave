@@ -775,7 +775,7 @@ VmDirBuildMemberOfAttribute(
 
         f->filtComp.ava.value = *currMemberDn;
 
-        dwError = pOperation->pBEIF->pfnBEGetCandidates( pOperation->pBECtx, f);
+        dwError = pOperation->pBEIF->pfnBEGetCandidates(pOperation->pBECtx, f, 0);
         if (dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
         {   // no candidates found
             dwError = 0;

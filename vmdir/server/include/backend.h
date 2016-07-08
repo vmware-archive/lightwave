@@ -238,10 +238,10 @@ typedef DWORD (*PFN_BACKEND_CHK_IS_LEAF_ENTRY)(
  * ERROR_BACKEND_ENTRY_NOTFOUND:    no entry found
  * ERROR_BACKEND_ERROR:             all others
  */
-//ERROR_BACKEND_ENTRY_NOTFOUND
 typedef DWORD (*PFN_BACKEND_GET_CANDIDATES)(
                     PVDIR_BACKEND_CTX   pBECtx,
-                    VDIR_FILTER*        pFilter
+                    VDIR_FILTER*        pFilter,
+                    ENTRYID             eStartingId
                     );
 /*
  * Add indices for a range of entries

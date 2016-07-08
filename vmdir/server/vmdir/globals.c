@@ -83,9 +83,10 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwMaxIndexScan, 512),
         VMDIR_SF_INIT(.dwSmallCandidateSet,32),
         VMDIR_SF_INIT(.dwMaxSizelimitScan,0),
-        VMDIR_SF_INIT(.bAllowImportOpAttrs, FALSE),
         VMDIR_SF_INIT(.dwLdapSearchTimeoutSec, 0),
+        VMDIR_SF_INIT(.bAllowImportOpAttrs, FALSE),
         VMDIR_SF_INIT(.bTrackLastLoginTime, FALSE),
+        VMDIR_SF_INIT(.bPagedSearchReadAhead, FALSE),
     };
 
 VMDIR_KRB_GLOBALS gVmdirKrbGlobals =

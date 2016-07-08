@@ -552,7 +552,7 @@ DeleteRefAttributesValue(
     mr.mods = &mod;
     mr.numMods = 1;
 
-    retVal = pOperation->pBEIF->pfnBEGetCandidates( pOperation->pBECtx, f);
+    retVal = pOperation->pBEIF->pfnBEGetCandidates(pOperation->pBECtx, f, 0);
     if ( retVal != 0 )
     {
         if (retVal == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)

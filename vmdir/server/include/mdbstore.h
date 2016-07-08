@@ -110,11 +110,6 @@ VmDirMDBGetAllAttrsMetaData(
     int *                       pnumAttrMetaData
     );
 
-DWORD
-VmDirMDBGetCandidates(
-    PVDIR_BACKEND_CTX   pBECtx,
-    VDIR_FILTER*        pFilter);
-
 // txn.c
 DWORD
 VmDirMDBTxnBegin(

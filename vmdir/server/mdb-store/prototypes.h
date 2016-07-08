@@ -65,6 +65,13 @@ MDBEntryIdToDBT(
     ENTRYID         eId,
     PVDIR_DB_DBT    pDBT);
 
+DWORD
+VmDirMDBGetCandidates(
+    PVDIR_BACKEND_CTX   pBECtx,
+    VDIR_FILTER*        pFilter,
+    ENTRYID             eStartingId
+    );
+
 // init.c
 DWORD
 MDBToBackendError(

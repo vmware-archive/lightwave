@@ -836,7 +836,11 @@ _ParsePagedResultControlVal(
         BAIL_ON_VMDIR_ERROR(retVal);
     }
 
-    VmDirStringNCpyA( pageResultCtrlVal->cookie, VMDIR_MAX_I64_ASCII_STR_LEN, pszCookie, VMDIR_MAX_I64_ASCII_STR_LEN-1);
+    VmDirStringNCpyA(
+        pageResultCtrlVal->cookie,
+        VMDIR_ARRAY_SIZE(pageResultCtrlVal->cookie),
+        pszCookie,
+        VMDIR_ARRAY_SIZE(pageResultCtrlVal->cookie) - 1);
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "pageSize:%d", pageResultCtrlVal->pageSize );
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "cookie:%s", pageResultCtrlVal->cookie );

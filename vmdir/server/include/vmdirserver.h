@@ -200,9 +200,10 @@ typedef struct _VMDIR_GLOBALS
     // Limit index scan for the best effort sizelimit search
     DWORD                           dwMaxSizelimitScan;
 
-    BOOLEAN                         bAllowImportOpAttrs;
     DWORD                           dwLdapSearchTimeoutSec;
+    BOOLEAN                         bAllowImportOpAttrs;
     BOOLEAN                         bTrackLastLoginTime;
+    BOOLEAN                         bPagedSearchReadAhead;
 } VMDIR_GLOBALS, *PVMDIR_GLOBALSS;
 
 extern VMDIR_GLOBALS gVmdirGlobals;

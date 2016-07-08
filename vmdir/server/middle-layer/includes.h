@@ -53,7 +53,7 @@
 
 #include "defines.h"
 #include "structs.h"
-#include "ml.h"
+#include "prototypes.h"
 #include "externs.h"
 
 #else
@@ -111,7 +111,7 @@
 
 #include "defines.h"
 #include "structs.h"
-#include "ml.h"
+#include "prototypes.h"
 #include "externs.h"
 
 #include "banned.h"

@@ -31,6 +31,7 @@ extern "C" {
 #define VMDIR_UUID_LEN                  16 /* typedef __darwin_uuid_t uuid_t; typedef unsigned char __darwin_uuid_t[16] */
 #define VMDIR_MAX_USN_STR_LEN           VMDIR_MAX_I64_ASCII_STR_LEN
 #define VMDIR_MAX_VERSION_NO_STR_LEN    VMDIR_MAX_I64_ASCII_STR_LEN /* Version number used in attribute meta-data */
+#define VMDIR_PS_COOKIE_LEN             (VMDIR_MAX_I64_ASCII_STR_LEN + 1 /* comma */ + VMDIR_GUID_STR_LEN + 1)
 
 // Format is: <local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
 #define VMDIR_MAX_ATTR_META_DATA_LEN    (VMDIR_MAX_USN_STR_LEN + 1 + VMDIR_MAX_VERSION_NO_STR_LEN + 1 + \
@@ -41,6 +42,7 @@ extern "C" {
 #define VMDIR_IS_DELETED_TRUE_STR_LEN  4
 
 #define VMDIR_UTD_VECTOR_HASH_TABLE_SIZE  100
+#define VMDIR_PAGED_SEARCH_CACHE_HASH_TABLE_SIZE 32
 #define VMDIR_LOCKOUT_VECTOR_HASH_TABLE_SIZE  1000
 
 #define VMDIR_DEFAULT_REPL_INTERVAL     "30"
@@ -486,7 +488,7 @@ typedef struct SyncDoneControlValue
 typedef struct _VDIR_PAGED_RESULT_CONTROL_VALUE
 {
     DWORD                   pageSize;
-    CHAR                    cookie[VMDIR_MAX_I64_ASCII_STR_LEN];
+    CHAR                    cookie[VMDIR_PS_COOKIE_LEN];
 } VDIR_PAGED_RESULT_CONTROL_VALUE;
 
 //SCW - Strong Consistency Write
