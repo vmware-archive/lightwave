@@ -46,211 +46,223 @@
 
 // function parameter pEntry is NULL in this case!!
 // NOTE: order of fields MUST stay in sync with struct definition...
-#define VDIR_PRE_MODAPPLY_MODIFY_PLUGIN_INITIALIZER                     \
-{                                                                       \
-    {                                                                   \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),                 \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                                 \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDIrPluginPasswordPreModApplyModify),       \
-    VMDIR_SF_INIT(.pNext, NULL )                                        \
-    },                                                                  \
-    {                                                                   \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),                 \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                                 \
+#define VDIR_PRE_MODAPPLY_MODIFY_PLUGIN_INITIALIZER                 \
+{                                                                   \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDIrPluginPasswordPreModApplyModify), \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplaceOpAttrsPreModApplyModify), \
-    VMDIR_SF_INIT(.pNext, NULL )                                        \
-    },                                                                  \
-    {                                                                   \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),                 \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                                 \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDIrPluginHandleFSPsPreModApplyModify), \
-    VMDIR_SF_INIT(.pNext, NULL )                                        \
-    },                                                                  \
-    {                                                                   \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),                 \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                                 \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginHandleStructureOCPreModApplyModify), \
-    VMDIR_SF_INIT(.pNext, NULL )                                        \
-    },                                                                  \
-    {                                                                   \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),                 \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                                 \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginMapAclStringAttributePreModApplyModify), \
-    VMDIR_SF_INIT(.pNext, NULL )                                        \
-    },                                                                  \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginIndexEntryPreModApplyModify), \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
 }
 
 // NOTE: order of fields MUST stay in sync with struct definition...
 // Following plugin will be call for normal and replication routes.
 // This plugin sees entry with modification applied
-#define VDIR_PRE_MODIFY_PLUGIN_INITIALIZER                    \
-{                                                             \
-    {                                                         \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),   \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                       \
+#define VDIR_PRE_MODIFY_PLUGIN_INITIALIZER                          \
+{                                                                   \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSchemaLibUpdatePreModify), \
-    VMDIR_SF_INIT(.pNext, NULL )                              \
-    },                                                        \
-    {                                                         \
-    VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),            \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                       \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginIndicesEntryPreModify), \
-    VMDIR_SF_INIT(.pNext, NULL )                              \
-    },                                                        \
-    {                                                         \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),       \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                       \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginLockoutPolicyEntryIntegrityCheck), \
-    VMDIR_SF_INIT(.pNext, NULL )                              \
-    },                                                        \
-    {                                                         \
-    VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),            \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                       \
-    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginGroupTypePreModify), \
-    VMDIR_SF_INIT(.pNext, NULL )                              \
-    },                                                        \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),                  \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginGroupTypePreModify),     \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginIndexEntryPreModify),    \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
 }
 
 // NOTE: order of fields MUST stay in sync with struct definition...
-#define VDIR_POST_MODIFY_COMMIT_PLUGIN_INITIALIZER                   \
-{                                                                    \
-    {                                                                \
-    VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),                   \
-    VMDIR_SF_INIT(.bSkipOnError, FALSE),                             \
+#define VDIR_POST_MODIFY_COMMIT_PLUGIN_INITIALIZER                  \
+{                                                                   \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),                  \
+    VMDIR_SF_INIT(.bSkipOnError, FALSE),                            \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirpluginPasswordPostModifyCommit), \
-    VMDIR_SF_INIT(.pNext, NULL )                                     \
-    },                                                               \
-    {                                                                \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),          \
-    VMDIR_SF_INIT(.bSkipOnError, FALSE),                             \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
+    VMDIR_SF_INIT(.bSkipOnError, FALSE),                            \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSchemaLibUpdatePostModifyCommit), \
-    VMDIR_SF_INIT(.pNext, NULL )                                     \
-    },                                                               \
-    {                                                                \
-    VMDIR_SF_INIT(.usOpMask, VDIR_ALL_OPERATIONS),                   \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                              \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginIndicesEntryPostModifyCommit), \
-    VMDIR_SF_INIT(.pNext, NULL )                                     \
-    },                                                               \
-    {                                                                \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),          \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                              \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginLockoutCachePostModifyCommit), \
-    VMDIR_SF_INIT(.pNext, NULL )                                     \
-    },                                                               \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
 }
 
 // NOTE1: order of fields MUST stay in sync with struct definition...
 // NOTE2: generate SID (_VmDirPluginGenerateSidPreAdd) after generating GUID in _VmDirPluginAddOpAttrsPreAdd plugin
-#define VDIR_PRE_ADD_PLUGIN_INITIALIZER                    \
-{                                                          \
-    {                                                      \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),    \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                    \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginGenericPreAdd), \
-    VMDIR_SF_INIT(.pNext, NULL )                           \
-    },                                                     \
-    {                                                      \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),    \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                    \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginPasswordHashPreAdd), \
-    VMDIR_SF_INIT(.pNext, NULL )                           \
-    },                                                     \
-    {                                                      \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),    \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                    \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginAddOpAttrsPreAdd),   \
-    VMDIR_SF_INIT(.pNext, NULL )                           \
-    },                                                     \
-    {                                                      \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),    \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                    \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginGenerateSidPreAdd),  \
-    VMDIR_SF_INIT(.pNext, NULL )                           \
-    },                                                     \
-    {                                                      \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),    \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                    \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginCreateFSPsPreAdd),   \
-    VMDIR_SF_INIT(.pNext, NULL )                           \
-    },                                                     \
-    {                                                      \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),    \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                    \
+#define VDIR_PRE_ADD_PLUGIN_INITIALIZER                             \
+{                                                                   \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginGenericPreAdd),         \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginPasswordHashPreAdd),    \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginAddOpAttrsPreAdd),      \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginGenerateSidPreAdd),     \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginCreateFSPsPreAdd),      \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginLockoutPolicyEntryIntegrityCheck), \
-    VMDIR_SF_INIT(.pNext, NULL )                           \
-    },                                                     \
-    {                                                      \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),    \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                    \
-    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginGroupTypePreAdd), \
-    VMDIR_SF_INIT(.pNext, NULL )                           \
-    },                                                     \
-    {                                                      \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),    \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                    \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSchemaEntryPreAdd), \
-    VMDIR_SF_INIT(.pNext, NULL )                           \
-    },                                                     \
-    {                                                      \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),\
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                    \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginGroupTypePreAdd),        \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSchemaEntryPreAdd),     \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSchemaLibUpdatePreAdd), \
-    VMDIR_SF_INIT(.pNext, NULL )                           \
-    },                                                     \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginIndexEntryPreAdd),       \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
 }
 
 // NOTE 1: order of fields MUST stay in sync with struct definition...
 // NOTE 2: _VmDirPluginReplAgrPostAddCommit() plugin is called only when Add commit has succeeded.
-#define VDIR_POST_ADD_COMMIT_PLUGIN_INITIALIZER              \
-{                                                            \
-    {                                                        \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),      \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                      \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplAgrPostAddCommit), \
-    VMDIR_SF_INIT(.pNext, NULL )                             \
-    },                                                       \
-    {                                                        \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),  \
-    VMDIR_SF_INIT(.bSkipOnError, FALSE),                     \
+#define VDIR_POST_ADD_COMMIT_PLUGIN_INITIALIZER                     \
+{                                                                   \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplAgrPostAddCommit),  \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
+    VMDIR_SF_INIT(.bSkipOnError, FALSE),                            \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSchemaLibUpdatePostAddCommit), \
-    VMDIR_SF_INIT(.pNext, NULL )                             \
-    },                                                       \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                            \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginIndexEntryPostAdd),      \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
 }
 
 // function parameter pEntry is NULL in this case!!
 // NOTE: order of fields MUST stay in sync with struct definition...
-#define VDIR_PRE_MODAPPLY_DELETE_PLUGIN_INITIALIZER                         \
-{                                                                           \
-    {                                                                       \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),                     \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                                     \
+#define VDIR_PRE_MODAPPLY_DELETE_PLUGIN_INITIALIZER                 \
+{                                                                   \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSchemaLibUpdatePreModApplyDelete), \
-    VMDIR_SF_INIT(.pNext, NULL )                                            \
-    },                                                                      \
-    {                                                                       \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),                     \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                                     \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplaceOpAttrsPreModApplyModify), \
-    VMDIR_SF_INIT(.pNext, NULL )                                            \
-    },                                                                      \
-    {                                                                       \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),                     \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                                     \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSetDeletedObjAttrsPreModApplyDelete), \
-    VMDIR_SF_INIT(.pNext, NULL )                                            \
-    },                                                                      \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
 }
 
 // NOTE: order of fields MUST stay in sync with struct definition...
-#define VDIR_POST_DELETE_COMMIT_PLUGIN_INITIALIZER                   \
-{                                                                    \
-    {                                                                \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),              \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                              \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplAgrPostDeleteCommit),\
-    VMDIR_SF_INIT(.pNext, NULL )                                     \
-    },                                                               \
+#define VDIR_POST_DELETE_COMMIT_PLUGIN_INITIALIZER                  \
+{                                                                   \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplAgrPostDeleteCommit), \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
 }
 
 static
@@ -285,21 +297,7 @@ _VmDirPluginSchemaLibUpdatePreModify(
 
 static
 DWORD
-_VmDirPluginIndicesEntryPreModify(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult);
-
-static
-DWORD
 _VmDirPluginSchemaLibUpdatePostModifyCommit(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult);
-
-static
-DWORD
-_VmDirPluginIndicesEntryPostModifyCommit(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,
     DWORD            dwPriorResult);
@@ -770,29 +768,6 @@ _VmDirPluginSchemaLibUpdatePreModify(
 
 error:
     return dwPriorResult ? dwPriorResult : dwRtn;
-}
-
-static
-DWORD
-_VmDirPluginIndicesEntryPreModify(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult)
-{
-    DWORD           dwRtn = 0;
-// WEI - TODO: Need remove once schema modification is fixed
-#if 0
-    PVDIR_MODIFICATION   pMods = pOperation->request.modifyReq.mods;
-
-    if (pEntry->eId == CFG_INDEX_ENTRY_ID)
-    {
-        dwRtn = VmDirCFGAttrIndexModifyPrepare(
-                pMods,
-                pEntry);
-    }
-#endif
-
-    return dwRtn;
 }
 
 /*
@@ -1608,19 +1583,12 @@ _VmDirPluginSchemaLibUpdatePreModApplyDelete(
 {
     // reject delete if it's a schema entry
     DWORD   dwError = 0;
-    PVDIR_BERVALUE  pDn = &(pOperation->request.deleteReq.dn);
+    PSTR    pszDN = BERVAL_NORM_VAL(pOperation->request.deleteReq.dn);
 
-    if (pDn && pDn->bvnorm_len > SCHEMA_NAMING_CONTEXT_DN_LEN)
+    if (VmDirStringEndsWith(pszDN, SCHEMA_NAMING_CONTEXT_DN, FALSE))
     {
-        size_t offset = pDn->bvnorm_len - (SCHEMA_NAMING_CONTEXT_DN_LEN);
-        if (VmDirStringCompareA(
-                pDn->bvnorm_val + offset,
-                SCHEMA_NAMING_CONTEXT_DN,
-                FALSE) == 0)
-        {
-            dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
+        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
 error:
@@ -1642,25 +1610,6 @@ _VmDirPluginSchemaLibUpdatePostModifyCommit(
     }
 
     return dwPriorResult ? dwPriorResult : dwRtn;
-}
-
-static
-DWORD
-_VmDirPluginIndicesEntryPostModifyCommit(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult)
-{
-    DWORD           dwError = 0;
-// WEI - TODO: Need remove once schema modification is fixed
-#if 0
-    if (pEntry->eId == CFG_INDEX_ENTRY_ID)
-    {
-        VmDirCFGAttrIndexModifyCommit();
-    }
-#endif
-
-    return dwError;
 }
 
 /*

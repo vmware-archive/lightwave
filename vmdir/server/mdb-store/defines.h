@@ -29,7 +29,8 @@
 
 // key for ENTRY and USN sequence number
 #define BE_MDB_SEQ_DB_NAME              "MDB_SEQUENCE_DB"
-#define BE_MDB_GENERIC_DB_NAME          "MDB_GNERIC_DB"
+#define BE_MDB_GENERIC_DUPKEY_DB_NAME   "MDB_GNERIC_DUPKEY_DB"
+#define BE_MDB_GENERIC_UNIQKEY_DB_NAME  "MDB_GNERIC_UNIQKEY_DB"
 #define BE_MDB_ENTRYID_SEQ_KEY          1
 #define BE_MDB_USN_SEQ_KEY              2
 

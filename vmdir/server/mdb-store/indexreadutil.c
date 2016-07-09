@@ -13,23 +13,7 @@
  */
 
 
-
 #include "includes.h"
-
-static
-void
-MDBDBTToEntryId(
-    PVDIR_DB_DBT        pDBT,
-    ENTRYID*            pEID);
-
-static
-DWORD
-MdbDeleteKeyValue(
-    VDIR_DB             mdbDBi,
-    PVDIR_DB_TXN        pTxn,
-    PVDIR_DB_DBT        pKey,
-    PVDIR_DB_DBT        pValue,
-    BOOLEAN             bIsUniqueVal);
 
 static
 DWORD
@@ -42,16 +26,6 @@ MdbScanIndex(
     int *               partialCandidates,
     ENTRYID             eStartingId
     );
-
-static
-DWORD
-MdbUpdateKeyValue(
-    VDIR_DB             mdbDBi,
-    PVDIR_DB_TXN        pTxn,
-    PVDIR_DB_DBT        pKey,
-    PVDIR_DB_DBT        pValue,
-    BOOLEAN             bIsUniqueVal,
-    ULONG               ulOPMask);
 
 /*
  * BdbCheckIfALeafNode(): From parentid.db, check if the entryId has children.
@@ -73,9 +47,7 @@ VmDirMDBCheckIfALeafNode(
     VDIR_BERVALUE       parentIdAttr = { {ATTR_PARENT_ID_LEN, ATTR_PARENT_ID}, 0, 0, NULL };
     unsigned char       EIDBytes[sizeof( ENTRYID )] = {0};
     PVDIR_DB_TXN        pTxn = NULL;
-
-    PVDIR_CFG_ATTR_INDEX_DESC   pIdxDesc = NULL;
-    USHORT                      usVersion = 0;
+    PVDIR_INDEX_CFG     pIndexCfg = NULL;
 
     assert(pBECtx && pBECtx->pBEPrivate && pIsLeafEntry);
 
@@ -83,10 +55,12 @@ VmDirMDBCheckIfALeafNode(
 
     *pIsLeafEntry = FALSE;
 
-    pIdxDesc = VmDirAttrNameToWriteIndexDesc(parentIdAttr.lberbv.bv_val, usVersion, &usVersion);
-    assert(pIdxDesc);
+    dwError = VmDirIndexCfgAcquire(
+            parentIdAttr.lberbv.bv_val, VDIR_INDEX_READ, &pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    mdbDBi = gVdirMdbGlobals.mdbIndexDBs.pIndexDBs[pIdxDesc->iId].pMdbDataFiles[0].mdbDBi;
+    dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     key.mv_data = &EIDBytes[0];
     MDBEntryIdToDBT(entryId, &key);
@@ -107,7 +81,7 @@ VmDirMDBCheckIfALeafNode(
     }
 
 cleanup:
-
+    VmDirIndexCfgRelease(pIndexCfg);
     return dwError;
 
 error:
@@ -143,21 +117,23 @@ VmDirMDBGetAttrMetaData(
     BOOLEAN               bIsUniqueVal = FALSE;
     VDIR_BERVALUE         attrMetaDataAttr = { {ATTR_ATTR_META_DATA_LEN, ATTR_ATTR_META_DATA}, 0, 0, NULL };
 
-    PVDIR_CFG_ATTR_INDEX_DESC   pIdxDesc = NULL;
-    USHORT                      usVersion = 0;
-    PVDIR_DB_TXN                pTxn = NULL;
+    PVDIR_DB_TXN          pTxn = NULL;
+    PVDIR_INDEX_CFG       pIndexCfg = NULL;
 
     assert( pBECtx && pBECtx->pBEPrivate );
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
-    pIdxDesc = VmDirAttrNameToWriteIndexDesc(attrMetaDataAttr.lberbv.bv_val, usVersion, &usVersion);
-    assert(pIdxDesc);
+    dwError = VmDirIndexCfgAcquire(
+            attrMetaDataAttr.lberbv.bv_val, VDIR_INDEX_READ, &pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    mdbDBi = gVdirMdbGlobals.mdbIndexDBs.pIndexDBs[pIdxDesc->iId].pMdbDataFiles[0].mdbDBi;
-    indTypes = pIdxDesc->iTypes;
+    dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    indTypes = pIndexCfg->iTypes;
     assert( indTypes == INDEX_TYPE_EQUALITY );
-    bIsUniqueVal = pIdxDesc->bIsUnique;
+    bIsUniqueVal = pIndexCfg->bGlobalUniq;
     assert( bIsUniqueVal );
 
     key.mv_data = &keyData[0];
@@ -176,7 +152,7 @@ VmDirMDBGetAttrMetaData(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-
+    VmDirIndexCfgRelease(pIndexCfg);
     return dwError;
 
 error:
@@ -223,9 +199,8 @@ VmDirMDBGetAllAttrsMetaData(
     PVDIR_DB_DBC          pCursor = NULL;
     unsigned int          cursorFlags;
 
-    PVDIR_CFG_ATTR_INDEX_DESC   pIdxDesc = NULL;
-    USHORT                      usVersion = 0;
     PVDIR_DB_TXN                pTxn = NULL;
+    PVDIR_INDEX_CFG             pIndexCfg = NULL;
     PATTRIBUTE_META_DATA_NODE   pDataNode = NULL;
     int                         iNumNode = 0;
     int                         iMaxNumNode = 0;
@@ -234,13 +209,16 @@ VmDirMDBGetAllAttrsMetaData(
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
-    pIdxDesc = VmDirAttrNameToWriteIndexDesc(attrMetaDataAttr.lberbv.bv_val, usVersion, &usVersion);
-    assert(pIdxDesc);
+    dwError = VmDirIndexCfgAcquire(
+            attrMetaDataAttr.lberbv.bv_val, VDIR_INDEX_READ, &pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    mdbDBi = gVdirMdbGlobals.mdbIndexDBs.pIndexDBs[pIdxDesc->iId].pMdbDataFiles[0].mdbDBi;
-    indTypes = pIdxDesc->iTypes;
+    dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    indTypes = pIndexCfg->iTypes;
     assert( indTypes == INDEX_TYPE_EQUALITY );
-    bIsUniqueVal = pIdxDesc->bIsUnique;
+    bIsUniqueVal = pIndexCfg->bGlobalUniq;
     assert( bIsUniqueVal );
 
     key.mv_data = &keyData[0];
@@ -316,7 +294,7 @@ VmDirMDBGetAllAttrsMetaData(
     *pNumAttrMetaData = iNumNode;
 
 cleanup:
-
+    VmDirIndexCfgRelease(pIndexCfg);
     if (pCursor)
     {
         mdb_cursor_close( pCursor );
@@ -533,10 +511,8 @@ VmDirMDBDNToEntryId(
     char *                normDn = NULL;
     ber_len_t             normDnLen = 0;
     VDIR_DB_TXN*          pTxn = NULL;
+    PVDIR_INDEX_CFG       pIndexCfg = NULL;
     PSTR                  pszLocalErrMsg = NULL;
-
-    PVDIR_CFG_ATTR_INDEX_DESC   pIdxDesc = NULL;
-    USHORT                      usVersion = 0;
 
     assert(pBECtx && pBECtx->pBEPrivate && pDn && pEId);
 
@@ -551,10 +527,12 @@ VmDirMDBDNToEntryId(
     }
     else
     {
-        pIdxDesc = VmDirAttrNameToWriteIndexDesc(dnAttr.lberbv.bv_val, usVersion, &usVersion);
-        assert( pIdxDesc );
+        dwError = VmDirIndexCfgAcquire(
+                dnAttr.lberbv.bv_val, VDIR_INDEX_READ, &pIndexCfg);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-        mdbDBi = gVdirMdbGlobals.mdbIndexDBs.pIndexDBs[pIdxDesc->iId].pMdbDataFiles[0].mdbDBi;
+        dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirAllocateMemory( normDnLen + 1, (PVOID *)&pKeyData );
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -580,7 +558,7 @@ VmDirMDBDNToEntryId(
     }
 
 cleanup:
-
+    VmDirIndexCfgRelease(pIndexCfg);
     VMDIR_SAFE_FREE_MEMORY( pKeyData );
     VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
 
@@ -616,10 +594,8 @@ VmDirMDBObjectGUIDToEntryId(
     VDIR_DB               mdbDBi = 0;
     ber_len_t             Len = 0;
     VDIR_DB_TXN*          pTxn = NULL;
+    PVDIR_INDEX_CFG       pIndexCfg = NULL;
     PSTR                  pszLocalErrMsg = NULL;
-
-    PVDIR_CFG_ATTR_INDEX_DESC   pIdxDesc = NULL;
-    USHORT                      usVersion = 0;
 
     assert(pBECtx && pBECtx->pBEPrivate && pszObjectGUID && pEId);
 
@@ -627,10 +603,12 @@ VmDirMDBObjectGUIDToEntryId(
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
-    pIdxDesc = VmDirAttrNameToWriteIndexDesc(guidAttr.lberbv.bv_val, usVersion, &usVersion);
-    assert( pIdxDesc );
+    dwError = VmDirIndexCfgAcquire(
+            guidAttr.lberbv.bv_val, VDIR_INDEX_READ, &pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    mdbDBi = gVdirMdbGlobals.mdbIndexDBs.pIndexDBs[pIdxDesc->iId].pMdbDataFiles[0].mdbDBi;
+    dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateMemory( Len + 1, (PVOID *)&pKeyData );
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -655,10 +633,9 @@ VmDirMDBObjectGUIDToEntryId(
     MDBDBTToEntryId( &value, pEId);
 
 cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY( pKeyData );
-    VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
-
+    VmDirIndexCfgRelease(pIndexCfg);
+    VMDIR_SAFE_FREE_MEMORY(pKeyData);
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return dwError;
 
 error:
@@ -666,190 +643,8 @@ error:
     VMDIR_LOG_ERROR( LDAP_DEBUG_BACKEND, VDIR_SAFE_STRING(pszLocalErrMsg) );
 
     VMDIR_SET_BACKEND_ERROR(dwError);
-
     goto cleanup;
 }
-
-/*
- * CreateParentIdIndex(): In parentid.db, create parentId => entryId index. => mainly used in one-level searches.
- *
- * Return values:
- *     On Success: 0
- *     On Error: BE error
- */
-DWORD
-MDBCreateParentIdIndex(
-    PVDIR_BACKEND_CTX   pBECtx,
-    VDIR_BERVALUE *     pdn,
-    ENTRYID             entryId)
-{
-    DWORD               dwError = 0;
-    VDIR_DB_DBT         key = {0};
-    VDIR_DB_DBT         value = {0};
-    VDIR_DB             mdbDBi = 0;
-    BOOLEAN             bIsUniqueVal = FALSE;
-    VDIR_BERVALUE       parentIdAttr = { {ATTR_PARENT_ID_LEN, ATTR_PARENT_ID}, 0, 0, NULL };
-    ENTRYID             parentId = 0;
-    unsigned char       eIdBytes[sizeof( ENTRYID )] = {0};
-    unsigned char       parentEIdBytes[sizeof( ENTRYID )] = {0};
-
-    PVDIR_CFG_ATTR_INDEX_DESC   pIdxDesc = NULL;
-    USHORT                      usVersion = 0;
-    PSTR                        pszLocalErrMsg = NULL;
-
-    assert(pBECtx && pBECtx->pBEPrivate && pdn);
-
-    dwError = VmDirMDBDNToEntryId( pBECtx, pdn, &parentId );
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-    // Update parentId => entryId index in parentid.db.
-    pIdxDesc = VmDirAttrNameToWriteIndexDesc(parentIdAttr.lberbv.bv_val, usVersion, &usVersion);
-    assert(pIdxDesc);
-
-    mdbDBi = gVdirMdbGlobals.mdbIndexDBs.pIndexDBs[pIdxDesc->iId].pMdbDataFiles[0].mdbDBi;
-    bIsUniqueVal = pIdxDesc->bIsUnique;
-    assert( bIsUniqueVal == FALSE );
-
-    key.mv_data = &parentEIdBytes[0];
-    MDBEntryIdToDBT(parentId, &key);
-
-    value.mv_data = &eIdBytes[0];
-    MDBEntryIdToDBT(entryId, &value);
-
-    if ((dwError = mdb_put((PVDIR_DB_TXN)pBECtx->pBEPrivate, mdbDBi, &key, &value, BE_DB_FLAGS_ZERO)) != 0)
-    {
-        DWORD   dwTmp = dwError;
-        dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx, VDIR_SAFE_STRING(pdn->lberbv.bv_val));
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                        "CreateParentIdIndex: For entryId: %lld, mdb_put failed with error code: %d, error "
-                        "string: %s", entryId, dwTmp, VDIR_SAFE_STRING(pBECtx->pszBEErrorMsg) );
-    }
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-
-    return dwError;
-
-error:
-
-    VMDIR_LOG_ERROR( LDAP_DEBUG_BACKEND, VDIR_SAFE_STRING(pszLocalErrMsg));
-
-    VMDIR_SET_BACKEND_ERROR(dwError);
-
-    goto cleanup;
-}
-
-/*
- * CreateEntryIdIndex(): In entry DB, create entryId => encodedEntry entry.
- *
- * Return values:
- *     On Success: 0
- *     On Error: MDB error
- */
-DWORD
-MdbCreateEIDIndex(
-    PVDIR_DB_TXN     pTxn,
-    ENTRYID          eId,
-    VDIR_BERVALUE *  pEncodedEntry,
-    BOOLEAN          bIsCreateIndex // Creating a new or updating an existing index recrod.
-    )
-{
-    int             dwError = 0;
-    VDIR_DB_DBT     key = {0};
-    VDIR_DB_DBT     value = {0};
-    VDIR_DB         mdbDBi = 0;
-    BOOLEAN         bIsUniqueVal = FALSE;
-    unsigned char   eIdBytes[sizeof( ENTRYID )] = {0};
-
-    assert(pTxn && pEncodedEntry);
-
-    mdbDBi = gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].mdbDBi;
-    bIsUniqueVal = gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].bIsUnique;
-    assert( bIsUniqueVal );
-
-    key.mv_data = &eIdBytes[0];
-    MDBEntryIdToDBT(eId, &key);
-
-    value.mv_data = pEncodedEntry->lberbv.bv_val;
-    value.mv_size = pEncodedEntry->lberbv.bv_len;
-
-    // new index case    - MDB_NOOVERWRITE
-    // update index case - MDB_FLAGS_ZERO
-    dwError = mdb_put( pTxn, mdbDBi, &key, &value, bIsCreateIndex ? MDB_NOOVERWRITE : BE_DB_FLAGS_ZERO);
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    VMDIR_LOG_ERROR( LDAP_DEBUG_BACKEND, "CreateEntryIdIndex failed for entryId: %lld, error code: %d, error string: %s",
-              eId, dwError, mdb_strerror(dwError) );
-
-    goto cleanup;
-}
-
-/*
- * DeleteParentIdIndex(): In parentid.db, delete parentId => entryId index.
- *
- * Return values:
- *     On Success: 0
- *     On Error: BE error
- */
-DWORD
-MDBDeleteParentIdIndex(
-    PVDIR_BACKEND_CTX   pBECtx,
-    VDIR_BERVALUE *     pdn,
-    ENTRYID             entryId)
-{
-    DWORD               dwError = 0;
-    VDIR_DB_DBT         key = {0};
-    VDIR_DB_DBT         value = {0};
-    VDIR_DB             mdbDBi = 0;
-    BOOLEAN             bIsUniqueVal = FALSE;
-    VDIR_BERVALUE       parentIdAttr = { {ATTR_PARENT_ID_LEN, ATTR_PARENT_ID}, 0, 0, NULL };
-    ENTRYID             parentId = 0;
-    unsigned char       parentEIdBytes[sizeof( ENTRYID )] = {0};
-    unsigned char       entryIdBytes[sizeof( ENTRYID )] = {0};
-
-    PVDIR_CFG_ATTR_INDEX_DESC   pIdxDesc = NULL;
-    USHORT                      usVersion = 0;
-
-    assert(pBECtx && pBECtx->pBEPrivate && pdn);
-
-    dwError = VmDirMDBDNToEntryId( pBECtx, pdn, &parentId );
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-    pIdxDesc = VmDirAttrNameToWriteIndexDesc(parentIdAttr.lberbv.bv_val, usVersion, &usVersion);
-    assert(pIdxDesc);
-
-    mdbDBi = gVdirMdbGlobals.mdbIndexDBs.pIndexDBs[pIdxDesc->iId].pMdbDataFiles[0].mdbDBi;
-    bIsUniqueVal = pIdxDesc->bIsUnique;
-    assert( bIsUniqueVal == FALSE );
-
-    key.mv_data = &parentEIdBytes[0];
-    MDBEntryIdToDBT(parentId, &key);
-
-    value.mv_data = &entryIdBytes[0];
-    MDBEntryIdToDBT(entryId, &value);
-
-    dwError = MdbDeleteKeyValue(mdbDBi, (VDIR_DB_TXN*)pBECtx->pBEPrivate, &key, &value, bIsUniqueVal);
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    VMDIR_SET_BACKEND_ERROR(dwError);
-
-    goto cleanup;
-}
-
-
 
 /* MDBEntryIdToDBT: Convert EntryId (db_seq_t/long long) to sequence of bytes (going from high order bytes to lower
  * order bytes) to be stored in BDB.
@@ -875,206 +670,9 @@ MDBEntryIdToDBT(
     }
 }
 
-/*
- * UpdateAttributeMetaData(): Update attribute's meta data.
- *
- * Return values:
- *     On Success: 0
- *     On Error: MDB error
- */
-DWORD
-MdbUpdateAttrMetaData(
-    PVDIR_DB_TXN     pTxn,
-    VDIR_ATTRIBUTE * attr,
-    ENTRYID          entryId,
-    ULONG            ulOPMask)
-{
-    DWORD                 dwError = 0;
-    VDIR_DB_DBT           key = {0};
-    VDIR_DB_DBT           value = {0};
-    char                  keyData[ sizeof( ENTRYID ) + 1 + 2 ] = {0}; /* key format is: <entry ID>:<attribute ID (a short)> */
-    VDIR_DB               mdbDBi = 0;
-    int                   indTypes = 0;
-    BOOLEAN               bIsUniqueVal = FALSE;
-    VDIR_BERVALUE         attrMetaDataAttr = { {ATTR_ATTR_META_DATA_LEN, ATTR_ATTR_META_DATA}, 0, 0, NULL };
-    unsigned char *       pWriter = NULL;
-
-    PVDIR_CFG_ATTR_INDEX_DESC   pIdxDesc = NULL;
-    USHORT                      usVersion = 0;
-
-    // E.g. while deleting a user, and therefore updating the member attribute of the groups to which the user belongs,
-    // member attrMetaData of the group object is left unchanged (at least in the current design, SJ-TBD).
-    if (ulOPMask == BE_INDEX_OP_TYPE_UPDATE && VmDirStringLenA( attr->metaData ) == 0)
-    {
-        goto cleanup;
-    }
-
-    pIdxDesc = VmDirAttrNameToWriteIndexDesc(attrMetaDataAttr.lberbv.bv_val, usVersion, &usVersion);
-    assert(pIdxDesc);
-
-    mdbDBi = gVdirMdbGlobals.mdbIndexDBs.pIndexDBs[pIdxDesc->iId].pMdbDataFiles[0].mdbDBi;
-    indTypes = pIdxDesc->iTypes;
-    assert( indTypes == INDEX_TYPE_EQUALITY );
-    bIsUniqueVal = pIdxDesc->bIsUnique;
-    assert( bIsUniqueVal );
-
-    key.mv_data = &keyData[0];
-    MDBEntryIdToDBT( entryId, &key );
-    *(unsigned char *)((unsigned char *)key.mv_data + key.mv_size) = ':';
-    key.mv_size++;
-    pWriter = ((unsigned char *)key.mv_data + key.mv_size);
-    VmDirEncodeShort( &pWriter, attr->pATDesc->usAttrID );
-    key.mv_size += 2;
-
-    value.mv_data = attr->metaData;
-    value.mv_size = VmDirStringLenA(attr->metaData);
-
-    dwError = MdbUpdateKeyValue( mdbDBi, pTxn, &key, &value, bIsUniqueVal, ulOPMask );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(LDAP_DEBUG_BACKEND,
-             "UpdateAttributeMetaData failed: error=%d,eid=%ld", dwError, entryId);
-
-    VMDIR_LOG_VERBOSE(LDAP_DEBUG_BACKEND,
-             "UpdateAttributeMetaData failed: key=(%p)(%.*s), value=(%p)(%.*s)\n",
-             key.mv_data,   VMDIR_MIN(key.mv_size,   VMDIR_MAX_LOG_OUTPUT_LEN), (char *) key.mv_data,
-             value.mv_data, VMDIR_MIN(value.mv_size, VMDIR_MAX_LOG_OUTPUT_LEN), (char *) value.mv_data);
-
-    goto cleanup;
-}
-
-
-/*
- * UpdateIndicesForAttribute(): If the given attribute is indexed, create/delete the required indices.
- *
- * Return values:
- *     On Success: 0
- *     On Error: MDB error
- *
- *     Returns Success if the attribute is not indexed. => nothing to be done.
- */
-DWORD
-MdbUpdateIndicesForAttr(
-    PVDIR_DB_TXN        pTxn,
-    VDIR_BERVALUE *     attrType,
-    VDIR_BERVARRAY      attrVals, // Normalized Attribute Values
-    unsigned            numVals,
-    ENTRYID             entryId,
-    ULONG               ulOPMask
-    )
-{
-    DWORD               dwError = 0;
-    VDIR_DB_DBT         value = {0};
-    VDIR_DB_DBT         key = {0};
-    ber_len_t           maxRqdKeyLen = 0;
-    PSTR                pKeyData = NULL;
-    VDIR_DB             mdbDBi = 0;
-    int                 indTypes = 0;
-    BOOLEAN             bIsUniqueVal = FALSE;
-    unsigned char       eIdBytes[sizeof( ENTRYID )] = {0};
-
-    PVDIR_CFG_ATTR_INDEX_DESC   pIdxDesc = NULL;
-    USHORT                      usVersion = 0;
-
-    if ((pIdxDesc = VmDirAttrNameToWriteIndexDesc(attrType->lberbv.bv_val, usVersion, &usVersion)) != NULL)
-    {
-        unsigned int     i = 0;
-
-        mdbDBi = gVdirMdbGlobals.mdbIndexDBs.pIndexDBs[pIdxDesc->iId].pMdbDataFiles[0].mdbDBi;
-        indTypes = pIdxDesc->iTypes;
-        bIsUniqueVal = pIdxDesc->bIsUnique;
-
-        // Calculate required maximum length of the key.
-        for (i=0; i<numVals; i++)
-        {
-            if (BERVAL_NORM_LEN(attrVals[i]) > maxRqdKeyLen)
-            {
-                maxRqdKeyLen = BERVAL_NORM_LEN(attrVals[i]);
-            }
-        }
-        maxRqdKeyLen += 1; // For adding the Key type in front
-
-        if (VmDirAllocateMemory( maxRqdKeyLen, (PVOID *)&pKeyData ) != 0)
-        {
-            dwError = ERROR_BACKEND_OPERATIONS;
-            BAIL_ON_VMDIR_ERROR( dwError );
-        }
-        assert (pKeyData != NULL);
-
-        value.mv_data = &eIdBytes[0];
-        MDBEntryIdToDBT(entryId, &value);
-
-        for (i=0; i<numVals; i++)
-        {
-            char*       pNormVal   = BERVAL_NORM_VAL(attrVals[i]);
-            ber_len_t   normValLen = BERVAL_NORM_LEN(attrVals[i]);
-
-            key.mv_size = 0;
-            key.mv_data = pKeyData;
-
-            // Create a normal index
-            if (indTypes & INDEX_TYPE_EQUALITY)
-            {
-                *(char *)(key.mv_data) = BE_INDEX_KEY_TYPE_FWD;
-                dwError = VmDirCopyMemory(((char *)key.mv_data + 1), normValLen, pNormVal, normValLen);
-                BAIL_ON_VMDIR_ERROR(dwError);
-
-                key.mv_size = normValLen + 1;
-
-                dwError = MdbUpdateKeyValue( mdbDBi, pTxn, &key, &value, bIsUniqueVal, ulOPMask );
-                BAIL_ON_VMDIR_ERROR( dwError );
-            }
-
-            // At least create a reverse index. => Normal index and reverse index should take care of initial substring
-            // and final substring filters.
-            if (indTypes & INDEX_TYPE_SUBSTR)
-            {
-                ber_len_t     j = 0;
-                ber_len_t     k = 0;
-
-                *(char *)key.mv_data = BE_INDEX_KEY_TYPE_REV;
-                // Reverse copy from attrVals[i]->lberbv.bv_val to &(key.data[1])
-                for (j=normValLen, k=1; j > 0; j--, k++)
-                {
-                    *((char *)key.mv_data + k) = pNormVal[j-1];
-                }
-
-                key.mv_size = normValLen + 1;
-
-                dwError = MdbUpdateKeyValue( mdbDBi, pTxn, &key, &value, bIsUniqueVal, ulOPMask );
-                BAIL_ON_VMDIR_ERROR( dwError );
-            }
-        }
-    }
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pKeyData);
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(LDAP_DEBUG_BACKEND,
-             "MDBUpdateIndicesForAttr failed: error=%d,eid=%ld,attr=%s",
-             dwError, entryId, VDIR_SAFE_STRING(attrType->lberbv.bv_val));
-
-    VMDIR_LOG_VERBOSE(LDAP_DEBUG_BACKEND,
-             "MDBUpdateIndicesForAttr failed: key=(%p)(%.*s), value=(%p)(%.*s)",
-             key.mv_data,   VMDIR_MIN(key.mv_size,   VMDIR_MAX_LOG_OUTPUT_LEN),  (char *) key.mv_data,
-             value.mv_data, VMDIR_MIN(value.mv_size, VMDIR_MAX_LOG_OUTPUT_LEN),  (char *) value.mv_data);
-
-    goto cleanup;
-}
-
 /* DBTToEntryId: Convert DBT data bytes sequence to EntryId (db_seq_t/long long).
  *
  */
-static
 void
 MDBDBTToEntryId(
     PVDIR_DB_DBT    pDBT,
@@ -1088,48 +686,6 @@ MDBDBTToEntryId(
         *pEID <<= 8;
         *pEID |= (unsigned char) ((unsigned char *)(pDBT->mv_data))[i];
     }
-}
-
-/*
- * DeleteKeyValue(). If it is a unique index, just delete the key, otherwise using cursor, go to the desired
- * value for the key, and delete that particular key-value pair.
- *
- * Return values:
- *     On Success: 0
- *     On Error: MDB error
-*/
-static
-DWORD
-MdbDeleteKeyValue(
-    VDIR_DB             mdbDBi,
-    PVDIR_DB_TXN        pTxn,
-    PVDIR_DB_DBT        pKey,
-    PVDIR_DB_DBT        pValue,
-    BOOLEAN             bIsUniqueVal)
-{
-    DWORD   dwError = 0;
-
-    if (bIsUniqueVal)
-    {   // unique key case, no need to match pValue parameter
-        dwError = mdb_del(pTxn, mdbDBi, pKey, NULL);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-    {   // delete matched key and value record only.
-        dwError = mdb_del(pTxn, mdbDBi, pKey, pValue);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    VMDIR_LOG_ERROR( LDAP_DEBUG_BACKEND, "DeleteKeyValue failed with error code: %d, error string: %s",
-              dwError, mdb_strerror(dwError) );
-
-    goto cleanup;
 }
 
 /*
@@ -1165,18 +721,19 @@ MdbScanIndex(
     VDIR_DB_DBT         currKey = {0};
     ENTRYID             eId = 0;
     PVDIR_DB_TXN        pLocalTxn = NULL;
+    PVDIR_INDEX_CFG     pIndexCfg = NULL;
     PVDIR_DB_DBC        pCursor = NULL;
     unsigned int        cursorFlags;
-
-    PVDIR_CFG_ATTR_INDEX_DESC   pIdxDesc = NULL;
-    USHORT                      usVersion = 0;
 
     // GE filter is neither exactMatch nor a partialMatch
     BOOLEAN     bIsExactMatch = (pFilter->choice == LDAP_FILTER_EQUALITY || pFilter->choice == FILTER_ONE_LEVEL_SEARCH);
     BOOLEAN     bIsPartialMatch = (pFilter->choice == LDAP_FILTER_SUBSTRINGS);
 
-    pIdxDesc = VmDirAttrNameToReadIndexDesc(attrType->lberbv.bv_val, usVersion, &usVersion);
-    if (!pIdxDesc)
+    dwError = VmDirIndexCfgAcquire(
+            attrType->lberbv.bv_val, VDIR_INDEX_READ, &pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (!pIndexCfg)
     {
         VMDIR_LOG_VERBOSE( LDAP_DEBUG_BACKEND, "ScanIndex: non-indexed attribute. attrType = %s", attrType->lberbv.bv_val);
         goto cleanup;
@@ -1193,8 +750,10 @@ MdbScanIndex(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    mdbDBi = gVdirMdbGlobals.mdbIndexDBs.pIndexDBs[pIdxDesc->iId].pMdbDataFiles[0].mdbDBi;
-    bIsUniqueVal = pIdxDesc->bIsUnique;
+    dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    bIsUniqueVal = pIndexCfg->bGlobalUniq;
 
     if (pTxn == NULL)
     {
@@ -1298,6 +857,7 @@ MdbScanIndex(
     }
 
 cleanup:
+    VmDirIndexCfgRelease(pIndexCfg);
 
     if (pCursor != NULL)
     {
@@ -1333,55 +893,3 @@ error:
 
     goto cleanup;
 }
-
-/*
- * MDBUpdateKeyValue(). If it is a unique index, just delete the key, otherwise using cursor, go to the desired
- * entryId value for the key, and delete that particular key-value pair.
- *
- * Return values:
- *     On Success: 0
- *     On Error: MDB error
- */
-
-static
-DWORD
-MdbUpdateKeyValue(
-   VDIR_DB             mdbDBi,
-   PVDIR_DB_TXN        pTxn,
-   PVDIR_DB_DBT        pKey,
-   PVDIR_DB_DBT        pValue,
-   BOOLEAN             bIsUniqueVal,
-   ULONG               ulOPMask)
-{
-    DWORD   dwError = 0;
-
-    switch ( ulOPMask )
-    {
-        case BE_INDEX_OP_TYPE_CREATE:
-            dwError = mdb_put(pTxn, mdbDBi, pKey, pValue, bIsUniqueVal ? MDB_NOOVERWRITE : BE_DB_FLAGS_ZERO);
-            BAIL_ON_VMDIR_ERROR( dwError );
-            break;
-        case BE_INDEX_OP_TYPE_UPDATE:
-            dwError = mdb_put(pTxn, mdbDBi, pKey, pValue, BE_DB_FLAGS_ZERO);
-            BAIL_ON_VMDIR_ERROR( dwError );
-            break;
-        case BE_INDEX_OP_TYPE_DELETE:
-            dwError = MdbDeleteKeyValue(mdbDBi, pTxn, pKey, pValue, bIsUniqueVal);
-            BAIL_ON_VMDIR_ERROR( dwError );
-            break;
-        default:
-            assert(FALSE);
-    }
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    VMDIR_LOG_ERROR( LDAP_DEBUG_BACKEND, "MDBUpdateKeyValue: failed with error code: %d, error string: %s",
-              dwError, mdb_strerror(dwError) );
-
-    goto cleanup;
-}
-

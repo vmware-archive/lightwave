@@ -129,6 +129,8 @@ VmDirLdapAtGetDiff(
 {
     DWORD   dwError = 0;
     CHAR    pszVmwAttrUsage[3] = {0};
+    CHAR    pszSearchFlags[4] = {0};
+    PSTR*   ppszNewUniqueScopes = NULL;
     PVDIR_LDAP_SCHEMA_OBJECT_DIFF   pAtDiff = NULL;
 
     if (!pNewAt || !ppAtDiff)
@@ -144,6 +146,12 @@ VmDirLdapAtGetDiff(
             sizeof(pszVmwAttrUsage), sizeof(pszVmwAttrUsage),
             "%d",
             (1 << pNewAt->usage) >> 1 | (pNewAt->bNoUserMod ? 0x8 : 0));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirStringNPrintFA(pszSearchFlags,
+            sizeof(pszSearchFlags), sizeof(pszSearchFlags),
+            "%d",
+            pNewAt->dwSearchFlags);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (!pOldAt)
@@ -191,6 +199,22 @@ VmDirLdapAtGetDiff(
                     pNewAt->pszDesc, NULL);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
+
+        if (pNewAt->dwSearchFlags)
+        {
+            dwError = _LdapSchemaObjectDiffAddMod(pAtDiff, MOD_OP_ADD,
+                    ATTR_SEARCH_FLAGS,
+                    pszSearchFlags, NULL);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        if (pNewAt->ppszUniqueScopes)
+        {
+            dwError = _LdapSchemaObjectDiffAddMod(pAtDiff, MOD_OP_ADD,
+                    ATTR_UNIQUENESS_SCOPE,
+                    NULL, pNewAt->ppszUniqueScopes);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
     }
     else
     {
@@ -210,6 +234,28 @@ VmDirLdapAtGetDiff(
                     ATTR_VMW_ATTRIBUTE_USAGE,
                     pszVmwAttrUsage, NULL);
             BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        if (pNewAt->dwSearchFlags != pOldAt->dwSearchFlags)
+        {
+            dwError = _LdapSchemaObjectDiffAddMod(pAtDiff, MOD_OP_REPLACE,
+                    ATTR_SEARCH_FLAGS,
+                    pszSearchFlags, NULL);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        dwError = VmDirGetStrArrayDiffs(
+                pOldAt->ppszUniqueScopes, pNewAt->ppszUniqueScopes,
+                &ppszNewUniqueScopes, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (ppszNewUniqueScopes)
+        {
+            dwError = _LdapSchemaObjectDiffAddMod(pAtDiff, MOD_OP_ADD,
+                    ATTR_UNIQUENESS_SCOPE,
+                    NULL, ppszNewUniqueScopes);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            VmDirFreeStrArray(ppszNewUniqueScopes);
         }
 
         if (pNewAt->pszDesc)

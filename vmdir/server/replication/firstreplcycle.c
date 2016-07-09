@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -175,7 +175,7 @@ _VmDirGetRemoteDBUsingRPC(
     retVal = VmDirReadDCAccountPassword(&pszDcAccountPwd);
     BAIL_ON_VMDIR_ERROR( retVal );
 
-    retVal = VmDirOpenServerA(pszHostname, gVmdirServerGlobals.dcAccountUPN.lberbv_val, NULL, pszDcAccountPwd, 0, NULL, &hServer); 
+    retVal = VmDirOpenServerA(pszHostname, gVmdirServerGlobals.dcAccountUPN.lberbv_val, NULL, pszDcAccountPwd, 0, NULL, &hServer);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
             "_VmDirGetRemoteDBUsingRPC: VmDirOpenServerA() call failed with error: %d, host name = %s",
             retVal, pszHostname  );
@@ -409,14 +409,14 @@ _VmDirSwapDB(
     pBE = VmDirBackendSelect(NULL);
     assert(pBE);
 
-    pBE->pfnBEShutdown();
-    VmDirBackendContentFree(pBE);
-
-    VmDirAttrIndexLibShutdown();
+    VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
 
     VmDirSchemaLibShutdown();
 
-    VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
+    VmDirIndexLibShutdown();
+
+    pBE->pfnBEShutdown();
+    VmDirBackendContentFree(pBE);
 
     // move .mdb files
     retVal = VmDirStringPrintFA( dbExistingFilename, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s%c%s", dbHomeDir, fileSeperator,
@@ -504,6 +504,7 @@ _VmDirWrapUpFirstReplicationCycle(
     PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
     VDIR_OPERATION      searchOp = {0};
     PVDIR_FILTER        pSearchFilter = NULL;
+    PSTR                pszSeparator = NULL;
 
     retVal = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR( retVal );
@@ -568,10 +569,20 @@ _VmDirWrapUpFirstReplicationCycle(
 
     if (pAttrUpToDateVector)
     {
+        if (VmDirStringEndsWith( pAttrUpToDateVector->vals[0].lberbv.bv_val, ",", FALSE))
+        {
+            pszSeparator = "";
+        }
+        else
+        {
+            pszSeparator = ",";
+        }
+
         // <partnerLocalUSN>,<partner up-to-date vector>,<partner server GUID>:<partnerLocalUSN>,
-        retVal = VmDirAllocateStringAVsnprintf( &(syncDoneCtrlVal.bv_val), "%s,%s,%s:%s,",
+        retVal = VmDirAllocateStringAVsnprintf( &(syncDoneCtrlVal.bv_val), "%s,%s%s%s:%s,",
                                                 partnerlocalUsnStr,
                                                 pAttrUpToDateVector->vals[0].lberbv.bv_val,
+                                                pszSeparator,
                                                 pAttrInvocationId->vals[0].lberbv.bv_val,
                                                 partnerlocalUsnStr);
         BAIL_ON_VMDIR_ERROR(retVal);

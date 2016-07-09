@@ -109,6 +109,11 @@ VmDirFreeMemberships(
     DWORD dwMemberships
     );
 
+DWORD
+VmDirLoadIndex(
+    BOOLEAN bFirstboot
+    );
+
 // init.c
 DWORD
 VmDirInit(
@@ -164,7 +169,7 @@ VmDirRpcAllocateStringW(
 // schema.c
 
 DWORD
-InitializeSchema(
+VmDirLoadSchema(
     PBOOLEAN    pbWriteSchemaEntry,
     PBOOLEAN    pbLegacyDataLoaded
     );

@@ -52,6 +52,10 @@ typedef struct _VDIR_LDAP_ATTRIBUTE_TYPE
     BOOLEAN                             bObsolete;
     VDIR_LDAP_ATTRIBUTE_TYPE_USAGE      usage;
 
+    // index configuration attributes
+    DWORD                               dwSearchFlags;
+    PSTR*                               ppszUniqueScopes;
+
 } VDIR_LDAP_ATTRIBUTE_TYPE, *PVDIR_LDAP_ATTRIBUTE_TYPE;
 
 typedef struct _VDIR_LDAP_OBJECT_CLASS

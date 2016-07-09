@@ -6,6 +6,7 @@ vmdird_SOURCES = \
     accountmgmt.c \
     auth.c \
     globals.c \
+    index.c \
     init.c \
     instance.c \
     ipcserver.c \

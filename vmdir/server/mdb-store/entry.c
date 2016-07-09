@@ -129,7 +129,6 @@ error:
 // To get the current max ENTRYID
 DWORD
 VmDirMDBMaxEntryId(
-    PVDIR_BACKEND_CTX   pBECtx,
     ENTRYID*            pEId)
 {
     DWORD           dwError = 0;
@@ -138,7 +137,7 @@ VmDirMDBMaxEntryId(
     MDB_val         value  = {0};
     unsigned char   EIDBytes[sizeof( ENTRYID )] = {0};
 
-    assert(pBECtx && pEId);
+    assert(pEId);
 
     dwError = mdb_txn_begin( gVdirMdbGlobals.mdbEnv, NULL, MDB_RDONLY, &pTxn );
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -171,8 +170,7 @@ error:
             "VmDirMDBMaxEntryId: failed with error (%d),(%s)",
              dwError, mdb_strerror(dwError) );
 
-    dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx, "MaxEntryId");
-
+    VMDIR_SET_BACKEND_ERROR(dwError);
     goto cleanup;
 }
 
@@ -359,7 +357,7 @@ VmDirMDBAddEntry(
             dwError = VmDirNormalizeDN( &(nextAttr->vals[0]), pEntry->pSchemaCtx );
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(nextAttr->type), nextAttr->vals, nextAttr->numVals,
+            if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(nextAttr->type), nextAttr->vals, nextAttr->numVals,
                                                     entryId, BE_INDEX_OP_TYPE_CREATE)) != 0)
             {
                 dwError = MDBToBackendError( dwError,
@@ -382,7 +380,7 @@ VmDirMDBAddEntry(
     {
         if (VmDirStringCompareA(nextAttr->type.lberbv.bv_val, ATTR_DN, FALSE) != 0)
         {
-            if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(nextAttr->type), nextAttr->vals, nextAttr->numVals,
+            if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(nextAttr->type), nextAttr->vals, nextAttr->numVals,
                                                     entryId, BE_INDEX_OP_TYPE_CREATE)) != 0)
             {
                 dwError = MDBToBackendError( dwError,
@@ -678,7 +676,7 @@ VmDirMDBModifyEntry(
             switch (mod->operation)
             {
                 case MOD_OP_ADD:
-                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
+                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
                                                            pEntry->eId, BE_INDEX_OP_TYPE_CREATE)) != 0)
                     {
                         dwError = MDBToBackendError( dwError, MDB_KEYEXIST, ERROR_BACKEND_CONSTRAINT, pBECtx,
@@ -688,7 +686,7 @@ VmDirMDBModifyEntry(
                     break;
 
                 case MOD_OP_DELETE:
-                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
+                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
                                                            pEntry->eId, BE_INDEX_OP_TYPE_DELETE )) != 0)
                     {
                         dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
@@ -723,7 +721,7 @@ VmDirMDBModifyEntry(
             switch (mod->operation)
             {
                 case MOD_OP_ADD:
-                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
+                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
                                                            pEntry->eId, BE_INDEX_OP_TYPE_CREATE)) != 0)
                     {
                         dwError = MDBToBackendError( dwError, MDB_KEYEXIST, ERROR_BACKEND_CONSTRAINT, pBECtx,
@@ -733,7 +731,7 @@ VmDirMDBModifyEntry(
                     break;
 
                 case MOD_OP_DELETE:
-                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
+                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
                                                            pEntry->eId, BE_INDEX_OP_TYPE_DELETE )) != 0)
                     {
                         dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,

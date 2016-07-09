@@ -682,6 +682,7 @@ BuildCandidateList(
 {
     int             retVal = LDAP_SUCCESS;
     VDIR_FILTER *   nextFilter = NULL;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
 
     if (f->computeResult != FILTER_RES_NORMAL)
     {
@@ -724,13 +725,13 @@ BuildCandidateList(
                 if (nextFilter->choice == LDAP_FILTER_EQUALITY)
                 {
                     //look for equality match filter on a unique indexed attribute
-                    PVDIR_CFG_ATTR_INDEX_DESC   pIdxDesc = NULL;
-                    USHORT                      usVersion = 0;
+                    retVal = VmDirIndexCfgAcquire(
+                            nextFilter->filtComp.ava.type.lberbv.bv_val,
+                            VDIR_INDEX_READ,
+                            &pIndexCfg);
+                    BAIL_ON_VMDIR_ERROR( retVal );
 
-                    pIdxDesc = VmDirAttrNameToReadIndexDesc( nextFilter->filtComp.ava.type.lberbv.bv_val, usVersion,
-                                                                 &usVersion);
-
-                    if (pIdxDesc != NULL && pIdxDesc->bIsUnique)
+                    if (pIndexCfg && pIndexCfg->bGlobalUniq)
                     {
                         specialFilter = nextFilter;
                         break;
@@ -950,6 +951,7 @@ candidate_build_done:
     }
 
 cleanup:
+    VmDirIndexCfgRelease(pIndexCfg);
     return retVal;
 
 error:

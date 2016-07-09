@@ -65,6 +65,10 @@ typedef struct _VDIR_SCHEMA_AT_DESC
 
     VDIR_LDAP_ATTRIBUTE_TYPE_USAGE  usage;
 
+    // index configuration attributes
+    DWORD       dwSearchFlags;
+    PSTR*       ppszUniqueScopes;
+
     PVDIR_SYNTAX_DESC           pSyntax;
     PVDIR_MATCHING_RULE_DESC    pEqualityMR;
     PVDIR_MATCHING_RULE_DESC    pOrderingMR;
@@ -332,10 +336,20 @@ VmDirSchemaAttrIdToName(
     USHORT              usId
     );
 
+DWORD
+VmDirSchemaAttrList(
+    PVDIR_SCHEMA_CTX        pCtx,
+    PVDIR_SCHEMA_AT_DESC**  pppATDescList
+    );
+
 BOOLEAN
-VmDirSchemaAttrHasIntegerMatchingRule(
-    PVDIR_SCHEMA_CTX    pCtx,
-    PCSTR               pszName
+VmDirSchemaSyntaxIsNumeric(
+    PCSTR   pszSyntaxOid
+    );
+
+BOOLEAN
+VmDirSchemaAttrIsNumeric(
+    PVDIR_SCHEMA_AT_DESC    pATDesc
     );
 
 PVDIR_ENTRY

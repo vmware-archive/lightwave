@@ -72,7 +72,7 @@ extern "C" {
 // Keys for backend funtion pfnBEStrkeyGet/SetValues to access attribute IDs
 #define ATTR_ID_MAP_KEY   "1VmdirAttrIDToNameTb"
 
-typedef struct _VDIR_CFG_ATTR_INDEX_DESC*   PVDIR_CFG_ATTR_INDEX_DESC;
+typedef struct _VDIR_INDEX_CFG*             PVDIR_INDEX_CFG;
 typedef struct _VDIR_BACKEND_INTERFACE*     PVDIR_BACKEND_INTERFACE;
 typedef struct _VDIR_SCHEMA_CTX*            PVDIR_SCHEMA_CTX;
 typedef struct _VDIR_SCHEMA_DIFF*           PVDIR_SCHEMA_DIFF;

@@ -252,20 +252,16 @@ ReplAddEntry(
         BAIL_ON_VMDIR_ERROR( retVal );
     }
 
-    if (pEntry->dn.bvnorm_val)
+    if (VmDirStringEndsWith(
+            BERVAL_NORM_VAL(pEntry->dn), SCHEMA_NAMING_CONTEXT_DN, FALSE))
     {
-        VDIR_BERVALUE dn = pEntry->dn;
-        size_t offset = dn.bvnorm_len - (SCHEMA_NAMING_CONTEXT_DN_LEN);
-        if (VmDirStringCompareA(
-                dn.bvnorm_val + offset, SCHEMA_NAMING_CONTEXT_DN, FALSE) == 0)
-        {   // schema entry updated, refresh replication schema ctx.
-            assert( ppOutSchemaCtx );
-            retVal = VmDirSchemaCtxAcquire(&pUpdateSchemaCtx);
-            BAIL_ON_VMDIR_ERROR(retVal);
-            *ppOutSchemaCtx = pUpdateSchemaCtx;
+        // schema entry updated, refresh replication schema ctx.
+        assert( ppOutSchemaCtx );
+        retVal = VmDirSchemaCtxAcquire(&pUpdateSchemaCtx);
+        BAIL_ON_VMDIR_ERROR(retVal);
+        *ppOutSchemaCtx = pUpdateSchemaCtx;
 
-            VmDirSchemaCtxRelease(pSchemaCtx);
-        }
+        VmDirSchemaCtxRelease(pSchemaCtx);
     }
 
 cleanup:
@@ -522,20 +518,18 @@ txnretry:
     // ************************************************************************************
     }
 
-    if (modOp.request.modifyReq.dn.bvnorm_val)
+    if (VmDirStringEndsWith(
+            BERVAL_NORM_VAL(modOp.request.modifyReq.dn),
+            SCHEMA_NAMING_CONTEXT_DN,
+            FALSE))
     {
-        VDIR_BERVALUE dn = modOp.request.modifyReq.dn;
-        size_t offset = dn.bvnorm_len - (SCHEMA_NAMING_CONTEXT_DN_LEN);
-        if (VmDirStringCompareA(
-                dn.bvnorm_val + offset, SCHEMA_NAMING_CONTEXT_DN, FALSE) == 0)
-        {   // schema entry updated, refresh replication schema ctx.
-            assert( ppOutSchemaCtx );
-            retVal = VmDirSchemaCtxAcquire(&pUpdateSchemaCtx);
-            BAIL_ON_VMDIR_ERROR(retVal);
-            *ppOutSchemaCtx = pUpdateSchemaCtx;
+        // schema entry updated, refresh replication schema ctx.
+        assert( ppOutSchemaCtx );
+        retVal = VmDirSchemaCtxAcquire(&pUpdateSchemaCtx);
+        BAIL_ON_VMDIR_ERROR(retVal);
+        *ppOutSchemaCtx = pUpdateSchemaCtx;
 
-            VmDirSchemaCtxRelease(pSchemaCtx);
-        }
+        VmDirSchemaCtxRelease(pSchemaCtx);
     }
 
 cleanup:

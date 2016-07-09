@@ -51,11 +51,6 @@
 #include <openssl/sha.h>
 #include <openssl/rand.h>
 
-#include "defines.h"
-#include "structs.h"
-#include "prototypes.h"
-#include "externs.h"
-
 #else
 #pragma once
 #include "targetver.h"
@@ -109,11 +104,11 @@
 #include <openssl/sha.h>
 #include <openssl/rand.h>
 
+#include "banned.h"
+
+#endif
+
 #include "defines.h"
 #include "structs.h"
 #include "prototypes.h"
 #include "externs.h"
-
-#include "banned.h"
-
-#endif

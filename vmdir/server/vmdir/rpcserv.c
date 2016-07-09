@@ -1865,6 +1865,9 @@ void vmdir_dbcp_handle_t_rundown(void *ctx)
     // Clear backend READ-ONLY mode when dbcp connection interrupted.
     VmDirSetMdbBackendState(0, &dwXlogNum, &dwDbSizeMb, &dwDbMapSizeMb, tmp_buf, sizeof(tmp_buf));
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "vmdir_dbcp_handle_t_rundown: turn off keeping xlog flag on backend, xlognum: %d", dwXlogNum);
+
+    // Set vmdir state to NORMAL
+    VmDirdStateSet(VMDIRD_STATE_NORMAL);
 }
 
 UINT32

@@ -17,7 +17,6 @@
 #define _PROTOTYPES_H_
 
 // add.c
-
 int
 VmDirAttributeDupValueCheck(
     PVDIR_ATTRIBUTE  pAttr,
@@ -35,8 +34,6 @@ VmDirBuildComputedAttribute(
     PVDIR_OPERATION     pOperation,
     PVDIR_ENTRY         pEntry
     );
-
-// modify.c
 
 // password.c
 DWORD
@@ -84,7 +81,6 @@ VmDirInternalEntryAttributeReplace(
     );
 
 // plugin.c
-
 /*
  * Called before backend add
  */
@@ -137,7 +133,6 @@ VmDirExecutePostModifyCommitPlugins(
 /*
  * Called at the beginning of internalDeleteEntry (to manipulate Mod structure)
  */
-
 DWORD
 VmDirExecutePreModApplyDeletePlugins(
     PVDIR_OPERATION     pOperation,      // current operation
@@ -152,8 +147,36 @@ VmDirExecutePostDeleteCommitPlugins(
     DWORD               dwResult         // latest call return value
     );
 
-/////////// lockoutpolicy.c
+// index.c
+DWORD
+VmDirPluginIndexEntryPreAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
 
+DWORD
+VmDirPluginIndexEntryPostAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+DWORD
+VmDirPluginIndexEntryPreModApplyModify(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+DWORD
+VmDirPluginIndexEntryPreModify(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+// lockoutpolicy.c
 DWORD
 VdirPasswordFailEvent(
     PVDIR_OPERATION     pOperation,
@@ -203,7 +226,7 @@ VdirPasswordStrengthCheck(
     PVDIR_BERVALUE                  pDNBerv        // optional
     );
 
-/////////// krb.c
+// krb.c
 DWORD
 VmDirKrbUPNKeySet(
     PVDIR_OPERATION  pOperation,
@@ -265,7 +288,6 @@ VmDirPluginGroupTypePreModify(
 
 
 // pscache.c
-
 DWORD
 VmDirPagedSearchCacheInit(
     VOID

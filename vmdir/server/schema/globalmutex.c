@@ -20,7 +20,7 @@ VmDirSchemaModMutexAcquire(
     )
 {
     DWORD   dwError = 0;
-    PVDIR_BERVALUE  pDn = NULL;
+    PSTR    pszDN = NULL;
 
     if (!pOperation)
     {
@@ -30,26 +30,20 @@ VmDirSchemaModMutexAcquire(
 
     if (pOperation->reqCode == LDAP_REQ_ADD)
     {
-        pDn = &(pOperation->request.addReq.pEntry->dn);
+        pszDN = BERVAL_NORM_VAL(pOperation->request.addReq.pEntry->dn);
     }
     else if (pOperation->reqCode == LDAP_REQ_MODIFY)
     {
-        pDn = &(pOperation->request.modifyReq.dn);
+        pszDN = BERVAL_NORM_VAL(pOperation->request.modifyReq.dn);
     }
 
-    if (pDn && pDn->bvnorm_len > SCHEMA_NAMING_CONTEXT_DN_LEN)
+    if (VmDirStringEndsWith(pszDN, SCHEMA_NAMING_CONTEXT_DN, FALSE) &&
+            VmDirStringLenA(pszDN) > (SCHEMA_NAMING_CONTEXT_DN_LEN))
     {
-        size_t offset = pDn->bvnorm_len - (SCHEMA_NAMING_CONTEXT_DN_LEN);
-        if (VmDirStringCompareA(
-                pDn->bvnorm_val + offset,
-                SCHEMA_NAMING_CONTEXT_DN,
-                FALSE) == 0)
-        {
-            dwError = VmDirLockMutex(gVdirSchemaGlobals.cacheModMutex);
-            BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = VmDirLockMutex(gVdirSchemaGlobals.cacheModMutex);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-            pOperation->bSchemaWriteOp = TRUE;
-        }
+        pOperation->bSchemaWriteOp = TRUE;
     }
 
 error:

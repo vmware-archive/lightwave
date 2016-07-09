@@ -21,6 +21,12 @@
     NULL                                                \
 }
 
+static
+DWORD
+_MarkDefaultIndices(
+    VOID
+    );
+
 /*
  * Examines the following options in order and use the first detected source
  * to initialize schema:
@@ -34,7 +40,7 @@
  * pbLegacyDataLoaded will be TRUE if option 2 was used
  */
 DWORD
-InitializeSchema(
+VmDirLoadSchema(
     PBOOLEAN    pbWriteSchemaEntry,
     PBOOLEAN    pbLegacyDataLoaded
     )
@@ -46,17 +52,13 @@ InitializeSchema(
 
     assert(pbWriteSchemaEntry && pbLegacyDataLoaded);
 
-    dwError = VmDirSchemaLibInit();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // legacy support
-    dwError = VmDirSchemaLibInitLegacy();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = VmDirReadSchemaObjects(&pAtEntries, &pOcEntries);
     if (dwError == 0)
     {
         dwError = VmDirSchemaLibPrepareUpdateViaEntries(pAtEntries, pOcEntries);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSchemaLibUpdate(0);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     else if (dwError == ERROR_BACKEND_ENTRY_NOTFOUND)
@@ -83,10 +85,14 @@ InitializeSchema(
 
             *pbWriteSchemaEntry = TRUE;
         }
-    }
-    BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSchemaLibUpdate(0);
+        dwError = VmDirSchemaLibUpdate(0);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = _MarkDefaultIndices();
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -210,5 +216,63 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError );
 
+    goto cleanup;
+}
+
+static
+DWORD
+_MarkDefaultIndices(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+    PLW_HASHMAP pIndexCfgMap = NULL;
+    PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
+    LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
+    LW_HASHMAP_PAIR pair = {NULL, NULL};
+
+    dwError = VmDirIndexCfgMap(&pIndexCfgMap);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    while (LwRtlHashMapIterate(pIndexCfgMap, &iter, &pair))
+    {
+        PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pair.pValue;
+        PVDIR_SCHEMA_AT_DESC pATDesc = NULL;
+
+        dwError = VmDirSchemaAttrNameToDescriptor(
+                pSchemaCtx, pIndexCfg->pszAttrName, &pATDesc);
+
+        // VMIT support
+        if (dwError == VMDIR_ERROR_NO_SUCH_ATTRIBUTE)
+        {
+            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                    "%s detected index for unknown attribute %s, "
+                    "the index will be deleted",
+                    __FUNCTION__, pIndexCfg->pszAttrName, dwError );
+
+            pIndexCfg->status = VDIR_INDEXING_DISABLED;
+            continue;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirIndexCfgGetAllScopesInStrArray(
+                pIndexCfg, &pATDesc->ppszUniqueScopes);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pATDesc->dwSearchFlags |= 1;
+
+        // for free later
+        pATDesc->pLdapAt->ppszUniqueScopes = pATDesc->ppszUniqueScopes;
+        pATDesc->pLdapAt->dwSearchFlags = pATDesc->dwSearchFlags;
+    }
+
+cleanup:
+    VmDirSchemaCtxRelease(pSchemaCtx);
+    return dwError;
+
+error:
     goto cleanup;
 }

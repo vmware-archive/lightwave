@@ -553,29 +553,27 @@ _VmDirEntryAttrValueNormalize(
 {
     DWORD           dwError = 0;
     PVDIR_ATTRIBUTE pAttr = NULL;
-    USHORT          usVersion = 0;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
 
     assert(pEntry && pEntry->pSchemaCtx);
 
     for (pAttr = pEntry->attrs; pAttr; pAttr = pAttr->next)
     {
-        PVDIR_CFG_ATTR_INDEX_DESC pIdxDesc = NULL;
-
         if (bIndexAttributeOnly == TRUE)
         {
-            pIdxDesc = VmDirAttrNameToWriteIndexDesc(
-                            pAttr->type.lberbv.bv_val,
-                            usVersion,
-                            &usVersion);
+            dwError = VmDirIndexCfgAcquire(
+                    pAttr->type.lberbv.bv_val, VDIR_INDEX_WRITE, &pIndexCfg);
+            BAIL_ON_VMDIR_ERROR(dwError);
         }
 
-        if (bIndexAttributeOnly == FALSE || pIdxDesc != NULL)
+        if (bIndexAttributeOnly == FALSE || pIndexCfg)
         {
             unsigned int    iCnt = 0;
 
             if (pAttr->pATDesc == NULL)
             {
-                if ((pAttr->pATDesc = VmDirSchemaAttrNameToDesc( pEntry->pSchemaCtx, pAttr->type.lberbv.bv_val )) == NULL)
+                if ((pAttr->pATDesc = VmDirSchemaAttrNameToDesc(
+                        pEntry->pSchemaCtx, pAttr->type.lberbv.bv_val )) == NULL)
                 {
                     dwError = VMDIR_ERROR_NO_SUCH_ATTRIBUTE;
                     BAIL_ON_VMDIR_ERROR(dwError);
@@ -584,15 +582,17 @@ _VmDirEntryAttrValueNormalize(
 
             for (iCnt=0; iCnt < pAttr->numVals; iCnt++)
             {
-
-                dwError = VmDirSchemaBervalNormalize( pEntry->pSchemaCtx, pAttr->pATDesc, &pAttr->vals[iCnt]);
+                dwError = VmDirSchemaBervalNormalize(
+                        pEntry->pSchemaCtx, pAttr->pATDesc, &pAttr->vals[iCnt]);
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
         }
+        VmDirIndexCfgRelease(pIndexCfg);
+        pIndexCfg = NULL;
     }
 
 error:
-
+    VmDirIndexCfgRelease(pIndexCfg);
     return dwError;
 }
 

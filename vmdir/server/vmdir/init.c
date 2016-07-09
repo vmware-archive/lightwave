@@ -180,22 +180,19 @@ VmDirInitBackend(
     pBE = VmDirBackendSelect(NULL);
     assert(pBE);
 
-    // init fix list of indices
-    dwError = VmDirAttrIndexLibInit();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // backend init phase 1 - initialize and open database
     dwError = pBE->pfnBEInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = pBE->pfnBEDBOpen();
+    dwError = VmDirIndexLibInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // backend init phase 2 - open additional index database
-    dwError = pBE->pfnBEIndexOpen();
+    dwError = VmDirSchemaLibInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = InitializeSchema(&bInitializeEntries, pbLegacyDataLoaded);
+    dwError = VmDirLoadSchema(&bInitializeEntries, pbLegacyDataLoaded);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLoadIndex(bInitializeEntries || *pbLegacyDataLoaded);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // prepare USNList to guarantee safe USN for replication

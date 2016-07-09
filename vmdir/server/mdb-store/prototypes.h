@@ -19,10 +19,45 @@
 
 
 // config.c
-extern DWORD
+DWORD
 MDBInitConfig();
 
-// indexer.c
+// desc.c
+DWORD
+MdbIndexDescInit(
+    PVDIR_INDEX_CFG             pIndexCfg,
+    PVDIR_MDB_INDEX_DATABASE*   ppMdbIndexDB
+    );
+
+VOID
+MdbIndexDescFree(
+    PVDIR_MDB_INDEX_DATABASE    pMdbIndexDB
+    );
+
+// index.c
+DWORD
+VmDirMDBIndexGetDBi(
+    PVDIR_INDEX_CFG pIndexCfg,
+    VDIR_DB*        pDBi
+    );
+
+// writeutil.c
+DWORD
+MdbUpdateKeyValue(
+   VDIR_DB             mdbDBi,
+   PVDIR_DB_TXN        pTxn,
+   PVDIR_DB_DBT        pKey,
+   PVDIR_DB_DBT        pValue,
+   BOOLEAN             bIsUniqueVal,
+   ULONG               ulOPMask);
+
+DWORD
+MdbDeleteKeyValue(
+    VDIR_DB             mdbDBi,
+    PVDIR_DB_TXN        pTxn,
+    PVDIR_DB_DBT        pKey,
+    PVDIR_DB_DBT        pValue,
+    BOOLEAN             bIsUniqueVal);
 
 DWORD
 MdbCreateEIDIndex(
@@ -46,11 +81,20 @@ MdbUpdateAttrMetaData(
 
 DWORD
 MdbUpdateIndicesForAttr(
-    PVDIR_DB_TXN        txn,
+    PVDIR_DB_TXN        pTxn,
+    VDIR_BERVALUE *     entryDN,
     VDIR_BERVALUE *     attrType,
     VDIR_BERVARRAY      attrVals, // Normalized Attribute Values
     unsigned            numVals,
     ENTRYID             entryId,
+    ULONG               ulOPMask
+    );
+
+DWORD
+MdbValidateAttrUniqueness(
+    PVDIR_INDEX_CFG     pIndexCfg,
+    PSTR                pszAttrVal,
+    PSTR                pszEntryDn,
     ULONG               ulOPMask
     );
 
@@ -60,10 +104,16 @@ MDBCreateParentIdIndex(
     VDIR_BERVALUE *     pdn,
     ENTRYID             entryId);
 
+// readutil.c
 void
 MDBEntryIdToDBT(
     ENTRYID         eId,
     PVDIR_DB_DBT    pDBT);
+
+void
+MDBDBTToEntryId(
+    PVDIR_DB_DBT    pDBT,
+    ENTRYID*        pEID);
 
 DWORD
 VmDirMDBGetCandidates(
@@ -81,8 +131,22 @@ MDBToBackendError(
     PVDIR_BACKEND_CTX   pBECtx,
     PCSTR               pszErrorContext);
 
-//void
-//MDBCloseSequences(
-//    VOID);
+DWORD
+MDBOpenDB(
+    PVDIR_DB            pmdbDBi,
+    const char *        dbName,
+    const char *        fileName,
+    PFN_BT_KEY_CMP      btKeyCmpFcn,
+    unsigned int        extraFlags);
+
+VOID
+MDBCloseDB(
+    VDIR_DB    mdbDBi
+    );
+
+DWORD
+MDBDropDB(
+    VDIR_DB    mdbDBi
+    );
 
 #endif /* MDB_H_ */

@@ -102,6 +102,19 @@ VmDirLdapAtMerge(
             pMergedAt->pSource->at_desc = pMergedAt->pszDesc;
         }
 
+        if (pOldAt->dwSearchFlags != pNewAt->dwSearchFlags)
+        {
+            pMergedAt->dwSearchFlags =
+                    pOldAt->dwSearchFlags | pNewAt->dwSearchFlags;
+        }
+
+        VmDirFreeStrArray(pMergedAt->ppszUniqueScopes);
+        dwError = VmDirMergeStrArray(
+                pOldAt->ppszUniqueScopes,
+                pNewAt->ppszUniqueScopes,
+                &pMergedAt->ppszUniqueScopes);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         // legacy support
         if (pOldAt->pSource->at_sup_oid)
         {
