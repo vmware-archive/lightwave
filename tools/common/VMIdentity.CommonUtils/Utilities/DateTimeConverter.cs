@@ -30,6 +30,12 @@ namespace VMIdentity.CommonUtils
             return dateTime.AddSeconds(timestamp);
         }
 
+        public static long ToUnixDate(DateTime date)
+        {
+            var startDate = DateTime.Parse("01-Jan-1970");
+            return (long)date.Subtract(startDate).TotalSeconds;
+        }
+
         public static string ToDurationAgo(DateTime dateTime)
         {
 			var duration = DateTime.UtcNow.Subtract(dateTime);
@@ -56,8 +62,8 @@ namespace VMIdentity.CommonUtils
             if (!string.IsNullOrWhiteSpace(value))
 			    value += " ago";
 
-            if(value.Contains("-"))
-                    value = "Change system time to align with the Local Time Zone";
+            if (value.Contains("-"))
+                value = "Change system time to align with the Local Time Zone";
             return value;
         }
     }

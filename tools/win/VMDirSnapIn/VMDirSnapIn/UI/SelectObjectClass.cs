@@ -41,11 +41,8 @@ namespace VMDirSnapIn.UI
         void BindList(SchemaManager mgr)
         {
             var om = mgr.GetObjectClassManager();
-            //Only list structural object classes.
-            _list = om.Data
-                .Where(x=>x.Value.IsStructural)
-                .Select(x => x.Value)
-                .ToList();
+            //Todo - list all classes now. Later fix to only list structural object classes after introducing specific fields in Schema classes.
+            _list = om.Data.Values.ToList();
             _list.Sort(SortObjectClassDTO);
 
             lstObjectClasses.VirtualListSize = _list.Count;

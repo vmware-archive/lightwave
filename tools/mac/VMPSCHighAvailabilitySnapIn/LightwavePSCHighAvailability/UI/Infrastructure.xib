@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="9059" systemVersion="14F27" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="9059" systemVersion="15E65" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
+        <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="9059"/>
     </dependencies>
     <objects>
@@ -8,6 +9,7 @@
             <connections>
                 <outlet property="HealthTextField" destination="Rpl-9N-4D7" id="tdI-5A-LEf"/>
                 <outlet property="HotnametextField" destination="GH5-hh-If7" id="IIY-af-BTs"/>
+                <outlet property="IpAddressTextField" destination="u2H-9S-wCX" id="WWQ-ES-FK4"/>
                 <outlet property="ServiceTableView" destination="SJr-7t-GYb" id="Kuh-3E-Km0"/>
                 <outlet property="SitenameTextField" destination="Ulr-5j-H5G" id="4Se-hz-oGv"/>
                 <outlet property="view" destination="Lpr-Bf-0Tl" id="itQ-Vy-JiW"/>
@@ -26,6 +28,7 @@
                         <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="GH5-hh-If7">
                             <rect key="frame" x="55" y="544" width="389" height="17"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxX="YES" flexibleMinY="YES"/>
+                            <animations/>
                             <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" alignment="left" title="hostname" id="kvO-bh-mFR">
                                 <font key="font" size="15" name=".HelveticaNeueDeskInterface-Bold"/>
                                 <color key="textColor" name="selectedControlTextColor" catalog="System" colorSpace="catalog"/>
@@ -42,6 +45,7 @@
                                     <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" alternatingRowBackgroundColors="YES" multipleSelection="NO" autosaveColumns="NO" headerView="fwC-3O-cZo" id="SJr-7t-GYb">
                                         <rect key="frame" x="0.0" y="0.0" width="617" height="19"/>
                                         <autoresizingMask key="autoresizingMask"/>
+                                        <animations/>
                                         <size key="intercellSpacing" width="3" height="2"/>
                                         <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                                         <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
@@ -114,24 +118,30 @@
                                         </tableColumns>
                                     </tableView>
                                 </subviews>
+                                <animations/>
                                 <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                             </clipView>
+                            <animations/>
                             <scroller key="horizontalScroller" verticalHuggingPriority="750" horizontal="YES" id="d7n-eX-sWR">
                                 <rect key="frame" x="1" y="463" width="521" height="16"/>
                                 <autoresizingMask key="autoresizingMask"/>
+                                <animations/>
                             </scroller>
                             <scroller key="verticalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="NO" id="3R2-RS-SNc">
                                 <rect key="frame" x="224" y="17" width="15" height="102"/>
                                 <autoresizingMask key="autoresizingMask"/>
+                                <animations/>
                             </scroller>
                             <tableHeaderView key="headerView" id="fwC-3O-cZo">
                                 <rect key="frame" x="0.0" y="0.0" width="617" height="17"/>
                                 <autoresizingMask key="autoresizingMask"/>
+                                <animations/>
                             </tableHeaderView>
                         </scrollView>
                         <box verticalHuggingPriority="750" title="Box" boxType="separator" titlePosition="noTitle" id="buA-8G-zjf">
                             <rect key="frame" x="12" y="533" width="540" height="5"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
+                            <animations/>
                             <color key="borderColor" white="0.0" alpha="0.41999999999999998" colorSpace="calibratedWhite"/>
                             <color key="fillColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                             <font key="titleFont" metaFont="system"/>
@@ -139,16 +149,19 @@
                         <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" id="8Gp-es-7KF">
                             <rect key="frame" x="460" y="540" width="26" height="26"/>
                             <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMinY="YES"/>
+                            <animations/>
                             <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" image="health" id="YwT-4p-i6j"/>
                         </imageView>
                         <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" id="PGR-DL-z4I">
                             <rect key="frame" x="19" y="546" width="28" height="28"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxX="YES" flexibleMinY="YES" heightSizable="YES"/>
+                            <animations/>
                             <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageAlignment="left" imageScaling="proportionallyUpOrDown" image="servermonitor" id="xe8-AK-32L"/>
                         </imageView>
                         <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="Ulr-5j-H5G">
-                            <rect key="frame" x="77" y="506" width="465" height="21"/>
+                            <rect key="frame" x="77" y="506" width="356" height="21"/>
                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                            <animations/>
                             <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="Sitename" id="YwD-8A-K46">
                                 <font key="font" size="11" name=".HelveticaNeueDeskInterface-Regular"/>
                                 <color key="textColor" name="selectedControlTextColor" catalog="System" colorSpace="catalog"/>
@@ -158,26 +171,40 @@
                         <imageView horizontalHuggingPriority="251" verticalHuggingPriority="251" id="rdW-Br-ouL">
                             <rect key="frame" x="51" y="508" width="26" height="26"/>
                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                            <animations/>
                             <imageCell key="cell" refusesFirstResponder="YES" alignment="left" imageScaling="proportionallyDown" image="provider" id="48f-Yb-k1Q"/>
                         </imageView>
                         <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="Rpl-9N-4D7">
                             <rect key="frame" x="492" y="544" width="62" height="17"/>
                             <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMinY="YES"/>
+                            <animations/>
                             <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="ACTIVE" id="YKc-5Z-04u">
                                 <font key="font" size="13" name=".HelveticaNeueDeskInterface-Regular"/>
                                 <color key="textColor" name="selectedControlTextColor" catalog="System" colorSpace="catalog"/>
                                 <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                             </textFieldCell>
                         </textField>
+                        <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="u2H-9S-wCX">
+                            <rect key="frame" x="458" y="511" width="88" height="21"/>
+                            <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMinY="YES"/>
+                            <animations/>
+                            <textFieldCell key="cell" controlSize="small" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="255.255.255.255" id="kfX-gv-PHG">
+                                <font key="font" size="11" name=".HelveticaNeueDeskInterface-Regular"/>
+                                <color key="textColor" name="selectedControlTextColor" catalog="System" colorSpace="catalog"/>
+                                <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                            </textFieldCell>
+                        </textField>
                     </subviews>
+                    <animations/>
                 </customView>
             </subviews>
+            <animations/>
             <point key="canvasLocation" x="434" y="444"/>
         </customView>
     </objects>
     <resources>
         <image name="health" width="24" height="24"/>
         <image name="provider" width="16" height="16"/>
-        <image name="servermonitor" width="128" height="128"/>
+        <image name="servermonitor" width="256" height="256"/>
     </resources>
 </document>

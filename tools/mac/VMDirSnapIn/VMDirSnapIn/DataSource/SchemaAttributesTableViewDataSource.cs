@@ -24,20 +24,20 @@ namespace VMDirSnapIn.DataSource
     {
         private List<AttributeTypeDTO> entries;
 
-        public SchemaAttributesTableViewDataSource ()
+        public SchemaAttributesTableViewDataSource()
         {
-            entries = new List<AttributeTypeDTO> ();
+            entries = new List<AttributeTypeDTO>();
         }
 
-        public SchemaAttributesTableViewDataSource (List<AttributeTypeDTO> classList)
+        public SchemaAttributesTableViewDataSource(List<AttributeTypeDTO> classList)
         {
-            entries = new List<AttributeTypeDTO> ();
+            entries = new List<AttributeTypeDTO>();
             entries = classList;
         }
 
         // This method will be called by the NSTableView control to learn the number of rows to display.
-        [Export ("numberOfRowsInTableView:")]
-        public int NumberOfRowsInTableView (NSTableView table)
+        [Export("numberOfRowsInTableView:")]
+        public int NumberOfRowsInTableView(NSTableView table)
         {
             if (entries != null)
                 return this.entries.Count;
@@ -46,20 +46,24 @@ namespace VMDirSnapIn.DataSource
         }
 
         // This method will be called by the control for each column and each row.
-        [Export ("tableView:objectValueForTableColumn:row:")]
-        public NSObject ObjectValueForTableColumn (NSTableView table, NSTableColumn col, int row)
+        [Export("tableView:objectValueForTableColumn:row:")]
+        public NSObject ObjectValueForTableColumn(NSTableView table, NSTableColumn col, int row)
         {
-            try {
-                if (entries != null) {
+            try
+            {
+                if (entries != null)
+                {
                     if (col.Identifier == "Name")
-                        return (NSString)this.entries [row].Name;
+                        return (NSString)this.entries[row].Name;
                     else if (col.Identifier == "Type")
-                        return (NSString)this.entries [row].SyntaxName;
+                        return (NSString)this.entries[row].AttributeSyntax;
                     else if (col.Identifier == "Description")
-                        return (NSString)this.entries [row].Description;
+                        return (NSString)this.entries[row].Description;
                 } 
-            } catch (Exception e) {
-                System.Diagnostics.Debug.WriteLine ("Error in List Operation " + e.Message);
+            }
+            catch (Exception e)
+            {
+                System.Diagnostics.Debug.WriteLine("Error in List Operation " + e.Message);
             }
             return null;
         }

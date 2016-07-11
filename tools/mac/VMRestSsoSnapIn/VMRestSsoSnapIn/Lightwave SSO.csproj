@@ -434,5 +434,9 @@
       <Project>{CD959E2E-5B9C-4329-B085-352844CFDCDD}</Project>
       <Name>VMIdentity.CommonUtils</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\VmIdentity.UI.Common\VmIdentity.UI.Common.csproj">
+      <Project>{35037B87-3B35-40FA-A9D3-7974DCDDABB5}</Project>
+      <Name>VmIdentity.UI.Common</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

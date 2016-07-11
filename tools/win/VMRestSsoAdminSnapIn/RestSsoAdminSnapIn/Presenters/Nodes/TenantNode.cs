@@ -19,6 +19,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn.Views;
 using Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider;
+using System.Collections.Generic;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
 {
@@ -40,11 +41,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
             EnabledStandardVerbs = StandardVerbs.Refresh;
             EnabledStandardVerbs = StandardVerbs.Delete;
             ImageIndex = SelectedImageIndex = (int)TreeImageIndex.Tenant;
-
-            if (IsSystemTenant)
-            {
-                ActionsPaneItems.Add(new Action("Configuration", "Configuration", (int)TreeImageIndex.Settings, TenantNodeAction.ActionConfiguration));
-            }
             ActionsPaneItems.Add(new Action("Super Log", "Super Log", (int)TreeImageIndex.Settings, TenantNodeAction.ActionSuperLogging));
             Children.Add(new IdentityProvidersNode());
             Children.Add(new ExternalIdentityProvidersNode());
@@ -52,13 +48,23 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
             Children.Add(new OidcClientsNode());
             Children.Add(new ServerCertificatesNode());
             IsSystemTenant = CheckSystemTenant();
+            if (IsSystemTenant)
+            {
+                ActionsPaneItems.Add(new Action("Configuration", "Configuration", (int)TreeImageIndex.Settings, TenantNodeAction.ActionConfiguration));
+            }
         }
 
         private bool CheckSystemTenant()
         {
+            var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_serverDto, _tenantName);
+            var roles = new List<string> { "Administrator", "RegularUser" };
+            if (!roles.Contains(auth.Token.Role))
+            {
+                return false;
+            }
             bool isSystemTenant = false;
             var service = this.GetServiceGateway();
-            var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_serverDto, _tenantName);
+
             ActionHelper.Execute(delegate
             {
                 var identityProviders = service.IdentityProvider.GetAll(_serverDto, _tenantName, auth.Token);

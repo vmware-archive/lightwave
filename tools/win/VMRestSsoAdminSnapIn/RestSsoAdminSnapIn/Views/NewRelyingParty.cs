@@ -236,6 +236,12 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 if (form.ShowDialog() == DialogResult.OK)
                 {
                     var service = (SignatureAlgorithmDto)form.DataContext;
+                    if (service.MaxKeySize < service.MinKeySize)
+                    {
+                        MMCDlgHelper.ShowError("MAX Key size cannot be less than MIN key size");
+                        DialogResult = DialogResult.Cancel;
+                        return;
+                    }
                     var lstItem = new ListViewItem(new[] { service.MaxKeySize.ToString(), service.MinKeySize.ToString(), service.Priority.ToString() }) { Tag = service };
                     lstSignatureAlgorithms.Items.Add(lstItem);
                 }

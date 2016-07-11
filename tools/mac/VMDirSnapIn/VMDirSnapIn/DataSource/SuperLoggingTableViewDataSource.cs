@@ -16,8 +16,6 @@ using System;
 using System.Collections.Generic;
 using AppKit;
 using Foundation;
-using VMDir.Common.Schema;
-using VmDirInterop.SuperLogging.Interfaces;
 using VMDir.Common;
 
 namespace VMDirSnapIn.DataSource

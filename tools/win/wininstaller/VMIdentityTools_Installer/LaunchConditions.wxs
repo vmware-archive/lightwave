@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
+  <?include Definitions.wxi ?>
+	<Fragment>
+		<!-- TODO: Put your code here. -->
+    <Property Id="LaunchConditionsFile"
+              Value="1" />
+
+    <PropertyRef Id="NETFRAMEWORK45"/>
+
+    <Property Id="MMC3_PROP">
+      <DirectorySearch Id="MMC3Path"
+                       Path="$(var.System32)">
+        <FileSearch Id="MMC3Installed"
+                    Name="mmc.exe"
+                    MinVersion="4.0.0.0"/>
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="LIBVMDNSCLIENT_PROP">
+      <DirectorySearch Id="libvmdnsclientPath"
+                       Path="$(var.System32)">
+        <FileSearch Id="libvmdnsclientInstalled"
+                    Name="libvmdnsclient.dll"/>
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="LIBVMAFDCLIENT_PROP">
+      <DirectorySearch Id="libvmafdclientPath"
+                       Path="$(var.System32)">
+        <FileSearch Id="libvmafdclientInstalled"
+                    Name="libvmafdclient.dll"/>
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="LIBVMCACLIENT_PROP">
+      <DirectorySearch Id="libvmcaclientPath"
+                       Path="$(var.System32)">
+        <FileSearch Id="libvmcaclientInstalled"
+                    Name="libvmcaclient.dll"/>
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="LIBLDAP_R_PROP">
+      <DirectorySearch Id="libldap_r_Path"
+                       Path="$(var.System32)">
+        <FileSearch Id="libldap_rInstalled"
+                    Name="libldap_r.dll"/>
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="LIBLBER_PROP">
+      <DirectorySearch Id="liblber_Path"
+                       Path="$(var.System32)">
+        <FileSearch Id="liblberInstalled"
+                    Name="liblber.dll"/>
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="LIBVMDIRCLIENT_PROP">
+      <DirectorySearch Id="libvmdirclient_Path"
+                       Path="$(var.System32)">
+        <FileSearch Id="libvmdirclientInstalled"
+                    Name="libvmdirclient.dll"/>
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="LIBWBASE_SD_WIN32_PROP">
+      <DirectorySearch Id="liblwbase_sd_win32_Path"
+                       Path="$(var.System32)">
+        <FileSearch Id="liblwbase_sd_win32Installed"
+                    Name="liblwbase-sd-win32.dll"/>
+      </DirectorySearch>
+    </Property>
+
+     <Property Id="PTHREAD_VC2_PROP">
+      <DirectorySearch Id="pthreadVC2_Path"
+                       Path="$(var.System32)">
+        <FileSearch Id="pthreadVC2Installed"
+                    Name="pthreadVC2.dll"/>
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="DCELIB_PROP">
+      <DirectorySearch Id="dcelib_Path"
+                       Path="$(var.System32)">
+        <FileSearch Id="dcelibInstalled"
+                    Name="dcelib.dll"/>
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="COMERR64_PROP">
+      <DirectorySearch Id="comerr64_Path"
+                       Path="$(var.KerberosDllPath)">
+        <FileSearch Id="comerr64Installed"
+                    Name="comerr64.dll"/>
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="K5SPRT64_PROP">
+      <DirectorySearch Id="k5sprt64_Path"
+                       Path="$(var.KerberosDllPath)">
+        <FileSearch Id="k5sprt64Installed"
+                    Name="k5sprt64.dll"/>
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="KRB5_64_PROP">
+      <DirectorySearch Id="krb5_64_Path"
+                       Path="$(var.KerberosDllPath)">
+        <FileSearch Id="krb5_64Installed"
+                    Name="krb5_64.dll"/>
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="WSHELP64_PROP">
+      <DirectorySearch Id="wshelp64_Path"
+                       Path="$(var.KerberosDllPath)">
+        <FileSearch Id="wshelp64Installed"
+                    Name="wshelp64.dll"/>
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="GSSAPI64_PROP">
+      <DirectorySearch Id="gssapi64_Path"
+                       Path="$(var.KerberosDllPath)">
+        <FileSearch Id="gssapi64Installed"
+                    Name="gssapi64.dll"/>
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="LIBSASL_PROP">
+      <DirectorySearch Id="libsasl_Path"
+                       Path="$(var.System32)">
+        <FileSearch Id="libsaslInstalled"
+                    Name="libsasl.dll"/>
+      </DirectorySearch>
+    </Property>
+
+    <Property Id="COND_CHECK" Value="1"/>
+    <Property Id="COND_MSG" Value="msg"/>
+
+    <CustomAction Id="testVBScript" Script="vbscript">
+      <![CDATA[
+      Function checkPrerequisite()
+        msgString=""
+        Const HKEY_CLASSES_ROOT   = &H80000000
+        Const HKEY_CURRENT_USER   = &H80000001
+        Const HKEY_LOCAL_MACHINE  = &H80000002
+        Const HKEY_USERS          = &H80000003
+        computer = "."
+        hklm = HKEY_LOCAL_MACHINE
+        KeyPath = "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
+        Set reg = GetObject("winmgmts:{impersonationLevel=impersonate}!\\" & Computer & "\root\default:StdRegProv")
+        reg.EnumKey hklm, keyPath, subKeysArr
+        
+        For Each subkey In subKeysArr
+            subKeyPath = keyPath & "\" & subkey
+            reg.EnumValues hklm, subKeyPath, valueNamesArr, typesArr
+            
+            if IsArray(valueNamesArr) Then
+            
+              For i = LBound(valueNamesArr) To UBound(valueNamesArr)
+              
+                valueName = valueNamesArr(i)
+                if StrComp(valueName,"DisplayName")=0 Then
+                
+                  reg.GetStringValue hklm, subKeyPath, valueName, value
+                  
+                  if InStr(value,"Microsoft Visual C++ 2008 Redistributable - x64") Then
+                    msgString=msgString+value+vbCrLf    
+                  End If
+                End If
+              Next
+            End If
+        Next
+        
+        if StrComp(msgString,"") = 0 Then
+         msgString="Microsoft Visual C++ 2008 SP1 x64 is required." 
+        Else
+         msgString=""
+        End If
+             
+        if Session.Property("MMC3_PROP")=""  Then
+          msgString=msgString+"MMC 3.0 is required"+vbCrLf
+        End If
+
+        if Session.Property("NETFRAMEWORK45")=""  Then
+          msgString=msgString+"Microsoft .NET Framework 4.5 or higher is required"+vbCrLf
+        End If
+
+       if Session.Property("PTHREAD_VC2_PROP")="" OR Session.Property("DCELIB_PROP")="" Then
+          msgString=msgString+"vmware-platform-sdk-windows.msi is not installed"+vbCrLf
+        End If
+
+       if Session.Property("LIBLDAP_R_PROP")="" OR Session.Property("LIBLBER_PROP")="" OR Session.Property("LIBVMDIRCLIENT_PROP")="" OR Session.Property("LIBWBASE_SD_WIN32_PROP")="" Then
+          msgString=msgString+"vmware-directory-client-msi.msi is not installed"+vbCrLf
+        End If
+
+         if Session.Property("COMERR64_PROP")="" OR Session.Property("K5SPRT64_PROP")="" OR Session.Property("KRB5_64_PROP")="" OR Session.Property("WSHELP64_PROP")="" OR Session.Property("GSSAPI64_PROP")="" Then
+          msgString=msgString+"kfw.msi is not installed"+vbCrLf
+        End If
+
+        if Session.Property("LIBVMAFDCLIENT_PROP")=""  Then
+          msgString=msgString+"vmware-afd.msi is not installed"+vbCrLf
+        End If
+
+        if Session.Property("LIBVMDNSCLIENT_PROP")=""  Then
+          msgString=msgString+"vmware-dns-client.msi is not installed"+vbCrLf
+        End If
+
+        if Session.Property("LIBVMCACLIENT_PROP")=""  Then
+          msgString=msgString+"vmware-vmca-client-msi.msi is not installed"+vbCrLf
+        End If
+
+        if msgString <> "" Then
+        Session.Property("COND_CHECK")=""
+        END If
+        Session.Property("COND_MSG")=msgString
+
+      End Function
+
+      checkPrerequisite()
+      ]]>
+    </CustomAction>
+
+    <Condition Message="[COND_MSG]">
+      COND_CHECK
+    </Condition>
+    
+    <InstallUISequence>
+      <Custom Action="testVBScript" Before="LaunchConditions" />
+    </InstallUISequence>
+
+  </Fragment>
+</Wix>

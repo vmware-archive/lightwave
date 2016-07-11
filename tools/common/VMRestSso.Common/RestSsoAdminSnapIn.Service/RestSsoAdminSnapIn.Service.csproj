@@ -111,6 +111,10 @@
     <EmbeddedResource Include="xml\SAMLRequest.xml" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
+      <Project>{CD959E2E-5B9C-4329-B085-352844CFDCDD}</Project>
+      <Name>VMIdentity.CommonUtils</Name>
+    </ProjectReference>
     <ProjectReference Include="..\RestSsoAdminSnapIn.Core\RestSsoAdminSnapIn.Core.csproj">
       <Project>{B64D4A16-C162-4FCD-943A-AEB556769D3C}</Project>
       <Name>RestSsoAdminSnapIn.Core</Name>

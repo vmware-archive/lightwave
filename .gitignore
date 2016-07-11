@@ -53,3 +53,5 @@ tools/common/VMRestSso.Common/RestSsoAdminSnapIn.Dto/RestSsoAdminSnapIn.Dto.cspr
 tools/win/VMIdentityToolsPrerequisite/VMIdentityToolsPrerequisite/bin/
 tools/win/VMIdentityToolsPrerequisite/VMIdentityToolsPrerequisite/obj/
 tools/win/VMPscHighAvailabilitySnapIn/VMPscHighAvailabilitySnapIn/VMPscHighAvailabilitySnapIn.csproj.user
+*.DS_Store
+*.user

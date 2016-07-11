@@ -63,15 +63,22 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             txtSubjectDN.Text = oidcClientDto.OidcClientMetadataDTO.CertSubjectDN;
             txtLogoutUri.Text = oidcClientDto.OidcClientMetadataDTO.LogoutUri;
             cbTokenAuth.SelectedIndex = oidcClientDto.OidcClientMetadataDTO.TokenEndpointAuthMethod == "none" ? 0 : 1;
-            foreach (var value in oidcClientDto.OidcClientMetadataDTO.RedirectUris)
+            if (oidcClientDto.OidcClientMetadataDTO.RedirectUris != null)
             {
-                var lstItem = new ListViewItem(value) { Tag = value };
-                lstRedirectUris.Items.Add(lstItem);
+                foreach (var value in oidcClientDto.OidcClientMetadataDTO.RedirectUris)
+                {
+                    var lstItem = new ListViewItem(value) { Tag = value };
+                    lstRedirectUris.Items.Add(lstItem);
+                }
             }
-            foreach (var value in oidcClientDto.OidcClientMetadataDTO.PostLogoutRedirectUris)
+
+            if (oidcClientDto.OidcClientMetadataDTO.PostLogoutRedirectUris != null)
             {
-                var lstItem = new ListViewItem(value) { Tag = value };
-                lstPostLogoutRedirectUris.Items.Add(lstItem);
+                foreach (var value in oidcClientDto.OidcClientMetadataDTO.PostLogoutRedirectUris)
+                {
+                    var lstItem = new ListViewItem(value) { Tag = value };
+                    lstPostLogoutRedirectUris.Items.Add(lstItem);
+                }
             }
         }
         private void btnCreateSignerIdentity_Click(object sender, EventArgs e)
@@ -214,7 +221,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
 
         private void NewOidcClient_Load(object sender, EventArgs e)
         {
-            cbTokenAuth.SelectedIndex = 0;
+            if (_oidcClientDtoOrig == null)
+                cbTokenAuth.SelectedIndex = 0;
         }
     }
 }

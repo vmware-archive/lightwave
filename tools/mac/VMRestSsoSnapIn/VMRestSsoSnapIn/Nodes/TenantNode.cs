@@ -13,6 +13,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using AppKit;
 using Foundation;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
@@ -72,9 +73,18 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 
 		public override void Refresh (object sender, EventArgs e)
 		{
+			Refresh ();
+		}
+
+		public void Refresh(){
 			Children.Clear ();
 			var identitySourceNode = new IdentitySourcesNode (_serverDto, _tenantName){ Parent = this };
-			identitySourceNode.Refresh (this, EventArgs.Empty);
+			var roles = new List<String>(){"Administrator", "RegularUser"};
+			var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_serverDto.ServerName);
+			var role = auth.Token.Role;
+			if (roles.Contains(role)) {
+				identitySourceNode.Refresh (this, EventArgs.Empty);
+			}
 			Children.Add (identitySourceNode);
 			Children.Add (new IdentityProvidersNode (){ Parent = this });
 			Children.Add (new RelyingPartyNode (){ Parent = this });

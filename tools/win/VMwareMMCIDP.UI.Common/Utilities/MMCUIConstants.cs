@@ -22,8 +22,13 @@ namespace VMwareMMCIDP.UI.Common.Utilities
     {
         // Confirmation messages
         public const string VALUES_EMPTY = "One or more required values are empty";
+        public const string CONFIRM = "Are you sure ?";
         public const string CONFIRM_DELETE = "Are you sure, you want to delete? ";
         public const string UNABLE_TO_LOGIN = "Unable to login! One or more errors occured.";
+        public const string EDIT = "Edit";
+        public const string UPDATE = "Update";
+        public const string LOGIN = "Login";
+        public const string LOGOUT = "Logout";
         public const string INCOMPATIBLE_SERVER = "Server is unsupported or not reachable";
 
         // Error messages
@@ -52,6 +57,8 @@ namespace VMwareMMCIDP.UI.Common.Utilities
         public const string IDP_ADMIN_PWD_ENT = "Please enter IDP admin password";
         public const string PRI_KEY_NOT_FOUND = "Private key file not found";
         public const string UPN_ENT = "Please enter UPN";
+        public const string DN_ENT = "Please enter DN";
+        public const string SERVICE_NOT_FOUND = "Service not found.";
 
         //Invalid data messages
         public const string INVALID_IP = "Please enter a valid IP address.";
@@ -63,10 +70,12 @@ namespace VMwareMMCIDP.UI.Common.Utilities
         public const string CSR_FILTER = "CSR Files (*.csr)|*.csr|All Files (*.*)|*.*";
         public const string CERT_FILTER = "Certificate Files (*.crt)|*.crt|All Files (*.*)|*.*";
         public const string SAML_TOKEN_FILTER = "SAML Token Files (*.xml)|*.xml|All Files (*.*)|*.*";
+        public const string XML_FILTER = "XML Files (*.xml)|*.xml|All Files (*.*)|*.*";
 
         // Log constants
         private const string LOG_FOLDER = @"C:\Users\{0}\AppData\Local\VMware, Inc\VMware Identity Tools\Logs\";
         public const string PSC_LOG_FILE = "VMPscSiteManagement.log";
+        public const string VMDIR_LOG_FILE = "VMDir.log";
 
         //Pattern constants
         public const string EmailPattern = @"^(?("")("".+?(?<!\\)""@)|(([0-9a-z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)(?<=[0-9a-z])@))"

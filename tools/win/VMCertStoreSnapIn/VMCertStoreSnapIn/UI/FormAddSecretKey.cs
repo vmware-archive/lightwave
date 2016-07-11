@@ -17,6 +17,7 @@ using VMCertStore.Common.DTO;
 using VMCertStoreSnapIn.Utilities;
 using VMwareMMCIDP.UI.Common.Utilities;
 using System.IO;
+using VMIdentity.CommonUtils;
 
 namespace VMCertStoreSnapIn.UI
 {
@@ -48,10 +49,12 @@ namespace VMCertStoreSnapIn.UI
         public bool ValidateForm()
         {
             string msg = null;
-            if (string.IsNullOrEmpty(txtAlias.Text))
+            if (string.IsNullOrWhiteSpace(txtAlias.Text))
                 msg = MMCUIConstants.ALIAS_ENT;
-            else if (string.IsNullOrEmpty(txtSecretKey.Text))
+            else if (string.IsNullOrWhiteSpace(txtSecretKey.Text))
                 msg = MMCUIConstants.SEC_KEY_SEL;
+            else if (txtSecretKey.Text.Length > CommonConstants.SECRET_KEY_LENGTH)
+                msg = CommonConstants.SECRET_KEY_LEN_ERR;
             if (msg != null)
             {
                 MMCDlgHelper.ShowWarning(msg);

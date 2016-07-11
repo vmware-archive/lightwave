@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Include>
+	<!-- TODO: Put your code here. -->
+  <?define Product="Lightwave Tools" ?>
+  <?define Manufacturer="VMware, Inc." ?>
+  <?define MajorVersion="1" ?>
+  <?define MinorVersion="0" ?>
+  <?define BuildVersion="3" ?>
+  <?define Revision="0" ?>
+  <?define VersionNumber="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion).$(var.Revision)" ?>
+  <?define UpgradeCode="{53548109-AB39-491D-B7B6-7217955AD17C}" ?>
+  <?define System32="C:\Windows\System32" ?>
+  <?define VMIDPOutDir=$(sys.SOURCEFILEDIR)..\..\$(var.Platform)\$(var.Configuration) ?>
+  <?define Resources="resources" ?>
+  <?define KerberosDllPath=[ProgramFiles64Folder]MIT\Kerberos\bin ?>
+  <?define ToolsMSIPath="..\..\x64" ?>
+  <?define MSIPath="..\..\..\interop\client_msi" ?>
+  <?define LegacySSO_desc="Administer users, groups, tenant policies, certificates and Open LDAP, AD and IDP integrations." ?>
+  <?define RestSSO_desc="Administer users, groups, tenant policies, certificates, relying party, OIDC and Open LDAP, AD and IDP integrations." ?>
+  <?define CA_desc="Manage certificate creations, issuance, expiring certificates, KeyPair/CSRs generations." ?>
+  <?define CertStore_desc="Manage certificate store, private keys and secret keys." ?>
+  <?define DirSchema_desc="Manage directory schema, federation and compare replication metadata." ?>
+  <?define Dir_desc=" Directory objects search and management." ?>
+  <?define DNS_desc="Administer zones, DNS records and configure forwarders." ?>
+  <?define PSCHA_desc="Manage site affinity for management node, monitor health of infrastructure node, global view of HA topology etc." ?>
+</Include>

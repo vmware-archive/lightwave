@@ -64,9 +64,11 @@ namespace VMCASnapIn.DTO
         public PrivateKeyDTO PrivateKey { get; set; }
 
         //[Category ("Security")]
+        [Description("Time in GMT")]
         public DateTime NotBefore { get; set; }
 
         //[Category ("Security")]
+        [Description ("Time in GMT")]
         public DateTime NotAfter { get; set; }
 
         public CertRequestDTO ()

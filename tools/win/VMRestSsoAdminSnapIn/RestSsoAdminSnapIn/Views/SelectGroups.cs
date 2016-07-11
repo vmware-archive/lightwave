@@ -11,40 +11,57 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
- 
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
+using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn.Presenters.PropertyManagers;
+using Vmware.Tools.RestSsoAdminSnapIn.Presenters.PropertyManagers.User;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Views
 {
     public partial class SelectGroups : Form
     {
-        private readonly IPropertyDataManager _dataMgr;
-        public SelectGroups(IPropertyDataManager mgr)
+        private readonly AllGroupsPropertyManager _dataMgr;
+
+        public SelectGroups()
+        {
+
+        }
+        public SelectGroups(AllGroupsPropertyManager mgr)
         {
             _dataMgr = mgr;
             InitializeComponent();
-
-            BindDataAllGroups();
         }
 
-        void BindDataAllGroups()
+        protected override void OnLoad(EventArgs e)
         {
-            var groups = _dataMgr.GetData() as IList<GroupDto>;
+            base.OnLoad(e);
+            var il = new ImageList();
+            il.Images.AddStrip(ResourceHelper.GetToolbarImage());
+            lstParentGroups.SmallImageList = il;
+            SearchGroups(null);
+        }
+
+        void SearchGroups(string name)
+        {
+            var groups = _dataMgr.Search(name);
             lstParentGroups.Items.Clear();
             if (groups != null)
             {
                 foreach (var group in groups)
                 {
-                    var item = new ListViewItem(@group.GroupName) { Tag = @group, ImageIndex = (int)TreeImageIndex.Group };
+                    var item = new ListViewItem(group.GroupName) { Tag = group, ImageIndex = (int)TreeImageIndex.Group };
                     lstParentGroups.Items.Add(item);
                 }
+
+                lblWarning.Visible = groups.Count >= 100;
             }
-        }
+        }
+
         private void btnAdd_Click(object sender, EventArgs e)
         {
             _dataMgr.Apply(GetSelectedGroups());
@@ -59,6 +76,11 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
         List<GroupDto> GetSelectedGroups()
         {
             return (from ListViewItem item in lstParentGroups.SelectedItems select item.Tag as GroupDto).ToList();
+        }
+
+        private void btnSearch_Click(object sender, EventArgs e)
+        {
+            SearchGroups(txtGroupName.Text);
         }
     }
 }

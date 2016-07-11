@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
@@ -15,51 +15,63 @@
 using System;
 using Foundation;
 using AppKit;
+using CoreGraphics;
 using System.Net.NetworkInformation;
 
 namespace VmIdentity.UI.Common
 {
-	public partial class MainWindowCommonController : NSWindowController
+    public partial class MainWindowCommonController : NSWindowController
     {
-		public MainWindowCommonController (IntPtr handle) : base (handle)
-        {
-		}
-
-        [Export ("initWithCoder:")]
-        public MainWindowCommonController (NSCoder coder) : base (coder)
+        public MainWindowCommonController(IntPtr handle)
+            : base(handle)
         {
         }
 
-        public MainWindowCommonController (string windowName) : base (windowName)
+        [Export("initWithCoder:")]
+        public MainWindowCommonController(NSCoder coder)
+            : base(coder)
         {
         }
 
-        public MainWindowCommonController () : base ("MainWindowCommon")
+        public MainWindowCommonController(string windowName)
+            : base(windowName)
         {
         }
-        public override void AwakeFromNib ()
+
+        public MainWindowCommonController()
+            : base("MainWindowCommon")
         {
-            base.AwakeFromNib ();
-			NetworkChange.NetworkAvailabilityChanged 
-			+= (object sender, NetworkAvailabilityEventArgs e) =>
-			{
-				NetworkStatus.StringValue = e.IsAvailable ? "Connected" : "Disconnected";
-				NetworkStatus.TextColor = e.IsAvailable
-					? NSColor.FromSrgb((nfloat)3.0/255,(nfloat)161/255,(nfloat)27/255,1)
+        }
+
+        public override void AwakeFromNib()
+        {
+            base.AwakeFromNib();
+            NetworkChange.NetworkAvailabilityChanged += (object sender, NetworkAvailabilityEventArgs e) =>
+            {
+                NetworkStatus.StringValue = e.IsAvailable ? "Connected" : "Disconnected";
+                NetworkStatus.TextColor = e.IsAvailable
+					? NSColor.FromSrgb((nfloat)3.0 / 255, (nfloat)161 / 255, (nfloat)27 / 255, 1)
 					: NSColor.Red;
-			};
+            };
         }
 
-        public virtual void InitialiseViews ()
+        public virtual void InitialiseViews()
         {
         }
 
-        public void SetSubView (NSView view)
+        public void SetSubView(NSView view)
         {
-            this.ContainerView.AddSubview (view);
+            this.ContainerView.AddSubview(view);
         }
 
-        public new MainWindowCommon Window {
+        public void ReplaceSubview(NSView sourceView, NSView targetView)
+        {
+            this.ContainerView.ReplaceSubviewWith(sourceView, targetView);
+            targetView.Frame = this.ContainerView.Bounds;
+        }
+
+        public new MainWindowCommon Window
+        {
             get { return (MainWindowCommon)base.Window; }
         }
     }

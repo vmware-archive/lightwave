@@ -18,6 +18,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn.Views;
 using VMwareMMCIDP.UI.Common.Utilities;
+using VMIdentity.CommonUtils;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
 {
@@ -34,6 +35,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
         private ServerDto _dto;
         public SnapInNode(): base(false)
         {
+            this.DisplayName = MMCMiscUtil.GetBrandConfig(CommonConstants.SSO_ROOT);
             AddActions();
         }
 

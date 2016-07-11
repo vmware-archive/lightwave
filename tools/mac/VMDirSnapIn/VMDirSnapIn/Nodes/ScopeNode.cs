@@ -17,41 +17,40 @@ using System.Collections.Generic;
 
 namespace VMDirSnapIn.Nodes
 {
-    public class ScopeNode : Foundation.NSObject
-    {
-        public String DisplayName;
+	public class ScopeNode : Foundation.NSObject
+	{
+		public String DisplayName;
+		public object Tag { get; set; }
+		public ScopeNode Parent { get; set; }
+		public List<ScopeNode> Children { get; set; }
 
-        public object Tag { get; set; }
+		public ScopeNode()
+		{
+			this.DisplayName = "";
+			this.Tag = null;
+			this.Children = new List<ScopeNode>();
+			this.Parent = null;
+		}
 
-        public ScopeNode Parent { get; set; }
+		public int NumberOfChildren()
+		{
+			if (this.Children == null)
+				return 0;
+			else
+				return this.Children.Count;
+		}
 
-        public List<ScopeNode> Children { get; set; }
-
-        public ScopeNode ()
-        {
-            this.DisplayName = "";
-            this.Tag = null;
-            this.Children = new List<ScopeNode> ();
-            this.Parent = null;
-        }
-
-        public int NumberOfChildren ()
-        {
-            if (this.Children == null)
-                return 0;
-            else
-                return this.Children.Count;
-        }
-
-        public ScopeNode ChildAtIndex (int n)
-        {
-            if (this.Children != null && n < NumberOfChildren ()) {
-                ScopeNode item = this.Children [n];
-                return item;
-            } else {
-                return null;
-            }
-        }
-    }
+		public ScopeNode ChildAtIndex(int n)
+		{
+			if (this.Children != null && n < NumberOfChildren())
+			{
+				ScopeNode item = this.Children[n];
+				return item;
+			}
+			else {
+				return null;
+			}
+		}
+	}
 }
 

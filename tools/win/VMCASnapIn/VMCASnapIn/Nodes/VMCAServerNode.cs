@@ -47,11 +47,16 @@ namespace VMCASnapIn.Nodes
         public VMCAServerNode(VMCAServerDTO dto):base(dto)
         {
             this.DisplayName = dto.Server;
-            this.EnabledStandardVerbs = StandardVerbs.Delete;
+            this.EnabledStandardVerbs = StandardVerbs.Delete | StandardVerbs.Refresh;
 
             this.ActionsPaneItems.Add(new Microsoft.ManagementConsole.Action("Login",
                 "Login", -1, ACTION_LOGIN));
             ImageIndex = SelectedImageIndex = (int)VMCAImageIndex.Server;
+            var lvd = new MmcListViewDescription();
+            lvd.DisplayName = "dto.Server";
+            lvd.ViewType = typeof(MmcListView);
+            this.ViewDescriptions.Add(lvd);
+            this.ViewDescriptions.DefaultIndex = 0;
             PopulateChildren();
         }
 
@@ -157,14 +162,17 @@ namespace VMCASnapIn.Nodes
             VMCASnapInEnvironment.Instance.LocalData.RemoveServer(ServerDTO);
             (Parent as VMCARootNode).RefreshAll();
         }
-
+        protected override void OnRefresh(AsyncStatus status)
+        {
+            PopulateChildren();
+        }
         public async Task DoLogin()
         {
             try
             {
                 if (!ServerDTO.IsLoggedIn)
                 {
-                    var frmLogin = new LoginForm(ServerDTO.Server, ServerDTO.UserName, ServerDTO.Password, ServerDTO.DomainName);
+                    var frmLogin = new LoginForm(ServerDTO.Server, ServerDTO.UserName, ServerDTO.DomainName);
                     if (MMCDlgHelper.ShowForm(frmLogin))
                     {
                         ServerDTO.Server = frmLogin.Server;
@@ -185,6 +193,8 @@ namespace VMCASnapIn.Nodes
                                                        "Show VMCA Root certificate", -1, ACTION_SHOW_ROOT_CERTIFICATE));
                             this.ActionsPaneItems.Add(new Microsoft.ManagementConsole.Action("Add root certificate",
                                                        "Add Root certificate", -1, ACTION_ADD_ROOT_CERTIFICATE));
+                            this.ViewDescriptions[0].DisplayName = "Logged in as: " + ServerDTO.UserName + "@" + ServerDTO.DomainName;
+                        
                         }
                         else
                         {

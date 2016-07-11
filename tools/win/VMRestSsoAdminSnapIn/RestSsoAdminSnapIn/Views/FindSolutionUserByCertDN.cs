@@ -14,6 +14,7 @@
 using System;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
+using Vmware.Tools.RestSsoAdminSnapIn.Core.Crypto;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn.Service;
@@ -54,7 +55,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             if (rdoUseFile.Checked)
             {
                 var cert = new X509Certificate2(txtCertFile.Text);
-                txtCertDN.Text = cert.Subject;
+                var subjectDN = ShaWithRsaSigner.GetX500SubjectDN(cert);
+                txtCertDN.Text = subjectDN;
             }
             CertDn = txtCertDN.Text;
         }

@@ -136,10 +136,15 @@ namespace RestSsoAdminSnapIn
 			if (result == VMIdentityConstants.DIALOGOK) {
 				if (GroupsMembershipDtoOriginal.Groups == null)
 					this.GroupMembershipDto.Groups = new List<GroupDto> ();
-				foreach (var group in form.SelectedGroups) {
+				foreach (var group in form.SelectedMembers.Groups) {
 					var principalName = group.GroupName + "@" + group.GroupDomain;
 					if (!GroupsMembershipDtoOriginal.Groups.Exists (x => (x.GroupName + "@" + x.GroupDomain) == principalName))
 						this.GroupMembershipDto.Groups.Add (group);
+				}
+				foreach (var user in form.SelectedMembers.Users) {
+					var principalName = user.Name + "@" + user.Domain;
+					if (!GroupsMembershipDtoOriginal.Users.Exists (x => (x.Name + "@" + x.Domain) == principalName))
+						this.GroupMembershipDto.Users.Add (user);
 				}
 				SetGroupDataSource (GroupMembershipDto);
 			}
@@ -153,7 +158,7 @@ namespace RestSsoAdminSnapIn
 					var row = (int)selectedRow;
 					if (row < GroupMembershipDto.Groups.Count) {
 						GroupMembershipDto.Groups.RemoveAt (row);
-					} else if (row >= GroupMembershipDto.Groups.Count && row < (GroupMembershipDto.Groups.Count + GroupMembershipDto.Users.Count) - 1) {
+					} else if (row >= GroupMembershipDto.Groups.Count && row <= (GroupMembershipDto.Groups.Count + GroupMembershipDto.Users.Count) - 1) {
 						GroupMembershipDto.Users.RemoveAt (row - GroupMembershipDto.Groups.Count);
 					} else if (row >= GroupMembershipDto.Groups.Count + GroupMembershipDto.Users.Count &&
 					         row < (GroupMembershipDto.Groups.Count + GroupMembershipDto.Users.Count + GroupMembershipDto.SolutionUsers.Count) - 1) {
@@ -206,13 +211,13 @@ namespace RestSsoAdminSnapIn
 					if (left.Groups.FirstOrDefault (x => (x.GroupName + "@" + x.GroupDomain) == fullName) == null) {
 						groups.Add (group);
 					}
+				}
 
-					if(groups.Count() > 0)
-					{
-						// remove
-						var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (ServerDto.ServerName);
-						SnapInContext.Instance.ServiceGateway.Group.AddGroups (ServerDto, TenantName, GroupDto,groups, auth.Token);
-					}
+				if(groups.Count() > 0)
+				{
+					// add
+					var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (ServerDto.ServerName);
+					SnapInContext.Instance.ServiceGateway.Group.AddGroups (ServerDto, TenantName, GroupDto,groups, auth.Token);
 				}
 			}
 
@@ -239,46 +244,13 @@ namespace RestSsoAdminSnapIn
 					if (left.Users.FirstOrDefault (x => (x.Name + "@" + x.Domain) == fullName) == null) {
 						users.Add (user);
 					}
-
-					if(users.Count() > 0)
-					{
-						// remove
-						var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (ServerDto.ServerName);
-						SnapInContext.Instance.ServiceGateway.Group.AddUsers (ServerDto, TenantName, GroupDto,users, auth.Token);
-					}
 				}
-			}
 
-			if (left.SolutionUsers == null && right.SolutionUsers != null) {
-				var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (ServerDto.ServerName);
-				SnapInContext.Instance.ServiceGateway.Group.AddSolutionUsers (ServerDto, TenantName, GroupDto, right.SolutionUsers, auth.Token);
-			} else if (left.SolutionUsers != null && right.SolutionUsers != null) {
-				var users = new List<SolutionUserDto> ();
-				foreach (var user in left.SolutionUsers) {
-					var fullName = user.Name + "@" + user.Domain;
-					if (right.SolutionUsers.FirstOrDefault (x => (x.Name + "@" + x.Domain) == fullName) == null) {
-						users.Add (user);
-					}
-					if(users.Count() > 0)
-					{
-						// remove
-						var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (ServerDto.ServerName);
-						SnapInContext.Instance.ServiceGateway.Group.RemoveSolutionUsers (ServerDto, TenantName, GroupDto,users, auth.Token);
-					}
-				}
-				users = new List<SolutionUserDto> ();
-				foreach (var user in right.SolutionUsers) {
-					var fullName = user.Name + "@" + user.Domain;
-					if (left.SolutionUsers.FirstOrDefault (x => (x.Name + "@" + x.Domain) == fullName) == null) {
-						users.Add (user);
-					}
-
-					if(users.Count() > 0)
-					{
-						// remove
-						var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (ServerDto.ServerName);
-						SnapInContext.Instance.ServiceGateway.Group.AddSolutionUsers (ServerDto, TenantName, GroupDto,users, auth.Token);
-					}
+				if(users.Count() > 0)
+				{
+					// add
+					var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (ServerDto.ServerName);
+					SnapInContext.Instance.ServiceGateway.Group.AddUsers (ServerDto, TenantName, GroupDto,users, auth.Token);
 				}
 			}
 		}

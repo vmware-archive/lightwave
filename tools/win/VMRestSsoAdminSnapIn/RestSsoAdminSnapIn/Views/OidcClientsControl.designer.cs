@@ -37,25 +37,25 @@
             // columnHeader1
             // 
             this.columnHeader1.Text = "Client ID";
-            this.columnHeader1.Width = 170;
+            this.columnHeader1.Width = 380;
             // 
             // columnHeader2
             // 
             this.columnHeader2.Text = "Certificate Subject DN";
             this.columnHeader2.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            this.columnHeader2.Width = 300;
+            this.columnHeader2.Width = 182;
             // 
             // columnHeader3
             // 
             this.columnHeader3.Text = "Token Auth Method";
             this.columnHeader3.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            this.columnHeader3.Width = 150;
+            this.columnHeader3.Width = 125;
             // 
             // columnHeader4
             // 
             this.columnHeader4.Text = "Logout URI";
             this.columnHeader4.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
-            this.columnHeader4.Width = 200;
+            this.columnHeader4.Width = 127;
             // 
             // contextMenuStrip1
             // 

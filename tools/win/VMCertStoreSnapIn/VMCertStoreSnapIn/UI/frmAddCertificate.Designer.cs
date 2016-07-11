@@ -45,7 +45,6 @@ namespace VMCertStoreSnapIn.UI
             this.txtAlias = new System.Windows.Forms.TextBox();
             this.txtCertificate = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
-            this.chkAutoRefresh = new System.Windows.Forms.CheckBox();
             this.btnCancel = new System.Windows.Forms.Button();
             this.btnAdd = new System.Windows.Forms.Button();
             this.btnBrowseCertificate = new System.Windows.Forms.Button();
@@ -83,16 +82,6 @@ namespace VMCertStoreSnapIn.UI
             this.label3.Size = new System.Drawing.Size(54, 13);
             this.label3.TabIndex = 2;
             this.label3.Text = "Certificate";
-            // 
-            // chkAutoRefresh
-            // 
-            this.chkAutoRefresh.AutoSize = true;
-            this.chkAutoRefresh.Location = new System.Drawing.Point(78, 79);
-            this.chkAutoRefresh.Name = "chkAutoRefresh";
-            this.chkAutoRefresh.Size = new System.Drawing.Size(88, 17);
-            this.chkAutoRefresh.TabIndex = 5;
-            this.chkAutoRefresh.Text = "Auto Refresh";
-            this.chkAutoRefresh.UseVisualStyleBackColor = true;
             // 
             // btnCancel
             // 
@@ -134,7 +123,6 @@ namespace VMCertStoreSnapIn.UI
             this.Controls.Add(this.btnBrowseCertificate);
             this.Controls.Add(this.btnAdd);
             this.Controls.Add(this.btnCancel);
-            this.Controls.Add(this.chkAutoRefresh);
             this.Controls.Add(this.txtCertificate);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.txtAlias);
@@ -157,7 +145,6 @@ namespace VMCertStoreSnapIn.UI
         private System.Windows.Forms.TextBox txtAlias;
         private System.Windows.Forms.TextBox txtCertificate;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.CheckBox chkAutoRefresh;
         private System.Windows.Forms.Button btnCancel;
         private System.Windows.Forms.Button btnAdd;
         private System.Windows.Forms.Button btnBrowseCertificate;

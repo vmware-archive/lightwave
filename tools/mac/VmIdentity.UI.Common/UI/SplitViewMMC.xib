@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="9059" systemVersion="14F27" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="9532" systemVersion="14F27" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="9059"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="9532"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="SplitViewMMCController">
@@ -19,7 +19,7 @@
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <customView id="4" customClass="SplitViewMMC">
             <rect key="frame" x="0.0" y="0.0" width="820" height="585"/>
-            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <autoresizingMask key="autoresizingMask" flexibleMinX="YES" widthSizable="YES" flexibleMaxX="YES" flexibleMinY="YES" heightSizable="YES" flexibleMaxY="YES"/>
             <subviews>
                 <splitView focusRingType="exterior" dividerStyle="paneSplitter" vertical="YES" id="22">
                     <rect key="frame" x="0.0" y="0.0" width="820" height="585"/>
@@ -62,7 +62,7 @@
                                         <nil key="backgroundColor"/>
                                     </clipView>
                                     <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="27">
-                                        <rect key="frame" x="1" y="513" width="225.5" height="16"/>
+                                        <rect key="frame" x="1" y="513" width="226" height="16"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                     </scroller>
                                     <scroller key="verticalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="NO" id="29">
@@ -88,7 +88,7 @@
                                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                         <subviews>
                                             <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" alternatingRowBackgroundColors="YES" columnSelection="YES" multipleSelection="NO" autosaveColumns="NO" rowHeight="20" headerView="45" id="43" customClass="CustomTableView">
-                                                <rect key="frame" x="0.0" y="0.0" width="560.5" height="23"/>
+                                                <rect key="frame" x="0.0" y="0.0" width="561" height="567"/>
                                                 <autoresizingMask key="autoresizingMask"/>
                                                 <size key="intercellSpacing" width="5" height="3"/>
                                                 <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -121,7 +121,7 @@
                                         <autoresizingMask key="autoresizingMask"/>
                                     </scroller>
                                     <tableHeaderView key="headerView" id="45">
-                                        <rect key="frame" x="0.0" y="0.0" width="560.5" height="17"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="561" height="17"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                     </tableHeaderView>
                                 </scrollView>

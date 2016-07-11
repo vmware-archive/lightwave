@@ -175,7 +175,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
 
         private AuthTokenDto GetJwtTokenByCertificate(ServiceGateway service, ServerDto serverDto)
         {
-            var cert = new X509Certificate2(txtCertificate.Text);
+            var cert = new X509Certificate2(txtCertificate.Text);            
             var rsaKey = ShaWithRsaSigner.PrivatePemKeyToRSACryptoServiceProvider(txtPrivateKey.Text);
             return service.JwtTokenService.GetTokenFromCertificate(serverDto, cert, rsaKey);
         }

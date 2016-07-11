@@ -4,7 +4,6 @@
         /// <summary>         /// Required method for Designer support - do not modify         /// the contents of this method with the code editor.        /// </summary>        private void InitializeComponent()        {            this.components = new System.ComponentModel.Container();
             this.lstGroups = new System.Windows.Forms.ListView();
             this.columnHeader15 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.columnHeader16 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader17 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.addToGroupToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -19,7 +18,6 @@
             // 
             this.lstGroups.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader15,
-            this.columnHeader16,
             this.columnHeader17});
             this.lstGroups.ContextMenuStrip = this.contextMenuStrip1;
             this.lstGroups.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -36,17 +34,12 @@
             // columnHeader15
             // 
             this.columnHeader15.Text = "Principal Name";
-            this.columnHeader15.Width = 144;
-            // 
-            // columnHeader16
-            // 
-            this.columnHeader16.Text = "Domain";
-            this.columnHeader16.Width = 141;
+            this.columnHeader15.Width = 297;
             // 
             // columnHeader17
             // 
             this.columnHeader17.Text = "Description";
-            this.columnHeader17.Width = 423;
+            this.columnHeader17.Width = 407;
             // 
             // contextMenuStrip1
             // 
@@ -105,5 +98,6 @@
 
         }
         #endregion
-        private System.Windows.Forms.ListView lstGroups;        private System.Windows.Forms.ColumnHeader columnHeader15;        private System.Windows.Forms.ColumnHeader columnHeader16;        private System.Windows.Forms.ColumnHeader columnHeader17;        private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;        private System.Windows.Forms.ToolStripMenuItem addToGroupToolStripMenuItem;        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;        private System.Windows.Forms.ToolStripMenuItem deleteToolStripMenuItem;        private System.Windows.Forms.ToolStripMenuItem renameToolStripMenuItem;        private System.Windows.Forms.ToolStripMenuItem propertiesToolStripMenuItem;
+        private System.Windows.Forms.ListView lstGroups;
+        private System.Windows.Forms.ColumnHeader columnHeader15;        private System.Windows.Forms.ColumnHeader columnHeader17;        private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;        private System.Windows.Forms.ToolStripMenuItem addToGroupToolStripMenuItem;        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;        private System.Windows.Forms.ToolStripMenuItem deleteToolStripMenuItem;        private System.Windows.Forms.ToolStripMenuItem renameToolStripMenuItem;        private System.Windows.Forms.ToolStripMenuItem propertiesToolStripMenuItem;
     }}

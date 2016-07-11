@@ -38,6 +38,7 @@ namespace RestSsoAdminSnapIn
 		public ServerDto ServerDto { get; set; }
 		public string TenantName { get; set; }
 		private string _domainName;
+		private bool isUpdate ;
 
 		#region Constructors
 
@@ -68,8 +69,32 @@ namespace RestSsoAdminSnapIn
 		public override void AwakeFromNib ()
 		{
 			base.AwakeFromNib ();
+
 			_certificates = new List<CertificateDto> ();
-			_currentStep = WizardSteps.One;
+			var title = string.Empty;
+			if (IdentityProviderDto != null) {
+				var tag = GetIdFromIdentitySourceType (IdentityProviderDto.Type);
+
+				if (tag == 1) {
+					title = VMIdentityConstants.AD_WIN_AUTH_TITLE;
+					_currentStep = WizardSteps.Four;
+				} else {
+					if (tag == 2) {
+						title = VMIdentityConstants.AD_AS_LDAP_TITLE;
+					}
+					else{
+						title = VMIdentityConstants.OPEN_LDAP_TITLE;
+					}
+					_currentStep = WizardSteps.Two;
+				}
+
+				isUpdate = true;
+			} else {
+				title = VMIdentityConstants.NEW_EXTERNAL_DOMAIN_TITLE;
+				_currentStep = WizardSteps.One;
+				isUpdate = false;
+			}
+			this.Window.Title = (NSString)title;
 			SetWizardStep ();
 			ReloadCertificates ();
 
@@ -589,8 +614,11 @@ namespace RestSsoAdminSnapIn
 				} else {
 						_currentStep = IsUnsecuredConnection() ? WizardSteps.Two : _currentStep - 1;
 				}
-			} else {	
-				_currentStep--;
+			} else {
+
+				if (!isUpdate || (isUpdate && _currentStep > WizardSteps.Two)) {
+					_currentStep--;
+				}
 			}
 		}
 
@@ -621,21 +649,26 @@ namespace RestSsoAdminSnapIn
 				var anyDc = RdoIdentitySource.SelectedTag == 2 && RdoDomainController.SelectedTag == 1;
 				EnableDisableConnectionString (!anyDc);
 			}
+			var adWin = IsAdWinSelected ();
 
 			if (!PnlStep4.Hidden) {
-				var adWin = IsAdWinSelected ();
 				RdoSpn.Hidden = !adWin;
 				LblSpn.Hidden = !adWin;
 				TxtSpn.Hidden = !adWin;
 				LblUsername.StringValue = adWin ? "User Principal Name" : "Username";
 			}
-			BtnBack.Enabled = _currentStep != WizardSteps.One;
+
+			BtnBack.Enabled = CheckBackEnabled (adWin);
 			BtnNext.Title = (_currentStep == WizardSteps.Four) ? "Save" : "Next";
 			BtnTestConnection.Hidden = RdoIdentitySource.SelectedTag == 1;
 			BtnAdvanced.Hidden = RdoIdentitySource.SelectedTag == 1;
 			StepIndicator.IntValue = (int)(_currentStep - 1);
 		}
 
+		private bool CheckBackEnabled(bool adWin){
+			return ((isUpdate && !adWin && _currentStep > WizardSteps.Two) ||
+				(!isUpdate && _currentStep != WizardSteps.One));
+		}
 		private bool IsAdWinSelected()
 		{
 			return RdoIdentitySource.SelectedTag == 1;

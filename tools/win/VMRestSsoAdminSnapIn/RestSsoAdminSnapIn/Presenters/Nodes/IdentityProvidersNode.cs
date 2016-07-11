@@ -14,6 +14,7 @@
 
 using Microsoft.ManagementConsole;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
@@ -44,7 +45,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
         private TenantNode GetTenant()
         {
             return Parent as TenantNode;
-        }private ServerDto GetServerDto()
+        }
+        private ServerDto GetServerDto()
         {
             var dto = Parent.Parent.Tag as AuthTokenDto;
             return dto != null ? dto.ServerDto : null;
@@ -61,7 +63,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
         }
         protected override void OnAction(Action action, AsyncStatus status)
         {
-            base.OnAction(action, status);            
+            base.OnAction(action, status);
         }
         public void DoRefresh()
         {
@@ -72,37 +74,42 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
             var service = this.GetServiceGateway();
             ActionHelper.Execute(delegate
            {
-               var identityProviders = service.IdentityProvider.GetAll(serverDto, tenantName, auth.Token);
-               var tenantConfig = new TenantConfigurationDto();
+               var roles = new List<string> { "Administrator", "RegularUser" };
 
-               ActionHelper.Execute(delegate
+               if (roles.Contains(auth.Token.Role))
                {
-                   tenantConfig = service.Tenant.GetConfig(serverDto, tenantName, auth.Token, TenantConfigType.PROVIDER);
-               }, null);
+                   var identityProviders = service.IdentityProvider.GetAll(serverDto, tenantName, auth.Token);
+                   var tenantConfig = new TenantConfigurationDto();
 
-               var systemDomains = identityProviders.Where(x => x.DomainType == DomainType.SYSTEM_DOMAIN.ToString());
-               if (systemDomains != null)
-               {
-                   foreach (var provider in systemDomains)
+                   ActionHelper.Execute(delegate
                    {
-                       var systemDomain = new IdentityProviderNode(provider, tenantName, true, provider.Name + " (System Domain)", tenantConfig);
-                       Children.Add(systemDomain);
-                   }
-               }
+                       tenantConfig = service.Tenant.GetConfig(serverDto, tenantName, auth.Token, TenantConfigType.PROVIDER);
+                   }, null);
 
-               var localOsDomains = identityProviders.Where(x => x.DomainType == DomainType.LOCAL_OS_DOMAIN.ToString());
-               if (localOsDomains != null)
-               {
-                   foreach (var provider in localOsDomains)
+                   var systemDomains = identityProviders.Where(x => x.DomainType == DomainType.SYSTEM_DOMAIN.ToString());
+                   if (systemDomains != null)
                    {
-                       var localOsDomain = new IdentityProviderNode(provider, tenantName, false, provider.Name + " (Local OS Domain)", tenantConfig);
-                       Children.Add(localOsDomain);
+                       foreach (var provider in systemDomains)
+                       {
+                           var systemDomain = new IdentityProviderNode(provider, tenantName, true, provider.Name + " (System Domain)", tenantConfig);
+                           Children.Add(systemDomain);
+                       }
                    }
-               }
 
-               var externalDomains = identityProviders.Where(x => x.DomainType == DomainType.EXTERNAL_DOMAIN.ToString()).ToList();
-               var externalDomainNode = new ExternalDomainsNode(tenantName, externalDomains);
-               Children.Add(externalDomainNode);
+                   var localOsDomains = identityProviders.Where(x => x.DomainType == DomainType.LOCAL_OS_DOMAIN.ToString());
+                   if (localOsDomains != null)
+                   {
+                       foreach (var provider in localOsDomains)
+                       {
+                           var localOsDomain = new IdentityProviderNode(provider, tenantName, false, provider.Name + " (Local OS Domain)", tenantConfig);
+                           Children.Add(localOsDomain);
+                       }
+                   }
+
+                   var externalDomains = identityProviders.Where(x => x.DomainType == DomainType.EXTERNAL_DOMAIN.ToString()).ToList();
+                   var externalDomainNode = new ExternalDomainsNode(tenantName, externalDomains);
+                   Children.Add(externalDomainNode);
+               }
            }, auth);
         }
     }

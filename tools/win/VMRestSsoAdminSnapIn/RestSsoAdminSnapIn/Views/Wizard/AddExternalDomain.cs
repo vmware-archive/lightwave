@@ -37,8 +37,15 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
         private Steps _current;
         private string _domainName;
         private bool _createNew;
-        public IdentityProviderDto IdentityProviderDto;
         private AdvancedExternalDomain advancedSettings;
+
+        /* External Domain constants */
+        private const string AD_WIN_AUTH_TITLE = "External Domain (AD using Windows Integrated Auth)";
+        private const string AD_AS_LDAP_TITLE = "External Domain (AD as an LDAP server)";
+        private const string OPEN_LDAP_TITLE = "External Domain (Open LDAP server)";
+        private const string NEW_EXTERNAL_DOMAIN_TITLE = "Add External Domain";
+
+        public IdentityProviderDto IdentityProviderDto;
         public ServerDto ServerDto;
         public string TenantName;
         public AddExternalDomain()
@@ -62,20 +69,26 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             _createNew = IdentityProviderDto == null;
             if (_createNew)
             {
+                _current = Steps.One;
                 rdoADWindowsAuth.Checked = false;
                 rdoADLdap.Checked = true;
                 rdoAnyDomain.Checked = true;
                 IdentityProviderDto = new IdentityProviderDto();
+                this.Text = NEW_EXTERNAL_DOMAIN_TITLE;
             }
             else
             {
                 DtoToView();
+                _current = rdoADWindowsAuth.Checked ? Steps.Four : Steps.Two;
+                this.Text = rdoADWindowsAuth.Checked ? AD_WIN_AUTH_TITLE :
+                    rdoADLdap.Checked ? AD_AS_LDAP_TITLE :
+                    OPEN_LDAP_TITLE;
             }
 
             button11.Enabled = false;
             button1.Enabled = false;
             button2.Enabled = false;
-            _current = Steps.One;
+
             StepShow();
         }
 
@@ -532,6 +545,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             {
                 radioButton1_CheckedChanged(this, EventArgs.Empty);
             }
+            button3.Enabled = (!_createNew && !rdoADWindowsAuth.Checked && _current > Steps.Two) ||
+                (_createNew && _current != Steps.One);
         }
 
         public enum Steps

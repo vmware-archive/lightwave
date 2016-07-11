@@ -24,6 +24,7 @@ using VMPscHighAvailabilitySnapIn.ScopeNodes;
 using VMPscHighAvailabilitySnapIn.SnapIn;
 using VMPscHighAvailabilitySnapIn.Utils;
 using VMwareMMCIDP.UI.Common.Utilities;
+using VMIdentity.CommonUtils;
 
 namespace VMPscHighAvailabilitySnapIn.UI
 {
@@ -58,6 +59,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
         public Login()
         {
             InitializeComponent();
+            this.txtBindUPN.Text = "Administrator@" + MMCMiscUtil.GetBrandConfig(CommonConstants.TENANT);
         }
 
         /// <summary>

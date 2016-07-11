@@ -81,7 +81,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                  {
                      foreach (var group in _groups)
                      {
-                         var lvItem = new ListViewItem(new[] { group.GroupName, group.GroupDomain, group.GroupDetails != null ? group.GroupDetails.Description : string.Empty }) { Tag = group };
+                         var lvItem = new ListViewItem(new[] { group.GroupName, group.GroupDetails != null ? group.GroupDetails.Description : string.Empty }) { Tag = group };
                          lvItem.ImageIndex = (int)TreeImageIndex.Group;
                          lstGroups.Items.Add(lvItem);
                      }

@@ -18,6 +18,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
+using VMIdentity.CommonUtils;
+using System.Xml.Serialization;
 
 namespace VMwareMMCIDP.UI.Common.Utilities
 {
@@ -47,6 +49,51 @@ namespace VMwareMMCIDP.UI.Common.Utilities
                 }
                 return String.Empty;
             }
+        }
+
+        public static string GetBrandConfig(string key)
+        {
+            try
+            {
+                return CommonConstants.GetConfigValue(key);
+            }
+            catch (Exception)
+            {
+                MessageBox.Show(CommonConstants.CONFIG_NOT_FOUND);
+                return string.Empty;
+            }
+        }
+        public static void SaveObjectToFile(object data, string dialogTitle, string dialogFilter)
+        {
+            using (var ms = new MemoryStream())
+            {
+                var xmlSerializer = new XmlSerializer(data.GetType());
+                xmlSerializer.Serialize(ms, data);
+
+                using (var sfd = new SaveFileDialog())
+                {
+                    sfd.Title = dialogTitle;
+                    sfd.Filter = dialogFilter;
+                    if (sfd.ShowDialog() == DialogResult.OK)
+                    {
+                        File.WriteAllBytes(sfd.FileName, ms.ToArray());
+                    }
+                }
+            }
+        }
+
+        public static void SetDoubleBuffered(System.Windows.Forms.Control c)
+        {
+            if (System.Windows.Forms.SystemInformation.TerminalServerSession)
+                return;
+
+            System.Reflection.PropertyInfo aProp =
+                  typeof(System.Windows.Forms.Control).GetProperty(
+                        "DoubleBuffered",
+                        System.Reflection.BindingFlags.NonPublic |
+                        System.Reflection.BindingFlags.Instance);
+
+            aProp.SetValue(c, true, null);
         }
     }
 }

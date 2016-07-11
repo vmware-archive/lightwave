@@ -104,8 +104,10 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                             var lvItem =
                                 new ListViewItem(new[]
                         {
-                            user.Name, user.PersonDetails.FirstName, user.PersonDetails.LastName,
-                            user.PersonDetails.EmailAddress, user.PersonDetails.Description,
+                            user.Name, 
+                            user.PersonDetails.FirstName, 
+                            user.PersonDetails.LastName, 
+                            user.PersonDetails.Description,
                             user.Locked ? "YES" : "NO", user.Disabled? "YES" : "NO"
                         }) { Tag = user };
                             lvItem.ImageIndex = (int)TreeImageIndex.User;

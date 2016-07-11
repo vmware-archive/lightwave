@@ -107,23 +107,25 @@ namespace RestSsoAdminSnapIn
 			MemberTableView.DataSource = listView;
 			MemberTableView.ReloadData ();
 			BtnApply.Hidden = !IsSystemDomain;
+			LoginAsUser.Hidden = !IsSystemDomain;
 
 			//Events
 			this.BtnApply.Activated += OnClickSaveButton;
 			this.BtnAddGroup.Activated += OnClickAddGroupButton;
 			this.BtnRemoveGroup.Activated += OnClickRemoveGroupButton;
+			this.LoginAsUser.Activated += OnLoginUserClicked;
 		}
 
 		public void OnClickAddGroupButton (object sender, EventArgs e)
 		{
 			NSApplication.SharedApplication.StopModal ();
-			var form = new ShowAllGroupsController ();
+			var form = new ShowAllGroupsController (){ IsUserSearch = true };
 			form.ServerDto = ServerDto;
 			form.TenantName = TenantName;
 			form.DomainName = UserDto.Domain;
 			var result = NSApplication.SharedApplication.RunModalForWindow (form.Window);
 			if (result == VMIdentityConstants.DIALOGOK) {
-				foreach (var group in form.SelectedGroups) {
+				foreach (var group in form.SelectedMembers.Groups) {
 					var principalName = group.GroupName + "@" + group.GroupDomain;
 					if (!Groups.Exists (x => (x.GroupName + "@" + x.GroupDomain) == principalName))
 						Groups.Add (group);
@@ -171,6 +173,11 @@ namespace RestSsoAdminSnapIn
 			});
 		}
 
+		public void OnLoginUserClicked(object sender, EventArgs e){
+			ActionHelper.Execute (delegate() {
+				NSNotificationCenter.DefaultCenter.PostNotificationName ("LoginAsUser", this);
+			});
+		}
 		private void UpdateGroupMembership ()
 		{
 			var users = new List<UserDto> { UserDto };

@@ -72,7 +72,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
                 switch ((IdentityProviderNodeAction)(int)action.Tag)
                 {
                     case IdentityProviderNodeAction.ActionSetDefault:
-                        _tenantConfigDto.ProviderPolicy = new ProviderPolicyDto { DefaultProvider = _provider.Name };
+                        _tenantConfigDto.ProviderPolicy = new ProviderPolicyDto { DefaultProvider = _provider.Name, DefaultProviderAlias = _provider.Name };
                         _tenantConfigDto = service.Tenant.UpdateConfig(serverDto, _tenantName, _tenantConfigDto, auth.Token, TenantConfigType.PROVIDER);
                         isDefault = true;
                         break;

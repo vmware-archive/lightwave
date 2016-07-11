@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "VMIdentityTools_Installer", "VMIdentityTools_Installer\VMIdentityTools_Installer.wixproj", "{BE213597-654B-436C-A8D4-413B724E7A08}"
+EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "VMIdentityTools_Prerequisite", "VMIdentityTools_Prerequisite\VMIdentityTools_Prerequisite.wixproj", "{C8C40DF6-7F9E-4095-9BFE-6EB79DF2AE4C}"
+EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "VMIdentityTools_Standalone", "VMIdentityTools_Standalone\VMIdentityTools_Standalone.wixproj", "{F244EB53-B524-4931-BD29-15A94B57BE38}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BE213597-654B-436C-A8D4-413B724E7A08}.Debug|x64.ActiveCfg = Debug|x64
+		{BE213597-654B-436C-A8D4-413B724E7A08}.Debug|x64.Build.0 = Debug|x64
+		{BE213597-654B-436C-A8D4-413B724E7A08}.Release|x64.ActiveCfg = Release|x64
+		{BE213597-654B-436C-A8D4-413B724E7A08}.Release|x64.Build.0 = Release|x64
+		{C8C40DF6-7F9E-4095-9BFE-6EB79DF2AE4C}.Debug|x64.ActiveCfg = Debug|x64
+		{C8C40DF6-7F9E-4095-9BFE-6EB79DF2AE4C}.Debug|x64.Build.0 = Debug|x64
+		{C8C40DF6-7F9E-4095-9BFE-6EB79DF2AE4C}.Release|x64.ActiveCfg = Release|x64
+		{C8C40DF6-7F9E-4095-9BFE-6EB79DF2AE4C}.Release|x64.Build.0 = Release|x64
+		{F244EB53-B524-4931-BD29-15A94B57BE38}.Debug|x64.ActiveCfg = Debug|x64
+		{F244EB53-B524-4931-BD29-15A94B57BE38}.Debug|x64.Build.0 = Debug|x64
+		{F244EB53-B524-4931-BD29-15A94B57BE38}.Release|x64.ActiveCfg = Release|x64
+		{F244EB53-B524-4931-BD29-15A94B57BE38}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

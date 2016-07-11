@@ -223,11 +223,17 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
         }
         private void LoginUser(AuthTokenDto auth, bool hasSessionExpired = false)
         {
+            LoginUser(auth, null, hasSessionExpired);
+        }
+        private void LoginUser(AuthTokenDto auth, string tenantName, bool hasSessionExpired = false)
+        {
             if (auth.Token != null && !hasSessionExpired) return;
             ActionHelper.Execute(delegate
             {
                 var text = hasSessionExpired ? "Re-login - Credentials expired or changed" : "Login";
-                var loginForm = new LoginForm(auth.Login, _serverDto.Tenant, text);
+                var tenant = tenantName == null ? _serverDto.Tenant : tenantName;
+                var login = tenantName == null ? auth.Login : null;
+                var loginForm = new LoginForm(login, tenant, text);
                 var context = this.GetApplicationContext();
                 var dataContext = context.NavigationController.NavigateToView(this, loginForm);
                 if (dataContext != null)
@@ -300,7 +306,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
                SnapInContext.Instance.AuthTokenManager.SetAuthToken(authToken);
                tenantDto = service.Tenant.Get(authToken.ServerDto, tenantDto.Name, authToken.Token);
                AddTenantNode(authToken, tenantDto.Name);
-           }, auth);
+           }, auth, tenantDto.Name);
         }
         public void Login(AuthTokenDto auth)
         {
@@ -312,6 +318,12 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
             var auth = Tag as AuthTokenDto;
             //auth.Token = null;
             LoginUser(auth, sessionExpired);
+        }
+
+        public void Login(bool sessionExpired, string tenantName)
+        {
+            var auth = Tag as AuthTokenDto;
+            LoginUser(auth, tenantName, sessionExpired);
         }
 
         public void LoginAsUser(string tenantName, UserDto userDto)

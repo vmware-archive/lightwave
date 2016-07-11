@@ -61,7 +61,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes{    public class Gr
                 var context = this.GetApplicationContext();
                 if (SnapIn.Console.ShowDialog(form) == DialogResult.OK)
                 {
-                    this.GroupsControl.RefreshGroups(form.SearchString);
+                    if (GroupsControl != null)
+                        this.GroupsControl.RefreshGroups(form.SearchString);
                 }
             }, null);
         }
@@ -76,7 +77,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes{    public class Gr
                     var group = (GroupDto) groupForm.DataContext;
                     group.GroupDomain = _domainName;                    
                     var success = service.Group.Create(ServerDto, TenantName, @group, authTokenDto.Token);
-                    GroupsControl.RefreshGroups(string.Empty);
+                    if (GroupsControl != null)
+                        GroupsControl.RefreshGroups(string.Empty);
                 }
             }, authTokenDto);        }
         void AddViewDescription()        {
@@ -106,5 +108,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes{    public class Gr
         protected override void OnRefresh(AsyncStatus status)
         {
             base.OnRefresh(status);
-            this.GroupsControl.RefreshGroups(string.Empty);
+            if (GroupsControl != null)
+                this.GroupsControl.RefreshGroups(string.Empty);
         }    }}
