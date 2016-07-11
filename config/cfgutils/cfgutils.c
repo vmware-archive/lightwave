@@ -268,7 +268,6 @@ VmwDeploySetupServerCommon(
     PSTR  pszSSLCert = NULL;
     PSTR  pszPrivateKey = NULL;
     PSTR  pszVmdirCfgPath = NULL;
-    PSTR  pszDCName = NULL; // Do not free
 
     VMW_DEPLOY_LOG_INFO("Setting various configuration values");
 
@@ -279,13 +278,11 @@ VmwDeploySetupServerCommon(
     dwError = VmAfdSetDomainNameA(pszHostname, pParams->pszDomainName);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
-    pszDCName = pParams->pszServer ? pParams->pszServer : pParams->pszHostname;
-
     VMW_DEPLOY_LOG_VERBOSE(
             "Setting Domain Controller Name to [%s]",
-            VMW_DEPLOY_SAFE_LOG_STRING(pszDCName));
+            VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszHostname));
 
-    dwError = VmAfdSetDCNameA(pszHostname, pszDCName);
+    dwError = VmAfdSetDCNameA(pszHostname, pParams->pszHostname);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_VERBOSE(
