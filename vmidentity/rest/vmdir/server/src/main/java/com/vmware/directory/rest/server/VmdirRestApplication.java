@@ -1,5 +1,7 @@
+package com.vmware.directory.rest.server;
+
 /*
- *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *  Copyright (c) 2016 VMware, Inc.  All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License.  You may obtain a copy
@@ -11,7 +13,6 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
-package com.vmware.identity.rest.idm.server;
 
 import java.util.logging.Logger;
 
@@ -19,46 +20,35 @@ import javax.ws.rs.ApplicationPath;
 
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.filter.LoggingFilter;
-import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import com.vmware.identity.idm.client.CasIdmClient;
-import com.vmware.identity.rest.core.server.authorization.filter.AuthorizationRequestFilter;
-import com.vmware.identity.rest.core.server.filter.ContextFilter;
+import com.vmware.identity.rest.core.server.resources.BaseRestApplication;
 
 /**
- * Base application for IDM REST.
+ * Base application for LDAP Directory.
  *
  * @author Balaji Boggaram Ramanarayan
- * @author Travis Hall
  */
+
 @ApplicationPath("/")
-public class RestApplication extends ResourceConfig {
+public class VmdirRestApplication extends BaseRestApplication {
 
-    private static final String ENTITY_LOG_PROPERTY = "vmware.rest.idm.entitylogging";
-    private static final String TRACE_LOG_PROPERTY = "vmware.rest.idm.tracing";
+    private static final String ENTITY_LOG_PROPERTY = "vmware.rest.directory.entitylogging";
+    private static final String TRACE_LOG_PROPERTY = "vmware.rest.directory.tracing";
 
-    public RestApplication() {
+    public VmdirRestApplication() {
 
-        // Install bridge for SLF4J
-        SLF4JBridgeHandler.removeHandlersForRootLogger();
-        SLF4JBridgeHandler.install();
+        super();
 
-        // Register resources and providers under com.vmware.identity.rest.idm.server
-        packages(true, "com.vmware.identity.rest.idm.server");
-
-        // Register the Context Filter
-        register(ContextFilter.class);
+        // Register resources and providers under com.vmware.directory.rest.server
+        packages(true, "com.vmware.directory.rest.server");
 
         // Register LoggingFilter with optional entity logging
-        Logger log = Logger.getLogger(RestApplication.class.getName());
+        Logger log = Logger.getLogger(VmdirRestApplication.class.getName());
         boolean entityLog = Boolean.parseBoolean(System.getProperty(ENTITY_LOG_PROPERTY, "false"));
         // Register the LoggingFilter so it occurs after the ContextFilter so Correlation ID works correctly
         register(new LoggingFilter(log, entityLog), Integer.MIN_VALUE + 1);
-
-        // Register Authorization Provider
-        register(AuthorizationRequestFilter.class);
 
         // Enable tracing support
         // Supply header during request: "X-Jersey-Tracing-Accept:true"
@@ -74,7 +64,7 @@ public class RestApplication extends ResourceConfig {
      *
      * @param mockCasIDMClient
      */
-    public RestApplication(final CasIdmClient casIDMClient) {
+    public VmdirRestApplication(final CasIdmClient casIDMClient) {
         /**
          * Register all necessary test dependencies
          */
@@ -87,6 +77,6 @@ public class RestApplication extends ResourceConfig {
         /**
          * Specify where resource classes are located. These classes will constituted by API
          */
-        packages(true,"com.vmware.identity.rest.idm.server");
+        packages(true,"com.vmware.directory.rest.server");
     }
 }

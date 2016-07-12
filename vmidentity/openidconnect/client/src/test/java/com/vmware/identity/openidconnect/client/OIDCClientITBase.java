@@ -31,6 +31,9 @@ import java.util.UUID;
 
 import org.junit.AfterClass;
 
+import com.vmware.directory.rest.client.VmdirClient;
+import com.vmware.directory.rest.common.data.MemberType;
+import com.vmware.directory.rest.common.data.SolutionUserDTO;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ProviderMetadata;
 import com.vmware.identity.openidconnect.common.TokenType;
@@ -42,8 +45,6 @@ import com.vmware.identity.rest.idm.client.IdmClient;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
 import com.vmware.identity.rest.idm.data.ResourceServerDTO;
-import com.vmware.identity.rest.idm.data.SolutionUserDTO;
-import com.vmware.identity.rest.idm.data.attributes.MemberType;
 
 /**
  * Base Class for OIDC Client Integration Test
@@ -64,6 +65,7 @@ public class OIDCClientITBase {
     static SolutionUserCredentialsGrant solutionUserCredentialsGrant;
     static ClientCredentialsGrant clientCredentialsGrant;
 
+    static VmdirClient vmdirClient;
     static IdmClient idmClient;
     static String tenant;
     static String username;
@@ -117,6 +119,13 @@ public class OIDCClientITBase {
                 domainControllerFQDN,
                 domainControllerPort,
                 ks);
+        
+        // Create REST Vmdir client
+        vmdirClient = TestUtils.createVMdirClient(
+                accessToken,
+                domainControllerFQDN,
+                domainControllerPort,
+                ks);
 
         // create key pair and client private key, certificate
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
@@ -135,11 +144,11 @@ public class OIDCClientITBase {
         .withDomain(tenant)
         .withCertificate(certificateDTO)
         .build();
-        idmClient.solutionUser().create(tenant, solutionUserDTO);
+        vmdirClient.solutionUser().create(tenant, solutionUserDTO);
 
         // add the solution user to ActAs group
         List<String> members = Arrays.asList(solutionUserName + "@" + tenant);
-        idmClient.group().addMembers(tenant, "ActAsUsers", tenant, members, MemberType.USER);
+        vmdirClient.group().addMembers(tenant, "ActAsUsers", tenant, members, MemberType.USER);
 
         // register a OIDC client
         List<String> redirectURIs = Arrays.asList("https://test.com:7444/openidconnect/redirect");

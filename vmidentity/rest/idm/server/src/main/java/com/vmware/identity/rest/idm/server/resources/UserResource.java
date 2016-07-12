@@ -40,7 +40,6 @@ import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.NoSuchIdpException;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.idm.PasswordPolicyViolationException;
-import com.vmware.identity.idm.PersonDetail;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.rest.core.server.authorization.Role;
@@ -54,11 +53,11 @@ import com.vmware.identity.rest.core.server.util.PrincipalUtil;
 import com.vmware.identity.rest.core.server.util.Validate;
 import com.vmware.identity.rest.idm.data.GroupDTO;
 import com.vmware.identity.rest.idm.data.PasswordResetRequestDTO;
+import com.vmware.identity.rest.idm.data.PrincipalDTO;
 import com.vmware.identity.rest.idm.data.UserDTO;
-import com.vmware.identity.rest.idm.data.UserDetailsDTO;
 import com.vmware.identity.rest.idm.server.PathParameters;
 import com.vmware.identity.rest.idm.server.mapper.GroupMapper;
-import com.vmware.identity.rest.idm.server.mapper.UserDetailsMapper;
+import com.vmware.identity.rest.idm.server.mapper.PrincipalMapper;
 import com.vmware.identity.rest.idm.server.mapper.UserMapper;
 
 /**
@@ -79,31 +78,55 @@ public class UserResource extends BaseSubResource {
     }
 
     /**
-     * Creates a user for a provided tenant
-     * @param user Details of the user to be created.
-     * @return Details of the user created
+     * Creates FSP(Foreign Security Principal) or external IDP user for a provided tenant
+     * @param externalUser Details of the FSP user to be created.
+     * @return true On successfull creation of external user.
+     *         false On failure
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
-    public UserDTO create(UserDTO user) {
-        Validate.isTrue(getSystemDomain().equalsIgnoreCase(user.getDomain()), sm.getString("valid.not.systemdomain", user.getDomain(), tenant));
+    public Boolean createExternalUser(PrincipalDTO externalUser) {
+        Boolean registrationStatus = false;
         try {
-            PersonUser personUser = UserMapper.getPersonUser(user);
-            String name = personUser.getId().getName();
-            PersonDetail personDetail = personUser.getDetail();
-            char[] password = user.getPasswordDetails().getPassword().toCharArray();
-
-            PrincipalId principal = getIDMClient().addPersonUser(tenant, name, personDetail, password);
-            return UserMapper.getUserDTO(getIDMClient().findPersonUser(tenant, principal), true);
+            PrincipalId externalUserId = PrincipalMapper.getPrincipal(externalUser);
+            registrationStatus = getIDMClient().registerThirdPartyIDPUser(getTenant(), externalUserId);
+            return registrationStatus;
         } catch (NoSuchTenantException e) {
-            log.debug("Failed to create user '{}'", user.getName(), e);
+            log.debug("Failed to create external IDP user(FSP) '{}'", externalUser.getName(), e);
             throw new NotFoundException(sm.getString("ec.404"), e);
         } catch (PasswordPolicyViolationException | DTOMapperException | InvalidArgumentException | InvalidPrincipalException | NoSuchIdpException e) {
-            log.debug("Failed to create user '{}' on tenant '{}' due to a client side error", user.getName(), tenant, e);
-            throw new BadRequestException(sm.getString("res.user.create.failed", user.getName(), tenant), e);
+            log.debug("Failed to create external IDP user(FSP) '{}' on tenant '{}' due to a client side error", externalUser.getName(), tenant, e);
+            throw new BadRequestException(sm.getString("res.user.create.failed", externalUser.getName(), tenant), e);
         } catch (Exception e) {
-            log.error("Failed to create user '{}' on tenant '{}' due to a server side error", user.getName(), tenant, e);
+            log.error("Failed to create external IDP user(FSP) '{}' on tenant '{}' due to a server side error", externalUser.getName(), tenant, e);
+            throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        }
+    }
+
+    /**
+     * Deletes FSP(Foreign Security Principal) or external IDP user for a given tenant
+     *
+     * @param name Username of third party user to be deleted.
+     * @return
+     *      Return 200 (OK) if update operation succeeds.
+     *      Return 500 (Internal Server Error) if update operation fails.
+     */
+    @DELETE @Path("/{userName}")
+    @RequiresRole(role=Role.ADMINISTRATOR)
+    public void delete(@PathParam("userName") String name) {
+        PrincipalId id = PrincipalUtil.fromName(name);
+        Validate.isTrue(getSystemDomain().equalsIgnoreCase(id.getDomain()), sm.getString("valid.not.systemdomain", id.getDomain(), tenant));
+        try {
+            getIDMClient().removeThirdPartyIDPUser(getTenant(), id);
+        } catch (NoSuchTenantException | InvalidPrincipalException e) {
+            log.debug("Failed to delete external IDP user (FSP) '{}' from tenant '{}'", name, tenant, e);
+            throw new NotFoundException(sm.getString("ec.404"), e);
+        } catch (InvalidArgumentException e) {
+            log.debug("Failed to delete external IDP user (FSP) '{}' from tenant '{}' due to a client side error", name, tenant, e);
+            throw new BadRequestException(sm.getString("res.user.delete.failed", name, tenant), e);
+        } catch (Exception e) {
+            log.error("Failed to delete external IDP user (FSP) '{}' from tenant '{}' due to a server side error", name, tenant, e);
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         }
     }
@@ -180,122 +203,6 @@ public class UserResource extends BaseSubResource {
     }
 
     /**
-     * Deletes person user for a given tenant
-     *
-     * @param name Username of person to be deleted.
-     * @return
-     *      Return 200 (OK) if update operation succeeds.
-     *      Return 500 (Internal Server Error) if update operation fails.
-     */
-    @DELETE @Path("/{userName}")
-    @RequiresRole(role=Role.ADMINISTRATOR)
-    public void delete(@PathParam("userName") String name) {
-        PrincipalId id = PrincipalUtil.fromName(name);
-        Validate.isTrue(getSystemDomain().equalsIgnoreCase(id.getDomain()), sm.getString("valid.not.systemdomain", id.getDomain(), tenant));
-        try {
-            getIDMClient().deletePrincipal(tenant, id.getName());
-        } catch (NoSuchTenantException | InvalidPrincipalException e) {
-            log.debug("Failed to delete user '{}' from tenant '{}'", name, tenant, e);
-            throw new NotFoundException(sm.getString("ec.404"), e);
-        } catch (InvalidArgumentException e) {
-            log.debug("Failed to delete user '{}' from tenant '{}' due to a client side error", name, tenant, e);
-            throw new BadRequestException(sm.getString("res.user.delete.failed", name, tenant), e);
-        } catch (Exception e) {
-            log.error("Failed to delete user '{}' from tenant '{}' due to a server side error", name, tenant, e);
-            throw new InternalServerErrorException(sm.getString("ec.500"), e);
-        }
-    }
-
-    /**
-     * Update various entities of person user in given tenant. This API can be used to :
-     *
-     * <li> Update details of person ({@link PersonDetailDTO})</li>
-     * <li> Unlock user </li>
-     * <li> Enable/Disable user </li>
-     *
-     * @param name name of user on which update operation is performed.
-     * @param userDTO Details of user to be updated.
-     * @return
-     *      Return 200 (OK) if update operation succeeds. <br/>
-     *      Return 500 (Internal Server Error) if update operation fails.
-     */
-    @PUT @Path("/{userName}")
-    @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRole(role=Role.ADMINISTRATOR)
-    public UserDTO update(@PathParam("userName") String name, UserDTO userDTO){
-        PrincipalId userId = PrincipalUtil.fromName(name);
-        Validate.isTrue(getSystemDomain().equalsIgnoreCase(userId.getDomain()), sm.getString("valid.not.systemdomain", userId.getDomain(), tenant));
-        UserDetailsDTO personDetailsToUpdate = userDTO.getDetails();
-
-        try {
-            if (personDetailsToUpdate != null) {
-                PersonDetail personDetail = UserDetailsMapper.getPersonDetail(personDetailsToUpdate);
-                getIDMClient().updatePersonUserDetail(tenant, userId.getName(), personDetail);
-            }
-
-            if (Boolean.TRUE.equals(userDTO.isDisabled())) {
-                getIDMClient().disableUserAccount(tenant, userId);
-            } else if (Boolean.FALSE.equals(userDTO.isDisabled())) {
-                getIDMClient().enableUserAccount(tenant, userId);
-            }
-
-            if (Boolean.FALSE.equals(userDTO.isLocked())) {
-                getIDMClient().unlockUserAccount(tenant, userId);
-            }
-            return UserMapper.getUserDTO(getIDMClient().findPersonUser(tenant, userId), true);
-        } catch (NoSuchIdpException | NoSuchTenantException | InvalidPrincipalException e) {
-            log.debug("Failed to update user '{}' in tenant '{}'", name, tenant, e);
-            throw new NotFoundException(sm.getString("ec.404"), e);
-        } catch (DTOMapperException | InvalidArgumentException e) {
-            log.debug("Failed to update user '{}' in tenant '{}' due to a client side error", name, tenant, e);
-            throw new BadRequestException(sm.getString("res.user.update.failed", name, tenant), e);
-        } catch (Exception e) {
-            log.error("Failed to update user '{}' in tenant '{}' due to a server side error", name, tenant, e);
-            throw new InternalServerErrorException(sm.getString("ec.500"), e);
-        }
-
-    }
-
-    /**
-     * Change/update password for a user in tenant
-     *
-     * @param name username of principal whose password needs to be changed
-     * @param currentPassword current password of user
-     * @param newPassword new password to be set for user
-     * @return Details of updated user
-     */
-    @PUT @Path("/{userName}/" + PathParameters.PASSWORD)
-    @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
-    @DynamicRole
-    public UserDTO updatePassword(@PathParam("userName") String name, PasswordResetRequestDTO passwordResetRequest) {
-        PrincipalId userId = PrincipalUtil.fromName(name);
-        Validate.isTrue(getSystemDomain().equalsIgnoreCase(userId.getDomain()), sm.getString("valid.not.systemdomain", userId.getDomain(), tenant));
-        Validate.notEmpty(passwordResetRequest.getNewPassword(), sm.getString("valid.not.empty", "new password"));
-        boolean isAdmin = getSecurityContext().isUserInRole(Role.ADMINISTRATOR.name());
-        if (!isAdmin) {
-            // Validate if current password is provided by non-admin users
-            Validate.notEmpty(passwordResetRequest.getCurrentPassword(), sm.getString("valid.not.empty", "current password"));
-        }
-        try {
-            if (isAdmin) {
-                getIDMClient().setUserPassword(tenant, userId.getName(), passwordResetRequest.getNewPassword().toCharArray());
-            } else {
-                getIDMClient().changeUserPassword(tenant, userId.getName(), passwordResetRequest.getCurrentPassword().toCharArray(), passwordResetRequest.getNewPassword().toCharArray());
-            }
-            return UserMapper.getUserDTO(getIDMClient().findPersonUser(tenant, userId), includePasswordDetails(name));
-        } catch (NoSuchTenantException e) {
-            log.warn("Failed to update password for user '{}' in tenant '{}'", name, tenant, e);
-            throw new NotFoundException(sm.getString("ec.404"), e);
-        } catch (InvalidPrincipalException | PasswordPolicyViolationException e) {
-            log.warn("Failed to update password for user '{}' in tenant '{}' due to a client side error", name, tenant, e);
-            throw new BadRequestException(sm.getString("res.user.update.password.failed", name, tenant), e);
-        } catch (Exception e) {
-            log.error("Failed to update password for user '{}' in tenant '{}' due to a server side error", name, tenant, e);
-            throw new InternalServerErrorException(sm.getString("ec.500"), e);
-        }
-    }
-
-    /**
      * Check if the requesting user is the same as the user requested
      *
      * @param username
@@ -308,4 +215,5 @@ public class UserResource extends BaseSubResource {
 
         return getSecurityContext().isUserInRole(Role.ADMINISTRATOR.toString()) || getSecurityContext().getUserPrincipal().getName().equals(username);
     }
+
 }

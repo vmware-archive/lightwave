@@ -1,19 +1,7 @@
-/*
- *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
- *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
- *  use this file except in compliance with the License.  You may obtain a copy
- *  of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS, without
- *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
- *  License for the specific language governing permissions and limitations
- *  under the License.
- */
-package com.vmware.identity.rest.idm.client.test.integration;
+package com.vmware.directory.rest.client.test.integration;
 
-import static com.vmware.identity.rest.idm.client.test.integration.util.Assert.assertSolutionUsersEqual;
+
+import static com.vmware.directory.rest.client.test.integration.util.Assert.assertSolutionUsersEqual;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
@@ -26,10 +14,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.vmware.directory.rest.client.test.integration.util.TestGenerator;
+import com.vmware.directory.rest.common.data.SolutionUserDTO;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.core.client.exceptions.client.NotFoundException;
-import com.vmware.identity.rest.idm.client.test.integration.util.TestGenerator;
-import com.vmware.identity.rest.idm.data.SolutionUserDTO;
 
 public class SolutionUserResourceIT extends IntegrationTestBase {
 
@@ -47,16 +35,16 @@ public class SolutionUserResourceIT extends IntegrationTestBase {
     }
 
     @Test
-    public void testCreateAndDelete() throws ClientProtocolException, ClientException, HttpException, IOException {
+    public void testCreateAndDelete() throws ClientProtocolException, ClientException, HttpException, IOException, GeneralSecurityException {
         SolutionUserDTO user = createSolutionUser(TEST_SOLUTION_USER_NAME, TEST_SOLUTION_USER_DESCRIPTION);
         deleteSolutionUser(user.getName());
     }
 
     @Test
-    public void testGet() throws ClientProtocolException, ClientException, HttpException, IOException {
+    public void testGet() throws ClientProtocolException, ClientException, HttpException, IOException, GeneralSecurityException {
         SolutionUserDTO testUser = createSolutionUser(TEST_SOLUTION_USER_NAME, TEST_SOLUTION_USER_DESCRIPTION);
 
-        SolutionUserDTO user = testAdminClient.solutionUser().get(testTenant.getName(),  testUser.getName());
+        SolutionUserDTO user = testAdminClient.solutionUser().get(TENANT_NAME,  testUser.getName());
 
         assertNotNull(user);
         assertSolutionUsersEqual(testUser, user);
@@ -65,29 +53,29 @@ public class SolutionUserResourceIT extends IntegrationTestBase {
     }
 
     @Test
-    public void testUpdate() throws ClientProtocolException, ClientException, HttpException, IOException {
+    public void testUpdate() throws ClientProtocolException, ClientException, HttpException, IOException, GeneralSecurityException {
         SolutionUserDTO testUser = createSolutionUser(TEST_SOLUTION_USER_NAME, TEST_SOLUTION_USER_DESCRIPTION);
 
-        SolutionUserDTO updated = testAdminClient.solutionUser().update(testTenant.getName(), testUser.getName(), testUser);
+        SolutionUserDTO updated = testAdminClient.solutionUser().update(TENANT_NAME, testUser.getName(), testUser);
 
         assertSolutionUsersEqual(testUser, updated);
 
         deleteSolutionUser(testUser.getName());
     }
 
-    private static SolutionUserDTO createSolutionUser(String name, String description) throws ClientProtocolException, ClientException, HttpException, IOException {
-        SolutionUserDTO testUser = TestGenerator.generateSolutionUser(name, testTenant.getName(), description, testTenant.getCredentials().getCertificates().get(0));
-        SolutionUserDTO user = testAdminClient.solutionUser().create(testTenant.getName(), testUser);
+    private static SolutionUserDTO createSolutionUser(String name, String description) throws ClientProtocolException, ClientException, HttpException, IOException, GeneralSecurityException {
+        SolutionUserDTO testUser = TestGenerator.generateSolutionUser(name, TENANT_NAME, description, TestGenerator.generateCertificate("cn=SomeTestUser"));
+        SolutionUserDTO user = testAdminClient.solutionUser().create(TENANT_NAME, testUser);
 
         assertSolutionUsersEqual(testUser, user);
         return user;
     }
 
     private static void deleteSolutionUser(String user) throws ClientProtocolException, ClientException, HttpException, IOException {
-        testAdminClient.solutionUser().delete(testTenant.getName(), user);
+        testAdminClient.solutionUser().delete(TENANT_NAME, user);
 
         try {
-            testAdminClient.solutionUser().get(testTenant.getName(), user);
+            testAdminClient.solutionUser().get(TENANT_NAME, user);
             fail("Found solution user that was previously deleted");
         } catch (NotFoundException e) {
             // Ignore it
