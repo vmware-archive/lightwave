@@ -36,7 +36,7 @@ import com.vmware.identity.samlservice.impl.PrincipalAttributesExtractorFactoryI
  */
 public class TestAuthnRequestStateAuthenticationFilter implements
         AuthenticationFilter<AuthnRequestState> {
-    private static final String REQUEST_AUTH_HEADER = Shared.REQUEST_AUTH_HEADER;
+    private static final String REQUEST_AUTH_HEADER = Shared.REQUEST_AUTH_PARAM;
     private static final String AUTH_PREFIX = Shared.KERB_AUTH_PREFIX;
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory

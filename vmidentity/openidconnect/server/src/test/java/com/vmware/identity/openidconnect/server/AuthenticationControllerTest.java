@@ -31,13 +31,13 @@ import static com.vmware.identity.openidconnect.server.TestContext.clientAsserti
 import static com.vmware.identity.openidconnect.server.TestContext.idmClientBuilder;
 import static com.vmware.identity.openidconnect.server.TestContext.initialize;
 import static com.vmware.identity.openidconnect.server.TestContext.passwordLoginString;
+import static com.vmware.identity.openidconnect.server.TestContext.qualifyGroupMembership;
 import static com.vmware.identity.openidconnect.server.TestContext.validateAuthnErrorResponse;
 import static com.vmware.identity.openidconnect.server.TestContext.validateAuthnSuccessResponse;
 
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -284,8 +284,8 @@ public class AuthenticationControllerTest {
         Flow flow = Flow.IMPLICIT;
         Map<String, String> params = authnRequestParameters(flow);
         params.put("scope", "openid rs_admin_server");
-        Set<String> systemGroupMembership = new HashSet<String>(Arrays.asList("x", "users", "systemconfiguration.administrators", "administrators"));
-        CasIdmClient idmClient = idmClientBuilder().systemGroupMembership(systemGroupMembership).build();
+        Set<String> groupMembership = qualifyGroupMembership(Arrays.asList("x", "users", "systemconfiguration.administrators", "administrators"));
+        CasIdmClient idmClient = idmClientBuilder().groupMembership(groupMembership).build();
         AuthenticationController controller = authnController(idmClient);
         Set<String> expectedIdTokenGroups     = GROUP_MEMBERSHIP;
         Set<String> expectedAccessTokenGroups = GROUP_MEMBERSHIP;

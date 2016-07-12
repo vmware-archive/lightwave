@@ -116,12 +116,17 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
             {
                 var ssoAdminSdkService = this.GetServiceGateway();
                 var server = _serverDto;
-                var frm = new NewSolutionUserForm(ssoAdminSdkService, server, _tenantName);
-                frm.ShowDialog();
-                if (frm.SolutionUserDto != null)
+                var userForm = new NewSolutionUserForm(ssoAdminSdkService, server, _tenantName);
+                var context = this.GetApplicationContext();
+                var dataContext = context.NavigationController.NavigateToView(this, userForm);
+                if (dataContext != null)
                 {
-                    MMCDlgHelper.ShowMessage(string.Format("Solution User {0} created successfully", frm.SolutionUserDto.Name));
-                    SolutionUsersControl.RefreshUsers(string.Empty);
+                    var userDto = (SolutionUserDto)dataContext;
+                    if (userDto != null)
+                    {
+                        MMCDlgHelper.ShowMessage(string.Format("Solution User {0} created successfully", userDto.Name));
+                        SolutionUsersControl.RefreshUsers(string.Empty);
+                    }
                 }
             } , null);
         }

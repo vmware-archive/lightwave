@@ -141,6 +141,9 @@
 #define VMDIR_REG_KEY_MAX_SIZELIMIT_SCAN      "MaxSizeLimitScan"
 #define VMDIR_REG_KEY_ALLOW_IMPORT_OP_ATTR    "AllowImportOperationalAttrs"
 #define VMDIR_REG_KEY_LDAP_SEARCH_TIMEOUT_SEC "LdapSearchTimeoutSec"
+#define VMDIR_REG_KEY_TRACK_LAST_LOGIN_TIME   "TrackLastLoginTime"
+#define VMDIR_REG_KEY_URGENT_REPL_TIMEOUT_MSEC "UrgentReplTimeoutMilliSec"
+#define VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD "PagedSearchReadAhead"
 
 #define VMDIR_CONFIG_INIT_TABLE_INITIALIZER                      \
 {                                                                \
@@ -296,5 +299,38 @@
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
-    }                                                            \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_TRACK_LAST_LOGIN_TIME,\
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_BOOLEAN,  \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 1,                                \
+        /*.dwDefault      = */ 0,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_URGENT_REPL_TIMEOUT_MSEC,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 180000,                           \
+        /*.dwDefault      = */ 60000,                            \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_BOOLEAN,  \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 1,                                \
+        /*.dwDefault      = */ 0,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
 }

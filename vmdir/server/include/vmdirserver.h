@@ -105,6 +105,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
     USN                  initialNextUSN; // used for server restore only
     USN                  maxOriginatingUSN;  // Cache value to prevent
                                              // excessive searching
+    VDIR_BERVALUE        bvServerObjName;
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;
@@ -199,8 +200,10 @@ typedef struct _VMDIR_GLOBALS
     // Limit index scan for the best effort sizelimit search
     DWORD                           dwMaxSizelimitScan;
 
-    BOOLEAN                         bAllowImportOpAttrs;
     DWORD                           dwLdapSearchTimeoutSec;
+    BOOLEAN                         bAllowImportOpAttrs;
+    BOOLEAN                         bTrackLastLoginTime;
+    BOOLEAN                         bPagedSearchReadAhead;
 } VMDIR_GLOBALS, *PVMDIR_GLOBALSS;
 
 extern VMDIR_GLOBALS gVmdirGlobals;
@@ -216,6 +219,52 @@ typedef struct _VMDIR_KRB_GLOBALS
 } VMDIR_KRB_GLOBALS, *PVMDIR_KRB_GLOBALS;
 
 extern VMDIR_KRB_GLOBALS gVmdirKrbGlobals;
+
+typedef struct _VMDIR_URGENT_REPL
+{
+    // To Synchronize Urgent Replication Request
+    PVMDIR_MUTEX                         pUrgentReplMutex;
+    BOOLEAN                              bUrgentReplicationRequest;
+    BOOLEAN                              bUrgentReplicationPending;
+    DWORD                                dwUrgentReplResponseCount;
+    DWORD                                dwUrgentReplTimeout;
+    USN                                  consensusUSN;
+    PSTR                                 pUTDVector;
+    /*
+     * Used by RPC thread to notify urgentReplicationCoordinator thread
+     * if rpc response was received.
+     */
+    PVMDIR_MUTEX                         pUrgentReplResponseRecvMutex;
+    PVMDIR_COND                          pUrgentReplResponseRecvCondition;
+    BOOLEAN                              bUrgentReplResponseRecvCondition;
+    /*
+     * Used by writer thread to notify urgentReplicationCoordinator thread
+     * to start urgent replication cycle immediately.
+     */
+    PVMDIR_MUTEX                         pUrgentReplThreadMutex;
+    PVMDIR_COND                          pUrgentReplThreadCondition;
+    BOOLEAN                              bUrgentReplThreadCondition;
+    /*
+     * Used by urgentReplicationCoordinator thread to notify writer threads
+     * that urgent replication cycle is completed. It is a broadcast.
+     */
+    PVMDIR_MUTEX                         pUrgentReplDoneMutex;
+    PVMDIR_COND                          pUrgentReplDoneCondition;
+    BOOLEAN                              bUrgentReplDoneCondition;
+    PVMDIR_STRONG_WRITE_PARTNER_CONTENT  pUrgentReplPartnerTable;
+    PVMDIR_URGENT_REPL_SERVER_LIST       pUrgentReplServerList;
+} VMDIR_URGENT_REPL, *PVMDIR_URGENT_REPL;
+
+extern VMDIR_URGENT_REPL gVmdirUrgentRepl;
+
+typedef struct _VMDIR_TRACK_LAST_LOGIN_TIME
+{
+    PVMDIR_MUTEX    pMutex;
+    PVMDIR_COND     pCond;
+    PVMDIR_TSSTACK  pTSStack;
+} VMDIR_TRACK_LAST_LOGIN_TIME, *PVMDIR_TRACK_LAST_LOGIN_TIME;
+
+extern VMDIR_TRACK_LAST_LOGIN_TIME gVmdirTrackLastLoginTime;
 
 // krb.c
 DWORD
@@ -324,15 +373,279 @@ VmDirReplicationStatusEntry(
     PVDIR_ENTRY*    ppEntry
     );
 
+//urgentreplthread.c
+VOID
+VmDirUrgentReplSignalUrgentReplCoordinatorThreadResponseRecv(
+    VOID
+    );
+
+VOID
+VmDirUrgentReplSignalUrgentReplCoordinatorThreadStart(
+    VOID
+    );
+
+DWORD
+VmDirTimedWaitForUrgentReplDone(
+    UINT64 timeout,
+    UINT64 startTime
+    );
+
+//urgentrepl.c
+BOOLEAN
+VmDirdGetUrgentReplicationRequest(
+    VOID
+    );
+
+BOOLEAN
+VmDirdGetUrgentReplicationRequest_InLock(
+    VOID
+    );
+
+VOID
+VmDirdSetUrgentReplicationRequest(
+    BOOLEAN bUrgentRepl
+    );
+
+VOID
+VmDirdSetUrgentReplicationRequest_InLock(
+    BOOLEAN bUrgentRepl
+    );
+
+PVMDIR_URGENT_REPL_SERVER_LIST
+VmDirdGetUrgentReplicationServerList(
+    VOID
+    );
+
+PVMDIR_URGENT_REPL_SERVER_LIST
+VmDirdGetUrgentReplicationServerList_InLock(
+    VOID
+    );
+
+DWORD
+VmDirdAddToUrgentReplicationServerList(
+    PSTR    pszUrgentReplicationServer
+    );
+
+DWORD
+VmDirdAddToUrgentReplicationServerList_InLock(
+    PSTR    pszUrgentReplicationServer
+    );
+
+VOID
+VmDirdFreeUrgentReplicationServerList(
+    VOID
+    );
+
+VOID
+VmDirdFreeUrgentReplicationServerList_InLock(
+    VOID
+    );
+
+DWORD
+VmDirdInitiateUrgentRepl(
+    PSTR   pszServerName
+    );
+
+VOID
+VmDirSendAllUrgentReplicationResponse(
+    VOID
+    );
+
+DWORD
+VmDirdUrgentReplSetUtdVector(
+    PCSTR pUTDVector
+    );
+
+PCSTR
+VmDirdUrgentReplGetUtdVector(
+    VOID
+    );
+
+PCSTR
+VmDirdUrgentReplGetUtdVector_InLock(
+    VOID
+    );
+
+VOID
+VmDirReplUpdateUrgentReplCoordinatorTableForRequest(
+    VOID
+    );
+
+VOID
+VmDirReplUpdateUrgentReplCoordinatorTableForResponse(
+    PVMDIR_REPL_UTDVECTOR pUtdVector,
+    PCSTR pszInvocationId,
+    PSTR pszHostName
+    );
+
+VOID
+VmDirReplUpdateUrgentReplCoordinatorTableForResponse_InLock(
+    PSTR  pInvocationId,
+    USN   confirmedUSN,
+    PVMDIR_STRONG_WRITE_PARTNER_CONTENT pReplicationPartnerEntry
+    );
+
+DWORD
+VmDirReplGetUrgentReplCoordinatorTableEntry_InLock(
+    PCSTR pszRemoteServerInvocationId,
+    PSTR  pszRemoteServerName,
+    PVMDIR_STRONG_WRITE_PARTNER_CONTENT *ppReplicationPartnerEntry
+    );
+
+VOID
+VmDirReplUpdateUrgentReplCoordinatorTableForDelete(
+    PVMDIR_REPLICATION_AGREEMENT  pReplAgr
+    );
+
+VOID
+VmDirReplFreeUrgentReplCoordinatorTable(
+    VOID
+    );
+
+VOID
+VmDirReplFreeUrgentReplCoordinatorTable_InLock(
+    VOID
+    );
+
+DWORD
+VmDirReplGetUrgentReplResponseCount(
+    VOID
+    );
+
+VOID
+VmDirReplUpdateUrgentReplResponseCount(
+    VOID
+    );
+
+VOID
+VmDirReplResetUrgentReplResponseCount(
+    VOID
+    );
+
+VOID
+VmDirReplResetUrgentReplResponseCount_InLock(
+    VOID
+    );
+
+VOID
+VmDirReplSetUrgentReplResponseRecvCondition(
+    BOOLEAN bUrgentReplResponseRecvCondition
+    );
+
+BOOLEAN
+VmDirReplGetUrgentReplResponseRecvCondition(
+    VOID
+    );
+
+VOID
+VmDirReplSetUrgentReplThreadCondition(
+    BOOLEAN bUrgentReplThreadCondition
+    );
+
+BOOLEAN
+VmDirReplGetUrgentReplThreadCondition(
+    VOID
+    );
+
+PVMDIR_STRONG_WRITE_PARTNER_CONTENT
+VmDirReplGetUrgentReplCoordinatorTable(
+    VOID
+    );
+
+PVMDIR_STRONG_WRITE_PARTNER_CONTENT
+VmDirReplGetUrgentReplCoordinatorTable_InLock(
+    VOID
+    );
+
+VOID
+VmDirReplSetUrgentReplDoneCondition(
+    BOOLEAN bUrgentReplDoneCondition
+    );
+
+VOID
+VmDirReplSetUrgentReplDoneCondition_InLock(
+    BOOLEAN bUrgentReplDoneCondition
+    );
+
+BOOLEAN
+VmDirReplGetUrgentReplDoneCondition(
+    VOID
+    );
+
+BOOLEAN
+VmDirReplGetUrgentReplDoneCondition_InLock(
+    VOID
+    );
+
+USN
+VmDirGetUrgentReplConsensus(
+    VOID
+    );
+
+USN
+VmDirGetUrgentReplConsensus_InLock(
+    VOID
+    );
+
+BOOLEAN
+VmDirUrgentReplUpdateConsensus(
+    VOID
+    );
+
+DWORD
+VmDirGetUrgentReplTimeout(
+    VOID
+    );
+
+DWORD
+VmDirGetUrgentReplTimeout_InLock(
+    VOID
+    );
+
+VOID
+VmDirSetUrgentReplTimeout(
+    DWORD dwTimeout
+    );
+
+VOID
+VmDirSetUrgentReplTimeout_InLock(
+    DWORD dwTimeout
+    );
+
+BOOLEAN
+VmDirGetUrgentReplicationPending(
+    VOID
+    );
+
+BOOLEAN
+VmDirGetUrgentReplicationPending_InLock(
+    VOID
+    );
+
+VOID
+VmDirSetUrgentReplicationPending(
+    BOOLEAN bUrgentReplicationPending
+    );
+
+VOID
+VmDirSetUrgentReplicationPending_InLock(
+    BOOLEAN bUrgentReplicationPending
+    );
+
+VOID
+VmDirReplFreeUrgentReplPartnerEntry_InLock(
+    PVMDIR_STRONG_WRITE_PARTNER_CONTENT pUrgentReplPartnerTable
+    );
+
 // srvthr.c
 VOID
 VmDirSrvThrAdd(
     PVDIR_THREAD_INFO   pThrInfo
     );
 
-VOID
+DWORD
 VmDirSrvThrInit(
-    PVDIR_THREAD_INFO   pThrInfo,
+    PVDIR_THREAD_INFO   *ppThrInfo,
     PVMDIR_MUTEX        pAltMutex,
     PVMDIR_COND         pAltCond,
     BOOLEAN             bJoinFlag
@@ -372,6 +685,12 @@ VmDirSrvGetSocketAcceptFd(
 VOID
 VmDirShutdown(
     PBOOLEAN pbWaitTimeOut
+    );
+
+// tracklastlogin.c
+VOID
+VmDirAddTrackLastLoginItem(
+    PCSTR   pszDN
     );
 
 #ifdef __cplusplus

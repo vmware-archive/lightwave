@@ -54,33 +54,9 @@ _VmDirReplicationEntriesExist(
 
 static
 DWORD
-_VmDirStrToToken(
-    PCSTR               pszTokenize,
-    CHAR                delimiter,
-    PVMDIR_STRING_LIST* ppStrList
-    );
-
-static
-DWORD
-_VmDirStrToNameAndNumber(
-    PCSTR   pszStr,
-    CHAR    del,
-    PSTR*   ppszName,
-    USN*    pUSN
-    );
-
-static
-DWORD
 _VmDirRAsToStruct(
     PCSTR   pszStr,
     PVMDIR_REPL_REPL_AGREEMENT*  ppRA
-    );
-
-static
-DWORD
-_VmDirUTDVectorToStruct(
-    PCSTR   pszStr,
-    PVMDIR_REPL_UTDVECTOR*  ppVector
     );
 
 static
@@ -98,12 +74,6 @@ _VmDirEntryToReplState(
     LDAP*           pLd,
     LDAPMessage*    pEntry,
     PVMDIR_REPL_STATE  pReplState
-    );
-
-static
-VOID
-_VmDirFreeReplVector(
-    PVMDIR_REPL_UTDVECTOR  pVector
     );
 
 static
@@ -810,7 +780,7 @@ VmDirFreeReplicationStateInternal(
     {
         VMDIR_SAFE_FREE_MEMORY(pReplState->pszHost);
         VMDIR_SAFE_FREE_MEMORY(pReplState->pszInvocationId);
-        _VmDirFreeReplVector(pReplState->pReplUTDVec);
+        VmDirFreeReplVector(pReplState->pReplUTDVec);
         _VmDirFreeReplRA(pReplState->pReplRA);
         VMDIR_SAFE_FREE_MEMORY(pReplState);
     }
@@ -963,7 +933,7 @@ _VmDirGetServerObjectBC(
     }
     if (ppUtdVector[0])
     {
-        dwError = _VmDirUTDVectorToStruct(ppUtdVector[0]->bv_val, &(pReplState->pReplUTDVec));
+        dwError = VmDirUTDVectorToStruct(ppUtdVector[0]->bv_val, &(pReplState->pReplUTDVec));
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -1030,100 +1000,6 @@ error:
     goto cleanup;
 }
 
-/*
- * Tokenize string pszTarget by CHAR delimiter.
- */
-static
-DWORD
-_VmDirStrToToken(
-    PCSTR               pszTokenize,
-    CHAR                delimiter,
-    PVMDIR_STRING_LIST* ppStrList
-    )
-{
-    DWORD   dwError = 0;
-    DWORD   dwLen = 0;
-    PCSTR   pszCurrent = pszTokenize;
-    PSTR    pszLocalResult = NULL;
-    PVMDIR_STRING_LIST  pStrList = NULL;
-
-    dwError = VmDirStringListInitialize(&pStrList, 8);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    while (pszCurrent)
-    {
-        PCSTR pszStart = pszCurrent;
-
-        pszCurrent = VmDirStringChrA(pszStart, delimiter);
-
-        if (pszCurrent)
-        {
-            dwLen = (DWORD)(pszCurrent - pszStart);
-            pszCurrent++;
-        }
-        else
-        {
-            dwLen = (DWORD)VmDirStringLenA(pszStart);
-        }
-
-        VMDIR_SAFE_FREE_MEMORY(pszLocalResult);
-        dwError = VmDirAllocateStringOfLenA( pszStart, dwLen, &pszLocalResult);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirStringListAdd(pStrList, pszLocalResult);
-        BAIL_ON_VMDIR_ERROR(dwError);
-        pszLocalResult = NULL;
-    }
-
-    *ppStrList = pStrList;
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszLocalResult);
-    return dwError;
-
-error:
-    VmDirStringListFree(pStrList);
-    goto cleanup;
-}
-
-static
-DWORD
-_VmDirStrToNameAndNumber(
-    PCSTR   pszStr,
-    CHAR    del,
-    PSTR*   ppszName,
-    USN*    pUSN
-    )
-{
-    DWORD   dwError = 0;
-    PCSTR   pszTmp = VmDirStringChrA(pszStr, del);
-    PSTR    pszName = NULL;
-    USN     localUSN = 0;
-
-    if (pszTmp)
-    {
-        dwError = VmDirAllocateStringOfLenA( pszStr, (DWORD)(pszTmp-pszStr), &pszName);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        localUSN = atol( pszTmp+1 );
-    }
-    else
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    *ppszName = pszName;
-    *pUSN = localUSN;
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_SAFE_FREE_MEMORY(pszName);
-    goto cleanup;
-}
-
 static
 DWORD
 _VmDirRAsToStruct(
@@ -1136,15 +1012,16 @@ _VmDirRAsToStruct(
     PVMDIR_STRING_LIST          pStrList = NULL;
     PVMDIR_REPL_REPL_AGREEMENT  pRA = NULL;
     PVMDIR_REPL_REPL_AGREEMENT  pTmpRA = NULL;
+    PCSTR                       pDelimiter = ",";
 
     // No RA processed USN
-    if( VmDirStringCompareA(pszStr, "Unknown", FALSE) == 0 )
+    if ( VmDirStringCompareA(pszStr, "Unknown", FALSE) == 0 )
     {
         *ppRA = pRA;
         goto cleanup;
     }
 
-    dwError = _VmDirStrToToken(pszStr, ',', &pStrList);
+    dwError = VmDirStringToTokenList(pszStr, pDelimiter, &pStrList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (dwCnt=0; dwCnt<pStrList->dwCount; dwCnt++)
@@ -1161,7 +1038,7 @@ _VmDirRAsToStruct(
         pRA          = pTmpRA;
         pTmpRA       = NULL;
 
-        dwError = _VmDirStrToNameAndNumber( pStrList->pStringList[dwCnt], '|',
+        dwError = VmDirStrToNameAndNumber( pStrList->pStringList[dwCnt], '|',
                                             &pRA->pszPartnerName,
                                             &pRA->maxProcessedUSN);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -1175,60 +1052,6 @@ cleanup:
 
 error:
     _VmDirFreeReplRA(pRA);
-    goto cleanup;
-}
-
-static
-DWORD
-_VmDirUTDVectorToStruct(
-    PCSTR   pszStr,
-    PVMDIR_REPL_UTDVECTOR*  ppVector
-    )
-{
-    DWORD   dwError = 0;
-    DWORD   dwCnt = 0;
-    PVMDIR_STRING_LIST      pStrList = NULL;
-    PVMDIR_REPL_UTDVECTOR   pVector = NULL;
-    PVMDIR_REPL_UTDVECTOR   pTmpVector = NULL;
-
-    // No UTD Vector.
-    if( VmDirStringCompareA(pszStr, "Unknown", FALSE) == 0 )
-    {
-        *ppVector = pVector;
-        goto cleanup;
-    }
-
-    dwError = _VmDirStrToToken(pszStr, ',', &pStrList);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (dwCnt=0; dwCnt<pStrList->dwCount; dwCnt++)
-    {
-        if (pStrList->pStringList[dwCnt][0] == '\0')
-        {
-            continue;
-        }
-
-        dwError = VmDirAllocateMemory(sizeof(*pTmpVector), (PVOID*)&pTmpVector);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        pTmpVector->next = pVector;
-        pVector          = pTmpVector;
-        pTmpVector       = NULL;
-
-        dwError = _VmDirStrToNameAndNumber( pStrList->pStringList[dwCnt], ':',
-                                            &pVector->pszPartnerInvocationId,
-                                            &pVector->maxOriginatingUSN);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    *ppVector = pVector;
-
-cleanup:
-    VmDirStringListFree(pStrList);
-    return dwError;
-
-error:
-    _VmDirFreeReplVector(pVector);
     goto cleanup;
 }
 
@@ -1395,7 +1218,7 @@ _VmDirEntryToReplState(
         else if (VmDirStringNCompareA(ppValues[iCnt]->bv_val, REPL_STATUS_UTDVECTOR,
                                       REPL_STATUS_UTDVECTOR_LEN, FALSE) == 0)
         {
-            dwError = _VmDirUTDVectorToStruct(ppValues[iCnt]->bv_val+REPL_STATUS_UTDVECTOR_LEN,
+            dwError = VmDirUTDVectorToStruct(ppValues[iCnt]->bv_val+REPL_STATUS_UTDVECTOR_LEN,
                                               &pReplState->pReplUTDVec);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
@@ -1435,24 +1258,6 @@ cleanup:
 
 error:
     goto cleanup;
-}
-
-static
-VOID
-_VmDirFreeReplVector(
-    PVMDIR_REPL_UTDVECTOR  pVector
-    )
-{
-    while (pVector)
-    {
-        PVMDIR_REPL_UTDVECTOR pNext = pVector->next;
-
-        VMDIR_SAFE_FREE_MEMORY(pVector->pszPartnerInvocationId);
-        VMDIR_SAFE_FREE_MEMORY(pVector);
-        pVector = pNext;
-    }
-
-    return;
 }
 
 static

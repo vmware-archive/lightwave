@@ -14,11 +14,15 @@
 
 package com.vmware.identity.openidconnect.server;
 
+import java.net.URI;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang3.Validate;
 
+import com.nimbusds.jose.JOSEException;
 import com.vmware.identity.idm.GSSResult;
 import com.vmware.identity.idm.IDMException;
 import com.vmware.identity.idm.IDMLoginException;
@@ -27,6 +31,7 @@ import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.RSAAMResult;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ErrorObject;
+import com.vmware.identity.openidconnect.protocol.PersonUserAssertion;
 
 /**
  * @author Yehia Zayour
@@ -58,19 +63,53 @@ public class PersonUserAuthenticator {
         return new PersonUser(principalId, tenant);
     }
 
-    public PersonUser authenticateByClientCertificate(
+    public PersonUser authenticateByPersonUserCertificate(
             String tenant,
-            List<X509Certificate> clientCertificateChain) throws InvalidCredentialsException, ServerException {
+            X509Certificate personUserCertificate,
+            PersonUserAssertion personUserAssertion,
+            long assertionLifetimeMs,
+            URI requestUri,
+            long clockToleranceMS) throws InvalidCredentialsException, ServerException {
         Validate.notEmpty(tenant, "tenant");
-        Validate.notNull(clientCertificateChain, "clientCertificateChain");
+        Validate.notNull(personUserCertificate, "personUserCertificate");
+        Validate.notNull(personUserAssertion, "personUserAssertion");
+        Validate.isTrue(assertionLifetimeMs > 0, "assertionLifetimeMs > 0");
+        Validate.notNull(requestUri, "requestUri");
+        Validate.isTrue(clockToleranceMS >= 0, "clockToleranceMS >= 0");
+
+        if (!("RSA").equals(personUserCertificate.getPublicKey().getAlgorithm())) {
+            throw new ServerException(ErrorObject.invalidGrant("certificate should use RSA for signature"));
+        }
+
+        try {
+            if (!personUserAssertion.hasValidSignature((RSAPublicKey) personUserCertificate.getPublicKey())) {
+                throw new ServerException(ErrorObject.invalidGrant("person_user_assertion has an invalid signature"));
+            }
+        } catch (JOSEException e) {
+            throw new ServerException(ErrorObject.serverError("error while verifying person_user_assertion signature"), e);
+        }
+
+        String errorDescription = personUserAssertion.validate(assertionLifetimeMs, requestUri, clockToleranceMS);
+        if (errorDescription != null) {
+            throw new ServerException(ErrorObject.invalidGrant(errorDescription));
+        }
+
+        return authenticateByPersonUserCertificate(tenant, Collections.singletonList(personUserCertificate));
+    }
+
+    public PersonUser authenticateByPersonUserCertificate(
+            String tenant,
+            List<X509Certificate> personUserCertificateChain) throws InvalidCredentialsException, ServerException {
+        Validate.notEmpty(tenant, "tenant");
+        Validate.notNull(personUserCertificateChain, "personUserCertificateChain");
 
         PrincipalId principalId;
         try {
-            principalId = this.idmClient.authenticate(tenant, clientCertificateChain.toArray(new X509Certificate[0]));
+            principalId = this.idmClient.authenticate(tenant, personUserCertificateChain.toArray(new X509Certificate[0]));
         } catch (IDMLoginException e) {
             throw new InvalidCredentialsException(e);
         } catch (Exception e) {
-            throw new ServerException(ErrorObject.serverError("idm error while authenticating client cert"), e);
+            throw new ServerException(ErrorObject.serverError("idm error while authenticating person user cert"), e);
         }
         return new PersonUser(principalId, tenant);
     }
@@ -94,7 +133,7 @@ public class PersonUserAuthenticator {
         return result;
     }
 
-    public RSAAMResult authenticateBySecureID(
+    public RSAAMResult authenticateBySecurID(
             String tenant,
             String username,
             String passcode,
@@ -111,7 +150,7 @@ public class PersonUserAuthenticator {
         } catch (IDMException e) {
             throw new InvalidCredentialsException(e);
         } catch (Exception e) {
-            throw new ServerException(ErrorObject.serverError("idm error while authentication secureid token"), e);
+            throw new ServerException(ErrorObject.serverError("idm error while authentication securid token"), e);
         }
     }
 }

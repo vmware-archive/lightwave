@@ -28,12 +28,14 @@ namespace RestSsoAdminSnapIn
 {
 	public partial class ShowAllGroupsController : AppKit.NSWindowController
 	{
+		private enum MemberTypeFilter{ All = 0, Users, Groups};
 		public bool IsSystemDomain { get; set; }
 		//private NSTableView TableView { get; set; }
-		public List<GroupDto> SelectedGroups { get; set;}
+		public GroupMembershipDto SelectedMembers { get; set;}
 		public ServerDto ServerDto;
 		public string TenantName;
 		public string DomainName;
+		public bool IsUserSearch { get; set; }
 
 		#region Constructors
 
@@ -70,38 +72,103 @@ namespace RestSsoAdminSnapIn
 				NSApplication.SharedApplication.StopModalWithCode (0);
 			};
 			this.BtnAdd.Activated += OnClickAddGroupButton;
+			this.SearchButton.Activated += (object sender, EventArgs e) => {
 
+				if(!IsUserSearch)
+				{
+					var domain = ((NSString)DomainComboBox.SelectedValue).ToString();
+					var filter = (MemberTypeFilter)((int)MemberTypeComboBox.SelectedIndex);
+					Search(NameTextString.StringValue, domain, filter);
+				}
+				else
+				{
+					Search(NameTextString.StringValue, DomainName, MemberTypeFilter.Groups);
+				}
+			};
 			foreach(NSTableColumn column in GroupsTableView.TableColumns())
 			{
 				GroupsTableView.RemoveColumn (column);
 			}
-			GroupsTableView.Delegate = new TableDelegate ();
-			var groupInfo = new GroupMembershipDto (){ Groups = new List<GroupDto> () };
-			ActionHelper.Execute (delegate() {
-				var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (ServerDto.ServerName);
-				groupInfo = SnapInContext.Instance.ServiceGateway.Tenant.Search (ServerDto, TenantName, DomainName, MemberType.GROUP, SearchType.NAME, auth.Token);
-			});
-				
-			var listView = new GroupsDataSource { Entries = groupInfo.Groups };
 			var columnNames = new List<ColumnOptions> {
-				new ColumnOptions{ Id = "Name", DisplayName = "Group Name", DisplayOrder = 1, Width = 500 },
-				};
+				new ColumnOptions{ Id = "Name", DisplayName = "Name", DisplayOrder = 1, Width = 500 },
+			};
 			var columns = ListViewHelper.ToNSTableColumns (columnNames);
 			foreach (var column in columns) {
 				GroupsTableView.AddColumn (column);
 			}
+			GroupsTableView.AllowsMultipleSelection = true;
+			GroupsTableView.Delegate = new TableDelegate ();
+			GetIdentitySources ();
+		}
+
+		private void GetIdentitySources(){
+			if (!IsUserSearch) {
+				
+				var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (ServerDto.ServerName);
+				var service = SnapInContext.Instance.ServiceGateway;
+				var identityProviders = service.IdentityProvider.GetAll (ServerDto, TenantName, auth.Token);
+
+				if (identityProviders.Count > 0) {
+					var items = identityProviders.Select (x => (NSString)x.Name).ToArray ();
+					DomainComboBox.Add (items);
+					DomainComboBox.SelectItem (0);
+					MemberTypeComboBox.SelectItem (0);
+					Search (null, items [0], MemberTypeFilter.All);
+				}
+			} else {
+				DomainComboBox.Hidden = true;
+				MemberTypeComboBox.Hidden = true;
+				DomainLabel.Hidden = true;
+				MemberTypeLabel.Hidden = true;
+				Search (null, DomainName, MemberTypeFilter.Groups);
+			}
+		}
+
+		private void Search(string name, string domain, MemberTypeFilter filter){
+
+			var groupInfo = new GroupMembershipDto (){ Groups = new List<GroupDto> (), Users = new List<UserDto>() };
+			if (filter != MemberTypeFilter.Users) {
+				
+				ActionHelper.Execute (delegate() {
+					var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (ServerDto.ServerName);
+					var groupInfo1 = SnapInContext.Instance.ServiceGateway.Tenant.Search (ServerDto, TenantName, domain, MemberType.GROUP, SearchType.NAME, auth.Token, name);
+					groupInfo.Groups = groupInfo1.Groups;
+				});
+			}
+
+			if (filter != MemberTypeFilter.Groups) {
+
+				ActionHelper.Execute (delegate() {
+					var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (ServerDto.ServerName);
+					var groupInfo2 = SnapInContext.Instance.ServiceGateway.Tenant.Search (ServerDto, TenantName, domain, MemberType.USER, SearchType.NAME, auth.Token, name);
+					groupInfo.Users = groupInfo2.Users;
+				});
+			}
+			var listView = new GroupMembershipDataSource { Groups = groupInfo.Groups, Users = groupInfo.Users };
+			if (listView.Groups == null)
+				listView.Groups = new List<GroupDto> ();
+			
+			if (listView.Users == null)
+				listView.Users = new List<UserDto> ();
+			
 			GroupsTableView.DataSource = listView;
 			GroupsTableView.ReloadData ();
+			WarningLabel.Hidden = (listView.Groups.Count + listView.Users.Count) < 100;
 		}
 
 		public void OnClickAddGroupButton (object sender, EventArgs e)
 		{
 			if (GroupsTableView.SelectedRows.Count > 0) {
-				SelectedGroups = new List<GroupDto> ();
-				var dataSource = (GroupsDataSource)GroupsTableView.DataSource;
+				SelectedMembers = new GroupMembershipDto (){ Groups = new List<GroupDto> (), Users = new List<UserDto> () };
+				var dataSource = (GroupMembershipDataSource)GroupsTableView.DataSource;
 
 				foreach (var groupId in GroupsTableView.SelectedRows) {
-					SelectedGroups.Add (dataSource.Entries [(int)groupId]);
+					var gid = (int)groupId;
+					if (gid < dataSource.Groups.Count) {
+						SelectedMembers.Groups.Add (dataSource.Groups [gid]);
+					} else {
+						SelectedMembers.Users.Add (dataSource.Users [gid - dataSource.Groups.Count]);
+					}
 				}
 				this.Close ();
 				NSApplication.SharedApplication.StopModalWithCode (1);
@@ -118,22 +185,16 @@ namespace RestSsoAdminSnapIn
 
 		public class TableDelegate : NSTableViewDelegate
 		{
-			private NSImage icon;
-
-			public TableDelegate ()
-			{
-				icon = NSImage.ImageNamed ("NSUserGroup");
-			}
-
 			public override void WillDisplayCell (NSTableView tableView, NSObject cell,
 				NSTableColumn tableColumn, nint row)
 			{
 				ActionHelper.Execute (delegate() {
+					var ds = tableView.DataSource as GroupMembershipDataSource;
 					NSBrowserCell browserCell = cell as NSBrowserCell;
 					if (browserCell != null) {
 						browserCell.Leaf = true;
 						if (tableColumn.Identifier == "Name")
-							browserCell.Image = icon;
+							browserCell.Image = ds.GetRowImage((int)row);
 					}
 				});
 			}

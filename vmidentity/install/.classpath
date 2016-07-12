@@ -12,7 +12,6 @@
 			<attribute name="org.eclipse.jst.component.dependency" value="/WEB-INF/lib"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="var" path="IDENTITY_SERVER_BUILD/packages/admin-interfaces.jar" />
         <classpathentry kind="var" path="IDENTITY_SERVER_BUILD/packages/samltoken.jar" sourcepath="/IDENTITY_SERVER_BUILD/packages/samltoken-src.jar"/>
         <classpathentry kind="var" path="IDENTITY_SERVER_BUILD/packages/wstClient.jar" sourcepath="/IDENTITY_SERVER_BUILD/packages/wstClient-src.jar"/>
         <classpathentry kind="var" path="IDENTITY_SERVER_BUILD/packages/sso-adminserver-client-bindings.jar" />

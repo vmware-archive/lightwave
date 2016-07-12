@@ -15,6 +15,7 @@ using System;
 using System.ComponentModel;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
+using Vmware.Tools.RestSsoAdminSnapIn.Core.Crypto;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Security.Certificate;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
@@ -69,10 +70,11 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.PropertyPages
         {
             var base64Value = CertificateHelper.PemToBase64EncodedString(_userDto.Certificate.Encoded);
             var cert = CertificateHelper.GetX509Certificate2FromString(base64Value);
+            var subjectDN = ShaWithRsaSigner.GetX500SubjectDN(cert);
             txtIssuedBy.Text = cert.IssuerName.Name;
             txtValidFrom.Text = cert.NotBefore.ToString("MM-dd-yyyy hh:mm:ss");
             txtValidTo.Text = cert.NotAfter.ToString("MM-dd-yyyy hh:mm:ss");
-            txtDN.Text = cert.Subject;
+            txtDN.Text = subjectDN;
         }
 
         private void btnShowCertificate_Click(object sender, EventArgs e)

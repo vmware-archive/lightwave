@@ -98,6 +98,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Utilities\ListViewUtil.cs" />
     <Compile Include="Utilities\MMCActionHelper.cs" />
     <Compile Include="Utilities\MMCDlgHelper.cs" />
     <Compile Include="Utilities\MMCMiscUtil.cs" />
@@ -139,6 +140,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Images\user.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
+      <Project>{cd959e2e-5b9c-4329-b085-352844cfdcdd}</Project>
+      <Name>VMIdentity.CommonUtils</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

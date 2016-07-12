@@ -76,6 +76,10 @@ VmDirSchemaLibInit(
     dwError = VmDirSchemaLibUpdate(0);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // legacy support
+    dwError = VmDirSchemaLibInitLegacy();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
     return dwError;
 

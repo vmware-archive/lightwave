@@ -7,7 +7,6 @@
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.columnHeader4 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -26,7 +25,6 @@
             this.columnHeader1,
             this.columnHeader2,
             this.columnHeader3,
-            this.columnHeader4,
             this.columnHeader5,
             this.columnHeader6,
             this.columnHeader7});
@@ -45,7 +43,7 @@
             // columnHeader1
             // 
             this.columnHeader1.Text = "User Name";
-            this.columnHeader1.Width = 170;
+            this.columnHeader1.Width = 265;
             // 
             // columnHeader2
             // 
@@ -56,11 +54,6 @@
             // 
             this.columnHeader3.Text = "Last Name";
             this.columnHeader3.Width = 131;
-            // 
-            // columnHeader4
-            // 
-            this.columnHeader4.Text = "Email";
-            this.columnHeader4.Width = 98;
             // 
             // columnHeader5
             // 
@@ -135,7 +128,8 @@
 
         }
         #endregion
-        private System.Windows.Forms.ListView lstUsers;        private System.Windows.Forms.ColumnHeader columnHeader1;        private System.Windows.Forms.ColumnHeader columnHeader2;        private System.Windows.Forms.ColumnHeader columnHeader3;        private System.Windows.Forms.ColumnHeader columnHeader4;        private System.Windows.Forms.ColumnHeader columnHeader5;        private System.Windows.Forms.ColumnHeader columnHeader6;        private System.Windows.Forms.ColumnHeader columnHeader7;        private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;        private System.Windows.Forms.ToolStripMenuItem deleteToolStripMenuItem;
+        private System.Windows.Forms.ListView lstUsers;        private System.Windows.Forms.ColumnHeader columnHeader1;        private System.Windows.Forms.ColumnHeader columnHeader2;
+        private System.Windows.Forms.ColumnHeader columnHeader3;        private System.Windows.Forms.ColumnHeader columnHeader5;        private System.Windows.Forms.ColumnHeader columnHeader6;        private System.Windows.Forms.ColumnHeader columnHeader7;        private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;        private System.Windows.Forms.ToolStripMenuItem deleteToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem propertiesToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem setPasswordToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem loginAsThisUserToolStripMenuItem;    }}

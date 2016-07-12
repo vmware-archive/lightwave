@@ -46,7 +46,6 @@
 /* --------------- Linux implementation -------------------- */
 
 #include <config.h>
-#include <vmstssys.h>
 
 #include <krb5/krb5.h>
 #include <gssapi/gssapi_generic.h>
@@ -63,12 +62,14 @@
 #include <lwadvapi.h>
 #include <lwmem.h>
 
+#include <vmstssys.h>
+
 #endif
+
 
 /* Common headers used between Windows and Linux */
 #include <stdlib.h>
 #include <vmidmgr.h>
-
 #include <idmcommon.h>
 
 #include "defines.h"

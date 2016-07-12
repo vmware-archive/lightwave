@@ -15,7 +15,9 @@
  */
 package com.vmware.identity.idm.server;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.ServiceLoader;
 
 import com.vmware.identity.auth.passcode.spi.AuthenticationException;
@@ -24,7 +26,8 @@ import com.vmware.identity.auth.passcode.spi.SessionFactoryProperties;
 import com.vmware.identity.auth.passcode.spi.SessionFactoryProvider;
 
 /**
- * This class provides the means to get an instances of the AuthenticationSessionFactory implementation.
+ * This class provides the means to get an instances of the
+ * AuthenticationSessionFactory implementation.
  *
  * @author aantochi
  *
@@ -40,6 +43,28 @@ public class PasscodeAuthenticationServiceProvider {
 
     public static PasscodeAuthenticationServiceProvider getInstance() {
         return INSTANCE;
+    }
+
+    /**
+     * This method returns the list of registered providers of the specific
+     * type.
+     *
+     * @param type
+     *            - The provider type
+     * @return - list of the providers that correspond to the type
+     */
+    public List<SessionFactoryProvider> getProviders(String type) {
+        Iterator<SessionFactoryProvider> iterator = loader.iterator();
+        List<SessionFactoryProvider> providers = new ArrayList<>();
+
+        while (iterator.hasNext()) {
+            SessionFactoryProvider factory = iterator.next();
+            if (factory.getType().equalsIgnoreCase(type)) {
+                providers.add(factory);
+            }
+        }
+
+        return providers;
     }
 
     /**

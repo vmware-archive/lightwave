@@ -16,7 +16,6 @@ package com.vmware.identity.openidconnect.client;
 
 import java.net.URI;
 import java.security.interfaces.RSAPublicKey;
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -24,19 +23,19 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
-import com.vmware.identity.openidconnect.common.AuthenticationErrorResponse;
-import com.vmware.identity.openidconnect.common.AuthenticationResponse;
-import com.vmware.identity.openidconnect.common.AuthenticationSuccessResponse;
 import com.vmware.identity.openidconnect.common.ClientID;
-import com.vmware.identity.openidconnect.common.HttpRequest;
-import com.vmware.identity.openidconnect.common.LogoutErrorResponse;
-import com.vmware.identity.openidconnect.common.LogoutResponse;
-import com.vmware.identity.openidconnect.common.LogoutSuccessResponse;
+import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.ParseException;
-import com.vmware.identity.openidconnect.common.RefreshToken;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.State;
-import com.vmware.identity.openidconnect.common.URIUtils;
+import com.vmware.identity.openidconnect.protocol.AuthenticationErrorResponse;
+import com.vmware.identity.openidconnect.protocol.AuthenticationResponse;
+import com.vmware.identity.openidconnect.protocol.AuthenticationSuccessResponse;
+import com.vmware.identity.openidconnect.protocol.HttpRequest;
+import com.vmware.identity.openidconnect.protocol.LogoutErrorResponse;
+import com.vmware.identity.openidconnect.protocol.LogoutResponse;
+import com.vmware.identity.openidconnect.protocol.LogoutSuccessResponse;
+import com.vmware.identity.openidconnect.protocol.URIUtils;
 
 /**
  * OIDC listener helper class for parsing data in response
@@ -44,31 +43,49 @@ import com.vmware.identity.openidconnect.common.URIUtils;
  * @author Yehia Zayour
  * @author Jun Sun
  */
-public class ListenerHelper {
+public final class ListenerHelper {
+    private static final URI DUMMY_URI;
+
+    static {
+        try {
+            DUMMY_URI = URIUtils.parseURI("https://dummy.uri.com");
+        } catch (ParseException e) {
+            throw new IllegalStateException("failed to instantiate DUMMY_URI", e);
+        }
+    }
+
+    private static HttpRequest httpRequestFromMap(Map<String, String> parameterMap) {
+        // we are passing in DUMMY_URI because authn/logout response ctors have a required non-null requestURI parameter
+        // this requestURI parameter is needed on the server but not on the client
+        // this is because authn/logout responses arrive at the oidc client in the form of a request
+        return HttpRequest.createGetRequest(DUMMY_URI, parameterMap);
+    }
+
     public static AuthenticationCodeResponse parseAuthenticationCodeResponse(
             HttpServletRequest request) throws OIDCClientException, OIDCServerException {
         Validate.notNull(request, "request");
-        return parseAuthenticationCodeResponse(parameterMap(request), URIUtils.from(request));
+        return parseAuthenticationCodeResponse(HttpRequest.from(request));
     }
 
     /**
      * Helper method to parse authentication response for authorization code flow (response contains authz code)
      *
      * @param parameterMap                      Map containing response parameters.
-     * @param requestURI                        request uri
      * @return                                  Authentication response object containing response related data.
      * @throws OIDCClientException              Client side exception.
      * @throws OIDCServerException              Server side exception.
      */
     public static AuthenticationCodeResponse parseAuthenticationCodeResponse(
-            Map<String, String> parameterMap,
-            URI requestURI) throws OIDCClientException, OIDCServerException {
+            Map<String, String> parameterMap) throws OIDCClientException, OIDCServerException {
         Validate.notNull(parameterMap, "parameterMap");
-        Validate.notNull(requestURI, "requestURI");
+        return parseAuthenticationCodeResponse(httpRequestFromMap(parameterMap));
+    }
 
+    private static AuthenticationCodeResponse parseAuthenticationCodeResponse(
+            HttpRequest httpRequest) throws OIDCClientException, OIDCServerException {
         AuthenticationResponse authnResponse;
         try {
-            authnResponse = AuthenticationResponse.parse(HttpRequest.createGetRequest(requestURI, parameterMap));
+            authnResponse = AuthenticationResponse.parse(httpRequest);
         } catch (ParseException e) {
             throw new OIDCClientException("failed to parse authentication response", e);
         }
@@ -89,17 +106,20 @@ public class ListenerHelper {
     public static AuthenticationTokensResponse parseAuthenticationTokensResponse(
             HttpServletRequest request,
             RSAPublicKey publicKey,
+            Issuer issuer,
             ClientID clientId,
             long clockToleranceSeconds) throws OIDCClientException, OIDCServerException, TokenValidationException {
         Validate.notNull(request, "request");
-        return parseAuthenticationTokensResponse(parameterMap(request), URIUtils.from(request), publicKey, clientId, clockToleranceSeconds);
+        Validate.notNull(publicKey, "publicKey");
+        Validate.notNull(issuer, "issuer");
+        Validate.notNull(clientId, "clientId");
+        return parseAuthenticationTokensResponse(HttpRequest.from(request), publicKey, issuer, clientId, clockToleranceSeconds);
     }
 
     /**
      * Helper method to parse authentication response for implicit flow (response contains id_token and access_token)
      *
      * @param parameterMap                      Map containing response parameters.
-     * @param requestURI                        request uri
      * @return                                  Authentication response object containing response related data.
      * @throws OIDCClientException              Client side exception.
      * @throws OIDCServerException              Server side exception.
@@ -107,18 +127,26 @@ public class ListenerHelper {
      */
     public static AuthenticationTokensResponse parseAuthenticationTokensResponse(
             Map<String, String> parameterMap,
-            URI requestURI,
             RSAPublicKey publicKey,
+            Issuer issuer,
             ClientID clientId,
             long clockToleranceSeconds) throws OIDCClientException, OIDCServerException, TokenValidationException {
         Validate.notNull(parameterMap, "parameterMap");
-        Validate.notNull(requestURI, "requestURI");
         Validate.notNull(publicKey, "publicKey");
+        Validate.notNull(issuer, "issuer");
         Validate.notNull(clientId, "clientId");
+        return parseAuthenticationTokensResponse(httpRequestFromMap(parameterMap), publicKey, issuer, clientId, clockToleranceSeconds);
+    }
 
+    private static AuthenticationTokensResponse parseAuthenticationTokensResponse(
+            HttpRequest httpRequest,
+            RSAPublicKey publicKey,
+            Issuer issuer,
+            ClientID clientId,
+            long clockToleranceSeconds) throws OIDCClientException, OIDCServerException, TokenValidationException {
         AuthenticationResponse authnResponse;
         try {
-            authnResponse = AuthenticationResponse.parse(HttpRequest.createGetRequest(requestURI, parameterMap));
+            authnResponse = AuthenticationResponse.parse(httpRequest);
         } catch (ParseException e) {
             throw new OIDCClientException("failed to parse authentication response", e);
         }
@@ -126,8 +154,9 @@ public class ListenerHelper {
         if (authnResponse instanceof AuthenticationSuccessResponse) {
             AuthenticationSuccessResponse authnSuccessResponse = (AuthenticationSuccessResponse) authnResponse;
             if (authnSuccessResponse.getIDToken() != null) {
-                ClientIDToken clientIdToken = ClientIDToken.build(authnSuccessResponse.getIDToken(), publicKey, clientId, clockToleranceSeconds);
-                OIDCTokens tokens = new OIDCTokens(clientIdToken, authnSuccessResponse.getAccessToken(), (RefreshToken) null);
+                IDToken idToken = IDToken.build(authnSuccessResponse.getIDToken(), publicKey, issuer, clientId, clockToleranceSeconds);
+                AccessToken accessToken = authnSuccessResponse.getAccessToken() == null ? null : new AccessToken(authnSuccessResponse.getAccessToken().serialize());
+                OIDCTokens tokens = new OIDCTokens(idToken, accessToken, (RefreshToken) null);
                 return new AuthenticationTokensResponse(authnSuccessResponse.getState(), tokens);
             } else {
                 throw new OIDCClientException("response is missing id_token");
@@ -141,7 +170,7 @@ public class ListenerHelper {
     public static SessionID parseSLORequest(
             HttpServletRequest request) throws OIDCClientException {
         Validate.notNull(request, "request");
-        return parseSLORequest(parameterMap(request));
+        return parseSLORequest(HttpRequest.from(request).getParameters());
     }
 
     /**
@@ -165,7 +194,7 @@ public class ListenerHelper {
     public static State parseLogoutResponse(
             HttpServletRequest request) throws OIDCClientException, OIDCServerException {
         Validate.notNull(request, "request");
-        return parseLogoutResponse(parameterMap(request), URIUtils.from(request));
+        return parseLogoutResponse(HttpRequest.from(request));
     }
 
     /**
@@ -177,14 +206,16 @@ public class ListenerHelper {
      * @throws OIDCServerException
      */
     public static State parseLogoutResponse(
-            Map<String, String> parameterMap,
-            URI requestURI) throws OIDCClientException, OIDCServerException {
+            Map<String, String> parameterMap) throws OIDCClientException, OIDCServerException {
         Validate.notNull(parameterMap, "parameterMap");
-        Validate.notNull(requestURI, "requestURI");
+        return parseLogoutResponse(httpRequestFromMap(parameterMap));
+    }
 
+    private static State parseLogoutResponse(
+            HttpRequest httpRequest) throws OIDCClientException, OIDCServerException {
         LogoutResponse logoutResponse;
         try {
-            logoutResponse = LogoutResponse.parse(HttpRequest.createGetRequest(requestURI, parameterMap));
+            logoutResponse = LogoutResponse.parse(httpRequest);
         } catch (ParseException e) {
             throw new OIDCClientException("failed to parse logout response", e);
         }
@@ -196,20 +227,5 @@ public class ListenerHelper {
             LogoutErrorResponse logoutErrorResponse = (LogoutErrorResponse) logoutResponse;
             throw new OIDCServerException(logoutErrorResponse.getErrorObject(), logoutErrorResponse.getState());
         }
-    }
-
-    private static Map<String, String> parameterMap(HttpServletRequest request) throws OIDCClientException {
-        Map<String, String> result = new HashMap<String, String>();
-
-        for (Map.Entry<String, String[]> entry : request.getParameterMap().entrySet()) {
-            String key = entry.getKey();
-            String[] values = entry.getValue();
-            if (values.length != 1) {
-                throw new OIDCClientException("HttpServletRequest parameter map must contain one value per key. " + entry);
-            }
-            result.put(key, values[0]);
-        }
-
-        return result;
     }
 }

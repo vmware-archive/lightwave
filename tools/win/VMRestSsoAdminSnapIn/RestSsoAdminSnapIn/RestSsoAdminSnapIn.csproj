@@ -642,6 +642,10 @@
     <EmbeddedResource Include="Images\User.ico" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
+      <Project>{cd959e2e-5b9c-4329-b085-352844cfdcdd}</Project>
+      <Name>VMIdentity.CommonUtils</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\common\VMRestSso.Common\RestSsoAdminSnapIn.Core\RestSsoAdminSnapIn.Core.csproj">
       <Project>{b64d4a16-c162-4fcd-943a-aeb556769d3c}</Project>
       <Name>RestSsoAdminSnapIn.Core</Name>

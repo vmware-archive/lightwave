@@ -22,8 +22,13 @@ VmDirLdapAtParseLDAPEntry(
     )
 {
     DWORD   dwError = 0;
+    DWORD   i = 0;
+    DWORD   dwVmwAttrUsage = 0;
+    DWORD   dwSearchFlags = 0;
+    PSTR*   ppszUniqueScopes = NULL;
     BerValue**  ppBerVals = NULL;
     LDAPAttributeType*  pSource = NULL;
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pAt = NULL;
 
     if (!pEntry || !ppAt)
     {
@@ -49,7 +54,7 @@ VmDirLdapAtParseLDAPEntry(
     ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_VMW_ATTRIBUTE_USAGE);
     if (ppBerVals && ppBerVals[0])
     {
-        DWORD dwVmwAttrUsage = VmDirStringToIA(ppBerVals[0]->bv_val);
+        dwVmwAttrUsage = VmDirStringToIA(ppBerVals[0]->bv_val);
 
         pSource->at_no_user_mod = dwVmwAttrUsage & 0x8 ? 1 : 0;
 
@@ -113,8 +118,45 @@ VmDirLdapAtParseLDAPEntry(
         ppBerVals = NULL;
     }
 
-    dwError = VmDirLdapAtCreate(pSource, ppAt);
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_SEARCH_FLAGS);
+    if (ppBerVals && ppBerVals[0])
+    {
+        dwSearchFlags = VmDirStringToIA(ppBerVals[0]->bv_val);
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_UNIQUENESS_SCOPE);
+    if (ppBerVals)
+    {
+        DWORD dwNumVals = ldap_count_values_len(ppBerVals);
+        if (dwNumVals > 0)
+        {
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*) * (dwNumVals + 1),
+                    (PVOID*)&ppszUniqueScopes);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            for (i = 0; i < dwNumVals; i++)
+            {
+                dwError = VmDirAllocateStringA(
+                        ppBerVals[i]->bv_val, &ppszUniqueScopes[i]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+        }
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    dwError = VmDirLdapAtCreate(pSource, &pAt);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    pAt->dwSearchFlags = dwSearchFlags;
+    pAt->ppszUniqueScopes = ppszUniqueScopes;
+
+    *ppAt = pAt;
 
 cleanup:
     return dwError;
@@ -128,6 +170,7 @@ error:
     {
         ldap_value_free_len(ppBerVals);
     }
+    VmDirFreeLdapAt(pAt);
     goto cleanup;
 }
 

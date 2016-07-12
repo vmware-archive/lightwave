@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include Definitions.wxi ?>
+	<Fragment>
+		<!-- TODO: Put your code here. -->
+    <ComponentGroup Id="VMDir_comp_group" Directory="APPLICATIONFOLDER">
+      <Component Id="vmdir_msc_comp" Guid="{B01A87CD-66B4-4788-A005-D984A8676411}" Win64="yes">
+        <File Id="vmdir_msc_file"
+              Name="Lightwave Directory.msc"
+              KeyPath="yes"
+              DiskId="1"
+              Source="$(var.Resources)/Lightwave Directory.msc" />
+      </Component>
+      <Component Id="VMDirSnapIn_Dll_Comp" Guid="{69B1A77C-D97C-441A-A51E-6CA0B3CCC638}" Win64="yes">
+        <File Id="VMDirSnapIn_Dll_File"
+              Name="VMDirSnapIn.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMDirSnapIn_Dll_File"
+              AssemblyApplication="VMDirSnapIn_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\VMDirSnapIn.dll" />
+      </Component>
+    </ComponentGroup>
+
+
+    <ComponentGroup Id="VMDir_reg_comp_group" Directory="TARGETDIR">
+      <Component Id="Reg_VMDir_Comp" Guid="{6323AA79-AA14-4FC7-8055-D251E565EFD3}" Win64="yes">
+        <RegistryKey Id="Reg_VMDir_Key"
+                     Action="createAndRemoveOnUninstall"
+                     Key="Software\Microsoft\MMC\SnapIns\FX:{4262730D-8B69-4581-8E39-264225BA302B}"
+                     Root="HKLM">
+          <RegistryKey Key="Standalone"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryKey Key="NodeTypes"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryValue Name="RuntimeVersion"
+                         Value="v2.0.50727"
+                         Type="string" />
+          <RegistryValue Name="UseCustomHelp"
+                         Value="0"
+                         Type="integer" />
+          <RegistryValue Name="ModuleName"
+                         Value="VMDirSnapIn.dll"
+                         Type="string"
+                         KeyPath="yes"/>
+          <RegistryValue Name="NameString"
+                         Value="VMDirectory Browser"
+                         Type="string" />
+          <RegistryValue Name="ApplicationBase"
+                         Value="[APPLICATIONFOLDER]"
+                         Type="expandable" />
+          <RegistryValue Name="About"
+                         Value="{00000000-0000-0000-0000-000000000000}"
+                         Type="string" />
+          <RegistryValue Name="Description"
+                         Value="$(var.Dir_desc)"
+                         Type="string"  />
+          <RegistryValue Name="FxVersion"
+                         Value="3.0.0.0"
+                         Type="string" />
+          <RegistryValue Name="Type"
+                         Value="VMDirSnapIn.VMDirSnapIn, VMDirSnapIn, Version=$(var.VersionNumber), Culture=neutral, PublicKeyToken=null"
+                         Type="string" />
+          <RegistryValue Name="AssemblyName"
+                         Value="VMDirSnapIn"
+                         Type="string" />
+          <RegistryValue Name="Version"
+                         Value="$(var.VersionNumber)"
+                         Type="string" />
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+
+	</Fragment>
+</Wix>

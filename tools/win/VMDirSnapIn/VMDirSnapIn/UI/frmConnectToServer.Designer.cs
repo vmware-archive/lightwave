@@ -169,12 +169,12 @@
             this.Controls.Add(this.label1);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOK);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmConnectToServer";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Connect to:";
+            this.Icon = VMDirEnvironment.Instance.GetIconResource(VMDirIconIndex.Login);
             this.Load += new System.EventHandler(this.frmConnectToServer_Load);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();

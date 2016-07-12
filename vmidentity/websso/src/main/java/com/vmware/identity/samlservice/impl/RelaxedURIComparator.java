@@ -16,6 +16,8 @@ package com.vmware.identity.samlservice.impl;
 import org.opensaml.common.binding.decoding.BasicURLComparator;
 import org.opensaml.common.binding.decoding.URIComparator;
 
+import com.vmware.identity.samlservice.Shared;
+
 /**
  * This replaces default URIComparator from OpenSAML and allows us to accept
  *  requests sent through HTTP protocol to HTTPS endpoint and vice versa.
@@ -29,8 +31,6 @@ public final class RelaxedURIComparator implements URIComparator {
 
     private final static String HTTPS = "https";
     private final static String HTTP = "http";
-    private final static String ssoCACEndpoint = "/websso/SAML2/SSOCAC";
-    private final static String ssoEndpoint = "/websso/SAML2/SSO";
 
     /**
      * Create instance
@@ -49,8 +49,10 @@ public final class RelaxedURIComparator implements URIComparator {
         arg0 = fixProtocol(arg0);
         arg1 = fixProtocol(arg1);
 
-        arg0 = arg0.replace(ssoCACEndpoint, ssoEndpoint);
-        arg1 = arg1.replace(ssoCACEndpoint, ssoEndpoint);
+        arg0 = arg0.replace(Shared.ssoCACEndpoint, Shared.ssoEndpoint);
+        arg1 = arg1.replace(Shared.ssoCACEndpoint, Shared.ssoEndpoint);
+        arg0 = arg0.replace(Shared.ssoSmartcardRealmEndpoint, Shared.ssoEndpoint);
+        arg1 = arg1.replace(Shared.ssoSmartcardRealmEndpoint, Shared.ssoEndpoint);
         return this.comparator.compare(arg0, arg1);
     }
 

@@ -23,7 +23,7 @@ import com.vmware.identity.openidconnect.common.ClientID;
  *
  * @author Jun Sun
  */
-public class ClientConfig {
+public final class ClientConfig {
     private final ConnectionConfig connectionConfig;
     private final ClientID clientId;
     private final HolderOfKeyConfig holderOfKeyConfig;

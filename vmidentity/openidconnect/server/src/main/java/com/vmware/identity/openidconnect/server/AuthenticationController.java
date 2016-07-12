@@ -35,10 +35,9 @@ import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsContextScope;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.client.CasIdmClient;
-import com.vmware.identity.openidconnect.common.CorrelationID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.HttpRequest;
-import com.vmware.identity.openidconnect.common.HttpResponse;
+import com.vmware.identity.openidconnect.protocol.HttpRequest;
+import com.vmware.identity.openidconnect.protocol.HttpResponse;
 
 /**
  * @author Yehia Zayour
@@ -76,7 +75,7 @@ public class AuthenticationController {
 
     // login using TLS client cert (smart card/CAC) requires a different endpoint so we can tell rhttp-proxy/tomcat to require TLS client cert
     @RequestMapping(value = "/oidc/cac", method = { RequestMethod.GET, RequestMethod.POST })
-    public ModelAndView authenticateByClientCertificate(
+    public ModelAndView authenticateByPersonUserCertificate(
             Model model,
             Locale locale,
             HttpServletRequest request,
@@ -85,7 +84,7 @@ public class AuthenticationController {
     }
 
     @RequestMapping(value = "/oidc/cac/{tenant:.*}", method = { RequestMethod.GET, RequestMethod.POST })
-    public ModelAndView authenticateByClientCertificate(
+    public ModelAndView authenticateByPersonUserCertificate(
             Model model,
             Locale locale,
             HttpServletRequest request,
@@ -116,7 +115,7 @@ public class AuthenticationController {
 
         try {
             HttpRequest httpRequest = HttpRequest.from(request);
-            context = DiagnosticsContextFactory.createContext(CorrelationID.get(httpRequest).getValue(), tenant);
+            context = DiagnosticsContextFactory.createContext(LoggerUtils.getCorrelationID(httpRequest).getValue(), tenant);
 
             AuthenticationRequestProcessor p = new AuthenticationRequestProcessor(
                     this.idmClient,

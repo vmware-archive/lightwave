@@ -22,6 +22,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using VMwareMMCIDP.UI.Common.Utilities;
 using System.Net;
+using VMIdentity.CommonUtils;
 
 namespace VMwareMMCIDP.UI.Common
 {
@@ -35,12 +36,14 @@ namespace VMwareMMCIDP.UI.Common
         {
             InitializeComponent();
         }
-        public LoginForm(string server, string user, string password,string domain):this()
+        public LoginForm(string server, string user,string domain):this()
         {
             this.Server = server;
             this.UserName = user;
-            this.Password = password;
-            this.DomainName = domain;
+            if (!string.IsNullOrWhiteSpace(domain))
+                this.DomainName = domain;
+            else
+                this.DomainName = MMCMiscUtil.GetBrandConfig(CommonConstants.TENANT);
         }
         public bool ValidateForm()
         {

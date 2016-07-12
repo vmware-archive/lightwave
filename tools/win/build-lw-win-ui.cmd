@@ -7,6 +7,8 @@ set INTEROPDIR=..\interop\lib64
 
 set MS_BUILD4="%windir%\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe"
 (echo MS_BUILD4=%MS_BUILD4%)>>%LOG%
+echo replace VMIdentity.CommonUtils.dll.config content with Brand_lw.config
+copy /Y ..\common\VMIdentity.CommonUtils\Brand_lw.config ..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.dll.config
 
 
 if NOT EXIST %LOGDIR% (
@@ -25,22 +27,25 @@ CALL :copyinterops ALL Release
 (echo starting windows build ...)>>%LOG%
 CALL :buildWithMSBUILD4 VMCertStoreSnapIn\VMCertStoreSnapIn.sln Debug
 CALL :buildWithMSBUILD4 VMDirSnapIn\VMDirSnapIn.sln Debug
-CALL :buildWithMSBUILD4 VMCertStoreSnapIn\VMCertStoreSnapIn.sln Debug
+CALL :buildWithMSBUILD4 VMDirSchemaSnapIn\VMDirSchemaSnapIn.sln Debug
 CALL :buildWithMSBUILD4 VMCASnapIn\VMCASnapIn.sln Debug
 CALL :buildWithMSBUILD4 VMRestSsoAdminSnapIn\RestSsoAdminSnapIn.sln Debug
 CALL :buildWithMSBUILD4 VMPscHighAvailabilitySnapIn\VMPscHighAvailabilitySnapIn.sln Debug
-CALL :buildWithMSBUILD4 VMIdentityToolsInstaller\VMIdentityToolsInstaller.sln Debug
+CALL :buildWithMSBUILD4 VMDNSSnapIn\VMDNSSnapIn.sln Debug
+CALL :buildWithMSBUILD4 wininstaller\wininstaller.sln Debug
 
 echo ------------ Release ---------------
 echo Build Release x64
 
+
 CALL :buildWithMSBUILD4 VMCertStoreSnapIn\VMCertStoreSnapIn.sln Release
 CALL :buildWithMSBUILD4 VMDirSnapIn\VMDirSnapIn.sln Release
-CALL :buildWithMSBUILD4 VMCertStoreSnapIn\VMCertStoreSnapIn.sln Release
+CALL :buildWithMSBUILD4 VMDirSchemaSnapIn\VMDirSchemaSnapIn.sln Release
 CALL :buildWithMSBUILD4 VMCASnapIn\VMCASnapIn.sln Release
 CALL :buildWithMSBUILD4 VMRestSsoAdminSnapIn\RestSsoAdminSnapIn.sln Release
 CALL :buildWithMSBUILD4 VMPscHighAvailabilitySnapIn\VMPscHighAvailabilitySnapIn.sln Release
-CALL :buildWithMSBUILD4 VMIdentityToolsInstaller\VMIdentityToolsInstaller.sln Release
+CALL :buildWithMSBUILD4 VMDNSSnapIn\VMDNSSnapIn.sln Release
+CALL :buildWithMSBUILD4 wininstaller\wininstaller.sln Release
 
 goto end
 
@@ -65,6 +70,15 @@ REM build all interop solutions in a particular config
     if %result% == true (
         REM build - vmdir
         CALL :buildWithMSBUILD4 ..\..\vmdir\interop\csharp\VmDirInterop\VmDirInterop.sln %2
+    )
+
+    set result = false
+    if %1% == ALL set result=true
+    if %1% == VMDNSSnapIn set result=true
+
+    if %result% == true (
+        REM build - vmdir
+        CALL :buildWithMSBUILD4 ..\..\vmdns\dotnet\VMDNS.Client\VMDNS.Client.sln %2
     )
     exit /b
 
@@ -96,6 +110,17 @@ REM copy interops to the lib folder
         copy /Y ..\..\vmdir\interop\csharp\VmDirInterop\VmDirInterop\bin\%2\* %INTEROPDIR%\
     
     )
+
+    set result=false
+    if %1% == ALL set result=true
+    if %1% == VMDNSSnapIn set result=true
+
+    if %result% == true (
+        echo 'move vmdir'
+        copy /Y ..\..\vmdns\dotnet\VMDNS.Client\bin\%2\* %INTEROPDIR%\
+    
+    )
+
     echo 'interops moved successfully to lib64 folder'
     
     exit /b

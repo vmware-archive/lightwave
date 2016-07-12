@@ -155,6 +155,7 @@ EXPORTS
     ldap_derefresponse_free
     ldap_parse_derefresponse_control
     ldap_parse_deref_control
+    ldap_pvt_put_filter
     ldap_pvt_sasl_install
     ldap_pvt_sasl_remove
     ldap_pvt_thread_mutex_init

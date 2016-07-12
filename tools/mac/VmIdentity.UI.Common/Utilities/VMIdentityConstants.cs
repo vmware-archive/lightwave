@@ -28,6 +28,9 @@ namespace VmIdentity.UI.Common
         public const string DISCONNECT = "Disconnect";
         public const string NAME_FIELD = "Name";
         public const string LOGGED_IN = "Logged in : ";
+        public const string EDIT = "Edit";
+        public const string UPDATE = "Update";
+        public const string BINDUPN_VSPHERE = "Administrator@vsphere.local";
 
         /* Certificate Constants */
         public const string CERT_ISSUED_BY = "IssuedBy";
@@ -40,20 +43,30 @@ namespace VmIdentity.UI.Common
         /* UI Error Messages */
         /* Error Messages */
         public const string SERVER_CONNECT_ERROR = "Unable to connect to the Server. Please check the login details.";
+        public const string CONNECTION_NOT_SUCCESSFUL = "Connection is not successful.";
         public const string SERVER_TIMED_OUT = "Server timed out";
         public const string SERVER_CONNECT = "Connect to Server";
         public const string EMPTY_FIELD = "One or more fields are empty. Please make sure to provide values.";
+        public const string SUCCESS = "Success";
 
         public const string HOST_NOT_REACHABLE = "Host not reachable";
         public const string HOST_OR_IP_ADDRESS_NOT_REACHABLE = "Host or IP address is not reachable. Please enter a valid server name of ip address and try again.";
-        public const string CONFIRM_DELETE = "Are you Sure?";
+        public const string CONFIRM_DELETE = "Are you sure to Delete?";
+        public const string CONFIRM_MSG = "Are you sure?";
 
         /* File Path/Names */
         public const string APPLICATION_DATA_FOLDER_NAME = "LightwaveTools";
 
-		/* General constants */
-		public const int DefaultColumnWidth = 200;
-		public const int ServerTimeoutInSeconds = 30;
+        /* General constants */
+        public const int DefaultColumnWidth = 200;
+        public const int ServerTimeoutInSeconds = 30;
+        public const int LOGIN_TIMEOUT_IN_MILLI = 20000;
+
+        /* UI Event Constants */
+        public const string CLOSE_MAIN_WINDOW = "CloseMainWindow";
+        public const string RELOAD_OUTLINEVIEW = "ReloadOutlineView";
+        public const string RELOAD_TABLEVIEW = "ReloadTableView";
+        public const string REFRESH_UI = "RefreshUI";
     }
 }
 

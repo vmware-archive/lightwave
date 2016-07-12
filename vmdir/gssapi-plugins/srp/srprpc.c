@@ -94,22 +94,37 @@ long cli_rpc_srp_verifier_new(
     int ret_len_B = 0;
     int ret_len_s = 0;
     int ret_MDA_value_len = 0;
+    int rpc_retry = 0;
 
     bytes_cont_A.len_B = len_A;
     bytes_cont_A.bytes_B = (unsigned char *) bytes_A;
 
-    DO_RPC(rpc_srp_verifier_new(
-              hServer,
-              alg,
-              ng_type,
-              username,
-              &bytes_cont_A, /* in */
-              &bytes_cont_B, /* out */
-              &bytes_cont_s, /* out */
-              &MDA_cont,
-              n_hex,
-              g_hex,
-              &hRetSrp), sts);
+    /*
+     * Reference: BUG 1315106
+     * Work-around for failure seen in some W2k12 systems. The failure mode is
+     * vmdir Srv_rpc_srp_verifier_new() RPC is called, succeeds, but
+     * the returned RPC fails with an error status rpc_s_connection_closed.
+     * This happens only once, and only in some W2K12 deployed environments.
+     */
+    do {
+        DO_RPC(rpc_srp_verifier_new(
+                  hServer,
+                  alg,
+                  ng_type,
+                  username,
+                  &bytes_cont_A, /* in */
+                  &bytes_cont_B, /* out */
+                  &bytes_cont_s, /* out */
+                  &MDA_cont,
+                  n_hex,
+                  g_hex,
+                  &hRetSrp), sts);
+        if (sts == rpc_s_connection_closed)
+        {
+            sleep(1);
+            rpc_retry++;
+        }
+    } while (sts == rpc_s_connection_closed && rpc_retry < 5);
     if (sts)
     {
         goto error;

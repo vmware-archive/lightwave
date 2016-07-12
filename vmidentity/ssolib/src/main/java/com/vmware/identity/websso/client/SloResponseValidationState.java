@@ -1,5 +1,5 @@
 /* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved. 
+ * Copyright 2012 VMware, Inc. All rights reserved.
  **********************************************************************************/
 package com.vmware.identity.websso.client;
 
@@ -22,7 +22,7 @@ import com.vmware.identity.websso.client.endpoint.SloListener;
 
 /**
  * ValidationState for slo response received by slo controller.
- * 
+ *
  */
 public class SloResponseValidationState extends ValidationState {
 
@@ -42,7 +42,7 @@ public class SloResponseValidationState extends ValidationState {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.vmware.identity.websso.client.ValidationState#validate()
      */
     @Override
@@ -119,6 +119,7 @@ public class SloResponseValidationState extends ValidationState {
         // this is login request ID
         String responseTo = opensamlResponse.getInResponseTo();
         if (responseTo == null) {
+            this.isIdpInitiated = true;
             return null;
         }
         // else the value must match to a request message.
@@ -142,7 +143,6 @@ public class SloResponseValidationState extends ValidationState {
         // 1. extract and decode saml response.
 
         String samlResponseStr = getRequest().getParameter(SamlUtils.SAML_RESPONSE_PARAMETER);
-        logger.trace("Coded SAML Response is " + samlResponseStr);
 
         // decompress and base64 decoding the response str.
         String decodedResponseStr = SamlUtils.extractResponse(samlResponseStr);
@@ -150,13 +150,13 @@ public class SloResponseValidationState extends ValidationState {
         setSamlDom(SharedUtils.createDOM(decodedResponseStr));
 
         // 2. format and print out xml
-        if (logger.isDebugEnabled()) {
+        if (logger.isTraceEnabled()) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             Element rootE = getSamlDom().getDocumentElement();
             rootE.normalize();
             SharedUtils.formattedPrint(rootE, baos);
             decodedResponseStr = baos.toString("UTF-8");
-            logger.debug("Decoded SAML Response is " + decodedResponseStr);
+            logger.trace("Decoded SAML Response is " + decodedResponseStr);
         }
 
         // 3. relayState

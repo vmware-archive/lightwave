@@ -19,6 +19,14 @@
 
 // add.c
 int
+VmDirParseBerToEntry(
+    BerElement *ber,
+    PVDIR_ENTRY e,
+    ber_int_t *pErrCode,
+    PSTR *ppszErrMsg
+    );
+
+int
 VmDirParseEntry(
     VDIR_OPERATION * op
     );
@@ -152,6 +160,12 @@ FilterToStrFilter(
    PVDIR_BERVALUE strFilter
    );
 
+DWORD
+StrFilterToFilter(
+    PCSTR pszString,
+    PVDIR_FILTER *ppFilter
+    );
+
 int
 ParseFilter(
    VDIR_OPERATION *   op,
@@ -205,6 +219,12 @@ void
 VmDirFreeModifyRequest(
    ModifyReq * mr,
    BOOLEAN     freeSelf
+   );
+
+// rename.c
+int
+VmDirPerformRename(
+   PVDIR_OPERATION pOperation
    );
 
 // search.c

@@ -26,9 +26,9 @@ import com.vmware.identity.openidconnect.common.ParseException;
  */
 public enum LoginMethod {
     PASSWORD("Basic"),
-    CLIENT_CERTIFICATE("TLSClient"),
+    PERSON_USER_CERTIFICATE("TLSClient"),
     GSS_TICKET("Negotiate"),
-    SECUREID("RSAAM");
+    SECURID("RSAAM");
 
     private static final Map<String, LoginMethod> stringToEnumMap = new HashMap<String, LoginMethod>();
     static {

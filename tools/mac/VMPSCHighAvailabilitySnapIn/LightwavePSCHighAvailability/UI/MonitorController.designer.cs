@@ -1,6 +1,6 @@
 // WARNING
 //
-// This file has been generated automatically by Xamarin Studio to store outlets and
+// This file has been generated automatically by Xamarin Studio Business to store outlets and
 // actions made in the UI designer. If it is removed, they will be lost.
 // Manual changes to this file may not be handled correctly.
 //
@@ -37,6 +37,9 @@ namespace VMPSCHighAvailability.UI
 		AppKit.NSComboBox IntervalComboBox { get; set; }
 
 		[Outlet]
+		AppKit.NSTextField IpAddressTextField { get; set; }
+
+		[Outlet]
 		AppKit.NSTextField LastRefreshTextField { get; set; }
 
 		[Outlet]
@@ -65,11 +68,6 @@ namespace VMPSCHighAvailability.UI
 		
 		void ReleaseDesignerOutlets ()
 		{
-			if (LegacyModeWarning != null) {
-				LegacyModeWarning.Dispose ();
-				LegacyModeWarning = null;
-			}
-
 			if (AutoRefreshButton != null) {
 				AutoRefreshButton.Dispose ();
 				AutoRefreshButton = null;
@@ -110,9 +108,19 @@ namespace VMPSCHighAvailability.UI
 				IntervalComboBox = null;
 			}
 
+			if (IpAddressTextField != null) {
+				IpAddressTextField.Dispose ();
+				IpAddressTextField = null;
+			}
+
 			if (LastRefreshTextField != null) {
 				LastRefreshTextField.Dispose ();
 				LastRefreshTextField = null;
+			}
+
+			if (LegacyModeWarning != null) {
+				LegacyModeWarning.Dispose ();
+				LegacyModeWarning = null;
 			}
 
 			if (PscTableView != null) {

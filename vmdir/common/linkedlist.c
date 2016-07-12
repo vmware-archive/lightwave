@@ -123,6 +123,8 @@ VmDirLinkedListInsertHead(
         *ppHead = pHead;
     }
 
+    pLinkedList->iSize++;
+
 cleanup:
     return dwError;
 
@@ -171,6 +173,8 @@ VmDirLinkedListInsertTail(
         *ppTail = pTail;
     }
 
+    pLinkedList->iSize++;
+
 cleanup:
     return dwError;
 
@@ -211,8 +215,24 @@ VmDirLinkedListRemove(
     }
     VMDIR_SAFE_FREE_MEMORY(pNode);
 
+    pLinkedList->iSize--;
+
 error:
     return dwError;
+}
+
+size_t
+VmDirLinkedListGetSize(
+    PVDIR_LINKED_LIST   pLinkedList
+    )
+{
+    size_t  iRtn = 0;
+
+    if (pLinkedList)
+    {
+        iRtn = pLinkedList->iSize;
+    }
+    return iRtn;
 }
 
 BOOLEAN

@@ -2,11 +2,14 @@
 noinst_LTLIBRARIES = libindexcfg.la
 
 libindexcfg_la_SOURCES = \
-    api.c           \
-    globals.c       \
-    init.c          \
-    indexingthr.c   \
-    libmain.c
+    api.c \
+    globals.c \
+    indexcfg.c \
+    indexingtask.c \
+    indexingthr.c \
+    libmain.c \
+    progress.c \
+    vmit.c
 
 libindexcfg_la_CPPFLAGS = \
     -I$(top_srcdir)/include \

@@ -40,43 +40,10 @@ MDBOpenGeneric(
     VOID
     );
 
-#ifdef _WIN32
-typedef UINT32 u_int32_t;
-#endif
-
-static
-DWORD
-MDBOpenDB(
-    PVDIR_DB            pmdbDBi,
-    const char *        dbName,
-    const char *        fileName,
-    PFN_BT_KEY_CMP      btKeyCmpFcn,
-    u_int32_t           extraFlags
-    );
-
 static
 void
 MDBCloseDBs(
     VOID
-    );
-
-static
-DWORD
-MDBGlobalIndexStructCreate(
-    VOID
-    );
-
-static
-int
-MDBIntegerCompareFunction(
-    const VDIR_DB_DBT * pDbt1,
-    const VDIR_DB_DBT * pDbt2
-    );
-
-static
-VOID
-MDbFreeIndexDBs(
-    PVDIR_MDB_INDEX_DB_COLLECTION pBdnIndexCollection
     );
 
 static
@@ -85,14 +52,6 @@ MDBFreeMdbGlobals(
     VOID
     );
 
-DWORD
-VmDirMDBBEInit ( // beInit
-    VOID)
-{
-    // make sure ENTRYID and VDIR_DB_SEQ_T have same size
-    return (sizeof(ENTRYID) == sizeof(VDIR_DB_SEQ_T)) ? 0 : ERROR_BACKEND_ERROR;
-}
-
 PVDIR_BACKEND_INTERFACE
 VmDirMDBBEInterface (
     VOID)
@@ -100,11 +59,15 @@ VmDirMDBBEInterface (
     static VDIR_BACKEND_INTERFACE mdbBEInterface =
     {
         // NOTE: order of fields MUST stay in sync with struct definition...
-        VMDIR_SF_INIT(.pfnBEInit, VmDirMDBBEInit),
-        VMDIR_SF_INIT(.pfnBEDBOpen, VmDirMDBInitializeDB),
-        VMDIR_SF_INIT(.pfnBEIndexOpen, VmDirMDBInitializeIndexDB),
-        VMDIR_SF_INIT(.pfnBEIndexAdd, NULL),
+        VMDIR_SF_INIT(.pfnBEInit, VmDirMDBInitializeDB),
         VMDIR_SF_INIT(.pfnBEShutdown, VmDirMDBShutdownDB),
+        VMDIR_SF_INIT(.pfnBEIndexOpen, VmDirMDBIndexOpen),
+        VMDIR_SF_INIT(.pfnBEIndexExist, VmDirMDBIndexExist),
+        VMDIR_SF_INIT(.pfnBEIndexDelete, VmDirMDBIndexDelete),
+        VMDIR_SF_INIT(.pfnBEIndexPopulate, VmDirMDBIndicesPopulate),
+        VMDIR_SF_INIT(.pfnBEIndexIteratorInit, VmDirMDBIndexIteratorInit),
+        VMDIR_SF_INIT(.pfnBEIndexIterate, VmDirMDBIndexIterate),
+        VMDIR_SF_INIT(.pfnBEIndexIteratorFree, VmDirMDBIndexIteratorFree),
         VMDIR_SF_INIT(.pfnBETxnBegin, VmDirMDBTxnBegin),
         VMDIR_SF_INIT(.pfnBETxnAbort, VmDirMDBTxnAbort),
         VMDIR_SF_INIT(.pfnBETxnCommit, VmDirMDBTxnCommit),
@@ -113,19 +76,21 @@ VmDirMDBBEInterface (
         VMDIR_SF_INIT(.pfnBEIdToEntry, VmDirMDBEIdToEntry),
         VMDIR_SF_INIT(.pfnBEDNToEntry, VmDirMDBDNToEntry),
         VMDIR_SF_INIT(.pfnBEDNToEntryId, VmDirMDBDNToEntryId),
+        VMDIR_SF_INIT(.pfnBEObjectGUIDToEntryId, VmDirMDBObjectGUIDToEntryId),
         VMDIR_SF_INIT(.pfnBEChkDNReference, VmDirMDBCheckRefIntegrity),
         VMDIR_SF_INIT(.pfnBEChkIsLeafEntry, VmDirMDBCheckIfALeafNode),
         VMDIR_SF_INIT(.pfnBEGetCandidates, VmDirMDBGetCandidates),
         VMDIR_SF_INIT(.pfnBEEntryAdd, VmDirMDBAddEntry),
         VMDIR_SF_INIT(.pfnBEEntryDelete, VmDirMDBDeleteEntry),
         VMDIR_SF_INIT(.pfnBEEntryModify, VmDirMDBModifyEntry),
-        VMDIR_SF_INIT(.pfnBEEntryAddIndices, VmDirMDBIndicesCreate),
         VMDIR_SF_INIT(.pfnBEMaxEntryId, VmDirMDBMaxEntryId),
         VMDIR_SF_INIT(.pfnBEGetAttrMetaData, VmDirMDBGetAttrMetaData),
         VMDIR_SF_INIT(.pfnBEGetAllAttrsMetaData, VmDirMDBGetAllAttrsMetaData),
         VMDIR_SF_INIT(.pfnBEGetNextUSN, VmDirMDBGetNextUSN),
-        VMDIR_SF_INIT(.pfnBEStrkeyGetValues, VmDirMDBStrkeyGetValues),
-        VMDIR_SF_INIT(.pfnBEStrKeySetValues, VmDirMDBStrkeySetValues),
+        VMDIR_SF_INIT(.pfnBEDupKeyGetValues, VmDirMDBDupKeyGetValues),
+        VMDIR_SF_INIT(.pfnBEDupKeySetValues, VmDirMDBDupKeySetValues),
+        VMDIR_SF_INIT(.pfnBEUniqKeyGetValue, VmDirMDBUniqKeyGetValue),
+        VMDIR_SF_INIT(.pfnBEUniqKeySetValue, VmDirMDBUniqKeySetValue),
         VMDIR_SF_INIT(.pfnBEConfigureFsync, VmDirMDBConfigureFsync),
     };
 
@@ -174,9 +139,9 @@ VmDirMDBInitializeDB(
 {
     DWORD           dwError = 0;
     unsigned int    envFlags = 0;
-    mdb_mode_t          oflags;
-    uint64_t       db_max_mapsize = BE_MDB_ENV_MAX_MEM_MAPSIZE;
-    DWORD          db_max_size_mb = 0;
+    mdb_mode_t      oflags;
+    uint64_t        db_max_mapsize = BE_MDB_ENV_MAX_MEM_MAPSIZE;
+    DWORD           db_max_size_mb = 0;
 
     // TODO: fix the hard coded Database dir path
 #ifndef _WIN32
@@ -189,24 +154,27 @@ VmDirMDBInitializeDB(
 
     VmDirLog( LDAP_DEBUG_TRACE, "MDBInitializeDB: Begin, DB Home Dir = %s", dbHomeDir );
 
+    dwError = (sizeof(ENTRYID) == sizeof(VDIR_DB_SEQ_T)) ? 0 : ERROR_BACKEND_ERROR;
+    BAIL_ON_VMDIR_ERROR( dwError );
+
     dwError = MDBInitConfig();
     BAIL_ON_VMDIR_ERROR( dwError );
 
-     /* Create the environment */
-     dwError = mdb_env_create ( &gVdirMdbGlobals.mdbEnv );
-     BAIL_ON_VMDIR_ERROR( dwError );
+    /* Create the environment */
+    dwError = mdb_env_create ( &gVdirMdbGlobals.mdbEnv );
+    BAIL_ON_VMDIR_ERROR( dwError );
 
-     dwError = mdb_env_set_maxreaders( gVdirMdbGlobals.mdbEnv, BE_MDB_ENV_MAX_READERS );
-     BAIL_ON_VMDIR_ERROR( dwError );
+    dwError = mdb_env_set_maxreaders( gVdirMdbGlobals.mdbEnv, BE_MDB_ENV_MAX_READERS );
+    BAIL_ON_VMDIR_ERROR( dwError );
 
-     /* FROM mdb.h
-      * The size should be a multiple of the OS page size. The default is
-      * 10485760 bytes. The size of the memory map is also the maximum size
-      * of the database. The value should be chosen as large as possible,
-      * to accommodate future growth of the database.
-      *
-      * // TODO, this is also the max size of database (per logical mdb db or the total dbs)
-      */
+    /* FROM mdb.h
+     * The size should be a multiple of the OS page size. The default is
+     * 10485760 bytes. The size of the memory map is also the maximum size
+     * of the database. The value should be chosen as large as possible,
+     * to accommodate future growth of the database.
+     *
+     * // TODO, this is also the max size of database (per logical mdb db or the total dbs)
+     */
 
      dwError = VmDirGetMaxDbSizeMb(&db_max_size_mb);
      if (dwError != 0)
@@ -262,8 +230,12 @@ VmDirMDBInitializeDB(
     dwError = MDBOpenSequence();
     BAIL_ON_VMDIR_ERROR( dwError );
 
-    /* Open Generic */
+    /* Open generic */
     dwError = MDBOpenGeneric();
+    BAIL_ON_VMDIR_ERROR( dwError );
+
+    /* Initialize indices */
+    dwError = VmDirMDBInitializeIndexDB();
     BAIL_ON_VMDIR_ERROR( dwError );
 
     VmDirLogDBStats();
@@ -284,44 +256,6 @@ error:
 }
 
 /*
- * Initialize Index DBs based on the content of cn=indices entry
- */
-DWORD
-VmDirMDBInitializeIndexDB(
-    VOID)
-{
-    DWORD   dwError = 0;
-    int     iCnt = 0;
-
-    // Fill gVdirMdbGlobals.mdbIndexDBs contents...
-    dwError = MDBGlobalIndexStructCreate();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (iCnt = 0; iCnt < gVdirMdbGlobals.mdbIndexDBs.usNumIndexAttribute ; iCnt++)
-    {
-        PVDIR_MDB_INDEX_DATABASE    pDbDesc = gVdirMdbGlobals.mdbIndexDBs.pIndexDBs + iCnt;
-        unsigned int                iDbFlags = 0;
-
-        iDbFlags |= (pDbDesc->pMdbDataFiles[0].bIsUnique) ? BE_DB_FLAGS_ZERO : MDB_DUPSORT;
-
-        dwError = MDBOpenDB(   &pDbDesc->pMdbDataFiles[0].mdbDBi,
-                                pDbDesc->pMdbDataFiles[0].pszDBName,
-                                pDbDesc->pMdbDataFiles[0].pszDBFile,
-                                pDbDesc->btKeyCmpFcn,
-                                iDbFlags);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    goto cleanup;
-}
-
-/*
  * Close all opened DBs and free environment
  * Free gVdirMdbGlobals.*
  */
@@ -337,6 +271,8 @@ VmDirMDBShutdownDB(
     {
         MDBCloseDBs();
 
+        VmDirMDBShutdownIndexDB();
+
         // force buffer sync
         mdb_env_sync(gVdirMdbGlobals.mdbEnv, 1);
 
@@ -351,76 +287,104 @@ VmDirMDBShutdownDB(
     return 0;
 }
 
-/*
- * Add a new index database to bdb backend.
- * 1. next slot in gVdirMdbGlobals.mdbIndexDBs.pIndexDBs is taken
- * 2. gVdirMdbGlobals.mdbIndexDBs.usNumIndexAttribute++
- *
- * NO access protection for gVdirMdbGlobals.mdbIndexDBs.* as new indices always
- * use next available slot (pIndexDesc->iId).
- */
 DWORD
-VmDirBDBGlobalIndexStructAdd(
-    PVDIR_CFG_ATTR_INDEX_DESC   pIndexDesc)
+MDBOpenDB(
+    PVDIR_DB            pmdbDBi,
+    const char *        dbName,
+    const char *        fileName,
+    PFN_BT_KEY_CMP      btKeyCmpFcn,
+    unsigned int        extraFlags)
 {
-    DWORD                    dwError = 0;
-    PVDIR_SCHEMA_CTX         pSchemaCtx = NULL;
-    PVDIR_MDB_INDEX_DATABASE pIndexDB = NULL;
-    unsigned int             iDbFlags = 0;
+    DWORD               dwError = 0;
+    MDB_txn*            pTxn = NULL;
+    VDIR_DB             mdbDBi  = 0;
 
-    if (pIndexDesc->iId >= BE_DB_MAX_INDEX_ATTRIBUTE)
+    VmDirLog( LDAP_DEBUG_TRACE, "MdbOpenDB: Begin, DN name = %s", fileName );
+
+    assert(pmdbDBi);
+
+    extraFlags |= MDB_CREATE;
+
+    dwError = mdb_txn_begin( gVdirMdbGlobals.mdbEnv, NULL, BE_DB_FLAGS_ZERO, &pTxn );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = mdb_open( pTxn, dbName, extraFlags, &mdbDBi);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (NULL != btKeyCmpFcn)
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        // set customize "key" compare function.
+        dwError = mdb_set_compare( pTxn, mdbDBi, btKeyCmpFcn);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        // if db is opened with MDB_DUPSORT flag, you can set customize "data" compare function.
+        // we use default lexical comparison.
+        //dwError = mdb_set_dupsort( pTxn, mdbDBi, btKeyCmpFcn);
+        //BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    pIndexDB = gVdirMdbGlobals.mdbIndexDBs.pIndexDBs + pIndexDesc->iId;
-    assert(! pIndexDB->pMdbDataFiles);
-
-    // add VDIR_CFG_BDB_DATAFILE_DESC and its content
-    dwError = VmDirAllocateMemory(sizeof(VDIR_CFG_MDB_DATAFILE_DESC), (PVOID)&pIndexDB->pMdbDataFiles);
+    dwError = mdb_txn_commit(pTxn);
+    // regardless of commit result, pTxn should not be accessed anymore
+    // see mdb-back/init.c mdb_db_open example.
+    // this is consistent with BDB DB_TXN->commit() man page.
+    pTxn = NULL;
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pIndexDB->usNumDataFiles = 1;
-    //pIndexDB->pszAttrName not currently used as we use one db only scheme
-
-    dwError = VmDirAllocateStringA(pIndexDesc->pszAttrName, &pIndexDB->pMdbDataFiles[0].pszDBName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringA("vmdir.db", &pIndexDB->pMdbDataFiles[0].pszDBFile);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pIndexDB->pMdbDataFiles[0].bIsUnique = pIndexDesc->bIsUnique;
-
-    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (VmDirSchemaAttrHasIntegerMatchingRule(pSchemaCtx, pIndexDesc->pszAttrName))
-    {
-        pIndexDB->btKeyCmpFcn = MDBIntegerCompareFunction;
-    }
-
-    iDbFlags |= (pIndexDB->pMdbDataFiles[0].bIsUnique) ? BE_DB_FLAGS_ZERO : MDB_DUPSORT;
-
-    // open mdb index data file
-    dwError = MDBOpenDB(   &pIndexDB->pMdbDataFiles[0].mdbDBi,
-                            pIndexDB->pMdbDataFiles[0].pszDBName,
-                            pIndexDB->pMdbDataFiles[0].pszDBFile,
-                            pIndexDB->btKeyCmpFcn,
-                            iDbFlags);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    *pmdbDBi = mdbDBi;
 
 cleanup:
 
-    if (pSchemaCtx)
-    {
-        VmDirSchemaCtxRelease(pSchemaCtx);
-    }
-
+    VmDirLog( LDAP_DEBUG_TRACE, "MdbOpenDB: End" );
     return dwError;
 
 error:
 
+    if (pTxn)
+    {
+        mdb_txn_abort(pTxn);
+        pTxn = NULL;
+    }
+
+    VmDirLog( LDAP_DEBUG_ANY, "MdbOpenDB failed with error code: %d, error string: %s", dwError, mdb_strerror(dwError) );
+
+    goto cleanup;
+}
+
+VOID
+MDBCloseDB(
+    VDIR_DB    mdbDBi
+    )
+{
+    mdb_close(gVdirMdbGlobals.mdbEnv, mdbDBi);
+}
+
+DWORD
+MDBDropDB(
+    VDIR_DB    mdbDBi
+    )
+{
+    DWORD               dwError = 0;
+    MDB_txn*            pTxn = NULL;
+
+    dwError = mdb_txn_begin(gVdirMdbGlobals.mdbEnv, NULL, BE_DB_FLAGS_ZERO, &pTxn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = mdb_drop(pTxn, mdbDBi, 1);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = mdb_txn_commit(pTxn);
+    pTxn = NULL;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    if (pTxn)
+    {
+        mdb_txn_abort(pTxn);
+        pTxn = NULL;
+    }
     goto cleanup;
 }
 
@@ -621,16 +585,28 @@ MDBOpenGeneric(
     VDIR_DB         mdbDBi = 0;
 
     iDbFlags |= MDB_CREATE;
-    iDbFlags |= MDB_DUPSORT; // allow dup keys
 
-    dwError = MDBOpenDB( &mdbDBi,
-                        BE_MDB_GENERIC_DB_NAME,
-                        gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].pszDBFile, // use same file as Entry DB
-                        NULL,
-                        iDbFlags);
+    dwError = MDBOpenDB(
+            &mdbDBi,
+            BE_MDB_GENERIC_UNIQKEY_DB_NAME,
+            gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].pszDBFile, // use same file as Entry DB
+            NULL,
+            iDbFlags);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    gVdirMdbGlobals.mdbGenericDBi = mdbDBi;
+    gVdirMdbGlobals.mdbGenericUniqKeyDBi = mdbDBi;
+
+    iDbFlags |= MDB_DUPSORT; // allow dup keys
+
+    dwError = MDBOpenDB(
+            &mdbDBi,
+            BE_MDB_GENERIC_DUPKEY_DB_NAME,
+            gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].pszDBFile, // use same file as Entry DB
+            NULL,
+            iDbFlags);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    gVdirMdbGlobals.mdbGenericDupKeyDBi = mdbDBi;
 
 cleanup:
 
@@ -643,38 +619,8 @@ error:
     goto cleanup;
 }
 
-/* The bt_compare_fcn function must return an integer value less than, equal to, or greater than zero if the first key
- * parameter is considered to be respectively less than, equal to, or greater than the second key parameter. In
- * addition, the comparison function must cause the keys in the database to be well-ordered. The comparison function
- * must correctly handle any key values used by the application (possibly including zero-length keys). In addition,
- * when Btree key prefix comparison is being performed (see DB->set_bt_prefix() for more information), the comparison
- * routine may be passed a prefix of any database key. The data and size  fields of the DBT are the only fields that
- * may be used for the purposes of this comparison, and no particular alignment of the memory to which by the data
- * field refers may be assumed.
- */
-static
-int
-MDBIntegerCompareFunction(
-    const VDIR_DB_DBT * pDbt1,
-    const VDIR_DB_DBT * pDbt2
-    )
-{
-//TODO, do we store number data in mv_data field?  sign or unsign?
-//this only work with unsigned number.
-    if (pDbt1->mv_size < pDbt2->mv_size)
-    {
-        return -1;
-    }
-    if (pDbt1->mv_size > pDbt2->mv_size)
-    {
-        return 1;
-    }
-    return (memcmp( pDbt1->mv_data, pDbt2->mv_data, pDbt1->mv_size));
-}
-
-
 /*
- * Close all opend database.
+ * Close all opened database.
  *
  * Called during server shutdown, so it is safe to access gVdirMdbGlobals
  * w/o protection.
@@ -683,9 +629,6 @@ static
 void
 MDBCloseDBs()
 {
-    int     i = 0;
-    int     iNumIdxDB = gVdirMdbGlobals.mdbIndexDBs.usNumIndexAttribute;
-
     VmDirLog( LDAP_DEBUG_TRACE, "MdbCloseDBs: Begin" );
 
     if (gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles)
@@ -694,194 +637,15 @@ MDBCloseDBs()
         mdb_close(gVdirMdbGlobals.mdbEnv, gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].mdbDBi);
     }
 
-    if (gVdirMdbGlobals.mdbIndexDBs.pIndexDBs)
-    {
-        /* Close Indexed attributes DBs */
-        for (i=0; i < iNumIdxDB; i++)
-        {
-            mdb_close(gVdirMdbGlobals.mdbEnv, gVdirMdbGlobals.mdbIndexDBs.pIndexDBs[i].pMdbDataFiles[0].mdbDBi);
-        }
-    }
-
     // close sequence db
     mdb_close(gVdirMdbGlobals.mdbEnv, gVdirMdbGlobals.mdbSeqDBi);
 
-    // close generic db
-    mdb_close(gVdirMdbGlobals.mdbEnv, gVdirMdbGlobals.mdbGenericDBi);
+    // close generic dbs
+    mdb_close(gVdirMdbGlobals.mdbEnv, gVdirMdbGlobals.mdbGenericDupKeyDBi);
+    mdb_close(gVdirMdbGlobals.mdbEnv, gVdirMdbGlobals.mdbGenericUniqKeyDBi);
 
     VmDirLog( LDAP_DEBUG_TRACE, "MdbCloseDBs: End" );
 }
-
-/*
- * Get a list of index descriptor from AttrIndexCache to prepare
- * gVdirMdbGlobals.mdbIndexDBs.*  contents.
- *
- * Note: after this call, mdbIndexDBs.* contents will NOT change except when
- * adding a new index.  In that case,
- * 1. usNumIndexAttribute will increase and
- * 2. next slot in pIndexDBs (VDIR_BDB_INDEX_DATABASE) will be taken
- */
-static
-DWORD
-MDBGlobalIndexStructCreate(
-    VOID)
-{
-    DWORD       dwError = 0;
-    int         iCnt = 0;
-    USHORT      usSize = 0;
-    PVDIR_CFG_ATTR_INDEX_DESC   pIndexDesc = NULL;
-
-    dwError = VmDirAttrIndexDescList(
-            &usSize,
-            &pIndexDesc);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (iCnt=0; iCnt < usSize; iCnt++)
-    {
-        int     i = 0;
-#ifndef _WIN32
-        int     dbNameLen = 0;
-#else
-        long long dbNameLen = 0;
-#endif
-        PVDIR_MDB_INDEX_DATABASE pIndexDB =
-                gVdirMdbGlobals.mdbIndexDBs.pIndexDBs + pIndexDesc[iCnt].iId;
-
-        if (iCnt == gVdirMdbGlobals.mdbIndexDBs.usMaxSize - 1)
-        {
-            dwError = ERROR_INVALID_CONFIGURATION;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        dwError = VmDirAllocateMemory(  sizeof(VDIR_CFG_MDB_DATAFILE_DESC),
-                                        (PVOID)&pIndexDB->pMdbDataFiles);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        pIndexDB->usNumDataFiles = 1;
-        //pIndexDB->pszAttrName not currently used as we use one db only scheme
-
-        dwError = VmDirAllocateStringA( pIndexDesc[iCnt].pszAttrName,
-                                        &pIndexDB->pMdbDataFiles[0].pszDBName);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        // Normalize pszDBName to all lower case.
-        dbNameLen = VmDirStringLenA( pIndexDB->pMdbDataFiles[0].pszDBName );
-        for (i = 0; i < dbNameLen; i++)
-        {
-            pIndexDB->pMdbDataFiles[0].pszDBName[i] = tolower( pIndexDB->pMdbDataFiles[0].pszDBName[i] );
-        }
-
-        dwError = VmDirAllocateStringA(VMDIR_DB_FILE_NAME, &pIndexDB->pMdbDataFiles[0].pszDBFile);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        pIndexDB->pMdbDataFiles[0].bIsUnique = pIndexDesc[iCnt].bIsUnique;
-
-        if (pIndexDesc[iCnt].bIsNumeric)
-        {
-            pIndexDB->btKeyCmpFcn = MDBIntegerCompareFunction;
-        }
-    }
-
-    gVdirMdbGlobals.mdbIndexDBs.usNumIndexAttribute = usSize;
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    goto cleanup;
-}
-
-static
-DWORD
-MDBOpenDB(
-    PVDIR_DB            pmdbDBi,
-    const char *        dbName,
-    const char *        fileName,
-    PFN_BT_KEY_CMP      btKeyCmpFcn,
-    u_int32_t           extraFlags)
-{
-    DWORD               dwError = 0;
-    MDB_txn*            pTxn = NULL;
-    VDIR_DB             mdbDBi  = 0;
-
-    VmDirLog( LDAP_DEBUG_TRACE, "MdbOpenDB: Begin, DN name = %s", fileName );
-
-    assert(pmdbDBi);
-
-    extraFlags |= MDB_CREATE;
-
-    dwError = mdb_txn_begin( gVdirMdbGlobals.mdbEnv, NULL, BE_DB_FLAGS_ZERO, &pTxn );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = mdb_open( pTxn, dbName, extraFlags, &mdbDBi);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (NULL != btKeyCmpFcn)
-    {
-        // set customize "key" compare function.
-        dwError = mdb_set_compare( pTxn, mdbDBi, btKeyCmpFcn);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        // if db is opened with MDB_DUPSORT flag, you can set customize "data" compare function.
-        // we use default lexical comparison.
-        //dwError = mdb_set_dupsort( pTxn, mdbDBi, btKeyCmpFcn);
-        //BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = mdb_txn_commit(pTxn);
-    // regardless of commit result, pTxn should not be accessed anymore
-    // see mdb-back/init.c mdb_db_open example.
-    // this is consistent with BDB DB_TXN->commit() man page.
-    pTxn = NULL;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *pmdbDBi = mdbDBi;
-
-cleanup:
-
-    VmDirLog( LDAP_DEBUG_TRACE, "MdbOpenDB: End" );
-    return dwError;
-
-error:
-
-    if (pTxn)
-    {
-        mdb_txn_abort(pTxn);
-        pTxn = NULL;
-    }
-
-    VmDirLog( LDAP_DEBUG_ANY, "MdbOpenDB failed with error code: %d, error string: %s", dwError, mdb_strerror(dwError) );
-
-    goto cleanup;
-}
-
-static
-VOID
-MDbFreeIndexDBs(
-    PVDIR_MDB_INDEX_DB_COLLECTION pBdnIndexCollection
-    )
-{
-    int i = 0;
-
-    if (pBdnIndexCollection)
-    {
-        for (; i<pBdnIndexCollection->usNumIndexAttribute; i++)
-        {
-            VDIR_MDB_INDEX_DATABASE IndexDBs = pBdnIndexCollection->pIndexDBs[i];
-
-            VMDIR_SAFE_FREE_MEMORY((IndexDBs.pMdbDataFiles)->pszDBFile);
-            VMDIR_SAFE_FREE_MEMORY((IndexDBs.pMdbDataFiles)->pszDBName);
-            VMDIR_SAFE_FREE_MEMORY(IndexDBs.pMdbDataFiles);
-
-            VMDIR_SAFE_FREE_MEMORY(IndexDBs.pszAttrName);
-        }
-        VMDIR_SAFE_FREE_MEMORY(pBdnIndexCollection->pIndexDBs);
-        pBdnIndexCollection->usNumIndexAttribute = 0;
-    }
-}
-
 
 static
 VOID
@@ -896,8 +660,6 @@ MDBFreeMdbGlobals(
         VMDIR_SAFE_FREE_MEMORY(gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles->pszDBName);
         VMDIR_SAFE_FREE_MEMORY(gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles);
     }
-
-    MDbFreeIndexDBs(&gVdirMdbGlobals.mdbIndexDBs);
 }
 
 /*
@@ -909,7 +671,7 @@ VmDirSetMdbBackendState(
     DWORD               *pdwLogNum,
     DWORD               *pdwDbSizeMb,
     DWORD               *pdwDbMapSizeMb,
-    char                *pDbPath,
+    PSTR                pszDbPath,
     DWORD               dwDbPathSize)
 {
     DWORD dwError = 0;
@@ -922,10 +684,20 @@ VmDirSetMdbBackendState(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+
+    if (dwFileTransferState == 0)
+    {
+        VmDirdStateSet(VMDIRD_STATE_NORMAL);
+    }
+    else
+    {
+        VmDirdStateSet(VMDIRD_STATE_READ_ONLY);
+    }
+
     *pdwLogNum = 0;
     *pdwDbSizeMb = 0;
     *pdwDbMapSizeMb = 0;
-    dwError = mdb_env_set_state(gVdirMdbGlobals.mdbEnv, dwFileTransferState, &lognum, &dbSizeMb, &dbMapSizeMb, pDbPath, dwDbPathSize);
+    dwError = mdb_env_set_state(gVdirMdbGlobals.mdbEnv, dwFileTransferState, &lognum, &dbSizeMb, &dbMapSizeMb, pszDbPath, dwDbPathSize);
     BAIL_ON_VMDIR_ERROR(dwError);
     *pdwLogNum = lognum;
     *pdwDbSizeMb = dbSizeMb;

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include Definitions.wxi ?>
+	<Fragment>
+		<!-- TODO: Put your code here. -->
+    <ComponentGroup Id="SSO_comp_group" Directory="APPLICATIONFOLDER">
+      <Component Id="single_sign_on_msc_comp" Guid="{A1B8E42E-E08B-42af-8073-2D2980617D31}" Win64="yes">
+        <File Id="single_sign_on_msc_file"
+              Name="Single Sign On.msc"
+              KeyPath="yes"
+              DiskId="1"
+              Source="$(var.Resources)/Single Sign On.msc" />
+      </Component>
+      <Component Id="SSOAdminSnapIn_Dll_Comp" Guid="{680588B0-22B6-5DB3-B194-5C90F5ECFD28}" Win64="yes">
+        <File Id="SSOAdminSnapIn_Dll_File"
+              Name="SSOAdminSnapIn.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="SSOAdminSnapIn_Dll_File"
+              AssemblyApplication="SSOAdminSnapIn_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\SSOAdminSnapIn.dll" />
+      </Component>
+      <Component Id="SSOSSPI_Dll_Comp" Guid="{A4F892AB-2677-F248-ED4B-89592CE6F430}" Win64="yes">
+        <File Id="SSOSSPI_Dll_Comp"
+              Name="SSOSSPI.dll"
+              KeyPath="yes"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\SSOSSPI.dll" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="SSO_reg_comp_group" Directory="TARGETDIR">
+      <Component Id="Reg_SSO_Comp" Guid="{B2D1E0D0-D2FE-4B30-9F9B-BF8AE7554F02}" Win64="yes">
+        <RegistryKey Id="Reg_SSO_Key"
+                     Action="createAndRemoveOnUninstall"
+                     Key="Software\Microsoft\MMC\SnapIns\FX:{DAEA8907-42EA-4fd2-A22D-23AD33099C08}"
+                     Root="HKLM">
+          <RegistryKey Key="Standalone"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryKey Key="NodeTypes"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryValue Name="RuntimeVersion"
+                         Value="v2.0.50727"
+                         Type="string" />
+          <RegistryValue Name="UseCustomHelp"
+                         Value="0"
+                         Type="integer" />
+          <RegistryValue Name="ModuleName"
+                         Value="SSOAdminSnapIn.dll"
+                         Type="string"
+                         KeyPath="yes"/>
+          <RegistryValue Name="NameString"
+                         Value="VMWare SSO Admin"
+                         Type="string" />
+          <RegistryValue Name="ApplicationBase"
+                         Value="[APPLICATIONFOLDER]"
+                         Type="expandable" />
+          <RegistryValue Name="About"
+                         Value="{00000000-0000-0000-0000-000000000000}"
+                         Type="string" />
+          <RegistryValue Name="Description"
+                         Value="$(var.LegacySSO_desc)"
+                         Type="string"  />
+          <RegistryValue Name="FxVersion"
+                         Value="3.0.0.0"
+                         Type="string" />
+          <RegistryValue Name="Type"
+                         Value="SSOAdminSnapIn.SSOAdminSnapIn, SSOAdminSnapIn, Version=$(var.VersionNumber), Culture=neutral, PublicKeyToken=null"
+                         Type="string" />
+          <RegistryValue Name="AssemblyName"
+                         Value="SSOAdminSnapIn"
+                         Type="string" />
+          <RegistryValue Name="Version"
+                         Value="$(var.VersionNumber)"
+                         Type="string" />
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+
+	</Fragment>
+</Wix>

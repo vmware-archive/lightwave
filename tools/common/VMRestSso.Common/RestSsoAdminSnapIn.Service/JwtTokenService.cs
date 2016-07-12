@@ -25,6 +25,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Serialization;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Web;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
+using VMIdentity.CommonUtils;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Service
 {
@@ -52,6 +53,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
             token.Raw = result;
             token.ClientId = clientId;
             token.TokenType = TokenType.Bearer.ToString();
+			token.Role = GetRole(token.AccessToken);
             var certificates = GetCertificates(serverDto, loginDto.TenantName, CertificateScope.TENANT, token);
             var claimsPrincipal = Validate(serverDto, loginDto.User + "@" + loginDto.DomainName, certificates[certificates.Count - 1], loginDto.TenantName, token.IdToken);
             if (claimsPrincipal != null)
@@ -118,11 +120,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         public AuthTokenDto GetTokenFromCertificate(ServerDto serverDto, X509Certificate2 certificate, RSACryptoServiceProvider rsa)
         {
             var url = ServiceConfigManager.GetTokenFromCertificateUrl(serverDto);
-            var signedToken = GetSignedJwtToken(rsa, certificate, url);
+            var aud = ServiceConfigManager.GetAudience(serverDto);
+            var signedToken = GetSignedJwtToken(rsa, certificate, aud);
             if (signedToken == null)
                 throw new Exception("Could not generate a valid token");
 
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+
             var data = ServiceConfigManager.GetJwtTokenBySolutionUserArgs(signedToken);
             var requestConfig = new RequestSettings
             {
@@ -136,12 +140,15 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         }
         private string GetSignedJwtToken(RSACryptoServiceProvider rsa, X509Certificate2 cert, string url)
         {
+            var subjectDN = ShaWithRsaSigner.GetX500SubjectDN(cert);
             var claims = new List<Claim>();
-            claims.Add(new Claim("token_class", "solution_assertion"));
+            claims.Add(new Claim("token_class", "solution_user_assertion"));
             claims.Add(new Claim("token_type", "Bearer"));
+            claims.Add(new Claim("iat", DateTimeConverter.ToUnixDate(DateTime.UtcNow.AddMinutes(-5)).ToString(), ClaimValueTypes.Integer64));
             claims.Add(new Claim("jti", new Random().Next().ToString()));
-            claims.Add(new Claim("sub", cert.Subject));
-            var payload = new JwtPayload(cert.Issuer, url, claims, DateTime.Now, DateTime.Now.AddMinutes(5));
+            claims.Add(new Claim("sub", subjectDN));
+            claims.Add(new Claim("aud", url));
+            var payload = new JwtPayload(subjectDN, url, claims, DateTime.UtcNow.AddMinutes(-5), DateTime.UtcNow.AddMinutes(5));
             var key = new RsaSecurityKey(rsa);
             var signingCredentials = new SigningCredentials(key, SecurityAlgorithms.RsaSha256Signature, SecurityAlgorithms.Sha256Digest);
 
@@ -149,7 +156,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
             var token = new JwtSecurityToken(header, payload);
             var jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
             try
-            {                
+            {
                 var jsonToken = jwtSecurityTokenHandler.WriteToken(token);
                 return jsonToken;
             }
@@ -166,6 +173,22 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
             System.Buffer.BlockCopy(str.ToCharArray(), 0, bytes, 0, bytes.Length);
             return bytes;
         }
+
+		private string GetRole(string token){
+			var jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
+			JwtSecurityToken sToken = (JwtSecurityToken)jwtSecurityTokenHandler.ReadToken (token);
+			var role = string.Empty;
+
+			if (sToken.Claims != null) {
+				foreach (var claim in sToken.Claims) {
+					if (claim.Type == "admin_server_role") {
+						role = claim.Value;
+						break;
+					}
+				}
+			}
+			return role;
+		}
 
         public AuthTokenDto GetTokenFromGssTicket(ServerDto serverDto, string base64EncodedGSSTicketBytes, string clientId)
         {

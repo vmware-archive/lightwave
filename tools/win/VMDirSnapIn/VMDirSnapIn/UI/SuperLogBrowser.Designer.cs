@@ -42,18 +42,24 @@ namespace VMDirSnapIn.UI
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SuperLogBrowser));
             this.lblSuperLogStatus = new System.Windows.Forms.Label();
             this.lvLogInfo = new System.Windows.Forms.ListView();
-            this.columnHeader1 = new System.Windows.Forms.ColumnHeader();
-            this.columnHeader2 = new System.Windows.Forms.ColumnHeader();
-            this.columnHeader6 = new System.Windows.Forms.ColumnHeader();
-            this.columnHeader7 = new System.Windows.Forms.ColumnHeader();
-            this.columnHeader5 = new System.Windows.Forms.ColumnHeader();
-            this.columnHeader3 = new System.Windows.Forms.ColumnHeader();
+            this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader6 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader7 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.btnSuperLogOnOff = new System.Windows.Forms.Button();
             this.btnClearEntries = new System.Windows.Forms.Button();
             this.btnRefresh = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.btnClear = new System.Windows.Forms.Button();
+            this.btnFilter = new System.Windows.Forms.Button();
+            this.txtFilter = new System.Windows.Forms.TextBox();
+            this.cbFilterCriteria = new System.Windows.Forms.ComboBox();
+            this.cbFilterColumn = new System.Windows.Forms.ComboBox();
             this.btnChangeBufferSize = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.txtBufferSize = new System.Windows.Forms.NumericUpDown();
@@ -61,11 +67,6 @@ namespace VMDirSnapIn.UI
             this.chkAutoRefresh = new System.Windows.Forms.CheckBox();
             this.label2 = new System.Windows.Forms.Label();
             this.timerAutoRefresh = new System.Windows.Forms.Timer(this.components);
-            this.cbFilterColumn = new System.Windows.Forms.ComboBox();
-            this.cbFilterCriteria = new System.Windows.Forms.ComboBox();
-            this.txtFilter = new System.Windows.Forms.TextBox();
-            this.btnFilter = new System.Windows.Forms.Button();
-            this.btnClear = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.txtBufferSize)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtAutoRefresh)).BeginInit();
@@ -73,8 +74,8 @@ namespace VMDirSnapIn.UI
             // 
             // lblSuperLogStatus
             // 
-            this.lblSuperLogStatus.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblSuperLogStatus.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.lblSuperLogStatus.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.lblSuperLogStatus.Location = new System.Drawing.Point(6, 16);
             this.lblSuperLogStatus.Name = "lblSuperLogStatus";
@@ -83,9 +84,9 @@ namespace VMDirSnapIn.UI
             // 
             // lvLogInfo
             // 
-            this.lvLogInfo.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-                        | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.lvLogInfo.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.lvLogInfo.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeader1,
             this.columnHeader2,
@@ -102,8 +103,8 @@ namespace VMDirSnapIn.UI
             this.lvLogInfo.UseCompatibleStateImageBehavior = false;
             this.lvLogInfo.View = System.Windows.Forms.View.Details;
             this.lvLogInfo.VirtualMode = true;
-            this.lvLogInfo.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.lvLogInfo_MouseDoubleClick);
             this.lvLogInfo.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.lvLogInfo_RetrieveVirtualItem);
+            this.lvLogInfo.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.lvLogInfo_MouseDoubleClick);
             // 
             // columnHeader1
             // 
@@ -170,8 +171,8 @@ namespace VMDirSnapIn.UI
             // 
             // groupBox1
             // 
-            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
+            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox1.Controls.Add(this.btnClear);
             this.groupBox1.Controls.Add(this.btnFilter);
             this.groupBox1.Controls.Add(this.txtFilter);
@@ -189,6 +190,61 @@ namespace VMDirSnapIn.UI
             this.groupBox1.TabIndex = 0;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Superlogging controls";
+            // 
+            // btnClear
+            // 
+            this.btnClear.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnClear.Location = new System.Drawing.Point(699, 92);
+            this.btnClear.Name = "btnClear";
+            this.btnClear.Size = new System.Drawing.Size(60, 23);
+            this.btnClear.TabIndex = 10;
+            this.btnClear.Text = "Clear";
+            this.btnClear.UseVisualStyleBackColor = true;
+            this.btnClear.Click += new System.EventHandler(this.btnClear_Click);
+            // 
+            // btnFilter
+            // 
+            this.btnFilter.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnFilter.Location = new System.Drawing.Point(632, 92);
+            this.btnFilter.Name = "btnFilter";
+            this.btnFilter.Size = new System.Drawing.Size(61, 23);
+            this.btnFilter.TabIndex = 9;
+            this.btnFilter.Text = "Filter";
+            this.btnFilter.UseVisualStyleBackColor = true;
+            this.btnFilter.Click += new System.EventHandler(this.btnFilter_Click);
+            // 
+            // txtFilter
+            // 
+            this.txtFilter.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.txtFilter.Location = new System.Drawing.Point(357, 95);
+            this.txtFilter.Name = "txtFilter";
+            this.txtFilter.Size = new System.Drawing.Size(269, 20);
+            this.txtFilter.TabIndex = 8;
+            // 
+            // cbFilterCriteria
+            // 
+            this.cbFilterCriteria.FormattingEnabled = true;
+            this.cbFilterCriteria.Location = new System.Drawing.Point(206, 94);
+            this.cbFilterCriteria.Name = "cbFilterCriteria";
+            this.cbFilterCriteria.Size = new System.Drawing.Size(145, 21);
+            this.cbFilterCriteria.TabIndex = 7;
+            // 
+            // cbFilterColumn
+            // 
+            this.cbFilterColumn.FormattingEnabled = true;
+            this.cbFilterColumn.Items.AddRange(new object[] {
+            "Client IP",
+            "Port",
+            "Login DN",
+            "Operation",
+            "Error Code",
+            "Duration"});
+            this.cbFilterColumn.Location = new System.Drawing.Point(12, 94);
+            this.cbFilterColumn.Name = "cbFilterColumn";
+            this.cbFilterColumn.Size = new System.Drawing.Size(182, 21);
+            this.cbFilterColumn.TabIndex = 6;
+            this.cbFilterColumn.SelectedIndexChanged += new System.EventHandler(this.cbFilterColumn_SelectedIndexChanged);
             // 
             // btnChangeBufferSize
             // 
@@ -284,61 +340,6 @@ namespace VMDirSnapIn.UI
             this.timerAutoRefresh.Interval = 2000;
             this.timerAutoRefresh.Tick += new System.EventHandler(this.timerAutoRefresh_Tick);
             // 
-            // cbFilterColumn
-            // 
-            this.cbFilterColumn.FormattingEnabled = true;
-            this.cbFilterColumn.Items.AddRange(new object[] {
-            "Client IP",
-            "Port",
-            "Login DN",
-            "Operation",
-            "Error Code",
-            "Duration"});
-            this.cbFilterColumn.Location = new System.Drawing.Point(12, 94);
-            this.cbFilterColumn.Name = "cbFilterColumn";
-            this.cbFilterColumn.Size = new System.Drawing.Size(182, 21);
-            this.cbFilterColumn.TabIndex = 6;
-            this.cbFilterColumn.SelectedIndexChanged += new System.EventHandler(this.cbFilterColumn_SelectedIndexChanged);
-            // 
-            // cbFilterCriteria
-            // 
-            this.cbFilterCriteria.FormattingEnabled = true;
-            this.cbFilterCriteria.Location = new System.Drawing.Point(206, 94);
-            this.cbFilterCriteria.Name = "cbFilterCriteria";
-            this.cbFilterCriteria.Size = new System.Drawing.Size(145, 21);
-            this.cbFilterCriteria.TabIndex = 7;
-            // 
-            // txtFilter
-            // 
-            this.txtFilter.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-                        | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtFilter.Location = new System.Drawing.Point(357, 95);
-            this.txtFilter.Name = "txtFilter";
-            this.txtFilter.Size = new System.Drawing.Size(269, 20);
-            this.txtFilter.TabIndex = 8;
-            // 
-            // btnFilter
-            // 
-            this.btnFilter.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnFilter.Location = new System.Drawing.Point(632, 92);
-            this.btnFilter.Name = "btnFilter";
-            this.btnFilter.Size = new System.Drawing.Size(61, 23);
-            this.btnFilter.TabIndex = 9;
-            this.btnFilter.Text = "Filter";
-            this.btnFilter.UseVisualStyleBackColor = true;
-            this.btnFilter.Click += new System.EventHandler(this.btnFilter_Click);
-            // 
-            // btnClear
-            // 
-            this.btnClear.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnClear.Location = new System.Drawing.Point(699, 92);
-            this.btnClear.Name = "btnClear";
-            this.btnClear.Size = new System.Drawing.Size(60, 23);
-            this.btnClear.TabIndex = 10;
-            this.btnClear.Text = "Clear";
-            this.btnClear.UseVisualStyleBackColor = true;
-            this.btnClear.Click += new System.EventHandler(this.btnClear_Click);
-            // 
             // SuperLogBrowser
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -350,9 +351,10 @@ namespace VMDirSnapIn.UI
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.btnRefresh);
             this.Controls.Add(this.lvLogInfo);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "SuperLogBrowser";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Superlogging browser";
-            this.Icon = VMDirEnvironment.Instance.GetIconResource(VMDirIconIndex.ServerLog);
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.txtBufferSize)).EndInit();

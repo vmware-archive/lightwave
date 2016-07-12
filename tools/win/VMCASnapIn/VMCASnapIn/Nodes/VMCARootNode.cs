@@ -19,6 +19,7 @@ using VMwareMMCIDP.UI.Common;
 using VMCASnapIn.Utilities;
 using System;
 using VMwareMMCIDP.UI.Common.Utilities;
+using VMIdentity.CommonUtils;
 
 namespace VMCASnapIn.Nodes
 {
@@ -29,15 +30,15 @@ namespace VMCASnapIn.Nodes
 
         const int ACTION_ADD_SERVER = 1;
 
-        public VMCARootNode():base()
+        public VMCARootNode()
+            : base()
         {
-            DisplayName = "Lightwave CA Servers";
-
+            DisplayName = MMCMiscUtil.GetBrandConfig(CommonConstants.CA_ROOT);
             RefreshDelegate = new Refresh(RefreshMethod);
 
             this.ActionsPaneItems.Add(new Microsoft.ManagementConsole.Action("Add Server",
                                        "Add Server", -1, ACTION_ADD_SERVER));
-            ImageIndex = SelectedImageIndex=(int)VMCAImageIndex.CertificateAuthority;
+            ImageIndex = SelectedImageIndex = (int)VMCAImageIndex.CertificateAuthority;
         }
 
         protected override void OnExpand(AsyncStatus status)
@@ -103,6 +104,10 @@ namespace VMCASnapIn.Nodes
             catch (Exception e)
             {
                 MMCDlgHelper.ShowException(e);
+            }
+            finally
+            {
+                VMCASnapInEnvironment.Instance.SaveLocalData();
             }
         }
     }

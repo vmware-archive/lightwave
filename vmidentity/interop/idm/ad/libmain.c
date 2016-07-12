@@ -42,6 +42,9 @@ IDMInitialize(
     PCSTR pszLocalStateDir = VMSTS_DB_DIR;
     PCSTR pszCacheFilename = "krb5_cc_idm";
 
+    dwError = pthread_mutex_init(&pgIdmAuthMutex->mutex, NULL);
+    BAIL_ON_ERROR(dwError);
+
     IDM_RWMUTEX_LOCK_EXCLUSIVE(&pgIdmKrbContext->mutex_rw, bLocked, dwError);
     BAIL_ON_ERROR(dwError);
 
@@ -81,6 +84,9 @@ IDMShutdown(
 {
     DWORD dwError = 0;
     BOOLEAN bLocked = FALSE;
+
+    pthread_mutex_destroy(&pgIdmAuthMutex->mutex);
+
 
     IDM_RWMUTEX_LOCK_EXCLUSIVE(&pgIdmKrbContext->mutex_rw, bLocked, dwError);
     BAIL_ON_ERROR(dwError);

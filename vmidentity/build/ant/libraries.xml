@@ -17,6 +17,10 @@
         <include name="tomcat-coyote-7.0.26.jar"/>
    </fileset>
 
+   <fileset id="jar-set.tomcat-catalina" dir="${MAINSRCROOT}/build/depends">
+        <include name="tomcat-catalina-7.0.25.jar"/>
+   </fileset>
+
    <fileset id="jar-set.apache-httpclient" dir="${MAINSRCROOT}/build/depends">
         <include name="httpclient-4.3.3.jar"/>
         <include name="httpcore-4.3.2.jar"/>
@@ -33,19 +37,19 @@
    <fileset id="jar-set.jsr-250" dir="${MAINSRCROOT}/build/depends">
         <include name="jsr250-api-1.0.jar"/>
    </fileset>
-   
+
    <fileset id="jar-set.jsr-173" dir="${MAINSRCROOT}/build/depends">
         <include name="jsr173-1.0.jar"/>
    </fileset>
-   
+
    <fileset id="jar-set.saaj-api" dir="${MAINSRCROOT}/build/depends">
         <include name="saaj-api-1.3.1.jar"/>
    </fileset>
-   
+
    <fileset id="jar-set.http" dir="${MAINSRCROOT}/build/depends">
         <include name="http-20070405.jar" />
    </fileset>
- 
+
    <fileset id="jar-set.objenesis" dir="${MAINSRCROOT}/build/depends">
 	<include name="objenesis-1.2.jar" />
    </fileset>
@@ -54,7 +58,7 @@
 	<include name="cglib-2.2.jar" />
    </fileset>
 
-   <fileset id="jar-set.easymock" dir="${MAINSRCROOT}/build/depends">   
+   <fileset id="jar-set.easymock" dir="${MAINSRCROOT}/build/depends">
         <include name="easymock-3.0.jar" />
    </fileset>
 

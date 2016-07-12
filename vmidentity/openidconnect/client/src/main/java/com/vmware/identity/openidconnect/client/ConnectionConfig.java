@@ -19,6 +19,7 @@ import java.security.KeyStore;
 import java.security.interfaces.RSAPublicKey;
 
 import org.apache.commons.lang3.Validate;
+
 import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.ProviderMetadata;
 
@@ -27,7 +28,7 @@ import com.vmware.identity.openidconnect.common.ProviderMetadata;
  *
  * @author Jun Sun
  */
-public class ConnectionConfig {
+public final class ConnectionConfig {
     private final URI authorizationEndpointURI;
     private final URI tokenEndpointURI;
     private final URI endSessionEndpointURI;

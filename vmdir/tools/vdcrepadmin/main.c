@@ -29,6 +29,23 @@
 
 static
 DWORD
+_VmDirGetAttributeMetadata(
+    PCSTR pszHostName,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszEntryDn,
+    PCSTR pszAttribute
+    );
+
+static
+VOID
+_VmDirPrintAttributeMetadata(
+    PVMDIR_METADATA pAttrMetadata
+    );
+
+
+static
+DWORD
 _VmDirGetConnection(
     PCSTR   pszHostName,
     PCSTR   pszUserName,
@@ -140,17 +157,17 @@ _VmDirPrintReplState(
 
     if (pReplState)
     {
-        printf("Domain Controller: %s\n",VDIR_SAFE_STRING(pReplState->pszHost) );
-        printf("Invocation ID: %s\n",VDIR_SAFE_STRING(pReplState->pszInvocationId) );
-        printf("Replication cycle count: %d\n",pReplState->dwCycleCount );
-        printf("Max consumable  USN: %lu\n",pReplState->maxConsumableUSN );
-        printf("Max originating USN: %lu\n",pReplState->maxOriginatingUSN );
+        printf("Domain Controller: %s\n",VDIR_SAFE_STRING(pReplState->pszHost));
+        printf("Invocation ID: %s\n",VDIR_SAFE_STRING(pReplState->pszInvocationId));
+        printf("Replication cycle count: %d\n",pReplState->dwCycleCount);
+        printf("Max consumable  USN: %lu\n",pReplState->maxConsumableUSN);
+        printf("Max originating USN: %lu\n",pReplState->maxOriginatingUSN);
 
         pVector = pReplState->pReplUTDVec;
         while (pVector)
         {
             printf("Has seen %lu USN from %s\n",pVector->maxOriginatingUSN,
-                   VDIR_SAFE_STRING(pVector->pszPartnerInvocationId) );
+                   VDIR_SAFE_STRING(pVector->pszPartnerInvocationId));
             pVector = pVector->next;
         }
 
@@ -164,6 +181,29 @@ _VmDirPrintReplState(
 
         printf("\n\n");
     }
+}
+
+static
+VOID
+_VmDirPrintAttributeMetadata(
+    PVMDIR_METADATA pAttrMetadata
+    )
+{
+    if (pAttrMetadata)
+    {
+        printf("\tAttribute: %s\n", VDIR_SAFE_STRING(pAttrMetadata->pszAttribute));
+        printf("\tLocal USN: %lu\n", pAttrMetadata->localUsn);
+        printf("\tVersion: %u\n", pAttrMetadata->dwVersion);
+        printf("\tOriginating Id: %s\n", VDIR_SAFE_STRING(pAttrMetadata->pszOriginatingId));
+        printf("\tOriginating time: %s\n", VDIR_SAFE_STRING(pAttrMetadata->pszOriginatingTime));
+        printf("\tOriginating USN: %lu\n", pAttrMetadata->originatingUsn);
+    }
+    else
+    {
+        printf("\tAttribute metadata NOT found\n");
+    }
+
+    printf("\n");
 }
 
 static
@@ -191,13 +231,14 @@ VmDirGetFederationStatus(
     {
         VmDirConnectionClose( pConnection );
         pConnection = NULL;
-        dwError = _VmDirGetConnection( pDCList->pStringList[dwCnt],
-                                       pszUserName,
-                                       pszPassword,
-                                       &pConnection);
+        dwError = _VmDirGetConnection(
+                        pDCList->pStringList[dwCnt],
+                        pszUserName,
+                        pszPassword,
+                        &pConnection);
         if (dwError == VMDIR_ERROR_SERVER_DOWN)
         {
-            printf("Domain Controller: %s is NOT available\n\n", pDCList->pStringList[dwCnt] );
+            printf("Domain Controller: %s is NOT available\n\n", pDCList->pStringList[dwCnt]);
             dwError = 0;
             continue;
         }
@@ -208,7 +249,7 @@ VmDirGetFederationStatus(
         dwError = VmDirGetReplicationState(pConnection, &pReplState);
         if (dwError == VMDIR_ERROR_ENTRY_NOT_FOUND)
         {
-            printf("Domain Controller: %s is NOT supported\n\n", pDCList->pStringList[dwCnt] );
+            printf("Domain Controller: %s is NOT supported\n\n", pDCList->pStringList[dwCnt]);
             dwError = 0;
             continue;
         }
@@ -219,7 +260,7 @@ VmDirGetFederationStatus(
 
 cleanup:
     VmDirStringListFree(pDCList);
-    VmDirConnectionClose( pConnection );
+    VmDirConnectionClose(pConnection);
     VmDirFreeReplicationState(pReplState);
     return dwError;
 
@@ -499,18 +540,20 @@ _VmDirDummyDomainWrite(
         BAIL_ON_VMDIR_ERROR(dwError);
 
         /* Get current value of attribute to write back */
-        dwError = _VdcLdapGetAttributeValue( pLd,
-                                             pDCList->pStringList[dwCnt],
-                                             ATTR_COMMENT,
-                                             TRUE,
-                                             &pszAttrVal );
+        dwError = _VdcLdapGetAttributeValue(
+                        pLd,
+                        pDCList->pStringList[dwCnt],
+                        ATTR_COMMENT,
+                        TRUE,
+                        &pszAttrVal);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         /* write dummy value to attribute of the DC */
-        dwError = _VdcLdapReplaceAttributeValues( pLd,
-                                                  pDCList->pStringList[dwCnt],
-                                                  ATTR_COMMENT,
-                                                  (PCSTR*)ppszVals );
+        dwError = _VdcLdapReplaceAttributeValues(
+                        pLd,
+                        pDCList->pStringList[dwCnt],
+                        ATTR_COMMENT,
+                        (PCSTR*)ppszVals);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // restore previous value of attribute
@@ -543,6 +586,98 @@ error:
 }
 
 static
+DWORD
+_VmDirGetAttributeMetadata(
+    PCSTR pszHostName,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszEntryDn,
+    PCSTR pszAttribute
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwCnt = 0;
+    DWORD dwAttrs = 0;
+    PVMDIR_STRING_LIST pDCList = NULL;
+    PVMDIR_CONNECTION  pConnection = NULL;
+    PVMDIR_METADATA_LIST pMetadataList = NULL;
+
+    dwError = _VmDirGetDCList(
+                pszHostName,
+                pszUserName,
+                pszPassword,
+                &pDCList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt=0; dwCnt<pDCList->dwCount; dwCnt++)
+    {
+        // VOID function, no return value to check
+        VmDirConnectionClose(pConnection);
+
+        pConnection = NULL;
+
+        dwError = _VmDirGetConnection(
+                        pDCList->pStringList[dwCnt],
+                        pszUserName,
+                        pszPassword,
+                        &pConnection);
+
+        if (dwError == VMDIR_ERROR_SERVER_DOWN)
+        {
+            printf("Domain Controller: %s is NOT available\n\n", VDIR_SAFE_STRING(pDCList->pStringList[dwCnt]));
+
+            dwError = 0;
+            continue;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        printf("Domain Controller: %s\n", VDIR_SAFE_STRING(pDCList->pStringList[dwCnt]));
+
+        // VOID function, no return value to check
+        VmDirFreeMetadataList(pMetadataList);
+
+        pMetadataList = NULL;
+
+        dwError = VmDirGetAttributeMetadata(
+                        pConnection,
+                        pszEntryDn,
+                        pszAttribute,
+                        &pMetadataList);
+
+        if (dwError == LDAP_NO_SUCH_OBJECT)
+        {
+            printf("\tEntry NOT found\n\n");
+            dwError = 0;
+            continue;
+
+        }
+
+        if (dwError == VMDIR_ERROR_NO_SUCH_ATTRIBUTE)
+        {
+            printf("\tAttribute NOT found\n\n");
+            dwError = 0;
+            continue;
+
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        for (dwAttrs = 0; dwAttrs < pMetadataList->dwCount; dwAttrs++)
+        {
+            _VmDirPrintAttributeMetadata(pMetadataList->ppMetadataArray[dwAttrs]);
+        }
+    }
+
+cleanup:
+    VmDirStringListFree(pDCList);
+    VmDirConnectionClose(pConnection);
+    VmDirFreeMetadataList(pMetadataList);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
 int
 VmDirMain(int argc, char* argv[])
 {
@@ -555,6 +690,8 @@ VmDirMain(int argc, char* argv[])
     PSTR        pszSrcPassword = NULL;
     PSTR        pszTgtHostName = NULL;
     PSTR        pszTgtPort     = NULL;
+    PSTR        pszEntryDn     = NULL;
+    PSTR        pszAttribute   = NULL;
     BOOLEAN     bVerbose       = FALSE;
     BOOLEAN     bTwoWayRepl    = FALSE;
     PSTR        pszErrMsg      = NULL;
@@ -575,11 +712,12 @@ VmDirMain(int argc, char* argv[])
     dwError = VmDirGetVmDirLogPath(pszPath,
                                    "vdcrepadmin.log");
     BAIL_ON_VMDIR_ERROR(dwError);
-    dwError = VmDirLogInitialize(pszPath,
-                                 FALSE,
-                                 NULL,
-                                 VMDIR_LOG_INFO,
-                                 VMDIR_LOG_MASK_ALL );
+    dwError = VmDirLogInitialize(
+                pszPath,
+                FALSE,
+                NULL,
+                VMDIR_LOG_INFO,
+                VMDIR_LOG_MASK_ALL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     //get commandline parameters
@@ -594,6 +732,8 @@ VmDirMain(int argc, char* argv[])
                     &pszSrcPassword,
                     &pszTgtHostName,
                     &pszTgtPort,
+                    &pszEntryDn,
+                    &pszAttribute,
                     &bVerbose
                     );
 
@@ -745,6 +885,20 @@ VmDirMain(int argc, char* argv[])
                         );
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_ATTRIBUTE_METADATA,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
+       {
+           dwError = _VmDirGetAttributeMetadata(
+                                pszSrcHostName,
+                                pszSrcUserName,
+                                pszSrcPassword,
+                                pszEntryDn,
+                                pszAttribute
+                                );
+           BAIL_ON_VMDIR_ERROR(dwError);
+
+       }
 
 cleanup:
     // Free internal memory used
@@ -773,7 +927,7 @@ cleanup:
     return dwError;
 
 error:
-    VmDirGetErrorMessage(dwError, &pszErrMsg ); // ignore error
+    VmDirGetErrorMessage(dwError, &pszErrMsg); // ignore error
     printf("Vdcrepadmin failed. Error [%s] [%d]\n",
            VDIR_SAFE_STRING(pszErrMsg),
            dwError);

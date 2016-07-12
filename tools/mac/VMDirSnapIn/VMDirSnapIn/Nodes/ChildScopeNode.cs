@@ -16,17 +16,17 @@ using VMDir.Common.DTO;
 
 namespace VMDirSnapIn.Nodes
 {
-    public class ChildScopeNode : ScopeNode
-    {
-        public VMDirServerDTO ServerDTO { get; protected set; }
+	public class ChildScopeNode : ScopeNode
+	{
+		public VMDirServerDTO ServerDTO { get; protected set; }
 
-        public ChildScopeNode ()
-        {
-        }
+		public ChildScopeNode()
+		{
+		}
 
-        public ChildScopeNode (VMDirServerDTO dto)
-        {
-            this.ServerDTO = dto;
-        }
-    }
+		public ChildScopeNode(VMDirServerDTO dto)
+		{
+			this.ServerDTO = dto;
+		}
+	}
 }

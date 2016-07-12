@@ -22,6 +22,7 @@ using VMPscHighAvailabilitySnapIn.SnapIn;
 using VMPscHighAvailabilitySnapIn.UI;
 using VMPscHighAvailabilitySnapIn.Utils;
 using VMwareMMCIDP.UI.Common.Utilities;
+using VMIdentity.CommonUtils;
 
 namespace VMPscHighAvailabilitySnapIn.ScopeNodes
 {
@@ -39,6 +40,7 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
         /// </summary>
         public RootNode()
         {
+            this.DisplayName = MMCMiscUtil.GetBrandConfig(CommonConstants.PSC_ROOT);
             this.ActionsPaneItems.Add(new Microsoft.ManagementConsole.Action(Constants.ConnectToServer,
                                        Constants.ConnectToServer, -1, ConnectToServerAction));
         }
@@ -112,6 +114,10 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
             {
                 PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exp);
                 MMCDlgHelper.ShowException(exp);
+            }
+            finally
+            {
+                PscHighAvailabilityAppEnvironment.Instance.SaveLocalData();
             }
             return false;
         }

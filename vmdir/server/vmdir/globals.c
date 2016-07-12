@@ -83,8 +83,10 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwMaxIndexScan, 512),
         VMDIR_SF_INIT(.dwSmallCandidateSet,32),
         VMDIR_SF_INIT(.dwMaxSizelimitScan,0),
-        VMDIR_SF_INIT(.bAllowImportOpAttrs, FALSE),
         VMDIR_SF_INIT(.dwLdapSearchTimeoutSec, 0),
+        VMDIR_SF_INIT(.bAllowImportOpAttrs, FALSE),
+        VMDIR_SF_INIT(.bTrackLastLoginTime, FALSE),
+        VMDIR_SF_INIT(.bPagedSearchReadAhead, FALSE),
     };
 
 VMDIR_KRB_GLOBALS gVmdirKrbGlobals =
@@ -130,7 +132,39 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.isIPV4AddressPresent, FALSE),
         VMDIR_SF_INIT(.isIPV6AddressPresent, FALSE),
         VMDIR_SF_INIT(.initialNextUSN, 0),
-        VMDIR_SF_INIT(.maxOriginatingUSN, 0)
+        VMDIR_SF_INIT(.maxOriginatingUSN, 0),
+        VMDIR_SF_INIT(.bvServerObjName, VDIR_BERVALUE_INIT)
     };
 
 VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs = NULL;
+
+VMDIR_URGENT_REPL gVmdirUrgentRepl =
+    {
+        // NOTE: order of fields MUST stay in sync with struct definition...
+        VMDIR_SF_INIT(.pUrgentReplMutex, NULL),
+        VMDIR_SF_INIT(.bUrgentReplicationRequest, FALSE),
+        VMDIR_SF_INIT(.bUrgentReplicationPending, FALSE),
+        VMDIR_SF_INIT(.dwUrgentReplResponseCount, 0),
+        VMDIR_SF_INIT(.dwUrgentReplTimeout, 0),
+        VMDIR_SF_INIT(.consensusUSN, 0),
+        VMDIR_SF_INIT(.pUTDVector, NULL),
+        VMDIR_SF_INIT(.pUrgentReplResponseRecvMutex, NULL),
+        VMDIR_SF_INIT(.pUrgentReplResponseRecvCondition, NULL),
+        VMDIR_SF_INIT(.bUrgentReplResponseRecvCondition, FALSE),
+        VMDIR_SF_INIT(.pUrgentReplThreadMutex, NULL),
+        VMDIR_SF_INIT(.pUrgentReplThreadCondition, NULL),
+        VMDIR_SF_INIT(.bUrgentReplThreadCondition, FALSE),
+        VMDIR_SF_INIT(.pUrgentReplDoneMutex, NULL),
+        VMDIR_SF_INIT(.pUrgentReplDoneCondition, NULL),
+        VMDIR_SF_INIT(.bUrgentReplDoneCondition, FALSE),
+        VMDIR_SF_INIT(.pUrgentReplPartnerTable, NULL),
+        VMDIR_SF_INIT(.pUrgentReplServerList, NULL)
+    };
+
+VMDIR_TRACK_LAST_LOGIN_TIME gVmdirTrackLastLoginTime =
+    {
+        // NOTE: order of fields MUST stay in sync with struct definition...
+        VMDIR_SF_INIT(.pMutex, NULL),
+        VMDIR_SF_INIT(.pCond, NULL),
+        VMDIR_SF_INIT(.pTSStack, NULL)
+    };

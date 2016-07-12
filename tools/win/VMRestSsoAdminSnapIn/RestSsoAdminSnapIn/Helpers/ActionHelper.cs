@@ -26,6 +26,10 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Helpers
     {
         public static void Execute(System.Action fn, AuthTokenDto authTokenDto)
         {
+            Execute(fn, authTokenDto, null);
+        }
+        public static void Execute(System.Action fn, AuthTokenDto authTokenDto, string tenantName)
+        {
             try
             {
                 fn();
@@ -82,7 +86,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Helpers
                                         }
                                         var serverNode = root.GetServerNode(node);
                                         if (serverNode != null)
-                                            serverNode.Login(sessionExpired);
+                                            serverNode.Login(sessionExpired, tenantName);
                                     }
                                     else
                                     {

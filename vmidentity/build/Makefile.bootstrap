@@ -27,7 +27,6 @@ RPMBUILD_DIRS= \
 SRCROOT=..
 
 CLEAN_OBJECTS = \
-    admin-interfaces \
     tomcat-extensions \
     config \
     depends \
@@ -49,7 +48,7 @@ CLEAN_OBJECTS = \
     vmware-sts \
     websso \
     ssolib \
-    wstauthz \
+    ROOT \
     sts \
     wsTrustClient \
     install \
@@ -78,13 +77,15 @@ CLEAN_OBJECTS = \
     $(SRCROOT)/openidconnect/client/target \
     $(SRCROOT)/openidconnect/sample/target \
     $(SRCROOT)/openidconnect/common/target \
+    $(SRCROOT)/openidconnect/protocol/target \
     $(SRCROOT)/openidconnect/server/src/main/resources/css \
     $(SRCROOT)/openidconnect/server/src/main/resources/img \
     $(SRCROOT)/openidconnect/server/src/main/resources/js \
     $(SRCROOT)/openidconnect/server/src/main/webapp/views \
     $(SRCROOT)/openidconnect/server/src/main/resources/locale \
     $(SRCROOT)/openidconnect/server/src/main/resources/messages.properties \
-    $(SRCROOT)/openidconnect/server/src/main/resources/locale
+    $(SRCROOT)/openidconnect/server/src/main/resources/locale \
+    $(SRCROOT)/ROOT/target
 
 
 PKG_SPEC=vmware-sts.spec

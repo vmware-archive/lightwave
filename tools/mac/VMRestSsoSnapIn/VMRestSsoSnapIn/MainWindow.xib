@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="9059" systemVersion="14F27" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="9059" systemVersion="15E65" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
         <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="9059"/>
@@ -44,6 +44,7 @@
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="13">
                         <rect key="frame" x="5" y="2" width="568" height="17"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxY="YES"/>
+                        <animations/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" id="15">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
@@ -53,21 +54,19 @@
                     <customView id="122">
                         <rect key="frame" x="0.0" y="22" width="755" height="585"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                    </customView>
-                    <customView autoresizesSubviews="NO" id="123">
-                        <rect key="frame" x="752" y="22" width="248" height="585"/>
-                        <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMinY="YES"/>
+                        <animations/>
                     </customView>
                     <scrollView hidden="YES" borderType="none" autohidesScrollers="YES" horizontalLineScroll="24" horizontalPageScroll="10" verticalLineScroll="24" verticalPageScroll="10" hasHorizontalScroller="NO" hasVerticalScroller="NO" usesPredominantAxisScrolling="NO" id="151">
-                        <rect key="frame" x="573.99999761581421" y="2" width="419.00000238418579" height="17"/>
+                        <rect key="frame" x="574" y="2" width="419" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinX="YES" widthSizable="YES" flexibleMaxY="YES"/>
                         <clipView key="contentView" id="mRE-fo-BxV">
-                            <rect key="frame" x="2.384185791015625e-06" y="0.0" width="419" height="17"/>
+                            <rect key="frame" x="0.0" y="0.0" width="419" height="17"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                             <subviews>
                                 <tableView focusRingType="none" verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" selectionHighlightStyle="none" multipleSelection="NO" autosaveColumns="NO" rowHeight="22" rowSizeStyle="small" id="155">
                                     <rect key="frame" x="0.0" y="0.0" width="419" height="24"/>
                                     <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMinY="YES"/>
+                                    <animations/>
                                     <size key="intercellSpacing" width="1" height="2"/>
                                     <color key="backgroundColor" white="0.81972772510000003" alpha="1" colorSpace="calibratedWhite"/>
                                     <color key="gridColor" white="1" alpha="0.0" colorSpace="calibratedWhite"/>
@@ -88,25 +87,36 @@
                                     </tableColumns>
                                 </tableView>
                             </subviews>
+                            <animations/>
                             <color key="backgroundColor" white="0.83137254900000002" alpha="0.32000000000000001" colorSpace="deviceWhite"/>
                         </clipView>
+                        <animations/>
                         <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="154">
                             <rect key="frame" x="-100" y="-100" width="223" height="15"/>
                             <autoresizingMask key="autoresizingMask"/>
+                            <animations/>
                         </scroller>
                         <scroller key="verticalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="NO" id="152">
                             <rect key="frame" x="-100" y="-100" width="16" height="16"/>
                             <autoresizingMask key="autoresizingMask"/>
+                            <animations/>
                         </scroller>
                     </scrollView>
                     <box horizontalHuggingPriority="750" title="Box" boxType="separator" titlePosition="noTitle" id="170">
                         <rect key="frame" x="292" y="0.0" width="5" height="77"/>
                         <autoresizingMask key="autoresizingMask" heightSizable="YES"/>
+                        <animations/>
                         <color key="borderColor" white="0.0" alpha="0.41999999999999998" colorSpace="calibratedWhite"/>
                         <color key="fillColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                         <font key="titleFont" metaFont="system"/>
                     </box>
+                    <customView autoresizesSubviews="NO" focusRingType="none" id="123">
+                        <rect key="frame" x="752" y="22" width="248" height="585"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMinY="YES"/>
+                        <animations/>
+                    </customView>
                 </subviews>
+                <animations/>
             </view>
             <toolbar key="toolbar" implicitIdentifier="77FD3F8C-476C-422B-9FF8-85D25D95242A" autosavesConfiguration="NO" displayMode="iconAndLabel" sizeMode="regular" id="11">
                 <allowedToolbarItems>
@@ -121,6 +131,7 @@
                         <searchField key="view" wantsLayer="YES" verticalHuggingPriority="750" id="32">
                             <rect key="frame" x="6" y="14" width="96" height="22"/>
                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                            <animations/>
                             <searchFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" borderStyle="bezel" usesSingleLineMode="YES" bezelStyle="round" id="33">
                                 <font key="font" metaFont="system"/>
                                 <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -141,6 +152,7 @@
                         <button key="view" verticalHuggingPriority="750" id="34">
                             <rect key="frame" x="16" y="14" width="26" height="25"/>
                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                            <animations/>
                             <buttonCell key="cell" type="roundTextured" title="&lt;" bezelStyle="texturedRounded" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="35">
                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -157,6 +169,7 @@
                         <button key="view" verticalHuggingPriority="750" id="36">
                             <rect key="frame" x="20" y="14" width="26" height="25"/>
                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                            <animations/>
                             <buttonCell key="cell" type="roundTextured" title="&gt;" bezelStyle="texturedRounded" alignment="center" state="on" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="37">
                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                 <font key="font" metaFont="system"/>
@@ -173,6 +186,7 @@
                         <button key="view" horizontalHuggingPriority="750" verticalHuggingPriority="750" id="38">
                             <rect key="frame" x="16" y="14" width="39" height="38"/>
                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                            <animations/>
                             <buttonCell key="cell" type="round" bezelStyle="circular" image="AddIcon" imagePosition="above" alignment="left" borderStyle="border" imageScaling="proportionallyDown" id="39">
                                 <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                 <font key="font" metaFont="label"/>
@@ -186,6 +200,7 @@
                         <segmentedControl key="view" verticalHuggingPriority="750" id="40">
                             <rect key="frame" x="8" y="14" width="61" height="25"/>
                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                            <animations/>
                             <segmentedCell key="cell" borderStyle="border" alignment="left" style="texturedSquare" trackingMode="selectOne" id="41">
                                 <font key="font" metaFont="system"/>
                                 <segments>

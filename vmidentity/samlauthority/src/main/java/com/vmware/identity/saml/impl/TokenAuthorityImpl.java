@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import javax.xml.crypto.MarshalException;
 import javax.xml.crypto.dsig.CanonicalizationMethod;
@@ -944,10 +945,10 @@ public final class TokenAuthorityImpl implements TokenAuthority {
       XMLSignature xmlSignature = factory.newXMLSignature(signedInfo, keyInfo);
 
       try {
-         final long start = System.currentTimeMillis();
+         final long start = System.nanoTime();
          xmlSignature.sign(signingContext);
          perfLog.trace("'signature.sign' took {} ms.",
-            System.currentTimeMillis() - start);
+            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
       } catch (MarshalException e) {
          throw new IllegalStateException(e);
       } catch (XMLSignatureException e) {

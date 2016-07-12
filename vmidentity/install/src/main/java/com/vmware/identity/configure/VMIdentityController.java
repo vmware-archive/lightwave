@@ -18,7 +18,7 @@ public class VMIdentityController {
 
     public boolean setupInstanceStandalone(
             VmIdentityParams standaloneParams)
-                    throws DomainControllerNativeException {
+            throws DomainControllerNativeException {
 
         Validate.validateNotNull(standaloneParams.getUsername(), "Username");
         Validate.validateNotNull(standaloneParams.getPassword(), "Password");
@@ -163,7 +163,8 @@ public class VMIdentityController {
         }
         System.out.println("Directory Service checked successfully.");
 
-     */}
+     */
+    }
 
     private void checkVMAFDService() throws Exception {/*
 
@@ -176,6 +177,6 @@ public class VMIdentityController {
                     ex);
         }
         System.out.println("Authentication Service checked successfully.");
-     */}
+     */
+    }
 }
-

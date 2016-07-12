@@ -15,11 +15,26 @@ package com.vmware.identity.session;
 
 import java.util.Collection;
 
+import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.saml.SamlTokenSpec.AuthenticationData.AuthnMethod;
+import com.vmware.identity.samlservice.SamlServiceException;
+
 /**
  * Session Manager interface
  *
  */
 public interface SessionManager {
+
+    /**
+     * @param principal
+     * @param authMethod
+     * @param externalIDPSessionId optional. used for external authentication
+     * @param idpEntId   optional. must used together with externalIDPSessionId for external authentication.
+     * @return
+     */
+    public Session createSession(
+            PrincipalId principal, AuthnMethod authMethod,
+            String externalIDPSessionId, String idpEntId) throws SamlServiceException;
 
 	/**
 	 * Add a session to store

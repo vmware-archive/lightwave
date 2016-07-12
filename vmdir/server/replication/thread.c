@@ -137,12 +137,6 @@ _VmDirFilterEmptyPageSyncDoneCtr(
     struct berval * pPageSyncDoneCtrl
     );
 
-#if 0   // 2013 port
-static DWORD
-_VmDirStorePartnerCertificate(
-    PCSTR pszPartnerHostName);
-#endif
-
 DWORD
 VmDirGetReplCycleCounter(
     VOID
@@ -165,14 +159,12 @@ InitializeReplicationThread(
     DWORD               dwError = 0;
     PVDIR_THREAD_INFO   pThrInfo = NULL;
 
-    dwError = VmDirAllocateMemory( sizeof(*pThrInfo), (PVOID)&pThrInfo);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VmDirSrvThrInit(
-                pThrInfo,
-                gVmdirGlobals.replAgrsMutex,       // alternative mutex
-                gVmdirGlobals.replAgrsCondition,   // alternative cond
+    dwError = VmDirSrvThrInit(
+                &pThrInfo,
+                gVmdirGlobals.replAgrsMutex,
+                gVmdirGlobals.replAgrsCondition,
                 TRUE);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirCreateThread( &pThrInfo->tid, FALSE, vdirReplicationThrFun, pThrInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -185,10 +177,7 @@ cleanup:
 
 error:
 
-    if (pThrInfo)
-    {
-        VmDirSrvThrFree(pThrInfo);
-    }
+    VmDirSrvThrFree(pThrInfo);
 
     goto cleanup;
 }
@@ -433,6 +422,20 @@ vdirReplicationThrFun(
             "vdirReplicationThrFun: Sleeping for the replication interval: %d seconds.",
             gVmdirServerGlobals.replInterval );
 
+        if (VmDirdGetUrgentReplicationRequest() == TRUE)
+        {
+            /*
+             * TODO: Move RPC call out of the repl thread.
+             * Update memory copy of utdVector for urgentReplication (thread safe)
+             */
+            DWORD   iLocalRetVal = 0;
+            iLocalRetVal = VmDirdUrgentReplSetUtdVector(gVmdirServerGlobals.utdVector.lberbv.bv_val);
+            if (iLocalRetVal == 0)
+            {
+                VmDirSendAllUrgentReplicationResponse();
+            }
+        }
+
         for (i=0; i<gVmdirServerGlobals.replInterval; i++)
         {
             if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
@@ -440,12 +443,21 @@ vdirReplicationThrFun(
                 goto cleanup;
             }
 
-            // An RPC call requested a replication cycle to start immediately
-            if (VmDirdGetReplNow() == TRUE)
+            /*
+             * RPC call request to start replication cycle immediately
+             * Can happen in two cases 1) Triggered by vdcadmintool 2) strong consistency write
+             * case 2: control write which ensures that corresponding write is updated to all its
+             *         replication partners by triggering UrgentReplicationRequest on them
+             */
+            if (VmDirdGetReplNow() == TRUE || VmDirdGetUrgentReplicationRequest() == TRUE)
             {
-                VmDirdSetReplNow(FALSE);
+		VmDirdSetReplNow(FALSE);
                 break;
             }
+            /*
+             * TODO sleep granularity need to be reduced to milliseconds
+             * or change to conditioned wait
+             */
             VmDirSleep( 1000 );
         }
     } // Endless replication loop
@@ -1351,11 +1363,11 @@ _VmDirConsumePartner(
     BOOLEAN bReplayEverything = FALSE;
     BOOLEAN bReTrialDesired = FALSE;
     struct berval bervalSyncDoneCtrl = {0};
-    int iPreviousCycleEntriesAddedErrorNoSuchObject = -1;
+    int iPreviousCycleEntriesOutOfSequence = -1;
 
     do // do-while ( bReTrialDesired )
     {
-        int iEntriesAddedErrorNoSuchObject = 0;
+        int iEntriesOutOfSequence = 0;
 
         bReTrialDesired = FALSE;
         initUsn = VmDirStringToLA(replAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, 10 );
@@ -1394,7 +1406,7 @@ _VmDirConsumePartner(
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
             lastSupplierUsnProcessed = pPage->lastSupplierUsnProcessed;
-            iEntriesAddedErrorNoSuchObject += pPage->iEntriesAddedErrorNoSuchObject;
+            iEntriesOutOfSequence += pPage->iEntriesOutOfSequence;
 
             // When a page has 0 entry, we should selectively update bervalSyncDoneCtrl.
             retVal = _VmDirFilterEmptyPageSyncDoneCtr(replAgr->lastLocalUsnProcessed.lberbv.bv_val,
@@ -1406,18 +1418,18 @@ _VmDirConsumePartner(
                  pPage->iEntriesReceived > 0 &&
                  pPage->iEntriesReceived == pPage->iEntriesRequested);
 
-        if (iEntriesAddedErrorNoSuchObject > 0)
+        if (iEntriesOutOfSequence > 0)
         {
             // first time we need a retrial
-            if (iPreviousCycleEntriesAddedErrorNoSuchObject == -1)
+            if (iPreviousCycleEntriesOutOfSequence == -1)
             {
-                iPreviousCycleEntriesAddedErrorNoSuchObject = iEntriesAddedErrorNoSuchObject;
+                iPreviousCycleEntriesOutOfSequence = iEntriesOutOfSequence;
                 bReTrialDesired = TRUE;
             }
             // we've made progress on reducing the number of missing parents
-            else if (iEntriesAddedErrorNoSuchObject < iPreviousCycleEntriesAddedErrorNoSuchObject)
+            else if (iEntriesOutOfSequence < iPreviousCycleEntriesOutOfSequence)
             {
-                iPreviousCycleEntriesAddedErrorNoSuchObject = iEntriesAddedErrorNoSuchObject;
+                iPreviousCycleEntriesOutOfSequence = iEntriesOutOfSequence;
                 bReTrialDesired = TRUE;
             }
             // we've made no progress on filling the hole...try from first USN
@@ -1752,7 +1764,7 @@ _VmDirProcessReplicationPage(
 
     pSchemaCtx = pContext->pSchemaCtx;
     pPage->iEntriesProcessed = 0;
-    pPage->iEntriesAddedErrorNoSuchObject = 0;
+    pPage->iEntriesOutOfSequence = 0;
     for (i = 0; i < pPage->iEntriesReceived; i++)
     {
         int errVal = 0;
@@ -1769,17 +1781,26 @@ _VmDirProcessReplicationPage(
             {
                 // - out-of-sequence parent-child updates OR
                 // - parent deleted on one node, child added on another
-                pPage->iEntriesAddedErrorNoSuchObject++;
+                pPage->iEntriesOutOfSequence++;
             }
         }
         else if (entryState == LDAP_SYNC_MODIFY)
         {
             errVal = ReplModifyEntry( pSchemaCtx, entry, &pSchemaCtx);
+            if (errVal == LDAP_NOT_ALLOWED_ON_NONLEAF)
+            {
+                pPage->iEntriesOutOfSequence++;
+            }
+
             pContext->pSchemaCtx = pSchemaCtx ;
         }
         else if (entryState == LDAP_SYNC_DELETE)
         {
             errVal = ReplDeleteEntry( pSchemaCtx, entry);
+            if (errVal == LDAP_NOT_ALLOWED_ON_NONLEAF)
+            {
+                pPage->iEntriesOutOfSequence++;
+            }
         }
         else
         {
@@ -1816,7 +1837,7 @@ _VmDirProcessReplicationPage(
         LDAP_DEBUG_REPL,
         "%s: error %d "
         "filter: '%s' requested: %d received: %d last usn: %llu "
-        "processed: %d nosuchobject: %d ",
+        "processed: %d out-of-sequence: %d ",
         __FUNCTION__,
         retVal,
         VDIR_SAFE_STRING(pPage->pszFilter),
@@ -1824,7 +1845,7 @@ _VmDirProcessReplicationPage(
         pPage->iEntriesReceived,
         pPage->lastSupplierUsnProcessed,
         pPage->iEntriesProcessed,
-        pPage->iEntriesAddedErrorNoSuchObject);
+        pPage->iEntriesOutOfSequence);
 
     return retVal;
 }

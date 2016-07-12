@@ -17,7 +17,7 @@ package com.vmware.identity.openidconnect.common;
 /**
  * @author Yehia Zayour
  */
-public class ParseException extends Exception {
+public final class ParseException extends Exception {
     private static final long serialVersionUID = 1L;
 
     private final ErrorObject errorObject;

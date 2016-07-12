@@ -81,6 +81,7 @@
 #include <vmdircommon.h>
 #include <srvcommon.h>
 #include <backend.h>
+#include <indexcfg.h>
 #include <schema.h>
 #include <middlelayer.h>
 

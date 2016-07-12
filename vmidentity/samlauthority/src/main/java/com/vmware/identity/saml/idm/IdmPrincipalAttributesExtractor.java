@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.Validate;
 
@@ -114,11 +115,11 @@ public final class IdmPrincipalAttributesExtractor implements
 
       Collection<AttributeValuePair> attributes = Collections.emptySet();
       try {
-         final long start = System.currentTimeMillis();
+         final long start = System.nanoTime();
          attributes = idmClient.getAttributeValues(tenantName, principalId,
             attributeDefsIDM);
          perfLog.trace("'idmClient.getAttributes' took {} ms.",
-            System.currentTimeMillis() - start);
+            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
       } catch (com.vmware.identity.idm.InvalidPrincipalException e) {
          throw new InvalidPrincipalException(e);
       } catch (Exception e) {
@@ -154,10 +155,10 @@ public final class IdmPrincipalAttributesExtractor implements
    public boolean isActive(PrincipalId principalId)
       throws InvalidPrincipalException, SystemException {
       try {
-         final long start = System.currentTimeMillis();
+         final long start = System.nanoTime();
          final boolean result = idmClient.isActive(tenantName, principalId);
          perfLog.trace("'idmClient.isActive' took {} ms.",
-            System.currentTimeMillis() - start);
+            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
          return result;
       } catch (com.vmware.identity.idm.InvalidPrincipalException | NoSuchIdpException e) {
          throw new InvalidPrincipalException(e);
@@ -171,10 +172,10 @@ public final class IdmPrincipalAttributesExtractor implements
            throws InvalidPrincipalException, SystemException
    {
        try {
-           final long start = System.currentTimeMillis();
+           final long start = System.nanoTime();
            final PrincipalId result = idmClient.findActiveUserInSystemDomain(tenantName, attributeName, attributeValue);
            perfLog.trace("'idmClient.findActiveUser' took {} ms.",
-              System.currentTimeMillis() - start);
+              TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
            return result;
         } catch (com.vmware.identity.idm.InvalidPrincipalException e) {
            throw new InvalidPrincipalException(e);

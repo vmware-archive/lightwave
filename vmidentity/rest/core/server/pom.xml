@@ -97,6 +97,13 @@
       <version>${slf4j.version}</version>
     </dependency>
 
+        <!-- Required for native Jersey HTTP request/response logging-->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jul-to-slf4j</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+
     <!-- VMware Dependencies -->
     <dependency>
       <groupId>com.vmware.identity</groupId>

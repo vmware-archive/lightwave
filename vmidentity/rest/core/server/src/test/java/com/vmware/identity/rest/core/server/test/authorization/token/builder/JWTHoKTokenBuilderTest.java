@@ -60,7 +60,7 @@ public class JWTHoKTokenBuilderTest extends AccessTokenBuilderTest {
             .hotk(publicKey)
             .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
 
         AccessToken token = build(jwt, TokenStyle.HEADER, TokenType.HOK, builder);
 
@@ -81,7 +81,7 @@ public class JWTHoKTokenBuilderTest extends AccessTokenBuilderTest {
             .hotk(publicKey)
             .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
 
         AccessToken token = build(jwt, TokenStyle.HEADER, TokenType.HOK, builder);
 
@@ -101,7 +101,7 @@ public class JWTHoKTokenBuilderTest extends AccessTokenBuilderTest {
         .role(Role.ADMINISTRATOR.getRoleName())
         .build();
 
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
 
         build(jwt, TokenStyle.HEADER, TokenType.HOK, builder);
     }
@@ -109,7 +109,7 @@ public class JWTHoKTokenBuilderTest extends AccessTokenBuilderTest {
     @Test(expected = InvalidTokenException.class)
     public void testBuilding_BadToken() {
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.HOK, "ABCDEFG");
-        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
+        JWTHoKTokenBuilder builder = new JWTHoKTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM, JWTBuilder.HOK_CLAIM);
         builder.build(info);
     }
 

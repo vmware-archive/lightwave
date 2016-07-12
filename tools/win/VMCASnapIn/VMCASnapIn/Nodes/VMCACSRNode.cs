@@ -85,6 +85,7 @@ namespace VMCASnapIn.Nodes
                         string csr = request.GetCSR(dto.PrivateKey.ToString());
 
                         serverDTO.SigningRequests.Add(new SigningRequestDTO { CSR = csr, CreatedDateTime = DateTime.Now });
+                        VMCASnapInEnvironment.Instance.SaveLocalData();
                         MMCDlgHelper.ShowMessage(csr);
                     }
                 }

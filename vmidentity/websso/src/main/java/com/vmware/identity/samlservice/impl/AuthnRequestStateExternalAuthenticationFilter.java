@@ -14,10 +14,11 @@
 
 package com.vmware.identity.samlservice.impl;
 
+import java.util.Collection;
+
 import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.lang.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.IDPConfig;
@@ -27,9 +28,12 @@ import com.vmware.identity.saml.config.ConfigExtractorFactory;
 import com.vmware.identity.saml.idm.IdmPrincipalAttributesExtractorFactory;
 import com.vmware.identity.samlservice.AuthenticationFilter;
 import com.vmware.identity.samlservice.AuthnRequestState;
+import com.vmware.identity.samlservice.DefaultIdmAccessorFactory;
+import com.vmware.identity.samlservice.IdmAccessor;
 import com.vmware.identity.samlservice.OasisNames;
 import com.vmware.identity.samlservice.SamlServiceException;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
+import com.vmware.identity.samlservice.Shared;
 import com.vmware.identity.websso.client.IDPConfiguration;
 import com.vmware.identity.websso.client.MetadataSettings;
 import com.vmware.identity.websso.client.SPConfiguration;
@@ -46,9 +50,97 @@ public class AuthnRequestStateExternalAuthenticationFilter implements
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(AuthnRequestStateCookieWrapper.class);
 
+    private volatile Thread idpMetadataSynchronizer  = null;
+
+
+    /**
+     * SAML Metadata refreshing thread refreshing at interval of 10 minutes (600000 milliseconds). The thread runs at service starts
+     * and predetermined interval.
+     * This thread dealt with following scenarios:
+     * 1. IDP-Initiated SSO/SLO where no authentication request proceed the response to be received.
+     * 2. SP or IDP Configuration changes. Without a STS reboot, the configuration for IDP_initiated flow should arrive at maximum delay
+     *      of 10 minutes.
+     */
+    class SAMLMetadataSynchronizer extends Thread
+    {
+        private final Integer CheckInterval = 600000;   // Check every IDP configuration changes every 10 minitues
+        private DefaultIdmAccessorFactory factory;
+
+        SAMLMetadataSynchronizer() {
+            this.factory = new DefaultIdmAccessorFactory();
+        }
+        @Override
+        public void run()
+        {
+                while(idpMetadataSynchronizer == Thread.currentThread())
+                {
+                    try
+                    {
+                        this.refreshMetadata();
+                    }
+                    catch (Throwable t)
+                    {
+                        log.error(String.format("IdpMetadataSynchronizer refresh tenant IDP failed : %s",
+                                t.getMessage()), t);
+                    }
+
+                    try
+                    {
+                        Thread.sleep(CheckInterval);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        log.error("IdpMetadataSynchronizer Thread is interrupted!");
+                    }
+                }
+
+        }
+        /**
+         * Refresh all metadata configuration for WebSSO client library.
+         * @throws Exception
+         */
+        private void refreshMetadata() throws Exception {
+
+            IdmAccessor accessor = this.factory.getIdmAccessor();
+            Collection<String> tenants = accessor.getAllTenants();
+
+            metadataSettings.StartRebuilding();
+            try {
+
+                metadataSettings.clear();
+
+                for (String tenant:tenants) {
+                    accessor.setTenant(tenant);
+                    Collection<IDPConfig> IdpConfigs = accessor.getExternalIdps();
+
+                    if (null == IdpConfigs || IdpConfigs.isEmpty()) {
+                        break;
+                    }
+
+                    //Add IDP configurations for the tenant
+                    for (IDPConfig idpConfig : IdpConfigs)
+                    {
+                        IDPConfiguration clientLibIdpConfiguration =
+                                SamlServiceImpl.generateIDPConfiguration(idpConfig);
+
+                        metadataSettings.addIDPConfiguration(clientLibIdpConfiguration);
+                    }
+
+                    //Update the server's SP role for the tenant.
+                    SPConfiguration spConfig = SamlServiceImpl.generateSPConfiguration(accessor);
+                    metadataSettings.addSPConfiguration(spConfig);
+                }
+
+            } finally {
+                metadataSettings.EndRebuilding();
+            }
+
+        }
+    }
 
     public AuthnRequestStateExternalAuthenticationFilter() {
-
+        this.idpMetadataSynchronizer = new SAMLMetadataSynchronizer();
+        this.idpMetadataSynchronizer.start();
     }
 
 
@@ -131,8 +223,11 @@ public class AuthnRequestStateExternalAuthenticationFilter implements
             String redirectUrl = getSsoRequestSender().getRequestUrl(
                     extSSORequestSetting);
 
-            t.getResponse().sendRedirect(redirectUrl);
-
+            if (t.getTenantIDPSelectHeader() != null) {
+                t.getResponse().addHeader(Shared.IDP_SELECTION_REDIRECT_URL, redirectUrl);
+            } else {
+                t.getResponse().sendRedirect(redirectUrl);
+            }
         } catch (Exception e) {
             // failed to authenticate with via proxying.
             log.warn("Caught exception in authenticate via external IDP: {}", e.getMessage());

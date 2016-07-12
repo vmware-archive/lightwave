@@ -19,10 +19,9 @@
 /*
  * MDB configuration are done in two stages -
  * 1. startup stage for fix DB (i.e. non configurable one like ENTRY)
- *    in InitBdbConfig()
- * 2. cn=indices stage to open all index DB
- *    in MDBInitializeIndexDB
- *
+ *    in VmDirMDBInitializeDB()
+ * 2. schema initialization stage to open all custom index DB
+ *    using VmDirMDBIndexOpen()
  */
 DWORD
 MDBInitConfig()
@@ -49,14 +48,6 @@ MDBInitConfig()
    BAIL_ON_VMDIR_ERROR(dwError);
 
    gVdirMdbGlobals.mdbEntryDB.btKeyCmpFcn = NULL;
-
-   // Set hard limit of MAX index attribute
-   //TODO, could make this configurable
-   gVdirMdbGlobals.mdbIndexDBs.usMaxSize = BE_DB_MAX_INDEX_ATTRIBUTE;
-
-   dwError = VmDirAllocateMemory( sizeof(VDIR_MDB_INDEX_DATABASE) * BE_DB_MAX_INDEX_ATTRIBUTE,
-                                  (PVOID)&gVdirMdbGlobals.mdbIndexDBs.pIndexDBs);
-   BAIL_ON_VMDIR_ERROR(dwError);
 
    VmDirLog( LDAP_DEBUG_TRACE, "InitMdbConfig: End" );
 

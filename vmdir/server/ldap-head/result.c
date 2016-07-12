@@ -211,9 +211,7 @@ VmDirSendLdapResult(
    }
 
    /* Send controls only if local write succeeds - strong consistency write */
-   if (op->reqControls != NULL &&
-       !IsNullOrEmptyString(op->reqControls->type) &&
-       !VmDirStringCompareA(op->reqControls->type, LDAP_CONTROL_CONSISTENT_WRITE, TRUE) &&
+   if (op->strongConsistencyWriteCtrl != NULL &&
        op->ldapResult.errCode == LDAP_SUCCESS)
    {
        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirSendLdapResult: Write consistency done Control value");
@@ -600,6 +598,10 @@ IsAttrInReplScope(
         attrMetaData[0] = '\0';
         *inScope = FALSE;
         goto cleanup;
+    }
+    else if ( attrType != NULL && (VmDirStringCompareA( attrType, ATTR_OBJECT_GUID, FALSE) == 0))
+    {
+        ; // always send objectGUID to uniquely identify entries.
     }
     else
     {

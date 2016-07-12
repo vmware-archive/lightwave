@@ -31,10 +31,8 @@
 
          </resources>
      </copy>
-   
      <move file="${depends}/jna-3.5.1.jar" tofile="${depends}/jna.jar" />
-     <move file="${depends}/platform-3.5.1.jar" tofile="${depends}/platform.jar" />    
-    
+     <move file="${depends}/platform-3.5.1.jar" tofile="${depends}/platform.jar" />
    </target>
 
    <target name="clean">

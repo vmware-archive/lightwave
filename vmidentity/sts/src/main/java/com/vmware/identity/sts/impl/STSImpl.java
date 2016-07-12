@@ -52,20 +52,19 @@ import com.vmware.identity.sts.UnableToRenewException;
 import com.vmware.identity.sts.UnsupportedSecurityTokenException;
 import com.vmware.identity.sts.auth.Authenticator;
 import com.vmware.identity.sts.auth.Result;
-import com.vmware.identity.sts.authz.RoleCheck;
+import com.vmware.identity.sts.idm.InvalidPrincipalException;
+import com.vmware.identity.sts.idm.PrincipalDiscovery;
 import com.vmware.identity.sts.idm.STSConfigExtractor;
 import com.vmware.identity.sts.idm.SsoStatisticsService;
 import com.vmware.identity.sts.idm.STSConfiguration;
-import com.vmware.identity.sts.util.PrincipalIdConvertor;
 import com.vmware.identity.util.TimePeriod;
-import com.vmware.vim.sso.PrincipalId;
-import com.vmware.vim.sso.admin.RoleManagement;
-import com.vmware.vim.sso.admin.exception.InvalidPrincipalException;
 
 public final class STSImpl implements STS {
 
    private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(STSImpl.class);
 
+   private static final String actAsGroupName = "ActAsUsers";
+ 
    // TODO [848560] make the number of max simultaneous session configurable
    private final LRURequests spnegoSessions = new LRURequests(1024);
    private final TokenAuthority tokenAuthority;
@@ -73,18 +72,18 @@ public final class STSImpl implements STS {
    private final Authenticator authenticator;
    private final SamlTokenSpecBuilder specBuilder;
    private final STSConfigExtractor configExtractor;
-   private final RoleCheck roleCheck;
+   private final PrincipalDiscovery principalDiscovery;
    private final SsoStatisticsService ssoStatistics;
 
    public STSImpl(TokenAuthority tokenAuthority, TokenValidator tokenValidator, TokenValidator authnOnlyValidator,
       Authenticator authenticator, DelegationParser delegationParser,
-      STSConfigExtractor configExtractor, RoleCheck roleCheck, SsoStatisticsService ssoStatistics) {
+      STSConfigExtractor configExtractor, PrincipalDiscovery principalDiscovery, SsoStatisticsService ssoStatistics) {
       assert tokenAuthority != null;
       assert tokenValidator != null;
       assert authenticator != null;
       assert delegationParser != null;
       assert configExtractor!= null;
-      assert roleCheck != null;
+      assert principalDiscovery != null;
       assert ssoStatistics != null;
 
       this.tokenAuthority = tokenAuthority;
@@ -93,7 +92,7 @@ public final class STSImpl implements STS {
       this.specBuilder = new SamlTokenSpecBuilder(delegationParser,
           authnOnlyValidator);
       this.configExtractor = configExtractor;
-      this.roleCheck = roleCheck;
+      this.principalDiscovery = principalDiscovery;
       this.ssoStatistics = ssoStatistics;
    }
 
@@ -375,13 +374,8 @@ public final class STSImpl implements STS {
 
       if (req.getActAsToken() != null) {
 
-         final PrincipalId principalId = PrincipalIdConvertor
-            .fromIdmPrincipalId(authResult.getPrincipalId());
-
          try {
-            if (!roleCheck.hasRole(principalId,
-               RoleManagement.WSTrustRole.ActAsUser)) {
-
+            if (!principalDiscovery.isMemberOfSystemGroup(authResult.getPrincipalId(), actAsGroupName)) {
                throw new InvalidRequestException("Access not authorized!");
             }
          } catch (InvalidPrincipalException e) {

@@ -218,6 +218,8 @@ extern "C" {
 #define ATTR_UID_LEN                        sizeof(ATTR_UID)-1
 #define ATTR_VMWITUSERGUID                  "vmwituserguid"
 #define ATTR_VMWITUSERGUID_LEN              sizeof(ATTR_VMWITUSERGUID)-1
+#define ATTR_LASTLOGONTIMESTAMP             "lastLogonTimestamp"
+#define ATTR_LASTLOGONTIMESTAMP_LEN         sizeof(ATTR_LASTLOGONTIMESTAMP)-1
 
 #define ATTR_VMW_OBJECT_SECURITY_DESCRIPTOR   "vmwSecurityDescriptor"
 #define ATTR_VMW_ORGANIZATION_GUID            "vmwOrganizationGuid"
@@ -301,6 +303,10 @@ extern "C" {
 #define ATTR_SCHEMAID_GUID_LEN              sizeof(ATTR_SCHEMAID_GUID)-1
 #define ATTR_VMW_ATTRIBUTE_USAGE            "vmwattributeusage"
 #define ATTR_VMW_ATTRIBUTE_USAGE_LEN        sizeof(ATTR_VMW_ATTRIBUTE_USAGE)-1
+#define ATTR_SEARCH_FLAGS                   "searchflags"
+#define ATTR_SEARCH_FLAGS_LEN               sizeof(ATTR_SEARCH_FLAGS)-1
+#define ATTR_UNIQUENESS_SCOPE               "vmwattruniquenessscope"
+#define ATTR_UNIQUENESS_SCOPE_LEN           sizeof(ATTR_UNIQUENESS_SCOPE)-1
 
 #define ATTR_SUBCLASSOF                     "subclassof"
 #define ATTR_SUBCLASSOF_LEN                 sizeof(ATTR_SUBCLASSOF)-1
@@ -433,9 +439,8 @@ extern "C" {
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096
 
-/*  LDAP_CONTROL_CONSISTENT_WRITE value is temporary
-    - actual value will be finalized later and define also will be moved to appropriate file */
-#define LDAP_CONTROL_CONSISTENT_WRITE                  "2.16.840.1.113730.3.4.5"
+// vmw OID for Strong Consistency Write Control
+#define LDAP_CONTROL_CONSISTENT_WRITE                  "1.3.6.1.4.1.6876.40.10.1"
 
 #ifndef _WIN32
 #define VMDIR_NCALRPC_END_POINT "vmdirsvc"

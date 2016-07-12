@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="9059" systemVersion="14F27" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
-        <deployment identifier="macosx"/>
         <development version="5000" identifier="xcode"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="9059"/>
     </dependencies>
@@ -14,11 +13,14 @@
                 <outlet property="BackForwardToolBarItem" destination="wOM-jE-s3t" id="H08-Vt-EXX"/>
                 <outlet property="ContainerView" destination="7" id="4QU-vy-GwR"/>
                 <outlet property="DeleteObjectToolBarItem" destination="79" id="103"/>
+                <outlet property="FederationViewToolBarItem" destination="nas-ZQ-x9E" id="wwn-hz-0aY"/>
                 <outlet property="LoggedInLabel" destination="dUt-mC-ey0" id="EBB-Dy-a4o"/>
+                <outlet property="MainToolBar" destination="8" id="1eZ-1r-IKJ"/>
                 <outlet property="NetworkStatus" destination="thM-Bl-xhi" id="WGx-ap-aqZ"/>
                 <outlet property="PropertiesToolBarItem" destination="82" id="101"/>
                 <outlet property="RefreshToolBarItem" destination="7cf-ae-wcN" id="rgx-Cl-lPb"/>
                 <outlet property="SchemaToolBarItem" destination="81" id="102"/>
+                <outlet property="SchemaViewToolBarItem" destination="36C-PR-SVj" id="qDe-hU-QPu"/>
                 <outlet property="SearchFieldCell" destination="VFi-jK-eL0" id="cNZ-OG-red"/>
                 <outlet property="SearchRecordsField" destination="lzH-Bf-ecg" id="naN-3L-axZ"/>
                 <outlet property="SearchToolBarItem" destination="pv4-wM-hEg" id="dNd-pQ-4rh"/>
@@ -72,7 +74,6 @@
                     <toolbarItem implicitItemIdentifier="NSToolbarShowColorsItem" id="12"/>
                     <toolbarItem implicitItemIdentifier="NSToolbarShowFontsItem" id="11"/>
                     <toolbarItem implicitItemIdentifier="NSToolbarPrintItem" id="9"/>
-                    <toolbarItem implicitItemIdentifier="NSToolbarSpaceItem" id="13"/>
                     <toolbarItem implicitItemIdentifier="NSToolbarFlexibleSpaceItem" id="10"/>
                     <toolbarItem implicitItemIdentifier="8A797D04-C71F-464E-A4D1-73BAA3B51167" label="Delete Object" paletteLabel="DeleteItem" tag="-1" image="delete" id="79" customClass="ActivatableToolBarItem">
                         <connections>
@@ -153,6 +154,9 @@
                             <action selector="ShowSuperLogWindow:" target="-2" id="eaL-bi-BnT"/>
                         </connections>
                     </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="9EFAFA75-C162-43D9-AD42-6177F1749C3D" explicitItemIdentifier="FederationToolBar" label="Federation View" paletteLabel="Federation View" tag="-1" image="NSNetwork" id="nas-ZQ-x9E" customClass="ActivatableToolBarItem"/>
+                    <toolbarItem implicitItemIdentifier="B45CB1A6-29DF-44E9-AC83-60AC39A2C5C6" explicitItemIdentifier="SchemaViewToolBar" label="Schema View" paletteLabel="Schema View" tag="-1" image="NSQuickLookTemplate" id="36C-PR-SVj" customClass="ActivatableToolBarItem"/>
+                    <toolbarItem implicitItemIdentifier="NSToolbarSpaceItem" id="HfE-ui-skQ"/>
                 </allowedToolbarItems>
                 <defaultToolbarItems>
                     <toolbarItem reference="wOM-jE-s3t"/>
@@ -178,6 +182,7 @@
         <image name="Edit_Properties_64" width="128" height="128"/>
         <image name="NSMultipleDocuments" width="32" height="32"/>
         <image name="NSNetwork" width="32" height="32"/>
+        <image name="NSQuickLookTemplate" width="19" height="12"/>
         <image name="NSRefreshTemplate" width="11" height="15"/>
         <image name="View_Schema_64" width="64" height="64"/>
         <image name="connect_32x32" width="32" height="32"/>

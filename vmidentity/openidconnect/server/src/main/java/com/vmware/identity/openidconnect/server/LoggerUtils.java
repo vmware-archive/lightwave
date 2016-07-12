@@ -14,10 +14,13 @@
 
 package com.vmware.identity.openidconnect.server;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.openidconnect.common.CorrelationID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
+import com.vmware.identity.openidconnect.protocol.HttpRequest;
 
 /**
  * @author Yehia Zayour
@@ -47,5 +50,11 @@ public class LoggerUtils {
                 errorObject.getErrorCode().getValue(),
                 errorObject.getDescription(),
                 cause);
+    }
+
+    public static CorrelationID getCorrelationID(HttpRequest httpRequest) {
+        Validate.notNull(httpRequest, "httpRequest");
+        String correlationIdParameter = httpRequest.getParameters().get("correlation_id");
+        return StringUtils.isEmpty(correlationIdParameter) ? new CorrelationID() : new CorrelationID(correlationIdParameter);
     }
 }

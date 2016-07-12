@@ -108,7 +108,7 @@ DWORD
 VmDirCopyMemory(
     PVOID   pDestination,
     size_t  destinationSize,
-    PCVOID  pSource,
+    const void* pSource,
     size_t  maxCount
     )
 {

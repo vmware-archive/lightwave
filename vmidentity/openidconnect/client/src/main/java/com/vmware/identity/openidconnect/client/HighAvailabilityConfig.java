@@ -17,7 +17,7 @@ package com.vmware.identity.openidconnect.client;
 /**
  * @author Yehia Zayour
  */
-public class HighAvailabilityConfig {
+public final class HighAvailabilityConfig {
     private final String domainName;
     private final ClientDCCacheFactory clientDCCacheFactory;
 

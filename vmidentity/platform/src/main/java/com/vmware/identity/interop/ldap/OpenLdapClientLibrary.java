@@ -13,6 +13,7 @@
 
 package com.vmware.identity.interop.ldap;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -35,6 +36,7 @@ import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.ptr.PointerByReference;
 import com.vmware.identity.interop.NativeAdapter;
 import com.vmware.identity.interop.NativeMemory;
+import com.vmware.identity.interop.PlatformUtils;
 import com.vmware.identity.interop.idm.IdmClientLibraryFactory;
 import com.vmware.identity.interop.ldap.ssl.ASN1_String;
 import com.vmware.identity.interop.ldap.ssl.X509CINFNative;
@@ -57,7 +59,7 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
 
    private interface SSLLibrary extends Library
    {
-      ///lib64/libssl.so.1.0.1 on Linux, or ssleay32.dll on Windows
+      ///lib64/libssl.so.1.0.2 on Linux, or ssleay32.dll on Windows
         SSLLibrary INSTANCE = Platform.isWindows() ?
                 (SSLLibrary) Native.loadLibrary("ssleay32.dll", SSLLibrary.class) :
                 (SSLLibrary) Native.loadLibrary("libssl.so.1.0.2", SSLLibrary.class);
@@ -288,7 +290,7 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
       ldap_get_option(Pointer ld, int option, PointerByReference prOutValue);
 
       int
-      ldap_bind_s(Pointer ld, String dn, String cred, int method);
+      ldap_bind_s(Pointer ld, Pointer dn, Pointer cred, int method);
 
       int
       ldap_sasl_bind_s(Pointer ld, String dn, Pointer mechs,
@@ -308,18 +310,18 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
           );
 
       int
-      ldap_add_s(Pointer ld, String dn, Pointer[] attributes);
+      ldap_add_s(Pointer ld, Pointer dn, Pointer[] attributes);
 
       int
-      ldap_modify_s(Pointer ld, String dn, Pointer[] attributes);
+      ldap_modify_s(Pointer ld, Pointer dn, Pointer[] attributes);
 
       int
       ldap_search_s(
             Pointer            ld,
-            String             base,
+            Pointer            baseDn,
             int                scope,
             String             filter,
-            String[]           attrs,
+            Pointer[]           attrs,
             int                attrsonly,
             PointerByReference res
             );
@@ -327,10 +329,10 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
       int
       ldap_search_ext_s(
             Pointer            ld,
-            String             base,
+            Pointer            baseDn,
             int                scope,
             String             filter,
-            String[]           attrs,
+            Pointer[]           attrs,
             int                attrsonly,
             Pointer[]          sctrls,
             Pointer[]          cctrls,
@@ -340,7 +342,7 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
             );
 
       int
-      ldap_delete_s(Pointer ld, String dn);
+      ldap_delete_s(Pointer ld, Pointer dn);
 
       Pointer
       ldap_get_dn(Pointer ld, Pointer msg);
@@ -439,8 +441,8 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
           Pointer ld,
           Pointer pMessageResult,
           PointerByReference errorCodep,
-          String[] matchedDnp,
-          String[] errMsagp,
+          Pointer[] matchedDnp,
+          Pointer[] errMsagp,
           Pointer referralsp,
           PointerByReference serverCtrlsp,
           int freeit);
@@ -691,7 +693,14 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
 
    @Override
    public void ldap_bind_s(LdapConnectionCtx ctx, String dn, String cred, int method) {
-       OpenLdapClientLibrary.CheckError(ctx.getConnection(), LdapClientLibrary.INSTANCE.ldap_bind_s(ctx.getConnection(), dn, cred, method));
+       Validate.notNull(dn, "dn");
+       Validate.notNull(cred, "cred");
+
+       try(NativeMemory pDn = getNativeMemoryFromString(dn);
+           NativeMemory pCred = getNativeMemoryFromString(cred))
+       {
+           OpenLdapClientLibrary.CheckError(ctx.getConnection(), LdapClientLibrary.INSTANCE.ldap_bind_s(ctx.getConnection(), pDn, pCred, method));
+       }
    }
 
    @Override
@@ -750,29 +759,41 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
    @Override
    public void ldap_add_s(Pointer ld, String dn, Pointer[] attributes)
    {
-       OpenLdapClientLibrary.CheckError(ld, LdapClientLibrary.INSTANCE.ldap_add_s(ld, dn, attributes));
+       Validate.notNull(dn, "dn");
+
+       try(NativeMemory pDn = getNativeMemoryFromString(dn))
+       {
+           OpenLdapClientLibrary.CheckError(ld, LdapClientLibrary.INSTANCE.ldap_add_s(ld, pDn, attributes));
+       }
    }
 
    @Override
    public void ldap_modify_s(Pointer ld, String dn, Pointer[] attributes)
    {
-       OpenLdapClientLibrary.CheckError(ld, LdapClientLibrary.INSTANCE.ldap_modify_s(ld, dn, attributes));
+       Validate.notNull(dn, "dn");
+
+       try(NativeMemory pDn = getNativeMemoryFromString(dn))
+       {
+           OpenLdapClientLibrary.CheckError(ld, LdapClientLibrary.INSTANCE.ldap_modify_s(ld, pDn, attributes));
+       }
    }
 
    @Override
    public Pointer ldap_search_s(
-         Pointer ld, String base, int scope, String filter,
+         Pointer ld, String baseDn, int scope, String filter,
          String[] attrs, int attrsonly
          )
    {
       PointerByReference values = new PointerByReference();
       values.setValue(Pointer.NULL);
+      NativeMemory pBaseDn = getNativeMemoryFromString(baseDn);
+      Pointer[] attrArray = getNativeMemoryArray(attrs);
 
       try
       {
           OpenLdapClientLibrary.CheckError(ld,
                                 LdapClientLibrary.INSTANCE.ldap_search_s(
-                                            ld, base, scope, filter, attrs, attrsonly, values
+                                            ld, pBaseDn, scope, filter, attrArray, attrsonly, values
                                )
                );
 
@@ -787,7 +808,7 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
 
          String ctx =
                String.format("base=%s, scope=%d, filter=%s, attrs=%s, attrsonly=%d",
-                     base==null? "null":base,
+                     baseDn==null? "null":baseDn,
                      scope,
                      filter==null?"null":filter,
                      attrs==null?"null":attrs.toString(),
@@ -802,22 +823,31 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
             throw new LdapException( LdapErrors.LDAP_OTHER.getCode(), ex.getMessage() );
          }
       }
+      finally
+      {
+          if(pBaseDn != null) {
+              pBaseDn.close();
+          }
+          freeNativeMemoryArray(attrArray);
+      }
    }
 
    @Override
    public Pointer ldap_search_ext_s(
-         Pointer ld, String base, int scope, String filter,
+         Pointer ld, String baseDn, int scope, String filter,
          String[] attrs, int attrsonly, Pointer[] sctrls, Pointer[] cctrls, Pointer timeout, int sizelimit
          )
    {
       PointerByReference values = new PointerByReference();
       values.setValue(Pointer.NULL);
+      NativeMemory pBaseDn = getNativeMemoryFromString(baseDn);
+      Pointer[] attrArray = getNativeMemoryArray(attrs);
 
       try
       {
           int retVal =
               LdapClientLibrary.INSTANCE.ldap_search_ext_s(
-                  ld, base, scope, filter, attrs, attrsonly, sctrls, cctrls, timeout, sizelimit, values
+                  ld, pBaseDn, scope, filter, attrArray, attrsonly, sctrls, cctrls, timeout, sizelimit, values
               );
 
           // size limit exception can result together with valid results when results are partial
@@ -859,7 +889,7 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
 
          String ctx =
                String.format("base=%s, scope=%d, filter=%s, attrs=%s, attrsonly=%d, sizelimit=%d",
-                     base==null?"null":base,
+                     baseDn==null?"null":baseDn,
                      scope,
                      filter==null?"null":filter,
                      attrs==null?"null":attrs.toString(),
@@ -875,12 +905,19 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
             throw new LdapException( LdapErrors.LDAP_OTHER.getCode(), ex.getMessage() );
          }
       }
+      finally
+      {
+          if(pBaseDn != null) {
+              pBaseDn.close();
+          }
+          freeNativeMemoryArray(attrArray);
+      }
    }
 
    @Override
    public LdapPagedSearchResultPtr ldap_one_paged_search(
            Pointer ld,
-           String base,
+           String baseDn,
            int scope,
            String filter,
            String[] attrs,
@@ -906,6 +943,10 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
 
        PointerByReference pNewBerCookie = new PointerByReference(Pointer.NULL);
 
+       NativeMemory pBaseDn = getNativeMemoryFromString(baseDn);
+
+       Pointer[] attrArray = getNativeMemoryArray(attrs);
+
        try
        {
            OpenLdapClientLibrary.CheckError(ld,
@@ -920,7 +961,7 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
 
            OpenLdapClientLibrary.CheckError(ld,
                     LdapClientLibrary.INSTANCE.ldap_search_ext_s(
-                            ld, base, scope, filter, attrs, 0, ppInputControls, null, null, 0, pMessage)
+                            ld, pBaseDn, scope, filter, attrArray, 0, ppInputControls, null, null, 0, pMessage)
                     );
 
            OpenLdapClientLibrary.CheckError(ld,
@@ -963,7 +1004,7 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
 
            String ctx =
                    String.format("base=%s, scope=%d, filter=%s, attrs=%s, attrsonly=0, sizelimit=0",
-                         base==null?"null":base,
+                         baseDn==null?"null":baseDn,
                          scope,
                          filter==null?"null":filter,
                          attrs==null?"null":attrs.toString());
@@ -995,12 +1036,23 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
                pPageControl = new PointerByReference();
                pPageControl.setValue(Pointer.NULL);
            }
+
+           if(pBaseDn != null) {
+               pBaseDn.close();
+           }
+
+           freeNativeMemoryArray(attrArray);
        }
    }
 
    @Override
    public void ldap_delete_s(Pointer ld, String dn) {
-       OpenLdapClientLibrary.CheckError(ld, LdapClientLibrary.INSTANCE.ldap_delete_s(ld, dn));
+       Validate.notNull(dn, "dn");
+
+       try (NativeMemory pDn = getNativeMemoryFromString(dn))
+       {
+           OpenLdapClientLibrary.CheckError(ld, LdapClientLibrary.INSTANCE.ldap_delete_s(ld, pDn));
+       }
    }
 
    @Override
@@ -1121,8 +1173,37 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
    }
 
    @Override
-   public String getString(Pointer ptr) {
-       return ptr != null? ptr.getString(0): null;
+   public String getString(Pointer p) {
+       String str = null;
+       if( ( p != null ) &&( p != Pointer.NULL ) )
+       {
+           if(!Platform.isWindows()) {
+               str = p.getString(0);
+           } else {
+               int bufLen = -1;
+               for (int i = 0; i < Integer.MAX_VALUE; i++)
+               {
+                   if (p.getByte(i) == 0) // check end of string
+                   {
+                       bufLen = i;
+                       break;
+                   }
+               }
+               if ( ( bufLen == -1 ) || (bufLen > Integer.MAX_VALUE) )
+               {
+                   throw new RuntimeException("Invalid native string.");
+               }
+               else if(bufLen == 0)
+               {
+                   str = "";
+               }
+               else
+               {
+                   str = new String(p.getByteArray( 0 , bufLen ), PlatformUtils.getLdapServerCharSet());
+               }
+           }
+       }
+       return str;
    }
 
    @Override
@@ -1240,4 +1321,42 @@ class OpenLdapClientLibrary extends NativeAdapter implements ILdapClientLibrary
             return OpenLdapSSLConstants.LDAP_OPT_X_TLS_PROTOCOL_TLS1_0;
         }
    }
+
+    private static NativeMemory getNativeMemoryFromString(String s)
+    {
+        NativeMemory res = null;
+        if( s != null )
+        {
+            byte[] array = null;
+            array = s.getBytes(PlatformUtils.getLdapServerCharSet());
+            res = new NativeMemory(array.length + 1); // + null terminator
+            res.write(0, array, 0, array.length);
+            res.setByte( array.length, (byte)0x0 );
+        }
+
+        return res;
+    }
+
+    private static Pointer[] getNativeMemoryArray(String[] a)
+    {
+        Pointer[] res = null;
+        if( a != null )
+        {
+            res = new Pointer[a.length];
+            for(int i=0; i<res.length; i++) {
+                res[i] = getNativeMemoryFromString(a[i]);
+            }
+        }
+
+        return res;
+    }
+
+    private static void freeNativeMemoryArray(Pointer[] array) {
+        if(array != null) {
+            for(Pointer pAttr: array) {
+                if(pAttr != null && pAttr instanceof NativeMemory)
+                   ((NativeMemory) pAttr).close();
+            }
+        }
+    }
 }

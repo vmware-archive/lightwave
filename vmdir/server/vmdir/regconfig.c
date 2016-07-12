@@ -213,6 +213,27 @@ VmDirSrvUpdateConfig(
         {
             gVmdirGlobals.dwLdapSearchTimeoutSec = pEntry->dwValue;
         }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_TRACK_LAST_LOGIN_TIME,
+                    TRUE))
+        {
+            gVmdirGlobals.bTrackLastLoginTime = pEntry->dwValue ? TRUE : FALSE;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_URGENT_REPL_TIMEOUT_MSEC,
+                    TRUE))
+        {
+            gVmdirUrgentRepl.dwUrgentReplTimeout = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD,
+                    TRUE))
+        {
+            gVmdirGlobals.bPagedSearchReadAhead = !!pEntry->dwValue;
+        }
     }
 
 cleanup:

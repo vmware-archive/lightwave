@@ -19,27 +19,22 @@ using System.Threading.Tasks;
 
 namespace VMDirSnapIn
 {
-    public enum VMDirImageIndex
-    {
-        Server,
-        Warning,
-        Information,
-        Search,
-        Report,
-        Settings,
-        DirectoryObject,
-        AddObject,
-        AddUser,
-        AddGroup,
-        Properties,
-        Schema,
-        Object,
-        Directory,
-    }
     public enum VMDirIconIndex
     {
-        Server,
+        Directory,
+        Group,
         Login,
+        NextPage,
+        Object,
+        PageSize,
+        ResetPassword,
+        Search,
+        SearchBoxCollapse,
+        Server,
+        ShowOperationalAttr,
+        User,
         ServerLog,
+        Save,
+        Open
     }
 }

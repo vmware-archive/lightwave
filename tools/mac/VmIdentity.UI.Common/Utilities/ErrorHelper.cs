@@ -19,6 +19,24 @@ namespace VmIdentity.UI.Common.Utilities
 {
     public static class UIErrorHelper
     {
+		public static nint ShowWarning(String text)
+		{
+			var alert = new NSAlert();
+			alert.MessageText = "Warning";
+			alert.AlertStyle = NSAlertStyle.Warning;
+			alert.InformativeText = text;
+			return alert.RunModal();
+		}
+
+		public static nint ShowInformation(String text)
+		{
+			var alert = new NSAlert();
+			alert.MessageText = "Information";
+			alert.AlertStyle = NSAlertStyle.Warning;
+			alert.InformativeText = text;
+			return alert.RunModal();
+		}
+
         public static nint ShowAlert(String text, String caption)
         {
             var alert = new NSAlert();

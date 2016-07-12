@@ -439,6 +439,48 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirSchemaAttrList(
+    PVDIR_SCHEMA_CTX        pCtx,
+    PVDIR_SCHEMA_AT_DESC**  pppATDescList
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCount = 0, i =0;
+    PVDIR_SCHEMA_AT_COLLECTION  pATColl = NULL;
+    PVDIR_SCHEMA_AT_DESC*       ppATDescList = NULL;
+    LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
+    LW_HASHMAP_PAIR pair = {NULL, NULL};
+
+    if (!pCtx || !pppATDescList)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pATColl = &pCtx->pVdirSchema->attributeTypes;
+    dwCount = LwRtlHashMapGetCount(pATColl->byName);
+
+    dwError = VmDirAllocateMemory(
+            sizeof(PVDIR_SCHEMA_AT_DESC) * (dwCount + 1),
+            (PVOID*)&ppATDescList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    while (LwRtlHashMapIterate(pATColl->byName, &iter, &pair))
+    {
+        ppATDescList[i++] = (PVDIR_SCHEMA_AT_DESC)pair.pValue;
+    }
+
+    *pppATDescList = ppATDescList;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(ppATDescList);
+    goto cleanup;
+}
+
 BOOLEAN
 VmDirSchemaIsNameEntryLeafStructureOC(
     PVDIR_ENTRY     pEntry,
@@ -472,37 +514,35 @@ error:
     goto cleanup;
 }
 
-/*
- * Numeric ordering attribute has matching rule integerMatch or integerOrderingMatch
- */
 BOOLEAN
-VmDirSchemaAttrHasIntegerMatchingRule(
-    PVDIR_SCHEMA_CTX    pCtx,
-    PCSTR               pszName
+VmDirSchemaSyntaxIsNumeric(
+    PCSTR   pszSyntaxOid
     )
 {
-    DWORD                   dwError = 0;
-    BOOLEAN                 bIsNumericOrdering = FALSE;
-    PVDIR_SCHEMA_AT_DESC    pATDesc = NULL;
+    BOOLEAN bIsNumeric = FALSE;
 
-    if (pCtx && pszName)
+    if (!IsNullOrEmptyString(pszSyntaxOid) &&
+         VmDirStringCompareA(pszSyntaxOid, VDIR_OID_INTERGER, FALSE) == 0)
     {
-        pATDesc = VmDirSchemaAttrNameToDesc(pCtx,pszName);
-        if (!pATDesc)
-        {
-            dwError = ERROR_NO_SUCH_ATTRIBUTE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        if (pATDesc->pSyntax &&
-                VmDirStringCompareA(pATDesc->pSyntax->pszOid, VDIR_OID_INTERGER, FALSE) == 0)
-        {
-            bIsNumericOrdering = TRUE;
-        }
+        bIsNumeric = TRUE;
     }
 
-error:
-    return bIsNumericOrdering;
+    return bIsNumeric;
+}
+
+BOOLEAN
+VmDirSchemaAttrIsNumeric(
+    PVDIR_SCHEMA_AT_DESC    pATDesc
+    )
+{
+    BOOLEAN bIsNumeric = FALSE;
+
+    if (pATDesc && pATDesc->pSyntax)
+    {
+        bIsNumeric = VmDirSchemaSyntaxIsNumeric(pATDesc->pSyntax->pszOid);
+    }
+
+    return bIsNumeric;
 }
 
 /*

@@ -15,54 +15,61 @@
 using System;
 using VMDir.Common.DTO;
 using VMDir.Common.VMDirUtilities;
-using VmIdentity.UI.Common.Utilities;
-using System.Threading;
 using System.Threading.Tasks;
-using VmIdentity.UI.Common;
-using AppKit;
+using VMIdentity.CommonUtils;
 
 namespace Nodes
 {
-    public class VMDirServerInfo: Foundation.NSObject
-    {
-        public bool IsLoggedIn { get; set; }
+	public class VMDirServerInfo : Foundation.NSObject
+	{
+		public bool IsLoggedIn { get; set; }
+		public bool loginComplete { get; set; }
+		public VMDirServerDTO DTO { get; set; }
 
-        public  bool loginComplete { get; set; }
+		public VMDirServerInfo(VMDirServerDTO dto)
+		{
+			DTO = dto;
+			IsLoggedIn = false;
+			loginComplete = false;
+		}
 
-        public VMDirServerDTO DTO { get; set; }
+		public async Task DoLogin()
+		{
+			try
+			{
+				Task t = new Task(ServerConnect);
+				t.Start();
+				if (await Task.WhenAny(t, Task.Delay(CommonConstants.TEN_SEC * 2)) == t)
+				{
+					await t;
+				}
+				else {
+					throw new Exception(CommonConstants.SERVER_TIMEOUT);
+				}
+			}
+			catch (Exception ex)
+			{
+				throw ex;
+			}
+		}
 
-        private int ret = 0;
+		public void ServerConnect()
+		{
+			try
+			{
+				DTO.Connection = new LdapConnectionService(DTO.Server, DTO.BindDN, DTO.Password);
 
-        public VMDirServerInfo (VMDirServerDTO dto)
-        {
-            DTO = dto;
-            IsLoggedIn = false;
-            loginComplete = false;
-        }
-
-        public async Task DoLogin ()
-        {
-            try {
-                Task t = new Task (ServerConnect);
-                t.Start ();
-                if (await Task.WhenAny (t, Task.Delay (20000)) == t) {
-                    if (ret == 1)
-                        IsLoggedIn = true;
-                    Console.WriteLine ("Success");
-                } else { 
-                    throw new Exception ("Server timed out");
-                }
-            } catch (Exception ex) {
-                throw ex;
-            }
-        }
-
-        public async void ServerConnect ()
-        {
-            DTO.Connection = new LdapConnectionService (DTO.Server, DTO.BindDN, DTO.Password);
-            ret = DTO.Connection.CreateConnection ();
-        }
-
-    }
+				if (DTO.Connection.CreateConnection() == 1)
+					IsLoggedIn = true;
+				else
+					IsLoggedIn = false;
+			}
+			catch (Exception)
+			{
+				IsLoggedIn = false;
+				throw;
+			}
+		}
+	}
 }
 

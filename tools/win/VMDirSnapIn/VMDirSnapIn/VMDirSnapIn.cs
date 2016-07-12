@@ -16,11 +16,16 @@ using System.Security.Permissions;
 using System.Text;
 using System.Windows.Forms;
 using Microsoft.ManagementConsole;
-using VMDirSnapIn.ScopeNodes;
-using VMDirSnapIn.Services;
+using VMDirSnapIn.Utilities;
 using System.Drawing;
 using VMDirSnapIn.UI;
 using VMwareMMCIDP.UI.Common.Utilities;
+using System.Threading;
+using System;
+using VMDirSnapIn.ScopeNodes;
+using System.Collections.Generic;
+using System.Linq;
+
 [assembly: PermissionSetAttribute(SecurityAction.RequestMinimum, Unrestricted = true)]
 namespace VMDirSnapIn
 {
@@ -33,8 +38,9 @@ namespace VMDirSnapIn
 
         }
     }
-    [SnapInSettings("{4262730D-8B69-4581-8E39-264225BA302B}", DisplayName = "Lightwave Directory Browser",
-         Description = "Lightwave Directory Browser")]
+
+    //[SnapInSettings("{387738AF-C695-46f3-B178-9C9915364BD6}", DisplayName = "Directory Browser")]
+    //uncomment above line for local testing
     public class VMDirSnapIn : SnapIn
     {
         public VMDirSnapIn()
@@ -49,8 +55,13 @@ namespace VMDirSnapIn
 
             VMDirEnvironment.Instance.SnapIn = this;
             MMCDlgHelper.snapIn = this;
+
+            foreach (var item in Enum.GetValues(typeof(VMDirIconIndex)).Cast<VMDirIconIndex>())
+            {
+                VMDirEnvironment.Instance.ImageLst.Add(VMDirEnvironment.Instance.GetImageResource(item));
+            }
         }
-        
+
         void AddViewDescription(ScopeNode node, MmcListViewDescription lvd)
         {
             node.ViewDescriptions.Add(lvd);
@@ -59,7 +70,6 @@ namespace VMDirSnapIn
         }
         void InitConsole()
         {
-            var il = new ImageList();
             this.SmallImages.AddStrip(VMDirEnvironment.Instance.GetToolbarImage());
             this.RootNode = new VMDirRootNode();
         }

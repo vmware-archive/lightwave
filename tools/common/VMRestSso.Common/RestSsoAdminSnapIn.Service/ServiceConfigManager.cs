@@ -21,9 +21,10 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         // Authentication Endpoints
         public const string LoginTokenFragments = "/openidconnect/token/";
         public const string LoginEndPoint = "{0}://{1}:{2}/openidconnect/token/{3}";
+        public const string ServerEndPoint = "{0}://{1}/openidconnect/token/{2}";
         private const string LoginArguments = "grant_type=password&username={0}%40{2}&password={1}&scope=openid+offline_access+id_groups+at_groups+rs_admin_server";
         public const string GssTicketLoginArguments = "grant_type=urn:vmware:grant_type:gss_ticket&gss_ticket={0}&context_id=_context_id_{1}&scope=openid+offline_access";
-        public const string JwtTokenBySolutionUserArguments = "grant_type=urn:vmware:grant_type:solution_user_credentials&solution_assertion={0}&scope=openid";
+        public const string JwtTokenBySolutionUserArguments = "grant_type=urn:vmware:grant_type:solution_user_credentials&solution_user_assertion={0}&scope=openid";
         public const string RefreshTokenEndPoint = "{0}://{1}:{2}/openidconnect/token/{3}";
         private const string RefreshTokenArguments = "grant_type=refresh_token&refresh_token={0}";
 
@@ -154,6 +155,11 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         internal static string GetTokenFromCertificateUrl(ServerDto serverDto)
         {
             return string.Format(ServiceConfigManager.LoginEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, serverDto.Tenant);
+        }
+
+        internal static string GetAudience(ServerDto serverDto)
+        {
+            return string.Format(ServiceConfigManager.ServerEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Tenant);
         }
 
         internal static string GetValidIssuer(ServerDto serverDto, string hostName, string tenantName)

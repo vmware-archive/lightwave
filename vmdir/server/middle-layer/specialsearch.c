@@ -171,17 +171,31 @@ VmDirIsSearchForSchemaEntry(
 
     pSearchReq = &(pOp->request.searchReq);
 
-    if ( pSearchReq->scope == LDAP_SCOPE_BASE && VmDirStringCompareA( pOp->reqDn.lberbv.bv_val, SUB_SCHEMA_SUB_ENTRY_DN, FALSE) == 0 &&
-         pSearchReq->filter->choice == LDAP_FILTER_EQUALITY                             &&
-         pSearchReq->filter->filtComp.ava.type.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN   &&
-         pSearchReq->filter->filtComp.ava.type.lberbv.bv_val != NULL                    &&
-         VmDirStringNCompareA( ATTR_OBJECT_CLASS, pSearchReq->filter->filtComp.ava.type.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0 &&
-         pSearchReq->filter->filtComp.ava.value.lberbv.bv_len == OC_SUB_SCHEMA_LEN      &&
-         pSearchReq->filter->filtComp.ava.value.lberbv.bv_val != NULL                   &&
-         VmDirStringNCompareA( OC_SUB_SCHEMA, pSearchReq->filter->filtComp.ava.value.lberbv.bv_val, OC_SUB_SCHEMA_LEN, FALSE) == 0
-       )
+    // scope must be base
+    if (pSearchReq->scope == LDAP_SCOPE_BASE &&
+        VmDirStringCompareA( pOp->reqDn.lberbv.bv_val, SUB_SCHEMA_SUB_ENTRY_DN, FALSE) == 0)
     {
-        bRetVal = TRUE;
+        // filter can be (objectClass=subschema)
+        if (pSearchReq->filter->choice == LDAP_FILTER_EQUALITY                              &&
+            pSearchReq->filter->filtComp.ava.type.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN    &&
+            pSearchReq->filter->filtComp.ava.type.lberbv.bv_val != NULL                     &&
+            VmDirStringNCompareA( ATTR_OBJECT_CLASS, pSearchReq->filter->filtComp.ava.type.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0 &&
+            pSearchReq->filter->filtComp.ava.value.lberbv.bv_len == OC_SUB_SCHEMA_LEN       &&
+            pSearchReq->filter->filtComp.ava.value.lberbv.bv_val != NULL                    &&
+            VmDirStringNCompareA( OC_SUB_SCHEMA, pSearchReq->filter->filtComp.ava.value.lberbv.bv_val, OC_SUB_SCHEMA_LEN, FALSE) == 0
+            )
+        {
+            bRetVal = TRUE;
+        }
+        // filter can be (objectClass=*)
+        else if (pSearchReq->filter->choice == LDAP_FILTER_PRESENT                              &&
+                 pSearchReq->filter->filtComp.present.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN    &&
+                 pSearchReq->filter->filtComp.present.lberbv.bv_val != NULL                     &&
+                 VmDirStringNCompareA( ATTR_OBJECT_CLASS, pSearchReq->filter->filtComp.present.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0
+                 )
+        {
+            bRetVal = TRUE;
+        }
     }
 
     return bRetVal;

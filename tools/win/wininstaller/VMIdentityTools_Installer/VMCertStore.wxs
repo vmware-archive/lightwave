@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include Definitions.wxi ?>
+	<Fragment>
+		<!-- TODO: Put your code here. -->
+    <ComponentGroup Id="VMCert_comp_group" Directory="APPLICATIONFOLDER">
+      <Component Id="vmcertstore_msc_comp" Guid="{E1D6F9BB-E75C-4361-B89F-B643618B2FBB}" Win64="yes">
+        <File Id="vmcertstore_msc_file"
+              Name="Lightwave Certificate Store.msc"
+              KeyPath="yes"
+              DiskId="1"
+              Source="$(var.Resources)/Lightwave Certificate Store.msc" />
+      </Component>
+      <Component Id="VMCertStoreSnapIn_Dll_Comp" Guid="{7A1D6C68-2820-409B-AC53-8949CD3D98F2}" Win64="yes">
+        <File Id="VMCertStoreSnapIn_Dll_File"
+              Name="VMCertStoreSnapIn.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMCertStoreSnapIn_Dll_File"
+              AssemblyApplication="VMCertStoreSnapIn_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\VMCertStoreSnapIn.dll" />
+      </Component>
+      <Component Id="VMCertStore_Client_Dll_Comp" Guid="{5122FE97-5DC7-4F60-9DE4-BDED8DE7A0B3}" Win64="yes">
+        <File Id="VMCertStore_Client_Dll_File"
+              Name="VMCertStore.Client.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMCertStore_Client_Dll_File"
+              AssemblyApplication="VMCertStore_Client_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\VMCertStore.Client.dll" />
+      </Component>
+      <Component Id="VMCertStore_Common_Dll_Comp" Guid="{02A414E6-284C-40A4-97DE-06AE03D74608}" Win64="yes">
+        <File Id="VMCertStore_Common_Dll_File"
+              Name="VMCertStore.Common.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMCertStore_Common_Dll_File"
+              AssemblyApplication="VMCertStore_Common_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\VMCertStore.Common.dll" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="VMCert_reg_comp_group" Directory="TARGETDIR">
+      <Component Id="Reg_CertStore_Comp" Guid="{AF1A4960-2F75-4748-ACF5-896436D64461}" Win64="yes">
+        <RegistryKey Id="Reg_CertStore_Key"
+                     Action="createAndRemoveOnUninstall"
+                     Key="Software\Microsoft\MMC\SnapIns\FX:{D78AF69F-58BC-4912-9961-055673BDF3F0}" 
+                     Root="HKLM">
+          <RegistryKey Key="Standalone"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryKey Key="NodeTypes"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryValue Name="RuntimeVersion"
+                         Value="v2.0.50727"
+                         Type="string" />
+          <RegistryValue Name="UseCustomHelp"
+                         Value="0"
+                         Type="integer" />
+          <RegistryValue Name="ModuleName"
+                         Value="VMCertStoreSnapIn.dll"
+                         Type="string"
+                         KeyPath="yes"/>
+          <RegistryValue Name="NameString"
+                         Value="VMWare Certificate Store"
+                         Type="string" />
+          <RegistryValue Name="ApplicationBase"
+                         Value="[APPLICATIONFOLDER]"
+                         Type="expandable" />
+          <RegistryValue Name="About"
+                         Value="{00000000-0000-0000-0000-000000000000}"
+                         Type="string" />
+          <RegistryValue Name="Description"
+                         Value="$(var.CertStore_desc)"
+                         Type="string"  />
+          <RegistryValue Name="FxVersion"
+                         Value="3.0.0.0"
+                         Type="string" />
+          <RegistryValue Name="Type"
+                         Value="VMCertStoreSnapIn.VMCertStoreSnapIn, VMCertStoreSnapIn, Version=$(var.VersionNumber), Culture=neutral, PublicKeyToken=null"
+                         Type="string" />
+          <RegistryValue Name="AssemblyName"
+                         Value="VMCertStoreSnapIn"
+                         Type="string" />
+          <RegistryValue Name="Version"
+                         Value="$(var.VersionNumber)"
+                         Type="string" />
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+
+	</Fragment>
+</Wix>

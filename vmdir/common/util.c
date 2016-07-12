@@ -1548,37 +1548,6 @@ error:
     goto cleanup;
 }
 
-DWORD
-VmDirValidateDCAccountPassword(
-    PSTR pszPassword)
-{
-    DWORD dwError = 0;
-    PSTR  pLocalPassword = NULL;
-
-    dwError = VmDirAllocateMemory( VMDIR_KDC_RANDOM_PWD_LEN + 1, (PVOID *)&pLocalPassword );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirGetRegKeyValue( VMDIR_CONFIG_PARAMETER_KEY_PATH, VMDIR_REG_KEY_DC_ACCOUNT_PWD, pLocalPassword,
-                                   VMDIR_KDC_RANDOM_PWD_LEN + 1 );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (VmDirIsValidSecret(pszPassword, pLocalPassword) == FALSE)
-    {
-        dwError = ERROR_ACCESS_DENIED;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pLocalPassword);
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirValidateDCAccountPassword failed with error code: %d", dwError );
-    goto cleanup;
-}
-
 VOID
 VmDirSleep(
     DWORD dwMilliseconds
@@ -2776,6 +2745,49 @@ VmDirQsortCaseIgnoreCompareString(
     return VmDirStringCompareA(* (char * const *) ppStr1, * (char * const *) ppStr2, FALSE);
 }
 
+DWORD
+VmDirCopyStrArray(
+    PSTR*   ppszOrgArray,
+    PSTR**  pppszCopyArray
+    )
+{
+    DWORD   dwError = 0;
+    PSTR*   ppszCopyArray = NULL;
+    int     iSize = 0, iCnt = 0;
+
+    if (!pppszCopyArray)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (ppszOrgArray)
+    {
+        for (iSize=0; ppszOrgArray[iSize]; iSize++);
+
+        dwError = VmDirAllocateMemory(
+                sizeof(PSTR)*(iSize+1), (PVOID*)&ppszCopyArray);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+
+        for (iCnt=0; ppszOrgArray[iCnt]; iCnt++)
+        {
+            dwError = VmDirAllocateStringA(
+                    ppszOrgArray[iCnt], &ppszCopyArray[iCnt]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    *pppszCopyArray = ppszCopyArray;
+
+cleanup:
+    return dwError;
+
+error:
+    VmDirFreeStrArray(ppszCopyArray);
+    goto cleanup;
+}
+
 /*
  *  ppszArray1 and ppszArray2 are NULL terminated PSTR arrays.
  *  pppszOutArray is ppszArray1 UNION ppszArray2.
@@ -3039,11 +3051,24 @@ VmDirFreeStrArray(
  */
 VOID
 VmDirNoopHashMapPairFree(
-    PLW_HASHMAP_PAIR pPair,
-    LW_PVOID pUnused
+    PLW_HASHMAP_PAIR    pPair,
+    LW_PVOID            pUnused
     )
 {
     return;
+}
+
+/*
+ * when hash map can use simple free function for both key and value.
+ */
+VOID
+VmDirSimpleHashMapPairFree(
+    PLW_HASHMAP_PAIR    pPair,
+    PVOID               pUnused
+    )
+{
+    VMDIR_SAFE_FREE_MEMORY(pPair->pKey);
+    VMDIR_SAFE_FREE_MEMORY(pPair->pValue);
 }
 
 /*
@@ -3334,4 +3359,114 @@ error:
     VmDirStringListFree(pDCList);
 
     goto cleanup;
+}
+
+DWORD
+VmDirStrToNameAndNumber(
+    PCSTR   pszStr,
+    CHAR    del,
+    PSTR*   ppszName,
+    USN*    pUSN
+    )
+{
+    DWORD   dwError = 0;
+    PCSTR   pszTmp = NULL;
+    PSTR    pszName = NULL;
+    USN     localUSN = 0;
+
+    pszTmp = VmDirStringChrA(pszStr, del);
+
+    if (pszTmp)
+    {
+        dwError = VmDirAllocateStringOfLenA( pszStr, (DWORD)(pszTmp-pszStr), &pszName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        localUSN = atol( pszTmp+1 );
+    }
+    else
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppszName = pszName;
+    *pUSN = localUSN;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszName);
+    goto cleanup;
+}
+
+DWORD
+VmDirUTDVectorToStruct(
+    PCSTR   pszStr,
+    PVMDIR_REPL_UTDVECTOR*  ppVector
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCnt = 0;
+    PVMDIR_STRING_LIST      pStrList = NULL;
+    PVMDIR_REPL_UTDVECTOR   pVector = NULL;
+    PVMDIR_REPL_UTDVECTOR   pTmpVector = NULL;
+    PCSTR                   pDelimiter = ",";
+    // No UTD Vector.
+    if (VmDirStringCompareA(pszStr, "Unknown", FALSE) == 0)
+    {
+        *ppVector = pVector;
+        goto cleanup;
+    }
+
+    dwError = VmDirStringToTokenList(pszStr, pDelimiter, &pStrList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt=0; dwCnt < pStrList->dwCount; dwCnt++)
+    {
+        if (pStrList->pStringList[dwCnt][0] == '\0')
+        {
+            continue;
+        }
+
+        dwError = VmDirAllocateMemory(sizeof(*pTmpVector), (PVOID*)&pTmpVector);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pTmpVector->next = pVector;
+        pVector          = pTmpVector;
+        pTmpVector       = NULL;
+
+        dwError = VmDirStrToNameAndNumber( pStrList->pStringList[dwCnt], ':',
+                                            &pVector->pszPartnerInvocationId,
+                                            &pVector->maxOriginatingUSN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppVector = pVector;
+
+cleanup:
+    VmDirStringListFree(pStrList);
+    return dwError;
+
+error:
+    VmDirFreeReplVector(pVector);
+    goto cleanup;
+}
+
+
+VOID
+VmDirFreeReplVector(
+    PVMDIR_REPL_UTDVECTOR  pVector
+    )
+{
+    while (pVector)
+    {
+        PVMDIR_REPL_UTDVECTOR pNext = pVector->next;
+
+        VMDIR_SAFE_FREE_MEMORY(pVector->pszPartnerInvocationId);
+        VMDIR_SAFE_FREE_MEMORY(pVector);
+        pVector = pNext;
+    }
+
+    return;
 }

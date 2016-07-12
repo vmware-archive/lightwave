@@ -44,29 +44,7 @@ namespace VMDirSnapIn.UI
         //Handle right click event for the TableView
         public override NSMenu MenuForEvent (NSEvent theEvent)
         {
-            CGPoint pt = this.ConvertPointFromView (theEvent.LocationInWindow, null);
-            _selectedRow = this.GetRow (pt);
-            NSTableViewDataSource ds = (NSTableViewDataSource)this.DataSource;
             NSMenu menu = new NSMenu ();
-            if (_selectedRow >= (nint)0) {
-                if (ds is NodesListView) {
-                    DirectoryNode node = ((ds as NodesListView).Entries [(int)_selectedRow] as DirectoryNode);
-                    if (node != null) {
-                        if (node.NodeType == DirectoryNode.DirectoryNodeType.User) {
-                            NSMenuItem ResetPassword = new NSMenuItem ("Set Password", node.RestUserPassword); 
-                            menu.AddItem (ResetPassword);
-                            NSMenuItem delete = new NSMenuItem ("Delete", node.Delete); 
-                            menu.AddItem (delete);
-                            NSMenuItem Properties = new NSMenuItem ("Properties", node.ViewProperties); 
-                            menu.AddItem (Properties);
-                        } else if (node.NodeType == DirectoryNode.DirectoryNodeType.Groups) {
-                            NSMenuItem addUser = new NSMenuItem ("Add user to group", node.AddUserToGroup); 
-                            menu.AddItem (addUser);
-                        }
-                       
-                    }
-                }
-            }
             NSMenu.PopUpContextMenu (menu, theEvent, theEvent.Window.ContentView);
             return base.MenuForEvent (theEvent);
         }

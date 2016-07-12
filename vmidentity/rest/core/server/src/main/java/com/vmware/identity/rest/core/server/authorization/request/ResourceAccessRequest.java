@@ -185,7 +185,7 @@ public class ResourceAccessRequest {
             throw new InsufficientRoleException(sm.getString("auth.ise.wrong.role", requiredRole.getRole()));
         }
     }
-    
+
     private boolean checkIfGroupExists(List<String> groupList, String group) {
         boolean groupExists = false;
         for (String groupName : groupList) {
@@ -297,9 +297,9 @@ public class ResourceAccessRequest {
     private static AccessTokenBuilder getAccessTokenBuilder(TokenType type) throws ServerException {
         switch(type) {
         case BEARER:
-            return new JWTBearerTokenBuilder(Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD);
+            return new JWTBearerTokenBuilder(Config.JWT_TYPE_FIELD, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD);
         case HOK:
-            return new JWTHoKTokenBuilder(Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD, Config.JWT_HOK_FIELD);
+            return new JWTHoKTokenBuilder(Config.JWT_TYPE_FIELD, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD, Config.JWT_HOK_FIELD);
         case SAML:
             return new SAMLTokenBuilder();
         default:

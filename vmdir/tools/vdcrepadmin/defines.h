@@ -25,6 +25,7 @@
 #define VDCREPADMIN_FEATURE_REMOVE_AGREEMENT           "removeagreement"
 #define VDCREPADMIN_FEATURE_DUMMY_DOMAIN_WRITE         "dummydomainwrite"
 #define VDCREPADMIN_QUERY_IS_FIRST_CYCLE_DONE          "isfirstcycledone"
+#define VDCREPADMIN_FEATURE_SHOW_ATTRIBUTE_METADATA    "showattributemetadata"
 
 
 #ifndef _WIN32
@@ -38,7 +39,9 @@
 #define VDCREPADMIN_OPTION_VERBOSE            'v'
 #define VDCREPADMIN_OPTION_TWO_WAY_REPL       '2'
 #define VDCREPADMIN_OPTION_FEATURE_SET        'f'
-#define VDCREPADMIN_OPTIONS_VALID             "2h:H:p:P:D:u:w:vf:"
+#define VDCREPADMIN_OPTION_ENTRY_DN           'e'
+#define VDCREPADMIN_OPTION_ATTRIBUTE          'a'
+#define VDCREPADMIN_OPTIONS_VALID             "2h:H:p:P:D:u:w:vf:e:a:"
 
 #else
 #define VDCREPADMIN_OPTION_SOURCE_HOSTNAME    "-h"
@@ -50,6 +53,8 @@
 #define VDCREPADMIN_OPTION_VERBOSE            "-v"
 #define VDCREPADMIN_OPTION_TWO_WAY_REPL       "-2"
 #define VDCREPADMIN_OPTION_FEATURE_SET        "-f"
+#define VDCREPADMIN_OPTION_ENTRY_DN           "-e"
+#define VDCREPADMIN_OPTION_ATTRIBUTE          "-a"
 
 #endif
 

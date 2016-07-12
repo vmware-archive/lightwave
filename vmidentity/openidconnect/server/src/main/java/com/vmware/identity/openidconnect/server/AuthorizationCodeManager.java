@@ -16,9 +16,9 @@ package com.vmware.identity.openidconnect.server;
 
 import org.apache.commons.lang3.Validate;
 
-import com.vmware.identity.openidconnect.common.AuthenticationRequest;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.SessionID;
+import com.vmware.identity.openidconnect.protocol.AuthenticationRequest;
 
 /**
  * @author Yehia Zayour

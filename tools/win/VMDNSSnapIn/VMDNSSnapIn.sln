@@ -1,0 +1,37 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013VisualStudioVersion = 12.0.21005.1MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMDNSSnapIn", "VMDNSSnapIn\VMDNSSnapIn.csproj", "{79AAC091-FAA1-4E15-80C4-DBD4731F387C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMDNS.Common", "..\..\common\VMDNS.Common\VMDNS.Common.csproj", "{E643DC2D-59B2-40B0-8277-462172F21ED1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMIdentity.CommonUtils", "..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj", "{CD959E2E-5B9C-4329-B085-352844CFDCDD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMwareMMCIDP.UI.Common", "..\VMwareMMCIDP.UI.Common\VMwareMMCIDP.UI.Common.csproj", "{474831AB-37DE-415C-B944-37E2D10D1E85}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{79AAC091-FAA1-4E15-80C4-DBD4731F387C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{79AAC091-FAA1-4E15-80C4-DBD4731F387C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{79AAC091-FAA1-4E15-80C4-DBD4731F387C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{79AAC091-FAA1-4E15-80C4-DBD4731F387C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E643DC2D-59B2-40B0-8277-462172F21ED1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E643DC2D-59B2-40B0-8277-462172F21ED1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E643DC2D-59B2-40B0-8277-462172F21ED1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E643DC2D-59B2-40B0-8277-462172F21ED1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{474831AB-37DE-415C-B944-37E2D10D1E85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{474831AB-37DE-415C-B944-37E2D10D1E85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{474831AB-37DE-415C-B944-37E2D10D1E85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{474831AB-37DE-415C-B944-37E2D10D1E85}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
