@@ -55,6 +55,7 @@ import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.vmware.directory.rest.client.VmdirClient;
 import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.JWTID;
 import com.vmware.identity.openidconnect.common.TokenType;
@@ -263,6 +264,27 @@ class TestUtils {
                         com.vmware.identity.rest.core.client.AccessToken.Type.JWT);
         idmClient.setToken(restAccessToken);
         return idmClient;
+    }
+
+    static VmdirClient createVMdirClient(
+            AccessToken accessToken,
+            String domainControllerFQDN,
+            int domainControllerPort,
+            KeyStore keyStore) throws Exception {
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init(keyStore);
+        SSLContext sslContext = SSLContext.getInstance("SSL");
+        sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+        VmdirClient vmdirClient = new VmdirClient(
+                domainControllerFQDN,
+                domainControllerPort,
+                new DefaultHostnameVerifier(),
+                sslContext);
+        com.vmware.identity.rest.core.client.AccessToken restAccessToken =
+                new com.vmware.identity.rest.core.client.AccessToken(accessToken.getValue(),
+                        com.vmware.identity.rest.core.client.AccessToken.Type.JWT);
+        vmdirClient.setToken(restAccessToken);
+        return vmdirClient;
     }
 
     static String convertToBase64PEMString(X509Certificate x509Certificate) throws Exception {
