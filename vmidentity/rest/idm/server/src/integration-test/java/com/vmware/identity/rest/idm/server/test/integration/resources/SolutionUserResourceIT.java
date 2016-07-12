@@ -14,10 +14,6 @@
 package com.vmware.identity.rest.idm.server.test.integration.resources;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-
-import java.io.IOException;
-import java.security.cert.CertificateException;
 import java.util.Locale;
 
 import javax.ws.rs.container.ContainerRequestContext;
@@ -27,14 +23,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import com.vmware.identity.rest.core.server.exception.client.BadRequestException;
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.NotImplementedError;
 import com.vmware.identity.rest.idm.data.SolutionUserDTO;
 import com.vmware.identity.rest.idm.server.Config;
 import com.vmware.identity.rest.idm.server.resources.SolutionUserResource;
 import com.vmware.identity.rest.idm.server.test.annotation.IntegrationTest;
-import com.vmware.identity.rest.idm.server.test.integration.util.data.SolutionUserDataGenerator;
 
 /**
  * Integration tests for Solution user Resource
@@ -64,39 +58,6 @@ public class SolutionUserResourceIT extends TestBase {
     }
 
     @Test
-    public void testCreateSolnUser() throws Exception {
-        try {
-            SolutionUserDTO solnUserToCreate = SolutionUserDataGenerator.createTestSolutionUserDTO(SOLUTION_USERNAME, DEFAULT_SYSTEM_DOMAIN, false);
-            SolutionUserDTO solutionUser = solutionUserResource.create(solnUserToCreate);
-
-            assertEquals(SOLUTION_USERNAME, solutionUser.getName());
-            assertEquals(DEFAULT_SYSTEM_DOMAIN, solutionUser.getDomain());
-        } finally {
-            solutionUserHelper.deleteSolutionUser(DEFAULT_SYSTEM_DOMAIN, SOLUTION_USERNAME);
-        }
-    }
-
-    @Test(expected = NotFoundException.class)
-    public void testCreateSolnUser_WithNonexistentTenant_ThrowsNotFoundEx() throws CertificateException, IOException {
-        SolutionUserDTO solnUserToCreate = SolutionUserDataGenerator.createTestSolutionUserDTO(SOLUTION_USERNAME, "unknown.local", false);
-        solutionUserResource = new SolutionUserResource("unknown.local", request, null);
-        solutionUserResource.setIDMClient(idmClient);
-        solutionUserResource.create(solnUserToCreate);
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void testCreateSolnUser_WithDuplicateSubjectDN_ThrowsInternalServerEx() throws Exception {
-        try {
-            SolutionUserDTO solnUserToCreate = SolutionUserDataGenerator.createTestSolutionUserDTO(SOLUTION_USERNAME, DEFAULT_SYSTEM_DOMAIN, false);
-            solutionUserResource.create(solnUserToCreate);
-            SolutionUserDTO duplicateSolutionUser = SolutionUserDataGenerator.createTestSolutionUserDTO("DuplicateSolutionUser", DEFAULT_SYSTEM_DOMAIN, false);
-            solutionUserResource.create(duplicateSolutionUser);
-        } finally {
-            solutionUserHelper.deleteSolutionUser(DEFAULT_SYSTEM_DOMAIN, SOLUTION_USERNAME);
-        }
-    }
-
-    @Test
     public void testGetSolutionUser() throws Exception {
         try {
             // Test setup [Create solution user]
@@ -123,29 +84,6 @@ public class SolutionUserResourceIT extends TestBase {
     @Test(expected = NotFoundException.class)
     public void testGetSolutionUser_WithUnknownUser_ThrowsNotFoundEx() {
         solutionUserResource.get(SOLUTIONUSER_UPN_UNKNOWN_USERNAME);
-    }
-
-    @Test
-    public void testDeleteSolutionUser() throws Exception {
-
-        // Test setup [Create solution user]
-        solutionUserHelper.createSolutionUser(DEFAULT_SYSTEM_DOMAIN, SOLUTION_USERNAME);
-
-        // Delete solution user
-        solutionUserResource.delete(SOLUTION_USERNAME);
-        assertNull(solutionUserHelper.findSolutionUser(DEFAULT_SYSTEM_DOMAIN, SOLUTION_USERNAME));
-    }
-
-    @Test(expected=NotFoundException.class)
-    public void testDeleteSolutionUser_WithNonExistentUser_ThrowsNotFoundEx() {
-        solutionUserResource.delete(SOLUTIONUSER_UPN_UNKNOWN_USERNAME);
-    }
-
-    @Test(expected = NotFoundException.class)
-    public void testDeleteSolutionUser_WithNonExistentTenant_ThrowsNotFoundEx() {
-        solutionUserResource = new SolutionUserResource("unknown.local", request, null);
-        solutionUserResource.setIDMClient(idmClient);
-        solutionUserResource.delete(SOLUTIONUSER_UPN_UNKNOWN_TENANT);
     }
 
     @Test(expected = NotImplementedError.class)
