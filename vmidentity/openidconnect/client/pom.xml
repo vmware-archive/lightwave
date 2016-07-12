@@ -183,7 +183,18 @@
             <version>${vmware.version}</version>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>com.vmware.vmdir.rest</groupId>
+            <artifactId>vmware-directory-rest-client</artifactId>
+            <version>${vmware.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware.vmdir.rest</groupId>
+            <artifactId>vmware-directory-rest-common</artifactId>
+            <version>${vmware.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>com.vmware.identity.rest.idm</groupId>
             <artifactId>vmware-identity-rest-idm-common</artifactId>

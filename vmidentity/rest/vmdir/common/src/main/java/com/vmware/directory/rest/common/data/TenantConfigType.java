@@ -11,31 +11,33 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
-package com.vmware.identity.rest.idm.server.log;
+package com.vmware.directory.rest.common.data;
 
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
 /**
- * Listener to bridge between Jersey's default usage of java.util.logging
- * and SLF4J.
+ * The {@code TenantConfigType} enum contains the known types of configuration policies
+ * for use when retrieving a tenant configuration.
  *
  * @author Balaji Boggaram Ramanarayan
- * @author Travis Hall
  */
-public class SLF4JListener implements ServletContextListener {
+public enum TenantConfigType {
 
-    @Override
-    public void contextDestroyed(ServletContextEvent arg0) {
-        SLF4JBridgeHandler.uninstall();
-    }
+    /**
+     * Retrieve all tenant configuration policies
+     */
+    ALL,
 
-    @Override
-    public void contextInitialized(ServletContextEvent arg0) {
-        SLF4JBridgeHandler.removeHandlersForRootLogger();
-        SLF4JBridgeHandler.install();
-    }
+    /**
+     * Retrieve only the tenant lockout policy.
+     *
+     * @see LockoutPolicyDTO
+     */
+    LOCKOUT,
 
+    /**
+     * Retrieve only the tenant password policy.
+     *
+     * @see PasswordPolicyDTO
+     */
+    PASSWORD
 }
