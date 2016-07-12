@@ -342,8 +342,6 @@ public class TenantResourceTest {
     @Test
     public void testUpdateConfig() throws Exception {
         TenantConfigurationDTO configToUpdate = TenantConfigurationDTO.builder()
-                .withLockoutPolicy(LockoutPolicyMapper.getLockoutPolicyDTO(getTestLockoutPolicy()))
-                .withPasswordPolicy(PasswordPolicyMapper.getPasswordPolicyDTO(getTestPasswordPolicy()))
                 .withTokenPolicy(getTestTokenPolicyDTO())
                 .withProviderPolicy(getProviderPolicyDTO())
                 .withBrandPolicy(getTestBrandPolicyDTO())
@@ -393,8 +391,6 @@ public class TenantResourceTest {
         mControl.replay();
         TenantConfigurationDTO updatedConfig = tenantResource.updateConfig(TENANT_NAME, configToUpdate);
 
-        assertLockoutPolicy(updatedConfig.getLockoutPolicy());
-        assertPasswordPolicy(updatedConfig.getPasswordPolicy());
         assertTokenPolicy(updatedConfig.getTokenPolicy());
         assertProviderPolicy(updatedConfig.getProviderPolicy());
         assertBrandPolicy(updatedConfig.getBrandPolicy());
