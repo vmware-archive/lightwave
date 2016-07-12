@@ -96,6 +96,12 @@
             <version>${vmware.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.vmware.vmdir.rest</groupId>
+            <artifactId>vmware-directory-rest-client</artifactId>
+            <version>${vmware.version}</version>
+        </dependency>
+
         <!-- Compile Dependencies -->
         <dependency>
             <groupId>org.bouncycastle</groupId>

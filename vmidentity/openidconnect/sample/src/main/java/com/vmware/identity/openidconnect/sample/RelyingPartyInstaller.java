@@ -54,6 +54,8 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
+import com.vmware.directory.rest.client.VmdirClient;
+import com.vmware.directory.rest.common.data.SolutionUserDTO;
 import com.vmware.identity.openidconnect.client.AccessToken;
 import com.vmware.identity.openidconnect.client.ClientConfig;
 import com.vmware.identity.openidconnect.client.ConnectionConfig;
@@ -68,7 +70,6 @@ import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.idm.client.IdmClient;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
-import com.vmware.identity.rest.idm.data.SolutionUserDTO;
 import com.vmware.identity.rest.idm.data.attributes.MemberType;
 
 /**
@@ -127,6 +128,11 @@ class RelyingPartyInstaller {
                 oidcTokens.getAccessToken(),
                 domainControllerFQDN,
                 domainControllerPort);
+        
+        VmdirClient vmdirClient = createVMdirClient(
+                oidcTokens.getAccessToken(),
+                domainControllerFQDN,
+                domainControllerPort);
 
         // create a solution user
         CertificateDTO certificateDTO = new CertificateDTO.Builder()
@@ -137,11 +143,11 @@ class RelyingPartyInstaller {
                 withDomain(tenant).
                 withCertificate(certificateDTO).
                 build();
-        idmClient.solutionUser().create(tenant, solutionUserDTO);
+        vmdirClient.solutionUser().create(tenant, solutionUserDTO);
 
         // add the solution user to ActAs group
         List<String> members = Arrays.asList(solutionUserName + "@" + tenant);
-        idmClient.group().addMembers(tenant, "ActAsUsers", tenant, members, MemberType.USER);
+        vmdirClient.group().addMembers(tenant, "ActAsUsers", tenant, members, com.vmware.directory.rest.common.data.MemberType.USER);
 
         // register a OIDC client
         OIDCClientMetadataDTO oidcClientMetadataDTO = new OIDCClientMetadataDTO.Builder().
@@ -273,6 +279,23 @@ class RelyingPartyInstaller {
                         com.vmware.identity.rest.core.client.AccessToken.Type.JWT);
         idmClient.setToken(restAccessToken);
         return idmClient;
+    }
+
+    private VmdirClient createVMdirClient(
+            AccessToken accessToken,
+            String domainControllerFQDN,
+            int domainControllerPort)
+            throws Exception {
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init(this.keyStore);
+        SSLContext sslContext = SSLContext.getInstance("SSL");
+        sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+        VmdirClient vmdirClient = new VmdirClient(domainControllerFQDN, domainControllerPort, new DefaultHostnameVerifier(), sslContext);
+        com.vmware.identity.rest.core.client.AccessToken restAccessToken =
+                new com.vmware.identity.rest.core.client.AccessToken(accessToken.getValue(),
+                        com.vmware.identity.rest.core.client.AccessToken.Type.JWT);
+        vmdirClient.setToken(restAccessToken);
+        return vmdirClient;
     }
 
     private String convertToBase64PEMString(X509Certificate x509Certificate) throws Exception {

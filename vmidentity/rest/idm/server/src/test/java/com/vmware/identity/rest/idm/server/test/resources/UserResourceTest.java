@@ -13,10 +13,8 @@
  */
 package com.vmware.identity.rest.idm.server.test.resources;
 
-import static org.easymock.EasyMock.aryEq;
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -24,7 +22,6 @@ import static org.junit.Assert.assertNotNull;
 
 import java.security.Principal;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Set;
 
@@ -39,10 +36,8 @@ import org.junit.Test;
 import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.IDMException;
 import com.vmware.identity.idm.InvalidArgumentException;
-import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.NoSuchIdpException;
 import com.vmware.identity.idm.NoSuchTenantException;
-import com.vmware.identity.idm.PasswordPolicyViolationException;
 import com.vmware.identity.idm.PersonDetail;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
@@ -54,7 +49,6 @@ import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
 import com.vmware.identity.rest.idm.data.GroupDTO;
 import com.vmware.identity.rest.idm.data.PasswordDetailsDTO;
-import com.vmware.identity.rest.idm.data.PasswordResetRequestDTO;
 import com.vmware.identity.rest.idm.data.PrincipalDTO;
 import com.vmware.identity.rest.idm.data.UserDTO;
 import com.vmware.identity.rest.idm.data.UserDetailsDTO;
@@ -83,9 +77,6 @@ public class UserResourceTest {
     private static final String DESC = "Test user created from unit tests";
     private static final String EMAIL = "testUser@test.com";
     private static final String UPN = "testUser@test.local";
-
-    private static final String CURRENT_PWD = "oldpassword_That_Needs_To_Be_Updated";
-    private static final String NEW_PWD = "newpassword_Being_Updated_With";
 
     private UserResource userResource;
     private IMocksControl mControl;
@@ -156,46 +147,6 @@ public class UserResourceTest {
     }
 
     @Test
-    public void testDelete() throws Exception {
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TENANT));
-
-        mockCasIDMClient.deletePrincipal(TENANT, TEST_USERNAME);
-        mControl.replay();
-
-        userResource.delete(TEST_USER_UPN);
-    }
-
-    @Test(expected = NotFoundException.class)
-    public void testDeleteOnNoSuchTenant_ThrowsNotFoundEx() throws Exception {
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TENANT));
-        mockCasIDMClient.deletePrincipal(eq(TENANT), eq(TEST_USERNAME));
-        expectLastCall().andThrow(new NoSuchTenantException("No such tenant"));
-        mControl.replay();
-        userResource.delete(TEST_USER_UPN);
-        mControl.verify();
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void testDeleteOnInvalidArgument_ThrowsBadRequestEx() throws Exception {
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TENANT));
-        mockCasIDMClient.deletePrincipal(eq(TENANT), eq(TEST_USERNAME));
-        expectLastCall().andThrow(new InvalidArgumentException("Invalid Argument"));
-        mControl.replay();
-        userResource.delete(TEST_USER_UPN);
-        mControl.verify();
-    }
-
-    @Test(expected = InternalServerErrorException.class)
-    public void testDeleteOnIDMError_ThrowsInternalServerError() throws Exception {
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TENANT));
-        mockCasIDMClient.deletePrincipal(eq(TENANT), eq(TEST_USERNAME));
-        expectLastCall().andThrow(new IDMException("IDM error"));
-        mControl.replay();
-        userResource.delete(TEST_USER_UPN);
-        mControl.verify();
-    }
-
-    @Test
     public void testGetGroups() throws Exception {
         Set<Group> groups = TestDataGenerator.getIdmGroups(2);
         expect(mockCasIDMClient.findDirectParentGroups(eq(TENANT), isA(PrincipalId.class))).andReturn(groups);
@@ -238,175 +189,6 @@ public class UserResourceTest {
         mControl.replay();
         Collection<GroupDTO> groupDTOs = userResource.getGroups(TEST_USER_UPN, true);
         assertEquals(4, groupDTOs.size());
-    }
-
-    @Test
-    public void testCreateuser() throws Exception {
-        PersonUser user = getTestUser();
-
-        PrincipalId userId = new PrincipalId(TEST_USERNAME, TEST_DOMAIN);
-        expect(mockCasIDMClient.addPersonUser(eq(TENANT), eq(TEST_USERNAME), isA(PersonDetail.class), aryEq("testUser!23".toCharArray()))).andReturn(userId);
-        expect(mockCasIDMClient.findPersonUser(eq(TENANT), isA(PrincipalId.class))).andReturn(user);
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TENANT));
-
-        mControl.replay();
-
-        UserDTO userDTO = getTestUserDTO();
-        UserDTO userCreated = userResource.create(userDTO);
-
-        assertEquals(TEST_USERNAME, userCreated.getName());
-        assertEquals(TEST_DOMAIN, userCreated.getDomain());
-        assertNotNull(userCreated.getDetails());
-        assertEquals(UPN, userCreated.getDetails().getUPN());
-
-        mControl.verify();
-    }
-
-    @Test(expected=BadRequestException.class)
-    public void testCreateUser_OnInvalidPwdPolicy_ThrowsBadRequest() throws Exception {
-        expect(mockCasIDMClient.addPersonUser(eq(TENANT), eq(TEST_USERNAME), isA(PersonDetail.class), aryEq("invalidpwd".toCharArray())))
-              .andThrow(new PasswordPolicyViolationException("Invalid Password. Password policy voliated"));
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TENANT));
-
-        mControl.replay();
-
-        PrincipalDTO alias = new PrincipalDTO(TEST_ALIAS, TEST_ALIAS_DOMAIN);
-        PasswordDetailsDTO passwordDetails = PasswordDetailsDTO.builder().withPassword("invalidpwd").build();
-        UserDTO userToCreate =  UserDTO.builder().withName(TEST_USERNAME).withDomain(TEST_DOMAIN).withAlias(alias).withDetails(getTestPersonDetailDTO()).withLocked(false).withDisabled(false).withPasswordDetails(passwordDetails).build();
-        userResource.create(userToCreate);
-        mControl.verify();
-    }
-
-    @Test(expected = NotFoundException.class)
-    public void testCreateUserOnNoTenant() throws Exception {
-        expect(mockCasIDMClient.addPersonUser(eq(TENANT), eq(TEST_USERNAME), isA(PersonDetail.class), aryEq("testUser!23".toCharArray()))).andThrow(new NoSuchTenantException("no such tenant"));
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TENANT));
-
-        mControl.replay();
-        UserDTO userDTO = getTestUserDTO();
-        userResource.create(userDTO);
-        mControl.verify();
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void testCreateUserOnInvalidPrincipal() throws Exception {
-        expect(mockCasIDMClient.addPersonUser(eq(TENANT), eq(TEST_USERNAME), isA(PersonDetail.class), aryEq("testUser!23".toCharArray()))).andThrow(new InvalidPrincipalException("no such tenant"));
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TENANT));
-
-        mControl.replay();
-        UserDTO userDTO = getTestUserDTO();
-        userResource.create(userDTO);
-        mControl.verify();
-    }
-
-    @Test(expected = InternalServerErrorException.class)
-    public void testCreateOnException_throwsInternalServerError() throws Exception {
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TENANT));
-        expect(mockCasIDMClient.addPersonUser(eq(TENANT), eq(TEST_USERNAME), isA(PersonDetail.class), aryEq("testUser!23".toCharArray()))).andThrow(new Exception("UnitTest : IDM Error"));
-        mControl.replay();
-        userResource.create(getTestUserDTO());
-        mControl.verify();
-    }
-
-
-    @Test
-    public void testUpdateUser() throws Exception {
-        PersonUser user = getTestUser();
-
-        PrincipalId userId = new PrincipalId(TEST_USERNAME, TEST_DOMAIN);
-        expect(mockCasIDMClient.updatePersonUserDetail(eq(TENANT), eq(TEST_USERNAME), isA(PersonDetail.class))).andReturn(userId);
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TENANT));
-        expect(mockCasIDMClient.findPersonUser(eq(TENANT), isA(PrincipalId.class))).andReturn(user);
-        expect(mockCasIDMClient.enableUserAccount(eq(TENANT), isA(PrincipalId.class))).andReturn(true);
-        expect(mockCasIDMClient.unlockUserAccount(eq(TENANT), isA(PrincipalId.class))).andReturn(true);
-        mControl.replay();
-
-        UserDTO userDTO = getTestUserDTO();
-        UserDTO updated = userResource.update(TEST_USER_UPN, userDTO);
-
-        assertNotNull(updated);
-        assertNotNull(updated.getDetails());
-        assertEquals(userDTO.getDetails().getDescription(), updated.getDetails().getDescription());
-        assertEquals(userDTO.getDetails().getEmail(), updated.getDetails().getEmail());
-        assertEquals(userDTO.getDetails().getFirstName(), updated.getDetails().getFirstName());
-        assertEquals(userDTO.getDetails().getLastName(), updated.getDetails().getLastName());
-        assertEquals(userDTO.getDetails().getUPN(), updated.getDetails().getUPN());
-    }
-
-    @Test(expected = NotFoundException.class)
-    public void testUpdateOnInvalidPrincipalEx_ThrowsNotFoundEx() throws Exception {
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TENANT));
-        expect(mockCasIDMClient.updatePersonUserDetail(eq(TENANT), eq(TEST_USERNAME), isA(PersonDetail.class))).andThrow(new InvalidPrincipalException("Invalid Principal"));
-        mControl.replay();
-        userResource.update(TEST_USER_UPN, getTestUserDTO());
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void testUpdateOnInvalidArgument_ThrowsBadRequestEx() throws Exception {
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TENANT));
-        expect(mockCasIDMClient.updatePersonUserDetail(eq(TENANT), eq(TEST_USERNAME), isA(PersonDetail.class))).andThrow(new InvalidArgumentException("Invalid argument"));
-        mControl.replay();
-        userResource.update(TEST_USER_UPN, getTestUserDTO());
-    }
-
-    @Test(expected = InternalServerErrorException.class)
-    public void testUpdateOnIDMError_ThrowsInternalServerError() throws Exception {
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TENANT));
-        expect(mockCasIDMClient.updatePersonUserDetail(eq(TENANT), eq(TEST_USERNAME), isA(PersonDetail.class))).andThrow(new IDMException("IDM error"));
-        mControl.replay();
-        userResource.update(TEST_USER_UPN, getTestUserDTO());
-    }
-
-    @Test
-    public void testChangePasswordBySelf() throws Exception {
-        expect(mockSecurityContext.getUserPrincipal()).andReturn(mockPrincipal);
-        expect(mockPrincipal.getName()).andReturn(TEST_USER_UPN);
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TEST_DOMAIN));
-        expect(mockSecurityContext.isUserInRole(Role.ADMINISTRATOR.name())).andReturn(false).times(2);
-        mockCasIDMClient.changeUserPassword(eq(TENANT), eq(TEST_USERNAME), aryEq(CURRENT_PWD.toCharArray()), aryEq(NEW_PWD.toCharArray()));
-        expect(mockCasIDMClient.findPersonUser(eq(TENANT), isA(PrincipalId.class))).andReturn(getTestUser());
-        mControl.replay();
-
-        userResource.updatePassword(TEST_USER_UPN, new PasswordResetRequestDTO(CURRENT_PWD, NEW_PWD));
-        mControl.verify();
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void testChangePasswordBySelfWithoutOldPwd() throws Exception {
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TEST_DOMAIN));
-        expect(mockSecurityContext.isUserInRole(Role.ADMINISTRATOR.name())).andReturn(false);
-        mControl.replay();
-        userResource.updatePassword(TEST_USER_UPN, new PasswordResetRequestDTO(null, NEW_PWD));
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void testUpdatePasswordViolatingPwdPolicy() throws Exception {
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TENANT));
-        expect(mockSecurityContext.isUserInRole(Role.ADMINISTRATOR.name())).andReturn(false);
-        mockCasIDMClient.changeUserPassword(eq(TENANT), eq(TEST_USERNAME), aryEq(CURRENT_PWD.toCharArray()), aryEq(NEW_PWD.toCharArray()));
-        expectLastCall().andThrow(new PasswordPolicyViolationException("Unit test : Password policy have been not met"));
-        mControl.replay();
-        userResource.updatePassword(TEST_USER_UPN, new PasswordResetRequestDTO(CURRENT_PWD, NEW_PWD));
-    }
-
-    @Test
-    public void testUpdatePasswordWithAdminRole() throws Exception {
-
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TEST_DOMAIN));
-        expect(mockSecurityContext.isUserInRole(Role.ADMINISTRATOR.name())).andReturn(true).times(2);
-        mockCasIDMClient.setUserPassword(eq(TENANT), eq(TEST_USERNAME), aryEq(NEW_PWD.toCharArray()));
-        expect(mockCasIDMClient.findPersonUser(eq(TENANT), isA(PrincipalId.class))).andReturn(getTestUser());
-
-        mControl.replay();
-        userResource.updatePassword(TEST_USER_UPN, new PasswordResetRequestDTO(CURRENT_PWD, NEW_PWD));
-        mControl.verify();
-    }
-
-    @Test(expected = NotFoundException.class)
-    public void testUpdatePasswordOnNoSuchTenant_ThrowsNotFoundEx() throws Exception {
-        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andThrow(new NoSuchTenantException("No such tenant"));
-        mControl.replay();
-        userResource.updatePassword(TEST_USER_UPN, new PasswordResetRequestDTO(CURRENT_PWD, NEW_PWD));
     }
 
     private PersonUser getTestUser() {
