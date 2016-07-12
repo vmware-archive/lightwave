@@ -1,0 +1,32 @@
+<EntitiesDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" Name="Org1">
+     <EntityDescriptor entityID="https://sc-rdops-vm18-dhcp-39-91.eng.vmware.com:7444/ssolib-sample/SsoClient/Metadata/Org1">
+          <SPSSODescriptor AuthnRequestsSigned="true" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+               <KeyDescriptor xmlns:ds="http://www.w3.org/2000/09/xmldsig#" use="signing">
+                    <ds:KeyInfo>
+                         <ds:X509Data>
+                              <ds:X509Certificate>MIIDMTCCAhkCCQCpraeAXt4HqDANBgkqhkiG9w0BAQUFADBaMQwwCgYDVQQDDANzdHMxDDAKBgNV
+BAsMA1ImRDEPMA0GA1UECgwGVk13YXJlMQ4wDAYDVQQHDAVTb2ZpYTEOMAwGA1UECAwFU29maWEx
+CzAJBgNVBAYTAkJHMB4XDTEyMDExMDEwMDYzN1oXDTIxMTAwOTEwMDYzN1owWzENMAsGA1UEAwwE
+c3RzMTEMMAoGA1UECwwDUiZEMQ8wDQYDVQQKDAZWTVdhcmUxDjAMBgNVBAcMBVNvZmlhMQ4wDAYD
+VQQIDAVTb2ZpYTELMAkGA1UEBhMCQkcwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDE
+GyhRK1ygL5QibjTrVdpRvSHTaGhskOVLKK4xnoRub9TbI2j1zGgxa7T9oQ6R86Ofg/kvOm+Fzhb8
+Jt5shCUKzSweQ2bGa5yjt0kO/FbwE7oxOdV/3XuJbn7fd+xdwdpT+5pFKKjYgdKJmoV3FZEoiB+l
+if/IvX0f5pfJHPbUHIiKRIukzdSmg/sfyH4gczw8r67jC51jmD7djZPQ3ySlR59erXr/en3g5hWF
+3Szn0p/5EPSCfT6p1UFBDKW28AqD8tLXajN13tOUw1/guSTPmhJfn+nM+6oH2/bjHoPe1B/wGlEh
+uAPuuzHpyhxcJ1nMGWJhZPkIQmS0EwKousAPAgMBAAEwDQYJKoZIhvcNAQEFBQADggEBAJHLw/Hh
+lxx6KOIflq9W9goav/uGzEGtiKzfFGSZKV3oCcL597Csj669p/02INNg+AzZRo5i2Sjsa3QIuxWp
+pee3TmfOb6fKBVTO90UIQddHOeWNOZIGN1zfzpbIuetNfr9vICxhFZo3Y+7MH58mnXUQ4UU2WV3y
+m91fcJhyxuYx1lH+fPbbKuJGatOxO6Yj/DEcGcJ6ZuMG+lsgiM2EKy6jPbvnhw/hvv+jzasBmU9h
+gBk3tytSE4m0tIMupBVWA5f2JSVZOdJkJSZaYygpnkBYZPpmSQGKwmPcADb2QzpB40yCCK04WLzk
+aD6mx9REtLxX+CTzgqNn9Yy9YxIwdwY=</ds:X509Certificate>
+                         </ds:X509Data>
+                    </ds:KeyInfo>
+               </KeyDescriptor>
+               <SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://sc-rdops-vm18-dhcp-39-91.eng.vmware.com:7444/ssolib-sample/SsoClient/SLO/Org1" ResponseLocation="https://sc-rdops-vm18-dhcp-39-91.eng.vmware.com:7444/ssolib-sample/SsoClient/SLO/Org1"/>
+               <SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:SOAP" Location="https://sc-rdops-vm18-dhcp-39-91.eng.vmware.com:7444/ssolib-sample/SsoClient/SLO/Org1" ResponseLocation=""/>
+               <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</NameIDFormat>
+               <NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat>
+               <AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="https://sc-rdops-vm18-dhcp-39-91.eng.vmware.com:7444/ssolib-sample/SsoClient/SSO/Org1" index="0" isDefault="true"/>
+          </SPSSODescriptor>
+     </EntityDescriptor>
+</EntitiesDescriptor>

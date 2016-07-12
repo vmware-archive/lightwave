@@ -16,7 +16,6 @@ package com.vmware.identity.rest.idm.server.test.integration.resources;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -30,13 +29,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import com.vmware.identity.idm.Group;
-import com.vmware.identity.idm.InvalidPrincipalException;
-import com.vmware.identity.rest.core.server.exception.client.BadRequestException;
 import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
-import com.vmware.identity.rest.core.server.exception.server.NotImplementedError;
-import com.vmware.identity.rest.core.server.util.PrincipalUtil;
 import com.vmware.identity.rest.idm.data.GroupDTO;
-import com.vmware.identity.rest.idm.data.GroupDetailsDTO;
 import com.vmware.identity.rest.idm.data.SearchResultDTO;
 import com.vmware.identity.rest.idm.data.attributes.MemberType;
 import com.vmware.identity.rest.idm.server.Config;
@@ -44,7 +38,6 @@ import com.vmware.identity.rest.idm.server.mapper.GroupMapper;
 import com.vmware.identity.rest.idm.server.resources.GroupResource;
 import com.vmware.identity.rest.idm.server.test.annotation.IntegrationTest;
 import com.vmware.identity.rest.idm.server.test.integration.util.PrincipalAssertor;
-import com.vmware.identity.rest.idm.server.test.integration.util.data.GroupDataGenerator;
 import com.vmware.identity.rest.idm.server.test.integration.util.data.UserDataGenerator;
 
 /**
@@ -102,81 +95,6 @@ public class GroupResourceIT extends TestBase {
         groupResource.setIDMClient(idmClient);
         groupResource.get(GROUP_UPN_UNKNOWN_TENANT);
     }
-
-    @Test
-    public void testCreateGroup() throws Exception {
-        try {
-            GroupDTO groupToCreate = GroupDataGenerator.createGroupDTO(GROUPNAME, DEFAULT_SYSTEM_DOMAIN, GROUP_DESCRIPTION);
-            GroupDTO createdGroup = groupResource.create(groupToCreate);
-            PrincipalAssertor.assertGroup(groupToCreate, createdGroup);
-        } finally {
-            groupHelper.deleteGroup(DEFAULT_TENANT, GROUPNAME);
-        }
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void testCreateGroup_WithNonSystemTenant_ThrowsBadRequestEx() {
-        GroupDTO groupToCreate = GroupDataGenerator.createGroupDTO(GROUPNAME, "unknown.local", GROUP_DESCRIPTION);
-        groupResource.create(groupToCreate);
-    }
-
-    @Test(expected = InvalidPrincipalException.class)
-    public void testDeleteGroup() throws Exception {
-
-        // Prepare test set up [create group]
-        groupHelper.createGroup(DEFAULT_TENANT, GROUPNAME);
-
-        // Delete the group
-        groupResource.delete(GROUP_UPN);
-
-        groupHelper.getGroup(DEFAULT_TENANT, GROUPNAME);
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void testDeleteGroup_WithNonSystemTenant_ThrowsNotFoundEx() {
-        groupResource.delete(GROUPNAME + "@" + "nonsytem.local");
-    }
-
-    @Test(expected = NotFoundException.class)
-    public void testDeleteGroup_WithNonExistentGroup_ThrowsNotFoundEx() {
-        groupResource.delete(GROUP_UPN_UNKNOWN_GROUPNAME);
-    }
-
-    @Test
-    public void testUpdateGroup() throws Exception {
-        String newDescription = "New description that is being updated as part of integration testing";
-        try {
-            // test set up [Create group with some description]
-            groupHelper.createGroup(DEFAULT_TENANT, GROUPNAME);
-
-            // update group with new description
-            GroupDTO groupDTO = new GroupDTO(null, null, getTestGroupDetailsDTO(newDescription), null, null);
-            groupResource.update(GROUP_UPN, groupDTO);
-
-            // Assert if the description of group is been updated
-            Group updatedGroup = groupHelper.getGroup(DEFAULT_TENANT, GROUPNAME);
-            assertEquals(newDescription, updatedGroup.getDetail().getDescription());
-        } finally {
-            groupHelper.deleteGroup(DEFAULT_TENANT, GROUPNAME);
-        }
-    }
-
-    @Test(expected = NotFoundException.class)
-    public void testUpdateGroup_WithNonExistentGroup_ThrowsNotFoundException() {
-        String newDescription = "New description that is being updated as part of integration testing";
-        // update unknown group with new description
-        GroupDTO groupDTO = new GroupDTO(null, null, getTestGroupDetailsDTO(newDescription), null, null);
-        groupResource.update(GROUP_UPN_UNKNOWN_GROUPNAME, groupDTO);
-    }
-
-    @Test(expected = BadRequestException.class)
-    public void testUpdateGroup_WithNonSystemTenant_ThrowsBadRequestException() {
-        String newDescription = "New description that is being updated as part of integration testing";
-        // update unknown group with new description
-        GroupDTO groupDTO = new GroupDTO(null, null, getTestGroupDetailsDTO(newDescription), null, null);
-        groupResource.update(GROUP_UPN_UNKNOWN_TENANT, groupDTO);
-    }
-
 
     @Test
     public void testGetMembersFromGroup() throws Exception {
@@ -237,79 +155,6 @@ public class GroupResourceIT extends TestBase {
     }
 
     @Test
-    public void testAddUsersToGroup() throws Exception {
-        List<String> users = null;
-        try {
-            groupHelper.createGroup(DEFAULT_TENANT, GROUPNAME);
-            users = Arrays.asList("User1@vsphere.local", "User2@vsphere.local", "User3@vsphere.local");
-            for (String user : users) {
-                userHelper.createUser(DEFAULT_TENANT, UserDataGenerator.generateTestUser(PrincipalUtil.fromName(user).getName(), DEFAULT_TENANT, false, false));
-            }
-
-            groupResource.addMembers(GROUP_UPN, users, MemberType.USER.name());
-
-            int totalPersonUsers = groupHelper.findPersonUsersInGroup(DEFAULT_TENANT, GROUPNAME, "User").size();
-            assertEquals(3, totalPersonUsers);
-
-        } finally {
-            userHelper.deleteUsers(DEFAULT_TENANT, users);
-            groupHelper.deleteGroup(DEFAULT_TENANT, GROUPNAME); // Delete target group
-        }
-    }
-
-    @Test
-    public void testAddGroupToGroup() throws Exception {
-        List<String> groups = null;
-        try {
-            groupHelper.createGroup(DEFAULT_TENANT, GROUPNAME);
-            groups = Arrays.asList("Group1@vsphere.local", "Group2@vsphere.local", "Group3@vsphere.local");
-            for (String group : groups) {
-                groupHelper.createGroup(DEFAULT_TENANT, PrincipalUtil.fromName(group).getName());
-            }
-
-            groupResource.addMembers(GROUP_UPN, groups, MemberType.GROUP.name());
-
-            int totalGroups = groupHelper.findGroupsInGroup(DEFAULT_TENANT, GROUPNAME, "Group").size();
-            assertEquals(3, totalGroups);
-
-        } finally {
-            groupHelper.deleteGroups(DEFAULT_TENANT, groups);
-            groupHelper.deleteGroup(DEFAULT_TENANT, GROUPNAME); // Delete target group
-        }
-    }
-
-    @Test(expected = NotImplementedError.class)
-    public void testAddSolutionUsersToGroup() throws Exception {
-        List<String> solutionUsers = null;
-        try {
-            groupHelper.createGroup(DEFAULT_TENANT, GROUPNAME);
-            solutionUsers = Arrays.asList("SolutionUser1@vsphere.local");
-            // revisit after implementing support to add solution user to group
-            /*
-             * for (String solutionUser : solutionUsers) {
-             * solutionUserHelper.createSolutionUser(DEFAULT_TENANT, solutionUser); }
-             */
-            groupResource.addMembers(GROUP_UPN, solutionUsers, MemberType.SOLUTIONUSER.name());
-        } finally {
-            groupHelper.deleteGroup(DEFAULT_TENANT, GROUPNAME); // Delete target group
-        }
-    }
-
-    @Test(expected = NotFoundException.class)
-    public void testAddMember_WithNonExistentTenant_throwsNotFoundEx() {
-        groupResource = new GroupResource("unknown.local", request, null);
-        groupResource.setIDMClient(idmClient);
-        List<String> groupsToAdd = new ArrayList<String>();
-        groupResource.addMembers(GROUP_UPN, groupsToAdd, MemberType.GROUP.name());
-    }
-
-    @Test(expected = NotFoundException.class)
-    public void testAddMember_WithNonExistentGroup_ThrowsNotFoundEx() {
-        List<String> unknownGroups = Arrays.asList("unknownGroup1@vsphere.local", "unknownGroup2@vsphere.local");
-        groupResource.addMembers(GROUP_UPN, unknownGroups, MemberType.GROUP.name());
-    }
-
-    @Test
     public void testGetParentsOfGroup_NonNested() throws Exception {
         String parentGroup = "parentGroup";
         String childGroup = "childGroup";
@@ -336,35 +181,6 @@ public class GroupResourceIT extends TestBase {
     @Test(expected = NotFoundException.class)
     public void testGetParent_WithNonExistentGroup_ThrowsNotFoundEx() {
         groupResource.getParents(GROUP_UPN_UNKNOWN_GROUPNAME, false);
-    }
-
-    @Test
-    public void testRemoveMembersFromGroup() throws Exception {
-        List<String> groups = null;
-        try {
-            groupHelper.createGroup(DEFAULT_TENANT, GROUPNAME);
-            groups = Arrays.asList("Group1@vsphere.local", "Group2@vsphere.local");
-            for (String group : groups) {
-                groupHelper.createGroup(DEFAULT_TENANT, PrincipalUtil.fromName(group).getName());
-                groupHelper.addGroupToGroup(DEFAULT_TENANT, PrincipalUtil.fromName(group).getName(), GROUPNAME);
-            }
-
-            groupResource.removeMembers(GROUP_UPN, groups, MemberType.GROUP.name());
-            assertEquals(0, groupResource.getMembers(GROUP_UPN, MemberType.GROUP.name(), 200).getGroups().size());
-        } finally {
-            groupHelper.deleteGroup(DEFAULT_TENANT, GROUPNAME);
-            groupHelper.deleteGroups(DEFAULT_TENANT, groups);
-        }
-    }
-
-    @Test(expected = NotFoundException.class)
-    public void testRemoveMembers_WithNonExistingUser_ThrowsNotFoundEx() {
-        List<String> unknownUsers = Arrays.asList("unknownUser1@vsphere.local", "unknownUser2@vsphere.local");
-        groupResource.removeMembers(GROUP_UPN, unknownUsers, MemberType.USER.name());
-    }
-
-    private GroupDetailsDTO getTestGroupDetailsDTO(String desc) {
-        return GroupDetailsDTO.builder().withDescription(desc).build();
     }
 
 }
