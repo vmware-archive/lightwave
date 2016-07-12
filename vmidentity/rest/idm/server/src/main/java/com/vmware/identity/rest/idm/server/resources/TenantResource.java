@@ -365,27 +365,12 @@ public class TenantResource extends BaseResource {
     public TenantConfigurationDTO updateConfig(@PathParam(PathParameters.TENANT_NAME) String tenantName, TenantConfigurationDTO configurationDTO) {
 
         TenantConfigurationDTO.Builder configBuilder = TenantConfigurationDTO.builder();
-        LockoutPolicyDTO lockoutPolicy = configurationDTO.getLockoutPolicy();
-        PasswordPolicyDTO passwordPolicy = configurationDTO.getPasswordPolicy();
         TokenPolicyDTO tokenPolicy = configurationDTO.getTokenPolicy();
         ProviderPolicyDTO providerPolicy = configurationDTO.getProviderPolicy();
         BrandPolicyDTO brandPolicy = configurationDTO.getBrandPolicy();
         AuthenticationPolicyDTO authenticationPolicy = configurationDTO.getAuthenticationPolicy();
 
         try {
-            // update lockout policy configuration of tenant
-            if (lockoutPolicy != null) {
-                LockoutPolicy lockoutPolicyUpdate = LockoutPolicyMapper.getLockoutPolicy(lockoutPolicy);
-                getIDMClient().setLockoutPolicy(tenantName, lockoutPolicyUpdate);
-                configBuilder.withLockoutPolicy(getLockoutPolicy(tenantName));
-            }
-
-            // update password policy configuration of tenant
-            if (passwordPolicy != null) {
-                PasswordPolicy passwordPolicyUpdate = PasswordPolicyMapper.getPasswordPolicy(passwordPolicy);
-                getIDMClient().setPasswordPolicy(tenantName, passwordPolicyUpdate);
-                configBuilder.withPasswordPolicy(getPasswordPolicy(tenantName));
-            }
 
             // update token policy configuration of tenant
             if (tokenPolicy != null) {
@@ -431,7 +416,7 @@ public class TenantResource extends BaseResource {
             throw new NotFoundException(sm.getString("ec.404"),e);
         } catch( IllegalArgumentException | InvalidArgumentException | InvalidPasswordPolicyException e){
             log.error("Failed to update the configuration details for tenant '{}' due to a client side error", tenantName, e);
-            throw new BadRequestException(sm.getString("res.ten.get.config.failed", tenantName), e);
+            throw new BadRequestException(sm.getString("res.ten.update.config.failed", tenantName), e);
         } catch (Exception e){
             log.error("Failed to update the configuration details for tenant '{}' due to a server side error", tenantName, e);
             throw new InternalServerErrorException(sm.getString("ec.500"), e);

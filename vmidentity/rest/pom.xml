@@ -20,6 +20,7 @@
     <module>core</module>
     <module>afd</module>
     <module>idm</module>
+    <module>vmdir</module>
   </modules>
 
   <properties>
