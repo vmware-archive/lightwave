@@ -123,7 +123,7 @@ public class WindowsIdmNativeAdapter extends NativeAdapter implements IIdmClient
                 throw new Win32Exception(errCode);
             }
 
-            return ppName.getValue().getString(0, true);
+            return ppName.getValue().getWideString(0);
         }
         finally
         {

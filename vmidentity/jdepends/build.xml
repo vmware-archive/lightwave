@@ -47,7 +47,7 @@
            <url url="http://central.maven.org/maven2/org/apache/httpcomponents/httpcore/4.3.2/httpcore-4.3.2.jar" />
            <url url="http://central.maven.org/maven2/net/jcip/jcip-annotations/1.0/jcip-annotations-1.0.jar" />
            <url url="http://central.maven.org/maven2/org/slf4j/jcl-over-slf4j/1.7.10/jcl-over-slf4j-1.7.10.jar" />
-           <url url="http://central.maven.org/maven2/net/java/dev/jna/jna/3.5.1/jna-3.5.1.jar" />
+           <url url="http://central.maven.org/maven2/net/java/dev/jna/jna/4.2.1/jna-4.2.1.jar" />
            <url url="http://central.maven.org/maven2/joda-time/joda-time/1.6.2/joda-time-1.6.2.jar" />
            <url url="http://central.maven.org/maven2/net/minidev/json-smart/1.1.1/json-smart-1.1.1.jar" />
            <url url="http://central.maven.org/maven2/javax/servlet/jsp/jstl/jstl-api/1.2/jstl-api-1.2.jar" />
@@ -63,7 +63,7 @@
            <url url="http://central.maven.org/maven2/com/nimbusds/oauth2-oidc-sdk/4.9/oauth2-oidc-sdk-4.9.jar" />
            <url url="http://central.maven.org/maven2/org/opensaml/opensaml/2.5.3/opensaml-2.5.3.jar" />
            <url url="http://central.maven.org/maven2/org/opensaml/openws/1.4.4/openws-1.4.4.jar" />
-           <url url="http://central.maven.org/maven2/net/java/dev/jna/platform/3.5.1/platform-3.5.1.jar" />
+           <url url="http://central.maven.org/maven2/net/java/dev/jna/jna-platform/4.2.1/jna-platform-4.2.1.jar" />
            <url url="http://central.maven.org/maven2/javax/servlet/javax.servlet-api/3.0.1/javax.servlet-api-3.0.1.jar" />
            <url url="http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.10/slf4j-api-1.7.10.jar" />
            <url url="http://central.maven.org/maven2/org/slf4j/slf4j-log4j12/1.7.12/slf4j-log4j12-1.7.12.jar" />
@@ -95,10 +95,10 @@
            <url url="http://central.maven.org/maven2/org/objenesis/objenesis/1.2/objenesis-1.2.jar" />
          </resources>
      </copy>
-   
-     <move file="${depends}/jna-3.5.1.jar" tofile="${depends}/jna.jar" />
-     <move file="${depends}/platform-3.5.1.jar" tofile="${depends}/platform.jar" />    
-    
+
+     <move file="${depends}/jna-4.2.1.jar" tofile="${depends}/jna.jar" />
+     <move file="${depends}/jna-platform-4.2.1.jar" tofile="${depends}/platform.jar" />
+
      <jar destfile="${buildRoot}/vmware-identity-depends-tmp.jar" >
            <zipgroupfileset dir="${depends}" includes="*.jar" />
      </jar>
