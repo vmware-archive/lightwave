@@ -74,7 +74,7 @@
          <classpath location="${tcRoot}/noarch/apache-commons-lang-2.5/commons-lang-2.5.jar"/>
          <classpath location="${tcRoot}/noarch/apache-commons-codec-1.4/commons-codec-1.4.jar"/>
          <classpath>
-            <fileset dir="${tcRoot}/noarch/jna-3.5.1">
+            <fileset dir="${tcRoot}/noarch/jna-4.2.1">
                <include name="jna.jar"/>
                <include name="platform.jar"/>
              </fileset>
