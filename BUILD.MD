@@ -57,43 +57,23 @@ Preparing the build system
 
  
 
-1.  Start with a Photon system
+1.  Start with a Photon 1.0 system
 
-2.  Make sure you have the yum repository for photon-extras configured
+2.  tdnf install likewise-open-6.2.9
 
-    -   How to configure the photon-extras repository ?
+3.  tdnf install likewise-open-devel-6.2.9
 
-        Copy the following into /etc/yum.repos.d/photon-extras.repo
+4.  tdnf install openjdk
 
-        [photon-extras]
+5.  tdnf install apache-maven
 
-        name=VMware Photon Extras 1.0(x86\_64)
+6.  tdnf install apache-ant
 
-        baseurl=https://dl.bintray.com/vmware/photon\_extras
+7.  tdnf install ant-contrib
 
-        gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY
+8.  tdnf install jaxws-ri
 
-        gpgcheck=0
-
-        enabled=1
-
-        skip\_if\_unavailable=True
-
-3.  tdnf install likewise-open-6.2.8
-
-4.  tdnf install likewise-open-devel-6.2.8
-
-5.  tdnf install openjdk
-
-6.  tdnf install apache-maven
-
-7.  tdnf install apache-ant
-
-8.  tdnf install ant-contrib
-
-9.  tdnf install jaxws-ri
-
-10. tdnf install apache-tomcat
+r9. tdnf install apache-tomcat
 
  
 
@@ -106,7 +86,11 @@ From workspace root, run “make container”.
 
  
 
-A successful build will yield the container at stage/vmware-lightwave-sts.tar
+A successful build will yield the container at stage/vmware-lightwave-sts.tar.
+This container will include lightwave packages from the local build tree.
+
+To build a container using lightwave packages from the extern yum repository,
+set your working directory to support/docker and run “docker build .”.
 
  
 
