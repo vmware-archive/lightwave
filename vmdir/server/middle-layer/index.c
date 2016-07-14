@@ -377,10 +377,11 @@ VmDirPluginIndexEntryPreModify(
         dwError = VmDirIndexDelete(
                 pOperation->pBECtx, pCNAttr->vals[0].lberbv.bv_val);
         BAIL_ON_VMDIR_ERROR(dwError);
+        bExist = FALSE;
     }
 
     // update uniqueness scopes
-    else if (bExist)
+    if (bExist)
     {
         for (pMod = pModReq->mods; pMod; pMod = pMod->next)
         {

@@ -46,6 +46,14 @@ _VmDirModifyLastLogonTimeStamp(
     PVMDIR_LOGIN_TIME   pLoginTime
     );
 
+static
+DWORD
+_VmDirGetAccountType(
+    PCSTR       pszDN,
+    PBOOLEAN    pIsUser,
+    PBOOLEAN    pIsComputer
+    );
+
 DWORD
 VmDirInitTrackLastLoginThread(
     VOID
@@ -254,7 +262,16 @@ _VmDirTrackLastLoginTimeThreadFun(
                 pLoginTime != NULL
               )
         {
-            (VOID) _VmDirModifyLastLogonTimeStamp(pLoginTime);
+            BOOLEAN bIsUser = FALSE;
+            BOOLEAN bIsComputer = FALSE;
+
+            if (_VmDirGetAccountType(pLoginTime->pszDN, &bIsUser, &bIsComputer) == 0    &&
+                bIsUser                                                                 &&
+                !bIsComputer
+               )
+            {   // only update lastlogontimestamp for user
+                (VOID) _VmDirModifyLastLogonTimeStamp(pLoginTime);
+            }
 
             if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
             {
@@ -282,4 +299,50 @@ cleanup:
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Exit track last login time thread" );
 
     return dwError;
+}
+
+static
+DWORD
+_VmDirGetAccountType(
+    PCSTR       pszDN,
+    PBOOLEAN    pIsUser,
+    PBOOLEAN    pIsComputer
+    )
+{
+    DWORD       dwError = 0;
+    BOOLEAN     bIsUserAccount = FALSE;
+    BOOLEAN     bIsComputerAccount = FALSE;
+    PVDIR_ENTRY pEntry = NULL;
+    PVDIR_ATTRIBUTE pAttr = NULL;
+
+    dwError = VmDirSimpleDNToEntry(pszDN, &pEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pAttr = VmDirFindAttrByName(pEntry, ATTR_OBJECT_CLASS);
+    if (pAttr)
+    {
+        unsigned i=0;
+        for (i=0; i<pAttr->numVals; i++)
+        {
+            if (VmDirStringCompareA(pAttr->vals[i].lberbv_val, OC_USER, FALSE) == 0)
+            {
+                bIsUserAccount = TRUE;
+            }
+            else if (VmDirStringCompareA(pAttr->vals[i].lberbv_val, OC_COMPUTER, FALSE) == 0)
+            {
+                bIsComputerAccount = TRUE;
+            }
+        }
+    }
+
+    *pIsUser = bIsUserAccount;
+    *pIsComputer = bIsComputerAccount;
+
+cleanup:
+    VmDirFreeEntry(pEntry);
+
+    return dwError;
+
+error:
+    goto cleanup;
 }

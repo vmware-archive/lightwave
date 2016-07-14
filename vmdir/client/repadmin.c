@@ -279,6 +279,8 @@ VmDirGetAttributeMetadataInternal(
     int                 iCnt = 0;
     PVMDIR_METADATA_LIST pMetadataList = NULL;
     DWORD               dwMetadataListSize = 0;
+    LDAPControl*        pCtrl = NULL;
+    LDAPControl*        pServerCtrl[2] = { NULL, NULL };
 
     if ( IsNullOrEmptyString(pszEntryDn) ||
          !ppMetadataList )
@@ -307,6 +309,17 @@ VmDirGetAttributeMetadataInternal(
                 (PVOID*)&pMetadataList->ppMetadataArray);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+
+    dwError = ldap_control_create(
+                        VDIR_LDAP_CONTROL_SHOW_DELETED_OBJECTS,
+                        0,
+                        NULL,
+                        0,
+                        &pCtrl);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pServerCtrl[0] = pCtrl;
+
     dwError = ldap_search_ext_s(
                 pConnection->pLd,
                 pszEntryDn,
@@ -314,7 +327,7 @@ VmDirGetAttributeMetadataInternal(
                 NULL,
                 (PSTR*)ppszAttrs,
                 FALSE, /* get values      */
-                NULL,  /* server controls */
+                pServerCtrl,  /* server controls */
                 NULL,  /* client controls */
                 NULL,  /* timeout         */
                 0,     /* size limit */
@@ -395,6 +408,10 @@ cleanup:
     if (pResult)
     {
         ldap_msgfree(pResult);
+    }
+    if (pCtrl)
+    {
+        ldap_control_free(pCtrl);
     }
 
     return dwError;

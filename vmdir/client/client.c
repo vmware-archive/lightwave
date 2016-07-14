@@ -928,6 +928,9 @@ VmDirJoin(
     PSTR    pszLotusServerNameCanon = NULL;
     PSTR    pszCurrentServerObjectDN = NULL;
     PSTR    pszErrMsg = NULL;
+    DWORD   dwHighWatermark = 0;
+    LDAP*   pLd = NULL;
+    PVMDIR_REPL_STATE pReplState = NULL;
 
     if (IsNullOrEmptyString(pszUserName) ||
         IsNullOrEmptyString(pszPassword) ||
@@ -1034,12 +1037,31 @@ VmDirJoin(
                                     pszPassword,
                                     pszLotusServerNameCanon );
 
+    // If db copy, use the local usn as the highwater mark for the partner's RA
+    if (firstReplCycleMode == FIRST_REPL_CYCLE_MODE_COPY_DB)
+    {
+        dwError = _VmDirCreateServerPLD(
+                                pszLotusServerNameCanon,
+                                pszDomainName,
+                                pszUserName,
+                                pszPassword,
+                                &pLd);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirGetReplicationStateInternal(pLd, &pReplState);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // Buffer the highwater mark but just not down to zero
+        dwHighWatermark= (DWORD)VMDIR_MAX(pReplState->maxVisibleUSN - HIGHWATER_USN_REPL_BUFFER, 1);
+    }
+
     dwError = VmDirLdapSetupRemoteHostRA(
                                     pszDomainName,
                                     pszPartnerServerName,
                                     pszUserName,    /* we use same username and password */
                                     pszPassword,
-                                    pszLotusServerNameCanon );
+                                    pszLotusServerNameCanon,
+                                    dwHighWatermark);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
@@ -1054,7 +1076,11 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLotusServerNameCanon);
     VMDIR_SAFE_FREE_MEMORY(pszCurrentServerObjectDN);
     VMDIR_SAFE_FREE_MEMORY(pszErrMsg);
-
+    if (pLd)
+    {
+        ldap_unbind_ext_s(pLd, NULL, NULL);
+    }
+    VmDirFreeReplicationStateInternal(pReplState);
     return dwError;
 
 error:
@@ -2065,7 +2091,8 @@ VmDirAddReplicationAgreement(
                     pszTgtServerName,
                     pszSrcUserName,
                     pszSrcPassword,
-                    pszSrcServerName
+                    pszSrcServerName,
+                    0
                     );
     BAIL_ON_VMDIR_ERROR(dwError);
     VMDIR_LOG_VERBOSE(
@@ -2083,7 +2110,8 @@ VmDirAddReplicationAgreement(
                     pszSrcServerName,
                     pszSrcUserName,
                     pszSrcPassword,
-                    pszTgtServerName
+                    pszTgtServerName,
+                    0
                     );
         BAIL_ON_VMDIR_ERROR(dwError);
         VMDIR_LOG_VERBOSE(
