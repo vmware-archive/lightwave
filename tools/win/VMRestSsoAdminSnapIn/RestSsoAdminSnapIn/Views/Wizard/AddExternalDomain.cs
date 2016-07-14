@@ -29,6 +29,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Security.Certificate;
 using VMwareMMCIDP.UI.Common.Utilities;
+using Vmware.Tools.RestSsoAdminSnapIn.Presenters;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
 {
@@ -192,7 +193,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
                 var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(ServerDto, TenantName);
                 ActionHelper.Execute(delegate()
                 {
-                    var adJoinInfoDto = SnapInContext.Instance.ServiceGateway.Adf.GetActiveDirectory(ServerDto, auth.Token);
+                    var service = ScopeNodeExtensions.GetServiceGateway(ServerDto.ServerName);
+                    var adJoinInfoDto = service.Adf.GetActiveDirectory(ServerDto, auth.Token);
                     if (adJoinInfoDto != null && adJoinInfoDto.JoinStatus == "DOMAIN")
                     {
                         _domainName = adJoinInfoDto.Name;
@@ -311,7 +313,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
                     var provider = ViewToDto();
                     if (_createNew)
                     {
-                        var result = SnapInContext.Instance.ServiceGateway.IdentityProvider.Create(ServerDto, TenantName, provider, auth.Token);
+                        var service = ScopeNodeExtensions.GetServiceGateway(ServerDto.ServerName);
+                        var result = service.IdentityProvider.Create(ServerDto, TenantName, provider, auth.Token);
                         if (result != null)
                         {
                             MMCDlgHelper.ShowWarning(string.Format("External domain {0} created successfully", result.Name));
@@ -319,7 +322,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
                     }
                     else
                     {
-                        var result = SnapInContext.Instance.ServiceGateway.IdentityProvider.Update(ServerDto, TenantName, provider, auth.Token);
+                        var service = ScopeNodeExtensions.GetServiceGateway(ServerDto.ServerName);
+                        var result = service.IdentityProvider.Update(ServerDto, TenantName, provider, auth.Token);
                         if (result != null)
                         {
                             MMCDlgHelper.ShowWarning(string.Format("External domain {0} updated successfully", result.Name));
@@ -417,7 +421,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
                 ActionHelper.Execute(delegate()
                 {
                     var provider = ViewToDto();
-                    var result = SnapInContext.Instance.ServiceGateway.IdentityProvider.Probe(ServerDto, TenantName, provider, auth.Token);
+                    var service = ScopeNodeExtensions.GetServiceGateway(ServerDto.ServerName);
+                    var result = service.IdentityProvider.Probe(ServerDto, TenantName, provider, auth.Token);
                     if (result != null)
                         MMCDlgHelper.ShowInformation("Test connection successful");
                 }, auth);

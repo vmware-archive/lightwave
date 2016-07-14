@@ -26,9 +26,11 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 	public class IdentityProviderService
 	{
 		private readonly IWebRequestManager _webRequestManager;
-		public IdentityProviderService(IWebRequestManager webRequestManager)
+        private readonly IServiceConfigManager _serviceConfigManager;
+        public IdentityProviderService(IWebRequestManager webRequestManager, IServiceConfigManager serviceConfigManager)
 		{
 			_webRequestManager = webRequestManager;
+            _serviceConfigManager = serviceConfigManager;
 		}
 
 		static string CleanupJson (string response)
@@ -115,13 +117,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 		public List<IdentityProviderDto> GetAll(ServerDto server, string tenant, Token token)
 		{
 			tenant = Uri.EscapeDataString(tenant);
-			var url = string.Format(ServiceConfigManager.GetIdentityProvidersPostEndPoint, server.Protocol, server.ServerName, server.Port, tenant);
+			var url = string.Format(_serviceConfigManager.GetIdentityProvidersPostEndPoint(), server.Protocol, server.ServerName, server.Port, tenant);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 			var requestConfig = new RequestSettings
 			{
 				Method = HttpMethod.Post,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
 			return JsonConvert.JsonDeserialize<List<IdentityProviderDto>>(response);
@@ -131,13 +133,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 		{
 			tenant = Uri.EscapeDataString(tenant);
 			provider = Uri.EscapeDataString(provider);
-			var url = string.Format(ServiceConfigManager.GetIdentityProviderPostEndPoint, server.Protocol, server.ServerName, server.Port, tenant, provider);
+			var url = string.Format(_serviceConfigManager.GetIdentityProviderPostEndPoint(), server.Protocol, server.ServerName, server.Port, tenant, provider);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 			var requestConfig = new RequestSettings
 			{
 				Method = HttpMethod.Post,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
             return JsonConvert.JsonDeserialize <IdentityProviderDto>(response);
@@ -152,7 +154,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 			provider.AttributesMap = null;
 
 			tenant = Uri.EscapeDataString(tenant);
-			var url = string.Format(ServiceConfigManager.IdentityProvidersEndPoint, server.Protocol, server.ServerName, server.Port, tenant);
+            var url = string.Format(_serviceConfigManager.GetIdentityProvidersEndPoint(), server.Protocol, server.ServerName, server.Port, tenant);
 			var dto = typeof(IdentityProviderDto).Assembly;
 			var json = JsonConvert.Serialize(provider,"root", dto.GetTypes(), true);
 			json = SerializationJsonHelper.Cleanup (json);
@@ -176,7 +178,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 			{
 				Method = HttpMethod.Post
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return JsonConvert.JsonDeserialize <IdentityProviderDto>(response);
@@ -186,13 +188,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 		{
 			tenant = Uri.EscapeDataString(tenant);
 			provider = Uri.EscapeDataString(provider);
-			var url = string.Format(ServiceConfigManager.IdentityProviderEndPoint, server.Protocol, server.ServerName, server.Port, tenant, provider);
+            var url = string.Format(_serviceConfigManager.GetIdentityProviderEndPoint(), server.Protocol, server.ServerName, server.Port, tenant, provider);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 			var requestConfig = new RequestSettings
 			{
 				Method = HttpMethod.Delete,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			var json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
 			return string.IsNullOrEmpty(response);
@@ -208,7 +210,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 
 			tenant = Uri.EscapeDataString(tenant);
 			var name = Uri.EscapeDataString(provider.Name);
-			var url = string.Format(ServiceConfigManager.IdentityProviderEndPoint, server.Protocol, server.ServerName, server.Port, tenant, name);
+            var url = string.Format(_serviceConfigManager.GetIdentityProviderEndPoint(), server.Protocol, server.ServerName, server.Port, tenant, name);
 			var dto = typeof(IdentityProviderDto).Assembly;
 			var json = JsonConvert.Serialize(provider,"root", dto.GetTypes(), true);
 			json = SerializationJsonHelper.Cleanup (json);
@@ -233,7 +235,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 			{
 				Method = HttpMethod.Put,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return JsonConvert.JsonDeserialize <IdentityProviderDto>(response);
@@ -248,7 +250,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 			provider.AttributesMap = null;
 
 			tenant = Uri.EscapeDataString(tenant);
-			var url = string.Format(ServiceConfigManager.IdentityProvidersEndPoint, server.Protocol, server.ServerName, server.Port, tenant);
+            var url = string.Format(_serviceConfigManager.GetIdentityProvidersEndPoint(), server.Protocol, server.ServerName, server.Port, tenant);
 			url += "?probe=true";
 			var dto = typeof(IdentityProviderDto).Assembly;
 			var json = JsonConvert.Serialize(provider,"root", dto.GetTypes(), true);
@@ -274,7 +276,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider
 			{
 				Method = HttpMethod.Post
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
 			response = SerializationJsonHelper.JsonToDictionary("attributesMap",response);

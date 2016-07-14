@@ -96,6 +96,8 @@
     <Compile Include="SearchType.cs" />
     <Compile Include="ServerService.cs" />
     <Compile Include="ServiceConfigManager.cs" />
+    <Compile Include="ServiceConfigManager\IServiceConfigManager.cs" />
+    <Compile Include="ServiceConstants.cs" />
     <Compile Include="ServiceGateway.cs" />
     <Compile Include="ServiceHelper.cs" />
     <Compile Include="SolutionUserSearchType.cs" />
@@ -145,6 +147,11 @@
   <ItemGroup>
     <EmbeddedResource Include="xml\BETLoginRequest.xml" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="configs\lightwave.services.endpoint.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="configs\vsphere.services.endpoint.xml" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

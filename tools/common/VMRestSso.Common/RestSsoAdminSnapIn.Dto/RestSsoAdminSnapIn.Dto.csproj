@@ -68,6 +68,7 @@
     <Compile Include="ActiveDirectoryJoinRequestDto.cs" />
     <Compile Include="AssertionConsumerServiceDto.cs" />
     <Compile Include="AttributeConsumerServiceDto.cs" />
+    <Compile Include="ServerInfoDto.cs" />
     <Compile Include="AttributeDto.cs" />
     <Compile Include="Attributes\AttributeId.cs" />
     <Compile Include="Attributes\GroupAttributeId.cs" />

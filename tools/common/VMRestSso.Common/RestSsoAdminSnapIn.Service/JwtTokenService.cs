@@ -32,17 +32,19 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
     public class JwtTokenService : IAuthenticationService
     {
         private readonly IWebRequestManager _webRequestManager;
-        public JwtTokenService(IWebRequestManager webRequestManager)
+        private readonly IServiceConfigManager _serviceConfigManager;
+        public JwtTokenService(IWebRequestManager webRequestManager, IServiceConfigManager serviceConfigManager)
         {
             _webRequestManager = webRequestManager;
+            _serviceConfigManager = serviceConfigManager;
         }
 
         public AuthTokenDto Authenticate(ServerDto serverDto, LoginDto loginDto, string clientId)
         {
             var tenant = Uri.EscapeDataString(loginDto.TenantName);
-            var url = ServiceConfigManager.GetLoginUrl(serverDto, tenant);
+            var url = _serviceConfigManager.GetLoginUrl(serverDto, tenant);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-            var data = ServiceConfigManager.FormatLoginArgs(loginDto);
+            var data = _serviceConfigManager.FormatLoginArgs(loginDto);
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,
@@ -64,9 +66,9 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         public Token Refresh(ServerDto serverDto, LoginDto loginDto, Token tokenToRefresh)
         {
             var tenant = Uri.EscapeDataString(loginDto.TenantName);
-            var url = ServiceConfigManager.GetRefreshUrl(serverDto, tenant);
+            var url = _serviceConfigManager.GetRefreshUrl(serverDto, tenant);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-            var data = ServiceConfigManager.FormatRefreshTokenArgs(tokenToRefresh.RefreshToken);
+            var data = _serviceConfigManager.FormatRefreshTokenArgs(tokenToRefresh.RefreshToken);
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,
@@ -89,7 +91,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
             var hostName = ServiceHelper.GetHostName(serverDto.ServerName);
             var validationParams = new TokenValidationParameters
             {
-                ValidIssuer = ServiceConfigManager.GetValidIssuer(serverDto, hostName, tenantName),
+                ValidIssuer = _serviceConfigManager.GetValidIssuer(serverDto, hostName, tenantName),
                 ValidAudience = audience,
                 IssuerSigningToken = new X509SecurityToken(x509Certificate2),
                 ValidateIssuer = false
@@ -103,14 +105,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         private List<CertificateChainDto> GetCertificates(ServerDto serverDto, string tenantName, CertificateScope scope, Token token)
         {
             tenantName = Uri.EscapeDataString(tenantName);
-            var url = ServiceConfigManager.GetCertificatesUrl(serverDto, tenantName);
+            var url = _serviceConfigManager.GetCertificatesUrl(serverDto, tenantName);
             url += "?scope=" + scope;
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Get
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var authorization = string.Format("{0} {1}", token.TokenType, token.AccessToken);
             headers.Add(HttpRequestHeader.Authorization, authorization);
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, null);
@@ -119,15 +121,15 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
 
         public AuthTokenDto GetTokenFromCertificate(ServerDto serverDto, X509Certificate2 certificate, RSACryptoServiceProvider rsa)
         {
-            var url = ServiceConfigManager.GetTokenFromCertificateUrl(serverDto);
-            var aud = ServiceConfigManager.GetAudience(serverDto);
+            var url = _serviceConfigManager.GetTokenFromCertificateUrl(serverDto);
+            var aud = _serviceConfigManager.GetAudience(serverDto);
             var signedToken = GetSignedJwtToken(rsa, certificate, aud);
             if (signedToken == null)
                 throw new Exception("Could not generate a valid token");
 
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 
-            var data = ServiceConfigManager.GetJwtTokenBySolutionUserArgs(signedToken);
+            var data = _serviceConfigManager.GetJwtTokenBySolutionUserArgs(signedToken);
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,
@@ -192,9 +194,9 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
 
         public AuthTokenDto GetTokenFromGssTicket(ServerDto serverDto, string base64EncodedGSSTicketBytes, string clientId)
         {
-            var url = ServiceConfigManager.GetTokenFromGssTicketUrl(serverDto);
+            var url = _serviceConfigManager.GetTokenFromGssTicketUrl(serverDto);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-            var data = ServiceConfigManager.GetTokenFromGssTicketArgs(base64EncodedGSSTicketBytes, clientId);
+            var data = _serviceConfigManager.GetTokenFromGssTicketArgs(base64EncodedGSSTicketBytes, clientId);
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,

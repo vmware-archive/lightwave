@@ -76,11 +76,11 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
             if (!ErrorMessageDisplayHelper.Confirm("Delete domain " + _provider.Name + "?"))
                 return;
             var serverDto = GetServerDTO();
-            var service = this.GetServiceGateway();
+            var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto, _tenantName);
             ActionHelper.Execute(delegate()
-            {   
-                if (this.GetServiceGateway().IdentityProvider.Delete(serverDto, _tenantName, _provider.Name, auth.Token))
+            {
+                if (service.IdentityProvider.Delete(serverDto, _tenantName, _provider.Name, auth.Token))
                 {
                     Parent.Children.Remove(this);
                 }

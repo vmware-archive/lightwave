@@ -52,11 +52,11 @@ using Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard;
         public void DoRefresh()        {
             this.Children.Clear();
             var serverDto = GetServerDto();
-            var service = this.GetServiceGateway();
+            var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto, _tenantName);
             ActionHelper.Execute(delegate()
-            {   
-                var identityProviders = this.GetServiceGateway().IdentityProvider.GetAll(serverDto, _tenantName, auth.Token);
+            {
+                var identityProviders = service.IdentityProvider.GetAll(serverDto, _tenantName, auth.Token);
                 var externalProviders = identityProviders.Where(x => x.DomainType == DomainType.EXTERNAL_DOMAIN.ToString()).ToList();
                 PopulateChildren(externalProviders);
             }, auth);        }

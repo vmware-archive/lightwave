@@ -64,7 +64,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
         {
             base.OnAction(action, status); 
             var serverDto = GetServerDto();
-            var service = SnapInContext.Instance.ServiceGateway;
+            var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto, _tenantName);
             ActionHelper.Execute(delegate()
             {                

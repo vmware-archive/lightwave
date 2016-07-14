@@ -16,6 +16,7 @@ using System.Windows.Forms;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
+using Vmware.Tools.RestSsoAdminSnapIn.Presenters;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Views
 {
@@ -41,7 +42,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
         private void RefreshView()
         {
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_serverDto, _tenantName);
-            var service = SnapInContext.Instance.ServiceGateway;
+            var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
             ActionHelper.Execute(delegate()
             {                
                 _tenantConfigurationDto = service.Tenant.GetConfig(_serverDto, _tenantName, auth.Token);                
@@ -55,9 +56,10 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_serverDto, _tenantName);
             ActionHelper.Execute(delegate()
            {
-               var service = SnapInContext.Instance.ServiceGateway;
-               
-               _tenantConfigurationDto = service.Tenant.UpdateConfig(_serverDto, _tenantName, _tenantConfigurationDto, auth.Token);
+               var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
+               service.Tenant.UpdateConfig(_serverDto, _tenantName, _tenantConfigurationDto, auth.Token);
+               service.Tenant.UpdatePasswordAndLockoutConfig(_serverDto, _tenantName, _tenantConfigurationDto, auth.Token);
+               _tenantConfigurationDto = service.Tenant.GetConfig(_serverDto, _tenantName, auth.Token);
                propGridInput.SelectedObject = _tenantConfigurationDto;
                propGridInput.Refresh();
            }, auth);

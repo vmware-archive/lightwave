@@ -83,6 +83,7 @@ namespace VMDirSnapIn.Nodes
 		{
 			_properties.Clear();
 			FillProperties();
+			NSNotificationCenter.DefaultCenter.PostNotificationName("ReloadTableView", this);
 		}
 		private void InitPageSearch()
 		{

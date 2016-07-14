@@ -337,7 +337,7 @@ namespace RestSsoAdminSnapIn
                     Servernode.Login ();
 
 					if(Servernode.IsLoggedIn)
-					{
+					{	
 						splitViewController.MainOutlineView.SelectRow(0,true);
 					}
                 }

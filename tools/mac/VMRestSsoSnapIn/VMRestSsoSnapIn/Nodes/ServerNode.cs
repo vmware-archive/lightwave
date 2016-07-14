@@ -25,6 +25,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Nodes;
 using RestSsoAdminSnapIn;
 using System.Threading.Tasks;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
+using Vmware.Tools.RestSsoAdminSnapIn.Service;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 {
@@ -32,6 +33,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 	{
 		public LoginDto LoginDto;
 		private ServerDto _serverDto;
+		private ServerInfoDto _serverInfo;
 		private NSObject notificationObject;
 
 		public bool IsLoggedIn{ get; set; }
@@ -64,6 +66,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 				var service = SnapInContext.Instance.ServiceGateway;
 				var authToken = service.Authentication.Login (((AuthTokenDto)Tag).ServerDto, LoginDto, Constants.ClientId);
 				Tag = authToken;
+				AddServiceGatewayForServer(service, authToken);
 				var key = authToken.ServerDto.ServerName;// + "-" + _loginDto.TenantName;
 				SnapInContext.Instance.AuthTokenManager.SetAuthToken (authToken, key);
 				AddTenantNode (authToken, new TenantDto{ Name = LoginDto.TenantName });
@@ -125,6 +128,27 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 			}
 		}
 
+		private void AddServiceGatewayForServer(ServiceGateway service, AuthTokenDto authToken)
+		{
+			try
+			{
+				_serverInfo = service.Server.GetServerInfo(authToken.ServerDto, authToken.Token);
+			}
+			catch (Exception exc)
+			{
+				// default the configuration to vsphere
+				_serverInfo = new ServerInfoDto
+				{
+					Release = "Vsphere",
+					ProductName = "idm"
+				};
+			}
+
+			var serviceConfigManager = new ServiceConfigManager(_serverInfo.Release);
+			var serviceGateway = new ServiceGateway(serviceConfigManager);
+			SnapInContext.Instance.ServiceGateway = serviceGateway;
+		}
+
 		private void AddTenantNode (AuthTokenDto tokenDto, TenantDto tenant)
 		{
 			var node = new TenantNode (tokenDto.ServerDto, tenant.Name) {
@@ -178,6 +202,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 					tenantDto = service.Tenant.Get (auth.ServerDto, tenantDto.Name, auth.Token);
 					AddTenantNode (auth, new TenantDto{ Name = tenantDto.Name });
 				}
+			});
+		}
+
+		public void OnShowAbout (object sender, EventArgs e)
+		{
+			ActionHelper.Execute (delegate() {
+				var form = new AboutServerController (_serverInfo);
+				var result = NSApplication.SharedApplication.RunModalForWindow (form.Window);
 			});
 		}
 

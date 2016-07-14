@@ -67,7 +67,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes{    public class Gr
             }, null);
         }
         void AddNewGroup()        {
-            var service = this.GetServiceGateway();
+            var service = ScopeNodeExtensions.GetServiceGateway(ServerDto.ServerName);
             var authTokenDto = SnapInContext.Instance.AuthTokenManager.GetAuthToken(ServerDto, _tenantName);
             ActionHelper.Execute(delegate
             {
@@ -96,10 +96,10 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes{    public class Gr
             base.OnAddPropertyPages(propertyPageCollection);
             var authTokenDto = SnapInContext.Instance.AuthTokenManager.GetAuthToken(ServerDto, TenantName);
             ActionHelper.Execute(delegate
-                {   
-                    var ssoAdminSdkService = this.GetServiceGateway();
+                {
+                    var service = ScopeNodeExtensions.GetServiceGateway(ServerDto.ServerName);
                     var groupDto = Tag as GroupDto;
-                    var presenter = new GroupPropertyDataManager(groupDto, ssoAdminSdkService, ServerDto, TenantName, _domainName);
+                    var presenter = new GroupPropertyDataManager(groupDto, service, ServerDto, TenantName, _domainName);
                     var generalPage = new GroupGeneralProperty(presenter, groupDto, IsSystemDomain) { Title = "General" };
                     propertyPageCollection.Add(generalPage.Page);
                 }, authTokenDto);

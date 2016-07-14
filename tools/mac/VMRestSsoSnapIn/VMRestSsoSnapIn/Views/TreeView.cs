@@ -49,17 +49,18 @@ namespace RestSsoAdminSnapIn
 					if (obj is ServerNode) {
 						ServerNode serverNode = obj as ServerNode;
 						if (serverNode.IsLoggedIn) {
+
 							NSMenuItem addNewTenant = new NSMenuItem ("Add New Tenant", serverNode.OnAddNewTenant);
 							var image = NSImage.ImageNamed ("NSAddTemplate");
 							addNewTenant.Image = image;
 							addNewTenant.Image.Size = new CGSize{ Width = (float)16.0, Height = (float)16.0 };
 							menu.AddItem (addNewTenant);
 
-//							NSMenuItem activeDirectory = new NSMenuItem ("Active Directory", serverNode.OnShowActiveDirectory);
-//							image = NSImage.ImageNamed ("NSNetwork");
-//							activeDirectory.Image = image;
-//							activeDirectory.Image.Size = new CGSize{ Width = (float)16.0, Height = (float)16.0 };
-//							menu.AddItem (activeDirectory);
+							NSMenuItem aboutServer = new NSMenuItem ("About", serverNode.OnShowAbout);
+							image = NSImage.ImageNamed ("NSInfo");
+							aboutServer.Image = image;
+							aboutServer.Image.Size = new CGSize{ Width = (float)16.0, Height = (float)16.0 };
+							menu.AddItem (aboutServer);
 
 							NSMenuItem getComputers = new NSMenuItem ("Computers", serverNode.OnShowComputers);
 							image = NSImage.ImageNamed ("NSComputer");

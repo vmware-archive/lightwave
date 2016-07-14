@@ -39,7 +39,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.PropertyManagers.User
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_serverDto, _tenantName);
             ActionHelper.Execute(delegate()
             {
-                var membershipDto = SnapInContext.Instance.ServiceGateway.Tenant.Search(_serverDto, _tenantName, _domainName, MemberType.GROUP, SearchType.NAME, auth.Token, name);
+                var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
+                var membershipDto = service.Tenant.Search(_serverDto, _tenantName, _domainName, MemberType.GROUP, SearchType.NAME, auth.Token, name);
                 groupsDto = membershipDto.Groups;// _service.Group.GetAll(_serverDto, _tenantName, auth.Token, _domainName);
             }, auth);
             return groupsDto;

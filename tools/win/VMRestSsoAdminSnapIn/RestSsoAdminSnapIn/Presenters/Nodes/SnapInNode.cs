@@ -94,7 +94,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
         }
         private ServerDto NavigateToAddServerView()
         {
-            var service = this.GetServiceGateway();
+            var service = ScopeNodeExtensions.GetServiceGateway();
             var form = new NewServerView(service) { Text = @"Add New Server" };
             var showAddServerUi = SnapInContext.Instance.NavigationController.NavigateToView(this, form);
             return (ServerDto)showAddServerUi;

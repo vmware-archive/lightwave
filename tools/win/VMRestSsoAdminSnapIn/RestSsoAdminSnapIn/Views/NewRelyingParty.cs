@@ -23,12 +23,12 @@ using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn.Service;
 using System.Text;
 using VMwareMMCIDP.UI.Common.Utilities;
+using Vmware.Tools.RestSsoAdminSnapIn.Presenters;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Views
 {
     public partial class NewRelyingParty : Form, IView
     {
-        private readonly ServiceGateway _service;
         private readonly ServerDto _serverDto;
         private readonly string _tenantName;
         private CertificateDto _certDto;
@@ -39,7 +39,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
         }
         public NewRelyingParty(ServiceGateway service, ServerDto serverDto, string tenantName)
         {
-            _service = service;
             _serverDto = serverDto;
             _tenantName = tenantName;
             InitializeComponent();
@@ -47,9 +46,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             btnCreate.Text = "Create";
         }
 
-        public NewRelyingParty(RelyingPartyDto relyingPartyDto, ServiceGateway service, ServerDto serverDto, string tenantName)
+        public NewRelyingParty(RelyingPartyDto relyingPartyDto, ServerDto serverDto, string tenantName)
         {
-            _service = service;
             _serverDto = serverDto;
             _tenantName = tenantName;
             _relyingPartyDtoOrig = relyingPartyDto;
@@ -132,14 +130,15 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                     var defaultAttributeConsumerService = relyingPartyDto.AttributeConsumerServices.Where(x => x.IsDefault).FirstOrDefault();
                     if(defaultAttributeConsumerService != null)
                         relyingPartyDto.DefaultAttributeConsumerService = defaultAttributeConsumerService.Name;
-                    
+
+                    var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
                     if (_relyingPartyDtoOrig == null)
                     {
-                        _relyingPartyDtoOrig = _service.RelyingParty.Create(_serverDto, _tenantName, relyingPartyDto, auth.Token);
+                        _relyingPartyDtoOrig = service.RelyingParty.Create(_serverDto, _tenantName, relyingPartyDto, auth.Token);
                     }
                     else
                     {
-                        _relyingPartyDtoOrig = _service.RelyingParty.Update(_serverDto, _tenantName, relyingPartyDto, auth.Token);
+                        _relyingPartyDtoOrig = service.RelyingParty.Update(_serverDto, _tenantName, relyingPartyDto, auth.Token);
                     }
                 }, auth);
                 this.DialogResult = DialogResult.OK;

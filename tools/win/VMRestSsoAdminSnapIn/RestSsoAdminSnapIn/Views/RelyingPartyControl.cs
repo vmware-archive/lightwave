@@ -57,7 +57,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
         {
             _formView = (RelyingPartyFormView)parentSelectionFormView;
             _formView.SelectionData.ActionsPaneItems.Clear();
-            _ssoAdminSdkService = _formView.ScopeNode.GetServiceGateway();
             RefreshRelyingParty();
         }
         public void RefreshRelyingParty()
@@ -67,7 +66,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto, tenantName);
             ActionHelper.Execute(delegate
                 {
-                    var relyingParties = _ssoAdminSdkService.RelyingParty.GetAll(serverDto, tenantName, auth.Token);
+                    var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
+                    var relyingParties = service.RelyingParty.GetAll(serverDto, tenantName, auth.Token);
                     lstRelyingParties.Items.Clear();
                     if (relyingParties != null)
                     {
@@ -88,7 +88,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             ActionHelper.Execute(delegate
             {
                 var tenantName = GetTenantName();
-                var form = new NewRelyingParty(rp, _ssoAdminSdkService, serverDto, tenantName);
+                var form = new NewRelyingParty(rp, serverDto, tenantName);
                 form.ShowDialog();
                 RefreshRelyingParty();
             }, null);
@@ -120,8 +120,10 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 var tenantName = GetTenantName();
                 var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto, tenantName);
                 ActionHelper.Execute(delegate
-                {   
-                    _formView.ScopeNode.GetServiceGateway().RelyingParty.Delete(serverDto, tenantName, rp, auth.Token);
+                {
+
+                    var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
+                    service.RelyingParty.Delete(serverDto, tenantName, rp, auth.Token);
                     RefreshRelyingParty();
                 }, auth);
             }

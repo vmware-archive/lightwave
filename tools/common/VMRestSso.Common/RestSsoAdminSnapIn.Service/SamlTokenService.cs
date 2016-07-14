@@ -28,13 +28,15 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
     public class SamlTokenService : IAuthenticationService
     {
         private readonly IWebRequestManager _webRequestManager;
-        public SamlTokenService(IWebRequestManager webRequestManager)
+        private readonly IServiceConfigManager _serviceConfigManager;
+        public SamlTokenService(IWebRequestManager webRequestManager, IServiceConfigManager serviceConfigManager)
         {
             _webRequestManager = webRequestManager;
+            _serviceConfigManager = serviceConfigManager;
         }
         public AuthTokenDto Authenticate(ServerDto serverDto, LoginDto loginDto, string clientId)
         {
-			var url = string.Format(ServiceConfigManager.SamlLegacyEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, serverDto.StsUrl + "/" + loginDto.TenantName);
+            var url = string.Format(_serviceConfigManager.GetSamlLegacyEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, serverDto.StsUrl + "/" + loginDto.TenantName);
             string soapString = XmlResourceHelper.GetResourceXml("Vmware.Tools.RestSsoAdminSnapIn.Service.xml.SAMLRequest.xml");
 
             int lifeInSeconds = 300;

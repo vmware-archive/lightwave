@@ -63,7 +63,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
                 return false;
             }
             bool isSystemTenant = false;
-            var service = this.GetServiceGateway();
+            var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
 
             ActionHelper.Execute(delegate
             {
@@ -96,7 +96,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
             {
                 if (ErrorMessageDisplayHelper.Confirm("Delete Tenant " + DisplayName + " permenantly?"))
                 {
-                    var service = this.GetServiceGateway();
+                    var service = ScopeNodeExtensions.GetServiceGateway(auth.ServerDto.ServerName);
                     service.Tenant.Delete(auth.ServerDto, DisplayName, auth.Token);
                     deleted = true;
 

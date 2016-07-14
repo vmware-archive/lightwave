@@ -108,8 +108,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             if (SelectedNodes.Count == 0)
                 return;
             var node = ScopeNode as TrustedCertificatesNode;
-            var domainService = node.GetServiceGateway();
             var serverDto = node.GetServerDto();
+            var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
             var tenant = node.GetTenant().DisplayName;
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto, tenant);
             ActionHelper.Execute(delegate
@@ -117,7 +117,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 var cert = SelectedNodes[0].Tag as X509Certificate2;
                 if (cert != null)
                 {                    
-                    domainService.Certificate.Delete(serverDto, tenant, cert.GetFormattedThumbPrint(), auth.Token);
+                    service.Certificate.Delete(serverDto, tenant, cert.GetFormattedThumbPrint(), auth.Token);
                     Refresh();
                 }
             }, auth);

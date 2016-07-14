@@ -46,7 +46,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
         {
             base.OnLoad(e);
             Dock = DockStyle.Fill;
-            _service = _formView.ScopeNode.GetServiceGateway();
             var il = new ImageList();
             il.Images.AddStrip(ResourceHelper.GetToolbarImage());
             lstGroups.SmallImageList = il;
@@ -75,7 +74,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(server, tenantName);
             ActionHelper.Execute(delegate
              {
-                 var membershipDto = SnapInContext.Instance.ServiceGateway.Tenant.Search(server, tenantName, domainName, MemberType.GROUP, SearchType.NAME, auth.Token, searchString);
+                 var service = ScopeNodeExtensions.GetServiceGateway(server.ServerName);
+                 var membershipDto = service.Tenant.Search(server, tenantName, domainName, MemberType.GROUP, SearchType.NAME, auth.Token, searchString);
                  _groups = membershipDto.Groups;
                  if (_groups != null)
                  {
@@ -133,7 +133,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             ActionHelper.Execute(delegate
             {
                 var group = (GroupDto)lstGroups.Items[selectedIndex].Tag;
-                _service.Group.Delete(server, tenantName, group, auth.Token);
+                var service = ScopeNodeExtensions.GetServiceGateway(server.ServerName);
+                service.Group.Delete(server, tenantName, group, auth.Token);
                 RefreshGroups(string.Empty);
             }, auth);
             Cursor.Current = Cursors.Default;

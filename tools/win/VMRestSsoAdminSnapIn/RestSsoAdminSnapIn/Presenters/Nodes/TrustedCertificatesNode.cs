@@ -70,7 +70,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
             ActionHelper.Execute(delegate()
             {
                 var tenantName = GetTenant().DisplayName;
-                var frm = new NewSignerIdentity(this.GetServiceGateway(), serverDto, tenantName);
+                var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
+                var frm = new NewSignerIdentity(service, serverDto, tenantName);
                 if (this.SnapIn.Console.ShowDialog(frm) == DialogResult.OK)
                 {
                     View.Refresh();
@@ -102,7 +103,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
             var result = new List<CertificateDto>();
             var serverDto = GetServerDto();
             var tenantName = GetTenant().DisplayName;
-            var service = this.GetServiceGateway();
+            var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto, tenantName);
 
             ActionHelper.Execute(delegate

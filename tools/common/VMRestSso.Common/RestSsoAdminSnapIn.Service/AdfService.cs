@@ -24,20 +24,22 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Adf
     public class AdfService
     {
         private readonly IWebRequestManager _webRequestManager;
-        public AdfService(IWebRequestManager webRequestManager)
+        private readonly IServiceConfigManager _serviceConfigManager;
+        public AdfService(IWebRequestManager webRequestManager, IServiceConfigManager serviceConfigManager)
         {
             _webRequestManager = webRequestManager;
+            _serviceConfigManager = serviceConfigManager;
         }
 
         public ActiveDirectoryJoinInfoDto GetActiveDirectory(ServerDto server, Token token)
         {
-            var url = string.Format(ServiceConfigManager.PostAdfEndPoint, server.Protocol, server.ServerName, server.Port);
+            var url = string.Format(_serviceConfigManager.GetPostAdfEndPoint(), server.Protocol, server.ServerName, server.Port);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
             return JsonConvert.Deserialize<ActiveDirectoryJoinInfoDto>(response);
@@ -45,14 +47,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Adf
 
         public ActiveDirectoryJoinInfoDto JoinActiveDirectory(ServerDto server, ActiveDirectoryJoinRequestDto ad, Token token)
         {
-            var url = string.Format(ServiceConfigManager.AdfEndPoint, server.Protocol, server.ServerName, server.Port);
+            var url = string.Format(_serviceConfigManager.GetAdfEndPoint(), server.Protocol, server.ServerName, server.Port);
             var json = JsonConvert.Serialize(ad);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return JsonConvert.Deserialize<ActiveDirectoryJoinInfoDto>(response);
@@ -60,14 +62,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Adf
 
         public bool LeaveActiveDirectory(ServerDto serverDto, CredentialsDto credentialsDto, Token token)
         {
-            var url = string.Format(ServiceConfigManager.AdfEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port);
+            var url = string.Format(_serviceConfigManager.GetAdfEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port);
             var json = JsonConvert.Serialize(credentialsDto);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Delete,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return string.IsNullOrEmpty(response);

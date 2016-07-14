@@ -112,7 +112,8 @@ namespace VMDirSnapIn.UI
             // 
             // textBoxEdit
             // 
-            this.textBoxEdit.Location = new System.Drawing.Point(20, 2);
+            this.textBoxEdit.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.textBoxEdit.Location = new System.Drawing.Point(23, 426);
             this.textBoxEdit.Name = "textBoxEdit";
             this.textBoxEdit.Size = new System.Drawing.Size(36, 20);
             this.textBoxEdit.TabIndex = 5;
@@ -125,7 +126,6 @@ namespace VMDirSnapIn.UI
             this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this.panel1.Controls.Add(this.buttonReset);
             this.panel1.Controls.Add(this.buttonSubmit);
-            this.panel1.Controls.Add(this.textBoxEdit);
             this.panel1.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.panel1.Location = new System.Drawing.Point(0, 452);
             this.panel1.Name = "panel1";
@@ -138,14 +138,15 @@ namespace VMDirSnapIn.UI
             this.AutoScroll = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.Controls.Add(this.panel1);
+            this.Controls.Add(this.textBoxEdit);
             this.Controls.Add(this.listViewProp);
             this.DoubleBuffered = true;
             this.Name = "PropertiesControl";
             this.Size = new System.Drawing.Size(480, 487);
             this.contextMenuStripProp.ResumeLayout(false);
             this.panel1.ResumeLayout(false);
-            this.panel1.PerformLayout();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
