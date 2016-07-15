@@ -1528,8 +1528,13 @@ GenerateNewParent(
     int retVal = 0;
     VDIR_BERVALUE  NewParent = VDIR_BERVALUE_INIT;
 
-    retVal = VmDirGetParentDN(&pEntry->dn, &pEntry->pdn);
-    BAIL_ON_VMDIR_ERROR(retVal);
+    if (!pEntry->pdn.bvnorm_val)
+    {
+        VmDirFreeBervalContent(&pEntry->pdn);
+
+        retVal = VmDirGetParentDN(&pEntry->dn, &pEntry->pdn);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
 
     retVal = VmDirGetParentDN(&pDnAttr->vals[0], &NewParent);
     BAIL_ON_VMDIR_ERROR(retVal);

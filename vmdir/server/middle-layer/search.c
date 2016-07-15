@@ -82,8 +82,7 @@ DWORD
 ProcessPreValidatedEntries(
     PVDIR_OPERATION pOperation,
     DWORD dwEntryCount,
-    ENTRYID *pValidatedEntries,
-    BOOLEAN bComplete
+    ENTRYID *pValidatedEntries
     )
 {
     DWORD i = 0;
@@ -128,18 +127,11 @@ ProcessPreValidatedEntries(
         VmDirFreeEntryContent(&srEntry);
     }
 
-    if (bComplete)
-    {
-        pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie[0] = '\0';
-    }
-    else
-    {
-        dwError = SetPagedSearchCookie(
-                    pOperation,
-                    pValidatedEntries[dwEntryCount - 1],
-                    0);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    dwError = SetPagedSearchCookie(
+                pOperation,
+                pValidatedEntries[dwEntryCount - 1],
+                0);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     pOperation->dwSentEntries = dwSentEntries;
@@ -168,7 +160,7 @@ VmDirInternalSearch(
     ENTRYID eStartingId = 0;
     ENTRYID *pValidatedEntries = NULL;
     DWORD dwEntryCount = 0;
-    BOOLEAN bPagedSearchComplete = FALSE;
+    BOOLEAN bUseOldSearch = TRUE;
 
     assert(pOperation && pOperation->pBEIF);
 
@@ -259,20 +251,32 @@ txnretry:
         if (pOperation->showPagedResultsCtrl != NULL &&
             !IsNullOrEmptyString(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie))
         {
-            //
-            // If this function fails we'll fallback to the old cookie behavior
-            // so we ignore the return value (pValidatedEntries will be NULL).
-            //
-            (VOID)VmDirPagedSearchCacheRead(
-                    pOperation,
-                    &eStartingId,
-                    &pValidatedEntries,
-                    &dwEntryCount,
-                    &bPagedSearchComplete);
+            retVal = VmDirPagedSearchCacheRead(
+                        pOperation,
+                        &eStartingId,
+                        &pValidatedEntries,
+                        &dwEntryCount);
+            /*
+             * If we didn't find any data for this cookie the cache must have
+             * timed-out and been cleaned up. Let's continue the search using
+             * the old search semantics.
+             */
+            if (retVal == 0)
+            {
+                bUseOldSearch = FALSE;
+            }
+            else if (retVal == VMDIR_ERROR_NOT_FOUND)
+            {
+                retVal = 0;
+            }
+            else
+            {
+                BAIL_ON_VMDIR_ERROR(retVal);
+            }
         }
     }
 
-    if (pValidatedEntries == NULL)
+    if (bUseOldSearch)
     {
         retVal = BuildCandidateList(pOperation, pOperation->request.searchReq.filter, eStartingId);
         BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "BuildCandidateList failed.");
@@ -294,14 +298,17 @@ txnretry:
             retVal,
             VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg));
     }
-    else
+    else if (pValidatedEntries != NULL)
     {
         retVal = ProcessPreValidatedEntries(
                     pOperation,
                     dwEntryCount,
-                    pValidatedEntries,
-                    bPagedSearchComplete);
+                    pValidatedEntries);
         BAIL_ON_VMDIR_ERROR(retVal);
+    }
+    else if (pOperation->showPagedResultsCtrl != NULL)
+    {
+        pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie[0] = '\0';
     }
 
     retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx);
@@ -312,7 +319,7 @@ txnretry:
 
 cleanup:
 
-    VmDirFreeMemory(pValidatedEntries);
+    VMDIR_SAFE_FREE_MEMORY(pValidatedEntries);
     VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
 
     return retVal;
@@ -963,7 +970,7 @@ error:
 static
 DWORD
 SetPagedSearchCookie(
-    PVDIR_OPERATION pOp,
+    PVDIR_OPERATION pOperation,
     ENTRYID eId,
     DWORD dwCandidatesProcessed
     )
@@ -972,7 +979,10 @@ SetPagedSearchCookie(
 
     if (gVmdirGlobals.bPagedSearchReadAhead)
     {
-        dwError = VmDirPagedSearchCacheInsert(pOp, eId, dwCandidatesProcessed);
+        dwError = VmDirPagedSearchCacheInsert(
+                    pOperation,
+                    eId,
+                    dwCandidatesProcessed);
     }
 
     if (dwError != 0 || !gVmdirGlobals.bPagedSearchReadAhead)
@@ -982,8 +992,8 @@ SetPagedSearchCookie(
         // old cookie mechanism.
         //
         dwError = VmDirStringPrintFA(
-                    pOp->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie,
-                    VMDIR_ARRAY_SIZE(pOp->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie),
+                    pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie,
+                    VMDIR_ARRAY_SIZE(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie),
                     "%u",
                     eId);
         BAIL_ON_VMDIR_ERROR(dwError);

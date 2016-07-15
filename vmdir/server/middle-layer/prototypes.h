@@ -310,8 +310,7 @@ VmDirPagedSearchCacheRead(
     PVDIR_OPERATION pOperation,
     ENTRYID *peStartingId,
     ENTRYID **ppValidatedEntries,
-    DWORD *pdwEntryCount,
-    BOOLEAN *pbSearchCompleted
+    DWORD *pdwEntryCount
     );
 
 // saslsockbuf.c

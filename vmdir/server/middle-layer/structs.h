@@ -103,7 +103,6 @@ typedef struct _VDIR_LOCKOUT_REC
 
 } VDIR_LOCKOUT_REC, *PVDIR_LOCKOUT_REC;
 
-// TODO -- Can we just NULL-terminate the array?
 typedef struct _VDIR_PAGED_SEARCH_ENTRY_LIST
 {
     ENTRYID *pEntryIds;

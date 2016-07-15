@@ -397,7 +397,6 @@ VmDirPagedSearchCacheCullWorkerThread(
     PVDIR_PAGED_SEARCH_RECORD pSearchRecord
     )
 {
-    pSearchRecord->bSearchCompleted = TRUE;
     VmDirSrvThrSignal(pSearchRecord->pThreadInfo);
 }
 
@@ -414,8 +413,7 @@ static
 DWORD
 VmDirPagedSearchCacheAddData(
     PVDIR_PAGED_SEARCH_RECORD pSearchRecord,
-    PVDIR_PAGED_SEARCH_ENTRY_LIST pEntryList,
-    BOOLEAN bProcessingCompleted
+    PVDIR_PAGED_SEARCH_ENTRY_LIST pEntryList
     )
 {
     DWORD dwError = 0;
@@ -424,8 +422,6 @@ VmDirPagedSearchCacheAddData(
     VMDIR_LOCK_MUTEX(bInLock, pSearchRecord->mutex);
     dwError = dequePush(pSearchRecord->pQueue, pEntryList);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    pSearchRecord->bProcessingCompleted = bProcessingCompleted;
 
     VmDirPagedSearchCacheReaderSignal_inlock(pSearchRecord);
 cleanup:
@@ -456,13 +452,22 @@ _VmDirPagedSearchCacheWaitAndRead_inlock(
         {
             break;
         }
+        else if (pSearchRecord->bProcessingCompleted)
+        {
+            //
+            // Nothing in the queue and processing's complete so we must have
+            // read all the data.
+            //
+            pSearchRecord->bSearchCompleted = TRUE;
+            dwError = 0;
+            break;
+        }
         else
         {
-            dwError = VmDirConditionTimedWait(
-                        pSearchRecord->pDataAvailable,
-                        pSearchRecord->mutex,
-                        VMDIR_PSCACHE_READ_TIMEOUT);
-            BAIL_ON_VMDIR_ERROR(dwError);
+            (VOID)VmDirConditionTimedWait(
+                    pSearchRecord->pDataAvailable,
+                    pSearchRecord->mutex,
+                    VMDIR_PSCACHE_READ_TIMEOUT);
         }
 
         if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
@@ -484,15 +489,13 @@ VmDirPagedSearchCacheRead(
     PVDIR_OPERATION pOperation,
     ENTRYID *peStartingId,
     ENTRYID **ppValidatedEntries,
-    DWORD *pdwEntryCount,
-    BOOLEAN *pbSearchCompleted
+    DWORD *pdwEntryCount
     )
 {
     DWORD dwError = 0;
     PVDIR_PAGED_SEARCH_RECORD pSearchRecord = NULL;
     BOOLEAN bInLock = FALSE;
     PVDIR_PAGED_SEARCH_ENTRY_LIST pEntryList = NULL;
-    BOOLEAN bSearchCompleted = FALSE;
 
     pSearchRecord = VmDirPagedSearchCacheFind(pOperation);
     if (pSearchRecord == NULL)
@@ -501,7 +504,7 @@ VmDirPagedSearchCacheRead(
         // Barring the client sending us an invalid cookie, failure here
         // means that the worker thread timed out and freed the cache.
         //
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NOT_FOUND);
     }
 
     VMDIR_LOCK_MUTEX(bInLock, pSearchRecord->mutex);
@@ -511,26 +514,22 @@ VmDirPagedSearchCacheRead(
                 &pEntryList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    *ppValidatedEntries = pEntryList->pEntryIds;
-    *pdwEntryCount = pEntryList->dwCount;
-
-    //
-    // We transferred ownership of pEntryList->pEntryIds above but we still
-    // need to delete the rest of the structure.
-    //
-    pEntryList->pEntryIds = NULL;
-    _VmDirPagedSearchEntryListFree(pEntryList);
-
-    //
-    // Check if we've read all the data.
-    //
-    if (pSearchRecord->pQueue->iSize == 0 && pSearchRecord->bProcessingCompleted)
+    if (pSearchRecord->bSearchCompleted)
     {
-        bSearchCompleted = TRUE;
         VmDirPagedSearchCacheCullWorkerThread(pSearchRecord);
     }
+    else
+    {
+        *ppValidatedEntries = pEntryList->pEntryIds;
+        *pdwEntryCount = pEntryList->dwCount;
 
-    *pbSearchCompleted = bSearchCompleted;
+        //
+        // We transferred ownership of pEntryList->pEntryIds above but we still
+        // need to delete the rest of the structure.
+        //
+        pEntryList->pEntryIds = NULL;
+        _VmDirPagedSearchEntryListFree(pEntryList);
+    }
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bInLock, pSearchRecord->mutex);
@@ -639,18 +638,25 @@ _VmDirPagedSearchCacheWaitForClientCompletion(
     // will cause the client to fallback to the old search semantics.
     //
     VMDIR_LOCK_MUTEX(bInLock, pSearchRecord->pThreadInfo->mutexUsed);
+
+    pSearchRecord->bProcessingCompleted = TRUE;
+
     while (TRUE)
     {
+        if (pSearchRecord->bSearchCompleted)
+        {
+            break;
+        }
         dwError = VmDirConditionTimedWait(
                     pSearchRecord->pThreadInfo->conditionUsed,
                     pSearchRecord->pThreadInfo->mutexUsed,
                     gPagedSearchCache.dwTimeoutPeriod);
-        if ((dwError == 0 && pSearchRecord->bSearchCompleted) ||
-            dwError == ETIMEDOUT)
+        if (dwError == ETIMEDOUT)
         {
             break;
         }
     }
+
     VMDIR_UNLOCK_MUTEX(bInLock, pSearchRecord->pThreadInfo->mutexUsed);
 }
 
@@ -682,16 +688,15 @@ _VmDirPagedSearchWorkerThread(
 
         _VmDirPagedSearchProcessEntries(&searchOp, pSearchRecord, pEntryIdList);
 
-        //
-        // We need to add the data even if no processed entries were valid (in
-        // order to wake up the client).
-        //
-        dwError = VmDirPagedSearchCacheAddData(
-                    pSearchRecord,
-                    pEntryIdList,
-                    pSearchRecord->dwCandidatesProcessed == pSearchRecord->pTotalCandidates->size
-                    );
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (pEntryIdList->dwCount == 0)
+        {
+            _VmDirPagedSearchEntryListFree(pEntryIdList);
+        }
+        else
+        {
+            dwError = VmDirPagedSearchCacheAddData(pSearchRecord, pEntryIdList);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
     }
 
     _VmDirPagedSearchCacheWaitForClientCompletion(pSearchRecord);
@@ -704,6 +709,5 @@ cleanup:
     _DerefPagedSearchRecord(pSearchRecord);
     return dwError;
 error:
-    _VmDirPagedSearchEntryListFree(pEntryIdList);
     goto cleanup;
 }

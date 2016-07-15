@@ -2418,14 +2418,14 @@ VmDirGetReplicationPartnerStatus(
     PVMDIR_REPL_PARTNER_STATUS  pReplPartnerStatus = NULL;
     PSTR*       ppszPartnerHosts = NULL;
     PSTR        pszDomain = NULL;
-    PSTR        pszDCAccount = NULL;
     LDAP*       pLd = NULL;
+    PSTR        pszServerName = NULL;
 
-    dwError = VmDirRegReadDCAccount(&pszDCAccount);
+    // find hosts with hostname as the partner
+    dwError = VmDirGetServerName(pszHostName, &pszServerName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // find hosts with myself as the partner
-    dwError = _VmDirFindAllReplPartnerHost(pszDCAccount, pszUserName, pszPassword, &ppszPartnerHosts, &dwNumHost);
+    dwError = _VmDirFindAllReplPartnerHost(pszServerName, pszUserName, pszPassword, &ppszPartnerHosts, &dwNumHost);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (dwNumHost > 0)
@@ -2484,7 +2484,7 @@ VmDirGetReplicationPartnerStatus(
         pReplPartnerStatus[dwCnt].bHostAvailable = TRUE;
 
         // get partner replication status
-        dwError = VmDirGetPartnerReplicationStatus(pLd, pszDCAccount, &pReplPartnerStatus[dwCnt]);
+        dwError = VmDirGetPartnerReplicationStatus(pLd, pszServerName, &pReplPartnerStatus[dwCnt]);
         if (dwError)
         {
             VMDIR_LOG_WARNING(
@@ -2506,7 +2506,7 @@ cleanup:
 
     VmDirLdapUnbind(&pLd);
     VMDIR_SAFE_FREE_MEMORY(pszDomain);
-    VMDIR_SAFE_FREE_MEMORY(pszDCAccount);
+    VMDIR_SAFE_FREE_MEMORY(pszServerName);
 
     for (dwCnt=0; dwCnt < dwNumHost; dwCnt++)
     {

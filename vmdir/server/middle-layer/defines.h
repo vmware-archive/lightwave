@@ -70,4 +70,4 @@
 // thread (we'll loop until more data's available, but we wake up periodically
 // to check if the server's shutting down).
 //
-#define VMDIR_PSCACHE_READ_TIMEOUT 1000
+#define VMDIR_PSCACHE_READ_TIMEOUT 100
