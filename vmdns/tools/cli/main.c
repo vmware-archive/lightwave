@@ -151,6 +151,7 @@ BOOL
 VerifyRemoteConnectionArgs(
     PSTR* ppszServer,
     PSTR pszUserName,
+    PSTR pszDomain,
     PSTR* ppszPassword
     );
 
@@ -176,6 +177,7 @@ int main(int argc, char* argv[])
 
     dwError = VmDnsCliExecute(pContext);
     BAIL_ON_VMDNS_ERROR(dwError);
+
 
 cleanup:
 
@@ -375,9 +377,11 @@ ParseArgs(
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VerifyRemoteConnectionArgs(
-                &pContext->pszServer,
-                pszUserName,
-                &pszPassword);
+                            &pContext->pszServer,
+                            pszUserName,
+                            pszDomain,
+                            &pszPassword
+                            );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsOpenServerA(pContext->pszServer,
@@ -2515,6 +2519,7 @@ DWORD
 VerifyRemoteConnectionArgs(
     PSTR* ppszServer,
     PSTR pszUserName,
+    PSTR pszDomain,
     PSTR* ppszPassword
     )
 {
@@ -2522,7 +2527,10 @@ VerifyRemoteConnectionArgs(
     PSTR  pszPasswordBuf = NULL;
     PSTR  pszPassword = NULL;
 
-    if (!IsNullOrEmptyString(*ppszServer) && !IsNullOrEmptyString(pszUserName) && !IsNullOrEmptyString(*ppszPassword))
+    if (!IsNullOrEmptyString(*ppszServer)
+            && !IsNullOrEmptyString(pszUserName)
+            && !IsNullOrEmptyString(*ppszPassword)
+            && !IsNullOrEmptyString(pszDomain))
     {
         dwError = ERROR_SUCCESS;
     }
@@ -2530,11 +2538,15 @@ VerifyRemoteConnectionArgs(
     {
         dwError = VmDnsCopyStringArg(VMDNS_LOCALHOST, ppszServer);
     }
-    else if (!IsNullOrEmptyString(*ppszServer) && (VmDnsStringCompareA(*ppszServer, VMDNS_LOCALHOST, FALSE) != 0) && (IsNullOrEmptyString(pszUserName) || IsNullOrEmptyString(*ppszPassword)))
+    else if (!IsNullOrEmptyString(*ppszServer)
+                && (VmDnsStringCompareA(*ppszServer, VMDNS_LOCALHOST, FALSE) != 0)
+                && (IsNullOrEmptyString(pszUserName)
+                || IsNullOrEmptyString(*ppszPassword)
+                || IsNullOrEmptyString(pszDomain)))
     {
         fprintf(
             stdout,
-            "Remote server requires authentication. Please, specify username and password.\n");
+            "Remote server requires authentication. Please, specify username, password and domain.\n");
 
         dwError = ERROR_INVALID_PARAMETER;
     }

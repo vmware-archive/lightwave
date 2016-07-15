@@ -712,8 +712,6 @@ VmDnsZoneQuery(
     )
 {
     DWORD                   dwError = 0;
-    DWORD                   idxSrc = 0;
-    DWORD                   idxDst = 0;
     PVMDNS_ZONE             pZone = NULL;
     PVMDNS_RECORD_ARRAY     pRecords = NULL;
     PVMDNS_NAME_ENTRY       pNameEntry = NULL;
@@ -737,7 +735,11 @@ VmDnsZoneQuery(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    dwError = VmDnsZoneGetRecordShortName(type, pszName, pszZone, &pszShortName);
+    dwError = VmDnsZoneGetRecordShortName(
+                    type,
+                    pszName,
+                    pszZone,
+                    &pszShortName);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     LOCKREAD_ZONE_LIST(bZoneListLocked);
@@ -748,30 +750,13 @@ VmDnsZoneQuery(
     LOCKREAD_ZONE(bZoneLocked);
 
     dwError = VmDnsZoneFindNameEntry(
-                pZone,
-                pszShortName ? pszShortName : pszName,
-                &pNameEntry);
+                    pZone,
+                    pszShortName ? pszShortName : pszName,
+                    &pNameEntry);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsNameEntryListRecord(pNameEntry, &pRecords);
+    dwError = VmDnsNameEntryListRecord(pNameEntry, &pRecords, type);
     BAIL_ON_VMDNS_ERROR(dwError);
-
-    for (; idxSrc < pRecords->dwCount; ++idxSrc)
-    {
-        if (pRecords->Records[idxSrc].dwType == type)
-        {
-            if (idxSrc != idxDst)
-            {
-                VmDnsClearRecord(&pRecords->Records[idxDst]);
-                memcpy(
-                    &pRecords->Records[idxDst],
-                    &pRecords->Records[idxSrc],
-                    sizeof(VMDNS_RECORD));
-            }
-            ++idxDst;
-        }
-    }
-    pRecords->dwCount = idxDst;
 
     *ppRecords = pRecords;
 

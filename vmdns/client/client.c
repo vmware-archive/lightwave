@@ -524,6 +524,8 @@ VmDnsListZoneA(
     )
 {
     DWORD dwError = 0;
+    PVMDNS_ZONE_INFO_ARRAY pZoneInfoArray = NULL;
+    PVMDNS_ZONE_INFO_ARRAY pRpcZoneInfoArray = NULL;
 
     if (!pServerContext ||
         !pServerContext->hBinding ||
@@ -537,7 +539,7 @@ VmDnsListZoneA(
     {
         dwError = VmDnsRpcListZones(
                             pServerContext->hBinding,
-                            ppZoneInfoArray
+                            &pRpcZoneInfoArray
                             );
     }
     DCETHREAD_CATCH_ALL(THIS_CATCH)
@@ -547,10 +549,32 @@ VmDnsListZoneA(
     DCETHREAD_ENDTRY;
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    dwError = VmDnsAllocateFromRpcZoneInfoArray(
+                                    pRpcZoneInfoArray,
+                                    &pZoneInfoArray
+                                    );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppZoneInfoArray = pZoneInfoArray;
+
 cleanup:
+
+    if (pRpcZoneInfoArray)
+    {
+        VmDnsRpcClientFreeZoneInfoArray(pRpcZoneInfoArray);
+    }
     return dwError;
 
 error:
+
+    if (pZoneInfoArray)
+    {
+        VmDnsFreeZoneInfoArray(pZoneInfoArray);
+    }
+    if (ppZoneInfoArray)
+    {
+        *ppZoneInfoArray = NULL;
+    }
     goto cleanup;
 
 }
@@ -694,6 +718,7 @@ VmDnsQueryRecordsA(
 {
     DWORD dwError = 0;
     PVMDNS_RECORD_ARRAY pRecordArray = NULL;
+    PVMDNS_RECORD_ARRAY pRpcRecordArray = NULL;
 
     if (!pServerContext ||
         !pServerContext->hBinding ||
@@ -713,7 +738,7 @@ VmDnsQueryRecordsA(
                         pszName,
                         dwType,
                         dwOptions,
-                        &pRecordArray
+                        &pRpcRecordArray
                         );
     }
     DCETHREAD_CATCH_ALL(THIS_CATCH)
@@ -723,13 +748,29 @@ VmDnsQueryRecordsA(
     DCETHREAD_ENDTRY;
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    dwError = VmDnsAllocateFromRpcRecordArray(
+                                pRpcRecordArray,
+                                &pRecordArray
+                                );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
     *ppRecordArray = pRecordArray;
 
 cleanup:
+
+    if (pRpcRecordArray)
+    {
+        VmDnsRpcClientFreeRpcRecordArray(pRpcRecordArray);
+    }
     return dwError;
 
 error:
     VMDNS_FREE_RECORD_ARRAY(pRecordArray);
+
+    if (ppRecordArray)
+    {
+        *ppRecordArray = NULL;
+    }
     goto cleanup;
 }
 
@@ -743,6 +784,7 @@ VmDnsListRecordsA(
 {
     DWORD dwError = 0;
     PVMDNS_RECORD_ARRAY pRecordArray = NULL;
+    PVMDNS_RECORD_ARRAY pRpcRecordArray = NULL;
 
     if (!pServerContext ||
         !pServerContext->hBinding ||
@@ -757,7 +799,7 @@ VmDnsListRecordsA(
         dwError = VmDnsRpcListRecords(
                         pServerContext->hBinding,
                         pszZone,
-                        &pRecordArray
+                        &pRpcRecordArray
                         );
     }
     DCETHREAD_CATCH_ALL(THIS_CATCH)
@@ -767,9 +809,20 @@ VmDnsListRecordsA(
     DCETHREAD_ENDTRY;
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    dwError = VmDnsAllocateFromRpcRecordArray(
+                                pRpcRecordArray,
+                                &pRecordArray
+                                );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
     *ppRecordArray = pRecordArray;
 
 cleanup:
+
+    if (pRpcRecordArray)
+    {
+        VmDnsRpcClientFreeRpcRecordArray(pRpcRecordArray);
+    }
     return dwError;
 
 error:
@@ -785,10 +838,9 @@ VmDnsFreeZoneInfo(
 {
     if (pZoneInfo)
     {
-        VmDnsRpcFreeStringA(pZoneInfo->pszName);
-        VmDnsRpcFreeStringA(pZoneInfo->pszPrimaryDnsSrvName);
-        VmDnsRpcFreeStringA(pZoneInfo->pszRName);
-        VmDnsRpcFreeMemory(pZoneInfo);
+        VmDnsFreeStringA(pZoneInfo->pszName);
+        VmDnsFreeStringA(pZoneInfo->pszPrimaryDnsSrvName);
+        VmDnsFreeStringA(pZoneInfo->pszRName);
     }
 }
 
@@ -805,7 +857,7 @@ VmDnsFreeZoneInfoArray(
         {
             VmDnsFreeZoneInfo(&pZoneInfoArray->ZoneInfos[idx]);
         }
-        VmDnsRpcFreeMemory(pZoneInfoArray);
+        VmDnsFreeMemory(pZoneInfoArray);
     }
 }
 
@@ -831,11 +883,16 @@ VmDnsFreeRecordArray(
     if (pRecordArray)
     {
         DWORD idx = 0;
-        for (; idx < pRecordArray->dwCount; ++idx)
+        if (pRecordArray->Records)
         {
-            VmDnsRpcClearRecord(&pRecordArray->Records[idx]);
+            for (; idx < pRecordArray->dwCount; ++idx)
+            {
+                VmDnsClearRecord(&pRecordArray->Records[idx]);
+            }
+
+            VmDnsFreeMemory(pRecordArray->Records);
         }
-        VmDnsRpcFreeMemory(pRecordArray);
+        VmDnsFreeMemory(pRecordArray);
     }
 }
 
