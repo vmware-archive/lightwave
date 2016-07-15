@@ -38,10 +38,19 @@ VmDnsReadRecordsFromBuffer(
     PVMDNS_RECORD **pppRecords
     );
 
+static
+DWORD
+VmDnsReadZoneFromBuffer(
+    PVMDNS_MESSAGE_BUFFER pMessageBuffer,
+    PVMDNS_UPDATE_ZONE *ppZone
+    );
+
+
 DWORD
 VmDnsParseMessage(
       PVMDNS_MESSAGE_BUFFER pMessageBuffer,
-      PVMDNS_MESSAGE *ppMessage
+      PVMDNS_MESSAGE *ppMessage,
+      PVMDNS_UPDATE_MESSAGE *ppUpdateMessage
       )
 {
     DWORD dwError = 0;
@@ -49,8 +58,13 @@ VmDnsParseMessage(
     PVMDNS_HEADER pHeader = NULL;
     PVMDNS_QUESTION *pQuestions = NULL;
     PVMDNS_RECORD *pRecords = NULL;
+    PVMDNS_UPDATE_MESSAGE pUpdateMessage = NULL;
+    PVMDNS_UPDATE_ZONE pZone = NULL;
+    PVMDNS_RECORD *pPrereqs = NULL;
+    PVMDNS_RECORD *pUpdates = NULL;
+    PVMDNS_RECORD *pAdds = NULL;
 
-    if (!pMessageBuffer || !ppMessage)
+    if (!pMessageBuffer || !ppMessage || !ppUpdateMessage)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -62,34 +76,88 @@ VmDnsParseMessage(
                               );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsReadQuestionsFromBuffer(
-                              pMessageBuffer,
-                              pHeader->usQDCount,
-                              &pQuestions
-                              );
-    BAIL_ON_VMDNS_ERROR(dwError);
+    if (pHeader && pHeader->codes.opcode == VM_DNS_OPCODE_QUERY)
+    {
+        dwError = VmDnsReadQuestionsFromBuffer(
+                                  pMessageBuffer,
+                                  pHeader->usQDCount,
+                                  &pQuestions
+                                  );
+        BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsReadRecordsFromBuffer(
-                              pMessageBuffer,
-                              pHeader->usANCount,
-                              &pRecords
-                              );
-    BAIL_ON_VMDNS_ERROR(dwError);
+        dwError = VmDnsReadRecordsFromBuffer(
+                                  pMessageBuffer,
+                                  pHeader->usANCount,
+                                  &pRecords
+                                  );
+        BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsAllocateMemory(
-                              sizeof(VMDNS_MESSAGE),
-                              (PVOID)&pMessage
-                              );
-    BAIL_ON_VMDNS_ERROR(dwError);
+        dwError = VmDnsAllocateMemory(
+                                  sizeof(VMDNS_MESSAGE),
+                                  (PVOID)&pMessage
+                                  );
+        BAIL_ON_VMDNS_ERROR(dwError);
 
-    pMessage->pHeader = pHeader;
-    pHeader = NULL;
-    pMessage->pQuestions = pQuestions;
-    pQuestions = NULL;
-    pMessage->pRecords = pRecords;
-    pRecords = NULL;
+        pMessage->pHeader = pHeader;
+        pHeader = NULL;
+        pMessage->pQuestions = pQuestions;
+        pQuestions = NULL;
+        pMessage->pRecords = pRecords;
+        pRecords = NULL;
 
-    *ppMessage = pMessage;
+        *ppMessage = pMessage;
+    }
+    else if (pHeader && pHeader->codes.opcode == VM_DNS_OPCODE_UPDATE)
+    {
+        dwError = VmDnsReadZoneFromBuffer(
+                                    pMessageBuffer,
+                                    &pZone
+                                    );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        //   To read prerequisites
+        dwError = VmDnsReadRecordsFromBuffer(
+                                    pMessageBuffer,
+                                    pHeader->usPRCount,
+                                    &pPrereqs
+                                    );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        //   To read updates
+        dwError = VmDnsReadRecordsFromBuffer(
+                                    pMessageBuffer,
+                                    pHeader->usUPCount,
+                                    &pUpdates
+                                    );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        //   To read additional data
+        dwError = VmDnsReadRecordsFromBuffer(
+                                    pMessageBuffer,
+                                    pHeader->usADCount,
+                                    &pAdds
+                                    );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwError = VmDnsAllocateMemory(
+                            sizeof(VMDNS_UPDATE_MESSAGE),
+                            (PVOID)&pUpdateMessage
+                            );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        pUpdateMessage->pHeader = pHeader;
+        pHeader = NULL;
+        pUpdateMessage->pZone = pZone;
+        pZone = NULL;
+        pUpdateMessage->pPrerequisite = pPrereqs;
+        pPrereqs = NULL;
+        pUpdateMessage->pUpdate = pUpdates;
+        pUpdates = NULL;
+        pUpdateMessage->pAdditional = pAdds;
+        pAdds = NULL;
+
+        *ppUpdateMessage = pUpdateMessage;
+    }
 
 cleanup:
 
@@ -104,6 +172,10 @@ error:
     {
       VmDnsFreeDnsMessage(pMessage);
     }
+    if (pUpdateMessage)
+    {
+        VmDnsFreeDnsUpdateMessage(pUpdateMessage);
+    }
     if (pHeader && pQuestions)
     {
         VmDnsFreeQuestions(pQuestions, pHeader->usQDCount);
@@ -112,6 +184,19 @@ error:
     {
         VmDnsFreeRecordsArray(pRecords, pHeader->usANCount);
     }
+    if (pHeader && pAdds)
+    {
+        VmDnsFreeRecordsArray(pAdds, pHeader->usADCount);
+    }
+    if (pHeader && pPrereqs)
+    {
+        VmDnsFreeRecordsArray(pPrereqs, pHeader->usPRCount);
+    }
+    if (pHeader && pUpdates)
+    {
+        VmDnsFreeRecordsArray(pUpdates, pHeader->usUPCount);
+    }
+    VMDNS_SAFE_FREE_MEMORY(pZone);
     VMDNS_SAFE_FREE_MEMORY(pHeader);
     goto cleanup;
 }
@@ -176,6 +261,8 @@ error:
 
     goto cleanup;
 }
+
+
 
 DWORD
 VmDnsWriteQuestionToBuffer(
@@ -288,6 +375,7 @@ error:
     VMDNS_SAFE_FREE_MEMORY(pHeader);
     goto cleanup;
 }
+
 
 static
 DWORD
@@ -415,3 +503,57 @@ error:
     goto cleanup;
 }
 
+
+
+// It is one one zone in the request package for update
+static
+DWORD
+VmDnsReadZoneFromBuffer(
+    PVMDNS_MESSAGE_BUFFER pMessageBuffer,
+    PVMDNS_UPDATE_ZONE *ppZone
+)
+{
+    DWORD dwError = 0;
+    PVMDNS_UPDATE_ZONE pZone = NULL;
+
+    if (!pMessageBuffer || !ppZone)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsAllocateMemory(
+        sizeof(PVMDNS_UPDATE_ZONE),
+        (PVOID)&pZone
+        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsReadDomainNameFromBuffer(
+        pMessageBuffer,
+        &pZone->pszName
+        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsReadUINT16FromBuffer(
+        pMessageBuffer,
+        &pZone->uType
+        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsReadUINT16FromBuffer(
+        pMessageBuffer,
+        &pZone->uClass
+        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppZone = pZone;
+
+cleanup:
+
+    return dwError;
+error:
+
+    VmDnsFreeMemory(pZone);
+
+    goto cleanup;
+}

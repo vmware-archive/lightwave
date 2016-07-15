@@ -365,6 +365,7 @@ VmdnsZoneEndUpdate(
 
 DWORD
 VmDnsCoreInit(
+    BOOL bUseDirectoryStore
     );
 
 VOID
@@ -383,6 +384,18 @@ VmDnsSetState(
 VMDNS_STATE VmDnsConditionalSetState(
     VMDNS_STATE newState,
     VMDNS_STATE oldState
+    );
+
+UINT32
+VmDnsInitialize(
+    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
+    PVMDNS_INIT_INFO            pInitInfo
+    );
+
+UINT32
+VmDnsUninitialize(
+    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
+    PVMDNS_INIT_INFO            pInitInfo
     );
 
 DWORD

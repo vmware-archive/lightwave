@@ -56,7 +56,7 @@ extern "C" {
 #ifndef _WIN32
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH "Services\\vmdir"
 #define VMAFD_CONFIG_PARAMETER_KEY_PATH "Services\\vmafd\\Parameters"
-#define VMDNS_CONFIG_PARAMETER_KEY_PATH "Services\\vmdns"
+#define VMDNS_CONFIG_PARAMETER_KEY_PATH "Services\\vmdns\\Parameters"
 #else
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH "SYSTEM\\CurrentControlSet\\services\\VMWareDirectoryService"
 #define VMAFD_CONFIG_PARAMETER_KEY_PATH "SYSTEM\\CurrentControlSet\\services\\VMWareAfdService\\Parameters"
@@ -75,7 +75,8 @@ typedef enum
 {
     VM_DNS_OPCODE_QUERY = 0,
     VM_DNS_OPCODE_IQUERY = 1,
-    VM_DNS_OPCODE_STATUS = 2
+    VM_DNS_OPCODE_STATUS = 2,
+    VM_DNS_OPCODE_UPDATE = 5
 } VM_DNS_OPCODE;
 
 typedef enum
@@ -130,7 +131,6 @@ typedef enum
     (pVmDnsHeader->codes.RA & 0x1) << 7 | \
     (pVmDnsHeader->codes.RCODE & 0xf);
 #endif
-
 
 #ifdef	__cplusplus
 }

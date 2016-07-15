@@ -74,7 +74,7 @@ void
 ListRecords()
 {
     PVMDNS_RECORD_ARRAY pra = NULL;
-    VmDnsZoneListRecord("sphere.local", &pra);
+    VmDnsZoneListRecord("vsphere.local", &pra);
     VMDNS_FREE_RECORD_ARRAY(pra);
 }
 
@@ -82,7 +82,7 @@ void TestZoneInit(CuTest* tc)
 {
     vmdns_syslog_level = VMDNS_LOG_LEVEL_DEBUG;
 
-    VmDnsCoreInit();
+    VmDnsCoreInit(FALSE);
     CuAssertTrue(tc, gpDNSDriverGlobals->pZoneList != NULL);
     VmDnsSetState(VMDNS_READY);
 }
@@ -94,9 +94,9 @@ void TestZoneCreate(CuTest* tc)
     PVMDNS_RECORD_ARRAY pRecords = NULL;
     PVMDNS_ZONE_INFO_ARRAY pZoneArray = NULL;
 
-    zi.pszName ="sphere.local";
-    zi.pszPrimaryDnsSrvName = "dns.sphere.local";
-    zi.pszRName = "admin@sphere.local";
+    zi.pszName ="vsphere.local";
+    zi.pszPrimaryDnsSrvName = "dns.vsphere.local";
+    zi.pszRName = "admin@vsphere.local";
     zi.expire = DEFAULT_EXPIRE;
     zi.minimum = DEFAULT_TTL;
     zi.serial = DEFAULT_SERIAL;
@@ -140,9 +140,9 @@ void TestZoneUpdate(CuTest* tc)
     VMDNS_ZONE_INFO zi = {0};
     PVMDNS_RECORD_ARRAY pRecords = NULL;
 
-    zi.pszName = "sphere.local";
-    zi.pszPrimaryDnsSrvName = "dns2.sphere.local";
-    zi.pszRName = "admin2@sphere.local";
+    zi.pszName = "vsphere.local";
+    zi.pszPrimaryDnsSrvName = "dns2.vsphere.local";
+    zi.pszRName = "admin2@vsphere.local";
     zi.expire = DEFAULT_EXPIRE / 2;
     zi.minimum = DEFAULT_TTL / 2;
     zi.serial = DEFAULT_SERIAL + 1;
@@ -167,11 +167,11 @@ void TestZoneUpdate(CuTest* tc)
         pRecords->Records[0].Data.SOA.dwDefaultTtl == zi.minimum);
     VMDNS_FREE_RECORD_ARRAY(pRecords);
 
-    zi.pszPrimaryDnsSrvName = "dns1.sphere.local";
+    zi.pszPrimaryDnsSrvName = "dns1.vsphere.local";
     dwError = VmDnsZoneUpdate(NULL, &zi, FALSE);
     CuAssert(tc, "Zones primary server name restore should succeed.", !dwError);
 
-    VerifyTestZone(tc, "sphere.local");
+    VerifyTestZone(tc, "vsphere.local");
     ListRecords();
 }
 
@@ -181,12 +181,12 @@ void TestAddressRecord(CuTest* tc)
     PVMDNS_RECORD pRecord = NULL;
     PVMDNS_RECORD_ARRAY    pRecords = NULL;
     PSTR pcszHostName = "host1";
-    PSTR pszZone = "sphere.local";
+    PSTR pszZone = "vsphere.local";
     PBYTE pSerializedBytes = NULL;
     DWORD dwSerializationSize = 0;
     BYTE bytes[16] = {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
 
-    VerifyTestZone(tc, "sphere.local");
+    VerifyTestZone(tc, "vsphere.local");
 
     pRecord = CreateAddressRecord(pcszHostName, 11111, pszZone);
     dwError = VmDnsZoneAddRecord(NULL, pszZone, pRecord, FALSE);
@@ -225,12 +225,13 @@ void TestAddressRecord(CuTest* tc)
     CuAssert(tc, "Querying the added records should succeed.", !dwError);
     CuAssert(tc, "IPv4 address record count from query should be 2.", pRecords->dwCount == 2);
 
+    dwError = VmDnsZoneDeleteRecord(NULL, pszZone, &pRecords->Records[1], FALSE);
+    CuAssert(tc, "Deleting the second address record should succeed.", !dwError);
+    VMDNS_FREE_RECORD_ARRAY(pRecords);
+
     dwError = VmDnsZoneQuery(pszZone, pcszHostName, VMDNS_RR_TYPE_AAAA, &pRecords);
     CuAssert(tc, "Querying the added records should succeed.", !dwError);
     CuAssert(tc, "IPV6 address record count from query should be 1.", pRecords->dwCount == 1);
-
-    dwError = VmDnsZoneDeleteRecord(NULL, pszZone, &pRecords->Records[1], FALSE);
-    CuAssert(tc, "Deleting the second address record should succeed.", !dwError);
     VMDNS_FREE_RECORD_ARRAY(pRecords);
 
     dwError = VmDnsZoneQuery(pszZone, pcszHostName, VMDNS_RR_TYPE_A, &pRecords);
@@ -270,15 +271,15 @@ void TestSrvRecord(CuTest* tc)
     DWORD dwError = 0;
     PVMDNS_RECORD pRecord = NULL;
     PVMDNS_RECORD pDeserializedRecord = NULL;
-    PSTR pcszDomain = "sphere.local";
+    PSTR pcszDomain = "vsphere.local";
     PSTR pszZone = pcszDomain;
-    PSTR pszTarget1 = "dc1.sphere.local";
-    PSTR pszTarget2 = "dc2.sphere.local";
+    PSTR pszTarget1 = "dc1.vsphere.local";
+    PSTR pszTarget2 = "dc2.vsphere.local";
     PVMDNS_RECORD_ARRAY    pRecords = NULL;
     PBYTE pSerializedBytes = NULL;
     DWORD dwSerializationSize = 0;
 
-    VerifyTestZone(tc, "sphere.local");
+    VerifyTestZone(tc, "vsphere.local");
 
     pRecord = CreateServiceRecord(pcszDomain, DOMAIN_CONTROLLER, SERVICE_PROTOCOL_TCP, pszTarget1, 2015, 1, 3);
     dwError = VmDnsZoneAddRecord(NULL, pszZone, pRecord, FALSE);
@@ -325,18 +326,18 @@ void TestNSRecord(CuTest* tc)
 {
     DWORD dwError = 0;
     PVMDNS_RECORD pRecord = NULL;
-    PSTR pszZone = "sphere.local";
+    PSTR pszZone = "vsphere.local";
     PSTR pcszName1 = "external";
     PSTR pcszName2 = "local";
-    PSTR pcszName3 = "sphere.local";
-    PSTR pszTarget = "dns.sphere.local";
+    PSTR pcszName3 = "vsphere.local";
+    PSTR pszTarget = "dns.vsphere.local";
     UINT16 port = 53, priority = 1, weight = 1;
 
     PBYTE pSerializedBytes = NULL;
     DWORD dwSerializationSize = 0;
     PVMDNS_RECORD_ARRAY    pRecords = NULL;
 
-    VerifyTestZone(tc, "sphere.local");
+    VerifyTestZone(tc, "vsphere.local");
 
     pRecord = CreateNSRecord(pcszName1, pszTarget, port, priority, weight);
     dwError = VmDnsZoneAddRecord(NULL, pszZone, pRecord, FALSE);
@@ -405,23 +406,23 @@ void TestSoaRecord(CuTest* tc)
     VMDNS_ZONE_INFO zi = {0};
     PVMDNS_RECORD pSoa = NULL;
     PVMDNS_RECORD pRecord = NULL;
-    PSTR  pcszDomain = "sphere.local";
-    PSTR  pcszOldServerName = "dns1.sphere.local";
-    PSTR  pcszNewServerName = "dns2.sphere.local";
+    PSTR  pcszDomain = "vsphere.local";
+    PSTR  pcszOldServerName = "dns1.vsphere.local";
+    PSTR  pcszNewServerName = "dns2.vsphere.local";
     PVMDNS_ZONE_INFO_ARRAY pZoneArray = NULL;
     PBYTE pSerializedBytes = NULL;
     DWORD dwSerializationSize = 0;
 
     zi.pszName = pcszDomain;
     zi.pszPrimaryDnsSrvName = pcszOldServerName;
-    zi.pszRName = "admin@sphere.local";
+    zi.pszRName = "admin@vsphere.local";
     zi.expire = DEFAULT_EXPIRE;
     zi.minimum = DEFAULT_TTL;
     zi.serial = DEFAULT_SERIAL;
     zi.retryInterval = DEFAULT_RETRY;
     zi.refreshInterval = DEFAULT_REFRESH;
 
-    VerifyTestZone(tc, "sphere.local");
+    VerifyTestZone(tc, "vsphere.local");
 
     dwError = VmDnsCreateSoaRecord(&zi, &pSoa);
     CuAssert(tc, "Creating SOA record should succeed.", !dwError);
@@ -490,8 +491,8 @@ void TestSoaRecord(CuTest* tc)
 void TestNameEntry(CuTest* tc)
 {
     DWORD dwError = ERROR_SUCCESS;
-    PCSTR pszZone = "sphere.local";
-    PCSTR pszHost = "dc1.sphere.local";
+    PCSTR pszZone = "vsphere.local";
+    PCSTR pszHost = "dc1.vsphere.local";
     DWORD address = 11111;
     PVMDNS_RECORD pRecord1 = NULL;
     PVMDNS_RECORD pRecord2 = NULL;
@@ -510,7 +511,7 @@ void TestNameEntry(CuTest* tc)
     CuAssert(tc, "Record count in name entry should be 1.",
         VmDnsNameEntryGetRecordCount(pNameEntry) == 1);
 
-    dwError = VmDnsNameEntryListRecord(pNameEntry, &pRecords);
+    dwError = VmDnsNameEntryListRecord(pNameEntry, &pRecords, VMDNS_RR_TYPE_A);
     CuAssert(tc, "Listing record should succeed.", !dwError);
     CuAssert(tc, "One record is exptected.", pRecords->dwCount == 1);
     CuAssert(tc, "Record should be the same as added.",
@@ -553,21 +554,55 @@ void TestZoneCleanup(CuTest* tc)
     VmDnsCoreCleanup();
 }
 
+void TestServerInitialize(CuTest* tc)
+{
+    DWORD dwError = ERROR_SUCCESS;
+    PSTR pszZone = "vsphere.local";
+    PSTR pszHost = "dc1.vsphere.local";
+    VMDNS_IP6_ADDRESS      ipV6Addresses[] = {
+                                                { { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 } },
+                                                { { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2 } }
+                                             };
+    VMDNS_IP4_ADDRESS      ipV4Addresses[] = { 0xAC031F43 };
+    VMDNS_INIT_INFO        initInfo = { 0 };
+
+    initInfo.IpV4Addrs.Addrs = ipV4Addresses;
+    initInfo.IpV6Addrs.Addrs = ipV6Addresses;
+    initInfo.IpV4Addrs.dwCount = 1;
+    initInfo.IpV6Addrs.dwCount = 2;
+    initInfo.pszDcSrvName = pszHost;
+    initInfo.pszDomain = pszZone;
+    initInfo.wPort = VMDNS_DEFAULT_LDAP_PORT;
+
+    VmDnsCoreInit(FALSE);
+
+    dwError = VmDnsInitialize(NULL, &initInfo);
+    CuAssert(tc, "DnsInit should succeed.", !dwError);
+
+    VmDnsSetState(VMDNS_READY);
+
+    dwError = VmDnsUninitialize(NULL, &initInfo);
+    CuAssert(tc, "DnsInit should succeed.", !dwError);
+
+    VmDnsCoreCleanup();
+}
+
 CuSuite* CuGetZoneSuite(void)
 {
-	CuSuite* suite = CuSuiteNew();
+    CuSuite* suite = CuSuiteNew();
 
-	SUITE_ADD_TEST(suite, TestZoneInit);
-	SUITE_ADD_TEST(suite, TestZoneCreate);
-	SUITE_ADD_TEST(suite, TestZoneUpdate);
-	SUITE_ADD_TEST(suite, TestAddressRecord);
-	SUITE_ADD_TEST(suite, TestSrvRecord);
-	SUITE_ADD_TEST(suite, TestNSRecord);
-	SUITE_ADD_TEST(suite, TestSoaRecord);
-	SUITE_ADD_TEST(suite, TestNameEntry);
-	SUITE_ADD_TEST(suite, TestZoneCleanup);
+    SUITE_ADD_TEST(suite, TestZoneInit);
+    SUITE_ADD_TEST(suite, TestZoneCreate);
+    SUITE_ADD_TEST(suite, TestZoneUpdate);
+    SUITE_ADD_TEST(suite, TestAddressRecord);
+    SUITE_ADD_TEST(suite, TestSrvRecord);
+    SUITE_ADD_TEST(suite, TestNSRecord);
+    SUITE_ADD_TEST(suite, TestSoaRecord);
+    SUITE_ADD_TEST(suite, TestNameEntry);
+    SUITE_ADD_TEST(suite, TestZoneCleanup);
+    SUITE_ADD_TEST(suite, TestServerInitialize);
 
-	return suite;
+    return suite;
 }
 
 static
@@ -587,6 +622,7 @@ CreateAddressRecord(
     VmDnsAllocateStringA(pszHostName, &pRecord->pszName);
     pRecord->Data.A.IpAddress = address;
     pRecord->dwType = VMDNS_RR_TYPE_A;
+    pRecord->iClass = VMDNS_CLASS_IN;
 
     return pRecord;
 }
@@ -606,8 +642,9 @@ CreateAAAARecord(
     VmDnsAllocateMemory(sizeof(VMDNS_RECORD), (void**)&pRecord);
     VmDnsTrimDomainNameSuffix(pszHostName, pszZone);
     VmDnsAllocateStringA(pszHostName, &pRecord->pszName);
-    memcpy(pRecord->Data.AAAA.Ip6Address.IP6Byte, bytes, sizeof(pRecord->Data.AAAA.Ip6Address.IP6Byte));
+    memcpy(pRecord->Data.AAAA.Ip6Address.IP6Byte, bytes, sizeof(bytes));
     pRecord->dwType = VMDNS_RR_TYPE_AAAA;
+    pRecord->iClass = VMDNS_CLASS_IN;
 
     return pRecord;
 }
@@ -634,6 +671,7 @@ CreateServiceRecord(
     pRecord->Data.SRV.wPriority = priority;
     pRecord->Data.SRV.wWeight = weight;
     pRecord->dwType = VMDNS_RR_TYPE_SRV;
+    pRecord->iClass = VMDNS_CLASS_IN;
 
     return pRecord;
 }
@@ -654,6 +692,7 @@ CreateNSRecord(
     VmDnsAllocateStringA(pszName, &pRecord->pszName);
     VmDnsAllocateStringA(pszTarget, &pRecord->Data.NS.pNameHost);
     pRecord->dwType = VMDNS_RR_TYPE_NS;
+    pRecord->iClass = VMDNS_CLASS_IN;
 
     return pRecord;
 }
