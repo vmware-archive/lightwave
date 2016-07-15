@@ -553,12 +553,15 @@ public class TenantResource extends BaseResource {
     }
 
     private ProviderPolicyDTO getProviderPolicy(String tenantName) throws Exception {
+        ProviderPolicyDTO providerPolicyDTO = null;
         Collection<String> defaultProviders = getIDMClient().getDefaultProviders(tenantName);
-        IIdentityStoreData defaultIdentitySource = getIDMClient().getProvider(tenantName, defaultProviders.iterator().next());
-        return ProviderPolicyMapper.getProviderPolicyDTO(getIDMClient().getDefaultProviders(tenantName),
-                defaultIdentitySource.getExtendedIdentityStoreData() != null ? defaultIdentitySource.getExtendedIdentityStoreData().getAlias() : null,
-                        getIDMClient().isTenantIDPSelectionEnabled(tenantName));
-    }
+        if(defaultProviders != null) {
+         IIdentityStoreData defaultIdentitySource = getIDMClient().getProvider(tenantName, defaultProviders.iterator().next());
+            providerPolicyDTO =  ProviderPolicyMapper.getProviderPolicyDTO(getIDMClient().getDefaultProviders(tenantName),
+                             defaultIdentitySource.getExtendedIdentityStoreData() != null ? defaultIdentitySource.getExtendedIdentityStoreData(
+                                       getIDMClient().isTenantIDPSelectionEnabled(tenantName));)
+        }
+        return providerPolicyDTO;
 
     private BrandPolicyDTO getBrandPolicy(String tenantName) throws Exception {
         String logonBannerTitle = getIDMClient().getLogonBannerTitle(tenantName);
