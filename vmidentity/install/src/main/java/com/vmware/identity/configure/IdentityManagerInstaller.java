@@ -35,15 +35,17 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
 
     public IdentityManagerInstaller(String username, String domainName,
 
-    String password, boolean setReverseProxy) {
-        Validate.validateNotEmpty(username, "Username");
-        Validate.validateNotEmpty(domainName, "Domain name");
-        Validate.validateNotEmpty(password, "Password");
+    String password, boolean setReverseProxy, boolean isUpgrade) {
+        if (!isUpgrade) {
+            Validate.validateNotEmpty(username, "Username");
+            Validate.validateNotEmpty(domainName, "Domain name");
+            Validate.validateNotEmpty(password, "Password");
 
-        this.domainName = domainName;
-        this.password = password;
-        this.username = username;
-        this.setReverseProxy = setReverseProxy;
+            this.domainName = domainName;
+            this.password = password;
+            this.username = username;
+            this.setReverseProxy = setReverseProxy;
+        }
     }
 
     @Override
