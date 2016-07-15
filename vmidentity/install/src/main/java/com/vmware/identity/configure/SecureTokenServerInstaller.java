@@ -1,5 +1,5 @@
 /* **********************************************************************
- * Copyright 2015 VMware, Inc.  All rights reserved.
+ * Copyright 2015 VMware, Inc.  All rights reserved. VMware Confidential
  * *********************************************************************/
 
 package com.vmware.identity.configure;
@@ -46,6 +46,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,10 +56,31 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
     private static final String ID = "vmware-secure-token-service";
     private static final String Name = "VMware Secure Token Service";
     private static final String Description = "VMware Secure Token Service";
+
+    private static final String SSL_ENABLED_ATTR= "SSLEnabled";
+    private static final String SSL_ENABLED_PROTOCOL_ATTR="sslEnabledProtocols";
+    private static final String SSL_IMPLEMENTATION_NAME_ATTR="sslImplementationName";
+    private static final String STORE_ATTR="store";
+    private static final String KEYALIAS_ATTR="keyAlias";
+    private static final String KEYSTORETYPE_ATTR="keystoreType";
+
     private static final Logger log = LoggerFactory
             .getLogger(SecureTokenServerInstaller.class);
 
     private String hostnameURL = null;
+    private VmIdentityParams params = null;
+    private String sslEnabledProtocols = "";
+    private String storename = "";
+    private String sslImplementationName="";
+    private String keyAlias ="";
+    private String keyStoreType ="";
+
+    public SecureTokenServerInstaller() {
+        params = null;
+    }
+    public SecureTokenServerInstaller(VmIdentityParams installParams) {
+        params = installParams;
+    }
 
     @Override
     public void install() throws Exception {
@@ -76,49 +98,12 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
         installInstAsWinService();
 
         startSTSService();
-        //TODO: Properly install ROOT hosting index.html SSO landing page
-        //configureInfraNodeHomePage();
     }
 
     private void initialize() {
         if (hostnameURL == null) {
             String hostnameURL = VmAfClientUtil.getHostnameURL();
             this.hostnameURL = hostnameURL;
-        }
-    }
-
-    private void configureInfraNodeHomePage()
-            throws SecureTokenServerInstallerException {
-        // TODO: Do configuration specific for install type. This does the
-        // configuration for infrastructure node
-
-        String webappDir = InstallerUtils.joinPath(InstallerUtils
-                .getInstallerHelper().getTCBase(), "webapps");
-        log.info("Configure ROOT index.html on infrastructure node");
-
-        String rootPagePath = InstallerUtils.joinPath(webappDir, "ROOT",
-                "index.html");
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(
-                rootPagePath))) {
-
-            writer.append("<html>");
-            writer.append(System.lineSeparator());
-            writer.append("<head>");
-            writer.append(System.lineSeparator());
-            writer.append(String
-                    .format("<meta http-equiv=\"refresh\" content=\"0;URL=http://%s/websso/\">%s",
-                            hostnameURL, System.lineSeparator()));
-            writer.append("</head>");
-            writer.append(System.lineSeparator());
-            writer.append("<body> </body>");
-            writer.append(System.lineSeparator());
-            writer.append("</html>");
-            writer.append(System.lineSeparator());
-
-        } catch (IOException e) {
-            log.error("Failed to configure InfraNodeHomePage", e);
-            throw new SecureTokenServerInstallerException(
-                    "Failed to configure InfraNodeHomePage", e);
         }
     }
 
@@ -238,7 +223,8 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
 
     @Override
     public void upgrade() {
-        // TODO Auto-generated method stub
+        log.debug("SecureTokenServerInstaller : Upgrade");
+        mergeServerXMl();
 
     }
 
@@ -297,7 +283,88 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
             }
         }
     }
+    private void mergeServerXMl() {
 
+        getServerAttributes();
+        setServerAttributes();
+
+    }
+
+    private void getServerAttributes() {
+
+        File serverXmlFile = new File(InstallerUtils.joinPath(params.getBackupDir() , "server.xml"));
+        try {
+            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            Document doc = builder.parse(serverXmlFile);
+            NodeList connectorList = doc.getElementsByTagName("Connector");
+            for (int i = 0 ; i < connectorList.getLength(); i ++) {
+
+                Node node = connectorList.item(i);
+                Element element = (Element) node;
+                boolean isSSLEnabled = element.hasAttribute(SSL_ENABLED_ATTR);
+                if (isSSLEnabled) {
+                    sslEnabledProtocols = element.getAttribute(SSL_ENABLED_PROTOCOL_ATTR);
+                    log.debug("SecureTokenServerInstaller : getServerAttributes sslEnabledProtocols: %s",sslEnabledProtocols);
+                    storename  = element.getAttribute(STORE_ATTR);
+                    log.debug("SecureTokenServerInstaller : getServerAttributes storename: %s", storename);
+                    sslImplementationName = element.getAttribute(SSL_IMPLEMENTATION_NAME_ATTR);
+                    log.debug("SecureTokenServerInstaller : getServerAttributes sslImplementationName: %s",sslImplementationName);
+                    keyAlias  = element.getAttribute(KEYALIAS_ATTR);
+                    log.debug("SecureTokenServerInstaller : getServerAttributes keyAlias:" +keyAlias);
+                    keyStoreType  = element.getAttribute(KEYSTORETYPE_ATTR);
+                    log.debug("SecureTokenServerInstaller : getServerAttributes keyStoreType:" +keyStoreType);
+
+                } else {
+                    continue;
+                }
+
+            }
+            log.debug("SecureTokenServerInstaller : getServerAttributes - Completed");
+        } catch (Exception ex) {
+            log.error("SecureTokenServerInstaller : getServerAttributes - failed");
+        }
+
+    }
+
+    private void setServerAttributes() {
+
+        String filePath = InstallerUtils.joinPath( InstallerUtils.getInstallerHelper().getTCBase(),
+                            "conf","server.xml");
+        try {
+            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            Document doc = builder.parse(new File(filePath));
+            NodeList connectorList = doc.getElementsByTagName("Connector");
+            for (int i = 0; i < connectorList.getLength(); i++) {
+
+                Node node = connectorList.item(i);
+                Element element = (Element) node;
+                boolean isSSLEnabled = element.hasAttribute(SSL_ENABLED_ATTR);
+                if (isSSLEnabled) {
+                    element.setAttribute(SSL_ENABLED_PROTOCOL_ATTR, sslEnabledProtocols);
+                    element.setAttribute(STORE_ATTR,storename);
+                    element.setAttribute(SSL_IMPLEMENTATION_NAME_ATTR,sslImplementationName);
+                    element.setAttribute(KEYALIAS_ATTR,keyAlias);
+                    element.setAttribute(KEYSTORETYPE_ATTR,keyStoreType);
+
+                } else {
+                    continue;
+                }
+            }
+
+            Transformer transformer = TransformerFactory.newInstance().newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+            transformer.setOutputProperty(
+                    "{http://xml.apache.org/xslt}indent-amount", "4");
+            DOMSource source = new DOMSource(doc);
+            StreamResult result = new StreamResult (new File(filePath));
+            transformer.transform(source, result);
+            log.debug("SecureTokenServerInstaller : setServerAttributes - Completed");
+        } catch (Exception ex) {
+           log.error("SecureTokenServerInstaller : setServerAttributes - failed");
+        }
+
+    }
     @Override
     public PlatformInstallComponent getComponentInfo() {
         return new PlatformInstallComponent(ID, Name, Description);

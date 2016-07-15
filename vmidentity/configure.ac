@@ -386,6 +386,7 @@ AC_CONFIG_FILES([Makefile
                  config/vmware-idmd.service
                  config/vmware-stsd.sh
                  config/vmware-stsd.service
+                 config/configure-build.sh
                  diagnostics/Makefile
                  idm/Makefile
                  tomcat-extensions/Makefile
