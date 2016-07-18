@@ -59,10 +59,26 @@ typedef struct _VMDNS_HEADER
     } codes;
 #pragma pack(pop)
 
+union
+{
     UINT16 usQDCount;
+    UINT16 usZOCount;
+};
+union
+{
     UINT16 usANCount;
+    UINT16 usPRCount;
+};
+union
+{
     UINT16 usNSCount;
+    UINT16 usUPCount;
+};
+union
+{
     UINT16 usARCount;
+    UINT16 usADCount;
+};
 }VMDNS_HEADER, *PVMDNS_HEADER;
 #pragma pack(pop)
 
@@ -84,10 +100,26 @@ typedef struct _VMDNS_HEADER
         unsigned char RCODE  : 4;
     } __attribute__((__packed__)) codes;
 
-    UINT16 usQDCount;
-    UINT16 usANCount;
-    UINT16 usNSCount;
-    UINT16 usARCount;
+    union
+    {
+        UINT16 usQDCount;
+        UINT16 usZOCount;
+    };
+    union
+    {
+        UINT16 usANCount;
+        UINT16 usPRCount;
+    };
+    union
+    {
+        UINT16 usNSCount;
+        UINT16 usUPCount;
+    };
+    union
+    {
+        UINT16 usARCount;
+        UINT16 usADCount;
+    };
 } __attribute__((__packed__)) VMDNS_HEADER, *PVMDNS_HEADER;
 #endif
 
@@ -98,12 +130,28 @@ typedef struct _VMDNS_QUESTION
     UINT16 uQClass;
 } VMDNS_QUESTION, *PVMDNS_QUESTION;
 
+typedef struct _VMDNS_UPDATE_ZONE
+{
+    PSTR   pszName;
+    UINT16 uType;
+    UINT16 uClass;
+} VMDNS_UPDATE_ZONE, *PVMDNS_UPDATE_ZONE;
+
 typedef struct _VMDNS_MESSAGE
 {
     PVMDNS_HEADER pHeader;
     PVMDNS_QUESTION *pQuestions;
     PVMDNS_RECORD *pRecords;
 } VMDNS_MESSAGE, *PVMDNS_MESSAGE;
+
+typedef struct _VMDNS_UPDATE_MESSAGE
+{
+    PVMDNS_HEADER pHeader;
+    PVMDNS_UPDATE_ZONE pZone;
+    PVMDNS_RECORD *pPrerequisite;
+    PVMDNS_RECORD *pUpdate;
+    PVMDNS_RECORD *pAdditional;
+} VMDNS_UPDATE_MESSAGE, *PVMDNS_UPDATE_MESSAGE;
 
 typedef struct _VMDNS_SOCK_CONTEXT
 {
@@ -223,6 +271,7 @@ typedef struct _VMW_DNS_DRIVER_GLOBALS
     PVMDNS_ZONE_LIST            pZoneList;
     PVMDNS_FORWARDER_CONETXT    pForwarderContext;
     PVMDNS_SOCK_CONTEXT         pSockContext;
-	VMDNS_STATE                 state;
+    VMDNS_STATE                 state;
+    BOOL                        bUseDirectoryStore;
 } VMW_DNS_DRIVER_GLOBALS, *PVMW_DNS_DRIVER_GLOBALS;
 

@@ -44,7 +44,8 @@ VmDnsDeleteNameEntry(
 DWORD
 VmDnsNameEntryListRecord(
     PVMDNS_NAME_ENTRY       pNameEntry,
-    PVMDNS_RECORD_ARRAY*    ppRecords
+    PVMDNS_RECORD_ARRAY*    ppRecords,
+    VMDNS_RR_TYPE           type
     );
 
 DWORD
@@ -98,7 +99,8 @@ VmDnsNameEntryGetRecordCount(
 DWORD
 VmDnsParseMessage(
     PVMDNS_MESSAGE_BUFFER pMessageBuffer,
-    PVMDNS_MESSAGE *ppMessage
+    PVMDNS_MESSAGE *ppMessage,
+    PVMDNS_UPDATE_MESSAGE *ppUpdateMessage
     );
 
 DWORD
@@ -176,12 +178,18 @@ DWORD
 VmDnsGetDnsMessage(
     PBYTE pDnsRequest,
     DWORD dwDnsRequestSize,
-    PVMDNS_MESSAGE *ppDnsMessage
+    PVMDNS_MESSAGE *ppDnsMessage,
+    PVMDNS_UPDATE_MESSAGE *ppDnsUpdateMessage
     );
 
 VOID
 VmDnsFreeDnsMessage(
     PVMDNS_MESSAGE pVmDnsMessage
+    );
+
+VOID
+VmDnsFreeDnsUpdateMessage(
+    PVMDNS_UPDATE_MESSAGE pVmDnsMessage
     );
 
 

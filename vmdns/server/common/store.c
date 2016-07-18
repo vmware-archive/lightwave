@@ -29,12 +29,13 @@ VmDnsStoreCreateZone(
     PVMDNS_ZONE_INFO    pZoneInfo
     )
 {
-#ifdef _DEBUG
-	VmDnsSetState(VMDNS_READY);
-	return 0;
-#else
-    return VmDnsDirCreateZone(pZoneInfo);
-#endif
+    DWORD dwError = 0;
+    if (gpDNSDriverGlobals->bUseDirectoryStore)
+    {
+        dwError = VmDnsDirCreateZone(pZoneInfo);
+    }
+
+    return dwError;
 }
 
 DWORD
@@ -42,11 +43,13 @@ VmDnsStoreUpdateZone(
     PVMDNS_ZONE_INFO    pZoneInfo
     )
 {
-#ifdef _DEBUG
-	return 0;
-#else
-	return VmDnsDirUpdateZone(pZoneInfo);
-#endif
+    DWORD dwError = 0;
+    if (gpDNSDriverGlobals->bUseDirectoryStore)
+    {
+        dwError = VmDnsDirUpdateZone(pZoneInfo);
+    }
+
+    return dwError;
 }
 
 DWORD
@@ -54,11 +57,13 @@ VmDnsStoreDeleteZone(
     PCSTR               pszZoneName
     )
 {
-#ifdef _DEBUG
-	return 0;
-#else
-	return VmDnsDirDeleteZone(pszZoneName);
-#endif
+    DWORD dwError = 0;
+    if (gpDNSDriverGlobals->bUseDirectoryStore)
+    {
+        dwError = VmDnsDirDeleteZone(pszZoneName);
+    }
+
+    return dwError;
 }
 
 DWORD
@@ -67,11 +72,13 @@ VmDnsStoreAddZoneRecord(
     PVMDNS_RECORD       pRecord
     )
 {
-#ifdef _DEBUG
-	return 0;
-#else
-	return VmDnsDirAddZoneRecord(pszZoneName, pRecord);
-#endif
+    DWORD dwError = 0;
+    if (gpDNSDriverGlobals->bUseDirectoryStore)
+    {
+        dwError = VmDnsDirAddZoneRecord(pszZoneName, pRecord);
+    }
+
+    return dwError;
 }
 
 DWORD
@@ -80,11 +87,13 @@ VmDnsStoreDeleteZoneRecord(
     PVMDNS_RECORD       pRecord
     )
 {
-#ifdef _DEBUG
-	return 0;
-#else
-	return VmDnsDirDeleteZoneRecord(pszZoneName, pRecord);
-#endif
+    DWORD dwError = 0;
+    if (gpDNSDriverGlobals->bUseDirectoryStore)
+    {
+        dwError = VmDnsDirDeleteZoneRecord(pszZoneName, pRecord);
+    }
+
+    return dwError;
 }
 
 DWORD
@@ -93,9 +102,11 @@ VmDnsStoreSaveForwarders(
     PSTR*               ppszForwarders
     )
 {
-#ifdef _DEBUG
-	return 0;
-#else
-	return VmDnsDirSaveForwarders(dwCount, ppszForwarders);
-#endif
+    DWORD dwError = 0;
+    if (gpDNSDriverGlobals->bUseDirectoryStore)
+    {
+        dwError = VmDnsDirSaveForwarders(dwCount, ppszForwarders);
+    }
+
+    return dwError;
 }

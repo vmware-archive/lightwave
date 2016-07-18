@@ -581,3 +581,53 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDnsCopyFromZoneInfo(
+    PVMDNS_ZONE_INFO pZoneInfoSrc,
+    PVMDNS_ZONE_INFO pZoneInfoDest
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+
+    BAIL_ON_VMDNS_INVALID_POINTER(pZoneInfoSrc, dwError);
+    BAIL_ON_VMDNS_INVALID_POINTER(pZoneInfoDest, dwError);
+
+    dwError = VmDnsAllocateStringA(pZoneInfoSrc->pszName,
+                                    &pZoneInfoDest->pszName);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsAllocateStringA(pZoneInfoSrc->pszPrimaryDnsSrvName,
+                                    &pZoneInfoDest->pszPrimaryDnsSrvName);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsAllocateStringA(pZoneInfoSrc->pszRName,
+                                    &pZoneInfoDest->pszRName);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    pZoneInfoDest->dwFlags = pZoneInfoSrc->dwFlags;
+    pZoneInfoDest->expire = pZoneInfoSrc->expire;
+    pZoneInfoDest->minimum = pZoneInfoSrc->minimum;
+    pZoneInfoDest->refreshInterval = pZoneInfoSrc->refreshInterval;
+    pZoneInfoDest->retryInterval = pZoneInfoSrc->retryInterval;
+    pZoneInfoDest->serial = pZoneInfoSrc->serial;
+
+cleanup:
+    return dwError;
+error:
+
+    if (pZoneInfoDest->pszName)
+    {
+      VmDnsFreeMemory(pZoneInfoDest->pszName);
+    }
+    if (pZoneInfoDest->pszPrimaryDnsSrvName)
+    {
+      VmDnsFreeMemory(pZoneInfoDest->pszPrimaryDnsSrvName);
+    }
+    if (pZoneInfoDest->pszRName)
+    {
+      VmDnsFreeMemory(pZoneInfoDest->pszRName);
+    }
+    goto cleanup;
+}
+
+

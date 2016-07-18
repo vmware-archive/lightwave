@@ -363,7 +363,8 @@ VmDnsHashTableClearData(
         while (pNode)
         {
             pNodeNext = pNode->pNext;
-            VmDnsFreeMemory(pNode->pKey);
+            VMDNS_SAFE_FREE_MEMORY(pNode->pKey);
+            VMDNS_SAFE_FREE_MEMORY(pNode);
             pNode = pNodeNext;
         }
     }
