@@ -495,6 +495,13 @@ VmDnsMakeFQDN(
     PSTR* ppszFQDN
     );
 
+DWORD
+VmDnsCopyFromZoneInfo(
+    PVMDNS_ZONE_INFO pZoneInfoSrc,
+    PVMDNS_ZONE_INFO pZoneInfoDest
+    );
+
+
 #ifdef _WIN32
 
 //cmd line args parsing helpers
