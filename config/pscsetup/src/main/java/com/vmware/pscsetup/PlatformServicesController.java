@@ -130,7 +130,7 @@ public class PlatformServicesController {
 	    components.add(new AuthenticationFrameworkInstaller(standaloneParams));
 		components.add(new IdentityManagerInstaller("Administrator",
 		        standaloneParams.getDomainName(), standaloneParams
-						.getPassword(), true));
+						.getPassword(), true, false));
 		components.add(new SecureTokenServerInstaller());
 		return components;
 	}
