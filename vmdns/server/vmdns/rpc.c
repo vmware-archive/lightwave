@@ -386,7 +386,9 @@ VmDnsListenRpcServer(
 
 cleanup:
 
+#ifndef _WIN32
     raise(SIGTERM); // indicate that process must terminate
+#endif
 
     return NULL;
 

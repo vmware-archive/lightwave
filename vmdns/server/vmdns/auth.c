@@ -118,8 +118,6 @@ VmDnsCheckAccess(
     ULONG rpc_status = rpc_s_ok;
     unsigned char *authPrinc = NULL;
 
-	return 0;
-
     rpc_binding_inq_auth_caller(
                 IDL_handle,
                 &hPriv,

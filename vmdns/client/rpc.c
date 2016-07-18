@@ -146,3 +146,137 @@ PSTR pszStr
         VmDnsRpcClientFreeMemory(pszStr);
     }
 }
+
+DWORD
+VmDnsAllocateFromRpcRecordArray(
+    PVMDNS_RECORD_ARRAY pRecordArray,
+    PVMDNS_RECORD_ARRAY *ppRecordArray
+    )
+{
+    DWORD idx = 0;
+    DWORD dwError = ERROR_SUCCESS;
+    PVMDNS_RECORD_ARRAY pRecordArrayTemp = NULL;
+
+    dwError = VmDnsAllocateMemory(sizeof(VMDNS_RECORD_ARRAY),
+                                     (PVOID*)&pRecordArrayTemp);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsAllocateMemory(sizeof(VMDNS_RECORD)*pRecordArray->dwCount,
+                                     (PVOID*)&pRecordArrayTemp->Records);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    for (; idx < pRecordArray->dwCount; ++idx)
+    {
+        dwError = VmDnsCopyRecord(&pRecordArray->Records[idx],
+                                    &pRecordArrayTemp->Records[idx]);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    pRecordArrayTemp->dwCount = pRecordArray->dwCount;
+
+    *ppRecordArray = pRecordArrayTemp;
+
+cleanup:
+    return dwError;
+error:
+
+    VMDNS_FREE_RECORD_ARRAY(pRecordArrayTemp);
+    if (ppRecordArray)
+    {
+        *ppRecordArray = NULL;
+    }
+    goto cleanup;
+}
+
+VOID
+VmDnsRpcClientFreeRpcRecordArray(
+    PVMDNS_RECORD_ARRAY pRecordArray
+    )
+{
+    DWORD idx = 0;
+    if (pRecordArray)
+    {
+
+        if (pRecordArray->Records)
+        {
+            for (; idx < pRecordArray->dwCount; ++idx)
+            {
+                VmDnsRpcClearRecord(&pRecordArray->Records[idx]);
+            }
+            VmDnsRpcClientFreeMemory(pRecordArray->Records);
+        }
+        VmDnsRpcClientFreeMemory(pRecordArray);
+    }
+}
+
+DWORD
+VmDnsAllocateFromRpcZoneInfoArray(
+    PVMDNS_ZONE_INFO_ARRAY pZoneInfoArray,
+    PVMDNS_ZONE_INFO_ARRAY *ppZoneInfoArray
+    )
+{
+    DWORD idx = 0;
+    DWORD dwError = ERROR_SUCCESS;
+
+    PVMDNS_ZONE_INFO_ARRAY pZoneInfoArrayTemp = NULL;
+    dwError = VmDnsAllocateMemory(sizeof(VMDNS_ZONE_INFO_ARRAY),
+                                     (PVOID*)&pZoneInfoArrayTemp);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsAllocateMemory(sizeof(VMDNS_ZONE_INFO)*pZoneInfoArray->dwCount,
+                                     (PVOID*)&pZoneInfoArrayTemp->ZoneInfos);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    for (; idx < pZoneInfoArray->dwCount; ++idx)
+    {
+        dwError = VmDnsCopyFromZoneInfo(&pZoneInfoArray->ZoneInfos[idx],
+                                        &pZoneInfoArrayTemp->ZoneInfos[idx]);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    pZoneInfoArrayTemp->dwCount = pZoneInfoArray->dwCount;
+
+    *ppZoneInfoArray = pZoneInfoArrayTemp;
+
+cleanup:
+    return dwError;
+error:
+
+    if (pZoneInfoArrayTemp)
+    {
+        VmDnsFreeZoneInfoArray(pZoneInfoArrayTemp);
+    }
+    if (*ppZoneInfoArray)
+    {
+        *ppZoneInfoArray = NULL;
+    }
+    goto cleanup;
+}
+
+VOID
+VmDnsRpcClientFreeZoneInfo(
+    PVMDNS_ZONE_INFO pZoneInfo
+    )
+{
+    if (pZoneInfo)
+    {
+        VmDnsRpcClientFreeMemory(pZoneInfo->pszName);
+        VmDnsRpcClientFreeMemory(pZoneInfo->pszPrimaryDnsSrvName);
+        VmDnsRpcClientFreeMemory(pZoneInfo->pszRName);
+    }
+}
+
+VOID
+VmDnsRpcClientFreeZoneInfoArray(
+    PVMDNS_ZONE_INFO_ARRAY pZoneInfoArray
+    )
+{
+    DWORD idx = 0;
+    if (pZoneInfoArray)
+    {
+        for (; idx < pZoneInfoArray->dwCount; ++idx)
+        {
+            VmDnsRpcClientFreeZoneInfo(&pZoneInfoArray->ZoneInfos[idx]);
+        }
+        VmDnsRpcClientFreeMemory(pZoneInfoArray);
+    }
+}
+

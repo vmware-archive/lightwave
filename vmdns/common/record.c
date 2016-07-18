@@ -1046,6 +1046,11 @@ VmDnsReadDomainNameFromBuffer(
 
         if (dwLabelLength)
         {
+            if (dwLabelLength > (255 - dwTotalStringLength))
+            {
+                dwError = ERROR_INVALID_PARAMETER;
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
 
             dwError = VmDnsCopyMemory(
                           pszTempStringCursor,

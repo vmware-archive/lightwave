@@ -640,7 +640,7 @@ cleanup:
 
     if (pSocket)
     {
-        VmwSockClose(pSocket);
+        VmwSockRelease(pSocket);
     }
     if (pIoRequest)
     {
