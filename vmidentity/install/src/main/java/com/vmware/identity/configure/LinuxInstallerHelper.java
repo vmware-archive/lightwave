@@ -145,7 +145,7 @@ public class LinuxInstallerHelper implements InstallerHelper {
 
     @Override
     public String getCertoolPath() {
-        return "/usr/lib/vmware-vmca/bin/certool";
+        return "/opt/vmware/bin/certool";
     }
 
     @Override
