@@ -14,6 +14,7 @@ BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >=
 %define _jarsdir %_prefix/jars
 %define _binsdir %_prefix/bin
 %define _webappsdir %_prefix/vmware-sts/webapps
+%define _backupdir /tmp/sso
 
 %if 0%{?_javahome:1} == 0
 %define _javahome %_javahome
@@ -55,12 +56,18 @@ cd build && make install DESTDIR=%{buildroot}
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
-
+if [[ $1 -gt 1 ]]
+then
+    if [ ! -d %{_backupdir} ];
+    then
+        /bin/mkdir "%{_backupdir}"
+    fi
+    /bin/cp "%{_prefix}/vmware-sts/conf/server.xml" "%{_backupdir}/server.xml"
+fi
 %post
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
-
     /sbin/ldconfig
 
     /bin/mkdir -m 700 -p %{_dbdir}
@@ -84,6 +91,7 @@ case "$1" in
         ;;
 
     2)
+        %{_sbindir}/configure-build.sh "%{_backupdir}"
         ;;
 esac
 
@@ -131,6 +139,7 @@ fi
 /lib/systemd/system/vmware-stsd.service
 %{_sbindir}/vmware-idmd.sh
 %{_sbindir}/vmware-stsd.sh
+%{_sbindir}/configure-build.sh
 %{_lib64dir}/*.so*
 %{_binsdir}/test-ldapbind
 %{_binsdir}/test-logon
