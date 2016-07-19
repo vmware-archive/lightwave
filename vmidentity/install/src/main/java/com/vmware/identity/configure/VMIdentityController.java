@@ -1,5 +1,5 @@
 /* **********************************************************************
- * Copyright 2015 VMware, Inc.  All rights reserved. 
+ * Copyright 2015 VMware, Inc.  All rights reserved.
  * *********************************************************************/
 
 package com.vmware.identity.configure;
@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 
 public class VMIdentityController {
 
@@ -29,6 +30,71 @@ public class VMIdentityController {
         return true;
     }
 
+    public boolean upgradeStandaloneInstance(
+            VmIdentityParams standaloneParams) throws DomainControllerNativeException {
+
+        upgradeInstance(standaloneParams);
+
+        return true;
+    }
+
+    private void upgradeInstance (VmIdentityParams params) throws DomainControllerNativeException
+    {
+        // check services vmafd, vmca and vmdir if they are confgiured.
+        try {
+            // check authentication services
+            // TODO: Need to figure out if we are going
+            //  check the status of the VMAFD Service
+            //checkVMAFDService();
+
+            // check directory services
+            // TODO: Need to figure out if we are going 
+            // check the status of the VMDIR service
+            checkVMDIRService();
+
+            // check certificate services
+            checkVMCAService(params.getHostname());
+
+        } catch (Exception ex) {
+            System.err.println("Error: Cannot proceed. Failed to check services.\n");
+            ex.printStackTrace(System.err);
+            System.exit(1);
+        }
+
+        List<IPlatformComponentInstaller> components = getComponents(params);
+        List<PlatformInstallComponent> componentsInfo = new ArrayList<>();
+
+        if (observer != null) {
+            for (IPlatformComponentInstaller comp : components) {
+                componentsInfo.add(comp.getComponentInfo());
+            }
+            observer.beginUpgrade(componentsInfo);
+        }
+
+        boolean status = true;
+        try {
+            for (IPlatformComponentInstaller comp : components) {
+                try {
+                    if (observer != null)
+                        observer.beginComponentUpgrade(comp.getComponentInfo()
+                                .getId());
+
+                    comp.upgrade();
+
+                } catch (Exception e) {
+                    status = false;
+                    throw new DomainControllerNativeException(-1, e);
+                } finally {
+                    if (observer != null)
+                        observer.endComponentUpgrade(comp.getComponentInfo()
+                                .getId(), status);
+                }
+            }
+        } finally {
+            if (observer != null)
+                observer.endUpgrade(status);
+        }
+    }
     private void setupInstance(VmIdentityParams params)
             throws DomainControllerNativeException {
         if (params.getHostname() == null || params.getHostname().isEmpty()) {
@@ -108,8 +174,8 @@ public class VMIdentityController {
         List<IPlatformComponentInstaller> components = new ArrayList<IPlatformComponentInstaller>();
         components.add(new IdentityManagerInstaller(standaloneParams
                 .getUsername(), standaloneParams.getDomainName(),
-                standaloneParams.getPassword(),false));
-        components.add(new SecureTokenServerInstaller());
+                standaloneParams.getPassword(),false, standaloneParams.isUpgradeMode()));
+        components.add(new SecureTokenServerInstaller(standaloneParams));
         return components;
     }
 
@@ -162,11 +228,10 @@ public class VMIdentityController {
             throw new ServiceCheckException("Failed to check directory service. Cannot configure IDM or STS.", ex);
         }
         System.out.println("Directory Service checked successfully.");
-
-     */
+        */
     }
 
-    private void checkVMAFDService() throws Exception {/*
+    private void checkVMAFDService() throws Exception { /*
 
         System.out.println("\n\n-----Checking Authentication service-----");
         try {
@@ -177,6 +242,6 @@ public class VMIdentityController {
                     ex);
         }
         System.out.println("Authentication Service checked successfully.");
-     */
+       */
     }
 }

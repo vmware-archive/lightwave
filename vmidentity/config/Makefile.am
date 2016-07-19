@@ -1,7 +1,8 @@
 
 sbin_SCRIPTS = \
     @top_builddir@/config/vmware-idmd.sh \
-    @top_builddir@/config/vmware-stsd.sh
+    @top_builddir@/config/vmware-stsd.sh \
+    @top_builddir@/config/configure-build.sh
 
 vmstsconf_DATA = \
     @top_builddir@/config/server.xml \
