@@ -404,7 +404,7 @@ AC_CONFIG_FILES([Makefile
                  commons/Makefile
                  ssolib/Makefile
                  websso/Makefile
-				 lightwaveui/Makefile
+	         lightwaveui/Makefile
                  wsTrustClient/Makefile
                  sts/Makefile
                  rest/Makefile

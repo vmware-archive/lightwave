@@ -1,7 +1,7 @@
 Name:    vmware-ca
 Summary: VMware Certificate Authority Service
-Version: 6.5.0
-Release: 1
+Version: %{_version}
+Release: %{_patch}
 Group:   Applications/System
 Vendor:  VMware, Inc.
 License: VMware

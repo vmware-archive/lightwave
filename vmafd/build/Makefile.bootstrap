@@ -82,6 +82,8 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_javahome $(JAVA_HOME)" \
               --define "_anthome $(ANT_HOME)" \
               --define "_mavendir $(MAVEN_HOME)" \
+              --define "_version $(VMAFD_MAJOR_VER).$(VMAFD_MINOR_VER).$(VMAFD_RELEASE_VER)" \
+              --define "_patch $(VMAFD_PATCH_VER)" \
               --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
               SPECS/$(PKG_SPEC)
 
