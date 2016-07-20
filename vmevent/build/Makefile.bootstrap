@@ -1,3 +1,5 @@
+include ../../support/make/makedefs.mk
+
 MKDIR=/bin/mkdir
 RM=/bin/rm
 CP=/bin/cp
@@ -49,7 +51,7 @@ all: package
 
 package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
 	cd $(RPMBUILD_ROOT) && \
-	$(RPMBUILD) \
+        $(RPMBUILD) \
               -ba \
               --define "_topdir $(RPMBUILD_ROOT)" \
               --define "_prefix /opt/vmware" \
@@ -58,6 +60,7 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_lib64dir /opt/vmware/lib64" \
               --define "_datadir /opt/vmware/share" \
               --define "_includedir /opt/vmware/include" \
+              --define "_version $(VMEVENT_MAJOR_VER).$(VMEVENT_MINOR_VER).$(VMEVENT_RELEASE_VER)" \
               --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
               SPECS/$(PKG_SPEC)
 
