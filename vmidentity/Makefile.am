@@ -13,6 +13,7 @@ SUBDIRS = \
     samlauthority \
     ssolib \
     websso \
+	lightwaveui \
     sts \
     wsTrustClient \
     install \

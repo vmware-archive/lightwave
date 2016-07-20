@@ -47,6 +47,7 @@ CLEAN_OBJECTS = \
     commons \
     vmware-sts \
     websso \
+	lightwaveui \
     ssolib \
     ROOT \
     sts \
