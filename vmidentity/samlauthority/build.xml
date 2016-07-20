@@ -45,7 +45,7 @@
       <fileset refid="jar-set.apache-commons-lang"/>
    </path>
 
-   <artifact:pom id="pom-samlauthority" groupId="com.vmware.identity" artifactId="samlauthority" version="6.5.0" name="VMwareIdentity-STS-Samlauthority" >
+   <artifact:pom id="pom-samlauthority" groupId="com.vmware.identity" artifactId="samlauthority" version="${version_number}" name="VMwareIdentity-STS-Samlauthority" >
     <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />
     <dependency groupId="org.apache.logging.log4j" artifactId="log4j-1.2-api" version="2.0.2" />
     <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />
@@ -56,11 +56,11 @@
     <dependency groupId="joda-time" artifactId="joda-time" version="1.6.2" />
     <dependency groupId="commons-lang" artifactId="commons-lang" version="2.5" />
     <dependency groupId="org.opensaml" artifactId="opensaml" version="2.5.3" />
-    <dependency groupId="com.vmware.identity" artifactId="diagnostics" version="6.5.0" />
-    <dependency groupId="com.vmware.identity.idm" artifactId="vmware-identity-idm-interface" version="6.5.0" />
-    <dependency groupId="com.vmware.identity.idm" artifactId="vmware-identity-idm-client" version="6.5.0" />
-    <dependency groupId="com.vmware.identity" artifactId="samltoken" version="6.5.0" />
-     <dependency groupId="com.vmware.identity" artifactId="diagnostics" version="6.5.0" />
+    <dependency groupId="com.vmware.identity" artifactId="diagnostics" version="${version_number}" />
+    <dependency groupId="com.vmware.identity.idm" artifactId="vmware-identity-idm-interface" version="${version_number}" />
+    <dependency groupId="com.vmware.identity.idm" artifactId="vmware-identity-idm-client" version="${version_number}" />
+    <dependency groupId="com.vmware.identity" artifactId="samltoken" version="${version_number}" />
+     <dependency groupId="com.vmware.identity" artifactId="diagnostics" version="{version_number}" />
    </artifact:pom>
 
    <artifact:writepom pomRefId="pom-samlauthority" file="pom.xml"/>
@@ -72,6 +72,7 @@
        <arg value="-DrepositoryId=${lightwave-server-id}" />
        <arg value="-DpomFile=pom.xml" />
        <arg value="-Dfile=${jar}" />
+       <arg value="-Dversion_number=${version_number}" />
        <arg value="-Pgpg" />
      </artifact:mvn>
    </target>

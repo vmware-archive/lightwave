@@ -7,7 +7,7 @@
 	<property name="target-sets" value="main" />
 
 	<property name="install.title" value="install" />
-	<property name="install.version" value="0.0.1.${BUILD_NUMBER}" />
+	<property name="install.version" value="{version_number}" />
 	<property name="install.vendor" value="VMWare, Inc." />
 
 	<property file="../product.properties" />

@@ -7,7 +7,7 @@
    <property name="target-sets" value="main,webapp,test" />
 
    <property name="wstrust.title" value="WSTRUST" />
-   <property name="wstrust.version" value="0.0.1.${BUILD_NUMBER}" />
+   <property name="wstrust.version" value="${version_number}" />
    <property name="wstrust.vendor" value="VMWare, Inc." />
 
    <property file="../product.properties" />

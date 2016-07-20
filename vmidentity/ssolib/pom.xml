@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.vmware.identity</groupId>
   <artifactId>vmware-identity-websso-client</artifactId>
-  <version>6.5.0</version>
+  <version>{version_number}</version>
   <name>VMwareIdentity-STS-websso-client</name>
   <dependencies>
     <dependency>
