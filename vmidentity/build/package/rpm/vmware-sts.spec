@@ -159,6 +159,7 @@ fi
 %{_webappsdir}/openidconnect.war
 %{_webappsdir}/sts.war
 %{_webappsdir}/websso.war
+%{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war
 %{_webappsdir}/vmdir.war
 %{_datadir}/config/idm/*

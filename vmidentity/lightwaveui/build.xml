@@ -28,11 +28,15 @@
              value="${build.packages}/vmware-identity-websso-client.jar" />
    <property name="build.packages.samltoken"
              value="${build.packages}/samltoken.jar" />
-
+   <path id="classpath.runtime-dependencies">
+		 <pathelement location="${TomcatHome}/lib/servlet-api.jar" />
+   </path>
+   
    <path id="classpath.webapp-libs">
    </path>
 
    <path id="classpath.main">
+	   <path refid="classpath.runtime-dependencies" />
    </path>
 
    <path id="classpath.test">
