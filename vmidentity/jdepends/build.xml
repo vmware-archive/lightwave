@@ -20,6 +20,7 @@
        <resources>
 
           <!-- CORE (COMPILE_TIME + RUN_TIME)DEPENDENCIES -->
+           <url url="http://central.maven.org/maven2/commons-cli/commons-cli/1.2/commons-cli-1.2.jar" />
            <url url="http://central.maven.org/maven2/com/sun/xml/bind/jaxb-core/2.2.10/jaxb-core-2.2.10.jar" />
            <url url="http://central.maven.org/maven2/org/apache/tomcat/tomcat-coyote/7.0.26/tomcat-coyote-7.0.26.jar" />
            <url url="http://central.maven.org/maven2/org/apache/tomcat/tomcat-catalina/7.0.25/tomcat-catalina-7.0.25.jar" />

@@ -407,6 +407,7 @@ AC_CONFIG_FILES([Makefile
                  sts/Makefile
                  rest/Makefile
                  install/Makefile
+		 sso-config/Makefile
                 ])
 AC_OUTPUT
 

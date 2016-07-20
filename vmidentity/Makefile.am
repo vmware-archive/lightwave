@@ -17,4 +17,5 @@ SUBDIRS = \
     wsTrustClient \
     install \
     rest \
-    openidconnect
+    openidconnect \
+    sso-config
