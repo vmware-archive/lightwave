@@ -131,6 +131,7 @@ fi
 /lib/systemd/system/vmware-stsd.service
 %{_sbindir}/vmware-idmd.sh
 %{_sbindir}/vmware-stsd.sh
+%{_sbindir}/sso-config.sh
 %{_lib64dir}/*.so*
 %{_binsdir}/test-ldapbind
 %{_binsdir}/test-logon
@@ -145,6 +146,7 @@ fi
 %{_jarsdir}/vmware-identity-rest-core-server.jar
 %{_jarsdir}/vmware-identity-rest-idm-server.jar
 %{_jarsdir}/vmware-identity-install.jar
+%{_jarsdir}/vmware-identity-sso-config.jar
 %{_webappsdir}/idm.war
 %{_webappsdir}/afd.war
 %{_webappsdir}/openidconnect.war
