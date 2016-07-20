@@ -154,6 +154,7 @@ fi
 %{_jarsdir}/vmware-identity-rest-core-server.jar
 %{_jarsdir}/vmware-identity-rest-idm-server.jar
 %{_jarsdir}/vmware-identity-install.jar
+%{_jarsdir}/vmware-identity-sso-config.jar
 %{_webappsdir}/idm.war
 %{_webappsdir}/afd.war
 %{_webappsdir}/openidconnect.war
