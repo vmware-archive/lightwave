@@ -1,4 +1,3 @@
-
 CLASSPATH=@TOOLS_CLASSPATH@:@ANT_CLASSPATH@
 
 vmstsjars_DATA= \
@@ -10,5 +9,5 @@ all: jar
 
 jar:
 	@echo "Building Jar : samltoken.jar"
-	cd @top_srcdir@/commons && @JAVA@ -Xmx128m -Xms64m -Xss1024k -classpath "$(CLASSPATH)" -Dant.home="@ANT_HOME@" org.apache.tools.ant.launch.Launcher $(ANT_VERBOSE) -f build.xml build
+	cd @top_srcdir@/commons && @JAVA@ -Xmx128m -Xms64m -Xss1024k -classpath "$(CLASSPATH)" -Dant.home="@ANT_HOME@" -Dversion_number="$(VMSTS_MAJOR_VER).$(VMSTS_MINOR_VER).$(VMSTS_RELWASE_VER)" org.apache.tools.ant.launch.Launcher $(ANT_VERBOSE) -f build.xml build
 

@@ -13,6 +13,7 @@
    <property name="build.dist" location="${COMPONENT_DIST_DIR}" />
    <property name="PUBLISH_DIR" location="${buildRoot}/publish" />
    <property name="build.publish" location="${PUBLISH_DIR}" />
+   <property name="version_number" value="${version_number}" />
 
    <target name="module.samltoken">
       <make-module dir="samltoken" />

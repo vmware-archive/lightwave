@@ -8,7 +8,7 @@
 
    <!-- webapp manifest properties -->
    <property name="websso.title" value="websso" />
-   <property name="websso.version" value="0.0.1.${BUILD_NUMBER}" />
+   <property name="websso.version" value="${version_number}" />
    <property name="websso.vendor" value="VMWare, Inc." />
 
    <property file="../product.properties" />
