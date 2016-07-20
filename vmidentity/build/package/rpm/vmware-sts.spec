@@ -1,6 +1,6 @@
 Name:    vmware-sts
 Summary: VMware Secure Token Service
-Version: 6.5.0
+Version: %{_version}
 Release: 0
 Group:   Applications/System
 Vendor:  VMware, Inc.
@@ -159,7 +159,6 @@ fi
 %{_webappsdir}/openidconnect.war
 %{_webappsdir}/sts.war
 %{_webappsdir}/websso.war
-%{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war
 %{_webappsdir}/vmdir.war
 %{_datadir}/config/idm/*

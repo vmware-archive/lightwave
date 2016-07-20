@@ -9,6 +9,7 @@
    <property name="MAINSRCROOT" value="${basedir}/.." />
    <property file="${MAINSRCROOT}/product.properties" />
    <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}"/>
+   <property name="version" value="${version_number}"/>
    <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
 
    <property name="src.conf.bundle-manifest-template"
@@ -47,7 +48,7 @@
       <fileset refid="jar-set.clover" />
    </path>
  
-   <artifact:pom id="pom-wsTrustClient" groupId="com.vmware.identity" artifactId="wsTrustClient" version="6.5.0" name="VMwareIdentity-STS-wstclient" >
+   <artifact:pom id="pom-wsTrustClient" groupId="com.vmware.identity" artifactId="wsTrustClient" version="${version_number}" name="VMwareIdentity-STS-wstclient" >
       <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />
       <dependency groupId="org.apache.logging.log4j" artifactId="log4j-1.2-api" version="2.0.2" />
       <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />
@@ -55,7 +56,7 @@
       <dependency groupId="org.slf4j" artifactId="slf4j-api" version="1.7.10" />
       <dependency groupId="org.slf4j" artifactId="jcl-over-slf4j" version="1.7.10" />
       <dependency groupId="commons-codec" artifactId="commons-codec" version="1.4" />
-      <dependency groupId="com.vmware.identity" artifactId="samltoken" version="6.5.0" />
+      <dependency groupId="com.vmware.identity" artifactId="samltoken" version="${version_number}" />
    </artifact:pom>
 
    <artifact:writepom pomRefId="pom-wsTrustClient" file="pom.xml"/>
@@ -67,6 +68,7 @@
        <arg value="-DrepositoryId=${lightwave-server-id}" />
        <arg value="-DpomFile=pom.xml" />
        <arg value="-Dfile=${jar}" />
+       <arg value="-Dversion_number=${version_number}" />
        <arg value="-Pgpg" />
      </artifact:mvn>
    </target>
