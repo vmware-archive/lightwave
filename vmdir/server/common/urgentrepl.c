@@ -48,6 +48,8 @@ VmDirPerformUrgentReplication(
      * If Signalled but USN not updated and not a time out case.
      * This function would calculate the new time out, retry urgent repl cycle and wait again.
      */
+    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
+        "VmDirPerformUrgentReplication for USN: %lld", currentTxnUSN);
     while (bSuccess == FALSE &&
            VmDirdState() != VMDIRD_STATE_SHUTDOWN)
     {

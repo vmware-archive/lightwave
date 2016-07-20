@@ -804,6 +804,7 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
     PSTR                pszLocalErrMsg = NULL;
     PSTR                pszDcAccountPwd = NULL;
     PSTR                pszServerName = NULL;
+    DWORD               dwCurrentDfl = VDIR_DFL_DEFAULT;
 
     dwError = VmDirInitStackOperation( &op,
                                        VDIR_OPERATION_TYPE_INTERNAL,
@@ -1118,6 +1119,18 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Server ID (%d), InvocationID (%s)",
                                         gVmdirServerGlobals.serverId,
                                         gVmdirServerGlobals.invocationId.lberbv_val);
+
+    // Set the domain functional level
+    // TODO: update global when dfl is changed.
+    dwError = VmDirSrvGetDomainFunctionalLevel(&dwCurrentDfl);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    gVmdirServerGlobals.dwDomainFunctionalLevel = dwCurrentDfl;
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Domain Functional Level (%d)",
+                    gVmdirServerGlobals.dwDomainFunctionalLevel);
+
+
 cleanup:
 
     VMDIR_SECURE_FREE_STRINGA(pszDcAccountPwd);

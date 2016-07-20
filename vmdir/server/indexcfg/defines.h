@@ -113,6 +113,13 @@
         VMDIR_SF_INIT(.bIsNumeric, TRUE)                                 \
     },                                                                   \
     {                                                                    \
+        VMDIR_SF_INIT(.pszAttrName, ATTR_ATTR_VALUE_META_DATA),          \
+        VMDIR_SF_INIT(.iTypes, INDEX_TYPE_EQUALITY),                     \
+        VMDIR_SF_INIT(.bScopeEditable, FALSE),                           \
+        VMDIR_SF_INIT(.bGlobalUniq, FALSE),                              \
+        VMDIR_SF_INIT(.bIsNumeric, FALSE)                                \
+    },                                                                   \
+    {                                                                    \
         VMDIR_SF_INIT(.pszAttrName, NULL),                               \
         VMDIR_SF_INIT(.iTypes, INDEX_TYPE_EQUALITY),                     \
         VMDIR_SF_INIT(.bScopeEditable, FALSE),                           \

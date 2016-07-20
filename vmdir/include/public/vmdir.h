@@ -130,6 +130,8 @@ extern "C" {
 #define ATTR_USN_CHANGED_LEN                sizeof(ATTR_USN_CHANGED)-1
 #define ATTR_ATTR_META_DATA                 "attributeMetaData"
 #define ATTR_ATTR_META_DATA_LEN             sizeof(ATTR_ATTR_META_DATA)-1
+#define ATTR_ATTR_VALUE_META_DATA           "attributeValueMetaData"
+#define ATTR_ATTR_VALUE_META_DATA_LEN       sizeof(ATTR_ATTR_VALUE_META_DATA)-1
 #define ATTR_IS_DELETED                     "isDeleted"
 #define ATTR_IS_DELETED_LEN                 sizeof(ATTR_IS_DELETED)-1
 #define ATTR_OBJECT_GUID                    "objectGUID"

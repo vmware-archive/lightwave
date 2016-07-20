@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -67,7 +67,16 @@ extern "C" {
 #define SCHEMA_BOOTSTRAP_USN_SEQ_ATTRID_23     23
 
 #define VDIR_FOREST_FUNCTIONAL_LEVEL    "1"
-#define VDIR_DOMAIN_FUNCTIONAL_LEVEL	"2"  // This value is the DFL for the current version
+// This value is the DFL for the current version
+#define VDIR_DOMAIN_FUNCTIONAL_LEVEL	"3"
+
+// Mapping of functionality to levels
+// Base DFL, support for all 6.0 and earlier functionality
+#define VDIR_DFL_DEFAULT 1
+// Support for 6.5 functionality, PSCHA
+#define VDIR_DFL_PSCHA   2
+// Support for 7.0 functionality, ModDn
+#define VDIR_DFL_MODDN   3
 
 // Keys for backend funtion pfnBEStrkeyGet/SetValues to access attribute IDs
 #define ATTR_ID_MAP_KEY   "1VmdirAttrIDToNameTb"
@@ -875,11 +884,6 @@ VmDirUuidFromString(
     PCSTR pStr,
     uuid_t* pGuid
 );
-
-uint64_t
-VmDirGetTimeInMilliSec(
-    VOID
-    );
 
 DWORD
 VmDirFQDNToDNSize(

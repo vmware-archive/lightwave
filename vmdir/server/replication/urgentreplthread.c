@@ -44,8 +44,8 @@ VmDirWaitForUrgentReplRequest(
 
 static
 VOID
-VmDirWaitForUrgentReplResponse(
-    VOID
+_VmDirWaitForUrgentReplResponse(
+    DWORD  dwRpcRequestsSent
     );
 
 static
@@ -202,10 +202,11 @@ VmDirReplUrgentReplCoordinatorThreadFun(
     )
 {
     PSTR     pszPartnerHostName = NULL;
-    DWORD    rpcRequestsSent = 0;
+    DWORD    dwRpcRequestsSent = 0;
     DWORD    dwError = 0;
     time_t   startTime = 0;
     BOOLEAN  bInReplAgrsLock = FALSE;
+    BOOLEAN  bUrgentReplPartialFailure = FALSE;
     VMDIR_REPLICATION_AGREEMENT    *pReplAgr = NULL;
 
     while (1)
@@ -227,10 +228,11 @@ VmDirReplUrgentReplCoordinatorThreadFun(
         }
 
         VmDirSetUrgentReplicationPending(FALSE);
-        VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
+        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
             "VmDirReplUrgentReplCoordinatorThreadFun: Initiating Urgent Replication Request to all Replication Partners");
 
-        rpcRequestsSent = 0;
+        dwRpcRequestsSent = 0;
+        bUrgentReplPartialFailure = FALSE;
 	VmDirReplResetUrgentReplResponseCount();
 
         VMDIR_LOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
@@ -257,6 +259,7 @@ VmDirReplUrgentReplCoordinatorThreadFun(
                     "VmDirReplUrgentReplCoordinatorThreadFun: URI:%s to host name failed status: %d",
                     pReplAgr->ldapURI,
                     dwError);
+                bUrgentReplPartialFailure = TRUE;
                 continue;
             }
 
@@ -266,10 +269,14 @@ VmDirReplUrgentReplCoordinatorThreadFun(
                 VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
                     "VmDirReplUrgentReplCoordinatorThreadFun: VmDirUrgentReplicationRequest failed with status: %d",
                     dwError);
+                bUrgentReplPartialFailure = TRUE;
                 continue;
             }
 
-            rpcRequestsSent++;
+            dwRpcRequestsSent++;
+	    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
+	        "VmDirReplUrgentReplCoordinatorThreadFun :requests:%d hostname: %s",
+	        dwRpcRequestsSent, pReplAgr->ldapURI);
         }
 
         VMDIR_UNLOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
@@ -279,20 +286,27 @@ VmDirReplUrgentReplCoordinatorThreadFun(
         startTime = time(NULL);
 
         while ((time(NULL) - startTime) < VMDIR_URGENT_REPL_RPC_RESPONSE_TIMEOUT &&
-                VmDirReplGetUrgentReplResponseCount() < rpcRequestsSent)
+                VmDirReplGetUrgentReplResponseCount() < dwRpcRequestsSent)
         {
-             VmDirWaitForUrgentReplResponse();
+             _VmDirWaitForUrgentReplResponse(dwRpcRequestsSent);
 
              if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
              {
                  goto cleanup;
              }
-             VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
+             VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
                  "VmDirReplUrgentReplCoordinatorThreadFun:requests:%d Responses:%d",
-                 rpcRequestsSent, VmDirReplGetUrgentReplResponseCount());
+                 dwRpcRequestsSent, VmDirReplGetUrgentReplResponseCount());
         }
 
-        if (VmDirUrgentReplUpdateConsensus())
+        /*
+         * Update consensus only if Replication cycle on all the Repl Partners
+         * completed successfully.
+         */
+        if (bUrgentReplPartialFailure == FALSE &&
+            dwRpcRequestsSent != 0 &&
+            VmDirReplGetUrgentReplResponseCount() == dwRpcRequestsSent &&
+            VmDirUrgentReplUpdateConsensus())
         {
             VmDirReplBroadcastUrgentReplDone();
         }
@@ -345,8 +359,8 @@ error:
 
 static
 VOID
-VmDirWaitForUrgentReplResponse(
-    VOID
+_VmDirWaitForUrgentReplResponse(
+    DWORD  dwRpcRequestsSent
     )
 {
     BOOLEAN  bInUrgentReplResponseRecvLock = FALSE;
@@ -383,7 +397,11 @@ VmDirWaitForUrgentReplResponse(
             }
         }
 
-        if (timeoutCount >= 20)
+        /*
+         * Time out or condition met break out of the loop
+         */
+        if (timeoutCount >= 20 ||
+            VmDirReplGetUrgentReplResponseCount() == dwRpcRequestsSent)
         {
             break;
         }
@@ -396,7 +414,7 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-        "VmDirWaitForUrgentReplResponse: pUrgentReplResponseRecvCondition wait failed with error: %d", dwError);
+        "_VmDirWaitForUrgentReplResponse: pUrgentReplResponseRecvCondition wait failed with error: %d", dwError);
     goto cleanup;
 }
 
@@ -427,4 +445,3 @@ error:
       " VmDirReplBroadcastUrgentReplDone: failed with error: %d", dwError);
     goto cleanup;
 }
-

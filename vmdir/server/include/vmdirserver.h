@@ -106,6 +106,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
     USN                  maxOriginatingUSN;  // Cache value to prevent
                                              // excessive searching
     VDIR_BERVALUE        bvServerObjName;
+    DWORD                dwDomainFunctionalLevel;
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;

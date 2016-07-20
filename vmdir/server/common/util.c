@@ -362,39 +362,6 @@ error:
     return dwError;
 }
 
-uint64_t
-VmDirGetTimeInMilliSec(
-    VOID
-    )
-{
-    uint64_t            iTimeInMSec = 0;
-
-#ifdef _WIN32
-
-    FILETIME        currentFileTime = {0};
-    ULARGE_INTEGER  currentTime = {0};
-
-    GetSystemTimeAsFileTime(&currentFileTime);
-
-    currentTime.LowPart  = currentFileTime.dwLowDateTime;
-    currentTime.HighPart = currentFileTime.dwHighDateTime;
-
-    iTimeInMSec = (currentTime.QuadPart * 100) / NSECS_PER_MSEC;
-
-#else
-
-    struct timespec     timeValue = {0};
-
-    if (clock_gettime(CLOCK_MONOTONIC, &timeValue) == 0)
-    {
-        iTimeInMSec = (timeValue.tv_sec * NSECS_PER_SEC + timeValue.tv_nsec ) / NSECS_PER_MSEC;
-    }
-
-#endif
-
-    return  iTimeInMSec;
-}
-
 VOID
 VmDirLogStackFrame(
     int     logLevel

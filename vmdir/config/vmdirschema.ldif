@@ -706,6 +706,15 @@ attributeTypes: (
     NO-USER-MODIFICATION
     )
 
+attributeTypes: (
+    VMWare.DIR.attribute.0.59
+    NAME 'attributeValueMetaData'
+    DESC 'An internal computed attribute used to store info for replication'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
 ##############################################################
 ########## Following attribute override AD schema.  ##########
 ########## ??????????? should we do this ?????????  ##########

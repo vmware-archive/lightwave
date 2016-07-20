@@ -599,7 +599,8 @@ IsAttrInReplScope(
         *inScope = FALSE;
         goto cleanup;
     }
-    else if ( attrType != NULL && (VmDirStringCompareA( attrType, ATTR_OBJECT_GUID, FALSE) == 0))
+    else if ( attrType != NULL && gVmdirServerGlobals.dwDomainFunctionalLevel >= VDIR_DFL_MODDN &&
+              (VmDirStringCompareA( attrType, ATTR_OBJECT_GUID, FALSE) == 0))
     {
         ; // always send objectGUID to uniquely identify entries.
     }

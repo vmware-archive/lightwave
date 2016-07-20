@@ -1596,6 +1596,10 @@ VmDirHaveLegacy(
     );
 
 // util.c
+uint64_t
+VmDirGetTimeInMilliSec(
+    VOID
+    );
 
 DWORD
 VmDirAllocateUserCreateParamsWFromA(

@@ -107,7 +107,7 @@ VmDirdAddToUrgentReplicationServerList_InLock(
         pTempUrgentReplServerList = gVmdirUrgentRepl.pUrgentReplServerList;
         while (pTempUrgentReplServerList != NULL)
         {
-            if (VmDirStringCompareA(pszUrgentReplicationServer,
+            if (VmDirStringCompareA(pUrgentReplServerList->pInitiatorServerName,
                                     pTempUrgentReplServerList->pInitiatorServerName,
                                     FALSE) == 0)
             {
@@ -443,6 +443,8 @@ VmDirReplUpdateUrgentReplCoordinatorTableForResponse_InLock(
         }
 
         pReplicationPartnerEntry->lastConfirmedUSN = confirmedUSN;
+	VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
+			"%s: hostname: %s USN: %lld ", __func__, pReplicationPartnerEntry->pServerName, confirmedUSN);
     }
 }
 
@@ -804,15 +806,14 @@ VmDirUrgentReplUpdateConsensus(
             pUrgentReplPartnerTable = pUrgentReplPartnerTable->next;
         }
 
-        VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
-		        "%s: minUSN: %lld gVmdirUrgentRepl.ConsensusUSN: %lld",
-                         __func__, minUSN, gVmdirUrgentRepl.consensusUSN);
-
         if (gVmdirUrgentRepl.consensusUSN < minUSN)
         {
             gVmdirUrgentRepl.consensusUSN = minUSN;
             bUpdated = TRUE;
         }
+        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
+		        "%s: minUSN: %lld gVmdirUrgentRepl.ConsensusUSN: %lld",
+                         __func__, minUSN, gVmdirUrgentRepl.consensusUSN);
     }
 
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
