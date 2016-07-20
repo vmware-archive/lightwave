@@ -80,7 +80,7 @@
     <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>diagnostics</artifactId>
-      <version>6.5.0</version>
+      <version>{version_number}</version>
     </dependency>
   </dependencies>
 </project>
