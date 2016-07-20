@@ -1,7 +1,7 @@
 Name:    vmware-sts
 Summary: VMware Secure Token Service
-Version: 6.5.0
-Release: 0
+Version: %{_version}
+Release: %{_patch}
 Group:   Applications/System
 Vendor:  VMware, Inc.
 License: VMware
