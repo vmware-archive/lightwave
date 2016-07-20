@@ -1,0 +1,248 @@
+<div class="content-container"><div class="content-header"><img src="../app/assets/certificate.png" width="24px" height="24px"> <strong style="padding-top:10px">Certificates</strong></div><div class="error" ng-show="globals.errors"><img src="../app/assets/error.png" width="16px" height="16px"> <button type="button" class="btn btn-xs btn-link pull-right" ng-click="globals.errors = null;">X</button> {{globals.errors.details}} {{globals.errors.cause}}</div><div style="margin-top:5px"><!-- Set of Tabs for Signer Certificate Chains view --><uib-tabset active="active"><!-- Certificate Chain tab --><uib-tab index="1" select="vm.getchains(vm.searchsubjectDN)" heading="STS Signing"><!-- STS Signing tab: Content --><div class="tab-container"><div style="margin-bottom:5px"><button type="button" class="btn btn-link" ng-click="showUpdateChain();" ng-show="globals.currentUser.role == 'Administrator'" uib-tooltip="Update Certificate Chain" style="float:left;margin-left:10px">UPDATE CHAIN</button><!-- Search box to search all the tenants created in this session --><form name="form" ng-submit="vm.getchains(vm.searchsubjectDN)" role="form" style="float:right"><input type="text" name="searchsubjectDN" id="searchsubjectDN" ng-model="vm.searchsubjectDN" class="search-box" placeholder="search by certificate subject DN "> <button type="submit" class="btn btn-primary btn-sm">Search</button></form></div><!-- Update STS Chain --><!--                    <div uib-collapse="vm.addchain"
+                         class="box row">
+                        <div class="box-header">
+                            Update STS Certificate Chain
+                        </div>
+                        <div class="box-content">
+                            <form name="addchainform"
+                                  role="addchainform"
+                                  ng-submit="vm.updatechain(vm.newchain)">
+                                <div class="section-help">
+                                    Fill out the form and click Save to update STS certificate chain<br/><br/>
+                                </div>
+                                <div class="form-group col-xs-12 pull-left">
+                                    <div class="col-xs-2">
+                                        <label class="control-label pull-right" for="vm.newchain.privateKeyFilePath">Private Key</label>
+                                    </div>
+                                    <div class="col-xs-4">
+                                        <input type="file" on-read-file="vm.setprivatekeycontent(vm.newchain, contents)"
+                                               id="vm.newchain.privateKeyFilePath" name="privatekeyPath"
+                                               ng-model="vm.newchain.privateKeyFilePath"/>
+                                    </div>
+                                    <div class="col-xs-2">
+                                        <label class="control-label pull-right" for="vm.newchain.certfilepath">Certificates</label>
+                                    </div>
+                                    <div class="col-xs-4">
+                                        <input type="file" on-read-file="vm.setcertificatecontent(vm.newchain, contents)"
+                                               id="vm.newchain.certfilepath" name="encodedcertfilepath"
+                                               ng-model="vm.newchain.certFilePath"/>
+                                    </div>
+                                </div>
+                                <div class="section-help" style="float:left;">
+                                    Certificate chain selected  (minimum 2 certificates required) starting with the root.
+                                </div>
+                                <div style="float:right;padding-right: 30px;">
+                                    <strong>
+                                        Total Certificates: {{vm.newchain.certificates.length}}
+                                    </strong>
+                                </div>
+                                <img ng-if="vm.certsdataLoading"
+                                     src="../app/assets/progress.gif"
+                                     style="padding:20px;"/>
+                                <div class="form-group col-xs-12 pull-left">
+                                    <div class="large-grid">
+                                        <div class="large-grid-header">
+                                            <div class="col-xs-3">
+                                                <strong>
+                                                    Subject
+                                                </strong>
+                                            </div>
+                                            <div class="col-xs-3">
+                                                <strong>
+                                                    Issuer
+                                                </strong>
+                                            </div>
+                                            <div class="col-xs-2">
+                                                <strong>
+                                                    Valid From
+                                                </strong>
+                                            </div>
+                                            <div class="col-xs-2">
+                                                <strong>
+                                                    Valid Until
+                                                </strong>
+                                            </div>
+                                           &lt;!&ndash; <div class="col-xs-2">
+                                            </div>&ndash;&gt;
+                                        </div>
+                                        <div class="large-grid-content">
+                                            <div ng-repeat="certificate in vm.newchain.certificates"
+                                                 ng-show="vm.newchain.certificates"
+                                                 ng-class-odd="'large-grid-row-odd'"
+                                                 ng-class-even="'large-grid-row-even'">
+                                                <div class="col-xs-3"
+                                                     uib-tooltip="{{certificate.metadata.subject}}">
+                                                    {{
+                                                    certificate.metadata.subject.length > 30 ?
+                                                    certificate.metadata.subject.substring(0,30) + '...' :
+                                                    certificate.metadata.subject;
+                                                    }}
+                                                </div>
+                                                <div class="col-xs-3"
+                                                     uib-tooltip="{{certificate.metadata.issuer}}">
+                                                    {{
+                                                    certificate.metadata.issuer.length > 30 ?
+                                                    certificate.metadata.issuer.substring(0,30) + '...' :
+                                                    certificate.metadata.issuer;
+                                                    }}
+                                                </div>
+                                                <div class="col-xs-2">
+                                                    {{certificate.metadata.before}}
+                                                </div>
+                                                <div class="col-xs-2">
+                                                    <img src="../app/assets/enabled.png"
+                                                         width="16px"
+                                                         height="16px"
+                                                         ng-show="!certificate.metadata.expired"/>
+                                                    <img src="../app/assets/disabled.png"
+                                                         width="16px"
+                                                         height="16px"
+                                                         ng-show="certificate.metadata.expired"/>
+                                                    {{certificate.metadata.after}}
+                                                </div>
+                                               &lt;!&ndash; <div class="col-xs-2">
+                                                    <form name="viewcertificateform"
+                                                          ng-submit="viewcertificate(certificate.encoded)"
+                                                          role="viewcertificateform"
+                                                          class="text-left" style="float:left;padding-right:5px;">
+                                                        <button class="btn btn-xs btn-success" type="submit"
+                                                                uib-tooltip="View Certificate">
+                                                            View
+                                                        </button>
+                                                    </form>
+                                                    <form name="removecertificateform"
+                                                          ng-submit="vm.removecertificate(vm.newchain, certificate)"
+                                                          role="removecertificateform"
+                                                          class="text-left" style="float:left;padding-right:5px;">
+                                                        <button class="btn btn-xs btn-danger"
+                                                                type="submit"
+                                                                uib-tooltip="Remove Certificate">
+                                                            Remove
+                                                        </button>
+                                                    </form>
+                                                </div>&ndash;&gt;
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <br/><br/>
+                                <div class="form-group col-xs-12">
+                                    <div class="col-xs-3 col-xs-offset-3">
+                                        <form name="updatecertificateform"
+                                              ng-submit="vm.updatechain(vm.newchain)"
+                                              role="updatecertificateform"
+                                              class="text-left" style="float:left;padding-right:5px;">
+                                            <button type="submit" class="btn btn-primary btn-xs">Save</button>
+                                        </form>
+                                        <button type="button" class="btn btn-default btn-xs"
+                                                ng-click="vm.newchain = {};vm.addchain = true;">Cancel</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>--><br><br><div class="large-grid"><div class="large-grid-header"><div class="large-grid-header-cell col-xs-2">Chain</div><div class="large-grid-header-cell col-xs-3">Subject</div><div class="large-grid-header-cell col-xs-3">Issuer</div><div class="large-grid-header-cell col-xs-2">Valid From</div><div class="large-grid-header-cell col-xs-2">Valid Until</div><!--<div class="large-grid-header-cell ol-xs-2">
+                            </div>--></div><div class="large-grid-content"><img ng-if="vm.certsdataLoading" src="../app/assets/progress.gif" style="padding:20px"><div ng-if="!vm.certsdataLoading && (!vm.chains || vm.chains.length == 0)" style="padding:60px" class="row">No certificate chains found.</div><div ng-repeat="chain in vm.chains" ng-show="vm.chains"><div ng-repeat="certificate in chain.certificates" ng-show="chain.certificates" tabindex="1" class="large-grid-content-row" ng-click="vm.currentCert = certificate;"><div class="col-xs-2" uib-tooltip="{{chain.name}}"><img src="../app/assets/certificate.png" width="16px" height="16px"> {{chain.name}}</div><div class="col-xs-3" uib-tooltip="{{certificate.metadata.subject}}"><button type="button" class="btn btn-link" ng-click="vm.viewcertificate()" uib-tooltip="{{certificate.metadata.subject}}" style="margin-top:-10px">{{ certificate.metadata.subject.length > 30 ? certificate.metadata.subject.substring(0,30) + '...' : certificate.metadata.subject; }}</button></div><div class="col-xs-3" uib-tooltip="{{certificate.metadata.issuer}}">{{ certificate.metadata.issuer.length > 30 ? certificate.metadata.issuer.substring(0,30) + '...' : certificate.metadata.issuer; }}</div><div class="col-xs-2">{{certificate.metadata.before}}</div><div class="col-xs-2"><img src="../app/assets/enabled.png" width="16px" height="16px" ng-show="!certificate.metadata.expired"> <img src="../app/assets/disabled.png" width="16px" height="16px" ng-show="certificate.metadata.expired"> {{certificate.metadata.after}}</div><!-- <div class="col-xs-2">
+                                    <form name="viewcertificateform" ng-submit="vm.viewcertificate(certificate.encoded)"
+                                          role="viewcertificateform" class="text-left">
+                                        <button class="btn btn-xs btn-success" type="submit"
+                                                uib-tooltip="View Certificate">
+                                            View
+                                        </button>
+                                    </form>
+                                </div>--></div></div></div><div class="large-grid-footer"></div></div></div><!--
+                    <uib-accordion close-others="true">
+                        <uib-accordion-group ng-repeat="chain in vm.chains" ng-if="vm.chains">
+                            <uib-accordion-heading>
+                                <div>
+                                    <ul id="nav">
+                                        <li id="icon-enable" ng-show="chain.active" uib-tooltip="Chain is currently active."></li>
+                                        <li id="icon-disable" ng-show="!chain.active" uib-tooltip="Chain is no longer active."></li>
+                                        <li id="icon-delete" ng-show="!chain.active" uib-tooltip="Delete chain"
+                                            ng-click="vm.deletechain(chain)"></li>
+                                    </ul>
+                                    <img src="../app/assets/certificate.png"
+                                         width="16px"
+                                         height="16px"/>
+                                    <small>
+                                        <strong>{{chain.name}}  </strong>
+                                        ({{chain.certificates.length}} certificates)
+                                    </small>
+                                </div>
+
+                            </uib-accordion-heading>--><!--<div class="large-grid">
+                                <div class="large-grid-header">
+                                    <div class="col-xs-3">
+                                        <strong>
+                                            Subject
+                                        </strong>
+                                    </div>
+                                    <div class="col-xs-3">
+                                        <strong>
+                                            Issuer
+                                        </strong>
+                                    </div>
+                                    <div class="col-xs-2">
+                                        <strong>
+                                            Valid From
+                                        </strong>
+                                    </div>
+                                    <div class="col-xs-2">
+                                        <strong>
+                                            Valid Until
+                                        </strong>
+                                    </div>
+                                    <div class="col-xs-2">
+                                    </div>
+                                </div>
+                                <div ng-if="!vm.certsdataLoading && (!vm.chains || vm.chains.length == 0)" style="padding:60px;" class="row">
+                                    No certificate chains found.
+                                </div>
+                                <div class="large-grid-content">
+
+                                    <div ng-repeat="certificate in chain.certificates"
+                                     ng-show="chain.certificates"
+                                     ng-class-odd="'large-grid-row-odd'"
+                                     ng-class-even="'large-grid-row-even'"
+                                     >
+                                    <div class="col-xs-3"
+                                         uib-tooltip="{{certificate.metadata.subject}}">
+                                        {{
+                                            certificate.metadata.subject.length > 30 ?
+                                            certificate.metadata.subject.substring(0,30) + '...' :
+                                            certificate.metadata.subject;
+                                        }}
+                                    </div>
+                                    <div class="col-xs-3"
+                                         uib-tooltip="{{certificate.metadata.issuer}}">
+                                        {{
+                                            certificate.metadata.issuer.length > 30 ?
+                                            certificate.metadata.issuer.substring(0,30) + '...' :
+                                            certificate.metadata.issuer;
+                                        }}
+                                    </div>
+                                    <div class="col-xs-2">
+                                        {{certificate.metadata.before}}
+                                    </div>
+                                    <div class="col-xs-2">
+                                        <img src="../app/assets/enabled.png"
+                                             width="16px"
+                                             height="16px"
+                                             ng-show="!certificate.metadata.expired"/>
+                                        <img src="../app/assets/disabled.png"
+                                             width="16px"
+                                             height="16px"
+                                             ng-show="certificate.metadata.expired"/>
+                                        {{certificate.metadata.after}}
+                                    </div>
+                                    <div class="col-xs-2">
+                                        <form name="viewcertificateform" ng-submit="vm.viewcertificate(certificate.encoded)"
+                                              role="viewcertificateform" class="text-left">
+                                            <button class="btn btn-xs btn-success" type="submit"
+                                                    uib-tooltip="View Certificate">
+                                                View
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                </div>
+                            </div>--><!--</uib-accordion-group>--><!--</uib-accordion>--></uib-tab></uib-tabset></div></div>

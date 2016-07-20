@@ -1,0 +1,35 @@
+<div class="popup-container">
+    <div class="header-20px">
+        View Group '{{
+        vm.selectedGroup.name.length > 25 ?
+        vm.selectedGroup.name.substring(0,25) + '...' :
+        vm.selectedGroup.name;
+        }}'
+    </div>
+    <div class='error' ng-show="globals.errors">
+        <img src="../app/assets/error.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.errors = null;">X
+        </button>
+        {{globals.errors.details}} {{globals.errors.cause}}
+    </div>
+    <div class="row content popup-content">
+        <div class="popup-row col-xs-12">
+            <div class="col-xs-4">
+                Name
+            </div>
+            <div class="col-xs-8">
+                {{vm.selectedGroup.name}}
+            </div>
+        </div>
+        <div class="popup-row col-xs-12">
+            <div class="col-xs-4">
+                Description
+            </div>
+            <div class="col-xs-8">
+                {{vm.selectedGroup.details.description}}
+            </div>
+        </div>
+    </div>
+</div>

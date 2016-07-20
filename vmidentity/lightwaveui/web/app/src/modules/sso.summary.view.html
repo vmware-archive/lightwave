@@ -1,0 +1,78 @@
+
+<div class='error' ng-show="globals.errors">
+    <img src="../app/assets/error.png" width="16px" height="16px"/>
+    <button type="button"
+            class="btn btn-xs btn-link pull-right"
+            ng-click="globals.errors = null;">X
+    </button>
+    {{globals.errors.details}} {{globals.errors.cause}}
+</div>
+
+<div class="content-container">
+    <div style="float:right;top:0px;">
+        <img src="../app/assets/sso-intro.png" width="500px" height="400px;">
+    </div>
+    <div class="header">
+        <span class="header-emphasis">Single Sign-On </span>
+        provides the identity management services for the lightwave platform.
+    </div>
+    <br/>
+    <div class="secondary-header">
+        Use the Single Sign-On interface to perform these tasks:<br/>
+        <ul class="content">
+            <li> Administer the Users & Groups</li>
+            <li> Configure the external identity sources</li>
+            <li> Manage service providers, identity providers, openid connect and relying parties</li>
+            <li> Configure policies and signer certificates</li>
+        </ul>
+    </div>
+    <br/>
+    <div ng-show="globals.currentUser.role != 'GuestUser'">
+        <div class="header">
+            Summary of the identities managed on the server
+        </div>
+        <div class="content">
+            <img ng-if="vm.summarydataLoading"
+             src="../app/assets/progress.gif"
+             style="padding:20px;"/>
+            <br/><br/>
+            <div>
+            <span class="sso-view-item-header">Users </span>
+             <span class="sso-view-item-text">
+                <a href="#usersandgroups">{{vm.summary.users}}</a>
+            </span>
+            </div>
+            <div>
+            <span class="sso-view-item-header">Groups </span>
+             <span class="sso-view-item-text">
+                <a href="#usersandgroups">{{vm.summary.groups}}</a>
+            </span>
+            </div>
+            <div>
+            <span class="sso-view-item-header">Solution Users </span>
+             <span class="sso-view-item-text">
+                <a href="#usersandgroups">{{vm.summary.solutionUsers}}</a>
+            </span>
+            </div>
+            <div>
+            <span class="sso-view-item-header">Identity Sources </span>
+             <span class="sso-view-item-text">
+                <a href="#/identitysources">{{vm.summary.identitySources}}</a>
+            </span>
+            </div>
+            <div ng-show="globals.currentUser.role == 'Administrator'">
+                <div>
+                <span class="sso-view-item-header">Identity Providers </span>
+                 <span class="sso-view-item-text">
+                    <a href="#serviceproviders">{{vm.summary.identityProviders}}</a>
+                </span>
+                </div>
+                <div>
+                <span class="sso-view-item-header">Relying Party </span><span class="sso-view-item-text">
+                    <a href="#serviceproviders">{{vm.summary.relyingParties}}</a>
+                </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

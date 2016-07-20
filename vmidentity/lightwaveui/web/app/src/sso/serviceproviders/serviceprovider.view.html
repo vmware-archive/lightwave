@@ -1,0 +1,1476 @@
+
+<div class="content-container">
+    <div class="content-header">
+        <img src="../app/assets/serviceprovider.png"
+             width="24px"
+             height="24px"/> Service Providers
+    </div>
+    <div class='error' ng-show="globals.errors">
+        <img src="../app/assets/error.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.errors = null;">X
+        </button>
+        {{globals.errors.details}} {{globals.errors.cause}}
+    </div>
+    <div style="margin-top:5px;">
+
+        <!-- Set of Tabs for Service Provider view -->
+        <uib-tabset active="active">
+
+            <!-- Relying party tab -->
+            <uib-tab index="0" select="vm.getallrelyingparty(vm.searchrelyingparty)" heading="Relying Party">
+                <!-- Relying party tab: Content -->
+                <!--<div class="tab-container">
+
+                    &lt;!&ndash; Search box to search all the relying parties &ndash;&gt;
+                    <form name="form"
+                          ng-submit="vm.getallrelyingparty(vm.searchrelyingparty)"
+                          role="form"
+                          class="text-center">
+                        <input type="text" name="searchrelyingparty"
+                               id="searchrelyingparty"
+                               ng-model="vm.searchrelyingparty"
+                               class="search-box-in-tab"
+                               placeholder="search by relying party name"/>
+                        <button type="submit"
+                                class="btn btn-primary btn-xs">
+                            Search
+                        </button>
+                       &lt;!&ndash; <button type="button"
+                                class="btn btn-default btn-xs item-menu-button"
+                                ng-click="vm.addrelyingparty = false">
+                            Add New Relying Party
+                        </button>&ndash;&gt;
+                    </form>
+
+                    &lt;!&ndash; Add a new relying party &ndash;&gt;
+                    &lt;!&ndash;<div uib-collapse="vm.addrelyingparty"
+                         class="box row">
+                        <div class="box-header">
+                            Add New Relying Party
+                        </div>
+                        <div class="box-content">
+                            <form name="addnewrelyingpartyform"
+                                  role="addnewrelyingpartyform"
+                                  ng-submit="vm.savenewrelyingparty(vm.newrelyingparty)">
+                                <div class="section-help">
+                                    Upload a relying party metadata and click Save to add a new relying party<br/>
+                                </div>
+                                <div class="form-group col-xs-12">
+                                    <div class="col-xs-2">
+                                        <label class="control-label pull-left"
+                                               for="addnewrelyingpartyform.filepath"
+                                               style="margin-right:10px;">Metadata File (xml)</label>
+                                    </div>
+                                    <div class="col-xs-3">
+                                        <input type="file"
+                                               on-read-file="vm.previewxml(vm.newrelyingparty, contents)"
+                                               id="addnewrelyingpartyform.filepath"
+                                               name="rpxmlfilepath"
+                                               ng-model="vm.newrelyingparty.filepath"/>
+                                    </div>
+                                    <div class="col-xs-1">
+                                        <label class="control-label pull-right" for="addnewrelyingpartyform.xml">Preview</label>
+                                    </div>
+                                    <div class="col-xs-6">
+                                            <textarea ng-model="vm.newrelyingparty.xml"
+                                                      id="addnewrelyingpartyform.xml"
+                                                      name="rpxml"
+                                                      class="form-control input-xs pull-left text-area"
+                                                      rows="10"
+                                                      readonly="readonly">
+                                            </textarea>
+                                    </div>
+                                </div>
+                                <div class="form-group col-xs-12">
+                                    <div class="col-xs-3 col-xs-offset-3">
+                                        <button type="submit" class="btn btn-primary btn-xs"
+                                                ng-disabled="addnewrelyingpartyform.$invalid">Save</button>
+                                        <button type="button" class="btn btn-default btn-xs"
+                                                ng-click="vm.newrelyingparty = {};vm.addrelyingparty = true;">Cancel</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>&ndash;&gt;
+
+                    &lt;!&ndash; Total relying parties header &ndash;&gt;
+                    <div style="bottom:0px; height:20px;">
+                        <div ng-if="vm.relyingparties"
+                             class="text-right total-members">
+                            Total Relying Party: {{vm.relyingparties.length}}
+                        </div>
+                    </div>
+                    <img ng-if="vm.rpdataLoading"
+                         src="../app/assets/progress.gif"
+                         style="padding:20px;"/>
+
+                    &lt;!&ndash; List all the relying parties &ndash;&gt;
+                    <uib-accordion close-others="true">
+                        <uib-accordion-group ng-repeat="currentrelyingparty in vm.relyingparties" ng-if="vm.relyingparties">
+                            <uib-accordion-heading>
+                                <div>
+                                    <img src="../app/assets/serviceprovider.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-click="vm.getrelyingparty(currentrelyingparty)"/>
+                                    <small>
+                                        <strong ng-click="vm.getrelyingparty(currentrelyingparty)">
+                                            {{currentrelyingparty.name}}
+                                        </strong>
+                                    </small>
+                                </div>
+                            </uib-accordion-heading>
+                            <br/><br/>
+                            <form name="currentrelyingpartyform">
+                                <div ng-if="currentrelyingparty">
+                                    <div class="form-group col-xs-12 pull-left">
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right"
+                                                   for="currentrelyingparty.name">
+                                                Name
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <input type="text"
+                                                   id="currentrelyingparty.name"
+                                                   name="name"
+                                                   ng-model="currentrelyingparty.name"
+                                                   class="form-control input-xs pull-left"
+                                                   placeholder="contoso relying party"
+                                                   readonly="readonly"/>
+                                        </div>
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right"
+                                                   for="currentrelyingparty.url">
+                                                URL
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5"
+                                             ng-class="{ 'has-error': currentrelyingpartyform.text.$dirty
+                                                        && currentrelyingpartyform.text.$error.required }">
+                                            <input type="text"
+                                                   id="currentrelyingparty.url"
+                                                   name="url"
+                                                   ng-model="currentrelyingparty.url"
+                                                   class="form-control input-xs pull-left"
+                                                   placeholder="https://contoso.com"
+                                                   required/>
+                                        </div>
+                                    </div>
+                                    <div class="form-group col-xs-12 pull-left">
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right"
+                                                   for="currentrelyingparty.authnRequestsSigned">
+                                                Sign?
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <input type="checkbox"
+                                                   id="currentrelyingparty.authnRequestsSigned"
+                                                   name="authnRequestsSigned"
+                                                   ng-model="currentrelyingparty.authnRequestsSigned"
+                                                   class="input-md pull-left"/>
+                                        </div>
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right"
+                                                   for="currentrelyingparty.url">
+                                                Certificate
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5 small">
+                                            <strong>Issuer: </strong>
+                                            <span style="word-wrap: break-word">{{ currentrelyingparty.cert.issuer }}</span><br/><br/>
+                                            <strong>Subject: </strong>
+                                            <span style="word-wrap: break-word">{{ currentrelyingparty.cert.subject }}</span><br/><br/>
+                                            <strong>Expiry: </strong>
+                                            <span style="word-wrap: break-word">{{ currentrelyingparty.cert.expiry }}</span><br/><br/>
+                                            &lt;!&ndash;<strong>Upload: </strong>
+                                            <input type="file"
+                                                   on-read-file="previewcertificate(currentrelyingparty, contents)"
+                                                   id="currentrelyingparty.certificate.filepath"
+                                                   name="encodedcertfilepath"
+                                                   ng-model="currentrelyingparty.certificate.filepath"
+                                                   style="margin-left:50px;margin-top: -20px;"/>&ndash;&gt;
+                                        </div>
+                                    </div>
+                                    <div class="form-group col-xs-12 pull-left">
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right">
+                                                Signature Algorithms
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <div class="small small-grid">
+                                                <div class="small-grid-header">
+                                                    <div class="col-xs-4">
+                                                        <strong>
+                                                            Max Key Size
+                                                        </strong>
+                                                    </div>
+                                                    <div class="col-xs-4">
+                                                        <strong>
+                                                            Min Key Size
+                                                        </strong>
+                                                    </div>
+                                                    <div class="col-xs-2">
+                                                        <strong>
+                                                            Priority
+                                                        </strong>
+                                                    </div>
+                                                </div>
+                                                <div ng-show="!currentrelyingparty.signatureAlgorithms">
+                                                    <br/>
+                                                        <span style="padding-left:10px;">
+                                                            No signature algorithms specified
+                                                        </span>
+                                                    <br/>
+                                                </div>
+                                                <div ng-repeat="signatureAlgorithm in currentrelyingparty.signatureAlgorithms"
+                                                     ng-show="currentrelyingparty.signatureAlgorithms"
+                                                     ng-class-odd="'small-grid-row-odd'">
+                                                    <div class="col-xs-4">{{ signatureAlgorithm.maxKeySize }}</div>
+                                                    <div class="col-xs-4">{{ signatureAlgorithm.minKeySize }}</div>
+                                                    <div class="col-xs-2">{{ signatureAlgorithm.priority }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right">
+                                                Single Logout Services
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <div class="small small-grid">
+                                                <div class="small-grid-header">
+                                                    <div class="col-xs-4">
+                                                        <strong>
+                                                            Name
+                                                        </strong>
+                                                    </div>
+                                                    <div class="col-xs-4">
+                                                        <strong>
+                                                            Endpoint
+                                                        </strong>
+                                                    </div>
+                                                    <div class="col-xs-2">
+                                                        <strong>
+                                                            Binding
+                                                        </strong>
+                                                    </div>
+                                                </div>
+                                                <div ng-show="!currentrelyingparty.singleLogoutServices ||
+                                                            currentrelyingparty.singleLogoutServices.length <= 0 ">
+                                                    <br/>
+                                                        No single logout services specified
+                                                    <br/>
+                                                </div>
+                                                <div ng-repeat="slo in currentrelyingparty.singleLogoutServices"
+                                                     ng-show="currentrelyingparty.signatureAlgorithms"
+                                                     ng-class-odd="'small-grid-row-odd'">
+                                                    <div class="col-xs-4"
+                                                         uib-tooltip="{{slo.name}}">
+                                                        {{
+                                                            slo.name.length > 10
+                                                            ? slo.name.substr(0,10) + '...'
+                                                            : slo.name
+                                                        }}
+                                                    </div>
+                                                    <div class="col-xs-4"
+                                                         uib-tooltip="{{slo.endpoint}}">
+                                                        {{
+                                                            slo.endpoint.length > 20
+                                                            ? slo.endpoint.substr(0,20) + '...'
+                                                            : slo.endpoint
+                                                        }}
+                                                    </div>
+                                                    <div class="col-xs-2"
+                                                         uib-tooltip="{{slo.binding}}">
+                                                        {{
+                                                            slo.binding.length > 20
+                                                            ? slo.binding.substr(0,20) + '...'
+                                                            : slo.binding
+                                                        }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group col-xs-12 pull-left">
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right">
+                                                Assertion Consumer Services
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <div class="small small-grid">
+                                                <div class="small-grid-header">
+                                                    <div class="col-xs-2">
+                                                        <strong>
+                                                            Name
+                                                        </strong>
+                                                    </div>
+                                                    <div class="col-xs-4">
+                                                        <strong>
+                                                            Endpoint
+                                                        </strong>
+                                                    </div>
+                                                    <div class="col-xs-3">
+                                                        <strong>
+                                                            Binding
+                                                        </strong>
+                                                    </div>
+                                                    <div class="col-xs-1">
+                                                        <strong>
+                                                            Index
+                                                        </strong>
+                                                    </div>
+                                                    <div class="col-xs-1">
+                                                        <strong>
+                                                            Default
+                                                        </strong>
+                                                    </div>
+                                                </div>
+                                                <div ng-show="!currentrelyingparty.assertionConsumerServices">
+                                                    <br/>
+                                                     <span style="padding-left:10px;">
+                                                         No assertion consumer services specified
+                                                     </span>
+                                                    <br/>
+                                                </div>
+                                                <div ng-repeat="assert in currentrelyingparty.assertionConsumerServices"
+                                                     ng-show="currentrelyingparty.assertionConsumerServices"
+                                                     ng-class-odd="'small-grid-row-odd'">
+                                                    <div class="col-xs-2"
+                                                         uib-tooltip="{{assert.name}}">
+                                                        {{
+                                                        assert.name.length > 10
+                                                        ? assert.name.substr(0,10) + '...'
+                                                        : assert.name
+                                                        }}
+                                                    </div>
+                                                    <div class="col-xs-4"
+                                                         uib-tooltip="{{assert.endpoint}}">
+                                                        {{
+                                                        assert.endpoint.length > 20
+                                                        ? assert.endpoint.substr(0,20) + '...'
+                                                        : assert.endpoint
+                                                        }}
+                                                    </div>
+                                                    <div class="col-xs-3"
+                                                         uib-tooltip="{{assert.binding}}">
+                                                        {{
+                                                        assert.binding.length > 20
+                                                        ? assert.binding.substr(0,20) + '...'
+                                                        : assert.binding
+                                                        }}
+                                                    </div>
+                                                    <div class="col-xs-1">{{ assert.index }}</div>
+                                                    <div class="col-xs-1">
+                                                        <span ng-show="currentrelyingparty.defaultAssertionConsumerService == assert.name">
+                                                             <img src="../app/assets/enabled.png"
+                                                                  width="16px"
+                                                                  height="16px"/>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-xs-1">
+                                                <label class="control-label pull-right">
+                                                    Attribute Consumer Services
+                                                </label>
+                                            </div>
+                                        <div class="col-xs-5">
+                                                <div class="small small-grid">
+                                                    <div class="small-grid-header">
+                                                        <div class="col-xs-8">
+                                                            <strong>
+                                                                Name
+                                                            </strong>
+                                                        </div>
+                                                        <div class="col-xs-1">
+                                                            <strong>
+                                                                Index
+                                                            </strong>
+                                                        </div>
+                                                        <div class="col-xs-1">
+                                                            <strong>
+                                                                Default
+                                                            </strong>
+                                                        </div>
+                                                    </div>
+                                                    <div ng-show="!currentrelyingparty.attributeConsumerServices">
+                                                        <br/>
+                                                        <span style="padding-left:10px;">
+                                                            No attribute consumer services specified
+                                                        </span>
+                                                        <br/>
+                                                    </div>
+                                                    <div ng-repeat="attribute in currentrelyingparty.attributeConsumerServices"
+                                                         ng-show="currentrelyingparty.attributeConsumerServices"
+                                                         ng-class-odd="'small-grid-row-odd'">
+                                                        <div class="col-xs-8"
+                                                             uib-tooltip="{{attribute.name}}">
+                                                            {{
+                                                            attribute.name.length > 10
+                                                            ? attribute.name.substr(0,10) + '...'
+                                                            : attribute.name
+                                                            }}
+                                                        </div>
+                                                        <div class="col-xs-1">{{ attribute.index }}</div>
+                                                        <div class="col-xs-1">
+                                                        <span ng-show="currentrelyingparty.defaultAttributeConsumerService == attribute.name">
+                                                            <img src="../app/assets/enabled.png"
+                                                                 width="16px"
+                                                                 height="16px"/>
+                                                        </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                            </form>
+                            <br/><br/><br/><br/>
+                            &lt;!&ndash;<div class="form-group col-xs-12">
+                                <div class="col-xs-2">
+                                    <label class="control-label pull-left"
+                                           for="currentrelyingpartyform.filepath"
+                                           style="margin-right:10px;">Metadata File (xml)</label>
+                                </div>
+                                <div class="col-xs-3">
+                                    <input type="file"
+                                           on-read-file="vm.previewxml(vm.currentrelyingparty, contents)"
+                                           id="currentrelyingpartyform.filepath"
+                                           name="rpxmlfilepath"
+                                           ng-model="vm.currentrelyingparty.filepath"/>
+                                </div>
+                                <div class="col-xs-1">
+                                    <label class="control-label pull-right" for="currentrelyingpartyform.xml">Preview</label>
+                                </div>
+                                <div class="col-xs-6">
+                                    <textarea ng-model="vm.currentrelyingparty.xml"
+                                              id="currentrelyingpartyform.xml"
+                                              name="rpxml"
+                                              class="form-control input-xs pull-left text-area"
+                                              rows="10"
+                                              readonly="readonly">
+                                    </textarea>
+                                </div>
+                            </div>&ndash;&gt;
+                            &lt;!&ndash;<div class="form-group col-xs-12">
+                                <div class="col-xs-3 col-xs-offset-4">
+                                    <form name="currentrelyingpartyform"
+                                          ng-submit="vm.savecurrentrelyingparty(vm.currentrelyingparty)"
+                                          role="currentrelyingpartyform"
+                                          class="text-left">
+                                        <button class="btn btn-xs btn-primary"
+                                                type="submit"
+                                                uib-tooltip="Save Relying Party"
+                                                style="float:left;margin-right:10px;">
+                                            Save
+                                        </button>
+                                    </form>
+                                    <form name="deletecurrentrelyingpartyform"
+                                          ng-submit="vm.deletecurrentrelyingparty(vm.currentrelyingparty.name)"
+                                          role="deletecurrentrelyingpartyform"
+                                          class="text-left">
+                                        <button class="btn btn-xs btn-danger"
+                                                type="submit"
+                                                uib-tooltip="Delete Relying Party"
+                                                style="float:left;margin-right:10px;">
+                                            Delete
+                                        </button>
+                                    </form>
+                                    <form name="viewcurrentrelyingpartyform"
+                                          ng-submit="viewcurrentrelyingpartycertificate(currentrelyingparty)"
+                                          role="viewcurrentrelyingpartyform"
+                                          class="text-left">
+                                        <button class="btn btn-xs btn-success"
+                                                type="submit"
+                                                ng-show="currentrelyingparty.certificate && currentrelyingparty.certificate.encoded"
+                                                uib-tooltip="View Certificate"
+                                                style="float:left;margin-right:10px;">
+                                            View Certificate
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>&ndash;&gt;
+                        </uib-accordion-group>
+                        <div ng-if="!vm.rpdataLoading && (!vm.relyingparties || vm.relyingparties.length == 0)" style="padding:60px;" class="row">
+                            No relying parties found.
+                        </div>
+                    </uib-accordion>
+                </div>-->
+                <div class="tab-container">
+
+                    <div style="margin-bottom:5px;">
+                        <form name="form"
+                              ng-submit="vm.getallrelyingparty(vm.searchrelyingparty)"
+                              role="form"
+                              style="float:right;">
+                            <input type="text"
+                                   name="searchrelyingparty"
+                                   id="searchrelyingparty"
+                                   ng-model="vm.searchrelyingparty"
+                                   class="search-box"
+                                   placeholder="search by relying party name"/>
+                            <button type="submit"
+                                    class="btn btn-primary btn-sm">
+                                Search
+                            </button>
+                        </form>
+                    </div>
+
+                    <br/><br/>
+                    <div class="large-grid">
+                        <div class="large-grid-header">
+                            <div class="large-grid-header-cell col-xs-4">
+                                Name
+                            </div>
+                            <div class="large-grid-header-cell col-xs-8">
+                                URL
+                            </div>
+                        </div>
+                        <div class="large-grid-content">
+                            <img ng-if="vm.rpdataLoading"
+                                 src="../app/assets/progress.gif"
+                                 style="padding:20px;"/>
+                            <div ng-if="!vm.rpdataLoading && (!vm.relyingparties || vm.relyingparties.length == 0)"
+                                 style="padding:60px;"
+                                 class="row">
+                                No relying party  found.
+                            </div>
+                            <div ng-repeat="currentrelyingparty in vm.relyingparties"
+                                     ng-if="vm.relyingparties"
+                                     tabindex="1"
+                                     class="large-grid-content-row"
+                                     ng-click="vm.selectedRelyingParty = currentrelyingparty;">
+                                    <div class="col-xs-4"
+                                         uib-tooltip="{{currentrelyingparty.name}}">
+                                        <img src="../app/assets/serviceprovider.png"
+                                             width="16px"
+                                             height="16px"/>
+                                        <button type="button"
+                                                class="btn btn-link"
+                                                ng-click="vm.viewrelyingparty()"
+                                                style="margin-top:-10px;">
+                                            {{
+                                                currentrelyingparty.name.length > 30 ?
+                                                currentrelyingparty.name.substring(0,30) + '...' :
+                                                currentrelyingparty.name;
+                                            }}
+                                        </button>
+                                    </div>
+                                    <div class="col-xs-8"
+                                         uib-tooltip="{{currentrelyingparty.url}}">
+                                        {{
+                                            currentrelyingparty.url.length > 50 ?
+                                            currentrelyingparty.url.substring(0,50) + '...' :
+                                            currentrelyingparty.url;
+                                        }}
+                                    </div>
+                            </div>
+                        </div>
+                        <div class="large-grid-footer">
+                        </div>
+                    </div>
+                </div>
+            </uib-tab>
+ 
+            <!-- Identity Provider tab -->
+            <uib-tab index="1" select="vm.getallidentityprovider(vm.searchidentityprovider)" heading="Identity Provider">
+
+                <!-- Identity Provider tab: Content -->
+                <!--<div class="tab-container">
+
+                    &lt;!&ndash; Search box to search all the identity Providers &ndash;&gt;
+                    <form name="form"
+                          ng-submit="getidentityproviders(vm.searchidentityprovider)"
+                          role="form"
+                          class="text-center">
+                        <input type="text" name="searchidentityprovider"
+                               id="searchidentityprovider"
+                               ng-model="vm.searchidentityprovider"
+                               class="search-box-in-tab"
+                               placeholder="search by identity Provider name"/>
+                        <button type="submit"
+                                class="btn btn-primary btn-xs">
+                            Search
+                        </button>
+                       &lt;!&ndash; <button type="button"
+                                class="btn btn-default btn-xs item-menu-button"
+                                ng-click="vm.addidentityprovider = false">
+                            Add New Identity Provider
+                        </button>&ndash;&gt;
+                    </form>
+
+                    &lt;!&ndash; Add a new identity Provider &ndash;&gt;
+                    &lt;!&ndash;<div uib-collapse="vm.addidentityprovider"
+                         class="box row">
+                        <div class="box-header">
+                            Add New Identity Provider
+                        </div>
+                        <div class="box-content">
+                            <form name="addnewidentityproviderform"
+                                  role="addnewidentityproviderform"
+                                  ng-submit="savenewidentityprovider(vm.newidentityprovider)">
+                                <div class="section-help">
+                                    Upload metadata xml file and click Save to add a new External Identity Provider<br/>
+                                </div>
+                                <div class="form-group col-xs-12">
+                                    <div class="col-xs-2">
+                                        <label class="control-label pull-left"
+                                               for="addnewidentityproviderform.filepath"
+                                               style="margin-right:10px;">Metadata File (xml)</label>
+                                    </div>
+                                    <div class="col-xs-3">
+                                        <input type="file"
+                                               on-read-file="vm.previewxml(vm.newidentityprovider, contents)"
+                                               id="addnewidentityproviderform.filepath"
+                                               name="idpxmlfilepath"
+                                               ng-model="vm.newrelyingparty.filepath"/>
+                                    </div>
+                                    <div class="col-xs-1">
+                                        <label class="control-label pull-right" for="addnewidentityproviderform.xml">Preview</label>
+                                    </div>
+                                    <div class="col-xs-6">
+                                            <textarea ng-model="vm.newidentityprovider.xml"
+                                                      id="addnewidentityproviderform.xml"
+                                                      name="idpxml"
+                                                      class="form-control input-xs pull-left text-area"
+                                                      rows="10"
+                                                      readonly="readonly">
+                                            </textarea>
+                                    </div>
+                                </div>
+                                <div class="form-group col-xs-12">
+                                    <div class="col-xs-3 col-xs-offset-3">
+                                        <button type="submit" class="btn btn-primary btn-xs"
+                                                ng-disabled="addnewidentityproviderform.$invalid">Save</button>
+                                        <button type="button" class="btn btn-default btn-xs"
+                                                ng-click="vm.newidentityprovider = {};vm.addidentityprovider = true;">Cancel</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>&ndash;&gt;
+
+                    &lt;!&ndash; Total identity Providers header &ndash;&gt;
+                    <div style="bottom:0px; height:20px;">
+                        <div ng-if="vm.identityproviders"
+                             class="text-right total-members">
+                            Total Identity Providers: {{vm.identityproviders.length}}
+                        </div>
+                    </div>
+                    <img ng-if="vm.idpdataLoading"
+                         src="../app/assets/progress.gif"
+                         style="padding:20px;"/>
+
+                    &lt;!&ndash; List all the identity Providers &ndash;&gt;
+                    <uib-accordion close-others="true">
+                        <uib-accordion-group ng-repeat="currentidentityprovider in vm.identityproviders" ng-if="vm.identityproviders">
+                            <uib-accordion-heading>
+                                <div>
+                                    <img src="../app/assets/serviceprovider.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-click="getidentityprovider(currentidentityprovider)"/>
+                                    <small>
+                                        <strong ng-click="getidentityprovider(currentidentityprovider)">
+                                            {{currentidentityprovider.name}}
+                                        </strong>
+                                    </small>
+                                </div>
+                            </uib-accordion-heading>
+                            <br/><br/>
+                            <form name="currentidentityproviderform">
+                                <div ng-if="currentidentityprovider">
+                                    <div class="form-group col-xs-12 pull-left">
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right"
+                                                   for="currentidentityprovider.entityid">
+                                                ID
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <input type="text"
+                                                   id="currentidentityprovider.entityid"
+                                                   name="name"
+                                                   ng-model="currentidentityprovider.entityid"
+                                                   class="form-control input-xs pull-left"
+                                                   style="width:300px;"
+                                                   readonly="readonly"/>
+                                        </div>
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right"
+                                                   for="currentidentityprovider.alias">
+                                                Alias
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5"
+                                             ng-class="{
+                                             'has-error': currentidentityproviderform.alias.$dirty
+                                             && currentidentityproviderform.alias.$error.required }">
+                                            <input type="text"
+                                                   id="currentidentityprovider.alias"
+                                                   name="alias"
+                                                   ng-model="currentidentityprovider.alias"
+                                                   class="form-control input-xs pull-left"
+                                                   placeholder="Constoso"
+                                                   style="width:300px;"
+                                                   required/>
+                                        </div>
+                                    </div>
+                                    <div class="form-group col-xs-12 pull-left">
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right"
+                                                   for="currentidentityprovider.jitEnabled">
+                                                JIT Enabled?
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <input type="checkbox"
+                                                   id="currentidentityprovider.jitEnabled"
+                                                   name="name"
+                                                   ng-model="currentidentityprovider.jitEnabled"
+                                                   class="input-md pull-left"/>
+                                        </div>
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right"
+                                                   for="currentidentityprovider.alias">
+                                                Name ID Format
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <div class="small small-grid" style="overflow-x:scroll">
+                                                <div class="small-grid-header">
+                                                    <div class="col-xs-4">
+                                                        <strong>
+                                                            Name ID Format
+                                                        </strong>
+                                                    </div>
+                                                </div>
+                                                <div ng-show="!currentidentityprovider.nameIDFormats">
+                                                    <br/>
+                                                     <span style="padding-left:10px;">
+                                                        No name ID format specified
+                                                     </span>
+                                                    <br/>
+                                                </div>
+                                                <div ng-repeat="nameIDFormat in currentidentityprovider.nameIDFormats"
+                                                     ng-show="currentidentityprovider.nameIDFormats"
+                                                     ng-class-odd="'small-grid-row-odd'">
+                                                    <div class="col-xs-4">
+                                                        {{
+                                                            nameIDFormat.length > 20
+                                                            ? nameIDFormat.substring(0,20) + '...'
+                                                            : nameIDFormat
+                                                        }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group col-xs-12 pull-left">
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right">
+                                                Subject Format
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <div class="small small-grid" style="overflow-x:scroll">
+                                                <div class="small-grid-header">
+                                                    <div class="col-xs-2">
+                                                        <strong>
+                                                            Name
+                                                        </strong>
+                                                    </div>
+                                                    <div class="col-xs-2">
+                                                        <strong>
+                                                            Value
+                                                        </strong>
+                                                    </div>
+                                                </div>
+                                                <div ng-show="!currentidentityprovider.subjectFormats">
+                                                    <br/>
+                                                     <span style="padding-left:10px;">
+                                                        No subject format specified
+                                                     </span>
+                                                    <br/>
+                                                </div>
+                                                <div ng-repeat="subjectFormat in currentidentityprovider.subjectFormats"
+                                                     ng-show="currentidentityprovider.subjectFormats"
+                                                     ng-class-odd="'small-grid-row-odd'">
+                                                    <div class="col-xs-2">
+                                                        {{
+                                                            subjectFormat.name.length > 20
+                                                            ? subjectFormat.name.substring(0,20) + '...'
+                                                            : subjectFormat.name
+                                                        }}
+                                                    </div>
+                                                    <div class="col-xs-2">
+                                                        {{
+                                                        subjectFormat.value.length > 20
+                                                        ? subjectFormat.value.substring(0,20) + '...'
+                                                        : subjectFormat.value
+                                                        }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right">
+                                                Certificates
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <div class="small small-grid" style="overflow-x:scroll">
+                                                <div class="small-grid-header">
+                                                    <div class="col-xs-4">
+                                                        <strong>
+                                                            Subject DN
+                                                        </strong>
+                                                    </div>
+                                                </div>
+                                                <div ng-show="!currentidentityprovider.signingCertificates">
+                                                    <br/>
+                                                     <span style="padding-left:10px;">
+                                                        No certificates specified
+                                                     </span>
+                                                    <br/>
+                                                </div>
+                                                <div ng-repeat="certificate in currentidentityprovider.signingCertificates"
+                                                     ng-show="currentidentityprovider.signingCertificates"
+                                                     ng-class-odd="'small-grid-row-odd'">
+                                                    <div class="col-xs-4">
+                                                        {{
+                                                        certificate.subject.length > 20
+                                                        ? certificate.subject.substring(0,20) + '...'
+                                                        : certificate.subject
+                                                        }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group col-xs-12 pull-left">
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right">
+                                                SSO Services
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <div class="small small-grid" style="overflow-x:scroll">
+                                                <div class="small-grid-header">
+                                                    <div class="col-xs-2">
+                                                        <strong>
+                                                            Name
+                                                        </strong>
+                                                    </div>
+                                                    <div class="col-xs-2">
+                                                        <strong>
+                                                            Endpoint
+                                                        </strong>
+                                                    </div>
+                                                    <div class="col-xs-2">
+                                                        <strong>
+                                                            Binding
+                                                        </strong>
+                                                    </div>
+                                                </div>
+                                                <div ng-show="!currentidentityprovider.ssoServices">
+                                                    <br/>
+                                                     <span style="padding-left:10px;">
+                                                        No SSO Services specified
+                                                     </span>
+                                                    <br/>
+                                                </div>
+                                                <div ng-repeat="sso in currentidentityprovider.ssoServices"
+                                                     ng-show="currentidentityprovider.ssoServices"
+                                                     ng-class-odd="'small-grid-row-odd'">
+                                                    <div class="col-xs-2">
+                                                        {{
+                                                        sso.name.length > 10
+                                                        ? sso.name.substring(0,10) + '...'
+                                                        : sso.name
+                                                        }}
+                                                    </div>
+                                                    <div class="col-xs-2">
+                                                        {{
+                                                        sso.endpoint.length > 20
+                                                        ? sso.endpoint.substring(0,20) + '...'
+                                                        : sso.endpoint
+                                                        }}
+                                                    </div>
+                                                    <div class="col-xs-2">
+                                                        {{
+                                                        sso.binding.length > 20
+                                                        ? sso.binding.substring(0,20) + '...'
+                                                        : sso.binding
+                                                        }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right">
+                                                SLO Services
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <div class="small small-grid" style="overflow-x:scroll">
+                                                <div class="small-grid-header">
+                                                    <div class="col-xs-2">
+                                                        <strong>
+                                                            Name
+                                                        </strong>
+                                                    </div>
+                                                    <div class="col-xs-2">
+                                                        <strong>
+                                                            Endpoint
+                                                        </strong>
+                                                    </div>
+                                                    <div class="col-xs-2">
+                                                        <strong>
+                                                            Binding
+                                                        </strong>
+                                                    </div>
+                                                </div>
+                                                <div ng-show="!currentidentityprovider.sloServices">
+                                                    <br/>
+                                                     <span style="padding-left:10px;">
+                                                        No SLO Services specified
+                                                     </span>
+                                                    <br/>
+                                                </div>
+                                                <div ng-repeat="slo in currentidentityprovider.sloServices"
+                                                     ng-show="currentidentityprovider.sloServices"
+                                                     ng-class-odd="'small-grid-row-odd'">
+                                                    <div class="col-xs-2">
+                                                        {{
+                                                        slo.name.length > 10
+                                                        ? slo.name.substring(0,10) + '...'
+                                                        : slo.name
+                                                        }}
+                                                        {{slo.name}}
+                                                    </div>
+                                                    <div class="col-xs-2">
+                                                        {{
+                                                        slo.endpoint.length > 20
+                                                        ? slo.endpoint.substring(0,20) + '...'
+                                                        : slo.endpoint
+                                                        }}
+                                                    </div>
+                                                    <div class="col-xs-2">
+                                                        {{
+                                                        slo.binding.length > 20
+                                                        ? slo.binding.substring(0,20) + '...'
+                                                        : slo.binding
+                                                        }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    &lt;!&ndash;<div class="form-group col-xs-12">
+                                        <div class="col-xs-2">
+                                            <label class="control-label pull-left"
+                                                   for="currentidentityproviderform.filepath"
+                                                   style="margin-right:10px;">Metadata File (xml)</label>
+                                        </div>
+                                        <div class="col-xs-3">
+                                            <input type="file"
+                                                   on-read-file="vm.previewxml(currentidentityprovider, contents)"
+                                                   id="currentidentityproviderform.filepath"
+                                                   name="idpxmlfilepath"
+                                                   ng-model="currentidentityprovider.filepath"/>
+                                        </div>
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right" for="currentidentityproviderform.xml">Preview</label>
+                                        </div>
+                                        <div class="col-xs-6">
+                                            <textarea ng-model="currentidentityprovider.xml"
+                                                      id="currentidentityproviderform.xml"
+                                                      name="idpxml"
+                                                      class="form-control input-xs pull-left text-area"
+                                                      rows="10"
+                                                      readonly="readonly">
+                                            </textarea>
+                                        </div>
+                                    </div>&ndash;&gt;
+                                </div>
+                            </form>
+                            <br/><br/>
+                            &lt;!&ndash;<div class="form-group col-xs-9">
+                                <div class="col-xs-3 col-xs-offset-6">
+                                    <form name="currentidentityproviderform"
+                                          ng-submit="vm.savecurrentidentityprovider(currentidentityprovider)"
+                                          role="currentidentityproviderform"
+                                          class="text-left">
+                                        <button class="btn btn-xs btn-primary"
+                                                type="submit"
+                                                uib-tooltip="Save Identity Provider"
+                                                style="float:left;margin-right:10px;">
+                                            Save
+                                        </button>
+                                    </form>
+                                    <form name="deletecurrentidentityproviderform"
+                                          ng-submit="vm.deletecurrentidentityprovider(currentidentityprovider)"
+                                          role="deletecurrentidentityproviderform"
+                                          class="text-left">
+                                        <button class="btn btn-xs btn-danger"
+                                                type="submit"
+                                                uib-tooltip="Delete Identity Provider"
+                                                style="float:left;margin-right:10px;">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>&ndash;&gt;
+                        </uib-accordion-group>
+                        <div ng-if="!vm.idpdataLoading && (!vm.identityproviders  || vm.identityproviders.length == 0)" style="padding:60px;" class="row">
+                            No Identity Providers found.
+                        </div>
+                    </uib-accordion>
+                </div>-->
+
+                <div class="tab-container">
+
+                    <div style="margin-bottom:5px;">
+                        <!-- Search box to search all the relying party -->
+                        <form name="form"
+                              ng-submit="vm.getallidentityprovider(vm.searchidentityprovider)"
+                              role="form"
+                              style="float:right;">
+                            <input type="text"
+                                   name="searchidentityprovider"
+                                   id="searchidentityprovider"
+                                   ng-model="vm.searchidentityprovider"
+                                   class="search-box"
+                                   placeholder="search by identity provider ID"/>
+                            <button type="submit"
+                                    class="btn btn-primary btn-sm">
+                                Search
+                            </button>
+                        </form>
+                    </div>
+
+                    <br/><br/>
+                    <div class="large-grid">
+                        <div class="large-grid-header">
+                            <div class="large-grid-header-cell col-xs-6">
+                                ID
+                            </div>
+                            <div class="large-grid-header-cell col-xs-5">
+                                Alias
+                            </div>
+                            <div class="large-grid-header-cell col-xs-1">
+                                JIT
+                            </div>
+                        </div>
+                        <div class="large-grid-content">
+                            <img ng-if="vm.idpdataLoading"
+                                 src="../app/assets/progress.gif"
+                                 style="padding:20px;"/>
+                            <div ng-if="!vm.idpdataLoading && (!vm.identityproviders || vm.identityproviders.length == 0)"
+                                 style="padding:60px;"
+                                 class="row">
+                                No identity providers  found.
+                            </div>
+                            <div ng-repeat="currentidentityprovider in vm.identityproviders"
+                                 ng-if="vm.identityproviders"
+                                 tabindex="1"
+                                 class="large-grid-content-row"
+                                 ng-click="vm.selectedIdentityProvider = currentidentityprovider;">
+                                <div class="col-xs-6"
+                                     uib-tooltip="{{currentidentityprovider.entityID}}">
+                                    <img src="../app/assets/serviceprovider.png"
+                                         width="16px"
+                                         height="16px"/>
+                                    <button type="button"
+                                            class="btn btn-link"
+                                            ng-click="vm.viewidentityprovider()"
+                                            style="margin-top:-10px;">
+                                        {{
+                                        currentidentityprovider.entityID.length > 50 ?
+                                        currentidentityprovider.entityID.substring(0,50) + '...' :
+                                        currentidentityprovider.entityID;
+                                        }}
+                                    </button>
+                                </div>
+                                <div class="col-xs-5"
+                                     uib-tooltip="{{currentrelyingparty.alias}}">
+                                    {{
+                                        currentidentityprovider.alias.length > 30 ?
+                                        currentidentityprovider.alias.substring(0,30) + '...' :
+                                        currentidentityprovider.alias;
+                                    }}
+                                </div>
+                                <div class="col-xs-1">
+                                    <img src="../app/assets/enabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="currentidentityprovider.jitEnabled"
+                                         style="margin-top:-5px;"/>
+                                    <img src="../app/assets/disabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="!currentidentityprovider.jitEnabled"
+                                         style="margin-top:-5px;"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="large-grid-footer">
+                        </div>
+                    </div>
+                </div>
+
+            </uib-tab>
+
+            <!-- Open Id Connect Client tab -->
+            <uib-tab index="2" select="vm.getalloidcclient(vm.searchoidcclient)" heading="Open ID Connect Client">
+                <!-- Open Id Connect Client tab: Content -->
+                <!--<div class="tab-container">
+
+                    &lt;!&ndash; Search box to search all the open Id Connect Clients &ndash;&gt;
+                    <form name="form"
+                          ng-submit="vm.getalloidcclient(vm.searchoidcclient)"
+                          role="form"
+                          class="text-center">
+                        <input type="text" name="searchoidcclient"
+                               id="searchoidcclient"
+                               ng-model="vm.searchoidcclient"
+                               class="search-box-in-tab"
+                               placeholder="Search by Open Id Connect Client Id"/>
+                        <button type="submit"
+                                class="btn btn-primary btn-xs">
+                            Search
+                        </button>
+                       &lt;!&ndash; <button type="button"
+                                class="btn btn-default btn-xs item-menu-button"
+                                ng-click="vm.addoidcclient = false">
+                            Add New Open Id Connect Client
+                        </button>&ndash;&gt;
+                    </form>
+
+                    &lt;!&ndash; Add a new open Id Connect Client &ndash;&gt;
+                   &lt;!&ndash; <div uib-collapse="vm.addoidcclient"
+                         class="box row">
+                        <div class="box-header">
+                            Add New Open Id Connect Client
+                        </div>
+                        <div class="box-content">
+                            <form name="addnewoidcclientform"
+                                  role="addnewoidcclientform"
+                                  ng-submit="savenewoidcclient(newoidcclient)">
+                                <div class="section-help">
+                                    Fill out the form and click Save to add a new Open Id Connect Client<br/>
+                                </div>
+                            </form>
+                        </div>
+                    </div>&ndash;&gt;
+
+                    &lt;!&ndash; Total open Id Connect Clients header &ndash;&gt;
+                    <div style="bottom:0px; height:20px;">
+                        <div ng-if="vm.oidcclients"
+                             class="text-right total-members">
+                            Total Open Id Connect Client: {{vm.oidcclients.length}}
+                        </div>
+                    </div>
+
+                    <img ng-if="vm.oidcdataLoading"
+                         src="../app/assets/progress.gif"
+                         style="padding:20px;"/>
+                    &lt;!&ndash; List all the open Id Connect Clients &ndash;&gt;
+                    <uib-accordion close-others="true">
+                        <uib-accordion-group ng-repeat="currentoidcclient in vm.oidcclients" ng-if="vm.oidcclients">
+                            <uib-accordion-heading>
+                                <div>
+                                    <img src="../app/assets/serviceprovider.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-click="getoidcclient(currentoidcclient.clientId)"/>
+                                    <small>
+                                        <strong ng-click="getoidcclient(currentoidcclient.clientId)">
+                                            {{currentoidcclient.clientId}}
+                                        </strong>
+                                    </small>
+                                </div>
+                            </uib-accordion-heading>
+                            <br/><br/>
+                            <form name="currentoidcclientform">
+                                <div ng-if="currentoidcclient">
+                                    <div class="form-group col-xs-12 pull-left">
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right"
+                                                   for="currentoidcclient.clientId">
+                                                Client ID
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <input type="text"
+                                                   id="currentoidcclient.clientId"
+                                                   name="clientId"
+                                                   ng-model="currentoidcclient.clientId"
+                                                   class="input-md pull-left"
+                                                   style="width:300px;"
+                                                   readonly="readonly"/>
+                                        </div>
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right"
+                                                   for="currentoidcclient.oidcclientMetadataDTO.CertSubjectDN">
+                                                Certificate DN
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <input type="text"
+                                                   id="currentoidcclient.oidcclientMetadataDTO.CertSubjectDN"
+                                                   name="CertSubjectDN"
+                                                   ng-model="currentoidcclient.oidcclientMetadataDTO.CertSubjectDN"
+                                                   class="input-md pull-left" readonly="readonly"
+                                                   style="width:300px;"/>
+
+                                        </div>
+                                    </div>
+                                    <div class="form-group col-xs-12 pull-left">
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right">
+                                                Token Auth Method
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <select ng-model="currentoidcclient.oidcclientMetadataDTO.tokenEndpointAuthMethod"
+                                                    ng-options="t as t.name for t in vm.tokenauthmethods"
+                                                    style="height:48px;width:120px;margin-left:5px;" disabled="disabled">
+                                            </select>
+                                        </div>
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right"
+                                                   for="currentoidcclient.oidcclientMetadataDTO.logoutUri">
+                                                Logout URI
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5 small">
+                                            <input type="text"
+                                                   id="currentoidcclient.oidcclientMetadataDTO.logoutUri"
+                                                   name="logoutUri"
+                                                   ng-model="currentoidcclient.oidcclientMetadataDTO.logoutUri"
+                                                   class="input-md pull-left" readonly="readonly"
+                                                   style="width:300px;"/>
+                                        </div>
+                                    </div>
+                                    <div class="form-group col-xs-12 pull-left">
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right">
+                                                Redirect URI
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <div class="small small-grid" style="overflow-x:scroll">
+                                                <div class="small-grid-header">
+                                                    <div class="col-xs-4">
+                                                        <strong>
+                                                           URI
+                                                        </strong>
+                                                    </div>
+                                                </div>
+                                                <div ng-show="!currentoidcclient.oidcclientMetadataDTO.redirectUris">
+                                                    <br/>
+                                                     <span style="padding-left:10px;">
+                                                        No redirect URI specified
+                                                     </span>
+                                                    <br/>
+                                                </div>
+                                                <div ng-repeat="redirectUri in currentoidcclient.oidcclientMetadataDTO.redirectUris"
+                                                     ng-show="currentoidcclient.oidcclientMetadataDTO.redirectUris"
+                                                     class="col-xs-4"
+                                                     style="width:100%;"
+                                                     ng-if="redirectUri"
+                                                     uib-tooltip="{{redirectUri}}"
+                                                     ng-class-odd="'small-grid-row-odd'">
+                                                        {{
+                                                            redirectUri.length > 50
+                                                                ? redirectUri.substring(0,50) + '...'
+                                                                : redirectUri
+                                                        }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-xs-1">
+                                            <label class="control-label pull-right">
+                                                Post Logout Redirect URI
+                                            </label>
+                                        </div>
+                                        <div class="col-xs-5">
+                                            <div class="small small-grid" style="overflow-x:scroll">
+                                                <div class="small-grid-header">
+                                                    <div class="col-xs-4">
+                                                        <strong>
+                                                            URI
+                                                        </strong>
+                                                    </div>
+                                                </div>
+                                                <div ng-show="!currentoidcclient.oidcclientMetadataDTO.postLogoutRedirectUris">
+                                                    <br/>
+                                                     <span style="padding-left:10px;">
+                                                        No post logout redirect URI specified
+                                                     </span>
+                                                    <br/>
+                                                </div>
+                                                <div ng-repeat="postlogoutRedirectUri in currentoidcclient.oidcclientMetadataDTO.postLogoutRedirectUris"
+                                                     ng-show="currentoidcclient.oidcclientMetadataDTO.postLogoutRedirectUris"
+                                                     ng-class-odd="'small-grid-row-odd'"
+                                                     class="col-xs-4"
+                                                     style="width:100%;"
+                                                     ng-if="postlogoutRedirectUri"
+                                                     uib-tooltip="{{postlogoutRedirectUri}}">
+                                                        {{
+                                                            postlogoutRedirectUri.length > 50
+                                                            ? postlogoutRedirectUri.substring(0,50) + '...'
+                                                            : postlogoutRedirectUri
+                                                        }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                            <br/><br/>
+                            &lt;!&ndash;<div class="form-group col-xs-9">
+                                <div class="col-xs-3 col-xs-offset-6">
+                                    <form name="currentoidcclientform"
+                                          ng-submit="vm.savecurrentoidcclient(currentoidcclient)"
+                                          role="currentoidcclientform"
+                                          class="text-left">
+                                        <button class="btn btn-xs btn-primary"
+                                                type="submit"
+                                                uib-tooltip="Save Open Id Connect Client"
+                                                style="float:left;margin-right:10px;">
+                                            Save
+                                        </button>
+                                    </form>
+                                    <form name="deletecurrentoidcclientform"
+                                          ng-submit="vm.deletecurrentoidcclient(currentoidcclient.clientId)"
+                                          role="deletecurrentoidcclientform"
+                                          class="text-left">
+                                        <button class="btn btn-xs btn-danger"
+                                                type="submit"
+                                                uib-tooltip="Delete Open Id Connect Client"
+                                                style="float:left;margin-right:10px;">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>&ndash;&gt;
+                        </uib-accordion-group>
+                        <div ng-if="!vm.oidcdataLoading && (!vm.oidcclients || vm.oidcclients.length == 0)" style="padding:60px;" class="row">
+                            No Open Id Connect Clients found.
+                        </div>
+                    </uib-accordion>
+                </div>-->
+
+                <div class="tab-container">
+
+                    <div style="margin-bottom:5px;">
+                        <!-- Search box to search all the relying party -->
+                        <form name="form"
+                              ng-submit="vm.getalloidcclient(vm.searchoidcclient)"
+                              role="form"
+                              style="float:right;">
+                            <input type="text"
+                                   name="searchoidcclient"
+                                   id="searchoidcclient"
+                                   ng-model="vm.searchoidcclient"
+                                   class="search-box"
+                                   placeholder="search by OIDC Client name"/>
+                            <button type="submit"
+                                    class="btn btn-primary btn-sm">
+                                Search
+                            </button>
+                        </form>
+                    </div>
+
+                    <br/><br/>
+                    <div class="large-grid">
+                        <div class="large-grid-header">
+                            <div class="large-grid-header-cell col-xs-5">
+                                Client ID
+                            </div>
+                            <div class="large-grid-header-cell col-xs-2">
+                                Token Auth Method
+                            </div>
+                            <div class="large-grid-header-cell col-xs-1">
+                                Certificate
+                            </div>
+                            <div class="large-grid-header-cell col-xs-4">
+                                Logout URI
+                            </div>
+                        </div>
+                        <div class="large-grid-content">
+                            <img ng-if="vm.oidcdataLoading"
+                                 src="../app/assets/progress.gif"
+                                 style="padding:20px;"/>
+                            <div ng-if="!vm.oidcdataLoading && (!vm.oidcclients || vm.oidcclients.length == 0)"
+                                 style="padding:60px;"
+                                 class="row">
+                                No OIDC Clients  found.
+                            </div>
+                            <div ng-repeat="currentoidcclient in vm.oidcclients"
+                                 ng-if="vm.oidcclients"
+                                 tabindex="1"
+                                 class="large-grid-content-row"
+                                 ng-click="vm.selectedOIDCClient = currentoidcclient;">
+                                <div class="col-xs-5"
+                                     uib-tooltip="{{currentoidcclient.clientId}}">
+                                    <img src="../app/assets/serviceprovider.png"
+                                         width="16px"
+                                         height="16px" style="margin-top:-5px;"/>
+                                    <button type="button"
+                                            class="btn btn-link"
+                                            ng-click="vm.selectedOIDCClient = currentoidcclient; vm.viewoidcclient()"
+                                            style="margin-top:-10px;">
+                                        {{
+                                            currentoidcclient.clientId.length > 50 ?
+                                            currentoidcclient.clientId.substring(0,50) + '...' :
+                                            currentoidcclient.clientId;
+                                        }}
+                                    </button>
+                                </div>
+                                <div class="col-xs-2"
+                                     uib-tooltip="{{currentoidcclient.oidcclientMetadataDTO.tokenEndpointAuthMethod}}">
+                                    {{currentoidcclient.oidcclientMetadataDTO.tokenEndpointAuthMethod}}
+                                </div>
+                                <div class="col-xs-1"
+                                uib-tooltip="{{currentoidcclient.oidcclientMetadataDTO.CertSubjectDN}}">
+                                    <img src="../app/assets/enabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="currentoidcclient.oidcclientMetadataDTO.CertSubjectDN"/>
+                                    <img src="../app/assets/disabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="!currentoidcclient.oidcclientMetadataDTO.CertSubjectDN"/>
+                                </div>
+                                <div class="col-xs-4"
+                                     uib-tooltip="{{currentrelyingparty.oidcclientMetadataDTO.logoutUri}}">
+                                    {{
+                                    currentoidcclient.oidcclientMetadataDTO.logoutUri.length > 30 ?
+                                    currentoidcclient.oidcclientMetadataDTO.logoutUri.substring(0,30) + '...' :
+                                    currentoidcclient.oidcclientMetadataDTO.logoutUri;
+                                    }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="large-grid-footer">
+                        </div>
+                    </div>
+                </div>
+
+            </uib-tab>
+            
+        </uib-tabset>
+    </div>
+</div>

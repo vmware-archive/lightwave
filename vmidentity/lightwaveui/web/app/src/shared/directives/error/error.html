@@ -1,0 +1,8 @@
+<div class='error' ng-show="globals.errors">
+    <img src="../app/assets/error.png" width="16px" height="16px"/>
+    <button type="button"
+            class="btn btn-xs btn-link pull-right"
+            ng-click="globals.errors = null;">X
+    </button>
+    {{globals.errors.details}} {{globals.errors.cause}}
+</div>
