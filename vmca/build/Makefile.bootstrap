@@ -81,6 +81,8 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_vmafd_prefix /opt/vmware" \
               --define "_javahome $(JAVA_HOME)" \
               --define "_anthome $(ANT_HOME)" \
+              --define "_version $(VMCA_MAJOR_VER).$(VMCA_MINOR_VER).$(VMCA_RELEASE_VER)" \
+              --define "_patch $(VMCA_PATCH_VER)" \
               --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
               SPECS/$(PKG_SPEC)
 

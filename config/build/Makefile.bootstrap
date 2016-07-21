@@ -73,6 +73,8 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_vmsts_prefix /opt/vmware" \
               --define "_javahome $(JAVA_HOME)" \
               --define "_anthome $(ANT_HOME)" \
+              --define "_version $(CFG_MAJOR_VER).$(CFG_MINOR_VER).$(CFG_RELEASE_VER)" \
+              --define "_patch $(CFG_PATCH_VER)" \
               --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
               SPECS/$(PKG_SPEC)
 
