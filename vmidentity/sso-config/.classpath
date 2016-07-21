@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/main/java"/>
+	<classpathentry kind="src" path="src/test/java"/>
+	<classpathentry kind="src" path="src/test/resources"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="var" path="TCROOT/noarch/junit-4.4/junit-4.4.jar"/>
+	<classpathentry kind="var" path="GOBUILD_VLSI_ROOT/vlsi-client.jar" sourcepath="/GOBUILD_VLSI_ROOT/vlsi-client-src.jar"/>
+	<classpathentry kind="var" path="GOBUILD_VLSI_ROOT/vlsi-core.jar" sourcepath="/GOBUILD_VLSI_ROOT/vlsi-core-src.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/apache-httpcomponents-client-4.0.1/lib/httpclient-4.0.1.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/apache-httpcomponents-client-4.0.1/lib/httpcore-4.0.1.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/apache-commons-lang-2.5/commons-lang-2.5.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/apache-commons-cli-1.2/commons-cli-1.2.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/spring-integration-1.0.3/lib/org.springframework.beans-2.5.6.A.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/spring-integration-1.0.3/lib/org.springframework.context-2.5.6.A.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/spring-integration-1.0.3/lib/org.springframework.core-2.5.6.A.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/spring-integration-1.0.3/lib/org.springframework.jms-2.5.6.A.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/spring-integration-1.0.3/lib/org.springframework.transaction-2.5.6.A.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/spring-integration-1.0.3/lib/org.springframework.web-2.5.6.A.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/woodstox-4.0.5/stax2-api-3.0.1.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/woodstox-4.0.5/woodstox-core-asl-4.0.5.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/apache-commons-logging-1.1.1/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="var" path="IDENTITY_SERVER_BUILD/packages/sso-adminserver-client-bindings.jar"/>
+	<classpathentry kind="var" path="IDENTITY_SERVER_BUILD/packages/idp-provisioning-client-bindings.jar"/>
+	<classpathentry kind="var" path="IDENTITY_SERVER_BUILD/packages/samltoken.jar"/>
+	<classpathentry kind="var" path="IDENTITY_SERVER_BUILD/packages/wstClient.jar"/>
+	<classpathentry kind="var" path="IDENTITY_SERVER_BUILD/packages/vmware-identity-idm-client.jar"/>
+	<classpathentry kind="var" path="IDENTITY_SERVER_BUILD/packages/vmware-identity-idm-interface.jar"/>
+	<classpathentry kind="output" path="target/classes"/>
+</classpath>
