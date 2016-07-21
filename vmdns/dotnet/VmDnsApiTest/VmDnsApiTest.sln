@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VmDnsApiTest", "VmDnsApiTest.csproj", "{FAF79023-687D-4A31-BD09-313E33B967F0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMDNS.Client", "..\VMDNS.Client\VMDNS.Client.csproj", "{D3148DC3-142E-4BBE-A45C-569BF360C2AE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FAF79023-687D-4A31-BD09-313E33B967F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FAF79023-687D-4A31-BD09-313E33B967F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FAF79023-687D-4A31-BD09-313E33B967F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FAF79023-687D-4A31-BD09-313E33B967F0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3148DC3-142E-4BBE-A45C-569BF360C2AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3148DC3-142E-4BBE-A45C-569BF360C2AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3148DC3-142E-4BBE-A45C-569BF360C2AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3148DC3-142E-4BBE-A45C-569BF360C2AE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
