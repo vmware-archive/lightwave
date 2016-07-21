@@ -1340,6 +1340,12 @@ InitializeGlobalVars(
     dwError = VmDirAllocateCondition(&gVmdirUrgentRepl.pUrgentReplDoneCondition);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirAllocateMutex(&gVmdirUrgentRepl.pUrgentReplStartMutex);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateCondition(&gVmdirUrgentRepl.pUrgentReplStartCondition);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     // LDAP operation threads shutdown synchronization, shutdown continue
     // when count == 0 (i.e. all op thrs are done)
     dwError = VmDirAllocateSyncCounter( &gVmdirGlobals.pOperationThrSyncCounter,

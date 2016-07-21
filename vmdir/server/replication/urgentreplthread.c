@@ -445,3 +445,82 @@ error:
       " VmDirReplBroadcastUrgentReplDone: failed with error: %d", dwError);
     goto cleanup;
 }
+
+BOOLEAN
+VmDirUrgentReplCondTimedWait(
+    VOID
+    )
+{
+    BOOLEAN  bInUrgentReplStartLock = FALSE;
+    DWORD    dwError = 0;
+    DWORD    dwNewTimeout = 0;
+    DWORD    dwTimeout = 0;
+    UINT64   startTime = 0;
+    UINT64   endTime = 0;
+    BOOLEAN  btimeout = FALSE;
+
+    dwNewTimeout = dwTimeout = MSECS_IN_SECOND;
+
+    startTime = VmDirGetTimeInMilliSec();
+
+    VMDIR_LOCK_MUTEX(bInUrgentReplStartLock, gVmdirUrgentRepl.pUrgentReplStartMutex);
+
+    while (VmDirdGetReplNow() == FALSE)
+    {
+        dwError = VmDirConditionTimedWait(gVmdirUrgentRepl.pUrgentReplStartCondition,
+                                          gVmdirUrgentRepl.pUrgentReplStartMutex,
+                                          dwNewTimeout
+                                          );
+        // BAIL In the case of error
+        if (dwError != 0 && dwError != ETIMEDOUT)
+        {
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        // calculate the new time out - for spurious wakeup
+        endTime = VmDirGetTimeInMilliSec();
+        if ((startTime + dwTimeout) > endTime)
+        {
+            dwNewTimeout = (DWORD)((startTime + dwTimeout) - endTime);
+        }
+
+        // Break only after 1000 milliseconds
+        if ((endTime > startTime) && (endTime - startTime) >= MSECS_IN_SECOND)
+        {
+            btimeout = TRUE;
+            break;
+        }
+    }
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInUrgentReplStartLock, gVmdirUrgentRepl.pUrgentReplStartMutex);
+    return btimeout;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+        " VmDirUrgentReplTimedWaitUrgentReplStart: failed error: %d", dwError);
+    goto cleanup;
+}
+
+VOID
+VmDirUrgentReplSignal(
+    VOID
+    )
+{
+    DWORD      dwError = 0;
+    BOOLEAN    bUrgentReplStartLock = FALSE;
+
+    VMDIR_LOCK_MUTEX(bUrgentReplStartLock, gVmdirUrgentRepl.pUrgentReplStartMutex);
+
+    dwError = VmDirConditionSignal(gVmdirUrgentRepl.pUrgentReplStartCondition);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bUrgentReplStartLock, gVmdirUrgentRepl.pUrgentReplStartMutex);
+    return;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+      "VmDirUrgentReplSignalUrgentReplStart: error: %d", dwError);
+    goto cleanup;
+}

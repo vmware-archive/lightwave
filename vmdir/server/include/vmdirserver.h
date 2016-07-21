@@ -225,7 +225,6 @@ typedef struct _VMDIR_URGENT_REPL
 {
     // To Synchronize Urgent Replication Request
     PVMDIR_MUTEX                         pUrgentReplMutex;
-    BOOLEAN                              bUrgentReplicationRequest;
     BOOLEAN                              bUrgentReplicationPending;
     DWORD                                dwUrgentReplResponseCount;
     DWORD                                dwUrgentReplTimeout;
@@ -237,21 +236,28 @@ typedef struct _VMDIR_URGENT_REPL
      */
     PVMDIR_MUTEX                         pUrgentReplResponseRecvMutex;
     PVMDIR_COND                          pUrgentReplResponseRecvCondition;
-    BOOLEAN                              bUrgentReplResponseRecvCondition;
+    BOOLEAN                              bUrgentReplResponseRecv;
     /*
      * Used by writer thread to notify urgentReplicationCoordinator thread
      * to start urgent replication cycle immediately.
      */
     PVMDIR_MUTEX                         pUrgentReplThreadMutex;
     PVMDIR_COND                          pUrgentReplThreadCondition;
-    BOOLEAN                              bUrgentReplThreadCondition;
+    BOOLEAN                              bUrgentReplThreadPredicate;
     /*
      * Used by urgentReplicationCoordinator thread to notify writer threads
      * that urgent replication cycle is completed. It is a broadcast.
      */
     PVMDIR_MUTEX                         pUrgentReplDoneMutex;
     PVMDIR_COND                          pUrgentReplDoneCondition;
-    BOOLEAN                              bUrgentReplDoneCondition;
+    BOOLEAN                              bUrgentReplDone;
+    /*
+     * Used by RPC thread to notify Replicaton thread to start urgent repl
+     * uses bReplNow predicate for proper synchronization.
+     */
+    PVMDIR_MUTEX                         pUrgentReplStartMutex;
+    PVMDIR_COND                          pUrgentReplStartCondition;
+
     PVMDIR_STRONG_WRITE_PARTNER_CONTENT  pUrgentReplPartnerTable;
     PVMDIR_URGENT_REPL_SERVER_LIST       pUrgentReplServerList;
 } VMDIR_URGENT_REPL, *PVMDIR_URGENT_REPL;
@@ -389,6 +395,16 @@ DWORD
 VmDirTimedWaitForUrgentReplDone(
     UINT64 timeout,
     UINT64 startTime
+    );
+
+BOOLEAN
+VmDirUrgentReplCondTimedWait(
+    VOID
+    );
+
+VOID
+VmDirUrgentReplSignal(
+    VOID
     );
 
 //urgentrepl.c
@@ -530,7 +546,7 @@ VmDirReplResetUrgentReplResponseCount_InLock(
 
 VOID
 VmDirReplSetUrgentReplResponseRecvCondition(
-    BOOLEAN bUrgentReplResponseRecvCondition
+    BOOLEAN bUrgentReplResponseRecv
     );
 
 BOOLEAN
@@ -540,7 +556,7 @@ VmDirReplGetUrgentReplResponseRecvCondition(
 
 VOID
 VmDirReplSetUrgentReplThreadCondition(
-    BOOLEAN bUrgentReplThreadCondition
+    BOOLEAN bUrgentReplThreadPredicate
     );
 
 BOOLEAN
@@ -560,12 +576,12 @@ VmDirReplGetUrgentReplCoordinatorTable_InLock(
 
 VOID
 VmDirReplSetUrgentReplDoneCondition(
-    BOOLEAN bUrgentReplDoneCondition
+    BOOLEAN bUrgentReplDone
     );
 
 VOID
 VmDirReplSetUrgentReplDoneCondition_InLock(
-    BOOLEAN bUrgentReplDoneCondition
+    BOOLEAN bUrgentReplDone
     );
 
 BOOLEAN

@@ -204,12 +204,14 @@ VmDirCleanupGlobals(
     VMDIR_SAFE_FREE_MUTEX( gVmdirUrgentRepl.pUrgentReplResponseRecvMutex );
     VMDIR_SAFE_FREE_MUTEX( gVmdirUrgentRepl.pUrgentReplThreadMutex );
     VMDIR_SAFE_FREE_MUTEX( gVmdirUrgentRepl.pUrgentReplDoneMutex );
+    VMDIR_SAFE_FREE_MUTEX( gVmdirUrgentRepl.pUrgentReplStartMutex );
 
     VMDIR_SAFE_FREE_CONDITION(gVmdirGlobals.replCycleDoneCondition);
     VMDIR_SAFE_FREE_CONDITION(gVmdirGlobals.replAgrsCondition);
     VMDIR_SAFE_FREE_CONDITION(gVmdirUrgentRepl.pUrgentReplResponseRecvCondition);
     VMDIR_SAFE_FREE_CONDITION(gVmdirUrgentRepl.pUrgentReplThreadCondition);
     VMDIR_SAFE_FREE_CONDITION(gVmdirUrgentRepl.pUrgentReplDoneCondition);
+    VMDIR_SAFE_FREE_CONDITION(gVmdirUrgentRepl.pUrgentReplStartCondition);
 
     VMDIR_SAFE_FREE_SYNCCOUNTER(gVmdirGlobals.pOperationThrSyncCounter);
 

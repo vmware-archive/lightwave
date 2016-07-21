@@ -853,6 +853,7 @@ Srv_RpcVmDirReplNow(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VmDirdSetReplNow(TRUE);
+    VmDirUrgentReplSignal();
 
 cleanup:
     if (pAccessToken)

@@ -16,51 +16,6 @@
 
 #include "includes.h"
 
-VOID
-VmDirdSetUrgentReplicationRequest(
-    BOOLEAN bUrgentReplicationRequest
-    )
-{
-    BOOLEAN bInLock = FALSE;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
-    VmDirdSetUrgentReplicationRequest_InLock(bUrgentReplicationRequest);
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
-
-    return;
-}
-
-VOID
-VmDirdSetUrgentReplicationRequest_InLock(
-    BOOLEAN bUrgentReplicationRequest
-    )
-{
-    gVmdirUrgentRepl.bUrgentReplicationRequest = bUrgentReplicationRequest;
-}
-
-BOOLEAN
-VmDirdGetUrgentReplicationRequest(
-    VOID
-    )
-{
-    BOOLEAN     bUrgentReplicationRequest = FALSE;
-    BOOLEAN     bInLock = FALSE;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
-    bUrgentReplicationRequest = VmDirdGetUrgentReplicationRequest_InLock();
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
-
-    return bUrgentReplicationRequest;
-}
-
-BOOLEAN
-VmDirdGetUrgentReplicationRequest_InLock(
-    VOID
-    )
-{
-    return gVmdirUrgentRepl.bUrgentReplicationRequest;
-}
-
 DWORD
 VmDirdAddToUrgentReplicationServerList(
     PSTR    pszUrgentReplicationServer
@@ -204,9 +159,11 @@ VmDirdInitiateUrgentRepl(
 
     VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
-    VmDirdSetUrgentReplicationRequest_InLock(TRUE);
     dwError = VmDirdAddToUrgentReplicationServerList_InLock(pszServerName);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    VmDirdSetReplNow(TRUE);
+    VmDirUrgentReplSignal();
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
@@ -230,7 +187,6 @@ VmDirSendAllUrgentReplicationResponse(
     VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     pUtdVector = VmDirdUrgentReplGetUtdVector_InLock();
-    VmDirdSetUrgentReplicationRequest_InLock(FALSE);
 
     pUrgentReplServerList = VmDirdGetUrgentReplicationServerList_InLock();
     while (pUrgentReplServerList != NULL)
@@ -631,13 +587,13 @@ VmDirReplResetUrgentReplResponseCount_InLock(
 
 VOID
 VmDirReplSetUrgentReplResponseRecvCondition(
-    BOOLEAN bUrgentReplResponseRecvCondition
+    BOOLEAN bUrgentReplResponseRecv
     )
 {
     BOOLEAN   bInLock = FALSE;
 
     VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
-    gVmdirUrgentRepl.bUrgentReplResponseRecvCondition = bUrgentReplResponseRecvCondition;
+    gVmdirUrgentRepl.bUrgentReplResponseRecv = bUrgentReplResponseRecv;
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     return;
@@ -649,24 +605,24 @@ VmDirReplGetUrgentReplResponseRecvCondition(
     )
 {
     BOOLEAN   bInLock = FALSE;
-    BOOLEAN   bUrgentReplResponseRecvCondition = FALSE;
+    BOOLEAN   bUrgentReplResponseRecv = FALSE;
 
     VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
-    bUrgentReplResponseRecvCondition = gVmdirUrgentRepl.bUrgentReplResponseRecvCondition;
+    bUrgentReplResponseRecv = gVmdirUrgentRepl.bUrgentReplResponseRecv;
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
-    return bUrgentReplResponseRecvCondition;
+    return bUrgentReplResponseRecv;
 }
 
 VOID
 VmDirReplSetUrgentReplThreadCondition(
-    BOOLEAN bUrgentReplThreadCondition
+    BOOLEAN bUrgentReplThreadPredicate
     )
 {
     BOOLEAN   bInLock = FALSE;
 
     VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
-    gVmdirUrgentRepl.bUrgentReplThreadCondition = bUrgentReplThreadCondition;
+    gVmdirUrgentRepl.bUrgentReplThreadPredicate = bUrgentReplThreadPredicate;
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     return;
@@ -678,13 +634,13 @@ VmDirReplGetUrgentReplThreadCondition(
     )
 {
     BOOLEAN   bInLock = FALSE;
-    BOOLEAN   bUrgentReplThreadCondition = FALSE;
+    BOOLEAN   bUrgentReplThreadPredicate = FALSE;
 
     VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
-    bUrgentReplThreadCondition = gVmdirUrgentRepl.bUrgentReplThreadCondition;
+    bUrgentReplThreadPredicate = gVmdirUrgentRepl.bUrgentReplThreadPredicate;
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
-    return bUrgentReplThreadCondition;
+    return bUrgentReplThreadPredicate;
 }
 
 PVMDIR_STRONG_WRITE_PARTNER_CONTENT
@@ -712,13 +668,13 @@ VmDirReplGetUrgentReplCoordinatorTable_InLock(
 
 VOID
 VmDirReplSetUrgentReplDoneCondition(
-    BOOLEAN bUrgentReplDoneCondition
+    BOOLEAN bUrgentReplDone
     )
 {
     BOOLEAN bInLock = FALSE;
 
     VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
-    VmDirReplSetUrgentReplDoneCondition_InLock(bUrgentReplDoneCondition);
+    VmDirReplSetUrgentReplDoneCondition_InLock(bUrgentReplDone);
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     return;
@@ -726,10 +682,10 @@ VmDirReplSetUrgentReplDoneCondition(
 
 VOID
 VmDirReplSetUrgentReplDoneCondition_InLock(
-    BOOLEAN bUrgentReplDoneCondition
+    BOOLEAN bUrgentReplDone
     )
 {
-    gVmdirUrgentRepl.bUrgentReplDoneCondition = bUrgentReplDoneCondition;
+    gVmdirUrgentRepl.bUrgentReplDone = bUrgentReplDone;
 }
 
 BOOLEAN
@@ -738,13 +694,13 @@ VmDirReplGetUrgentReplDoneCondition(
     )
 {
     BOOLEAN bInLock = FALSE;
-    BOOLEAN bUrgentReplDoneCondition = FALSE;
+    BOOLEAN bUrgentReplDone = FALSE;
 
     VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
-    bUrgentReplDoneCondition = VmDirReplGetUrgentReplDoneCondition_InLock();
+    bUrgentReplDone = VmDirReplGetUrgentReplDoneCondition_InLock();
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
-    return bUrgentReplDoneCondition;
+    return bUrgentReplDone;
 }
 
 BOOLEAN
@@ -752,7 +708,7 @@ VmDirReplGetUrgentReplDoneCondition_InLock(
     VOID
     )
 {
-    return gVmdirUrgentRepl.bUrgentReplDoneCondition;
+    return gVmdirUrgentRepl.bUrgentReplDone;
 }
 
 USN

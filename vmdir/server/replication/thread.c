@@ -422,7 +422,7 @@ vdirReplicationThrFun(
             "vdirReplicationThrFun: Sleeping for the replication interval: %d seconds.",
             gVmdirServerGlobals.replInterval );
 
-        if (VmDirdGetUrgentReplicationRequest() == TRUE)
+        if (VmDirdGetUrgentReplicationServerList() != NULL)
         {
             /*
              * TODO: Move RPC call out of the repl thread.
@@ -448,17 +448,14 @@ vdirReplicationThrFun(
              * Can happen in two cases 1) Triggered by vdcadmintool 2) strong consistency write
              * case 2: control write which ensures that corresponding write is updated to all its
              *         replication partners by triggering UrgentReplicationRequest on them
+             * Timed wait for 1000 milliseconds, will be signald by RPC thread
+             * if urgent replication request was received
              */
-            if (VmDirdGetReplNow() == TRUE || VmDirdGetUrgentReplicationRequest() == TRUE)
+            if (VmDirUrgentReplCondTimedWait() == FALSE)
             {
 		VmDirdSetReplNow(FALSE);
                 break;
             }
-            /*
-             * TODO sleep granularity need to be reduced to milliseconds
-             * or change to conditioned wait
-             */
-            VmDirSleep( 1000 );
         }
     } // Endless replication loop
 
