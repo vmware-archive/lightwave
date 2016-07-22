@@ -64,7 +64,8 @@ autoreconf -mif ..
     --with-sasl=%{_sasl_prefix} \
     --with-datastore=mdb \
     --with-vmevent=%{_vmevent_prefix} \
-    --enable-server=yes
+    --enable-server=yes \
+    --with-version=%{_version}
 
 make
 
