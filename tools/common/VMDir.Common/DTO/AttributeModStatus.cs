@@ -17,29 +17,19 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace VMDirSnapIn
+namespace VMDir.Common.DTO
 {
-    public enum VMDirIconIndex
+    public class AttributeModStatus
     {
-        Directory,
-        Group,
-        Login,
-        NextPage,
-        Object,
-        PageSize,
-        ResetPassword,
-        Search,
-        SearchBoxCollapse,
-        Server,
-        ShowOperationalAttr,
-        User,
-        ServerLog,
-        Save,
-        Open,
-        Edit,
-        Delete,
-        Refresh,
-        AddToGroup,
-        Export
+        public string AttributeName { get; set; }
+        public bool ModStatus { get; set; }
+        public string ErrorMsg { get; set; }
+
+        public AttributeModStatus(string name,bool status,string msg)
+        {
+            AttributeName = name;
+            ModStatus = status;
+            ErrorMsg = msg;
+        }
     }
 }

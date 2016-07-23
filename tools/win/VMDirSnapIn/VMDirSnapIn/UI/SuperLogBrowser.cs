@@ -284,6 +284,7 @@ namespace VMDirSnapIn.UI
 
         private void cbFilterColumn_SelectedIndexChanged(object sender, EventArgs e)
         {
+            cbFilterCriteria.SelectedIndex = -1;
             cbFilterCriteria.Items.Clear();
 
             if (cbFilterColumn.Text == "Duration")
@@ -307,6 +308,7 @@ namespace VMDirSnapIn.UI
             cbFilterCriteria.SelectedIndex = -1;
             txtFilter.Text = "";
             ApplyFilter();
+            RefreshList();
         }
 
         private void lvLogInfo_MouseDoubleClick(object sender, MouseEventArgs e)

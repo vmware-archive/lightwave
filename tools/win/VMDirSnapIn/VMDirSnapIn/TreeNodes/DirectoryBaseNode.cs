@@ -46,6 +46,10 @@ namespace VMDirSnapIn.TreeNodes
                     FillProperties();
                 return _properties;
             }
+            set
+            {
+                _properties = value;
+            }
         }
 
         public DirectoryBaseNode(string dn, string oc, VMDirServerDTO serverDTO, PropertiesControl propCtl)
@@ -66,7 +70,8 @@ namespace VMDirSnapIn.TreeNodes
                 ServerDTO.Connection.Search(dto,
                     (l, e) =>
                     {
-                        _properties = ServerDTO.Connection.GetEntryProperties(e);
+                        if (e.Count > 0)
+                            _properties = ServerDTO.Connection.GetEntryProperties(e[0]);
                     });
             });
         }
@@ -81,6 +86,10 @@ namespace VMDirSnapIn.TreeNodes
         {
             PropertiesCtl.Visible = true;
             PropertiesCtl.Init(Dn, ObjectClass, ServerDTO, NodeProperties);
+        }
+        public void Delete()
+        {
+            ServerDTO.Connection.DeleteObject(Dn);
         }
 
         public void AddUserToGroup()

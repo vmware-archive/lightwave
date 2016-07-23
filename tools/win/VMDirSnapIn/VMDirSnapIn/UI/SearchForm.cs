@@ -25,6 +25,8 @@ using System.Linq;
 using VMIdentity.CommonUtils;
 using VMDir.Common;
 using System.Drawing;
+using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 
 namespace VMDirSnapIn.UI
 {
@@ -42,6 +44,8 @@ namespace VMDirSnapIn.UI
         private int _currPage { get; set; }
         private int _totalPage { get; set; }
 
+        private List<string> _returnedAttr;
+
         private delegate void DelegateWithNode(TreeView tv, TreeNode[] childNames);
         private delegate void DelegateSelectNode(TreeView tv, int index);
 
@@ -53,6 +57,8 @@ namespace VMDirSnapIn.UI
             _pageSize = VMDirConstants.DEFAULT_PAGE_SIZE;
             _result = new List<DirectoryNonExpandableNode>();
             resultStatusLabel.Text = "";
+            tableLayoutPanel2.Visible = false;
+            _returnedAttr = new List<string>();
         }
         private void searchQueryControl1_Load(object sender, EventArgs e)
         {
@@ -63,6 +69,11 @@ namespace VMDirSnapIn.UI
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
+            foreach (ToolStripItem item in toolStrip1.Items)
+            {
+                if (Convert.ToString(item.Tag) != "all")
+                    item.Enabled = false;
+            }
         }
         void InitPageSearch(QueryDTO q)
         {
@@ -74,11 +85,18 @@ namespace VMDirSnapIn.UI
             _result.Clear();
             resultTreeView.Nodes.Clear();
             resultStatusLabel.Text = "";
+            _returnedAttr.Clear();
+            _returnedAttr.AddRange(q.AttrToReturn);
         }
-        void GetPage()
+
+        private async Task GetPage()
         {
-            MiscUtilsService.CheckedExec(delegate
+            resultStatusLabel.Text = VMDirConstants.STAT_SR_FETCHING_PG;
+            IntPtr _timeout = Marshal.AllocCoTaskMem(sizeof(int));
+            Marshal.WriteInt32(_timeout, VMDirConstants.SEARCH_TIMEOUT_IN_SEC);
+            try
             {
+                _qdto.TimeOut = _timeout;
                 _serverDTO.Connection.PagedSearch(_qdto, _pageSize, _cookie, _morePages,
                     delegate(ILdapMessage ldMsg, IntPtr ck, bool moreP, List<ILdapEntry> entries)
                     {
@@ -88,7 +106,9 @@ namespace VMDirSnapIn.UI
                         _pageNumber++;
                         foreach (var entry in entries)
                         {
-                            _result.Add(new DirectoryNonExpandableNode(entry.getDN(), MiscUtilsService.GetObjectClass(entry), _serverDTO, this.propertiesControl1));
+                            var node = new DirectoryNonExpandableNode(entry.getDN(), MiscUtilsService.GetObjectClass(entry), _serverDTO, this.propertiesControl1);
+                            node.NodeProperties = _serverDTO.Connection.GetEntryProperties(entry);
+                            _result.Add(node);
                         }
                     });
 
@@ -104,22 +124,33 @@ namespace VMDirSnapIn.UI
                 {
                     resultStatusLabel.Text = VMDirConstants.STAT_SR_NO_MORE_PG;
                 }
-            });
+            }
+            catch (Exception e)
+            {
+                resultStatusLabel.Text = VMDirConstants.STAT_SR_FAILED_PG;
+                VMDirEnvironment.Instance.Logger.LogException(e);
+                MiscUtilsService.ShowError(e);
+            }
+            finally
+            {
+                Marshal.FreeCoTaskMem(_timeout);
+            }
         }
-        private void searchQueryControl1_SearchButtonClicked(object sender, SearchArgs args)
+        private async void searchQueryControl1_SearchButtonClicked(object sender, SearchArgs args)
         {
             if (_serverDTO.Connection == null)
             {
                 MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
                 return;
             }
-            //this.searchResultControl1.Visible = true;
-            InitPageSearch(args.Qdto);
             if (args.Qdto == null)
                 return;
+            
+            tableLayoutPanel2.Visible = true;
+            InitPageSearch(args.Qdto);
+
             this.Text = "Server: " + _serverDTO.Server + "           Search In: " + args.Qdto.SearchBase;
-            //this.searchResultControl1.ClearData();
-            GetPage();
+            await GetPage();
             if (_result.Count > 0)
             {
                 resultTreeView.Nodes.AddRange(_result.ToArray());
@@ -155,10 +186,10 @@ namespace VMDirSnapIn.UI
             var node = this.resultTreeView.SelectedNode as DirectoryNonExpandableNode;
             if (node != null)
             {
-                if (node.ServerDTO.OperationalFlag)
-                    node.ServerDTO.OperationalFlag = false;
+                if (node.ServerDTO.OperationalAttrFlag)
+                    node.ServerDTO.OperationalAttrFlag = false;
                 else
-                    node.ServerDTO.OperationalFlag = true;
+                    node.ServerDTO.OperationalAttrFlag = true;
                 node.DoSelect();
             }
             else
@@ -192,8 +223,29 @@ namespace VMDirSnapIn.UI
             var node = e.Node as DirectoryNonExpandableNode;
             if (node != null)
                 node.DoSelect();
+            SetToolBarOptions(e);
         }
+        private void SetToolBarOptions(TreeViewEventArgs e)
+        {
+            foreach (ToolStripItem item in toolStrip1.Items)
+            {
+                item.Enabled = false;
+                if (Convert.ToString(item.Tag) == "all")
+                    item.Enabled = true;
+            }
 
+            var n2 = e.Node as DirectoryNonExpandableNode;
+            if (n2 != null && n2.ServerDTO.IsLoggedIn)
+            {
+                foreach (ToolStripItem item in toolStrip1.Items)
+                {
+                    if (Convert.ToString(item.Tag) == "directory")
+                        item.Enabled = true;
+                    else if (Convert.ToString(item.Tag) == "user" && string.Equals(n2.ObjectClass, VMDirConstants.USER_OC))
+                        item.Enabled = true;
+                }
+            }
+        }
         private void PrevButton_Click(object sender, EventArgs e)
         {
             _currPage--;
@@ -255,25 +307,103 @@ namespace VMDirSnapIn.UI
                 }
             }
         }
+
+        private void DoActionOnDirectoryNonExpandableNode(Action<DirectoryNonExpandableNode> action)
+        {
+            var node = this.resultTreeView.SelectedNode as DirectoryNonExpandableNode;
+            if (node != null && action != null)
+            {
+                action(node);
+            }
+            else
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_OBJ_NODE_SEL);
+            }
+        }
+
         private void tsmiAddToGroup_Click(object sender, EventArgs e)
         {
-            var node = this.resultTreeView.SelectedNode as DirectoryNonExpandableNode;
-            if (node != null)
-                node.AddUserToGroup();
+            DoActionOnDirectoryNonExpandableNode(delegate(DirectoryNonExpandableNode node) { node.AddUserToGroup(); });
         }
-
         private void tsmiResetUserPassword_Click(object sender, EventArgs e)
         {
-            var node = this.resultTreeView.SelectedNode as DirectoryNonExpandableNode;
-            if (node != null)
-                node.ResetPassword();
+            DoActionOnDirectoryNonExpandableNode(delegate(DirectoryNonExpandableNode node) { node.ResetPassword(); });
+        }
+        private void tsmiVerifyUserPassword_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryNonExpandableNode(delegate(DirectoryNonExpandableNode node) { node.VerifyPassword(); });
         }
 
-        private void tsmiVerifyUserPassword_Click(object sender, EventArgs e)
+        private void toolStripButtonShowHideOptionalAttr_Click(object sender, EventArgs e)
         {
             var node = this.resultTreeView.SelectedNode as DirectoryNonExpandableNode;
             if (node != null)
-                node.VerifyPassword();
+            {
+                if (node.ServerDTO.OptionalAttrFlag)
+                    node.ServerDTO.OptionalAttrFlag = false;
+                else
+                    node.ServerDTO.OptionalAttrFlag = true;
+                node.DoSelect();
+            }
+            else
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_OBJ_NODE_SEL);
+            }
+        }
+
+        private void performDelete(DirectoryNonExpandableNode node)
+        {
+            MiscUtilsService.CheckedExec(delegate()
+            {
+                if (!MMCDlgHelper.ShowQuestion(string.Format(CommonConstants.CONFIRM_DELETE, "object", Text)))
+                    return;
+                node.Delete();
+                this.resultTreeView.Nodes.Remove(node);
+                if (_result != null)
+                {
+                    _result.Remove(node);
+                }
+            });
+        } 
+        private void tsmiDelete_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryNonExpandableNode(delegate(DirectoryNonExpandableNode node) { performDelete(node); });
+        }
+
+        private void tsbRefresh_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryNonExpandableNode(delegate(DirectoryNonExpandableNode node) { node.RefreshProperties(); });
+        }
+
+        private void tsbDelete_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryNonExpandableNode(delegate(DirectoryNonExpandableNode node) { performDelete(node); });
+        }
+        private void tsbAddToGroup_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryNonExpandableNode(delegate(DirectoryNonExpandableNode node) { node.AddUserToGroup(); });
+        }
+        private void tsbResetPassword_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryNonExpandableNode(delegate(DirectoryNonExpandableNode node) { node.ResetPassword(); });
+        }
+        private void tsbVerifyPassword_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryNonExpandableNode(delegate(DirectoryNonExpandableNode node) { node.VerifyPassword(); });
+        }
+        private void tsbExportResult_Click(object sender, EventArgs e)
+        {
+            if (_result != null && _result.Count > 0)
+            {
+                var attrTypes = _serverDTO.Connection.SchemaManager.GetAttributeTypeManager();
+                var attrList = attrTypes.Data.Select(x => x.Key).ToList();
+                var frm = new ExportResult(_result, _returnedAttr, _currPage, _pageSize);
+                frm.ShowDialog();
+            }
+            else
+            {
+                MMCDlgHelper.ShowWarning("There is no result to export.");
+            }
         }
 
     }

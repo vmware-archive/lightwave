@@ -39,8 +39,22 @@ namespace VMDirSnapIn.UI
             _dto = dto;
             txtDirectoryServer.Text = dto.Server;
             var tenant = MMCMiscUtil.GetBrandConfig(CommonConstants.TENANT);
-            txtBaseDN.Text = CommonConstants.GetDNFormat(tenant);
-            txtBindUPN.Text = "Administrator@"+tenant;
+
+            if (string.IsNullOrWhiteSpace(dto.BindDN))
+            {
+                txtBindUPN.Text = "Administrator@" + tenant;
+            }
+            else
+            {
+                txtBindUPN.Text = dto.BindDN;
+            }
+            if (string.IsNullOrWhiteSpace(dto.BaseDN))
+            {
+                txtBaseDN.Text = CommonConstants.GetDNFormat(tenant);
+            }
+            else{
+                txtBaseDN.Text = dto.BaseDN;
+            }
         }
 
         private void btnOK_Click(object sender, EventArgs e)
