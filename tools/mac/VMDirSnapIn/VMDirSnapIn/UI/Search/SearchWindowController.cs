@@ -502,10 +502,10 @@ namespace VMDirSnapIn.UI
 
 		partial void OnOperationalToolBarItem(NSObject sender)
 		{
-			if (_serverDTO.OperationalFlag)
-				_serverDTO.OperationalFlag = false;
+			if (_serverDTO.OperationalAttrFlag)
+				_serverDTO.OperationalAttrFlag = false;
 			else
-				_serverDTO.OperationalFlag = true;
+				_serverDTO.OperationalAttrFlag = true;
 			RefreshPropTableViewBasedOnSelection(SearchResultOutlineView.SelectedRow);
 		}
 

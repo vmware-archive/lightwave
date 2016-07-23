@@ -111,6 +111,18 @@
     <Compile Include="UI\CheckUserPwdForm.Designer.cs">
       <DependentUpon>CheckUserPwdForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="UI\ConditionsFromFile.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\ConditionsFromFile.Designer.cs">
+      <DependentUpon>ConditionsFromFile.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ExportResult.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\ExportResult.Designer.cs">
+      <DependentUpon>ExportResult.cs</DependentUpon>
+    </Compile>
     <Compile Include="UI\PropertiesControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -153,6 +165,18 @@
     </Compile>
     <Compile Include="UI\SetPageSizeForm.Designer.cs">
       <DependentUpon>SetPageSizeForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\SubmitModConfirm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\SubmitModConfirm.Designer.cs">
+      <DependentUpon>SubmitModConfirm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\SubmitModStatus.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\SubmitModStatus.Designer.cs">
+      <DependentUpon>SubmitModStatus.cs</DependentUpon>
     </Compile>
     <Compile Include="UI\SuperLogBrowser.cs">
       <SubType>Form</SubType>
@@ -207,6 +231,12 @@
     <EmbeddedResource Include="UI\CheckUserPwdForm.resx">
       <DependentUpon>CheckUserPwdForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="UI\ConditionsFromFile.resx">
+      <DependentUpon>ConditionsFromFile.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\ExportResult.resx">
+      <DependentUpon>ExportResult.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="UI\PropertiesControl.resx">
       <DependentUpon>PropertiesControl.cs</DependentUpon>
       <SubType>Designer</SubType>
@@ -234,6 +264,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\SetPageSizeForm.resx">
       <DependentUpon>SetPageSizeForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\SubmitModConfirm.resx">
+      <DependentUpon>SubmitModConfirm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\SubmitModStatus.resx">
+      <DependentUpon>SubmitModStatus.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Views\ResultPaneControl.resx">
       <DependentUpon>ResultPaneControl.cs</DependentUpon>
@@ -299,52 +335,25 @@
     <None Include="Images\User.ico" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Images\DirectoryImg.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Images\GroupImg.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Images\LoginImg.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Images\NextPageImg.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Images\ObjectImg.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Images\OpenImg.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Images\PageSizeImg.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Images\ResetPasswordImg.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Images\SaveImg.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Images\SearchBoxCollapseImg.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Images\SearchImg.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Images\ServerImg.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Images\ShowOperationalAttrImg.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Images\UserImg.png" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Images\Open.ico" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Images\Save.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\AddToGroup.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\delete.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\edit.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\refresh.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Export.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

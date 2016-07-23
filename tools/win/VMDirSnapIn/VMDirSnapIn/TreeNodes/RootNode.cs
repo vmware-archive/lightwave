@@ -38,7 +38,6 @@ namespace VMDirSnapIn.TreeNodes
                 return;
             foreach (var dto in VMDirEnvironment.Instance.LocalData.ServerList)
             {
-                VMDirEnvironment.Instance.Logger.Log("Adding "+dto.Server, LogLevel.Info);
                 this.Nodes.Add(new ServerNode(dto, PropertiesCtl));
             }
             Expand();
@@ -48,7 +47,7 @@ namespace VMDirSnapIn.TreeNodes
         {
             if (PropertiesCtl==null)
                 VMDirEnvironment.Instance.Logger.Log("PropertiesCtl is null", LogLevel.Error);
-            PropertiesCtl.Visible = false;
+            PropertiesCtl.SetEditState(false);
             DoExpand();
         }
 
@@ -60,7 +59,7 @@ namespace VMDirSnapIn.TreeNodes
                 serverDTO.Server = "";
                 var node = new ServerNode(serverDTO, PropertiesCtl);
                 node.Login();
-                if (node.IsLoggedIn)
+                if (node.ServerDTO.IsLoggedIn)
                 {
                     VMDirEnvironment.Instance.LocalData.AddServer(serverDTO);
                     this.Nodes.Add(node);

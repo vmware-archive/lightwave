@@ -74,7 +74,8 @@ namespace VMDirSnapIn.Nodes
 				ServerDTO.Connection.Search(dto,
 					(l, e) =>
 					{
-						_properties = ServerDTO.Connection.GetEntryProperties(e);
+					if(e.Count>0)
+						_properties = ServerDTO.Connection.GetEntryProperties(e[0]);
 					});
 			});
 		}

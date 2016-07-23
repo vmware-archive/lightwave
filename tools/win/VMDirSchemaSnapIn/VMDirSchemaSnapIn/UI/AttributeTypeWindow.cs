@@ -23,6 +23,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using VMDir.Common.Schema;
 using VMDir.Common.VMDirUtilities;
+using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace VMDirSchemaSnapIn.UI
 {
@@ -79,10 +80,10 @@ namespace VMDirSchemaSnapIn.UI
 
         private void EnableUIControls(bool state)
         {
-            this.NameTextBox.Enabled = state;
-            this.AttributeIdentifierTextbox.Enabled = state;
+            this.NameTextBox.ReadOnly = !state;
+            this.AttributeIdentifierTextbox.ReadOnly = !state;
             this.AttributeSyntaxCombo.Enabled = state;
-            this.DescriptionTextBox.Enabled = state;
+            this.DescriptionTextBox.ReadOnly = !state;
             this.MultiValuedCheckBox.Enabled = state;
         }
 
@@ -114,12 +115,14 @@ namespace VMDirSchemaSnapIn.UI
                     AttributeModDTO.Description = this.DescriptionTextBox.Text;
                 if (AttributeDTO.SingleValue == true && MultiValuedCheckBox.Checked == true)
                     AttributeModDTO.SingleValue = false;
+                else
+                    AttributeModDTO.SingleValue = AttributeDTO.SingleValue;
             }
         }
 
         private void SetUIToolsEditability()
         {
-            this.DescriptionTextBox.Enabled = true;
+            this.DescriptionTextBox.ReadOnly = false;
             if (MultiValuedCheckBox.Checked != true)
                 MultiValuedCheckBox.Enabled = true;
         }
@@ -127,21 +130,21 @@ namespace VMDirSchemaSnapIn.UI
         private void AddButton_Click_1(object sender, EventArgs e)
         {
             UIErrorHelper.CheckedExec(delegate()
-            {
-                if (this.AddButton.Text == VMwareMMCIDP.UI.Common.Utilities.MMCUIConstants.EDIT)
                 {
-                    SetUIToolsEditability();
-                    this.AddButton.Text = VMwareMMCIDP.UI.Common.Utilities.MMCUIConstants.UPDATE;
-                }
-                else if ( UIErrorHelper.ShowMessage(VMwareMMCIDP.UI.Common.Utilities.MMCUIConstants.CONFIRM) == DialogResult.Yes)
-                {
-                    DoValidateControls();
-                    FillDTOWithUIControls();
-                    this.Close();
-                    this.DialogResult = DialogResult.OK;
+                    if (this.AddButton.Text == VMwareMMCIDP.UI.Common.Utilities.MMCUIConstants.EDIT)
+                    {
+                        SetUIToolsEditability();
+                        this.AddButton.Text = VMwareMMCIDP.UI.Common.Utilities.MMCUIConstants.UPDATE;
+                    }
+                    else if (UIErrorHelper.ShowConfirm(VMwareMMCIDP.UI.Common.Utilities.MMCUIConstants.CONFIRM) == DialogResult.Yes)
+                    {
+                        DoValidateControls();
+                        FillDTOWithUIControls();
+                        this.Close();
+                        this.DialogResult = DialogResult.OK;
 
-                }
-            });
+                    }
+                });
         }
 
         private void CancelButton_Click(object sender, EventArgs e)

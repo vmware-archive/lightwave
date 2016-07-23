@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="10116" systemVersion="15E65" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="10117" systemVersion="15E65" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
         <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="10116"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="10117"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="ObjectClassWindowController">
@@ -10,6 +10,7 @@
                 <outlet property="ActionButton" destination="8X9-Zj-0Sv" id="5BD-8j-BKU"/>
                 <outlet property="AddAuxiliaryClassesButton" destination="KEX-9H-uzb" id="iRc-4f-H7a"/>
                 <outlet property="AddMandatoryAttributesButton" destination="r4j-xa-rui" id="7FR-Yb-XJi"/>
+                <outlet property="AddObjectClassButton" destination="vrU-Ou-3Fx" id="3GA-tE-dix"/>
                 <outlet property="AddOptionalAttributesButton" destination="JZR-eT-O5g" id="Vdm-m2-JH6"/>
                 <outlet property="AuxiliaryClassesListView" destination="SlT-aZ-5iC" id="VHe-MO-G1w"/>
                 <outlet property="AuxiliaryClassesView" destination="SlT-aZ-5iC" id="yqj-71-HFT"/>
@@ -117,7 +118,7 @@
                     <textField verticalHuggingPriority="750" id="GjN-PX-5Mz">
                         <rect key="frame" x="170" y="364" width="321" height="22"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" placeholderString="Chose the parent class" drawsBackground="YES" id="wG1-yP-35X">
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" placeholderString="Chose the parent class" drawsBackground="YES" id="wG1-yP-35X">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>

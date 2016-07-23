@@ -23,6 +23,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using VMDir.Common.Schema;
+using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace VMDirSchemaSnapIn.UI
 {
@@ -36,34 +37,41 @@ namespace VMDirSchemaSnapIn.UI
 
         public ObjectClassManager objectManager { get; set; }
 
+        public SchemaManager schemaManager { get; set; }
+
         private bool isAddMode = false;
         private List<string> allAttributesList = null;
         private List<string> allClassesList = null;
         private List<string> auxiliaryClassesList = new List<string>();
         private List<string> mandatoryAttributesList = new List<string>();
         private List<string> optionalAttributesList = new List<string>();
+        private List<string> parentMandatoryAttributes = new List<string>();
+        private List<string> parentOptionalAttributes = new List<string>();
+
         //object class types
         private List<string> structuralClasses = null;
         private List<string> abstractClasses = null;
         private List<string> auxiliaryClasses = null;
         private List<string> parentClassList = new List<string>();
 
-        public ObjectClassWindow(AttributeTypeManager attributeManager, ObjectClassManager objectManager)
+        public ObjectClassWindow(SchemaManager schemaManager)
         {
             InitializeComponent();
             isAddMode = true;
-            this.attributeManager = attributeManager;
-            this.objectManager = objectManager;
+            this.schemaManager = schemaManager;
+            this.attributeManager = schemaManager.GetAttributeTypeManager();
+            this.objectManager = schemaManager.GetObjectClassManager();
             Initialise();
         }
 
-        public ObjectClassWindow(ObjectClassDTO dto, AttributeTypeManager attributeManager, ObjectClassManager objectManager)
+        public ObjectClassWindow(ObjectClassDTO dto, SchemaManager schemaManager)
         {
             InitializeComponent();
             this.ObjectDTO = dto;
             isAddMode = false;
-            this.attributeManager = attributeManager;
-            this.objectManager = objectManager;
+            this.schemaManager = schemaManager;
+            this.attributeManager = schemaManager.GetAttributeTypeManager();
+            this.objectManager = schemaManager.GetObjectClassManager();
             Initialise();
             
         }
@@ -105,11 +113,12 @@ namespace VMDirSchemaSnapIn.UI
 
         private void SetUIFieldsEditability(bool status)
         {
-            this.ObjectClassNameText.Enabled = status;
-            this.ObjectClassIdentifierText.Enabled = status;
-            this.DescriptionText.Enabled = status;
+            this.ObjectClassNameText.ReadOnly = !status;
+            this.ObjectClassIdentifierText.ReadOnly = !status;
+            this.DescriptionText.ReadOnly = !status;
             this.ClassTypeCombo.Enabled = status;
-            this.ParentClassText.Enabled = status;
+            this.ParentClassText.ReadOnly = true;
+            this.AddParentClassButton.Enabled = status;
             this.AddAuxiliaryAttributeButton.Enabled = status;
             this.RemoveAuxiliaryAttribtueButton.Enabled = status;
             this.AddMandatoryAttributeButton.Enabled = status;
@@ -155,7 +164,7 @@ namespace VMDirSchemaSnapIn.UI
         {
             if (isAddMode)
             {
-                var frm = new SelectItemsWindow(allAttributesList);
+                var frm = new SelectItemsWindow(allAttributesList, mandatoryAttributesList, parentMandatoryAttributes);
 
                 if (frm.ShowDialog() == DialogResult.OK)
                 {
@@ -181,8 +190,8 @@ namespace VMDirSchemaSnapIn.UI
 
         private void AddOptionalAttributeButton_Click(object sender, EventArgs e)
         {
-                var frm = new SelectItemsWindow(allAttributesList);
-                if (frm.ShowDialog() == DialogResult.OK)
+            var frm = new SelectItemsWindow(allAttributesList, optionalAttributesList, parentOptionalAttributes);
+            if (frm.ShowDialog() == DialogResult.OK)
                 {
                     optionalAttributesList.AddRange(frm.SelectedItemsList);
                     this.OptionalList.DataSource = optionalAttributesList;
@@ -205,7 +214,7 @@ namespace VMDirSchemaSnapIn.UI
 
         private void AddAuxiliaryAttributeButton_Click(object sender, EventArgs e)
         {
-                var frm = new SelectItemsWindow(allClassesList);
+                var frm = new SelectItemsWindow(allClassesList,null,null);
                 if (frm.ShowDialog() == DialogResult.OK)
                 {
                     auxiliaryClassesList.AddRange(frm.SelectedItemsList);
@@ -234,6 +243,7 @@ namespace VMDirSchemaSnapIn.UI
                 ObjectDTO.Name = this.ObjectClassNameText.Text;
                 ObjectDTO.Description = this.DescriptionText.Text;
                 ObjectDTO.SuperClass = this.ParentClassText.Text;
+                optionalAttributesList.AddRange(parentOptionalAttributes);
                 ObjectDTO.May = optionalAttributesList;
                 ObjectDTO.Must = mandatoryAttributesList;
                 ObjectDTO.ClassType = (ObjectClassDTO.ObjectClassType)((int)this.ClassTypeCombo.SelectedIndex) + 1;
@@ -251,9 +261,14 @@ namespace VMDirSchemaSnapIn.UI
         //set only editable object class fields to true.
         private void SetEditableFields()
         {
-            this.DescriptionText.Enabled = true;
+            this.DescriptionText.ReadOnly = false;
             this.AddAuxiliaryAttributeButton.Enabled = true;
             this.AddOptionalAttributeButton.Enabled = true;
+            this.AddMandatoryAttributeButton.Visible = false;
+            this.AddParentClassButton.Visible = false;
+            this.RemoveAuxiliaryAttribtueButton.Visible = false;
+            this.RemoveMandatoryAttributeButton.Visible = false;
+            this.RemoveOptionalAttributeButton.Visible = false;
         }
 
         private void AddButton_Click(object sender, EventArgs e)
@@ -263,7 +278,7 @@ namespace VMDirSchemaSnapIn.UI
                 this.AddButton.Text = "Update";
                 SetEditableFields();
             }
-            else if (UIErrorHelper.ShowMessage(VMwareMMCIDP.UI.Common.Utilities.MMCUIConstants.CONFIRM) == DialogResult.Yes)
+            else if (UIErrorHelper.ShowConfirm(VMwareMMCIDP.UI.Common.Utilities.MMCUIConstants.CONFIRM) == DialogResult.Yes)
             {
                 UIErrorHelper.CheckedExec(delegate()
                 {
@@ -287,6 +302,19 @@ namespace VMDirSchemaSnapIn.UI
             if (frm.ShowDialog() == DialogResult.OK)
             {
                 this.ParentClassText.Text = frm.SelectedItem;
+
+                mandatoryAttributesList.RemoveAll(item => parentMandatoryAttributes.Contains(item));
+
+                parentMandatoryAttributes.Clear();
+                parentOptionalAttributes.Clear();
+
+                parentMandatoryAttributes.AddRange(this.schemaManager.GetRequiredAttributes(this.ParentClassText.Text).Select(item => item.Name).ToList());
+                parentOptionalAttributes.AddRange(this.schemaManager.GetOptionalAttributes(this.ParentClassText.Text).Select(item => item.Name).ToList());
+
+
+                mandatoryAttributesList.AddRange(parentMandatoryAttributes);
+                this.MandatoryList.DataSource = mandatoryAttributesList;
+                this.MandatoryList.Refresh();
             }
         }
 
@@ -305,7 +333,7 @@ namespace VMDirSchemaSnapIn.UI
             {
                 if (String.Equals(this.ClassTypeCombo.SelectedItem.ToString(), VMDirSchemaConstants.VMDIRSCHEMA_AUXILIARY) == true)
                 {
-                    this.ParentClassText.Enabled = false; //Todo - verify derivation hierarchy
+                    this.ParentClassText.Enabled = false;
                     parentClassList.AddRange(structuralClasses);
                     parentClassList.AddRange(abstractClasses);
                     parentClassList.AddRange(auxiliaryClasses);

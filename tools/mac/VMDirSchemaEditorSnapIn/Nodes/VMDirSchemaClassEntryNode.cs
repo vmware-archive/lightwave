@@ -35,10 +35,7 @@ namespace VMDirSchemaEditorSnapIn.Nodes
 
         public void ShowProperties(object sender, EventArgs args)
         {
-            //TODO - pass flags to set mode for objectClass window
-            AttributeTypeManager attributes = this.ServerNode.ServerDTO.Connection.SchemaManager.GetAttributeTypeManager();
-            ObjectClassManager objectClasses = this.ServerNode.ServerDTO.Connection.SchemaManager.GetObjectClassManager();
-            ObjectClassWindowController obc = new ObjectClassWindowController(ObjectClassDto, attributes, objectClasses);
+            ObjectClassWindowController obc = new ObjectClassWindowController(ObjectClassDto, this.ServerNode.ServerDTO.Connection.SchemaManager);
             nint ret = NSApplication.SharedApplication.RunModalForWindow(obc.Window);
             if (ret == VMIdentityConstants.DIALOGOK)
             {

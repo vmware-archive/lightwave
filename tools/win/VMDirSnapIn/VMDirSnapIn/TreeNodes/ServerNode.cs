@@ -25,13 +25,11 @@ using VMDirSnapIn.Utilities;
 using VMDirSnapIn.UI;
 using VMDirSnapIn.Views;
 using VMIdentity.CommonUtils;
+using VMwareMMCIDP.UI.Common.Utilities;
 namespace VMDirSnapIn.TreeNodes
 {
     public class ServerNode : BaseTreeNode
     {
-        public string ServerGUID { get; set; }
-        public bool IsLoggedIn { get; set; }
-
         private Dictionary<string, VMDirAttributeDTO> _properties;
 
         public Dictionary<string, VMDirAttributeDTO> ServerProperties
@@ -52,7 +50,8 @@ namespace VMDirSnapIn.TreeNodes
                 ServerDTO.Connection.Search(dto,
                     (l, e) =>
                     {
-                        _properties = ServerDTO.Connection.GetEntryProperties(e);
+                        if(e.Count>0)
+                            _properties = ServerDTO.Connection.GetEntryProperties(e[0]);
                     });
             });
         }
@@ -73,13 +72,15 @@ namespace VMDirSnapIn.TreeNodes
 
         public override void DoSelect()
         {
-            if (IsLoggedIn)
+            if (ServerDTO.IsLoggedIn)
             {
-                PropertiesCtl.Visible = true;
                 PropertiesCtl.Init(VMDirConstants.ATTR_VMW_DSEROOT_DN, string.Empty, ServerDTO, ServerProperties);
             }
             else
-                PropertiesCtl.Visible = false;
+            {
+                PropertiesCtl.ClearView();
+                PropertiesCtl.SetEditState(false);
+            }
         }
         public override void DoRefresh()
         {
@@ -98,7 +99,7 @@ namespace VMDirSnapIn.TreeNodes
                 {
                     if (ServerDTO.Connection.CreateConnection() == 1)
                     {
-                        IsLoggedIn = true;
+                        ServerDTO.IsLoggedIn = true;
                         this.Text = ServerDTO.Server;
 
                         if (string.IsNullOrWhiteSpace(ServerDTO.BaseDN))
@@ -160,11 +161,11 @@ namespace VMDirSnapIn.TreeNodes
                 ServerDTO.Connection = new LdapConnectionService(ServerDTO.Server, ServerDTO.BindDN, ServerDTO.Password);
                 ServerDTO.Connection.CloseConnection();
                 ServerDTO.Connection = null;
-                IsLoggedIn = false;
+                ServerDTO.IsLoggedIn = false;
                 ServerDTO.BaseDN = string.Empty;
                 ServerDTO.BindDN = string.Empty;
                 Nodes.Clear();
-                PropertiesCtl.Visible = false;
+                PropertiesCtl.ClearView();
             }
             catch (Exception exp)
             {
@@ -176,15 +177,19 @@ namespace VMDirSnapIn.TreeNodes
         {
             if (MiscUtilsService.Confirm(CommonConstants.GetDeleteMsg("server", ServerDTO.Server)))
             {
-                VMDirEnvironment.Instance.LocalData.RemoveServer(ServerDTO.GUID);
-                if (ServerDTO.Connection != null)
-                    ServerDTO.Connection.CloseConnection();
-
-                var parent = this.Parent as RootNode;
-                if (parent != null)
+                MiscUtilsService.CheckedExec(delegate()
                 {
-                    parent.Nodes.Remove(this);
-                }
+                    VMDirEnvironment.Instance.LocalData.RemoveServer(ServerDTO.GUID);
+                    if (ServerDTO.Connection != null)
+                        ServerDTO.Connection.CloseConnection();
+                    var server=ServerDTO.Server;
+                    var parent = this.Parent as RootNode;
+                    if (parent != null)
+                    {
+                        parent.Nodes.Remove(this);
+                    }
+                    MMCDlgHelper.ShowInformation(VMDirConstants.STAT_SER_REM_SUCC+server);
+                });
             }
         }
 
@@ -199,7 +204,10 @@ namespace VMDirSnapIn.TreeNodes
         {
             var frm = new SetPageSizeForm(ServerDTO.PageSize);
             if (frm.ShowDialog() == DialogResult.OK)
+            {
                 ServerDTO.PageSize = frm.PageSize;
+                MMCDlgHelper.ShowInformation(VMDirConstants.STAT_PG_SZ_SUCC);
+            }
         }
     }
 }

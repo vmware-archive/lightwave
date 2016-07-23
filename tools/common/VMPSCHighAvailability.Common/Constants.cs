@@ -88,6 +88,8 @@ namespace VMPSCHighAvailability.Common
         public const string LocalDataFileName = "PSCHighAvailability.xml";
         public const string ToolsSuiteName = "LightwaveTools";
 		public const string PscLogFileName = "PscSiteManagement.log";
+		public const string PscTopologyFileName = "PscTopologyInfo.log";
+
 
         #endregion
 

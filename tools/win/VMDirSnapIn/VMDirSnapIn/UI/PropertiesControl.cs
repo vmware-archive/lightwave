@@ -38,16 +38,15 @@ namespace VMDirSnapIn.UI
         private List<AttributeDTO> _oprAttrDTOList;
         private HashSet<string> _modData;
         private List<AttributeTypeDTO> _mayAttrTyDTOList;
-
-        private string _oldObjectClass = string.Empty;
         private string _objectClass = string.Empty;
         private string _dn = string.Empty;
         private VMDirServerDTO _serverDTO;
+        private string oldVal = string.Empty;
         enum GroupTag
         {
-            CURRENT_ATTR = 0,
-            OPTIONAL_ATT,
-            OPERATIONAL_ATT
+            OPERATIONAL_ATT=0,
+            CURRENT_ATTR,
+            OPTIONAL_ATT
         }
 
         public PropertiesControl()
@@ -75,6 +74,7 @@ namespace VMDirSnapIn.UI
             _oprAttrDTOList = new List<AttributeDTO>();
             _mayAttrTyDTOList = new List<AttributeTypeDTO>();
             _modData = new HashSet<string>();
+            SetEditState(false);
         }
         internal void Init(string dn, string oc, VMDirServerDTO serverDTO, Dictionary<string, VMDirAttributeDTO> properties)
         {
@@ -84,7 +84,6 @@ namespace VMDirSnapIn.UI
                 return;
             }
             _properties = properties;
-            _oldObjectClass = _objectClass;
             _objectClass = oc;
             _dn = dn;
             _serverDTO = serverDTO;
@@ -92,49 +91,51 @@ namespace VMDirSnapIn.UI
             ClearContext();
             GetData();
             FillListView();
+            SetEditState(false);
         }
 
         public void ClearData()
         {
             _currAttrDTOList.Clear();
             _oprAttrDTOList.Clear();
+            _optAttrDTOList.Clear();
             _modData.Clear();
         }
         public void ClearContext()
         {
             this.listViewProp.Items.Clear();
             this.listViewProp.Groups.Clear();
+            SetEditState(false);
         }
         public void GetData()
         {
+            _currAttrDTOList = VmdirUtil.Utilities.ConvertToAttributeDTOList(_properties);
+
+            if (getGroup(GroupTag.OPTIONAL_ATT) != null)
+                GetOptionalAttribute();
+            if (getGroup(GroupTag.OPERATIONAL_ATT) != null)
+                GetOperationalAttribute();
+        }
+
+        private void GetOptionalAttribute()
+        {
             MiscUtilsService.CheckedExec(delegate
-           {
-               if (string.IsNullOrWhiteSpace(_objectClass))
-                   _objectClass = VmdirUtil.Utilities.GetAttrLastVal(_properties, VMDirConstants.ATTR_OBJECT_CLASS);
-
-               if (!_objectClass.Equals(_oldObjectClass))
-               {
-                   _mayAttrTyDTOList.Clear();
-                   _mayAttrTyDTOList = _serverDTO.Connection.SchemaManager.GetOptionalAttributes(_objectClass);
-                   _optAttrDTOList.Clear();
-                   foreach (var item in _mayAttrTyDTOList)
-                       if (item != null)
-                           _optAttrDTOList.Add(new AttributeDTO(item.Name, string.Empty, item));
-
-               }
-
-               _currAttrDTOList = VmdirUtil.Utilities.ConvertToAttributeDTOList(_properties);
-
-               foreach (var item in _currAttrDTOList)
-               {
-                   if (item.AttrSyntaxDTO.SingleValue)
-                       _optAttrDTOList.RemoveAll(x => x.Name.Equals(item.Name));
-               }
-               _optAttrDTOList.Sort((x, y) => string.Compare(x.Name, y.Name, StringComparison.InvariantCultureIgnoreCase));
-
-               if (getGroup(GroupTag.OPERATIONAL_ATT) != null)
-                   GetOperationalAttribute();
-           });
+                 {
+                     if (string.IsNullOrWhiteSpace(_objectClass))
+                         _objectClass = VmdirUtil.Utilities.GetAttrLastVal(_properties, VMDirConstants.ATTR_OBJECT_CLASS);
+                         _mayAttrTyDTOList.Clear();
+                         _mayAttrTyDTOList = _serverDTO.Connection.SchemaManager.GetOptionalAttributes(_objectClass);
+                         _optAttrDTOList.Clear();
+                         foreach (var item in _mayAttrTyDTOList)
+                             if (item != null)
+                                 _optAttrDTOList.Add(new AttributeDTO(item.Name, string.Empty, item));
+                     foreach (var item in _currAttrDTOList)
+                     {
+                         if (item.AttrSyntaxDTO.SingleValue)
+                             _optAttrDTOList.RemoveAll(x => x.Name.Equals(item.Name));
+                     }
+                     _optAttrDTOList.Sort((x, y) => string.Compare(x.Name, y.Name, StringComparison.InvariantCultureIgnoreCase));
+                 });
         }
 
         private void GetOperationalAttribute()
@@ -142,33 +143,102 @@ namespace VMDirSnapIn.UI
             TextQueryDTO dto = new TextQueryDTO(_dn, LdapScope.SCOPE_BASE, VMDirConstants.SEARCH_ALL_OC,
                 new string[] { "+" }, 0, IntPtr.Zero, 0);
             var operationalProperties = new Dictionary<string, VMDirAttributeDTO>();
-            _serverDTO.Connection.Search(dto, (l, e) => operationalProperties = _serverDTO.Connection.GetEntryProperties(e));
+            _serverDTO.Connection.Search(dto, (l, e) =>
+            {
+                if (e.Count > 0)
+                    operationalProperties = _serverDTO.Connection.GetEntryProperties(e[0]);
+            });
             _oprAttrDTOList = VmdirUtil.Utilities.ConvertToAttributeDTOList(operationalProperties);
         }
         public void FillListView()
         {
-            var clvg = new ListViewGroup("Current Attributes") { Tag = GroupTag.CURRENT_ATTR };
-            var optlvg = new ListViewGroup("Optional Attributes") { Tag = GroupTag.OPTIONAL_ATT };
+            var clvg = new ListViewGroup("Current Attributes") { Tag = GroupTag.CURRENT_ATTR };          
             listViewProp.Groups.Add(clvg);
-            listViewProp.Groups.Add(optlvg);
-
             var lviList = new List<ListViewItem>();
             foreach (var item in _currAttrDTOList)
             {
-                lviList.Add(new ListViewItem(new string[] { item.Name, item.Value, item.AttrSyntaxDTO.Type }) { Tag = clvg.Tag, Group = clvg, BackColor = Color.WhiteSmoke });
-            }
-            foreach (var item in _optAttrDTOList)
-            {
-                lviList.Add(new ListViewItem(new string[] { item.Name, item.Value, item.AttrSyntaxDTO.Type }) { Tag = optlvg.Tag, Group = optlvg, BackColor = Color.WhiteSmoke });
+                var val = item.Value;
+                if (string.Equals(item.AttrSyntaxDTO.Type, "Generalized Time"))
+                    val = VmdirUtil.Utilities.ConvertGeneralizedTimeIntoReadableFormat(item.Value);
+                lviList.Add(new ListViewItem(new string[] { item.Name, val, item.AttrSyntaxDTO.Type }) { Tag = clvg.Tag, Group = clvg, BackColor = Color.WhiteSmoke });
             }
             listViewProp.Items.AddRange(lviList.ToArray());
 
-            if (_serverDTO.OperationalFlag)
+            if(_serverDTO.OptionalAttrFlag)
+                ShowOptionalAttribute();
+            else
+                HideAttribute(GroupTag.OPTIONAL_ATT);
+
+            if (_serverDTO.OperationalAttrFlag)
                 ShowOperationalAttribute();
             else
-                HideOprationalAttribute();
+                HideAttribute(GroupTag.OPERATIONAL_ATT);
         }
 
+        private void ShowOptionalAttribute()
+        {
+            if (_serverDTO == null || _serverDTO.Connection == null)
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
+                return;
+            }
+            MiscUtilsService.CheckedExec(delegate
+            {
+                if (_optAttrDTOList.Count <= 0)
+                    GetOptionalAttribute();
+                var optlvg = new ListViewGroup("Optional Attributes") { Tag = GroupTag.OPTIONAL_ATT };
+                listViewProp.Groups.Add(optlvg);
+
+                var lviList = new List<ListViewItem>();
+                foreach (var item in _optAttrDTOList)
+                {
+                    lviList.Add(new ListViewItem(new string[] { item.Name, item.Value, item.AttrSyntaxDTO.Type }) { Tag = optlvg.Tag, Group = optlvg, BackColor = Color.WhiteSmoke });
+                }
+                listViewProp.Items.AddRange(lviList.ToArray());
+            });
+        }
+
+        private void HideAttribute(GroupTag grpTag)
+        {
+            foreach (ListViewGroup grp in listViewProp.Groups)
+            {
+                if ((GroupTag)grp.Tag == grpTag)
+                {
+                    while (grp.Items.Count > 0)
+                    {
+                        listViewProp.Items.Remove(grp.Items[0]);
+                    }
+                    listViewProp.Groups.Remove(grp);
+                    break;
+                }
+            }
+        }
+
+        private void ShowOperationalAttribute()
+        {
+            if (_serverDTO == null || _serverDTO.Connection == null)
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
+                return;
+            }
+            MiscUtilsService.CheckedExec(delegate
+            {
+                if (_oprAttrDTOList.Count <= 0)
+                    GetOperationalAttribute();
+                var oprlvg = new ListViewGroup("Operational Attributes") { Tag = GroupTag.OPERATIONAL_ATT };
+                this.listViewProp.Groups.Insert(0, oprlvg);
+
+                var lviList = new List<ListViewItem>();
+                foreach (var item in _oprAttrDTOList)
+                {
+                    var val = item.Value;
+                    if (string.Equals(item.AttrSyntaxDTO.Type, "Generalized Time"))
+                        val = VmdirUtil.Utilities.ConvertGeneralizedTimeIntoReadableFormat(item.Value);
+                    lviList.Add(new ListViewItem(new string[] { item.Name, val, item.AttrSyntaxDTO.Type }) { Tag = oprlvg.Tag, Group = oprlvg, BackColor = Color.WhiteSmoke });
+                }
+                listViewProp.Items.AddRange(lviList.ToArray());
+            });
+        }
         public void RefreshPropertiesView()
         {
             ClearData();
@@ -180,7 +250,8 @@ namespace VMDirSnapIn.UI
                 _serverDTO.Connection.Search(dto,
                     (l, e) =>
                     {
-                        _properties = _serverDTO.Connection.GetEntryProperties(e);
+                        if (e.Count > 0)
+                            _properties = _serverDTO.Connection.GetEntryProperties(e[0]);
                     });
             });
             GetData();
@@ -262,8 +333,8 @@ namespace VMDirSnapIn.UI
                     listViewProp.Bounds.Top + lvsi.Bounds.Top,
                     lvsi.Bounds.Width,
                     lvsi.Bounds.Height);
-                var type = String.Empty;
                 textBoxEdit.Text = lvsi.Text;
+                oldVal = lvsi.Text;
                 textBoxEdit.Visible = true;
                 textBoxEdit.Focus();
             }
@@ -284,8 +355,15 @@ namespace VMDirSnapIn.UI
             ListViewItem lvi = listViewProp.SelectedItems[0];
             System.Windows.Forms.ListViewItem.ListViewSubItem lvsi = lvi.SubItems[1];
             lvsi.Text = textBoxEdit.Text;
+            if (!string.Equals(oldVal, lvsi.Text)) 
+            {
+                _modData.Add(lvi.SubItems[0].Text);
+                lvi.BackColor = Color.LightYellow;
+                SetEditState(true);
+            }
+            oldVal = string.Empty;
             textBoxEdit.Visible = false;
-            _modData.Add(lvi.SubItems[0].Text);
+
         }
 
         private void buttonSubmit_Click(object sender, EventArgs e)
@@ -316,54 +394,34 @@ namespace VMDirSnapIn.UI
                             }
                         }
                     }
-                    LdapMod[] attrMods = new LdapMod[finalMods.Count];
+                    var frm = new SubmitModConfirm(finalMods);
+                    if (frm.ShowDialog() != DialogResult.OK)
+                        return;
+
+                    //LdapMod[] attrMods = new LdapMod[finalMods.Count];
+                    List<AttributeModStatus> modificationStatus = new List<AttributeModStatus>();
                     int i = 0;
                     foreach (var m in finalMods)
                     {
+                        LdapMod[] ldapVal = new LdapMod[1];
                         var values = m.Value.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
                         Array.Resize(ref values, values.Count() + 1);
-                        attrMods[i] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_REPLACE, m.Key, values);
+                        ldapVal[0] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_REPLACE, m.Key, values);
+                        try
+                        {
+                            _serverDTO.Connection.ModifyObject(_dn, ldapVal);
+                            modificationStatus.Add(new AttributeModStatus(m.Key,true,"Success"));
+                        }
+                        catch(Exception exp){
+                            modificationStatus.Add(new AttributeModStatus(m.Key, false, exp.Message));
+                        }
                         i++;
                     }
-                    _serverDTO.Connection.ModifyObject(_dn, attrMods);
+                    var frm2 = new SubmitModStatus(modificationStatus);
+                    frm2.ShowDialog();
                     RefreshPropertiesView();
                 }
             });
-        }
-
-        private void HideOprationalAttribute()
-        {
-            if ((GroupTag)listViewProp.Groups[0].Tag == GroupTag.OPERATIONAL_ATT)
-            {
-                while (listViewProp.Groups[0].Items.Count > 0)
-                {
-                    listViewProp.Items.Remove(listViewProp.Groups[0].Items[0]);
-                }
-                listViewProp.Groups.RemoveAt(0);
-            }
-        }
-
-        private void ShowOperationalAttribute()
-        {
-            if (_serverDTO == null || _serverDTO.Connection == null)
-            {
-                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
-                return;
-            }
-            MiscUtilsService.CheckedExec(delegate
-           {
-               if (_oprAttrDTOList.Count <= 0)
-                   GetOperationalAttribute();
-               var oprlvg = new ListViewGroup("Operational Attributes") { Tag = GroupTag.OPERATIONAL_ATT };
-               this.listViewProp.Groups.Insert(0, oprlvg);
-
-               var lviList = new List<ListViewItem>();
-               foreach (var item in _oprAttrDTOList)
-               {
-                   lviList.Add(new ListViewItem(new string[] { item.Name, item.Value, item.AttrSyntaxDTO.Type }) { Tag = oprlvg.Tag, Group = oprlvg, BackColor = Color.WhiteSmoke });
-               }
-               listViewProp.Items.AddRange(lviList.ToArray());
-           });
         }
 
         private void buttonReset_Click(object sender, EventArgs e)
@@ -376,6 +434,20 @@ namespace VMDirSnapIn.UI
             ClearContext();
             _modData.Clear();
             FillListView();
+            SetEditState(false);
+        }
+
+        public void SetEditState(bool state)
+        {
+            this.buttonSubmit.Visible = state;
+            this.buttonReset.Visible = state;
+        }
+        public void ClearView()
+        {
+            _properties = null;
+            _mayAttrTyDTOList.Clear();
+            ClearData();
+            ClearContext();
         }
     }
 }

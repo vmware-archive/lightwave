@@ -31,7 +31,6 @@ CALL :buildWithMSBUILD4 VMDirSchemaSnapIn\VMDirSchemaSnapIn.sln Debug
 CALL :buildWithMSBUILD4 VMCASnapIn\VMCASnapIn.sln Debug
 CALL :buildWithMSBUILD4 VMRestSsoAdminSnapIn\RestSsoAdminSnapIn.sln Debug
 CALL :buildWithMSBUILD4 VMPscHighAvailabilitySnapIn\VMPscHighAvailabilitySnapIn.sln Debug
-CALL :buildWithMSBUILD4 VMDNSSnapIn\VMDNSSnapIn.sln Debug
 CALL :buildWithMSBUILD4 wininstaller\wininstaller.sln Debug
 
 echo ------------ Release ---------------
@@ -44,7 +43,6 @@ CALL :buildWithMSBUILD4 VMDirSchemaSnapIn\VMDirSchemaSnapIn.sln Release
 CALL :buildWithMSBUILD4 VMCASnapIn\VMCASnapIn.sln Release
 CALL :buildWithMSBUILD4 VMRestSsoAdminSnapIn\RestSsoAdminSnapIn.sln Release
 CALL :buildWithMSBUILD4 VMPscHighAvailabilitySnapIn\VMPscHighAvailabilitySnapIn.sln Release
-CALL :buildWithMSBUILD4 VMDNSSnapIn\VMDNSSnapIn.sln Release
 CALL :buildWithMSBUILD4 wininstaller\wininstaller.sln Release
 
 goto end
@@ -70,15 +68,6 @@ REM build all interop solutions in a particular config
     if %result% == true (
         REM build - vmdir
         CALL :buildWithMSBUILD4 ..\..\vmdir\interop\csharp\VmDirInterop\VmDirInterop.sln %2
-    )
-
-    set result = false
-    if %1% == ALL set result=true
-    if %1% == VMDNSSnapIn set result=true
-
-    if %result% == true (
-        REM build - vmdir
-        CALL :buildWithMSBUILD4 ..\..\vmdns\dotnet\VMDNS.Client\VMDNS.Client.sln %2
     )
     exit /b
 
@@ -108,16 +97,6 @@ REM copy interops to the lib folder
     if %result% == true (
         echo 'move vmdir'
         copy /Y ..\..\vmdir\interop\csharp\VmDirInterop\VmDirInterop\bin\%2\* %INTEROPDIR%\
-    
-    )
-
-    set result=false
-    if %1% == ALL set result=true
-    if %1% == VMDNSSnapIn set result=true
-
-    if %result% == true (
-        echo 'move vmdir'
-        copy /Y ..\..\vmdns\dotnet\VMDNS.Client\bin\%2\* %INTEROPDIR%\
     
     )
 

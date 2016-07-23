@@ -17,7 +17,8 @@ using System.Collections.Generic;
 using VMDir.Common.DTO;
 using VMDirInterop.LDAP;
 using VMDirInterop.Interfaces;
-using VMDir.Common.Schema;
+using VMDir.Common.Schema;
+using System.Text;
 
 namespace VMDir.Common.VMDirUtilities
 {
@@ -155,6 +156,93 @@ namespace VMDir.Common.VMDirUtilities
 			}
 			return new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_ADD, entry.Key, vals.ToArray());
 		}
+
+        public static string ConvertGeneralizedTimeIntoReadableFormat(string gt)
+        {
+            try
+            {
+                int century=-1, year=-1, month=-1, day=-1, hour=-1, minute=-1, second=-1;
+                string zone=string.Empty;
+                string leftPart=string.Empty;
+                string rightPart = string.Empty;
+
+                if (gt.Contains("Z"))
+                {
+                    var parts = gt.Split('Z');
+                    leftPart = parts[0];
+                    rightPart = parts[1];
+                    zone = "GMT";
+                }
+                else if (gt.Contains("-"))
+                {
+                    var parts = gt.Split('-');
+                    leftPart = parts[0];
+                    rightPart = parts[1];
+                }
+                else if (gt.Contains("+"))
+                {
+                    var parts = gt.Split('+');
+                    leftPart = parts[0];
+                    rightPart = parts[1];
+                }
+
+                if (rightPart.Length >= 2)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append("GMT");
+                    if (gt.Contains("+"))
+                        sb.Append("+");
+                    else if (gt.Contains("-"))
+                        sb.Append("-");
+                    sb.Append(rightPart.Substring(0, 2));
+                    if (rightPart.Length >= 4)
+                        sb.Append(":" + rightPart.Substring(2, 2));
+                    zone = sb.ToString();
+                }
+
+                if (leftPart.Contains("."))
+                {
+                    var parts = gt.Split('.');
+                    leftPart = parts[0];
+                }
+                if (leftPart.Length >= 10)
+                {
+                    century=int.Parse(leftPart.Substring(0, 2));
+                    year=int.Parse(leftPart.Substring(2, 2));
+                    month = int.Parse(leftPart.Substring(4, 2));
+                    day = int.Parse(leftPart.Substring(6, 2));
+                    hour = int.Parse(leftPart.Substring(8, 2));
+
+                    if(leftPart.Length>=12)
+                        minute = int.Parse(leftPart.Substring(10, 2));
+                    if (leftPart.Length >= 14)
+                        second = int.Parse(leftPart.Substring(12, 2));
+                }
+                StringBuilder sb2 = new StringBuilder();
+                sb2.Append(day);
+                sb2.Append("/");
+                sb2.Append(month);
+                sb2.Append("/");
+                sb2.Append(century);
+                sb2.Append(year);
+                sb2.Append(", ");
+                sb2.Append(hour);
+                if(minute>=0)
+                {
+                    sb2.Append(":");
+                    sb2.Append(minute);
+                    if (second >= 0)
+                        sb2.Append(":" + second);
+                }
+                sb2.Append(" ");
+                sb2.Append(zone);
+                return sb2.ToString();
+            }
+            catch (Exception ex)
+            {
+                return gt;
+            }
+        }
 	}
 }
 

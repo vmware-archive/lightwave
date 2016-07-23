@@ -95,9 +95,7 @@ namespace VMDirSchemaEditorSnapIn.Nodes
 
         public void AddObjectClass()
         {
-            AttributeTypeManager attributes = this.ServerNode.ServerDTO.Connection.SchemaManager.GetAttributeTypeManager();
-            ObjectClassManager objectClasses = this.ServerNode.ServerDTO.Connection.SchemaManager.GetObjectClassManager();
-            var frm = new ObjectClassWindow(attributes,objectClasses);
+            var frm = new ObjectClassWindow(this.ServerNode.ServerDTO.Connection.SchemaManager);
             if (SnapIn.Console.ShowDialog(frm) == DialogResult.OK)
             {
               UIErrorHelper.CheckedExec(delegate()
