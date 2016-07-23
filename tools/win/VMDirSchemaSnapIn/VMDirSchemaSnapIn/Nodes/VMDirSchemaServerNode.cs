@@ -116,6 +116,13 @@ namespace VMDirSchemaEditorSnapIn.Nodes
             }
         }
 
+        protected override void OnRefresh(AsyncStatus status)
+        {
+            base.OnRefresh(status);
+            ServerDTO.Connection.SchemaManager.RefreshSchema();
+            PopulateChildren();
+        }
+
         public void Logout()
         {
             CloseConnection();
@@ -192,9 +199,16 @@ namespace VMDirSchemaEditorSnapIn.Nodes
         }
 
         public async void ServerConnect()
-        {
-            ServerDTO.Connection = new LdapConnectionService(ServerDTO.Server, ServerDTO.BindDN, ServerDTO.Password);
-            ret = ServerDTO.Connection.CreateConnection();
+        {
+            try
+            {
+                ServerDTO.Connection = new LdapConnectionService(ServerDTO.Server, ServerDTO.BindDN, ServerDTO.Password);
+                ret = ServerDTO.Connection.CreateConnection();
+            }
+            catch (Exception e)
+            {
+                ret = 0;
+            }
         }
     }
 }

@@ -35,6 +35,11 @@ namespace VMDirSnapIn
         User,
         ServerLog,
         Save,
-        Open
+        Open,
+        Edit,
+        Delete,
+        Refresh,
+        AddToGroup,
+        Export
     }
 }

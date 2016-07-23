@@ -477,10 +477,10 @@ namespace VMDirSnapIn.UI
 
 		partial void OnOperationalToolBarItem(NSObject sender)
 		{
-			if (serverNode.DTO.OperationalFlag)
-				serverNode.DTO.OperationalFlag = false;
+			if (serverNode.DTO.OperationalAttrFlag)
+				serverNode.DTO.OperationalAttrFlag = false;
 			else
-				serverNode.DTO.OperationalFlag = true;
+				serverNode.DTO.OperationalAttrFlag = true;
 			RefreshTableViewBasedOnSelection(MainOutlineView.SelectedRow);
 		}
 

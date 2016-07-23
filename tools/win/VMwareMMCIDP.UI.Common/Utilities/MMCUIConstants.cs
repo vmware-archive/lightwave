@@ -71,6 +71,8 @@ namespace VMwareMMCIDP.UI.Common.Utilities
         public const string CERT_FILTER = "Certificate Files (*.crt)|*.crt|All Files (*.*)|*.*";
         public const string SAML_TOKEN_FILTER = "SAML Token Files (*.xml)|*.xml|All Files (*.*)|*.*";
         public const string XML_FILTER = "XML Files (*.xml)|*.xml|All Files (*.*)|*.*";
+        public const string TXT_FILTER = "TXT Files (*.txt)|*.txt|All Files (*.*)|*.*";
+        public const string CSV_FILTER = "CSV Files (*.csv)|*.csv|All Files (*.*)|*.*";
 
         // Log constants
         private const string LOG_FOLDER = @"C:\Users\{0}\AppData\Local\VMware, Inc\VMware Identity Tools\Logs\";

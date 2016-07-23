@@ -29,15 +29,19 @@ using VMIdentity.CommonUtils.Utilities;
 using VMDirInterop.LDAP;
 using VMDirInterop.Interfaces;
 using VMIdentity.CommonUtils.Log;
+using VmIdentity.CommonUtils;
+using System.Text;
 
 namespace VMPSCHighAvailability.Common.Service
 {
     public class PscHighAvailabilityService : IPscHighAvailabilityService
     {
         private ILogger _logger;
-        public PscHighAvailabilityService(ILogger logger)
+		private VMBaseSnapInEnvironment _snapInEnv;
+        public PscHighAvailabilityService(ILogger logger,VMBaseSnapInEnvironment snapInEnv)
         {
             _logger = logger;
+			_snapInEnv = snapInEnv;
         }
         /// <summary>
         /// Gets the infrastructure nodes.
@@ -178,6 +182,7 @@ namespace VMPSCHighAvailability.Common.Service
             List<NodeDto> list1 = null, list2 = null;
             var t1 = Task.Run(() => { list1 = GetInfrastructureNodes(serverDto, dcName); });
             var t2 = Task.Run(() => { list2 = GetManagementNodes(serverDto, dcName, siteName); });
+
             var tasks = new Task[] { t1, t2 };
             var result = Task.WaitAll(tasks, Constants.TopologyTimeout * Constants.MilliSecsMultiplier);
 
@@ -190,7 +195,27 @@ namespace VMPSCHighAvailability.Common.Service
                 if (t2.Exception != null)
                     throw t2.Exception;
             }
-            if (list2 != null)
+			//For test automation consumption 
+			var filePath = Path.Combine(_snapInEnv.GetApplicationPath(), Constants.PscTopologyFileName);
+			StringBuilder sb = new StringBuilder();
+			if (list1 != null)
+			{
+				sb.Append("Infrastructure Nodes: ");
+				foreach (var item in list1)
+					sb.Append(item.Ip + ", ");
+				sb.Append(Environment.NewLine);
+			}
+			if (list2 != null)
+			{
+				sb.Append("Management Nodes: ");
+				foreach (var item in list2)
+					sb.Append(item.Ip + ", ");
+				sb.Append(Environment.NewLine);
+			}
+			File.WriteAllText(filePath, sb.ToString());
+			//
+
+			if (list2 != null)
             {
                 list2.AddRange(list1);
                 return list2;

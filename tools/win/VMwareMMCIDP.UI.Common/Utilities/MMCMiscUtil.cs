@@ -25,7 +25,7 @@ namespace VMwareMMCIDP.UI.Common.Utilities
 {
     public static class MMCMiscUtil
     {
-        public static void SaveDataToFile(string data, string dialogTitle, string dialogFilter)
+        public static bool SaveDataToFile(string data, string dialogTitle, string dialogFilter)
         {
             using (var sfd = new SaveFileDialog())
             {
@@ -34,7 +34,10 @@ namespace VMwareMMCIDP.UI.Common.Utilities
                 if (sfd.ShowDialog() == DialogResult.OK)
                 {
                     File.WriteAllText(sfd.FileName, data);
+                    return true;
                 }
+                else
+                    return false;
             }
         }
         public static string SelectFile(string dialogTitle, string dialogFilter)
@@ -46,6 +49,20 @@ namespace VMwareMMCIDP.UI.Common.Utilities
                 if (ofd.ShowDialog() == DialogResult.OK)
                 {
                     return ofd.FileName;
+                }
+                return String.Empty;
+            }
+        }
+
+        public static string ReadAllFromFile(string dialogTitle, string dialogFilter)
+        {
+            using (var ofd = new OpenFileDialog())
+            {
+                ofd.Title = dialogTitle;
+                ofd.Filter = dialogFilter;
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    return File.ReadAllText(ofd.FileName);
                 }
                 return String.Empty;
             }

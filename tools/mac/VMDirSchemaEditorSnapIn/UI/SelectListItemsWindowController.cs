@@ -6,12 +6,16 @@ using System.Collections.Generic;
 using VMDirSchemaEditorSnapIn.ListViews;
 using System.Linq;
 using VmIdentity.UI.Common;
+using VmIdentity.UI.Common.Utilities;
+using VMDir.Common;
 
 namespace VMDirSchemaEditorSnapIn
 {
     public partial class SelectListItemsWindowController : NSWindowController
     {
         public List<string> ItemsToSelect;
+        private List<string> currentItems;
+        private List<string> parentItems;
 
         public List<string> SelectedItemsList { get; set; }
 
@@ -29,10 +33,12 @@ namespace VMDirSchemaEditorSnapIn
         {
         }
 
-        public SelectListItemsWindowController(List<string> items)
+        public SelectListItemsWindowController(List<string> items, List<string> currentAttributes, List<string> parentAttributes)
             : base("SelectListItemsWindow")
         {
             this.ItemsToSelect = items;
+            this.currentItems = currentAttributes;
+            this.parentItems = parentAttributes;
         }
 
         public override void AwakeFromNib()
@@ -59,9 +65,18 @@ namespace VMDirSchemaEditorSnapIn
             int row = (int)this.SelectItemsListBox.SelectedRow;
             if (row >= 0)
             {
-                SelectedItemsList.Add((this.SelectItemsListBox.DataSource as StringItemsListView).Entries[row]);
+                string selectedItem = (this.SelectItemsListBox.DataSource as StringItemsListView).Entries[row];
+                if (currentItems != null && parentItems != null && (currentItems.Contains(selectedItem) || parentItems.Contains(selectedItem)))
+                {
+                    UIErrorHelper.ShowAlert(VMDirConstants.WRN_SEL_ITEM_PRESENT, string.Empty);
+                }
+                else
+                {
+                    SelectedItemsList.Add(selectedItem);
+                    this.SelectedItemsListBox.ReloadData();
+                }
             }
-            this.SelectedItemsListBox.ReloadData();
+
         }
 
         partial void RemoveItems(Foundation.NSObject sender)

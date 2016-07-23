@@ -142,7 +142,6 @@
       <MsiPackage SourceFile="$(var.MSIPath)\kfw.msi" Vital="yes"/>
       <MsiPackage SourceFile="$(var.MSIPath)\vmware-platform-sdk-windows.msi" Vital="yes"/>
       <MsiPackage SourceFile="$(var.MSIPath)\vmware-vmca-client-msi.msi" Vital="yes"/>
-      <MsiPackage SourceFile="$(var.MSIPath)\vmware-dns-client.msi" Vital="yes"/>
       <MsiPackage SourceFile="$(var.MSIPath)\vmware-directory-client-msi.msi" Vital="yes"/>
       <MsiPackage SourceFile="$(var.MSIPath)\vmware-afd.msi" Vital="yes"/>
       <MsiPackage SourceFile="$(var.VMIDPOutDir)\LightwaveTools_Installer.msi" Vital="yes"/>

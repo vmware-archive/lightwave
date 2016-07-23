@@ -74,9 +74,7 @@ namespace VMDirSchemaEditorSnapIn.Nodes
 
         public void ShowProperties()
         {
-            AttributeTypeManager attributes = this.ServerNode.ServerDTO.Connection.SchemaManager.GetAttributeTypeManager();
-            ObjectClassManager objectClasses = this.ServerNode.ServerDTO.Connection.SchemaManager.GetObjectClassManager();
-            var frm = new ObjectClassWindow(ObjectClassDto, attributes, objectClasses);
+            var frm = new ObjectClassWindow(ObjectClassDto, this.ServerNode.ServerDTO.Connection.SchemaManager);
             if (SnapIn.Console.ShowDialog(frm) == DialogResult.OK)
             {
                 UIErrorHelper.CheckedExec(delegate(){

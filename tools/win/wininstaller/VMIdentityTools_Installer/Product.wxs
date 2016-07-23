@@ -52,11 +52,6 @@
                   Description="MMC Console for Lightwave SSO"
                   Target="[APPLICATIONFOLDER]Lightwave SSO.msc"
                   WorkingDirectory="TARGETDIR"/>
-        <Shortcut Id="VMDNSShortcut"
-                  Name="Lightwave DNS"
-                  Description="MMC Console for Lightwave Domain Name Server"
-                  Target="[APPLICATIONFOLDER]Lightwave DNS.msc"
-                  WorkingDirectory="TARGETDIR"/>
         <Shortcut Id="VMDirSchemaShortcut"
                   Name="Lightwave Directory Schema"
                   Description="MMC console for Lightwave Directory Schema Browser"
@@ -107,9 +102,6 @@
       
       <ComponentGroupRef Id="VMDirSchema_comp_group"/>
       <ComponentGroupRef Id="VMDirSchema_reg_comp_group"/>
-      
-      <ComponentGroupRef Id="VMDNS_comp_group"/>
-      <ComponentGroupRef Id="VMDNS_reg_comp_group"/>
 
       <ComponentGroupRef Id="RestSSO_comp_group"/>
       <ComponentGroupRef Id="RestSSO_reg_comp_group"/>

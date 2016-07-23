@@ -32,6 +32,7 @@
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
         <window title="Lightwave Directory" autorecalculatesKeyViewLoop="NO" oneShot="NO" animationBehavior="default" id="2" customClass="MainWindow">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
+            <windowCollectionBehavior key="collectionBehavior" fullScreenAuxiliary="YES"/>
             <rect key="contentRect" x="351" y="220" width="1024" height="700"/>
             <rect key="screenRect" x="0.0" y="0.0" width="1440" height="877"/>
             <value key="minSize" type="size" width="1024" height="700"/>
@@ -180,10 +181,10 @@
         <image name="Edit_Properties_64" width="128" height="128"/>
         <image name="NSMultipleDocuments" width="32" height="32"/>
         <image name="NSRefreshTemplate" width="11" height="15"/>
-        <image name="NextPageImg" width="16" height="16"/>
-        <image name="PageSizeImg" width="16" height="16"/>
-        <image name="SearchImg" width="16" height="16"/>
-        <image name="ShowOperationalAttrImg" width="16" height="16"/>
+        <image name="NextPageImg" width="64" height="64"/>
+        <image name="PageSizeImg" width="64" height="64"/>
+        <image name="SearchImg" width="64" height="64"/>
+        <image name="ShowOperationalAttrImg" width="64" height="64"/>
         <image name="View_Schema_64" width="64" height="64"/>
         <image name="connect" width="64" height="64"/>
         <image name="delete" width="64" height="64"/>

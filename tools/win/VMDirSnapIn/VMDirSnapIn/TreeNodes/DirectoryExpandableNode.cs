@@ -118,22 +118,6 @@ namespace VMDirSnapIn.TreeNodes
             });
         }
 
-        public void Delete()
-        {
-            if (!MiscUtilsService.Confirm(string.Format(CommonConstants.CONFIRM_DELETE, "object", Text)))
-                return;
-
-            MiscUtilsService.CheckedExec(delegate
-            {
-                ServerDTO.Connection.DeleteObject(Dn);
-                var parent = this.Parent;
-                if (parent != null)
-                {
-                    parent.Nodes.Remove(this);
-                }
-            });
-        }
-
         public void AddObject()
         {
             MiscUtilsService.CheckedExec(delegate
@@ -152,6 +136,7 @@ namespace VMDirSnapIn.TreeNodes
                         ServerDTO.Connection.AddObject(newdn, attributes);
                         ClearDummyNode();
                         this.Nodes.Add(new DirectoryExpandableNode(newdn, frmSelect.SelectedObject, ServerDTO, PropertiesCtl));
+                        MMCDlgHelper.ShowInformation(VMDirConstants.STAT_OBJ_ADD_SUCC);
                     }
                 }
             });
@@ -183,9 +168,9 @@ namespace VMDirSnapIn.TreeNodes
 					});
                     string dn = string.Format("cn={0},{1}", dto.cn, Dn);
                     ServerDTO.Connection.AddObject(dn, user);
-                    MMCDlgHelper.ShowInformation(VMDirConstants.STAT_GRP_ADD_SUCC);
                     ClearDummyNode();
                     this.Nodes.Add(new DirectoryExpandableNode(dn, dto.objectClass, ServerDTO, PropertiesCtl));
+                    MMCDlgHelper.ShowInformation(VMDirConstants.STAT_GRP_ADD_SUCC);
                 });
             }
         }
@@ -225,9 +210,9 @@ namespace VMDirSnapIn.TreeNodes
 					});
                     string dn = string.Format("cn={0},{1}", userDTO.Cn, Dn);
                     ServerDTO.Connection.AddObject(dn, user);
-                    MMCDlgHelper.ShowInformation(VMDirConstants.STAT_USR_ADD_SUCC);
                     ClearDummyNode();
                     this.Nodes.Add(new DirectoryExpandableNode(dn, VMDirConstants.USER_OC, ServerDTO, PropertiesCtl));
+                    MMCDlgHelper.ShowInformation(VMDirConstants.STAT_USR_ADD_SUCC);
                 });
             }
         }

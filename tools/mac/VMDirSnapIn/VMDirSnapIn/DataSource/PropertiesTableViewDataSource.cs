@@ -78,7 +78,7 @@ namespace VMDirSnapIn.DataSource
 					optAttrDTOList.RemoveAll(x => x.Name.Equals(item.Name));
 			optAttrDTOList.Sort((x, y) => string.Compare(x.Name, y.Name, StringComparison.InvariantCultureIgnoreCase));
 
-			if (serverDTO.OperationalFlag)
+			if (serverDTO.OperationalAttrFlag)
 			{
 				GetOperationalAttribute();
 				displayAttrDTOList.AddRange(oprAttrDTOList);
@@ -92,7 +92,11 @@ namespace VMDirSnapIn.DataSource
 			TextQueryDTO dto = new TextQueryDTO(dn, LdapScope.SCOPE_BASE, VMDirConstants.SEARCH_ALL_OC,
 	new string[] { "+" }, 0, IntPtr.Zero, 0);
 			var operationalProperties = new Dictionary<string, VMDirAttributeDTO>();
-			serverDTO.Connection.Search(dto, (l, e) => operationalProperties = serverDTO.Connection.GetEntryProperties(e));
+			serverDTO.Connection.Search(dto, (l, e) =>
+			{
+				if(e.Count>0)
+					operationalProperties = serverDTO.Connection.GetEntryProperties(e[0]);
+			});
 			oprAttrDTOList = Utilities.ConvertToAttributeDTOList(operationalProperties);
 		}
 
@@ -111,8 +115,11 @@ namespace VMDirSnapIn.DataSource
 			serverDTO.Connection.Search(dto,
 				(l, e) =>
 				{
-					if (e.Count > 0) dn = e[0].getDN();
-					properties = serverDTO.Connection.GetEntryProperties(e);
+					if (e.Count > 0)
+					{
+						dn = e[0].getDN();
+						properties = serverDTO.Connection.GetEntryProperties(e[0]);
+					}
 				});
 
 			FillData();

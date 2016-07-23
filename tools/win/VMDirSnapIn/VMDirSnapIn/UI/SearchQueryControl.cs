@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Xml.Serialization;
 using VMDir.Common;
@@ -45,7 +46,6 @@ namespace VMDirSnapIn.UI
             this.comboBoxAttr.Items.Clear();
             this.comboBoxCond.Items.Clear();
             this.comboBoxScope.Items.Clear();
-            this.comboBoxScope2.Items.Clear();
             this.comboBoxLogicalOp.Items.Clear();
         }
         public void BindUI(string searchBase, VMDirServerDTO serverDTO)
@@ -57,25 +57,18 @@ namespace VMDirSnapIn.UI
 
             ClearUI();
             this.textBoxBase.Text = searchBase;
-            this.textBoxBase2.Text = searchBase;
             this.comboBoxAttr.Items.AddRange(attrList.ToArray());
+            this.comboBoxAttrToReturn.Items.AddRange(attrList.ToArray());
+            this.comboBoxAttrToReturn.SelectedIndex = 0;
             this.comboBoxAttr.SelectedIndex = 0;
             this.comboBoxCond.Items.AddRange(VMDirConstants.ConditionList);
             this.comboBoxCond.SelectedIndex = 0;
             this.comboBoxScope.Items.AddRange(VMDirConstants.ScopeList);
-            this.comboBoxScope.SelectedIndex = 0;
-            this.comboBoxScope2.Items.AddRange(VMDirConstants.ScopeList);
-            this.comboBoxScope2.SelectedIndex = 0;
+            this.comboBoxScope.SelectedIndex = 2;
             this.comboBoxLogicalOp.Items.AddRange(VMDirConstants.OperatorList);
             this.comboBoxLogicalOp.SelectedIndex = 0;
         }
-        private void buttonAdd_Click(object sender, EventArgs e)
-        {
-            if (!ValidateAdd())
-                return;
-            var lvi = new ListViewItem(new string[] { comboBoxAttr.SelectedItem.ToString(), comboBoxCond.SelectedItem.ToString(), textBoxVal.Text });
-            listViewConditions.Items.Add(lvi);
-        }
+
         private bool ValidateAdd()
         {
             if (comboBoxAttr.SelectedItem == null)
@@ -166,49 +159,26 @@ namespace VMDirSnapIn.UI
             return filters;
         }
 
-        private void buttonView_Click_1(object sender, EventArgs e)
-        {
-            if (!ValidateSearch())
-                return;
-            var qdto = GetQuery();
-            if (qdto != null)
-                MessageBox.Show(qdto.GetFilterString());
-        }
-        private void buttonSearch_Click_1(object sender, EventArgs e)
-        {
-            SearchClicked();
-        }
-        private void buttonSearch2_Click(object sender, EventArgs e)
-        {
-            SearchClicked();
-        }
         private QueryDTO GetQuery()
         {
             QueryDTO qdto = null;
+            var lst = new HashSet<string>();
+            foreach(ListViewItem item in listViewAttrToReturn.Items)
+                lst.Add(item.SubItems[0].Text);
+            lst.Add(VMDirConstants.ATTR_OBJECT_CLASS);
+            lst.Add(VMDirConstants.ATTR_DN);
+
             if (this.tabControl1.SelectedIndex == 0)
             {
                 qdto = new BuildQueryDTO(textBoxBase.Text, (LdapScope)comboBoxScope.SelectedIndex, (LogicalOp)comboBoxLogicalOp.SelectedIndex,
-                    GetFiltersList(), new string[] { VMDirConstants.ATTR_DN, VMDirConstants.ATTR_OBJECT_CLASS }, 0, IntPtr.Zero, 0);
-
+                    GetFiltersList(), lst.ToArray(), 0, IntPtr.Zero, 0);
             }
             else if (this.tabControl1.SelectedIndex == 1)
             {
-                qdto = new TextQueryDTO(textBoxBase2.Text, (LdapScope)comboBoxScope2.SelectedIndex, this.textBoxFilterString.Text,
-                    new string[] { VMDirConstants.ATTR_DN, VMDirConstants.ATTR_OBJECT_CLASS }, 0, IntPtr.Zero, 0);
+                qdto = new TextQueryDTO(textBoxBase.Text, (LdapScope)comboBoxScope.SelectedIndex, this.textBoxFilterString.Text,
+                    lst.ToArray(), 0, IntPtr.Zero, 0);
             }
             return qdto;
-        }
-        private void SearchClicked()
-        {
-            if (!ValidateSearch())
-                return;
-
-            qdto = GetQuery();
-            if (SearchButtonClicked != null)
-            {
-                SearchArgs args = new SearchArgs(qdto);
-                SearchButtonClicked(new object(), args);
-            }
         }
 
         private void contextMenuStrip1_Opening_1(object sender, CancelEventArgs e)
@@ -296,9 +266,94 @@ namespace VMDirSnapIn.UI
             {
                 var dto = qdto as TextQueryDTO;
                 this.tabControl1.SelectedIndex = 1;
-                this.textBoxBase2.Text = dto.SearchBase;
-                this.comboBoxScope2.SelectedIndex = (int)dto.SearchScope;
+                this.textBoxBase.Text = dto.SearchBase;
+                this.comboBoxScope.SelectedIndex = (int)dto.SearchScope;
                 this.textBoxFilterString.Text = dto.GetFilterString();
+            }
+        }
+
+        private void buttonAttrAdd_Click(object sender, EventArgs e)
+        {
+            var item=comboBoxAttrToReturn.SelectedItem;
+            var lvi = new ListViewItem(new string[] { item.ToString() });
+            listViewAttrToReturn.Items.Add(lvi);
+            this.comboBoxAttrToReturn.SelectedIndex = 0;
+            this.comboBoxAttrToReturn.Items.Remove(item);
+        }
+
+        private void buttonAttrRemove_Click(object sender, EventArgs e)
+        {
+            foreach (ListViewItem item in this.listViewAttrToReturn.SelectedItems)
+            {
+                this.listViewAttrToReturn.Items.Remove(item);
+                this.comboBoxAttrToReturn.Items.Add(item);
+            }
+        }
+
+        private void buttonAttrRemoveAll_Click(object sender, EventArgs e)
+        {
+            foreach (ListViewItem item in this.listViewAttrToReturn.Items)
+            {
+                this.comboBoxAttrToReturn.Items.Add(item);
+            }
+            this.listViewAttrToReturn.Items.Clear();
+        }
+
+        private void buttonCondAdd_Click(object sender, EventArgs e)
+        {
+            if (!ValidateAdd())
+                return;
+            var lvi = new ListViewItem(new string[] { comboBoxAttr.SelectedItem.ToString(), comboBoxCond.SelectedItem.ToString(), textBoxVal.Text });
+            listViewConditions.Items.Add(lvi);
+        }
+
+        private void buttonCondRemove_Click(object sender, EventArgs e)
+        {
+            foreach (ListViewItem item in this.listViewConditions.SelectedItems)
+            {
+                this.listViewConditions.Items.Remove(item);
+            }
+        }
+
+        private void buttonCondRemoveAll_Click(object sender, EventArgs e)
+        {
+            this.listViewConditions.Items.Clear();
+        }
+
+        private void buttonCopyFilter_Click(object sender, EventArgs e)
+        {
+            var query = GetQuery();
+            if (query != null)
+            {
+                textBoxFilterString.Text=query.GetFilterString();
+                tabControl1.SelectedIndex = 1;
+            }
+        }
+
+        private void buttonFromFile_Click(object sender, EventArgs e)
+        {
+            List<FilterDTO> filters = new List<FilterDTO>();
+            var frm = new ConditionsFromFile(filters, attrList);
+            if (frm.ShowDialog() == DialogResult.OK)
+            {
+                foreach (var item in filters)
+                {
+                    var lvi = new ListViewItem(new string[] { item.Attribute,VMDirConstants.ConditionList[(int)item.Condition], item.Value });
+                    listViewConditions.Items.Add(lvi);
+                }
+            }
+        }
+
+        private void buttonSearch_Click(object sender, EventArgs e)
+        {
+            if (!ValidateSearch())
+                return;
+
+            qdto = GetQuery();
+            if (SearchButtonClicked != null)
+            {
+                SearchArgs args = new SearchArgs(qdto);
+                SearchButtonClicked(new object(), args);
             }
         }
     }

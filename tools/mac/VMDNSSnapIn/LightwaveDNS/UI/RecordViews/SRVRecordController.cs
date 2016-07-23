@@ -63,7 +63,7 @@ namespace VMDNS
                     var record = new VMDNS_RECORD_SRV();
                     record.data = data;
                     record.common.iClass = 1;
-                    record.common.pszName = "_" + ServiceOptionsField.TitleOfSelectedItem + "._" + ProtocolOptionsField.StringValue;
+                    record.common.pszName = "_" + ServiceOptionsField.TitleOfSelectedItem + "._" + ProtocolOptionsField.TitleOfSelectedItem;
                     record.common.type = (UInt16)RecordType.VMDNS_RR_TYPE_SRV;
                     addressRecord = new VmDnsRecordSRV(record);
 

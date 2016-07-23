@@ -56,9 +56,7 @@ namespace VMDirSchemaEditorSnapIn.Nodes
 
         public void AddObjectClass(object sender, EventArgs args)
         {
-            AttributeTypeManager attributes = this.ServerNode.ServerDTO.Connection.SchemaManager.GetAttributeTypeManager();
-            ObjectClassManager objectClasses = this.ServerNode.ServerDTO.Connection.SchemaManager.GetObjectClassManager();
-            ObjectClassWindowController obc = new ObjectClassWindowController(attributes, objectClasses);
+            ObjectClassWindowController obc = new ObjectClassWindowController(this.ServerNode.ServerDTO.Connection.SchemaManager);
             nint ret = NSApplication.SharedApplication.RunModalForWindow(obc.Window);
             if (ret == VMIdentityConstants.DIALOGOK)
             {
