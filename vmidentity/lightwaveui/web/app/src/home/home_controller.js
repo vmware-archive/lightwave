@@ -15,8 +15,8 @@
 'use strict';
 
 var module = angular.module('lightwave.ui.home');
-module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope', 'Configuration', 'Util',
-        function($rootScope, $cookies, $location, $scope, Configuration, Util) {
+module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope', '$window', 'Configuration', 'Util',
+        function($rootScope, $cookies, $location, $scope, $window, Configuration, Util) {
 
         init();
 
@@ -36,7 +36,13 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
             }
             else
             {
-                setcontext(id_token, access_token, token_type, expires_in, state);
+                if($window.sessionStorage.currentUser) {
+                    console.log('inside current user assignment ..');
+                    $rootScope.globals.currentUser = JSON.parse($window.sessionStorage.currentUser);
+                }
+                else {
+                    setcontext(id_token, access_token, token_type, expires_in, state);
+                }
 
                 var key = 'oidc_session_id-'+$rootScope.globals.currentUser.tenant;
                 var sessionId = $cookies.get(key);
@@ -66,6 +72,9 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
                     }
                 }
             };
+            $window.sessionStorage.currentUser = JSON.stringify($rootScope.globals.currentUser);
+
+            console.log('Setting $window.sessionStorage.currentUser: ' + $window.sessionStorage.currentUser);
         }
 
         function getserver(uri){

@@ -239,7 +239,7 @@
                             <div ng-repeat="solutionuser in vm.solutionusers"
                                  ng-if="vm.solutionusers"
                                  tabindex="1"
-                                 ng-class="getClass(vm.selectedSolutionUser.upn == solutionuser.upn)"
+                                 ng-class="getClass(vm.selectedSolutionUser.name == solutionuser.name)"
                                  ng-click="vm.selectedSolutionUser = solutionuser;">
 
                                 <div class="col-xs-3"

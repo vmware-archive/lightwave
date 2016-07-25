@@ -452,7 +452,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
                             $scope.vm.solutionusers = res.data.solutionUsers;
 
                             if($scope.vm.solutionusers && $scope.vm.solutionusers.length > 0) {
-                                $scope.vm.selectedSolutionUser = $scope.vm.users[0];
+                                $scope.vm.selectedSolutionUser = $scope.vm.solutionusers[0];
                             }
 
                             if ($scope.vm.solutionusers) {

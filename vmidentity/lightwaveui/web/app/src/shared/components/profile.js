@@ -44,6 +44,7 @@ module.controller('ProfileCntrl', [ '$scope', '$rootScope', '$window', 'popupUti
         }
 
         function logout() {
+            $window.sessionStorage.currentUser = null;
             var logoutUri = "/lightwaveui/Logout?id_token="
                 + $rootScope.globals.currentUser.token.id_token
                 + "&state="

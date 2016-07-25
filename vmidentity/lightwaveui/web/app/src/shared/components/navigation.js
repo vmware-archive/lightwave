@@ -15,8 +15,8 @@
 'use strict';
 
 var module = angular.module('lightwave.ui.shared.components');
-module.controller('NavigationCntrl', [ '$scope', '$rootScope',
-        function($scope, $rootScope) {
+module.controller('NavigationCntrl', [ '$scope', '$rootScope', '$location',
+        function($scope, $rootScope, $location) {
             $scope.vm = this;
             $scope.vm.select = select;
             $scope.vm.getItemStyle = getItemStyle;
@@ -25,6 +25,12 @@ module.controller('NavigationCntrl', [ '$scope', '$rootScope',
             init();
 
             function init() {
+
+                var absUrl = $location.absUrl();
+                var uris = absUrl.split('/');
+                var lastUri = uris[uris.length - 1];
+                var part = lastUri.split('?')[0];
+
                 $scope.vm.menus = [
                     {
                         name: "Single Sign-On",
@@ -33,7 +39,6 @@ module.controller('NavigationCntrl', [ '$scope', '$rootScope',
                         href: "#ssohome",
                         selected: true,
                         roles: ['Administrator', 'RegularUser','GuestUser']
-
                     },
                     {
                         name: "Users & Groups",
@@ -78,6 +83,10 @@ module.controller('NavigationCntrl', [ '$scope', '$rootScope',
                         roles: ['Administrator']
                     }
                 ];
+
+                for (var i=0; i<$scope.vm.menus.length; i++) {
+                    $scope.vm.menus[i].selected = ($scope.vm.menus[i].href == ('#' + part));
+                }
             }
 
             function exists(roles, role){

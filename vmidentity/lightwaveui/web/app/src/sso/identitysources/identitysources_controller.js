@@ -83,6 +83,7 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
                         var identitySources = $scope.vm.identitySources;
                         $scope.vm.filteredIdentitySources = [];
                         if (identitySources != null && identitySources.length > 0) {
+                            $scope.vm.selectedIdentitysource = $scope.vm.identitySources[0];
                             for (var i = 0; i < $scope.vm.identitySources.length; i++) {
                                 if (!searchText ||
                                     searchText == '' ||
