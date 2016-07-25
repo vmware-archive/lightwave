@@ -34,7 +34,7 @@ module.controller('PasswordPolicyCntrl', [ '$scope', '$rootScope', 'TenantServic
                 };
 
                 TenantService
-                    .UpdateConfiguration($rootScope.globals.currentUser, policy)
+                    .UpdateDirConfiguration($rootScope.globals.currentUser, policy)
                     .then(function (res) {
                         if (res.status == 200) {
                             $rootScope.globals.errors = {details: 'Password policy updated successfully', success:true};

@@ -80,6 +80,22 @@ function Configuration() {
         return tenantEndpoint + '/config' + type;
     }
 
+    // Tenant configuration endpoint
+    function getDirConfigEndpoint(server, tenant, policies) {
+
+        var type = '';
+        if(policies && policies.length > 0)
+        {
+            type = '?';
+            for(var i = 0; i < policies.length; i++) {
+                type = type + 'type=' + policies[i] + '&';
+            }
+            type = type.substr(0, type.length - 1);
+        }
+        var tenantEndpoint = getDirTenantEndpoint(server, tenant);
+        return tenantEndpoint + '/config' + type;
+    }
+
     // Member search endpoint
     function getMemberSearchEndpoint(server, tenant) {
         var tenantEndpoint = getTenantEndpoint(server, tenant);
@@ -257,5 +273,6 @@ function Configuration() {
     service.getPrivateKeysEndpoint = getPrivateKeysEndpoint;
     service.getCertificatesEndpoint = getCertificatesEndpoint;
     service.getUserPasswordEndpoint = getUserPasswordEndpoint;
+    service.getDirConfigEndpoint = getDirConfigEndpoint;
     return service;
 }

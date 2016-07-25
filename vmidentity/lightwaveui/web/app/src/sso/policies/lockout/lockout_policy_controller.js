@@ -34,7 +34,7 @@ module.controller('LockoutPolicyCntrl', [ '$scope', '$rootScope', 'TenantService
                 };
 
                 TenantService
-                    .UpdateConfiguration($rootScope.globals.currentUser, policy)
+                    .UpdateDirConfiguration($rootScope.globals.currentUser, policy)
                     .then(function (res) {
                         if (res.status == 200) {
                             $rootScope.globals.errors = {details: 'Lockout policy updated successfully', success:true};

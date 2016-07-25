@@ -26,6 +26,7 @@ function TenantService(Configuration, HttpService, HandleHttpResponse) {
     service.Delete = Delete;
     service.GetConfiguration = GetConfiguration;
     service.UpdateConfiguration = UpdateConfiguration;
+    service.UpdateDirConfiguration = UpdateDirConfiguration;
     return service;
 
     function GetConfiguration(context, policies) {
@@ -37,6 +38,13 @@ function TenantService(Configuration, HttpService, HandleHttpResponse) {
 
     function UpdateConfiguration(context, policy) {
         var endpoint = Configuration.getConfigEndpoint(context.server, context.tenant);
+        return HttpService
+            .getResponse(endpoint, 'PUT', context.token, policy)
+            .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
+    }
+
+    function UpdateDirConfiguration(context, policy) {
+        var endpoint = Configuration.getDirConfigEndpoint(context.server, context.tenant);
         return HttpService
             .getResponse(endpoint, 'PUT', context.token, policy)
             .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
