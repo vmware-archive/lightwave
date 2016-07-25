@@ -61,7 +61,7 @@
                             <input type="radio"
                                    name="identitySourceType"
                                    ng-click="vm.setIdentitySourceType(1)"
-                                   ng-value="vm.newIdentitySource.type == 'IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING'"/>
+                                   ng-checked="vm.newIdentitySource.type == 'IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING'"/>
                             Active Directory as LDAP
                             <br/>
 
@@ -73,7 +73,7 @@
                             <input type="radio"
                                    name="identitySourceType"
                                    ng-click="vm.setIdentitySourceType(2)"
-                                   ng-value="vm.newIdentitySource.type == 'IDENTITY_STORE_TYPE_LDAP'"/>
+                                   ng-checked="vm.newIdentitySource.type == 'IDENTITY_STORE_TYPE_LDAP'"/>
                             Open LDAP
                         </div>
                     </div>
@@ -387,10 +387,10 @@
                         class="btn btn-primary pull-right btn-popup-footer"
                         ng-show="vm.idsTab < 4;"
                         ng-click="vm.showNextTab()"
-                        ng-disabled="addnewuserform.$invalid">Next</button>
+                        ng-disabled="!vm.isValid()">Next</button>
                 <button type="button"
                         class="btn btn-default pull-right btn-popup-footer"
-                        ng-show="vm.idsTab > 1;"
+                        ng-show="vm.canShowPreviousTab()"
                         ng-click="vm.showPreviousTab()"
                         ng-disabled="addnewuserform.$invalid">Back</button>
                 <button type="button"
