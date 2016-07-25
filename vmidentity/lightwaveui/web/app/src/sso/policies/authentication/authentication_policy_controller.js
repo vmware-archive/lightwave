@@ -24,6 +24,13 @@ module.controller('AuthenticationPolicyCntrl', [ '$scope', '$rootScope', 'Util',
             $scope.addCertificate = addCertificate;
             $scope.removeCertificate = removeCertificate;
 
+            init();
+
+            function init(){
+                $rootScope.globals.errors = null;
+                $rootScope.globals.popup_errors = null;
+            }
+
             function addPolicyOid(){
 
                 var certPolicyOIDs = $scope.vm.policies.authenticationPolicy.clientCertificatePolicy.certcertPolicyOIDs;
@@ -60,11 +67,12 @@ module.controller('AuthenticationPolicyCntrl', [ '$scope', '$rootScope', 'Util',
                     .UpdateConfiguration($rootScope.globals.currentUser, policy)
                     .then(function (res) {
                         if (res.status == 200) {
+                            $rootScope.globals.errors = {details: 'Authentication policy updated successfully', success:true};
                             $scope.getConfig();
                             $scope.closeThisDialog('save');
                         }
                         else {
-                            $rootScope.globals.errors = res.data;
+                            $rootScope.globals.popup_errors = res.data;
                         }
                     });
             }

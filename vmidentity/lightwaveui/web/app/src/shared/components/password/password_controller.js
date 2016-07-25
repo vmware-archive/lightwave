@@ -20,7 +20,15 @@ module.controller('PasswordCntrl', [ '$scope', '$rootScope', 'UserService',
         $scope.vm = this;
         $scope.vm.updatePassword = updatePassword;
 
-        function updatePassword(){
+        init();
+
+        function init(){
+            $rootScope.globals.errors = null;
+            $rootScope.globals.popup_errors = null;
+        }
+        function updatePassword() {
+
+            $rootScope.globals.errors = '';
             var password = {
                 newPassword : $scope.newPassword,
                 currentPassword : $scope.currentPassword
@@ -42,7 +50,15 @@ module.controller('PasswordCntrl', [ '$scope', '$rootScope', 'UserService',
                 .SetPassword($rootScope.globals.currentUser, user, user.passwordDetails)
                 .then(function(res) {
                     console.log("User: " + JSON.stringify(res.data));
-                    $scope.closeThisDialog('save');
+                    if (res.status == 200) {
+                        $rootScope.globals.errors = {details: 'Password for user ' + user.details.upn + ' updated successfully', success:true};
+                        $scope.newPassword = '';
+                        $scope.currentPassword = '';
+                        $scope.closeThisDialog('save');
+                    }
+                    else {
+                        $rootScope.globals.popup_errors = res.data;
+                    }
                 });
         }
     }]);

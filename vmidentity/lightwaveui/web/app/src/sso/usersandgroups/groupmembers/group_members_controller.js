@@ -20,46 +20,51 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
 
             $scope.vm.saveMembers = saveMembers;
             $scope.vm.deleteSelectedMembers = deleteSelectedMembers;
+            $scope.vm.canDeleteSelectedMembers = canDeleteSelectedMembers;
             $scope.vm.getAllMembers = getAllMembers;
             $scope.vm.clearMemberSearch = clearMemberSearch;
             $scope.vm.searchMembers = searchMembers;
             $scope.vm.addMembersToGroup = addMembersToGroup;
             $scope.vm.searchSelectedMembers = searchSelectedMembers;
+            $scope.vm.disable = disable;
 
             init();
 
             function init() {
-                $rootScope.globals.errors = '';
+                $rootScope.globals.errors = null;
+                $rootScope.globals.popup_errors = null;
                 var group = $scope.vm.selectedGroup;
                 $scope.vm.selectedmembersearch = '';
                 getMembers(group, '');
 
-                if($scope.vm.idsmembersearch) {
+                if ($scope.vm.identitysource) {
+                    $scope.vm.idsmembersearch = $scope.vm.identitysource;
                     getAllMembers($scope.vm.idsmembersearch);
                 }
                 clearMemberSearch();
             }
 
-            function searchSelectedMembers(){
-                $rootScope.globals.errors = '';
+            function searchSelectedMembers() {
+                $rootScope.globals.popup_errors = null;
                 var group = $scope.vm.selectedGroup;
                 var text = $scope.vm.selectedmembersearch;
                 getMembers(group, text);
             }
+
             function getMembers(group, searchText) {
-                $rootScope.globals.errors = '';
+                $rootScope.globals.popup_errors = null;
                 $scope.vm.searchSelectedMembersLoading = true;
                 $scope.currentgroup = {};
                 var upn = group.name + "@" + group.domain;
                 GroupService
                     .Get($rootScope.globals.currentUser, upn)
                     .then(function (res) {
-                        if(res.status == 200){
+                        if (res.status == 200) {
                             $scope.currentgroup = res.data;
                             $scope.currentgroup.members = {};
                         }
                         else {
-                            $rootScope.globals.errors = res.data;
+                            $rootScope.globals.popup_errors = res.data;
                         }
                     })
                     .then(function (res) {
@@ -78,7 +83,7 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                                         }
                                     }
                                     else {
-                                        $rootScope.globals.errors = res.data;
+                                        $rootScope.globals.popup_errors = res.data;
                                     }
                                 });
                         }
@@ -88,20 +93,18 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                             GroupService
                                 .GetMembership($rootScope.globals.currentUser, upn, "SOLUTIONUSER")
                                 .then(function (res) {
-                                    if(res.status == 200){
+                                    if (res.status == 200) {
                                         $scope.currentgroup.members.solutionusers = [];
-                                        if(res.data.solutionUsers)
-                                        {
-                                            for(var i=0;i<res.data.solutionUsers.length; i++){
-                                                if(!searchText || searchText == '' || res.data.solutionUsers[i].name.indexOf(searchText) > -1)
-                                                {
+                                        if (res.data.solutionUsers) {
+                                            for (var i = 0; i < res.data.solutionUsers.length; i++) {
+                                                if (!searchText || searchText == '' || res.data.solutionUsers[i].name.indexOf(searchText) > -1) {
                                                     $scope.currentgroup.members.solutionusers.push(res.data.solutionUsers[i]);
                                                 }
                                             }
                                         }
                                     }
                                     else {
-                                        $rootScope.globals.errors = res.data;
+                                        $rootScope.globals.popup_errors = res.data;
                                     }
                                 });
                         }
@@ -122,7 +125,7 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                                         }
                                     }
                                     else {
-                                        $rootScope.globals.errors = res.data;
+                                        $rootScope.globals.popup_errors = res.data;
                                     }
                                     $scope.vm.searchSelectedMembersLoading = false;
                                 });
@@ -130,13 +133,41 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                     })
             }
 
-            function saveMembers(){
-                $scope.vm.isSaving = true;
-                $rootScope.globals.errors = '';
+            function disable() {
+
+                var group = $scope.currentgroup;
+                if (group.members) {
+                    if (group.members.groups) {
+                        for (var j = group.members.groups.length - 1; j >= 0; j--) {
+                            if (group.members.groups[j].state == 2 ||
+                                group.members.groups[j].state == 1) {
+                                return false;
+                            }
+                        }
+                    }
+
+                    if (group.members.users) {
+                        for (var i = group.members.users.length - 1; i >= 0; i--) {
+                            if (group.members.users[i].state == 2 ||
+                                group.members.users[i].state == 1) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+
+                return true;
+            }
+
+            function saveMembers() {
+
+                $rootScope.globals.popup_errors = null;
                 var group = $scope.currentgroup;
                 var upn = group.name + '%40' + group.domain;
 
-                if(group.members) {
+                if (group.members) {
+
+                    $scope.vm.isSaving = true;
 
                     if (group.members.groups) {
 
@@ -159,7 +190,7 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                                 .UpdateMembers($rootScope.globals.currentUser, upn, addedgroups, 'GROUP')
                                 .then(function (res) {
                                     if (!res.status == 200) {
-                                        $rootScope.globals.errors += res.data;
+                                        $rootScope.globals.popup_errors += res.data;
                                     }
                                     $scope.vm.isSaving = false;
                                 });
@@ -170,7 +201,7 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                                 .DeleteMembers($rootScope.globals.currentUser, upn, deletedgroups, 'GROUP')
                                 .then(function (res) {
                                     if (!res.status == 200) {
-                                        $rootScope.globals.errors += res.data;
+                                        $rootScope.globals.popup_errors += res.data;
                                     }
                                     $scope.vm.isSaving = false;
                                 });
@@ -198,7 +229,7 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                                 .UpdateMembers($rootScope.globals.currentUser, upn, addedusers, 'USER')
                                 .then(function (res) {
                                     if (!res.status == 200) {
-                                        $rootScope.globals.errors += res.data;
+                                        $rootScope.globals.popup_errors += res.data;
                                     }
                                     $scope.vm.isSaving = false;
                                 });
@@ -208,90 +239,95 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                                 .DeleteMembers($rootScope.globals.currentUser, upn, deletedusers, 'USER')
                                 .then(function (res) {
                                     if (!res.status == 200) {
-                                        $rootScope.globals.errors += res.data;
+                                        $rootScope.globals.popup_errors += res.data;
                                     }
                                     $scope.vm.isSaving = false;
                                 });
                         }
                     }
                 }
+                else {
+                    $scope.vm.isSaving = false;
+                }
             }
 
-            function getAllMembers(provider){
-                $scope.membersearchtype = { name:"all" };
+            function getAllMembers(provider) {
+                $scope.membersearchtype = $scope.membersearchtypes[2];
                 searchMembers('', provider, $scope.membersearchtype);
             }
 
-            function clearMemberSearch()
-            {
+            function clearMemberSearch() {
+                $rootScope.globals.popup_errors = null;
                 $scope.vm.membersearch = '';
                 $scope.vm.membersearchresult = {};
             }
 
             function searchMembers(searchvalue, provider, type) {
 
-                var typename = type.name;
-                $scope.vm.membersearchresult = {};
-                $scope.vm.searchMembersLoading = true;
-                if(type.name == "user")
-                {
-                    MemberService
-                        .Search($rootScope.globals.currentUser, provider.name, "USER", "NAME", searchvalue)
-                        .then(function (res) {
-                            if (res.status == 200) {
-                                // console.log("Users: " + JSON.stringify(res.data));
-                                $scope.vm.membersearchresult.users = res.data.users;
-                                $scope.vm.searchMembersLoading = false;
-                            }
-                            else {
-                                $rootScope.globals.errors = res.data;
-                            }
-                        });
+                if (provider && type) {
+                    $rootScope.globals.popup_errors = null;
+                    var typename = type.name;
+                    $scope.vm.membersearchresult = {};
+                    $scope.vm.searchMembersLoading = true;
+                    if (type.name == "user") {
+                        MemberService
+                            .Search($rootScope.globals.currentUser, provider.name, "USER", "NAME", searchvalue)
+                            .then(function (res) {
+                                if (res.status == 200) {
+                                    // console.log("Users: " + JSON.stringify(res.data));
+                                    $scope.vm.membersearchresult.users = res.data.users;
+                                    $scope.vm.searchMembersLoading = false;
+                                }
+                                else {
+                                    $rootScope.globals.popup_errors = res.data;
+                                }
+                            });
 
-                } else if(type.name == "group")
-                {
-                    MemberService
-                        .Search($rootScope.globals.currentUser, provider.name, "GROUP", "NAME", searchvalue)
-                        .then(function (res) {
-                            if (res.status == 200) {
-                                $scope.vm.membersearchresult.groups = res.data.groups;
-                                $scope.vm.searchMembersLoading = false;
-                            }
-                            else {
-                                $rootScope.globals.errors = res.data;
-                            }
-                        });
-                } else if(type.name == "all")
-                {
-                    MemberService
-                        .Search($rootScope.globals.currentUser, provider.name, "ALL", "NAME", searchvalue)
-                        .then(function (res) {
-                            if (res.status == 200) {
-                                $scope.vm.membersearchresult.users = res.data.users;
-                                $scope.vm.membersearchresult.groups = res.data.groups;
-                                $scope.vm.searchMembersLoading = false;
-                            }
-                            else {
-                                $rootScope.globals.errors = res.data;
-                            }
-                        })
+                    } else if (type.name == "group") {
+                        MemberService
+                            .Search($rootScope.globals.currentUser, provider.name, "GROUP", "NAME", searchvalue)
+                            .then(function (res) {
+                                if (res.status == 200) {
+                                    $scope.vm.membersearchresult.groups = res.data.groups;
+                                    $scope.vm.searchMembersLoading = false;
+                                }
+                                else {
+                                    $rootScope.globals.popup_errors = res.data;
+                                }
+                            });
+                    } else if (type.name == "all") {
+                        MemberService
+                            .Search($rootScope.globals.currentUser, provider.name, "ALL", "NAME", searchvalue)
+                            .then(function (res) {
+                                if (res.status == 200) {
+                                    $scope.vm.membersearchresult.users = res.data.users;
+                                    $scope.vm.membersearchresult.groups = res.data.groups;
+                                    $scope.vm.searchMembersLoading = false;
+                                }
+                                else {
+                                    $rootScope.globals.popup_errors = res.data;
+                                }
+                            })
+                    }
                 }
             }
 
-            function addMembersToGroup(){
+
+            function addMembersToGroup() {
                 console.log('addMembersToGroup');
-                if($scope.vm.membersearchresult) {
+                $rootScope.globals.popup_errors = null;
+                if ($scope.vm.membersearchresult) {
                     addUserMembers();
                     addGroupMembers();
                 }
             }
 
-            function addUserMembers(){
+            function addUserMembers() {
                 var group = $scope.currentgroup;
 
-                if(group.members == null)
+                if (group.members == null)
                     group.members = {};
-                if(group.members.users == null)
+                if (group.members.users == null)
                     group.members.users = [];
 
                 console.log('addUserMembers');
@@ -300,7 +336,7 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                 var dup = false;
                 var user = null;
 
-                if($scope.vm.membersearchresult.users) {
+                if ($scope.vm.membersearchresult.users) {
                     for (var j = 0; j < $scope.vm.membersearchresult.users.length; j++) {
                         user = $scope.vm.membersearchresult.users[j];
                         if (user.markedForAdd) {
@@ -324,45 +360,77 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                 }
             }
 
-            function addGroupMembers(){
+            function addGroupMembers() {
                 var group = $scope.currentgroup;
 
-                if(group.members == null)
+                if (group.members == null)
                     group.members = {};
-                if(group.members.groups == null)
+                if (group.members.groups == null)
                     group.members.groups = [];
 
                 /* check duplicate */
                 var dup = false;
                 var member = null;
 
-                if($scope.vm.membersearchresult.groups) {
+                if ($scope.vm.membersearchresult.groups) {
                     for (var j = 0; j < $scope.vm.membersearchresult.groups.length; j++) {
                         member = $scope.vm.membersearchresult.groups[j];
                         if (member.markedForAdd) {
-                            for (var i = 0; i < group.members.groups.length; i++) {
-                                if (group.members.groups[i].name == member.name &&
-                                    group.members.groups[i].domain == member.domain) {
-                                    if (group.members.groups[i].state == 2) {
-                                        group.members.groups[i].state = 0;
+
+                            if (member.name != group.name || member.domain != group.domain) {
+
+                                for (var i = 0; i < group.members.groups.length; i++) {
+                                    if (group.members.groups[i].name == member.name &&
+                                        group.members.groups[i].domain == member.domain) {
+                                        if (group.members.groups[i].state == 2) {
+                                            group.members.groups[i].state = 0;
+                                        }
+                                        dup = true;
+                                        break;
                                     }
-                                    dup = true;
-                                    break;
+                                }
+                                if (!dup && member) {
+                                    member.state = 1;
+                                    group.members.groups.push(member);
                                 }
                             }
-                            if (!dup && member) {
-                                member.state = 1;
-                                group.members.groups.push(member);
+                            else {
+                                member.markedForAdd = false;
+                                $rootScope.globals.popup_errors = {details: 'Cannot add a group as member to itself.'};
                             }
                         }
                     }
                 }
             }
 
+            function canDeleteSelectedMembers() {
 
-            function deleteSelectedMembers(){
+                var group = $scope.currentgroup;
+                if (group.members) {
+                    if (group.members.users) {
+                        for (var i = group.members.users.length - 1; i >= 0; i--) {
+                            if (group.members.users[i].markedForDelete) {
+                                return true;
+                            }
+                        }
+                    }
+
+                    if (group.members.groups) {
+                        for (var i = group.members.groups.length - 1; i >= 0; i--) {
+                            if (group.members.groups[i].markedForDelete) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+
+
+            function deleteSelectedMembers() {
 
                 console.log('deleteSelectedMembers');
+                $rootScope.globals.popup_errors = null;
                 deleteUserMembers();
                 deleteGroupMembers();
             }
@@ -370,49 +438,45 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
             function deleteUserMembers() {
 
                 var group = $scope.currentgroup;
-                if(group.members == null || group.members.users == null)
+                if (group.members == null || group.members.users == null)
                     return;
 
                 console.log('deleteUserMembers: ALL USERS: ' + JSON.stringify(group.members.users));
 
                 /* check duplicate */
                 var found = false;
-                for(var i=group.members.users.length-1; i>= 0 ; i--) {
-                    if(group.members.users[i].markedForDelete)
-                    {
+                for (var i = group.members.users.length - 1; i >= 0; i--) {
+                    if (group.members.users[i].markedForDelete) {
                         console.log('markedForDelete: USER: ' + JSON.stringify(group.members.users[i]));
                         found = true;
 
-                        if(group.members.users[i].state == 1) {
+                        if (group.members.users[i].state == 1) {
                             group.members.users.splice(i, 1);
                         }
-                        else
-                        {
+                        else {
                             group.members.users[i].state = 2;
                         }
                     }
                 }
             }
 
-            function deleteGroupMembers(){
+            function deleteGroupMembers() {
 
                 var group = $scope.currentgroup;
 
-                if(group.members == null || group.members.groups == null)
+                if (group.members == null || group.members.groups == null)
                     return;
 
                 /* check duplicate */
                 var found = false;
-                for(var i=group.members.groups.length-1; i>= 0 ; i--) {
-                    if(group.members.groups[i].markedForDelete)
-                    {
+                for (var i = group.members.groups.length - 1; i >= 0; i--) {
+                    if (group.members.groups[i].markedForDelete) {
                         found = true;
 
-                        if(group.members.groups[i].state == 1) {
+                        if (group.members.groups[i].state == 1) {
                             group.members.groups.splice(i, 1);
                         }
-                        else
-                        {
+                        else {
                             group.members.groups[i].state = 2;
                         }
                     }

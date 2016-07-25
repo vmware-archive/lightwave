@@ -20,6 +20,13 @@ module.controller('PasswordPolicyCntrl', [ '$scope', '$rootScope', 'TenantServic
 
             $scope.updatePasswordPolicy = updatePasswordPolicy;
 
+            init();
+
+            function init(){
+                $rootScope.globals.errors = null;
+                $rootScope.globals.popup_errors = null;
+            }
+
             function updatePasswordPolicy(passwordPolicy) {
                 $rootScope.globals.errors = null;
                 var policy = {
@@ -30,11 +37,12 @@ module.controller('PasswordPolicyCntrl', [ '$scope', '$rootScope', 'TenantServic
                     .UpdateConfiguration($rootScope.globals.currentUser, policy)
                     .then(function (res) {
                         if (res.status == 200) {
+                            $rootScope.globals.errors = {details: 'Password policy updated successfully', success:true};
                             $scope.getConfig();
                             $scope.closeThisDialog('save');
                         }
                         else {
-                            $rootScope.globals.errors = res.data;
+                            $rootScope.globals.popup_errors = res.data;
                         }
                     });
             }

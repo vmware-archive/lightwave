@@ -25,10 +25,13 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
             $scope.vm.add = add;
             $scope.vm.deleteIdentitySource = deleteIdentitySource;
             $scope.vm.providerPolicy = {};
+            $scope.vm.getClass = getClass;
 
             init();
 
             function init(){
+                $rootScope.globals.errors = null;
+                $rootScope.globals.popup_errors = null;
                 getIdentitySources();
             }
 
@@ -127,6 +130,7 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
                         .Delete($rootScope.globals.currentUser, ids.name)
                         .then(function (res) {
                             if (res.status == 200 || res.status == 204) {
+                                $rootScope.globals.errors = {details: 'Identity Source ' + ids.name + ' deleted successfully', success:true};
                                 getIdentitySources();
                             }
                             else {
@@ -134,5 +138,13 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
                             }
                         });
                 }
+            }
+
+            function getClass(isMatch, defaultFocus){
+                if(defaultFocus && isMatch)
+                {
+                    return 'large-grid-content-row-selected';
+                }
+                return 'large-grid-content-row';
             }
         }]);

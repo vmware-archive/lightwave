@@ -2,13 +2,21 @@
     <div class="content-header">
         <img src="../app/assets/group.png" width="24px" height="24px"/>  Users & Groups
     </div>
-    <div class='error' ng-show="globals.errors">
+    <div class='error' ng-show="globals.errors && !globals.errors.success">
         <img src="../app/assets/error.png" width="16px" height="16px"/>
         <button type="button"
                 class="btn btn-xs btn-link pull-right"
                 ng-click="globals.errors = null;">X
         </button>
         {{globals.errors.details}} {{globals.errors.cause}}
+    </div>
+    <div class='success' ng-show="globals.errors && globals.errors.success">
+        <img src="../app/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.errors = null;">X
+        </button>
+        {{globals.errors.details}}
     </div>
     <div style="margin-top:5px;">
         <uib-tabset active="active">
@@ -24,13 +32,13 @@
                         </button>
                         <button type="button" class="btn btn-link"
                                 ng-click="editUser(vm.selectedUser)"
-                                ng-show="vm.identitysource.domainType === 'SYSTEM_DOMAIN' && globals.currentUser.role == 'Administrator'"
+                                ng-show="vm.identitysource.domainType === 'SYSTEM_DOMAIN' && globals.currentUser.role == 'Administrator' && vm.selectedUser"
                                 style="float:left;margin-left:10px;">
                             EDIT
                         </button>
                         <button type="button" class="btn btn-link"
                                 ng-click="edit(currentUser)"
-                                ng-show="vm.identitysource.domainType === 'SYSTEM_DOMAIN' && globals.currentUser.role == 'Administrator'"
+                                ng-show="vm.identitysource.domainType === 'SYSTEM_DOMAIN' && globals.currentUser.role == 'Administrator' && vm.selectedUser"
                                 style="float:left;margin-left:10px;"
                                 confirmed-click="deleteUser(vm.selectedUser)"
                                 ng-confirm-click="Do you want to delete user {{vm.selectedUser.username}}?">
@@ -38,7 +46,7 @@
                         </button>
                         <button type="button" class="btn btn-link"
                                 ng-click="showSetPassword(vm.selectedUser)"
-                                ng-show="vm.identitysource.domainType === 'SYSTEM_DOMAIN' && globals.currentUser.role == 'Administrator'"
+                                ng-show="vm.identitysource.domainType === 'SYSTEM_DOMAIN' && globals.currentUser.role == 'Administrator' && vm.selectedUser"
                                 style="float:left;margin-left:10px;">
                             SET PASSWORD
                         </button>
@@ -50,7 +58,7 @@
                             <select ng-model="vm.identitysource"
                                     ng-options="t as t.name for t in vm.identitysources"
                                     ng-change="refresh(vm.identitysource)"
-                                    class="form-control input-md ids-select"></select>
+                                    class="ids-select"></select>
                             <input type="text" name="search" id="search" ng-model="vm.search"
                                    class="search-box"
                                    placeholder="search by user name"/>
@@ -60,7 +68,7 @@
                     <br/><br/>
                     <div class="large-grid">
                         <div class="large-grid-header">
-                            <div class="large-grid-header-cell col-xs-3">
+                            <div class="large-grid-header-cell col-xs-4">
                                 User
                             </div>
                             <div class="large-grid-header-cell col-xs-2">
@@ -69,7 +77,7 @@
                             <div class="large-grid-header-cell col-xs-2">
                                 Last name
                             </div>
-                            <div class="large-grid-header-cell col-xs-3">
+                            <div class="large-grid-header-cell col-xs-2">
                               Email
                             </div>
                             <div class="large-grid-header-cell col-xs-1">
@@ -91,9 +99,9 @@
                             <div ng-repeat="user in vm.users"
                                  ng-if="vm.users"
                                  tabindex="1"
-                                 class="large-grid-content-row"
-                                 ng-click="vm.selectedUser = user;">
-                                <div class="large-grid-header-cell col-xs-3"
+                                 ng-class="getClass(vm.selectedUser.details.upn == user.details.upn)"
+                                 ng-click="vm.selectedUser = user;vm.userFocus = false;">
+                                <div class="large-grid-header-cell col-xs-4"
                                      uib-tooltip="{{user.name}}">
                                     <img src="../app/assets/user.png"
                                          width="16px"
@@ -123,11 +131,11 @@
                                         user.details.lastName;
                                     }}
                                 </div>
-                                <div class="large-grid-header-cell col-xs-3"
+                                <div class="large-grid-header-cell col-xs-2"
                                 uib-tooltip="{{user.details.email}}">
                                     {{
-                                    user.details.email.length > 25 ?
-                                    user.details.email.substring(0,25) + '...' :
+                                    user.details.email.length > 18 ?
+                                    user.details.email.substring(0,18) + '...' :
                                     user.details.email;
                                     }}
                                 </div>
@@ -179,13 +187,13 @@
                          </button>
                          <button type="button" class="btn btn-link"
                                  style="float:left;margin-left:10px;"
-                                 ng-show="globals.currentUser.role == 'Administrator'"
+                                 ng-show="globals.currentUser.role == 'Administrator' && vm.selectedSolutionUser"
                                  ng-click="editSolutionUser(vm.selectedSolutionUser);">
                              EDIT
                          </button>
                          <button type="button" class="btn btn-link"
                                  style="float:left;margin-left:10px;"
-                                 ng-show="globals.currentUser.role == 'Administrator'"
+                                 ng-show="globals.currentUser.role == 'Administrator' && vm.selectedSolutionUser"
                                  confirmed-click="deleteSolutionUser(vm.selectedSolutionUser)"
                                  ng-confirm-click="Do you want to delete solution user {{vm.selectedSolutionUser.name}}?">
                              DELETE
@@ -231,7 +239,7 @@
                             <div ng-repeat="solutionuser in vm.solutionusers"
                                  ng-if="vm.solutionusers"
                                  tabindex="1"
-                                 class="large-grid-content-row"
+                                 ng-class="getClass(vm.selectedSolutionUser.upn == solutionuser.upn)"
                                  ng-click="vm.selectedSolutionUser = solutionuser;">
 
                                 <div class="col-xs-3"
@@ -284,13 +292,13 @@
                         </button>
                         <button type="button" class="btn btn-link"
                                 style="float:left;margin-left:10px;"
-                                ng-show="globals.currentUser.role == 'Administrator'"
+                                ng-show="globals.currentUser.role == 'Administrator'  && vm.selectedGroup"
                                 ng-click="editGroup(vm.selectedGroup);">
                             EDIT
                         </button>
                         <button type="button" class="btn btn-link"
                                 style="float:left;margin-left:10px;"
-                                ng-show="globals.currentUser.role == 'Administrator'"
+                                ng-show="globals.currentUser.role == 'Administrator' && vm.selectedGroup"
                                 confirmed-click="deleteGroup(vm.selectedGroup)"
                                 ng-confirm-click="Do you want to delete group {{vm.selectedGroup.name}}?">
                             DELETE
@@ -339,7 +347,7 @@
                             <div ng-repeat="group in vm.groups"
                                  ng-if="vm.groups"
                                  tabindex="1"
-                                 class="large-grid-content-row"
+                                 ng-class="getClass(vm.selectedGroup.name == group.name && vm.selectedGroup.domain == group.domain)"
                                  ng-click="vm.selectedGroup = group;">
 
                                 <div class="col-xs-4"

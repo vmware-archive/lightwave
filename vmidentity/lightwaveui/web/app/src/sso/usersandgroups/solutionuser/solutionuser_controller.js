@@ -26,7 +26,8 @@ module.controller('SolutionUserCntrl', [ '$scope', '$rootScope', 'SolutionUserSe
             init();
 
             function init(){
-                $rootScope.globals.errors = '';
+                $rootScope.globals.errors = null;
+                $rootScope.globals.popup_errors = null;
                 $scope.newSolutionUser = {};
             }
 
@@ -50,15 +51,14 @@ module.controller('SolutionUserCntrl', [ '$scope', '$rootScope', 'SolutionUserSe
                 SolutionUserService
                     .Add($rootScope.globals.currentUser, solutionuser)
                     .then(function (res) {
-                        console.log('Save response: ' + JSON.stringify(res));
-                        console.log('Save response status: ' + res.status);
                             if (res.status == 200) {
+                                $rootScope.globals.errors = {details: 'Solution User ' + solutionuser.upn + ' added successfully', success:true};
                                 $scope.newsolutionuser = {};
                                 $scope.getsolutionusers($scope.vm.identitysources, $scope.vm.solutionusersearch);
                                 $scope.closeThisDialog('save');
                             }
                             else {
-                                $rootScope.globals.errors = res.data;
+                                $rootScope.globals.popup_errors = res.data;
                             }
 
                     });
@@ -72,12 +72,12 @@ module.controller('SolutionUserCntrl', [ '$scope', '$rootScope', 'SolutionUserSe
                     .Update($rootScope.globals.currentUser, solutionUser)
                     .then(function (res) {
                         if (res.status == 200) {
-                            console.log("Solution User: " + JSON.stringify(res.data));
+                            $rootScope.globals.errors = {details: 'Solution User ' + solutionUser.upn + ' updated successfully', success:true};
                             $scope.getsolutionusers($scope.vm.identitysources, $scope.vm.solutionusersearch);
                             $scope.closeThisDialog('save');
                         }
                         else {
-                            $rootScope.globals.errors = res.data;
+                            $rootScope.globals.popup_errors = res.data;
                         }
                     });
             }

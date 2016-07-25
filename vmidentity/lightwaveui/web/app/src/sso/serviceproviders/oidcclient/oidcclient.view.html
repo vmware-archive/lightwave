@@ -6,94 +6,109 @@
         vm.selectedOIDCClient.clientId;
         }}'
     </div>
-    <div class='error' ng-show="globals.errors">
+    <div class='error' ng-show="globals.popup_errors && !globals.popup_errors.success">
         <img src="../app/assets/error.png" width="16px" height="16px"/>
         <button type="button"
                 class="btn btn-xs btn-link pull-right"
-                ng-click="globals.errors = null;">X
+                ng-click="globals.popup_errors = null;">X
         </button>
-        {{globals.errors.details}} {{globals.errors.cause}}
+        {{globals.popup_errors.details}} {{globals.popup_errors.cause}}
     </div>
-    <div class="row content popup-content">
+    <div class='success' ng-show="globals.popup_errors && globals.popup_errors.success">
+        <img src="../app/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}}
+    </div>
+    <div class="row">
+        <div class="row content popup-content">
+            <div class="popup-row col-xs-12">
+                <div class="col-xs-4">
+                        Client ID
+                </div>
+                <div class="col-xs-8">
+                    {{
+                        vm.selectedOIDCClient.clientId
+                    }}
+                </div>
+                </div>
+            <div class="col-xs-12 popup-row">
+                <div class="col-xs-4">
+                        Certificate DN
+                </div>
+                <div class="col-xs-8">
+                    {{
+                        vm.selectedOIDCClient.oidcclientMetadataDTO.CertSubjectDN
+                    }}
+                </div>
+            </div>
+            <div class="col-xs-12 popup-row">
+                <div class="col-xs-4">
+                        Token Auth Method
+                </div>
+                <div class="col-xs-8">
+                    {{
+                        vm.selectedOIDCClient.oidcclientMetadataDTO.tokenEndpointAuthMethod
+                    }}
+                </div>
+            </div>
+            <div class="col-xs-12 popup-row">
+                <div class="col-xs-4">
+                        Logout URI
+                </div>
+                <div class="col-xs-8">
+                    {{
+                        vm.selectedOIDCClient.oidcclientMetadataDTO.logoutUri
+                    }}
+                </div>
+            </div>
+            <div class="col-xs-12 popup-row">
+                <div class="col-xs-4">
+                        Redirect URI
+                </div>
+                <div class="col-xs-8">
+                    <div ng-show="!vm.selectedOIDCClient.oidcclientMetadataDTO.redirectUris">
+                       No redirect URI specified
+                    </div>
+                    <div ng-repeat="redirectUri in vm.selectedOIDCClient.oidcclientMetadataDTO.redirectUris"
+                         ng-show="vm.selectedOIDCClient.oidcclientMetadataDTO.redirectUris"
+                         ng-if="redirectUri"
+                         uib-tooltip="{{redirectUri}}">
+                        {{
+                            redirectUri.length > 50
+                            ? redirectUri.substring(0,50) + '...'
+                            : redirectUri
+                        }}
+                    </div>
+                </div>
+            </div>
+            <div class="col-xs-12 popup-row">
+                <div class="col-xs-4">
+                        Post Logout Redirect URI
+                </div>
+                <div class="col-xs-8">
+                    <div ng-show="!vm.selectedOIDCClient.oidcclientMetadataDTO.postLogoutRedirectUris">
+                        No post logout redirect URI specified
+                    </div>
+                    <div ng-repeat="postlogoutRedirectUri in vm.selectedOIDCClient.oidcclientMetadataDTO.postLogoutRedirectUris"
+                         ng-show="vm.selectedOIDCClient.oidcclientMetadataDTO.postLogoutRedirectUris"
+                         ng-if="postlogoutRedirectUri"
+                         uib-tooltip="{{postlogoutRedirectUri}}">
+                        {{
+                            postlogoutRedirectUri.length > 50
+                            ? postlogoutRedirectUri.substring(0,50) + '...'
+                            : postlogoutRedirectUri
+                        }}
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="popup-row col-xs-12">
-            <div class="col-xs-4">
-                    Client ID
-            </div>
-            <div class="col-xs-8">
-                {{
-                    vm.selectedOIDCClient.clientId
-                }}
-            </div>
-            </div>
-        <div class="col-xs-12 popup-row">
-            <div class="col-xs-4">
-                    Certificate DN
-            </div>
-            <div class="col-xs-8">
-                {{
-                    vm.selectedOIDCClient.oidcclientMetadataDTO.CertSubjectDN
-                }}
-            </div>
-        </div>
-        <div class="col-xs-12 popup-row">
-            <div class="col-xs-4">
-                    Token Auth Method
-            </div>
-            <div class="col-xs-8">
-                {{
-                    vm.selectedOIDCClient.oidcclientMetadataDTO.tokenEndpointAuthMethod
-                }}
-            </div>
-        </div>
-        <div class="col-xs-12 popup-row">
-            <div class="col-xs-4">
-                    Logout URI
-            </div>
-            <div class="col-xs-8">
-                {{
-                    vm.selectedOIDCClient.oidcclientMetadataDTO.logoutUri
-                }}
-            </div>
-        </div>
-        <div class="col-xs-12 popup-row">
-            <div class="col-xs-4">
-                    Redirect URI
-            </div>
-            <div class="col-xs-8">
-                <div ng-show="!vm.selectedOIDCClient.oidcclientMetadataDTO.redirectUris">
-                   No redirect URI specified
-                </div>
-                <div ng-repeat="redirectUri in vm.selectedOIDCClient.oidcclientMetadataDTO.redirectUris"
-                     ng-show="vm.selectedOIDCClient.oidcclientMetadataDTO.redirectUris"
-                     ng-if="redirectUri"
-                     uib-tooltip="{{redirectUri}}">
-                    {{
-                        redirectUri.length > 50
-                        ? redirectUri.substring(0,50) + '...'
-                        : redirectUri
-                    }}
-                </div>
-            </div>
-        </div>
-        <div class="col-xs-12 popup-row">
-            <div class="col-xs-4">
-                    Post Logout Redirect URI
-            </div>
-            <div class="col-xs-8">
-                <div ng-show="!vm.selectedOIDCClient.oidcclientMetadataDTO.postLogoutRedirectUris">
-                    No post logout redirect URI specified
-                </div>
-                <div ng-repeat="postlogoutRedirectUri in vm.selectedOIDCClient.oidcclientMetadataDTO.postLogoutRedirectUris"
-                     ng-show="vm.selectedOIDCClient.oidcclientMetadataDTO.postLogoutRedirectUris"
-                     ng-if="postlogoutRedirectUri"
-                     uib-tooltip="{{postlogoutRedirectUri}}">
-                    {{
-                        postlogoutRedirectUri.length > 50
-                        ? postlogoutRedirectUri.substring(0,50) + '...'
-                        : postlogoutRedirectUri
-                    }}
-                </div>
-            </div>
+            <button type="button"
+                    class="btn btn-default pull-right btn-popup-footer"
+                    ng-click="closeThisDialog('cancel')">Close</button>
         </div>
     </div>
 </div>

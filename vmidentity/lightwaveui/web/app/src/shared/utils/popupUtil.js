@@ -29,7 +29,7 @@ function popupUtil(ngDialog) {
         ngDialog.open({
             template: template,
             controller: controller,
-            className: 'ngdialog-theme-default ngdialog-background-clear',
+            className: 'ngdialog-theme-default ngdialog-background-clear popup-style',
             scope: scope,
             width: '50%',
             height: '80%'

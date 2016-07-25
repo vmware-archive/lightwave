@@ -42,6 +42,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
         $scope.isuserregularuser = isuserregularuser;
         $scope.isuseradmin = isuseradmin;
         $scope.canceladdnewuser = canceladdnewuser;
+        $scope.getClass = getClass;
 
         /* Solution User */
         $scope.allgroups = [];
@@ -144,12 +145,21 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
             }
         }
 
+        function getClass(isMatch){
+            if(isMatch)
+            {
+                return 'large-grid-content-row-selected';
+            }
+            return 'large-grid-content-row';
+        }
 
         function getusers(provider, name) {
+            $scope.vm.userCounter = 0;
             $scope.error = '';
             $scope.vm.usersdataLoading = true;
             $scope.currentTab = 0;
-            if (provider != undefined) {
+            $scope.vm.selectedUser = null;
+            if (provider) {
                 $scope.currentuser = {};
                 MemberService
                     .Search($rootScope.globals.currentUser, provider.name, "USER", "NAME", name)
@@ -157,6 +167,10 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
                         console.log('Users response: ' + res);
                         if (res.status == 200) {
                             $scope.vm.users = res.data.users;
+
+                            if($scope.vm.users && $scope.vm.users.length > 0) {
+                                $scope.vm.selectedUser = $scope.vm.users[0];
+                            }
                             $scope.vm.usersdataLoading = false;
                         }
                         else {
@@ -247,18 +261,26 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
         }
 
         function deleteUser(user) {
-            $scope.error = '';
-            UserService
-                .Delete($rootScope.globals.currentUser, user.details.upn)
-                .then(function (res) {
-                    if (res.status == 200  || res.status == 204) {
-                        var provider = $scope.vm.identitysource;
-                        getusers(provider, $scope.vm.search);
-                    }
-                    else {
-                        $rootScope.globals.errors = res.data;
-                    }
-                });
+
+            if(user) {
+                $scope.error = '';
+                UserService
+                    .Delete($rootScope.globals.currentUser, user.details.upn)
+                    .then(function (res) {
+                        if (res.status == 200 || res.status == 204) {
+                            $scope.vm.selectedUser = null;
+                            var provider = $scope.vm.identitysource;
+                            $rootScope.globals.errors = {
+                                details: 'User ' + user.details.upn + ' deleted successfully',
+                                success: true
+                            };
+                            getusers(provider, $scope.vm.search);
+                        }
+                        else {
+                            $rootScope.globals.errors = res.data;
+                        }
+                    });
+            }
         }
 
 
@@ -268,6 +290,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
             $scope.newgroup = {};
             $scope.addNewGroup = true;
             $scope.currentTab = 2;
+            $scope.vm.selectedGroup = null;
             if (providers != null) {
                 var provider_name = '';
                 for (var i = 0; i < providers.length; i++) {
@@ -283,6 +306,10 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
                     .then(function (res) {
                         if (res.status == 200) {
                             $scope.vm.groups = res.data.groups;
+
+                            if($scope.vm.groups && $scope.vm.groups.length >0){
+                                $scope.vm.selectedGroup = $scope.vm.groups[0];
+                            }
                             $scope.vm.groupsdataLoading = false;
                         }
                         else {
@@ -383,25 +410,33 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
         }
 
         function deleteGroup(group) {
-            $scope.error = '';
-            var upn = group.name + "@" + group.domain;
-            GroupService
-                .Delete($rootScope.globals.currentUser, upn)
-                .then(function (res) {
-                    if (res.status == 200 || res.status == 204) {
-                        getgroups($scope.vm.identitysources, $scope.vm.groupsearch);
-                    }
-                    else {
-                        $rootScope.globals.errors = res.data;
-                    }
-                });
+
+            if(group) {
+                $scope.error = '';
+                var upn = group.name + "@" + group.domain;
+                GroupService
+                    .Delete($rootScope.globals.currentUser, upn)
+                    .then(function (res) {
+                        if (res.status == 200 || res.status == 204) {
+                            $rootScope.globals.errors = {
+                                details: 'Group ' + upn + ' deleted successfully',
+                                success: true
+                            };
+                            $scope.vm.selectedGroup = null;
+                            getgroups($scope.vm.identitysources, $scope.vm.groupsearch);
+                        }
+                        else {
+                            $rootScope.globals.errors = res.data;
+                        }
+                    });
+            }
         }
 
         function getsolutionusers(providers, name) {
             $scope.error = '';
             $scope.vm.solutionusersdataLoading = true;
             $scope.currentTab = 1;
-
+            $scope.vm.selectedSolutionUser = null;
             if (providers != null) {
                 var provider_name = '';
                 for (var i = 0; i < providers.length; i++) {
@@ -415,6 +450,10 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
                     .then(function (res) {
                         if (res.status == 200) {
                             $scope.vm.solutionusers = res.data.solutionUsers;
+
+                            if($scope.vm.solutionusers && $scope.vm.solutionusers.length > 0) {
+                                $scope.vm.selectedSolutionUser = $scope.vm.users[0];
+                            }
 
                             if ($scope.vm.solutionusers) {
                                 for (var i = 0; i < $scope.vm.solutionusers.length; i++) {
@@ -448,16 +487,24 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
 
         function deleteSolutionUser(solutionuser) {
             $scope.error = '';
-            SolutionUserService
-                .Delete($rootScope.globals.currentUser, solutionuser.name)
-                .then(function (res) {
-                    if (res.status == 200  || res.status == 204) {
-                        getsolutionusers($scope.vm.identitysources, $scope.vm.solutionusersearch);
-                    }
-                    else {
-                        $rootScope.globals.errors = res.data;
-                    }
-                });
+
+            if(solutionuser) {
+                SolutionUserService
+                    .Delete($rootScope.globals.currentUser, solutionuser.name)
+                    .then(function (res) {
+                        if (res.status == 200 || res.status == 204) {
+                            $rootScope.globals.errors = {
+                                details: 'Solution User ' + solutionuser.upn + ' deleted successfully',
+                                success: true
+                            };
+                            $scope.vm.selectedSolutionUser = null;
+                            getsolutionusers($scope.vm.identitysources, $scope.vm.solutionusersearch);
+                        }
+                        else {
+                            $rootScope.globals.errors = res.data;
+                        }
+                    });
+            }
         }
 
         function refresh(provider) {

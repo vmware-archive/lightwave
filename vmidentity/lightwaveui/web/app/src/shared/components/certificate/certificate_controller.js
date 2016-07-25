@@ -17,11 +17,4 @@
 var module = angular.module('lightwave.ui.shared.components');
 module.controller('CertificateViewerCntrl', [ '$scope',
         function($scope) {
-
-            init();
-
-            function init(){
-                console.log('certificate viewer init: ' + $scope.metadata);
-                console.log('metadata: ' + $scope.metadata.Issuer);
-            }
         }]);

@@ -15,11 +15,19 @@
 'use strict';
 
 var module = angular.module('lightwave.ui.sso');
-module.controller('RelyingPartyCntrl', [ '$scope', 'Util',
-        function($scope, Util) {
+module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util',
+        function($scope, $rootScope, Util) {
 
             $scope.relyingpartyvm = {};
             $scope.relyingpartyvm.viewcertificate = viewcertificate;
+
+            init();
+
+            function init(){
+                $rootScope.globals.errors = '';
+                $rootScope.globals.popup_errors = null;
+            }
+
 
             function viewcertificate(){
                 console.log('view certificate');

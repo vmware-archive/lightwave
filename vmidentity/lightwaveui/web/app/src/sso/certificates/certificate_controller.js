@@ -27,6 +27,8 @@ module.controller('CertificateCntrl', ['$scope', '$rootScope', 'CertificateServi
             init();
 
             function init() {
+                $rootScope.globals.errors = null;
+                $rootScope.globals.popup_errors = null;
                 $scope.vm.addchain = true;
                 $scope.vm.chains = [];
                 $scope.vm.currentCert = null;

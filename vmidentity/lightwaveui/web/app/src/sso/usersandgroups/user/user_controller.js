@@ -25,7 +25,9 @@ module.controller('UserCntrl', [ '$scope', '$rootScope', 'UserService',
             init();
 
             function init(){
-                $scope.newUser = {};
+                $rootScope.globals.errors = null;
+                $rootScope.globals.popup_errors = null;
+                $scope.newuser = {};
             }
 
             function saveUser(user){
@@ -39,6 +41,7 @@ module.controller('UserCntrl', [ '$scope', '$rootScope', 'UserService',
                     .Add($rootScope.globals.currentUser, user)
                     .then(function (res) {
                         if (res.status == 200) {
+                            $rootScope.globals.errors = {details: 'User ' + user.details.upn + ' added successfully', success:true};
                             console.log('Save response: ' + JSON.stringify(res));
                             $scope.newuser = {};
                             $scope.addNewUser = true;
@@ -47,7 +50,7 @@ module.controller('UserCntrl', [ '$scope', '$rootScope', 'UserService',
                             $scope.closeThisDialog('save');
                         }
                         else {
-                            $rootScope.globals.errors = res.data;
+                            $rootScope.globals.popup_errors = res.data;
                         }
                     });
             }
@@ -63,11 +66,12 @@ module.controller('UserCntrl', [ '$scope', '$rootScope', 'UserService',
                     .Update($rootScope.globals.currentUser, user)
                     .then(function (res) {
                         if (res.status == 200) {
+                            $rootScope.globals.errors = {details: 'User ' + user.details.upn + ' updated successfully', success:true};
                             $scope.getusers(provider, $scope.vm.search);
                             $scope.closeThisDialog('save');
                         }
                         else {
-                            $rootScope.globals.errors = res.data;
+                            $rootScope.globals.popup_errors = res.data;
                         }
                     });
             }
@@ -84,10 +88,13 @@ module.controller('UserCntrl', [ '$scope', '$rootScope', 'UserService',
                     .SetPassword($rootScope.globals.currentUser, user, user.passwordDetails)
                     .then(function(res) {
                         if (res.status == 200) {
+                            $rootScope.globals.errors = {details: 'Password for user ' + user.details.upn + ' updated successfully', success:true};
+                            user.passwordDetails.newPassword = '';
+                            user.passwordDetails.confirmpassword = '';
                             $scope.closeThisDialog('save');
                         }
                         else {
-                            $rootScope.globals.errors = res.data;
+                            $rootScope.globals.popup_errors = res.data;
                         }
                 });
             }

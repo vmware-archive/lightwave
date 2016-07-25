@@ -20,6 +20,13 @@ module.controller('LockoutPolicyCntrl', [ '$scope', '$rootScope', 'TenantService
 
             $scope.updateLockoutPolicy = updateLockoutPolicy;
 
+            init();
+
+            function init(){
+                $rootScope.globals.errors = null;
+                $rootScope.globals.popup_errors = null;
+            }
+
             function updateLockoutPolicy(lockoutPolicy) {
                 $rootScope.globals.errors = null;
                 var policy = {
@@ -30,11 +37,12 @@ module.controller('LockoutPolicyCntrl', [ '$scope', '$rootScope', 'TenantService
                     .UpdateConfiguration($rootScope.globals.currentUser, policy)
                     .then(function (res) {
                         if (res.status == 200) {
+                            $rootScope.globals.errors = {details: 'Lockout policy updated successfully', success:true};
                             $scope.getConfig();
                             $scope.closeThisDialog('save');
                         }
                         else {
-                            $rootScope.globals.errors = res.data;
+                            $rootScope.globals.popup_errors = res.data;
                         }
                     });
             }

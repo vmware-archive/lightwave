@@ -20,6 +20,7 @@
     "ng-dialog": "^0.6.2",
     "karma-jasmine": "^1.0.2",
     "requirejs": "^2.2.0",
+    "cryptojslib": "latest",
     "kjur-jsrsasign": "jsrsasign#^5.0.12"
   },
   "resolutions": {

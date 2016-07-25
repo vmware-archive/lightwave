@@ -15,7 +15,13 @@
 'use strict';
 
 var module = angular.module('lightwave.ui.sso');
-module.controller('IdentityProviderCntrl', [ '$scope',
-        function($scope) {
+module.controller('IdentityProviderCntrl', [ '$scope', '$rootScope',
+        function($scope, $rootScope) {
 
+                init();
+
+                function init(){
+                        $rootScope.globals.errors = '';
+                        $rootScope.globals.popup_errors = null;
+                }
         }]);

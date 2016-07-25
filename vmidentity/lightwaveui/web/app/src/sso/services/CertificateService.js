@@ -26,6 +26,7 @@ function CertificateService(Configuration, HttpService, HandleHttpResponse) {
     service.SetTenantCredentials = SetTenantCredentials;
     service.AddCertificate = AddCertificate;
     service.DeleteCertificateChain = DeleteCertificateChain;
+    service.SetCertificateChain = SetCertificateChain;
     return service;
 
     function GetCertificateChain(context, username) {
@@ -53,6 +54,13 @@ function CertificateService(Configuration, HttpService, HandleHttpResponse) {
         var endpoint = Configuration.getPrivateKeysEndpoint(context.server, context.tenant, '');
         return HttpService
             .getResponse(endpoint, 'PUT', context.token, tenantCredentials)
+            .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
+    }
+
+    function SetCertificateChain(context, tenantCredentials) {
+        var endpoint = Configuration.getPrivateKeysEndpoint(context.server, context.tenant, '');
+        return HttpService
+            .getResponse(endpoint, 'POST', context.token, tenantCredentials)
             .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
     }
 

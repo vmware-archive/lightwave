@@ -16,7 +16,6 @@
 
 var module = angular.module('lightwave.ui.shared.components');
 module.config(['$routeProvider', function($routeProvider) {
-    // console.log('inside certificate routeProvider');
     $routeProvider
         .when('/sharedcertificate', {
             templateUrl: 'shared/components/certificate/certificate.view.html',

@@ -3,13 +3,21 @@
         <img src="../app/assets/configuration.png" width="24px" height="24px"/>
         Policies & Configurations
     </div>
-    <div class='error' ng-show="globals.errors">
+    <div class='error' ng-show="globals.errors && !globals.errors.success">
         <img src="../app/assets/error.png" width="16px" height="16px"/>
         <button type="button"
                 class="btn btn-xs btn-link pull-right"
                 ng-click="globals.errors = null;">X
         </button>
         {{globals.errors.details}} {{globals.errors.cause}}
+    </div>
+    <div class='success' ng-show="globals.errors && globals.errors.success">
+        <img src="../app/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.errors = null;">X
+        </button>
+        {{globals.errors.details}}
     </div>
     <br/>
     <div style="margin-top:5px;height:100%;">

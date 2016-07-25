@@ -38,6 +38,8 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                 init();
 
                 function init() {
+                        $rootScope.globals.errors = null;
+                        $rootScope.globals.popup_errors = null;
                         $scope.vm.idsTab = $scope.vm.isNew ? 0 : 1;
                         $scope.vm.testConnectionStatus = null;
                         $scope.vm.isTestingConnection = false;
@@ -69,8 +71,10 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                         return $scope.vm.selectedIdentitysource &&
                             $scope.vm.selectedIdentitysource.connectionStrings &&
                             (($scope.vm.selectedIdentitysource.connectionStrings.length > 0
+                            && $scope.vm.selectedIdentitysource.connectionStrings[0] != null
                             && $scope.vm.selectedIdentitysource.connectionStrings[0].indexOf("ldaps") > -1) ||
                             ($scope.vm.selectedIdentitysource.connectionStrings.length > 1
+                            && $scope.vm.selectedIdentitysource.connectionStrings[1] != null
                             && $scope.vm.selectedIdentitysource.connectionStrings[1].indexOf("ldaps") > -1));
                 }
 
@@ -78,8 +82,10 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                         return $scope.vm.newIdentitySource &&
                             $scope.vm.newIdentitySource.connectionStrings &&
                             (($scope.vm.newIdentitySource.connectionStrings.length > 0
+                            && $scope.vm.newIdentitySource.connectionStrings[0]!= null
                             && $scope.vm.newIdentitySource.connectionStrings[0].indexOf("ldaps") > -1) ||
                             ($scope.vm.newIdentitySource.connectionStrings.length > 1
+                            && $scope.vm.newIdentitySource.connectionStrings[1] != null
                             && $scope.vm.newIdentitySource.connectionStrings[1].indexOf("ldaps") > -1));
                 }
 
@@ -145,7 +151,7 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                                             $scope.closeThisDialog('save');
                                     }
                                     else {
-                                            $rootScope.globals.errors = res.data;
+                                            $rootScope.globals.popup_errors = res.data;
                                     }
                                     $scope.vm.isSaving = false;
                             });
@@ -158,11 +164,12 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                             .Add($rootScope.globals.currentUser, identitySource)
                             .then(function (res) {
                                     if (res.status == 200) {
+                                            $rootScope.globals.errors = {details: 'Identity Source ' + identitySource.name + ' added successfully', success:true};
                                             $scpe.vm.getIdentitySources();
                                             $scope.closeThisDialog('save');
                                     }
                                     else {
-                                            $rootScope.globals.errors = res.data;
+                                            $rootScope.globals.popup_errors = res.data;
                                     }
                                     $scope.vm.isSaving = false;
                             });

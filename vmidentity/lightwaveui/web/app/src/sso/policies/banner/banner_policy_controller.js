@@ -21,6 +21,13 @@ module.controller('BannerPolicyCntrl', [ '$scope', '$rootScope', 'TenantService'
             $scope.updateBannerPolicy = updateBannerPolicy;
             $scope.addContent = addContent;
 
+            init();
+
+            function init(){
+                $rootScope.globals.errors = null;
+                $rootScope.globals.popup_errors = null;
+            }
+
             function addContent(content){
                 $scope.vm.policies.brandPolicy.logonBannerContent = content;
             }
@@ -35,11 +42,12 @@ module.controller('BannerPolicyCntrl', [ '$scope', '$rootScope', 'TenantService'
                     .UpdateConfiguration($rootScope.globals.currentUser, policy)
                     .then(function (res) {
                         if (res.status == 200) {
+                            $rootScope.globals.errors = {details: 'Banner policy updated successfully', success:true};
                             $scope.getConfig();
                             $scope.closeThisDialog('save');
                         }
                         else {
-                            $rootScope.globals.errors = res.data;
+                            $rootScope.globals.popup_errors = res.data;
                         }
                     });
             }

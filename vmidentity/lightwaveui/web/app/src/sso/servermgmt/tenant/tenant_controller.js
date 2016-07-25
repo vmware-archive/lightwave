@@ -23,6 +23,8 @@ module.controller('TenantCntrl', ['$scope', '$rootScope', 'TenantService', 'Util
             $scope.setcertificatecontent = setcertificatecontent;
             $scope.removecertificate = removecertificate;
             $scope.viewcertificate = viewcertificate;
+            $scope.isValid = isValid;
+
             init();
 
 
@@ -59,6 +61,12 @@ module.controller('TenantCntrl', ['$scope', '$rootScope', 'TenantService', 'Util
                     newchain.certificates.push(certificate);
                 }
 
+                if(newchain.certificates.length < 2)
+                {
+                    $rootScope.globals.errors = { details : 'At-least 2 certificates needs to be present.'};
+                    return;
+                }
+
                 var newTenant = {
                     name: tenant.name,
                     username: tenant.username + '@' + tenant.name,
@@ -70,6 +78,7 @@ module.controller('TenantCntrl', ['$scope', '$rootScope', 'TenantService', 'Util
                     .Create($rootScope.globals.currentUser, newTenant)
                     .then(function (res) {
                         if (res.status == 200) {
+                            $rootScope.globals.errors = {details: 'Tenant ' + tenant.name + ' added successfully', success:true};
                             $scope.vm.tenants.push(tenant);
                             $scope.newtenant = {
                                 credentials: {
@@ -114,5 +123,12 @@ module.controller('TenantCntrl', ['$scope', '$rootScope', 'TenantService', 'Util
                         break;
                     }
                 }
+            }
+
+            function isValid() {
+                return ($scope.newtenant.credentials
+                && $scope.newtenant.credentials.certificates
+                && $scope.newtenant.credentials.certificates.length >= 2
+                && $scope.newtenant.credentials.privateKey);
             }
     }]);

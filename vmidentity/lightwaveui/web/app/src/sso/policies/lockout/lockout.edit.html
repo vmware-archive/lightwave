@@ -2,13 +2,21 @@
     <div class="header-20px">
         Update Lockout Policy
     </div>
-    <div class='error' ng-show="globals.errors">
+    <div class='error' ng-show="globals.popup_errors && !globals.popup_errors.success">
         <img src="../app/assets/error.png" width="16px" height="16px"/>
         <button type="button"
                 class="btn btn-xs btn-link pull-right"
-                ng-click="globals.errors = null;">X
+                ng-click="globals.popup_errors = null;">X
         </button>
-        {{globals.errors.details}} {{globals.errors.cause}}
+        {{globals.popup_errors.details}} {{globals.popup_errors.cause}}
+    </div>
+    <div class='success' ng-show="globals.popup_errors && globals.popup_errors.success">
+        <img src="../app/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}}
     </div>
     <div class="row">
         <form name="editLockoutPolicyForm"

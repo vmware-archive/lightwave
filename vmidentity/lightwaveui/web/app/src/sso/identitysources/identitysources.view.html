@@ -5,13 +5,21 @@
              width="24px"
              height="24px"/> Identity Sources
     </div>
-    <div class='error' ng-show="globals.errors">
+    <div class='error' ng-show="globals.errors && !globals.errors.success">
         <img src="../app/assets/error.png" width="16px" height="16px"/>
         <button type="button"
                 class="btn btn-xs btn-link pull-right"
                 ng-click="globals.errors = null;">X
         </button>
         {{globals.errors.details}} {{globals.errors.cause}}
+    </div>
+    <div class='success' ng-show="globals.errors && globals.errors.success">
+        <img src="../app/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.errors = null;">X
+        </button>
+        {{globals.errors.details}}
     </div>
     <div style="margin-top:5px;">
 
@@ -91,7 +99,7 @@
                                  ng-if="vm.filteredIdentitySources"
                                  tabindex="1"
                                  ng-click="vm.selectedIdentitysource = identitysource;"
-                                 class="large-grid-content-row">
+                                 ng-class="vm.getClass(vm.selectedIdentitysource.name == identitysource.name)">
 
                                 <div class="col-xs-10"
                                      uib-tooltip="{{identitysource.name}}">

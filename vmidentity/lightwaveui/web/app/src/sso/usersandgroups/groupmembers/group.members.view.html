@@ -6,13 +6,21 @@
         vm.selectedGroup.name;
         }}'
     </div>
-    <div class='error' ng-show="globals.errors">
+    <div class='error' ng-show="globals.popup_errors && !globals.popup_errors.success">
         <img src="../app/assets/error.png" width="16px" height="16px"/>
         <button type="button"
                 class="btn btn-xs btn-link pull-right"
-                ng-click="globals.errors = null;">X
+                ng-click="globals.popup_errors = null;">X
         </button>
-        {{globals.errors.details}} {{globals.errors.cause}}
+        {{globals.popup_errors.details}} {{globals.popup_errors.cause}}
+    </div>
+    <div class='success' ng-show="globals.popup_errors && globals.popup_errors.success">
+        <img src="../app/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}}
     </div>
     <div class="row">
         <div class="row content popup-content">
@@ -26,15 +34,17 @@
                     Domain: <select
                         ng-model="vm.idsmembersearch"
                         ng-options="t as t.name for t in vm.identitysources"
-                        style="height:24px;width:120px;margin-left:5px;margin-right:10px;"
+                        style="height:24px;width:120px;margin-left:5px;margin-right:5px;"
                         ng-change="vm.getAllMembers(vm.idsmembersearch);"></select>
                     Filter: <select
                         ng-model="membersearchtype"
                         ng-options="t as t.name for t in membersearchtypes"
-                        style="height:24px;width:120px;margin-left:5px; margin-right:10px;"></select>
-                    <input type="text" id="membersearch"
-                           name="membersearch" ng-model="vm.membersearch"
-                           class="form-control" style="display:inline;width:240px;"
+                        style="height:24px;width:120px;margin-left:5px; margin-right:5px;"></select>
+                    <input type="text"
+                           id="membersearch"
+                           name="membersearch"
+                           ng-model="vm.membersearch"
+                           class="form-control" style="display:inline;width:120px;"
                            placeholder="Search text"/> <br/><br/>
                     <button type="submit"
                             class="btn btn-primary btn-sm pull-right"
@@ -107,6 +117,7 @@
                 <button type="button"
                         class="btn btn-link btn-sm pull-left btn-popup-footer"
                         style="margin-left: 10px;"
+                        ng-show="vm.canDeleteSelectedMembers()"
                         ng-click="vm.deleteSelectedMembers()">DELETE
                 </button>
                 <button type="button"
@@ -186,7 +197,7 @@
             <div class="popup-row col-xs-12">
                 <button type="submit"
                         class="btn btn-primary pull-right btn-popup-footer"
-                        ng-disabled="editGroupMembershipForm.$invalid">SAVE
+                        ng-disabled="editGroupMembershipForm.$invalid || vm.disable()">SAVE
                 </button>
                 <button type="button"
                         class="btn btn-default pull-right btn-popup-footer"

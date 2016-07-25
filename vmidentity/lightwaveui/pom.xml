@@ -15,6 +15,6 @@
     </dependency>
   </dependencies>
   <build>
-    <finalName>webui</finalName>
+    <finalName>lightwaveui</finalName>
   </build>
 </project>

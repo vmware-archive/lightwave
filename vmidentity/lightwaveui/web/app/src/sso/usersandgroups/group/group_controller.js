@@ -25,6 +25,7 @@ module.controller('GroupCntrl', [ '$scope', '$rootScope', 'GroupService',
 
             function init(){
                 $rootScope.globals.errors = '';
+                $rootScope.globals.popup_errors = null;
                 $scope.newGroup = {};
             }
 
@@ -38,13 +39,13 @@ module.controller('GroupCntrl', [ '$scope', '$rootScope', 'GroupService',
                     .Add($rootScope.globals.currentUser, group)
                     .then(function (res) {
                         if(res.status == 200) {
-                            console.log('Save response: ' + JSON.stringify(res));
+                            $rootScope.globals.errors = {details: 'Group ' + group.upn + ' added successfully', success:true};
                             $scope.newgroup = {};
                             $scope.getgroups($scope.vm.identitysources, $scope.vm.groupsearch);
                             $scope.closeThisDialog('save');
                         }
                         else {
-                            $rootScope.globals.errors = res.data;
+                            $rootScope.globals.popup_errors = res.data;
                         }
                     });
             }
@@ -65,12 +66,12 @@ module.controller('GroupCntrl', [ '$scope', '$rootScope', 'GroupService',
                     .Update($rootScope.globals.currentUser, newgroup)
                     .then(function (res) {
                         if(res.status == 200) {
-                            console.log("Saved Group: " + JSON.stringify(res.data));
+                            $rootScope.globals.errors = {details: 'Group ' + newgroup.upn + ' updated successfully', success:true};
                             $scope.getgroups($scope.vm.identitysources, $scope.vm.groupsearch);
                             $scope.closeThisDialog('save');
                         }
                         else {
-                            $rootScope.globals.errors = res.data;
+                            $rootScope.globals.popup_errors = res.data;
                         }
                     });
             }
