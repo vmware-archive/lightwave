@@ -67,7 +67,6 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
             }
 
             function getIdentitySources(searchText) {
-                $rootScope.globals.errors = null;
                 $scope.vm.idsdataLoading = true;
                 IdentitySourceService
                     .GetAll($rootScope.globals.currentUser)
@@ -94,9 +93,11 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
                                             identitySources[i].ssl = true;
                                         }
 
-                                        for (var j = 0; j < identitySources[i].certificates.length; j++) {
-                                            var encoded = identitySources[i].certificates[j].encoded;
-                                            identitySources[i].certificates[j].metadata = Util.getCertificateDetails(encoded);
+                                        if(identitySources[i].certificates) {
+                                            for (var j = 0; j < identitySources[i].certificates.length; j++) {
+                                                var encoded = identitySources[i].certificates[j].encoded;
+                                                identitySources[i].certificates[j].metadata = Util.getCertificateDetails(encoded);
+                                            }
                                         }
                                     }
                                     $scope.vm.filteredIdentitySources.push(identitySources[i]);
@@ -108,7 +109,6 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
             }
 
             function getDefaultProvider() {
-                $rootScope.globals.errors = null;
                 var configs = ['PROVIDER'];
 
                 TenantService

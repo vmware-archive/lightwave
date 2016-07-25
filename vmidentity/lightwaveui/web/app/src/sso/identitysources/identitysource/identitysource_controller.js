@@ -65,10 +65,11 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                                                     $scope.vm.newIdentitySource.connectionStrings.length > 0 &&
                                                     $scope.vm.newIdentitySource.connectionStrings[0] != null &&
                                                     $scope.vm.newIdentitySource.connectionStrings[0].indexOf("ldap") == 0 &&
-                                                    $scope.vm.newIdentitySource.connectionStrings.length > 1 &&
+                                                ($scope.vm.newIdentitySource.connectionStrings.length == 1 ||
+                                                ($scope.vm.newIdentitySource.connectionStrings.length > 1 &&
                                                     ($scope.vm.newIdentitySource.connectionStrings[1] == null ||
                                                     ($scope.vm.newIdentitySource.connectionStrings[1] != null &&
-                                                    $scope.vm.newIdentitySource.connectionStrings[1].indexOf("ldap") == 0)));
+                                                    $scope.vm.newIdentitySource.connectionStrings[1].indexOf("ldap") == 0)))));
                                         }
                                 else {
                                         return ($scope.vm.selectedIdentitysource.name &&
@@ -80,10 +81,21 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                                         $scope.vm.selectedIdentitysource.connectionStrings.length > 0 &&
                                         $scope.vm.selectedIdentitysource.connectionStrings[0] != null &&
                                         $scope.vm.selectedIdentitysource.connectionStrings[0].indexOf("ldap") == 0 &&
+                                        ($scope.vm.selectedIdentitysource.connectionStrings.length == 1 ||
                                         $scope.vm.selectedIdentitysource.connectionStrings.length > 1 &&
                                         ($scope.vm.selectedIdentitysource.connectionStrings[1] == null ||
                                         ($scope.vm.selectedIdentitysource.connectionStrings[1] != null &&
-                                        $scope.vm.selectedIdentitysource.connectionStrings[1].indexOf("ldap") == 0)));
+                                        $scope.vm.selectedIdentitysource.connectionStrings[1].indexOf("ldap") == 0))));
+                                }
+                        }
+                        if($scope.vm.idsTab == 3){
+                                if ($scope.vm.newIdentitySource) {
+                                        return $scope.vm.newIdentitySource.username &&
+                                            $scope.vm.newIdentitySource.password;
+                                }
+                                else {
+                                        return $scope.vm.selectedIdentitysource.username &&
+                                            $scope.vm.selectedIdentitysource.password;
                                 }
                         }
 
@@ -206,7 +218,7 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                             .then(function (res) {
                                     if (res.status == 200) {
                                             $rootScope.globals.errors = {details: 'Identity Source ' + identitySource.name + ' added successfully', success:true};
-                                            $scpe.vm.getIdentitySources();
+                                            $scope.vm.getIdentitySources();
                                             $scope.closeThisDialog('save');
                                     }
                                     else {
