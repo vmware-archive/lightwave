@@ -432,11 +432,22 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
             }
         }
 
-        function getsolutionusers(providers, name) {
+        function getsolutionusers(providers, name, type) {
             $scope.error = '';
             $scope.vm.solutionusersdataLoading = true;
             $scope.currentTab = 1;
             $scope.vm.selectedSolutionUser = null;
+
+            var value = "NAME";
+            if(!type){
+                var item = {name: "Name", value: "NAME"};
+                $scope.vm.selectedSolutionUserSearchType = item;
+                $scope.vm.solutionUserSearchType = [item, {name: "Certificate", value: "CERT_SUBJECTDN"}]
+            }
+
+            if(name && name != '' && type){
+                value = type.value;
+            }
             if (providers != null) {
                 var provider_name = '';
                 for (var i = 0; i < providers.length; i++) {
@@ -446,7 +457,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
                 }
                 $scope.currentsolutionuser = {};
                 MemberService
-                    .Search($rootScope.globals.currentUser, provider_name, "SOLUTIONUSER", "NAME", name)
+                    .Search($rootScope.globals.currentUser, provider_name, "SOLUTIONUSER", value , name)
                     .then(function (res) {
                         if (res.status == 200) {
                             $scope.vm.solutionusers = res.data.solutionUsers;
