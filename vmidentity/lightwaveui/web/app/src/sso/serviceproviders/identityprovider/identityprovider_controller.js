@@ -18,10 +18,23 @@ var module = angular.module('lightwave.ui.sso');
 module.controller('IdentityProviderCntrl', [ '$scope', '$rootScope',
         function($scope, $rootScope) {
 
+                $scope.vm.viewCertificate = viewCertificate;
+
                 init();
 
                 function init(){
                         $rootScope.globals.errors = '';
                         $rootScope.globals.popup_errors = null;
+                }
+
+
+                function viewCertificate(){
+                        console.log('view certificate');
+
+                        if($scope.vm.selectedRelyingParty.certificate) {
+                                var template = 'shared/components/certificate/certificate.view.html';
+                                var controller = 'CertificateViewerCntrl';
+                                Util.viewCertificate($scope, $scope.vm.selectedRelyingParty.certificate.encoded, template, controller);
+                        }
                 }
         }]);

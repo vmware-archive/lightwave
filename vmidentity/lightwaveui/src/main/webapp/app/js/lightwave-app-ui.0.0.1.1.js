@@ -30,23 +30,25 @@ var app = angular.module('lightwave.ui', [
 
 app.run(run);
 
-run.$inject = ['$rootScope', '$location', '$cookieStore'];
+run.$inject = ['$rootScope', '$location', '$cookieStore', '$window'];
 
-function run($rootScope, $location, $cookieStore) {
+function run($rootScope, $location, $cookieStore, $window) {
     $rootScope.globals = $cookieStore.get('globals') || {};
     $rootScope.globals.errors = '';
     $rootScope.globals.crumbs = [];
     $rootScope.globals.vm = {};
-    $rootScope.globals.vm.menus = [];
 
     $rootScope.$on('$locationChangeStart', function (event, next, current) {
+
         $rootScope.globals.errors = '';
-        var isHomePageWithToken = $location.path().indexOf('/home') >= 0;
-        var loggedIn = $rootScope.globals.currentUser;
+        var loggedIn = $window.sessionStorage.currentUser;
         $rootScope.appLoad = false;
-        if (!isHomePageWithToken && !loggedIn) {
+        if (!loggedIn) {
             $rootScope.appLoad = true;
             $location.path('/home');
+        }
+        else {
+            $rootScope.globals.currentUser = JSON.parse($window.sessionStorage.currentUser);
         }
     });
 }

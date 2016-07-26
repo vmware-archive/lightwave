@@ -117,7 +117,15 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
                             } else if (rps != null) {
                                 for (var i = 0; i < rps.length; i++) {
                                     if (rps[i].entityId.indexOf(searchText) > -1) {
+
+                                        if (rp[i].signingCertificates && rp[i].signingCertificates.certificates) {
+                                            for (var j = 0; j < rp[i].signingCertificates.certificates.length; j++) {
+                                                var cert = rps[i].signingCertificates.certificates[j];
+                                                rps[i].signingCertificates.certificates[j].metadata = Util.getCertificateDetails(cert.encoded);
+                                            }
+                                        }
                                         $scope.vm.identityproviders.push(rps[i]);
+
                                     }
                                 }
                             }

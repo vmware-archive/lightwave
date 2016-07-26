@@ -79,9 +79,9 @@
                         <div ng-show="!vm.selectedIdentityProvider.subjectFormats">
                             No subject format specified
                         </div>
-                        <div ng-repeat="subjectFormat in vm.selectedIdentityProvider.subjectFormats"
+                        <div ng-repeat="(key, value) in vm.selectedIdentityProvider.subjectFormats"
                              ng-show="vm.selectedIdentityProvider.subjectFormats">
-                                {{subjectFormat.name}} ({{subjectFormat.value}})
+                                {{key}} ({{value}})
                         </div>
                 </div>
             </div>
@@ -93,9 +93,19 @@
                     <div ng-show="!vm.selectedIdentityProvider.signingCertificates">
                     No certificates specified
                 </div>
-                    <div ng-repeat="certificate in vm.selectedIdentityProvider.signingCertificates"
-                         ng-show="vm.selectedIdentityProvider.signingCertificates">
-                        {{ certificate.subject }}
+                    <div ng-repeat="certificate in vm.selectedIdentityProvider.signingCertificates.certificates"
+                         ng-show="vm.selectedIdentityProvider.signingCertificates && vm.selectedIdentityProvider.signingCertificates.certificates">
+                        <button type="button"
+                                class="btn btn-link"
+                                ng-click="vm.viewCertificate()"
+                                uib-tooltip="{{certificate.subject}}"
+                                style="margin-left:-10px;word-wrap: break-word;word-break: break-all">
+                            {{
+                                certificate.metadata.subject.length> 20 ?
+                                certificate.metadata.subject.substring(0,20) + '...' :
+                                certificate.metadata.subject;
+                            }}
+                        </button>
                     </div>
                 </div>
             </div>
