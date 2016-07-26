@@ -50,21 +50,40 @@ module.controller('CertificateCntrl', ['$scope', '$rootScope', 'CertificateServi
                     .then(function (res) {
                         if (res.status == 200) {
                             var chains = res.data;
-                            $scope.vm.chains = [];
+                            $scope.vm.origChains = [];
                             if (chains && chains.length > 0) {
                                 for (var i = 0; i < chains.length; i++) {
                                     var chain = chains[chains.length - 1 - i];
-                                    chain.active = (i == 0);
-                                    $scope.vm.chains.push(chain);
+                                    chain.active = (i == 0) ? "ACTIVE" : "INACTIVE";
+                                    $scope.vm.origChains.push(chain);
                                 }
                             }
-                            populatemetadata($scope.vm.chains);
-                            $scope.vm.certsdataLoading = false;
-                            $scope.vm.currentCert = null;
+                            populatemetadata($scope.vm.origChains);
+
+                            $scope.vm.chains = [];
+                                for (var i = 0; i < $scope.vm.origChains.length; i++) {
+
+                                    var found = false;
+                                    for(var j=0; j<$scope.vm.origChains[i].certificates.length; j++) {
+
+                                        var cert = $scope.vm.origChains[i].certificates[j];
+                                        if (!searchText || cert.metadata.subject.indexOf(searchText) > -1)
+                                        {
+                                            found = true;
+                                        }
+                                    }
+
+                                    if(found)
+                                    {
+                                        $scope.vm.chains.push($scope.vm.origChains[i]);
+                                    }
+                                }
                         }
                         else {
                             $rootScope.globals.errors = res.data;
                         }
+                        $scope.vm.certsdataLoading = false;
+                        $scope.vm.currentCert = null;
                     });
             }
 
