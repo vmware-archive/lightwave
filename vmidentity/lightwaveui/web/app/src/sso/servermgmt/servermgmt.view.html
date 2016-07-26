@@ -159,7 +159,11 @@
                                          width="16px"
                                          height="16px"
                                          style="margin-top:-10px;"/>
-                                        {{tenant.name}}
+                                    {{
+                                        tenant.name.length > 50 ?
+                                        tenant.name.substring(0,50) + '...' :
+                                        tenant.name;
+                                    }}
                                 </div>
                                 <div class="col-xs-4"
                                      uib-tooltip="{{tenant.username}}">
