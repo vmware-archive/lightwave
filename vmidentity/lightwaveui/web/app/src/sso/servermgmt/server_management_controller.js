@@ -16,12 +16,14 @@
 
 var module = angular.module('lightwave.ui.sso');
 module.controller('ServerMgmtCntrl', ['$scope',  '$rootScope','ServerService', 'TenantService', 'Util', 'popupUtil',
-        function($scope, $rootScope, ServerService, TenantService, Util, popupUtil) {
+    'AuthenticationService',
+        function($scope, $rootScope, ServerService, TenantService, Util, popupUtil, AuthenticationService) {
 
             $scope.vm = this;
             $scope.vm.getcomputers = getcomputers;
             $scope.vm.gettenants = gettenants;
             $scope.vm.addTenant = addTenant;
+            $scope.vm.deleteTenant = deleteTenant;
 
             init();
 
@@ -82,5 +84,19 @@ module.controller('ServerMgmtCntrl', ['$scope',  '$rootScope','ServerService', '
                         }
                     }
                 }
+            }
+
+            function deleteTenant(){
+                $rootScope.globals.errors = null;
+                TenantService
+                    .Delete($rootScope.globals.currentUser)
+                    .then(function (res) {
+                        if (res.status == 200 || res.status == 204) {
+                            AuthenticationService.logout();
+                        }
+                        else {
+                            $rootScope.globals.errors = res.data;
+                        }
+                    });
             }
         }]);

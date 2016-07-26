@@ -199,15 +199,18 @@
                              DELETE
                          </button>
                         <form name="form"
-                              ng-submit="getsolutionusers(vm.identitysource, vm.solutionusersearch)"
+                              ng-submit="getsolutionusers(vm.identitysource, vm.solutionusersearch, vm.selectedSolutionUserSearchType)"
                               role="form"
                               style="float:right;">
+                            <select ng-model="vm.selectedSolutionUserSearchType"
+                                    ng-options="t.name for t in vm.solutionUserSearchType"
+                                    class="ids-select"></select>
                             <input type="text"
                                    name="solutionusersearch"
                                    id="solutionusersearch"
                                    ng-model="vm.solutionusersearch"
                                    class="search-box"
-                                   placeholder="search by solution user name"/>
+                                   placeholder="search for solution"/>
                             <button type="submit"
                                     class="btn btn-primary btn-sm">
                                 Search

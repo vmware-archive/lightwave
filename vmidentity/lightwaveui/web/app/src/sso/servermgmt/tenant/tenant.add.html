@@ -28,12 +28,13 @@
                         Tenant Name
                     </div>
                     <div class="col-xs-8"
-                         ng-class="{ 'has-error': newtenantform.newtenantname.$dirty && newtenantform.newtenantname.$error.required }">
+                         ng-class="{ 'has-error': newtenantform.newtenantname.$invalid }">
                         <input type="text"
                                id="newtenant.name"
                                name="newtenantname"
                                ng-model="newtenant.name"
                                class="form-control pull-left"
+                               maxlength="100"
                                required
                                placeholder="contoso"/>
                     </div>
@@ -43,7 +44,7 @@
                         Username
                     </div>
                     <div class="col-xs-8"
-                         ng-class="{ 'has-error': newtenantform.username.$dirty && newtenantform.username.$error.required }">
+                         ng-class="{ 'has-error': newtenantform.username.$invalid }">
                         <input type="text"
                                id="newtenant.username"
                                name="newtenantusername"
@@ -55,14 +56,14 @@
                 </div>
                 <div class="popup-row col-xs-12">
                     <div class="col-xs-4"
-                         ng-class="{ 'has-error': newtenantform.password.$dirty && newtenantform.password.$error.required }">
+                         ng-class="{ 'has-error': newtenantform.password.$invalid }">
                         Password
                     </div>
                     <div class="col-xs-8"
-                         ng-class="{ 'has-error': newtenantform.name.$dirty && newtenantform.name.$error }">
+                         ng-class="{ 'has-error': newtenantform.password.$invalid }">
                         <input type="password"
-                               id="newtenant.password"
-                               name="newtenantpassword"
+                               id="password"
+                               name="password"
                                ng-model="newtenant.password"
                                class="form-control pull-left"
                                required
@@ -70,11 +71,30 @@
                     </div>
                 </div>
                 <div class="popup-row col-xs-12">
+                    <div class="col-xs-4"
+                         ng-class="{ 'has-error': newtenantform.confirmpassword.$invalid }">
+                        Confirm Password
+                    </div>
+                    <div class="col-xs-8"
+                         ng-class="{ 'has-error': newtenantform.confirmpassword.$invalid }">
+                        <input type="password"
+                               id="confirmpassword"
+                               name="confirmpassword"
+                               ng-model="newtenant.confirmpassword"
+                               class="form-control pull-left"
+                               required
+                               placeholder="confirm password"/>
+                         <span ng-show="newtenant && (newtenant.confirmpassword != newtenant.password)"
+                               class="error-display">
+                                    password & confirm mis-match</span>
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
                     <div class="col-xs-4">
                         Private Key
                     </div>
                     <div class="col-xs-8"
-                         ng-class="{ 'has-error': newtenantform.privatekeyPath.$dirty && newtenantform.privatekeyPath.$error.required }">
+                         ng-class="{ 'has-error': newtenantform.privatekeyPath.$invalid }">
                         <input type="file"
                                on-read-file="setprivatekeycontent(newtenant, contents)"
                                id="newtenant.privateKeyFilePath"
@@ -87,7 +107,7 @@
                         Choose Certificate
                     </div>
                     <div class="col-xs-8"
-                         ng-class="{ 'has-error': newtenantform.name.$dirty && newtenantform.name.$error }">
+                         ng-class="{ 'has-error': newtenantform.encodedcertfilepath.$invalid }">
                         <input type="file"
                                on-read-file="setcertificatecontent(newtenant, contents)"
                                id="newtenant.certfilepath"
