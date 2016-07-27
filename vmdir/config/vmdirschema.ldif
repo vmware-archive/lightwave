@@ -20546,7 +20546,7 @@ attributetypes: (
 attributetypes: (
     VMWare.CIS.attribute.8
     NAME 'vmwCISDescription'
-    DESC 'VMware CIS -  resource key for service description'
+    DESC 'VMware CIS - resource key for service description'
     EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
@@ -21405,7 +21405,7 @@ attributeTypes: (
 attributeTypes: (
     VMWare.LicSvc.attribute.413
     NAME 'vmwLicSvcAssetIsInEvaluation'
-    DESC 'VMware License Service - Asset Is In Eval '
+    DESC 'VMware License Service - Asset Is In Eval'
     EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
@@ -21423,7 +21423,7 @@ attributeTypes: (
 attributeTypes: (
     VMWare.LicSvc.attribute.415
     NAME 'vmwLicSvcAssetFeaturesInUseList'
-    DESC 'VMware License Service - Asset Features In Use List '
+    DESC 'VMware License Service - Asset Features In Use List'
     EQUALITY caseIgnoreMatch
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE

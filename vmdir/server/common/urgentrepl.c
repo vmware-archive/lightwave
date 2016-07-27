@@ -17,7 +17,7 @@
 #include "includes.h"
 
 
-VOID
+BOOLEAN
 VmDirPerformUrgentReplication(
     PVDIR_OPERATION pOperation,
     USN currentTxnUSN
@@ -29,6 +29,8 @@ VmDirPerformUrgentReplication(
     UINT64    newTimeout = 0;
     UINT64    startTime = 0;
     UINT64    endTime = 0;
+    USN       prevConsensusUSN = 0;
+    USN       currentConsensusUSN = 0;
 
     /*
      * If urgent replication request is already active then set this boolean
@@ -53,17 +55,29 @@ VmDirPerformUrgentReplication(
     while (bSuccess == FALSE &&
            VmDirdState() != VMDIRD_STATE_SHUTDOWN)
     {
+        // cache the local consensus before waiting on condition
+        prevConsensusUSN = VmDirGetUrgentReplConsensus();
+
         dwError = VmDirTimedWaitForUrgentReplDone(newTimeout, startTime);
-        if (dwError != 0)
+
+        currentConsensusUSN = VmDirGetUrgentReplConsensus();
+        /*
+         * if urgent repl thread signalled writer thread without updating
+         * consensus it means either partial failure or no repl partners
+         * don't retry break out of the loop.
+         */
+        if (dwError != 0 ||
+            (VmDirReplGetUrgentReplDoneCondition() && prevConsensusUSN == currentConsensusUSN))
         {
             break;
         }
 
         endTime = VmDirGetTimeInMilliSec();
-
-        if (currentTxnUSN <= VmDirGetUrgentReplConsensus())
+        if (currentTxnUSN <= currentConsensusUSN)
         {
             bSuccess = TRUE;
+            VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
+                "Strong Consistency guaranteed for USN: %lld", currentTxnUSN);
         }
         else if((startTime + timeout) > endTime && VmDirdState() != VMDIRD_STATE_SHUTDOWN)
         {
@@ -85,7 +99,7 @@ VmDirPerformUrgentReplication(
     VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
         "VmDirPerformUrgentReplication completed successfully");
 
-    return;
+    return bSuccess;
 }
 
 VOID
@@ -119,7 +133,11 @@ VmDirPerformUrgentReplIfRequired(
         * signalled by urgentReplCoordinator thread
         * read the consensus and make a decision
         */
-       VmDirPerformUrgentReplication(pOperation, currentTxnUSN);
+       if (VmDirPerformUrgentReplication(pOperation, currentTxnUSN) == FALSE)
+       {
+           VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+               "Strong Consistency not guaranteed for USN: %lld", currentTxnUSN);
+       }
    }
 
 }

@@ -2178,14 +2178,14 @@ VmDirRemoveReplicationAgreement(
                         &dwNumReplPartner
                     );
     BAIL_ON_VMDIR_ERROR(dwError);
-    if (dwNumReplPartner < 2) // Must have 2 or more repl partner before removal
+
+    // Warn if less than two partners
+    if (dwNumReplPartner < 2)
     {
-        VMDIR_LOG_ERROR(
+        VMDIR_LOG_WARNING(
                 VMDIR_LOG_MASK_ALL,
-                "VmDirRemoveReplPartner error: too few replication partner on %s to remove\n",
-                pszTgtHostName);
-        dwError = ERROR_VDCREPADMIN_TOO_FEW_REPLICATION_PARTNERS;
-        BAIL_ON_VMDIR_ERROR(dwError);
+                "%s: Attempting to remove replication agreements with %s having only %d partner\n",
+                __FUNCTION__, pszTgtHostName, dwNumReplPartner);
     }
 
     if (bTwoWayRepl)
@@ -2198,14 +2198,14 @@ VmDirRemoveReplicationAgreement(
                             &dwNumReplPartner
                         );
         BAIL_ON_VMDIR_ERROR(dwError);
-        if (dwNumReplPartner < 2) // Must have 2 or more repl partner before removal
+
+        // Warn if less than two partners
+        if (dwNumReplPartner < 2)
         {
-            VMDIR_LOG_ERROR(
-                    VMDIR_LOG_MASK_ALL,
-                    "VmDirRemoveReplPartner error: too few replication partner on %s to remove\n",
-                    pszTgtHostName);
-            dwError = ERROR_VDCREPADMIN_TOO_FEW_REPLICATION_PARTNERS;
-            BAIL_ON_VMDIR_ERROR(dwError);
+            VMDIR_LOG_WARNING(
+                VMDIR_LOG_MASK_ALL,
+                "%s: Attempting to remove replication agreements with %s having only %d partner\n",
+                __FUNCTION__, pszSrcHostName, dwNumReplPartner);
         }
     }
 
