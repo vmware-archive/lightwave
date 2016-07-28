@@ -15,9 +15,6 @@
 package com.vmware.lightwaveui;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -44,10 +41,17 @@ public class Logout extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		
+		try{
 		String[] values_id_token = request.getParameterValues("id_token");
 		String value_id_token = "";
 		if(values_id_token != null && values_id_token.length > 0){
 			value_id_token = values_id_token[0];
+		}
+		
+		String[] values_tenant = request.getParameterValues("tenant");
+		String value_tenant = "";
+		if(values_tenant != null && values_tenant.length > 0){
+			value_tenant = values_tenant[0];
 		}
 		
 		String[] values_state = request.getParameterValues("state");
@@ -58,14 +62,20 @@ public class Logout extends HttpServlet {
 		
 		String uri = request.getRequestURL().toString();
 		String server = uri.split("://")[1].split("/")[0].split(":")[0];
-		//String server = "blr-1st-1-dhcp613.eng.vmware.com";
 		String postLogoutRedirectUri = "https://" + server + "/lightwaveui";
-		String openIdConnectUri = "https://" + server + "/openidconnect/logout";
+		String openIdConnectUri = "https://" + server + "/openidconnect/logout/" + value_tenant;
 		String args = "?id_token_hint=" + value_id_token +
 					  "&post_logout_redirect_uri=" + postLogoutRedirectUri +
 					  "&state=" + value_state;
 		String logoutUri = openIdConnectUri + args;
 		response.sendRedirect(logoutUri);
+		} catch(Exception exc)
+		{
+			String message = " Message: " + exc.getMessage();
+			String querystring = "?" + request.getQueryString();
+			String uri = request.getRequestURL().toString();
+			response.getWriter().append("Home Served at: ").append(uri + querystring + message);
+		}
 	}
 
 	/**

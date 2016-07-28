@@ -50,7 +50,7 @@ body{
 	</h1> <br/><br/><br/><br/>
 	Enter the tenant you want to login to 
 	<input type="text" id="tenant" style="margin:10px;" placeholder="lightwave.local" /> 
-	<input type="text" id="clientId" style="margin:10px;" placeholder="OIDC client ID" /> 
+	<!-- <input type="text" id="clientId" style="margin:10px;" placeholder="OIDC client ID" />  -->
 	<input type="submit" name="Login" value="Take me to Lightwave Admin ..." onclick="redirect()"/>
 	<br/><br/><br/><br/>
 	<p style="line-height:1.5em;max-width:900px;">
@@ -76,14 +76,16 @@ function redirect(){
 		}
 	else
 		{
-			var clientIdStr = document.getElementById('clientId').value;
+			/*var clientIdStr = document.getElementById('clientId').value;
 			if(clientIdStr == null || clientIdStr == '')
 			{
 				alert('Enter a valid OIDC client Id: '+ clientIdStr );
 			}
+			*/
 			var server = getserver(location.href);
 			
-			var uri = "https://" + server + "/openidconnect/oidc/authorize/" + tenantName + "?response_type=id_token%20token&response_mode=form_post&client_id=" + clientIdStr + "&redirect_uri=https://" + server + "/lightwaveui/Home&state=_state_lmn_&nonce=_nonce_lmn_&scope=openid%20rs_admin_server";
+			//var uri = "https://" + server + "/openidconnect/oidc/authorize/" + tenantName + "?response_type=id_token%20token&response_mode=form_post&client_id=" + clientIdStr + "&redirect_uri=https://" + server + "/lightwaveui/Home&state=_state_lmn_&nonce=_nonce_lmn_&scope=openid%20rs_admin_server";
+			var uri = "https://" + server + "/lightwaveui/Login?tenant=" + tenantName;
 			alert('Redirecting to server uri: '+ uri );
 			window.location = uri;
 		}
