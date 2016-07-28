@@ -140,6 +140,8 @@ public class VMIdentityController {
         try {
             for (IPlatformComponentInstaller comp : components) {
                 try {
+					String id = comp.getComponentInfo().getId();
+					System.out.println("\nAdded getComponentInfo: " + id);
                     if (observer != null)
                         observer.beginComponentInstall(comp.getComponentInfo()
                                 .getId());
@@ -176,6 +178,8 @@ public class VMIdentityController {
                 .getUsername(), standaloneParams.getDomainName(),
                 standaloneParams.getPassword(),false, standaloneParams.isUpgradeMode()));
         components.add(new SecureTokenServerInstaller(standaloneParams));
+        components.add(new LightwaveUIInstaller(standaloneParams));
+		System.out.println("\nAdded Lightwave UI installer");
         return components;
     }
 
