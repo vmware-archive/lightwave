@@ -15,8 +15,8 @@
 'use strict';
 
 var module = angular.module('lightwave.ui.sso');
-module.controller('TenantCntrl', ['$scope', '$rootScope', 'TenantService', 'Util',
-        function($scope, $rootScope, TenantService, Util) {
+module.controller('TenantCntrl', ['$scope', '$rootScope', 'TenantService', 'OidcClientService', 'OpenIdConnectService', 'Util',
+        function($scope, $rootScope, TenantService, OidcClientService, OpenIdConnectService, Util) {
 
             $scope.addtenant = addtenant;
             $scope.setprivatekeycontent = setprivatekeycontent;
@@ -76,21 +76,62 @@ module.controller('TenantCntrl', ['$scope', '$rootScope', 'TenantService', 'Util
 
                 TenantService
                     .Create($rootScope.globals.currentUser, newTenant)
-                    .then(function (res) {
-                        if (res.status == 200) {
-                            $rootScope.globals.errors = {details: 'Tenant ' + tenant.name + ' added successfully', success:true};
-                            $scope.vm.tenants.push(tenant);
-                            $scope.newtenant = {
-                                credentials: {
-                                    certificates: [],
-                                    privateKey: {}
-                                }
-                            };
-                            $scope.vm.gettenants('');
-                            $scope.closeThisDialog('save');
+                    .then(function (res4) {
+                        if (res4.status == 200) {
+                            OpenIdConnectService
+                                .GetToken($rootScope.globals.currentUser.server, newTenant.name, newTenant.username, newTenant.password)
+                                .then(function (res1) {
+                                    if (res1.status == 200) {
+
+                                        var uri = "https://" + $rootScope.globals.currentUser.server + "/lightwaveui";
+                                        var client = {
+                                            "redirectUris": [uri + "/Home"],
+                                            "tokenEndpointAuthMethod": "none",
+                                            "postLogoutRedirectUris": [uri],
+                                            "logoutUri": uri
+                                        };
+                                        console.log('OpenID Connect response: ' + JSON.stringify(res1.data.access_token));
+                                        var token = res1.data;
+                                        OidcClientService
+                                            .Create($rootScope.globals.currentUser.server, token , tenant.name, client)
+                                            .then(function (res2) {
+                                                if (res2.status == 200) {
+                                                    var clientId = res2.data.clientId;
+                                                    OidcClientService
+                                                        .AddClientId($rootScope.globals.currentUser.server, token , tenant.name, clientId)
+                                                        .then(function (res3) {
+                                                            if (res3.status == 200) {
+                                                                $scope.vm.tenants.push(tenant);
+                                                                $scope.newtenant = {
+                                                                    credentials: {
+                                                                        certificates: [],
+                                                                        privateKey: {}
+                                                                    }
+                                                                };
+                                                                $rootScope.globals.errors = {
+                                                                    details: 'Tenant ' + tenant.name + ' added successfully',
+                                                                    success: true
+                                                                };
+                                                                $scope.vm.gettenants('');
+                                                                $scope.closeThisDialog('save');
+                                                            }
+                                                            else {
+                                                                $rootScope.globals.popup_errors = {details: "OIDC client ID could not be saved"};
+                                                            }
+                                                        });
+                                                }
+                                                else {
+                                                    $rootScope.globals.popup_errors = res2.data;
+                                                }
+                                            });
+                                    }
+                                    else {
+                                        $rootScope.globals.popup_errors = res1.data;
+                                    }
+                                });
                         }
                         else {
-                            $rootScope.globals.errors = res.data;
+                            $rootScope.globals.popup_errors = res4.data;
                         }
                         $scope.vm.isSaving = false;
                     });

@@ -73,7 +73,9 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
                     .then(function (res) {
                         if (res.status == 200) {
                             $scope.vm.identitySources = res.data;
-                            getDefaultProvider();
+                            if($rootScope.globals.currentUser.isSystemTenant) {
+                                getDefaultProvider();
+                            }
                         }
                         else {
                             $rootScope.globals.errors = res.data;

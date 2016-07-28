@@ -6,7 +6,7 @@ var gulp = require('gulp'),
     htmlmin = require('gulp-html-minifier'),
     cleanCSS = require('gulp-clean-css');
 
-var version = '0.0.1.1';
+var version = '0.0.1.2';
 
 var sequence = [
     'lightwave-app-ui-js',
@@ -95,9 +95,10 @@ gulp.task('lightwave-ui-html-minify', function() {
 });
 
 gulp.task('lightwave-ui-css-minify', function() {
+    var app_css = 'lightwave-ui.' + version + '.min.css';
     gulp.src('./app/app.css')
         .pipe(cleanCSS({compatibility: 'ie8'}))
-        .pipe(rename({ extname: '.min.css' }))
+        .pipe(rename(app_css))
         .pipe(gulp.dest('./dist/css'));
 });
 

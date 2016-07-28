@@ -13,13 +13,13 @@
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
         integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7"
         crossorigin="anonymous">
-  <link rel="stylesheet" href="css/app.min.css">
-  <link rel="stylesheet" href="css/lightwave-ui-vendor.0.0.1.1.min.css">
+    <link rel="stylesheet" href="css/lightwave-ui.0.0.1.2.min.css">
+  <link rel="stylesheet" href="css/lightwave-ui-vendor.0.0.1.2.min.css">
 </head>
 <body>
     <div ng-controller="ProfileCntrl">
         <div class="title">
-          <img src="assets/vmwarelogo.png" height="10px;" style="margin-left:10px;"/>
+          <img src="assets/vm_logo.png" height="16px;" style="margin-left:10px;border-radius: 3px;"/>
             Lightwave Admin
             <sup><small>Beta</small></sup>
             <div ng-show="globals.currentUser" class="logged-in-user ng-cloak">
@@ -33,29 +33,28 @@
         </div>
         <div class="profile ng-cloak"
              ng-show="globals.currentUser && vm.profileState">
-            <button type="button"
-                    class="btn btn-xs btn-link pull-right"
-                    ng-click="vm.hideProfile();">X
-            </button>
-            <div class="pull-left">
-                Role: {{globals.currentUser.role}}
+                <button type="button"
+                        class="btn btn-xs btn-link pull-right"
+                        ng-click="vm.hideProfile();">X
+                </button><br/>
+                <div class="pull-left" style="margin-right:30px;margin-bottom:10px;">
+                    <span style="margin-left:10px;">
+                        Role: {{globals.currentUser.role}}
+                    </span><br/><br/>
+                <button type="button"
+                        class="btn btn-link pull-left"
+                        ng-click="vm.changePassword();"
+                        ng-show="globals.currentUser.role != 'GuestUser'"
+                        uib-tooltip="Change Password">
+                    Change Password
+                </button> <br/>
+                <button type="button"
+                        class="btn btn-link pull-left"
+                        ng-click="vm.logout()"
+                        uib-tooltip="Sign Out from the server">
+                    Logout
+                </button>
             </div>
-            <br/>
-           <button type="button"
-                    class="btn btn-link pull-left"
-                    ng-click="vm.logout()"
-                    uib-tooltip="Sign Out from the server"
-                    style="float:right;margin-right:10px;">
-                Logout
-            </button><br/>
-            <button type="button"
-                    class="btn btn-link pull-left"
-                    ng-click="vm.changePassword();"
-                    ng-show="globals.currentUser.role != 'GuestUser'"
-                    uib-tooltip="Change Password"
-                    style="float:right;margin-right:10px;">
-                Change Password
-            </button>
         </div>
     </div>
     <div id="navigator"
@@ -63,7 +62,7 @@
          ng-show="globals.currentUser"
          ng-controller="NavigationCntrl">
         <div ng-repeat="menu in vm.menus"
-             ng-if="vm && vm.menus && vm.exists(menu.roles, globals.currentUser.role)"
+             ng-if="vm && vm.menus &&  vm.canShow(menu, globals.currentUser)"
              ng-class="vm.getItemStyle(menu)"
              ng-click="vm.select(menu)">
             <a href="{{menu.href}}" ng-click="vm.select(menu)">
@@ -74,9 +73,9 @@
     <div ng-view style="width:95%;" ng-show="globals.currentUser">
 
     </div>
-  <script src="js/lightwave-ui-vendor.0.0.1.1.min.js"></script>
-  <script src="js/lightwave-ui.0.0.1.1.min.js"></script>
-  <script src="js/lightwave-app-ui.0.0.1.1.js"></script>
+    <script src="js/lightwave-ui-vendor.0.0.1.2.min.js"></script>
+    <script src="js/lightwave-ui.0.0.1.2.min.js"></script>
+    <script src="js/lightwave-app-ui.0.0.1.2.js"></script>
 
 </body>
 </html>

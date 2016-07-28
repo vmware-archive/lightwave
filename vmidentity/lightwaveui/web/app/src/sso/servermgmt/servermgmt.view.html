@@ -3,7 +3,9 @@
     <div class="content-header">
         <img src="../app/assets/tenant.png"
              width="24px"
-             height="24px"/> Computers & Tenants
+             height="24px"/>
+        <span ng-show="!globals.currentUser.isSystemTenant">Tenants</span>
+        <span ng-show="globals.currentUser.isSystemTenant">Computers & Tenants</span>
     </div>
     <div class='error' ng-show="globals.errors && !globals.errors.success">
         <img src="../app/assets/error.png" width="16px" height="16px"/>
@@ -27,7 +29,8 @@
         <uib-tabset active="active">
 
             <!-- Computers tab -->
-            <uib-tab index="0" select="vm.getcomputers(vm.searchcomputer)" heading="Computers">
+            <uib-tab index="0" select="vm.getcomputers(vm.searchcomputer)"
+                     heading="Computers" ng-show="globals.currentUser.isSystemTenant">
                 <div class="tab-container">
                     <div style="margin-bottom:5px;">
                         <form name="form"

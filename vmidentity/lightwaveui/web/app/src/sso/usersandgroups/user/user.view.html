@@ -102,6 +102,22 @@
                     {{vm.selectedUser.details.description}}
                 </div>
             </div>
+            <div class="popup-row col-xs-12">
+                <div class="col-xs-4">
+                    Password Last Changed on:
+                </div>
+                <div class="col-xs-8">
+                    {{ vm.selectedUser.passwordDetails.lastSet > 0 ? unixToDateText(vm.selectedUser.passwordDetails.lastSet) : "--"}}
+                </div>
+            </div>
+            <div class="popup-row col-xs-12">
+                <div class="col-xs-4">
+                    Days until password expiry:
+                </div>
+                <div class="col-xs-8">
+                    {{ vm.selectedUser.passwordDetails.lifetime > 0 ? numberToTime(vm.selectedUser.passwordDetails.lifetime) : "--"}}
+                </div>
+            </div>
         </div>
         <div class="popup-row col-xs-12">
             <button type="button"

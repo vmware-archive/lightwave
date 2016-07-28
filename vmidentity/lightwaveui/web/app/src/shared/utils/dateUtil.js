@@ -43,10 +43,10 @@ function dateUtil() {
     }
 
     function numberToTime(a) {
-        var hours = Math.trunc(a / 60);
+        var hours = Math.trunc(a / 3600);
         var days = Math.trunc(hours / 24);
         hours = hours % 24;
-        var minutes = a % 60;
+        var minutes = a % 3600;
         // console.log(hours + ":" + minutes);
         return days + " days " + hours + " hours " + minutes + " minutes";
     }

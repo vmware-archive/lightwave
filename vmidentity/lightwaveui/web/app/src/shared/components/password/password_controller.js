@@ -19,6 +19,7 @@ module.controller('PasswordCntrl', [ '$scope', '$rootScope', 'UserService',
     function($scope, $rootScope, UserService) {
         $scope.vm = this;
         $scope.vm.updatePassword = updatePassword;
+        $scope.vm.isValid = isValid;
 
         init();
 
@@ -60,5 +61,12 @@ module.controller('PasswordCntrl', [ '$scope', '$rootScope', 'UserService',
                         $rootScope.globals.popup_errors = res.data;
                     }
                 });
+        }
+
+        function isValid(){
+            return ($scope.newPassword &&
+            $scope.confirmpassword &&
+            $scope.currentPassword &&
+            $scope.confirmpassword == $scope.newPassword);
         }
     }]);

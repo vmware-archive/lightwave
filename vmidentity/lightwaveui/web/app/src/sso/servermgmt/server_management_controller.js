@@ -36,7 +36,10 @@ module.controller('ServerMgmtCntrl', ['$scope',  '$rootScope','ServerService', '
                         certificates: []
                     }
                 };
-                getcomputers('');
+
+                if($rootScope.globals.currentUser.isSystemTenant) {
+                    getcomputers('');
+                }
             }
 
             function addTenant(){
@@ -47,28 +50,30 @@ module.controller('ServerMgmtCntrl', ['$scope',  '$rootScope','ServerService', '
             }
 
             function getcomputers(searchText) {
-                $rootScope.globals.errors = null;
-                $scope.vm.computersdataLoading = true;
-                ServerService
-                    .Get($rootScope.globals.currentUser)
-                    .then(function (res) {
-                        if (res.status == 200) {
-                            var comps = res.data;
-                            if (!searchText || searchText == '') {
-                                $scope.vm.computers = comps;
-                            } else if (comps != null) {
-                                for (var i = 0; i < comps.length; i++) {
-                                    if (comps[i].domainController.indexOf(searchText) > -1) {
-                                        $scope.vm.computers.push(comps[i]);
+                if($rootScope.globals.currentUser.isSystemTenant) {
+                    $rootScope.globals.errors = null;
+                    $scope.vm.computersdataLoading = true;
+                    ServerService
+                        .Get($rootScope.globals.currentUser)
+                        .then(function (res) {
+                            if (res.status == 200) {
+                                var comps = res.data;
+                                if (!searchText || searchText == '') {
+                                    $scope.vm.computers = comps;
+                                } else if (comps != null) {
+                                    for (var i = 0; i < comps.length; i++) {
+                                        if (comps[i].domainController.indexOf(searchText) > -1) {
+                                            $scope.vm.computers.push(comps[i]);
+                                        }
                                     }
                                 }
                             }
-                        }
-                        else {
-                            $rootScope.globals.errors = res.data;
-                        }
-                        $scope.vm.computersdataLoading = false;
-                    });
+                            else {
+                                $rootScope.globals.errors = res.data;
+                            }
+                            $scope.vm.computersdataLoading = false;
+                        });
+                }
             }
 
             function gettenants(searchText) {

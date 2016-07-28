@@ -174,7 +174,8 @@
                 </div>
                 </div>
             </uib-tab>
-            <uib-tab index="1" select="getsolutionusers(vm.identitysource, vm.solutionusersearch)" heading="Solution Users">
+            <uib-tab index="1" select="getsolutionusers(vm.identitysource, vm.solutionusersearch)" heading="Solution Users"
+                     ng-show="globals.currentUser.isSystemTenant">
                 <div class="tab-container">
                     <span class='error-display'>{{error}}</span>
                      <div style="margin-bottom:5px;">

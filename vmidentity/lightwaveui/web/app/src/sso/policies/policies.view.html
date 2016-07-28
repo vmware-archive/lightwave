@@ -1,6 +1,6 @@
 <div class="content-container">
     <div class="content-header">
-        <img src="../app/assets/configuration.png" width="24px" height="24px"/>
+        <img src="../app/assets/policy.png" width="24px" height="24px"/>
         Policies & Configurations
     </div>
     <div class='error' ng-show="globals.errors && !globals.errors.success">
@@ -242,6 +242,14 @@
                             </div>
                             <div class="col-xs-6 text-label">
                                 {{vm.policies.passwordPolicy.minLength}}
+                            </div>
+                        </div>
+                        <div class="popup-row col-xs-12">
+                            <div class="col-xs-6">
+                                Max Length
+                            </div>
+                            <div class="col-xs-6 text-label">
+                                {{vm.policies.passwordPolicy.maxLength}}
                             </div>
                         </div>
                         <div class="popup-row col-xs-12">

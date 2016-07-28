@@ -15,31 +15,21 @@
 'use strict';
 
 var sso_service_module = angular.module('lightwave.ui.sso.services');
-sso_service_module.factory('HttpConfiguration', HttpConfiguration);
+sso_service_module.factory('OpenIdConnectService', OpenIdConnectService);
 
+OpenIdConnectService.$inject = ['Configuration', 'HttpService', 'HandleHttpResponse'];
 
-function HttpConfiguration(){
+function OpenIdConnectService(Configuration, HttpService, HandleHttpResponse) {
 
-    var config = {};
-    config.getHeaders = getHeaders;
-    return config;
+    var service = {};
+    service.GetToken = GetToken;
+    return service;
 
-    function getHeaders(token, contentType) {
-
-        if(token){
-            var header1 =
-            {
-                "Content-Type": contentType,
-                "Authorization": token.token_type + " " + token.access_token
-            };
-            return header1;
-        }
-        else {
-            var header2 =
-            {
-                "Content-Type": contentType
-            };
-            return header2;
-        }
+    function GetToken(server, tenant, username, password) {
+        var endpoint = Configuration.getLoginEndpoint(server, tenant);
+        var args = Configuration.getLoginArgument(username, password);
+        return HttpService
+            .getResponse(endpoint, 'POST', null, args, true)
+            .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
     }
 }

@@ -216,12 +216,14 @@ body {
 
 
 .ids-select{
-  height:24px;
+  height:28px;
   width:120px;
   margin-left:5px;
   margin-right:10px;
   border: 1px solid gray;
   display: inline;
+  border-radius: 3px;
+  margin-top:-5px;
 }
 
 /* ====== Popup Panel ====== */
@@ -248,6 +250,7 @@ body {
   padding: 20px 10px;
   background-color: #FAFAFA;
   border-radius: 0.2em;
+  word-wrap: break-word;
 }
 
 .popup-container{
@@ -375,13 +378,12 @@ body {
 
 .profile{
   right:40px;
-  top:50px;
+  top:45px;
   z-index: 1040;
   padding: 10px;
   position:fixed;
   border: 1px solid #AAAAAA;
   background: #FFFFFF;
-  height:100px
 }
 
 .input-xs {

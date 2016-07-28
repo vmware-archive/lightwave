@@ -43,7 +43,6 @@ module.controller('CertificateCntrl', ['$scope', '$rootScope', 'CertificateServi
             }
 
             function getchains(searchText) {
-                $rootScope.globals.errors = null;
                 $scope.vm.certsdataLoading = true;
                 CertificateService
                     .GetCertificateChain($rootScope.globals.currentUser)
