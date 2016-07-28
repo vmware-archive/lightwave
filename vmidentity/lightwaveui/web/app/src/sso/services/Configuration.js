@@ -25,9 +25,9 @@ function Configuration() {
     }
 
     // Open Id Connect login endpoint
-    function getLoginEndpoint(server) {
+    function getLoginEndpoint(server, tenant) {
         var serverUri = getServerUri(server);
-        return serverUri + 'openidconnect/token';
+        return serverUri + 'openidconnect/token/' + tenant;
     }
 
     // IDM endpoint
@@ -246,6 +246,12 @@ function Configuration() {
         return certificatesEndpoint + '/privatekey';
     }
 
+    // Client Id
+    function addClientId(server, tenant, clientId){
+        var serverUri = getServerUri(server);
+        return serverUri + "lightwaveui/RegisterOidc?tenant=" + tenant + "&clientId=" + clientId;
+    }
+
     var service = {};
     service.getLoginEndpoint = getLoginEndpoint;
     service.getLoginArgument = getLoginArgument;
@@ -274,5 +280,6 @@ function Configuration() {
     service.getCertificatesEndpoint = getCertificatesEndpoint;
     service.getUserPasswordEndpoint = getUserPasswordEndpoint;
     service.getDirConfigEndpoint = getDirConfigEndpoint;
+    service.addClientId = addClientId;
     return service;
 }

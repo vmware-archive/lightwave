@@ -15,12 +15,14 @@
 'use strict';
 
 var module = angular.module('lightwave.ui.sso');
-module.controller('UserCntrl', [ '$scope', '$rootScope', 'UserService',
-        function($scope, $rootScope, UserService) {
+module.controller('UserCntrl', [ '$scope', '$rootScope', 'UserService', 'Util',
+        function($scope, $rootScope, UserService, Util) {
 
             $scope.saveUser = saveUser;
             $scope.updateUser = updateUser;
             $scope.updateUserPassword = updateUserPassword;
+            $scope.numberToTime = Util.numberToTime;
+            $scope.unixToDateText = Util.unixToDateText;
 
             init();
 

@@ -36,7 +36,6 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
         $scope.editUser = editUser;
         $scope.getusers = getusers;
         $scope.viewUser = viewUser;
-        $scope.getuser = getuser;
         $scope.deleteUser = deleteUser;
         $scope.isuserguest = isuserguest;
         $scope.isuserregularuser = isuserregularuser;
@@ -112,11 +111,24 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
         }
 
         function viewUser(user) {
+            $rootScope.globals.errors = null;
+
             if (user) {
-                $scope.vm.selectedUser = user;
-                var template = 'sso/usersandgroups/user/user.view.html';
-                var controller = 'UserCntrl';
-                popupUtil.open($scope, template, controller);
+                $scope.error = '';
+                UserService
+                    .Get($rootScope.globals.currentUser, user.name + '@' + user.domain)
+                    .then(function (res) {
+                        if (res.status == 200) {
+                            $scope.vm.selectedUser = res.data;
+                            var template = 'sso/usersandgroups/user/user.view.html';
+                            var controller = 'UserCntrl';
+                            popupUtil.open($scope, template, controller);
+                        }
+                        else {
+                            $rootScope.globals.errors = res.data;
+                        }
+                    });
+
             }
         }
 
@@ -180,23 +192,6 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
             }
         }
 
-        function getuser(current) {
-            $scope.error = '';
-            $scope.currentuser = {};
-            var upn = current.name + "@" + current.domain;
-            UserService
-                .Get($rootScope.globals.currentUser, upn)
-                .then(function (res) {
-                    if (res.status == 200) {
-                        $scope.currentuser = res.data;
-                        getusergroups($scope.currentuser, $scope.vm.identitysource);
-                    }
-                    else {
-                        $rootScope.globals.errors = res.data;
-                    }
-                });
-        }
-
         function showSetPassword(user) {
             var template = 'sso/usersandgroups/user/user.password.html';
             var controller = 'UserCntrl';
@@ -247,6 +242,8 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
 
         function viewGroupMembership(group) {
             if (group) {
+
+
                 $scope.vm.selectedGroup = group;
                 var template = 'sso/usersandgroups/groupmembers/group.members.view.html';
                 var controller = 'GroupMembersCntrl';

@@ -24,6 +24,8 @@ function OidcClientService(Configuration, HttpService, HandleHttpResponse) {
     var service = {};
     service.GetAll = GetAll;
     service.Get = Get;
+    service.Create = Create;
+    service.AddClientId = AddClientId;
     return service;
 
     function Get(context, name) {
@@ -37,6 +39,20 @@ function OidcClientService(Configuration, HttpService, HandleHttpResponse) {
         var endpoint = Configuration.getOpenIdConnectClientsEndpoint(context.server, context.tenant);
         return HttpService
             .getResponse(endpoint, 'GET', context.token)
+            .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
+    }
+
+    function Create(server, token, tenant, client) {
+        var endpoint = Configuration.getOpenIdConnectClientsEndpoint(server, tenant);
+        return HttpService
+            .getResponse(endpoint, 'POST', token, client)
+            .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
+    }
+
+    function AddClientId(server, token, tenant, clientId) {
+        var endpoint = Configuration.addClientId(server, tenant, clientId);
+        return HttpService
+            .getResponse(endpoint, 'GET', token, clientId)
             .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
     }
 }
