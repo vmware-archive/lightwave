@@ -248,6 +248,7 @@ body {
   padding: 20px 10px;
   background-color: #FAFAFA;
   border-radius: 0.2em;
+  word-wrap: break-word;
 }
 
 .popup-container{

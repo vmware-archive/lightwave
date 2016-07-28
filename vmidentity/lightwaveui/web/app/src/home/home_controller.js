@@ -26,6 +26,10 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
 
             var qs = $location.search();
             var state = qs.state;
+
+            if(qs != null) {
+                console.log('qs.id_token: ' + qs.id_token);
+            }
             var id_token = qs.id_token;
             var access_token = qs.access_token;
             var token_type = qs.token_type;
@@ -36,14 +40,24 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
             }
             else
             {
-                if($window.sessionStorage.currentUser) {
-                    console.log('inside current user assignment ..');
-                    $rootScope.globals.currentUser = JSON.parse($window.sessionStorage.currentUser);
+                var loggedIn = $window.sessionStorage.currentUser;
+                console.log("$window.sessionStorage.currentUser: " + loggedIn);
+                if (!loggedIn) {
+                    console.log('set context start ..');
+                    setcontext(id_token, access_token, token_type, expires_in, state);
+                    console.log('set context end ..');
                 }
                 else {
-                    setcontext(id_token, access_token, token_type, expires_in, state);
+                    if (loggedIn == 'logout') {
+                        console.log('set context after logout start  ..');
+                        setcontext(id_token, access_token, token_type, expires_in, state);
+                        console.log('set context after logout end ..');
+                    }
+                    else {
+                        console.log('inside current user assignment ..');
+                        $rootScope.globals.currentUser = JSON.parse($window.sessionStorage.currentUser);
+                    }
                 }
-
                 var key = 'oidc_session_id-'+$rootScope.globals.currentUser.tenant;
                 var sessionId = $cookies.get(key);
                 $rootScope.globals.sessionId = sessionId;

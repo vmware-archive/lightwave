@@ -14,9 +14,7 @@
 
 package com.vmware.lightwaveui;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Map;
-
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -33,7 +31,6 @@ public class Home extends HttpServlet {
      */
     public Home() {
         super();
-        // TODO Auto-generated constructor stub
     }
 
 	/**
@@ -43,9 +40,7 @@ public class Home extends HttpServlet {
 		
 		String querystring = "?" + request.getQueryString();
 		String uri = request.getRequestURL().toString();
-		
-		// TODO Auto-generated method stub
-		response.getWriter().append("Test Served at: ").append(uri + querystring);
+		response.getWriter().append("Latest Test Served at: ").append(uri + querystring);
 	}
 
 	/**
@@ -53,6 +48,7 @@ public class Home extends HttpServlet {
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		
+		try{
 		String querystring = "?" + request.getQueryString();
 		String uri = request.getRequestURL().toString();
 		
@@ -113,5 +109,12 @@ public class Home extends HttpServlet {
 		String expiresInUri = "expires_in=" + value_expires_in;
 		String fullUri = baseuri + stateUri + "&" + idTokenUri + "&" + accessTokenUri + "&" + tokenTypeUri + "&" + expiresInUri;
 		response.sendRedirect(fullUri);
+		} catch(Exception exc)
+			{
+				String message = " Message: " + exc.getMessage();
+				String querystring = "?" + request.getQueryString();
+				String uri = request.getRequestURL().toString();
+				response.getWriter().append("Home Served at: ").append(uri + querystring + message);
+			}
 	}
 }

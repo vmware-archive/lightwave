@@ -36,7 +36,7 @@ module.controller('ServerMgmtCntrl', ['$scope',  '$rootScope','ServerService', '
                         certificates: []
                     }
                 };
-                getcomputers('');
+                //getcomputers('');
             }
 
             function addTenant(){
