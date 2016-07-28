@@ -14,12 +14,20 @@
 
 package com.vmware.lightwaveui;
 
+import java.io.File;
 import java.io.IOException;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.DocumentBuilder;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+import org.w3c.dom.Node;
 
 /**
  * Servlet implementation class Login
@@ -40,39 +48,40 @@ public class Login extends HttpServlet {
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		
-		String[] tenant = request.getParameterValues("tenant");
-		String tenantName = "";
-		if(tenant != null && tenant.length > 0){
-			tenantName = tenant[0];
-		}
-		
-		if(tenantName == null || tenantName == "")
+		try{
+			String[] tenant = request.getParameterValues("tenant");
+			String tenantName = "";
+			if(tenant != null && tenant.length > 0){
+				tenantName = tenant[0];
+			}
+			
+			if(tenantName == null || tenantName == "")
+			{
+				response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No tenant specifed.");
+				return;
+			}
+			
+			String uri = request.getRequestURL().toString();
+			String server = uri.split("://")[1].split("/")[0].split(":")[0];
+			String client_id = getClientId(tenantName);
+			String redirect_uri = "https://" + server + "/lightwaveui/Home";
+			String openIdConnectUri = "https://" + server + "/openidconnect/oidc/authorize/" + tenantName;
+			String args = "?response_type=id_token%20token&response_mode=form_post&client_id=" +
+						  client_id + 
+						  "&redirect_uri=" + 
+						  redirect_uri + 
+						  "&state=_state_lmn_&nonce=_nonce_lmn_&scope=openid%20rs_admin_server";
+			String authorizeUri = openIdConnectUri + args;
+			response.sendRedirect(authorizeUri);
+		} catch(Exception exc)
 		{
-			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No tenant specifed.");
-			return;
+			String message = " Message: " + exc.getMessage();
+			String querystring = "?" + request.getQueryString();
+			String uri = request.getRequestURL().toString();
+			response.getWriter().append("Error: ").append(uri + querystring + message);
 		}
-		
-		String[] clientIds = request.getParameterValues("clientId");
-		String clientId = "";
-		if(clientIds != null && clientIds.length > 0){
-			clientId = clientIds[0];
-		}
-		String uri = request.getRequestURL().toString();
-		String server = uri.split("://")[1].split("/")[0].split(":")[0];
-		//String server = "blr-1st-1-dhcp613.eng.vmware.com";
-		String client_id = clientId;//"6b96fb61-bf26-40bc-bf23-b6c9b1819bbc";
-		String redirect_uri = "https://" + server + "/lightwaveui/Home";
-		String openIdConnectUri = "https://" + server + "/openidconnect/oidc/authorize/" + tenantName;
-		String args = "?response_type=id_token%20token&response_mode=form_post&client_id=" +
-					  client_id + 
-					  "&redirect_uri=" + 
-					  redirect_uri + 
-					  "&state=_state_lmn_&nonce=_nonce_lmn_&scope=openid%20rs_admin_server";
-		String authorizeUri = openIdConnectUri + args;
-		response.sendRedirect(authorizeUri);
-		
 	}
-
+	
 	/**
 	 * @see HttpServlet#doPost(HttpServletRequest request, HttpServletResponse response)
 	 */
@@ -80,4 +89,33 @@ public class Login extends HttpServlet {
 		doGet(request, response);
 	}
 
+	private String getClientId(String domain) throws ParserConfigurationException, IOException, SAXException, Exception {
+		String clientId = "";
+		Boolean found = false;
+		File inputFile = new File("/opt/vmware/share/config/lightwave-ui-oidc.xml");
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+        Document doc = dBuilder.parse(inputFile);
+        doc.getDocumentElement().normalize();
+        NodeList nList = doc.getElementsByTagName("tenant");
+        
+        if(nList != null){
+	        for (int i = 0; i < nList.getLength(); i++) {
+	        	Node node = nList.item(i);
+	        	NodeList children = node.getChildNodes();
+	        	String name = children.item(0).getTextContent();
+	        	
+	        	if(name.equals(domain)){
+	        		clientId = children.item(1).getTextContent();
+	        		found = true;
+	        		break;
+	        	}
+	        }
+        }
+        
+        if(!found){
+        	throw new Exception("No OIDC client registered for tenant " + domain);
+        }
+        return clientId;
+	}
 }

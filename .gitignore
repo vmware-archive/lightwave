@@ -70,3 +70,4 @@ tools/win/VMDNSSnapIn/VMDNSSnapIn/obj
 tools/win/VMDirSchemaSnapIn/VMDirSchemaSnapIn/obj
 tools/win/logs
 tools/x64
+vmidentity/lightwaveui/target
