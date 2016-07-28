@@ -19,6 +19,7 @@ import com.vmware.identity.configure.IPlatformInstallObserver;
 import com.vmware.identity.configure.IdentityManagerInstaller;
 import com.vmware.identity.configure.PlatformInstallComponent;
 import com.vmware.identity.configure.SecureTokenServerInstaller;
+import com.vmware.identity.configure.LightwaveUIInstaller;
 import com.vmware.identity.interop.Validate;
 import com.vmware.pscsetup.interop.DeployUtilsAdapter;
 
@@ -132,6 +133,11 @@ public class PlatformServicesController {
 		        standaloneParams.getDomainName(), standaloneParams
 						.getPassword(), true, false));
 		components.add(new SecureTokenServerInstaller());
+		String domain = standaloneParams.getDomainName();
+		String hostname = standaloneParams.getHostname();
+		String username = "Administrator";
+		String password = standaloneParams.getPassword();
+		components.add(new LightwaveUIInstaller(hostname, domain, username, password));
 		return components;
 	}
 

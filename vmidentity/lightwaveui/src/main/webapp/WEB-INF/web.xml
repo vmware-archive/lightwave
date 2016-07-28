@@ -3,5 +3,29 @@
  "http://java.sun.com/dtd/web-app_2_3.dtd" >
 
 <web-app>
-  <display-name>Archetype Created Web Application</display-name>
+  <display-name>Lightwave Admin UI</display-name>
+	<error-page>
+	    <error-code>404</error-code>
+	    <location>/ErrorHandler</location>
+	</error-page>
+	<error-page>
+	    <error-code>403</error-code>
+	    <location>/ErrorHandler</location>
+	</error-page>
+	<error-page>
+	    <exception-type>
+	          javax.servlet.ServletException
+	    </exception-type >
+	    <location>/ErrorHandler</location>
+	</error-page>
+	<error-page>
+	    <exception-type>
+	          java.lang.Exception
+	    </exception-type >
+	    <location>/ErrorHandler</location>
+	</error-page>
+	<error-page>
+	    <exception-type>java.io.IOException</exception-type >
+	    <location>/ErrorHandler</location>
+	</error-page>
 </web-app>
