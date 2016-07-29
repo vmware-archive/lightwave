@@ -33,7 +33,7 @@ namespace VMDirSnapIn.Nodes
 	public class DirectoryNode : ChildScopeNode
 	{
 		public string Dn { get; private set; }
-		public string ObjectClass { get; private set; }
+		public List<string> ObjectClass { get; private set; }
 
 		private QueryDTO qdto;
 		private IntPtr cookie;
@@ -43,25 +43,29 @@ namespace VMDirSnapIn.Nodes
 
 		public bool isChildrenLoaded { get; private set; }
 		public bool IsBaseNode { get; set; }
-		private Dictionary<string, VMDirAttributeDTO> _properties;
+		protected Dictionary<string, VMDirAttributeDTO> _properties;
 
 		public Dictionary<string, VMDirAttributeDTO> NodeProperties
 		{
 			get
 			{
-				FillProperties();
+				if(_properties==null)
+					FillProperties();
 				return _properties;
+			}
+			set
+			{
+				_properties = value;
 			}
 		}
 
-		public DirectoryNode(string dn, string oc, VMDirServerDTO dto, ScopeNode parent) : base(dto)
+		public DirectoryNode(string dn, List<string> ocSet, VMDirServerDTO dto, ScopeNode parent) : base(dto)
 		{
 			Dn = dn;
-			ObjectClass = oc;
+			ObjectClass = ocSet;
 			DisplayName = VMDirServerDTO.DN2CN(Dn);
 			Parent = parent;
 			IsBaseNode = false;
-			_properties = new Dictionary<string, VMDirAttributeDTO>();
 			InitPageSearch();
 		}
 
@@ -89,7 +93,7 @@ namespace VMDirSnapIn.Nodes
 		private void InitPageSearch()
 		{
 			qdto = new TextQueryDTO(Dn, LdapScope.SCOPE_ONE_LEVEL, VMDirConstants.SEARCH_ALL_OC,
-	   new string[] { VMDirConstants.ATTR_DN, VMDirConstants.ATTR_OBJECT_CLASS }, 0, IntPtr.Zero, 0);
+			                        new string[] { VMDirConstants.ATTR_DN, VMDirConstants.ATTR_OBJECT_CLASS }, 0, IntPtr.Zero, 0);
 			cookie = IntPtr.Zero;
 			totalCount = 0;
 			pageNumber = 1;
@@ -119,7 +123,10 @@ namespace VMDirSnapIn.Nodes
 						pageNumber++;
 						foreach (var entry in entries)
 						{
-							lst.Add(new DirectoryNode(entry.getDN(), Utilities.GetObjectClass(entry), ServerDTO, this));
+							var ocList = new List<string>(entry.getAttributeValues(VMDirConstants.ATTR_OBJECT_CLASS).Select(x => x.StringValue).ToArray());
+							var node = new DirectoryNode(entry.getDN(), ocList, ServerDTO, this);
+							//node.NodeProperties = ServerDTO.Connection.GetEntryProperties(entry);
+							lst.Add(node);
 						}
 					});
 				isChildrenLoaded = true;
@@ -144,7 +151,7 @@ namespace VMDirSnapIn.Nodes
 		}
 
 		//Events
-		public void RefreshNode(object sender, EventArgs e)
+		public virtual void RefreshNode(object sender, EventArgs e)
 		{
 			RefreshProperties();
 			ReloadChildren();
@@ -155,7 +162,7 @@ namespace VMDirSnapIn.Nodes
 			ShowAddWindow();
 		}
 
-		public void Delete(object sender, EventArgs e)
+		public virtual void Delete(object sender, EventArgs e)
 		{
 			PerformDelete();
 		}
@@ -187,7 +194,8 @@ namespace VMDirSnapIn.Nodes
 		public void ShowSearch()
 		{
 			SearchWindowController swc = new SearchWindowController(Dn, ServerDTO);
-			swc.Window.MakeKeyAndOrderFront(this);
+			NSApplication.SharedApplication.RunModalForWindow(swc.Window);
+			//swc.Window.MakeKeyAndOrderFront(this);
 		}
 
 		public void GetNextPage()
@@ -224,7 +232,7 @@ namespace VMDirSnapIn.Nodes
 		}
 
 		//Launch Dialogs
-		public void AddUserToGroup(object sender, EventArgs e)
+		public virtual void AddUserToGroup(object sender, EventArgs e)
 		{
 			AddGroupByCNWindowController gwc = new AddGroupByCNWindowController(ServerDTO);
 			nint result = NSApplication.SharedApplication.RunModalForWindow(gwc.Window);
@@ -252,19 +260,19 @@ namespace VMDirSnapIn.Nodes
 			nint result = NSApplication.SharedApplication.RunModalForWindow(swc.Window);
 			if (result == (nint)VMIdentityConstants.DIALOGOK)
 			{
-				CreateObjectWindowController cwc = new CreateObjectWindowController(swc.SelectedObject, ServerDTO);
+				CreateObjectWindowController cwc = new CreateObjectWindowController(swc.SelectedObject.Name, ServerDTO,Dn);
 				nint res = NSApplication.SharedApplication.RunModalForWindow(cwc.Window);
 				if (res == (nint)VMIdentityConstants.DIALOGOK)
 				{
 					UIErrorHelper.CheckedExec(delegate ()
 					{
 						var attr = cwc._properties.Select(x => Utilities.MakeAttribute(x)).ToArray();
-						var cnVal = cwc._properties.First(x => x.Key == VMDirConstants.ATTR_CN).Value.Values;
-						string newdn = string.Format(VMDirConstants.ATTR_CN + "={0},{1}", cnVal[0].StringValue, Dn);
-
+						string newdn = cwc.Rdn + "," + Dn;
 						ServerDTO.Connection.AddObject(newdn, attr);
 						UIErrorHelper.ShowInformation(VMDirConstants.STAT_OBJ_ADD_SUCC);
-						ReloadChildren();
+						var oc = Utilities.GetObjectClassList(ServerDTO,newdn,LdapScope.SCOPE_BASE);
+						this.Children.Insert(0,new DirectoryNode(newdn,oc,ServerDTO,this));
+						//ReloadChildren();
 						RefreshProperties();
 						NSNotificationCenter.DefaultCenter.PostNotificationName("ReloadOutlineView", this);
 						NSNotificationCenter.DefaultCenter.PostNotificationName("ReloadTableView", this);
@@ -304,7 +312,9 @@ namespace VMDirSnapIn.Nodes
 					string dn = string.Format("cn={0},{1}", dto.cn, Dn);
 					ServerDTO.Connection.AddObject(dn, user);
 					UIErrorHelper.ShowInformation(VMDirConstants.STAT_GRP_ADD_SUCC);
-					ReloadChildren();
+					var oc = Utilities.GetObjectClassList(ServerDTO, dn, LdapScope.SCOPE_BASE);
+					this.Children.Insert(0, new DirectoryNode(dn, oc, ServerDTO, this));
+					//ReloadChildren();
 					RefreshProperties();
 					NSNotificationCenter.DefaultCenter.PostNotificationName("ReloadOutlineView", this);
 					NSNotificationCenter.DefaultCenter.PostNotificationName("ReloadTableView", this);
@@ -349,7 +359,9 @@ namespace VMDirSnapIn.Nodes
 					string dn = string.Format("cn={0},{1}", userDTO.Cn, Dn);
 					ServerDTO.Connection.AddObject(dn, user);
 					UIErrorHelper.ShowInformation(VMDirConstants.STAT_USR_ADD_SUCC);
-					ReloadChildren();
+					var oc = Utilities.GetObjectClassList(ServerDTO, dn, LdapScope.SCOPE_BASE);
+					this.Children.Insert(0, new DirectoryNode(dn, oc, ServerDTO, this));
+					//ReloadChildren();
 					RefreshProperties();
 					NSNotificationCenter.DefaultCenter.PostNotificationName("ReloadOutlineView", this);
 					NSNotificationCenter.DefaultCenter.PostNotificationName("ReloadTableView", this);
@@ -358,7 +370,7 @@ namespace VMDirSnapIn.Nodes
 			}
 		}
 
-		public void PerformDelete()
+		public virtual void PerformDelete()
 		{
 			ConfirmationDialogController cwc = new ConfirmationDialogController("Are you sure?");
 			nint result = NSApplication.SharedApplication.RunModalForWindow(cwc.Window);

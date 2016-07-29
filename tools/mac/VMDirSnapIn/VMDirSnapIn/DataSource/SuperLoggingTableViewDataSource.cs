@@ -64,8 +64,6 @@ namespace VMDirSnapIn.DataSource
 						return (NSString)this.entries [row].ErrorCode;
 					else if (col.Identifier == "Duration")
 						return (NSString)this.entries [row].Duration;
-					else if (col.Identifier == "String")
-						return (NSString)this.entries [row].String;
                 } 
             } catch (Exception e) {
                 System.Diagnostics.Debug.WriteLine ("Error in List Operation " + e.Message);

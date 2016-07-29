@@ -24,8 +24,8 @@ namespace VMDirSnapIn.UI
     public partial class SelectObjectClass : Form
     {
         List<ObjectClassDTO> _list;
-        string _selectedObject;
-        public string SelectedObject { get { return _selectedObject; } }
+        ObjectClassDTO _selectedObject;
+        public ObjectClassDTO SelectedObject { get { return _selectedObject; } }
 
         public SelectObjectClass(SchemaManager mgr)
         {
@@ -52,7 +52,7 @@ namespace VMDirSnapIn.UI
         {
             if (lstObjectClasses.SelectedIndices.Count == 1)
             {
-                _selectedObject = _list[lstObjectClasses.SelectedIndices[0]].Name;
+                _selectedObject = _list[lstObjectClasses.SelectedIndices[0]];
                 DialogResult = DialogResult.OK;
                 this.Close();
             }

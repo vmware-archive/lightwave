@@ -117,11 +117,11 @@ namespace VMDirSnapIn.Utilities
             return values[(values.Count() - 1)].StringValue;
         }
 
-        internal static int GetImgIndx(string objectClass)
+        internal static int GetImgIndx(List<string> objectClass)
         {
-            if (string.Equals(objectClass, VMDirConstants.USER_OC))
+            if (objectClass.Contains(VMDirConstants.USER_OC))
                 return (int)VMDirIconIndex.User;
-            else if (string.Equals(objectClass, VMDirConstants.GROUP_OC))
+            else if (objectClass.Contains(VMDirConstants.GROUP_OC))
                 return (int)VMDirIconIndex.Group;
             else
                 return (int)VMDirIconIndex.Object;

@@ -28,10 +28,10 @@ namespace VMDirSnapIn.UI
 	public partial class SelectObjectClassWindowController : NSWindowController
 	{
 		private List<ObjectClassDTO> _list;
-		private string _selectedObject;
+		private ObjectClassDTO _selectedObject;
 		private List<KeyValuePair<string, string>> dataSourceList;
 
-		public string SelectedObject { get { return _selectedObject; } }
+		public ObjectClassDTO SelectedObject { get { return _selectedObject; } }
 
 		#region Constructors
 
@@ -95,7 +95,7 @@ namespace VMDirSnapIn.UI
 			nint row = AddObjectTableView.SelectedRow;
 			if (row >= (nint)0)
 			{
-				_selectedObject = _list[(int)row].Name;
+				_selectedObject = _list[(int)row];
 				this.Close();
 				NSApplication.SharedApplication.StopModalWithCode(1);
 			}

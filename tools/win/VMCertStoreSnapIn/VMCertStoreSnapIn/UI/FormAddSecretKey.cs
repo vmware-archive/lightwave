@@ -53,8 +53,6 @@ namespace VMCertStoreSnapIn.UI
                 msg = MMCUIConstants.ALIAS_ENT;
             else if (string.IsNullOrWhiteSpace(txtSecretKey.Text))
                 msg = MMCUIConstants.SEC_KEY_SEL;
-            else if (txtSecretKey.Text.Length > CommonConstants.SECRET_KEY_LENGTH)
-                msg = CommonConstants.SECRET_KEY_LEN_ERR;
             if (msg != null)
             {
                 MMCDlgHelper.ShowWarning(msg);

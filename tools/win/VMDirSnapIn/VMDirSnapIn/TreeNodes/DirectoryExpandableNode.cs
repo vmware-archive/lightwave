@@ -26,6 +26,7 @@ using VMDirSnapIn.UI;
 using VMDirSnapIn.Utilities;
 using VMIdentity.CommonUtils;
 using VMwareMMCIDP.UI.Common.Utilities;
+using VMDirUtil = VMDir.Common.VMDirUtilities;
 
 namespace VMDirSnapIn.TreeNodes
 {
@@ -36,7 +37,7 @@ namespace VMDirSnapIn.TreeNodes
         private bool _morePages;
         private int _pageNumber;
         private QueryDTO _qdto;
-        public DirectoryExpandableNode(string dn, string oc, VMDirServerDTO serverDTO, PropertiesControl propCtl)
+        public DirectoryExpandableNode(string dn, List<string> oc, VMDirServerDTO serverDTO, PropertiesControl propCtl)
             : base(dn, oc, serverDTO, propCtl)
         {
             this.Text = Cn + " ...";
@@ -109,7 +110,8 @@ namespace VMDirSnapIn.TreeNodes
                         _pageNumber++;
                         foreach (var entry in entries)
                         {
-                            _lst.Add(new DirectoryExpandableNode(entry.getDN(), MiscUtilsService.GetObjectClass(entry), ServerDTO, PropertiesCtl));
+                            var ocList = new List<string>(entry.getAttributeValues(VMDirConstants.ATTR_OBJECT_CLASS).Select(x=>x.StringValue).ToArray());
+                            _lst.Add(new DirectoryExpandableNode(entry.getDN(), ocList, ServerDTO, PropertiesCtl));
                         }
                     });
                 if (!_morePages)
@@ -125,17 +127,15 @@ namespace VMDirSnapIn.TreeNodes
                 var frmSelect = new SelectObjectClass(ServerDTO.Connection.SchemaManager);
                 if (frmSelect.ShowDialog() == DialogResult.OK)
                 {
-                    var frm = new CreateForm(frmSelect.SelectedObject, ServerDTO);
+                    var frm = new CreateForm(frmSelect.SelectedObject.Name, ServerDTO, Dn);
                     if (frm.ShowDialog() == DialogResult.OK)
                     {
-                        var attributes = frm.Attributes.Select(x => LdapTypesService.MakeAttribute(x)).ToArray();
-
-                        var cnVal = frm.Attributes.First(x => x.Key == VMDirConstants.ATTR_CN).Value.Values;
-                        string newdn = string.Format(VMDirConstants.ATTR_CN + "={0},{1}", cnVal[0].StringValue, Dn);
-
+                        var attributes = frm.Attributes.Select(x => LdapTypesService.MakeAttribute(x)).ToArray();   
+                        string newdn = frm.Rdn+","+Dn;
                         ServerDTO.Connection.AddObject(newdn, attributes);
                         ClearDummyNode();
-                        this.Nodes.Add(new DirectoryExpandableNode(newdn, frmSelect.SelectedObject, ServerDTO, PropertiesCtl));
+                        var oc = VMDirUtil.Utilities.GetObjectClassList(ServerDTO, newdn, LdapScope.SCOPE_BASE);
+                        this.Nodes.Insert(0, new DirectoryExpandableNode(newdn, oc, ServerDTO, PropertiesCtl));
                         MMCDlgHelper.ShowInformation(VMDirConstants.STAT_OBJ_ADD_SUCC);
                     }
                 }
@@ -169,7 +169,8 @@ namespace VMDirSnapIn.TreeNodes
                     string dn = string.Format("cn={0},{1}", dto.cn, Dn);
                     ServerDTO.Connection.AddObject(dn, user);
                     ClearDummyNode();
-                    this.Nodes.Add(new DirectoryExpandableNode(dn, dto.objectClass, ServerDTO, PropertiesCtl));
+                    var oc = VMDirUtil.Utilities.GetObjectClassList(ServerDTO,dn,LdapScope.SCOPE_BASE);
+                    this.Nodes.Insert(0,new DirectoryExpandableNode(dn, oc, ServerDTO, PropertiesCtl));
                     MMCDlgHelper.ShowInformation(VMDirConstants.STAT_GRP_ADD_SUCC);
                 });
             }
@@ -211,7 +212,8 @@ namespace VMDirSnapIn.TreeNodes
                     string dn = string.Format("cn={0},{1}", userDTO.Cn, Dn);
                     ServerDTO.Connection.AddObject(dn, user);
                     ClearDummyNode();
-                    this.Nodes.Add(new DirectoryExpandableNode(dn, VMDirConstants.USER_OC, ServerDTO, PropertiesCtl));
+                    var oc = VMDirUtil.Utilities.GetObjectClassList(ServerDTO, dn, LdapScope.SCOPE_BASE);
+                    this.Nodes.Insert(0,new DirectoryExpandableNode(dn, oc, ServerDTO, PropertiesCtl));
                     MMCDlgHelper.ShowInformation(VMDirConstants.STAT_USR_ADD_SUCC);
                 });
             }

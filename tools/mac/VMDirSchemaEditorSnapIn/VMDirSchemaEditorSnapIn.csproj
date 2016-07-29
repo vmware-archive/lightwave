@@ -71,9 +71,6 @@
     <Compile Include="VMDirSchemaSnapInEnvironment.cs" />
     <Compile Include="VMDirSchemaConstants.cs" />
     <Compile Include="Nodes\VMDirSchemaServerNode.cs" />
-    <Compile Include="UI\ConnectToLdapWindow.cs" />
-    <Compile Include="UI\ConnectToLdapWindow.designer.cs" />
-    <Compile Include="UI\ConnectToLdapWindowController.cs" />
     <Compile Include="Nodes\VMDirSchemaClassBaseNode.cs" />
     <Compile Include="Nodes\VMDirSchemaAttributeBaseNode.cs" />
     <Compile Include="Nodes\VMDirSchemaClassEntryNode.cs" />
@@ -168,7 +165,6 @@
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="UI\MainMenu.xib" />
-    <InterfaceDefinition Include="UI\ConnectToLdapWindow.xib" />
     <InterfaceDefinition Include="UI\AttributeTypeWindow.xib" />
     <InterfaceDefinition Include="UI\ObjectClassWindow.xib" />
     <InterfaceDefinition Include="UI\SchemaFederationView.xib" />

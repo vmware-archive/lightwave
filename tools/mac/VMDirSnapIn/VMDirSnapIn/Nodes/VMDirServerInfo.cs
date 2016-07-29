@@ -39,7 +39,7 @@ namespace Nodes
 			{
 				Task t = new Task(ServerConnect);
 				t.Start();
-				if (await Task.WhenAny(t, Task.Delay(CommonConstants.TEN_SEC * 2)) == t)
+				if (await Task.WhenAny(t, Task.Delay(CommonConstants.TEN_SEC * 3)) == t)
 				{
 					await t;
 				}

@@ -43,6 +43,19 @@
             this.toolStripButtonShowHideOperAttr = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripButtonShowHideOptionalAttr = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsbRefresh = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsbDelete = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator9 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsbAddToGroup = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator12 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsbResetPassword = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator11 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsbVerifyPassword = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator13 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsbExportResult = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator10 = new System.Windows.Forms.ToolStripSeparator();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.searchQueryControl1 = new UI.SearchQueryControl();
             this.tableLayoutPanel2 = new System.Windows.Forms.TableLayoutPanel();
@@ -61,19 +74,7 @@
             this.tsmiResetUserPassword = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmiVerifyUserPassword = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmiDelete = new System.Windows.Forms.ToolStripMenuItem();
-            this.tsbRefresh = new System.Windows.Forms.ToolStripButton();
-            this.tsbDelete = new System.Windows.Forms.ToolStripButton();
-            this.tsbAddToGroup = new System.Windows.Forms.ToolStripButton();
-            this.tsbResetPassword = new System.Windows.Forms.ToolStripButton();
-            this.tsbVerifyPassword = new System.Windows.Forms.ToolStripButton();
-            this.tsbExportResult = new System.Windows.Forms.ToolStripButton();
-            this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
-            this.toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
-            this.toolStripSeparator9 = new System.Windows.Forms.ToolStripSeparator();
-            this.toolStripSeparator10 = new System.Windows.Forms.ToolStripSeparator();
-            this.toolStripSeparator11 = new System.Windows.Forms.ToolStripSeparator();
-            this.toolStripSeparator12 = new System.Windows.Forms.ToolStripSeparator();
-            this.toolStripSeparator13 = new System.Windows.Forms.ToolStripSeparator();
+            this.tsmiRefresh = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStrip1.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.tableLayoutPanel2.SuspendLayout();
@@ -207,13 +208,114 @@
             // toolStripButtonShowHideOptionalAttr
             // 
             this.toolStripButtonShowHideOptionalAttr.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.toolStripButtonShowHideOptionalAttr.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.Edit);
+            this.toolStripButtonShowHideOptionalAttr.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButtonShowHideOptionalAttr.Image")));
             this.toolStripButtonShowHideOptionalAttr.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButtonShowHideOptionalAttr.Name = "toolStripButtonShowHideOptionalAttr";
             this.toolStripButtonShowHideOptionalAttr.Size = new System.Drawing.Size(23, 27);
             this.toolStripButtonShowHideOptionalAttr.Tag = "directory";
             this.toolStripButtonShowHideOptionalAttr.Text = "Show/Hide Optional Attribute";
             this.toolStripButtonShowHideOptionalAttr.Click += new System.EventHandler(this.toolStripButtonShowHideOptionalAttr_Click);
+            // 
+            // toolStripSeparator7
+            // 
+            this.toolStripSeparator7.Name = "toolStripSeparator7";
+            this.toolStripSeparator7.Size = new System.Drawing.Size(6, 30);
+            // 
+            // tsbRefresh
+            // 
+            this.tsbRefresh.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tsbRefresh.Image = ((System.Drawing.Image)(resources.GetObject("tsbRefresh.Image")));
+            this.tsbRefresh.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbRefresh.Name = "tsbRefresh";
+            this.tsbRefresh.Size = new System.Drawing.Size(23, 27);
+            this.tsbRefresh.Tag = "directory";
+            this.tsbRefresh.Text = "Refresh";
+            this.tsbRefresh.Click += new System.EventHandler(this.tsbRefresh_Click);
+            // 
+            // toolStripSeparator8
+            // 
+            this.toolStripSeparator8.Name = "toolStripSeparator8";
+            this.toolStripSeparator8.Size = new System.Drawing.Size(6, 30);
+            // 
+            // tsbDelete
+            // 
+            this.tsbDelete.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tsbDelete.Image = ((System.Drawing.Image)(resources.GetObject("tsbDelete.Image")));
+            this.tsbDelete.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbDelete.Name = "tsbDelete";
+            this.tsbDelete.Size = new System.Drawing.Size(23, 27);
+            this.tsbDelete.Tag = "directory";
+            this.tsbDelete.Text = "Delete";
+            this.tsbDelete.Click += new System.EventHandler(this.tsbDelete_Click);
+            // 
+            // toolStripSeparator9
+            // 
+            this.toolStripSeparator9.Name = "toolStripSeparator9";
+            this.toolStripSeparator9.Size = new System.Drawing.Size(6, 30);
+            // 
+            // tsbAddToGroup
+            // 
+            this.tsbAddToGroup.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tsbAddToGroup.Image = ((System.Drawing.Image)(resources.GetObject("tsbAddToGroup.Image")));
+            this.tsbAddToGroup.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbAddToGroup.Name = "tsbAddToGroup";
+            this.tsbAddToGroup.Size = new System.Drawing.Size(23, 27);
+            this.tsbAddToGroup.Tag = "directory";
+            this.tsbAddToGroup.Text = "Add To Group";
+            this.tsbAddToGroup.Click += new System.EventHandler(this.tsbAddToGroup_Click);
+            // 
+            // toolStripSeparator12
+            // 
+            this.toolStripSeparator12.Name = "toolStripSeparator12";
+            this.toolStripSeparator12.Size = new System.Drawing.Size(6, 30);
+            // 
+            // tsbResetPassword
+            // 
+            this.tsbResetPassword.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tsbResetPassword.Image = ((System.Drawing.Image)(resources.GetObject("tsbResetPassword.Image")));
+            this.tsbResetPassword.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbResetPassword.Name = "tsbResetPassword";
+            this.tsbResetPassword.Size = new System.Drawing.Size(23, 27);
+            this.tsbResetPassword.Tag = "user";
+            this.tsbResetPassword.Text = "Reset User Password";
+            this.tsbResetPassword.Click += new System.EventHandler(this.tsbResetPassword_Click);
+            // 
+            // toolStripSeparator11
+            // 
+            this.toolStripSeparator11.Name = "toolStripSeparator11";
+            this.toolStripSeparator11.Size = new System.Drawing.Size(6, 30);
+            // 
+            // tsbVerifyPassword
+            // 
+            this.tsbVerifyPassword.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tsbVerifyPassword.Image = ((System.Drawing.Image)(resources.GetObject("tsbVerifyPassword.Image")));
+            this.tsbVerifyPassword.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbVerifyPassword.Name = "tsbVerifyPassword";
+            this.tsbVerifyPassword.Size = new System.Drawing.Size(23, 27);
+            this.tsbVerifyPassword.Tag = "user";
+            this.tsbVerifyPassword.Text = "Verify User Password";
+            this.tsbVerifyPassword.Click += new System.EventHandler(this.tsbVerifyPassword_Click);
+            // 
+            // toolStripSeparator13
+            // 
+            this.toolStripSeparator13.Name = "toolStripSeparator13";
+            this.toolStripSeparator13.Size = new System.Drawing.Size(6, 30);
+            // 
+            // tsbExportResult
+            // 
+            this.tsbExportResult.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tsbExportResult.Image = ((System.Drawing.Image)(resources.GetObject("tsbExportResult.Image")));
+            this.tsbExportResult.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbExportResult.Name = "tsbExportResult";
+            this.tsbExportResult.Size = new System.Drawing.Size(23, 27);
+            this.tsbExportResult.Tag = "all";
+            this.tsbExportResult.Text = "Export Result";
+            this.tsbExportResult.Click += new System.EventHandler(this.tsbExportResult_Click);
+            // 
+            // toolStripSeparator10
+            // 
+            this.toolStripSeparator10.Name = "toolStripSeparator10";
+            this.toolStripSeparator10.Size = new System.Drawing.Size(6, 30);
             // 
             // tableLayoutPanel1
             // 
@@ -351,6 +453,7 @@
             this.currPageTextBox.Name = "currPageTextBox";
             this.currPageTextBox.Size = new System.Drawing.Size(80, 20);
             this.currPageTextBox.TabIndex = 4;
+            this.currPageTextBox.Enabled = false;
             // 
             // propertiesControl1
             // 
@@ -368,9 +471,10 @@
             this.tsmiAddToGroup,
             this.tsmiResetUserPassword,
             this.tsmiVerifyUserPassword,
-            this.tsmiDelete});
+            this.tsmiDelete,
+            this.tsmiRefresh});
             this.cmuResultTreeView.Name = "cmuResultTreeView";
-            this.cmuResultTreeView.Size = new System.Drawing.Size(184, 92);
+            this.cmuResultTreeView.Size = new System.Drawing.Size(184, 136);
             // 
             // tsmiAddToGroup
             // 
@@ -397,109 +501,17 @@
             // 
             this.tsmiDelete.Name = "tsmiDelete";
             this.tsmiDelete.Size = new System.Drawing.Size(183, 22);
+            this.tsmiDelete.Tag = "all";
             this.tsmiDelete.Text = "Delete";
             this.tsmiDelete.Click += new System.EventHandler(this.tsmiDelete_Click);
             // 
-            // tsbRefresh
+            // tsmiRefresh
             // 
-            this.tsbRefresh.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbRefresh.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.Refresh);
-            this.tsbRefresh.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tsbRefresh.Name = "tsbRefresh";
-            this.tsbRefresh.Size = new System.Drawing.Size(23, 27);
-            this.tsbRefresh.Tag = "directory";
-            this.tsbRefresh.Text = "Refresh";
-            this.tsbRefresh.Click += new System.EventHandler(this.tsbRefresh_Click);
-            // 
-            // tsbDelete
-            // 
-            this.tsbDelete.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbDelete.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.Delete);
-            this.tsbDelete.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tsbDelete.Name = "tsbDelete";
-            this.tsbDelete.Size = new System.Drawing.Size(23, 27);
-            this.tsbDelete.Tag = "directory";
-            this.tsbDelete.Text = "Delete";
-            this.tsbDelete.Click += new System.EventHandler(this.tsbDelete_Click);
-            // 
-            // tsbAddToGroup
-            // 
-            this.tsbAddToGroup.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbAddToGroup.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.AddToGroup);
-            this.tsbAddToGroup.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tsbAddToGroup.Name = "tsbAddToGroup";
-            this.tsbAddToGroup.Size = new System.Drawing.Size(23, 27);
-            this.tsbAddToGroup.Tag = "directory";
-            this.tsbAddToGroup.Text = "Add To Group";
-            this.tsbAddToGroup.Click += new System.EventHandler(this.tsbAddToGroup_Click);
-            // 
-            // tsbResetPassword
-            // 
-            this.tsbResetPassword.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbResetPassword.Image = ((System.Drawing.Image)(resources.GetObject("tsbResetPassword.Image")));
-            this.tsbResetPassword.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tsbResetPassword.Name = "tsbResetPassword";
-            this.tsbResetPassword.Size = new System.Drawing.Size(23, 27);
-            this.tsbResetPassword.Tag = "user";
-            this.tsbResetPassword.Text = "Reset User Password";
-            this.tsbResetPassword.Click += new System.EventHandler(this.tsbResetPassword_Click);
-            // 
-            // tsbVerifyPassword
-            // 
-            this.tsbVerifyPassword.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbVerifyPassword.Image = ((System.Drawing.Image)(resources.GetObject("tsbVerifyPassword.Image")));
-            this.tsbVerifyPassword.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tsbVerifyPassword.Name = "tsbVerifyPassword";
-            this.tsbVerifyPassword.Size = new System.Drawing.Size(23, 27);
-            this.tsbVerifyPassword.Tag = "user";
-            this.tsbVerifyPassword.Text = "Verify User Password";
-            this.tsbVerifyPassword.Click += new System.EventHandler(this.tsbVerifyPassword_Click);
-            // 
-            // tsbExportResult
-            // 
-            this.tsbExportResult.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbExportResult.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.Export);
-            this.tsbExportResult.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tsbExportResult.Name = "tsbExportResult";
-            this.tsbExportResult.Size = new System.Drawing.Size(23, 27);
-            this.tsbExportResult.Tag = "all";
-            this.tsbExportResult.Text = "Export Result";
-            this.tsbExportResult.Click += new System.EventHandler(this.tsbExportResult_Click);
-            // 
-            // toolStripSeparator7
-            // 
-            this.toolStripSeparator7.Name = "toolStripSeparator7";
-            this.toolStripSeparator7.Size = new System.Drawing.Size(6, 30);
-            // 
-            // toolStripSeparator8
-            // 
-            this.toolStripSeparator8.Name = "toolStripSeparator8";
-            this.toolStripSeparator8.Size = new System.Drawing.Size(6, 30);
-            // 
-            // toolStripSeparator9
-            // 
-            this.toolStripSeparator9.Name = "toolStripSeparator9";
-            this.toolStripSeparator9.Size = new System.Drawing.Size(6, 30);
-            // 
-            // toolStripSeparator10
-            // 
-            this.toolStripSeparator10.Name = "toolStripSeparator10";
-            this.toolStripSeparator10.Size = new System.Drawing.Size(6, 30);
-            // 
-            // toolStripSeparator11
-            // 
-            this.toolStripSeparator11.Name = "toolStripSeparator11";
-            this.toolStripSeparator11.Size = new System.Drawing.Size(6, 30);
-            // 
-            // toolStripSeparator12
-            // 
-            this.toolStripSeparator12.Name = "toolStripSeparator12";
-            this.toolStripSeparator12.Size = new System.Drawing.Size(6, 30);
-            // 
-            // toolStripSeparator13
-            // 
-            this.toolStripSeparator13.Name = "toolStripSeparator13";
-            this.toolStripSeparator13.Size = new System.Drawing.Size(6, 30);
+            this.tsmiRefresh.Name = "tsmiRefresh";
+            this.tsmiRefresh.Size = new System.Drawing.Size(183, 22);
+            this.tsmiRefresh.Tag = "all";
+            this.tsmiRefresh.Text = "Refresh";
+            this.tsmiRefresh.Click += new System.EventHandler(this.tsmiRefresh_Click);
             // 
             // SearchForm
             // 
@@ -510,7 +522,7 @@
             this.ClientSize = new System.Drawing.Size(1024, 666);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Controls.Add(this.toolStrip1);
-            this.Icon = VMDirEnvironment.Instance.GetIconResource(VMDirIconIndex.Search);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "SearchForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "SearchForm";
@@ -575,5 +587,6 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator13;
         private System.Windows.Forms.ToolStripButton tsbExportResult;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator10;
+        private System.Windows.Forms.ToolStripMenuItem tsmiRefresh;
     }
 }

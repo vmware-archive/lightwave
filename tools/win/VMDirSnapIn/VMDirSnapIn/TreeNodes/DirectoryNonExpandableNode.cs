@@ -16,20 +16,27 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VMDir.Common;
 using VMDir.Common.DTO;
 using VMDirSnapIn.UI;
+using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace VMDirSnapIn.TreeNodes
 {
     public class DirectoryNonExpandableNode : DirectoryBaseNode
     {
-        public DirectoryNonExpandableNode(string dn, string oc, VMDirServerDTO serverDTO, PropertiesControl propCtl)
+        public DirectoryNonExpandableNode(string dn, List<string> oc, VMDirServerDTO serverDTO, PropertiesControl propCtl)
             : base(dn, oc, serverDTO, propCtl)
         {
             this.Text = dn;
         }
         public override void DoRefresh()
         {
+            if (ServerDTO.Connection == null)
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
+                return;
+            }
             RefreshProperties();
         }
     }

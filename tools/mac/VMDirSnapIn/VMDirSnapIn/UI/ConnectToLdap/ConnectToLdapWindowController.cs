@@ -71,8 +71,8 @@ namespace VMDirSnapIn.UI
 		{
 			ServerName.StringValue = _dto.Server ?? "";
 			var tenant = MiscUtil.GetBrandConfig(CommonConstants.TENANT);
-			BindDN.StringValue = "Administrator@" + tenant;
-			BaseDN.StringValue = CommonConstants.GetDNFormat(tenant);
+			BindDN.StringValue = string.IsNullOrWhiteSpace(_dto.BindDN)?"Administrator@" + tenant:_dto.BindDN;
+			BaseDN.StringValue = string.IsNullOrWhiteSpace(_dto.BaseDN)?CommonConstants.GetDNFormat(tenant):_dto.BaseDN;
 		}
 
 		private void AddEventListeners()

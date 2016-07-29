@@ -28,6 +28,7 @@ using VMDirSnapIn.Delegate;
 using VmIdentity.UI.Common;
 using System.IO;
 using System.Xml.Serialization;
+using System.Runtime.InteropServices;
 
 namespace VMDirSnapIn.UI
 {
@@ -36,6 +37,7 @@ namespace VMDirSnapIn.UI
 		private string _dn;
 		private VMDirServerDTO _serverDTO;
 		private SearchConditionsTableViewDataSource _searchCondDs;
+		private AttributeTableViewDataSource _attrToReturnDs;
 		private PropertiesViewController _propViewController;
 		private ResultOutlineDataSource _resultDs;
 		private int _pageSize;
@@ -45,9 +47,15 @@ namespace VMDirSnapIn.UI
 		private bool _morePages = false;
 		private QueryDTO _qdto;
 		private bool _searchBoxFlag = false;
-		public List<DirectoryNode> _resultList { get; set; }
+		public List<DirectoryNonExpandableNode> _resultList { get; set; }
 		private int _currPage { get; set; }
 		private int _totalPage { get; set; }
+		private List<string> _attrList;
+		private List<string> _returnedAttrList;
+
+		private NSObject ReloadResultOutlineViewNotificationObject;
+		private NSObject ReloadResultTableViewNotificationObject;
+		private NSObject CloseSearchNotificationObject;
 
 		public SearchWindowController(IntPtr handle) : base(handle)
 		{
@@ -65,7 +73,8 @@ namespace VMDirSnapIn.UI
 			_pageSize = 100;
 			_currPage = 0;
 			_totalPage = 0;
-			_resultList = new List<DirectoryNode>();
+			_resultList = new List<DirectoryNonExpandableNode>();
+			_returnedAttrList = new List<string>();
 		}
 
 		void InitPageSearch()
@@ -79,39 +88,39 @@ namespace VMDirSnapIn.UI
 			_totalPage = 0;
 			_resultList.Clear();
 			_resultDs.ResultList.Clear();
+			_returnedAttrList.Clear();
+			_returnedAttrList.AddRange(_qdto.AttrToReturn);
 			SetHeaderText("");
 		}
 
 		private void BindView()
 		{
-			this.BFSearchBaseTextField.StringValue = _dn;
-			this.TFSearchBaseTextField.StringValue = _dn;
-
+			this.SearchBaseTextField.StringValue = _dn;
 			foreach (var item in VMDirConstants.ScopeList)
 			{
-				this.BFSeachScopeComboBox.Add(new NSString(item));
-				this.TFSearchScopeComboBox.Add(new NSString(item));
+				this.SearchScopeComboBox.Add(new NSString(item));
 			}
 
 			foreach (var item in VMDirConstants.ConditionList)
-				this.BFCondComboBox.Add(new NSString(item));
+				this.BfConditionComboBox.Add(new NSString(item));
 
 			var attrTypes = _serverDTO.Connection.SchemaManager.GetAttributeTypeManager();
-			var attrList = attrTypes.Data.Select(x => x.Key).ToList();
-			attrList.Sort((x, y) => string.Compare(x, y, StringComparison.InvariantCultureIgnoreCase));
-			foreach (var item in attrList)
+			_attrList = attrTypes.Data.Select(x => x.Key).ToList();
+			_attrList.Sort((x, y) => string.Compare(x, y, StringComparison.InvariantCultureIgnoreCase));
+			foreach (var item in _attrList)
 			{
-				this.BFAttrComboBox.Add(new NSString(item));
+				this.BfAttributeComboBox.Add(new NSString(item));
+				this.AttrToReturnComboBox.Add(new NSString(item));
 			}
 
 			foreach (var item in VMDirConstants.OperatorList)
-				this.BFOperatorComboBox.Add(new NSString(item));
+				this.BfOperatorComboBox.Add(new NSString(item));
 
-			BFCondComboBox.SelectItem(0);
-			BFSeachScopeComboBox.SelectItem(2);
-			TFSearchScopeComboBox.SelectItem(2);
-			BFAttrComboBox.SelectItem(0);
-			BFOperatorComboBox.SelectItem(0);
+			BfConditionComboBox.SelectItem(0);
+			SearchScopeComboBox.SelectItem(2);
+			BfAttributeComboBox.SelectItem(0);
+			BfOperatorComboBox.SelectItem(0);
+			AttrToReturnComboBox.SelectItem(0);
 
 		}
 
@@ -119,6 +128,9 @@ namespace VMDirSnapIn.UI
 		{
 			base.AwakeFromNib();
 			BindView();
+			ReloadResultOutlineViewNotificationObject = NSNotificationCenter.DefaultCenter.AddObserver((NSString)"ReloadResultOutlineView", ReloadResultOutlineView);
+			ReloadResultTableViewNotificationObject = NSNotificationCenter.DefaultCenter.AddObserver((NSString)"ReloadResultTableView", ReloadResultTableView);
+			CloseSearchNotificationObject = NSNotificationCenter.DefaultCenter.AddObserver((NSString)"CloseSearchApplication", OnCloseSearchApplication);
 
 			_propViewController = new PropertiesViewController();
 			_propViewController.PropTableView = new VMDirTableView();
@@ -152,7 +164,9 @@ namespace VMDirSnapIn.UI
 			_propViewController.PropTableView.AddColumn(col2);
 
 			_searchCondDs = new SearchConditionsTableViewDataSource();
-			BFCondTableView.DataSource = _searchCondDs;
+			BfConditionsTableView.DataSource = _searchCondDs;
+			_attrToReturnDs = new AttributeTableViewDataSource();
+			AttrToReturnTableView.DataSource = _attrToReturnDs;
 			_resultDs = new ResultOutlineDataSource();
 			SearchResultOutlineView.DataSource = _resultDs;
 			SetHeaderText("");
@@ -166,36 +180,51 @@ namespace VMDirSnapIn.UI
 			PageSizeToolBarItem.Active = true;
 		}
 
+		void OnCloseSearchApplication(NSNotification obj)
+		{
+			NSNotificationCenter.DefaultCenter.RemoveObserver(ReloadResultOutlineViewNotificationObject);
+			NSNotificationCenter.DefaultCenter.RemoveObserver(ReloadResultTableViewNotificationObject);
+			NSNotificationCenter.DefaultCenter.RemoveObserver(CloseSearchNotificationObject);
+		}
+
+		void ReloadResultTableView(NSNotification obj)
+		{
+			RefreshPropTableViewBasedOnSelection(SearchResultOutlineView.SelectedRow);
+		}
+
+		void ReloadResultOutlineView(NSNotification obj)
+		{
+			var node = obj.Object as DirectoryNonExpandableNode;
+			if (node != null)
+			{
+				_resultList.Remove(node);
+				_resultDs.ResultList.Remove(node);
+				SearchResultOutlineView.ReloadData();
+			}
+		}
+
 		void SetHeaderText(string val)
 		{
 			SearchResultOutlineView.OutlineTableColumn.HeaderCell.Title = val;
 		}
 
-		partial void BFOnAddAction(NSObject sender)
+		partial void OnBfAddAction(NSObject sender)
 		{
 			if (!ValidateAdd())
 				return;
-			_searchCondDs.condList.Add(new FilterDTO(BFAttrComboBox.SelectedValue.ToString(), (Condition)(int)BFCondComboBox.SelectedIndex, BFValTextField.StringValue));
-			BFCondTableView.ReloadData();
+			_searchCondDs.condList.Add(new FilterDTO(BfAttributeComboBox.SelectedValue.ToString(), (Condition)(int)BfConditionComboBox.SelectedIndex, BfValueTextField.StringValue));
+			BfConditionsTableView.ReloadData();
 		}
 
-		partial void BFOnSearchAction(NSObject sender)
-		{
-			DoSearch();
-		}
-
-		partial void TFOnSearchAction(NSObject sender)
-		{
-			DoSearch();
-		}
-
-		private void DoSearch()
+		partial void OnSearchAction(NSObject sender)
 		{
 			InitPageSearch();
 			if (!ValidateSearch())
 				return;
 			SetToolBarState(true);
-
+			_resultDs.ResultList.Clear();
+			SearchResultOutlineView.ReloadData();
+			RefreshPropTableViewBasedOnSelection(-1);
 			GetPage();
 
 			_resultDs.ResultList.AddRange(_resultList.ToArray());
@@ -210,24 +239,30 @@ namespace VMDirSnapIn.UI
 		private QueryDTO GetQuery()
 		{
 			QueryDTO qdto = null;
+			var lst = new HashSet<string>(_attrToReturnDs.attrList);
+			lst.Add(VMDirConstants.ATTR_OBJECT_CLASS);
+			lst.Add(VMDirConstants.ATTR_DN);
 			if (SearchQueryTabView.IndexOf(SearchQueryTabView.Selected) == 0)
 			{
-				qdto = new BuildQueryDTO(BFSearchBaseTextField.StringValue, (LdapScope)(int)BFSeachScopeComboBox.SelectedIndex,
-										 (LogicalOp)(int)BFOperatorComboBox.SelectedIndex,
-										 _searchCondDs.condList, new string[] { VMDirConstants.ATTR_DN, VMDirConstants.ATTR_OBJECT_CLASS }, 0, IntPtr.Zero, 0);
+				qdto = new BuildQueryDTO(SearchBaseTextField.StringValue, (LdapScope)(int)SearchScopeComboBox.SelectedIndex,
+										 (LogicalOp)(int)BfOperatorComboBox.SelectedIndex,
+				                         _searchCondDs.condList, lst.ToArray(), 0, IntPtr.Zero, 0);
 
 			}
 			else if (SearchQueryTabView.IndexOf(SearchQueryTabView.Selected) == 1)
 			{
-				qdto = new TextQueryDTO(TFSearchBaseTextField.StringValue, (LdapScope)(int)TFSearchScopeComboBox.SelectedIndex, TFSearchFilterTextView.Value,
-					new string[] { VMDirConstants.ATTR_DN, VMDirConstants.ATTR_OBJECT_CLASS }, 0, IntPtr.Zero, 0);
+				qdto = new TextQueryDTO(SearchBaseTextField.StringValue, (LdapScope)(int)SearchScopeComboBox.SelectedIndex, TfSearchFilterTextView.Value,
+				                        lst.ToArray(), 0, IntPtr.Zero, 0);
 			}
 			return qdto;
 		}
 
 		private void GetPage()
 		{
-			UIErrorHelper.CheckedExec(delegate
+			SetHeaderText(VMDirConstants.STAT_SR_FETCHING_PG);
+			//_qdto.TimeOut = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Int32)));
+			//Marshal.WriteInt32(_qdto.TimeOut, VMDirConstants.SEARCH_TIMEOUT_IN_SEC);
+			try
 			{
 				_serverDTO.Connection.PagedSearch(_qdto, _pageSize, _cookie, _morePages,
 					delegate (ILdapMessage ldMsg, IntPtr ck, bool moreP, List<ILdapEntry> entries)
@@ -238,7 +273,10 @@ namespace VMDirSnapIn.UI
 						_pageNumber++;
 						foreach (var entry in entries)
 						{
-							_resultList.Add(new DirectoryNode(entry.getDN(), Utilities.GetObjectClass(entry), _serverDTO, null));
+							var ocList = new List<string>(entry.getAttributeValues(VMDirConstants.ATTR_OBJECT_CLASS).Select(x => x.StringValue).ToArray());
+							var node = new DirectoryNonExpandableNode(entry.getDN(), ocList, _serverDTO);
+							node.NodeProperties = _serverDTO.Connection.GetEntryProperties(entry);
+							_resultList.Add(node);
 						}
 					});
 				_totalPage = _totalCount / _pageSize;
@@ -252,7 +290,15 @@ namespace VMDirSnapIn.UI
 				else {
 					SetHeaderText(VMDirConstants.STAT_SR_NO_MORE_PG);
 				}
-			});
+			}
+			catch (Exception e)
+			{
+				UIErrorHelper.ShowError(e.Message);
+			}
+			finally
+			{
+				//Marshal.FreeHGlobal(_qdto.TimeOut);
+			}
 		}
 
 		partial void BFOnViewAction(NSObject sender)
@@ -269,18 +315,18 @@ namespace VMDirSnapIn.UI
 
 		private bool ValidateAdd()
 		{
-			if (BFAttrComboBox.SelectedValue == null)
+			if (BfAttributeComboBox.SelectedValue == null)
 			{
 				UIErrorHelper.ShowWarning(VMDirConstants.WRN_ATTR);
 				return false;
 
 			}
-			if (BFCondComboBox.SelectedValue == null)
+			if (BfConditionComboBox.SelectedValue == null)
 			{
 				UIErrorHelper.ShowWarning(VMDirConstants.WRN_COND);
 				return false;
 			}
-			if (string.IsNullOrWhiteSpace(BFValTextField.StringValue))
+			if (string.IsNullOrWhiteSpace(BfValueTextField.StringValue))
 			{
 				UIErrorHelper.ShowWarning(VMDirConstants.WRN_VAL);
 				return false;
@@ -290,27 +336,27 @@ namespace VMDirSnapIn.UI
 
 		private bool ValidateSearch()
 		{
-			if (string.IsNullOrWhiteSpace(this.BFSearchBaseTextField.StringValue))
+			if (string.IsNullOrWhiteSpace(this.SearchBaseTextField.StringValue))
 			{
 				UIErrorHelper.ShowWarning(VMDirConstants.WRN_SEARCH_BASE);
 				return false;
 			}
-			if (BFSeachScopeComboBox.SelectedValue == null)
+			if (SearchScopeComboBox.SelectedValue == null)
 			{
 				UIErrorHelper.ShowWarning(VMDirConstants.WRN_SEARCH_SCOPE);
 				return false;
 			}
-			if (BFOperatorComboBox.SelectedValue == null)
+			if (BfOperatorComboBox.SelectedValue == null)
 			{
 				UIErrorHelper.ShowWarning(VMDirConstants.WRN_OP);
 				return false;
 			}
-			if (SearchQueryTabView.IndexOf(SearchQueryTabView.Selected) == 0 && BFCondTableView.RowCount <= 0)
+			if (SearchQueryTabView.IndexOf(SearchQueryTabView.Selected) == 0 && BfConditionsTableView.RowCount <= 0)
 			{
 				UIErrorHelper.ShowWarning(VMDirConstants.WRN_COND_COUNT);
 				return false;
 			}
-			if (SearchQueryTabView.IndexOf(SearchQueryTabView.Selected) == 1 && string.IsNullOrWhiteSpace(TFSearchFilterTextView.Value))
+			if (SearchQueryTabView.IndexOf(SearchQueryTabView.Selected) == 1 && string.IsNullOrWhiteSpace(TfSearchFilterTextView.Value))
 			{
 				UIErrorHelper.ShowWarning(VMDirConstants.WRN_TEXT_FILTER);
 				return false;
@@ -326,9 +372,9 @@ namespace VMDirSnapIn.UI
 				if (item is DirectoryNode)
 				{
 					DirectoryNode node = item as DirectoryNode;
-					_propViewController.PropTableView.DataSource = new PropertiesTableViewDataSource(node.Dn, node.ObjectClass, node.ServerDTO, node.NodeProperties);
+					_propViewController.PropTableView.DataSource = new PropertiesTableViewDataSource(node.Dn, node.ObjectClass.Last(), node.ServerDTO, node.NodeProperties);
 					_propViewController.ds = (PropertiesTableViewDataSource)_propViewController.PropTableView.DataSource;
-					_propViewController.PropTableView.Delegate = new PropertiesTableDelegate(this, (PropertiesTableViewDataSource)_propViewController.PropTableView.DataSource);
+					_propViewController.PropTableView.Delegate = new PropertiesTableDelegate(this, (PropertiesTableViewDataSource)_propViewController.PropTableView.DataSource,_propViewController);
 				}
 			}
 			else
@@ -426,26 +472,38 @@ namespace VMDirSnapIn.UI
 			{
 				var dto = _qdto as BuildQueryDTO;
 				SearchQueryTabView.SelectAt(0);
-				BFSearchBaseTextField.StringValue = dto.SearchBase;
-				BFSeachScopeComboBox.SelectItem((int)dto.SearchScope);
-				BFOperatorComboBox.SelectItem((int)dto.Operator);
-				BFAttrComboBox.SelectItem(0);
-				BFCondComboBox.SelectItem(0);
+				SearchBaseTextField.StringValue = dto.SearchBase;
+				SearchScopeComboBox.SelectItem((int)dto.SearchScope);
+				BfOperatorComboBox.SelectItem((int)dto.Operator);
+				BfAttributeComboBox.SelectItem(0);
+				BfConditionComboBox.SelectItem(0);
 
 				_searchCondDs.condList.Clear();
 				foreach (var item in dto.CondList)
 				{
 					_searchCondDs.condList.Add(new FilterDTO(item.Attribute, item.Condition, item.Value));
 				}
-				BFCondTableView.ReloadData();
+				BfConditionsTableView.ReloadData();
+				_attrToReturnDs.attrList.Clear();
+				foreach (var item in dto.AttrToReturn)
+				{
+					_attrToReturnDs.attrList.Add(item);
+				}
+				AttrToReturnTableView.ReloadData();
 			}
 			else if (_qdto.GetType() == typeof(TextQueryDTO))
 			{
 				var dto = _qdto as TextQueryDTO;
 				SearchQueryTabView.SelectAt(1);
-				TFSearchBaseTextField.StringValue = dto.SearchBase;
-				TFSearchScopeComboBox.SelectItem((int)dto.SearchScope);
-				TFSearchFilterTextView.Value = dto.GetFilterString();
+				SearchBaseTextField.StringValue = dto.SearchBase;
+				SearchScopeComboBox.SelectItem((int)dto.SearchScope);
+				TfSearchFilterTextView.Value = dto.GetFilterString();
+				_attrToReturnDs.attrList.Clear();
+				foreach (var item in dto.AttrToReturn)
+				{
+					_attrToReturnDs.attrList.Add(item);
+				}
+				AttrToReturnTableView.ReloadData();
 			}
 		}
 
@@ -509,11 +567,50 @@ namespace VMDirSnapIn.UI
 			RefreshPropTableViewBasedOnSelection(SearchResultOutlineView.SelectedRow);
 		}
 
+		partial void OnOptionalToolBarItem(NSObject sender)
+		{
+			if (_serverDTO.OptionalAttrFlag)
+				_serverDTO.OptionalAttrFlag = false;
+			else
+				_serverDTO.OptionalAttrFlag = true;
+			RefreshPropTableViewBasedOnSelection(SearchResultOutlineView.SelectedRow);
+		}
+
+		partial void OnDelete(NSObject sender)
+		{
+			nint row = SearchResultOutlineView.SelectedRow;
+			if (isObjectSelected(row))
+			{
+				DirectoryNonExpandableNode node = SearchResultOutlineView.ItemAtRow(row) as DirectoryNonExpandableNode;
+				node.PerformDelete();
+			}
+		}
+
+		partial void OnRefresh(NSObject sender)
+		{
+			nint row = SearchResultOutlineView.SelectedRow;
+			if (isObjectSelected(row))
+			{
+				DirectoryNonExpandableNode node = SearchResultOutlineView.ItemAtRow(row) as DirectoryNonExpandableNode;
+				node.PerformRefreshNode();
+			}
+		}
+
 		partial void OnSearchBoxVisibilityToolBarItem(Foundation.NSObject sender)
 		{
 			SetSearchBoxVisibility();
 		}
 
+		private bool isObjectSelected(nint row)
+		{
+			if (row < (nint)0)
+			{
+				UIErrorHelper.ShowWarning(VMDirConstants.WRN_OBJ_NODE_SEL);
+				return false;
+			}
+			else
+				return true;
+		}
 		private void SetSearchBoxVisibility()
 		{
 			if (_searchBoxFlag)
@@ -541,20 +638,82 @@ namespace VMDirSnapIn.UI
 		private void SetToolBarState(bool state)
 		{
 			OperationalAttrToolBarItem.Active = state;
+			OptionalToolBarItem.Active = state;
 			PageSizeToolBarItem.Active = state;
 			StoreQueryToolBarItem.Active = state;
 			LoadQueryToolBarItem.Active = state;
 			SearchBoxVisibilityToolBarItem.Active = state;
+			RefreshToolBarItem.Active = state;
+			DeleteToolBarItem.Active = state;
+			ExportToolBarItem.Active = state;
 		}
 
-		partial void OnRemoveTableEntry(Foundation.NSObject sender)
+		partial void OnBfRemoveTableEntry(Foundation.NSObject sender)
 		{
-			nint row = BFCondTableView.SelectedRow;
+			nint row = BfConditionsTableView.SelectedRow;
 			if (row >= (nint)0)
 			{
 				_searchCondDs.condList.RemoveAt((int)row);
-				BFCondTableView.ReloadData();
+				BfConditionsTableView.ReloadData();
 			}
+		}
+		partial void OnBfRemoveAllTableEntries(NSObject sender)
+		{
+			_searchCondDs.condList.Clear();
+			BfConditionsTableView.ReloadData();
+		}
+		partial void OnBfCopyToTf(NSObject sender)
+		{
+			var query = GetQuery();
+			if (query != null)
+			{
+				this.TfSearchFilterTextView.Value = query.GetFilterString();
+				this.SearchQueryTabView.SelectAt(1);
+			}
+		}
+		partial void OnBfMultipleValFromFile(NSObject sender)
+		{
+			ConditionValuesFromFileController cvffwc = new ConditionValuesFromFileController(_attrList);
+			nint result = NSApplication.SharedApplication.RunModalForWindow(cvffwc.Window);
+			if (result == (nint)VMIdentityConstants.DIALOGOK)
+			{
+				foreach (var item in cvffwc.ValuesList)
+				{
+					_searchCondDs.condList.Add(new FilterDTO(cvffwc.Attribute,cvffwc.Condition,item));
+				}
+				BfConditionsTableView.ReloadData();
+			}
+		}
+		partial void OnAttrToReturnAdd(NSObject sender)
+		{
+			_attrToReturnDs.attrList.Add(AttrToReturnComboBox.SelectedValue.ToString());
+			AttrToReturnTableView.ReloadData();
+		}
+		partial void OnAttrToReturnRemove(NSObject sender)
+		{
+			nint row = AttrToReturnTableView.SelectedRow;
+			if (row >= (nint)0)
+			{
+				_attrToReturnDs.attrList.RemoveAt((int)row);
+				AttrToReturnTableView.ReloadData();
+			}
+		}
+		partial void OnAttrToReturnRemoveAll(NSObject sender)
+		{
+			_attrToReturnDs.attrList.Clear();
+			AttrToReturnTableView.ReloadData();
+		}
+		partial void OnExportToolBarItem(NSObject sender)
+		{
+			ExportSearchResultController esrwc = new ExportSearchResultController(_resultList,_returnedAttrList,_currPage,_pageSize);
+			NSApplication.SharedApplication.RunModalForWindow(esrwc.Window);
+		}
+
+		[Export("windowWillClose:")]
+		public void WindowWillClose(NSNotification notification)
+		{
+			NSApplication.SharedApplication.StopModalWithCode(0);
+			NSNotificationCenter.DefaultCenter.PostNotificationName("CloseSearchApplication", this);
 		}
 	}
 }

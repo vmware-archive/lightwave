@@ -15,6 +15,7 @@ using System;
 using AppKit;
 using CoreGraphics;
 using Foundation;
+using VMDir.Common;
 using VMDir.Common.DTO;
 using VMDir.Common.Schema;
 using VMDir.Common.VMDirUtilities;
@@ -25,19 +26,21 @@ namespace VMDirSnapIn.Delegate
 {
 	public class PropertiesTableDelegate : NSTableViewDelegate
 	{
-		private PropertiesTableViewDataSource ds;
-		private NSWindowController Controller;
+		private PropertiesTableViewDataSource _ds;
+		private NSWindowController _controller;
+		private PropertiesViewController _propViewCtl;
 
-		public PropertiesTableDelegate(NSWindowController controller, PropertiesTableViewDataSource ds)
+		public PropertiesTableDelegate(NSWindowController controller, PropertiesTableViewDataSource ds, PropertiesViewController propViewCtl)
 		{
-			this.Controller = controller;
-			this.ds = ds;
+			_controller = controller;
+			_ds = ds;
+			_propViewCtl = propViewCtl;
 		}
 
 		public override nint GetNextTypeSelectMatch(NSTableView tableView, nint startRow, nint endRow, string searchString)
 		{
 			nint row = 0;
-			foreach (var item in ds.displayAttrDTOList)
+			foreach (var item in _ds.displayAttrDTOList)
 			{
 				if (item.Name.Contains(searchString)) return row;
 				++row;
@@ -68,12 +71,19 @@ namespace VMDirSnapIn.Delegate
 					switch (view.Identifier)
 					{
 						case "Value":
-							string currKey = ds.displayAttrDTOList[(int)view.TextField.Tag].Name;
+							string currKey = _ds.displayAttrDTOList[(int)view.TextField.Tag].Name;
 
 							if (currKey != "objectClass")
 							{
-								ds.displayAttrDTOList[(int)view.TextField.Tag].Value = view.TextField.StringValue;
-								ds.modData.Add(currKey);
+								if (!string.Equals(_ds.displayAttrDTOList[(int)view.TextField.Tag].Value, view.TextField.StringValue))
+								{
+									_ds.displayAttrDTOList[(int)view.TextField.Tag].Value = view.TextField.StringValue;
+									_ds.displayAttrDTOList[(int)view.TextField.Tag].Dirty = true;
+									_ds.modData.Add(currKey);
+									_propViewCtl.SetEditVisibility(true);
+								}
+							if(_ds.displayAttrDTOList[(int)view.TextField.Tag].Dirty)
+								view.TextField.BackgroundColor = NSColor.Orange;
 							}
 							break;
 					}
@@ -116,14 +126,14 @@ namespace VMDirSnapIn.Delegate
 					{
 						// Get button and product
 						var btn = sender as NSButton;
-						var name = ds.displayAttrDTOList[(int)btn.Tag].Name;
-						var type = ds.serverDTO.Connection.SchemaManager.GetAttributeType(name);
+						var name = _ds.displayAttrDTOList[(int)btn.Tag].Name;
+						var type = _ds.serverDTO.Connection.SchemaManager.GetAttributeType(name);
 						AttributeHelpDTO attrHelp = null;
 						if (type.AttributeSyntax != null)
 							VMDirCommonEnvironment.Instance.AttrHelpDict.TryGetValue(type.AttributeSyntax, out attrHelp);
 
 						SyntaxHelpWindowController shwc = new SyntaxHelpWindowController(attrHelp);
-						NSApplication.SharedApplication.BeginSheet(shwc.Window, Controller.Window, () =>
+						NSApplication.SharedApplication.BeginSheet(shwc.Window, _controller.Window, () =>
 							{
 							});
 						try
@@ -132,7 +142,7 @@ namespace VMDirSnapIn.Delegate
 						}
 						finally
 						{
-							Controller.Window.EndSheet(shwc.Window);
+							_controller.Window.EndSheet(shwc.Window);
 							shwc.Dispose();
 						}
 					};
@@ -144,15 +154,23 @@ namespace VMDirSnapIn.Delegate
 			switch (tableColumn.Title)
 			{
 				case "Attribute":
-					view.TextField.StringValue = ds.displayAttrDTOList[(int)row].Name;
+					view.TextField.StringValue = _ds.displayAttrDTOList[(int)row].Name;
 					view.TextField.Tag = row;
 					break;
 				case "Value":
-					view.TextField.StringValue = ds.displayAttrDTOList[(int)row].Value == null ? string.Empty : ds.displayAttrDTOList[(int)row].Value;
+					var val = _ds.displayAttrDTOList[(int)row].Value == null ? string.Empty : _ds.displayAttrDTOList[(int)row].Value;
+					var type = _ds.displayAttrDTOList[(int)row].AttrSyntaxDTO;
+					if (type != null && type.Type.Equals("Generalized Time"))
+					{
+						val = Utilities.ConvertGeneralizedTimeIntoReadableFormat(val);
+					}
+					view.TextField.StringValue = val;
 					view.TextField.Tag = row;
+					if(_ds.displayAttrDTOList[(int)row].Dirty)
+						view.TextField.BackgroundColor = NSColor.Orange;
 					break;
 				case "Syntax":
-					view.TextField.StringValue = ds.displayAttrDTOList[(int)row].AttrSyntaxDTO.Type == null ? string.Empty : ds.displayAttrDTOList[(int)row].AttrSyntaxDTO.Type;
+					view.TextField.StringValue = _ds.displayAttrDTOList[(int)row].AttrSyntaxDTO.Type == null ? string.Empty : _ds.displayAttrDTOList[(int)row].AttrSyntaxDTO.Type;
 					foreach (NSView subview in view.Subviews)
 					{
 						var bt = subview as NSButton;

@@ -98,7 +98,7 @@ namespace VMDir.Common
         public const int GROUPTYPE_ACCOUNT = 2;
         public const int SERVERTIMEOUT_IN_MILLI = 5000;
         public const int DEFAULT_PAGE_SIZE = 1000;
-        public const int SEARCH_TIMEOUT_IN_SEC = 90;
+        public const int SEARCH_TIMEOUT_IN_SEC = 300;
 
         //ERROR Msg
         public const string ERR_FETCH_DATA = "Unable to fetch data for the object specified. Please ensure the user has access";
@@ -163,6 +163,7 @@ namespace VMDir.Common
         public static string WRN_FILE_FORMAT = "Please select format of file to export";
         public static string WRN_SCOPE = "Please select scope of result to export";
         public const string WRN_SEL_ITEM_PRESENT = "Selected item is already present in the current set of attributes";
+        public static string WRN_RDN_ENT = "Please enter RDN.";
 
         //Status msg
         public const string STAT_SR_NO_MATCH = "Result: No match Found.";
@@ -194,7 +195,9 @@ namespace VMDir.Common
             "Not Greater Than Equal To", "Less Than Equal To", "Not Less Than Equal To"
         };
         public static string[] ScopeList = new[] { "Base Object", "Next Level", "Full Subtree" };
-        public static string[] OperatorList = new[] { "AND", "OR" };
+        public static string[] OperatorList = new[] { "AND", "OR" };
+		public static string[] ResultExportFormatList = new[] { "csv" };
+		public static string[] ResultExportScopeList = new[] { "Current Result Page","All Fetched Result Pages" };
     }
 }
 

@@ -23,6 +23,7 @@ using VMDirSnapIn.Delegate;
 using VMDirSnapIn.Nodes;
 using VmIdentity.UI.Common;
 using VmIdentity.UI.Common.Utilities;
+using System.Collections.Generic;
 
 namespace VMDirSnapIn.UI
 {
@@ -119,7 +120,7 @@ namespace VMDirSnapIn.UI
 				{
 					InitialiseDefaultOutlineView();
 					VMDirSnapInEnvironment.Instance.LocalData.AddServer(serverNode.DTO.Server);
-					DirectoryNode baseNode = new DirectoryNode(serverNode.DTO.BaseDN, string.Empty, serverNode.DTO, null);
+					DirectoryNode baseNode = new DirectoryNode(serverNode.DTO.BaseDN, new List<string>() { string.Empty }, serverNode.DTO, null);
 					baseNode.IsBaseNode = true;
 					outlineViewDataSource = new OutlineViewDataSource(baseNode);
 					splitViewController.VmdirOutlineView.DataSource = outlineViewDataSource;
@@ -246,6 +247,7 @@ namespace VMDirSnapIn.UI
 			OperationalToolBarItem.Active = state;
 			SearchToolBarItem.Active = state;
 			FetchNextPageToolBarItem.Active = state;
+			OptionalToolBarItem.Active = state;
 		}
 
 		partial void ShowSuperLogWindow(NSObject sender)
@@ -374,9 +376,9 @@ namespace VMDirSnapIn.UI
 				if (item is DirectoryNode)
 				{
 					DirectoryNode node = item as DirectoryNode;
-					MainTableView.DataSource = new PropertiesTableViewDataSource(node.Dn, node.ObjectClass, node.ServerDTO, node.NodeProperties);
+					MainTableView.DataSource = new PropertiesTableViewDataSource(node.Dn, node.ObjectClass[node.ObjectClass.Count - 1], node.ServerDTO, node.NodeProperties);
 					splitViewController.propViewController.ds = (PropertiesTableViewDataSource)MainTableView.DataSource;
-					MainTableView.Delegate = new PropertiesTableDelegate(this, (PropertiesTableViewDataSource)MainTableView.DataSource);
+					MainTableView.Delegate = new PropertiesTableDelegate(this, (PropertiesTableViewDataSource)MainTableView.DataSource, splitViewController.propViewController);
 				}
 			}
 			else
@@ -481,6 +483,15 @@ namespace VMDirSnapIn.UI
 				serverNode.DTO.OperationalAttrFlag = false;
 			else
 				serverNode.DTO.OperationalAttrFlag = true;
+			RefreshTableViewBasedOnSelection(MainOutlineView.SelectedRow);
+		}
+
+		partial void OnOptionalToolBatItem(NSObject sender)
+		{
+			if (serverNode.DTO.OptionalAttrFlag)
+				serverNode.DTO.OptionalAttrFlag = false;
+			else
+				serverNode.DTO.OptionalAttrFlag = true;
 			RefreshTableViewBasedOnSelection(MainOutlineView.SelectedRow);
 		}
 

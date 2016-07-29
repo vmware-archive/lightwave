@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="10117" systemVersion="15F34" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="10117" systemVersion="15G31" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
-        <deployment identifier="macosx"/>
         <development version="5000" identifier="xcode"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="10117"/>
     </dependencies>
@@ -17,6 +16,8 @@
                 <outlet property="FetchNextPageToolBarItem" destination="yk9-cN-umY" id="u0H-UR-4C2"/>
                 <outlet property="FetchNextToolBatItem" destination="yk9-cN-umY" id="CKr-4u-yj7"/>
                 <outlet property="OperationalToolBarItem" destination="dMy-Yk-tkb" id="GWg-TD-ic9"/>
+                <outlet property="OptionalAttributeToolBarItem" destination="mId-3O-THE" id="gSs-MV-GAH"/>
+                <outlet property="OptionalToolBarItem" destination="mId-3O-THE" id="of9-r2-mnF"/>
                 <outlet property="PageSizeToolBarItem" destination="cpO-bk-e2V" id="Vyj-ee-aQD"/>
                 <outlet property="PropertiesToolBarItem" destination="82" id="101"/>
                 <outlet property="RefreshToolBarItem" destination="7cf-ae-wcN" id="ujb-3O-Gy0"/>
@@ -149,6 +150,11 @@
                             <action selector="OnFetchNextPageToolBarItem:" target="-2" id="sQt-9U-bnu"/>
                         </connections>
                     </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="40735594-53FD-4581-A5CC-4EEA90BE934E" label="Optional Attribute" paletteLabel="OptionalAttribute" tag="-1" id="mId-3O-THE" customClass="ActivatableToolBarItem">
+                        <connections>
+                            <action selector="OnOptionalToolBatItem:" target="-2" id="XZo-U1-idW"/>
+                        </connections>
+                    </toolbarItem>
                 </allowedToolbarItems>
                 <defaultToolbarItems>
                     <toolbarItem reference="10"/>
@@ -156,6 +162,7 @@
                     <toolbarItem reference="cpO-bk-e2V"/>
                     <toolbarItem reference="yk9-cN-umY"/>
                     <toolbarItem reference="dMy-Yk-tkb"/>
+                    <toolbarItem reference="mId-3O-THE"/>
                     <toolbarItem reference="oD2-9n-hSl"/>
                     <toolbarItem reference="83"/>
                     <toolbarItem reference="jvu-kW-zSR"/>
@@ -170,7 +177,7 @@
             <connections>
                 <outlet property="delegate" destination="14" id="19"/>
             </connections>
-            <point key="canvasLocation" x="444" y="410"/>
+            <point key="canvasLocation" x="214" y="420"/>
         </window>
         <customObject id="14" customClass="MainWindow"/>
     </objects>

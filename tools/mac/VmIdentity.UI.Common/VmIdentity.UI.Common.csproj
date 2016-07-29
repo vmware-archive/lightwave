@@ -106,6 +106,7 @@
     <Compile Include="Utilities\NSTableColumnHelper.cs" />
     <Compile Include="Utilities\ColumnOptions.cs" />
     <Compile Include="Utilities\MiscUtil.cs" />
+    <Compile Include="Utilities\FileIOUtil.cs" />
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="UI\LoginWindow.xib" />

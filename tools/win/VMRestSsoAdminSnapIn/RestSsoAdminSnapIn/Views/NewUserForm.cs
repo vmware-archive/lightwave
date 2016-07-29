@@ -125,6 +125,10 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                                 {
                                     MMCDlgHelper.ShowError("Password does not match the password policy set on the tenant. Check tenant configuration for password policy or contact administrator");
                                 }
+                                else
+                                {
+                                    MMCDlgHelper.ShowError(error.Details + " Cause - " + error.Cause);
+                                }
                             }
                             else
                             {

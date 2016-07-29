@@ -60,9 +60,10 @@ namespace VMDirSnapIn.UI
                 return;
             }
             _filters.Clear();
+            var charArr=new char[] { '\r', '\n' };
             foreach (var item in this.textBox1.Text.Split('\n'))
             {
-                _filters.Add(new FilterDTO(comboBoxAttr.SelectedItem.ToString(), (Condition) comboBoxCond.SelectedIndex, item));
+                _filters.Add(new FilterDTO(comboBoxAttr.SelectedItem.ToString(), (Condition) comboBoxCond.SelectedIndex, item.Trim(charArr)));
             }
             this.Close();
         }

@@ -57,7 +57,7 @@ namespace VMDirSnapIn.UI
 						NSMenuItem delete = new NSMenuItem("Delete", node.Delete);
 						menu.AddItem(delete);
 
-						if (string.Equals(node.ObjectClass, VMDirConstants.USER_OC, StringComparison.InvariantCultureIgnoreCase)){
+						if (node.ObjectClass.Contains(VMDirConstants.USER_OC)){
 							menu.AddItem(NSMenuItem.SeparatorItem);
 							NSMenuItem addUsertoGroup = new NSMenuItem("Add to a Group", node.AddUserToGroup);
 							menu.AddItem(addUsertoGroup);
@@ -66,7 +66,7 @@ namespace VMDirSnapIn.UI
 							NSMenuItem verifyUserPassword = new NSMenuItem("Verify Password", node.VerifyUserPassword);
 							menu.AddItem(verifyUserPassword);
 							}
-						else if (string.Equals(node.ObjectClass, VMDirConstants.GROUP_OC, StringComparison.InvariantCultureIgnoreCase))
+						else if (node.ObjectClass.Contains(VMDirConstants.GROUP_OC))
 						{
 							menu.AddItem(NSMenuItem.SeparatorItem);
 							NSMenuItem addGrouptoGroup = new NSMenuItem("Add to a Group", node.AddUserToGroup);

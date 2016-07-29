@@ -33,6 +33,7 @@ namespace VMDirSnapIn.UI
         {
             InitializeComponent();
             _dto = dto;
+            _dto.objectClass = VMDirConstants.USER_OC;
         }
         private bool DoValidateControls()
         {
