@@ -32,6 +32,8 @@ namespace VMDirSnapIn.UI
 		private VMDirServerDTO _serverDTO;
 		public Dictionary<string, VMDirAttributeDTO> _properties;
 		private CreateObjectTableViewDataSource ds;
+		private string _parentDn;
+		public string Rdn;
 
 		#region Constructors
 
@@ -55,11 +57,12 @@ namespace VMDirSnapIn.UI
 		}
 
 		// Call to load from the XIB/NIB file
-		public CreateObjectWindowController(string objectClass, VMDirServerDTO serverDTO)
+		public CreateObjectWindowController(string objectClass, VMDirServerDTO serverDTO, string parentDn)
 			: base("CreateObjectWindow")
 		{
 			_objectClass = objectClass;
 			_serverDTO = serverDTO;
+			_parentDn = parentDn;
 			Bind();
 		}
 
@@ -86,6 +89,7 @@ namespace VMDirSnapIn.UI
 			base.AwakeFromNib();
 			try
 			{
+				this.ParentDnTextField.StringValue = _parentDn;
 				ds = new CreateObjectTableViewDataSource(_properties);
 				this.PropertiesTableView.DataSource = ds;
 				NSTableColumn col;
@@ -112,6 +116,7 @@ namespace VMDirSnapIn.UI
 		{
 			if (DoValidate())
 			{
+				Rdn = this.RdnTextField.StringValue;
 				this.Close();
 				NSApplication.SharedApplication.StopModalWithCode(1);
 			}
@@ -119,6 +124,16 @@ namespace VMDirSnapIn.UI
 
 		private bool DoValidate()
 		{
+			if (string.IsNullOrWhiteSpace(ParentDnTextField.StringValue))
+			{
+				UIErrorHelper.ShowWarning(VMDirConstants.WRN_DN_ENT);
+				return false;
+			}
+			if (string.IsNullOrWhiteSpace(RdnTextField.StringValue))
+			{
+				UIErrorHelper.ShowWarning(VMDirConstants.WRN_RDN_ENT);
+				return false;
+			}
 			var requiredPropsNotFilled = _properties.Where(x =>
 				{
 					var val = x.Value.Values;

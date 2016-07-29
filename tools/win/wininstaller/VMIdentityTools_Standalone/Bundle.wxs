@@ -3,19 +3,19 @@
      xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension"
      xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
-  <?include Definitions.wxi ?>
+  <?include ../VMIdentityTools_Installer/Definitions.wxi ?>
 
   <Bundle Name="$(var.Product)"
           Version="$(var.VersionNumber)"
           Manufacturer="$(var.Manufacturer)"
           UpgradeCode="$(var.UpgradeCode)"
-          IconSourceFile="$(var.Resources)/SetupIcon.ico"
+          IconSourceFile="$(var.ResourcesForOtherProject)/SetupIcon.ico"
           DisableModify="yes">
 
     <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense" >
       <bal:WixStandardBootstrapperApplication
-        LicenseFile="$(var.Resources)/LicenseAgreement.rtf"
-        SuppressOptionsUI="yes" LogoFile="$(var.Resources)/InstallerLogo.bmp" />
+        LicenseFile="$(var.ResourcesForOtherProject)/LicenseAgreement.rtf"
+        SuppressOptionsUI="yes" LogoFile="$(var.ResourcesForOtherProject)/InstallerLogo.bmp" ShowVersion="yes"/>
     </BootstrapperApplicationRef>
 
     <util:RegistrySearch

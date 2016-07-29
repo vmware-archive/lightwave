@@ -18,7 +18,8 @@ using VMDir.Common.DTO;
 using VMDirInterop.LDAP;
 using VMDirInterop.Interfaces;
 using VMDir.Common.Schema;
-using System.Text;
+using System.Text;
+using System.Linq;
 
 namespace VMDir.Common.VMDirUtilities
 {
@@ -115,7 +116,7 @@ namespace VMDir.Common.VMDirUtilities
 				if (attrTypeDTO == null)
 					attrTypeDTO = new AttributeTypeDTO();
 				foreach (var val in valDTO.Values)
-					attrList.Add(new AttributeDTO(entry.Key, val.StringValue, attrTypeDTO));
+					attrList.Add(new AttributeDTO(entry.Key, val.StringValue, attrTypeDTO,false));
 			}
 			attrList.Sort((x, y) => string.Compare(x.Name, y.Name, StringComparison.InvariantCultureIgnoreCase));
 			return attrList;
@@ -138,7 +139,6 @@ namespace VMDir.Common.VMDirUtilities
 				return string.Empty;
 			}
 		}
-
 		public static string GetObjectClass(ILdapEntry entry)
 		{
 			var values = entry.getAttributeValues(VMDirConstants.ATTR_OBJECT_CLASS);
@@ -156,6 +156,19 @@ namespace VMDir.Common.VMDirUtilities
 			}
 			return new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_ADD, entry.Key, vals.ToArray());
 		}
+
+        public static List<string> GetObjectClassList(VMDirServerDTO ServerDTO, string searchBase, LdapScope searchScope)
+        {
+            QueryDTO qdto = new TextQueryDTO(searchBase, searchScope, VMDirConstants.SEARCH_ALL_OC, null, 0, IntPtr.Zero, 0);
+            var ocList = new List<string>();
+            ServerDTO.Connection.Search(qdto,
+                 (l, e) =>
+                 {
+                     if (e.Count > 0)
+                         ocList = new List<string>(e[0].getAttributeValues(VMDirConstants.ATTR_OBJECT_CLASS).Select(x => x.StringValue).ToArray());
+                 });
+            return ocList;
+        }
 
         public static string ConvertGeneralizedTimeIntoReadableFormat(string gt)
         {
@@ -217,7 +230,9 @@ namespace VMDir.Common.VMDirUtilities
                         minute = int.Parse(leftPart.Substring(10, 2));
                     if (leftPart.Length >= 14)
                         second = int.Parse(leftPart.Substring(12, 2));
-                }
+                }
+				if (day < 0 || month < 0 || century < 0 || year < 0 || hour < 0)
+					return gt;
                 StringBuilder sb2 = new StringBuilder();
                 sb2.Append(day);
                 sb2.Append("/");

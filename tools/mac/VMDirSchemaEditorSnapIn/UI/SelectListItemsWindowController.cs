@@ -70,6 +70,10 @@ namespace VMDirSchemaEditorSnapIn
                 {
                     UIErrorHelper.ShowAlert(VMDirConstants.WRN_SEL_ITEM_PRESENT, string.Empty);
                 }
+                else if (SelectedItemsList.Contains(selectedItem))
+                {
+                    UIErrorHelper.ShowAlert(VMDirConstants.WRN_ITEM_ALRDY_SLCTD, string.Empty);
+                }
                 else
                 {
                     SelectedItemsList.Add(selectedItem);

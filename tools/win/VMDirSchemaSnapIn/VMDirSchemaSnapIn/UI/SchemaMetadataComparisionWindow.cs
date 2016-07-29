@@ -223,21 +223,28 @@ namespace VMDirSchemaSnapIn.UI
 
         private void CompareButton_Click(object sender, EventArgs e)
         {
-            if (this.MetaDataButton.Checked == true)
+            try
             {
-                ViewAttributeTypeDiffButton.Visible = true;
-                ViewObjectClassDiffButton.Visible = false;
-                ViewAttributeTypeDiffButton.Text = VMDirSchemaConstants.DIFF_METADATA;
-                schemaDiff = ServerNode.ServerDTO.Connection.SchemaConnection.GetAllSchemaMetadataDiffs();
-                NodesList.DataSource = attrTypediff.Keys.ToList();
+                if (this.MetaDataButton.Checked == true)
+                {
+                    ViewAttributeTypeDiffButton.Visible = true;
+                    ViewObjectClassDiffButton.Visible = false;
+                    ViewAttributeTypeDiffButton.Text = VMDirSchemaConstants.DIFF_METADATA;
+                    schemaDiff = ServerNode.ServerDTO.Connection.SchemaConnection.GetAllSchemaMetadataDiffs();
+                    NodesList.DataSource = attrTypediff.Keys.ToList();
+                }
+                else if (this.SchemaButton.Checked == true)
+                {
+                    ViewAttributeTypeDiffButton.Visible = true;
+                    ViewObjectClassDiffButton.Visible = true;
+                    ViewAttributeTypeDiffButton.Text = VMDirSchemaConstants.DIFF_ATTRIBUTETYPE;
+                    attrTypediff = ServerNode.ServerDTO.Connection.SchemaConnection.GetAllSchemaDefinitionDiffs();
+                    NodesList.DataSource = attrTypediff.Keys.ToList();
+                }
             }
-            else if (this.SchemaButton.Checked == true)
+            catch (Exception ex)
             {
-                ViewAttributeTypeDiffButton.Visible = true;
-                ViewObjectClassDiffButton.Visible = true;
-                ViewAttributeTypeDiffButton.Text = VMDirSchemaConstants.DIFF_ATTRIBUTETYPE;
-                attrTypediff = ServerNode.ServerDTO.Connection.SchemaConnection.GetAllSchemaDefinitionDiffs();
-                NodesList.DataSource = attrTypediff.Keys.ToList();
+                UIErrorHelper.ShowMessage(ex.Message);
             }
         }
     }

@@ -13,25 +13,31 @@ namespace VMDirSnapIn.UI
 	partial class SearchWindowController
 	{
 		[Outlet]
-		AppKit.NSComboBox BFAttrComboBox { get; set; }
+		AppKit.NSComboBox AttrToReturnComboBox { get; set; }
 
 		[Outlet]
-		AppKit.NSComboBox BFCondComboBox { get; set; }
+		AppKit.NSTableView AttrToReturnTableView { get; set; }
 
 		[Outlet]
-		AppKit.NSTableView BFCondTableView { get; set; }
+		AppKit.NSComboBox BfAttributeComboBox { get; set; }
 
 		[Outlet]
-		AppKit.NSComboBox BFOperatorComboBox { get; set; }
+		AppKit.NSComboBox BfConditionComboBox { get; set; }
 
 		[Outlet]
-		AppKit.NSComboBox BFSeachScopeComboBox { get; set; }
+		AppKit.NSTableView BfConditionsTableView { get; set; }
 
 		[Outlet]
-		AppKit.NSTextField BFSearchBaseTextField { get; set; }
+		AppKit.NSComboBox BfOperatorComboBox { get; set; }
 
 		[Outlet]
-		AppKit.NSTextField BFValTextField { get; set; }
+		AppKit.NSTextField BfValueTextField { get; set; }
+
+		[Outlet]
+		VmIdentity.UI.Common.ActivatableToolBarItem DeleteToolBarItem { get; set; }
+
+		[Outlet]
+		VmIdentity.UI.Common.ActivatableToolBarItem ExportToolBarItem { get; set; }
 
 		[Outlet]
 		VmIdentity.UI.Common.ActivatableToolBarItem LoadQueryToolBarItem { get; set; }
@@ -40,13 +46,22 @@ namespace VMDirSnapIn.UI
 		VmIdentity.UI.Common.ActivatableToolBarItem OperationalAttrToolBarItem { get; set; }
 
 		[Outlet]
+		VmIdentity.UI.Common.ActivatableToolBarItem OptionalToolBarItem { get; set; }
+
+		[Outlet]
 		VmIdentity.UI.Common.ActivatableToolBarItem PageSizeToolBarItem { get; set; }
+
+		[Outlet]
+		VmIdentity.UI.Common.ActivatableToolBarItem RefreshToolBarItem { get; set; }
 
 		[Outlet]
 		AppKit.NSTextField ResultPageNoTextField { get; set; }
 
 		[Outlet]
 		AppKit.NSView ResultPropView { get; set; }
+
+		[Outlet]
+		AppKit.NSTextField SearchBaseTextField { get; set; }
 
 		[Outlet]
 		VmIdentity.UI.Common.ActivatableToolBarItem SearchBoxVisibilityToolBarItem { get; set; }
@@ -67,28 +82,46 @@ namespace VMDirSnapIn.UI
 		public AppKit.NSOutlineView SearchResultOutlineView { get; private set; }
 
 		[Outlet]
-		AppKit.NSTabView SearQueryTabView { get; set; }
+		AppKit.NSComboBox SearchScopeComboBox { get; set; }
 
 		[Outlet]
 		VmIdentity.UI.Common.ActivatableToolBarItem StoreQueryToolBarItem { get; set; }
 
 		[Outlet]
-		AppKit.NSTextField TFSearchBaseTextField { get; set; }
-
-		[Outlet]
-		AppKit.NSTextView TFSearchFilterTextView { get; set; }
-
-		[Outlet]
-		AppKit.NSComboBox TFSearchScopeComboBox { get; set; }
-
-		[Action ("BFOnAddAction:")]
-		partial void BFOnAddAction (Foundation.NSObject sender);
-
-		[Action ("BFOnSearchAction:")]
-		partial void BFOnSearchAction (Foundation.NSObject sender);
+		AppKit.NSTextView TfSearchFilterTextView { get; set; }
 
 		[Action ("BFOnViewAction:")]
 		partial void BFOnViewAction (Foundation.NSObject sender);
+
+		[Action ("OnAttrToReturnAdd:")]
+		partial void OnAttrToReturnAdd (Foundation.NSObject sender);
+
+		[Action ("OnAttrToReturnRemove:")]
+		partial void OnAttrToReturnRemove (Foundation.NSObject sender);
+
+		[Action ("OnAttrToReturnRemoveAll:")]
+		partial void OnAttrToReturnRemoveAll (Foundation.NSObject sender);
+
+		[Action ("OnBfAddAction:")]
+		partial void OnBfAddAction (Foundation.NSObject sender);
+
+		[Action ("OnBfCopyToTf:")]
+		partial void OnBfCopyToTf (Foundation.NSObject sender);
+
+		[Action ("OnBfMultipleValFromFile:")]
+		partial void OnBfMultipleValFromFile (Foundation.NSObject sender);
+
+		[Action ("OnBfRemoveAllTableEntries:")]
+		partial void OnBfRemoveAllTableEntries (Foundation.NSObject sender);
+
+		[Action ("OnBfRemoveTableEntry:")]
+		partial void OnBfRemoveTableEntry (Foundation.NSObject sender);
+
+		[Action ("OnDelete:")]
+		partial void OnDelete (Foundation.NSObject sender);
+
+		[Action ("OnExportToolBarItem:")]
+		partial void OnExportToolBarItem (Foundation.NSObject sender);
 
 		[Action ("OnLoadQueryToolBarItem:")]
 		partial void OnLoadQueryToolBarItem (Foundation.NSObject sender);
@@ -99,14 +132,20 @@ namespace VMDirSnapIn.UI
 		[Action ("OnOperationalToolBarItem:")]
 		partial void OnOperationalToolBarItem (Foundation.NSObject sender);
 
+		[Action ("OnOptionalToolBarItem:")]
+		partial void OnOptionalToolBarItem (Foundation.NSObject sender);
+
 		[Action ("OnPageSizeToolBarItem:")]
 		partial void OnPageSizeToolBarItem (Foundation.NSObject sender);
 
 		[Action ("OnPrevResultButton:")]
 		partial void OnPrevResultButton (Foundation.NSObject sender);
 
-		[Action ("OnRemoveTableEntry:")]
-		partial void OnRemoveTableEntry (Foundation.NSObject sender);
+		[Action ("OnRefresh:")]
+		partial void OnRefresh (Foundation.NSObject sender);
+
+		[Action ("OnSearchAction:")]
+		partial void OnSearchAction (Foundation.NSObject sender);
 
 		[Action ("OnSearchBoxVisibilityToolBarItem:")]
 		partial void OnSearchBoxVisibilityToolBarItem (Foundation.NSObject sender);
@@ -119,39 +158,49 @@ namespace VMDirSnapIn.UI
 		
 		void ReleaseDesignerOutlets ()
 		{
-			if (BFAttrComboBox != null) {
-				BFAttrComboBox.Dispose ();
-				BFAttrComboBox = null;
+			if (AttrToReturnComboBox != null) {
+				AttrToReturnComboBox.Dispose ();
+				AttrToReturnComboBox = null;
 			}
 
-			if (BFCondComboBox != null) {
-				BFCondComboBox.Dispose ();
-				BFCondComboBox = null;
+			if (AttrToReturnTableView != null) {
+				AttrToReturnTableView.Dispose ();
+				AttrToReturnTableView = null;
 			}
 
-			if (BFCondTableView != null) {
-				BFCondTableView.Dispose ();
-				BFCondTableView = null;
+			if (BfAttributeComboBox != null) {
+				BfAttributeComboBox.Dispose ();
+				BfAttributeComboBox = null;
 			}
 
-			if (BFOperatorComboBox != null) {
-				BFOperatorComboBox.Dispose ();
-				BFOperatorComboBox = null;
+			if (BfConditionComboBox != null) {
+				BfConditionComboBox.Dispose ();
+				BfConditionComboBox = null;
 			}
 
-			if (BFSeachScopeComboBox != null) {
-				BFSeachScopeComboBox.Dispose ();
-				BFSeachScopeComboBox = null;
+			if (BfConditionsTableView != null) {
+				BfConditionsTableView.Dispose ();
+				BfConditionsTableView = null;
 			}
 
-			if (BFSearchBaseTextField != null) {
-				BFSearchBaseTextField.Dispose ();
-				BFSearchBaseTextField = null;
+			if (BfOperatorComboBox != null) {
+				BfOperatorComboBox.Dispose ();
+				BfOperatorComboBox = null;
 			}
 
-			if (BFValTextField != null) {
-				BFValTextField.Dispose ();
-				BFValTextField = null;
+			if (BfValueTextField != null) {
+				BfValueTextField.Dispose ();
+				BfValueTextField = null;
+			}
+
+			if (DeleteToolBarItem != null) {
+				DeleteToolBarItem.Dispose ();
+				DeleteToolBarItem = null;
+			}
+
+			if (ExportToolBarItem != null) {
+				ExportToolBarItem.Dispose ();
+				ExportToolBarItem = null;
 			}
 
 			if (LoadQueryToolBarItem != null) {
@@ -164,9 +213,19 @@ namespace VMDirSnapIn.UI
 				OperationalAttrToolBarItem = null;
 			}
 
+			if (OptionalToolBarItem != null) {
+				OptionalToolBarItem.Dispose ();
+				OptionalToolBarItem = null;
+			}
+
 			if (PageSizeToolBarItem != null) {
 				PageSizeToolBarItem.Dispose ();
 				PageSizeToolBarItem = null;
+			}
+
+			if (RefreshToolBarItem != null) {
+				RefreshToolBarItem.Dispose ();
+				RefreshToolBarItem = null;
 			}
 
 			if (ResultPageNoTextField != null) {
@@ -177,6 +236,11 @@ namespace VMDirSnapIn.UI
 			if (ResultPropView != null) {
 				ResultPropView.Dispose ();
 				ResultPropView = null;
+			}
+
+			if (SearchBaseTextField != null) {
+				SearchBaseTextField.Dispose ();
+				SearchBaseTextField = null;
 			}
 
 			if (SearchBoxVisibilityToolBarItem != null) {
@@ -209,9 +273,9 @@ namespace VMDirSnapIn.UI
 				SearchResultOutlineView = null;
 			}
 
-			if (SearQueryTabView != null) {
-				SearQueryTabView.Dispose ();
-				SearQueryTabView = null;
+			if (SearchScopeComboBox != null) {
+				SearchScopeComboBox.Dispose ();
+				SearchScopeComboBox = null;
 			}
 
 			if (StoreQueryToolBarItem != null) {
@@ -219,19 +283,9 @@ namespace VMDirSnapIn.UI
 				StoreQueryToolBarItem = null;
 			}
 
-			if (TFSearchBaseTextField != null) {
-				TFSearchBaseTextField.Dispose ();
-				TFSearchBaseTextField = null;
-			}
-
-			if (TFSearchFilterTextView != null) {
-				TFSearchFilterTextView.Dispose ();
-				TFSearchFilterTextView = null;
-			}
-
-			if (TFSearchScopeComboBox != null) {
-				TFSearchScopeComboBox.Dispose ();
-				TFSearchScopeComboBox = null;
+			if (TfSearchFilterTextView != null) {
+				TfSearchFilterTextView.Dispose ();
+				TfSearchFilterTextView = null;
 			}
 		}
 	}

@@ -98,6 +98,7 @@
             this.Name = "SubmitModConfirm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Confirm";
+            this.Icon = VMDirEnvironment.Instance.GetIconResource(VMDirIconIndex.Question);
             this.ResumeLayout(false);
             this.PerformLayout();
 

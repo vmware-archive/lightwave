@@ -32,7 +32,11 @@ namespace VMDir.Common.Schema
         public const string ObjectClassSubClass = "subClassOf";
         public const string ObjectClassCategory = "objectClassCategory";
         public const string SystemMayContain = "systemMayContain";
-        public const string SystemMustContain = "systemMustContain";
+        public const string SystemMustContain = "systemMustContain";
+
+        public const string MayContain = "mayContain";
+
+        public const string MustContain = "mustContain";
         public const string ObjectClass = "objectClass";
         public const string AuxiliaryClass = "auxiliaryClass";
 
@@ -59,11 +63,29 @@ namespace VMDir.Common.Schema
                 if (val != null)
                     dto.ClassType = (ObjectClassDTO.ObjectClassType)Convert.ToInt32(val[0].StringValue);
 
-                val = Utilities.FetchLdapValueFromAttributesDictionary(SystemMayContain, objectclasses);
-                dto.May = val != null ? val.Select(data => data.StringValue).ToList() : null;
-
-                val = Utilities.FetchLdapValueFromAttributesDictionary(SystemMustContain, objectclasses);
-                dto.Must = val != null ? val.Select(data => data.StringValue).ToList() : null;
+                val = Utilities.FetchLdapValueFromAttributesDictionary(SystemMayContain, objectclasses);
+                dto.May = val != null ? val.Select(data => data.StringValue).ToList() : null;
+
+                val = Utilities.FetchLdapValueFromAttributesDictionary(MayContain, objectclasses);
+                if (val != null)
+                {
+                    if(dto.May!=null)
+                         dto.May.AddRange(val.Select(data => data.StringValue));
+                    else
+                        dto.May= val.Select(data => data.StringValue).ToList();
+                }
+
+                val = Utilities.FetchLdapValueFromAttributesDictionary(SystemMustContain, objectclasses);
+                dto.Must = val != null ? val.Select(data => data.StringValue).ToList() : null;
+
+                val = Utilities.FetchLdapValueFromAttributesDictionary(MustContain, objectclasses);
+                if (val != null)
+                {
+                    if (dto.Must != null)
+                        dto.Must.AddRange(val.Select(data => data.StringValue));
+                    else
+                        dto.Must = val.Select(data => data.StringValue).ToList();
+                }
 
                 val = Utilities.FetchLdapValueFromAttributesDictionary(ObjectClass, objectclasses);
                 dto.ObjectClass = val != null ? val.Select(data => data.StringValue).ToList() : null;

@@ -104,6 +104,7 @@
             this.Name = "AddGroup";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "AddGroup";
+            this.Icon = VMDirEnvironment.Instance.GetIconResource(VMDirIconIndex.Group);
             this.ResumeLayout(false);
             this.PerformLayout();
 

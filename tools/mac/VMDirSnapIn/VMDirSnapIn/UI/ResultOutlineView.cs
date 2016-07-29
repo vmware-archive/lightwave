@@ -46,11 +46,11 @@ namespace VMDirSnapIn.UI
 				if (obj != null)
 				{
 					NSMenu menu = new NSMenu();
-					if (obj is DirectoryNode)
+					if (obj is DirectoryNonExpandableNode)
 					{
-						DirectoryNode node = obj as DirectoryNode;
+						DirectoryNonExpandableNode node = obj as DirectoryNonExpandableNode;
 
-						if (string.Equals(node.ObjectClass, VMDirConstants.USER_OC, StringComparison.InvariantCultureIgnoreCase))
+						if (node.ObjectClass.Contains(VMDirConstants.USER_OC))
 						{
 							menu.AddItem(NSMenuItem.SeparatorItem);
 							NSMenuItem addUsertoGroup = new NSMenuItem("Add to a Group", node.AddUserToGroup);
@@ -59,13 +59,19 @@ namespace VMDirSnapIn.UI
 							menu.AddItem(resetPassword);
 							NSMenuItem verifyUserPassword = new NSMenuItem("Verify Password", node.VerifyUserPassword);
 							menu.AddItem(verifyUserPassword);
+							menu.AddItem(NSMenuItem.SeparatorItem);
 						}
-						else if (string.Equals(node.ObjectClass, VMDirConstants.GROUP_OC, StringComparison.InvariantCultureIgnoreCase))
+						else if (node.ObjectClass.Contains(VMDirConstants.GROUP_OC))
 						{
 							menu.AddItem(NSMenuItem.SeparatorItem);
 							NSMenuItem addGrouptoGroup = new NSMenuItem("Add to a Group", node.AddUserToGroup);
 							menu.AddItem(addGrouptoGroup);
+							menu.AddItem(NSMenuItem.SeparatorItem);
 						}
+						NSMenuItem delete = new NSMenuItem("Delete", node.Delete);
+						menu.AddItem(delete);
+						NSMenuItem refresh = new NSMenuItem("Refresh", node.RefreshNode);
+						menu.AddItem(refresh);
 					}
 					NSMenu.PopUpContextMenu(menu, theEvent, theEvent.Window.ContentView);
 				}

@@ -274,8 +274,8 @@ namespace VMPSCHighAvailability.UI
 			};
 
 			if (_isConnected) {
-				var mgmtDto = _service.GetManagementNodeDetails (serverDto);
-				//var mgmtDto = RootNode.Hosts.FirstOrDefault(x => x.Sitename == _mgmtDto.Sitename && x.Name == _mgmtDto.Name) as ManagementDto;
+				//var mgmtDto = _service.GetManagementNodeDetails (serverDto);
+				var mgmtDto = RootNode.Hosts.FirstOrDefault(x => x.Sitename == _mgmtDto.Sitename && x.Name == _mgmtDto.Name) as ManagementDto;
 
 				if (mgmtDto != null) {
 					var infraNodes = FilterBySiteName (mgmtDto.DomainControllers);

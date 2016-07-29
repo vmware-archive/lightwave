@@ -106,7 +106,8 @@ namespace VMDirSnapIn.UI
                         _pageNumber++;
                         foreach (var entry in entries)
                         {
-                            var node = new DirectoryNonExpandableNode(entry.getDN(), MiscUtilsService.GetObjectClass(entry), _serverDTO, this.propertiesControl1);
+                            var ocList = new List<string>(entry.getAttributeValues(VMDirConstants.ATTR_OBJECT_CLASS).Select(x=>x.StringValue).ToArray());
+                            var node = new DirectoryNonExpandableNode(entry.getDN(), ocList, _serverDTO, this.propertiesControl1);
                             node.NodeProperties = _serverDTO.Connection.GetEntryProperties(entry);
                             _result.Add(node);
                         }
@@ -147,8 +148,10 @@ namespace VMDirSnapIn.UI
                 return;
             
             tableLayoutPanel2.Visible = true;
+            tsbExportResult.Enabled = true;
             InitPageSearch(args.Qdto);
-
+            propertiesControl1.ClearView();
+            propertiesControl1.SetEditState(false);
             this.Text = "Server: " + _serverDTO.Server + "           Search In: " + args.Qdto.SearchBase;
             await GetPage();
             if (_result.Count > 0)
@@ -241,7 +244,7 @@ namespace VMDirSnapIn.UI
                 {
                     if (Convert.ToString(item.Tag) == "directory")
                         item.Enabled = true;
-                    else if (Convert.ToString(item.Tag) == "user" && string.Equals(n2.ObjectClass, VMDirConstants.USER_OC))
+                    else if (Convert.ToString(item.Tag) == "user" && n2.ObjectClass.Contains(VMDirConstants.USER_OC))
                         item.Enabled = true;
                 }
             }
@@ -298,7 +301,9 @@ namespace VMDirSnapIn.UI
                     resultTreeView.SelectedNode = node;
                     cmuResultTreeView.Items.Clear();
                     cmuResultTreeView.Items.Add(tsmiAddToGroup);
-                    if (string.Equals(node.ObjectClass, VMDirConstants.USER_OC))
+                    cmuResultTreeView.Items.Add(tsmiDelete);
+                    cmuResultTreeView.Items.Add(tsmiRefresh);
+                    if (node.ObjectClass.Contains(VMDirConstants.USER_OC))
                     {
                         cmuResultTreeView.Items.Add(tsmiResetUserPassword);
                         cmuResultTreeView.Items.Add(tsmiVerifyUserPassword);
@@ -311,7 +316,7 @@ namespace VMDirSnapIn.UI
         private void DoActionOnDirectoryNonExpandableNode(Action<DirectoryNonExpandableNode> action)
         {
             var node = this.resultTreeView.SelectedNode as DirectoryNonExpandableNode;
-            if (node != null && action != null)
+            if (node != null && action != null && node.ServerDTO!=null)
             {
                 action(node);
             }
@@ -393,17 +398,30 @@ namespace VMDirSnapIn.UI
         }
         private void tsbExportResult_Click(object sender, EventArgs e)
         {
-            if (_result != null && _result.Count > 0)
+            if (_serverDTO.Connection == null)
             {
-                var attrTypes = _serverDTO.Connection.SchemaManager.GetAttributeTypeManager();
-                var attrList = attrTypes.Data.Select(x => x.Key).ToList();
-                var frm = new ExportResult(_result, _returnedAttr, _currPage, _pageSize);
-                frm.ShowDialog();
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
+                return;
             }
-            else
+            MiscUtilsService.CheckedExec(delegate
             {
-                MMCDlgHelper.ShowWarning("There is no result to export.");
-            }
+                if (_result != null && _result.Count > 0)
+                {
+                    var attrTypes = _serverDTO.Connection.SchemaManager.GetAttributeTypeManager();
+                    var attrList = attrTypes.Data.Select(x => x.Key).ToList();
+                    var frm = new ExportResult(_result, _returnedAttr, _currPage, _pageSize);
+                    frm.ShowDialog();
+                }
+                else
+                {
+                    MMCDlgHelper.ShowWarning("There is no result to export.");
+                }
+            });
+        }
+
+        private void tsmiRefresh_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryNonExpandableNode(delegate(DirectoryNonExpandableNode node) { node.RefreshProperties(); });
         }
 
     }

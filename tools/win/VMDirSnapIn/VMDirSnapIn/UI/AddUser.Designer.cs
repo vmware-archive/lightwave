@@ -164,6 +164,7 @@
             this.Name = "AddUser";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "AddUser";
+            this.Icon = VMDirEnvironment.Instance.GetIconResource(VMDirIconIndex.User);
             this.ResumeLayout(false);
             this.PerformLayout();
 

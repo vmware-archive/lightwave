@@ -19,7 +19,13 @@ namespace VMDirSnapIn.UI
 		AppKit.NSButton CreateButton { get; set; }
 
 		[Outlet]
+		AppKit.NSTextField ParentDnTextField { get; set; }
+
+		[Outlet]
 		AppKit.NSTableView PropertiesTableView { get; set; }
+
+		[Outlet]
+		AppKit.NSTextField RdnTextField { get; set; }
 		
 		void ReleaseDesignerOutlets ()
 		{
@@ -36,6 +42,16 @@ namespace VMDirSnapIn.UI
 			if (PropertiesTableView != null) {
 				PropertiesTableView.Dispose ();
 				PropertiesTableView = null;
+			}
+
+			if (ParentDnTextField != null) {
+				ParentDnTextField.Dispose ();
+				ParentDnTextField = null;
+			}
+
+			if (RdnTextField != null) {
+				RdnTextField.Dispose ();
+				RdnTextField = null;
 			}
 		}
 	}

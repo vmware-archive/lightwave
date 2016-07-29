@@ -26,10 +26,11 @@ namespace VMDirSnapIn.UI
         List<ObjectClassDTO> _list;
         string _selectedObject;
         public string SelectedObject { get { return _selectedObject; } }
-
+        private List<ListViewItem> _lviList;
         public SelectObjectClass(SchemaManager mgr)
         {
             InitializeComponent();
+            _lviList = new List<ListViewItem>();
             BindList(mgr);
         }
 
@@ -44,30 +45,52 @@ namespace VMDirSnapIn.UI
             //Todo - list all classes now. Later fix to only list structural object classes after introducing specific fields in Schema classes.
             _list = om.Data.Values.ToList();
             _list.Sort(SortObjectClassDTO);
-
-            lstObjectClasses.VirtualListSize = _list.Count;
+            ResetList();
         }
-
+        private void ResetList()
+        {
+            lstObjectClasses.Items.Clear();
+            _lviList.Clear();
+            foreach (var item in _list)
+            {
+               ListViewItem lvi= new ListViewItem(new string[] { item.Name, item.Description });
+               _lviList.Add(lvi);
+            }
+            lstObjectClasses.Items.AddRange(_lviList.ToArray());
+        }
         private void btnOK_Click(object sender, EventArgs e)
         {
             if (lstObjectClasses.SelectedIndices.Count == 1)
             {
-                _selectedObject = _list[lstObjectClasses.SelectedIndices[0]].Name;
+                _selectedObject = lstObjectClasses.SelectedItems[0].SubItems[0].Text;
                 DialogResult = DialogResult.OK;
                 this.Close();
             }
         }
-
-        private void lstObjectClasses_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
+        void textBoxSearch_TextChanged(object sender, System.EventArgs e)
         {
-            var dto = _list[e.ItemIndex];
-            e.Item = new ListViewItem(new string[] { dto.Name, dto.Description });
+            if(string.IsNullOrWhiteSpace(textBoxSearch.Text))
+                ResetList();
+            else
+            {
+                lstObjectClasses.Items.Clear();
+                _lviList.Clear();
+                foreach (var item in _list)
+                {
+                    if (item.Name.StartsWith(textBoxSearch.Text))
+                    {
+                        ListViewItem lvi = new ListViewItem(new string[] { item.Name, item.Description });
+                        _lviList.Add(lvi);
+                    }
+                }
+                lstObjectClasses.Items.AddRange(_lviList.ToArray());
+            }
         }
 
-        private void lstObjectClasses_KeyPress(object sender, KeyPressEventArgs e)
+        private void buttonClear_Click(object sender, EventArgs e)
         {
-            SearchListByKeyPress.findAndSelect((ListView)sender, e.KeyChar);
+            textBoxSearch.Text = string.Empty;
+            ResetList();
         }
-
     }
 }

@@ -1,21 +1,21 @@
-/*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the “License”); you may not
- * use this file except in compliance with the License.  You may obtain a copy
- * of the License at http://www.apache.org/licenses/LICENSE-2.0
- *·
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an “AS IS” BASIS, without
- * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
- * License for the specific language governing permissions and limitations
- * under the License.
+/*
+ * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *·
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  */
-using System;
-
-namespace VMDir.Common
+using System;
+
+namespace VMDir.Common
 {
-    public static class VMDirConstants
+    public static class VMDirConstants
     {
         // Attributes
         public const string ATTR_CN = "cn";
@@ -98,7 +98,8 @@ namespace VMDir.Common
         public const int GROUPTYPE_ACCOUNT = 2;
         public const int SERVERTIMEOUT_IN_MILLI = 5000;
         public const int DEFAULT_PAGE_SIZE = 1000;
-        public const int SEARCH_TIMEOUT_IN_SEC = 90;
+        public const int SEARCH_TIMEOUT_IN_SEC = 300;
+		public static int MAX_SERVER_PERSIST = 9;
 
         //ERROR Msg
         public const string ERR_FETCH_DATA = "Unable to fetch data for the object specified. Please ensure the user has access";
@@ -126,14 +127,14 @@ namespace VMDir.Common
         //ERROR STRINGS
         public const string ERR_LDAP_CONNECTION_NULL = "Ldap Connection is null";
         public const string ERR_SCHEMA_CONNECTION_NULL = "Schema Connection is null";
-        public const string ERR_SERVER_CONNECTION_LOST = "Connection to Server is lost. Please disconnect and connect again.";
-        public const string ERR_LOGIN_FAILED = "Please check your server details and credentials.";
+        public const string ERR_SERVER_CONNECTION_LOST = "Connection to Server is lost. Please disconnect and connect again.";
+		public const string ERR_LOGIN_FAILED = "Please check your server details and credentials.";
 
         //Warning Msg
         public const string WRN_ATTR = "Please select valid attribute";
         public const string WRN_COND = "Please select valid condition";
         public const string WRN_VAL = "Please enter value";
-        public const string WRN_SEARCH_BASE = "Plese enter search base.";
+        public const string WRN_SEARCH_BASE = "Plese enter search base.";
         public const string WRN_OP = "Plese select operator.";
         public const string WRN_SEARCH_SCOPE = "Please select valid search scope";
         public const string WRN_COND_COUNT = "Please enter atleast one condition";
@@ -141,21 +142,21 @@ namespace VMDir.Common
         public const string WRN_PAGE_SIZE = "Please Enter Page Size";
         public const string WRN_PAGE_SIZE_MINVAL = "Please Enter Page Size greater than 0.";
         public const string WRN_PAGE_SIZE_MAXVAL = "Please Enter Page Size less than 10000";
-        public const string WRN_INT_VAL = "Please Enter integer value.";
-        public const string WRN_OC_SEL = "Please select one object class from the list";
+        public const string WRN_INT_VAL = "Please Enter integer value.";
+        public const string WRN_OC_SEL = "Please select one object class from the list";
         public const string WRN_UPN_ENT = "Please enter UPN.";
-        public const string WRN_DN_ENT = "Please enter DN.";
-        public const string WRN_PWD_ENT = "Please enter Password.";
-        public const string WRN_NEW_PWD_ENT = "Please enter new password.";
-        public const string WRN_PWD_NO_MATCH = "Passwords do not match";
-        public const string WRN_OBJ_NODE_SEL = "Please select a valid object from the tree view";
-        public const string WRN_BASE_DN_ENT = "Please enter base dn.";
-        public const string WRN_SERVER_ENT = "Please enter server.";
-        public const string WRN_CN_ENT = "Please enter cn.";
-        public const string WRN_FN_ENT = "Please enter first name.";
-        public const string WRN_LN_ENT = "Please enter last name.";
-        public const string WRN_SAM_NAME_ENT = "Please enter sAMAccountName.";
-        public const string WRN_GRP_NAME_SEL = "Please select a valid group name";
+        public const string WRN_DN_ENT = "Please enter DN.";
+        public const string WRN_PWD_ENT = "Please enter Password.";
+        public const string WRN_NEW_PWD_ENT = "Please enter new password.";
+        public const string WRN_PWD_NO_MATCH = "Passwords do not match";
+        public const string WRN_OBJ_NODE_SEL = "Please select a valid object from the tree view";
+        public const string WRN_BASE_DN_ENT = "Please enter base dn.";
+        public const string WRN_SERVER_ENT = "Please enter server.";
+        public const string WRN_CN_ENT = "Please enter cn.";
+        public const string WRN_FN_ENT = "Please enter first name.";
+        public const string WRN_LN_ENT = "Please enter last name.";
+        public const string WRN_SAM_NAME_ENT = "Please enter sAMAccountName.";
+        public const string WRN_GRP_NAME_SEL = "Please select a valid group name";
         public const string WRN_GRP_NAME_ENT = "Please enter a valid group name";
         public const string WRN_NO_MORE_PAGES = "All pages has been fetched.";
         public const string WRN_RELOGIN = "Your session has expired! Please relogin.";
@@ -163,21 +164,23 @@ namespace VMDir.Common
         public static string WRN_FILE_FORMAT = "Please select format of file to export";
         public static string WRN_SCOPE = "Please select scope of result to export";
         public const string WRN_SEL_ITEM_PRESENT = "Selected item is already present in the current set of attributes";
+        public const string WRN_ITEM_ALRDY_SLCTD = "Item is already selected";
+        public static string WRN_RDN_ENT = "Please enter RDN.";
 
         //Status msg
-        public const string STAT_SR_NO_MATCH = "Result: No match Found.";
-        public const string STAT_SR_MORE_PG = "Result: There are more pages to be fetched.";
+        public const string STAT_SR_NO_MATCH = "Result: No match Found.";
+        public const string STAT_SR_MORE_PG = "Result: There are more pages to be fetched.";
         public const string STAT_SR_NO_MORE_PG = "Result: All pages has been fetched.";
         public const string STAT_SR_FETCHING_PG = "Result: Fetching page from server...";
-        public const string STAT_SR_FAILED_PG = "Result: Failed to fetch page from server...";
-        public const string STAT_QUERY_LOAD_SUCC = "Query Loaded Successfully";
-        public const string STAT_QUERY_STORE_SUCC = "Query Stored Successfully";
-        public const string STAT_MEMBER_ADD_SUCC = "Successfully Added Member";
-        public const string STAT_OBJ_ADD_SUCC = "Successfully Added Object";
-        public const string STAT_GRP_ADD_SUCC = "Successfully Added Group";
-        public const string STAT_USR_ADD_SUCC = "Successfully Added User";
-        public const string STAT_OBJ_DEL_SUCC = "Successfully deleted object";
-        public const string STAT_BASE_OBJ_DEL_SUCC = "Deleted base object. Please Refresh the Server";
+        public const string STAT_SR_FAILED_PG = "Result: Failed to fetch page from server...";
+        public const string STAT_QUERY_LOAD_SUCC = "Query Loaded Successfully";
+        public const string STAT_QUERY_STORE_SUCC = "Query Stored Successfully";
+        public const string STAT_MEMBER_ADD_SUCC = "Successfully Added Member";
+        public const string STAT_OBJ_ADD_SUCC = "Successfully Added Object";
+        public const string STAT_GRP_ADD_SUCC = "Successfully Added Group";
+        public const string STAT_USR_ADD_SUCC = "Successfully Added User";
+        public const string STAT_OBJ_DEL_SUCC = "Successfully deleted object";
+        public const string STAT_BASE_OBJ_DEL_SUCC = "Deleted base object. Please Refresh the Server";
         public const string STAT_PWD_RESET_SUCC = "Successfully reset password for the user";
         public const string STAT_RES_EXPO_SUCC = "Successfully exported result";
         public const string STAT_SER_REM_SUCC = "Successfully removed server ";
@@ -187,14 +190,16 @@ namespace VMDir.Common
         //Search Query
         public const string SEARCH_ALL_OC = "(objectClass=*)";
         public const string USER_OC = "user";
-        public const string GROUP_OC = "group";
-        public static string[] ConditionList = new string[]
-        { "Equal To", "Not Equal To", "Beginning With", "Not Beginning With",
-            "Ending With", "Not Ending With", "Containing", "Not Containing", "Greater Than Equal To",
-            "Not Greater Than Equal To", "Less Than Equal To", "Not Less Than Equal To"
-        };
-        public static string[] ScopeList = new[] { "Base Object", "Next Level", "Full Subtree" };
+        public const string GROUP_OC = "group";
+        public static string[] ConditionList = new string[]
+        { "Equal To", "Not Equal To", "Beginning With", "Not Beginning With",
+            "Ending With", "Not Ending With", "Containing", "Not Containing", "Greater Than Equal To",
+            "Not Greater Than Equal To", "Less Than Equal To", "Not Less Than Equal To"
+        };
+        public static string[] ScopeList = new[] { "Base Object", "Next Level", "Full Subtree" };
         public static string[] OperatorList = new[] { "AND", "OR" };
-    }
-}
-
+        public static string[] ResultExportFormatList = new[] { "csv" };
+        public static string[] ResultExportScopeList = new[] { "Current Result Page", "All Fetched Result Pages" };
+    }
+}
+

@@ -5,7 +5,7 @@
   <?define Manufacturer="VMware, Inc." ?>
   <?define MajorVersion="1" ?>
   <?define MinorVersion="0" ?>
-  <?define BuildVersion="3" ?>
+  <?define BuildVersion="4" ?>
   <?define Revision="0" ?>
   <?define VersionNumber="$(var.MajorVersion).$(var.MinorVersion).$(var.BuildVersion).$(var.Revision)" ?>
   <?define UpgradeCode="{53548109-AB39-491D-B7B6-7217955AD17C}" ?>
@@ -23,4 +23,6 @@
   <?define Dir_desc=" Directory objects search and management." ?>
   <?define DNS_desc="Administer zones, DNS records and configure forwarders." ?>
   <?define PSCHA_desc="Manage site affinity for management node, monitor health of infrastructure node, global view of HA topology etc." ?>
+  <?define ResourcesForOtherProject="../VMIdentityTools_Installer/resources" ?>
+  <?define PrerequisiteUpgradeCode="{140CE8D6-D0C8-47AF-8D26-295BEC000BCA}" ?>
 </Include>

@@ -80,8 +80,8 @@ namespace VMDirSchemaSnapIn.UI
         {
             InitialiseAttributesList();
             InitialiseClassesList();
-            this.RemoveAuxiliaryAttribtueButton.Enabled = false;
-            this.AddAuxiliaryAttributeButton.Enabled = false;
+            //this.RemoveAuxiliaryAttribtueButton.Enabled = false;
+           // this.AddAuxiliaryAttributeButton.Enabled = false;
             if (!isAddMode)
             {
                 ObjectClassModDTO = new ObjectClassDTO();
@@ -169,8 +169,9 @@ namespace VMDirSchemaSnapIn.UI
                 if (frm.ShowDialog() == DialogResult.OK)
                 {
                     mandatoryAttributesList.AddRange(frm.SelectedItemsList);
-                   this.MandatoryList.DataSource =mandatoryAttributesList;
-                   this.MandatoryList.Refresh();
+                    this.MandatoryList.DataSource = null;
+                    this.MandatoryList.DataSource =mandatoryAttributesList;
+                    this.MandatoryList.Refresh();
                 }
             }
         }
@@ -183,8 +184,10 @@ namespace VMDirSchemaSnapIn.UI
                 if (row >= 0)
                 {
                     mandatoryAttributesList.RemoveAt(row);
+                    this.MandatoryList.DataSource = null;
+                    this.MandatoryList.DataSource = mandatoryAttributesList;
+                    this.MandatoryList.Refresh();
                 }
-                this.MandatoryList.Refresh();
             }
         }
 
@@ -194,6 +197,7 @@ namespace VMDirSchemaSnapIn.UI
             if (frm.ShowDialog() == DialogResult.OK)
                 {
                     optionalAttributesList.AddRange(frm.SelectedItemsList);
+                    this.OptionalList.DataSource = null;
                     this.OptionalList.DataSource = optionalAttributesList;
                     this.OptionalList.Refresh();
                 }
@@ -207,8 +211,10 @@ namespace VMDirSchemaSnapIn.UI
                 if (row >= 0)
                 {
                     optionalAttributesList.RemoveAt(row);
-                }
-                this.OptionalList.Refresh();
+                    this.OptionalList.DataSource = null;
+                    this.OptionalList.DataSource = optionalAttributesList;
+                    this.OptionalList.Refresh();
+                }  
             }
         }
 
@@ -218,6 +224,7 @@ namespace VMDirSchemaSnapIn.UI
                 if (frm.ShowDialog() == DialogResult.OK)
                 {
                     auxiliaryClassesList.AddRange(frm.SelectedItemsList);
+                    this.AuxiliaryList.DataSource = null;
                     this.AuxiliaryList.DataSource = auxiliaryClassesList;
                     this.AuxiliaryList.Refresh();
                 }
@@ -231,8 +238,10 @@ namespace VMDirSchemaSnapIn.UI
                 if (row >= 0)
                 {
                     auxiliaryClassesList.RemoveAt(row);
+                    this.AuxiliaryList.DataSource = null;
+                    this.AuxiliaryList.DataSource = auxiliaryClassesList;
+                    this.AuxiliaryList.Refresh();
                 }
-                this.AuxiliaryList.Refresh();
             }
         }
 
@@ -323,8 +332,8 @@ namespace VMDirSchemaSnapIn.UI
             parentClassList.Clear();
             if (String.Equals(this.ClassTypeCombo.SelectedItem.ToString(), VMDirSchemaConstants.VMDIRSCHEMA_STRUCTURAL) == true)
             {
-                this.AddAuxiliaryAttributeButton.Enabled = true;
-                this.RemoveAuxiliaryAttribtueButton.Enabled = true;
+                //this.AddAuxiliaryAttributeButton.Enabled = true;
+                //this.RemoveAuxiliaryAttribtueButton.Enabled = true;
                 this.ParentClassText.Enabled = true;
                 parentClassList.AddRange(structuralClasses);
                 parentClassList.AddRange(abstractClasses);
@@ -345,8 +354,8 @@ namespace VMDirSchemaSnapIn.UI
                 }
                 auxiliaryClassesList.Clear();
                 this.AuxiliaryList.Refresh();
-                this.AddAuxiliaryAttributeButton.Enabled = false;
-                this.RemoveAuxiliaryAttribtueButton.Enabled = false;
+               // this.AddAuxiliaryAttributeButton.Enabled = false;
+               // this.RemoveAuxiliaryAttribtueButton.Enabled = false;
 
             }
         }

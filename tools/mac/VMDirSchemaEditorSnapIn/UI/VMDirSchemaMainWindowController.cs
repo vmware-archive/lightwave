@@ -303,22 +303,26 @@ namespace VMDirSchema.UI
             var serverDTO = VMDirServerDTO.CreateInstance();
             if (!string.IsNullOrWhiteSpace(server))
                 serverDTO.Server = server;
+            serverNode = new VMDirSchemaServerNode(serverDTO);
             ProgressWindowController pwc = new ProgressWindowController();
             IntPtr session = new IntPtr(0);
-            ConnectToLdapWindowController awc = new ConnectToLdapWindowController(serverDTO);
-            NSApplication.SharedApplication.BeginSheet(awc.Window, this.Window, () =>
+            string[] servers = VMDirSchemaSnapInEnvironment.Instance.LocalData.GetServerArray();
+            LoginWindowController lwc = new LoginWindowController(servers);
+            NSApplication.SharedApplication.BeginSheet(lwc.Window, this.Window, () =>
                 {
                 });
-            nint result = NSApplication.SharedApplication.RunModalForWindow(awc.Window);
+            nint result = NSApplication.SharedApplication.RunModalForWindow(lwc.Window);
             try
             {
                 if (result == VMIdentityConstants.DIALOGOK)
                 {
+                    serverNode.ServerDTO.Server = lwc.Server;
+                    serverNode.ServerDTO.BindDN = lwc.UserName + "@" + lwc.DomainName;
+                    serverNode.ServerDTO.Password = lwc.Password;
                     NSApplication.SharedApplication.BeginSheet(pwc.Window, this.Window as NSWindow, () =>
                         {
                         });
                     session = NSApplication.SharedApplication.BeginModalSession(pwc.Window);
-                    serverNode = new VMDirSchemaServerNode(serverDTO);
                     await serverNode.DoLogin();
                     InitialiseViews();
 
@@ -336,8 +340,8 @@ namespace VMDirSchema.UI
                     pwc.Window.Close();
                     NSApplication.SharedApplication.EndModalSession(session);
                 }
-                Window.EndSheet(awc.Window);
-                awc.Dispose();
+                Window.EndSheet(lwc.Window);
+                lwc.Dispose();
             }
         }
 

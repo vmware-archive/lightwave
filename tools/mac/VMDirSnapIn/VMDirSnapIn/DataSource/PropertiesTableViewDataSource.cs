@@ -34,8 +34,6 @@ namespace VMDirSnapIn.DataSource
 		public HashSet<string> modData;
 		private List<AttributeTypeDTO> mayAttrDTOList;
 		public List<AttributeDTO> displayAttrDTOList;
-
-		private string oldObjectClass = string.Empty;
 		private string objectClass = string.Empty;
 		public string dn = string.Empty;
 		public VMDirServerDTO serverDTO;
@@ -62,50 +60,47 @@ namespace VMDirSnapIn.DataSource
 
 		public void FillData()
 		{
+			oprAttrDTOList.Clear();
 			currAttrDTOList.Clear();
 			displayAttrDTOList.Clear();
 			optAttrDTOList.Clear();
-
-			currAttrDTOList = Utilities.ConvertToAttributeDTOList(properties);
-			if (string.IsNullOrWhiteSpace(objectClass))
-				objectClass = Utilities.GetAttrLastVal(properties, VMDirConstants.ATTR_OBJECT_CLASS);
-			mayAttrDTOList = serverDTO.Connection.SchemaManager.GetOptionalAttributes(objectClass);
-			foreach (var item in mayAttrDTOList)
-				if (item != null)
-					optAttrDTOList.Add(new AttributeDTO(item.Name, string.Empty, item));
-			foreach (var item in currAttrDTOList)
-				if (item.AttrSyntaxDTO.SingleValue)
-					optAttrDTOList.RemoveAll(x => x.Name.Equals(item.Name));
-			optAttrDTOList.Sort((x, y) => string.Compare(x.Name, y.Name, StringComparison.InvariantCultureIgnoreCase));
 
 			if (serverDTO.OperationalAttrFlag)
 			{
 				GetOperationalAttribute();
 				displayAttrDTOList.AddRange(oprAttrDTOList);
 			}
+
+			currAttrDTOList = Utilities.ConvertToAttributeDTOList(properties);
 			displayAttrDTOList.AddRange(currAttrDTOList);
-			displayAttrDTOList.AddRange(optAttrDTOList);
+
+			if (serverDTO.OptionalAttrFlag)
+			{
+				if (string.IsNullOrWhiteSpace(objectClass))
+					objectClass = Utilities.GetAttrLastVal(properties, VMDirConstants.ATTR_OBJECT_CLASS);
+				mayAttrDTOList = serverDTO.Connection.SchemaManager.GetOptionalAttributes(objectClass);
+				foreach (var item in mayAttrDTOList)
+					if (item != null)
+						optAttrDTOList.Add(new AttributeDTO(item.Name, string.Empty, item,false));
+				foreach (var item in currAttrDTOList)
+					if (item.AttrSyntaxDTO.SingleValue)
+						optAttrDTOList.RemoveAll(x => x.Name.Equals(item.Name));
+				optAttrDTOList.Sort((x, y) => string.Compare(x.Name, y.Name, StringComparison.InvariantCultureIgnoreCase));
+				displayAttrDTOList.AddRange(optAttrDTOList);
+			}
 		}
 
 		private void GetOperationalAttribute()
 		{
 			TextQueryDTO dto = new TextQueryDTO(dn, LdapScope.SCOPE_BASE, VMDirConstants.SEARCH_ALL_OC,
-	new string[] { "+" }, 0, IntPtr.Zero, 0);
+												new string[] { "+" }, 0, IntPtr.Zero, 0);
 			var operationalProperties = new Dictionary<string, VMDirAttributeDTO>();
 			serverDTO.Connection.Search(dto, (l, e) =>
 			{
-				if(e.Count>0)
+				if (e.Count > 0)
 					operationalProperties = serverDTO.Connection.GetEntryProperties(e[0]);
 			});
 			oprAttrDTOList = Utilities.ConvertToAttributeDTOList(operationalProperties);
-		}
-
-		public void ResetEdit()
-		{
-			displayAttrDTOList.Clear();
-			displayAttrDTOList.AddRange(oprAttrDTOList);
-			displayAttrDTOList.AddRange(currAttrDTOList);
-			displayAttrDTOList.AddRange(optAttrDTOList);
 		}
 
 		public void ReloadData()

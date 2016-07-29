@@ -84,7 +84,7 @@ namespace VMDirSnapIn.Views
                  {
                      if (Convert.ToString(item.Tag) == "directory")
                          item.Enabled = true;
-                     else if (Convert.ToString(item.Tag) == "user" && string.Equals(n2.ObjectClass, VMDirConstants.USER_OC))
+                     else if (Convert.ToString(item.Tag) == "user" && n2.ObjectClass.Contains(VMDirConstants.USER_OC))
                          item.Enabled = true;
                  }
              }
@@ -139,7 +139,7 @@ namespace VMDirSnapIn.Views
                                 cmsDirectoryNode.Items.Add(tsmiSearch);
                                 cmsDirectoryNode.Items.Add(tsmiFetchNextPage);
                                 cmsDirectoryNode.Items.Add(tsmiAdd);
-                                if (string.Equals(dn.ObjectClass, VMDirConstants.USER_OC))
+                                if (dn.ObjectClass.Contains(VMDirConstants.USER_OC))
                                 {
                                     cmsDirectoryNode.Items.Add(tsmiPasswordManagement);
                                 }
@@ -262,7 +262,7 @@ namespace VMDirSnapIn.Views
         private void tsbShowHideOperationalAttr_Click(object sender, EventArgs e)
         {
             var node = this.treeViewExplore.SelectedNode as BaseTreeNode;
-            if (node != null)
+            if (node != null && node.ServerDTO!=null)
             {
                 if (node.ServerDTO.OperationalAttrFlag)
                     node.ServerDTO.OperationalAttrFlag = false;
@@ -278,7 +278,7 @@ namespace VMDirSnapIn.Views
         private void tsbShowOptionalAttr_Click(object sender, EventArgs e)
         {
             var node = this.treeViewExplore.SelectedNode as BaseTreeNode;
-            if (node != null)
+            if (node != null && node.ServerDTO != null)
             {
                 if (node.ServerDTO.OptionalAttrFlag)
                     node.ServerDTO.OptionalAttrFlag = false;

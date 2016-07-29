@@ -10,13 +10,16 @@
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
  * License for the specific language governing permissions and limitations
  * under the License.
- */
-
+ */
+
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Xml.Serialization;
 using VMDir.Common.VMDirUtilities;
-
+using VMDirInterop.Interfaces;
+using VMDirInterop.LDAP;
+using VMIdentity.CommonUtils;
 
 namespace VMDir.Common.DTO
 {
@@ -70,6 +73,81 @@ namespace VMDir.Common.DTO
         {
             return dn.Replace (",", ".").Replace ("dc=", "");
         }
+
+		public async Task DoLogin()
+		{
+			try
+			{
+				Task t = new Task(ServerConnect);
+				t.Start();
+				if (await Task.WhenAny(t, Task.Delay(CommonConstants.TEN_SEC * 3)) == t)
+				{
+					await t;
+				}
+				else {
+					throw new Exception(CommonConstants.SERVER_TIMEOUT);
+				}
+			}
+			catch (Exception ex)
+			{
+				throw ex;
+			}
+		}
+
+		public void ServerConnect()
+		{
+			try
+			{
+				Connection = new LdapConnectionService(Server, BindDN, Password);
+
+				if (Connection.CreateConnection() == 1)
+				{
+					if (string.IsNullOrWhiteSpace(BaseDN))
+					{
+						TextQueryDTO dto = new TextQueryDTO("", LdapScope.SCOPE_BASE, VMDirConstants.SEARCH_ALL_OC,
+							new string[] { VMDirConstants.ATTR_ROOT_DOMAIN_NAMING_CONTEXT }, 0, IntPtr.Zero, 0);
+						try
+						{
+							Connection.Search(dto,
+								delegate (ILdapMessage searchRequest, List<ILdapEntry> entries)
+								{
+									BaseDN = GetRootDomainNamingContext(entries);
+								});
+						}
+						catch (Exception)
+						{
+							throw new Exception(VMDirConstants.ERR_DN_RETRIEVAL);
+						}
+					}
+					else
+					{
+						TextQueryDTO dto = new TextQueryDTO(BaseDN, LdapScope.SCOPE_BASE, VMDirConstants.SEARCH_ALL_OC,
+							new string[] { VMDirConstants.ATTR_DN }, 0, IntPtr.Zero, 0);
+						Connection.Search(dto, null);
+					}
+					IsLoggedIn = true;
+				}
+				else {
+					IsLoggedIn = false;
+				}
+			}
+			catch (Exception)
+			{
+				IsLoggedIn = false;
+				throw;
+			}
+		}
+		private string GetRootDomainNamingContext(List<ILdapEntry> entries)
+		{
+			if (entries != null)
+			{
+				var value = entries[0].getAttributeValues(VMDirConstants.ATTR_ROOT_DOMAIN_NAMING_CONTEXT);
+				if (value != null && value.Count > 0)
+					return value[0].StringValue;
+			}
+			return string.Empty;
+		}
+
     }
 
 }

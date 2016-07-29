@@ -58,113 +58,106 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(43, 23);
-            this.label1.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label1.Location = new System.Drawing.Point(57, 28);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(41, 13);
+            this.label1.Size = new System.Drawing.Size(53, 17);
             this.label1.TabIndex = 0;
             this.label1.Text = "Name :";
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(42, 54);
-            this.label2.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label2.Location = new System.Drawing.Point(56, 66);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(66, 13);
+            this.label2.Size = new System.Drawing.Size(87, 17);
             this.label2.TabIndex = 1;
             this.label2.Text = "Description :";
             // 
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(43, 89);
-            this.label3.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label3.Location = new System.Drawing.Point(57, 110);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(54, 13);
+            this.label3.Size = new System.Drawing.Size(69, 17);
             this.label3.TabIndex = 2;
             this.label3.Text = "X00.OID :";
             // 
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(43, 125);
-            this.label4.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label4.Location = new System.Drawing.Point(57, 154);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(65, 13);
+            this.label4.Size = new System.Drawing.Size(86, 17);
             this.label4.TabIndex = 3;
             this.label4.Text = "Class Type :";
             // 
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(43, 163);
-            this.label5.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label5.Location = new System.Drawing.Point(57, 201);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(75, 13);
+            this.label5.Size = new System.Drawing.Size(100, 17);
             this.label5.TabIndex = 4;
             this.label5.Text = "Parent Class : ";
             // 
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(42, 210);
-            this.label6.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label6.Location = new System.Drawing.Point(56, 258);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(113, 13);
+            this.label6.Size = new System.Drawing.Size(151, 17);
             this.label6.TabIndex = 5;
             this.label6.Text = "Mandatory Attributes : ";
             // 
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(197, 210);
-            this.label7.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label7.Location = new System.Drawing.Point(263, 258);
             this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(99, 13);
+            this.label7.Size = new System.Drawing.Size(133, 17);
             this.label7.TabIndex = 6;
             this.label7.Text = "Optional Attributes :";
             // 
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(347, 210);
-            this.label8.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label8.Location = new System.Drawing.Point(463, 258);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(93, 13);
+            this.label8.Size = new System.Drawing.Size(125, 17);
             this.label8.TabIndex = 7;
             this.label8.Text = "Auxiliary Classes : ";
             // 
             // ObjectClassNameText
             // 
-            this.ObjectClassNameText.Location = new System.Drawing.Point(152, 23);
-            this.ObjectClassNameText.Margin = new System.Windows.Forms.Padding(2);
+            this.ObjectClassNameText.Location = new System.Drawing.Point(203, 28);
+            this.ObjectClassNameText.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.ObjectClassNameText.Name = "ObjectClassNameText";
-            this.ObjectClassNameText.Size = new System.Drawing.Size(290, 20);
+            this.ObjectClassNameText.Size = new System.Drawing.Size(385, 22);
             this.ObjectClassNameText.TabIndex = 8;
             // 
             // DescriptionText
             // 
-            this.DescriptionText.Location = new System.Drawing.Point(152, 54);
-            this.DescriptionText.Margin = new System.Windows.Forms.Padding(2);
+            this.DescriptionText.Location = new System.Drawing.Point(203, 66);
+            this.DescriptionText.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.DescriptionText.Name = "DescriptionText";
-            this.DescriptionText.Size = new System.Drawing.Size(290, 20);
+            this.DescriptionText.Size = new System.Drawing.Size(385, 22);
             this.DescriptionText.TabIndex = 9;
             // 
             // ObjectClassIdentifierText
             // 
-            this.ObjectClassIdentifierText.Location = new System.Drawing.Point(152, 89);
-            this.ObjectClassIdentifierText.Margin = new System.Windows.Forms.Padding(2);
+            this.ObjectClassIdentifierText.Location = new System.Drawing.Point(203, 110);
+            this.ObjectClassIdentifierText.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.ObjectClassIdentifierText.Name = "ObjectClassIdentifierText";
-            this.ObjectClassIdentifierText.Size = new System.Drawing.Size(290, 20);
+            this.ObjectClassIdentifierText.Size = new System.Drawing.Size(385, 22);
             this.ObjectClassIdentifierText.TabIndex = 10;
             // 
             // ParentClassText
             // 
-            this.ParentClassText.Location = new System.Drawing.Point(152, 164);
-            this.ParentClassText.Margin = new System.Windows.Forms.Padding(2);
+            this.ParentClassText.Location = new System.Drawing.Point(203, 202);
+            this.ParentClassText.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.ParentClassText.Name = "ParentClassText";
-            this.ParentClassText.Size = new System.Drawing.Size(250, 20);
+            this.ParentClassText.ReadOnly = true;
+            this.ParentClassText.Size = new System.Drawing.Size(332, 22);
             this.ParentClassText.TabIndex = 11;
             // 
             // ClassTypeCombo
@@ -172,21 +165,21 @@
             this.ClassTypeCombo.FormattingEnabled = true;
             this.ClassTypeCombo.Items.AddRange(new object[] {
             "Structural",
-            "Auxiliary",
-            "Abstract"});
-            this.ClassTypeCombo.Location = new System.Drawing.Point(152, 125);
-            this.ClassTypeCombo.Margin = new System.Windows.Forms.Padding(2);
+            "Abstract",
+            "Auxiliary"});
+            this.ClassTypeCombo.Location = new System.Drawing.Point(203, 154);
+            this.ClassTypeCombo.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.ClassTypeCombo.Name = "ClassTypeCombo";
-            this.ClassTypeCombo.Size = new System.Drawing.Size(290, 21);
+            this.ClassTypeCombo.Size = new System.Drawing.Size(385, 24);
             this.ClassTypeCombo.TabIndex = 12;
             this.ClassTypeCombo.SelectedValueChanged += new System.EventHandler(this.OnSelectionChanged);
             // 
             // AddParentClassButton
             // 
-            this.AddParentClassButton.Location = new System.Drawing.Point(417, 164);
-            this.AddParentClassButton.Margin = new System.Windows.Forms.Padding(2);
+            this.AddParentClassButton.Location = new System.Drawing.Point(556, 202);
+            this.AddParentClassButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.AddParentClassButton.Name = "AddParentClassButton";
-            this.AddParentClassButton.Size = new System.Drawing.Size(24, 19);
+            this.AddParentClassButton.Size = new System.Drawing.Size(32, 23);
             this.AddParentClassButton.TabIndex = 13;
             this.AddParentClassButton.Text = "+";
             this.AddParentClassButton.UseVisualStyleBackColor = true;
@@ -195,36 +188,39 @@
             // MandatoryList
             // 
             this.MandatoryList.FormattingEnabled = true;
-            this.MandatoryList.Location = new System.Drawing.Point(36, 235);
-            this.MandatoryList.Margin = new System.Windows.Forms.Padding(2);
+            this.MandatoryList.ItemHeight = 16;
+            this.MandatoryList.Location = new System.Drawing.Point(48, 289);
+            this.MandatoryList.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.MandatoryList.Name = "MandatoryList";
-            this.MandatoryList.Size = new System.Drawing.Size(123, 95);
+            this.MandatoryList.Size = new System.Drawing.Size(163, 116);
             this.MandatoryList.TabIndex = 14;
             // 
             // OptionalList
             // 
             this.OptionalList.FormattingEnabled = true;
-            this.OptionalList.Location = new System.Drawing.Point(191, 235);
-            this.OptionalList.Margin = new System.Windows.Forms.Padding(2);
+            this.OptionalList.ItemHeight = 16;
+            this.OptionalList.Location = new System.Drawing.Point(255, 289);
+            this.OptionalList.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.OptionalList.Name = "OptionalList";
-            this.OptionalList.Size = new System.Drawing.Size(127, 95);
+            this.OptionalList.Size = new System.Drawing.Size(168, 116);
             this.OptionalList.TabIndex = 15;
             // 
             // AuxiliaryList
             // 
             this.AuxiliaryList.FormattingEnabled = true;
-            this.AuxiliaryList.Location = new System.Drawing.Point(350, 235);
-            this.AuxiliaryList.Margin = new System.Windows.Forms.Padding(2);
+            this.AuxiliaryList.ItemHeight = 16;
+            this.AuxiliaryList.Location = new System.Drawing.Point(467, 289);
+            this.AuxiliaryList.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.AuxiliaryList.Name = "AuxiliaryList";
-            this.AuxiliaryList.Size = new System.Drawing.Size(129, 95);
+            this.AuxiliaryList.Size = new System.Drawing.Size(171, 116);
             this.AuxiliaryList.TabIndex = 16;
             // 
             // AddButton
             // 
-            this.AddButton.Location = new System.Drawing.Point(338, 347);
-            this.AddButton.Margin = new System.Windows.Forms.Padding(2);
+            this.AddButton.Location = new System.Drawing.Point(451, 427);
+            this.AddButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.AddButton.Name = "AddButton";
-            this.AddButton.Size = new System.Drawing.Size(56, 19);
+            this.AddButton.Size = new System.Drawing.Size(75, 23);
             this.AddButton.TabIndex = 17;
             this.AddButton.Text = "Add";
             this.AddButton.UseVisualStyleBackColor = true;
@@ -232,10 +228,10 @@
             // 
             // CloseButton
             // 
-            this.CloseButton.Location = new System.Drawing.Point(412, 347);
-            this.CloseButton.Margin = new System.Windows.Forms.Padding(2);
+            this.CloseButton.Location = new System.Drawing.Point(549, 427);
+            this.CloseButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.CloseButton.Name = "CloseButton";
-            this.CloseButton.Size = new System.Drawing.Size(56, 19);
+            this.CloseButton.Size = new System.Drawing.Size(75, 23);
             this.CloseButton.TabIndex = 18;
             this.CloseButton.Text = "Close";
             this.CloseButton.UseVisualStyleBackColor = true;
@@ -243,10 +239,10 @@
             // 
             // AddMandatoryAttributeButton
             // 
-            this.AddMandatoryAttributeButton.Location = new System.Drawing.Point(163, 235);
-            this.AddMandatoryAttributeButton.Margin = new System.Windows.Forms.Padding(2);
+            this.AddMandatoryAttributeButton.Location = new System.Drawing.Point(217, 289);
+            this.AddMandatoryAttributeButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.AddMandatoryAttributeButton.Name = "AddMandatoryAttributeButton";
-            this.AddMandatoryAttributeButton.Size = new System.Drawing.Size(14, 19);
+            this.AddMandatoryAttributeButton.Size = new System.Drawing.Size(19, 23);
             this.AddMandatoryAttributeButton.TabIndex = 19;
             this.AddMandatoryAttributeButton.Text = "+";
             this.AddMandatoryAttributeButton.UseVisualStyleBackColor = true;
@@ -254,10 +250,10 @@
             // 
             // RemoveMandatoryAttributeButton
             // 
-            this.RemoveMandatoryAttributeButton.Location = new System.Drawing.Point(163, 258);
-            this.RemoveMandatoryAttributeButton.Margin = new System.Windows.Forms.Padding(2);
+            this.RemoveMandatoryAttributeButton.Location = new System.Drawing.Point(217, 318);
+            this.RemoveMandatoryAttributeButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.RemoveMandatoryAttributeButton.Name = "RemoveMandatoryAttributeButton";
-            this.RemoveMandatoryAttributeButton.Size = new System.Drawing.Size(14, 19);
+            this.RemoveMandatoryAttributeButton.Size = new System.Drawing.Size(19, 23);
             this.RemoveMandatoryAttributeButton.TabIndex = 20;
             this.RemoveMandatoryAttributeButton.Text = "-";
             this.RemoveMandatoryAttributeButton.UseVisualStyleBackColor = true;
@@ -265,10 +261,10 @@
             // 
             // RemoveOptionalAttributeButton
             // 
-            this.RemoveOptionalAttributeButton.Location = new System.Drawing.Point(322, 258);
-            this.RemoveOptionalAttributeButton.Margin = new System.Windows.Forms.Padding(2);
+            this.RemoveOptionalAttributeButton.Location = new System.Drawing.Point(429, 318);
+            this.RemoveOptionalAttributeButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.RemoveOptionalAttributeButton.Name = "RemoveOptionalAttributeButton";
-            this.RemoveOptionalAttributeButton.Size = new System.Drawing.Size(15, 19);
+            this.RemoveOptionalAttributeButton.Size = new System.Drawing.Size(20, 23);
             this.RemoveOptionalAttributeButton.TabIndex = 21;
             this.RemoveOptionalAttributeButton.Text = "-";
             this.RemoveOptionalAttributeButton.UseVisualStyleBackColor = true;
@@ -276,10 +272,10 @@
             // 
             // AddOptionalAttributeButton
             // 
-            this.AddOptionalAttributeButton.Location = new System.Drawing.Point(322, 235);
-            this.AddOptionalAttributeButton.Margin = new System.Windows.Forms.Padding(2);
+            this.AddOptionalAttributeButton.Location = new System.Drawing.Point(429, 289);
+            this.AddOptionalAttributeButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.AddOptionalAttributeButton.Name = "AddOptionalAttributeButton";
-            this.AddOptionalAttributeButton.Size = new System.Drawing.Size(15, 19);
+            this.AddOptionalAttributeButton.Size = new System.Drawing.Size(20, 23);
             this.AddOptionalAttributeButton.TabIndex = 22;
             this.AddOptionalAttributeButton.Text = "+";
             this.AddOptionalAttributeButton.UseVisualStyleBackColor = true;
@@ -287,10 +283,10 @@
             // 
             // AddAuxiliaryAttributeButton
             // 
-            this.AddAuxiliaryAttributeButton.Location = new System.Drawing.Point(483, 235);
-            this.AddAuxiliaryAttributeButton.Margin = new System.Windows.Forms.Padding(2);
+            this.AddAuxiliaryAttributeButton.Location = new System.Drawing.Point(644, 289);
+            this.AddAuxiliaryAttributeButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.AddAuxiliaryAttributeButton.Name = "AddAuxiliaryAttributeButton";
-            this.AddAuxiliaryAttributeButton.Size = new System.Drawing.Size(13, 19);
+            this.AddAuxiliaryAttributeButton.Size = new System.Drawing.Size(17, 23);
             this.AddAuxiliaryAttributeButton.TabIndex = 23;
             this.AddAuxiliaryAttributeButton.Text = "+";
             this.AddAuxiliaryAttributeButton.UseVisualStyleBackColor = true;
@@ -298,10 +294,10 @@
             // 
             // RemoveAuxiliaryAttribtueButton
             // 
-            this.RemoveAuxiliaryAttribtueButton.Location = new System.Drawing.Point(483, 258);
-            this.RemoveAuxiliaryAttribtueButton.Margin = new System.Windows.Forms.Padding(2);
+            this.RemoveAuxiliaryAttribtueButton.Location = new System.Drawing.Point(644, 318);
+            this.RemoveAuxiliaryAttribtueButton.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.RemoveAuxiliaryAttribtueButton.Name = "RemoveAuxiliaryAttribtueButton";
-            this.RemoveAuxiliaryAttribtueButton.Size = new System.Drawing.Size(13, 19);
+            this.RemoveAuxiliaryAttribtueButton.Size = new System.Drawing.Size(17, 23);
             this.RemoveAuxiliaryAttribtueButton.TabIndex = 24;
             this.RemoveAuxiliaryAttribtueButton.Text = "-";
             this.RemoveAuxiliaryAttribtueButton.UseVisualStyleBackColor = true;
@@ -309,9 +305,9 @@
             // 
             // ObjectClassWindow
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(507, 392);
+            this.ClientSize = new System.Drawing.Size(676, 482);
             this.Controls.Add(this.RemoveAuxiliaryAttribtueButton);
             this.Controls.Add(this.AddAuxiliaryAttributeButton);
             this.Controls.Add(this.AddOptionalAttributeButton);
@@ -337,7 +333,7 @@
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
-            this.Margin = new System.Windows.Forms.Padding(2);
+            this.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.MaximizeBox = false;
             this.Name = "ObjectClassWindow";
             this.Text = "ObjectClassWindow";

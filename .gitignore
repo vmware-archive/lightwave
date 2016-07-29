@@ -71,3 +71,4 @@ tools/win/VMDirSchemaSnapIn/VMDirSchemaSnapIn/obj
 tools/win/logs
 tools/x64
 vmidentity/lightwaveui/target
+tools/win/wininstaller/wininstaller.v12.suo

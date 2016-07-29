@@ -43,6 +43,9 @@ namespace VMDirSnapIn.UI
 		VmIdentity.UI.Common.ActivatableToolBarItem OperationalToolBarItem { get; set; }
 
 		[Outlet]
+		VmIdentity.UI.Common.ActivatableToolBarItem OptionalToolBarItem { get; set; }
+
+		[Outlet]
 		VmIdentity.UI.Common.ActivatableToolBarItem PageSizeToolBarItem { get; set; }
 
 		[Outlet]
@@ -99,6 +102,12 @@ namespace VMDirSnapIn.UI
 		[Action ("OnOperationalToolBarItem:")]
 		partial void OnOperationalToolBarItem (Foundation.NSObject sender);
 
+		[Action ("OnOptionalAttribute:")]
+		partial void OnOptionalAttribute (Foundation.NSObject sender);
+
+		[Action ("OnOptionalToolBatItem:")]
+		partial void OnOptionalToolBatItem (Foundation.NSObject sender);
+
 		[Action ("OnPageSizeToolBarItem:")]
 		partial void OnPageSizeToolBarItem (Foundation.NSObject sender);
 
@@ -119,6 +128,11 @@ namespace VMDirSnapIn.UI
 		
 		void ReleaseDesignerOutlets ()
 		{
+			if (OptionalToolBarItem != null) {
+				OptionalToolBarItem.Dispose ();
+				OptionalToolBarItem = null;
+			}
+
 			if (AddGroupToolBarItem != null) {
 				AddGroupToolBarItem.Dispose ();
 				AddGroupToolBarItem = null;
@@ -139,11 +153,6 @@ namespace VMDirSnapIn.UI
 				BackForwardToolBarItem = null;
 			}
 
-			if (FetchNextPageToolBarItem != null) {
-				FetchNextPageToolBarItem.Dispose ();
-				FetchNextPageToolBarItem = null;
-			}
-
 			if (ConnectMenuItem != null) {
 				ConnectMenuItem.Dispose ();
 				ConnectMenuItem = null;
@@ -162,6 +171,11 @@ namespace VMDirSnapIn.UI
 			if (DisconnectMenuItem != null) {
 				DisconnectMenuItem.Dispose ();
 				DisconnectMenuItem = null;
+			}
+
+			if (FetchNextPageToolBarItem != null) {
+				FetchNextPageToolBarItem.Dispose ();
+				FetchNextPageToolBarItem = null;
 			}
 
 			if (OperationalToolBarItem != null) {

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
@@ -11,37 +11,26 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
 using System;
 using Foundation;
+using AppKit;
 
-namespace VMDirSchemaEditorSnapIn.UI
+namespace VMDirSnapIn.UI
 {
-    public partial class ConnectToLdapWindow : AppKit.NSWindow
-    {
-        #region Constructors
+	public partial class ModSubmitConfirm : NSWindow
+	{
+		public ModSubmitConfirm(IntPtr handle) : base(handle)
+		{
+		}
 
-        // Called when created from unmanaged code
-        public ConnectToLdapWindow(IntPtr handle)
-            : base(handle)
-        {
-            Initialize();
-        }
+		[Export("initWithCoder:")]
+		public ModSubmitConfirm(NSCoder coder) : base(coder)
+		{
+		}
 
-        // Called when created directly from a XIB file
-        [Export("initWithCoder:")]
-        public ConnectToLdapWindow(NSCoder coder)
-            : base(coder)
-        {
-            Initialize();
-        }
-
-        // Shared initialization code
-        void Initialize()
-        {
-        }
-
-        #endregion
-    }
+		public override void AwakeFromNib()
+		{
+			base.AwakeFromNib();
+		}
+	}
 }
-

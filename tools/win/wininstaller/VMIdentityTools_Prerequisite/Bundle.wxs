@@ -2,17 +2,18 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
-  <?include Definitions.wxi ?>
+  <?include ../VMIdentityTools_Installer/Definitions.wxi ?>
 
   <Bundle Name="$(var.Product)"
           Version="$(var.VersionNumber)"
           Manufacturer="$(var.Manufacturer)"
-          UpgradeCode="$(var.UpgradeCode)">
+          UpgradeCode="$(var.PrerequisiteUpgradeCode)">
 
     <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense" >
       <bal:WixStandardBootstrapperApplication
-        LicenseFile="$(var.Resources)/LicenseAgreement.rtf"
-        SuppressOptionsUI="yes"/>
+        LicenseFile="$(var.ResourcesForOtherProject)/LicenseAgreement.rtf"
+        SuppressOptionsUI="yes"
+        LogoFile="$(var.ResourcesForOtherProject)/InstallerLogo.bmp" ShowVersion="yes"/>
     </BootstrapperApplicationRef>
 
     <util:RegistrySearch

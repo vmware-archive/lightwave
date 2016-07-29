@@ -35,13 +35,16 @@ namespace VMDirSnapIn.UI
         string _objectClass;
         VMDirServerDTO _serverDTO;
         Dictionary<string, VMDirAttributeDTO> _properties;
+        private string _parentDn;
+        public string Rdn;
 
         public Dictionary<string, VMDirAttributeDTO> Attributes { get { return _properties; } }
 
-        public CreateForm(string objectClass, VMDirServerDTO serverDTO)
+        public CreateForm(string objectClass, VMDirServerDTO serverDTO,string parentDn)
         {
             _objectClass = objectClass;
             _serverDTO = serverDTO;
+            _parentDn = parentDn;
 
             InitializeComponent();
             ColumnHeader attrColumnHeader = new ColumnHeader();
@@ -58,8 +61,10 @@ namespace VMDirSnapIn.UI
         void Bind()
         {
             this.Text = "New " + _objectClass;
+            textBoxParentDn.Text = _parentDn;
+            MiscUtilsService.CheckedExec(delegate
+            { 
             var requiredProps = _serverDTO.Connection.SchemaManager.GetRequiredAttributes(_objectClass);
-
             _properties = new Dictionary<string, VMDirAttributeDTO>();
             foreach (var prop in requiredProps)
             {
@@ -84,6 +89,7 @@ namespace VMDirSnapIn.UI
                     this.listViewProp.Items.Add(lvi);
                 }
             }
+            });
         }
 
         void listViewProp_DoubleClick(object sender, System.EventArgs e)
@@ -128,6 +134,7 @@ namespace VMDirSnapIn.UI
         {
             if (DoValidate())
             {
+                Rdn = textBoxRdn.Text;
                 DialogResult = DialogResult.OK;
                 this.Close();
             }
@@ -135,6 +142,16 @@ namespace VMDirSnapIn.UI
 
         bool DoValidate()
         {
+            if (string.IsNullOrWhiteSpace(textBoxParentDn.Text))
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_DN_ENT);
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(textBoxRdn.Text))
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RDN_ENT);
+                return false;
+            }
             foreach (ListViewItem item in this.listViewProp.Items)
             {
                 if (string.IsNullOrWhiteSpace(item.SubItems[1].Text))

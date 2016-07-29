@@ -19,6 +19,8 @@ using VMDirSnapIn.DataSource;
 using VMDirInterop.LDAP;
 using VmIdentity.UI.Common.Utilities;
 using VMDir.Common.DTO;
+using AppKit;
+using VmIdentity.UI.Common;
 
 namespace VMDirSnapIn.UI
 {
@@ -65,13 +67,14 @@ namespace VMDirSnapIn.UI
 		public override void AwakeFromNib()
 		{
 			base.AwakeFromNib();
+			SetEditVisibility(false);
 		}
 
 		partial void PropApplyClick(NSObject sender)
 		{
 			UIErrorHelper.CheckedExec(delegate
 			{
-				if (ds!=null && ds.modData.Count > 0)
+				if (ds != null && ds.modData.Count > 0)
 				{
 					var finalMods = new Dictionary<string, List<string>>();
 					foreach (var item in ds.displayAttrDTOList)
@@ -90,20 +93,39 @@ namespace VMDirSnapIn.UI
 							}
 						}
 					}
-					LdapMod[] attrMods = new LdapMod[finalMods.Count];
+
+					ModSubmitConfirmController mscwc = new ModSubmitConfirmController(finalMods);
+					nint result = NSApplication.SharedApplication.RunModalForWindow(mscwc.Window);
+					if (result != (nint)VMIdentityConstants.DIALOGOK)
+					{
+						return;
+					}
+
+					List<AttributeModStatus> modificationStatus = new List<AttributeModStatus>();
 					int i = 0;
 					foreach (var m in finalMods)
 					{
+						LdapMod[] attrMods = new LdapMod[1];
 						var values = m.Value.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
 						Array.Resize(ref values, values.Count() + 1);
-						attrMods[i] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_REPLACE, m.Key, values);
+						attrMods[0] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_REPLACE, m.Key, values);
+						try
+						{
+							ds.serverDTO.Connection.ModifyObject(ds.dn, attrMods);
+							modificationStatus.Add(new AttributeModStatus(m.Key, true, "Success"));
+						}
+						catch (Exception exp)
+						{
+							modificationStatus.Add(new AttributeModStatus(m.Key, false, exp.Message));
+						}
 						i++;
 					}
-					ds.serverDTO.Connection.ModifyObject(ds.dn, attrMods);
+					ModSubmitStatusController msswc = new ModSubmitStatusController(modificationStatus);
+					NSApplication.SharedApplication.RunModalForWindow(msswc.Window);
 					ds.modData.Clear();
 					ds.ReloadData();
 					ReloadTable();
-
+					SetEditVisibility(false);
 				}
 			});
 		}
@@ -112,8 +134,10 @@ namespace VMDirSnapIn.UI
 		{
 			if (ds != null)
 			{
-				ds.ResetEdit();
+				ds.modData.Clear();
+				ds.FillData();
 				ReloadTable();
+				SetEditVisibility(false);
 			}
 		}
 
@@ -126,7 +150,7 @@ namespace VMDirSnapIn.UI
 				if (!item.AttrSyntaxDTO.SingleValue)
 				{
 					indx++;
-					ds.displayAttrDTOList.Insert(indx, new AttributeDTO(item.Name, string.Empty, item.AttrSyntaxDTO));
+					ds.displayAttrDTOList.Insert(indx, new AttributeDTO(item.Name, string.Empty, item.AttrSyntaxDTO,true));
 					ReloadTable();
 				}
 			}
@@ -135,6 +159,12 @@ namespace VMDirSnapIn.UI
 		public void ReloadTable()
 		{
 			PropTableView.ReloadData();
+		}
+
+		public void SetEditVisibility(bool v)
+		{
+			PropApply.Hidden = !v;
+			PropReset.Hidden = !v;
 		}
 	}
 }

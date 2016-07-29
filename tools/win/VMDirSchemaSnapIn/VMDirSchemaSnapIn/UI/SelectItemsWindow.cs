@@ -62,11 +62,14 @@ namespace VMDirSchemaSnapIn.UI
                 {
                     UIErrorHelper.ShowMessage(VMDirConstants.WRN_SEL_ITEM_PRESENT);
                 }
+                else if (SelectedItemsList.Contains(selectedItem))
+                {
+                    UIErrorHelper.ShowMessage(VMDirConstants.WRN_ITEM_ALRDY_SLCTD);
+                }
                 else
                 {
                     SelectedItemsList.Add(selectedItem);
                     //The datasource has to be explicitly set to null before we refresh the list. it doesnt seem to work by reference.
-                    //Todo - find if there is a better mechanism to do this without resetting datasource.
                     this.ToList.DataSource = null;
                     this.ToList.DataSource = SelectedItemsList;
                     ToList.Refresh();

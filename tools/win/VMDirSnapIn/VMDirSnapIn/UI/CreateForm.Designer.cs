@@ -69,6 +69,10 @@ namespace VMDirSnapIn.UI
             this.btnOK = new System.Windows.Forms.Button();
             this.listViewProp = new System.Windows.Forms.ListView();
             this.textBoxEdit = new System.Windows.Forms.MaskedTextBox();
+            this.textBoxParentDn = new System.Windows.Forms.TextBox();
+            this.textBoxRdn = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // btnCancel
@@ -101,9 +105,9 @@ namespace VMDirSnapIn.UI
             this.listViewProp.FullRowSelect = true;
             this.listViewProp.GridLines = true;
             this.listViewProp.HideSelection = false;
-            this.listViewProp.Location = new System.Drawing.Point(0, 1);
+            this.listViewProp.Location = new System.Drawing.Point(12, 70);
             this.listViewProp.Name = "listViewProp";
-            this.listViewProp.Size = new System.Drawing.Size(426, 396);
+            this.listViewProp.Size = new System.Drawing.Size(402, 330);
             this.listViewProp.TabIndex = 4;
             this.listViewProp.UseCompatibleStateImageBehavior = false;
             this.listViewProp.View = System.Windows.Forms.View.Details;
@@ -119,12 +123,50 @@ namespace VMDirSnapIn.UI
             this.textBoxEdit.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.textBoxEdit_KeyPress);
             this.textBoxEdit.LostFocus += new System.EventHandler(this.textBoxEdit_LostFocus);
             // 
+            // textBoxParentDn
+            // 
+            this.textBoxParentDn.Enabled = false;
+            this.textBoxParentDn.Location = new System.Drawing.Point(75, 13);
+            this.textBoxParentDn.Name = "textBoxParentDn";
+            this.textBoxParentDn.Size = new System.Drawing.Size(339, 20);
+            this.textBoxParentDn.TabIndex = 7;
+            // 
+            // textBoxRdn
+            // 
+            this.textBoxRdn.Location = new System.Drawing.Point(77, 39);
+            this.textBoxRdn.Name = "textBoxRdn";
+            this.textBoxRdn.Size = new System.Drawing.Size(337, 20);
+            this.textBoxRdn.TabIndex = 8;
+            this.textBoxRdn.Text = "cn=";
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(9, 20);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(60, 13);
+            this.label1.TabIndex = 9;
+            this.label1.Text = "Parent DN:";
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(9, 46);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(62, 13);
+            this.label2.TabIndex = 10;
+            this.label2.Text = "Enter RDN:";
+            // 
             // CreateForm
             // 
             this.AcceptButton = this.btnOK;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(426, 446);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.textBoxRdn);
+            this.Controls.Add(this.textBoxParentDn);
             this.Controls.Add(this.textBoxEdit);
             this.Controls.Add(this.listViewProp);
             this.Controls.Add(this.btnOK);
@@ -132,9 +174,9 @@ namespace VMDirSnapIn.UI
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "CreateForm";
-            this.ShowIcon = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "CreateForm";
+            this.Icon = VMDirEnvironment.Instance.GetIconResource(VMDirIconIndex.Object);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -150,6 +192,10 @@ namespace VMDirSnapIn.UI
         private System.Windows.Forms.Button btnOK;
         private System.Windows.Forms.ListView listViewProp;
         private System.Windows.Forms.MaskedTextBox textBoxEdit;
+        private System.Windows.Forms.TextBox textBoxParentDn;
+        private System.Windows.Forms.TextBox textBoxRdn;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label label2;
 
     }
 

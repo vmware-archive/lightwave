@@ -13,7 +13,7 @@
              Compressed="yes"
              InstallScope="perMachine"
              Manufacturer="$(var.Manufacturer)"
-             Description="Installs VMware Software"
+             Description="Installs $(var.Product) $(var.VersionNumber)"
              Keywords="Installer,MSI"
              Comments="(c) 2015 VMware Company"
              Platform="x64" />

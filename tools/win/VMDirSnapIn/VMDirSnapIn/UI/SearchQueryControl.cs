@@ -102,6 +102,22 @@ namespace VMDirSnapIn.UI
             }
             return true;
         }
+        private bool ValidateReturnAttrAdd()
+        {
+            if (comboBoxAttrToReturn.SelectedItem == null)
+            {
+                if (comboBoxAttrToReturn.Items.Contains(comboBoxAttrToReturn.Text))
+                {
+                    comboBoxAttrToReturn.SelectedIndex = comboBoxAttrToReturn.Items.IndexOf(comboBoxAttrToReturn.Text);
+                }
+                else
+                {
+                    MMCDlgHelper.ShowWarning(VMDirConstants.WRN_ATTR);
+                    return false;
+                }
+            }
+            return true;
+        }
 
         private bool ValidateSearch()
         {
@@ -261,6 +277,13 @@ namespace VMDirSnapIn.UI
                     lvi.SubItems.Add(item.Value);
                     this.listViewConditions.Items.Add(lvi);
                 }
+                foreach (var item in dto.AttrToReturn)
+                {
+                    var lvi = new ListViewItem(new string[] { item });
+                    listViewAttrToReturn.Items.Add(lvi);
+                    this.comboBoxAttrToReturn.SelectedIndex = 0;
+                    this.comboBoxAttrToReturn.Items.Remove(item);
+                }
             }
             else if (qdto.GetType() == typeof(TextQueryDTO))
             {
@@ -269,16 +292,26 @@ namespace VMDirSnapIn.UI
                 this.textBoxBase.Text = dto.SearchBase;
                 this.comboBoxScope.SelectedIndex = (int)dto.SearchScope;
                 this.textBoxFilterString.Text = dto.GetFilterString();
+                foreach (var item in dto.AttrToReturn)
+                {
+                    var lvi = new ListViewItem(new string[] { item });
+                    listViewAttrToReturn.Items.Add(lvi);
+                    this.comboBoxAttrToReturn.SelectedIndex = 0;
+                    this.comboBoxAttrToReturn.Items.Remove(item);
+                }
             }
         }
 
         private void buttonAttrAdd_Click(object sender, EventArgs e)
         {
-            var item=comboBoxAttrToReturn.SelectedItem;
-            var lvi = new ListViewItem(new string[] { item.ToString() });
-            listViewAttrToReturn.Items.Add(lvi);
-            this.comboBoxAttrToReturn.SelectedIndex = 0;
-            this.comboBoxAttrToReturn.Items.Remove(item);
+            if (ValidateReturnAttrAdd())
+            {
+                var item = comboBoxAttrToReturn.SelectedItem;
+                var lvi = new ListViewItem(new string[] { item.ToString() });
+                listViewAttrToReturn.Items.Add(lvi);
+                this.comboBoxAttrToReturn.SelectedIndex = 0;
+                this.comboBoxAttrToReturn.Items.Remove(item);
+            }
         }
 
         private void buttonAttrRemove_Click(object sender, EventArgs e)

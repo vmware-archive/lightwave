@@ -23,6 +23,7 @@ using System.ComponentModel;
 using VMCASnapIn.UI.GridEditors;
 using System.Drawing.Design;
 using VMwareMMCIDP.UI.Common.Utilities;
+using VMwareMMCIDP.UI.Common;
 
 namespace VMCASnapIn.Nodes
 {
@@ -83,10 +84,11 @@ namespace VMCASnapIn.Nodes
                     {
                         dto.FillRequest(request);
                         string csr = request.GetCSR(dto.PrivateKey.ToString());
-
                         serverDTO.SigningRequests.Add(new SigningRequestDTO { CSR = csr, CreatedDateTime = DateTime.Now });
                         VMCASnapInEnvironment.Instance.SaveLocalData();
-                        MMCDlgHelper.ShowMessage(csr);
+                        var frm2 = new InfoForm(csr);
+                        frm2.Icon = VMCASnapInEnvironment.Instance.GetIconResource(VMCAIconIndex.cert);
+                        MMCDlgHelper.ShowForm(frm2);
                     }
                 }
             });

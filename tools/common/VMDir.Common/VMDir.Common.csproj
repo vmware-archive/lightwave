@@ -63,6 +63,7 @@
     <Compile Include="DTO\SuperLogDto.cs" />
     <Compile Include="DTO\UserDTO.cs" />
     <Compile Include="DTO\GroupDTO.cs" />
+    <Compile Include="Persistence\LocalData.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\LDAPDefs.xml" />

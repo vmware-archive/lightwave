@@ -145,6 +145,7 @@
             this.Controls.Add(this.label4);
             this.Controls.Add(this.comboBoxCond);
             this.Name = "ConditionsFromFile";
+            this.ShowIcon = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Add Conditions From File";
             this.ResumeLayout(false);
