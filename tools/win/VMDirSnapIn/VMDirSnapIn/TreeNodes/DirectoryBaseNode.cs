@@ -34,7 +34,7 @@ namespace VMDirSnapIn.TreeNodes
     {
         public string Dn { get; private set; }
         public string Cn { get; private set; }
-        public string ObjectClass { get; private set; }
+        public List<string> ObjectClass { get; private set; }
 
         private Dictionary<string, VMDirAttributeDTO> _properties;
 
@@ -52,7 +52,7 @@ namespace VMDirSnapIn.TreeNodes
             }
         }
 
-        public DirectoryBaseNode(string dn, string oc, VMDirServerDTO serverDTO, PropertiesControl propCtl)
+        public DirectoryBaseNode(string dn, List<string> oc, VMDirServerDTO serverDTO, PropertiesControl propCtl)
             : base(serverDTO, propCtl)
         {
             this.Dn = dn;
@@ -84,16 +84,34 @@ namespace VMDirSnapIn.TreeNodes
 
         public override void DoSelect()
         {
+            if (ServerDTO.Connection == null)
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
+                return;
+            }
             PropertiesCtl.Visible = true;
-            PropertiesCtl.Init(Dn, ObjectClass, ServerDTO, NodeProperties);
+            var oc = string.Empty;
+            if (ObjectClass.Count > 0)
+                oc = ObjectClass[ObjectClass.Count - 1];
+            PropertiesCtl.Init(Dn, oc, ServerDTO, NodeProperties);
         }
         public void Delete()
         {
+            if (ServerDTO.Connection == null)
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
+                return;
+            }
             ServerDTO.Connection.DeleteObject(Dn);
         }
 
         public void AddUserToGroup()
         {
+            if (ServerDTO.Connection == null)
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
+                return;
+            }
             var frm = new AddToGroup(ServerDTO);
             if (frm.ShowDialog() == DialogResult.OK)
             {

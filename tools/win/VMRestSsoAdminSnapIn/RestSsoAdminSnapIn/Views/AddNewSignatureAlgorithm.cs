@@ -15,6 +15,7 @@
 using System;
 using System.Windows.Forms;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
+using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Views
 {
@@ -28,9 +29,18 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
 
         private void btnCreate_Click(object sender, EventArgs e)
         {
-            _dto = new SignatureAlgorithmDto { MaxKeySize = (int)nudMaxKeySize.Value, MinKeySize = (int)nudMinKeySize.Value, Priority = (int)nudPriority.Value };
-            DialogResult = DialogResult.OK;
-            Close();
+            var max = (int)nudMaxKeySize.Value;
+            var min = (int)nudMinKeySize.Value;
+            if (max < min)
+            {
+                MMCDlgHelper.ShowError("MAX Key size cannot be less than MIN key size");
+            }
+            else
+            {
+                _dto = new SignatureAlgorithmDto { MaxKeySize = max, MinKeySize = min, Priority = (int)nudPriority.Value };
+                DialogResult = DialogResult.OK;
+                Close();
+            }
         }
 
         public Dto.IDataContext DataContext

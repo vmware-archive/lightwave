@@ -20,11 +20,19 @@ namespace VMDir.Common.DTO
         public string Name { get; set; }
         public string Value { get; set; }
         public AttributeTypeDTO AttrSyntaxDTO { get; set; }
+		public bool Dirty { get; set; }
         public AttributeDTO(string name, string value, AttributeTypeDTO attrSyntaxDTO)
         {
             this.Name = name;
             this.Value = value;
             this.AttrSyntaxDTO = attrSyntaxDTO;
-        }
+        }
+		public AttributeDTO(string name, string value, AttributeTypeDTO attrSyntaxDTO, bool dirty)
+		{
+			this.Name = name;
+			this.Value = value;
+			this.AttrSyntaxDTO = attrSyntaxDTO;
+			this.Dirty = dirty;
+		}
     }
 }

@@ -23,12 +23,11 @@ namespace VMDir.Common.DTO
     {
         public string SearchBase { get; set; }
         public LdapScope SearchScope { get; set; }
-        [XmlIgnore]
         public string[] AttrToReturn { get; set; }
          [XmlIgnore]
         public int AttrOnly { get; set; }
          [XmlIgnore]
-        public IntPtr TimeOut { get; set; }
+		public IntPtr TimeOut { get; set; }
          [XmlIgnore]
         public int SizeLimit { get; set; }
         public abstract string GetFilterString();

@@ -37,6 +37,15 @@ namespace VmIdentity.UI.Common.Utilities
 			return alert.RunModal();
 		}
 
+		public static nint ShowError(String text)
+		{
+			var alert = new NSAlert();
+			alert.MessageText = "Error";
+			alert.AlertStyle = NSAlertStyle.Critical;
+			alert.InformativeText = text;
+			return alert.RunModal();
+		}
+
         public static nint ShowAlert(String text, String caption)
         {
             var alert = new NSAlert();

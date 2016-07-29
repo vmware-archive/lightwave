@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="10117" systemVersion="15E65" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
-        <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="10117"/>
     </dependencies>
     <objects>
@@ -127,14 +126,14 @@
                     <popUpButton verticalHuggingPriority="750" id="jdi-KB-Ii4">
                         <rect key="frame" x="168" y="407" width="360" height="26"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <popUpButtonCell key="cell" type="push" title="Abstract" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="MhG-ms-M95" id="ypz-jx-ndS">
+                        <popUpButtonCell key="cell" type="push" title="Abstract" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="SIm-Ka-5l0" id="ypz-jx-ndS">
                             <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="menu"/>
                             <menu key="menu" id="bzI-Q1-Uk3">
                                 <items>
-                                    <menuItem title="Structural" id="lv7-hL-yE9"/>
-                                    <menuItem title="Auxiliary" id="SIm-Ka-5l0"/>
-                                    <menuItem title="Abstract" state="on" id="MhG-ms-M95"/>
+                                    <menuItem title="Structural" state="on" id="lv7-hL-yE9"/>
+                                    <menuItem title="Abstract" id="SIm-Ka-5l0"/>
+                                    <menuItem title="Auxiliary" id="MhG-ms-M95"/>
                                 </items>
                             </menu>
                         </popUpButtonCell>

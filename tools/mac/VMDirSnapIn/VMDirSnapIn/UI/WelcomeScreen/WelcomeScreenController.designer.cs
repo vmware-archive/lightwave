@@ -12,18 +12,11 @@ namespace VMDirSnapIn.UI
 	[Register ("WelcomeScreenController")]
 	partial class WelcomeScreenController
 	{
-		[Outlet]
-		public AppKit.NSPopUpButton ConnectToServer { get; private set; }
-
 		[Action ("OnConnect:")]
 		partial void OnConnect (Foundation.NSObject sender);
 		
 		void ReleaseDesignerOutlets ()
 		{
-			if (ConnectToServer != null) {
-				ConnectToServer.Dispose ();
-				ConnectToServer = null;
-			}
 		}
 	}
 }

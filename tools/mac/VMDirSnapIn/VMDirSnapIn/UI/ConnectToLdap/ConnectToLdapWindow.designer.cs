@@ -28,7 +28,10 @@ namespace VMDirSnapIn.UI
 		public AppKit.NSSecureTextField Password { get; private set; }
 
 		[Outlet]
-		public AppKit.NSTextField ServerName { get; private set; }
+		AppKit.NSComboBox ServerComboBox { get; set; }
+
+		[Action ("OnServerComboBox:")]
+		partial void OnServerComboBox (Foundation.NSObject sender);
 		
 		void ReleaseDesignerOutlets ()
 		{
@@ -57,9 +60,9 @@ namespace VMDirSnapIn.UI
 				Password = null;
 			}
 
-			if (ServerName != null) {
-				ServerName.Dispose ();
-				ServerName = null;
+			if (ServerComboBox != null) {
+				ServerComboBox.Dispose ();
+				ServerComboBox = null;
 			}
 		}
 	}

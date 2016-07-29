@@ -88,6 +88,28 @@ namespace VMCertStoreSnapIn
                     });
                     menu.AddItem (deleteEntry);
                 }
+				else if (ds is SecretKeysListView)
+				{
+					SecretKeysListView lw = ds as SecretKeysListView;
+					CertDTO cert = lw.Entries[(int)_selectedRow];
+					NSMenuItem deleteEntry = new NSMenuItem("Delete", (object sender, EventArgs e) =>
+					{
+						UIErrorHelper.CheckedExec(delegate ()
+						{
+							if (UIErrorHelper.ConfirmDeleteOperation("Are you sure?") == true)
+							{
+								using (var session = new VecsStoreSession(lw.ServerDto.VecsClient, lw.Store, ""))
+								{
+									session.DeleteCertificate(cert.Alias);
+								}
+								lw.Entries.Remove(cert);
+								UIErrorHelper.ShowAlert("", "Successfully deleted the entry.");
+								NSNotificationCenter.DefaultCenter.PostNotificationName("ReloadServerData", this);
+							}
+						});
+					});
+					menu.AddItem(deleteEntry);
+				}
                 NSMenu.PopUpContextMenu (menu, theEvent, theEvent.Window.ContentView);
             }
             return base.MenuForEvent (theEvent);

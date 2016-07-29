@@ -8,6 +8,7 @@ namespace VMDir.Common.DTO
 		public string Cn { get; set; }
 		public string UPN { get; set; }
 		public string SAMAccountName { get; set; }
+        public string objectClass { get; set; }
 	}
 }
 

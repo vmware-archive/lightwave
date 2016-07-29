@@ -23,6 +23,8 @@ using VMDirSnapIn.Delegate;
 using VMDirSnapIn.Nodes;
 using VmIdentity.UI.Common;
 using VmIdentity.UI.Common.Utilities;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace VMDirSnapIn.UI
 {
@@ -33,14 +35,14 @@ namespace VMDirSnapIn.UI
 		private OutlineViewNavigationController navigationController;
 		private NSTableView MainTableView;
 		public NSOutlineView MainOutlineView;
-		private VMDirServerInfo serverNode;
+		private VMDirServerDTO serverNode;
 
 		//observers
 		private NSObject ReloadOutlineViewNotificationObject;
 		private NSObject ReloadTableViewNotificationObject;
 		private NSObject CloseNotificationObject;
 
-		private string server { get; set; }
+		private List<VMDirServerDTO> server { get; set; }
 
 		#region Constructors
 
@@ -65,7 +67,7 @@ namespace VMDirSnapIn.UI
 		}
 
 		// Call to load from the XIB/NIB file
-		public MainWindowController(string serverName)
+		public MainWindowController(List<VMDirServerDTO> serverName)
 			: base("MainWindow")
 		{
 			Initialise();
@@ -74,8 +76,7 @@ namespace VMDirSnapIn.UI
 
 		private void Initialise()
 		{
-			var serverDTO = VMDirServerDTO.CreateInstance();
-			serverNode = new VMDirServerInfo(serverDTO);
+			serverNode = VMDirServerDTO.CreateInstance();
 			navigationController = new OutlineViewNavigationController();
 		}
 
@@ -118,15 +119,18 @@ namespace VMDirSnapIn.UI
 				if (serverNode.IsLoggedIn)
 				{
 					InitialiseDefaultOutlineView();
-					VMDirSnapInEnvironment.Instance.LocalData.AddServer(serverNode.DTO.Server);
-					DirectoryNode baseNode = new DirectoryNode(serverNode.DTO.BaseDN, string.Empty, serverNode.DTO, null);
+					var indx = server.FindIndex(x => string.Equals(x.Server, serverNode.Server));
+					if (indx >= 0)
+						server.RemoveAt(indx);
+					VMDirSnapInEnvironment.Instance.LocalData.AddServer(serverNode);
+					DirectoryNode baseNode = new DirectoryNode(serverNode.BaseDN, new List<string>() { string.Empty }, serverNode, null);
 					baseNode.IsBaseNode = true;
 					outlineViewDataSource = new OutlineViewDataSource(baseNode);
 					splitViewController.VmdirOutlineView.DataSource = outlineViewDataSource;
-					baseNode.Expand(serverNode.DTO.BaseDN);
+					baseNode.Expand(serverNode.BaseDN);
 					SetToolBarState(true);
 					InitialiseDefaultTableView();
-					StatusLabel.StringValue = "Logged in : " + serverNode.DTO.BindDN;
+					StatusLabel.StringValue = "Logged in : " + serverNode.BindDN;
 				}
 				else
 					UIErrorHelper.ShowAlert(VMDirConstants.ERR_LOGIN_FAILED, "Login not successful!");
@@ -141,7 +145,7 @@ namespace VMDirSnapIn.UI
 		private void InitialiseDefaultOutlineView()
 		{
 			MainOutlineView = splitViewController.VmdirOutlineView;
-			MainOutlineView.OutlineTableColumn.HeaderCell.Title = " Connected to " + serverNode.DTO.Server;
+			MainOutlineView.OutlineTableColumn.HeaderCell.Title = " Connected to " + serverNode.Server;
 
 			MainOutlineView.Activated += OnOutlineViewActivated;
 
@@ -180,14 +184,11 @@ namespace VMDirSnapIn.UI
 			MainTableView.AddColumn(col2);
 		}
 
-		public async void ConnectToServer(string server)
+		public async void ConnectToServer(List<VMDirServerDTO> server)
 		{
-			var serverDTO = VMDirServerDTO.CreateInstance();
-			if (!string.IsNullOrWhiteSpace(server))
-				serverDTO.Server = server;
 			ProgressWindowController pwc = new ProgressWindowController();
 			IntPtr session = new IntPtr(0);
-			ConnectToLdapWindowController awc = new ConnectToLdapWindowController(serverDTO);
+			ConnectToLdapWindowController awc = new ConnectToLdapWindowController(server);
 			NSApplication.SharedApplication.BeginSheet(awc.Window, this.Window, () =>
 				{
 				});
@@ -200,16 +201,15 @@ namespace VMDirSnapIn.UI
 						{
 						});
 					session = NSApplication.SharedApplication.BeginModalSession(pwc.Window);
-					serverNode = new VMDirServerInfo(serverDTO);
+					serverNode = awc.ServerDTO;
 					await serverNode.DoLogin();
 					InitialiseViews();
-
 				}
 			}
 			catch (Exception e)
 			{
 				serverNode.IsLoggedIn = false;
-				UIErrorHelper.ShowAlert(VMDirConstants.ERR_LOGIN_FAILED + " " + e.Message, "Login not successful!");
+				UIErrorHelper.ShowAlert(VMDirConstants.ERR_LOGIN_FAILED + " : " + e.Message, "Login not successful!");
 			}
 			finally
 			{
@@ -246,11 +246,12 @@ namespace VMDirSnapIn.UI
 			OperationalToolBarItem.Active = state;
 			SearchToolBarItem.Active = state;
 			FetchNextPageToolBarItem.Active = state;
+			OptionalToolBarItem.Active = state;
 		}
 
 		partial void ShowSuperLogWindow(NSObject sender)
 		{
-			SuperLoggingBrowserWindowController awc = new SuperLoggingBrowserWindowController(serverNode.DTO);
+			SuperLoggingBrowserWindowController awc = new SuperLoggingBrowserWindowController(serverNode);
 			NSApplication.SharedApplication.BeginSheet(awc.Window, this.Window, () =>
 				{
 				});
@@ -269,7 +270,7 @@ namespace VMDirSnapIn.UI
 		{
 			if (serverNode == null || serverNode.IsLoggedIn == false)
 			{
-				ConnectToServer(null);
+				ConnectToServer(server);
 			}
 			else
 			{
@@ -337,7 +338,7 @@ namespace VMDirSnapIn.UI
 		{
 			UIErrorHelper.CheckedExec(delegate ()
 				{
-					serverNode.DTO.Connection.CloseConnection();
+					serverNode.Connection.CloseConnection();
 					serverNode.IsLoggedIn = false;
 					ResetViews();
 				});
@@ -368,22 +369,25 @@ namespace VMDirSnapIn.UI
 
 		public void RefreshTableViewBasedOnSelection(nint row)
 		{
-			if (row >= (nint)0)
+			UIErrorHelper.CheckedExec(delegate
 			{
-				NSObject item = MainOutlineView.ItemAtRow(row);
-				if (item is DirectoryNode)
+				if (row >= (nint)0)
 				{
-					DirectoryNode node = item as DirectoryNode;
-					MainTableView.DataSource = new PropertiesTableViewDataSource(node.Dn, node.ObjectClass, node.ServerDTO, node.NodeProperties);
-					splitViewController.propViewController.ds = (PropertiesTableViewDataSource)MainTableView.DataSource;
-					MainTableView.Delegate = new PropertiesTableDelegate(this, (PropertiesTableViewDataSource)MainTableView.DataSource);
+					NSObject item = MainOutlineView.ItemAtRow(row);
+					if (item is DirectoryNode)
+					{
+						DirectoryNode node = item as DirectoryNode;
+						MainTableView.DataSource = new PropertiesTableViewDataSource(node.Dn, node.ObjectClass[node.ObjectClass.Count - 1], node.ServerDTO, node.NodeProperties);
+						splitViewController.propViewController.ds = (PropertiesTableViewDataSource)MainTableView.DataSource;
+						MainTableView.Delegate = new PropertiesTableDelegate(this, (PropertiesTableViewDataSource)MainTableView.DataSource, splitViewController.propViewController);
+					}
 				}
-			}
-			else
-			{
-				MainTableView.DataSource = null;
-			}
-			MainTableView.ReloadData();
+				else
+				{
+					MainTableView.DataSource = null;
+				}
+				MainTableView.ReloadData();
+			});
 		}
 
 		//Handle the Right Panel Display logic here
@@ -477,16 +481,25 @@ namespace VMDirSnapIn.UI
 
 		partial void OnOperationalToolBarItem(NSObject sender)
 		{
-			if (serverNode.DTO.OperationalAttrFlag)
-				serverNode.DTO.OperationalAttrFlag = false;
+			if (serverNode.OperationalAttrFlag)
+				serverNode.OperationalAttrFlag = false;
 			else
-				serverNode.DTO.OperationalAttrFlag = true;
+				serverNode.OperationalAttrFlag = true;
+			RefreshTableViewBasedOnSelection(MainOutlineView.SelectedRow);
+		}
+
+		partial void OnOptionalToolBatItem(NSObject sender)
+		{
+			if (serverNode.OptionalAttrFlag)
+				serverNode.OptionalAttrFlag = false;
+			else
+				serverNode.OptionalAttrFlag = true;
 			RefreshTableViewBasedOnSelection(MainOutlineView.SelectedRow);
 		}
 
 		partial void OnPageSizeToolBarItem(NSObject sender)
 		{
-			PageSizeController pswc = new PageSizeController(serverNode.DTO.PageSize);
+			PageSizeController pswc = new PageSizeController(serverNode.PageSize);
 			NSApplication.SharedApplication.BeginSheet(pswc.Window, this.Window, () =>
 				{
 				});
@@ -495,7 +508,7 @@ namespace VMDirSnapIn.UI
 				nint result = NSApplication.SharedApplication.RunModalForWindow(pswc.Window);
 				if (result == (nint)VMIdentityConstants.DIALOGOK)
 				{
-					serverNode.DTO.PageSize = pswc.PageSize;
+					serverNode.PageSize = pswc.PageSize;
 				}
 			}
 			finally

@@ -93,6 +93,7 @@
     <Folder Include="UI\PageSize\" />
     <Folder Include="UI\SyntaxHelp\" />
     <Folder Include="UI\ConnectToLdap\" />
+    <Folder Include="UI\Export\" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Main.cs" />
@@ -212,6 +213,42 @@
     <Compile Include="UI\ConnectToLdap\ConnectToLdapWindow.cs" />
     <Compile Include="UI\ConnectToLdap\ConnectToLdapWindow.designer.cs" />
     <Compile Include="UI\ConnectToLdap\ConnectToLdapWindowController.cs" />
+    <Compile Include="Nodes\DirectoryNonExpandableNode.cs" />
+    <Compile Include="DataSource\AttributeTableViewDataSource.cs" />
+    <Compile Include="UI\PropertiesView\ModSubmitConfirm.cs" />
+    <Compile Include="UI\PropertiesView\ModSubmitConfirm.designer.cs">
+      <DependentUpon>ModSubmitConfirm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\PropertiesView\ModSubmitConfirmController.cs" />
+    <Compile Include="UI\PropertiesView\ModSubmitConfirmController.designer.cs">
+      <DependentUpon>ModSubmitConfirmController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\PropertiesView\ModSubmitStatus.cs" />
+    <Compile Include="UI\PropertiesView\ModSubmitStatus.designer.cs">
+      <DependentUpon>ModSubmitStatus.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\PropertiesView\ModSubmitStatusController.cs" />
+    <Compile Include="UI\PropertiesView\ModSubmitStatusController.designer.cs">
+      <DependentUpon>ModSubmitStatusController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Export\ExportSearchResult.cs" />
+    <Compile Include="UI\Export\ExportSearchResult.designer.cs">
+      <DependentUpon>ExportSearchResult.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Export\ExportSearchResultController.cs" />
+    <Compile Include="UI\Export\ExportSearchResultController.designer.cs">
+      <DependentUpon>ExportSearchResultController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DataSource\ModificationStatusTableViewDataSource.cs" />
+    <Compile Include="UI\Search\ConditionValuesFromFile.cs" />
+    <Compile Include="UI\Search\ConditionValuesFromFile.designer.cs">
+      <DependentUpon>ConditionValuesFromFile.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Search\ConditionValuesFromFileController.cs" />
+    <Compile Include="UI\Search\ConditionValuesFromFileController.designer.cs">
+      <DependentUpon>ConditionValuesFromFileController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Delegate\ModificationStatusTableDelegate.cs" />
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="UI\SplitViewMMC\VmdirSplitView.xib" />
@@ -231,6 +268,10 @@
     <InterfaceDefinition Include="UI\PageSize\PageSize.xib" />
     <InterfaceDefinition Include="UI\SyntaxHelp\SyntaxHelpWindow.xib" />
     <InterfaceDefinition Include="UI\ConnectToLdap\ConnectToLdapWindow.xib" />
+    <InterfaceDefinition Include="UI\PropertiesView\ModSubmitConfirm.xib" />
+    <InterfaceDefinition Include="UI\PropertiesView\ModSubmitStatus.xib" />
+    <InterfaceDefinition Include="UI\Export\ExportSearchResult.xib" />
+    <InterfaceDefinition Include="UI\Search\ConditionValuesFromFile.xib" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Info.plist" />
@@ -264,7 +305,6 @@
     <BundleResource Include="Resources\disconnect_64x.png" />
     <BundleResource Include="Resources\Question.png" />
     <BundleResource Include="Resources\UserImg.png" />
-    <BundleResource Include="Resources\ShowOperationalAttrImg.png" />
     <BundleResource Include="Resources\SearchImg.png" />
     <BundleResource Include="Resources\SearchBoxCollapseImg.png" />
     <BundleResource Include="Resources\SaveImg.png" />
@@ -274,6 +314,10 @@
     <BundleResource Include="Resources\NextPageImg.png" />
     <BundleResource Include="Resources\LoginImg.png" />
     <BundleResource Include="Resources\GroupImg.png" />
+    <BundleResource Include="Resources\OperationalAttrImg.png" />
+    <BundleResource Include="Resources\OptionalAttrImg.png" />
+    <BundleResource Include="Resources\RefreshImg.png" />
+    <BundleResource Include="Resources\ExportImg.png" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
   <ItemGroup>

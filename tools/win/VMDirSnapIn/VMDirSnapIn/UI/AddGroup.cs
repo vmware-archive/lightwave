@@ -34,7 +34,7 @@ namespace VMDirSnapIn.UI
             InitializeComponent();
             _dto = dto;
             _dto.groupType = VMDirConstants.GROUPTYPE_ACCOUNT;
-            _dto.objectClass = "group";
+            _dto.objectClass = VMDirConstants.GROUP_OC;
         }
 
         private bool DoValidateControls()

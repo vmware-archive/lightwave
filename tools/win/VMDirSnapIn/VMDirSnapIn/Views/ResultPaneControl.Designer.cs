@@ -176,7 +176,7 @@ namespace VMDirSnapIn.Views
             // tsbSetPageSize
             // 
             this.tsbSetPageSize.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbSetPageSize.Image = ((System.Drawing.Image)(resources.GetObject("tsbSetPageSize.Image")));
+            this.tsbSetPageSize.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.PageSize);
             this.tsbSetPageSize.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbSetPageSize.Name = "tsbSetPageSize";
             this.tsbSetPageSize.Size = new System.Drawing.Size(23, 27);
@@ -208,7 +208,7 @@ namespace VMDirSnapIn.Views
             // tsbShowHideOperationalAttr
             // 
             this.tsbShowHideOperationalAttr.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbShowHideOperationalAttr.Image = ((System.Drawing.Image)(resources.GetObject("tsbShowHideOperationalAttr.Image")));
+            this.tsbShowHideOperationalAttr.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.OperationalAttr);
             this.tsbShowHideOperationalAttr.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbShowHideOperationalAttr.Name = "tsbShowHideOperationalAttr";
             this.tsbShowHideOperationalAttr.Size = new System.Drawing.Size(23, 27);
@@ -224,7 +224,7 @@ namespace VMDirSnapIn.Views
             // tsbShowOptionalAttr
             // 
             this.tsbShowOptionalAttr.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbShowOptionalAttr.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.Edit);
+            this.tsbShowOptionalAttr.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.OptionalAttr);
             this.tsbShowOptionalAttr.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbShowOptionalAttr.Name = "tsbShowOptionalAttr";
             this.tsbShowOptionalAttr.Size = new System.Drawing.Size(23, 27);

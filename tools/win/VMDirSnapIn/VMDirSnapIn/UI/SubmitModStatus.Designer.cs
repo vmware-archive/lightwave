@@ -30,9 +30,9 @@
         {
             this.listView1 = new System.Windows.Forms.ListView();
             this.Attributes = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.Status = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.buttonOk = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
-            this.Status = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.SuspendLayout();
             // 
             // listView1
@@ -55,6 +55,11 @@
             this.Attributes.Text = "Attributes";
             this.Attributes.Width = 150;
             // 
+            // Status
+            // 
+            this.Status.Text = "Status";
+            this.Status.Width = 300;
+            // 
             // buttonOk
             // 
             this.buttonOk.DialogResult = System.Windows.Forms.DialogResult.OK;
@@ -76,11 +81,6 @@
             this.label1.TabIndex = 4;
             this.label1.Text = "Following attributes were submitted for modification";
             // 
-            // Status
-            // 
-            this.Status.Text = "Status";
-            this.Status.Width = 300;
-            // 
             // SubmitModStatus
             // 
             this.AcceptButton = this.buttonOk;
@@ -91,6 +91,7 @@
             this.Controls.Add(this.buttonOk);
             this.Controls.Add(this.label1);
             this.Name = "SubmitModStatus";
+            this.ShowIcon = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Modification Status";
             this.ResumeLayout(false);

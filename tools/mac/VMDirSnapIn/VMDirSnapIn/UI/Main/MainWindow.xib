@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="10117" systemVersion="15F34" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="10117" systemVersion="15G31" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
-        <deployment identifier="macosx"/>
         <development version="5000" identifier="xcode"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="10117"/>
     </dependencies>
@@ -17,6 +16,8 @@
                 <outlet property="FetchNextPageToolBarItem" destination="yk9-cN-umY" id="u0H-UR-4C2"/>
                 <outlet property="FetchNextToolBatItem" destination="yk9-cN-umY" id="CKr-4u-yj7"/>
                 <outlet property="OperationalToolBarItem" destination="dMy-Yk-tkb" id="GWg-TD-ic9"/>
+                <outlet property="OptionalAttributeToolBarItem" destination="mId-3O-THE" id="gSs-MV-GAH"/>
+                <outlet property="OptionalToolBarItem" destination="mId-3O-THE" id="of9-r2-mnF"/>
                 <outlet property="PageSizeToolBarItem" destination="cpO-bk-e2V" id="Vyj-ee-aQD"/>
                 <outlet property="PropertiesToolBarItem" destination="82" id="101"/>
                 <outlet property="RefreshToolBarItem" destination="7cf-ae-wcN" id="ujb-3O-Gy0"/>
@@ -119,7 +120,7 @@
                             <action selector="BackForwardAction:" target="-2" id="A3M-bL-Qs1"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="7D579AA8-09B1-4B64-8D81-D24EFFEB2214" label="Refresh" paletteLabel="Refresh" tag="-1" image="NSRefreshTemplate" id="7cf-ae-wcN" customClass="ActivatableToolBarItem">
+                    <toolbarItem implicitItemIdentifier="7D579AA8-09B1-4B64-8D81-D24EFFEB2214" label="Refresh" paletteLabel="Refresh" tag="-1" image="RefreshImg" id="7cf-ae-wcN" customClass="ActivatableToolBarItem">
                         <connections>
                             <action selector="OnRefresh:" target="-2" id="uj6-xk-O1W"/>
                         </connections>
@@ -134,7 +135,7 @@
                             <action selector="OnPageSizeToolBarItem:" target="-2" id="8jG-oJ-KOr"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="24932C95-77F3-4BE8-92BB-3BE1E26D6C38" label="Operational Attribute" paletteLabel="Operational Attribute" tag="-1" image="ShowOperationalAttrImg" id="dMy-Yk-tkb" customClass="ActivatableToolBarItem">
+                    <toolbarItem implicitItemIdentifier="24932C95-77F3-4BE8-92BB-3BE1E26D6C38" label="Operational Attribute" paletteLabel="Operational Attribute" tag="-1" image="OperationalAttrImg" id="dMy-Yk-tkb" customClass="ActivatableToolBarItem">
                         <connections>
                             <action selector="OnOperationalToolBarItem:" target="-2" id="9mN-X1-Acr"/>
                         </connections>
@@ -144,9 +145,14 @@
                             <action selector="OnSearchToolBarItem:" target="-2" id="UYD-v1-WwX"/>
                         </connections>
                     </toolbarItem>
-                    <toolbarItem implicitItemIdentifier="90A13DBF-8C94-474C-B30A-99EDFADB77BF" label="Fetch Next Page" paletteLabel="FetchNextPage" tag="-1" image="NextPageImg" id="yk9-cN-umY" customClass="ActivatableToolBarItem">
+                    <toolbarItem implicitItemIdentifier="90A13DBF-8C94-474C-B30A-99EDFADB77BF" label="Next Page" paletteLabel="FetchNextPage" tag="-1" image="NextPageImg" id="yk9-cN-umY" customClass="ActivatableToolBarItem">
                         <connections>
                             <action selector="OnFetchNextPageToolBarItem:" target="-2" id="sQt-9U-bnu"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="40735594-53FD-4581-A5CC-4EEA90BE934E" label="Optional Attribute" paletteLabel="OptionalAttribute" tag="-1" image="OptionalAttrImg" id="mId-3O-THE" customClass="ActivatableToolBarItem">
+                        <connections>
+                            <action selector="OnOptionalToolBatItem:" target="-2" id="XZo-U1-idW"/>
                         </connections>
                     </toolbarItem>
                 </allowedToolbarItems>
@@ -156,6 +162,7 @@
                     <toolbarItem reference="cpO-bk-e2V"/>
                     <toolbarItem reference="yk9-cN-umY"/>
                     <toolbarItem reference="dMy-Yk-tkb"/>
+                    <toolbarItem reference="mId-3O-THE"/>
                     <toolbarItem reference="oD2-9n-hSl"/>
                     <toolbarItem reference="83"/>
                     <toolbarItem reference="jvu-kW-zSR"/>
@@ -170,7 +177,7 @@
             <connections>
                 <outlet property="delegate" destination="14" id="19"/>
             </connections>
-            <point key="canvasLocation" x="444" y="410"/>
+            <point key="canvasLocation" x="214" y="420"/>
         </window>
         <customObject id="14" customClass="MainWindow"/>
     </objects>
@@ -180,11 +187,12 @@
         <image name="Add_User_64" width="64" height="64"/>
         <image name="Edit_Properties_64" width="128" height="128"/>
         <image name="NSMultipleDocuments" width="32" height="32"/>
-        <image name="NSRefreshTemplate" width="11" height="15"/>
         <image name="NextPageImg" width="64" height="64"/>
+        <image name="OperationalAttrImg" width="128" height="128"/>
+        <image name="OptionalAttrImg" width="128" height="128"/>
         <image name="PageSizeImg" width="64" height="64"/>
+        <image name="RefreshImg" width="128" height="128"/>
         <image name="SearchImg" width="64" height="64"/>
-        <image name="ShowOperationalAttrImg" width="64" height="64"/>
         <image name="View_Schema_64" width="64" height="64"/>
         <image name="connect" width="64" height="64"/>
         <image name="delete" width="64" height="64"/>

@@ -94,24 +94,32 @@ namespace VMDirSchemaEditorSnapIn
 
         partial void OnCompare(Foundation.NSObject sender)
         {
-            switch (this.CompareRadioMatrix.SelectedTag)
+            try
             {
-                case 0:
-                    ViewAttributeTypeDiffButton.Hidden = false;
-                    ViewObjectClassDiffButton.Hidden = false;
-                    ViewObjectClassDiffButton.Title = VMDirSchemaConstants.DIFF_OBJECTCLASS;
-                    attrTypediff = ServerNode.ServerDTO.Connection.SchemaConnection.GetAllSchemaDefinitionDiffs();
-                    SetNodesDataSource(attrTypediff);
-                    break;
-                case 1:
-                    ViewAttributeTypeDiffButton.Hidden = true;
-                    ViewObjectClassDiffButton.Hidden = false;
-                    ViewObjectClassDiffButton.Title = VMDirSchemaConstants.DIFF_METADATA;
-                    schemaDiff = ServerNode.ServerDTO.Connection.SchemaConnection.GetAllSchemaMetadataDiffs();
-                    SetNodesDataSourceForMetaData(schemaDiff);
-                    break;
-                default:
-                    break;
+                switch (this.CompareRadioMatrix.SelectedTag)
+                {
+
+                    case 0:
+                        ViewAttributeTypeDiffButton.Hidden = false;
+                        ViewObjectClassDiffButton.Hidden = false;
+                        ViewObjectClassDiffButton.Title = VMDirSchemaConstants.DIFF_OBJECTCLASS;
+                        attrTypediff = ServerNode.ServerDTO.Connection.SchemaConnection.GetAllSchemaDefinitionDiffs();
+                        SetNodesDataSource(attrTypediff);
+                        break;
+                    case 1:
+                        ViewAttributeTypeDiffButton.Hidden = true;
+                        ViewObjectClassDiffButton.Hidden = false;
+                        ViewObjectClassDiffButton.Title = VMDirSchemaConstants.DIFF_METADATA;
+                        schemaDiff = ServerNode.ServerDTO.Connection.SchemaConnection.GetAllSchemaMetadataDiffs();
+                        SetNodesDataSourceForMetaData(schemaDiff);
+                        break;
+                    default:
+                        break;
+                }
+            }
+            catch (Exception e)
+            {
+                UIErrorHelper.ShowAlert(e.Message, String.Empty);
             }
         }
 

@@ -93,16 +93,6 @@ namespace VMDirSnapIn {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
-        internal static System.Drawing.Icon Edit {
-            get {
-                object obj = ResourceManager.GetObject("Edit", resourceCulture);
-                return ((System.Drawing.Icon)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
-        /// </summary>
         internal static System.Drawing.Icon Export {
             get {
                 object obj = ResourceManager.GetObject("Export", resourceCulture);
@@ -163,9 +153,39 @@ namespace VMDirSnapIn {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
+        internal static System.Drawing.Icon OperationalAttr {
+            get {
+                object obj = ResourceManager.GetObject("OperationalAttr", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon OptionalAttr {
+            get {
+                object obj = ResourceManager.GetObject("OptionalAttr", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
         internal static System.Drawing.Icon PageSize {
             get {
                 object obj = ResourceManager.GetObject("PageSize", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon Question {
+            get {
+                object obj = ResourceManager.GetObject("Question", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
             }
         }
@@ -236,16 +256,6 @@ namespace VMDirSnapIn {
         internal static System.Drawing.Icon ServerLog {
             get {
                 object obj = ResourceManager.GetObject("ServerLog", resourceCulture);
-                return ((System.Drawing.Icon)(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
-        /// </summary>
-        internal static System.Drawing.Icon ShowOperationalAttr {
-            get {
-                object obj = ResourceManager.GetObject("ShowOperationalAttr", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
             }
         }

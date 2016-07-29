@@ -63,7 +63,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 txtRefreshToken.Text = string.Empty;
                 if (ValidateInputs())
                 {
-                    var service = ScopeNodeExtensions.GetServiceGateway(null);
+                    var service = ScopeNodeExtensions.GetServiceGateway();
                     var serverDto = new ServerDto() { Tenant = txtDefaultTenant.Text, ServerName = txtServer.Text, Port = txtPort.Text, Protocol = GetProtocol() };
                     serverDto.TokenType = cbSaml.Checked ? TokenType.SAML : TokenType.Bearer;
                     serverDto.Url = lnkURLPreview.Text;

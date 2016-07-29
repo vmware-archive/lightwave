@@ -73,7 +73,7 @@ namespace VMDirSnapIn.UI
 			BtnRefresh.Activated += btnRefresh_Click;
 			BtnOff.Activated += btnSuperLogOnOff_Click;
 			BtnFilter.Activated += btnFilter_Click;
-			BtnClear.Activated += btnClearEntries_Click;
+			BtnClear.Activated += btnClear_Click;
 			BtnBufferSizeChange.Activated += btnChangeBufferSize_Click;
 			ChkAutoRefresh.Activated += chkAutoRefresh_CheckedChanged;
 			CboColumns.Activated += CboColumns_Changed;
@@ -404,20 +404,27 @@ namespace VMDirSnapIn.UI
 				UIErrorHelper.ShowAlert(exp.ToString(),"Error");
 			}
 		}
+		private void btnClear_Click(object sender, EventArgs e)
+		{
+			CboColumns.SelectItem(0);
+			CbOperator.SelectItem(0);
+			TxtFilterValue.StringValue = string.Empty;
+			RefreshList();
 
-		private void btnClearEntries_Click(object sender, EventArgs e)
+		}
+		partial void OnClearEntries(NSObject sender)
 		{
 			UIErrorHelper.CheckedExec(delegate
+			{
+				if (UIErrorHelper.ConfirmDeleteOperation("This will clear all the superlog entries at the server. Continue?"))
 				{
-					if(UIErrorHelper.ConfirmDeleteOperation("This will clear all the superlog entries at the server. Continue?"))
-					{
-						SuperLog.clear();
-						RefreshList();
-						TxtFilterValue.StringValue = string.Empty;
-						CboColumns.SelectItem(0);
-						CbOperator.SelectItem(0);
-					}
-				});
+					SuperLog.clear();
+					RefreshList();
+					TxtFilterValue.StringValue = string.Empty;
+					CboColumns.SelectItem(0);
+					CbOperator.SelectItem(0);
+				}
+			});
 		}
 
 		private void btnRefresh_Click(object sender, EventArgs e)

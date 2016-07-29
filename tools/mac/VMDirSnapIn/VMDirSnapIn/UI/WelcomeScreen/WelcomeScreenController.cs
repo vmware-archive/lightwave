@@ -15,6 +15,9 @@
 using System;
 using Foundation;
 using AppKit;
+using System.Linq;
+using VMDir.Common.DTO;
+using System.Collections.Generic;
 
 namespace VMDirSnapIn.UI
 {
@@ -38,19 +41,17 @@ namespace VMDirSnapIn.UI
             base.AwakeFromNib ();
             //set window background color
             this.Window.BackgroundColor = NSColor.FromSrgb (1, 1, (float)1, (float)1);
-            string[] servers = VMDirSnapInEnvironment.Instance.LocalData.GetServerArray ();
-            ConnectToServer.AddItem ("New Server");
-			ConnectToServer.AddItems(servers);
         }
 
-        partial void OnConnect(Foundation.NSObject sender)
+		partial void OnConnect(Foundation.NSObject sender)
 		{
-            if (!string.IsNullOrEmpty (ConnectToServer.SelectedItem.Title)) {
-                this.Close ();
-                MainWindowController mainWindowController = new MainWindowController (ConnectToServer.SelectedItem.Title);
-                mainWindowController.Window.MakeKeyAndOrderFront (this);
-            }
-        }
+			this.Close();
+			var servers = VMDirSnapInEnvironment.Instance.LocalData.ServerList;
+			if (servers == null)
+				servers = new List<VMDirServerDTO>();
+			MainWindowController mainWindowController = new MainWindowController(servers);
+			mainWindowController.Window.MakeKeyAndOrderFront(this);
+		}
 
         public new WelcomeScreen Window {
             get { return (WelcomeScreen)base.Window; }

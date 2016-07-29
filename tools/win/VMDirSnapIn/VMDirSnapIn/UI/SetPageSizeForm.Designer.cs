@@ -96,7 +96,7 @@ namespace VMDirSnapIn.UI
             this.Controls.Add(this.buttonSubmit);
             this.Controls.Add(this.buttonCancel);
             this.Controls.Add(this.label1);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.Icon = VMDirEnvironment.Instance.GetIconResource(VMDirIconIndex.PageSize); 
             this.Name = "SetPageSizeForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Set Page Size";

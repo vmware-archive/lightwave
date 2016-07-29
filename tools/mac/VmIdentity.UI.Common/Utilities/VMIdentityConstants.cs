@@ -60,7 +60,7 @@ namespace VmIdentity.UI.Common
         /* General constants */
         public const int DefaultColumnWidth = 200;
         public const int ServerTimeoutInSeconds = 30;
-        public const int LOGIN_TIMEOUT_IN_MILLI = 20000;
+        public const int LOGIN_TIMEOUT_IN_MILLI = 30000;
 
         /* UI Event Constants */
         public const string CLOSE_MAIN_WINDOW = "CloseMainWindow";

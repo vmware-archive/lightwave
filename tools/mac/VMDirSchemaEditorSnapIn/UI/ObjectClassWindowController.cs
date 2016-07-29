@@ -100,9 +100,9 @@ namespace VMDirSchemaEditorSnapIn
         public override void AwakeFromNib()
         {
             base.AwakeFromNib();
-            AuxiliaryClassesListView.Enabled = false;
-            RemoveAuxiliaryClassesButton.Enabled = false;
-            AddAuxiliaryClassesButton.Enabled = false;
+            //AuxiliaryClassesListView.Enabled = false;
+            // RemoveAuxiliaryClassesButton.Enabled = false;
+            //AddAuxiliaryClassesButton.Enabled = false;
             if (!isAddMode)
             {
                 ObjectClassModDTO = new ObjectClassDTO();
@@ -122,9 +122,9 @@ namespace VMDirSchemaEditorSnapIn
             parentClassList.Clear();
             if (String.Equals(ClassTypePopup.TitleOfSelectedItem, VMDirSchemaConstants.VMDIRSCHEMA_STRUCTURAL) == true)
             {
-                AuxiliaryClassesListView.Enabled = true;
-                AddAuxiliaryClassesButton.Enabled = true;
-                RemoveAuxiliaryClassesButton.Enabled = true;
+                // AuxiliaryClassesListView.Enabled = true;
+                // AddAuxiliaryClassesButton.Enabled = true;
+                //RemoveAuxiliaryClassesButton.Enabled = true;
                 ParentClass.Enabled = true;
                 parentClassList.AddRange(structuralClasses);
                 parentClassList.AddRange(abstractClasses);
@@ -133,7 +133,7 @@ namespace VMDirSchemaEditorSnapIn
             {
                 if (String.Equals(ClassTypePopup.TitleOfSelectedItem, VMDirSchemaConstants.VMDIRSCHEMA_AUXILIARY) == true)
                 {
-                    ParentClass.Enabled = false; //Todo - verify if derivation hierarchy is right
+                    ParentClass.Enabled = false;
                     parentClassList.AddRange(structuralClasses);
                     parentClassList.AddRange(abstractClasses);
                     parentClassList.AddRange(auxiliaryClasses);
@@ -145,9 +145,9 @@ namespace VMDirSchemaEditorSnapIn
                 }
                 auxiliaryClassesList.Clear();
                 AuxiliaryClassesListView.ReloadData();
-                AuxiliaryClassesListView.Enabled = false;
-                AddAuxiliaryClassesButton.Enabled = false;
-                RemoveAuxiliaryClassesButton.Enabled = false;
+                // AuxiliaryClassesListView.Enabled = false;
+                // AddAuxiliaryClassesButton.Enabled = false;
+                // RemoveAuxiliaryClassesButton.Enabled = false;
 
             }
         }
@@ -318,7 +318,7 @@ namespace VMDirSchemaEditorSnapIn
             if (isAddMode)
             {
                 ObjectDTO.Name = ObjectClassName.StringValue;
-                ObjectDTO.Description = ObjectClassDescription.StringValue;
+                ObjectDTO.Description = String.IsNullOrWhiteSpace(ObjectClassDescription.StringValue) ? String.Empty : ObjectClassDescription.StringValue;
                 ObjectDTO.SuperClass = ParentClass.StringValue;
                 optionalAttributesList.AddRange(parentOptionalAttributes);
                 ObjectDTO.May = optionalAttributesList;
@@ -331,7 +331,7 @@ namespace VMDirSchemaEditorSnapIn
                 if (String.Equals(ObjectDTO.Description, ObjectClassDescription.StringValue) != true)
                     ObjectClassModDTO.Description = ObjectClassDescription.StringValue;
                 ObjectClassModDTO.May = optionalAttributesList;
-                //ObjectClassModDTO.Aux = auxiliaryClassesList;
+                ObjectClassModDTO.Aux = auxiliaryClassesList;
 
             }
         }

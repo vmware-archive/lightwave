@@ -85,7 +85,7 @@ namespace VMDirSnapIn.TreeNodes
         public override void DoRefresh()
         {
             this.Nodes.Clear();
-            this.Nodes.Add(new DirectoryExpandableNode(ServerDTO.BaseDN, string.Empty, ServerDTO, PropertiesCtl));
+            this.Nodes.Add(new DirectoryExpandableNode(ServerDTO.BaseDN, new List<string>(), ServerDTO, PropertiesCtl));
             Expand();
             RefreshProperties();
         }
@@ -125,7 +125,7 @@ namespace VMDirSnapIn.TreeNodes
                                 new string[] { VMDirConstants.ATTR_DN }, 0, IntPtr.Zero, 0);
                             ServerDTO.Connection.Search(dto, null);
                         }
-                        this.Nodes.Add(new DirectoryExpandableNode(ServerDTO.BaseDN, string.Empty, ServerDTO, PropertiesCtl));
+                        this.Nodes.Add(new DirectoryExpandableNode(ServerDTO.BaseDN, new List<string>(), ServerDTO, PropertiesCtl));
                         Expand();
                         DoSelect();
                     }

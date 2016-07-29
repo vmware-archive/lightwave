@@ -31,15 +31,16 @@ namespace VMDirSnapIn
         Search,
         SearchBoxCollapse,
         Server,
-        ShowOperationalAttr,
+        OperationalAttr,
         User,
         ServerLog,
         Save,
         Open,
-        Edit,
+        OptionalAttr,
         Delete,
         Refresh,
         AddToGroup,
-        Export
+        Export,
+        Question
     }
 }

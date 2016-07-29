@@ -45,6 +45,9 @@
             this.lstObjectClasses = new System.Windows.Forms.ListView();
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.textBoxSearch = new System.Windows.Forms.TextBox();
+            this.buttonClear = new System.Windows.Forms.Button();
+            this.label1 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // btnCancel
@@ -75,16 +78,13 @@
             this.columnHeader1,
             this.columnHeader2});
             this.lstObjectClasses.FullRowSelect = true;
-            this.lstObjectClasses.Location = new System.Drawing.Point(13, 13);
+            this.lstObjectClasses.Location = new System.Drawing.Point(13, 41);
             this.lstObjectClasses.MultiSelect = false;
             this.lstObjectClasses.Name = "lstObjectClasses";
-            this.lstObjectClasses.Size = new System.Drawing.Size(439, 381);
+            this.lstObjectClasses.Size = new System.Drawing.Size(439, 353);
             this.lstObjectClasses.TabIndex = 4;
             this.lstObjectClasses.UseCompatibleStateImageBehavior = false;
             this.lstObjectClasses.View = System.Windows.Forms.View.Details;
-            this.lstObjectClasses.VirtualMode = true;
-            this.lstObjectClasses.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.lstObjectClasses_RetrieveVirtualItem);
-            this.lstObjectClasses.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.lstObjectClasses_KeyPress);
             // 
             // columnHeader1
             // 
@@ -96,12 +96,42 @@
             this.columnHeader2.Text = "Description";
             this.columnHeader2.Width = 184;
             // 
+            // textBoxSearch
+            // 
+            this.textBoxSearch.Location = new System.Drawing.Point(60, 13);
+            this.textBoxSearch.Name = "textBoxSearch";
+            this.textBoxSearch.Size = new System.Drawing.Size(218, 20);
+            this.textBoxSearch.TabIndex = 5;
+            this.textBoxSearch.TextChanged += new System.EventHandler(this.textBoxSearch_TextChanged);
+            // 
+            // buttonClear
+            // 
+            this.buttonClear.Location = new System.Drawing.Point(284, 13);
+            this.buttonClear.Name = "buttonClear";
+            this.buttonClear.Size = new System.Drawing.Size(44, 20);
+            this.buttonClear.TabIndex = 6;
+            this.buttonClear.Text = "Clear";
+            this.buttonClear.UseVisualStyleBackColor = true;
+            this.buttonClear.Click += new System.EventHandler(this.buttonClear_Click);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(10, 20);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(44, 13);
+            this.label1.TabIndex = 7;
+            this.label1.Text = "Search:";
+            // 
             // SelectObjectClass
             // 
             this.AcceptButton = this.btnOK;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(464, 445);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.buttonClear);
+            this.Controls.Add(this.textBoxSearch);
             this.Controls.Add(this.lstObjectClasses);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOK);
@@ -110,6 +140,7 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Select objectclass to add";
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -119,6 +150,9 @@
         private System.Windows.Forms.Button btnOK;
         private System.Windows.Forms.ListView lstObjectClasses;
         private System.Windows.Forms.ColumnHeader columnHeader1;
-        private System.Windows.Forms.ColumnHeader columnHeader2;
+        private System.Windows.Forms.ColumnHeader columnHeader2;
+        private System.Windows.Forms.TextBox textBoxSearch;
+        private System.Windows.Forms.Button buttonClear;
+        private System.Windows.Forms.Label label1;
     }
 }
