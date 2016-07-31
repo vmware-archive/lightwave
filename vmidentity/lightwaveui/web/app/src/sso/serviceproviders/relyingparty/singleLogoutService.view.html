@@ -1,0 +1,58 @@
+<div class="popup-container">
+    <div class="header-20px">
+        View Single Logout Service '{{
+        vm.selectedSlo.name.length > 25 ?
+        vm.selectedSlo.name.substring(0,25) + '...' :
+        vm.selectedSlo.name;
+        }}'
+    </div>
+    <div class='error' ng-show="globals.popup_errors && !globals.popup_errors.success">
+        <img src="../app/assets/error.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}} {{globals.popup_errors.cause}}
+    </div>
+    <div class='success' ng-show="globals.popup_errors && globals.popup_errors.success">
+        <img src="../app/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}}
+    </div>
+    <div class="row">
+        <div class="row content popup-content">
+            <div class="popup-row col-xs-12">
+                <div class="col-xs-4">
+                        Name
+                </div>
+                <div class="col-xs-8">
+                    {{vm.selectedSlo.name}}
+                </div>
+            </div>
+            <div class="popup-row col-xs-12">
+                <div class="col-xs-4">
+                        Endpoint
+                </div>
+                <div class="col-xs-8">
+                    {{vm.selectedSlo.endpoint}}
+                </div>
+            </div>
+            <div class="popup-row col-xs-12">
+                <div class="col-xs-4">
+                    Binding
+                </div>
+                <div class="col-xs-8">
+                    {{vm.selectedSlo.binding}}
+                </div>
+            </div>
+        </div>
+        <div class="popup-row col-xs-12">
+            <button type="button"
+                    class="btn btn-default pull-right btn-popup-footer"
+                    ng-click="closeThisDialog('cancel')">Close</button>
+        </div>
+    </div>
+</div>

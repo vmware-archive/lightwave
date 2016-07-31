@@ -51,52 +51,73 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                         }
                 }
 
-                function isValid(){
-
+                function isValid() {
+                        $rootScope.globals.popup_errors = null;
+                        var ids = null;
+                        if ($scope.vm.newIdentitySource) {
+                                ids = $scope.vm.newIdentitySource;
+                        }
+                        else {
+                                ids = $scope.vm.selectedIdentitysource;
+                        }
                         if($scope.vm.idsTab == 1){
 
-                                if ($scope.vm.newIdentitySource) {
-                                        return ($scope.vm.newIdentitySource.name &&
-                                                    $scope.vm.newIdentitySource.friendlyName &&
-                                                    $scope.vm.newIdentitySource.alias &&
-                                                    $scope.vm.newIdentitySource.userBaseDN &&
-                                                    $scope.vm.newIdentitySource.groupBaseDN &&
-                                                    $scope.vm.newIdentitySource.connectionStrings != null &&
-                                                    $scope.vm.newIdentitySource.connectionStrings.length > 0 &&
-                                                    $scope.vm.newIdentitySource.connectionStrings[0] != null &&
-                                                    $scope.vm.newIdentitySource.connectionStrings[0].indexOf("ldap") == 0 &&
-                                                ($scope.vm.newIdentitySource.connectionStrings.length == 1 ||
-                                                ($scope.vm.newIdentitySource.connectionStrings.length > 1 &&
-                                                    ($scope.vm.newIdentitySource.connectionStrings[1] == null ||
-                                                    ($scope.vm.newIdentitySource.connectionStrings[1] != null &&
-                                                    $scope.vm.newIdentitySource.connectionStrings[1].indexOf("ldap") == 0)))));
+                                if(ids.name && ids.friendlyName && ids.alias && ids.userBaseDN &&  ids.groupBaseDN && ids.connectionStrings)
+                                {
+                                        if(ids.connectionStrings &&
+                                            ids.connectionStrings.length > 0) {
+                                                var conn = ids.connectionStrings[0];
+                                                if (conn.indexOf("ldap:") != 0 && conn.indexOf("ldaps:") != 0) {
+                                                        $rootScope.globals.popup_errors =
+                                                        { details : "Invalid Format : Primary connection should be of form - ldap(s)://<hostname>:<port>" };
+                                                        return false;
+                                                }
+                                                else {
+                                                        var parts = conn.split(":");
+
+                                                        if(parts.length != 3 || parts[1].trim() == '' || !Util.isInteger(parts[2])){
+
+                                                                $rootScope.globals.popup_errors =
+                                                                { details : "Invalid Format : Primary connection should be of form - ldap(s)://<hostname>:<port>" };
+                                                                return false;
+                                                        }
+                                                        else {
+                                                                if (ids.connectionStrings.length > 1 && ids.connectionStrings[1])
+                                                                {
+                                                                        if(ids.connectionStrings[1] != '' &&
+                                                                            ids.connectionStrings[1].indexOf("ldap:") != 0 &&
+                                                                            ids.connectionStrings[1].indexOf("ldaps:") != 0) {
+                                                                                $rootScope.globals.popup_errors =
+                                                                                        { details : "Invalid Format : Secondary connection should be of form - ldap(s)://<hostname>:<port>" };
+                                                                                return false;
+                                                                        }
+                                                                        else {
+                                                                                var conn2 = ids.connectionStrings[1];
+                                                                                var parts2 = conn2.split(":");
+
+                                                                                if(parts2.length != 3 || parts2[1].trim() == '' || !Util.isInteger(parts2[2])) {
+
+                                                                                        $rootScope.globals.popup_errors =
+                                                                                        { details : "Invalid Format : Secondary connection should be of form - ldap(s)://<hostname>:<port>" };
+                                                                                        return false;
+                                                                                }
+                                                                        }
+                                                                }
+                                                        }
+                                                }
                                         }
+                                        else {
+                                                return false;
+                                        }
+                                }
                                 else {
-                                        return ($scope.vm.selectedIdentitysource.name &&
-                                        $scope.vm.selectedIdentitysource.friendlyName &&
-                                        $scope.vm.selectedIdentitysource.alias &&
-                                        $scope.vm.selectedIdentitysource.userBaseDN &&
-                                        $scope.vm.selectedIdentitysource.groupBaseDN &&
-                                        $scope.vm.selectedIdentitysource.connectionStrings != null &&
-                                        $scope.vm.selectedIdentitysource.connectionStrings.length > 0 &&
-                                        $scope.vm.selectedIdentitysource.connectionStrings[0] != null &&
-                                        $scope.vm.selectedIdentitysource.connectionStrings[0].indexOf("ldap") == 0 &&
-                                        ($scope.vm.selectedIdentitysource.connectionStrings.length == 1 ||
-                                        $scope.vm.selectedIdentitysource.connectionStrings.length > 1 &&
-                                        ($scope.vm.selectedIdentitysource.connectionStrings[1] == null ||
-                                        ($scope.vm.selectedIdentitysource.connectionStrings[1] != null &&
-                                        $scope.vm.selectedIdentitysource.connectionStrings[1].indexOf("ldap") == 0))));
+                                        return false;
                                 }
                         }
-                        if($scope.vm.idsTab == 3){
-                                if ($scope.vm.newIdentitySource) {
-                                        return $scope.vm.newIdentitySource.username &&
-                                            $scope.vm.newIdentitySource.password;
-                                }
-                                else {
-                                        return $scope.vm.selectedIdentitysource.username &&
-                                            $scope.vm.selectedIdentitysource.password;
-                                }
+                        else if($scope.vm.idsTab == 3) {
+                                return ids.username && ids.password;
+                        } else if($scope.vm.idsTab == 2) {
+                                return ids.certificates && ids.certificates.length > 0;
                         }
 
                         return true;
@@ -236,7 +257,7 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                                 else {
                                         if($scope.vm.selectedIdentitysource)
                                                 $scope.vm.selectedIdentitysource.certificates = [];
-                                        if($scope.vm.selectedIdentitysource)
+                                        if($scope.vm.newIdentitySource)
                                                 $scope.vm.newIdentitySource.certificates = [];
                                         $scope.vm.idsTab += 2;
                                 }
@@ -251,7 +272,7 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                 function showPreviousTab(){
                         $scope.vm.testConnectionStatus = null;
                         if($scope.vm.idsTab == 3){
-                                if($scope.vm.isSecure() || $scope.vm.isSecure())
+                                if($scope.vm.isNewSecure() || $scope.vm.isSecure())
                                         $scope.vm.idsTab -= 1;
                                 else
                                         $scope.vm.idsTab -= 2;
@@ -294,6 +315,11 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                 }
 
                 function testConnection(identitySource){
+                        if(identitySource.connectionStrings.length > 1 &&
+                            (identitySource.connectionStrings[1] == null ||
+                             identitySource.connectionStrings[1].trim() == '')){
+                                identitySource.connectionStrings.splice(1,1);
+                        }
                         $scope.vm.isTestingConnection = true;
                         $scope.vm.testConnectionStatus = null;
                         identitySource.authenticationType = "PASSWORD";
