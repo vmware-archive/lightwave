@@ -34,7 +34,6 @@ module.controller('GroupCntrl', [ '$scope', '$rootScope', 'GroupService',
                 var provider_name = $scope.vm.identitysource.name;
                 group.upn = group.name + "@" + provider_name;
                 group.domain = provider_name;
-                console.log('inside savenewgroup: ' + JSON.stringify(group));
                 GroupService
                     .Add($rootScope.globals.currentUser, group)
                     .then(function (res) {
@@ -61,7 +60,6 @@ module.controller('GroupCntrl', [ '$scope', '$rootScope', 'GroupService',
                     },
                     objectId: null
                 };
-                console.log('inside savecurrentgroup: ' + JSON.stringify(newgroup));
                 GroupService
                     .Update($rootScope.globals.currentUser, newgroup)
                     .then(function (res) {

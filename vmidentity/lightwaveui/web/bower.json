@@ -1,6 +1,6 @@
 {
   "name": "lightwave-ui",
-  "version": "0.0.1",
+  "version": "0.0.2.0",
   "description": "HTML 5 based UI for Lightwave ",
   "homepage": "https://github.com/vmware/lightwave",
   "license": "Apache 2.0",

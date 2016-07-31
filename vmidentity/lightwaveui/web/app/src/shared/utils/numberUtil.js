@@ -15,20 +15,19 @@
 'use strict';
 
 var module = angular.module('lightwave.ui.shared.utils');
-module.factory('Util', Util);
+module.factory('numberUtil', numberUtil);
 
-Util.$inject = ['dateUtil', 'certUtil', 'numberUtil'];
-
-function Util(dateUtil, certUtil, numberUtil) {
+function numberUtil() {
 
     var util = {};
-    util.unixToDateText = dateUtil.unixToDateText;
-    util.numberToTime = dateUtil.numberToTime;
-    util.getCertificateDetails = certUtil.getCertificateDetails;
-    util.extractBase64Encoded = certUtil.extractBase64Encoded;
-    util.decodeJWT = certUtil.decodeJWT;
-    util.viewCertificate = certUtil.viewCertificate;
-    util.isValidBase64 = certUtil.isValidBase64;
-    util.isInteger = numberUtil.isInteger;
+    util.isInteger = isInteger;
     return util;
+
+    function isInteger(value) {
+        if (isNaN(value)) {
+            return false;
+        }
+        var x = parseFloat(value);
+        return (x | 0) === x;
+    }
 }

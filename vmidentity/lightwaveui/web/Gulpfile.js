@@ -6,7 +6,7 @@ var gulp = require('gulp'),
     htmlmin = require('gulp-html-minifier'),
     cleanCSS = require('gulp-clean-css');
 
-var version = '0.0.1.2';
+var version = '0.0.2.0';
 
 var sequence = [
     'lightwave-app-ui-js',

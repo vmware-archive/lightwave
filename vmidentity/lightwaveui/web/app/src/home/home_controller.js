@@ -49,13 +49,16 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
                     }
                     else {
                         $rootScope.globals.currentUser = JSON.parse($window.sessionStorage.currentUser);
+                        redirectToSsoHome();
                     }
                 }
-                var key = 'oidc_session_id-'+$rootScope.globals.currentUser.tenant;
-                var sessionId = $cookies.get(key);
-                $rootScope.globals.sessionId = sessionId;
-                $location.path('ssohome');
             }
+        }
+
+        function redirectToSsoHome(){
+            var key = 'oidc_session_id-'+$rootScope.globals.currentUser.tenant;
+            $rootScope.globals.sessionId = $cookies.get(key);
+            $location.path('ssohome');
         }
 
         function setcontext(id_token, access_token, token_type, expires_in, state) {
@@ -90,7 +93,6 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
                 .then(function (res) {
                     if (res.status == 200) {
                         var identitySources = res.data;
-                        console.log('IDS Reponse: ' + JSON.stringify(res.data));
                         for (var i = 0; i < identitySources.length; i++) {
                             if (identitySources[i].domainType == 'LOCAL_OS_DOMAIN') {
                                 $rootScope.globals.currentUser.isSystemTenant = true;
@@ -101,8 +103,8 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
                     else {
                         $rootScope.globals.errors = res.data;
                     }
-                    console.log("System tenant: " + $rootScope.globals.currentUser.isSystemTenant);
                     $window.sessionStorage.currentUser = JSON.stringify($rootScope.globals.currentUser);
+                    redirectToSsoHome();
                 });
         }
 

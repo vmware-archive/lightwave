@@ -36,7 +36,6 @@ module.controller('CertificateCntrl', ['$scope', '$rootScope', 'CertificateServi
             }
 
             function showUpdateChain() {
-                console.log('showUpdateChain clicked ..');
                 var template = 'sso/certificates/chain.update.html';
                 var controller = 'ChainCntrl';
                 popupUtil.open($scope, template, controller);
@@ -92,8 +91,6 @@ module.controller('CertificateCntrl', ['$scope', '$rootScope', 'CertificateServi
                     for (var i = 0; i < chains.length; i++) {
                         chains[i].name = "Chain " + (i + 1).toString();
                         for (var j = 0; j < chains[i].certificates.length; j++) {
-
-                            // console.log('getting certificate metadata for chain: ' + chains[i].name + ' certificate: ' + j.toString());
                             var encoded = chains[i].certificates[j].encoded;
                             chains[i].certificates[j].metadata = Util.getCertificateDetails(encoded);
                         }

@@ -45,12 +45,9 @@ module.controller('PasswordCntrl', [ '$scope', '$rootScope', 'UserService',
                 domain: provider,
                 passwordDetails: password
             };
-            console.log('inside updateUserPassword: ' + JSON.stringify(user));
-
             UserService
                 .SetPassword($rootScope.globals.currentUser, user, user.passwordDetails)
                 .then(function(res) {
-                    console.log("User: " + JSON.stringify(res.data));
                     if (res.status == 200) {
                         $rootScope.globals.errors = {details: 'Password for user ' + user.details.upn + ' updated successfully', success:true};
                         $scope.newPassword = '';

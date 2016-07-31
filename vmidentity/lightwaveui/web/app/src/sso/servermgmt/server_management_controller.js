@@ -43,7 +43,6 @@ module.controller('ServerMgmtCntrl', ['$scope',  '$rootScope','ServerService', '
             }
 
             function addTenant(){
-                console.log('addTenant clicked ..');
                 var template = 'sso/servermgmt/tenant/tenant.add.html';
                 var controller = 'TenantCntrl';
                 popupUtil.open($scope, template, controller);

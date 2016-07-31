@@ -44,13 +44,11 @@ module.controller('UserCntrl', [ '$scope', '$rootScope', 'UserService', 'Util',
                 user.details.upn = user.name + "@" + provider.name;
                 user.alias = { name: user.name, domain: provider.name };
                 user.domain = provider.name;
-                console.log('inside saveUser: ' + JSON.stringify(user));
                 UserService
                     .Add($rootScope.globals.currentUser, user)
                     .then(function (res) {
                         if (res.status == 200) {
                             $rootScope.globals.errors = {details: 'User ' + user.details.upn + ' added successfully', success:true};
-                            console.log('Save response: ' + JSON.stringify(res));
                             $scope.newuser = {};
                             $scope.addNewUser = true;
                             $scope.currentPassword = null;
@@ -69,7 +67,6 @@ module.controller('UserCntrl', [ '$scope', '$rootScope', 'UserService', 'Util',
                 user.details.upn = user.name + "@" + provider.name;
                 user.alias = { name: user.name, domain: provider.name };
                 user.domain = provider.name;
-                console.log('inside savecurrentuser: ' + JSON.stringify(user));
                 UserService
                     .Update($rootScope.globals.currentUser, user)
                     .then(function (res) {
@@ -90,7 +87,6 @@ module.controller('UserCntrl', [ '$scope', '$rootScope', 'UserService', 'Util',
                 user.details.upn = user.name + "@" + provider.name;
                 user.alias = { name: user.name, domain: provider.name };
                 user.domain = provider.name;
-                console.log('inside updateUserPassword: ' + JSON.stringify(user));
 
                 UserService
                     .SetPassword($rootScope.globals.currentUser, user, user.passwordDetails)

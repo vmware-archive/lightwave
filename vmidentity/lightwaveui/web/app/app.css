@@ -296,7 +296,7 @@ body {
 
 .large-grid-header div{
   border-right: 1px solid #DDDDDD;
-  text-align: center;
+  text-align: left;
   padding: 0px 12px;
   height:36px;
   font-weight: 700;

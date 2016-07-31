@@ -274,7 +274,6 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                             .Search($rootScope.globals.currentUser, provider.name, "USER", "NAME", searchvalue)
                             .then(function (res) {
                                 if (res.status == 200) {
-                                    // console.log("Users: " + JSON.stringify(res.data));
                                     $scope.vm.membersearchresult.users = res.data.users;
                                     $scope.vm.searchMembersLoading = false;
                                 }
@@ -314,7 +313,6 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
 
 
             function addMembersToGroup() {
-                console.log('addMembersToGroup');
                 $rootScope.globals.popup_errors = null;
                 if ($scope.vm.membersearchresult) {
                     addUserMembers();
@@ -329,9 +327,6 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                     group.members = {};
                 if (group.members.users == null)
                     group.members.users = [];
-
-                console.log('addUserMembers');
-
                 /* check duplicate */
                 var dup = false;
                 var user = null;
@@ -429,7 +424,6 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
 
             function deleteSelectedMembers() {
 
-                console.log('deleteSelectedMembers');
                 $rootScope.globals.popup_errors = null;
                 deleteUserMembers();
                 deleteGroupMembers();
@@ -440,14 +434,10 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                 var group = $scope.currentgroup;
                 if (group.members == null || group.members.users == null)
                     return;
-
-                console.log('deleteUserMembers: ALL USERS: ' + JSON.stringify(group.members.users));
-
                 /* check duplicate */
                 var found = false;
                 for (var i = group.members.users.length - 1; i >= 0; i--) {
                     if (group.members.users[i].markedForDelete) {
-                        console.log('markedForDelete: USER: ' + JSON.stringify(group.members.users[i]));
                         found = true;
 
                         if (group.members.users[i].state == 1) {
