@@ -44,7 +44,6 @@ function HttpService($http, HttpConfiguration, $window, $q, $rootScope) {
 
     function handleFailure(response){
         if(response.status == 401 && response.data.error == 'invalid_token') {
-            console.log('UnAuthorized ... re-login');
             var redirectUri = '/lightwaveui/Login?tenant=' + $rootScope.globals.currentUser.tenant;
             $window.sessionStorage.currentUser = 'logout';
             $window.location.href = redirectUri;

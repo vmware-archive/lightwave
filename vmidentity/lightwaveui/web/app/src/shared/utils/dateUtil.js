@@ -47,7 +47,6 @@ function dateUtil() {
         var days = Math.trunc(hours / 24);
         hours = hours % 24;
         var minutes = a % 3600;
-        // console.log(hours + ":" + minutes);
         return days + " days " + hours + " hours " + minutes + " minutes";
     }
 

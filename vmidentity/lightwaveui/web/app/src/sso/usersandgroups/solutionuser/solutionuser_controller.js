@@ -21,7 +21,10 @@ module.controller('SolutionUserCntrl', [ '$scope', '$rootScope', 'SolutionUserSe
             $scope.solnuservm.viewcertificate = viewcertificate;
             $scope.saveSolutionUser = saveSolutionUser;
             $scope.setCertificate = setCertificate;
+            $scope.setSelectedCertificate = setSelectedCertificate;
             $scope.updateSolutionUser = updateSolutionUser;
+            $scope.isValid = isValid;
+            $scope.isSelectedCertificateValid = isSelectedCertificateValid;
 
             init();
 
@@ -32,13 +35,50 @@ module.controller('SolutionUserCntrl', [ '$scope', '$rootScope', 'SolutionUserSe
             }
 
             function viewcertificate(){
-                console.log('view certificate');
-
                 if($scope.vm.selectedSolutionUser.certificate) {
                     var template = 'shared/components/certificate/certificate.view.html';
                     var controller = 'CertificateViewerCntrl';
                     Util.viewCertificate($scope, $scope.vm.selectedSolutionUser.certificate.encoded, template, controller);
                 }
+            }
+
+            function isValid(user){
+
+                if(user && user.name && user.certificate && user.certificate.encoded) {
+
+                    try {
+                        var x = new X509();
+                        x.readCertPEM(user.certificate.encoded);
+                        var info = x.getIssuerString();
+                        return info == '/undefined=';
+                    }
+                    catch(e){
+                        return true;
+                    }
+                }
+                return true;
+            }
+
+            function isSelectedCertificateValid(solutionUser, certificate){
+
+                if(certificate && certificate.encoded) {
+
+                    try {
+                        var x = new X509();
+                        x.readCertPEM(certificate.encoded);
+                        var info = x.getIssuerString();
+                        var failed = (info == '/undefined=');
+
+                        if(!failed){
+                            solutionUser.certificate.encoded = certificate.encoded;
+                        }
+                        return failed;
+                    }
+                    catch(e){
+                        return true;
+                    }
+                }
+                return true;
             }
 
             function saveSolutionUser(solutionuser){
@@ -47,7 +87,6 @@ module.controller('SolutionUserCntrl', [ '$scope', '$rootScope', 'SolutionUserSe
                 solutionuser.upn = solutionuser.name + "@" + provider.name;
                 solutionuser.alias = { name: solutionuser.name, domain: provider.name };
                 solutionuser.domain = provider.name;
-                console.log('inside saveSolutionUser: ' + JSON.stringify(solutionuser));
                 SolutionUserService
                     .Add($rootScope.globals.currentUser, solutionuser)
                     .then(function (res) {
@@ -89,5 +128,14 @@ module.controller('SolutionUserCntrl', [ '$scope', '$rootScope', 'SolutionUserSe
                     solutionuser.certificate = {};
                 }
                 solutionuser.certificate.encoded = contents;
+            }
+
+            function setSelectedCertificate(solutionuser, contents){
+                $rootScope.globals.errors = '';
+                if(!solutionuser.selCertificate)
+                {
+                    solutionuser.selCertificate = {};
+                }
+                solutionuser.selCertificate.encoded = contents;
             }
         }]);

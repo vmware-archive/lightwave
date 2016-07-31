@@ -29,8 +29,6 @@ module.controller('IdentityProviderCntrl', [ '$scope', '$rootScope', 'Util',
 
 
                 function viewCertificate(certificate){
-                        console.log('view certificate');
-
                         if(certificate) {
                                 var template = 'shared/components/certificate/certificate.view.html';
                                 var controller = 'CertificateViewerCntrl';

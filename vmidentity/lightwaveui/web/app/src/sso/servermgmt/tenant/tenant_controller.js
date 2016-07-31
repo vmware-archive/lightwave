@@ -90,7 +90,6 @@ module.controller('TenantCntrl', ['$scope', '$rootScope', 'TenantService', 'Oidc
                                             "postLogoutRedirectUris": [uri],
                                             "logoutUri": uri
                                         };
-                                        console.log('OpenID Connect response: ' + JSON.stringify(res1.data.access_token));
                                         var token = res1.data;
                                         OidcClientService
                                             .Create($rootScope.globals.currentUser.server, token , tenant.name, client)
@@ -147,7 +146,6 @@ module.controller('TenantCntrl', ['$scope', '$rootScope', 'TenantService', 'Oidc
 
             function setcertificatecontent(tenant, contents) {
 
-                console.log('setcertificatecontent');
                 var metadata = Util.getCertificateDetails(contents);
                 var certificate = {
                     encoded: contents,

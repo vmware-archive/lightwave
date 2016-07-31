@@ -107,7 +107,6 @@ module.controller('ChainCntrl', ['$scope', '$rootScope', 'CertificateService', '
             CertificateService
                 .SetCertificateChain($rootScope.globals.currentUser, newchain)
                 .then(function (res) {
-                    console.log("Update chaain response: " + JSON.stringify(res));
                     if (res.status == 204) {
                         $rootScope.globals.errors = {details: 'Chain added successfully', success:true};
                         $scope.vm.addchain = true;

@@ -64,13 +64,11 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
                 $scope.vm.relyingparties = [];
                 $scope.vm.currentTab = 0;
                 $scope.currentrelyingparty = {};
-                // console.log('inside get relying parties');
                 RelyingPartyService
                     .GetAll($rootScope.globals.currentUser, searchText)
                     .then(function (res) {
                         if (res.status == 200) {
                             $scope.vm.relyingparties = [];
-                            // console.log("Relying Party: " + JSON.stringify(res.data));
                             var rps = res.data;
                             if (rps != null) {
                                 for (var i = 0; i < rps.length; i++) {
@@ -106,7 +104,6 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
                 $scope.vm.identityproviders = [];
                 $scope.vm.currentTab = 1;
                 $scope.currentidentityprovider = {};
-                // console.log('inside get relying parties');
                 IdentityProviderService
                     .GetAll($rootScope.globals.currentUser, searchText)
                     .then(function (res) {
@@ -152,7 +149,6 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
                 $scope.vm.oidcclients = [];
                 $scope.vm.currentTab = 2;
                 $scope.currentoidcclient = {};
-                // console.log('inside get oidc clients');
                 OidcClientService
                     .GetAll($rootScope.globals.currentUser, searchText)
                     .then(function (res) {

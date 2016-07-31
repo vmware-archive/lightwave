@@ -48,6 +48,7 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
             }
 
             function edit(ids){
+                $scope.vm.newIdentitySource = null;
                 if(ids && ids.domainType == 'EXTERNAL_DOMAIN'){
                     $scope.vm.isNew = false;
                     $scope.vm.selectedIdentitysource = ids;

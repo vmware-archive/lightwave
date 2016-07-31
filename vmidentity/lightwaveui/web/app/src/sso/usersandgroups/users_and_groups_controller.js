@@ -85,7 +85,6 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
             IdentitySourceService
                 .GetAll($rootScope.globals.currentUser)
                 .then(function (res) {
-                    console.log('IdentitySourceService response: ' + JSON.stringify(res));
                     if (res.status == 200) {
                         setids(res.data);
                     }
@@ -176,7 +175,6 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
                 MemberService
                     .Search($rootScope.globals.currentUser, provider.name, "USER", "NAME", name)
                     .then(function (res) {
-                        console.log('Users response: ' + res);
                         if (res.status == 200) {
                             $scope.vm.users = res.data.users;
 
@@ -297,7 +295,6 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
                 }
 
                 $scope.currentgroup = {};
-                // console.log('inside getgroups');
                 MemberService
                     .Search($rootScope.globals.currentUser, provider_name, "GROUP", "NAME", name)
                     .then(function (res) {
@@ -534,7 +531,6 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
             $scope.error = '';
             if (provider != undefined) {
                 $scope.currentuser.groups = [];
-                // console.log('inside getusergroups');
                 var upn = user.name + '@' + user.domain;
                 UserService
                     .GetGroups($rootScope.globals.currentUser, upn)

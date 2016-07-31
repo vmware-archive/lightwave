@@ -255,6 +255,7 @@
                                     type="button"
                                     ng-click="vm.testConnection(vm.newIdentitySource)"
                                     uib-tooltip="Test Connection"
+                                    ng-disabled="!vm.isValid()"
                                     style="margin-right:10px;">
                                 Test Connection
                             </button>
@@ -381,8 +382,7 @@
             <div class="popup-row col-xs-12">
                 <button type="submit"
                         class="btn btn-primary pull-right btn-popup-footer"
-                        ng-show="vm.idsTab == 4;"
-                        ng-disabled="addnewuserform.$invalid">Save</button>
+                        ng-show="vm.idsTab == 4;">Save</button>
                 <button type="button"
                         class="btn btn-primary pull-right btn-popup-footer"
                         ng-show="vm.idsTab < 4;"
@@ -391,8 +391,7 @@
                 <button type="button"
                         class="btn btn-default pull-right btn-popup-footer"
                         ng-show="vm.canShowPreviousTab()"
-                        ng-click="vm.showPreviousTab()"
-                        ng-disabled="addnewuserform.$invalid">Back</button>
+                        ng-click="vm.showPreviousTab()">Back</button>
                 <button type="button"
                         class="btn btn-default pull-right btn-popup-footer"
                         ng-click="closeThisDialog('cancel')">Cancel</button>
