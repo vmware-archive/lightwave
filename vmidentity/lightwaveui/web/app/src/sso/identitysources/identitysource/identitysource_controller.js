@@ -293,9 +293,10 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                                 $scope.vm.showCredentialsTab();
                         } else if($scope.vm.idsTab == 4){
                                 $scope.vm.showSummaryTab();
-                        } else if($scope.vm.idsTab == 0){
-                                $scope.vm.showIdentityChoice();
                         }
+                        /*else if($scope.vm.idsTab == 0){
+                                $scope.vm.showIdentityChoice();
+                        }*/
                 }
 
                 function removeCertificate(certificates, certificate){
