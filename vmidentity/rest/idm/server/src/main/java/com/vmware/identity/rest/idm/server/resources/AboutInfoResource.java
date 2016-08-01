@@ -27,7 +27,6 @@ public class AboutInfoResource extends BaseResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @RequiresRole(role = Role.REGULAR_USER)
     public AboutInfo getServiceInformation() {
         try {
             log.info("trying to get about info");
