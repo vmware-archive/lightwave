@@ -22,6 +22,9 @@ namespace VMDirSchemaEditorSnapIn
         AppKit.NSButton AddMandatoryAttributesButton { get; set; }
 
         [Outlet]
+        AppKit.NSButton AddObjectClassButton { get; set; }
+
+        [Outlet]
         AppKit.NSButton AddOptionalAttributesButton { get; set; }
 
         [Outlet]
@@ -92,6 +95,24 @@ namespace VMDirSchemaEditorSnapIn
 
         void ReleaseDesignerOutlets()
         {
+            if (AddObjectClassButton != null)
+            {
+                AddObjectClassButton.Dispose();
+                AddObjectClassButton = null;
+            }
+
+            if (ActionButton != null)
+            {
+                ActionButton.Dispose();
+                ActionButton = null;
+            }
+
+            if (AddAuxiliaryClassesButton != null)
+            {
+                AddAuxiliaryClassesButton.Dispose();
+                AddAuxiliaryClassesButton = null;
+            }
+
             if (AddMandatoryAttributesButton != null)
             {
                 AddMandatoryAttributesButton.Dispose();
@@ -102,18 +123,6 @@ namespace VMDirSchemaEditorSnapIn
             {
                 AddOptionalAttributesButton.Dispose();
                 AddOptionalAttributesButton = null;
-            }
-
-            if (AddAuxiliaryClassesButton != null)
-            {
-                AddAuxiliaryClassesButton.Dispose();
-                AddAuxiliaryClassesButton = null;
-            }
-
-            if (ActionButton != null)
-            {
-                ActionButton.Dispose();
-                ActionButton = null;
             }
 
             if (AuxiliaryClassesListView != null)

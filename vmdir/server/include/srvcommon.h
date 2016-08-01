@@ -1354,7 +1354,7 @@ VmDirSRPCreateSecret(
     );
 
 //server/common/urgentrepl.c
-VOID
+BOOLEAN
 VmDirPerformUrgentReplication(
     PVDIR_OPERATION pOperation,
     USN currentTxnUSN

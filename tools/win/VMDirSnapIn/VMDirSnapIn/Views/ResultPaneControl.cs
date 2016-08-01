@@ -21,6 +21,8 @@ using System.Threading;
 using System.Windows.Forms;
 using VMDir.Common;
 using VMDirSnapIn.TreeNodes;
+using VMDirSnapIn.Utilities;
+using VMIdentity.CommonUtils;
 using VMIdentity.CommonUtils.Log;
 using VMwareMMCIDP.UI.Common.Utilities;
 
@@ -54,6 +56,38 @@ namespace VMDirSnapIn.Views
             //VMDirEnvironment.Instance.Logger.Log(node.Text+" selected",LogLevel.Info);
             if (node != null)
                 node.DoSelect();
+            SetToolBarOptions(e);
+        }
+
+        private void SetToolBarOptions(TreeViewEventArgs e)
+        {
+            foreach(ToolStripItem item in toolStrip1.Items)
+            {
+                item.Enabled=false;
+                if (Convert.ToString(item.Tag) == "all")
+                    item.Enabled = true;
+            }
+
+             var n1 = e.Node as ServerNode;
+             if (n1 != null && n1.ServerDTO.IsLoggedIn)
+             {
+                 foreach (ToolStripItem item in toolStrip1.Items)
+                 {
+                     if (Convert.ToString(item.Tag) == "server")
+                         item.Enabled = true;
+                 }
+             }
+             var n2 = e.Node as DirectoryExpandableNode;
+             if (n2 != null && n2.ServerDTO.IsLoggedIn)
+             {
+                 foreach (ToolStripItem item in toolStrip1.Items)
+                 {
+                     if (Convert.ToString(item.Tag) == "directory")
+                         item.Enabled = true;
+                     else if (Convert.ToString(item.Tag) == "user" && string.Equals(n2.ObjectClass, VMDirConstants.USER_OC))
+                         item.Enabled = true;
+                 }
+             }
         }
 
         private void treeViewExplore_AfterExpand(object sender, TreeViewEventArgs e)
@@ -83,7 +117,7 @@ namespace VMDirSnapIn.Views
                             if (sn != null)
                             {
                                 cmsServerNode.Items.Clear();
-                                if (sn.IsLoggedIn)
+                                if (sn.ServerDTO.IsLoggedIn)
                                 {
                                     cmsServerNode.Items.Add(tsmiLogout);
                                 }
@@ -118,141 +152,138 @@ namespace VMDirSnapIn.Views
                 }
             }
         }
+
+        private void DoActionOnDirectoryExpandableNode(Action<DirectoryExpandableNode> action)
+        {
+            var node = this.treeViewExplore.SelectedNode as DirectoryExpandableNode;
+            if (node != null && action != null)
+            {
+                action(node);
+            }
+            else
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_OBJ_NODE_SEL);
+            }
+        }
+        private void DoActionOnServerNode(Action<ServerNode> action)
+        {
+            var node = this.treeViewExplore.SelectedNode as ServerNode;
+            if (node != null && action != null)
+            {
+                action(node);
+            }
+            else
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_SER_NODE_SEL);
+            }
+        }
+        private void DoActionOnRootNode(Action<RootNode> action)
+        {
+            var node = this.treeViewExplore.SelectedNode as RootNode;
+            if (node != null && action != null)
+            {
+                action(node);
+            }
+        }
+
         private void tsmiSuperlog_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as ServerNode;
-            if (node != null)
-                node.SuperLog();
+            DoActionOnServerNode(delegate(ServerNode node) { node.SuperLog(); });
         }
-
         private void tsmiAddNewServer_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as RootNode;
-            if (node != null)
-                node.AddNewServer();
+            DoActionOnRootNode(delegate(RootNode node) { node.AddNewServer(); });
         }
-
         private void tsmiRootRefresh_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as RootNode;
-            if (node != null)
-                node.DoRefresh();
+            DoActionOnRootNode(delegate(RootNode node) { node.DoRefresh(); });
         }
-
         private void tsmiLogin_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as ServerNode;
-            if (node != null)
-                node.Login();
+            DoActionOnServerNode(delegate(ServerNode node) { node.Login(); });
         }
-
         private void tsmiLogout_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as ServerNode;
-            if (node != null)
-                node.Logout();
+            DoActionOnServerNode(delegate(ServerNode node) { node.Logout(); });
         }
-
         private void tsmiRemove_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as ServerNode;
-            if (node != null)
-                node.RemoveServer();
+            DoActionOnServerNode(delegate(ServerNode node) { node.RemoveServer(); });
         }
-
         private void tsmiServerRefresh_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as ServerNode;
-            if (node != null)
-                node.DoRefresh();
+            DoActionOnServerNode(delegate(ServerNode node) { node.DoRefresh(); });
         }
-
         private void tsmiSetPageSize_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as ServerNode;
-            if (node != null)
-                node.SetPageSize();
+            DoActionOnServerNode(delegate(ServerNode node) { node.SetPageSize(); });
         }
-
         private void tsmiSearch_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as DirectoryExpandableNode;
-            if (node != null)
-                node.Search();
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.Search(); });
         }
-
         private void tsmiFetchNextPage_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as DirectoryExpandableNode;
-            if (node != null)
-                node.GetNextPage();
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.GetNextPage(); });
         }
-
         private void tsmiNewObject_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as DirectoryExpandableNode;
-            if (node != null)
-                node.AddObject();
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.AddObject(); });
         }
-
         private void tsmiNewUser_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as DirectoryExpandableNode;
-            if (node != null)
-                node.AddUser();
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.AddUser(); });
         }
-
         private void tsmiNewGroup_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as DirectoryExpandableNode;
-            if (node != null)
-                node.AddGroup();
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.AddGroup(); });
         }
-
         private void tsmiAddToGroup_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as DirectoryExpandableNode;
-            if (node != null)
-                node.AddUserToGroup();
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.AddUserToGroup(); });
         }
-
         private void tsmiResetUserPassword_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as DirectoryExpandableNode;
-            if (node != null)
-                node.ResetPassword();
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.ResetPassword(); });
         }
-
         private void tsmiVerifyUserPassword_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as DirectoryExpandableNode;
-            if (node != null)
-                node.VerifyPassword();
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.VerifyPassword(); });
         }
-
         private void tsmiRefreshDirectory_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as DirectoryExpandableNode;
-            if (node != null)
-                node.DoRefresh();
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.DoRefresh(); });
         }
-
         private void tsmiDelete_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as DirectoryExpandableNode;
-            if (node != null)
-                node.Delete();
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) {performDelete(node);});
         }
 
-        private void toolStripButtonShowHide_Click(object sender, EventArgs e)
+        private void tsbShowHideOperationalAttr_Click(object sender, EventArgs e)
         {
-            var node = this.treeViewExplore.SelectedNode as DirectoryExpandableNode;
+            var node = this.treeViewExplore.SelectedNode as BaseTreeNode;
             if (node != null)
             {
-                if (node.ServerDTO.OperationalFlag)
-                    node.ServerDTO.OperationalFlag = false;
+                if (node.ServerDTO.OperationalAttrFlag)
+                    node.ServerDTO.OperationalAttrFlag = false;
                 else
-                    node.ServerDTO.OperationalFlag = true;
+                    node.ServerDTO.OperationalAttrFlag = true;
+                node.DoSelect();
+            }
+            else
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_OBJ_NODE_SEL);
+            }
+        }
+        private void tsbShowOptionalAttr_Click(object sender, EventArgs e)
+        {
+            var node = this.treeViewExplore.SelectedNode as BaseTreeNode;
+            if (node != null)
+            {
+                if (node.ServerDTO.OptionalAttrFlag)
+                    node.ServerDTO.OptionalAttrFlag = false;
+                else
+                    node.ServerDTO.OptionalAttrFlag = true;
                 node.DoSelect();
             }
             else
@@ -261,17 +292,69 @@ namespace VMDirSnapIn.Views
             }
         }
 
-        private void toolStripButtonSetPageSize_Click(object sender, EventArgs e)
+        private void performDelete(DirectoryExpandableNode node)
         {
-            var node = this.treeViewExplore.SelectedNode as ServerNode;
-            if (node != null)
+            MiscUtilsService.CheckedExec(delegate()
             {
-                node.SetPageSize();
-            }
-            else
-            {
-                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_SER_NODE_SEL);
-            }
+                if (!MMCDlgHelper.ShowQuestion(string.Format(CommonConstants.CONFIRM_DELETE, "object", Text)))
+                    return;
+                node.Delete();
+                var parent = node.Parent;
+                if (parent != null)
+                {
+                    parent.Nodes.Remove(node);
+                }
+            });
         }
+
+        private void tsbSetPageSize_Click(object sender, EventArgs e)
+        {
+            DoActionOnServerNode(delegate(ServerNode node) { node.SetPageSize(); });
+        }
+        private void tsbFetchNext_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.GetNextPage(); });
+        }
+        private void tsbRefresh_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.DoRefresh(); });
+        }
+        private void tsbSearch_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node){node.Search();});
+        }
+        private void tsbSuperLog_Click(object sender, EventArgs e)
+        {
+            DoActionOnServerNode(delegate(ServerNode node) { node.SuperLog(); });
+        }
+        private void tsbDelete_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { performDelete(node); });
+        }
+        private void tsbAddObject_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.AddObject(); });
+        }
+        private void tsbAddUser_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.AddUser(); });
+        }
+        private void tsbAddGroup_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.AddGroup(); });
+        }
+        private void tsbAddToGroup_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.AddUserToGroup(); });
+        }
+        private void tsbResetPassword_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.ResetPassword(); });
+        }
+        private void tsbVerifyPassword_Click(object sender, EventArgs e)
+        {
+            DoActionOnDirectoryExpandableNode(delegate(DirectoryExpandableNode node) { node.VerifyPassword(); });
+        }
+
     }
 }

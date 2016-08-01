@@ -112,12 +112,18 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
                     .then(function (res) {
                         if (res.status == 200) {
                             var rps = res.data;
-                            if (!searchText || searchText == '') {
-                                $scope.vm.identityproviders = rps;
-                            } else if (rps != null) {
+                            if (rps != null) {
                                 for (var i = 0; i < rps.length; i++) {
-                                    if (rps[i].entityId.indexOf(searchText) > -1) {
+                                    if (!searchText || searchText == '' || rps[i].entityId.indexOf(searchText) > -1) {
+
+                                        if (rps[i].signingCertificates && rps[i].signingCertificates.certificates) {
+                                            for (var j = 0; j < rps[i].signingCertificates.certificates.length; j++) {
+                                                var cert = rps[i].signingCertificates.certificates[j];
+                                                rps[i].signingCertificates.certificates[j].metadata = Util.getCertificateDetails(cert.encoded);
+                                            }
+                                        }
                                         $scope.vm.identityproviders.push(rps[i]);
+
                                     }
                                 }
                             }

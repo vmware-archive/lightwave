@@ -125,6 +125,8 @@ namespace VMDirSchemaEditorSnapIn
                     AttributeModDTO.Description = AttributeDescription.StringValue;
                 if (AttributeDTO.SingleValue == true && MultiValuedCheckBox.State == NSCellStateValue.On)
                     AttributeModDTO.SingleValue = false;
+                else
+                    AttributeModDTO.SingleValue = AttributeDTO.SingleValue;
             }
         }
 

@@ -21,6 +21,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using VMDir.Common;
 
 namespace VMDirSchemaSnapIn.UI
 {
@@ -28,14 +29,18 @@ namespace VMDirSchemaSnapIn.UI
     {
         public List<string> ItemsToSelect;
         public List<string> AllItems;
+        private List<string> currentItems;
+        private List<string> parentItems;
 
         public List<string> SelectedItemsList { get; set; }
 
-        public SelectItemsWindow(List<string> items)
+        public SelectItemsWindow(List<string> items , List<string> currentAttributes, List<string> parentAttributes)
         {
             InitializeComponent();
             this.ItemsToSelect = items;
             this.AllItems = items;
+            this.currentItems = currentAttributes;
+            this.parentItems = parentAttributes;
             Initialise();
         }
 
@@ -52,12 +57,20 @@ namespace VMDirSchemaSnapIn.UI
             int row = (int)this.FromList.SelectedIndex;
             if (row >= 0)
             {
-                SelectedItemsList.Add(this.FromList.SelectedValue.ToString());
-                //The datasource has to be explicitly set to null before we refresh the list. it doesnt seem to work by reference.
-                //Todo - find if there is a better mechanism to do this without resetting datasource.
-                this.ToList.DataSource = null;
-                this.ToList.DataSource = SelectedItemsList;
-                ToList.Refresh();
+                string selectedItem = this.FromList.SelectedValue.ToString();
+                if (currentItems != null && parentItems != null && (currentItems.Contains(selectedItem) || parentItems.Contains(selectedItem)))
+                {
+                    UIErrorHelper.ShowMessage(VMDirConstants.WRN_SEL_ITEM_PRESENT);
+                }
+                else
+                {
+                    SelectedItemsList.Add(selectedItem);
+                    //The datasource has to be explicitly set to null before we refresh the list. it doesnt seem to work by reference.
+                    //Todo - find if there is a better mechanism to do this without resetting datasource.
+                    this.ToList.DataSource = null;
+                    this.ToList.DataSource = SelectedItemsList;
+                    ToList.Refresh();
+                }
             }
 
         }

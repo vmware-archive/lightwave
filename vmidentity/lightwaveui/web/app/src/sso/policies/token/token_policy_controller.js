@@ -20,7 +20,15 @@ module.controller('TokenPolicyCntrl', [ '$scope', '$rootScope', 'TenantService',
 
             $scope.updateTokenPolicy = updateTokenPolicy;
 
+            init();
+
+            function init(){
+                $rootScope.globals.errors = null;
+                $rootScope.globals.popup_errors = null;
+            }
+
             function updateTokenPolicy(tokenPolicy) {
+                $rootScope.globals.errors = null;
                 var policy = {
                     tokenPolicy: tokenPolicy
                 };
@@ -29,8 +37,15 @@ module.controller('TokenPolicyCntrl', [ '$scope', '$rootScope', 'TenantService',
                     .UpdateConfiguration($rootScope.globals.currentUser, policy)
                     .then(function (res) {
                         console.log("Tenant Policy update: " + JSON.stringify(res));
-                        $scope.getConfig();
-                        $scope.closeThisDialog('save');
+
+                        if (res.status == 200) {
+                            $rootScope.globals.errors = {details: 'Token policy updated successfully', success: true};
+                            $scope.getConfig();
+                            $scope.closeThisDialog('save');
+                        }
+                        else {
+                            $rootScope.globals.popup_errors = res.data;
+                        }
                     });
             }
         }]);

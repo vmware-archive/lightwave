@@ -15,7 +15,26 @@
 'use strict';
 
 var module = angular.module('lightwave.ui.sso');
-module.controller('IdentityProviderCntrl', [ '$scope',
-        function($scope) {
+module.controller('IdentityProviderCntrl', [ '$scope', '$rootScope', 'Util',
+        function($scope, $rootScope, Util) {
 
+                $scope.vm.viewCertificate = viewCertificate;
+
+                init();
+
+                function init(){
+                        $rootScope.globals.errors = '';
+                        $rootScope.globals.popup_errors = null;
+                }
+
+
+                function viewCertificate(certificate){
+                        console.log('view certificate');
+
+                        if(certificate) {
+                                var template = 'shared/components/certificate/certificate.view.html';
+                                var controller = 'CertificateViewerCntrl';
+                                Util.viewCertificate($scope, certificate.encoded, template, controller);
+                        }
+                }
         }]);

@@ -15,6 +15,13 @@
 'use strict';
 
 var module = angular.module('lightwave.ui.sso');
-module.controller('OidcClientCntrl', [ '$scope',
-        function($scope) {
+module.controller('OidcClientCntrl', [ '$scope', '$rootScope',
+        function($scope, $rootScope) {
+
+                init();
+
+                function init(){
+                        $rootScope.globals.errors = '';
+                        $rootScope.globals.popup_errors = null;
+                }
         }]);

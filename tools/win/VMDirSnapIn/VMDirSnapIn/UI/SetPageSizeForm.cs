@@ -27,7 +27,7 @@ namespace VMDirSnapIn.UI
         {
             this.PageSize = pageSize;
             InitializeComponent();
-            this.maskedTextBox1.Text = pageSize.ToString();
+            this.textBoxPageSize.Text = pageSize.ToString();
         }
 
         private void buttonSubmit_Click(object sender, EventArgs e)
@@ -37,24 +37,29 @@ namespace VMDirSnapIn.UI
                 this.DialogResult = DialogResult.None;
                 return;
             }
-            PageSize = int.Parse(maskedTextBox1.Text);
+            PageSize = int.Parse(textBoxPageSize.Text);
+
             this.Close();
         }
 
         private bool ValidateInput()
         {
-            if (string.IsNullOrWhiteSpace(maskedTextBox1.Text))
+            if (string.IsNullOrWhiteSpace(textBoxPageSize.Text))
             {
                 MMCDlgHelper.ShowWarning(VMDirConstants.WRN_PAGE_SIZE);
                 return false;
             }
             try
             {
-                var pagesize = int.Parse(maskedTextBox1.Text);
+                var pagesize = int.Parse(textBoxPageSize.Text);
                 if (pagesize <= 0)
                 {
                     MMCDlgHelper.ShowWarning(VMDirConstants.WRN_PAGE_SIZE_MINVAL);
                     return false;
+                }
+                if (PageSize > VMDirConstants.DEFAULT_PAGE_SIZE * 10)
+                {
+                    MMCDlgHelper.ShowWarning(VMDirConstants.WRN_PAGE_SIZE_MAXVAL);
                 }
             }
             catch (Exception)

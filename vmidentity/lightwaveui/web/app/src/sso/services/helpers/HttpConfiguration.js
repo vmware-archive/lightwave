@@ -25,11 +25,21 @@ function HttpConfiguration(){
     return config;
 
     function getHeaders(token, contentType) {
-        var header =
-        {
-            "Content-Type": contentType,
-            "Authorization": token.token_type + " " + token.access_token
-        };
-        return header;
+
+        if(token){
+            var header1 =
+            {
+                "Content-Type": contentType,
+                "Authorization": token.token_type + " " + token.access_token
+            };
+            return header1;
+        }
+        else {
+            var header2 =
+            {
+                "Content-Type": contentType
+            };
+            return header2;
+        }
     }
 }

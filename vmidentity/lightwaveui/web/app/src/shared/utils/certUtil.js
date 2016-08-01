@@ -26,6 +26,7 @@ function certUtil(dateUtil, popupUtil) {
     util.extractBase64Encoded = extractBase64Encoded;
     util.decodeJWT = decodeJWT;
     util.viewCertificate = viewCertificate;
+    util.isValidBase64 = isValidBase64;
     return util;
 
     function checkexpired(before){
@@ -36,7 +37,6 @@ function certUtil(dateUtil, popupUtil) {
     }
 
     function getCertificateDetails(pem) {
-        // console.log('pem: ' + pem);
         var c = new X509();
         c.readCertPEM(pem);
         var issuer = c.getIssuerString();
@@ -59,10 +59,7 @@ function certUtil(dateUtil, popupUtil) {
             "after" : after,
             "before" : before,
             "expired": expired
-            //"fingerprint" : fingerprint
         };
-
-        // console.log('Certificate metadata: ' + JSON.stringify(metadata));
 
         return metadata;
     }
@@ -104,22 +101,6 @@ function certUtil(dateUtil, popupUtil) {
 
         var components = sJWS.split(".");
         var uHeader = b64utos(components[1]).toString();
-        //var uClaim = b64utos(components[2]).toString();
-
-        // console.log('Header base64:' + components[1]);
-        // console.log('Claims base64:' + components[2]);
-
-        // console.log('Header string: ' + uHeader);
-        // console.log('Claims string: ' + uClaim);
-
-        //var pHeader = KJUR.jws.JWS.readSafeJSONString(uHeader);
-        //var pClaim = KJUR.jws.JWS.readSafeJSONString(uClaim);
-
-        //var sHeader = JSON.stringify(pHeader, null, "  ");
-        //var sClaim = JSON.stringify(pClaim, null, "  ");
-
-        // console.log('Header string: ' + sHeader);
-        // console.log('Claims string: ' + sClaim);
 
         var decodedJWT =
         {
@@ -134,12 +115,10 @@ function certUtil(dateUtil, popupUtil) {
 
             scope.metadata  = getCertificateDetails(encoded);
             popupUtil.open(scope, template, controller);
-            /*ngDialog.open({
-                    template: 'shared/components/certificate/certificate.view.html',
-                    controller: 'CertificateViewerCntrl',
-                    className: 'ngdialog-theme-default',
+    }
 
-                    scope: scope
-                });*/
+    function isValidBase64(str){
+        var base64regex = /^([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?$/;
+        return base64regex.test(str);
     }
 }

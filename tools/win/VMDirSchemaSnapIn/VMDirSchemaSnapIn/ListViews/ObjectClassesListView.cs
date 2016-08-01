@@ -107,9 +107,7 @@ namespace VMDirSchemaSnapIn.ListViews
 
         void ShowProperties()
         {
-            AttributeTypeManager attributes = (this.ScopeNode as VMDirSchemaClassBaseNode).ServerNode.ServerDTO.Connection.SchemaManager.GetAttributeTypeManager();
-            ObjectClassManager objectClasses = (this.ScopeNode as VMDirSchemaClassBaseNode).ServerNode.ServerDTO.Connection.SchemaManager.GetObjectClassManager();
-            var frm = new ObjectClassWindow(this.Entries[(int)this.SelectedNodes[0].Tag].ObjectClassDto,attributes,objectClasses);
+            var frm = new ObjectClassWindow(this.Entries[(int)this.SelectedNodes[0].Tag].ObjectClassDto, (this.ScopeNode as VMDirSchemaClassBaseNode).ServerNode.ServerDTO.Connection.SchemaManager);
             if (SnapIn.Console.ShowDialog(frm) == DialogResult.OK)
             {
                 UIErrorHelper.CheckedExec(delegate()

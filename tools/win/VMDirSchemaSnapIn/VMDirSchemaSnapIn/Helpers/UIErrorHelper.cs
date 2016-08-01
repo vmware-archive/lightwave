@@ -41,7 +41,12 @@ namespace VMDirSchemaSnapIn
 
         public static DialogResult ShowMessage(string msg)
         {
-            return MessageBox.Show(msg, string.Empty, MessageBoxButtons.YesNo,MessageBoxIcon.Information);
+            return MessageBox.Show(msg, string.Empty, MessageBoxButtons.OK,MessageBoxIcon.Information);
+        }
+
+        public static DialogResult ShowConfirm(string msg)
+        {
+            return MessageBox.Show(msg, string.Empty, MessageBoxButtons.YesNo, MessageBoxIcon.Information);
         }
 
         public static int CheckedExec(Action fn)

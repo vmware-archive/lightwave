@@ -25,10 +25,13 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
             $scope.vm.add = add;
             $scope.vm.deleteIdentitySource = deleteIdentitySource;
             $scope.vm.providerPolicy = {};
+            $scope.vm.getClass = getClass;
 
             init();
 
             function init(){
+                $rootScope.globals.errors = null;
+                $rootScope.globals.popup_errors = null;
                 getIdentitySources();
             }
 
@@ -64,14 +67,15 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
             }
 
             function getIdentitySources(searchText) {
-                $rootScope.globals.errors = null;
                 $scope.vm.idsdataLoading = true;
                 IdentitySourceService
                     .GetAll($rootScope.globals.currentUser)
                     .then(function (res) {
                         if (res.status == 200) {
                             $scope.vm.identitySources = res.data;
-                            getDefaultProvider();
+                            if($rootScope.globals.currentUser.isSystemTenant) {
+                                getDefaultProvider();
+                            }
                         }
                         else {
                             $rootScope.globals.errors = res.data;
@@ -81,6 +85,7 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
                         var identitySources = $scope.vm.identitySources;
                         $scope.vm.filteredIdentitySources = [];
                         if (identitySources != null && identitySources.length > 0) {
+                            $scope.vm.selectedIdentitysource = $scope.vm.identitySources[0];
                             for (var i = 0; i < $scope.vm.identitySources.length; i++) {
                                 if (!searchText ||
                                     searchText == '' ||
@@ -91,9 +96,11 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
                                             identitySources[i].ssl = true;
                                         }
 
-                                        for (var j = 0; j < identitySources[i].certificates.length; j++) {
-                                            var encoded = identitySources[i].certificates[j].encoded;
-                                            identitySources[i].certificates[j].metadata = Util.getCertificateDetails(encoded);
+                                        if(identitySources[i].certificates) {
+                                            for (var j = 0; j < identitySources[i].certificates.length; j++) {
+                                                var encoded = identitySources[i].certificates[j].encoded;
+                                                identitySources[i].certificates[j].metadata = Util.getCertificateDetails(encoded);
+                                            }
                                         }
                                     }
                                     $scope.vm.filteredIdentitySources.push(identitySources[i]);
@@ -105,7 +112,6 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
             }
 
             function getDefaultProvider() {
-                $rootScope.globals.errors = null;
                 var configs = ['PROVIDER'];
 
                 TenantService
@@ -127,6 +133,7 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
                         .Delete($rootScope.globals.currentUser, ids.name)
                         .then(function (res) {
                             if (res.status == 200 || res.status == 204) {
+                                $rootScope.globals.errors = {details: 'Identity Source ' + ids.name + ' deleted successfully', success:true};
                                 getIdentitySources();
                             }
                             else {
@@ -134,5 +141,13 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
                             }
                         });
                 }
+            }
+
+            function getClass(isMatch, defaultFocus){
+                if(defaultFocus && isMatch)
+                {
+                    return 'large-grid-content-row-selected';
+                }
+                return 'large-grid-content-row';
             }
         }]);

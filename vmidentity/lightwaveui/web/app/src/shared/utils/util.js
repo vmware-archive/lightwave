@@ -28,5 +28,6 @@ function Util(dateUtil, certUtil) {
     util.extractBase64Encoded = certUtil.extractBase64Encoded;
     util.decodeJWT = certUtil.decodeJWT;
     util.viewCertificate = certUtil.viewCertificate;
+    util.isValidBase64 = certUtil.isValidBase64;
     return util;
 }

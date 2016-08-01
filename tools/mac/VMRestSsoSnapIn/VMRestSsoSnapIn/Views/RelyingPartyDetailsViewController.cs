@@ -208,7 +208,7 @@ namespace RestSsoAdminSnapIn
 			var result = openPanel.RunModal();
 			if (result == 1)
 			{
-				var filePath = openPanel.Url.AbsoluteString.Replace("file://",string.Empty);
+				var filePath = Uri.UnescapeDataString (openPanel.Url.AbsoluteString.Replace("file://",string.Empty));
 				var cert = new X509Certificate2 ();
 				ActionHelper.Execute (delegate() {
 					cert.Import (filePath);

@@ -374,6 +374,7 @@ MdbValidateAttrUniqueness(
         dwError = VmDirMDBSimpleEIdToEntry(eId, &entry);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        LwRtlHashMapResetIter(&iter);
         while (LwRtlHashMapIterate(pIndexCfg->pUniqScopes, &iter, &pair))
         {
             pszScope = pair.pKey;
@@ -409,8 +410,8 @@ MdbValidateAttrUniqueness(
 
     // check if the new entry dn matches any occupied scope
     entryDnLen = VmDirStringLenA(pszEntryDN);
-    LwRtlHashMapResetIter(&iter);
 
+    LwRtlHashMapResetIter(&iter);
     while (LwRtlHashMapIterate(pOccupiedScopes, &iter, &pair))
     {
         pszScope = (PSTR)pair.pKey;

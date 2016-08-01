@@ -398,14 +398,13 @@ namespace RestSsoAdminSnapIn
 
 		public void OnClickBrowseButton (object sender, EventArgs e)
 		{
-			var openPanel = new NSOpenPanel();
+			var openPanel = new NSOpenPanel ();
 			openPanel.ReleasedWhenClosed = true;
 			openPanel.Prompt = "Select file";
 
-			var result = openPanel.RunModal();
-			if (result == 1)
-			{
-				var filePath = openPanel.Url.AbsoluteString.Replace("file://",string.Empty);
+			var result = openPanel.RunModal ();
+			if (result == 1) {
+				var filePath = Uri.UnescapeDataString (openPanel.Url.AbsoluteString.Replace ("file://", string.Empty));
 				var cert = new X509Certificate2 ();
 				try {
 
@@ -416,6 +415,7 @@ namespace RestSsoAdminSnapIn
 				TxtCertificate.StringValue = filePath;
 			}
 		}
+
 		public class TableDelegate : NSTableViewDelegate
 		{
 			public TableDelegate ()

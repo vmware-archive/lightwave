@@ -36,12 +36,17 @@ namespace VMDirSchemaEditorSnapIn
 
         public ObjectClassManager objectManager { get; set; }
 
+        public SchemaManager schemaManager { get; set; }
+
         private bool isAddMode = false;
         private List<string> allAttributesList = null;
         private List<string> allClassesList = null;
         private List<string> auxiliaryClassesList = new List<string>();
         private List<string> mandatoryAttributesList = new List<string>();
         private List<string> optionalAttributesList = new List<string>();
+        private List<string> parentMandatoryAttributes = new List<string>();
+        private List<string> parentOptionalAttributes = new List<string>();
+
         //object class types
         private List<string> structuralClasses = null;
         private List<string> abstractClasses = null;
@@ -59,25 +64,22 @@ namespace VMDirSchemaEditorSnapIn
         {
         }
 
-        public ObjectClassWindowController(AttributeTypeManager attributeManager, ObjectClassManager objectManager)
+        public ObjectClassWindowController(SchemaManager schemaManager)
             : base("ObjectClassWindow")
         {
             isAddMode = true;
-            this.attributeManager = attributeManager;
-            this.objectManager = objectManager;
+            this.schemaManager = schemaManager;
+            this.attributeManager = schemaManager.GetAttributeTypeManager();
+            this.objectManager = schemaManager.GetObjectClassManager();
             InitialiseAttributesList();
             InitialiseClassesList();
         }
 
-        public ObjectClassWindowController(ObjectClassDTO dto, AttributeTypeManager attributeManager, ObjectClassManager objectManager)
-            : base("ObjectClassWindow")
+        public ObjectClassWindowController(ObjectClassDTO dto, SchemaManager schemaManager)
+            : this(schemaManager)
         {
             this.ObjectDTO = dto;
             isAddMode = false;
-            this.attributeManager = attributeManager;
-            this.objectManager = objectManager;
-            InitialiseAttributesList();
-            InitialiseClassesList();
         }
 
         public void InitialiseAttributesList()
@@ -157,6 +159,7 @@ namespace VMDirSchemaEditorSnapIn
             ObjectClassDescription.Enabled = status;
             ClassTypePopup.Enabled = status;
             ParentClass.Enabled = status;
+            AddObjectClassButton.Enabled = status;
             AuxiliaryClassesListView.Enabled = status;
             MandatoryAttributesListView.Enabled = status;
             OptionalAttributesListView.Enabled = status;
@@ -192,7 +195,7 @@ namespace VMDirSchemaEditorSnapIn
         {
             if (AuxiliaryClassesListView.Enabled == true)
             {
-                SelectListItemsWindowController swc = new SelectListItemsWindowController(allClassesList);
+                SelectListItemsWindowController swc = new SelectListItemsWindowController(allClassesList, null, null);
                 nint ret = NSApplication.SharedApplication.RunModalForWindow(swc.Window);
                 if (ret == VMIdentityConstants.DIALOGOK)
                 {
@@ -208,7 +211,7 @@ namespace VMDirSchemaEditorSnapIn
         {
             if (MandatoryAttributesListView.Enabled == true && isAddMode)
             {
-                SelectListItemsWindowController swc = new SelectListItemsWindowController(allAttributesList);
+                SelectListItemsWindowController swc = new SelectListItemsWindowController(allAttributesList, mandatoryAttributesList, parentMandatoryAttributes);
                 nint ret = NSApplication.SharedApplication.RunModalForWindow(swc.Window);
                 if (ret == VMIdentityConstants.DIALOGOK)
                 {
@@ -226,6 +229,20 @@ namespace VMDirSchemaEditorSnapIn
             if (ret == VMIdentityConstants.DIALOGOK)
             {
                 ParentClass.StringValue = swc.SelectedItem;
+
+                mandatoryAttributesList.RemoveAll(item => parentMandatoryAttributes.Contains(item));
+
+                parentMandatoryAttributes.Clear();
+                parentOptionalAttributes.Clear();
+
+                parentMandatoryAttributes.AddRange(this.schemaManager.GetRequiredAttributes(ParentClass.StringValue).Select(e => e.Name).ToList());
+                parentOptionalAttributes.AddRange(this.schemaManager.GetOptionalAttributes(ParentClass.StringValue).Select(e => e.Name).ToList());
+
+
+                mandatoryAttributesList.AddRange(parentMandatoryAttributes);
+                MandatoryAttributesListView.DataSource = new StringItemsListView(mandatoryAttributesList);
+                MandatoryAttributesListView.ReloadData();
+
             }
         }
 
@@ -233,7 +250,7 @@ namespace VMDirSchemaEditorSnapIn
         {
             if (OptionalAttributesListView.Enabled == true)
             {
-                SelectListItemsWindowController swc = new SelectListItemsWindowController(allAttributesList);
+                SelectListItemsWindowController swc = new SelectListItemsWindowController(allAttributesList, optionalAttributesList, parentOptionalAttributes);
                 nint ret = NSApplication.SharedApplication.RunModalForWindow(swc.Window);
                 if (ret == VMIdentityConstants.DIALOGOK)
                 {
@@ -303,6 +320,7 @@ namespace VMDirSchemaEditorSnapIn
                 ObjectDTO.Name = ObjectClassName.StringValue;
                 ObjectDTO.Description = ObjectClassDescription.StringValue;
                 ObjectDTO.SuperClass = ParentClass.StringValue;
+                optionalAttributesList.AddRange(parentOptionalAttributes);
                 ObjectDTO.May = optionalAttributesList;
                 ObjectDTO.Must = mandatoryAttributesList;
                 ObjectDTO.ClassType = (ObjectClassDTO.ObjectClassType)((int)ClassTypePopup.IndexOfSelectedItem) + 1;
@@ -327,6 +345,11 @@ namespace VMDirSchemaEditorSnapIn
             AuxiliaryClassesListView.Enabled = true;
             AddAuxiliaryClassesButton.Enabled = true;
             AddOptionalAttributesButton.Enabled = true;
+            AddMandatoryAttributesButton.Hidden = true;
+            AddObjectClassButton.Hidden = true;
+            RemoveAuxiliaryClassesButton.Hidden = true;
+            RemoveMandatoryAttributesButton.Hidden = true;
+            RemoveOptionalAttributesButton.Hidden = true;
         }
 
         partial void OnActionButton(Foundation.NSObject sender)

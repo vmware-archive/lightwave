@@ -26,7 +26,8 @@ using VmDirInterop.SuperLogging.Interfaces;
 using VmDirInterop.SuperLogging;
 using VmDirInterop.Schema.Interfaces;
 using VmDirInterop.Schema;
-using VMDir.Common.DTO;
+using VMDir.Common.DTO;
+using System.Runtime.InteropServices;
 
 namespace VMDir.Common.VMDirUtilities
 {
@@ -169,11 +170,9 @@ namespace VMDir.Common.VMDirUtilities
 			}
 		}
 
-		public Dictionary<string, VMDirAttributeDTO> GetEntryProperties(List<ILdapEntry> entries)
+		public Dictionary<string, VMDirAttributeDTO> GetEntryProperties(ILdapEntry entry)
 		{
 			Dictionary<string, VMDirAttributeDTO> properties = new Dictionary<string, VMDirAttributeDTO>();
-			foreach (LdapEntry entry in entries)
-			{
 				string[] attNamerArr = entry.getAttributeNames().ToArray();
 				foreach (string attrName in attNamerArr)
 				{
@@ -182,7 +181,6 @@ namespace VMDir.Common.VMDirUtilities
 					VMDirAttributeDTO dto = new VMDirAttributeDTO(attrName, new List<LdapValue>(attrValArr), typeDTO);
 					properties[attrName] = dto;
 				}
-			}
 			return properties;
 		}
 
@@ -209,12 +207,13 @@ namespace VMDir.Common.VMDirUtilities
 			ILdapMessage ldMsg = null;
 			IntPtr[] serverControls = { IntPtr.Zero };
 			IntPtr returnedControls = IntPtr.Zero;
+
 			MaintainSession(delegate ()
 			{
 				serverControls[0] = ldConn.LdapCreatePageControl(pageSize, cookie, true);
 
 				ldMsg = ldConn.LdapSearchExtExS(qdto.SearchBase, (int)qdto.SearchScope, qdto.GetFilterString(),
-					qdto.AttrToReturn, qdto.AttrOnly, qdto.TimeOut, qdto.SizeLimit, serverControls);
+                    qdto.AttrToReturn, qdto.AttrOnly, qdto.TimeOut, qdto.SizeLimit, serverControls);
 
 				ldConn.LdapParseResult(ldMsg, ref returnedControls, false);
 				if (cookie != IntPtr.Zero)

@@ -46,23 +46,23 @@ namespace VMDirSnapIn.UI
             this.buttonSubmit = new System.Windows.Forms.Button();
             this.buttonCancel = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
-            this.maskedTextBox1 = new System.Windows.Forms.MaskedTextBox();
+            this.textBoxPageSize = new System.Windows.Forms.TextBox();
             this.SuspendLayout();
             // 
             // buttonSubmit
             // 
             this.buttonSubmit.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.buttonSubmit.Location = new System.Drawing.Point(173, 78);
+            this.buttonSubmit.Location = new System.Drawing.Point(144, 78);
             this.buttonSubmit.Name = "buttonSubmit";
             this.buttonSubmit.Size = new System.Drawing.Size(75, 23);
             this.buttonSubmit.TabIndex = 14;
-            this.buttonSubmit.Text = "Submit";
+            this.buttonSubmit.Text = "Apply";
             this.buttonSubmit.UseVisualStyleBackColor = true;
             this.buttonSubmit.Click += new System.EventHandler(this.buttonSubmit_Click);
             // 
             // buttonCancel
             // 
-            this.buttonCancel.Location = new System.Drawing.Point(75, 78);
+            this.buttonCancel.Location = new System.Drawing.Point(63, 78);
             this.buttonCancel.Name = "buttonCancel";
             this.buttonCancel.Size = new System.Drawing.Size(75, 23);
             this.buttonCancel.TabIndex = 13;
@@ -79,21 +79,20 @@ namespace VMDirSnapIn.UI
             this.label1.TabIndex = 11;
             this.label1.Text = "Page Size:";
             // 
-            // maskedTextBox1
+            // textBoxPageSize
             // 
-            this.maskedTextBox1.Location = new System.Drawing.Point(109, 26);
-            this.maskedTextBox1.Mask = "000000";
-            this.maskedTextBox1.Name = "maskedTextBox1";
-            this.maskedTextBox1.Size = new System.Drawing.Size(161, 20);
-            this.maskedTextBox1.TabIndex = 16;
+            this.textBoxPageSize.Location = new System.Drawing.Point(98, 26);
+            this.textBoxPageSize.Name = "textBoxPageSize";
+            this.textBoxPageSize.Size = new System.Drawing.Size(150, 20);
+            this.textBoxPageSize.TabIndex = 15;
             // 
             // SetPageSizeForm
             // 
             this.AcceptButton = this.buttonSubmit;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(309, 130);
-            this.Controls.Add(this.maskedTextBox1);
+            this.ClientSize = new System.Drawing.Size(288, 130);
+            this.Controls.Add(this.textBoxPageSize);
             this.Controls.Add(this.buttonSubmit);
             this.Controls.Add(this.buttonCancel);
             this.Controls.Add(this.label1);
@@ -111,6 +110,6 @@ namespace VMDirSnapIn.UI
         private System.Windows.Forms.Button buttonSubmit;
         private System.Windows.Forms.Button buttonCancel;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.MaskedTextBox maskedTextBox1;
+        private System.Windows.Forms.TextBox textBoxPageSize;
     }
 }

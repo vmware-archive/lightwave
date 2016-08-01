@@ -214,8 +214,6 @@ VmDirSendLdapResult(
    if (op->strongConsistencyWriteCtrl != NULL &&
        op->ldapResult.errCode == LDAP_SUCCESS)
    {
-       VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirSendLdapResult: Write consistency done Control value");
-
        if (WriteConsistencyWriteDoneControl(op, ber) != LDAP_SUCCESS)
        {
           VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirSendLdapResult: WriteConsistencyWriteDoneControl failed");

@@ -24,7 +24,8 @@ namespace VMDir.Common.DTO
         public LogicalOp Operator { get; set; }
         public List<FilterDTO> CondList { get; set; }
         public BuildQueryDTO() { }
-        public BuildQueryDTO(string searchBase, LdapScope searchScope, LogicalOp op, List<FilterDTO> condList,
+        public BuildQueryDTO(string searchBase, LdapScope searchScope, LogicalOp op, List<FilterDTO> condList,
+
             string[] attrToReturn, int attrOnly, IntPtr timeOut, int sizeLimit)
         {
             this.SearchBase = searchBase;

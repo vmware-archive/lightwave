@@ -24,6 +24,14 @@ module.controller('ChainCntrl', ['$scope', '$rootScope', 'CertificateService', '
         $scope.viewcertificate = viewcertificate;
         $scope.setprivatekeycontent = setprivatekeycontent;
         $scope.setcertificatecontent = setcertificatecontent;
+        $scope.isValid = isValid;
+
+        init();
+
+        function init(){
+            $rootScope.globals.errors = null;
+            $rootScope.globals.popup_errors = null;
+        }
 
         function setprivatekeycontent(chain, contents){
 
@@ -61,12 +69,21 @@ module.controller('ChainCntrl', ['$scope', '$rootScope', 'CertificateService', '
                 for(var i=0; i<chain.certificates.length;i++){
                     if(chain.certificates[i].encoded == certificate.encoded) {
                         chain.certificates.splice(i, 1);
+                        break;
                     }
                 }
             }
         }
 
+        function isValid() {
+            return ($scope.newchain
+            && $scope.newchain.certificates
+            && $scope.newchain.certificates.length >= 2
+            && $scope.newchain.privateKey);
+        }
+
         function updatechain(chain) {
+
             $rootScope.globals.errors = null;
             var newchain = {
                 privateKey: {
@@ -81,15 +98,24 @@ module.controller('ChainCntrl', ['$scope', '$rootScope', 'CertificateService', '
                 newchain.certificates.push(certificate);
             }
 
+            if(newchain.certificates.length < 2)
+            {
+                $rootScope.globals.errors = { details : 'At-least 2 certificates needs to be present.'};
+                return;
+            }
+
             CertificateService
-                .SetTenantCredentials($rootScope.globals.currentUser, newchain)
+                .SetCertificateChain($rootScope.globals.currentUser, newchain)
                 .then(function (res) {
-                    if (res.status == 200) {
+                    console.log("Update chaain response: " + JSON.stringify(res));
+                    if (res.status == 204) {
+                        $rootScope.globals.errors = {details: 'Chain added successfully', success:true};
                         $scope.vm.addchain = true;
-                        getchains();
+                        $scope.vm.getchains();
+                        $scope.closeThisDialog('save');
                     }
                     else {
-                        $rootScope.globals.errors = res.data;
+                        $rootScope.globals.popup_errors = res.data;
                     }
 
                 });

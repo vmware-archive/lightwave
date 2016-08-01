@@ -98,7 +98,7 @@ namespace VMPSCHighAvailability.UI
 		public override void AwakeFromNib ()
 		{
 			base.AwakeFromNib ();
-			_service = new PscHighAvailabilityService (PscHighAvailabilityAppEnvironment.Instance.Logger);
+			_service = new PscHighAvailabilityService (PscHighAvailabilityAppEnvironment.Instance.Logger,PscHighAvailabilityAppEnvironment.Instance);
 			this.Window.MinSize = new CoreGraphics.CGSize (){Height = 607, Width= 820};
 			this.Window.Title = Constants.SuiteName + " " + Constants.ToolName;
 			ServerToolBarItem.Activated += OnServerToolBarItem_Activated;

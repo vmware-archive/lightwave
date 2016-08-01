@@ -300,13 +300,16 @@ VmDirReplUrgentReplCoordinatorThreadFun(
         }
 
         /*
-         * Update consensus only if Replication cycle on all the Repl Partners
-         * completed successfully.
+         * if bUrgentReplPartialFailure is true
+         * dwRpcRequestsSent is '0' and bUrgentReplPartialFailure is False - node with no repl partners
+         *     - broadcast all writer threads without updating consensus
+         * if all responses received,
+         *     - broadcast all writer threads after updating consensus
          */
-        if (bUrgentReplPartialFailure == FALSE &&
-            dwRpcRequestsSent != 0 &&
-            VmDirReplGetUrgentReplResponseCount() == dwRpcRequestsSent &&
+        if (bUrgentReplPartialFailure || dwRpcRequestsSent == 0 ||
+            (VmDirReplGetUrgentReplResponseCount() == dwRpcRequestsSent &&
             VmDirUrgentReplUpdateConsensus())
+           )
         {
             VmDirReplBroadcastUrgentReplDone();
         }

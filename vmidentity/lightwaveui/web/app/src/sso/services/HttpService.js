@@ -25,9 +25,9 @@ function HttpService($http, HttpConfiguration, $window, $q, $rootScope) {
     service.getResponse = getResponse;
     return service;
 
-    function getResponse(endpoint, verb, token, postData) {
+    function getResponse(endpoint, verb, token, postData, isText) {
 
-        var contentType = 'application/json';
+        var contentType = isText ? 'application/x-www-form-urlencoded; charset=utf-8' : 'application/json';
 
         return $http({
             url: endpoint,
@@ -39,17 +39,14 @@ function HttpService($http, HttpConfiguration, $window, $q, $rootScope) {
     }
 
     function handleSuccess(response){
-        //console.log('Success: ' + JSON.stringify(response));
         return response;
     }
 
     function handleFailure(response){
-        //console.log('Error: ' + JSON.stringify(response));
-        //console.log('Response status: ' + response.status);
-        //console.log('Response response.data.error: ' + response.data.error);
         if(response.status == 401 && response.data.error == 'invalid_token') {
             console.log('UnAuthorized ... re-login');
             var redirectUri = '/lightwaveui/Login?tenant=' + $rootScope.globals.currentUser.tenant;
+            $window.sessionStorage.currentUser = 'logout';
             $window.location.href = redirectUri;
             return $q.reject(response);
         }

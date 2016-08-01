@@ -15,8 +15,10 @@
 'use strict';
 
 var module = angular.module('lightwave.ui.home');
-module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope', 'Configuration', 'Util',
-        function($rootScope, $cookies, $location, $scope, Configuration, Util) {
+module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope', '$window', 'Configuration', 'Util',
+                  'IdentitySourceService',
+        function($rootScope, $cookies, $location, $scope, $window, Configuration, Util,
+                 IdentitySourceService) {
 
         init();
 
@@ -24,37 +26,34 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
 
             $rootScope.globals.errors = '';
 
-            // console.log('home controller Logout:' + $location.search.target);
             var qs = $location.search();
             var state = qs.state;
+
             var id_token = qs.id_token;
-            console.log('Extracted id_token: ' + id_token);
             var access_token = qs.access_token;
-            // console.log('Extracted id_token: ' + access_token);
             var token_type = qs.token_type;
-            // console.log('Extracted id_token: ' + token_type);
             var expires_in = qs.expires_in;
-            // console.log('Extracted id_token: ' + expires_in);
             if('logout' in qs)
             {
-                // console.log('logout ..');
                 $rootScope.globals.currentUser = null;
             }
             else
             {
-                setcontext(id_token, access_token, token_type, expires_in, state);
-
+                var loggedIn = $window.sessionStorage.currentUser;
+                if (!loggedIn) {
+                    setcontext(id_token, access_token, token_type, expires_in, state);
+                }
+                else {
+                    if (loggedIn == 'logout') {
+                        setcontext(id_token, access_token, token_type, expires_in, state);
+                    }
+                    else {
+                        $rootScope.globals.currentUser = JSON.parse($window.sessionStorage.currentUser);
+                    }
+                }
                 var key = 'oidc_session_id-'+$rootScope.globals.currentUser.tenant;
                 var sessionId = $cookies.get(key);
-
-                // console.log('$cookies oidc_session_id: key - ' + key.toString());
-
-                if(sessionId != undefined) {
-                    // console.log('$cookies oidc_session_id: value - ' + sessionId.toString());
-                }
-
                 $rootScope.globals.sessionId = sessionId;
-
                 $location.path('ssohome');
             }
         }
@@ -63,10 +62,6 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
 
             var decodedJwt = Util.decodeJWT(id_token);
             var decodedAccessJwt = Util.decodeJWT(access_token);
-
-            // console.log('Decoded JWT:' + JSON.stringify(decodedJwt));
-            //// console.log('Decoded AccessJWT:' + JSON.stringify(decodedAccessJwt));
-
             $rootScope.globals = {
                 currentUser: {
                     server: getserver(decodedJwt.header.iss),//$location.host(),
@@ -84,24 +79,38 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
                     }
                 }
             };
+            checkForSystemTenant();
+        }
 
-            //console.log(JSON.stringify($rootScope.globals));
-            //var expiration = $rootScope.globals.currentUser.token.expires_in;
-            //var redirectUri = 'https://'
-            //    + $rootScope.globals.currentUser.server
-            //    + '/webui/Login?tenant='
-            //    + $rootScope.globals.currentUser.tenant;
-            //var loc = "console.log('inside timeout'); window.location = '" + redirectUri + "' ;";
-            // console.log('timeout set to: ' + loc);
-            //setTimeout(loc, expiration * 1000);
+        function checkForSystemTenant() {
+
+            $rootScope.globals.currentUser.isSystemTenant = false;
+            IdentitySourceService
+                .GetAll($rootScope.globals.currentUser)
+                .then(function (res) {
+                    if (res.status == 200) {
+                        var identitySources = res.data;
+                        console.log('IDS Reponse: ' + JSON.stringify(res.data));
+                        for (var i = 0; i < identitySources.length; i++) {
+                            if (identitySources[i].domainType == 'LOCAL_OS_DOMAIN') {
+                                $rootScope.globals.currentUser.isSystemTenant = true;
+                                break;
+                            }
+                        }
+                    }
+                    else {
+                        $rootScope.globals.errors = res.data;
+                    }
+                    console.log("System tenant: " + $rootScope.globals.currentUser.isSystemTenant);
+                    $window.sessionStorage.currentUser = JSON.stringify($rootScope.globals.currentUser);
+                });
         }
 
         function getserver(uri){
 
             var server_uri = uri.split('//')[1];
             var server_with_port = server_uri.split('/')[0];
-            var server_name = server_with_port.split(':')[0];
-            return server_name;
+           return server_with_port.split(':')[0];
         }
 
     }]);

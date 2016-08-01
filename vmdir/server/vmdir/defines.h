@@ -177,7 +177,7 @@
         /*.dwMax          = */ 0,                                \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAP_PORT_STR "\000" LEGACY_DEFAULT_LDAP_PORT_STR "\000", \
+        /*.pszDefault     = */ DEFAULT_LDAP_PORT_STR "\000",     \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
@@ -188,7 +188,7 @@
         /*.dwMax          = */ 0,                                \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000" LEGACY_DEFAULT_LDAPS_PORT_STR "\000", \
+        /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000",    \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
@@ -199,7 +199,7 @@
         /*.dwMax          = */ 0,                                \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAP_PORT_STR "\000" LEGACY_DEFAULT_LDAP_PORT_STR "\000", \
+        /*.pszDefault     = */ DEFAULT_LDAP_PORT_STR "\000",     \
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
@@ -210,7 +210,7 @@
         /*.dwMax          = */ 0,                                \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000" LEGACY_DEFAULT_LDAPS_PORT_STR "\000", \
+        /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000",    \
         /*.pszValue       = */ NULL                              \
     },                                                            \
     {                                                            \
@@ -316,8 +316,8 @@
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 180000,                           \
-        /*.dwDefault      = */ 60000,                            \
+        /*.dwMax          = */ 60000,                            \
+        /*.dwDefault      = */ 10000,                            \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \

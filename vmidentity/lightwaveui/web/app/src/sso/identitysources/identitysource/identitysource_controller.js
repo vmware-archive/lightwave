@@ -34,10 +34,14 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                 $scope.vm.testConnection = testConnection;
                 $scope.vm.setIdentitySourceType = setIdentitySourceType;
                 $scope.vm.addIdentitySource = addIdentitySource;
+                $scope.vm.canShowPreviousTab = canShowPreviousTab;
+                $scope.vm.isValid = isValid;
 
                 init();
 
                 function init() {
+                        $rootScope.globals.errors = null;
+                        $rootScope.globals.popup_errors = null;
                         $scope.vm.idsTab = $scope.vm.isNew ? 0 : 1;
                         $scope.vm.testConnectionStatus = null;
                         $scope.vm.isTestingConnection = false;
@@ -45,6 +49,57 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                         if($scope.vm.newIdentitySource) {
                                 $scope.vm.newIdentitySource.type = 'IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING';
                         }
+                }
+
+                function isValid(){
+
+                        if($scope.vm.idsTab == 1){
+
+                                if ($scope.vm.newIdentitySource) {
+                                        return ($scope.vm.newIdentitySource.name &&
+                                                    $scope.vm.newIdentitySource.friendlyName &&
+                                                    $scope.vm.newIdentitySource.alias &&
+                                                    $scope.vm.newIdentitySource.userBaseDN &&
+                                                    $scope.vm.newIdentitySource.groupBaseDN &&
+                                                    $scope.vm.newIdentitySource.connectionStrings != null &&
+                                                    $scope.vm.newIdentitySource.connectionStrings.length > 0 &&
+                                                    $scope.vm.newIdentitySource.connectionStrings[0] != null &&
+                                                    $scope.vm.newIdentitySource.connectionStrings[0].indexOf("ldap") == 0 &&
+                                                ($scope.vm.newIdentitySource.connectionStrings.length == 1 ||
+                                                ($scope.vm.newIdentitySource.connectionStrings.length > 1 &&
+                                                    ($scope.vm.newIdentitySource.connectionStrings[1] == null ||
+                                                    ($scope.vm.newIdentitySource.connectionStrings[1] != null &&
+                                                    $scope.vm.newIdentitySource.connectionStrings[1].indexOf("ldap") == 0)))));
+                                        }
+                                else {
+                                        return ($scope.vm.selectedIdentitysource.name &&
+                                        $scope.vm.selectedIdentitysource.friendlyName &&
+                                        $scope.vm.selectedIdentitysource.alias &&
+                                        $scope.vm.selectedIdentitysource.userBaseDN &&
+                                        $scope.vm.selectedIdentitysource.groupBaseDN &&
+                                        $scope.vm.selectedIdentitysource.connectionStrings != null &&
+                                        $scope.vm.selectedIdentitysource.connectionStrings.length > 0 &&
+                                        $scope.vm.selectedIdentitysource.connectionStrings[0] != null &&
+                                        $scope.vm.selectedIdentitysource.connectionStrings[0].indexOf("ldap") == 0 &&
+                                        ($scope.vm.selectedIdentitysource.connectionStrings.length == 1 ||
+                                        $scope.vm.selectedIdentitysource.connectionStrings.length > 1 &&
+                                        ($scope.vm.selectedIdentitysource.connectionStrings[1] == null ||
+                                        ($scope.vm.selectedIdentitysource.connectionStrings[1] != null &&
+                                        $scope.vm.selectedIdentitysource.connectionStrings[1].indexOf("ldap") == 0))));
+                                }
+                        }
+                        if($scope.vm.idsTab == 3){
+                                if ($scope.vm.newIdentitySource) {
+                                        return $scope.vm.newIdentitySource.username &&
+                                            $scope.vm.newIdentitySource.password;
+                                }
+                                else {
+                                        return $scope.vm.selectedIdentitysource.username &&
+                                            $scope.vm.selectedIdentitysource.password;
+                                }
+                        }
+
+                        return true;
                 }
 
                 function setIdentitySourceType(type){
@@ -69,8 +124,10 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                         return $scope.vm.selectedIdentitysource &&
                             $scope.vm.selectedIdentitysource.connectionStrings &&
                             (($scope.vm.selectedIdentitysource.connectionStrings.length > 0
+                            && $scope.vm.selectedIdentitysource.connectionStrings[0] != null
                             && $scope.vm.selectedIdentitysource.connectionStrings[0].indexOf("ldaps") > -1) ||
                             ($scope.vm.selectedIdentitysource.connectionStrings.length > 1
+                            && $scope.vm.selectedIdentitysource.connectionStrings[1] != null
                             && $scope.vm.selectedIdentitysource.connectionStrings[1].indexOf("ldaps") > -1));
                 }
 
@@ -78,8 +135,10 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                         return $scope.vm.newIdentitySource &&
                             $scope.vm.newIdentitySource.connectionStrings &&
                             (($scope.vm.newIdentitySource.connectionStrings.length > 0
+                            && $scope.vm.newIdentitySource.connectionStrings[0]!= null
                             && $scope.vm.newIdentitySource.connectionStrings[0].indexOf("ldaps") > -1) ||
                             ($scope.vm.newIdentitySource.connectionStrings.length > 1
+                            && $scope.vm.newIdentitySource.connectionStrings[1] != null
                             && $scope.vm.newIdentitySource.connectionStrings[1].indexOf("ldaps") > -1));
                 }
 
@@ -145,7 +204,7 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                                             $scope.closeThisDialog('save');
                                     }
                                     else {
-                                            $rootScope.globals.errors = res.data;
+                                            $rootScope.globals.popup_errors = res.data;
                                     }
                                     $scope.vm.isSaving = false;
                             });
@@ -158,11 +217,12 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                             .Add($rootScope.globals.currentUser, identitySource)
                             .then(function (res) {
                                     if (res.status == 200) {
-                                            $scpe.vm.getIdentitySources();
+                                            $rootScope.globals.errors = {details: 'Identity Source ' + identitySource.name + ' added successfully', success:true};
+                                            $scope.vm.getIdentitySources();
                                             $scope.closeThisDialog('save');
                                     }
                                     else {
-                                            $rootScope.globals.errors = res.data;
+                                            $rootScope.globals.popup_errors = res.data;
                                     }
                                     $scope.vm.isSaving = false;
                             });
@@ -201,6 +261,11 @@ module.controller('IdentitySourceCntrl', ['$scope',  '$rootScope', 'popupUtil', 
                                 $scope.vm.idsTab -= 1;
                         }
                         showRightPane();
+                }
+
+                function canShowPreviousTab(){
+                        return (($scope.vm.newIdentitySource && $scope.vm.idsTab > 0) ||
+                            (!$scope.vm.newIdentitySource && $scope.vm.idsTab > 0));
                 }
 
                 function showRightPane(){

@@ -15,16 +15,23 @@
 'use strict';
 
 var module = angular.module('lightwave.ui.shared.components');
-module.controller('NavigationCntrl', [ '$scope', '$rootScope',
-        function($scope, $rootScope) {
+module.controller('NavigationCntrl', [ '$scope', '$rootScope', '$location',
+        function($scope, $rootScope, $location) {
             $scope.vm = this;
             $scope.vm.select = select;
             $scope.vm.getItemStyle = getItemStyle;
+            $scope.vm.canShow = canShow;
             $scope.vm.exists = exists;
-
+            $scope.vm.tenantCheck = tenantCheck;
             init();
 
             function init() {
+
+                var absUrl = $location.absUrl();
+                var uris = absUrl.split('/');
+                var lastUri = uris[uris.length - 1];
+                var part = lastUri.split('?')[0];
+
                 $scope.vm.menus = [
                     {
                         name: "Single Sign-On",
@@ -32,52 +39,62 @@ module.controller('NavigationCntrl', [ '$scope', '$rootScope',
                         header: true,
                         href: "#ssohome",
                         selected: true,
-                        roles: ['Administrator', 'RegularUser','GuestUser']
-
+                        roles: ['Administrator', 'RegularUser','GuestUser'],
+                        tenantType: 'All'
                     },
                     {
                         name: "Users & Groups",
                         image: "group.png",
                         header: false,
                         href: "#usersandgroups",
-                        roles: ['Administrator', 'RegularUser']
+                        roles: ['Administrator', 'RegularUser'],
+                        tenantType: 'All'
                     },
                     {
                         name: "Identity Sources",
                         image: "tenant.png",
                         header: false,
                         href: "#identitysources",
-                        roles: ['Administrator', 'RegularUser']
+                        roles: ['Administrator', 'RegularUser'],
+                        tenantType: 'All'
                     },
                     {
                         name: "Service Providers",
                         image: "serviceprovider.png",
                         header: false,
                         href: "#serviceproviders",
-                        roles: ['Administrator']
+                        roles: ['Administrator'],
+                        tenantType: 'All'
                     },
                     {
                         name: "Certificates",
                         image: "certificate.png",
                         header: false,
                         href: "#ssocertificate",
-                        roles: ['Administrator', 'RegularUser', 'GuestUser']
+                        roles: ['Administrator', 'RegularUser', 'GuestUser'],
+                        tenantType: 'All'
                     },
                     {
                         name: "Policies & Configuration",
                         image: "configuration.png",
                         header: false,
                         href: "#ssopolicies",
-                        roles: ['Administrator', 'RegularUser']
+                        roles: ['Administrator', 'RegularUser'],
+                        tenantType: 'System'
                     },
                     {
-                        name: "Computers & Tenants",
+                        name: "Tenants",
                         image: "computer.png",
                         header: false,
                         href: "#ssoservermgmt",
-                        roles: ['Administrator']
+                        roles: ['Administrator'],
+                        tenantType: 'All'
                     }
                 ];
+
+                for (var i=0; i<$scope.vm.menus.length; i++) {
+                    $scope.vm.menus[i].selected = ($scope.vm.menus[i].href == ('#' + part));
+                }
             }
 
             function exists(roles, role){
@@ -90,6 +107,21 @@ module.controller('NavigationCntrl', [ '$scope', '$rootScope',
                     }
                 }
                 return contains;
+            }
+
+            function tenantCheck(tenantType, isSystemTenant){
+                return (tenantType == "All" ||
+                       (tenantType == "System" && isSystemTenant));
+            }
+
+            function canShow(menu, context){
+
+                if(context) {
+                    var roleCheck = $scope.vm.exists(menu.roles, context.role);
+                    var tenantCheck = $scope.vm.tenantCheck(menu.tenantType, context.isSystemTenant);
+                    return roleCheck && tenantCheck;
+                }
+                return false;
             }
 
             function select(menu){

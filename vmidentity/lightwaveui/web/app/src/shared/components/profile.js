@@ -15,11 +15,11 @@
 'use strict';
 
 var module = angular.module('lightwave.ui.shared.components');
-module.controller('ProfileCntrl', [ '$scope', '$rootScope', '$window', 'popupUtil',
-    function($scope, $rootScope, $window, popupUtil) {
+module.controller('ProfileCntrl', [ '$scope', 'popupUtil', 'AuthenticationService',
+    function($scope, popupUtil, AuthenticationService) {
         $scope.vm = this;
         $scope.vm.changePassword = changePassword;
-        $scope.vm.logout = logout;
+        $scope.vm.logout = AuthenticationService.logout;
         $scope.vm.showProfile = showProfile;
         $scope.vm.hideProfile = hideProfile;
 
@@ -43,11 +43,4 @@ module.controller('ProfileCntrl', [ '$scope', '$rootScope', '$window', 'popupUti
             popupUtil.open($scope, template, controller);
         }
 
-        function logout() {
-            var logoutUri = "/lightwaveui/Logout?id_token="
-                + $rootScope.globals.currentUser.token.id_token
-                + "&state="
-                + $rootScope.globals.currentUser.token.state;
-            $window.location.href = logoutUri;
-        }
     }]);

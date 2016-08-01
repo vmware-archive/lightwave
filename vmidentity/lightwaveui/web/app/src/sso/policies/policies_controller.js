@@ -33,8 +33,12 @@ module.controller('PolicyCntrl', ['$scope',  '$rootScope', 'popupUtil', 'TenantS
         init();
 
         function init() {
-            getConfig();
-            $scope.vm.policyTab = 1;
+            if($rootScope.globals.currentUser.isSystemTenant) {
+                getConfig();
+                $scope.vm.policyTab = 1;
+            } else {
+                $rootScope.globals.errors = "The tenant is either not a system tenant or you do not have access to this page";
+            }
         }
 
         function showlockoutpolicy() {

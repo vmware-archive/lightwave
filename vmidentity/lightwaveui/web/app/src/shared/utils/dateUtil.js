@@ -43,29 +43,22 @@ function dateUtil() {
     }
 
     function numberToTime(a) {
-        var hours = Math.trunc(a / 60);
+        var hours = Math.trunc(a / 3600);
         var days = Math.trunc(hours / 24);
         hours = hours % 24;
-        var minutes = a % 60;
+        var minutes = a % 3600;
         // console.log(hours + ":" + minutes);
         return days + " days " + hours + " hours " + minutes + " minutes";
     }
 
 
     function toDate(dateString) {
-        // console.log('Time to date: ' + dateString);
         var yy = dateString.substring(0,2);
-        // console.log('yy: ' + yy + 'dateString: ' + dateString);
         var mm = dateString.substring(2,4);
-        // console.log('mm: ' + mm + 'dateString: ' + dateString);
         var dd = dateString.substring(4,6);
-        // console.log('dd: ' + dd + 'dateString: ' + dateString);
         var hh = dateString.substring(6,8);
-        // console.log('hh: ' + hh + 'dateString: ' + dateString);
         var mn = dateString.substring(8,10);
-        // console.log('mn: ' + mn + 'dateString: ' + dateString);
         var ss = dateString.substring(10,12);
-        // console.log('ss: ' + ss + 'dateString: ' + dateString);
         var ampm = '';
         if(hh > 12) {
             ampm = 'PM';
