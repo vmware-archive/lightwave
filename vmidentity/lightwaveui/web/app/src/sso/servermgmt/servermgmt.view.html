@@ -5,7 +5,7 @@
              width="24px"
              height="24px"/>
         <span ng-show="!globals.currentUser.isSystemTenant">Tenants</span>
-        <span ng-show="globals.currentUser.isSystemTenant">Computers & Tenants</span>
+        <span ng-show="globals.currentUser.isSystemTenant">Tenants & Computers</span>
     </div>
     <div class='error' ng-show="globals.errors && !globals.errors.success">
         <img src="../app/assets/error.png" width="16px" height="16px"/>
@@ -27,88 +27,8 @@
 
         <!-- Set of Tabs for Computers & Tenants view -->
         <uib-tabset active="active">
-
-            <!-- Computers tab -->
-            <uib-tab index="0" select="vm.getcomputers(vm.searchcomputer)"
-                     heading="Computers" ng-show="globals.currentUser.isSystemTenant">
-                <div class="tab-container">
-                    <div style="margin-bottom:5px;">
-                        <form name="form"
-                              ng-submit="vm.getcomputers(vm.searchcomputer)"
-                              role="form"
-                              style="float:right;">
-                            <input type="text"
-                                   name="searchcomputer"
-                                   id="searchcomputer"
-                                   ng-model="vm.searchcomputer"
-                                   class="search-box"
-                                   placeholder="search by computer name"/>
-                            <button type="submit"
-                                    class="btn btn-primary btn-sm">
-                                Search
-                            </button>
-                        </form>
-                    </div>
-
-                    <br/><br/>
-                    <div class="large-grid">
-                        <div class="large-grid-header">
-                            <div class="large-grid-header-cell col-xs-10">
-                                Name
-                            </div>
-                            <div class="large-grid-header-cell col-xs-2">
-                                Domain Controller
-                            </div>
-                        </div>
-                        <div class="large-grid-content">
-                            <img ng-if="vm.computersdataLoading"
-                                 src="../app/assets/progress.gif"
-                                 style="padding:20px;"/>
-                            <div ng-if="!vm.computersdataLoading && (!vm.computers || vm.computers.length == 0)"
-                                 style="padding:60px;"
-                                 class="row">
-                                No computers found.
-                            </div>
-                            <div ng-repeat="computer in vm.computers"
-                                 ng-if="vm.computers"
-                                 tabindex="1"
-                                 class="large-grid-content-row">
-
-                                <div class="col-xs-10"
-                                     uib-tooltip="{{computer.hostname}}">
-                                    <img src="../app/assets/computer.png"
-                                         width="16px"
-                                         height="16px"
-                                         ng-show="!computer.domainController"
-                                         uib-tooltip="Computer"/>
-                                    <img src="../app/assets/sso.png"
-                                         width="16px"
-                                         height="16px"
-                                         ng-show="computer.domainController"
-                                         uib-tooltip="Domain Controller"/>
-                                   {{computer.hostname}}
-                                </div>
-                                <div class="col-xs-2"
-                                     uib-tooltip="{{computer.hostname}}">
-                                    <img src="../app/assets/enabled.png"
-                                         width="16px"
-                                         height="16px"
-                                         ng-show="computer.domainController"
-                                         uib-tooltip="Domain Controller"/>
-                                    <span ng-show="!computer.domainController">
-                                        --
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="large-grid-footer">
-                        </div>
-                    </div>
-                </div>
-            </uib-tab>
-
             <!-- Tenants tab -->
-            <uib-tab index="1" select="vm.filtertenants(vm.searchtenant)" heading="Tenants">
+            <uib-tab index="0" select="vm.gettenants(vm.searchtenant)" heading="Tenants">
                 <div class="tab-container">
                     <div style="margin-bottom:5px;">
 
@@ -120,7 +40,7 @@
                         </button>
                         <button type="button" class="btn btn-link"
                                 style="float:left;margin-left:10px;"
-                                ng-show="globals.currentUser.role == 'Administrator'"
+                                ng-show="globals.currentUser.role == 'Administrator' && !globals.currentUser.isSystemTenant"
                                 confirmed-click="vm.deleteTenant()"
                                 ng-confirm-click="Do you want to delete tenant {{globals.currentUser.tenant}}?">
                             DELETE {{globals.currentUser.tenant.toUpperCase()}}
@@ -178,6 +98,84 @@
                                 <div class="col-xs-4"
                                      uib-tooltip="{{tenant.username}}">
                                     {{tenant.username}}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="large-grid-footer">
+                        </div>
+                    </div>
+                </div>
+            </uib-tab>
+            <!-- Computers tab -->
+            <uib-tab index="1" select="vm.getcomputers(vm.searchcomputer)"
+                     heading="Computers" ng-show="globals.currentUser.isSystemTenant">
+                <div class="tab-container" ng-show="globals.currentUser.isSystemTenant">
+                    <div style="margin-bottom:5px;">
+                        <form name="form"
+                              ng-submit="vm.getcomputers(vm.searchcomputer)"
+                              role="form"
+                              style="float:right;">
+                            <input type="text"
+                                   name="searchcomputer"
+                                   id="searchcomputer"
+                                   ng-model="vm.searchcomputer"
+                                   class="search-box"
+                                   placeholder="search by computer name"/>
+                            <button type="submit"
+                                    class="btn btn-primary btn-sm">
+                                Search
+                            </button>
+                        </form>
+                    </div>
+
+                    <br/><br/>
+                    <div class="large-grid">
+                        <div class="large-grid-header">
+                            <div class="large-grid-header-cell col-xs-10">
+                                Name
+                            </div>
+                            <div class="large-grid-header-cell col-xs-2">
+                                Domain Controller
+                            </div>
+                        </div>
+                        <div class="large-grid-content">
+                            <img ng-if="vm.computersdataLoading"
+                                 src="../app/assets/progress.gif"
+                                 style="padding:20px;"/>
+                            <div ng-if="!vm.computersdataLoading && (!vm.computers || vm.computers.length == 0)"
+                                 style="padding:60px;"
+                                 class="row">
+                                No computers found.
+                            </div>
+                            <div ng-repeat="computer in vm.computers"
+                                 ng-if="vm.computers"
+                                 tabindex="1"
+                                 class="large-grid-content-row">
+
+                                <div class="col-xs-10"
+                                     uib-tooltip="{{computer.hostname}}">
+                                    <img src="../app/assets/computer.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="!computer.domainController"
+                                         uib-tooltip="Computer"/>
+                                    <img src="../app/assets/sso.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="computer.domainController"
+                                         uib-tooltip="Domain Controller"/>
+                                    {{computer.hostname}}
+                                </div>
+                                <div class="col-xs-2"
+                                     uib-tooltip="{{computer.hostname}}">
+                                    <img src="../app/assets/enabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="computer.domainController"
+                                         uib-tooltip="Domain Controller"/>
+                                    <span ng-show="!computer.domainController">
+                                        --
+                                    </span>
                                 </div>
                             </div>
                         </div>
