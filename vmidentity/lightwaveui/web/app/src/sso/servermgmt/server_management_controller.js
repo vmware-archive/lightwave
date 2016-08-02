@@ -36,10 +36,6 @@ module.controller('ServerMgmtCntrl', ['$scope',  '$rootScope','ServerService', '
                         certificates: []
                     }
                 };
-
-                if($rootScope.globals.currentUser.isSystemTenant) {
-                    getcomputers('');
-                }
             }
 
             function addTenant(){
