@@ -93,10 +93,6 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
                                     identitySources[i].name.indexOf(searchText) > -1) {
                                     if (identitySources[i].domainType == 'EXTERNAL_DOMAIN') {
 
-                                        if (identitySources[i].connectionStrings[0].startsWith('ldaps')) {
-                                            identitySources[i].ssl = true;
-                                        }
-
                                         if(identitySources[i].certificates) {
                                             for (var j = 0; j < identitySources[i].certificates.length; j++) {
                                                 var encoded = identitySources[i].certificates[j].encoded;
