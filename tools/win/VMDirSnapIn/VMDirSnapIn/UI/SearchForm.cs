@@ -179,7 +179,7 @@ namespace VMDirSnapIn.UI
 
         private void toolStripButtonShowHide_Click(object sender, EventArgs e)
         {
-            if (this.searchQueryControl1.Visible)
+            if (this.searchQueryControl1.Visible && this.tableLayoutPanel2.Visible)
                 this.searchQueryControl1.Visible = false;
             else
                 this.searchQueryControl1.Visible = true;
@@ -316,14 +316,17 @@ namespace VMDirSnapIn.UI
         private void DoActionOnDirectoryNonExpandableNode(Action<DirectoryNonExpandableNode> action)
         {
             var node = this.resultTreeView.SelectedNode as DirectoryNonExpandableNode;
-            if (node != null && action != null && node.ServerDTO!=null)
-            {
-                action(node);
-            }
-            else
+            if (node == null || action == null)
             {
                 MMCDlgHelper.ShowWarning(VMDirConstants.WRN_OBJ_NODE_SEL);
+                return;
             }
+            if (node.ServerDTO == null || node.ServerDTO.Connection == null)
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
+                return;
+            }
+            action(node);
         }
 
         private void tsmiAddToGroup_Click(object sender, EventArgs e)

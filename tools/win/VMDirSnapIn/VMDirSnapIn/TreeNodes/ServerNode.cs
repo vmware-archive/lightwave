@@ -162,8 +162,6 @@ namespace VMDirSnapIn.TreeNodes
                 ServerDTO.Connection.CloseConnection();
                 ServerDTO.Connection = null;
                 ServerDTO.IsLoggedIn = false;
-                ServerDTO.BaseDN = string.Empty;
-                ServerDTO.BindDN = string.Empty;
                 Nodes.Clear();
                 PropertiesCtl.ClearView();
             }

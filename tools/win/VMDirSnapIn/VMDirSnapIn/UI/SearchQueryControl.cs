@@ -389,5 +389,19 @@ namespace VMDirSnapIn.UI
                 SearchButtonClicked(new object(), args);
             }
         }
+
+        private void contextMenuStrip2_Opening(object sender, CancelEventArgs e)
+        {
+            if (this.listViewAttrToReturn.SelectedIndices.Count == 0)
+                e.Cancel = true;
+        }
+
+        private void toolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            foreach (ListViewItem item in this.listViewAttrToReturn.SelectedItems)
+            {
+                this.listViewAttrToReturn.Items.Remove(item);
+            }
+        }
     }
 }

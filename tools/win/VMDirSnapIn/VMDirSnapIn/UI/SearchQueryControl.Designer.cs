@@ -114,8 +114,9 @@ namespace VMDirSnapIn.UI
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(117, 22);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(152, 22);
             this.toolStripMenuItem1.Text = "Remove";
+            this.toolStripMenuItem1.Click += new System.EventHandler(this.toolStripMenuItem1_Click);
             // 
             // buttonSearch
             // 
@@ -133,6 +134,7 @@ namespace VMDirSnapIn.UI
             this.toolStripMenuItem1});
             this.contextMenuStrip2.Name = "contextMenuStrip1";
             this.contextMenuStrip2.Size = new System.Drawing.Size(118, 26);
+            this.contextMenuStrip2.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStrip2_Opening);
             // 
             // buttonAttrRemove
             // 
@@ -275,6 +277,7 @@ namespace VMDirSnapIn.UI
             // 
             this.listViewAttrToReturn.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.Attribute});
+            this.listViewAttrToReturn.ContextMenuStrip = this.contextMenuStrip2;
             this.listViewAttrToReturn.GridLines = true;
             this.listViewAttrToReturn.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
             this.listViewAttrToReturn.Location = new System.Drawing.Point(6, 58);
@@ -438,7 +441,7 @@ namespace VMDirSnapIn.UI
             this.columnHeader2,
             this.columnHeader3,
             this.columnHeader4});
-            this.listViewConditions.ContextMenuStrip = this.contextMenuStrip2;
+            this.listViewConditions.ContextMenuStrip = this.contextMenuStrip1;
             this.listViewConditions.FullRowSelect = true;
             this.listViewConditions.GridLines = true;
             this.listViewConditions.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
