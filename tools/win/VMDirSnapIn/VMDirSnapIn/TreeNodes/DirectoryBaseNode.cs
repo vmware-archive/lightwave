@@ -84,11 +84,6 @@ namespace VMDirSnapIn.TreeNodes
 
         public override void DoSelect()
         {
-            if (ServerDTO.Connection == null)
-            {
-                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
-                return;
-            }
             PropertiesCtl.Visible = true;
             var oc = string.Empty;
             if (ObjectClass.Count > 0)
@@ -97,21 +92,11 @@ namespace VMDirSnapIn.TreeNodes
         }
         public void Delete()
         {
-            if (ServerDTO.Connection == null)
-            {
-                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
-                return;
-            }
             ServerDTO.Connection.DeleteObject(Dn);
         }
 
         public void AddUserToGroup()
         {
-            if (ServerDTO.Connection == null)
-            {
-                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
-                return;
-            }
             var frm = new AddToGroup(ServerDTO);
             if (frm.ShowDialog() == DialogResult.OK)
             {
@@ -131,11 +116,6 @@ namespace VMDirSnapIn.TreeNodes
 
         public void ResetPassword()
         {
-            if (ServerDTO.Connection == null)
-            {
-                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
-                return;
-            }
             MiscUtilsService.CheckedExec(delegate
             {
                 var frm = new ResetUserPwdForm(Dn);
@@ -154,11 +134,6 @@ namespace VMDirSnapIn.TreeNodes
 
         public void VerifyPassword()
         {
-            if (ServerDTO.Connection == null)
-            {
-                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
-                return;
-            }
             MiscUtilsService.CheckedExec(delegate
             {
                 var frm = new CheckUserPwdForm(VmdirUtil.Utilities.GetAttrLastVal(NodeProperties, VMDirConstants.ATTR_KRB_UPN));

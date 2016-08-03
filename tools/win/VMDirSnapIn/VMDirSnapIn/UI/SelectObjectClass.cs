@@ -77,7 +77,7 @@ namespace VMDirSnapIn.UI
                 _lviList.Clear();
                 foreach (var item in _list)
                 {
-                    if (item.Name.StartsWith(textBoxSearch.Text))
+                    if (item.Name.StartsWith(textBoxSearch.Text,StringComparison.OrdinalIgnoreCase))
                     {
                         ListViewItem lvi = new ListViewItem(new string[] { item.Name, item.Description });
                         _lviList.Add(lvi);

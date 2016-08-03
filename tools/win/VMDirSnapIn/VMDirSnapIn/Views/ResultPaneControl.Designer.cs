@@ -102,7 +102,6 @@ namespace VMDirSnapIn.Views
             this.tsmiRefreshDirectory = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmiDelete = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmiAddNewServer = new System.Windows.Forms.ToolStripMenuItem();
-            this.tsmiRootRefresh = new System.Windows.Forms.ToolStripMenuItem();
             this.cmsRootNode = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.tableLayoutPanel1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
@@ -176,7 +175,7 @@ namespace VMDirSnapIn.Views
             // tsbSetPageSize
             // 
             this.tsbSetPageSize.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbSetPageSize.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.PageSize);
+            this.tsbSetPageSize.Image = ((System.Drawing.Image)(resources.GetObject("tsbSetPageSize.Image")));
             this.tsbSetPageSize.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbSetPageSize.Name = "tsbSetPageSize";
             this.tsbSetPageSize.Size = new System.Drawing.Size(23, 27);
@@ -192,7 +191,7 @@ namespace VMDirSnapIn.Views
             // tsbFetchNext
             // 
             this.tsbFetchNext.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbFetchNext.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.NextPage);
+            this.tsbFetchNext.Image = ((System.Drawing.Image)(resources.GetObject("tsbFetchNext.Image")));
             this.tsbFetchNext.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbFetchNext.Name = "tsbFetchNext";
             this.tsbFetchNext.Size = new System.Drawing.Size(23, 27);
@@ -208,7 +207,7 @@ namespace VMDirSnapIn.Views
             // tsbShowHideOperationalAttr
             // 
             this.tsbShowHideOperationalAttr.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbShowHideOperationalAttr.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.OperationalAttr);
+            this.tsbShowHideOperationalAttr.Image = ((System.Drawing.Image)(resources.GetObject("tsbShowHideOperationalAttr.Image")));
             this.tsbShowHideOperationalAttr.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbShowHideOperationalAttr.Name = "tsbShowHideOperationalAttr";
             this.tsbShowHideOperationalAttr.Size = new System.Drawing.Size(23, 27);
@@ -224,7 +223,7 @@ namespace VMDirSnapIn.Views
             // tsbShowOptionalAttr
             // 
             this.tsbShowOptionalAttr.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbShowOptionalAttr.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.OptionalAttr);
+            this.tsbShowOptionalAttr.Image = ((System.Drawing.Image)(resources.GetObject("tsbShowOptionalAttr.Image")));
             this.tsbShowOptionalAttr.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbShowOptionalAttr.Name = "tsbShowOptionalAttr";
             this.tsbShowOptionalAttr.Size = new System.Drawing.Size(23, 27);
@@ -240,7 +239,7 @@ namespace VMDirSnapIn.Views
             // tsbRefresh
             // 
             this.tsbRefresh.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbRefresh.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.Refresh);
+            this.tsbRefresh.Image = ((System.Drawing.Image)(resources.GetObject("tsbRefresh.Image")));
             this.tsbRefresh.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbRefresh.Name = "tsbRefresh";
             this.tsbRefresh.Size = new System.Drawing.Size(23, 27);
@@ -256,7 +255,7 @@ namespace VMDirSnapIn.Views
             // tsbSearch
             // 
             this.tsbSearch.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbSearch.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.Search);
+            this.tsbSearch.Image = ((System.Drawing.Image)(resources.GetObject("tsbSearch.Image")));
             this.tsbSearch.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbSearch.Name = "tsbSearch";
             this.tsbSearch.Size = new System.Drawing.Size(23, 27);
@@ -276,7 +275,7 @@ namespace VMDirSnapIn.Views
             this.tsbSuperLog.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbSuperLog.Name = "tsbSuperLog";
             this.tsbSuperLog.Size = new System.Drawing.Size(23, 27);
-            this.tsbSuperLog.Tag = "server";
+            this.tsbSuperLog.Tag = "all";
             this.tsbSuperLog.Text = "Superlog";
             this.tsbSuperLog.Click += new System.EventHandler(this.tsbSuperLog_Click);
             // 
@@ -288,7 +287,7 @@ namespace VMDirSnapIn.Views
             // tsbDelete
             // 
             this.tsbDelete.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbDelete.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.Delete);
+            this.tsbDelete.Image = ((System.Drawing.Image)(resources.GetObject("tsbDelete.Image")));
             this.tsbDelete.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbDelete.Name = "tsbDelete";
             this.tsbDelete.Size = new System.Drawing.Size(23, 27);
@@ -336,7 +335,7 @@ namespace VMDirSnapIn.Views
             // tsbAddGroup
             // 
             this.tsbAddGroup.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbAddGroup.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.Group);
+            this.tsbAddGroup.Image = ((System.Drawing.Image)(resources.GetObject("tsbAddGroup.Image")));
             this.tsbAddGroup.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbAddGroup.Name = "tsbAddGroup";
             this.tsbAddGroup.Size = new System.Drawing.Size(23, 27);
@@ -352,7 +351,7 @@ namespace VMDirSnapIn.Views
             // tsbAddToGroup
             // 
             this.tsbAddToGroup.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbAddToGroup.Image = VMDirEnvironment.Instance.GetImageResource(VMDirIconIndex.AddToGroup);
+            this.tsbAddToGroup.Image = ((System.Drawing.Image)(resources.GetObject("tsbAddToGroup.Image")));
             this.tsbAddToGroup.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbAddToGroup.Name = "tsbAddToGroup";
             this.tsbAddToGroup.Size = new System.Drawing.Size(23, 27);
@@ -607,18 +606,10 @@ namespace VMDirSnapIn.Views
             this.tsmiAddNewServer.Text = "Add New Server";
             this.tsmiAddNewServer.Click += new System.EventHandler(this.tsmiAddNewServer_Click);
             // 
-            // tsmiRootRefresh
-            // 
-            this.tsmiRootRefresh.Name = "tsmiRootRefresh";
-            this.tsmiRootRefresh.Size = new System.Drawing.Size(158, 22);
-            this.tsmiRootRefresh.Text = "Refresh";
-            this.tsmiRootRefresh.Click += new System.EventHandler(this.tsmiRootRefresh_Click);
-            // 
             // cmsRootNode
             // 
             this.cmsRootNode.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.tsmiAddNewServer,
-            this.tsmiRootRefresh});
+            this.tsmiAddNewServer});
             this.cmsRootNode.Name = "cmsRootNode";
             this.cmsRootNode.Size = new System.Drawing.Size(159, 48);
             // 
@@ -676,7 +667,6 @@ namespace VMDirSnapIn.Views
         private System.Windows.Forms.ToolStripMenuItem tsmiResetUserPassword;
         private System.Windows.Forms.ToolStripMenuItem tsmiVerifyUserPassword;
         private System.Windows.Forms.ToolStripMenuItem tsmiAddNewServer;
-        private System.Windows.Forms.ToolStripMenuItem tsmiRootRefresh;
         private System.Windows.Forms.ContextMenuStrip cmsRootNode;
         private System.Windows.Forms.ToolStripMenuItem tsmiAddToGroup;
         private System.Windows.Forms.ToolStripButton tsbShowOptionalAttr;

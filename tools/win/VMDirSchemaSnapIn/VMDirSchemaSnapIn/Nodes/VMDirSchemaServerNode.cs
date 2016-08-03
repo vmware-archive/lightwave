@@ -60,7 +60,7 @@ namespace VMDirSchemaEditorSnapIn.Nodes
                     if (IsLoggedIn)
                     {
                         this.ActionsPaneItems.Remove(LoginAction);
-                        this.ActionsPaneItems.Add(new Microsoft.ManagementConsole.Action(VMDirSchemaConstants.COMPARE_SCHEMA, VMDirSchemaConstants.COMPARE_SCHEMA, -1, ACTION_SCHEMACOMPARE));
+                       // this.ActionsPaneItems.Add(new Microsoft.ManagementConsole.Action(VMDirSchemaConstants.COMPARE_SCHEMA, VMDirSchemaConstants.COMPARE_SCHEMA, -1, ACTION_SCHEMACOMPARE));
                         AddLogoutActions();
                         PopulateChildren();
                     }

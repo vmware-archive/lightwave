@@ -63,7 +63,9 @@ namespace VMDirSnapIn.UI
             var charArr=new char[] { '\r', '\n' };
             foreach (var item in this.textBox1.Text.Split('\n'))
             {
-                _filters.Add(new FilterDTO(comboBoxAttr.SelectedItem.ToString(), (Condition) comboBoxCond.SelectedIndex, item.Trim(charArr)));
+                var val = item.Trim(charArr);
+                if(!string.IsNullOrWhiteSpace(val))
+                    _filters.Add(new FilterDTO(comboBoxAttr.SelectedItem.ToString(), (Condition) comboBoxCond.SelectedIndex, val));
             }
             this.Close();
         }

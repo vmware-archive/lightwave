@@ -50,6 +50,9 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Xamarin.Mac" />
+    <Reference Include="VmDirInterop">
+      <HintPath>..\..\interop\lib64\VmDirInterop.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />
@@ -157,10 +160,6 @@
     <ProjectReference Include="..\..\common\VMDir.Common\VMDir.Common.csproj">
       <Project>{76109B16-B0AE-47EB-8545-EB135EB92E2A}</Project>
       <Name>VMDir.Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\vmdir\interop\csharp\VmDirInterop\VmDirInterop\VmDirInterop.csproj">
-      <Project>{CA2F370A-7C11-4173-8BDF-9FD143896E01}</Project>
-      <Name>VmDirInterop</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

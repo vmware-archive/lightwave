@@ -96,7 +96,9 @@ namespace VMDirSnapIn.UI
 				var charArr = new char[] { '\r', '\n' };
 				foreach (var item in ValuesTextField.StringValue.Split('\n'))
 				{
-					ValuesList.Add(item.Trim(charArr));
+					var val = item.Trim(charArr);
+					if(!string.IsNullOrWhiteSpace(val))
+						ValuesList.Add(val);
 				}
 			});
 		}
