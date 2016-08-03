@@ -423,6 +423,12 @@ AC_SUBST(VMCA_LIBS)
 pscsetupbindir=$prefix/bin
 AC_SUBST(pscsetupbindir)
 
+systemddir=/lib/systemd/system
+AC_SUBST(systemddir)
+
+scriptsconfdir="$datadir/config"
+AC_SUBST(scriptsconfdir)
+
 pscsetupjarsdir=$prefix/jars
 AC_SUBST(pscsetupjarsdir)
 
