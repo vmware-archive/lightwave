@@ -433,7 +433,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
             $scope.vm.selectedSolutionUser = null;
 
             var value = "NAME";
-            if(!type){
+            /*if(!type){
                 var item = {name: "Name", value: "NAME"};
                 $scope.vm.selectedSolutionUserSearchType = item;
                 $scope.vm.solutionUserSearchType = [item, {name: "Certificate", value: "CERT_SUBJECTDN"}]
@@ -441,7 +441,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
 
             if(name && name != '' && type){
                 value = type.value;
-            }
+            }*/
             if (providers != null) {
                 var provider_name = '';
                 for (var i = 0; i < providers.length; i++) {
