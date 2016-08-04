@@ -59,6 +59,11 @@ namespace VMDirSchemaEditorSnapIn
                 itemsToSelectListView.Entries = itemsToSelectListView.Entries.FindAll(p => p.StartsWith(SearchField.StringValue));
                 this.ObjectClassList.ReloadData();
             }
+            else
+            {
+                itemsToSelectListView.Entries = ItemsToSelect;
+                this.ObjectClassList.ReloadData();
+            }
         }
 
         public  void OnCloseSearch(object sender, EventArgs e)

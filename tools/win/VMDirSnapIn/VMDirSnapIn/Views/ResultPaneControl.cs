@@ -156,34 +156,52 @@ namespace VMDirSnapIn.Views
         private void DoActionOnDirectoryExpandableNode(Action<DirectoryExpandableNode> action)
         {
             var node = this.treeViewExplore.SelectedNode as DirectoryExpandableNode;
-            if (node != null && action != null)
+            if(node==null || action==null)
             {
-                action(node);
+                 MMCDlgHelper.ShowWarning(VMDirConstants.WRN_OBJ_NODE_SEL);
+                return;
             }
-            else
+            if (node.ServerDTO == null || node.ServerDTO.Connection == null)
             {
-                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_OBJ_NODE_SEL);
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
+                return;
             }
+            action(node);
         }
         private void DoActionOnServerNode(Action<ServerNode> action)
         {
             var node = this.treeViewExplore.SelectedNode as ServerNode;
-            if (node != null && action != null)
+            if (node == null || action == null)
             {
-                action(node);
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_OBJ_NODE_SEL);
+                return;
             }
-            else
+            if (node.ServerDTO == null || node.ServerDTO.Connection == null)
             {
-                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_SER_NODE_SEL);
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
+                return;
             }
+            action(node);
+        }
+        private void DoActionOnServerNodeWithoutConnCheck(Action<ServerNode> action)
+        {
+            var node = this.treeViewExplore.SelectedNode as ServerNode;
+            if (node == null || action == null)
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_OBJ_NODE_SEL);
+                return;
+            }
+            action(node);
         }
         private void DoActionOnRootNode(Action<RootNode> action)
         {
             var node = this.treeViewExplore.SelectedNode as RootNode;
-            if (node != null && action != null)
+            if (node == null || action == null)
             {
-                action(node);
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_OBJ_NODE_SEL);
+                return;
             }
+            action(node);
         }
 
         private void tsmiSuperlog_Click(object sender, EventArgs e)
@@ -200,7 +218,7 @@ namespace VMDirSnapIn.Views
         }
         private void tsmiLogin_Click(object sender, EventArgs e)
         {
-            DoActionOnServerNode(delegate(ServerNode node) { node.Login(); });
+            DoActionOnServerNodeWithoutConnCheck(delegate(ServerNode node) { node.Login();});
         }
         private void tsmiLogout_Click(object sender, EventArgs e)
         {
@@ -208,7 +226,7 @@ namespace VMDirSnapIn.Views
         }
         private void tsmiRemove_Click(object sender, EventArgs e)
         {
-            DoActionOnServerNode(delegate(ServerNode node) { node.RemoveServer(); });
+            DoActionOnServerNodeWithoutConnCheck(delegate(ServerNode node) { node.RemoveServer(); });
         }
         private void tsmiServerRefresh_Click(object sender, EventArgs e)
         {
@@ -216,7 +234,7 @@ namespace VMDirSnapIn.Views
         }
         private void tsmiSetPageSize_Click(object sender, EventArgs e)
         {
-            DoActionOnServerNode(delegate(ServerNode node) { node.SetPageSize(); });
+            DoActionOnServerNodeWithoutConnCheck(delegate(ServerNode node) { node.SetPageSize(); });
         }
         private void tsmiSearch_Click(object sender, EventArgs e)
         {
@@ -309,7 +327,7 @@ namespace VMDirSnapIn.Views
 
         private void tsbSetPageSize_Click(object sender, EventArgs e)
         {
-            DoActionOnServerNode(delegate(ServerNode node) { node.SetPageSize(); });
+            DoActionOnServerNodeWithoutConnCheck(delegate(ServerNode node) { node.SetPageSize(); });
         }
         private void tsbFetchNext_Click(object sender, EventArgs e)
         {

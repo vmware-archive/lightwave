@@ -32,11 +32,6 @@ namespace VMDirSnapIn.TreeNodes
         }
         public override void DoRefresh()
         {
-            if (ServerDTO.Connection == null)
-            {
-                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RELOGIN);
-                return;
-            }
             RefreshProperties();
         }
     }

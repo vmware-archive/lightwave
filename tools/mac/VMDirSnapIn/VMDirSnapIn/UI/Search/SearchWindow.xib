@@ -552,7 +552,7 @@ DQ
                                                                 <textField verticalHuggingPriority="750" id="keK-bx-g4b">
                                                                     <rect key="frame" x="105" y="7" width="88" height="22"/>
                                                                     <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                                                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" alignment="center" drawsBackground="YES" id="d7j-LO-yVe">
+                                                                    <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" enabled="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" alignment="center" drawsBackground="YES" id="d7j-LO-yVe">
                                                                         <font key="font" metaFont="system"/>
                                                                         <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                                                                         <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
@@ -690,7 +690,7 @@ DQ
         </window>
     </objects>
     <resources>
-        <image name="ExportImg" width="128" height="128"/>
+        <image name="ExportImg" width="64" height="64"/>
         <image name="OpenImg" width="64" height="64"/>
         <image name="OperationalAttrImg" width="64" height="64"/>
         <image name="OptionalAttrImg" width="64" height="64"/>

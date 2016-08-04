@@ -82,14 +82,14 @@ namespace VMDirSchema.UI
             SetSubView(splitViewController.View);
 
             LoadIcons();
-            MainToolBar.InsertItem(VMDirSchemaConstants.FEDERATION_TOOLBAR, 3);
+            //MainToolBar.InsertItem(VMDirSchemaConstants.FEDERATION_TOOLBAR, 3);
             SetToolBarState(false);
 
             ServerToolBarItem.Activated += HandleConnection;
             RefreshToolBarItem.Activated += HandleRefresh;
             SearchRecordsField.Activated += StartSearch;
-            FederationViewToolBarItem.Activated += SwitchViews;
-            FederationViewToolBarItem.Label = VMDirSchemaConstants.VMDIRSCHEMA_FEDERATION_VIEW;
+            // FederationViewToolBarItem.Activated += SwitchViews;
+            // FederationViewToolBarItem.Label = VMDirSchemaConstants.VMDIRSCHEMA_FEDERATION_VIEW;
             SchemaViewToolBarItem.Activated += SwitchViews;
             SearchRecordsField.PlaceholderString = VMDirSchemaConstants.VMDIRSCHEMA_SEARCH;
             SearchFieldCell.CancelButtonCell.Activated += OnCloseSearch;

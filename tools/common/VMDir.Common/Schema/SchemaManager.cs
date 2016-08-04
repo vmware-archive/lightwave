@@ -121,7 +121,7 @@ namespace VMDir.Common.Schema
 
         private List<AttributeTypeDTO> GetAttributes(string className, Func<ObjectClassDTO, List<string>> fnSelectAttribs)
         {
-            var attributes = new List<AttributeTypeDTO>();
+            var attributes = new HashSet<AttributeTypeDTO>();
             var dto = GetObjectClass(className);
             while (dto != null)
             {
@@ -141,7 +141,7 @@ namespace VMDir.Common.Schema
                     break;
 
             }
-            return attributes;
+            return attributes.ToList();
         }
 
         public List<AttributeTypeDTO> GetAllAttributes(string className)
