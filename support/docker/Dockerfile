@@ -22,7 +22,7 @@ RUN tdnf update -y tdnf; \
     tdnf install -y commons-daemon \
                     apache-tomcat \
                     boost; \
-    tdnf install -y likewise-open-6.2.9; \
+    tdnf install -y likewise-open-6.2.10; \
     tdnf install -y vmware-lightwave-server; \
     rm -rf /usr/share/doc/*; \
     rm -rf /usr/share/man/*; \
