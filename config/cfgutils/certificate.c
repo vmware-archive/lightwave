@@ -285,6 +285,11 @@ VmwDeployCreateMachineSSLCert(
                     pCertRequest);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
+    if (!VmwDeployIsIPAddress(pszHostname))
+    {
+        VMCASetPKCSMemberA(&pCertRequest->pszDNSName, pszHostname);
+    }
+
     dwError = VMCACreateSigningRequest(
                     pCertRequest,
                     pPrivateKey,
