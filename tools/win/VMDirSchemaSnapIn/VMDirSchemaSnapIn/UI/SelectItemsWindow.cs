@@ -34,7 +34,7 @@ namespace VMDirSchemaSnapIn.UI
 
         public List<string> SelectedItemsList { get; set; }
 
-        public SelectItemsWindow(List<string> items , List<string> currentAttributes, List<string> parentAttributes)
+        public SelectItemsWindow(List<string> items, List<string> currentAttributes, List<string> parentAttributes)
         {
             InitializeComponent();
             this.ItemsToSelect = items;
@@ -58,7 +58,7 @@ namespace VMDirSchemaSnapIn.UI
             if (row >= 0)
             {
                 string selectedItem = this.FromList.SelectedValue.ToString();
-                if (currentItems != null && parentItems != null && (currentItems.Contains(selectedItem) || parentItems.Contains(selectedItem)))
+                if ((currentItems != null && currentItems.Contains(selectedItem)) || (parentItems != null && parentItems.Contains(selectedItem)))
                 {
                     UIErrorHelper.ShowMessage(VMDirConstants.WRN_SEL_ITEM_PRESENT);
                 }
