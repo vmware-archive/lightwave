@@ -68,6 +68,11 @@ namespace VMDirSnapIn.UI
 					UIErrorHelper.ShowWarning(VMDirConstants.WRN_PAGE_SIZE_MINVAL);
 					return false;
 				}
+				else if (ps>VMDirConstants.DEFAULT_PAGE_SIZE*10)
+				{
+					UIErrorHelper.ShowWarning(VMDirConstants.WRN_PAGE_SIZE_MAXVAL);
+					return false;
+				}
 				else
 					return true;
 			}

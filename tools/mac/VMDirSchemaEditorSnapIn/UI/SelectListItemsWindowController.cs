@@ -66,7 +66,7 @@ namespace VMDirSchemaEditorSnapIn
             if (row >= 0)
             {
                 string selectedItem = (this.SelectItemsListBox.DataSource as StringItemsListView).Entries[row];
-                if (currentItems != null && parentItems != null && (currentItems.Contains(selectedItem) || parentItems.Contains(selectedItem)))
+                if ((currentItems != null && currentItems.Contains(selectedItem)) || (parentItems != null && parentItems.Contains(selectedItem)))
                 {
                     UIErrorHelper.ShowAlert(VMDirConstants.WRN_SEL_ITEM_PRESENT, string.Empty);
                 }

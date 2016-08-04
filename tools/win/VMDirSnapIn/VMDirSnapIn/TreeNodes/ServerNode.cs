@@ -99,7 +99,6 @@ namespace VMDirSnapIn.TreeNodes
                 {
                     if (ServerDTO.Connection.CreateConnection() == 1)
                     {
-                        ServerDTO.IsLoggedIn = true;
                         this.Text = ServerDTO.Server;
 
                         if (string.IsNullOrWhiteSpace(ServerDTO.BaseDN))
@@ -126,6 +125,7 @@ namespace VMDirSnapIn.TreeNodes
                             ServerDTO.Connection.Search(dto, null);
                         }
                         this.Nodes.Add(new DirectoryExpandableNode(ServerDTO.BaseDN, new List<string>(), ServerDTO, PropertiesCtl));
+                        ServerDTO.IsLoggedIn = true;
                         Expand();
                         DoSelect();
                     }
