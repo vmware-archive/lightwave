@@ -203,6 +203,14 @@ body {
   margin-top:20px;
 }
 
+.search-member-box {
+  border-radius: 3px;
+  border: 1px solid gray;
+  height:28px;
+  width: 210px;
+  margin-right:5px;
+  margin-left: 10px;
+}
 
 /* ====== Search Panel ====== */
 
@@ -210,14 +218,15 @@ body {
   border-radius: 3px;
   border: 1px solid gray;
   height:28px;
-  width: 300px;
+  width: 240px;
   margin-right:5px;
+  padding-left: 5px;
 }
 
 
 .ids-select{
   height:28px;
-  width:120px;
+  width:150px;
   margin-left:5px;
   margin-right:10px;
   border: 1px solid gray;
@@ -230,11 +239,13 @@ body {
 
 .ngdialog-content{
   min-width:480px;
+  display:block;
 }
 
 .popup-style{
   min-width:480px;
-  background-color: #FFFFFF;
+  background-color: #313131;
+  opacity: 0.93;
 }
 
 .tooltip-inner{
@@ -421,9 +432,4 @@ body {
 }
 .ng-cloak{
   display: none !important;
-}
-
-
-.ngdialog-overlay {
-  pointer-events: none;
 }

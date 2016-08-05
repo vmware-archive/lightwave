@@ -136,7 +136,7 @@ else {
 <div id="productName">
    <script type="text/javascript">
         if (isVCLogin()) {
-           document.write("<img id=\"VCSSO-Title\" src=\"../../resources/img/VCSSO-title.png\" />");
+           //document.write("<img id=\"VCSSO-Title\" src=\"../../resources/img/VCSSO-title.png\" />");
            }
    </script>
    <div id="response" style="display:none"></div>

@@ -1,0 +1,10 @@
+[Unit]
+Description= Firewall rules for Lightwave.
+After=iptables.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python /opt/vmware/share/config/setfirewallrules.py
+
+[Install]
+WantedBy=multi-user.target

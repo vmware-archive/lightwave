@@ -34,17 +34,17 @@
                     Domain: <select
                         ng-model="vm.idsmembersearch"
                         ng-options="t as t.name for t in vm.identitysources"
-                        style="height:24px;width:120px;margin-left:5px;margin-right:5px;"
+                        class="ids-select"
                         ng-change="vm.getAllMembers(vm.idsmembersearch);"></select>
                     Filter: <select
                         ng-model="membersearchtype"
                         ng-options="t as t.name for t in membersearchtypes"
-                        style="height:24px;width:120px;margin-left:5px; margin-right:5px;"></select>
+                        class="ids-select"></select>
                     <input type="text"
                            id="membersearch"
                            name="membersearch"
                            ng-model="vm.membersearch"
-                           class="form-control" style="display:inline;width:120px;"
+                           class="search-member-box"
                            placeholder="Search text"/> <br/><br/>
                     <button type="submit"
                             class="btn btn-primary btn-sm pull-right"
@@ -121,16 +121,15 @@
                         ng-click="vm.deleteSelectedMembers()">DELETE
                 </button>
                 <button type="button"
-                        class="btn btn-primary btn-xs pull-right btn-popup-footer"
+                        class="btn btn-primary btn-sm pull-right btn-popup-footer"
                         style="margin-right: 15px;margin-left:10px;"
                         ng-click="vm.searchSelectedMembers()">SEARCH
                 </button>
                 <input type="text"
                        id="selectedmembersearch"
                        name="selectedmembersearch"
+                       class="search-member-box"
                        ng-model="vm.selectedmembersearch"
-                       class="form-control pull-right"
-                       style="display:inline;width:200px;"
                        placeholder="Search current members"/>
                 <div class="popup-row col-xs-12">
                     <div class="large-grid">
