@@ -136,7 +136,7 @@ namespace VMDirSnapIn.UI
 			_propViewController.PropTableView = new VMDirTableView();
 			_propViewController.View.SetFrameSize(ResultPropView.Frame.Size);
 			ResultPropView.AddSubview(_propViewController.View);
-			SearchBoxVisibilityToolBarItem.Active = true;
+			LoadQueryToolBarItem.Active = true;
 			//SearchResultContainerView.RemoveFromSuperview();
 			RemoveTableColumns();
 

@@ -23,9 +23,9 @@ It lets you connect to a remote server and do the following tasks
 Lightwave Directory is a native Mac OSX app to manage the ldap directory store in a lightwave instance.
 It lets you connect to a remote server and do the following tasks
 
-* View directory data
-* Manage directory data
-* Browse ldap schema
+* Browse directory
+* Manage directory objects
+* Search directory objects
 
 ##Lightwave SSO.app
 Lightwave SSO is a native Mac OSX app to manage the SSO server in a lightwave instance.
@@ -39,7 +39,6 @@ It lets you connect to a remote server and do the following tasks
 ##Lightwave PSC Site Management.app
 Lightwave PSC Site Management is a native Mac OSX app to monitor the high availability of PSC and 
 VC nodes in a lightwave topology.
-
 It lets you connect to a remote VC and do the following tasks
 
 * Monitor the health of the sites and topology
@@ -47,13 +46,21 @@ It lets you connect to a remote VC and do the following tasks
 * Displays Domain Functional Level (DFL) for the topology
 * Monitors the updates done to the topology
 
+##Lightwave Directory Schema.app
+Lightwave Directory Schema is a native Mac OSX app to manage the ldap directory schema in a lightwave instance.
+It lets you connect to a remote server and do the following tasks
+
+* Browse directory schema
+* Manage/Edit schema
+* Compare Federation and Replication metadata
+
 ##Build Environment
 The source code is developed and tested against following environment:
 
-* Mono 4.0.4
-* Xamarin mac 2.4
-* XCode 7.2 (Beta)
-* Xamarin Studio 5.10.2 (https://store.xamarin.com)
+* Mono 4.4.2
+* Xamarin mac 2.8.2
+* XCode 7.3.1
+* Xamarin Studio 6.0.2 (https://www.xamarin.com/)
 
 ##Source code
 ```
@@ -61,51 +68,48 @@ git clone https://github.com/vmware/lightwave.git
 mac ui source files are under lightwave/tools/mac
 ```
 
-##Pre-built binaries
-The Lightwave UI tools installer comes pre-packaged with the pre-requisites packages and is available at the 
-following location:
-
-https://vmware.bintray.com/lightwave_ui/
-
-Install the pre-built binaries (link above) to satisfy dependencies before attempting to build.
-
 ##Build
+
 The code can be build either using the build script or manually using Xamarin Studio.
-Note that you will require a Xamarin license to build Xamarin.Mac apps that link with 64bit libraries.
-LightwaveUI Mac projects will require a Xamarin business license.
 
-If you have a trial license, you will have to build from the IDE using Xamarin Studio.
-Trial licenses can be created from the Xamarin Studio IDE.
+###Pre-requisite client binaries
+Install the client pre-built binaries (from the link below) to satisfy dependencies before attempting to build.:
 
-If you have a purchased license, you can use tools/mac/build.sh to build all apps.
+https://vmware.bintray.com/lightwave_ui/v1.0/rc/for_developers/mac
 
-Install the pre-built binaries (link above) to satisfy dependencies before attempting to build.
 
 ####Using build script
 ```
  cd lightwave/tools/mac
- ./build.sh
+ sh build.sh
 ```
 
-app files will be created under x64/Debug folder by default. If you need a Release build, use ./build.sh Release
+app files will be created under tools/mac/x64/Debug folder by default. If you need a Release build, use "sh build.sh Release" command.
 
 ####Using Xamarin Studio
 
 To build the tools indiviudally using Xamarin Studio, you need to build the pre-requisite interops first.
+
 If you have opened the .sln file for a tool, you would need to close it before you perform these steps.
 Perform the following steps before you open the solution for a tool.
 
 There are 3 pre-requisite interop projects that you need to build. 
 
 These are placed at:
+
 /lightwave/vmafd/dotnet/VMAFD.Client/VMAFD.Client.sln
+
 /lightwave/vmdir/dotnet/VMDIR.Client/VMDIR.Client.sln
-/lightwave/vmdir/interop/csharp/VmDirInterop/VmDirInterop.sln
+
+/lightwave/vmdir/interop/csharp/VmDirInterop/VmDirInterop.sln - Build only VMDirInterop project by changing target framework to 4.0
+
+Other projects in VmDirInterop solution are not required and if you want to build them then their target framework also requires to be changed to 4.0
 
 The artifacts for the above projects can be found under /bin/Debug or /bin/Release folders 
 under respective (VMAFD.Client, VMDIR.Client or VmDirInterop) project folder.
 
 The above project would generate following 6 artifacts:
+
 VMAFD.Client.dll
 VMAFD.Client.dll.config
 VMDIR.Client.dll
@@ -116,16 +120,28 @@ VmDirInterop.dll.config
 Now, copy the above artifacts to lightwave/tools/interop/lib64 folder.
 You may need to create the above folder if one does not exist.
 
+Make a copy of configuration file Brand_lw.config present inside tools/common/VMIdentity.CommonUtils project and rename it to "VMIdentity.CommonUtils.dll.config" (You can use below command)
+```
+cp tools/common/VMIdentity.CommonUtils/Brand_lw.config tools/common/VMIdentity.CommonUtils/VMIdentity.CommonUtils.dll.config
+```
+
 Now, you can open the solution files for the individual tool and build it using Xamarin Studio.
 
 Following are the location of the .sln files of the tools:
+
 Lightwave CA tool: \lightwave\tools\mac\VMCASnapIn\LightwaveCA.sln
+
 Lightwave Directory tool: \lightwave\tools\mac\VMDirSnapIn\Lightwave Directory.sln
+
 Lightwave Certificate tool: \lightwave\tools\mac\VMCertStoreSnapIn\LightwaveCertStore.sln
+
 Lightwave SSO tool: \lightwave\tools\mac\VMRestSsoSnapIn\Lightwave SSO.sln
+
 Lightwave PSC Site Management tool: \lightwave\tools\mac\VMPSCHighAvailabilitySnapIn\Lightwave PSC Site Management.sln
 
-The app files will be created under x64/Debug foler by default.
+Lightwave Directory Schema tool: \lightwave\tools\mac\VMDirSchemaEditorSnapIn\VMDirSchemaEditorSnapIn.sln
+
+The app files will be created under tools/mac/x64/Debug foler by default.
 
 ##Installer
 To create a MacOSX installer, use ./buildproduct.sh. This script will package all the apps 
@@ -142,23 +158,18 @@ In case you wish to cleanup the libs and links added by the Lightwave UI tool su
 ```
 
 * Lightwave REST SSO Tool : 
+	1. The get computer option should be disabled for non system tenant.
 
-	1. Cannot search the solution user by certificate since some special characters are not supported. 
-	2. The tools allows user to add expired certificate for STS signing.
-
-
-* Lightwave Directory Tool : 
-
-	1. To refresh the tree node just collapse and expand it. The right-click refresh option does not refresh the tree or attributes table.
-	2. There is no option to remove a member from a group
-
+* Lightwave CA Tool :  
+	1. Not able to Add root certificate
 
 * Lightwave PSC Site Management Tool :  
+	1. Performance improvements for Mac UI and management UI hangs when PSC is down
 
-	1. No support for partial topology load.
-	2. The UI refresh cycle is set to 60 seconds. There would be 2 minute (worst case) lag between the server state and its reflection on the UI.	
-	3. On EL Capitan maximize of screen clutter the screen and the labels.
-	4. Some of the services could be seen as ACTIVE for the PSC which is INACTIVE due to power off or vmdir or vmafd service down.
+* Lightwave Directory Schema Tool :  
+	1. When a class object is selected in left pane then attribute list show in right pane is not in alphabetic order in  mac
+	2. Many attribute types are showing syntax as System.String in Right Pane
+	3. UI tools allows attributes to be created for 34 different attribute syntax at present.
 	
 ```
 
@@ -177,6 +188,7 @@ the following command:
 tail -n 100 /var/log/install.log
 
 NOTE: It should contain details as below:
+```
 Nov 18 20:41:15 LOCALMACHINE.local Installer[13136]: PackageKit:
 Registered bundle file:///Applications/LightwaveTools/Lightwave%20CA.app/
 for uid 93024
@@ -191,7 +203,10 @@ file:///Applications/LightwaveTools/Lightwave%20Directory.app/ for uid
 Nov 18 20:41:15 LOCALMACHINE.local Installer[13136]: PackageKit:
 Registered bundle file:///Applications/LightwaveTools/Lightwave%20SSO.app/
 for uid 93024
-
+Nov 18 20:41:15 LOCALMACHINE.local Installer[13136]: PackageKit:
+Registered bundle file:///Applications/LightwaveTools/Lightwave%20Directory%20Schema.app/
+for uid 93024
+```
 
 
 3. If the paths in install.log in step 2. Are something other than above
@@ -202,7 +217,8 @@ not under LightwaveTools:
 	   sudo pkgutil --forget com.vmware.LightwaveDirectory OR
 	   sudo pkgutil --forget com.vmware.LightwaveSSO OR
 	   sudo pkgutil --forget com.vmware.LightwaveCertStore OR
-           sudo pkgutil --forget com.vmware.LightwaveCA
+       sudo pkgutil --forget com.vmware.LightwaveCA OR
+       sudo pkgutil --forget com.vmware.LightwaveDirectorySchema
 
 	ii. Go to the folder that the "culprit" app is unstalled under and move
 that app to Trash.

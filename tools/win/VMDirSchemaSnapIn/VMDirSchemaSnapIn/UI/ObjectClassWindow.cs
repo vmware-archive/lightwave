@@ -81,7 +81,7 @@ namespace VMDirSchemaSnapIn.UI
             InitialiseAttributesList();
             InitialiseClassesList();
             //this.RemoveAuxiliaryAttribtueButton.Enabled = false;
-           // this.AddAuxiliaryAttributeButton.Enabled = false;
+            // this.AddAuxiliaryAttributeButton.Enabled = false;
             if (!isAddMode)
             {
                 ObjectClassModDTO = new ObjectClassDTO();
@@ -170,7 +170,7 @@ namespace VMDirSchemaSnapIn.UI
                 {
                     mandatoryAttributesList.AddRange(frm.SelectedItemsList);
                     this.MandatoryList.DataSource = null;
-                    this.MandatoryList.DataSource =mandatoryAttributesList;
+                    this.MandatoryList.DataSource = mandatoryAttributesList;
                     this.MandatoryList.Refresh();
                 }
             }
@@ -195,12 +195,12 @@ namespace VMDirSchemaSnapIn.UI
         {
             var frm = new SelectItemsWindow(allAttributesList, optionalAttributesList, parentOptionalAttributes);
             if (frm.ShowDialog() == DialogResult.OK)
-                {
-                    optionalAttributesList.AddRange(frm.SelectedItemsList);
-                    this.OptionalList.DataSource = null;
-                    this.OptionalList.DataSource = optionalAttributesList;
-                    this.OptionalList.Refresh();
-                }
+            {
+                optionalAttributesList.AddRange(frm.SelectedItemsList);
+                this.OptionalList.DataSource = null;
+                this.OptionalList.DataSource = optionalAttributesList;
+                this.OptionalList.Refresh();
+            }
         }
 
         private void RemoveOptionalAttributeButton_Click(object sender, EventArgs e)
@@ -220,14 +220,14 @@ namespace VMDirSchemaSnapIn.UI
 
         private void AddAuxiliaryAttributeButton_Click(object sender, EventArgs e)
         {
-                var frm = new SelectItemsWindow(allClassesList,null,null);
-                if (frm.ShowDialog() == DialogResult.OK)
-                {
-                    auxiliaryClassesList.AddRange(frm.SelectedItemsList);
-                    this.AuxiliaryList.DataSource = null;
-                    this.AuxiliaryList.DataSource = auxiliaryClassesList;
-                    this.AuxiliaryList.Refresh();
-                }
+            var frm = new SelectItemsWindow(allClassesList, auxiliaryClassesList, null);
+            if (frm.ShowDialog() == DialogResult.OK)
+            {
+                auxiliaryClassesList.AddRange(frm.SelectedItemsList);
+                this.AuxiliaryList.DataSource = null;
+                this.AuxiliaryList.DataSource = auxiliaryClassesList;
+                this.AuxiliaryList.Refresh();
+            }
         }
 
         private void RemoveAuxiliaryAttribtueButton_Click(object sender, EventArgs e)
@@ -290,12 +290,12 @@ namespace VMDirSchemaSnapIn.UI
             else if (UIErrorHelper.ShowConfirm(VMwareMMCIDP.UI.Common.Utilities.MMCUIConstants.CONFIRM) == DialogResult.Yes)
             {
                 UIErrorHelper.CheckedExec(delegate()
-                {
-                    DoValidateControls();
-                    UpdateObjectClassDTOWithUIValues();
-                    this.DialogResult = DialogResult.OK;
-                    this.Close();
-                });
+                    {
+                        DoValidateControls();
+                        UpdateObjectClassDTOWithUIValues();
+                        this.DialogResult = DialogResult.OK;
+                        this.Close();
+                    });
             }
         }
 
@@ -343,7 +343,6 @@ namespace VMDirSchemaSnapIn.UI
                 if (String.Equals(this.ClassTypeCombo.SelectedItem.ToString(), VMDirSchemaConstants.VMDIRSCHEMA_AUXILIARY) == true)
                 {
                     this.ParentClassText.Enabled = false;
-                    parentClassList.AddRange(structuralClasses);
                     parentClassList.AddRange(abstractClasses);
                     parentClassList.AddRange(auxiliaryClasses);
                 }
@@ -354,8 +353,8 @@ namespace VMDirSchemaSnapIn.UI
                 }
                 auxiliaryClassesList.Clear();
                 this.AuxiliaryList.Refresh();
-               // this.AddAuxiliaryAttributeButton.Enabled = false;
-               // this.RemoveAuxiliaryAttribtueButton.Enabled = false;
+                // this.AddAuxiliaryAttributeButton.Enabled = false;
+                // this.RemoveAuxiliaryAttribtueButton.Enabled = false;
 
             }
         }

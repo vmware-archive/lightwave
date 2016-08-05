@@ -134,7 +134,6 @@ namespace VMDirSchemaEditorSnapIn
                 if (String.Equals(ClassTypePopup.TitleOfSelectedItem, VMDirSchemaConstants.VMDIRSCHEMA_AUXILIARY) == true)
                 {
                     ParentClass.Enabled = false;
-                    parentClassList.AddRange(structuralClasses);
                     parentClassList.AddRange(abstractClasses);
                     parentClassList.AddRange(auxiliaryClasses);
                 }
@@ -195,7 +194,7 @@ namespace VMDirSchemaEditorSnapIn
         {
             if (AuxiliaryClassesListView.Enabled == true)
             {
-                SelectListItemsWindowController swc = new SelectListItemsWindowController(allClassesList, null, null);
+                SelectListItemsWindowController swc = new SelectListItemsWindowController(allClassesList, auxiliaryClassesList, null);
                 nint ret = NSApplication.SharedApplication.RunModalForWindow(swc.Window);
                 if (ret == VMIdentityConstants.DIALOGOK)
                 {

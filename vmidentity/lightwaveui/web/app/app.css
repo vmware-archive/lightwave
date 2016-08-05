@@ -203,6 +203,13 @@ body {
   margin-top:20px;
 }
 
+.search-member-box {
+  border-radius: 3px;
+  border: 1px solid gray;
+  height:24px;
+  width: 150px;
+  margin-right:5px;
+}
 
 /* ====== Search Panel ====== */
 

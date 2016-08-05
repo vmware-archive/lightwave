@@ -17,9 +17,9 @@
 var sso_service_module = angular.module('lightwave.ui.sso.services');
 sso_service_module.factory('HttpService', HttpService);
 
-HttpService.$inject = ['$http','HttpConfiguration','$window', '$q', '$rootScope'];
+HttpService.$inject = ['$http','HttpConfiguration','AuthenticationService', '$window', '$q', '$rootScope'];
 
-function HttpService($http, HttpConfiguration, $window, $q, $rootScope) {
+function HttpService($http, HttpConfiguration, AuthenticationService, $window, $q, $rootScope) {
 
     var service = {};
     service.getResponse = getResponse;
@@ -43,10 +43,14 @@ function HttpService($http, HttpConfiguration, $window, $q, $rootScope) {
     }
 
     function handleFailure(response){
+        console.log('Failure response:' + JSON.stringify(response));
         if(response.status == 401 && response.data.error == 'invalid_token') {
-            var redirectUri = '/lightwaveui/Login?tenant=' + $rootScope.globals.currentUser.tenant;
+            /*var redirectUri = '/lightwaveui/Login?tenant=' + $rootScope.globals.currentUser.tenant;
             $window.sessionStorage.currentUser = 'logout';
-            $window.location.href = redirectUri;
+             $window.location.href = redirectUri;*/
+            response.data.error = null;
+            response.status = 200;
+            AuthenticationService.logout();
             return $q.reject(response);
         }
         return response;
