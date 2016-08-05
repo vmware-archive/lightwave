@@ -12,7 +12,8 @@ BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >=
 
 %define _jarsdir %{_prefix}/jars
 %define _bindir %{_prefix}/bin
-
+%define _configdir %{_prefix}/share/config
+%define _serviceddir /lib/systemd/system
 %if 0%{?_likewise_open_prefix:1} == 0
 %define _likewise_open_prefix /opt/likewise
 %endif
@@ -73,12 +74,34 @@ cd build && make install DESTDIR=%{buildroot}
 
     /sbin/ldconfig
 
+    /bin/systemctl enable firewall.service >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        /bin/ln -s %{_serviceddir}/firewall.service /etc/systemd/system/multi-user.target.wants/firewall.service 
+    fi
+
+    /bin/systemctl >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        /bin/systemctl daemon-reload
+    fi
+    /bin/systemctl start firewall.service
+
 %preun
 
     # First argument is 0 => Uninstall
     # First argument is 1 => Upgrade
+    /bin/systemctl >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
 
-%postun
+         if [ -f /etc/systemd/system/firewall.service ]; then
+             /bin/systemctl stop firewall.service
+             /bin/systemctl disable firewall.service
+             /bin/rm -f /etc/systemd/system/firewall.service
+             /bin/systemctl daemon-reload
+         fi
+
+    fi
+
+c%postun
 
     /sbin/ldconfig
 
@@ -93,6 +116,9 @@ cd build && make install DESTDIR=%{buildroot}
 %{_bindir}/domainjoin.sh
 %{_lib64dir}/*.so*
 %{_jarsdir}/*.jar
+%{_configdir}/firewall.json
+%{_configdir}/setfirewallrules.py
+%{_serviceddir}/firewall.service
 
 %exclude %{_lib64dir}/*.a
 %exclude %{_lib64dir}/*.la
@@ -100,4 +126,3 @@ cd build && make install DESTDIR=%{buildroot}
 # %doc ChangeLog README COPYING
 
 %changelog
-

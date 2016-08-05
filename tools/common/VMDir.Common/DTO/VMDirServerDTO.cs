@@ -37,7 +37,7 @@ namespace VMDir.Common.DTO
         private int _pageSize;
         public int PageSize { 
             get {
-                if (_pageSize <= 0)
+                if (_pageSize <= 0 || _pageSize > VMDirConstants.DEFAULT_PAGE_SIZE * 10)
                     return VMDirConstants.DEFAULT_PAGE_SIZE;
                 else
                     return _pageSize;

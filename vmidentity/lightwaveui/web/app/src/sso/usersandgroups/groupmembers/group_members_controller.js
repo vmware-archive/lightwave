@@ -315,14 +315,19 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
             function addMembersToGroup() {
                 $rootScope.globals.popup_errors = null;
                 if ($scope.vm.membersearchresult) {
-                    addUserMembers();
-                    addGroupMembers();
+                    var dupUsers = addUserMembers();
+                    var dupGroups = addGroupMembers();
+
+                    var duplicate = dupUsers + dupGroups;
+                    if(duplicate != ''){
+                        $rootScope.globals.popup_errors = { details : "Duplicate: Member(s) already exist - " + duplicate };
+                    }
                 }
             }
 
             function addUserMembers() {
                 var group = $scope.currentgroup;
-
+                var duplicate = '';
                 if (group.members == null)
                     group.members = {};
                 if (group.members.users == null)
@@ -350,14 +355,20 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                                 group.members.users.push(user);
                                 user.markedForAdd = false;
                             }
+
+                            if(dup)
+                            {
+                                duplicate = duplicate + " " + user.name + "@" + user.domain + " ";
+                            }
                         }
                     }
                 }
+                return duplicate;
             }
 
             function addGroupMembers() {
                 var group = $scope.currentgroup;
-
+                var duplicate = '';
                 if (group.members == null)
                     group.members = {};
                 if (group.members.groups == null)
@@ -388,6 +399,10 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                                     member.state = 1;
                                     group.members.groups.push(member);
                                 }
+                                if(dup)
+                                {
+                                    duplicate = duplicate + " " + member.name + "@" + member.domain + " ";
+                                }
                             }
                             else {
                                 member.markedForAdd = false;
@@ -396,6 +411,7 @@ module.controller('GroupMembersCntrl', [ '$scope', '$rootScope', 'GroupService',
                         }
                     }
                 }
+                return duplicate;
             }
 
             function canDeleteSelectedMembers() {

@@ -57,9 +57,10 @@ namespace VMDirSnapIn.UI
                     MMCDlgHelper.ShowWarning(VMDirConstants.WRN_PAGE_SIZE_MINVAL);
                     return false;
                 }
-                if (PageSize > VMDirConstants.DEFAULT_PAGE_SIZE * 10)
+                if (pagesize > VMDirConstants.DEFAULT_PAGE_SIZE * 10)
                 {
                     MMCDlgHelper.ShowWarning(VMDirConstants.WRN_PAGE_SIZE_MAXVAL);
+                    return false;
                 }
             }
             catch (Exception)
