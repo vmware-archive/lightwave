@@ -39,38 +39,39 @@
             <div>
             <span class="sso-view-item-header">Users </span>
              <span class="sso-view-item-text">
-                <a href="#usersandgroups">{{vm.summary.users}}</a>
+                {{vm.summary.users}}
             </span>
             </div>
             <div>
             <span class="sso-view-item-header">Groups </span>
              <span class="sso-view-item-text">
-                <a href="#usersandgroups">{{vm.summary.groups}}</a>
+                {{vm.summary.groups}}
             </span>
             </div>
             <div>
             <span class="sso-view-item-header">Solution Users </span>
              <span class="sso-view-item-text">
-                <a href="#usersandgroups">{{vm.summary.solutionUsers}}</a>
+                {{vm.summary.solutionUsers}}
             </span>
             </div>
             <div>
             <span class="sso-view-item-header">Identity Sources </span>
              <span class="sso-view-item-text">
-                <a href="#/identitysources">{{vm.summary.identitySources}}</a>
+                {{vm.summary.identitySources}}
             </span>
             </div>
             <div ng-show="globals.currentUser.role == 'Administrator'">
                 <div>
                 <span class="sso-view-item-header">Identity Providers </span>
                  <span class="sso-view-item-text">
-                    <a href="#serviceproviders">{{vm.summary.identityProviders}}</a>
+                    {{vm.summary.identityProviders}}
                 </span>
                 </div>
                 <div>
-                <span class="sso-view-item-header">Relying Party </span><span class="sso-view-item-text">
-                    <a href="#serviceproviders">{{vm.summary.relyingParties}}</a>
-                </span>
+                <span class="sso-view-item-header">Relying Party </span>
+                    <span class="sso-view-item-text">
+                            {{vm.summary.relyingParties}}
+                    </span>
                 </div>
             </div>
         </div>
