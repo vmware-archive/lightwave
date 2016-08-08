@@ -23,6 +23,7 @@ function AuthenticationService($window, $rootScope) {
 
     var service = {};
     service.logout = logout;
+    service.redirectToHome = redirectToHome;
     return service;
 
     function logout() {
@@ -34,5 +35,11 @@ function AuthenticationService($window, $rootScope) {
             + $rootScope.globals.currentUser.tenant;
         $window.sessionStorage.currentUser = 'logout';
         $window.location.href = logoutUri;
+    }
+
+    function redirectToHome() {
+        var homeUri = "/lightwaveui";
+        $window.sessionStorage.currentUser = 'logout';
+        $window.location.href = homeUri;
     }
 }

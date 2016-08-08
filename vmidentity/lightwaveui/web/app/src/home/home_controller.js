@@ -16,103 +16,233 @@
 
 var module = angular.module('lightwave.ui.home');
 module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope', '$window', 'Configuration', 'Util',
-                  'IdentitySourceService',
+                  'IdentitySourceService', 'RelyingPartyService', 'IdentityProviderService', 'MemberService',
         function($rootScope, $cookies, $location, $scope, $window, Configuration, Util,
-                 IdentitySourceService) {
+                 IdentitySourceService, RelyingPartyService, IdentityProviderService, MemberService ) {
 
-        init();
+            $scope.vm = this;
+            $scope.vm.summary = {};
 
-        function init() {
+            init();
 
-            $rootScope.globals.errors = '';
 
-            var qs = $location.search();
-            var state = qs.state;
+            function init() {
+                
+                $rootScope.globals.errors = '';
 
-            var id_token = qs.id_token;
-            var access_token = qs.access_token;
-            var token_type = qs.token_type;
-            var expires_in = qs.expires_in;
-            if('logout' in qs)
-            {
-                $rootScope.globals.currentUser = null;
-            }
-            else
-            {
-                var loggedIn = $window.sessionStorage.currentUser;
-                if (!loggedIn) {
-                    setcontext(id_token, access_token, token_type, expires_in, state);
+                var qs = $location.search();
+                var state = qs.state;
+
+                var id_token = qs.id_token;
+                var access_token = qs.access_token;
+                var token_type = qs.token_type;
+                var expires_in = qs.expires_in;
+                if('logout' in qs)
+                {
+                    $rootScope.globals.currentUser = null;
                 }
-                else {
-                    if (loggedIn == 'logout') {
+                else
+                {
+                    var loggedIn = $window.sessionStorage.currentUser;
+                    if (!loggedIn) {
                         setcontext(id_token, access_token, token_type, expires_in, state);
                     }
                     else {
-                        $rootScope.globals.currentUser = JSON.parse($window.sessionStorage.currentUser);
-                        redirectToSsoHome();
+                        if (loggedIn == 'logout') {
+                            setcontext(id_token, access_token, token_type, expires_in, state);
+                        }
+                        else {
+                            $rootScope.globals.currentUser = JSON.parse($window.sessionStorage.currentUser);
+                            redirectToSsoHome();
+                        }
                     }
                 }
             }
-        }
 
-        function redirectToSsoHome(){
-            var key = 'oidc_session_id-'+$rootScope.globals.currentUser.tenant;
-            $rootScope.globals.sessionId = $cookies.get(key);
-            $location.path('ssohome');
-        }
+            function initSummary() {
+                $scope.vm.summarydataLoading = true;
+                getIdentitySources();
+                getRelyingParties();
+                getIdentityProviders();
+            }
 
-        function setcontext(id_token, access_token, token_type, expires_in, state) {
+            function getIdentitySources() {
 
-            var decodedJwt = Util.decodeJWT(id_token);
-            var decodedAccessJwt = Util.decodeJWT(access_token);
-            $rootScope.globals = {
-                currentUser: {
-                    server: getserver(decodedJwt.header.iss),//$location.host(),
-                    tenant: decodedJwt.header.tenant,
-                    username: decodedJwt.header.sub,
-                    first_name: decodedJwt.header.given_name,
-                    last_name: decodedJwt.header.family_name,
-                    role: decodedAccessJwt.header.admin_server_role,
-                    token: {
-                        id_token: id_token,
-                        token_type: token_type,
-                        access_token: access_token,
-                        expires_in: expires_in,
-                        state: state
-                    }
-                }
-            };
-            checkForSystemTenant();
-        }
+                if($rootScope.globals.currentUser.role != 'GuestUser') {
+                    IdentitySourceService
+                        .GetAll($rootScope.globals.currentUser)
+                        .then(function (res) {
+                            if (res.status == 200) {
+                                $scope.vm.summary.identitySources = 0;
+                                if (res.data)
+                                    $scope.vm.summary.identitySources = res.data.length;
+                                var ids = res.data;
+                                var identitySource = null;
+                                if (ids && ids.length > 0) {
 
-        function checkForSystemTenant() {
+                                    for (var i = 0; i < ids.length; i++) {
 
-            $rootScope.globals.currentUser.isSystemTenant = false;
-            IdentitySourceService
-                .GetAll($rootScope.globals.currentUser)
-                .then(function (res) {
-                    if (res.status == 200) {
-                        var identitySources = res.data;
-                        for (var i = 0; i < identitySources.length; i++) {
-                            if (identitySources[i].domainType == 'LOCAL_OS_DOMAIN') {
-                                $rootScope.globals.currentUser.isSystemTenant = true;
-                                break;
+                                        if (ids[i].domainType == 'SYSTEM_DOMAIN') {
+                                            identitySource = ids[i];
+                                            break;
+                                        }
+                                    }
+
+                                    if (identitySource) {
+                                        getSolutionUsers(identitySource.name);
+                                        getUsers(identitySource.name);
+                                        getGroups(identitySource.name);
+                                    }
+                                    else {
+                                        $scope.vm.summary.solutionUsers = 0;
+                                        $scope.vm.summary.users = 0;
+                                        $scope.vm.summary.groups = 0;
+                                    }
+                                    $scope.vm.summarydataLoading = false;
+                                }
                             }
+                            else {
+                                $rootScope.globals.errors = res.data;
+                            }
+                        });
+                }
+            }
+
+            function getRelyingParties() {
+                if($rootScope.globals.currentUser.role == 'Administrator') {
+                    RelyingPartyService
+                        .GetAll($rootScope.globals.currentUser, '')
+                        .then(function (res) {
+                            if (res.status == 200) {
+                                $scope.vm.summary.relyingParties = 0;
+                                if (res.data)
+                                    $scope.vm.summary.relyingParties = res.data.length;
+                            }
+                            else {
+                                $rootScope.globals.errors = res.data;
+                            }
+                        });
+                }
+            }
+
+            function getIdentityProviders(){
+                if($rootScope.globals.currentUser.role == 'Administrator') {
+                    IdentityProviderService
+                        .GetAll($rootScope.globals.currentUser, '')
+                        .then(function (res) {
+                            if (res.status == 200) {
+                                $scope.vm.summary.identityProviders = 0;
+                                if (res.data)
+                                    $scope.vm.summary.identityProviders = res.data.length;
+                            }
+                            else {
+                                $rootScope.globals.errors = res.data;
+                            }
+                        });
+                }
+            }
+
+            function getSolutionUsers(provider_name){
+                MemberService
+                    .Search($rootScope.globals.currentUser, provider_name, "SOLUTIONUSER", "NAME", '')
+                    .then(function (res) {
+                        if (res.status == 200) {
+                            $scope.vm.summary.solutionUsers = 0;
+                            if (res.data && res.data.solutionUsers)
+                                $scope.vm.summary.solutionUsers = res.data.solutionUsers.length;
+                        }
+                        else {
+                            $rootScope.globals.errors = res.data;
+                        }
+                    });
+            }
+
+            function getGroups(provider_name){
+                MemberService
+                    .Search($rootScope.globals.currentUser, provider_name, "GROUP", "NAME", '')
+                    .then(function (res) {
+                        if (res.status == 200) {
+                            $scope.vm.summary.groups = 0;
+                            if (res.data && res.data.groups)
+                                $scope.vm.summary.groups = res.data. groups.length;
+                        }
+                        else {
+                            $rootScope.globals.errors = res.data;
+                        }
+                    });
+            }
+
+            function getUsers(provider_name){
+                MemberService
+                    .Search($rootScope.globals.currentUser, provider_name, "USER", "NAME", '')
+                    .then(function (res) {
+                        if (res.status == 200) {
+                            $scope.vm.summary.users = 0;
+                            if (res.data && res.data.users)
+                                $scope.vm.summary.users = res.data.users.length;
+                        }
+                        else {
+                            $rootScope.globals.errors = res.data;
+                        }
+                    });
+            }
+
+            function redirectToSsoHome(){
+                initSummary();
+            }
+
+            function setcontext(id_token, access_token, token_type, expires_in, state) {
+
+                var decodedJwt = Util.decodeJWT(id_token);
+                var decodedAccessJwt = Util.decodeJWT(access_token);
+                $rootScope.globals = {
+                    currentUser: {
+                        server: getserver(decodedJwt.header.iss),//$location.host(),
+                        tenant: decodedJwt.header.tenant,
+                        username: decodedJwt.header.sub,
+                        first_name: decodedJwt.header.given_name,
+                        last_name: decodedJwt.header.family_name,
+                        role: decodedAccessJwt.header.admin_server_role,
+                        token: {
+                            id_token: id_token,
+                            token_type: token_type,
+                            access_token: access_token,
+                            expires_in: expires_in,
+                            state: state
                         }
                     }
-                    else {
-                        $rootScope.globals.errors = res.data;
-                    }
-                    $window.sessionStorage.currentUser = JSON.stringify($rootScope.globals.currentUser);
-                    redirectToSsoHome();
-                });
-        }
+                };
+                checkForSystemTenant();
+            }
 
-        function getserver(uri){
+            function checkForSystemTenant() {
 
-            var server_uri = uri.split('//')[1];
-            var server_with_port = server_uri.split('/')[0];
-           return server_with_port.split(':')[0];
-        }
+                $rootScope.globals.currentUser.isSystemTenant = false;
+                IdentitySourceService
+                    .GetAll($rootScope.globals.currentUser)
+                    .then(function (res) {
+                        if (res.status == 200) {
+                            var identitySources = res.data;
+                            for (var i = 0; i < identitySources.length; i++) {
+                                if (identitySources[i].domainType == 'LOCAL_OS_DOMAIN') {
+                                    $rootScope.globals.currentUser.isSystemTenant = true;
+                                    break;
+                                }
+                            }
+                        }
+                        else {
+                            $rootScope.globals.errors = res.data;
+                        }
+                        $window.sessionStorage.currentUser = JSON.stringify($rootScope.globals.currentUser);
+                        redirectToSsoHome();
+                    });
+            }
+
+            function getserver(uri){
+
+                var server_uri = uri.split('//')[1];
+                var server_with_port = server_uri.split('/')[0];
+               return server_with_port.split(':')[0];
+            }
 
     }]);

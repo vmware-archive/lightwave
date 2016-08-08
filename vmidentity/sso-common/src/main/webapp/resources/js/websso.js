@@ -164,7 +164,8 @@
             return true;
          }
       }
-      if ((result = ieReg.exec(usrAgent)) !== null) {
+      /*
+	  if ((result = ieReg.exec(usrAgent)) !== null) {
          if (result[IE_VERSION_INDEX] >= 10) {
             return true;
          }
@@ -174,11 +175,42 @@
             return true;
          }
       }
+	  */
       if ((result = firefoxReg.exec(usrAgent)) !== null) {
          if (result[FF_VERSION_INDEX] >= 34) {
             return true;
          }
       }
+
+	  console.log('Edge useragent: ' + usrAgent);
+      var edgeIndex = usrAgent.toLowerCase().indexOf('edge/');
+      if( edgeIndex > -1) {
+        return true;
+      }
+	  
+	  console.log('Safari useragent: ' + usrAgent);
+      var safariIndex = usrAgent.toLowerCase().indexOf('safari/');
+      if( safariIndex > -1) {
+		console.log('Safari safariIndex: ' + safariIndex);
+        var versionIndex = usrAgent.toLowerCase().indexOf('version/');
+		console.log('Safari versionIndex: ' + versionIndex);
+        if(versionIndex > -1) {
+
+            var versionNumberIndex = versionIndex + 8;
+			console.log('Safari versionNumberIndex: ' + versionNumberIndex);
+            var length = safariIndex - versionNumberIndex;
+
+            if(length > 0)
+            {
+              var versionStr = usrAgent.substr(versionNumberIndex , length);
+			  console.log('Safari versionStr: ' + versionStr);
+              if(versionStr.trim() > 9)
+                return true;
+            }
+
+        }
+      }
+
       return false;
    };
 
