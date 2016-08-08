@@ -92,7 +92,7 @@ module.controller('ServerMgmtCntrl', ['$scope',  '$rootScope','ServerService', '
                     .Delete($rootScope.globals.currentUser)
                     .then(function (res) {
                         if (res.status == 200 || res.status == 204) {
-                            AuthenticationService.logout();
+                            AuthenticationService.redirectToHome();
                         }
                         else {
                             $rootScope.globals.errors = res.data;

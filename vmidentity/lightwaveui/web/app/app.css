@@ -245,7 +245,7 @@ body {
 .popup-style{
   min-width:480px;
   background-color: #313131;
-  opacity: 0.93;
+  opacity: 0.96;
 }
 
 .tooltip-inner{
@@ -432,4 +432,7 @@ body {
 }
 .ng-cloak{
   display: none !important;
+}
+.ngdialog-overlay {
+  pointer-events: none;
 }
