@@ -31,83 +31,83 @@ module.controller('SsoComponentCntrl', ['$scope', '$rootScope',
             getIdentityProviders();
         }
 
-            function getIdentitySources() {
+        function getIdentitySources() {
 
-                if($rootScope.globals.currentUser.role != 'GuestUser') {
-                    IdentitySourceService
-                        .GetAll($rootScope.globals.currentUser)
-                        .then(function (res) {
-                            if (res.status == 200) {
-                                $scope.vm.summary.identitySources = 0;
-                                if (res.data)
-                                    $scope.vm.summary.identitySources = res.data.length;
-                                var ids = res.data;
-                                var identitySource = null;
-                                if (ids && ids.length > 0) {
+            if($rootScope.globals.currentUser.role != 'GuestUser') {
+                IdentitySourceService
+                    .GetAll($rootScope.globals.currentUser)
+                    .then(function (res) {
+                        if (res.status == 200) {
+                            $scope.vm.summary.identitySources = 0;
+                            if (res.data)
+                                $scope.vm.summary.identitySources = res.data.length;
+                            var ids = res.data;
+                            var identitySource = null;
+                            if (ids && ids.length > 0) {
 
-                                    for (var i = 0; i < ids.length; i++) {
+                                for (var i = 0; i < ids.length; i++) {
 
-                                        if (ids[i].domainType == 'SYSTEM_DOMAIN') {
-                                            identitySource = ids[i];
-                                            break;
-                                        }
+                                    if (ids[i].domainType == 'SYSTEM_DOMAIN') {
+                                        identitySource = ids[i];
+                                        break;
                                     }
-
-                                    if (identitySource) {
-                                        getSolutionUsers(identitySource.name);
-                                        getUsers(identitySource.name);
-                                        getGroups(identitySource.name);
-                                    }
-                                    else {
-                                        $scope.vm.summary.solutionUsers = 0;
-                                        $scope.vm.summary.users = 0;
-                                        $scope.vm.summary.groups = 0;
-                                    }
-                                    $scope.vm.summarydataLoading = false;
                                 }
-                            }
-                            else {
-                                $rootScope.globals.errors = res.data;
-                            }
-                        });
-                }
-            }
 
-            function getRelyingParties() {
-                if($rootScope.globals.currentUser.role == 'Administrator') {
-                    RelyingPartyService
-                        .GetAll($rootScope.globals.currentUser, '')
-                        .then(function (res) {
-                            if (res.status == 200) {
-                                $scope.vm.summary.relyingParties = 0;
-                                if (res.data)
-                                    $scope.vm.summary.relyingParties = res.data.length;
+                                if (identitySource) {
+                                    getSolutionUsers(identitySource.name);
+                                    getUsers(identitySource.name);
+                                    getGroups(identitySource.name);
+                                }
+                                else {
+                                    $scope.vm.summary.solutionUsers = 0;
+                                    $scope.vm.summary.users = 0;
+                                    $scope.vm.summary.groups = 0;
+                                }
+                                $scope.vm.summarydataLoading = false;
                             }
-                            else {
-                                $rootScope.globals.errors = res.data;
-                            }
-                        });
-                }
+                        }
+                        else {
+                            $rootScope.globals.errors = res.data;
+                        }
+                    });
             }
+        }
 
-            function getIdentityProviders(){
-                if($rootScope.globals.currentUser.role == 'Administrator') {
-                    IdentityProviderService
-                        .GetAll($rootScope.globals.currentUser, '')
-                        .then(function (res) {
-                            if (res.status == 200) {
-                                $scope.vm.summary.identityProviders = 0;
-                                if (res.data)
-                                    $scope.vm.summary.identityProviders = res.data.length;
-                            }
-                            else {
-                                $rootScope.globals.errors = res.data;
-                            }
-                        });
-                }
+        function getRelyingParties() {
+            if($rootScope.globals.currentUser.role == 'Administrator') {
+                RelyingPartyService
+                    .GetAll($rootScope.globals.currentUser, '')
+                    .then(function (res) {
+                        if (res.status == 200) {
+                            $scope.vm.summary.relyingParties = 0;
+                            if (res.data)
+                                $scope.vm.summary.relyingParties = res.data.length;
+                        }
+                        else {
+                            $rootScope.globals.errors = res.data;
+                        }
+                    });
             }
+        }
 
-            function getSolutionUsers(provider_name){
+        function getIdentityProviders(){
+            if($rootScope.globals.currentUser.role == 'Administrator') {
+                IdentityProviderService
+                    .GetAll($rootScope.globals.currentUser, '')
+                    .then(function (res) {
+                        if (res.status == 200) {
+                            $scope.vm.summary.identityProviders = 0;
+                            if (res.data)
+                                $scope.vm.summary.identityProviders = res.data.length;
+                        }
+                        else {
+                            $rootScope.globals.errors = res.data;
+                        }
+                    });
+            }
+        }
+
+        function getSolutionUsers(provider_name){
                 MemberService
                     .Search($rootScope.globals.currentUser, provider_name, "SOLUTIONUSER", "NAME", '')
                     .then(function (res) {
