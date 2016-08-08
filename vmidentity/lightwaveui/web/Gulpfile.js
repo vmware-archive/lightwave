@@ -2,7 +2,7 @@ var gulp = require('gulp'),
     rename = require('gulp-rename'),
     concat = require('gulp-concat'),
     clean = require('gulp-clean'),
-    uglify = require('gulp-uglify'),
+    //uglify = require('gulp-uglify'),
     htmlmin = require('gulp-html-minifier'),
     cleanCSS = require('gulp-clean-css');
 
@@ -77,7 +77,7 @@ gulp.task('lightwave-ui-vendor-js-minify', function() {
             './app/bower_components/kjur-jsrsasign/min/x509-1.1.min.js'
         ])
         .pipe(concat(app_js))
-        .pipe(uglify())
+        //.pipe(uglify())
         .pipe(rename({ extname: '.min.js' }))
         .pipe(gulp.dest(dest_js_folder));
 });
