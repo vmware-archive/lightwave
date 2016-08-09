@@ -149,4 +149,46 @@ public final class URIUtils {
 
         return uri;
     }
+
+    public static boolean areEqual(URI lhs, URI rhs) {
+        Validate.notNull(lhs, "lhs");
+        Validate.notNull(rhs, "rhs");
+
+        URI lhsCopy;
+        URI rhsCopy;
+        try {
+            lhsCopy = new URI(
+                    lhs.getScheme(),
+                    lhs.getUserInfo(),
+                    lhs.getHost(),
+                    URIUtils.getPort(lhs),
+                    lhs.getPath(),
+                    lhs.getQuery(),
+                    lhs.getFragment());
+            rhsCopy = new URI(
+                    rhs.getScheme(),
+                    rhs.getUserInfo(),
+                    rhs.getHost(),
+                    URIUtils.getPort(rhs),
+                    rhs.getPath(),
+                    rhs.getQuery(),
+                    rhs.getFragment());
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException("failed to transform uri for equality check", e);
+        }
+
+        return lhsCopy.equals(rhsCopy);
+    }
+
+    private static int getPort(URI uri) {
+        int port = uri.getPort();
+        if (port == -1) {
+            if (("https").equalsIgnoreCase(uri.getScheme())) {
+                port = 443;
+            } else if (("http").equalsIgnoreCase(uri.getScheme())) {
+                port = 80;
+            }
+        }
+        return port;
+    }
 }

@@ -324,7 +324,7 @@ public class AuthenticationControllerTest {
         Flow flow = Flow.IMPLICIT;
         Map<String, String> params = authnRequestParameters(flow);
         JWTClaimsSet.Builder claimsBuilder = clientAssertionClaims();
-        claimsBuilder = claimsBuilder.audience("non_matching_audience");
+        claimsBuilder = claimsBuilder.audience("https://sso.com/invalid_authz_endpoint");
         params.put("client_assertion", TestUtil.sign(claimsBuilder.build(), CLIENT_PRIVATE_KEY).serialize());
         assertErrorResponse(flow, params, "invalid_client", "client_assertion audience does not match request URI");
     }

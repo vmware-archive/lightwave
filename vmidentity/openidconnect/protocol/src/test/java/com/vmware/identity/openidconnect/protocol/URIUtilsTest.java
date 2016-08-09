@@ -104,4 +104,60 @@ public class URIUtilsTest {
         URI newUri = URIUtils.appendFragmentParameters(oldUri, parameters);
         Assert.assertEquals("newUri", "https://identity.vmware.com/file#p1=v1", newUri.toString());
     }
+
+    @Test
+    public void testEquality() throws ParseException {
+        Assert.assertTrue(URIUtils.areEqual(
+                URI.create("https://identity.vmware.com/path/to/file"),
+                URI.create("https://identity.vmware.com/path/to/file")));
+    }
+
+    @Test
+    public void testEqualitySucceedsOnDifferentHostCase() throws ParseException {
+        Assert.assertTrue(URIUtils.areEqual(
+                URI.create("https://identity.vmware.com/path/to/file"),
+                URI.create("https://IDENTITY.VMWARE.COM/path/to/file")));
+    }
+
+    @Test
+    public void testEqualitySucceedsOnDefaultHttpPort() throws ParseException {
+        Assert.assertTrue(URIUtils.areEqual(
+                URI.create("http://identity.vmware.com/path/to/file"),
+                URI.create("http://identity.vmware.com:80/path/to/file")));
+    }
+
+    @Test
+    public void testEqualitySucceedsOnDefaultHttpsPort() throws ParseException {
+        Assert.assertTrue(URIUtils.areEqual(
+                URI.create("https://identity.vmware.com/path/to/file"),
+                URI.create("https://identity.vmware.com:443/path/to/file")));
+    }
+
+    @Test
+    public void testEqualityFailsOnDifferentSchemes() throws ParseException {
+        Assert.assertFalse(URIUtils.areEqual(
+                URI.create("https://identity.vmware.com/path/to/file"),
+                URI.create("http://identity.vmware.com/path/to/file")));
+    }
+
+    @Test
+    public void testEqualityFailsOnDifferentPorts() throws ParseException {
+        Assert.assertFalse(URIUtils.areEqual(
+                URI.create("https://identity.vmware.com:1/path/to/file"),
+                URI.create("https://identity.vmware.com:2/path/to/file")));
+    }
+
+    @Test
+    public void testEqualityFailsOnDifferentHosts() throws ParseException {
+        Assert.assertFalse(URIUtils.areEqual(
+                URI.create("https://identity.vmware.com/path/to/file"),
+                URI.create("https://identity2.vmware.com/path/to/file")));
+    }
+
+    @Test
+    public void testEqualityFailsOnDifferentPaths() throws ParseException {
+        Assert.assertFalse(URIUtils.areEqual(
+                URI.create("https://identity.vmware.com/path/to/file"),
+                URI.create("https://identity.vmware.com/path/to/file2")));
+    }
 }

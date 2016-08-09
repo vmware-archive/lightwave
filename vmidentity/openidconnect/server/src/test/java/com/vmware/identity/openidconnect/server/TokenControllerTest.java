@@ -1147,12 +1147,32 @@ public class TokenControllerTest {
     }
 
     @Test
-    public void testAssertionInvalidAudience() throws Exception {
+    public void testAssertionIncorrectAudience() throws Exception {
         Flow flow = Flow.AUTHZ_CODE;
         JWTClaimsSet.Builder claimsBuilder = clientAssertionClaims();
-        claimsBuilder = claimsBuilder.audience("http://invalid_token_endpoint");
+        claimsBuilder = claimsBuilder.audience("https://sso.com/invalid_token_endpoint");
         Map<String, String> params = tokenRequestParametersClient(flow, claimsBuilder.build());
         String expectedErrorMessage = "client_assertion audience does not match request URI";
+        assertErrorResponse(flow, params, "invalid_client", expectedErrorMessage);
+    }
+
+    @Test
+    public void testAssertionMultiValuedAudience() throws Exception {
+        Flow flow = Flow.AUTHZ_CODE;
+        JWTClaimsSet.Builder claimsBuilder = clientAssertionClaims();
+        claimsBuilder = claimsBuilder.audience(Arrays.asList("v1", "v2"));
+        Map<String, String> params = tokenRequestParametersClient(flow, claimsBuilder.build());
+        String expectedErrorMessage = "client_assertion audience should be single-valued";
+        assertErrorResponse(flow, params, "invalid_client", expectedErrorMessage);
+    }
+
+    @Test
+    public void testAssertionInvalidAudienceURI() throws Exception {
+        Flow flow = Flow.AUTHZ_CODE;
+        JWTClaimsSet.Builder claimsBuilder = clientAssertionClaims();
+        claimsBuilder = claimsBuilder.audience("this_is_not_a_valid_uri");
+        Map<String, String> params = tokenRequestParametersClient(flow, claimsBuilder.build());
+        String expectedErrorMessage = "client_assertion audience should be a valid URI";
         assertErrorResponse(flow, params, "invalid_client", expectedErrorMessage);
     }
 

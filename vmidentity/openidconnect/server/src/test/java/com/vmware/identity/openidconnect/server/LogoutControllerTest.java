@@ -176,7 +176,7 @@ public class LogoutControllerTest {
     public void testLogoutClientAssertionInvalidAudience() throws Exception {
         Map<String, String> params = logoutRequestParameters();
         JWTClaimsSet.Builder claimsBuilder = clientAssertionClaims();
-        claimsBuilder = claimsBuilder.audience("non_matching_audience");
+        claimsBuilder = claimsBuilder.audience("https://sso.com/invalid_logout_endpoint");
         params.put("client_assertion", TestUtil.sign(claimsBuilder.build(), CLIENT_PRIVATE_KEY).serialize());
         assertErrorResponse(params, "invalid_client", "client_assertion audience does not match request URI");
     }

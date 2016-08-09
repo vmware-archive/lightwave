@@ -32,11 +32,23 @@ import com.vmware.identity.openidconnect.common.TokenType;
  * @author Yehia Zayour
  */
 public abstract class ClientIssuedAssertion extends JWTToken {
+    private final URI targetEndpoint;
+
     protected ClientIssuedAssertion(TokenClass tokenClass, SignedJWT signedJwt) throws ParseException {
         super(tokenClass, signedJwt);
 
         if (!Objects.equals(super.getIssuer().getValue(), super.getSubject().getValue())) {
-            throw new ParseException(ErrorObject.invalidClient(super.getTokenClass().getValue() + " issuer and subject must be the same"));
+            throw new ParseException(ErrorObject.invalidClient(tokenClass.getValue() + " issuer and subject must be the same"));
+        }
+
+        if (this.getAudience().size() != 1) {
+            throw new ParseException(ErrorObject.invalidClient(tokenClass.getValue() + " audience should be single-valued"));
+        }
+
+        try {
+            this.targetEndpoint = URIUtils.parseURI(super.getAudience().get(0));
+        } catch (ParseException e) {
+            throw new ParseException(ErrorObject.invalidClient(tokenClass.getValue() + " audience should be a valid URI"), e);
         }
     }
 
@@ -44,7 +56,7 @@ public abstract class ClientIssuedAssertion extends JWTToken {
             TokenClass tokenClass,
             JWTID jwtId,
             String issuerAndSubject,
-            URI endpoint,
+            URI targetEndpoint,
             Date issueTime) {
         super(
                 tokenClass,
@@ -52,8 +64,13 @@ public abstract class ClientIssuedAssertion extends JWTToken {
                 jwtId,
                 new Issuer(issuerAndSubject),
                 new Subject(issuerAndSubject),
-                Arrays.asList(endpoint.toString()),
+                Arrays.asList(targetEndpoint.toString()),
                 issueTime);
+        this.targetEndpoint = targetEndpoint;
+    }
+
+    public URI getTargetEndpoint() {
+        return this.targetEndpoint;
     }
 
     public String validate(
@@ -62,10 +79,7 @@ public abstract class ClientIssuedAssertion extends JWTToken {
             long clockToleranceMS) {
         // if we are behind rhttp proxy, the requestUri will have http scheme instead of https
         URI httpsRequestUri = URIUtils.changeSchemeComponent(requestUri, "https");
-        boolean validAudience =
-                this.getAudience().size() == 1 &&
-                Objects.equals(this.getAudience().get(0), httpsRequestUri.toString());
-        if (!validAudience) {
+        if (!URIUtils.areEqual(httpsRequestUri, this.targetEndpoint)) {
             return String.format("%s audience does not match request URI", this.getTokenClass().getValue());
         }
 
