@@ -6,6 +6,8 @@ ic_promote_SOURCES = \
 ic_promote_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
+    @VMDIR_INCLUDES@ \
+    @VMAFD_INCLUDES@ \
     @LW_INCLUDES@
 
 ic_promote_LDADD = \
