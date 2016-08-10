@@ -179,6 +179,12 @@ VmwDeploySetupServerPrimary(
     dwError = VmwDeployValidateSiteName(pParams->pszSite);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
+    if (!IsNullOrEmptyString(pParams->pszDNSForwarders))
+    {
+        dwError = VmwDeployValidateDNSForwarders(pParams->pszDNSForwarders);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     for (; iSvc < sizeof(ppszServices)/sizeof(ppszServices[0]); iSvc++)
     {
         PCSTR pszService = ppszServices[iSvc];
@@ -231,6 +237,12 @@ VmwDeploySetupServerPartner(
 
     dwError = VmwDeployValidateSiteName(pParams->pszSite);
     BAIL_ON_DEPLOY_ERROR(dwError);
+
+    if (!IsNullOrEmptyString(pParams->pszDNSForwarders))
+    {
+        dwError = VmwDeployValidateDNSForwarders(pParams->pszDNSForwarders);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
 
     for (; iSvc < sizeof(ppszServices)/sizeof(ppszServices[0]); iSvc++)
     {

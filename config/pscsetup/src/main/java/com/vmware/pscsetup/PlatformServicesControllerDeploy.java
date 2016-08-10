@@ -73,6 +73,8 @@ public class PlatformServicesControllerDeploy {
                     mode = ParseMode.PARSE_MODE_SERVER;
                 } else if (arg.equals("--site")) {
                     mode = ParseMode.PARSE_MODE_SITE;
+                } else if (arg.equals("--dns-forwarders")) {
+                    mode = ParseMode.PARSE_MODE_DNS_FORWARDERS;
                 }
                 break;
             case PARSE_MODE_HOSTNAME:
@@ -96,6 +98,10 @@ public class PlatformServicesControllerDeploy {
                     ((DomainControllerPartnerParams) params).setServer(arg);
                 mode = ParseMode.PARSE_MODE_OPEN;
                 break;
+            case PARSE_MODE_DNS_FORWARDERS:
+                params.setDNSForwarders(arg);
+                mode = ParseMode.PARSE_MODE_OPEN;
+                break;
             default:
                 break;
             }
@@ -104,6 +110,6 @@ public class PlatformServicesControllerDeploy {
     }
 
     enum ParseMode {
-	    PARSE_MODE_OPEN, PARSE_MODE_MODE, PARSE_MODE_HOSTNAME, PARSE_MODE_DOMAIN, PARSE_MODE_PASSWORD, PARSE_MODE_SITE, PARSE_MODE_SERVER,
+	    PARSE_MODE_OPEN, PARSE_MODE_MODE, PARSE_MODE_HOSTNAME, PARSE_MODE_DOMAIN, PARSE_MODE_PASSWORD, PARSE_MODE_SITE, PARSE_MODE_SERVER, PARSE_MODE_DNS_FORWARDERS
     }
 }

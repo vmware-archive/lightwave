@@ -33,6 +33,10 @@ BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >=
 %define _vmca_prefix /opt/vmware
 %endif
 
+%if 0%{?_vmdns_prefix:1} == 0
+%define _vmdns_prefix /opt/vmware
+%endif
+
 %if 0%{?_vmsts_prefix:1} == 0
 %define _vmsts_prefix /opt/vmware
 %endif
@@ -51,6 +55,7 @@ autoreconf -mif .. &&
              --with-likewise=%{_likewise_open_prefix} \
              --with-vmdir=%{_vmdir_prefix} \
              --with-vmca=%{_vmca_prefix} \
+             --with-vmdns=%{_vmdns_prefix} \
              --with-afd=%{_vmafd_prefix} \
              --with-sts=%{_vmsts_prefix} \
              --with-ssl=/usr

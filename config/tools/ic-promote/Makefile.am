@@ -10,6 +10,10 @@ ic_promote_CPPFLAGS = \
 
 ic_promote_LDADD = \
     @top_builddir@/cfgutils/libcfgutils.la \
+    @VMAFD_LIBS@ \
+    @VMDNS_LIBS@ \
+    @VMCA_LIBS@ \
+    @VMDIR_LIBS@ \
     @LWSM_LIBS@ \
     @LWADVAPI_LIBS@ \
     @LWIO_LIBS@ \
@@ -24,6 +28,7 @@ ic_promote_LDADD = \
     @PTHREAD_LIBS@
 
 ic_promote_LDFLAGS = \
+    @VMDNS_LDFLAGS@ \
     @VMCA_LDFLAGS@ \
     @VMAFD_LDFLAGS@ \
     @VMDIR_LDFLAGS@ \

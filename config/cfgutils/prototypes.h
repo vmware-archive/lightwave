@@ -114,3 +114,8 @@ VmwDeployValidateHostname(
     PCSTR pszHostname
     );
 
+DWORD
+VmwDeployValidateDNSForwarders(
+    PCSTR pszForwarders
+    );
+

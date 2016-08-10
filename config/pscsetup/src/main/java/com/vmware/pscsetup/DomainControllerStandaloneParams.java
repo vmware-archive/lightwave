@@ -10,6 +10,7 @@ public class DomainControllerStandaloneParams {
     private String password;
     private String site;
     private String domainName;
+    private String dns_forwarders;
 
     public String getDomainName() {
 	return domainName;
@@ -41,5 +42,13 @@ public class DomainControllerStandaloneParams {
 
     public void setSite(String site) {
 	this.site = site;
+    }
+
+    public void setDNSForwarders(String forwarders) {
+        this.dns_forwarders = forwarders;
+    }
+
+    public String getDNSForwarders() {
+        return dns_forwarders;
     }
 }

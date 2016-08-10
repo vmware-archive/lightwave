@@ -34,6 +34,10 @@
 #include <vmca.h>
 #endif
 
+#ifdef HAVE_VMDNS_H
+#include <vmdns.h>
+#endif
+
 #ifdef HAVE_VMAFDCLIENT_H
 #include <vmafdclient.h>
 #endif
