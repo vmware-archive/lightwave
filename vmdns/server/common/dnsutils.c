@@ -51,15 +51,6 @@ VmDnsHandleProcessRequestError(
     PDWORD pdwDnsResponseSize
     );
 
-static
-DWORD
-VmDnsProcessUpdateRequest(
-    PVMDNS_UPDATE_MESSAGE pDnsMessage,
-    PVMDNS_HEADER pResponseHeader,
-    PVMDNS_RECORD_ARRAY **ppRecordsArray,
-    PDWORD pdwRecordArrayCount
-    );
-
 
 DWORD
 VmDnsCreateBufferContext(
@@ -209,9 +200,9 @@ VmDnsProcessRequestFromCache(
     )
 {
     DWORD dwError = 0;
+    DWORD dwError1 = 0;
     DWORD dwIndex = 0;
     DWORD dwQDCount = 0;
-    DWORD dwUPCount = 0;
     DWORD dwRecordArrayCount = 0;
     PVMDNS_MESSAGE_BUFFER pDnsMessageBuffer = NULL;
     PBYTE pDnsResponse = NULL;
@@ -221,9 +212,6 @@ VmDnsProcessRequestFromCache(
     PVMDNS_RECORD_ARRAY *ppRecordsArray = NULL;
     PSTR pszRecordName = NULL;
     PVMDNS_MESSAGE pDnsMessage = NULL;
-    PVMDNS_UPDATE_MESSAGE pDnsUpdateMessage = NULL;
-    VMDNS_HEADER ResponseUpdateHeader = { 0 };
-    VMDNS_QUESTION UpdateZone;
 
     if (
         !pDnsRequest ||
@@ -239,8 +227,8 @@ VmDnsProcessRequestFromCache(
     dwError = VmDnsGetDnsMessage(
                           pDnsRequest,
                           dwDnsRequestSize,
-                          &pDnsMessage,
-                          &pDnsUpdateMessage);
+                          &pDnsMessage
+                          );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsProcessHeader(
@@ -255,10 +243,7 @@ VmDnsProcessRequestFromCache(
     dwError = VmDnsSetBufferTokenizedFlag(pDnsMessageBuffer, TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    // Both QUERY and UPDATE are supported here. OPTCODE == 0 corresponds to QUERY type of request.
-    // OPTCODE == 5 corresponds to UPDATE type of request.
-    // First case is QUERY request to lookup for a domain
-    if (pDnsMessage && !ResponseHeader.codes.RCODE && pDnsMessage->pHeader->codes.opcode == VM_DNS_OPCODE_QUERY)
+    if (!ResponseHeader.codes.RCODE)
     {
         dwQDCount = pDnsMessage->pHeader->usQDCount;
         ResponseHeader.usQDCount = dwQDCount;
@@ -277,8 +262,8 @@ VmDnsProcessRequestFromCache(
             VMDNS_FREE_ZONE_INFO(pZoneInfo);
 
             dwError = VmDnsGetAuthorityZone(
-                                pQuestion->pszQName,
-                                &pZoneInfo);
+                                    pQuestion->pszQName,
+                                    &pZoneInfo);
             if (dwError == DNS_ERROR_ZONE_DOES_NOT_EXIST)
             {
                 ResponseHeader.codes.RCODE = VM_DNS_RCODE_NAME_ERROR;
@@ -289,10 +274,10 @@ VmDnsProcessRequestFromCache(
             ResponseHeader.codes.AA = 1;
 
             dwError = VmDnsGetRecordNameFromQuery(
-                                pZoneInfo->pszName,
-                                pQuestion->pszQName,
-                                &pszRecordName
-                                );
+                                              pZoneInfo->pszName,
+                                              pQuestion->pszQName,
+                                              &pszRecordName
+                                              );
             BAIL_ON_VMDNS_ERROR(dwError);
 
             dwError = VmDnsZoneQuery(
@@ -316,8 +301,8 @@ VmDnsProcessRequestFromCache(
             if (ppRecordsArray[dwIndex] && ppRecordsArray[dwIndex]->dwCount)
             {
                 VmDnsZoneRestoreRecordFQDN(
-                                pZoneInfo->pszName,
-                                ppRecordsArray[dwIndex]);
+                    pZoneInfo->pszName,
+                    ppRecordsArray[dwIndex]);
             }
         }
 
@@ -330,137 +315,59 @@ VmDnsProcessRequestFromCache(
             }
         }
     }
-    // Second case is UPDATE request to lookup for a domain
-    else if (pDnsUpdateMessage && !ResponseUpdateHeader.codes.RCODE && pDnsUpdateMessage->pHeader->codes.opcode == VM_DNS_OPCODE_UPDATE)
+
+    dwError = VmDnsWriteHeaderToBuffer(
+                                  &ResponseHeader,
+                                  pDnsMessageBuffer
+                                  );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    for (dwIndex = 0; dwIndex < dwQDCount; ++dwIndex)
     {
-        VmDnsLog(VMDNS_LOG_LEVEL_DEBUG, "VmDnsProcessRequestFromCache:: UPDATE Request\n");
-        dwError = VmDnsProcessUpdateRequest(
-                                pDnsUpdateMessage,
-                                &ResponseUpdateHeader,
-                                &ppRecordsArray,
-                                &dwRecordArrayCount
-                                );
+        dwError = VmDnsWriteQuestionToBuffer(
+                    pDnsMessage->pQuestions[dwIndex],
+                    pDnsMessageBuffer);
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-
-    // This section is to create response from DNS based on processed request.
-    // It will be ResponseHeader/ResponseUpdatedHeader and pDnsResponse/pDnsUpdateResponse for lookup and update correspondently.
-    if (pDnsMessage)
+    for (dwIndex = 0; dwIndex<dwQDCount; ++dwIndex)
     {
-        dwError = VmDnsWriteHeaderToBuffer(
-                                      &ResponseHeader,
-                                      pDnsMessageBuffer
-                                      );
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        for (dwIndex = 0; dwIndex < dwQDCount; ++dwIndex)
+        DWORD dwRecordIndex = 0;
+        PVMDNS_RECORD_ARRAY pRecordArray = ppRecordsArray[dwIndex];
+        if (pRecordArray)
         {
-            dwError = VmDnsWriteQuestionToBuffer(
-                        pDnsMessage->pQuestions[dwIndex],
-                        pDnsMessageBuffer);
-            BAIL_ON_VMDNS_ERROR(dwError);
-        }
-
-        for (dwIndex = 0; dwIndex<dwQDCount; ++dwIndex)
-        {
-            DWORD dwRecordIndex = 0;
-            PVMDNS_RECORD_ARRAY pRecordArray = ppRecordsArray[dwIndex];
-            if (pRecordArray)
+            for (;dwRecordIndex < pRecordArray->dwCount; ++dwRecordIndex)
             {
-                for (;dwRecordIndex < pRecordArray->dwCount; ++dwRecordIndex)
-                {
-                    dwError = VmDnsWriteRecordToBuffer(
-                                            &pRecordArray->Records[dwRecordIndex],
-                                            pDnsMessageBuffer
-                                            );
-                    BAIL_ON_VMDNS_ERROR(dwError);
-                }
-            }
-        }
-
-        dwError = VmDnsCopyBufferFromBufferStream(
-                                      pDnsMessageBuffer,
-                                      NULL,
-                                      &dwDnsResponseSize
-                                      );
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        dwError = VmDnsAllocateMemory(
-                            dwDnsResponseSize,
-                            (PVOID)&pDnsResponse
-                            );
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        dwError = VmDnsCopyBufferFromBufferStream(
-                        pDnsMessageBuffer,
-                        pDnsResponse,
-                        &dwDnsResponseSize
-                        );
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        *pbFound = ResponseHeader.codes.RCODE == VM_DNS_RCODE_NOERROR;
-    }
-    // Dynamic update response
-    else if (pDnsUpdateMessage != NULL)
-    {
-        dwError = VmDnsWriteHeaderToBuffer(
-                                &ResponseUpdateHeader,
-                                pDnsMessageBuffer
-                                );
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        if (pDnsUpdateMessage->pHeader->usZOCount > 0)
-        {
-                UpdateZone.pszQName = pDnsUpdateMessage->pZone->pszName;
-                UpdateZone.uQClass = pDnsUpdateMessage->pZone->uClass;
-                UpdateZone.uQType = pDnsUpdateMessage->pZone->uType;
-
-                dwError = VmDnsWriteQuestionToBuffer(
-                                    &UpdateZone,
-                                    pDnsMessageBuffer);
-                BAIL_ON_VMDNS_ERROR(dwError);
-        }
-
-        dwUPCount = pDnsUpdateMessage->pHeader->usUPCount;
-        for (dwIndex = 0; dwIndex<dwUPCount; ++dwIndex)
-        {
-            DWORD dwRecordIndex = 0;
-            PVMDNS_RECORD_ARRAY pRecordArray = ppRecordsArray[dwIndex];
-            if (pRecordArray)
-            {
-                for (; dwRecordIndex < pRecordArray->dwCount; ++dwRecordIndex)
-                {
-                    dwError = VmDnsWriteRecordToBuffer(
+                dwError = VmDnsWriteRecordToBuffer(
                                         &pRecordArray->Records[dwRecordIndex],
-                                        pDnsMessageBuffer);
-                    BAIL_ON_VMDNS_ERROR(dwError);
-                }
+                                        pDnsMessageBuffer
+                                        );
+                BAIL_ON_VMDNS_ERROR(dwError);
             }
         }
-
-        dwError = VmDnsCopyBufferFromBufferStream(
-                                    pDnsMessageBuffer,
-                                    NULL,
-                                    &dwDnsResponseSize);
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        dwError = VmDnsAllocateMemory(
-                            dwDnsResponseSize,
-                            (PVOID)&pDnsResponse
-                            );
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        dwError = VmDnsCopyBufferFromBufferStream(
-                        pDnsMessageBuffer,
-                        pDnsResponse,
-                        &dwDnsResponseSize
-                        );
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        *pbFound = ResponseUpdateHeader.codes.RCODE == VM_DNS_RCODE_NOERROR;
     }
 
+    dwError = VmDnsCopyBufferFromBufferStream(
+                                  pDnsMessageBuffer,
+                                  NULL,
+                                  &dwDnsResponseSize
+                                  );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsAllocateMemory(
+                          dwDnsResponseSize,
+                          (PVOID)&pDnsResponse
+                          );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsCopyBufferFromBufferStream(
+                                  pDnsMessageBuffer,
+                                  pDnsResponse,
+                                  &dwDnsResponseSize
+                                  );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *pbFound = ResponseHeader.codes.RCODE == VM_DNS_RCODE_NOERROR;
 
 cleanup:
 
@@ -471,10 +378,6 @@ cleanup:
     if (pDnsMessage)
     {
         VmDnsFreeDnsMessage(pDnsMessage);
-    }
-    if (pDnsUpdateMessage)
-    {
-        VmDnsFreeDnsUpdateMessage(pDnsUpdateMessage);
     }
     if (ppRecordsArray)
     {
@@ -491,10 +394,7 @@ cleanup:
     return dwError;
 error:
 
-    dwError = VmDnsHandleProcessRequestError(
-                            ResponseHeader,
-                            &pDnsResponse,
-                            &dwDnsResponseSize);
+    dwError1 = VmDnsHandleProcessRequestError(ResponseHeader, &pDnsResponse, &dwDnsResponseSize);
     goto cleanup;
 }
 
@@ -650,39 +550,6 @@ VmDnsFreeDnsMessage(
     }
 }
 
-VOID
-VmDnsFreeDnsUpdateMessage(
-    PVMDNS_UPDATE_MESSAGE pVmDnsMessage
-)
-{
-    if (pVmDnsMessage)
-    {
-        if (pVmDnsMessage->pAdditional)
-        {
-            VmDnsFreeRecordsArray(
-                        pVmDnsMessage->pAdditional,
-                        pVmDnsMessage->pHeader->usADCount
-                        );
-        }
-        if (pVmDnsMessage->pPrerequisite)
-        {
-            VmDnsFreeRecordsArray(
-                        pVmDnsMessage->pPrerequisite,
-                        pVmDnsMessage->pHeader->usPRCount
-                        );
-        }
-        if (pVmDnsMessage->pUpdate)
-        {
-            VmDnsFreeRecordsArray(
-                        pVmDnsMessage->pUpdate,
-                        pVmDnsMessage->pHeader->usUPCount
-                        );
-        }
-        VMDNS_SAFE_FREE_MEMORY(pVmDnsMessage->pHeader);
-        VMDNS_SAFE_FREE_MEMORY(pVmDnsMessage);
-    }
-}
-
 static
 DWORD
 VmDnsCopyZoneInformation(
@@ -759,17 +626,14 @@ DWORD
 VmDnsGetDnsMessage(
     PBYTE pDnsRequest,
     DWORD dwDnsRequestSize,
-    PVMDNS_MESSAGE *ppDnsMessage,
-    PVMDNS_UPDATE_MESSAGE *ppDnsUpdateMessage
+    PVMDNS_MESSAGE *ppDnsMessage
     )
 {
     DWORD dwError = 0;
     PVMDNS_MESSAGE pDnsMessage = NULL;
     PVMDNS_MESSAGE_BUFFER pDnsMessageBuffer = NULL;
-    PVMDNS_UPDATE_MESSAGE pDnsUpdateMessage = NULL;
 
-
-    if (!pDnsRequest || !dwDnsRequestSize || !ppDnsMessage || !ppDnsUpdateMessage)
+    if (!pDnsRequest || !dwDnsRequestSize || !ppDnsMessage)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -780,18 +644,17 @@ VmDnsGetDnsMessage(
                                           dwDnsRequestSize,
                                           0,
                                           FALSE,
-                                          &pDnsMessageBuffer);
+                                          &pDnsMessageBuffer
+                                          );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsParseMessage(
                               pDnsMessageBuffer,
-                              &pDnsMessage,
-                              &pDnsUpdateMessage
+                              &pDnsMessage
                               );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     *ppDnsMessage = pDnsMessage;
-    *ppDnsUpdateMessage = pDnsUpdateMessage;
 
 cleanup:
 
@@ -810,15 +673,6 @@ error:
     {
         VmDnsFreeDnsMessage(pDnsMessage);
     }
-    if (ppDnsUpdateMessage)
-    {
-        *ppDnsUpdateMessage = NULL;
-    }
-    if (pDnsUpdateMessage)
-    {
-        VmDnsFreeDnsUpdateMessage(pDnsUpdateMessage);
-    }
-
     goto cleanup;
 }
 
@@ -852,15 +706,9 @@ VmDnsProcessHeader(
     }
     switch (pRequestHeader->codes.opcode)
     {
-        case VM_DNS_OPCODE_QUERY:
-            pResponseHeader->codes.RCODE = VM_DNS_RCODE_NOERROR;
-            break;
-        case VM_DNS_OPCODE_IQUERY:
-        case VM_DNS_OPCODE_STATUS:
-            pResponseHeader->codes.RCODE = VM_DNS_RCODE_NOT_IMPLEMENTED;
-            break;
-        case VM_DNS_OPCODE_UPDATE: // DNS dynamic update
-            pResponseHeader->codes.RCODE = VM_DNS_RCODE_NOERROR;
+        case 1:
+        case 2:
+            pResponseHeader->codes.RCODE = 4;
             break;
         default:
             break;
@@ -906,7 +754,8 @@ VmDnsGetRecordNameFromQuery(
                     pszZoneName,
                     pszQueryName,
                     szZoneNameLength,
-                    FALSE)
+                    FALSE
+                    )
         )
     {
         dwError = VmDnsAllocateStringA(
@@ -1020,121 +869,3 @@ error:
     VMDNS_SAFE_FREE_MEMORY(pDnsResponse);
     goto cleanup;
 }
-
-static
-DWORD
-VmDnsProcessUpdateRequest(
-    PVMDNS_UPDATE_MESSAGE pDnsMessage,
-    PVMDNS_HEADER pResponseHeader,
-    PVMDNS_RECORD_ARRAY **pppRecordsArray,
-    PDWORD pdwRecordArrayCount
-)
-{
-    DWORD dwError = 0;
-    DWORD dwIndex = 0;
-    DWORD dwUPCount = 0;
-    DWORD dwZOCount = 0;
-    PVMDNS_ZONE_INFO pZoneInfo = NULL;
-    PVMDNS_RECORD_ARRAY *ppRecordsArray = NULL;
-
-    if (!pDnsMessage ||
-        !pResponseHeader ||
-        pdwRecordArrayCount ||
-        !pppRecordsArray)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
-    dwUPCount = pDnsMessage->pHeader->usUPCount;
-    dwZOCount = pDnsMessage->pHeader->usZOCount;
-
-    dwError = VmDnsAllocateMemory(
-        sizeof(PVMDNS_RECORD_ARRAY)*dwUPCount,
-        (PVOID)&ppRecordsArray
-        );
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    if (pDnsMessage->pZone)
-    {
-        dwError = VmDnsAllocateMemory(
-            sizeof(VMDNS_ZONE_INFO),
-            (PVOID)&pZoneInfo
-            );
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        dwError = VmDnsAllocateStringA(
-            pDnsMessage->pZone->pszName,
-            &pZoneInfo->pszName);
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        pZoneInfo->dwZoneType = pDnsMessage->pZone->uType;
-        pZoneInfo->dwFlags = pDnsMessage->pZone->uClass;
-    }
-
-    // the case when there are set of resource records to be updated
-    if (dwUPCount > 0)
-    {
-        VmDnsLog(VMDNS_LOG_LEVEL_INFO, "There are %d RR to add/update\n", dwUPCount);
-        for (; dwIndex < dwUPCount; ++dwIndex)
-        {
-            dwError = VmDnsZoneAddRecord(
-                                NULL,
-                                (pZoneInfo ? pZoneInfo->pszName : ""),
-                                pDnsMessage->pUpdate[dwIndex],
-                                FALSE
-                                );
-            BAIL_ON_VMDNS_ERROR(dwError);
-
-            dwError = VmDnsZoneQuery(
-                                pZoneInfo->pszName,
-                                pDnsMessage->pUpdate[dwIndex]->pszName,
-                                pDnsMessage->pUpdate[dwIndex]->dwType,
-                                &(ppRecordsArray)[dwIndex]
-                                );
-            BAIL_ON_VMDNS_ERROR(dwError);
-
-            if ((ppRecordsArray)[dwIndex] && (ppRecordsArray)[dwIndex]->dwCount)
-            {
-                VmDnsZoneRestoreRecordFQDN(
-                                    pZoneInfo->pszName,
-                                    (ppRecordsArray)[dwIndex]
-                                    );
-                BAIL_ON_VMDNS_ERROR(dwError);
-            }
-        }
-
-        pResponseHeader->usUPCount = pDnsMessage->pHeader->usUPCount;
-        pResponseHeader->usZOCount = pDnsMessage->pHeader->usZOCount;
-        pResponseHeader->usPRCount = pDnsMessage->pHeader->usPRCount;
-        pResponseHeader->usADCount = pDnsMessage->pHeader->usADCount;
-    }
-
-    *pppRecordsArray = ppRecordsArray;
-    *pdwRecordArrayCount = dwUPCount;
-
-cleanup:
-    VMDNS_FREE_ZONE_INFO(pZoneInfo);
-    return dwError;
-
-error:
-
-    if (pdwRecordArrayCount)
-    {
-        *pdwRecordArrayCount = 0;
-    }
-    if (pppRecordsArray)
-    {
-        *pppRecordsArray = NULL;
-    }
-    if (ppRecordsArray)
-    {
-        for (dwIndex = 0; dwIndex < dwUPCount; ++dwIndex)
-        {
-            VMDNS_FREE_RECORD_ARRAY(ppRecordsArray[dwIndex]);
-        }
-        VMDNS_SAFE_FREE_MEMORY(ppRecordsArray);
-    }
-    goto cleanup;
-}
-

@@ -75,8 +75,7 @@ typedef enum
 {
     VM_DNS_OPCODE_QUERY = 0,
     VM_DNS_OPCODE_IQUERY = 1,
-    VM_DNS_OPCODE_STATUS = 2,
-    VM_DNS_OPCODE_UPDATE = 5
+    VM_DNS_OPCODE_STATUS = 2
 } VM_DNS_OPCODE;
 
 typedef enum

@@ -99,8 +99,7 @@ VmDnsNameEntryGetRecordCount(
 DWORD
 VmDnsParseMessage(
     PVMDNS_MESSAGE_BUFFER pMessageBuffer,
-    PVMDNS_MESSAGE *ppMessage,
-    PVMDNS_UPDATE_MESSAGE *ppUpdateMessage
+    PVMDNS_MESSAGE *ppMessage
     );
 
 DWORD
@@ -178,18 +177,12 @@ DWORD
 VmDnsGetDnsMessage(
     PBYTE pDnsRequest,
     DWORD dwDnsRequestSize,
-    PVMDNS_MESSAGE *ppDnsMessage,
-    PVMDNS_UPDATE_MESSAGE *ppDnsUpdateMessage
+    PVMDNS_MESSAGE *ppDnsMessage
     );
 
 VOID
 VmDnsFreeDnsMessage(
     PVMDNS_MESSAGE pVmDnsMessage
-    );
-
-VOID
-VmDnsFreeDnsUpdateMessage(
-    PVMDNS_UPDATE_MESSAGE pVmDnsMessage
     );
 
 
