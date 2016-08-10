@@ -447,46 +447,6 @@ VmDirReplUpdateUrgentReplCoordinatorTableForRequest(
 }
 
 VOID
-VmDirReplUpdateUrgentReplCoordinatorTableForDelete(
-    PVMDIR_REPLICATION_AGREEMENT  pReplAgr
-    )
-{
-    DWORD     dwError = 0;
-    BOOLEAN   bInLock = FALSE;
-    PSTR      pszPartnerHostName = NULL;
-    PVMDIR_STRONG_WRITE_PARTNER_CONTENT   pUrgentReplPartnerTable = NULL;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
-
-    pUrgentReplPartnerTable = gVmdirUrgentRepl.pUrgentReplPartnerTable;
-    while (pUrgentReplPartnerTable != NULL)
-    {
-        dwError = VmDirReplURIToHostname(pReplAgr->ldapURI, &pszPartnerHostName);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        if (VmDirStringCompareA(pUrgentReplPartnerTable->pServerName,
-                                pszPartnerHostName,
-                                FALSE) == 0) //hostname not case sensitive
-        {
-            pUrgentReplPartnerTable->isDeleted = TRUE;
-            break;
-        }
-
-        VMDIR_SAFE_FREE_MEMORY(pszPartnerHostName);
-    }
-
-cleanup:
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
-    VMDIR_SAFE_FREE_MEMORY(pszPartnerHostName);
-    return;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-        "%s: failed %d", __func__, dwError);
-    goto cleanup;
-}
-
-VOID
 VmDirReplFreeUrgentReplCoordinatorTable(
     VOID
     )
@@ -867,3 +827,67 @@ VmDirSetUrgentReplicationPending_InLock(
     gVmdirUrgentRepl.bUrgentReplicationPending = bUrgentReplicationPending;
 }
 
+DWORD
+VmDirGetReplicationPartnerCount(
+    VOID
+    )
+{
+    PVMDIR_REPLICATION_AGREEMENT  pReplAgr = NULL;
+    BOOLEAN bInReplAgrsLock = FALSE;
+    DWORD  dwCount = 0;
+
+    VMDIR_LOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
+    pReplAgr = gVmdirReplAgrs;
+    while (pReplAgr != NULL)
+    {
+        if (pReplAgr->isDeleted == FALSE)
+        {
+            dwCount++;
+        }
+        pReplAgr = pReplAgr->next;
+    }
+    VMDIR_UNLOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
+
+    return dwCount;
+}
+
+VOID
+VmDirReplUpdateUrgentReplCoordinatorTableForDelete(
+    PVMDIR_REPLICATION_AGREEMENT  pReplAgr
+    )
+{
+    DWORD     dwError = 0;
+    BOOLEAN   bInLock = FALSE;
+    PSTR      pszPartnerHostName = NULL;
+    PVMDIR_STRONG_WRITE_PARTNER_CONTENT   pUrgentReplPartnerTable = NULL;
+
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
+
+    pUrgentReplPartnerTable = gVmdirUrgentRepl.pUrgentReplPartnerTable;
+    while (pUrgentReplPartnerTable != NULL)
+    {
+        dwError = VmDirReplURIToHostname(pReplAgr->ldapURI, &pszPartnerHostName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (VmDirStringCompareA(pUrgentReplPartnerTable->pServerName,
+                                pszPartnerHostName,
+                                FALSE) == 0) //hostname not case sensitive
+        {
+            pUrgentReplPartnerTable->isDeleted = TRUE;
+            break;
+        }
+        pUrgentReplPartnerTable = pUrgentReplPartnerTable->next;
+
+        VMDIR_SAFE_FREE_MEMORY(pszPartnerHostName);
+    }
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
+    VMDIR_SAFE_FREE_MEMORY(pszPartnerHostName);
+    return;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+        "%s: failed %d", __func__, dwError);
+    goto cleanup;
+}

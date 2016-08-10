@@ -133,7 +133,8 @@ VmDirPerformUrgentReplIfRequired(
         * signalled by urgentReplCoordinator thread
         * read the consensus and make a decision
         */
-       if (VmDirPerformUrgentReplication(pOperation, currentTxnUSN) == FALSE)
+       if (VmDirGetReplicationPartnerCount() > 0 &&
+           VmDirPerformUrgentReplication(pOperation, currentTxnUSN) == FALSE)
        {
            VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
                "Strong Consistency not guaranteed for USN: %lld", currentTxnUSN);

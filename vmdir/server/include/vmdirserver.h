@@ -654,6 +654,11 @@ VmDirReplFreeUrgentReplPartnerEntry_InLock(
     PVMDIR_STRONG_WRITE_PARTNER_CONTENT pUrgentReplPartnerTable
     );
 
+DWORD
+VmDirGetReplicationPartnerCount(
+    VOID
+    );
+
 // srvthr.c
 VOID
 VmDirSrvThrAdd(
