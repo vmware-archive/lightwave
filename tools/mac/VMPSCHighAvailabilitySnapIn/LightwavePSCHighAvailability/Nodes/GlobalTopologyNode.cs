@@ -22,6 +22,7 @@ using VMPSCHighAvailability.Common.DTO;
 using VmIdentity.UI.Common.Utilities;
 using VMPSCHighAvailability.Common;
 using VMPSCHighAvailability.Common.Service;
+using VMIdentity.CommonUtils.Utilities;
 
 namespace VMPSCHighAvailability.Nodes
 {
@@ -99,6 +100,7 @@ namespace VMPSCHighAvailability.Nodes
 			var dto = _service.GetManagementNodeDetails(server);
 			dto.Name = server.Server;
 			dto.Domain = server.DomainName;
+			dto.Ip =  Network.GetIpAddress (dto.Name);
 			var index = Hosts.FindIndex (x => x.Name == dto.Name);
 			if(index < Hosts.Count)
 				Hosts[index] = dto;
@@ -121,6 +123,7 @@ namespace VMPSCHighAvailability.Nodes
 				Password = serverDto.Password 
 			};
 			var dto = _service.UpdateStatus(host, server);
+			dto.Ip =  Network.GetIpAddress (dto.Name);
 			var index = Hosts.FindIndex (x => x.Name == dto.Name);
 			if(index > -1 && index < Hosts.Count)
 				Hosts[index] = dto;

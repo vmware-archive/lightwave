@@ -23,6 +23,7 @@ using VMPscHighAvailabilitySnapIn.UI;
 using VMPscHighAvailabilitySnapIn.Utils;
 using VMwareMMCIDP.UI.Common.Utilities;
 using VMIdentity.CommonUtils;
+using VMPSCHighAvailability.Common.Helpers;
 
 namespace VMPscHighAvailabilitySnapIn.ScopeNodes
 {
@@ -108,11 +109,13 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
                     var msg = exc.InnerExceptions.Select(x => x.Message).Aggregate((x, y) => x + " , " + y);
                     MMCDlgHelper.ShowMessage(msg);
                 }
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc, custom);
             }
             catch (Exception exp)
             {
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exp);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exp);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exp, custom);
                 MMCDlgHelper.ShowException(exp);
             }
             finally
@@ -148,11 +151,13 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
                     var msg = exc.InnerExceptions.Select(x => x.Message).Aggregate((x, y) => x + " , " + y);
                     MMCDlgHelper.ShowMessage(msg);
                 }
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc, custom);
             }
             catch (Exception exp)
             {
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exp);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exp);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exp, custom);
                 node.AddLoginActions();
                 MMCDlgHelper.ShowException(exp);
             }

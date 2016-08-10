@@ -13,8 +13,8 @@
  */
 
 using System;
-using System.IO;
 using System.Windows.Forms;
+using VMPSCHighAvailability.Common.Helpers;
 using VMPscHighAvailabilitySnapIn.SnapIn;
 
 namespace VMPscHighAvailabilitySnapIn.Utils
@@ -36,7 +36,8 @@ namespace VMPscHighAvailabilitySnapIn.Utils
             }
             catch (Exception exp)
             {
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exp);
+                var custom =  new CustomExceptionExtractor().GetCustomMessage(exp);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exp, custom);
                 ShowError(exp);
             }
         }

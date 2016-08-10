@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="10117" systemVersion="15E65" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
+        <deployment identifier="macosx"/>
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="10117"/>
     </dependencies>
     <objects>
@@ -14,6 +15,7 @@
                 <outlet property="AuxiliaryClassesListView" destination="SlT-aZ-5iC" id="VHe-MO-G1w"/>
                 <outlet property="AuxiliaryClassesView" destination="SlT-aZ-5iC" id="yqj-71-HFT"/>
                 <outlet property="ClassTypePopup" destination="jdi-KB-Ii4" id="Jhc-x5-6YV"/>
+                <outlet property="GovernsIDField" destination="fCt-0T-OhY" id="jnZ-6L-wAB"/>
                 <outlet property="MandatoryAttributes" destination="59q-e5-oSx" id="X5G-br-PC8"/>
                 <outlet property="MandatoryAttributesListView" destination="59q-e5-oSx" id="co5-o9-X4q"/>
                 <outlet property="ObjectClassDescription" destination="BJN-9i-Kbe" id="Zne-Ng-N37"/>
@@ -43,7 +45,7 @@
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="RIj-he-kqq">
-                        <rect key="frame" x="90" y="527" width="52" height="17"/>
+                        <rect key="frame" x="83" y="541" width="52" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Name : " id="Quw-fm-RZr">
                             <font key="font" metaFont="system"/>
@@ -52,7 +54,7 @@
                         </textFieldCell>
                     </textField>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="7z5-Bd-fd8">
-                        <rect key="frame" x="75" y="454" width="67" height="17"/>
+                        <rect key="frame" x="71" y="477" width="67" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="X00.OID : " id="qab-yM-ubR">
                             <font key="font" metaFont="system"/>
@@ -61,7 +63,7 @@
                         </textFieldCell>
                     </textField>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="R7b-zo-TaD">
-                        <rect key="frame" x="59" y="493" width="83" height="17"/>
+                        <rect key="frame" x="52" y="507" width="83" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Description :" id="9qR-gp-8I9">
                             <font key="font" metaFont="system"/>
@@ -70,7 +72,7 @@
                         </textFieldCell>
                     </textField>
                     <textField verticalHuggingPriority="750" id="JHN-wx-Dd4">
-                        <rect key="frame" x="170" y="525" width="355" height="22"/>
+                        <rect key="frame" x="158" y="538" width="355" height="22"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" placeholderString="Enter a name for new object class" drawsBackground="YES" id="Noh-60-LhB">
                             <font key="font" metaFont="system"/>
@@ -79,7 +81,7 @@
                         </textFieldCell>
                     </textField>
                     <textField verticalHuggingPriority="750" id="BJN-9i-Kbe">
-                        <rect key="frame" x="170" y="488" width="355" height="22"/>
+                        <rect key="frame" x="158" y="504" width="355" height="22"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" placeholderString="" drawsBackground="YES" id="nRJ-97-xQw">
                             <font key="font" metaFont="system"/>
@@ -88,7 +90,7 @@
                         </textFieldCell>
                     </textField>
                     <textField verticalHuggingPriority="750" id="7uJ-Ax-rlj">
-                        <rect key="frame" x="170" y="449" width="355" height="22"/>
+                        <rect key="frame" x="158" y="474" width="355" height="22"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" placeholderString="Identifier for Object class" drawsBackground="YES" id="JIf-Gx-nhA">
                             <font key="font" metaFont="system"/>
@@ -97,7 +99,7 @@
                         </textFieldCell>
                     </textField>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="A1s-cZ-R05">
-                        <rect key="frame" x="55" y="369" width="86" height="17"/>
+                        <rect key="frame" x="50" y="401" width="86" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Parent Class:" id="tCu-7l-l3r">
                             <font key="font" metaFont="system"/>
@@ -106,7 +108,7 @@
                         </textFieldCell>
                     </textField>
                     <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="JQW-LW-Wvs">
-                        <rect key="frame" x="63" y="414" width="79" height="17"/>
+                        <rect key="frame" x="54" y="439" width="79" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Class Type :" id="xIP-cO-nj1">
                             <font key="font" metaFont="system"/>
@@ -115,7 +117,7 @@
                         </textFieldCell>
                     </textField>
                     <textField verticalHuggingPriority="750" id="GjN-PX-5Mz">
-                        <rect key="frame" x="170" y="364" width="321" height="22"/>
+                        <rect key="frame" x="158" y="393" width="321" height="22"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" placeholderString="Chose the parent class" drawsBackground="YES" id="wG1-yP-35X">
                             <font key="font" metaFont="system"/>
@@ -124,15 +126,15 @@
                         </textFieldCell>
                     </textField>
                     <popUpButton verticalHuggingPriority="750" id="jdi-KB-Ii4">
-                        <rect key="frame" x="168" y="407" width="360" height="26"/>
+                        <rect key="frame" x="156" y="432" width="360" height="26"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <popUpButtonCell key="cell" type="push" title="Abstract" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="SIm-Ka-5l0" id="ypz-jx-ndS">
+                        <popUpButtonCell key="cell" type="push" title="Abstract" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" selectedItem="SIm-Ka-5l0" id="ypz-jx-ndS">
                             <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
                             <font key="font" metaFont="menu"/>
                             <menu key="menu" id="bzI-Q1-Uk3">
                                 <items>
-                                    <menuItem title="Structural" state="on" id="lv7-hL-yE9"/>
-                                    <menuItem title="Abstract" id="SIm-Ka-5l0"/>
+                                    <menuItem title="Structural" id="lv7-hL-yE9"/>
+                                    <menuItem title="Abstract" state="on" id="SIm-Ka-5l0"/>
                                     <menuItem title="Auxiliary" id="MhG-ms-M95"/>
                                 </items>
                             </menu>
@@ -385,7 +387,7 @@ DQ
                         </textFieldCell>
                     </textField>
                     <button verticalHuggingPriority="750" id="vrU-Ou-3Fx">
-                        <rect key="frame" x="493" y="358" width="38" height="32"/>
+                        <rect key="frame" x="481" y="386" width="38" height="32"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                         <buttonCell key="cell" type="push" title="+" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="ZuC-Rr-sRq">
                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
@@ -395,6 +397,24 @@ DQ
                             <action selector="AddObjectClass:" target="-2" id="hGn-vL-wya"/>
                         </connections>
                     </button>
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="Bzz-0o-0eb">
+                        <rect key="frame" x="55" y="355" width="83" height="17"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="GovernsID :" id="tGu-Ti-Gpo">
+                            <font key="font" metaFont="system"/>
+                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <textField verticalHuggingPriority="750" id="fCt-0T-OhY">
+                        <rect key="frame" x="158" y="350" width="355" height="22"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" placeholderString="Enter a Governs Id" drawsBackground="YES" id="BwB-bR-yBt">
+                            <font key="font" metaFont="system"/>
+                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
                 </subviews>
             </view>
             <connections>
