@@ -30,6 +30,8 @@ using System;
 using System.IO;
 using VMwareMMCIDP.UI.Common.Utilities;
 using VMIdentity.CommonUtils.Log;
+using VMPSCHighAvailability.Common.Helpers;
+using VMIdentity.CommonUtils.Utilities;
 
 namespace VMPscHighAvailabilitySnapIn.ScopeNodes
 {
@@ -97,7 +99,8 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
                             }
                             catch (Exception exc)
                             {
-                                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc, custom);
                             }
                         }
                             );
@@ -118,7 +121,8 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
                             }
                             catch (Exception exc)
                             {
-                                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc, custom);
                             }
                         }
                             );
@@ -150,7 +154,8 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
             }
             catch (Exception exc)
             {
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc, custom);
                 MMCDlgHelper.ShowException(exc);
             }
         }
@@ -169,7 +174,8 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
             }
             catch (Exception exc)
             {
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc, custom);
                 MMCDlgHelper.ShowException(exc);
             }
         }
@@ -194,11 +200,13 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
                     var message = string.Format(Constants.VMDirConnectFailure, msg);
                     MMCDlgHelper.ShowMessage(message);
                 }
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc, custom);
             }
             catch (Exception exc)
             {
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc, custom);
                 MMCDlgHelper.ShowException(exc);
             }
         }
@@ -389,6 +397,7 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
             var dto = service.GetManagementNodeDetails(server);
             dto.Name = server.Server;
             dto.Domain = server.DomainName;
+            dto.Ip = Network.GetIpAddress(dto.Name);
             message = string.Format("Method: UpdateManagementNode - for Server: {0}", host.Name);
             logger.Log(message, LogLevel.Info);
             var index = Hosts.FindIndex(x => x.Name == dto.Name);
@@ -414,6 +423,7 @@ namespace VMPscHighAvailabilitySnapIn.ScopeNodes
                 Password = serverDto.Password
             };
             var dto = service.UpdateStatus(host, server);
+            dto.Ip = Network.GetIpAddress(dto.Name);
             var index = Hosts.FindIndex(x => x.Name == dto.Name);
             if (index > -1 && index < Hosts.Count)
                 Hosts[index] = dto;

@@ -44,8 +44,8 @@ namespace VMDirSchemaEditorSnapIn
         private List<string> auxiliaryClassesList = new List<string>();
         private List<string> mandatoryAttributesList = new List<string>();
         private List<string> optionalAttributesList = new List<string>();
-        private List<string> parentMandatoryAttributes = new List<string>();
-        private List<string> parentOptionalAttributes = new List<string>();
+        // private List<string> parentMandatoryAttributes = new List<string>();
+        // private List<string> parentOptionalAttributes = new List<string>();
 
         //object class types
         private List<string> structuralClasses = null;
@@ -158,6 +158,7 @@ namespace VMDirSchemaEditorSnapIn
             ObjectClassDescription.Enabled = status;
             ClassTypePopup.Enabled = status;
             ParentClass.Enabled = status;
+            GovernsIDField.Enabled = status;
             AddObjectClassButton.Enabled = status;
             AuxiliaryClassesListView.Enabled = status;
             MandatoryAttributesListView.Enabled = status;
@@ -177,6 +178,7 @@ namespace VMDirSchemaEditorSnapIn
             ObjectClassDescription.StringValue = ObjectDTO.Description ?? string.Empty;
             ObjectClassID.StringValue = ObjectDTO.Name;
             ParentClass.StringValue = ObjectDTO.SuperClass;
+            GovernsIDField.StringValue = ObjectDTO.GovernsID;
             ClassTypePopup.SelectItem((int)ObjectDTO.ClassType - 1);
             if (ObjectDTO.Must != null)
                 mandatoryAttributesList = ObjectDTO.Must;
@@ -210,7 +212,7 @@ namespace VMDirSchemaEditorSnapIn
         {
             if (MandatoryAttributesListView.Enabled == true && isAddMode)
             {
-                SelectListItemsWindowController swc = new SelectListItemsWindowController(allAttributesList, mandatoryAttributesList, parentMandatoryAttributes);
+                SelectListItemsWindowController swc = new SelectListItemsWindowController(allAttributesList, mandatoryAttributesList, null);
                 nint ret = NSApplication.SharedApplication.RunModalForWindow(swc.Window);
                 if (ret == VMIdentityConstants.DIALOGOK)
                 {
@@ -229,16 +231,16 @@ namespace VMDirSchemaEditorSnapIn
             {
                 ParentClass.StringValue = swc.SelectedItem;
 
-                mandatoryAttributesList.RemoveAll(item => parentMandatoryAttributes.Contains(item));
+                // mandatoryAttributesList.RemoveAll(item => parentMandatoryAttributes.Contains(item));
 
-                parentMandatoryAttributes.Clear();
-                parentOptionalAttributes.Clear();
+                // parentMandatoryAttributes.Clear();
+                // parentOptionalAttributes.Clear();
 
-                parentMandatoryAttributes.AddRange(this.schemaManager.GetRequiredAttributes(ParentClass.StringValue).Select(e => e.Name).ToList());
-                parentOptionalAttributes.AddRange(this.schemaManager.GetOptionalAttributes(ParentClass.StringValue).Select(e => e.Name).ToList());
+                // parentMandatoryAttributes.AddRange(this.schemaManager.GetRequiredAttributes(ParentClass.StringValue).Select(e => e.Name).ToList());
+                //  parentOptionalAttributes.AddRange(this.schemaManager.GetOptionalAttributes(ParentClass.StringValue).Select(e => e.Name).ToList());
 
 
-                mandatoryAttributesList.AddRange(parentMandatoryAttributes);
+                // mandatoryAttributesList.AddRange(parentMandatoryAttributes);
                 MandatoryAttributesListView.DataSource = new StringItemsListView(mandatoryAttributesList);
                 MandatoryAttributesListView.ReloadData();
 
@@ -249,7 +251,7 @@ namespace VMDirSchemaEditorSnapIn
         {
             if (OptionalAttributesListView.Enabled == true)
             {
-                SelectListItemsWindowController swc = new SelectListItemsWindowController(allAttributesList, optionalAttributesList, parentOptionalAttributes);
+                SelectListItemsWindowController swc = new SelectListItemsWindowController(allAttributesList, optionalAttributesList, null);
                 nint ret = NSApplication.SharedApplication.RunModalForWindow(swc.Window);
                 if (ret == VMIdentityConstants.DIALOGOK)
                 {
@@ -302,7 +304,7 @@ namespace VMDirSchemaEditorSnapIn
         private void DoValidateControls()
         {
             if (String.IsNullOrWhiteSpace(ObjectClassName.StringValue) || String.IsNullOrWhiteSpace(ClassTypePopup.TitleOfSelectedItem) || String.IsNullOrWhiteSpace(ObjectClassID.StringValue)
-                || String.IsNullOrWhiteSpace(ParentClass.StringValue))
+                || String.IsNullOrWhiteSpace(ParentClass.StringValue) || String.IsNullOrWhiteSpace(GovernsIDField.StringValue))
                 throw new Exception(VMIdentityConstants.EMPTY_FIELD);
 
             if (!isAddMode)
@@ -319,7 +321,8 @@ namespace VMDirSchemaEditorSnapIn
                 ObjectDTO.Name = ObjectClassName.StringValue;
                 ObjectDTO.Description = String.IsNullOrWhiteSpace(ObjectClassDescription.StringValue) ? String.Empty : ObjectClassDescription.StringValue;
                 ObjectDTO.SuperClass = ParentClass.StringValue;
-                optionalAttributesList.AddRange(parentOptionalAttributes);
+                //optionalAttributesList.AddRange(parentOptionalAttributes);
+                ObjectDTO.GovernsID = GovernsIDField.StringValue;
                 ObjectDTO.May = optionalAttributesList;
                 ObjectDTO.Must = mandatoryAttributesList;
                 ObjectDTO.ClassType = (ObjectClassDTO.ObjectClassType)((int)ClassTypePopup.IndexOfSelectedItem) + 1;

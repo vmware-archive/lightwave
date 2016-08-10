@@ -283,7 +283,7 @@ namespace VMPSCHighAvailability.UI
 						DomainControllerTextField.StringValue = _mgmtDto.DomainController.Name;
 
 						foreach (var node in infraNodes) {
-							node.IsAffinitized = (node.Name == _mgmtDto.DomainController.Name);
+							node.IsAffinitized = (node.Name == _mgmtDto.DomainController.Name || node.Ip == _mgmtDto.DomainController.Ip);
 						}
 					}
 					PscTableView.Delegate = new MonitorTableViewDelegate (this);
@@ -316,7 +316,7 @@ namespace VMPSCHighAvailability.UI
 			{
 				foreach(var dc in allDcs)
 				{	
-					dc.IsRemote = !RootNode.Hosts.Exists (x => x.Sitename == _mgmtDto.Sitename && x.Name == dc.Name);
+					dc.IsRemote = !RootNode.Hosts.Exists (x => x.Sitename == _mgmtDto.Sitename && (x.Name == dc.Name || x.Ip == dc.Ip));
 				}
 			}
 			return allDcs;

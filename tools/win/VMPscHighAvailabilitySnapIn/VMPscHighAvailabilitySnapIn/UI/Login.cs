@@ -25,6 +25,7 @@ using VMPscHighAvailabilitySnapIn.SnapIn;
 using VMPscHighAvailabilitySnapIn.Utils;
 using VMwareMMCIDP.UI.Common.Utilities;
 using VMIdentity.CommonUtils;
+using VMPSCHighAvailability.Common.Helpers;
 
 namespace VMPscHighAvailabilitySnapIn.UI
 {
@@ -119,7 +120,8 @@ namespace VMPscHighAvailabilitySnapIn.UI
             }
             catch (AggregateException exc)
             {
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc, custom);
                 if (exc.InnerExceptions.Count > 0)
                 {
                     var msg = exc.InnerExceptions.Select(x => x.Message).Aggregate((x, y) => x + " , " + y);
@@ -128,7 +130,8 @@ namespace VMPscHighAvailabilitySnapIn.UI
             }
             catch (Exception exp)
             {
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exp);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exp);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exp, custom);
                 MiscUtilsService.ShowError(exp);
             }
         }

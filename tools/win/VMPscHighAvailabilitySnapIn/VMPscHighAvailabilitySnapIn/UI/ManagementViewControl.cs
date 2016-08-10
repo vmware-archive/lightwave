@@ -561,7 +561,8 @@ namespace VMPscHighAvailabilitySnapIn.UI
             }
             catch (Exception exc)
             {
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc, custom);
                 MiscUtilsService.ShowError(exc);
                 _timer.Enabled = false;
                 chkAutoRefresh.Checked = false;
@@ -576,7 +577,8 @@ namespace VMPscHighAvailabilitySnapIn.UI
             }
             catch (Exception exc)
             {
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc, custom);
                 MiscUtilsService.ShowError(exc);
             }
         }
@@ -657,7 +659,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             {
                 foreach (var dc in allDcs)
                 {
-                    dc.IsRemote = !colocatedHosts.Exists(x => x.Name == dc.Name);
+                    dc.IsRemote = !colocatedHosts.Exists(x => x.Name == dc.Name || x.Ip == dc.Ip);
                 }
                 return allDcs;
             }
@@ -698,7 +700,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
                                 item.SubItems[3].Text = services;
                                 item.SubItems[4].Text = status;
                                 item.SubItems[2].Text = location;
-                                item.SubItems[1].Text = (item.SubItems[0].Text == _dto.DomainController.Name) ? "Yes" : string.Empty;
+                                item.SubItems[1].Text = (item.SubItems[0].Text == _dto.DomainController.Name || infDto.Ip == _dto.DomainController.Ip) ? "Yes" : string.Empty;
                                 item.Tag = dto;
                             }
                         }
@@ -772,7 +774,8 @@ namespace VMPscHighAvailabilitySnapIn.UI
             }
             catch (Exception exc)
             {
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc, custom);
                 MiscUtilsService.ShowError(exc);
             }
             UpdateState();
@@ -844,7 +847,8 @@ namespace VMPscHighAvailabilitySnapIn.UI
             }
             catch (Exception exc)
             {
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc, custom);
                 MiscUtilsService.ShowError(exc);
             }
         }
