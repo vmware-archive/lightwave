@@ -24,6 +24,7 @@ using VMCertStore.Common.DTO;
 using VMCertStoreSnapIn.ListViews;
 using VMwareMMCIDP.UI.Common;
 using VMwareMMCIDP.UI.Common.Utilities;
+using VMIdentity.CommonUtils;
 
 
 namespace VMCertStoreSnapIn.Nodes
@@ -38,7 +39,7 @@ namespace VMCertStoreSnapIn.Nodes
         public VMCertStoreRootNode()
             : base()
         {
-            DisplayName = "Lightwave Certificate Stores";
+            DisplayName = MMCMiscUtil.GetBrandConfig(CommonConstants.CS_ROOT);
 
             RefreshDelegate = new Refresh(RefreshMethod);
 
@@ -110,6 +111,10 @@ namespace VMCertStoreSnapIn.Nodes
             catch (Exception e)
             {
                 MMCDlgHelper.ShowException(e);
+            }
+            finally
+            {
+                VMCertStoreSnapInEnvironment.Instance.SaveLocalData();
             }
         }
     }

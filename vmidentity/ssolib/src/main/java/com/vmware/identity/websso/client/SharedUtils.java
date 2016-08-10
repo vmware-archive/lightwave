@@ -1,5 +1,5 @@
 /* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved. 
+ * Copyright 2012 VMware, Inc. All rights reserved.
  **********************************************************************************/
 package com.vmware.identity.websso.client;
 
@@ -11,6 +11,7 @@ import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -43,6 +44,11 @@ import org.xml.sax.SAXException;
 public class SharedUtils {
     private static Logger logger = LoggerFactory.getLogger(SharedUtils.class);
 
+    private static final String DISALLOW_DOCTYPE_DECL = "http://apache.org/xml/features/disallow-doctype-decl";
+    private static final String EXTERNAL_GENERAL_ENTITIES = "http://xml.org/sax/features/external-general-entities";
+    private static final String EXTERNAL_PARAMETER_ENTITIES = "http://xml.org/sax/features/external-parameter-entities";
+    private static final String LOAD_EXTERNAL_DTD = "http://apache.org/xml/features/nonvalidating/load-external-dtd";
+
     /**
      * Create Dom from string.
      */
@@ -54,7 +60,13 @@ public class SharedUtils {
         dbf.setIgnoringElementContentWhitespace(true);
         dbf.setNamespaceAware(true);
 
-        DocumentBuilder db = dbf.newDocumentBuilder();
+        dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        dbf.setFeature(DISALLOW_DOCTYPE_DECL, true);
+        dbf.setFeature(EXTERNAL_GENERAL_ENTITIES, false);
+        dbf.setFeature(EXTERNAL_PARAMETER_ENTITIES, false);
+        dbf.setFeature(LOAD_EXTERNAL_DTD, false);
+
+        DocumentBuilder db = null;
         db = dbf.newDocumentBuilder();
         db.setEntityResolver(new NullResolver());
         db.setErrorHandler(new SamlParserErrorHandler());
@@ -75,6 +87,12 @@ public class SharedUtils {
         dbf.setIgnoringComments(false);
         dbf.setIgnoringElementContentWhitespace(true);
         dbf.setNamespaceAware(true);
+
+        dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        dbf.setFeature(DISALLOW_DOCTYPE_DECL, true);
+        dbf.setFeature(EXTERNAL_GENERAL_ENTITIES, false);
+        dbf.setFeature(EXTERNAL_PARAMETER_ENTITIES, false);
+        dbf.setFeature(LOAD_EXTERNAL_DTD, false);
 
         DocumentBuilder db = null;
         db = dbf.newDocumentBuilder();

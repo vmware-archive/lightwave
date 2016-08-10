@@ -30,13 +30,11 @@ namespace VMCASnapIn.DTO
 
         public string GUID { get; set; }
 
-        [XmlIgnore]
         public string UserName { get; set; }
 
         [XmlIgnore]
         public string Password { get; set; }
 
-        [XmlIgnore]
         public string DomainName { get; set; }
 
         public List<PrivateCertificateDTO> PrivateCertificates { get; set; }

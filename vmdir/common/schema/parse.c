@@ -620,6 +620,7 @@ VmDirFreeLdapAt(
             ldap_attributetype_free(pAt->pSource);
             pAt->pSource = NULL;
         }
+        VmDirFreeStrArray(pAt->ppszUniqueScopes);
         VMDIR_SAFE_FREE_MEMORY(pAt);
     }
 }

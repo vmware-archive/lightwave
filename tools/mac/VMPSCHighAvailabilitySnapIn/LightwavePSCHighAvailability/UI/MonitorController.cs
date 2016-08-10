@@ -29,6 +29,7 @@ using VMPSCHighAvailability.Common.Helpers;
 using VMPSCHighAvailability.Common;
 using VMPSCHighAvailability.Common.Service;
 using VMPSCHighAvailability.Nodes;
+using VMIdentity.CommonUtils.Utilities;
 
 namespace VMPSCHighAvailability.UI
 {
@@ -148,9 +149,7 @@ namespace VMPSCHighAvailability.UI
 			NetworkChange.NetworkAvailabilityChanged += (object sender, NetworkAvailabilityEventArgs e) => {
 				_isConnected = e.IsAvailable;
 			};
-			Initialize ();
-			HostnameHeader.StringValue = ServerDto.Server;
-			SitenameTextField.StringValue = SiteName;
+			Initialize();
 			RefreshState ();
 
 		}
@@ -160,6 +159,10 @@ namespace VMPSCHighAvailability.UI
 		/// </summary>
 		private void Initialize()
 		{
+			HostnameHeader.StringValue = ServerDto.Server;
+			IpAddressTextField.StringValue = Network.GetIpAddress (ServerDto.Server);
+			SitenameTextField.StringValue = SiteName;
+
 			ServicesTableView.AddColumn (NSTableColumnHelper.ToNSTableColumn (Constants.TableColumnIconId, string.Empty, true, 20));
 			ServicesTableView.MoveColumn (ServicesTableView.ColumnCount - 1, 0);
 
@@ -271,8 +274,8 @@ namespace VMPSCHighAvailability.UI
 			};
 
 			if (_isConnected) {
-				var mgmtDto = _service.GetManagementNodeDetails (serverDto);
-				//var mgmtDto = RootNode.Hosts.FirstOrDefault(x => x.Sitename == _mgmtDto.Sitename && x.Name == _mgmtDto.Name) as ManagementDto;
+				//var mgmtDto = _service.GetManagementNodeDetails (serverDto);
+				var mgmtDto = RootNode.Hosts.FirstOrDefault(x => x.Sitename == _mgmtDto.Sitename && x.Name == _mgmtDto.Name) as ManagementDto;
 
 				if (mgmtDto != null) {
 					var infraNodes = FilterBySiteName (mgmtDto.DomainControllers);
@@ -294,9 +297,11 @@ namespace VMPSCHighAvailability.UI
 
 					if (_mgmtDto.State != null) {
 						Health health = CdcDcStateHelper.GetHealth (_mgmtDto.State, infraNodes);
-						CurrentStatusTextField.StringValue = health.ToString ().ToUpper ();
+						var healthText = health.ToString ().ToUpper();
+						CurrentStatusTextField.StringValue = healthText;
 						CurrentStatusTextField.TextColor = GetHealthColor (health);
-						CurrentStatusTextField.ToolTip = CdcDcStateHelper.GetHealthDescription (health);
+						var healthDesc = CdcDcStateHelper.GetHealthDescription (health);
+						CurrentStatusTextField.ToolTip = healthDesc;
 					}
 					SiteAffinityButton.Title = "Enable " + (_mgmtDto.Legacy ? Constants.HA : Constants.Legacy);
 					LegacyModeWarning.Hidden = !_mgmtDto.Legacy;

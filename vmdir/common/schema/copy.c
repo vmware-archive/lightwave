@@ -108,6 +108,12 @@ VmDirLdapAtDeepCopy(
     dwError = VmDirLdapAtParseStr(pszAt, &pCopyAt);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirCopyStrArray(
+            pOrgAt->ppszUniqueScopes, &pCopyAt->ppszUniqueScopes);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pCopyAt->dwSearchFlags = pOrgAt->dwSearchFlags;
+
     *ppCopyAt = pCopyAt;
 
 cleanup:

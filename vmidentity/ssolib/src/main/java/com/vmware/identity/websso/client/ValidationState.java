@@ -1,5 +1,5 @@
 /* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved. 
+ * Copyright 2012 VMware, Inc. All rights reserved.
  **********************************************************************************/
 package com.vmware.identity.websso.client;
 
@@ -19,6 +19,7 @@ import org.w3c.dom.Document;
 public abstract class ValidationState {
     // state infor
     private String messageID;
+    protected boolean isIdpInitiated;
     private String relayState;
     private String status;
     private String subStatus;
@@ -48,7 +49,7 @@ public abstract class ValidationState {
 
     /**
      * validate optional destination in a SAML Response.
-     * 
+     *
      * @return void
      * @throws WebssoClientException
      *             validation failed.
@@ -70,7 +71,7 @@ public abstract class ValidationState {
 
     /**
      * validate issuer parameter of SLO request from IDP
-     * 
+     *
      * @param message
      *            Optional. The matching SLO request message. Only available in
      *            in SLO response validation.
@@ -318,4 +319,9 @@ public abstract class ValidationState {
     public void setMetadataSettings(MetadataSettings metadataSettings) {
         this.metadataSettings = metadataSettings;
     }
+
+    public boolean isIdpInitiated() {
+        return isIdpInitiated;
+    }
+
 }

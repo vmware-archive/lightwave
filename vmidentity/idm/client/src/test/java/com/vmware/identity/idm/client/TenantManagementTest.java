@@ -75,6 +75,8 @@ import org.junit.runner.RunWith;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
+import com.vmware.identity.idm.AlternativeOCSP;
+import com.vmware.identity.idm.AlternativeOCSPList;
 import com.vmware.identity.idm.AssertionConsumerService;
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeConsumerService;
@@ -385,6 +387,9 @@ public final class TenantManagementTest
             "idm.external-idp.2.slo.location.2";
     private final String CFG_KEY_EXTERNAL_IDP_2_SLO_BINDING_2 =
             "idm.external-idp.2.slo.binding.2";
+
+    private static final String TENANT_PSC_SITE_1 = "psc-site-1";
+    private static final String TENANT_PSC_SITE_2 = "psc-site-2";
 
     private final String CFG_KEY_EXTERNAL_IDP_STS_STORE = "idm.external-idp.sts.store";
     private final String CFG_KEY_EXTERNAL_IDP_STS_STORE_PASS = "idm.external-idp.sts.store.pass";
@@ -5480,6 +5485,121 @@ public final class TenantManagementTest
             IdmClientTestUtil.ensureTenantDoesNotExist(idmClient, tenantName);
         }
     }
+    @Test
+    public void testAlternativeOCSP() throws Exception,
+    IDMException
+    {
+        CasIdmClient idmClient = getIdmClient();
+        String tenantName = UUID.randomUUID().toString();
+        Tenant tenantToCreate = new Tenant(tenantName);
+        IdmClientTestUtil.ensureTenantDoesNotExist(idmClient, tenantName);
+        idmClient.addTenant(tenantToCreate, DEFAULT_TENANT_ADMIN_NAME, DEFAULT_TENANT_ADMIN_PASSWORD.toCharArray());
+        try
+        {
+            Tenant tenant = idmClient.getTenant(tenantName);
+            Assert.assertNotNull(tenant);
+            Assert.assertEquals(tenantName, tenant.getName());
+        }
+        catch (NoSuchTenantException ex)
+        {
+            Assert.fail("should not reach here");
+        }
+
+        try {
+            // Check default AuthnPolicy
+            AuthnPolicy policyInDefault = new AuthnPolicy(true, true, false,
+                    null);
+            AuthnPolicy policyOutDefault = idmClient.getAuthnPolicy(tenantName);
+            AssertAuthnPolicy(policyInDefault, policyOutDefault);
+
+            List<X509Certificate> certs = this
+                    .buildExternalIdpSTSKeyCertificates();
+            Assert.assertTrue(certs.size() >= 2);
+            List<Certificate> trustedCAs = new LinkedList<Certificate>();
+            trustedCAs.add(certs.get(0));
+            trustedCAs.add(certs.get(1));
+
+            // Set a base certificate policy
+            ClientCertPolicy cert = new ClientCertPolicy();
+            cert.setRevocationCheckEnabled(true);
+            cert.setUseOCSP(true);
+            cert.setUseCRLAsFailOver(true);
+            cert.setSendOCSPNonce(true);
+            cert.setOCSPUrl(new URL("http://www.ocsp1.com"));
+            cert.setOCSPResponderSigningCert(this.getSTSKeyCertificates()
+                    .get(0));
+
+            cert.setTrustedCAs(trustedCAs.toArray(new Certificate[trustedCAs.size()]));
+
+
+            //case 1: test one site with one OCSP responder
+            AlternativeOCSP altOcsp = new AlternativeOCSP(new URL("http://www.ocsp_Alt_1.com"), this.getSTSKeyCertificates().get(0) );
+            List<AlternativeOCSP> ocspList = new ArrayList<AlternativeOCSP>();
+            ocspList.add(altOcsp);
+            AlternativeOCSPList altOcspList = new AlternativeOCSPList(TENANT_PSC_SITE_1, ocspList);
+            HashMap<String, AlternativeOCSPList> altOcspSiteMap = new HashMap<String, AlternativeOCSPList>();
+            altOcspSiteMap.put(TENANT_PSC_SITE_1, altOcspList);
+            cert.set_siteOCSPMap(altOcspSiteMap);
+
+            AuthnPolicy policyIn = new AuthnPolicy(true, true, true, cert);
+            idmClient.setAuthnPolicy(tenantName, policyIn);
+            AuthnPolicy policyOut = idmClient.getAuthnPolicy(tenantName);
+            AssertAuthnPolicy(policyIn, policyOut);
+
+            //case 2: test adding second ocsp
+            AlternativeOCSP altOcsp2 = new AlternativeOCSP(new URL("http://www.ocsp_Alt_2.com"), this.getSTSKeyCertificates().get(0) );
+            policyIn.getClientCertPolicy().get_siteOCSPList().get(TENANT_PSC_SITE_1).addAlternativeOCSP(altOcsp2);
+
+            idmClient.setAuthnPolicy(tenantName, policyIn);
+            AuthnPolicy policyOut2 = idmClient.getAuthnPolicy(tenantName);
+            AssertAuthnPolicy(policyIn, policyOut2);
+
+            //case 3: test removing second ocsp of the site.
+            // AlternativeOCSP altOcsp2 = new AlternativeOCSP(new URL("http://www.ocsp_Alt_2.com"), this.getSTSKeyCertificates().get(0) );
+            policyIn.getClientCertPolicy().get_siteOCSPList().get(TENANT_PSC_SITE_1).get_ocspList().remove(altOcsp2);
+
+            idmClient.setAuthnPolicy(tenantName, policyIn);
+            AuthnPolicy policyOut3 = idmClient.getAuthnPolicy(tenantName);
+            AssertAuthnPolicy(policyIn, policyOut3);
+
+            //case 4: test adding OCSP for second PSC site
+            AlternativeOCSP altOcsp3 = new AlternativeOCSP(new URL("http://www.ocsp_Alt_3.com"), this.getSTSKeyCertificates().get(0) );
+            List<AlternativeOCSP> ocspList2 = new ArrayList<AlternativeOCSP>();
+            ocspList2.add(altOcsp3);
+            AlternativeOCSPList altOcspList2 = new AlternativeOCSPList(TENANT_PSC_SITE_2, ocspList2);
+            policyIn.getClientCertPolicy().get_siteOCSPList().put(TENANT_PSC_SITE_2, altOcspList2);
+
+            idmClient.setAuthnPolicy(tenantName, policyIn);
+            AuthnPolicy policyOut4 = idmClient.getAuthnPolicy(tenantName);
+            AssertAuthnPolicy(policyIn, policyOut4);
+
+            //case 5: test removing second psc site
+
+            policyIn.getClientCertPolicy().get_siteOCSPList().remove(TENANT_PSC_SITE_2);
+
+            idmClient.setAuthnPolicy(tenantName, policyIn);
+            AuthnPolicy policyOut5 = idmClient.getAuthnPolicy(tenantName);
+            AssertAuthnPolicy(policyIn, policyOut5);
+
+            //case 6: test backward compatibility to Admin. To obsolete once all clients move to REST.
+            policyIn.getClientCertPolicy().set_siteOCSPMap(null);
+
+            idmClient.setAuthnPolicy(tenantName, policyIn);
+            AuthnPolicy policyOut6 = idmClient.getAuthnPolicy(tenantName);
+            Assert.assertTrue(policyOut6.getClientCertPolicy().get_siteOCSPList().size() == 1);
+
+            //case 7: test removing all alternative OCSP
+            policyIn.getClientCertPolicy().set_siteOCSPMap(new HashMap<String, AlternativeOCSPList>());
+
+            idmClient.setAuthnPolicy(tenantName, policyIn);
+            AuthnPolicy policyOut7 = idmClient.getAuthnPolicy(tenantName);
+            AssertAuthnPolicy(policyIn, policyOut7);
+
+        } finally {
+            // Cleanup
+            IdmClientTestUtil.ensureTenantDoesNotExist(idmClient, tenantName);
+        }
+    }
 
     private void AssertAuthnPolicy(AuthnPolicy policyIn, AuthnPolicy policyOut){
         Assert.assertEquals(policyIn.IsPasswordAuthEnabled(),policyOut.IsPasswordAuthEnabled());
@@ -5500,23 +5620,30 @@ public final class TenantManagementTest
         Assert.assertEquals(certIn.useCertCRL(), certOut.useCertCRL());
         Assert.assertEquals(certIn.getCRLUrl(), certOut.getCRLUrl());
         Assert.assertEquals(certIn.getCacheSize(), certOut.getCacheSize());
+        if ( certIn.get_siteOCSPList() != null ) {
+            Assert.assertTrue(certIn.get_siteOCSPList().equals(certOut.get_siteOCSPList()));
+        }
+
+        //OIDs
         if(certIn.getOIDs() == null){
             Assert.assertNull(certOut.getOIDs());
-            return;
+        } else {
+            Assert.assertNotNull(certOut.getOIDs());
+            Assert.assertEquals(certIn.getOIDs().length, certOut.getOIDs().length);
+            for(String s : certIn.getOIDs()){
+                Assert.assertTrue(ArrayUtils.contains(certOut.getOIDs(), s));
+            }
         }
-        Assert.assertNotNull(certOut.getOIDs());
-        Assert.assertEquals(certIn.getOIDs().length, certOut.getOIDs().length);
-        for(String s : certIn.getOIDs()){
-            Assert.assertTrue(ArrayUtils.contains(certOut.getOIDs(), s));
-        }
+
+        //trusted CAs
         if(certIn.getTrustedCAs() == null || certIn.getTrustedCAs().length == 0){
             Assert.assertNull(certOut.getTrustedCAs());
-            return;
-        }
-        Assert.assertNotNull(certOut.getTrustedCAs());
-        Assert.assertEquals(certIn.getTrustedCAs().length, certOut.getTrustedCAs().length);
-        for(int i=0; i<certIn.getTrustedCAs().length; i++) {
-            Assert.assertEquals(certIn.getTrustedCAs()[i], certOut.getTrustedCAs()[i]);
+        } else {
+            Assert.assertNotNull(certOut.getTrustedCAs());
+            Assert.assertEquals(certIn.getTrustedCAs().length, certOut.getTrustedCAs().length);
+            for(int i=0; i<certIn.getTrustedCAs().length; i++) {
+                Assert.assertEquals(certIn.getTrustedCAs()[i], certOut.getTrustedCAs()[i]);
+            }
         }
     }
 

@@ -32,6 +32,7 @@ import org.glassfish.jersey.message.internal.ReaderWriter;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.rest.core.server.authorization.exception.InvalidTokenException;
 import com.vmware.identity.rest.core.server.authorization.token.AccessToken;
+import com.vmware.identity.rest.core.server.authorization.token.TokenType;
 import com.vmware.identity.rest.core.util.RequestSigner;
 import com.vmware.identity.rest.core.util.StringManager;
 
@@ -39,6 +40,23 @@ import com.vmware.identity.rest.core.util.StringManager;
  * Utility class for performing request verification.
  */
 public class VerificationUtil {
+
+    /**
+     * Verifies the token type in an access token.
+     *
+     * @param token the token to verify
+     * @param type the expected type of the token
+     * @param sm a string manager to get the exception message from
+     * @param log a logger to log the error to
+     *
+     * @throws InvalidTokenException if the token is of an invalid or incorrect type
+     */
+    public static void verifyTokenType(AccessToken token, TokenType type, StringManager sm, IDiagnosticsLogger log) {
+        if (!type.getJsonName().equals(token.getTokenType())) {
+            log.error("JWT was expected to have the token type '{}', but was '{}'", type.getJsonName(), token.getTokenType());
+            throw new InvalidTokenException(sm.getString("auth.ite.bad.type"));
+        }
+    }
 
     /**
      * Perform signature verification using the signed request, the HTTP context, and a public key.

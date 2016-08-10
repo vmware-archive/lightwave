@@ -45,5 +45,12 @@ IDM_KRB_CONTEXT gIdmKrbContext =
 
 PIDM_KRB_CONTEXT pgIdmKrbContext = &gIdmKrbContext;
 
+IDM_AUTH_MUTEX gIdmAuthMutex = 
+       {
+            .mutex = PTHREAD_MUTEX_INITIALIZER
+       };
+
+PIDM_AUTH_MUTEX pgIdmAuthMutex = &gIdmAuthMutex;
+
 #endif /* !_WIN32 */
 

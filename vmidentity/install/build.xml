@@ -26,8 +26,6 @@
 
 	 <property name="build.packages.vmware-identity-idm-interface"
              value="${build.packages}/vmware-identity-idm-interface.jar" />
-         <property name="build.packages.admin-interfaces"
-             value="${build.packages}/admin-interfaces.jar" />
          <property name="build.packages.samltoken"
              value="${build.packages}/samltoken.jar" />
          <property name="build.packages.vmware-identity-platform"
@@ -45,7 +43,6 @@
 
 	<path id="classpath.main">
                 <pathelement location="${build.packages.samltoken}" />
-                <pathelement location="${build.packages.admin-interfaces}" />
                 <pathelement location="${build.packages.vmware-identity-platform}" />
                 <pathelement location="${build.packages.vmware-identity-idm-interface}" />
                 <pathelement location="${build.packages.vmware-identity-idm-client}" />

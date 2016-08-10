@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -211,13 +211,9 @@ VmDirSendLdapResult(
    }
 
    /* Send controls only if local write succeeds - strong consistency write */
-   if (op->reqControls != NULL &&
-       !IsNullOrEmptyString(op->reqControls->type) &&
-       !VmDirStringCompareA(op->reqControls->type, LDAP_CONTROL_CONSISTENT_WRITE, TRUE) &&
+   if (op->strongConsistencyWriteCtrl != NULL &&
        op->ldapResult.errCode == LDAP_SUCCESS)
    {
-       VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirSendLdapResult: Write consistency done Control value");
-
        if (WriteConsistencyWriteDoneControl(op, ber) != LDAP_SUCCESS)
        {
           VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirSendLdapResult: WriteConsistencyWriteDoneControl failed");
@@ -601,6 +597,11 @@ IsAttrInReplScope(
         *inScope = FALSE;
         goto cleanup;
     }
+    else if ( attrType != NULL && gVmdirServerGlobals.dwDomainFunctionalLevel >= VDIR_DFL_MODDN &&
+              (VmDirStringCompareA( attrType, ATTR_OBJECT_GUID, FALSE) == 0))
+    {
+        ; // always send objectGUID to uniquely identify entries.
+    }
     else
     {
         rc = LwRtlHashTableFindKey( op->syncDoneCtrl->value.syncDoneCtrlVal.htUtdVector, &pNode, origInvocationId );
@@ -943,10 +944,11 @@ WriteMetaDataAttribute(
             berVal.lberbv.bv_val = attrMetaDataVal;
             berVal.lberbv.bv_len = VmDirStringLenA( attrMetaDataVal );
             if (VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_MODIFYTIMESTAMP, FALSE ) != 0 &&
-                VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE ) != 0)
+                VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE ) != 0     &&
+                VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_OBJECT_GUID, FALSE ) != 0)
             {
                 // To prevent endless replication ping pong, supplier should send result only if there are changes
-                // to attribute other than ATTR_USN_CHANGED and ATTR_MODIFYTIMESTAMP.
+                // to attribute other than ATTR_USN_CHANGED, ATTR_MODIFYTIMESTAMP and ATTR_OBJECT_GUID.
                 *nonTrivialAttrsInReplScope = TRUE;
             }
             if (ber_printf( ber, "O", &berVal ) == -1 )

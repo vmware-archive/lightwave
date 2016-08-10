@@ -28,7 +28,7 @@ namespace RestSsoAdminSnapIn
 	{
 		public LoginDto LoginDto{ get; private set; }
 		public ServerDto ServerDto{ get; set; }
-
+		public string Username { get; set; }
 		#region Constructors
 
 		// Called when created from unmanaged code
@@ -67,7 +67,7 @@ namespace RestSsoAdminSnapIn
 				this.Close ();
 				NSApplication.SharedApplication.StopModalWithCode (0);
 			};
-			TxtUsername.StringValue = "Administrator";
+			TxtUsername.StringValue = string.IsNullOrEmpty(Username)? "Administrator" : Username;
 		}
 
 		public void OnClickLoginButton (object sender, EventArgs e)

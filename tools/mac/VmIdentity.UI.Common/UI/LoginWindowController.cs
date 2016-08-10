@@ -16,6 +16,8 @@ using System;
 using AppKit;
 using Foundation;
 using VmIdentity.UI.Common.Utilities;
+using VMIdentity.CommonUtils;
+using VMIdentity.CommonUtils.Utilities;
 
 namespace VmIdentity.UI.Common
 {
@@ -69,7 +71,7 @@ namespace VmIdentity.UI.Common
             base.AwakeFromNib();
             foreach (var obj in ServerArray)
                 this.ServerCombo.Add(NSObject.FromObject(obj));
-            this.UserNameTxtField.StringValue = "Administrator@lightwave.local";
+            this.UserNameTxtField.StringValue = "Administrator@" + MiscUtil.GetBrandConfig(CommonConstants.TENANT);
             //Events
             this.OKButton.Activated += OnClickOKButton;
             this.CancelButton.Activated += OnClickCancelButton;
@@ -100,9 +102,15 @@ namespace VmIdentity.UI.Common
                     DomainName = userAndDomain[1];
                     Password = PasswordTxtField.StringValue;
                     Server = ServerCombo.StringValue;
-
-                    this.Close();
-                    NSApplication.SharedApplication.StopModalWithCode(1);
+                    if (!Network.IsValidIP(Server))
+                    {
+                        UIErrorHelper.ShowAlert("", "Enter Valid IP");
+                    }
+                    else
+                    {
+                        this.Close();
+                        NSApplication.SharedApplication.StopModalWithCode(1);
+                    }
                 }
             }
         }

@@ -14,6 +14,7 @@
 package com.vmware.identity.rest.idm.server.resources;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -40,6 +41,7 @@ import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.AuthnPolicy;
 import com.vmware.identity.idm.DuplicateTenantException;
 import com.vmware.identity.idm.Group;
+import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPasswordPolicyException;
 import com.vmware.identity.idm.LockoutPolicy;
@@ -194,11 +196,11 @@ public class TenantResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.REGULAR_USER)
     public SearchResultDTO searchMembers(@PathParam(PathParameters.TENANT_NAME) String tenantName,
-                                 @DefaultValue("all") @QueryParam("type") String memberType,
-                                 @QueryParam("domain") String domain,
-                                 @DefaultValue("200") @QueryParam("limit") int limit,
-                                 @DefaultValue("NAME") @QueryParam("searchBy") String searchBy,
-                                 @DefaultValue("") @QueryParam("query") String query) {
+            @DefaultValue("all") @QueryParam("type") String memberType,
+            @QueryParam("domain") String domain,
+            @DefaultValue("200") @QueryParam("limit") int limit,
+            @DefaultValue("NAME") @QueryParam("searchBy") String searchBy,
+            @DefaultValue("") @QueryParam("query") String query) {
 
         validateMemberType(memberType.toUpperCase());
         validateSearchBy(searchBy.toUpperCase());
@@ -219,22 +221,22 @@ public class TenantResource extends BaseResource {
                 solutionUsers = searchSolutionUsers(tenantName, criteria, memberToLimit.get(MemberType.SOLUTIONUSER), requestedSearchType);
             } else {
                 switch (requestedMemberType) {
-                    case GROUP:
-                        groups = searchGroups(tenantName, criteria, limit);
-                        break;
-                    case SOLUTIONUSER:
-                        solutionUsers = searchSolutionUsers(tenantName, criteria, limit, requestedSearchType);
-                        break;
-                    case USER:
-                        users = searchPersonUsers(tenantName, criteria, limit);
-                        break;
+                case GROUP:
+                    groups = searchGroups(tenantName, criteria, limit);
+                    break;
+                case SOLUTIONUSER:
+                    solutionUsers = searchSolutionUsers(tenantName, criteria, limit, requestedSearchType);
+                    break;
+                case USER:
+                    users = searchPersonUsers(tenantName, criteria, limit);
+                    break;
                 }
             }
             return SearchResultDTO.builder()
-                                   .withUsers(users)
-                                   .withGroups(groups)
-                                   .withSolutionUsers(solutionUsers)
-                                   .build();
+                    .withUsers(users)
+                    .withGroups(groups)
+                    .withSolutionUsers(solutionUsers)
+                    .build();
 
         } catch (NoSuchTenantException e) {
             log.debug("Failed to search members on tenant '{}'", tenantName, e);
@@ -277,7 +279,7 @@ public class TenantResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.REGULAR_USER)
     public TenantConfigurationDTO getConfig(@PathParam(PathParameters.TENANT_NAME) String tenantName,
-                                      @QueryParam("type") final List<String> configTypes) {
+            @QueryParam("type") final List<String> configTypes) {
 
         Set<TenantConfigType> requestedConfigs = new HashSet<TenantConfigType>();
         for (String configType : configTypes) {
@@ -308,41 +310,41 @@ public class TenantResource extends BaseResource {
             } else {
                 for (TenantConfigType type : requestedConfigs) {
                     switch (type) {
-                        case LOCKOUT:
-                            lockoutPolicy = getLockoutPolicy(tenantName);
-                            break;
+                    case LOCKOUT:
+                        lockoutPolicy = getLockoutPolicy(tenantName);
+                        break;
 
-                        case PASSWORD:
-                            passwordPolicy = getPasswordPolicy(tenantName);
-                            break;
+                    case PASSWORD:
+                        passwordPolicy = getPasswordPolicy(tenantName);
+                        break;
 
-                        case TOKEN:
-                            tokenPolicy = getTokenPolicy(tenantName);
-                            break;
+                    case TOKEN:
+                        tokenPolicy = getTokenPolicy(tenantName);
+                        break;
 
-                        case PROVIDER:
-                            providerPolicy = getProviderPolicy(tenantName);
-                            break;
+                    case PROVIDER:
+                        providerPolicy = getProviderPolicy(tenantName);
+                        break;
 
-                        case BRAND:
-                            brandPolicy = getBrandPolicy(tenantName);
-                            break;
+                    case BRAND:
+                        brandPolicy = getBrandPolicy(tenantName);
+                        break;
 
-                        case AUTHENTICATION:
-                            authenticationPolicy = getAuthenticationPolicy(tenantName);
-                            break;
+                    case AUTHENTICATION:
+                        authenticationPolicy = getAuthenticationPolicy(tenantName);
+                        break;
                     }
                 }
             }
 
             return TenantConfigurationDTO.builder()
-                                         .withLockoutPolicy(lockoutPolicy)
-                                         .withPasswordPolicy(passwordPolicy)
-                                         .withTokenPolicy(tokenPolicy)
-                                         .withProviderPolicy(providerPolicy)
-                                         .withBrandPolicy(brandPolicy)
-                                         .withAuthenticationPolicy(authenticationPolicy)
-                                         .build();
+                    .withLockoutPolicy(lockoutPolicy)
+                    .withPasswordPolicy(passwordPolicy)
+                    .withTokenPolicy(tokenPolicy)
+                    .withProviderPolicy(providerPolicy)
+                    .withBrandPolicy(brandPolicy)
+                    .withAuthenticationPolicy(authenticationPolicy)
+                    .build();
 
         } catch (NoSuchTenantException e) {
             log.debug("Failed to retrieve configuration details of tenant '{}'", tenantName, e);
@@ -363,27 +365,12 @@ public class TenantResource extends BaseResource {
     public TenantConfigurationDTO updateConfig(@PathParam(PathParameters.TENANT_NAME) String tenantName, TenantConfigurationDTO configurationDTO) {
 
         TenantConfigurationDTO.Builder configBuilder = TenantConfigurationDTO.builder();
-        LockoutPolicyDTO lockoutPolicy = configurationDTO.getLockoutPolicy();
-        PasswordPolicyDTO passwordPolicy = configurationDTO.getPasswordPolicy();
         TokenPolicyDTO tokenPolicy = configurationDTO.getTokenPolicy();
         ProviderPolicyDTO providerPolicy = configurationDTO.getProviderPolicy();
         BrandPolicyDTO brandPolicy = configurationDTO.getBrandPolicy();
         AuthenticationPolicyDTO authenticationPolicy = configurationDTO.getAuthenticationPolicy();
 
         try {
-            // update lockout policy configuration of tenant
-            if (lockoutPolicy != null) {
-                LockoutPolicy lockoutPolicyUpdate = LockoutPolicyMapper.getLockoutPolicy(lockoutPolicy);
-                getIDMClient().setLockoutPolicy(tenantName, lockoutPolicyUpdate);
-                configBuilder.withLockoutPolicy(getLockoutPolicy(tenantName));
-            }
-
-            // update password policy configuration of tenant
-            if (passwordPolicy != null) {
-                PasswordPolicy passwordPolicyUpdate = PasswordPolicyMapper.getPasswordPolicy(passwordPolicy);
-                getIDMClient().setPasswordPolicy(tenantName, passwordPolicyUpdate);
-                configBuilder.withPasswordPolicy(getPasswordPolicy(tenantName));
-            }
 
             // update token policy configuration of tenant
             if (tokenPolicy != null) {
@@ -394,7 +381,7 @@ public class TenantResource extends BaseResource {
             // update provider policy configuration of tenant
             if (providerPolicy != null) {
                 getIDMClient().setDefaultProviders(tenantName, Arrays.asList(providerPolicy.getDefaultProvider()));
-                getIDMClient().setLocalIDPAlias(tenantName, providerPolicy.getDefaultProviderAlias());
+                // TODO : Update default provider alias on provision of API. As interim, Can update on IdentityProviderResource
                 getIDMClient().setTenantIDPSelectionEnabled(tenantName, providerPolicy.isProviderSelectionEnabled());
                 configBuilder.withProviderPolicy(getProviderPolicy(tenantName));
             }
@@ -429,7 +416,7 @@ public class TenantResource extends BaseResource {
             throw new NotFoundException(sm.getString("ec.404"),e);
         } catch( IllegalArgumentException | InvalidArgumentException | InvalidPasswordPolicyException e){
             log.error("Failed to update the configuration details for tenant '{}' due to a client side error", tenantName, e);
-            throw new BadRequestException(sm.getString("res.ten.get.config.failed", tenantName), e);
+            throw new BadRequestException(sm.getString("res.ten.update.config.failed", tenantName), e);
         } catch (Exception e){
             log.error("Failed to update the configuration details for tenant '{}' due to a server side error", tenantName, e);
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
@@ -555,19 +542,27 @@ public class TenantResource extends BaseResource {
 
     private TokenPolicyDTO getTokenPolicy(String tenantName) throws Exception {
         return TokenPolicyDTO.builder()
-                             .withClockToleranceMillis(getClockTolerance(tenantName))
-                             .withDelegationCount(getDelegationCount(tenantName))
-                             .withMaxBearerTokenLifeTimeMillis(getBearerTokenLifetime(tenantName))
-                             .withMaxHOKTokenLifeTimeMillis(getHOKTokenLifetime(tenantName))
-                             .withMaxBearerRefreshTokenLifeTimeMillis(getBearerRefreshTokenLifetime(tenantName))
-                             .withMaxHOKRefreshTokenLifeTimeMillis(getHoKRefreshTokenLifetime(tenantName))
-                             .withRenewCount(getRenewCount(tenantName))
-                             .build();
+                .withClockToleranceMillis(getClockTolerance(tenantName))
+                .withDelegationCount(getDelegationCount(tenantName))
+                .withMaxBearerTokenLifeTimeMillis(getBearerTokenLifetime(tenantName))
+                .withMaxHOKTokenLifeTimeMillis(getHOKTokenLifetime(tenantName))
+                .withMaxBearerRefreshTokenLifeTimeMillis(getBearerRefreshTokenLifetime(tenantName))
+                .withMaxHOKRefreshTokenLifeTimeMillis(getHoKRefreshTokenLifetime(tenantName))
+                .withRenewCount(getRenewCount(tenantName))
+                .build();
     }
 
     private ProviderPolicyDTO getProviderPolicy(String tenantName) throws Exception {
-        return ProviderPolicyMapper.getProviderPolicyDTO(getIDMClient().getDefaultProviders(tenantName),
-                getIDMClient().getLocalIDPAlias(tenantName), getIDMClient().isTenantIDPSelectionEnabled(tenantName));
+        ProviderPolicyDTO providerPolicyDTO = null;
+        Collection<String> defaultProviders = getIDMClient().getDefaultProviders(tenantName);
+        if(defaultProviders != null) {
+          IIdentityStoreData defaultIdentitySource = getIDMClient().getProvider(tenantName, defaultProviders.iterator().next());
+
+          providerPolicyDTO = ProviderPolicyMapper.getProviderPolicyDTO(getIDMClient().getDefaultProviders(tenantName),
+                  defaultIdentitySource.getExtendedIdentityStoreData() != null ? defaultIdentitySource.getExtendedIdentityStoreData().getAlias() : null,
+                  getIDMClient().isTenantIDPSelectionEnabled(tenantName));
+        }
+        return providerPolicyDTO;
     }
 
     private BrandPolicyDTO getBrandPolicy(String tenantName) throws Exception {
@@ -578,12 +573,12 @@ public class TenantResource extends BaseResource {
             disableLogonBanner = true;
         }
         return BrandPolicyDTO.builder()
-                             .withName(getIDMClient().getBrandName(tenantName))
-                             .withLogonBannerTitle(logonBannerTitle)
-                             .withLogonBannerContent(logonBannerContent)
-                             .withLogonBannerCheckboxEnabled(getIDMClient().getLogonBannerCheckboxFlag(tenantName))
-                             .withLogonBannerDisabled(disableLogonBanner)
-                             .build();
+                .withName(getIDMClient().getBrandName(tenantName))
+                .withLogonBannerTitle(logonBannerTitle)
+                .withLogonBannerContent(logonBannerContent)
+                .withLogonBannerCheckboxEnabled(getIDMClient().getLogonBannerCheckboxFlag(tenantName))
+                .withLogonBannerDisabled(disableLogonBanner)
+                .build();
     }
 
     private void updateTokenPolicy(String tenantName, TokenPolicyDTO tokenPolicy) throws Exception {
@@ -641,7 +636,7 @@ public class TenantResource extends BaseResource {
             Set<SolutionUser> idmSolutionUsers = getIDMClient().findSolutionUsers(tenantName, criteria.getSearchString(), limit);
             solutionUsers = SolutionUserMapper.getSolutionUserDTOs(idmSolutionUsers);
         } else if (searchBy == SearchType.CERT_SUBJECTDN) {
-             SolutionUser idmSolutionUser = getIDMClient().findSolutionUserByCertDn(tenantName, criteria.getSearchString());
+            SolutionUser idmSolutionUser = getIDMClient().findSolutionUserByCertDn(tenantName, criteria.getSearchString());
             if (idmSolutionUser != null) {
                 solutionUsers.add(SolutionUserMapper.getSolutionUserDTO(idmSolutionUser));
             }

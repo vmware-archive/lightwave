@@ -33,6 +33,7 @@ public class PlatformServicesControllerDeploy {
 			} catch (DomainControllerNativeException e) {
 				System.err.println("Errorcode: " + e.getErrorCode());
 				e.printStackTrace(System.err);
+				System.exit(e.getErrorCode());
 			}
 		} else {
 			try {
@@ -41,6 +42,7 @@ public class PlatformServicesControllerDeploy {
 			} catch (DomainControllerNativeException e) {
 				System.err.printf("Errorcode: " + e.getErrorCode());
 				e.printStackTrace(System.err);
+				System.exit(e.getErrorCode());
 			}
 		}
     }

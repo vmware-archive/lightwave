@@ -222,7 +222,7 @@ error:
 }
 
 VOID
-VmDirFreeMetadata(
+VmDirFreeMetadataInternal(
     PVMDIR_METADATA pMetadata
     )
 {
@@ -233,6 +233,194 @@ VmDirFreeMetadata(
         VMDIR_SAFE_FREE_STRINGA(pMetadata->pszOriginatingTime);
         VMDIR_SAFE_FREE_MEMORY(pMetadata);
     }
+}
+
+VOID
+VmDirFreeMetadataListInternal(
+    PVMDIR_METADATA_LIST pMetadataList
+    )
+{
+    DWORD dwCnt = 0;
+
+    if(!pMetadataList)
+    {
+        return;
+    }
+
+    for(dwCnt = 0; dwCnt < pMetadataList->dwCount; dwCnt++)
+    {
+        VmDirFreeMetadataInternal(pMetadataList->ppMetadataArray[dwCnt]);
+    }
+
+    VMDIR_SAFE_FREE_MEMORY(pMetadataList->ppMetadataArray);
+    VMDIR_SAFE_FREE_MEMORY(pMetadataList);
+}
+
+/*
+ * Get the attribute metadata for the given EntryDn.
+ * If an attribute is specified, only return metadata for that attribute.
+ * Returns a metadata list, or NULL if attribute(s) or entry is not found.
+ */
+DWORD
+VmDirGetAttributeMetadataInternal(
+    PVMDIR_CONNECTION   pConnection,
+    PCSTR               pszEntryDn,
+    PCSTR               pszAttribute, // OPTIONAL
+    PVMDIR_METADATA_LIST*    ppMetadataList
+    )
+{
+    DWORD               dwError = 0;
+    LDAPMessage*        pResult = NULL;
+    PCSTR               pszMetadata = ATTR_ATTR_META_DATA;
+    PCSTR               ppszAttrs[] = { pszMetadata, NULL };
+    PVMDIR_METADATA     pMetadata = NULL;
+    LDAPMessage*        pEntry = NULL;
+    struct berval**     ppMetadataValues = NULL;
+    int                 iCnt = 0;
+    PVMDIR_METADATA_LIST pMetadataList = NULL;
+    DWORD               dwMetadataListSize = 0;
+    LDAPControl*        pCtrl = NULL;
+    LDAPControl*        pServerCtrl[2] = { NULL, NULL };
+
+    if ( IsNullOrEmptyString(pszEntryDn) ||
+         !ppMetadataList )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(
+                sizeof(VMDIR_METADATA_LIST),
+                (PVOID*)&pMetadataList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // Initialize array to reasonable size.
+    if (pszAttribute)
+    {
+        dwMetadataListSize = 2;
+    }
+    else
+    {
+        dwMetadataListSize = 10;
+    }
+
+    dwError = VmDirAllocateMemory(
+                sizeof(VMDIR_METADATA) * dwMetadataListSize,
+                (PVOID*)&pMetadataList->ppMetadataArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+
+    dwError = ldap_control_create(
+                        VDIR_LDAP_CONTROL_SHOW_DELETED_OBJECTS,
+                        0,
+                        NULL,
+                        0,
+                        &pCtrl);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pServerCtrl[0] = pCtrl;
+
+    dwError = ldap_search_ext_s(
+                pConnection->pLd,
+                pszEntryDn,
+                LDAP_SCOPE_BASE,
+                NULL,
+                (PSTR*)ppszAttrs,
+                FALSE, /* get values      */
+                pServerCtrl,  /* server controls */
+                NULL,  /* client controls */
+                NULL,  /* timeout         */
+                0,     /* size limit */
+                &pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for ( pEntry = ldap_first_entry(pConnection->pLd, pResult);
+          pEntry != NULL;
+          pEntry = ldap_next_entry(pConnection->pLd, pEntry) )
+    {
+        if (ppMetadataValues)
+        {
+            ldap_value_free_len(ppMetadataValues);
+            ppMetadataValues = NULL;
+        }
+
+        ppMetadataValues = ldap_get_values_len(
+                                pConnection->pLd,
+                                pEntry,
+                                ATTR_ATTR_META_DATA);
+
+        for (iCnt=0; ppMetadataValues[iCnt] != NULL; iCnt++)
+        {
+            if (pszAttribute)
+            {
+                // VOID function, no return value to check
+                VmDirFreeMetadata(pMetadata);
+            }
+
+            pMetadata = NULL;
+
+            dwError =  VmDirParseMetadata(
+                                ppMetadataValues[iCnt]->bv_val,
+                                &pMetadata);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            // Only return metadata if the attribute matches
+            if( pszAttribute && VmDirStringCompareA(pszAttribute,
+                                                    pMetadata->pszAttribute,
+                                                    FALSE) == 0)
+            {
+                pMetadataList->ppMetadataArray[pMetadataList->dwCount++] = pMetadata;
+                *ppMetadataList = pMetadataList;
+                goto cleanup;
+            }
+            else if (!pszAttribute)
+            {
+                // Is array big enough?
+                if (dwMetadataListSize <= pMetadataList->dwCount + 1)
+                {
+                    dwError = VmDirReallocateMemoryWithInit(
+                                (PVOID)pMetadataList->ppMetadataArray,
+                                (PVOID*)&pMetadataList->ppMetadataArray,
+                                sizeof(VMDIR_METADATA) * (dwMetadataListSize + 10),
+                                sizeof(VMDIR_METADATA) * dwMetadataListSize);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+
+                    dwMetadataListSize += 10;
+                }
+
+                pMetadataList->ppMetadataArray[pMetadataList->dwCount++] = pMetadata;
+            }
+        }
+    }
+
+    if (pMetadataList->dwCount == 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_SUCH_ATTRIBUTE);
+    }
+
+    *ppMetadataList = pMetadataList;
+
+cleanup:
+    if (ppMetadataValues)
+    {
+        ldap_value_free_len(ppMetadataValues);
+    }
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
+    if (pCtrl)
+    {
+        ldap_control_free(pCtrl);
+    }
+
+    return dwError;
+
+error:
+    VmDirFreeMetadataList(pMetadataList);
+    VmDirFreeMetadata(pMetadata);
+
+    goto cleanup;
 }
 
 /*

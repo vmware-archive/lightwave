@@ -39,6 +39,8 @@ VmDirParseArgs(
     PSTR*    ppszSrcPassword,
     PSTR*    ppszTgtHostName,
     PSTR*    ppszTgtPort,
+    PSTR*    ppszEntryDn,
+    PSTR*    ppszAttribute,
     PBOOLEAN pbVerbose
     )
 {
@@ -50,6 +52,8 @@ VmDirParseArgs(
     PSTR    pszSrcPassword = NULL;
     PSTR    pszTgtHostName = NULL;
     PSTR    pszTgtPort     = DEFAULT_LDAPS_PORT_STR;
+    PSTR    pszEntryDn     = NULL;
+    PSTR    pszAttribute   = NULL;
     BOOLEAN bVerbose       = FALSE;
     BOOLEAN bTwoWayRepl    = FALSE;
 
@@ -119,6 +123,14 @@ VmDirParseArgs(
                 pszFeatureSet = optarg;
                 break;
 
+            case VDCREPADMIN_OPTION_ENTRY_DN:
+                pszEntryDn = optarg;
+                break;
+
+            case VDCREPADMIN_OPTION_ATTRIBUTE:
+                pszAttribute = optarg;
+                break;
+
             default:
                 dwError = ERROR_INVALID_PARAMETER;
                 BAIL_ON_VMDIR_ERROR(dwError);
@@ -184,6 +196,19 @@ VmDirParseArgs(
             {
                 VmDirGetCmdLineOption(argc, argv, &i, &pszFeatureSet);
             }
+            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_ENTRY_DN,
+                                         argv[i],
+                                         TRUE) == 0)
+            {
+                VmDirGetCmdLineOption(argc, argv, &i, &pszEntryDn);
+            }
+            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_ATTRIBUTE,
+                                         argv[i],
+                                         TRUE) == 0)
+            {
+                VmDirGetCmdLineOption(argc, argv, &i, &pszAttribute);
+            }
+
         }
         i++;
     }
@@ -310,6 +335,21 @@ VmDirParseArgs(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_ATTRIBUTE_METADATA,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
+    {
+        if (
+               pszSrcHostName == NULL
+            || pszSrcPort     == NULL
+            || pszSrcUserName == NULL
+            || pszEntryDn     == NULL
+           )
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
     else
     {
         dwError = ERROR_INVALID_PARAMETER;
@@ -323,6 +363,8 @@ VmDirParseArgs(
     *ppszSrcPassword = pszSrcPassword;
     *ppszTgtHostName = pszTgtHostName;
     *ppszTgtPort     = pszTgtPort;
+    *ppszEntryDn     = pszEntryDn;
+    *ppszAttribute   = pszAttribute;
     *pbVerbose       = bVerbose;
     *pbTwoWayRepl    = bTwoWayRepl;
 
@@ -370,5 +412,9 @@ ShowUsage(
         "                   -h <fully-qualified-domain-name>\n"
         "                   -u <admin UPN, e.g. Administrator@vsphere.local>\n"
         "                   [-w <password>]\n"
+        "       vdcrepadmin -f showattributemetadata\n"
+        "                   -e <entry_dn> [-a <attribute>]\n"
+        "                   -h <source_hostname> [-p <source_portnumber>]\n"
+        "                   -u <source_username> [-w <source_password>]\n"
       );
 }

@@ -94,7 +94,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
             var serverDto = GetServerDto();
             ActionHelper.Execute(delegate()
             {
-                var service = SnapInContext.Instance.ServiceGateway;
+                var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
                 var tenantName = GetTenant().DisplayName;
                 var form = new NewOidcClient(service, serverDto, tenantName);
                 if (SnapIn.Console.ShowDialog(form) == DialogResult.OK)

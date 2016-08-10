@@ -1462,7 +1462,8 @@ VmDirLdapSetupRemoteHostRA(
     PCSTR pszHostName,
     PCSTR pszUsername,
     PCSTR pszPassword,
-    PCSTR pszReplHostName
+    PCSTR pszReplHostName,
+    DWORD dwHighWatermark
     )
 {
     DWORD       dwError = 0;
@@ -1532,14 +1533,22 @@ VmDirLdapSetupRemoteHostRA(
         replURI.mod_type = ATTR_LABELED_URI;
         replURI.mod_values = modv_uri;
 
-        dwError = VmDirLdapGetHighWatermark(pLd,
-                                            pszHostName,
-                                            pszReplHostName,
-                                            pszDomainName,
-                                            pszUsername,
-                                            pszPassword,
-                                            &lastLocalUsn);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (dwHighWatermark == 0)
+        {
+            dwError = VmDirLdapGetHighWatermark(
+                                        pLd,
+                                        pszHostName,
+                                        pszReplHostName,
+                                        pszDomainName,
+                                        pszUsername,
+                                        pszPassword,
+                                        &lastLocalUsn);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else
+        {
+            lastLocalUsn = dwHighWatermark;
+        }
 
         dwError = VmDirAllocateStringAVsnprintf(
                                         &pszLastLocalUsn,

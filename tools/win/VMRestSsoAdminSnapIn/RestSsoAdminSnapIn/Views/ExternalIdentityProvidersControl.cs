@@ -29,7 +29,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
     public partial class ExternalIdentityProvidersControl : UserControl, IFormViewControl
     {
         ExternalIdentityProviderFormView _formView;
-        private ServiceGateway _ssoAdminSdkService;
 
         public ExternalIdentityProvidersControl()
         {
@@ -60,7 +59,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
         {
             _formView = (ExternalIdentityProviderFormView)parentSelectionFormView;
             _formView.SelectionData.ActionsPaneItems.Clear();
-            _ssoAdminSdkService = _formView.ScopeNode.GetServiceGateway();
             RefreshExternalIdentityProviders();
         }
         public void RefreshExternalIdentityProviders()
@@ -70,7 +68,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto, tenantName);
             ActionHelper.Execute(delegate
                 {
-                    IExternalIdentityProviderService externalIdp = _ssoAdminSdkService.ExternalIdentityProvider;
+                    var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
+                    IExternalIdentityProviderService externalIdp = service.ExternalIdentityProvider;
                     var externalIdps = externalIdp.GetAll(serverDto, tenantName, auth.Token);
                     lstExternalIdentityProviders.Items.Clear();
                     if (externalIdps != null)
@@ -94,7 +93,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 ActionHelper.Execute(delegate
                 {
                     var tenantName = GetTenantName();
-                    var form = new NewExternalIdp(idp, _ssoAdminSdkService, serverDto, tenantName);
+                    var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
+                    var form = new NewExternalIdp(idp, service, serverDto, tenantName);
                     form.ShowDialog();
                 }, null);
                 RefreshExternalIdentityProviders();
@@ -128,7 +128,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto, tenantName);
                 ActionHelper.Execute(delegate
                 {
-                    IExternalIdentityProviderService externalIdp = _formView.ScopeNode.GetServiceGateway().ExternalIdentityProvider;
+                    var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
+                    IExternalIdentityProviderService externalIdp = service.ExternalIdentityProvider;
                     externalIdp.Delete(serverDto, tenantName, idp, auth.Token);
                     RefreshExternalIdentityProviders();
                 }, auth);

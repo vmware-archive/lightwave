@@ -18,16 +18,14 @@ using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn
 {
-    [SnapInSettings("{3E833CBA-48EF-4E0F-B5C0-0E2F6A6030C4}",
-         DisplayName = "Lightwave REST SSO Admin SnapIn",
-         Description = "SSO Admin MMC SnapIn that support REST based services.",
-         Vendor="Vmware Inc.")]
+    //[SnapInSettings("{3D203C08-4574-4A05-9E74-ACFEAC0082FD}", DisplayName = "VMware REST Sso Admin SnapIn")]
+    //uncomment above line for local testing
     public class RestSsoAdminSnapIn : SnapIn
     {
         private Bootstrapper _bootstrapper;
         public RestSsoAdminSnapIn()
         {
-            RootNode = new SnapInNode { DisplayName = "Lightwave SSO Servers" };
+            RootNode = new SnapInNode ();
             _bootstrapper = new Bootstrapper();
         }
 

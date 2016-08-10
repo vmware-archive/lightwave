@@ -12,46 +12,43 @@
  * under the License.
  */
 
-
-
 /*
- * Module Name: Directory indexer
- *
- * Filename: structs.h
- *
- * Abstract:
- *
- * Directory indexer module
- *
- * Private Structures
- *
+ * Subset of VDIR_INDEX_CFG to define default indices in defines.h
  */
-
-typedef struct _VDIR_ATTR_INDEX_INSTANCE
+typedef struct _VDIR_DEFAULT_INDEX_CFG
 {
-    USHORT                      usNumIndex;
-    PVDIR_CFG_ATTR_INDEX_DESC   pSortName;
+    PSTR                    pszAttrName;
+    int                     iTypes;
+    BOOLEAN                 bScopeEditable;
+    BOOLEAN                 bGlobalUniq;
+    BOOLEAN                 bIsNumeric;
 
-} VDIR_ATTR_INDEX_INSTANCE, *PVDIR_ATTR_INDEX_INSTANCE;
+} VDIR_DEFAULT_INDEX_CFG, *PVDIR_DEFAULT_INDEX_CFG;
 
+typedef struct _VDIR_INDEXING_TASK
+{
+    PVDIR_LINKED_LIST   pIndicesToPopulate;
+    PVDIR_LINKED_LIST   pIndicesToValidate;
+    PVDIR_LINKED_LIST   pIndicesToDelete;
+    PVDIR_LINKED_LIST   pIndicesCompleted;
 
-typedef struct _VDIR_ATTR_INDEX_GLOBALS
+} VDIR_INDEXING_TASK, *PVDIR_INDEXING_TASK;
+
+typedef struct _VDIR_INDEX_GLOBALS
 {
     // NOTE: order of fields MUST stay in sync with struct initializer...
-    PVMDIR_MUTEX    mutex;
-    PVMDIR_COND     condition;
-    USHORT          usLive;
+    PVMDIR_MUTEX        mutex;
+    PVMDIR_COND         cond;
+    PLW_HASHMAP         pIndexCfgMap;
 
-    // TRUE between indice entry modify commit to the end of indexing job
-    BOOLEAN         bIndexInProgress;
+    // fields used to determine index status during bootstrap
+    BOOLEAN             bFirstboot;
+    BOOLEAN             bLegacyDB;
 
-    // Never delete or change the content of pCaches after an instance is added.
-    // If we have no more space to add new instance, reject operation.
-    PVDIR_ATTR_INDEX_INSTANCE pCaches[MAX_ATTR_INDEX_CACHE_INSTANCE];
+    // current indexing offset
+    ENTRYID             offset;
 
-    // Temporary holder for newly create pNewCache.  Will add it into pCaches
-    // when it goes live.
-    PVDIR_ATTR_INDEX_INSTANCE pNewCache;
+    // indexing thread info
+    PVDIR_THREAD_INFO   pThrInfo;
 
-} VDIR_ATTR_INDEX_GLOBALS, *PVDIR_ATTR_INDEX_GLOBALS;
-
+} VDIR_INDEX_GLOBALS, *PVDIR_INDEX_GLOBALS;

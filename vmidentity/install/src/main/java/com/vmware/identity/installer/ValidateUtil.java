@@ -1,5 +1,5 @@
 /* **********************************************************************
- * Copyright 2011 VMware, Inc.  All rights reserved. 
+ * Copyright 2011 VMware, Inc.  All rights reserved.
  * *********************************************************************/
 package com.vmware.identity.installer;
 

@@ -57,7 +57,7 @@ nuget restore "VMRestSsoSnapIn/Lightwave SSO.sln"
 # build interops
 buildSolution ../../vmafd/dotnet/VMAFD.Client $BUILD_CONFIG
 buildSolution ../../vmdir/dotnet/VMDIR.Client $BUILD_CONFIG
-buildSolution ../../vmdir/interop/csharp/VmDirInterop $BUILD_CONFIG
+xbuild /p:Configuration=$BUILD_CONFIG ../../vmdir/interop/csharp/VmDirInterop/VmDirInterop/VmDirInterop.csproj
 
 #copy interops
 # xamarin build - psc vmdir
@@ -78,6 +78,7 @@ cp vmdir/dotnet/VMDIR.Client/bin/$BUILD_CONFIG/VMDIR.Client.dll.config tools/int
 cp vmafd/dotnet/VMAFD.Client/bin/$BUILD_CONFIG/VMAFD.Client.dll.config tools/interop/lib64
 cp vmdir/interop/csharp/VmDirInterop/VmDirInterop/bin/$BUILD_CONFIG/VmDirInterop.dll.config tools/interop/lib64
 
+cp tools/common/VMIdentity.CommonUtils/Brand_lw.config tools/common/VMIdentity.CommonUtils/VMIdentity.CommonUtils.dll.config
 cd tools/mac
 pwd
 
@@ -86,6 +87,7 @@ buildSolution VMDirSnapIn $BUILD_CONFIG
 buildSolution VMPSCHighAvailabilitySnapIn $BUILD_CONFIG
 buildSolution VMRestSsoSnapIn $BUILD_CONFIG
 buildSolution VMCASnapIn $BUILD_CONFIG
+buildSolution VMDirSchemaEditorSnapIn $BUILD_CONFIG
 
 echo ''
 echo ''
@@ -127,3 +129,4 @@ if [ $ENV_ISSUES -eq 1 ]; then
 else
   echo 'All pre-requisites are installed. No issues detected.'
 fi
+

@@ -1,0 +1,602 @@
+/*
+ * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+#include "includes.h"
+
+DWORD
+VmDirIndexCfgCreate(
+    PCSTR               pszAttrName,
+    PVDIR_INDEX_CFG*    ppIndexCfg
+    )
+{
+    DWORD   dwError = 0;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
+
+    if (!ppIndexCfg)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_INDEX_CFG),
+            (PVOID*)&pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(pszAttrName, &pIndexCfg->pszAttrName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = LwRtlCreateHashMap(
+            &pIndexCfg->pUniqScopes,
+            LwRtlHashDigestPstrCaseless,
+            LwRtlHashEqualPstrCaseless,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLinkedListCreate(&pIndexCfg->pNewUniqScopes);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLinkedListCreate(&pIndexCfg->pDelUniqScopes);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLinkedListCreate(&pIndexCfg->pBadUniqScopes);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMutex(&pIndexCfg->mutex);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // default values
+    pIndexCfg->bDefaultIndex = FALSE;
+    pIndexCfg->bScopeEditable = TRUE;
+    pIndexCfg->bGlobalUniq = FALSE;
+    pIndexCfg->bIsNumeric = FALSE;
+    pIndexCfg->iTypes = INDEX_TYPE_EQUALITY;
+
+    *ppIndexCfg = pIndexCfg;
+
+cleanup:
+    return dwError;
+
+error:
+    VmDirFreeIndexCfg(pIndexCfg);
+    goto cleanup;
+}
+
+DWORD
+VmDirDefaultIndexCfgInit(
+    PVDIR_DEFAULT_INDEX_CFG pDefIdxCfg,
+    PVDIR_INDEX_CFG*        ppIndexCfg
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszScope = NULL;
+    BOOLEAN bRestore = FALSE;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
+    VDIR_BACKEND_CTX    beCtx = {0};
+    BOOLEAN             bHasTxn = FALSE;
+
+    if (!pDefIdxCfg || !ppIndexCfg)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirIndexCfgCreate(pDefIdxCfg->pszAttrName, &pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pIndexCfg->bDefaultIndex = TRUE;
+    pIndexCfg->bScopeEditable = pDefIdxCfg->bScopeEditable;
+    pIndexCfg->bGlobalUniq = pDefIdxCfg->bGlobalUniq;
+    pIndexCfg->bIsNumeric = pDefIdxCfg->bIsNumeric;
+    pIndexCfg->iTypes = pDefIdxCfg->iTypes;
+
+    beCtx.pBE = VmDirBackendSelect(NULL);
+    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    bHasTxn = TRUE;
+
+    dwError = VmDirIndexCfgRestoreProgress(&beCtx, pIndexCfg, &bRestore);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (!bRestore && pIndexCfg->bGlobalUniq)
+    {
+        dwError = VmDirAllocateStringA(PERSISTED_DSE_ROOT_DN, &pszScope);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (pIndexCfg->status == VDIR_INDEXING_COMPLETE)
+        {
+            dwError = LwRtlHashMapInsert(
+                    pIndexCfg->pUniqScopes, pszScope, NULL, NULL);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else
+        {
+            dwError = VmDirLinkedListInsertHead(
+                    pIndexCfg->pNewUniqScopes, pszScope, NULL);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        pszScope = NULL;
+    }
+
+    dwError = VmDirIndexCfgRecordProgress(&beCtx, pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    bHasTxn = FALSE;
+
+    *ppIndexCfg = pIndexCfg;
+
+cleanup:
+    if (bHasTxn)
+    {
+        beCtx.pBE->pfnBETxnAbort(&beCtx);
+    }
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszScope);
+    VmDirFreeIndexCfg(pIndexCfg);
+    goto cleanup;
+}
+
+DWORD
+VmDirCustomIndexCfgInit(
+    PVDIR_SCHEMA_AT_DESC    pATDesc,
+    PVDIR_INDEX_CFG*        ppIndexCfg
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PSTR    pszScope = NULL;
+    BOOLEAN bRestore = FALSE;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
+    VDIR_BACKEND_CTX    beCtx = {0};
+    BOOLEAN             bHasTxn = FALSE;
+
+    if (!pATDesc || !ppIndexCfg)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirIndexCfgCreate(pATDesc->pszName, &pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pIndexCfg->bIsNumeric = VmDirSchemaAttrIsNumeric(pATDesc);
+
+    beCtx.pBE = VmDirBackendSelect(NULL);
+    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    bHasTxn = TRUE;
+
+    dwError = VmDirIndexCfgRestoreProgress(&beCtx, pIndexCfg, &bRestore);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (!bRestore && pATDesc->ppszUniqueScopes)
+    {
+        for (i = 0; pATDesc->ppszUniqueScopes[i]; i++)
+        {
+            dwError = VmDirAllocateStringA(
+                    pATDesc->ppszUniqueScopes[i], &pszScope);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            if (pIndexCfg->status == VDIR_INDEXING_COMPLETE)
+            {
+                dwError = LwRtlHashMapInsert(
+                        pIndexCfg->pUniqScopes, pszScope, NULL, NULL);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            else
+            {
+                dwError = VmDirLinkedListInsertHead(
+                        pIndexCfg->pNewUniqScopes, pszScope, NULL);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            pszScope = NULL;
+        }
+    }
+
+    dwError = VmDirIndexCfgRecordProgress(&beCtx, pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    bHasTxn = FALSE;
+
+    *ppIndexCfg = pIndexCfg;
+
+cleanup:
+    if (bHasTxn)
+    {
+        beCtx.pBE->pfnBETxnAbort(&beCtx);
+    }
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszScope);
+    VmDirFreeIndexCfg(pIndexCfg);
+    goto cleanup;
+}
+
+DWORD
+VmDirIndexCfgValidateUniqueScopeMods(
+    PVDIR_INDEX_CFG pIndexCfg
+    )
+{
+    DWORD   dwError = 0;
+    PVDIR_BACKEND_INTERFACE pBE = NULL;
+    PVDIR_BACKEND_INDEX_ITERATOR  pIterator = NULL;
+    PVDIR_LINKED_LIST       pNewScopes = NULL;
+    PVDIR_LINKED_LIST       pBadScopes = NULL;
+    PVDIR_LINKED_LIST_NODE  pNode = NULL;
+    PLW_HASHMAP pDetectedScopes = NULL;
+    PSTR        pszLastVal = NULL;
+    PSTR        pszVal = NULL;
+    ENTRYID     eId = 0;
+    VDIR_ENTRY  entry = {0};
+
+    if (!pIndexCfg)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pNewScopes = pIndexCfg->pNewUniqScopes;
+    pBadScopes = pIndexCfg->pBadUniqScopes;
+
+    dwError = LwRtlCreateHashMap(&pDetectedScopes,
+            LwRtlHashDigestPstrCaseless,
+            LwRtlHashEqualPstrCaseless,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pBE = VmDirBackendSelect(NULL);
+    dwError = pBE->pfnBEIndexIteratorInit(pIndexCfg, NULL, &pIterator);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    /*
+     * Iterate the whole index DB and validate all scopes in pNewScopes
+     */
+    while (pIterator->bHasNext && !VmDirLinkedListIsEmpty(pNewScopes))
+    {
+        dwError = pBE->pfnBEIndexIterate(pIterator, &pszVal, &eId);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (!pszLastVal || VmDirStringCompareA(pszLastVal, pszVal, FALSE))
+        {
+            LwRtlHashMapClear(pDetectedScopes, VmDirNoopHashMapPairFree, NULL);
+            VMDIR_SAFE_FREE_MEMORY(pszLastVal);
+            pszLastVal = pszVal;
+            pszVal = NULL;
+        }
+        else
+        {
+            VMDIR_SAFE_FREE_MEMORY(pszVal);
+        }
+
+        dwError = pBE->pfnBESimpleIdToEntry(eId, &entry);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pNode = pNewScopes->pTail;
+        while (pNode)
+        {
+            PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
+            PSTR pszScope = (PSTR)pNode->pElement;
+            PSTR pszDn = entry.dn.lberbv.bv_val;
+
+            /*
+             * If the scope cannot be enforced, move the scope to
+             * pBadScope for post-processing
+             */
+            if (VmDirStringCompareA(PERSISTED_DSE_ROOT_DN, pszScope, FALSE) == 0 ||
+                VmDirStringEndsWith(pszDn, pszScope, FALSE))
+            {
+                if (LwRtlHashMapFindKey(pDetectedScopes, NULL, pszScope) == 0)
+                {
+                    dwError = VmDirLinkedListInsertHead(
+                            pBadScopes, pszScope, NULL);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+
+                    dwError = VmDirLinkedListRemove(pNewScopes, pNode);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+                }
+                else
+                {
+                    dwError = LwRtlHashMapInsert(
+                            pDetectedScopes, pszScope, NULL, NULL);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+                }
+            }
+            pNode = pNextNode;
+        }
+        VmDirFreeEntryContent(&entry);
+    }
+
+cleanup:
+    pBE->pfnBEIndexIteratorFree(pIterator);
+    LwRtlHashMapClear(pDetectedScopes, VmDirNoopHashMapPairFree, NULL);
+    LwRtlFreeHashMap(&pDetectedScopes);
+    VmDirFreeEntryContent(&entry);
+    VMDIR_SAFE_FREE_MEMORY(pszLastVal);
+    VMDIR_SAFE_FREE_MEMORY(pszVal);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    goto cleanup;
+}
+
+DWORD
+VmDirIndexCfgApplyUniqueScopeMods(
+    PVDIR_INDEX_CFG pIndexCfg
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bInLock = FALSE;
+    PVDIR_LINKED_LIST       pNewScopes = NULL;
+    PVDIR_LINKED_LIST       pDelScopes = NULL;
+    PVDIR_LINKED_LIST_NODE  pNode = NULL;
+    LW_HASHMAP_PAIR pair = {NULL, NULL};
+    PVMDIR_MUTEX    pMutex = NULL;
+
+    if (!pIndexCfg)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pNewScopes = pIndexCfg->pNewUniqScopes;
+    pDelScopes = pIndexCfg->pDelUniqScopes;
+
+    pMutex = pIndexCfg->mutex;
+    VMDIR_LOCK_MUTEX(bInLock, pMutex);
+
+    /*
+     * Move all good scopes to pIndexCfg->pUniqScopes
+     */
+    pNode = pNewScopes->pTail;
+    while (pNode)
+    {
+        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
+        PSTR pszScope = (PSTR)pNode->pElement;
+
+        dwError = LwRtlHashMapInsert(
+                pIndexCfg->pUniqScopes, pszScope, NULL, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLinkedListRemove(pNewScopes, pNode);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pNode = pNextNode;
+    }
+
+    /*
+     * Remove all del scopes from pIndexCfg->pUniqScopes
+     */
+    pNode = pDelScopes->pTail;
+    while (pNode)
+    {
+        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
+        PSTR pszScope = (PSTR)pNode->pElement;
+
+        dwError = LwRtlHashMapRemove(pIndexCfg->pUniqScopes, pszScope, &pair);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VMDIR_SAFE_FREE_MEMORY(pair.pKey);
+        VMDIR_SAFE_FREE_MEMORY(pszScope);
+
+        dwError = VmDirLinkedListRemove(pDelScopes, pNode);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pNode = pNextNode;
+    }
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, pMutex);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    goto cleanup;
+}
+
+DWORD
+VmDirIndexCfgRevertBadUniqueScopeMods(
+    PVDIR_INDEX_CFG pIndexCfg
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszDn = NULL;
+    PVDIR_LINKED_LIST       pBadScopes = NULL;
+    PVDIR_LINKED_LIST_NODE  pNode = NULL;
+    VDIR_OPERATION  ldapOp = {0};
+
+    if (!pIndexCfg)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateStringPrintf(&pszDn,
+            "cn=%s,%s",
+            pIndexCfg->pszAttrName,
+            SCHEMA_NAMING_CONTEXT_DN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirInitStackOperation(&ldapOp,
+            VDIR_OPERATION_TYPE_INTERNAL,
+            LDAP_REQ_MODIFY,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    ldapOp.pBEIF = VmDirBackendSelect(NULL);
+    ldapOp.reqDn.lberbv_val = pszDn;
+    ldapOp.reqDn.lberbv_len = VmDirStringLenA(pszDn);
+
+    ldapOp.request.modifyReq.dn.lberbv_val = ldapOp.reqDn.lberbv_val;
+    ldapOp.request.modifyReq.dn.lberbv_len = ldapOp.reqDn.lberbv_len;
+
+    pBadScopes = pIndexCfg->pBadUniqScopes;
+
+    pNode = pBadScopes->pTail;
+    while (pNode)
+    {
+        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
+        PSTR pszScope = (PSTR)pNode->pElement;
+
+        dwError = VmDirAppendAMod(&ldapOp,
+                MOD_OP_DELETE,
+                ATTR_UNIQUENESS_SCOPE,
+                ATTR_UNIQUENESS_SCOPE_LEN,
+                pszScope,
+                VmDirStringLenA(pszScope));
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLinkedListRemove(pBadScopes, pNode);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VMDIR_SAFE_FREE_MEMORY(pszScope);
+
+        pNode = pNextNode;
+    }
+
+    dwError = VmDirInternalModifyEntry(&ldapOp);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirFreeOperationContent(&ldapOp);
+    VMDIR_SAFE_FREE_MEMORY(pszDn);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    goto cleanup;
+}
+
+DWORD
+VmDirIndexCfgGetAllScopesInStrArray(
+    PVDIR_INDEX_CFG pIndexCfg,
+    PSTR**          pppszScopes
+    )
+{
+    DWORD   dwError = 0;
+    PVMDIR_STRING_LIST  pScopes = NULL;
+    LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
+    LW_HASHMAP_PAIR pair = {NULL, NULL};
+    PVDIR_LINKED_LIST_NODE  pNode = NULL;
+
+    if (!pIndexCfg || !pppszScopes)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirStringListInitialize(&pScopes, 0);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // pScope = pUniqScopes (validated) + pNewUniqueScopes (not validated yet)
+    while (LwRtlHashMapIterate(pIndexCfg->pUniqScopes, &iter, &pair))
+    {
+        dwError = VmDirStringListAddStrClone((PSTR)pair.pKey, pScopes);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pNode = pIndexCfg->pNewUniqScopes->pHead;
+    while (pNode)
+    {
+        dwError = VmDirStringListAddStrClone((PSTR)pNode->pElement, pScopes);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pNode = pNode->pPrev;
+    }
+
+    // hand over string array
+    if (pScopes->dwCount > 0)
+    {
+        *pppszScopes = (PSTR*)pScopes->pStringList;
+        pScopes->pStringList = NULL;
+        pScopes->dwCount = 0;
+    }
+
+cleanup:
+    VmDirStringListFree(pScopes);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    goto cleanup;
+}
+
+VOID
+VmDirIndexCfgClear(
+    PVDIR_INDEX_CFG pIndexCfg
+    )
+{
+    PVDIR_LINKED_LIST_NODE  pNode = NULL;
+    if (pIndexCfg)
+    {
+        LwRtlHashMapClear(pIndexCfg->pUniqScopes,
+                VmDirSimpleHashMapPairFree, NULL);
+
+        pNode = pIndexCfg->pNewUniqScopes->pHead;
+        while (pNode)
+        {
+            VMDIR_SAFE_FREE_MEMORY(pNode->pElement);
+            pNode = pNode->pPrev;
+        }
+
+        pNode = pIndexCfg->pDelUniqScopes->pHead;
+        while (pNode)
+        {
+            VMDIR_SAFE_FREE_MEMORY(pNode->pElement);
+            pNode = pNode->pPrev;
+        }
+
+        pNode = pIndexCfg->pBadUniqScopes->pHead;
+        while (pNode)
+        {
+            VMDIR_SAFE_FREE_MEMORY(pNode->pElement);
+            pNode = pNode->pPrev;
+        }
+    }
+}
+
+VOID
+VmDirFreeIndexCfg(
+    PVDIR_INDEX_CFG pIndexCfg
+    )
+{
+    if (pIndexCfg)
+    {
+        VmDirIndexCfgClear(pIndexCfg);
+
+        VMDIR_SAFE_FREE_MEMORY(pIndexCfg->pszAttrName);
+        LwRtlFreeHashMap(&pIndexCfg->pUniqScopes);
+        VmDirFreeLinkedList(pIndexCfg->pNewUniqScopes);
+        VmDirFreeLinkedList(pIndexCfg->pDelUniqScopes);
+        VmDirFreeLinkedList(pIndexCfg->pBadUniqScopes);
+
+        VMDIR_SAFE_FREE_MUTEX(pIndexCfg->mutex);
+
+        VMDIR_SAFE_FREE_MEMORY(pIndexCfg);
+    }
+}

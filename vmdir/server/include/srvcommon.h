@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -31,6 +31,7 @@ extern "C" {
 #define VMDIR_UUID_LEN                  16 /* typedef __darwin_uuid_t uuid_t; typedef unsigned char __darwin_uuid_t[16] */
 #define VMDIR_MAX_USN_STR_LEN           VMDIR_MAX_I64_ASCII_STR_LEN
 #define VMDIR_MAX_VERSION_NO_STR_LEN    VMDIR_MAX_I64_ASCII_STR_LEN /* Version number used in attribute meta-data */
+#define VMDIR_PS_COOKIE_LEN             (VMDIR_MAX_I64_ASCII_STR_LEN + 1 /* comma */ + VMDIR_GUID_STR_LEN + 1)
 
 // Format is: <local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
 #define VMDIR_MAX_ATTR_META_DATA_LEN    (VMDIR_MAX_USN_STR_LEN + 1 + VMDIR_MAX_VERSION_NO_STR_LEN + 1 + \
@@ -41,6 +42,7 @@ extern "C" {
 #define VMDIR_IS_DELETED_TRUE_STR_LEN  4
 
 #define VMDIR_UTD_VECTOR_HASH_TABLE_SIZE  100
+#define VMDIR_PAGED_SEARCH_CACHE_HASH_TABLE_SIZE 32
 #define VMDIR_LOCKOUT_VECTOR_HASH_TABLE_SIZE  1000
 
 #define VMDIR_DEFAULT_REPL_INTERVAL     "30"
@@ -65,12 +67,21 @@ extern "C" {
 #define SCHEMA_BOOTSTRAP_USN_SEQ_ATTRID_23     23
 
 #define VDIR_FOREST_FUNCTIONAL_LEVEL    "1"
-#define VDIR_DOMAIN_FUNCTIONAL_LEVEL	"2"  // This value is the DFL for the current version
+// This value is the DFL for the current version
+#define VDIR_DOMAIN_FUNCTIONAL_LEVEL	"3"
+
+// Mapping of functionality to levels
+// Base DFL, support for all 6.0 and earlier functionality
+#define VDIR_DFL_DEFAULT 1
+// Support for 6.5 functionality, PSCHA
+#define VDIR_DFL_PSCHA   2
+// Support for 7.0 functionality, ModDn
+#define VDIR_DFL_MODDN   3
 
 // Keys for backend funtion pfnBEStrkeyGet/SetValues to access attribute IDs
 #define ATTR_ID_MAP_KEY   "1VmdirAttrIDToNameTb"
 
-typedef struct _VDIR_CFG_ATTR_INDEX_DESC*   PVDIR_CFG_ATTR_INDEX_DESC;
+typedef struct _VDIR_INDEX_CFG*             PVDIR_INDEX_CFG;
 typedef struct _VDIR_BACKEND_INTERFACE*     PVDIR_BACKEND_INTERFACE;
 typedef struct _VDIR_SCHEMA_CTX*            PVDIR_SCHEMA_CTX;
 typedef struct _VDIR_SCHEMA_DIFF*           PVDIR_SCHEMA_DIFF;
@@ -236,6 +247,13 @@ typedef enum _VDIR_ENTRY_ALLOCATION_TYPE
     ENTRY_STORAGE_FORMAT_NORMAL
 } VDIR_ENTRY_ALLOCATION_TYPE;
 
+//SCW - strong consistency write
+typedef enum _VDIR_ENTRY_SCW_STATUS
+{
+    VDIR_SCW_SUCCEEDED,
+    VDIR_SCW_FAILED
+} VDIR_ENTRY_SCW_STATUS;
+
 typedef struct _VDIR_ENTRY
 {
 
@@ -248,6 +266,8 @@ typedef struct _VDIR_ENTRY
    VDIR_BERVALUE                dn;
    // pdn.bv_val is in-place into dn.bv_val.  pdn.bvnrom_val follows BerValue rule
    VDIR_BERVALUE                pdn;
+   // pdnnew is set during rename operations if the entry is being re-parented
+   VDIR_BERVALUE                newpdn;
 
    // FORMAT_PACK, savedAttrsPtr is array of Attribute from one heap allocate
    // FORMAT_NORMAL, attrs (and next...) are individually heap allocated
@@ -360,8 +380,8 @@ struct _VDIR_FILTER
     VDIR_FILTER_COMPUTE_RESULT  computeResult;
     int                         iMaxIndexScan;  // limit scan to qualify for good filter. 0 means unlimited.
     BOOLEAN                     bAncestorGotPositiveCandidateSet;  // any of ancestor filters got a positive candidate set
-    VDIR_CANDIDATES *           candidates;    // Entry IDs candidate list that matches this filter, maintained for internal
-                                        // operation.
+    VDIR_CANDIDATES *           candidates;    // Entry IDs candidate list that matches this filter, maintained for internal Ber operation.
+    BerElement *                pBer; // If this filter was built by the server, then 'ber' must be deallocated when the filter is deallocated and this will not be NULL. Otherwise the filter components are 'owned' by the operation / client connection.
 };
 
 typedef struct AddReq
@@ -378,7 +398,9 @@ typedef struct _BindReq
 
 typedef struct DeleteReq
 {
-    VDIR_BERVALUE          dn;
+    VDIR_BERVALUE           dn;
+    PVDIR_MODIFICATION      mods;
+    unsigned                numMods;
 } DeleteReq;
 
 typedef struct ModifyReq
@@ -387,6 +409,10 @@ typedef struct ModifyReq
     PVDIR_MODIFICATION      mods;
     unsigned                numMods;
     BOOLEAN                 bPasswordModify;
+    VDIR_BERVALUE           newrdn;
+    BOOLEAN                 bDeleteOldRdn;
+    VDIR_BERVALUE           newSuperior;
+    VDIR_BERVALUE           newdn;
 } ModifyReq;
 
 typedef struct SearchReq
@@ -471,14 +497,21 @@ typedef struct SyncDoneControlValue
 typedef struct _VDIR_PAGED_RESULT_CONTROL_VALUE
 {
     DWORD                   pageSize;
-    CHAR                    cookie[VMDIR_MAX_I64_ASCII_STR_LEN];
+    CHAR                    cookie[VMDIR_PS_COOKIE_LEN];
 } VDIR_PAGED_RESULT_CONTROL_VALUE;
+
+//SCW - Strong Consistency Write
+typedef struct _VMDIR_SCW_DONE_CONTROL_VALUE
+{
+    DWORD    status;
+} VMDIR_SCW_DONE_CONTROL_VALUE;
 
 typedef union LdapControlValue
 {
-    SyncRequestControlValue             syncReqCtrlVal;
-    SyncDoneControlValue                syncDoneCtrlVal;
-    VDIR_PAGED_RESULT_CONTROL_VALUE     pagedResultCtrlVal;
+    SyncRequestControlValue            syncReqCtrlVal;
+    SyncDoneControlValue               syncDoneCtrlVal;
+    VDIR_PAGED_RESULT_CONTROL_VALUE    pagedResultCtrlVal;
+    VMDIR_SCW_DONE_CONTROL_VALUE       scwDoneCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -513,6 +546,7 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       showDeletedObjectsCtrl; // points in reqControls list.
     VDIR_LDAP_CONTROL *       showMasterKeyCtrl;
     VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
+    VDIR_LDAP_CONTROL *       strongConsistencyWriteCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
     BOOLEAN             bSchemaWriteOp;  // this operation is schema modification
@@ -585,6 +619,23 @@ typedef struct _VMDIR_OPERATION_STATISTIC
 } VMDIR_OPERATION_STATISTIC, *PVMDIR_OPERATION_STATISTIC;
 
 extern VMDIR_FIRST_REPL_CYCLE_MODE   gFirstReplCycleMode;
+
+typedef struct _VMDIR_URGENT_REPL_SERVER_LIST
+{
+    PSTR    pInitiatorServerName;
+    struct _VMDIR_URGENT_REPL_SERVER_LIST *next;
+} VMDIR_URGENT_REPL_SERVER_LIST, *PVMDIR_URGENT_REPL_SERVER_LIST;
+
+typedef struct _VMDIR_STRONG_WRITE_PARTNER_CONTENT
+{
+    PSTR     pInvocationId;
+    PSTR     pServerName;
+    BOOLEAN  isDeleted;
+    USN      lastConfirmedUSN;
+    char     lastNotifiedTimeStamp[VMDIR_ORIG_TIME_STR_LEN];
+    char     lastConfirmedTimeStamp[VMDIR_ORIG_TIME_STR_LEN];
+    struct _VMDIR_STRONG_WRITE_PARTNER_CONTENT   *next;
+} VMDIR_STRONG_WRITE_PARTNER_CONTENT, *PVMDIR_STRONG_WRITE_PARTNER_CONTENT;
 
 DWORD
 VmDirInitBackend();
@@ -723,6 +774,12 @@ VmDirAttributeDup(
     PVDIR_ATTRIBUTE* ppDupAttr
     );
 
+DWORD
+VmDirStringToBervalContent(
+    PSTR               pszBerval,
+    PVDIR_BERVALUE     pDupBerval
+    );
+
 VOID
 VmDirFreeBervalArrayContent(
     PVDIR_BERVALUE pBervs,
@@ -759,6 +816,12 @@ DWORD
 VmDirBervalContentDup(
     PVDIR_BERVALUE     pBerval,
     PVDIR_BERVALUE     pDupBerval
+    );
+
+DWORD
+VmDirNewEntry(
+    PCSTR pszDn,
+    PVDIR_ENTRY* ppEntry
     );
 
 DWORD
@@ -822,11 +885,6 @@ VmDirUuidFromString(
     uuid_t* pGuid
 );
 
-uint64_t
-VmDirGetTimeInMilliSec(
-    VOID
-    );
-
 DWORD
 VmDirFQDNToDNSize(
     PCSTR pszFQDN,
@@ -886,6 +944,12 @@ VmDirSrvCreateDomain(
     );
 
 DWORD
+VmDirFindMemberOfAttribute(
+    PVDIR_ENTRY pEntry,
+    PVDIR_ATTRIBUTE* ppMemberOfAttr
+    );
+
+DWORD
 VmDirBuildMemberOfAttribute(
     PVDIR_OPERATION     pOperation,
     PVDIR_ENTRY         pEntry,
@@ -925,6 +989,11 @@ DWORD
 VmDirValidatePrincipalName(
     PVDIR_ATTRIBUTE pAttr,
     PSTR*           ppErrMsg
+    );
+
+DWORD
+VmDirSrvGetDomainFunctionalLevel(
+    PDWORD pdwLevel
     );
 
 // candidates.c
@@ -1009,9 +1078,9 @@ DWORD
 VmDirAppendAMod(
     PVDIR_OPERATION   pOperation,
     int          modOp,
-    char *       attrName,
+    const char*  attrName,
     int          attrNameLen,
-    char *       attrVal,
+    const char*  attrVal,
     size_t       attrValLen
     );
 
@@ -1071,6 +1140,16 @@ VmDirSimpleEqualFilterInternalSearch(
     PCSTR               pszAttrName,
     PCSTR               pszAttrValue,
     PVDIR_ENTRY_ARRAY   pEntryArray
+    );
+
+DWORD
+VmDirFilterInternalSearch(
+        PCSTR               pszBaseDN,
+        int                 searchScope,
+        PCSTR               pszFilter,
+        unsigned long       ulPageSize,
+        PSTR                *ppszPageCookie,
+        PVDIR_ENTRY_ARRAY   pEntryArray
     );
 
 // middle-layer result.c
@@ -1272,6 +1351,24 @@ VmDirSRPCreateSecret(
     PVDIR_BERVALUE   pUPN,
     PVDIR_BERVALUE   pClearTextPasswd,
     PVDIR_BERVALUE   pSecretResult
+    );
+
+//server/common/urgentrepl.c
+BOOLEAN
+VmDirPerformUrgentReplication(
+    PVDIR_OPERATION pOperation,
+    USN currentTxnUSN
+    );
+
+VOID
+VmDirRetryUrgentReplication(
+    VOID
+    );
+
+VOID
+VmDirPerformUrgentReplIfRequired(
+    PVDIR_OPERATION pOperation,
+    USN currentTxnUSN
     );
 
 #ifdef __cplusplus

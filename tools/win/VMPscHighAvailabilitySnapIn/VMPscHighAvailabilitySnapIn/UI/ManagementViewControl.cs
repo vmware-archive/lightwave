@@ -56,21 +56,21 @@ namespace VMPscHighAvailabilitySnapIn.UI
         private ColumnHeader columnHeader10;
         private Label lblServices;
         private GroupBox groupBox1;
-        private Label label4;
+        private Label lblAffinitizedPsc;
         private TextBox txtDomainControllerName;
         private Button btnRefresh;
         private PictureBox pictureBox1;
         private Label lblSitename;
         private ToolTip toolTip1;
         private System.ComponentModel.IContainer components;
-        private Label label3;
+        private Label lblStateHeader;
         private Label lblState;
         private PictureBox pcHealth;
         private PictureBox pictureBox3;
-        private Label label5;
+        private Label lblRefreshAt;
         private Label lblSelectedDomainController;
         private TextBox lblName;
-        private Label label7;
+        private Label lblIPAddress;
         private TextBox txtIpAddress;
         private ColumnHeader columnHeader4;
         private ColumnHeader columnHeader7;
@@ -102,20 +102,20 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lblServices = new System.Windows.Forms.Label();
             this.lblDcs = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.label4 = new System.Windows.Forms.Label();
+            this.lblAffinitizedPsc = new System.Windows.Forms.Label();
             this.txtDomainControllerName = new System.Windows.Forms.TextBox();
             this.btnRefresh = new System.Windows.Forms.Button();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.lblSitename = new System.Windows.Forms.Label();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.label3 = new System.Windows.Forms.Label();
+            this.lblStateHeader = new System.Windows.Forms.Label();
             this.lblState = new System.Windows.Forms.Label();
             this.pcHealth = new System.Windows.Forms.PictureBox();
             this.pictureBox3 = new System.Windows.Forms.PictureBox();
-            this.label5 = new System.Windows.Forms.Label();
+            this.lblRefreshAt = new System.Windows.Forms.Label();
             this.lblSelectedDomainController = new System.Windows.Forms.Label();
             this.lblName = new System.Windows.Forms.TextBox();
-            this.label7 = new System.Windows.Forms.Label();
+            this.lblIPAddress = new System.Windows.Forms.Label();
             this.txtIpAddress = new System.Windows.Forms.TextBox();
             this.lblLegacyWarning = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
@@ -139,7 +139,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lstdcs.Location = new System.Drawing.Point(13, 257);
             this.lstdcs.MultiSelect = false;
             this.lstdcs.Name = "lstdcs";
-            this.lstdcs.Size = new System.Drawing.Size(596, 182);
+            this.lstdcs.Size = new System.Drawing.Size(689, 182);
             this.lstdcs.Sorting = System.Windows.Forms.SortOrder.Ascending;
             this.lstdcs.TabIndex = 0;
             this.lstdcs.UseCompatibleStateImageBehavior = false;
@@ -174,7 +174,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             // btnHA
             // 
             this.btnHA.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnHA.Location = new System.Drawing.Point(513, 94);
+            this.btnHA.Location = new System.Drawing.Point(606, 117);
             this.btnHA.Name = "btnHA";
             this.btnHA.Size = new System.Drawing.Size(91, 25);
             this.btnHA.TabIndex = 1;
@@ -187,7 +187,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lblStatus.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblStatus.AutoSize = true;
             this.lblStatus.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblStatus.Location = new System.Drawing.Point(547, 58);
+            this.lblStatus.Location = new System.Drawing.Point(640, 58);
             this.lblStatus.Name = "lblStatus";
             this.lblStatus.Size = new System.Drawing.Size(41, 13);
             this.lblStatus.TabIndex = 2;
@@ -198,7 +198,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lblLastRefreshed.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblLastRefreshed.AutoSize = true;
             this.lblLastRefreshed.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblLastRefreshed.Location = new System.Drawing.Point(496, 233);
+            this.lblLastRefreshed.Location = new System.Drawing.Point(594, 233);
             this.lblLastRefreshed.Name = "lblLastRefreshed";
             this.lblLastRefreshed.Size = new System.Drawing.Size(35, 13);
             this.lblLastRefreshed.TabIndex = 3;
@@ -208,7 +208,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             // 
             this.chkAutoRefresh.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.chkAutoRefresh.AutoSize = true;
-            this.chkAutoRefresh.Location = new System.Drawing.Point(162, 231);
+            this.chkAutoRefresh.Location = new System.Drawing.Point(257, 231);
             this.chkAutoRefresh.Name = "chkAutoRefresh";
             this.chkAutoRefresh.Size = new System.Drawing.Size(88, 17);
             this.chkAutoRefresh.TabIndex = 4;
@@ -227,9 +227,9 @@ namespace VMPscHighAvailabilitySnapIn.UI
             "120",
             "300",
             "600"});
-            this.cbInterval.Location = new System.Drawing.Point(248, 229);
+            this.cbInterval.Location = new System.Drawing.Point(350, 229);
             this.cbInterval.Name = "cbInterval";
-            this.cbInterval.Size = new System.Drawing.Size(36, 21);
+            this.cbInterval.Size = new System.Drawing.Size(52, 21);
             this.cbInterval.TabIndex = 5;
             this.cbInterval.SelectedIndexChanged += new System.EventHandler(this.cbInterval_SelectedIndexChanged);
             // 
@@ -238,11 +238,11 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lblSeconds.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblSeconds.AutoSize = true;
             this.lblSeconds.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblSeconds.Location = new System.Drawing.Point(284, 233);
+            this.lblSeconds.Location = new System.Drawing.Point(406, 234);
             this.lblSeconds.Name = "lblSeconds";
-            this.lblSeconds.Size = new System.Drawing.Size(47, 13);
+            this.lblSeconds.Size = new System.Drawing.Size(29, 13);
             this.lblSeconds.TabIndex = 6;
-            this.lblSeconds.Text = "seconds";
+            this.lblSeconds.Text = "secs";
             // 
             // lstServices
             // 
@@ -260,7 +260,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lstServices.Location = new System.Drawing.Point(13, 477);
             this.lstServices.MultiSelect = false;
             this.lstServices.Name = "lstServices";
-            this.lstServices.Size = new System.Drawing.Size(596, 238);
+            this.lstServices.Size = new System.Drawing.Size(689, 238);
             this.lstServices.Sorting = System.Windows.Forms.SortOrder.Ascending;
             this.lstServices.TabIndex = 7;
             this.lstServices.UseCompatibleStateImageBehavior = false;
@@ -306,9 +306,9 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lblDcs.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblDcs.Location = new System.Drawing.Point(15, 232);
             this.lblDcs.Name = "lblDcs";
-            this.lblDcs.Size = new System.Drawing.Size(117, 13);
+            this.lblDcs.Size = new System.Drawing.Size(174, 13);
             this.lblDcs.TabIndex = 9;
-            this.lblDcs.Text = "Domain Controllers:";
+            this.lblDcs.Text = "Platform Services Controllers:";
             // 
             // groupBox1
             // 
@@ -316,33 +316,33 @@ namespace VMPscHighAvailabilitySnapIn.UI
             | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox1.Location = new System.Drawing.Point(3, 77);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(607, 10);
+            this.groupBox1.Size = new System.Drawing.Size(700, 10);
             this.groupBox1.TabIndex = 11;
             this.groupBox1.TabStop = false;
             // 
-            // label4
+            // lblAffinitizedPsc
             // 
-            this.label4.AutoSize = true;
-            this.label4.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label4.Location = new System.Drawing.Point(15, 169);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(171, 13);
-            this.label4.TabIndex = 12;
-            this.label4.Text = "Affinitized Domain Controller:";
+            this.lblAffinitizedPsc.AutoSize = true;
+            this.lblAffinitizedPsc.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblAffinitizedPsc.Location = new System.Drawing.Point(15, 158);
+            this.lblAffinitizedPsc.Name = "lblAffinitizedPsc";
+            this.lblAffinitizedPsc.Size = new System.Drawing.Size(228, 13);
+            this.lblAffinitizedPsc.TabIndex = 12;
+            this.lblAffinitizedPsc.Text = "Affinitized Platform Services Controller:";
             // 
             // txtDomainControllerName
             // 
             this.txtDomainControllerName.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.txtDomainControllerName.Location = new System.Drawing.Point(200, 170);
+            this.txtDomainControllerName.Location = new System.Drawing.Point(18, 177);
             this.txtDomainControllerName.Name = "txtDomainControllerName";
             this.txtDomainControllerName.ReadOnly = true;
-            this.txtDomainControllerName.Size = new System.Drawing.Size(398, 13);
+            this.txtDomainControllerName.Size = new System.Drawing.Size(580, 13);
             this.txtDomainControllerName.TabIndex = 13;
             // 
             // btnRefresh
             // 
             this.btnRefresh.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnRefresh.Location = new System.Drawing.Point(337, 225);
+            this.btnRefresh.Location = new System.Drawing.Point(449, 227);
             this.btnRefresh.Name = "btnRefresh";
             this.btnRefresh.Size = new System.Drawing.Size(64, 25);
             this.btnRefresh.TabIndex = 14;
@@ -370,21 +370,21 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lblSitename.TabIndex = 17;
             this.lblSitename.Text = "Site";
             // 
-            // label3
+            // lblStateHeader
             // 
-            this.label3.AutoSize = true;
-            this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label3.Location = new System.Drawing.Point(15, 134);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(41, 13);
-            this.label3.TabIndex = 18;
-            this.label3.Text = "State:";
+            this.lblStateHeader.AutoSize = true;
+            this.lblStateHeader.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblStateHeader.Location = new System.Drawing.Point(15, 129);
+            this.lblStateHeader.Name = "lblStateHeader";
+            this.lblStateHeader.Size = new System.Drawing.Size(41, 13);
+            this.lblStateHeader.TabIndex = 18;
+            this.lblStateHeader.Text = "State:";
             // 
             // lblState
             // 
             this.lblState.AutoSize = true;
             this.lblState.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblState.Location = new System.Drawing.Point(61, 135);
+            this.lblState.Location = new System.Drawing.Point(61, 130);
             this.lblState.Name = "lblState";
             this.lblState.Size = new System.Drawing.Size(47, 13);
             this.lblState.TabIndex = 19;
@@ -394,7 +394,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             // 
             this.pcHealth.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.pcHealth.Image = ((System.Drawing.Image)(resources.GetObject("pcHealth.Image")));
-            this.pcHealth.Location = new System.Drawing.Point(526, 56);
+            this.pcHealth.Location = new System.Drawing.Point(619, 56);
             this.pcHealth.Name = "pcHealth";
             this.pcHealth.Size = new System.Drawing.Size(16, 16);
             this.pcHealth.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
@@ -411,16 +411,16 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.pictureBox3.TabIndex = 21;
             this.pictureBox3.TabStop = false;
             // 
-            // label5
+            // lblRefreshAt
             // 
-            this.label5.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.label5.AutoSize = true;
-            this.label5.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label5.Location = new System.Drawing.Point(425, 233);
-            this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(71, 13);
-            this.label5.TabIndex = 22;
-            this.label5.Text = "Refreshed at ";
+            this.lblRefreshAt.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblRefreshAt.AutoSize = true;
+            this.lblRefreshAt.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblRefreshAt.Location = new System.Drawing.Point(520, 234);
+            this.lblRefreshAt.Name = "lblRefreshAt";
+            this.lblRefreshAt.Size = new System.Drawing.Size(71, 13);
+            this.lblRefreshAt.TabIndex = 22;
+            this.lblRefreshAt.Text = "Refreshed at ";
             // 
             // lblSelectedDomainController
             // 
@@ -428,9 +428,9 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lblSelectedDomainController.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblSelectedDomainController.Location = new System.Drawing.Point(130, 458);
             this.lblSelectedDomainController.Name = "lblSelectedDomainController";
-            this.lblSelectedDomainController.Size = new System.Drawing.Size(108, 13);
+            this.lblSelectedDomainController.Size = new System.Drawing.Size(164, 13);
             this.lblSelectedDomainController.TabIndex = 23;
-            this.lblSelectedDomainController.Text = "domain controller:";
+            this.lblSelectedDomainController.Text = "platform services controller:";
             // 
             // lblName
             // 
@@ -444,23 +444,23 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lblName.TabStop = false;
             this.lblName.Text = "label1";
             // 
-            // label7
+            // lblIPAddress
             // 
-            this.label7.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.label7.AutoSize = true;
-            this.label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label7.Location = new System.Drawing.Point(345, 101);
-            this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(61, 13);
-            this.label7.TabIndex = 37;
-            this.label7.Text = "IP Address:";
+            this.lblIPAddress.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.lblIPAddress.AutoSize = true;
+            this.lblIPAddress.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblIPAddress.Location = new System.Drawing.Point(534, 93);
+            this.lblIPAddress.Name = "lblIPAddress";
+            this.lblIPAddress.Size = new System.Drawing.Size(61, 13);
+            this.lblIPAddress.TabIndex = 37;
+            this.lblIPAddress.Text = "IP Address:";
             // 
             // txtIpAddress
             // 
             this.txtIpAddress.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.txtIpAddress.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.txtIpAddress.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtIpAddress.Location = new System.Drawing.Point(407, 101);
+            this.txtIpAddress.Location = new System.Drawing.Point(607, 93);
             this.txtIpAddress.Name = "txtIpAddress";
             this.txtIpAddress.ReadOnly = true;
             this.txtIpAddress.Size = new System.Drawing.Size(91, 13);
@@ -473,7 +473,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lblLegacyWarning.AutoSize = true;
             this.lblLegacyWarning.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblLegacyWarning.ForeColor = System.Drawing.SystemColors.HotTrack;
-            this.lblLegacyWarning.Location = new System.Drawing.Point(15, 201);
+            this.lblLegacyWarning.Location = new System.Drawing.Point(15, 203);
             this.lblLegacyWarning.Name = "lblLegacyWarning";
             this.lblLegacyWarning.Size = new System.Drawing.Size(325, 13);
             this.lblLegacyWarning.TabIndex = 39;
@@ -481,35 +481,35 @@ namespace VMPscHighAvailabilitySnapIn.UI
             // 
             // ManagementViewControl
             // 
+            this.Controls.Add(this.chkAutoRefresh);
             this.Controls.Add(this.lblLegacyWarning);
             this.Controls.Add(this.txtIpAddress);
-            this.Controls.Add(this.label7);
+            this.Controls.Add(this.lblIPAddress);
             this.Controls.Add(this.cbInterval);
             this.Controls.Add(this.lblLastRefreshed);
             this.Controls.Add(this.lblName);
             this.Controls.Add(this.lblSelectedDomainController);
-            this.Controls.Add(this.label5);
+            this.Controls.Add(this.lblRefreshAt);
             this.Controls.Add(this.pictureBox3);
             this.Controls.Add(this.pcHealth);
             this.Controls.Add(this.lblState);
-            this.Controls.Add(this.label3);
+            this.Controls.Add(this.lblStateHeader);
             this.Controls.Add(this.lblSitename);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.btnRefresh);
             this.Controls.Add(this.txtDomainControllerName);
-            this.Controls.Add(this.label4);
+            this.Controls.Add(this.lblAffinitizedPsc);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.lblDcs);
             this.Controls.Add(this.lblServices);
             this.Controls.Add(this.lstServices);
             this.Controls.Add(this.lblSeconds);
-            this.Controls.Add(this.chkAutoRefresh);
             this.Controls.Add(this.lblStatus);
             this.Controls.Add(this.btnHA);
             this.Controls.Add(this.lstdcs);
             this.MinimumSize = new System.Drawing.Size(616, 730);
             this.Name = "ManagementViewControl";
-            this.Size = new System.Drawing.Size(616, 730);
+            this.Size = new System.Drawing.Size(709, 730);
             this.Load += new System.EventHandler(this.ManagementViewControl_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pcHealth)).EndInit();
@@ -736,7 +736,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             SetLegacyControlStatus();
             lblState.Text = _dto.State.Description;
             var health = CdcDcStateHelper.GetHealth(_dto.State, _infraDtos);
-            lblStatus.Text = health.ToString().ToUpper();
+            lblStatus.Text = health.ToString().ToUpper();            
             var description = CdcDcStateHelper.GetHealthDescription(health);
             toolTip1.SetToolTip(lblStatus, description);
             lblStatus.ForeColor = HealthHelper.GetHealthColor(health);

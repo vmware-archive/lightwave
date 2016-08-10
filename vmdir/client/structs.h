@@ -57,13 +57,4 @@ typedef struct _VMDIR_DFL_VERSION_MAP
     PCSTR version;
 } VMDIR_DFL_VERSION_MAP, *PVMDIR_DFL_VERSION_MAP;
 
-typedef struct _VMDIR_METADATA {
-    PSTR  pszAttribute;
-    USN   localUsn;
-    DWORD dwVersion;
-    PSTR  pszOriginatingId;
-    PSTR  pszOriginatingTime;
-    USN   originatingUsn;
-}VMDIR_METADATA, *PVMDIR_METADATA;
-
 #endif

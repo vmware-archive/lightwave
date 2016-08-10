@@ -16,6 +16,7 @@ using System;
 using System.Windows.Forms;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
+using Vmware.Tools.RestSsoAdminSnapIn.Presenters;
 using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Views
@@ -39,8 +40,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 var auth = auths[0];
                 ActionHelper.Execute(delegate()
                 {
-                    
-                    if (SnapInContext.Instance.ServiceGateway.Adf.LeaveActiveDirectory(_serverDto, dto, auth.Token))
+                    var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
+                    if (service.Adf.LeaveActiveDirectory(_serverDto, dto, auth.Token))
                     {
                         MMCDlgHelper.ShowWarning("Leave operation completed successfully. Please reboot the node/server for the changes to take effect");
                         Close();

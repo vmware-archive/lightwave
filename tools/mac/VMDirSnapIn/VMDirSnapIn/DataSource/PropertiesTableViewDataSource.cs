@@ -19,131 +19,113 @@ using Foundation;
 using System.Linq;
 using VMDir.Common.VMDirUtilities;
 using VMDirInterop.LDAP;
+using VMDir.Common.DTO;
+using VMDir.Common.Schema;
+using VMDir.Common;
 
 namespace VMDirSnapIn.DataSource
 {
-    public class PropertiesTableViewDataSource: NSTableViewDataSource
-    {
-        public Dictionary<string,VMDirBagItem> Entries { get; set; }
+	public class PropertiesTableViewDataSource : NSTableViewDataSource
+	{
+		public Dictionary<string, VMDirAttributeDTO> properties { get; set; }
+		public List<AttributeDTO> currAttrDTOList;
+		public List<AttributeDTO> optAttrDTOList;
+		public List<AttributeDTO> oprAttrDTOList;
+		public HashSet<string> modData;
+		private List<AttributeTypeDTO> mayAttrDTOList;
+		public List<AttributeDTO> displayAttrDTOList;
+		private string objectClass = string.Empty;
+		public string dn = string.Empty;
+		public VMDirServerDTO serverDTO;
 
-        public List<KeyValuePair<string,string>> data { get; set; }
+		public PropertiesTableViewDataSource()
+		{
+			properties = new Dictionary<string, VMDirAttributeDTO>();
+			currAttrDTOList = new List<AttributeDTO>();
+			optAttrDTOList = new List<AttributeDTO>();
+			oprAttrDTOList = new List<AttributeDTO>();
+			mayAttrDTOList = new List<AttributeTypeDTO>();
+			modData = new HashSet<string>();
+			displayAttrDTOList = new List<AttributeDTO>();
+		}
 
-        public List<KeyValuePair<string,string>> PendingMod { get; set; }
+		public PropertiesTableViewDataSource(string dn, string oc, VMDirServerDTO serverDTO, Dictionary<string, VMDirAttributeDTO> classList) : this()
+		{
+			this.dn = dn;
+			this.objectClass = oc;
+			this.serverDTO = serverDTO;
+			properties = classList;
+			FillData();
+		}
 
-        public List<KeyValuePair<string,string>> DeleteMod { get; set; }
+		public void FillData()
+		{
+			oprAttrDTOList.Clear();
+			currAttrDTOList.Clear();
+			displayAttrDTOList.Clear();
+			optAttrDTOList.Clear();
 
+			if (serverDTO.OperationalAttrFlag)
+			{
+				GetOperationalAttribute();
+				displayAttrDTOList.AddRange(oprAttrDTOList);
+			}
 
-        public PropertiesTableViewDataSource()
-        {
-            Entries = new Dictionary<string,VMDirBagItem>();
-            PendingMod = new List<KeyValuePair<string,string>>();
-            DeleteMod = new List<KeyValuePair<string,string>>();
-        }
+			currAttrDTOList = Utilities.ConvertToAttributeDTOList(properties);
+			displayAttrDTOList.AddRange(currAttrDTOList);
 
-        public PropertiesTableViewDataSource(Dictionary<string,VMDirBagItem>  classList)
-        {
-            PendingMod = new List<KeyValuePair<string,string>>();
-            DeleteMod = new List<KeyValuePair<string,string>>();
-            Entries = classList;
-            data = new List<KeyValuePair<string,string>>();
-            FillData();
-        }
+			if (serverDTO.OptionalAttrFlag)
+			{
+				if (string.IsNullOrWhiteSpace(objectClass))
+					objectClass = Utilities.GetAttrLastVal(properties, VMDirConstants.ATTR_OBJECT_CLASS);
+				mayAttrDTOList = serverDTO.Connection.SchemaManager.GetOptionalAttributes(objectClass);
+				foreach (var item in mayAttrDTOList)
+					if (item != null)
+						optAttrDTOList.Add(new AttributeDTO(item.Name, string.Empty, item,false));
+				foreach (var item in currAttrDTOList)
+					if (item.AttrSyntaxDTO.SingleValue)
+						optAttrDTOList.RemoveAll(x => x.Name.Equals(item.Name));
+				optAttrDTOList.Sort((x, y) => string.Compare(x.Name, y.Name, StringComparison.InvariantCultureIgnoreCase));
+				displayAttrDTOList.AddRange(optAttrDTOList);
+			}
+		}
 
-        public void FillData()
-        {
-            data.Clear();
-            foreach (var entry in Entries)
-            {
-                object value = entry.Value.Value;
-                if (value != null)
-                {
-                    Type valueType = value.GetType();
-                    if (valueType.IsArray)
-                    {
-                        LdapValue[] arr = value as LdapValue[];
-                        foreach (var arrayElement in arr)
-                        {
-                            data.Add(new KeyValuePair<string, string>(entry.Key, arrayElement != null ? arrayElement.StringValue : string.Empty));
-                        }
+		private void GetOperationalAttribute()
+		{
+			TextQueryDTO dto = new TextQueryDTO(dn, LdapScope.SCOPE_BASE, VMDirConstants.SEARCH_ALL_OC,
+												new string[] { "+" }, 0, IntPtr.Zero, 0);
+			var operationalProperties = new Dictionary<string, VMDirAttributeDTO>();
+			serverDTO.Connection.Search(dto, (l, e) =>
+			{
+				if (e.Count > 0)
+					operationalProperties = serverDTO.Connection.GetEntryProperties(e[0]);
+			});
+			oprAttrDTOList = Utilities.ConvertToAttributeDTOList(operationalProperties);
+		}
 
-                    }
-                    else
-                    {
-                        var LdapEntry = (LdapValue)value;
-                        data.Add(new KeyValuePair<string, string>(entry.Key, LdapEntry.StringValue));
-                    }
-                }
-                else
-                    data.Add(new KeyValuePair<string, string>(entry.Key, string.Empty));
-            }
-        }
+		public void ReloadData()
+		{
+			TextQueryDTO dto = new TextQueryDTO(dn, LdapScope.SCOPE_BASE, VMDirConstants.SEARCH_ALL_OC, null, 0, IntPtr.Zero, 0);
 
-        // This method will be called by the NSTableView control to learn the number of rows to display.
-        [Export("numberOfRowsInTableView:")]
-        public int NumberOfRowsInTableView(NSTableView table)
-        {
-            if (data != null)
-                return data.Count;
-            else
-                return 0;
-        }
+			serverDTO.Connection.Search(dto,
+				(l, e) =>
+				{
+					if (e.Count > 0)
+					{
+						dn = e[0].getDN();
+						properties = serverDTO.Connection.GetEntryProperties(e[0]);
+					}
+				});
 
-        // This method will be called by the control for each column and each row.
-        [Export("tableView:objectValueForTableColumn:row:")]
-        public NSObject ObjectValueForTableColumn(NSTableView table, NSTableColumn col, int row)
-        {
-            try
-            {
-                if (data != null)
-                {
-                    if (col.Identifier.Equals("Key"))
-                        return (NSString)data[row].Key;
-                    else
-                        return (NSString)data[row].Value;
-                }
-            }
-            catch (Exception e)
-            {
-                System.Diagnostics.Debug.WriteLine("Error in List Operation " + e.Message);
-            }
-            return null;
-        }
+			FillData();
+		}
 
-        [Export("tableView:setObjectValue:forTableColumn:row:")]
-        public override void SetObjectValue(NSTableView tableView, NSObject editedVal, NSTableColumn col, nint row)
-        {
-            try
-            {
-                if (data != null)
-                {
-                    if (col.Identifier == "Value")
-                    {
-                        string currKey = this.data[(int)row].Key;
-                        if (currKey != "objectClass")
-                        {
-                            if (!string.IsNullOrEmpty(editedVal.ToString()))
-                            {
-                                this.data[(int)row] = new KeyValuePair<string, string>(currKey, (NSString)editedVal);
-                                this.PendingMod.Add(new KeyValuePair<string, string>(currKey, this.data[(int)row].Value));
-                            }
-                            else
-                            {
-                                this.DeleteMod.Add(new KeyValuePair<string, string>(currKey, this.data[(int)row].Value));
-                                this.data[(int)row] = new KeyValuePair<string, string>(currKey, (NSString)editedVal);
-                            }
-                        }
-                    }
-                }
-
-            }
-            catch (Exception e)
-            {
-                System.Diagnostics.Debug.WriteLine("Error in List Operation " + e.Message);
-            }
-
-        }
-
-    }
+		public override nint GetRowCount(NSTableView tableView)
+		{
+			if (displayAttrDTOList != null)
+				return displayAttrDTOList.Count;
+			else
+				return 0;
+		}
+	}
 }
-
-

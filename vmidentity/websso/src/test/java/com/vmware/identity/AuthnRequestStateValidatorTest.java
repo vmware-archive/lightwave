@@ -152,7 +152,7 @@ public class AuthnRequestStateValidatorTest {
 		expect(authnRequestState.isProxying()).andReturn(true);
 		expect(authnRequestState.isChooseIDPViewRequired()).andReturn(null);
 		expect(authnRequestState.getTenantIDPCookie()).andReturn(null);
-		expect(authnRequestState.getTenatIDPSelectHeader()).andReturn(null);
+		expect(authnRequestState.getTenantIDPSelectHeader()).andReturn(null);
 		expect(authnRequest.getScoping()).andReturn(null).times(2);
 
 		// make sure expected set methods are called
@@ -237,7 +237,7 @@ public class AuthnRequestStateValidatorTest {
 		expect(authnRequestState.isProxying()).andReturn(true);
 		expect(authnRequestState.isChooseIDPViewRequired()).andReturn(null);
 		expect(authnRequestState.getTenantIDPCookie()).andReturn(null);
-		expect(authnRequestState.getTenatIDPSelectHeader()).andReturn(idpConfig_1.getEntityID());
+		expect(authnRequestState.getTenantIDPSelectHeader()).andReturn(idpConfig_1.getEntityID());
 		expect(authnRequestState.getResponse()).andReturn(null);
 		expect(authnRequest.getScoping()).andReturn(null).times(2);
 

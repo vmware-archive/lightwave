@@ -16,6 +16,7 @@
         <module>client</module>
         <module>server</module>
         <module>common</module>
+        <module>protocol</module>
         <module>sample</module>
     </modules>
 </project>

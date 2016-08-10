@@ -5,7 +5,7 @@ test_logon_SOURCES = test-logon.c
 test_ldapbind_SOURCES = test-ldap-bind.c
 
 test_svr_LDADD = \
-    $(top_builddir)/LogonService/idm/libidm.la \
+    $(top_builddir)/interop/idm/ad/libidm.la \
     -llsaclient \
     -llwnetclientapi \
     -llwnetcommon \
@@ -28,8 +28,9 @@ test_svr_LDADD = \
     @PTHREAD_LIBS@
 
 test_svr_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/LogonService/include \
+    -I$(top_srcdir)/interop/include/public \
+    -I$(top_srcdir)/interop/include \
+    -I$(top_srcdir)/interop/idm/include \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
 
@@ -39,9 +40,8 @@ test_svr_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@
 
-
 test_logon_LDADD = \
-    $(top_builddir)/LogonService/idm/libidm.la \
+    $(top_builddir)/interop/idm/ad/libidm.la \
     -llsaclient \
     -llwnetclientapi \
     -llwnetcommon \
@@ -65,8 +65,9 @@ test_logon_LDADD = \
 
 test_logon_CPPFLAGS = \
     -D_USE_GSS_SRP \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/LogonService/include \
+    -I$(top_srcdir)/interop/include/public \
+    -I$(top_srcdir)/interop/include \
+    -I$(top_srcdir)/interop/idm/include \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
 
@@ -77,8 +78,9 @@ test_logon_LDFLAGS = \
     @LW_LDFLAGS@
 
 test_ldapbind_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/LogonService/include \
+    -I$(top_srcdir)/interop/include/public \
+    -I$(top_srcdir)/interop/include \
+    -I$(top_srcdir)/interop/idm/include \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
 
@@ -89,7 +91,7 @@ test_ldapbind_LDFLAGS = \
     @LW_LDFLAGS@
 
 test_ldapbind_LDADD = \
-    $(top_builddir)/LogonService/idm/libidm.la \
+    $(top_builddir)/interop/idm/ad/libidm.la \
     -llsaclient \
     -llwnetclientapi \
     -llwnetcommon \

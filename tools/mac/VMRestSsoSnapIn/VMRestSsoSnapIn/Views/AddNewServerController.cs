@@ -21,6 +21,8 @@ using Vmware.Tools.RestSsoAdminSnapIn.Core.Web;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
+using VmIdentity.UI.Common;
+using VMIdentity.CommonUtils;
 
 namespace RestSsoAdminSnapIn
 {
@@ -93,7 +95,7 @@ namespace RestSsoAdminSnapIn
 			} else {
 				this.TxtStsEndpoint.StringValue = "sts/STSService";
 				this.TxtPort.StringValue = "443";
-				this.TxtTenant.StringValue = "lightwave.local";
+				this.TxtTenant.StringValue = MiscUtil.GetBrandConfig(CommonConstants.TENANT);
 				this.CbSaml.StringValue = "0";
 				this.LblStsEndpoint.Hidden = true;
 				this.TxtStsEndpoint.Hidden = true;

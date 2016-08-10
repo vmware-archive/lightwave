@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension"
+     xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension">
+  <?include ../VMIdentityTools_Installer/Definitions.wxi ?>
+
+  <Bundle Name="$(var.Product)"
+          Version="$(var.VersionNumber)"
+          Manufacturer="$(var.Manufacturer)"
+          UpgradeCode="$(var.UpgradeCode)"
+          IconSourceFile="$(var.ResourcesForOtherProject)/SetupIcon.ico"
+          DisableModify="yes">
+
+    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense" >
+      <bal:WixStandardBootstrapperApplication
+        LicenseFile="$(var.ResourcesForOtherProject)/LicenseAgreement.rtf"
+        SuppressOptionsUI="yes" LogoFile="$(var.ResourcesForOtherProject)/InstallerLogo.bmp" ShowVersion="yes"/>
+    </BootstrapperApplicationRef>
+
+    <util:RegistrySearch
+        Id="NETFRAMEWORK40"
+        Variable="NETFRAMEWORK40"
+        Root="HKLM"
+        Key="SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full"
+        Value="Version"
+        Result="value"/>
+    
+    <util:RegistrySearch
+        Id="VCSERVER"
+        Variable="VCSERVER"
+        Root="HKLM"
+        Key="SOFTWARE\VMware, Inc.\vCenter Server"
+        Value="ProductVersion"
+        Result="exists"
+        Win64="yes"/>
+    
+    <!--*************************************************************************************************-->
+    <util:RegistrySearch
+         Id="VCPP_2008_SP1_x86"
+         Variable="VCPP_2008_SP1_x86"
+         Root="HKLM"
+         Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{9A25302D-30C0-39D9-BD6F-21E6EC160475}"
+         Value="Version"
+         Result="exists"
+         Win64="yes"/>
+
+    <util:RegistrySearch
+      Id="VCPP_2008_SP1_x64"
+      Variable="VCPP_2008_SP1_x64"
+      Root="HKLM"
+      Key="HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{8220EEFE-38CD-377E-8595-13398D740ACE}"
+      Value="Version"
+      Result="exists"
+      Win64="yes"/>
+
+    <util:RegistrySearch
+      Id="VCPP_2008_SP1_ia64"
+      Variable="VCPP_2008_SP1_ia64"
+      Root="HKLM"
+      Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{5827ECE1-AEB0-328E-B813-6FC68622C1F9}"
+      Value="Version"
+      Result="exists"
+      Win64="yes"/>
+
+
+
+    <!--*******************************************ATL******************************************************-->
+    <util:RegistrySearch
+         Id="VCPP_2008_SP1_ATL_x86"
+         Variable="VCPP_2008_SP1_ATL_x86"
+         Root="HKLM"
+         Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1F1C2DFC-2D24-3E06-BCB8-725134ADF989}"
+         Value="Version"
+         Result="exists"
+         Win64="yes"/>
+
+    <util:RegistrySearch
+      Id="VCPP_2008_SP1_ATL_x64"
+      Variable="VCPP_2008_SP1_ATL_x64"
+      Root="HKLM"
+      Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{4B6C7001-C7D6-3710-913E-5BC23FCE91E6}"
+      Value="Version"
+      Result="exists"
+      Win64="yes"/>
+
+    <util:RegistrySearch
+      Id="VCPP_2008_SP1_ATL_ia64"
+      Variable="VCPP_2008_SP1_ATL_ia64"
+      Root="HKLM"
+      Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{977AD349-C2A8-39DD-9273-285C08987C7B}"
+      Value="Version"
+      Result="exists"
+      Win64="yes"/>
+
+
+    <!--******************************************MFC*******************************************************-->
+    <util:RegistrySearch
+        Id="VCPP_2008_SP1_MFC_x86"
+        Variable="VCPP_2008_SP1_MFC_x86"
+        Root="HKLM"
+        Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{9BE518E6-ECC6-35A9-88E4-87755C07200F}"
+        Value="Version"
+        Result="exists"
+        Win64="yes"/>
+
+    <util:RegistrySearch
+      Id="VCPP_2008_SP1_MFC_x64"
+      Variable="VCPP_2008_SP1_MFC_x64"
+      Root="HKLM"
+      Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{5FCE6D76-F5DC-37AB-B2B8-22AB8CEDB1D4}"
+      Value="Version"
+      Result="exists"
+      Win64="yes"/>
+
+    <util:RegistrySearch
+      Id="VCPP_2008_SP1_MFC_ia64"
+      Variable="VCPP_2008_SP1_MFC_ia64"
+      Root="HKLM"
+      Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{515643D1-4E9E-342F-A75A-D1F16448DC04}"
+      Value="Version"
+      Result="exists"
+      Win64="yes"/>
+    <!--*************************************************************************************************--> 
+    
+    <bal:Condition Message="Microsoft .NET Framework 4.5 or higher is required. &#xD;&#xA;
+      Please download and install from &lt;a href=&quot;https://www.microsoft.com/en-in/download/details.aspx?id=30653 &quot;&gt;here&lt;/a&gt;.">
+      <![CDATA[NETFRAMEWORK40 >= "4.5"]]>  OR (WixBundleInstalled AND WixBundleAction = 3)
+    </bal:Condition>
+
+    <bal:Condition Message="Microsoft Visual C++ 2008 SP1 x64 is required.&#xD;&#xA; 
+      Please download and install from &lt;a href=&quot;https://www.microsoft.com/en-us/download/details.aspx?id=11895 &quot;&gt;here&lt;/a&gt;.">
+      VCPP_2008_SP1_x64 OR VCPP_2008_SP1_ia64 OR VCPP_2008_SP1_ATL_x64 OR VCPP_2008_SP1_ATL_ia64 OR VCPP_2008_SP1_MFC_x64 OR VCPP_2008_SP1_MFC_ia64 OR (WixBundleInstalled AND WixBundleAction = 3)
+    </bal:Condition>
+
+    <bal:Condition Message="The vCenter server has been detected on this machine.&#xD;&#xA;It is recommended to use VMIdentityTools_Installer.msi for installation on a server.">
+      NOT VCSERVER OR (WixBundleInstalled AND WixBundleAction = 3)
+    </bal:Condition>
+
+    <Chain>
+      <MsiPackage SourceFile="$(var.MSIPath)\vmware-cyrus-sasl.msi"  Vital="yes" ForcePerMachine="yes"/>
+      <MsiPackage SourceFile="$(var.MSIPath)\kfw.msi" Vital="yes"/>
+      <MsiPackage SourceFile="$(var.MSIPath)\vmware-platform-sdk-windows.msi" Vital="yes"/>
+      <MsiPackage SourceFile="$(var.MSIPath)\vmware-vmca-client-msi.msi" Vital="yes"/>
+      <MsiPackage SourceFile="$(var.MSIPath)\vmware-directory-client-msi.msi" Vital="yes"/>
+      <MsiPackage SourceFile="$(var.MSIPath)\vmware-afd.msi" Vital="yes"/>
+      <MsiPackage SourceFile="$(var.VMIDPOutDir)\LightwaveTools_Installer.msi" Vital="yes"/>
+    </Chain>
+  </Bundle>
+
+</Wix>

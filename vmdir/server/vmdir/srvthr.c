@@ -44,42 +44,51 @@ VmDirSrvThrAdd(
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
 }
 
-VOID
+DWORD
 VmDirSrvThrInit(
-    PVDIR_THREAD_INFO   pThrInfo,
-    PVMDIR_MUTEX        pAltMutex,
-    PVMDIR_COND         pAltCond,
+    PVDIR_THREAD_INFO   *ppThrInfo,
+    PVMDIR_MUTEX        pAltMutex, /* OPTIONAL */
+    PVMDIR_COND         pAltCond, /* OPTIONAL */
     BOOLEAN             bJoinFlag
     )
 {
     DWORD dwError = 0;
-    assert (pThrInfo);
+    PVDIR_THREAD_INFO pThrInfo = NULL;
 
-    if (pAltMutex && pAltMutex != pThrInfo->mutex)
+    dwError = VmDirAllocateMemory(sizeof(*pThrInfo), (PVOID)&pThrInfo);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pAltMutex == NULL)
+    {
+        dwError = VmDirAllocateMutex(&pThrInfo->mutex);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pThrInfo->mutexUsed = pThrInfo->mutex;
+    }
+    else
     {
         pThrInfo->mutexUsed = pAltMutex;
     }
-    else
-    {
-        dwError = VmDirAllocateMutex(&pThrInfo->mutex);
-        assert(dwError == 0);
-        pThrInfo->mutexUsed = pThrInfo->mutex;
-    }
 
-    if (pAltCond && pAltCond != pThrInfo->condition)
-    {
-        pThrInfo->conditionUsed = pAltCond;
-    }
-    else
+    if (pAltCond == NULL)
     {
         dwError = VmDirAllocateCondition(&pThrInfo->condition);
-        assert(dwError == 0);
+        BAIL_ON_VMDIR_ERROR(dwError);
         pThrInfo->conditionUsed = pThrInfo->condition;
+    }
+    else
+    {
+        pThrInfo->conditionUsed = pAltCond;
     }
 
     pThrInfo->bJoinThr = bJoinFlag;
 
-    return;
+    *ppThrInfo = pThrInfo;
+
+cleanup:
+    return dwError;
+error:
+    VmDirSrvThrFree(pThrInfo);
+    goto cleanup;
 }
 
 
@@ -88,7 +97,10 @@ VmDirSrvThrFree(
     PVDIR_THREAD_INFO   pThrInfo
     )
 {
-    assert(pThrInfo);
+    if (pThrInfo == NULL)
+    {
+        return;
+    }
 
     if (pThrInfo->conditionUsed && pThrInfo->conditionUsed == pThrInfo->condition)
     {

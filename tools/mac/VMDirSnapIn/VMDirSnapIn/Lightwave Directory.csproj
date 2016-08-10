@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -69,12 +68,32 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Net.Http" />
     <Reference Include="Xamarin.Mac" />
+    <Reference Include="VmDirInterop">
+      <HintPath>..\..\..\interop\lib64\VmDirInterop.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />
     <Folder Include="Nodes\" />
     <Folder Include="UI\" />
     <Folder Include="DataSource\" />
+    <Folder Include="UI\PropertiesView\" />
+    <Folder Include="UI\SplitViewMMC\" />
+    <Folder Include="UI\Main\" />
+    <Folder Include="UI\WelcomeScreen\" />
+    <Folder Include="UI\AddUser\" />
+    <Folder Include="UI\AddGroup\" />
+    <Folder Include="UI\AddObject\" />
+    <Folder Include="UI\SuperLog\" />
+    <Folder Include="UI\Password\" />
+    <Folder Include="Delegate\" />
+    <Folder Include="UI\Search\" />
+    <Folder Include="UI\SelectObject\" />
+    <Folder Include="UI\AddToGroup\" />
+    <Folder Include="UI\PageSize\" />
+    <Folder Include="UI\SyntaxHelp\" />
+    <Folder Include="UI\ConnectToLdap\" />
+    <Folder Include="UI\Export\" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Main.cs" />
@@ -86,84 +105,173 @@
     <Compile Include="UI\AppDelegate.designer.cs">
       <DependentUpon>AppDelegate.cs</DependentUpon>
     </Compile>
-    <Compile Include="UI\MainWindow.cs" />
-    <Compile Include="UI\MainWindow.designer.cs">
-      <DependentUpon>MainWindow.cs</DependentUpon>
-    </Compile>
-    <Compile Include="UI\MainWindowController.cs" />
     <Compile Include="UI\OutlineView.cs" />
-    <Compile Include="UI\ConnectToLdapWindow.cs" />
-    <Compile Include="UI\ConnectToLdapWindow.designer.cs" />
-    <Compile Include="UI\ConnectToLdapWindowController.cs" />
     <Compile Include="Nodes\DirectoryNode.cs" />
-    <Compile Include="UI\SchemaBrowserWindow.cs" />
-    <Compile Include="UI\SchemaBrowserWindow.designer.cs" />
-    <Compile Include="UI\SchemaBrowserWindowController.cs" />
     <Compile Include="DataSource\SchemaAttributesTableViewDataSource.cs" />
     <Compile Include="DataSource\GenericListViewDataSource.cs" />
-    <Compile Include="UI\CreateObjectWindow.cs" />
-    <Compile Include="UI\CreateObjectWindow.designer.cs" />
-    <Compile Include="UI\CreateObjectWindowController.cs" />
-    <Compile Include="UI\SelectObjectClassWindow.cs" />
-    <Compile Include="UI\SelectObjectClassWindow.designer.cs" />
-    <Compile Include="UI\SelectObjectClassWindowController.cs" />
     <Compile Include="DataSource\PropertiesTableViewDataSource.cs" />
-    <Compile Include="UI\LdapPropertiesWindow.cs" />
-    <Compile Include="UI\LdapPropertiesWindow.designer.cs" />
-    <Compile Include="UI\LdapPropertiesWindowController.cs" />
-    <Compile Include="UI\ManagePropertiesWindow.cs" />
-    <Compile Include="UI\ManagePropertiesWindow.designer.cs" />
-    <Compile Include="UI\ManagePropertiesWindowController.cs" />
     <Compile Include="DataSource\GenericTableViewDataSource.cs" />
     <Compile Include="Nodes\VMDirServerInfo.cs" />
-    <Compile Include="UI\WelcomeScreen.cs" />
-    <Compile Include="UI\WelcomeScreen.designer.cs">
-      <DependentUpon>WelcomeScreen.cs</DependentUpon>
-    </Compile>
-    <Compile Include="UI\WelcomeScreenController.cs" />
-    <Compile Include="UI\WelcomeScreenController.designer.cs">
-      <DependentUpon>WelcomeScreenController.cs</DependentUpon>
-    </Compile>
     <Compile Include="DataSource\CreateObjectTableViewDataSource.cs" />
     <Compile Include="DataSource\NodesListView.cs" />
     <Compile Include="UI\VMDirTableView.cs" />
-    <Compile Include="UI\ResetPasswordWindow.cs" />
-    <Compile Include="UI\ResetPasswordWindow.designer.cs" />
-    <Compile Include="UI\ResetPasswordWindowController.cs" />
-    <Compile Include="UI\ResetPasswordWindowController.designer.cs" />
-    <Compile Include="UI\AddNewGroup.cs" />
-    <Compile Include="UI\AddNewGroup.designer.cs" />
-    <Compile Include="UI\AddNewGroupController.cs" />
-    <Compile Include="UI\AddNewGroupController.designer.cs" />
-    <Compile Include="UI\AddNewUser.cs" />
-    <Compile Include="UI\AddNewUser.designer.cs" />
-    <Compile Include="UI\AddNewUserController.cs" />
-    <Compile Include="UI\AddNewUserController.designer.cs" />
-    <Compile Include="UI\AddGroupByCNWindow.cs" />
-    <Compile Include="UI\AddGroupByCNWindow.designer.cs" />
-    <Compile Include="UI\AddGroupByCNWindowController.cs" />
-    <Compile Include="UI\AddGroupByCNWindowController.designer.cs" />
-    <Compile Include="UI\SuperLoggingBrowserWindow.cs" />
-    <Compile Include="UI\SuperLoggingBrowserWindow.designer.cs" />
-    <Compile Include="UI\SuperLoggingBrowserWindowController.cs" />
-    <Compile Include="UI\SuperLoggingBrowserWindowController.designer.cs" />
     <Compile Include="DataSource\SuperLoggingTableViewDataSource.cs" />
+    <Compile Include="UI\SplitViewMMC\VmdirSplitView.cs" />
+    <Compile Include="UI\SplitViewMMC\VmdirSplitViewController.cs" />
+    <Compile Include="UI\SplitViewMMC\VmdirSplitView.designer.cs">
+      <DependentUpon>VmdirSplitView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\SplitViewMMC\VmdirSplitViewController.designer.cs">
+      <DependentUpon>VmdirSplitViewController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\PropertiesView\PropertiesView.cs" />
+    <Compile Include="UI\PropertiesView\PropertiesViewController.cs" />
+    <Compile Include="UI\PropertiesView\PropertiesView.designer.cs">
+      <DependentUpon>PropertiesView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\PropertiesView\PropertiesViewController.designer.cs">
+      <DependentUpon>PropertiesViewController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Main\MainWindow.cs" />
+    <Compile Include="UI\Main\MainWindow.designer.cs">
+      <DependentUpon>MainWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Main\MainWindowController.cs" />
+    <Compile Include="UI\WelcomeScreen\WelcomeScreen.cs" />
+    <Compile Include="UI\WelcomeScreen\WelcomeScreen.designer.cs">
+      <DependentUpon>WelcomeScreen.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\WelcomeScreen\WelcomeScreenController.cs" />
+    <Compile Include="UI\WelcomeScreen\WelcomeScreenController.designer.cs">
+      <DependentUpon>WelcomeScreenController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\AddGroup\AddNewGroup.cs" />
+    <Compile Include="UI\AddGroup\AddNewGroup.designer.cs" />
+    <Compile Include="UI\AddGroup\AddNewGroupController.cs" />
+    <Compile Include="UI\AddGroup\AddNewGroupController.designer.cs" />
+    <Compile Include="UI\AddUser\AddNewUser.cs" />
+    <Compile Include="UI\AddUser\AddNewUser.designer.cs" />
+    <Compile Include="UI\AddUser\AddNewUserController.cs" />
+    <Compile Include="UI\AddUser\AddNewUserController.designer.cs" />
+    <Compile Include="UI\AddObject\CreateObjectWindow.cs" />
+    <Compile Include="UI\AddObject\CreateObjectWindow.designer.cs" />
+    <Compile Include="UI\AddObject\CreateObjectWindowController.cs" />
+    <Compile Include="UI\SuperLog\SuperLoggingBrowserWindow.cs" />
+    <Compile Include="UI\SuperLog\SuperLoggingBrowserWindow.designer.cs" />
+    <Compile Include="UI\SuperLog\SuperLoggingBrowserWindowController.cs" />
+    <Compile Include="UI\SuperLog\SuperLoggingBrowserWindowController.designer.cs" />
+    <Compile Include="UI\Password\ResetPasswordWindow.cs" />
+    <Compile Include="UI\Password\ResetPasswordWindow.designer.cs" />
+    <Compile Include="UI\Password\ResetPasswordWindowController.cs" />
+    <Compile Include="UI\Password\ResetPasswordWindowController.designer.cs" />
+    <Compile Include="Delegate\GenericTableDelegate.cs" />
+    <Compile Include="Delegate\OutlineDelegate.cs" />
+    <Compile Include="Delegate\PropertiesTableDelegate.cs" />
+    <Compile Include="UI\Search\SearchWindow.cs" />
+    <Compile Include="UI\Search\SearchWindow.designer.cs">
+      <DependentUpon>SearchWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Search\SearchWindowController.cs" />
+    <Compile Include="UI\Search\SearchWindowController.designer.cs">
+      <DependentUpon>SearchWindowController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\SelectObject\SelectObjectClassWindow.cs" />
+    <Compile Include="UI\SelectObject\SelectObjectClassWindowController.cs" />
+    <Compile Include="UI\SelectObject\SelectObjectClassWindow.designer.cs" />
+    <Compile Include="UI\AddToGroup\AddGroupByCNWindow.cs" />
+    <Compile Include="UI\AddToGroup\AddGroupByCNWindow.designer.cs" />
+    <Compile Include="UI\AddToGroup\AddGroupByCNWindowController.cs" />
+    <Compile Include="UI\AddToGroup\AddGroupByCNWindowController.designer.cs" />
+    <Compile Include="UI\Password\VerifyPassword.cs" />
+    <Compile Include="UI\Password\VerifyPassword.designer.cs">
+      <DependentUpon>VerifyPassword.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Password\VerifyPasswordController.cs" />
+    <Compile Include="UI\Password\VerifyPasswordController.designer.cs">
+      <DependentUpon>VerifyPasswordController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DataSource\SearchConditionsTableViewDataSource.cs" />
+    <Compile Include="DataSource\ResultOutlineDataSource.cs" />
+    <Compile Include="UI\ResultOutlineView.cs" />
+    <Compile Include="Delegate\ResultOutlineDelegate.cs" />
+    <Compile Include="UI\PageSize\PageSize.cs" />
+    <Compile Include="UI\PageSize\PageSize.designer.cs">
+      <DependentUpon>PageSize.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\PageSize\PageSizeController.cs" />
+    <Compile Include="UI\PageSize\PageSizeController.designer.cs">
+      <DependentUpon>PageSizeController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\SyntaxHelp\SyntaxHelpWindow.cs" />
+    <Compile Include="UI\SyntaxHelp\SyntaxHelpWindow.designer.cs">
+      <DependentUpon>SyntaxHelpWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\SyntaxHelp\SyntaxHelpWindowController.cs" />
+    <Compile Include="UI\SyntaxHelp\SyntaxHelpWindowController.designer.cs">
+      <DependentUpon>SyntaxHelpWindowController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ConnectToLdap\ConnectToLdapWindow.cs" />
+    <Compile Include="UI\ConnectToLdap\ConnectToLdapWindow.designer.cs" />
+    <Compile Include="UI\ConnectToLdap\ConnectToLdapWindowController.cs" />
+    <Compile Include="Nodes\DirectoryNonExpandableNode.cs" />
+    <Compile Include="DataSource\AttributeTableViewDataSource.cs" />
+    <Compile Include="UI\PropertiesView\ModSubmitConfirm.cs" />
+    <Compile Include="UI\PropertiesView\ModSubmitConfirm.designer.cs">
+      <DependentUpon>ModSubmitConfirm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\PropertiesView\ModSubmitConfirmController.cs" />
+    <Compile Include="UI\PropertiesView\ModSubmitConfirmController.designer.cs">
+      <DependentUpon>ModSubmitConfirmController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\PropertiesView\ModSubmitStatus.cs" />
+    <Compile Include="UI\PropertiesView\ModSubmitStatus.designer.cs">
+      <DependentUpon>ModSubmitStatus.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\PropertiesView\ModSubmitStatusController.cs" />
+    <Compile Include="UI\PropertiesView\ModSubmitStatusController.designer.cs">
+      <DependentUpon>ModSubmitStatusController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Export\ExportSearchResult.cs" />
+    <Compile Include="UI\Export\ExportSearchResult.designer.cs">
+      <DependentUpon>ExportSearchResult.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Export\ExportSearchResultController.cs" />
+    <Compile Include="UI\Export\ExportSearchResultController.designer.cs">
+      <DependentUpon>ExportSearchResultController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="DataSource\ModificationStatusTableViewDataSource.cs" />
+    <Compile Include="UI\Search\ConditionValuesFromFile.cs" />
+    <Compile Include="UI\Search\ConditionValuesFromFile.designer.cs">
+      <DependentUpon>ConditionValuesFromFile.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\Search\ConditionValuesFromFileController.cs" />
+    <Compile Include="UI\Search\ConditionValuesFromFileController.designer.cs">
+      <DependentUpon>ConditionValuesFromFileController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Delegate\ModificationStatusTableDelegate.cs" />
   </ItemGroup>
   <ItemGroup>
-    <InterfaceDefinition Include="UI\MainMenu.xib" />
-    <InterfaceDefinition Include="UI\MainWindow.xib" />
-    <InterfaceDefinition Include="UI\ConnectToLdapWindow.xib" />
-    <InterfaceDefinition Include="UI\SchemaBrowserWindow.xib" />
-    <InterfaceDefinition Include="UI\CreateObjectWindow.xib" />
-    <InterfaceDefinition Include="UI\SelectObjectClassWindow.xib" />
-    <InterfaceDefinition Include="UI\LdapPropertiesWindow.xib" />
-    <InterfaceDefinition Include="UI\ManagePropertiesWindow.xib" />
-    <InterfaceDefinition Include="UI\WelcomeScreen.xib" />
-    <InterfaceDefinition Include="UI\ResetPasswordWindow.xib" />
-    <InterfaceDefinition Include="UI\AddNewGroup.xib" />
-    <InterfaceDefinition Include="UI\AddNewUser.xib" />
-    <InterfaceDefinition Include="UI\AddGroupByCNWindow.xib" />
-    <InterfaceDefinition Include="UI\SuperLoggingBrowserWindow.xib" />
+    <InterfaceDefinition Include="UI\SplitViewMMC\VmdirSplitView.xib" />
+    <InterfaceDefinition Include="UI\PropertiesView\PropertiesView.xib" />
+    <InterfaceDefinition Include="UI\Main\MainMenu.xib" />
+    <InterfaceDefinition Include="UI\Main\MainWindow.xib" />
+    <InterfaceDefinition Include="UI\WelcomeScreen\WelcomeScreen.xib" />
+    <InterfaceDefinition Include="UI\AddGroup\AddNewGroup.xib" />
+    <InterfaceDefinition Include="UI\AddUser\AddNewUser.xib" />
+    <InterfaceDefinition Include="UI\AddObject\CreateObjectWindow.xib" />
+    <InterfaceDefinition Include="UI\SuperLog\SuperLoggingBrowserWindow.xib" />
+    <InterfaceDefinition Include="UI\Password\ResetPasswordWindow.xib" />
+    <InterfaceDefinition Include="UI\Search\SearchWindow.xib" />
+    <InterfaceDefinition Include="UI\SelectObject\SelectObjectClassWindow.xib" />
+    <InterfaceDefinition Include="UI\AddToGroup\AddGroupByCNWindow.xib" />
+    <InterfaceDefinition Include="UI\Password\VerifyPassword.xib" />
+    <InterfaceDefinition Include="UI\PageSize\PageSize.xib" />
+    <InterfaceDefinition Include="UI\SyntaxHelp\SyntaxHelpWindow.xib" />
+    <InterfaceDefinition Include="UI\ConnectToLdap\ConnectToLdapWindow.xib" />
+    <InterfaceDefinition Include="UI\PropertiesView\ModSubmitConfirm.xib" />
+    <InterfaceDefinition Include="UI\PropertiesView\ModSubmitStatus.xib" />
+    <InterfaceDefinition Include="UI\Export\ExportSearchResult.xib" />
+    <InterfaceDefinition Include="UI\Search\ConditionValuesFromFile.xib" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Info.plist" />
@@ -195,16 +303,27 @@
     <BundleResource Include="Resources\home.png" />
     <BundleResource Include="Resources\connect.png" />
     <BundleResource Include="Resources\disconnect_64x.png" />
+    <BundleResource Include="Resources\Question.png" />
+    <BundleResource Include="Resources\UserImg.png" />
+    <BundleResource Include="Resources\SearchImg.png" />
+    <BundleResource Include="Resources\SearchBoxCollapseImg.png" />
+    <BundleResource Include="Resources\SaveImg.png" />
+    <BundleResource Include="Resources\ResetPasswordImg.png" />
+    <BundleResource Include="Resources\PageSizeImg.png" />
+    <BundleResource Include="Resources\OpenImg.png" />
+    <BundleResource Include="Resources\NextPageImg.png" />
+    <BundleResource Include="Resources\LoginImg.png" />
+    <BundleResource Include="Resources\GroupImg.png" />
+    <BundleResource Include="Resources\OperationalAttrImg.png" />
+    <BundleResource Include="Resources\OptionalAttrImg.png" />
+    <BundleResource Include="Resources\RefreshImg.png" />
+    <BundleResource Include="Resources\ExportImg.png" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
   <ItemGroup>
     <ProjectReference Include="..\..\..\common\VMDir.Common\VMDir.Common.csproj">
       <Project>{76109B16-B0AE-47EB-8545-EB135EB92E2A}</Project>
       <Name>VMDir.Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\vmdir\interop\csharp\VmDirInterop\VmDirInterop\VmDirInterop.csproj">
-      <Project>{CA2F370A-7C11-4173-8BDF-9FD143896E01}</Project>
-      <Name>VmDirInterop</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
       <Project>{CD959E2E-5B9C-4329-B085-352844CFDCDD}</Project>

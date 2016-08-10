@@ -27,6 +27,7 @@
 
 #include "includes.h"
 
+
 DWORD
 VmDirMiddleLayerLibInit(
     VOID
@@ -38,6 +39,9 @@ VmDirMiddleLayerLibInit(
 
     // Initialize gVdirLockoutCache
     dwError = VmDirAllocateMutex(&gVdirLockoutCache.mutex);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirPagedSearchCacheInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSASLInit();
@@ -60,6 +64,8 @@ VmDirMiddleLayerLibShutdown(
 
     // Un-Initialize gVdirLockoutCache
     VMDIR_SAFE_FREE_MUTEX( gVdirLockoutCache.mutex );
+
+    VmDirPagedSearchCacheFree();
 
     VmDirLog( LDAP_DEBUG_TRACE, "VmDirMiddleLayerLibShutdown: End" );
 }

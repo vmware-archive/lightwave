@@ -643,6 +643,7 @@
             " 2.5.18.4"                                                 \
             " NAME 'modifiersName'"                                     \
             " SYNTAX 1.3.6.1.4.1.1466.115.121.1.12"                     \
+            " SINGLE-VALUE"                                             \
             " NO-USER-MODIFICATION"                                     \
             " USAGE directoryOperation )")                              \
     },                                                                  \
@@ -802,6 +803,21 @@
             " 2.5.4.13"                                                 \
             " NAME 'description'"                                       \
             " SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )")                  \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 45),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " 1.2.840.113556.1.2.334"                                   \
+            " NAME 'searchFlags'"                                       \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.27"                     \
+            " SINGLE-VALUE )")                                          \
+    },                                                                  \
+    {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 46),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " VMWare.DIR.attribute.1.7"                                 \
+            " NAME 'vmwAttrUniquenessScope'"                            \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 )")                  \
     },                                                                  \
     {                                                                   \
     VMDIR_SF_INIT(.usAttrID, 0),                                        \

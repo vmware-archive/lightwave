@@ -15,6 +15,7 @@
 
 
 #include "includes.h"
+#include "ldap_pvt.h"
 
 #define START_ANY_ALLOC_SIZE    5
 
@@ -446,8 +447,74 @@ DeleteFilter(
     }
 
     DeleteCandidates( &(f->candidates) );
+
+    if (f->pBer)
+    {
+        ber_free(f->pBer, 1);
+    }
+
     VMDIR_SAFE_FREE_MEMORY( f );
     VmDirLog( LDAP_DEBUG_TRACE, "DeleteFilter: End" );
+}
+
+DWORD
+StrFilterToFilter(
+    PCSTR pszString,
+    PVDIR_FILTER *ppFilter
+    )
+{
+    DWORD dwError = 0;
+    int res = 0;
+    BerElement *ber = NULL;
+    PVDIR_OPERATION pOperation = NULL;
+    VDIR_LDAP_RESULT lr = {0};
+    PVDIR_FILTER pFilter = NULL;
+
+    ber = ber_alloc_t(LBER_USE_DER);
+    if (ber == NULL)
+    {
+        dwError = LDAP_NO_MEMORY;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // Private function from libldap.
+    res = ldap_pvt_put_filter(ber, pszString);
+    if (res)
+    {
+        dwError = LDAP_FILTER_ERROR;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    ber_rewind(ber);
+
+    dwError = VmDirExternalOperationCreate(ber, -1, LDAP_REQ_SEARCH, NULL, &pOperation);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    res = ParseFilter(pOperation, &pFilter, &lr);
+    if (res)
+    {
+        dwError = LDAP_FILTER_ERROR;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pFilter->pBer = ber;
+    ber = NULL;
+
+    *ppFilter = pFilter;
+
+cleanup:
+    if (ber)
+    {
+        ber_free(ber, 1);
+    }
+    if (pOperation)
+    {
+        VmDirFreeOperation(pOperation);
+    }
+    return dwError;
+
+error:
+    goto cleanup;
 }
 
 DWORD

@@ -64,6 +64,8 @@ VmDirMLDelete(
                                                      pOperation->pBECtx->wTxnUSN);
     }
 
+    VmDirPerformUrgentReplIfRequired(pOperation, pOperation->pBECtx->wTxnUSN);
+
 cleanup:
 
     VmDirSendLdapResult( pOperation );
@@ -291,7 +293,8 @@ txnretry:
         BAIL_ON_VMDIR_ERROR( retVal );
 
         // Apply modify operations to the current entry in the DB.
-        retVal = VmDirApplyModsToEntryStruct( pOperation->pSchemaCtx, modReq, pEntry, &pszLocalErrMsg );
+        retVal = VmDirApplyModsToEntryStruct( pOperation->pSchemaCtx, modReq,
+pEntry, NULL, &pszLocalErrMsg );
         BAIL_ON_VMDIR_ERROR( retVal );
 
         // Update DBs
@@ -549,7 +552,7 @@ DeleteRefAttributesValue(
     mr.mods = &mod;
     mr.numMods = 1;
 
-    retVal = pOperation->pBEIF->pfnBEGetCandidates( pOperation->pBECtx, f);
+    retVal = pOperation->pBEIF->pfnBEGetCandidates(pOperation->pBECtx, f, 0);
     if ( retVal != 0 )
     {
         if (retVal == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)

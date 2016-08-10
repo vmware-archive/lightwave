@@ -28,6 +28,8 @@ VmDirParseArgs(
     PSTR*    ppszSrcPassword,
     PSTR*    ppszTgtHostName,
     PSTR*    ppszTgtPort,
+    PSTR*    ppszEntryDn,
+    PSTR*    ppszAttribute,
     PBOOLEAN pbVerbose
     );
 

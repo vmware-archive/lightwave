@@ -323,7 +323,7 @@ public class AuthnRequestStateValidator implements
         String selectedIDPEntityId = tenantIDPCookie;
 
         if (tenantIDPCookie == null || tenantIDPCookie.isEmpty()) {
-            String tenantIDPHeader = t.getTenatIDPSelectHeader();
+            String tenantIDPHeader = t.getTenantIDPSelectHeader();
             // if no idp header or cookie is available
             if (tenantIDPHeader == null || tenantIDPHeader.isEmpty()) {
                 List<String> eligibleIdps = new ArrayList<>();
@@ -417,6 +417,23 @@ public class AuthnRequestStateValidator implements
         return validExternalIdpList;
     }
 
+    /**
+     * This function updates AuthnRequestState.authnTypeSupported attribute by factoring in RequestedAuthnContext in the SAML request.
+     *
+     * Note about backward compatibility handling. vsphere 6.0u1 or older service providers integrates with older WebSSO client library that
+     * sends SAML request with RequestedAuthnContext=={"PasswordProtectedTransport"} when application does not set authentication preference.
+     * This function detects that and ignores the setting, as such treat the request as having null RequestedAuthnContext. The drawback
+     * is that we can not distinguish an intentional setting of PW-only vs unintentional default value of older service provider. Such that "Use Windows session
+     * authentication" checkbox undesirably appears - which is rather benign defect.
+     * I think this is acceptable given PW authentication is 1-FA and least secure compare to other types. It is unlikely
+     *  that third party SP in the federation would want to restrict authentication to only PW.
+     * We could remove this handling code only when the future PSC phase out support of service providers that use WebSSO client lib older than that
+     * integrated with vsphere 6.0u2. PR 1623511.
+     *
+     *
+     * @param t
+     * @param request
+     */
     private void computeSupportedAuthnTypes(AuthnRequestState t,
             AuthnRequest request) {
         log.debug("Computing authentication types to be enabled for this request.");
@@ -437,6 +454,11 @@ public class AuthnRequestStateValidator implements
 
                 if (requestedTypes == null || requestedTypes.size() == 0) {
                     //no-op in case RequestedAuthnContext is empty
+                    return;
+                }
+
+                //Backward compatible handling: for details refer to the function's java doc header.
+                if (requestedTypes.size() == 1 && requestedTypes.get(0).getAuthnContextClassRef().equals(AuthnContext.PPT_AUTHN_CTX)) {
                     return;
                 }
 

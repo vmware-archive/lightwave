@@ -70,7 +70,6 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="idm.lib gssapi64.lib krb5_64.lib"
 				OutputFile="$(OutDir)\test-logon.exe"
-				AdditionalLibraryDirectories="&quot;$(TCROOT)\win64\openssl-1.0.1j-vc90sp1\lib&quot;"
 				GenerateDebugInformation="true"
 				TargetMachine="17"
 			/>
@@ -151,7 +150,6 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="idm.lib gssapi64.lib krb5_64.lib"
 				OutputFile="$(OutDir)\test-logon.exe"
-				AdditionalLibraryDirectories="&quot;$(TCROOT)\win64\openssl-1.0.1j-vc90sp1\lib&quot;"
 				TargetMachine="17"
 			/>
 			<Tool

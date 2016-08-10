@@ -90,7 +90,6 @@ namespace VMwareMMCIDP.UI.Common
             this.textTenant.Name = "textTenant";
             this.textTenant.Size = new System.Drawing.Size(200, 20);
             this.textTenant.TabIndex = 4;
-            this.textTenant.Text = "lightwave.local";
             this.toolTip1.SetToolTip(this.textTenant, "Please enter the domain on the server to which the username belongs");
             // 
             // label1

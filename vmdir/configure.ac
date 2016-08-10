@@ -114,6 +114,8 @@ AC_ARG_WITH([datastore],
         VMDIRD_DATASTORE="$withval"
     ])
 
+
+
 # client only build
 
 ENABLE_SERVER=false
@@ -509,6 +511,17 @@ AC_DEFINE_UNQUOTED(VMDIR_LOG_DIR, "$VMDIR_LOG_DIR", [Log directory])
 vmdirlogdir=/var/log/vmware/vmdir
 AC_SUBST(vmdirlogdir)
 
+vmdir_version=1.0
+AC_ARG_WITH([version],
+    [AC_HELP_STRING([--with-version], [set the version (default: 1.0)])],
+    [
+        vmdir_version="$withval"
+    ])
+AC_SUBST(vmdir_version)
+AS_AC_EXPAND(VDIR_PSC_VERSION, $vmdir_version)
+AC_DEFINE_UNQUOTED(VDIR_PSC_VERSION, "$VDIR_PSC_VERSION", [PSC version])
+
+
 vmdirconfdir="$datadir/config"
 AC_SUBST(vmdirconfdir)
 AS_AC_EXPAND(VMDIR_CONFIG_DIR, $vmdirconfdir)
@@ -582,4 +595,3 @@ AC_CONFIG_FILES([Makefile
                  thirdparty/csrp/Makefile
                 ])
 AC_OUTPUT
-

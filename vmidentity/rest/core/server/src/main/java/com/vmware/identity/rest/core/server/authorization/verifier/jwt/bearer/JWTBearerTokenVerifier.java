@@ -24,6 +24,7 @@ import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.rest.core.server.authorization.Config;
 import com.vmware.identity.rest.core.server.authorization.exception.InvalidTokenException;
 import com.vmware.identity.rest.core.server.authorization.token.AccessToken;
+import com.vmware.identity.rest.core.server.authorization.token.TokenType;
 import com.vmware.identity.rest.core.server.authorization.token.jwt.bearer.JWTBearerToken;
 import com.vmware.identity.rest.core.server.authorization.verifier.AccessTokenVerifier;
 import com.vmware.identity.rest.core.server.exception.ServerException;
@@ -64,6 +65,10 @@ public class JWTBearerTokenVerifier implements AccessTokenVerifier {
 
     @Override
     public void verify(AccessToken token) throws InvalidTokenException, ServerException {
+        verify(token, TokenType.BEARER);
+    }
+
+    protected void verify(AccessToken token, TokenType type) {
 
         if (!(token instanceof JWTBearerToken)) {
             throw new IllegalArgumentException("Access token expected to be JWTBearerToken. Was " + token.getClass());
@@ -83,6 +88,7 @@ public class JWTBearerTokenVerifier implements AccessTokenVerifier {
             throw new InvalidTokenException(sm.getString("auth.ite.bad.verification"));
         }
 
+        VerificationUtil.verifyTokenType(token, type, sm, log);
         VerificationUtil.verifyTimestamps(token, skew, sm);
         VerificationUtil.verifyAudience(token, Config.RESOURCE_SERVER_AUDIENCE, sm, log);
     }

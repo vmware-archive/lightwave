@@ -19,9 +19,6 @@ package com.vmware.identity.openidconnect.common;
  * @author Jun Sun
  */
 public final class ClientID extends Identifier {
-    public ClientID() {
-    }
-
     public ClientID(String value) {
         super(value);
     }

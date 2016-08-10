@@ -4,6 +4,7 @@ SUBDIRS = \
     config \
     jdepends \
     tomcat-extensions \
+    ROOT \
     interop \
     diagnostics \
     platform \
@@ -12,10 +13,10 @@ SUBDIRS = \
     samlauthority \
     ssolib \
     websso \
-    admin-interfaces \
-    wstauthz \
+	lightwaveui \
     sts \
     wsTrustClient \
     install \
     rest \
-    openidconnect
+    openidconnect \
+    sso-config

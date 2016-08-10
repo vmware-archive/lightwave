@@ -40,6 +40,7 @@ VmDirSubSchemaSubEntry(
     PVDIR_BERVALUE  pBervCr = NULL;
     LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
     LW_HASHMAP_PAIR pair = {NULL, NULL};
+    PVDIR_LDAP_OBJECT_CLASS pTop = NULL;
 
     if (!ppEntry)
     {
@@ -97,6 +98,17 @@ VmDirSubSchemaSubEntry(
     while (LwRtlHashMapIterate(pLdapSchema->objectClasses, &iter, &pair))
     {
         PVDIR_LDAP_OBJECT_CLASS pOc = (PVDIR_LDAP_OBJECT_CLASS)pair.pValue;
+
+        if (VmDirStringCompareA(pOc->pszName, OC_TOP, FALSE) == 0)
+        {
+            dwError = VmDirLdapOcDeepCopy(pOc, &pTop);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            VmDirFreeStrArray(pTop->pSource->oc_sup_oids);
+            pTop->pSource->oc_sup_oids = NULL;
+            pOc = pTop;
+        }
+
         dwError = VmDirLdapOcToStr(pOc, &pBervOc[i].lberbv_val);
         BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -136,6 +148,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pBervAt);
     VMDIR_SAFE_FREE_MEMORY(pBervOc);
     VMDIR_SAFE_FREE_MEMORY(pBervCr);
+    VmDirFreeLdapOc(pTop);
     return dwError;
 
 error:

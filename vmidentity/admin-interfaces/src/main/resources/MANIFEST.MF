@@ -1,6 +1,0 @@
-Manifest-Version: 1.0
-Name: Admin Interfaces
-Specification-Title: Interface used in VMSTS components - IDM and STS
-Specification-Vendor: VMware Inc.
-Specification-Version: 6.5.0
-Class-Path:  log4j-1.2-api-2.0.2.jar log4j-core-2.2.jar log4j-core-2.2.jar log4j-slf4j-impl-2.2.jar slf4j-api-1.7.10.jar commons-codec-1.4.jar samltoken-6.5.0.jar wstclient-6.5.0.jar

@@ -58,6 +58,7 @@ namespace VMCASnapIn.ListViews
                 serverDTO.KeyPairs.RemoveAt(this.ResultNodes.IndexOf(node));
                 this.ResultNodes.Remove(node);
             }
+            RefreshList();
         }
 
         protected override void OnRefresh(AsyncStatus status)
@@ -86,6 +87,7 @@ namespace VMCASnapIn.ListViews
                     }
                 }
             }
+            this.DescriptionBarText = this.ResultNodes.Count.ToString();
         }
 
         protected override void OnSelectionChanged(SyncStatus status)

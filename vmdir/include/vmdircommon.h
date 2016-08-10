@@ -114,6 +114,7 @@ typedef struct _VDIR_LINKED_LIST
 {
     PVDIR_LINKED_LIST_NODE  pHead;
     PVDIR_LINKED_LIST_NODE  pTail;
+    size_t                  iSize;
 
 } VDIR_LINKED_LIST, *PVDIR_LINKED_LIST;
 
@@ -238,7 +239,7 @@ DWORD
 VmDirCopyMemory(
     PVOID   pDestination,
     size_t  destinationSize,
-    PCVOID  pSource,
+    const void* pSource,
     size_t  maxCount
     );
 
@@ -402,9 +403,10 @@ VmDirStringNCompareA(
     );
 
 BOOLEAN
-VmDirIsValidSecret(
-    PCSTR pszTheirs,
-    PCSTR pszOurs
+VmDirStringEndsWith(
+    PCSTR   pszStr,
+    PCSTR   pszSuffix,
+    BOOLEAN bIsCaseSensitive
     );
 
 SIZE_T
@@ -870,7 +872,7 @@ typedef enum
 #define VMDIR_REG_KEY_SSL_DISABLED_PROTOCOLS "SslDisabledProtocols"
 #define VMDIR_REG_KEY_SSL_CIPHER_SUITE       "SslCipherSuite"
 #define VMDIR_REG_KEY_DIRTY_SHUTDOWN         "DirtyShutdown"
-
+#define VMDIR_REG_KEY_ENABLE_RENAME          "EnableRename"
 #define VMAFD_REG_KEY_KRB5_CONF             "Krb5Conf"
 
 #ifdef _WIN32
@@ -934,6 +936,11 @@ VmDirConditionSignal(
     PVMDIR_COND pCondition
 );
 
+DWORD
+VmDirConditionBroadcast(
+    PVMDIR_COND pCondition
+);
+
 #if defined(_WIN32) && !defined(HAVE_PTHREADS_WIN32)
 #ifdef WIN2008
 DWORD
@@ -966,11 +973,17 @@ VmDirConditionSignal2008(
     PVMDIR_COND_2008 pCondition
 );
 
+DWORD
+VmDirConditionBroadcast2008(
+    PVMDIR_COND_2008 pCondition
+);
+
 #define VmDirAllocateCondition                  VmDirAllocateCondition2008
 #define VmDirFreeCondition                      VmDirFreeCondition2008
 #define VmDirConditionWait                      VmDirConditionWait2008
 #define VmDirConditionTimedWait                 VmDirConditionTimedWait2008
 #define VmDirConditionSignal                    VmDirConditionSignal2008
+#define VmDirConditionBroadcast                 VmDirConditionBroadcast2008
 
 
 #else
@@ -1005,11 +1018,17 @@ VmDirConditionSignal2003(
     PVMDIR_COND_2003 pCondition
 );
 
+DWORD
+VmDirConditionBroadcast2003(
+    PVMDIR_COND_2003 pCondition
+);
+
 #define VmDirAllocateCondition                  VmDirAllocateCondition2003
 #define VmDirFreeCondition                      VmDirFreeCondition2003
 #define VmDirConditionWait                      VmDirConditionWait2003
 #define VmDirConditionTimedWait                 VmDirConditionTimedWait2003
 #define VmDirConditionSignal                    VmDirConditionSignal2003
+#define VmDirConditionBroadcast                 VmDirConditionBroadcast2003
 
 
 #endif
@@ -1228,6 +1247,11 @@ VmDirLinkedListRemove(
     PVDIR_LINKED_LIST_NODE  pNode
     );
 
+size_t
+VmDirLinkedListGetSize(
+    PVDIR_LINKED_LIST   pLinkedList
+    );
+
 BOOLEAN
 VmDirLinkedListIsEmpty(
     PVDIR_LINKED_LIST   pLinkedList
@@ -1269,11 +1293,6 @@ VmDirReadDCAccountPassword(
 DWORD
 VmDirReadDCAccountOldPassword(
     PSTR* ppszPassword
-    );
-
-DWORD
-VmDirValidateDCAccountPassword(
-    PSTR pszPassword
     );
 
 DWORD
@@ -1577,6 +1596,10 @@ VmDirHaveLegacy(
     );
 
 // util.c
+uint64_t
+VmDirGetTimeInMilliSec(
+    VOID
+    );
 
 DWORD
 VmDirAllocateUserCreateParamsWFromA(
@@ -1968,6 +1991,12 @@ VmDirQsortCaseIgnoreCompareString(
     );
 
 DWORD
+VmDirCopyStrArray(
+    PSTR*   ppszOrgArray,
+    PSTR**  pppszCopyArray
+    );
+
+DWORD
 VmDirMergeStrArray(
     PSTR*   ppszSetCur,
     PSTR*   ppszSetNew,
@@ -2001,6 +2030,12 @@ VmDirFreeStrArray(
 
 VOID
 VmDirNoopHashMapPairFree(
+    PLW_HASHMAP_PAIR    pPair,
+    PVOID               pUnused
+    );
+
+VOID
+VmDirSimpleHashMapPairFree(
     PLW_HASHMAP_PAIR    pPair,
     PVOID               pUnused
     );
@@ -2041,6 +2076,25 @@ VmDirStringToTokenList(
     PCSTR pszStr,
     PCSTR pszDelimiter,
     PVMDIR_STRING_LIST *ppStrList
+    );
+
+DWORD
+VmDirUTDVectorToStruct(
+    PCSTR   pszStr,
+    PVMDIR_REPL_UTDVECTOR*  ppVector
+    );
+
+DWORD
+VmDirStrToNameAndNumber(
+    PCSTR   pszStr,
+    CHAR    del,
+    PSTR*   ppszName,
+    USN*    pUSN
+    );
+
+VOID
+VmDirFreeReplVector(
+    PVMDIR_REPL_UTDVECTOR  pVector
     );
 
 #ifdef __cplusplus

@@ -6,11 +6,11 @@
             this.components = new System.ComponentModel.Container();
             this.lstExternalIdentityProviders = new System.Windows.Forms.ListView();
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
+            this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.columnHeader3 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.contextMenuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -35,7 +35,12 @@
             // columnHeader1
             // 
             this.columnHeader1.Text = "Entity ID";
-            this.columnHeader1.Width = 270;
+            this.columnHeader1.Width = 495;
+            // 
+            // columnHeader3
+            // 
+            this.columnHeader3.Text = "Alias";
+            this.columnHeader3.Width = 240;
             // 
             // columnHeader2
             // 
@@ -66,11 +71,6 @@
             this.deleteToolStripMenuItem.Size = new System.Drawing.Size(107, 22);
             this.deleteToolStripMenuItem.Text = "Delete";
             this.deleteToolStripMenuItem.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
-            // 
-            // columnHeader3
-            // 
-            this.columnHeader3.Text = "Alias";
-            this.columnHeader3.Width = 240;
             // 
             // ExternalIdentityProvidersControl
             // 

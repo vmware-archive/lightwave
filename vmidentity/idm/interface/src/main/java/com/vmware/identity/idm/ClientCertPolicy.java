@@ -20,6 +20,9 @@ import java.io.Serializable;
 import java.net.URL;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  *  ClientCertPolicy specifies the client certificate checking policy,
@@ -36,6 +39,7 @@ public class ClientCertPolicy implements Serializable {
     private boolean _useCRLAsFailOver = false;
     private boolean _sendOCSPNonce = false;
     private URL _ocspUrl = null;
+    private HashMap<String, AlternativeOCSPList> _siteOCSPMap = null;
     private X509Certificate _ocspResponderSigningCert = null;
     private boolean _useCerCRL = true; // Use CRL distribution point in end cert.
     private URL _crlUrl = null; // Override CRL distribution point in end cert.
@@ -46,6 +50,18 @@ public class ClientCertPolicy implements Serializable {
 
     public ClientCertPolicy() {}
 
+    /**
+     * @param revCheckEnabled
+     * @param ocspEnabled
+     * @param useCRLAsFailOver
+     * @param sendOCSPNonce
+     * @param ocspURL  to be ignored. please use new ctr to specify alternative ocsp.
+     * @param ocspResponderCert to be ignored. please use new ctr to specify alternative ocsp.
+     * @param useCRLDP
+     * @param crlAddress
+     * @param crlCacheSize
+     * @param oidFilters
+     */
     public ClientCertPolicy(boolean revCheckEnabled, boolean ocspEnabled,
                     boolean useCRLAsFailOver, boolean sendOCSPNonce,
                     URL ocspURL, X509Certificate ocspResponderCert,
@@ -55,13 +71,41 @@ public class ClientCertPolicy implements Serializable {
         this._ocspEnabled = ocspEnabled;
         this._useCRLAsFailOver = useCRLAsFailOver;
         this._sendOCSPNonce = sendOCSPNonce;
-        this._ocspUrl = ocspURL;
-        this._ocspResponderSigningCert = ocspResponderCert;
         this._useCerCRL = useCRLDP;
         this._crlUrl = crlAddress;
         this._crlCacheSize = crlCacheSize;
         this._oids = oidFilters;
     }
+
+    /**
+     * ClientCertPolicy ctr that allow configuring per-site OCSP responder address and signing certificates.
+     *
+     *
+     * @param revCheckEnabled
+     * @param ocspEnabled
+     * @param useCRLAsFailOver
+     * @param sendOCSPNonce
+     * @param altOCSPLists
+     * @param useCRLDP
+     * @param crlAddress
+     * @param crlCacheSize
+     * @param oidFilters
+     */
+    public ClientCertPolicy(boolean revCheckEnabled, boolean ocspEnabled,
+            boolean useCRLAsFailOver, boolean sendOCSPNonce,
+            HashMap<String, AlternativeOCSPList> altOCSPmap,
+            boolean useCRLDP, URL crlAddress, int crlCacheSize,
+            String[] oidFilters) {
+        this._enabled = revCheckEnabled;
+        this._ocspEnabled = ocspEnabled;
+        this._useCRLAsFailOver = useCRLAsFailOver;
+        this._sendOCSPNonce = sendOCSPNonce;
+        this._siteOCSPMap = altOCSPmap;
+        this._useCerCRL = useCRLDP;
+        this._crlUrl = crlAddress;
+        this._crlCacheSize = crlCacheSize;
+        this._oids = oidFilters;
+}
 
     /*
      * if certificate revocation check is enabled or not
@@ -215,5 +259,19 @@ public class ClientCertPolicy implements Serializable {
      */
     public void setTrustedCAs(Certificate[] certs) {
         this._trustedCAs = certs;
+    }
+
+    /**
+     * @return the _siteOCSPList
+     */
+    public HashMap<String, AlternativeOCSPList> get_siteOCSPList() {
+        return _siteOCSPMap;
+    }
+
+    /**
+     * @param _siteOCSPList the _siteOCSPList to set
+     */
+    public void set_siteOCSPMap(HashMap<String, AlternativeOCSPList> _siteOCSPMap) {
+        this._siteOCSPMap = _siteOCSPMap;
     }
 }

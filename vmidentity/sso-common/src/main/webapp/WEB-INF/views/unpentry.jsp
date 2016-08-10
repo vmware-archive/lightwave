@@ -1,3 +1,16 @@
+<%--
+ *  Copyright (c) 2012-2016 VMware, Inc.  All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License.  You may obtain a copy
+ *  of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, without
+ *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ *  License for the specific language governing permissions and limitations
+ *  under the License.
+--%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ page session="false" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
@@ -64,9 +77,6 @@
 <body>
 
 <script type="text/javascript">
-    // regex to check for internet explorer 11 and below
-    var isInternetExplorer = /MSIE (\d+\.\d+);/.test(navigator.userAgent) || /Trident\/(\d+\.\d+);.*rv:(\d+\.\d+)/.test(navigator.userAgent);
-
     if (!isVCLogin()) {
         document.write('<link rel="stylesheet" type="text/css" href="../../resources/css/login_generic.css">');
     }
@@ -126,7 +136,7 @@ else {
 <div id="productName">
    <script type="text/javascript">
         if (isVCLogin()) {
-           document.write("<img id=\"VCSSO-Title\" src=\"../../resources/img/VCSSO-title.png\" />");
+           //document.write("<img id=\"VCSSO-Title\" src=\"../../resources/img/VCSSO-title.png\" />");
            }
    </script>
    <div id="response" style="display:none"></div>

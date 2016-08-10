@@ -26,4 +26,4 @@
  *
  */
 
-extern VDIR_ATTR_INDEX_GLOBALS      gVdirAttrIndexGlobals;
+extern VDIR_INDEX_GLOBALS      gVdirIndexGlobals;

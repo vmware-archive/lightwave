@@ -12,8 +12,6 @@
  * under the License.
  */
 
-
-
 #include "includes.h"
 
 #define VMDIR_RPC_FREE_MEMORY VmDirRpcClientFreeMemory
@@ -930,6 +928,9 @@ VmDirJoin(
     PSTR    pszLotusServerNameCanon = NULL;
     PSTR    pszCurrentServerObjectDN = NULL;
     PSTR    pszErrMsg = NULL;
+    DWORD   dwHighWatermark = 0;
+    LDAP*   pLd = NULL;
+    PVMDIR_REPL_STATE pReplState = NULL;
 
     if (IsNullOrEmptyString(pszUserName) ||
         IsNullOrEmptyString(pszPassword) ||
@@ -1036,12 +1037,31 @@ VmDirJoin(
                                     pszPassword,
                                     pszLotusServerNameCanon );
 
+    // If db copy, use the local usn as the highwater mark for the partner's RA
+    if (firstReplCycleMode == FIRST_REPL_CYCLE_MODE_COPY_DB)
+    {
+        dwError = _VmDirCreateServerPLD(
+                                pszLotusServerNameCanon,
+                                pszDomainName,
+                                pszUserName,
+                                pszPassword,
+                                &pLd);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirGetReplicationStateInternal(pLd, &pReplState);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // Buffer the highwater mark but just not down to zero
+        dwHighWatermark= (DWORD)VMDIR_MAX(pReplState->maxVisibleUSN - HIGHWATER_USN_REPL_BUFFER, 1);
+    }
+
     dwError = VmDirLdapSetupRemoteHostRA(
                                     pszDomainName,
                                     pszPartnerServerName,
                                     pszUserName,    /* we use same username and password */
                                     pszPassword,
-                                    pszLotusServerNameCanon );
+                                    pszLotusServerNameCanon,
+                                    dwHighWatermark);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
@@ -1056,7 +1076,11 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLotusServerNameCanon);
     VMDIR_SAFE_FREE_MEMORY(pszCurrentServerObjectDN);
     VMDIR_SAFE_FREE_MEMORY(pszErrMsg);
-
+    if (pLd)
+    {
+        ldap_unbind_ext_s(pLd, NULL, NULL);
+    }
+    VmDirFreeReplicationStateInternal(pReplState);
     return dwError;
 
 error:
@@ -2067,7 +2091,8 @@ VmDirAddReplicationAgreement(
                     pszTgtServerName,
                     pszSrcUserName,
                     pszSrcPassword,
-                    pszSrcServerName
+                    pszSrcServerName,
+                    0
                     );
     BAIL_ON_VMDIR_ERROR(dwError);
     VMDIR_LOG_VERBOSE(
@@ -2085,7 +2110,8 @@ VmDirAddReplicationAgreement(
                     pszSrcServerName,
                     pszSrcUserName,
                     pszSrcPassword,
-                    pszTgtServerName
+                    pszTgtServerName,
+                    0
                     );
         BAIL_ON_VMDIR_ERROR(dwError);
         VMDIR_LOG_VERBOSE(
@@ -2152,14 +2178,14 @@ VmDirRemoveReplicationAgreement(
                         &dwNumReplPartner
                     );
     BAIL_ON_VMDIR_ERROR(dwError);
-    if (dwNumReplPartner < 2) // Must have 2 or more repl partner before removal
+
+    // Warn if less than two partners
+    if (dwNumReplPartner < 2)
     {
-        VMDIR_LOG_ERROR(
+        VMDIR_LOG_WARNING(
                 VMDIR_LOG_MASK_ALL,
-                "VmDirRemoveReplPartner error: too few replication partner on %s to remove\n",
-                pszTgtHostName);
-        dwError = ERROR_VDCREPADMIN_TOO_FEW_REPLICATION_PARTNERS;
-        BAIL_ON_VMDIR_ERROR(dwError);
+                "%s: Attempting to remove replication agreements with %s having only %d partner\n",
+                __FUNCTION__, pszTgtHostName, dwNumReplPartner);
     }
 
     if (bTwoWayRepl)
@@ -2172,14 +2198,14 @@ VmDirRemoveReplicationAgreement(
                             &dwNumReplPartner
                         );
         BAIL_ON_VMDIR_ERROR(dwError);
-        if (dwNumReplPartner < 2) // Must have 2 or more repl partner before removal
+
+        // Warn if less than two partners
+        if (dwNumReplPartner < 2)
         {
-            VMDIR_LOG_ERROR(
-                    VMDIR_LOG_MASK_ALL,
-                    "VmDirRemoveReplPartner error: too few replication partner on %s to remove\n",
-                    pszTgtHostName);
-            dwError = ERROR_VDCREPADMIN_TOO_FEW_REPLICATION_PARTNERS;
-            BAIL_ON_VMDIR_ERROR(dwError);
+            VMDIR_LOG_WARNING(
+                VMDIR_LOG_MASK_ALL,
+                "%s: Attempting to remove replication agreements with %s having only %d partner\n",
+                __FUNCTION__, pszSrcHostName, dwNumReplPartner);
         }
     }
 
@@ -2392,14 +2418,14 @@ VmDirGetReplicationPartnerStatus(
     PVMDIR_REPL_PARTNER_STATUS  pReplPartnerStatus = NULL;
     PSTR*       ppszPartnerHosts = NULL;
     PSTR        pszDomain = NULL;
-    PSTR        pszDCAccount = NULL;
     LDAP*       pLd = NULL;
+    PSTR        pszServerName = NULL;
 
-    dwError = VmDirRegReadDCAccount(&pszDCAccount);
+    // find hosts with hostname as the partner
+    dwError = VmDirGetServerName(pszHostName, &pszServerName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // find hosts with myself as the partner
-    dwError = _VmDirFindAllReplPartnerHost(pszDCAccount, pszUserName, pszPassword, &ppszPartnerHosts, &dwNumHost);
+    dwError = _VmDirFindAllReplPartnerHost(pszServerName, pszUserName, pszPassword, &ppszPartnerHosts, &dwNumHost);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (dwNumHost > 0)
@@ -2458,7 +2484,7 @@ VmDirGetReplicationPartnerStatus(
         pReplPartnerStatus[dwCnt].bHostAvailable = TRUE;
 
         // get partner replication status
-        dwError = VmDirGetPartnerReplicationStatus(pLd, pszDCAccount, &pReplPartnerStatus[dwCnt]);
+        dwError = VmDirGetPartnerReplicationStatus(pLd, pszServerName, &pReplPartnerStatus[dwCnt]);
         if (dwError)
         {
             VMDIR_LOG_WARNING(
@@ -2480,7 +2506,7 @@ cleanup:
 
     VmDirLdapUnbind(&pLd);
     VMDIR_SAFE_FREE_MEMORY(pszDomain);
-    VMDIR_SAFE_FREE_MEMORY(pszDCAccount);
+    VMDIR_SAFE_FREE_MEMORY(pszServerName);
 
     for (dwCnt=0; dwCnt < dwNumHost; dwCnt++)
     {
@@ -3213,7 +3239,6 @@ VmDirSetLogLevel(
                   pszLogLevel);
     return dwError;
 }
-
 
 DWORD
 VmDirSetLogMaskH(
@@ -4428,6 +4453,33 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirDeleteReplAgreementToHost failed (%u)", dwError);
 
     goto cleanup;
+}
+
+VOID
+VmDirFreeMetadata(
+    PVMDIR_METADATA pMetadata
+    )
+{
+    VmDirFreeMetadataInternal(pMetadata);
+}
+
+VOID
+VmDirFreeMetadataList(
+    PVMDIR_METADATA_LIST pMetadataList
+    )
+{
+    VmDirFreeMetadataListInternal(pMetadataList);
+}
+
+DWORD
+VmDirGetAttributeMetadata(
+    PVMDIR_CONNECTION   pConnection,
+    PCSTR               pszEntryDn,
+    PCSTR               pszAttribute,
+    PVMDIR_METADATA_LIST*    ppMetadataList
+    )
+{
+    return VmDirGetAttributeMetadataInternal(pConnection, pszEntryDn, pszAttribute, ppMetadataList);
 }
 
 DWORD
@@ -5648,4 +5700,128 @@ error:
     }
     VMDIR_SAFE_FREE_MEMORY(pszErrMsg);
     goto    cleanup;
+}
+
+DWORD
+VmDirUrgentReplicationRequest(
+    PCSTR pszRemoteServerName
+    )
+{
+    DWORD       dwError = 0;
+    PCSTR       pszRemoteServerEndpoint = NULL;
+    handle_t    hBinding = NULL;
+    PWSTR       pwszSrcHostName = NULL;
+    char        pszSrcHostName[VMDIR_MAX_HOSTNAME_LEN] = {0};
+
+    if (IsNullOrEmptyString(pszRemoteServerName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirGetHostName(pszSrcHostName, sizeof(pszSrcHostName)-1);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringWFromA(pszSrcHostName, &pwszSrcHostName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCreateBindingHandleMachineAccountA(
+                    pszRemoteServerName,
+                    pszRemoteServerEndpoint,
+                    &hBinding);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_RPC_TRY
+    {
+        dwError = RpcVmDirUrgentReplicationRequest(hBinding, pwszSrcHostName);
+    }
+    VMDIR_RPC_CATCH
+    {
+        VMDIR_RPC_GETERROR_CODE(dwError);
+    }
+    VMDIR_RPC_ENDTRY;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pwszSrcHostName);
+
+    if (hBinding)
+    {
+        VmDirFreeBindingHandle(&hBinding);
+    }
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirUrgentReplicationRequest failed. Error[%d]\n", dwError);
+    goto cleanup;
+}
+
+/*
+ * VmDirUrgentReplicationResponse will be invoked at the end of replication cycle
+ * (if initiated by urgent replication request). This function updates the orginator
+ *  with the UTD vector.
+ */
+DWORD
+VmDirUrgentReplicationResponse(
+    PCSTR    pszRemoteServerName,
+    PCSTR    pszUtdVector,
+    PCSTR    pszInvocationId,
+    PCSTR    pszHostName
+    )
+{
+    PWSTR       pwszUtdVector = NULL;
+    PCSTR       pszRemoteServerEndpoint = NULL;
+    handle_t    hBinding = NULL;
+    DWORD       dwError = 0;
+    PWSTR       pwszInvocationId = NULL;
+    PWSTR       pwszHostName = NULL;
+
+    if (IsNullOrEmptyString(pszRemoteServerName) ||
+        IsNullOrEmptyString(pszUtdVector) ||
+        IsNullOrEmptyString(pszInvocationId))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateStringWFromA(pszUtdVector, &pwszUtdVector);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringWFromA(pszInvocationId, &pwszInvocationId);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringWFromA(pszHostName, &pwszHostName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCreateBindingHandleMachineAccountA(
+                    pszRemoteServerName,
+                    pszRemoteServerEndpoint,
+                    &hBinding);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_RPC_TRY
+    {
+        dwError = RpcVmDirUrgentReplicationResponse(hBinding, pwszInvocationId, pwszUtdVector, pwszHostName);
+    }
+    VMDIR_RPC_CATCH
+    {
+        VMDIR_RPC_GETERROR_CODE(dwError);
+    }
+    VMDIR_RPC_ENDTRY;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+   VMDIR_SAFE_FREE_MEMORY(pwszUtdVector);
+   VMDIR_SAFE_FREE_MEMORY(pwszInvocationId);
+   VMDIR_SAFE_FREE_MEMORY(pwszHostName);
+
+    if (hBinding)
+    {
+        VmDirFreeBindingHandle(&hBinding);
+    }
+   return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirUrgentReplicationResponse failed status: %d", dwError);
+    goto cleanup;
 }

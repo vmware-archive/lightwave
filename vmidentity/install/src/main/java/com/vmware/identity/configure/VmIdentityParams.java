@@ -10,6 +10,9 @@ public class VmIdentityParams {
     private String username;
     private String password;
     private String domainName;
+    private boolean isUpgrade = false;
+    private String backupDir;
+    private String vmidentityConfFile;
 
     public String getDomainName() {
         return domainName;
@@ -43,4 +46,27 @@ public class VmIdentityParams {
         this.username = username;
     }
 
+    public void SetUpgradeMode() {
+        this.isUpgrade = true;
+    }
+
+    public boolean isUpgradeMode() {
+        return this.isUpgrade;
+    }
+
+    public void setBackupDir(String path) {
+        this.backupDir = path;
+    }
+
+    public void setVmIdentityConf(String filepath) {
+        this.vmidentityConfFile = filepath;
+    }
+
+    public String getBackupDir() {
+        return this.backupDir;
+    }
+
+    public String getVmIdentityConf() {
+        return this.vmidentityConfFile;
+    }
 }

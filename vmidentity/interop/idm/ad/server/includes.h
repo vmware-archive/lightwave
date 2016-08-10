@@ -34,9 +34,7 @@
 #include <ldap.h>
 #include <krb5.h>
 #include <vmidmgr.h>
-#include <vmdirdefines.h>
 #else
 #include <vmidmgr.h>
 #include <krb5.h>
-#include <vmdirdefines.h>
 #endif

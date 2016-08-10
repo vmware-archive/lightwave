@@ -15,6 +15,7 @@
 using System;
 using System.Windows.Forms;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
+using Vmware.Tools.RestSsoAdminSnapIn.Presenters;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Views
 {
@@ -30,7 +31,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            var service = SnapInContext.Instance.ServiceGateway;
+            var service = ScopeNodeExtensions.GetServiceGateway();
             sortingOrder = SortingOrder.Descending;
             _httpTransportCollection = service.HttpTransport.GetAll();
             _httpTransportCollection.Sort(sortingOrder);

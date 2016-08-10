@@ -52,11 +52,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             return null;
         }
 
-        private ServiceGateway GetAdminSdkService()
-        {
-            return _formView.ScopeNode.GetServiceGateway();
-        }
-
         void IFormViewControl.Initialize(FormView parentSelectionFormView)
         {
             _formView = (SolutionUsersFormView)parentSelectionFormView;
@@ -76,7 +71,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(server, ssoSolutionUsersNode.TenantName);
             ActionHelper.Execute(delegate
             {
-                var membershipDto = SnapInContext.Instance.ServiceGateway.Tenant.Search(server, ssoSolutionUsersNode.TenantName, ssoSolutionUsersNode.DomainName, MemberType.SOLUTIONUSER, type, auth.Token, searchString);
+                var service = ScopeNodeExtensions.GetServiceGateway(server.ServerName);
+                var membershipDto = service.Tenant.Search(server, ssoSolutionUsersNode.TenantName, ssoSolutionUsersNode.DomainName, MemberType.SOLUTIONUSER, type, auth.Token, searchString);
                 if (membershipDto.SolutionUsers != null)
                 {
                     foreach (var user in membershipDto.SolutionUsers)
@@ -96,7 +92,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             ActionHelper.Execute(delegate
             {
                 var ssoSolutionUsersNode = _formView.ScopeNode as SolutionUsersNode;
-                var userAccountDto = GetAdminSdkService().SolutionUser.Get(_serverDto, ssoSolutionUsersNode.TenantName, user, _auth.Token);
+                var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
+                var userAccountDto = service.SolutionUser.Get(_serverDto, ssoSolutionUsersNode.TenantName, user, _auth.Token);
                 if (userAccountDto != null)
                 {
                     _formView.ScopeNode.Tag = userAccountDto;
@@ -144,7 +141,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 ActionHelper.Execute(delegate
                   {
                       Cursor.Current = Cursors.WaitCursor;
-                      GetAdminSdkService().SolutionUser.Delete(_serverDto, GetTenantName(), user, _auth.Token);
+                      var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
+                      service.SolutionUser.Delete(_serverDto, GetTenantName(), user, _auth.Token);
                       RefreshUsers(string.Empty);
                   }, _auth);
                 Cursor.Current = Cursors.Default;

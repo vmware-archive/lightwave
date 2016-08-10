@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include Definitions.wxi ?>
+	<Fragment>
+		<!-- TODO: Put your code here. -->
+    <ComponentGroup Id="VMDirSchema_comp_group" Directory="APPLICATIONFOLDER">
+      <Component Id="vmdirschema_msc_comp" Guid="{D7BF8B8A-D8B2-4D8F-800C-97009C2A64F7}" Win64="yes">
+        <File Id="vmdirschema_msc_file"
+              Name="Lightwave Directory Schema.msc"
+              KeyPath="yes"
+              DiskId="1"
+              Source="$(var.Resources)/Lightwave Directory Schema.msc" />
+      </Component>
+      <Component Id="VMDirSchemaSnapIn_Dll_Comp" Guid="{418B7570-ECD6-4201-9B77-BADDC0109DA5}" Win64="yes">
+        <File Id="VMDirSchemaSnapIn_Dll_File"
+              Name="VMDirSchemaSnapIn.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMDirSchemaSnapIn_Dll_File"
+              AssemblyApplication="VMDirSchemaSnapIn_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\VMDirSchemaSnapIn.dll" />
+      </Component>
+    </ComponentGroup>
+
+
+    <ComponentGroup Id="VMDirSchema_reg_comp_group" Directory="TARGETDIR">
+      <Component Id="Reg_VMDirSchema_Comp" Guid="{D93757C6-C510-4CAF-80BB-8C9C6C23B07F}" Win64="yes">
+        <RegistryKey Id="Reg_VMDirSchema_Key"
+                     Action="createAndRemoveOnUninstall"
+                     Key="Software\Microsoft\MMC\SnapIns\FX:{C073A618-56C5-4B63-B1A2-3D2C95F0C0E0}"
+                     Root="HKLM">
+          <RegistryKey Key="Standalone"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryKey Key="NodeTypes"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryValue Name="RuntimeVersion"
+                         Value="v4.0.30319"
+                         Type="string" />
+          <RegistryValue Name="UseCustomHelp"
+                         Value="0"
+                         Type="integer" />
+          <RegistryValue Name="ModuleName"
+                         Value="VMDirSchemaSnapIn.dll"
+                         Type="string"
+                         KeyPath="yes"/>
+          <RegistryValue Name="NameString"
+                         Value="VMDirectory Schema SnapIn"
+                         Type="string" />
+          <RegistryValue Name="ApplicationBase"
+                         Value="[APPLICATIONFOLDER]"
+                         Type="expandable" />
+          <RegistryValue Name="About"
+                         Value="{00000000-0000-0000-0000-000000000000}"
+                         Type="string" />
+          <RegistryValue Name="Description"
+                         Value="$(var.DirSchema_desc)"
+                         Type="string"  />
+          <RegistryValue Name="FxVersion"
+                         Value="3.0.0.0"
+                         Type="string" />
+          <RegistryValue Name="Type"
+                         Value="VMDirSchemaSnapIn.VMDirSchemaSnapIn, VMDirSchemaSnapIn, Version=$(var.VersionNumber), Culture=neutral, PublicKeyToken=null"
+                         Type="string" />
+          <RegistryValue Name="AssemblyName"
+                         Value="VMDirSchemaSnapIn"
+                         Type="string" />
+          <RegistryValue Name="Version"
+                         Value="$(var.VersionNumber)"
+                         Type="string" />
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+
+	</Fragment>
+</Wix>

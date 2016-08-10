@@ -106,15 +106,22 @@ cleanup:
     {
         VmDirSendLdapResult( pOperation );
 
-        if ( pOperation->request.bindReq.method == LDAP_AUTH_SASL
-             &&
-             pOperation->ldapResult.errCode == LDAP_SUCCESS
-           )
+        if (pOperation->ldapResult.errCode == LDAP_SUCCESS)
         {
-            // install sasl encode/decode sockbuf i/o
-            pOperation->ldapResult.errCode = VmDirSASLSockbufInstall(   pOperation->conn->sb,
-                                                                        pOperation->conn->pSaslInfo);
-            // do not bail in cleanup section.  we return ldapResult.errCode directly.
+            if (pOperation->request.bindReq.method == LDAP_AUTH_SASL)
+            {
+                // install sasl encode/decode sockbuf i/o
+                pOperation->ldapResult.errCode = VmDirSASLSockbufInstall(
+							pOperation->conn->sb,
+                                                        pOperation->conn->pSaslInfo
+							);
+                // do not bail in cleanup section.  we return ldapResult.errCode directly.
+            }
+
+            if (gVmdirGlobals.bTrackLastLoginTime)
+            {
+                VmDirAddTrackLastLoginItem(pOperation->reqDn.lberbv_val);
+            }
         }
     }
 

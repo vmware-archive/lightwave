@@ -1,5 +1,5 @@
 /* *************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved. 
+ * Copyright 2012 VMware, Inc. All rights reserved.
  **************************************************************************/
 package com.vmware.identity.websso.client.endpoint;
 
@@ -29,7 +29,7 @@ import com.vmware.identity.websso.client.SubjectData;
 /**
  * SLO endpoint component responsible for constructing logout request to the
  * IDP.
- * 
+ *
  */
 @Component
 public class SloRequestSender {
@@ -71,7 +71,7 @@ public class SloRequestSender {
     /**
      * Entry point for sending SLO request to IDP. This function results a HTTP
      * redirect with logout parameters attached to the url used in the redirect.
-     * 
+     *
      * @param requestSettings
      *            SSO request settings
      * @param response
@@ -102,7 +102,7 @@ public class SloRequestSender {
 
     /**
      * Create logout request url with SloRerequestSettings object.
-     * 
+     *
      * @param requestSettings
      *            SSO request settings
      * @return url if succeed null if failed
@@ -131,7 +131,7 @@ public class SloRequestSender {
 
     /**
      * Create redirect url from LogoutRequest obj.
-     * 
+     *
      * @param samlRequest
      * @param requestSettings
      * @return
@@ -206,7 +206,7 @@ public class SloRequestSender {
 
     /**
      * Construct LogoutRequest from requestSettings
-     * 
+     *
      * @param requestSettings
      * @return openSaml LogoutRequest
      */
@@ -259,7 +259,8 @@ public class SloRequestSender {
                     null, // substatus
                     requestSettings.getSessionIndex(), new SubjectData(requestSettings.getNameIDFormat(),
                             requestSettings.getSubject()), // MessageDatda
-                    null); // tag
+                    null,// tag
+                    false); //Idp_initiated
             getMessageStore().add(message);
 
         } catch (Exception e) {

@@ -21,6 +21,7 @@ libldap_head_la_SOURCES = \
     openssl.c       \
     operation.c     \
     opstatistic.c   \
+    rename.c        \
     result.c        \
     search.c        \
     vecs.c          \

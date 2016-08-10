@@ -52,6 +52,10 @@ typedef struct _VDIR_LDAP_ATTRIBUTE_TYPE
     BOOLEAN                             bObsolete;
     VDIR_LDAP_ATTRIBUTE_TYPE_USAGE      usage;
 
+    // index configuration attributes
+    DWORD                               dwSearchFlags;
+    PSTR*                               ppszUniqueScopes;
+
 } VDIR_LDAP_ATTRIBUTE_TYPE, *PVDIR_LDAP_ATTRIBUTE_TYPE;
 
 typedef struct _VDIR_LDAP_OBJECT_CLASS
@@ -154,6 +158,36 @@ DWORD
 VmDirLdapSchemaCopy(
     PVDIR_LDAP_SCHEMA   pOrgSchema,
     PVDIR_LDAP_SCHEMA*  ppCopySchema
+    );
+
+DWORD
+VmDirLdapAtDeepCopy(
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pOrgAt,
+    PVDIR_LDAP_ATTRIBUTE_TYPE*  ppCopyAt
+    );
+
+DWORD
+VmDirLdapOcDeepCopy(
+    PVDIR_LDAP_OBJECT_CLASS     pOrgOc,
+    PVDIR_LDAP_OBJECT_CLASS*    ppCopyOc
+    );
+
+DWORD
+VmDirLdapCrDeepCopy(
+    PVDIR_LDAP_CONTENT_RULE     pOrgCr,
+    PVDIR_LDAP_CONTENT_RULE*    ppCopyCr
+    );
+
+DWORD
+VmDirLdapSrDeepCopy(
+    PVDIR_LDAP_STRUCTURE_RULE   pOrgSr,
+    PVDIR_LDAP_STRUCTURE_RULE*  ppCopySr
+    );
+
+DWORD
+VmDirLdapNfDeepCopy(
+    PVDIR_LDAP_NAME_FORM    pOrgNf,
+    PVDIR_LDAP_NAME_FORM*   ppCopyNf
     );
 
 // diff.c

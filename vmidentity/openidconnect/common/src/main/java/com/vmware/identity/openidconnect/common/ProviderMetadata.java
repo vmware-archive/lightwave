@@ -16,8 +16,6 @@ package com.vmware.identity.openidconnect.common;
 
 import java.net.URI;
 
-import net.minidev.json.JSONObject;
-
 import org.apache.commons.lang3.Validate;
 
 /**
@@ -68,34 +66,5 @@ public final class ProviderMetadata {
 
     public URI getJWKSetURI() {
         return this.jwkSetURI;
-    }
-
-    public JSONObject toJSONObject() {
-        JSONObject json = new JSONObject();
-
-        json.put("issuer",                  this.issuer.getValue());
-        json.put("authorization_endpoint",  this.authorizationEndpointURI.toString());
-        json.put("token_endpoint",          this.tokenEndpointURI.toString());
-        json.put("end_session_endpoint",    this.endSessionEndpointURI.toString());
-        json.put("jwks_uri",                this.jwkSetURI.toString());
-
-        return json;
-    }
-
-    public static ProviderMetadata parse(JSONObject json) throws ParseException {
-        Validate.notNull(json, "json");
-
-        URI issuerURI                   = JSONUtils.getURI(json, "issuer");
-        URI authorizationEndpointURI    = JSONUtils.getURI(json, "authorization_endpoint");
-        URI tokenEndpointURI            = JSONUtils.getURI(json, "token_endpoint");
-        URI endSessionEndpointURI       = JSONUtils.getURI(json, "end_session_endpoint");
-        URI jwkSetURI                   = JSONUtils.getURI(json, "jwks_uri");
-
-        return new ProviderMetadata(
-                new Issuer(issuerURI.toString()),
-                authorizationEndpointURI,
-                tokenEndpointURI,
-                endSessionEndpointURI,
-                jwkSetURI);
     }
 }

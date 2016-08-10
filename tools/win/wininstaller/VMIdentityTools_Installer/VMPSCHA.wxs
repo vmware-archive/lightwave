@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include Definitions.wxi ?>
+  <Fragment>
+    <ComponentGroup Id="VMPscHighAvailability_comp_group" Directory="APPLICATIONFOLDER">
+      <Component Id="pscha_msc_comp" Guid="{F8B7D482-6F5C-4E2B-A091-C2C8A102B582}" Win64="yes">
+        <File Id="pscha_msc_file"
+			  Name="Lightwave PSC Site Management.msc"
+			  KeyPath="yes"
+			  DiskId="1"
+			  Source="$(var.Resources)/Lightwave PSC Site Management.msc" />
+      </Component>
+      <Component Id="PSCHA_Client_Dll_Comp" Guid="{83CFF34C-4212-40F5-AC8D-71499B4592DA}" Win64="yes">
+        <File Id="VMAFD_Client_Dll_File"
+			  Name="VMAFD.Client.dll"
+			  KeyPath="yes"
+			  Assembly=".net"
+			  AssemblyManifest="VMAFD_Client_Dll_File"
+			  AssemblyApplication="VMAFD_Client_Dll_File"
+			  DiskId="1"
+			  Source="$(var.VMIDPOutDir)\VMAFD.Client.dll" />
+      </Component>
+      <Component Id="PSCHA_Client_VMDir_Dll_Comp" Guid="{46590A14-0FB4-415A-9B20-F7186B890FD3}" Win64="yes">
+        <File Id="VMDIR_AFD_Client_Dll_File"
+		      Name="VMDIR.Client.dll"
+			  KeyPath="yes"
+			  Assembly=".net"
+			  AssemblyManifest="VMDIR_AFD_Client_Dll_File"
+			  AssemblyApplication="VMDIR_AFD_Client_Dll_File"
+			  DiskId="1"
+			  Source="$(var.VMIDPOutDir)\VMDIR.Client.dll" />
+      </Component>
+      <Component Id="PSCHASnapIn_Dll_Comp" Guid="{228F7C26-7133-4E8B-AEAE-1DAEEE41E1AB}" Win64="yes">
+        <File Id="PSCHASnapIn_Dll_File"
+			  Name="VMPscHighAvailabilitySnapIn.dll"
+			  KeyPath="yes"
+			  Assembly=".net"
+			  AssemblyManifest="PSCHASnapIn_Dll_File"
+			  AssemblyApplication="PSCHASnapIn_Dll_File"
+			  DiskId="1"
+			  Source="$(var.VMIDPOutDir)\VMPscHighAvailabilitySnapIn.dll" />
+      </Component>
+      <Component Id="PSCHASnapIn_Common_Dll_Comp" Guid="{0CC318FF-898D-4053-B348-4B294D62CE72}" Win64="yes">
+        <File Id="PSCHASnapIn_Common_Dll_File"
+			  Name="VMPSCHighAvailability.Common.dll"
+			  KeyPath="yes"
+			  Assembly=".net"
+			  AssemblyManifest="PSCHASnapIn_Common_Dll_File"
+			  AssemblyApplication="PSCHASnapIn_Common_Dll_File"
+			  DiskId="1"
+			  Source="$(var.VMIDPOutDir)\VMPSCHighAvailability.Common.dll" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="VMPscHighAvailability_reg_comp_group" Directory="TARGETDIR">
+      <Component Id="Reg_PscHighAvailability_Comp" Guid="{FE75EB6C-6F5F-43A7-953F-69AFD32561A9}" Win64="yes">
+        <RegistryKey Id="Reg_PSCHA_Key"
+                   Action="createAndRemoveOnUninstall"
+                   Key="Software\Microsoft\MMC\SnapIns\FX:{467BA8A8-7EC4-423C-A84F-04F8AED36870}"
+                   Root="HKLM">
+          <RegistryKey Key="Standalone"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryKey Key="NodeTypes"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryValue Name="RuntimeVersion"
+                         Value="v4.0.30319"
+                         Type="string" />
+          <RegistryValue Name="UseCustomHelp"
+                         Value="0"
+                         Type="integer" />
+          <RegistryValue Name="ModuleName"
+                         Value="VMPscHighAvailabilitySnapIn.dll"
+                         Type="string"
+                         KeyPath="yes"/>
+          <RegistryValue Name="NameString"
+                         Value="VMWare PSC Site Management"
+                         Type="string" />
+          <RegistryValue Name="ApplicationBase"
+                         Value="[APPLICATIONFOLDER]"
+                         Type="expandable" />
+          <RegistryValue Name="About"
+                         Value="{00000000-0000-0000-0000-000000000000}"
+                         Type="string" />
+          <RegistryValue Name="Description"
+                         Value="$(var.PSCHA_desc)"
+                         Type="string"  />
+          <RegistryValue Name="FxVersion"
+                         Value="3.0.0.0"
+                         Type="string" />
+          <RegistryValue Name="Type"
+                         Value="VMPscHighAvailabilitySnapIn.SnapIn.VMPscHighAvailabilitySnapIn, VMPscHighAvailabilitySnapIn, Version=$(var.VersionNumber), Culture=neutral, PublicKeyToken=null"
+                         Type="string" />
+          <RegistryValue Name="AssemblyName"
+                         Value="VMPscHighAvailabilitySnapIn"
+                         Type="string" />
+          <RegistryValue Name="Version"
+                         Value="$(var.VersionNumber)"
+                         Type="string" />
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

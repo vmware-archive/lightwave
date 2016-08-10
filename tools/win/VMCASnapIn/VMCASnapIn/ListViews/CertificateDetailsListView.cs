@@ -66,6 +66,7 @@ namespace VMCASnapIn.ListViews
                 serverDTO.PrivateCertificates.RemoveAt(this.ResultNodes.IndexOf(node));
                 this.ResultNodes.Remove(node);
             }
+            RefreshList();
         }
 
         protected override void OnRefresh(AsyncStatus status)
@@ -149,6 +150,17 @@ namespace VMCASnapIn.ListViews
                 vmcaCert.Revoke();
                 ResultNodes.Remove(this.SelectedNodes[0] as ResultNode);
             });
+            RefreshList();
+            var parent=this.ScopeNode.Parent as VMCAServerNode;
+            if (parent != null)
+            {
+                foreach (var node in parent.Children)
+                {
+                    var certNode = node as VMCACertsNode;
+                    if (certNode != null && (CertificateState)certNode.Tag == CertificateState.Revoked)
+                        certNode.DoRefresh();
+                }
+            }
         }
 
         void ShowCertificateDetails()

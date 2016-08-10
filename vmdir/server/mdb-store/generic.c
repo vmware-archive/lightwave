@@ -17,7 +17,7 @@
 
 
 DWORD
-VmDirMDBStrkeyGetValues(
+VmDirMDBDupKeyGetValues(
     PVDIR_BACKEND_CTX   pBECtx,
     PCSTR               pszKey,
     PVMDIR_STRING_LIST* ppStrList
@@ -35,7 +35,7 @@ VmDirMDBStrkeyGetValues(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = mdb_cursor_open((PVDIR_DB_TXN)pBECtx->pBEPrivate,
-            gVdirMdbGlobals.mdbGenericDBi, &pCursor);
+            gVdirMdbGlobals.mdbGenericDupKeyDBi, &pCursor);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     memset(&currKey, 0, sizeof(currKey));
@@ -73,15 +73,16 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-            "%s, %d failed, error(%d)", __FUNCTION__, __LINE__, dwError);
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+            "%s error (%d)", __FUNCTION__, dwError );
+
     VMDIR_SAFE_FREE_MEMORY(pValue);
     VmDirStringListFree(pStrList);
     goto cleanup;
 }
 
 DWORD
-VmDirMDBStrkeySetValues(
+VmDirMDBDupKeySetValues(
     PVDIR_BACKEND_CTX   pBECtx,
     PCSTR               pszKey,
     PVMDIR_STRING_LIST  pStrList
@@ -108,7 +109,7 @@ VmDirMDBStrkeySetValues(
         value.mv_size = VmDirStringLenA(pStrList->pStringList[dwIdx]);
 
         dwError = mdb_put((PVDIR_DB_TXN)pBECtx->pBEPrivate,
-                gVdirMdbGlobals.mdbGenericDBi,
+                gVdirMdbGlobals.mdbGenericDupKeyDBi,
                 &key, &value, BE_DB_FLAGS_ZERO);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
@@ -119,7 +120,80 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-            "%s, %d failed, error(%d)", __FUNCTION__, __LINE__, dwError);
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+            "%s error (%d)", __FUNCTION__, dwError );
+
+    goto cleanup;
+}
+
+DWORD
+VmDirMDBUniqKeyGetValue(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PCSTR               pszKey,
+    PSTR*               ppszValue
+    )
+{
+    DWORD       dwError = 0;
+    VDIR_DB_DBT key = {0};
+    VDIR_DB_DBT value = {0};
+    PSTR        pszValue = NULL;
+
+    key.mv_size = VmDirStringLenA(pszKey);
+    key.mv_data = (PVOID)pszKey;
+
+    dwError =  mdb_get((PVDIR_DB_TXN)pBECtx->pBEPrivate,
+            gVdirMdbGlobals.mdbGenericUniqKeyDBi,
+            &key, &value);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (value.mv_size > 0)
+    {
+        dwError = VmDirAllocateAndCopyMemory(
+                value.mv_data, value.mv_size, (PVOID*)&pszValue);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppszValue = pszValue;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+            "%s error (%d)", __FUNCTION__, dwError );
+
+    VMDIR_SAFE_FREE_MEMORY(pszValue);
+    goto cleanup;
+}
+
+DWORD
+VmDirMDBUniqKeySetValue(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PCSTR               pszKey,
+    PCSTR               pszValue
+    )
+{
+    DWORD       dwError = 0;
+    VDIR_DB_DBT key = {0};
+    VDIR_DB_DBT value = {0};
+
+    key.mv_data = (PVOID)pszKey;
+    key.mv_size = VmDirStringLenA(pszKey);
+
+    value.mv_data = (PVOID)pszValue;
+    value.mv_size = VmDirStringLenA(pszValue);
+
+    dwError = mdb_put((PVDIR_DB_TXN)pBECtx->pBEPrivate,
+            gVdirMdbGlobals.mdbGenericUniqKeyDBi,
+            &key, &value, BE_DB_FLAGS_ZERO);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+            "%s error (%d)", __FUNCTION__, dwError );
+
     goto cleanup;
 }

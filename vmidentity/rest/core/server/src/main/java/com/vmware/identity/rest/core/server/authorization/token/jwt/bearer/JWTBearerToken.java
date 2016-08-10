@@ -30,6 +30,7 @@ public class JWTBearerToken implements AccessToken {
 
     private SignedJWT jwt;
     private ReadOnlyJWTClaimsSet claims;
+    private String tokenType;
     private String role;
     private List<String> groups;
 
@@ -37,12 +38,16 @@ public class JWTBearerToken implements AccessToken {
      * Constructs a new {@link JWTBearerToken}.
      *
      * @param jwt the signed JWT object that represents this token
+     * @param tokenTypeField the field that contains the token type
      * @param roleField the field that contains the role
+     * @param groupsField the field that contains the groups
      * @throws ParseException if there is an error parsing information from the JWT
      */
-    public JWTBearerToken(SignedJWT jwt, String roleField, String groupsField) throws ParseException {
+    @SuppressWarnings("unchecked")
+    public JWTBearerToken(SignedJWT jwt, String tokenTypeField, String roleField, String groupsField) throws ParseException {
         this.jwt = jwt;
         this.claims = jwt.getJWTClaimsSet();
+        this.tokenType = (String) claims.getCustomClaim(tokenTypeField);
         this.role = (String) claims.getCustomClaim(roleField);
         this.groups = (List<String>) claims.getCustomClaim(groupsField);
     }
@@ -80,6 +85,11 @@ public class JWTBearerToken implements AccessToken {
     @Override
     public String getSubject() {
         return claims.getSubject();
+    }
+
+    @Override
+    public String getTokenType() {
+        return tokenType;
     }
 
     /**

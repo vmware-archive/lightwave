@@ -214,6 +214,7 @@ VmDirFreeOperationContent(
                  break;
 
             case LDAP_REQ_MODIFY:
+            case LDAP_REQ_MODDN:
                  VmDirFreeModifyRequest(&op->request.modifyReq, FALSE);
                  break;
 

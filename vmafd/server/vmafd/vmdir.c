@@ -211,6 +211,8 @@ VmAfSrvPromoteVmDir(
     PWSTR pwszCurDomainName = NULL;
     BOOLEAN bFirstInstance = TRUE;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
+    PSTR pszCanonicalHostName = NULL;
+    PSTR pszLocalHostName = NULL;
 
     BAIL_ON_VMAFD_INVALID_POINTER(pwszLotusServerName, dwError);
     BAIL_ON_VMAFD_INVALID_POINTER(pwszUserName, dwError);
@@ -317,6 +319,22 @@ VmAfSrvPromoteVmDir(
                           pszPartnerHostName,
                           &pszDomainName);
         BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdGetHostName(&pszLocalHostName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdGetCanonicalHostName(
+                          pszLocalHostName,
+                          &pszCanonicalHostName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvSetDNSRecords(
+                          pszPartnerHostName,
+                          pszDomainName,
+                          pszUserName,
+                          pszPassword,
+                          pszCanonicalHostName);
+        BAIL_ON_VMAFD_ERROR(dwError);
     }
 
     dwError = VmAfSrvSetDomainNameA(pszDomainName);
@@ -386,6 +404,8 @@ VmAfSrvPromoteVmDir(
 
 cleanup:
 
+    VMAFD_SAFE_FREE_STRINGA(pszLocalHostName);
+    VMAFD_SAFE_FREE_STRINGA(pszCanonicalHostName);
     VMAFD_SAFE_FREE_STRINGA(pszLotusServerName);
     VMAFD_SAFE_FREE_STRINGA(pszDomainName);
     VMAFD_SAFE_FREE_STRINGA(pszUserName);
@@ -667,7 +687,7 @@ VmAfSrvJoinVmDir2(
     PSTR pszOrgUnit = NULL;
     PSTR pszDefaultRealm = NULL;
     PSTR pszHostname = NULL;
-    PSTR pszCanonicalHostname = NULL;
+    PSTR pszCanonicalHostName = NULL;
     PSTR pszDCHostname = NULL;
     PSTR pszDCAddress = NULL;
     PWSTR pwszDCHostname = NULL;
@@ -740,10 +760,10 @@ VmAfSrvJoinVmDir2(
     }
     else
     {
-        dwError = VmAfdGetCanonicalHostName(pszHostname, &pszCanonicalHostname);
+        dwError = VmAfdGetCanonicalHostName(pszHostname, &pszCanonicalHostName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdAllocateStringA(pszCanonicalHostname, &pszMachineName);
+        dwError = VmAfdAllocateStringA(pszCanonicalHostName, &pszMachineName);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -861,7 +881,7 @@ cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszDefaultRealm);
     VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
     VMAFD_SAFE_FREE_MEMORY(pszHostname);
-    VMAFD_SAFE_FREE_MEMORY(pszCanonicalHostname);
+    VMAFD_SAFE_FREE_MEMORY(pszCanonicalHostName);
     VMAFD_SAFE_FREE_MEMORY(pszDCAddress);
     VMAFD_SAFE_FREE_MEMORY(pszDCHostname);
     VMAFD_SAFE_FREE_MEMORY(pwszDCHostname);

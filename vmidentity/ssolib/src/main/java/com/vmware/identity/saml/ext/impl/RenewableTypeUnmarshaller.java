@@ -1,5 +1,5 @@
 /* **********************************************************************
- * Copyright 2012 VMware, Inc.  All rights reserved. 
+ * Copyright 2012 VMware, Inc.  All rights reserved.
  * *********************************************************************/
 package com.vmware.identity.saml.ext.impl;
 

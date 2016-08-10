@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-import com.vmware.identity.openidconnect.common.JSONUtils;
+import com.vmware.identity.openidconnect.protocol.JSONUtils;
 
 /**
  * @author Jun Sun

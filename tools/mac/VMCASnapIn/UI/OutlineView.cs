@@ -66,8 +66,10 @@ namespace VMCASnapIn.UI
                         menu.AddItem (createSigningRequest);
                     } else if (obj is VMCAPersonalCertificatesNode) {
                         VMCAPersonalCertificatesNode node = obj as VMCAPersonalCertificatesNode;
-                        NSMenuItem createCertificate = new NSMenuItem ("Create Certificate", node.CreateCertificate);
+                        NSMenuItem createCertificate = new NSMenuItem ("Create Self Signed Certificate", node.CreateCertificate);
                         menu.AddItem (createCertificate);
+                        NSMenuItem createCASingedCertificate = new NSMenuItem ("Create CA Signed Certificate", node.CreateCASignedCertificate);
+                        menu.AddItem (createCASingedCertificate);
                     }
                     NSMenu.PopUpContextMenu (menu, theEvent, theEvent.Window.ContentView);
                 }

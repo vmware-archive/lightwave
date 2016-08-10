@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include Definitions.wxi ?>
+	<Fragment>
+		<!-- TODO: Put your code here. -->
+    <Property Id="System32Dir" Value="C:\Windows\System32" />
+    <ComponentGroup Id="RestSSO_comp_group" Directory="APPLICATIONFOLDER">
+
+      <Component Id="BouncyCastle_Comp" Guid="{DD0C71F2-B1D1-46B6-89D1-8FE1838DA817}" Win64="yes">
+        <File Id="BouncyCastle_Dll_File"
+              Name="BouncyCastle.Crypto.dll"
+              KeyPath="yes"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)/BouncyCastle.Crypto.dll" />
+      </Component>
+      <Component Id="VMRest_System_IdentityModel_Tokens_Jwt_Dll_Comp" Guid="{1AC7C596-662D-419E-964C-B626884B8115}" Win64="yes">
+        <File Id="VMRest_System_IdentityModel_Tokens_Jwt_Dll_File"
+              Name="System.IdentityModel.Tokens.Jwt.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMRest_System_IdentityModel_Tokens_Jwt_Dll_File"
+              AssemblyApplication="VMRest_System_IdentityModel_Tokens_Jwt_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)/System.IdentityModel.Tokens.Jwt.dll" />
+      </Component>
+     <Component Id="Vmware_Rest_Sso_Msc_comp" Guid="{CD6D1512-8539-414E-A4E8-D93E7B14AA72}" Win64="yes">
+        <File Id="Vmware_Rest_Sso_Msc_file"
+              Name="Lightwave SSO.msc"
+              KeyPath="yes"
+              DiskId="1"
+              Source="$(var.Resources)/Lightwave SSO.msc" />
+      </Component>
+      <Component Id="VMRestSSOAdminSnapIn_Dll_Comp" Guid="{1A4BF6D7-F953-4132-A873-9ACDC88FB5EE}" Win64="yes">
+        <File Id="VMRestSSOAdminSnapIn_Dll_File"
+              Name="Vmware.Tools.RestSsoAdminSnapIn.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMRestSSOAdminSnapIn_Dll_File"
+              AssemblyApplication="VMRestSSOAdminSnapIn_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\Vmware.Tools.RestSsoAdminSnapIn.dll" />
+      </Component>
+      <Component Id="VMRestSSOAdminSnapIn_Core_Dll_Comp" Guid="{5F1B7E51-1C2A-4982-B671-A1DF0222925A}" Win64="yes">
+        <File Id="VMRestSSOAdminSnapIn_Core_Dll_File"
+              Name="Vmware.Tools.RestSsoAdminSnapIn.Core.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMRestSSOAdminSnapIn_Core_Dll_File"
+              AssemblyApplication="VMRestSSOAdminSnapIn_Core_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\Vmware.Tools.RestSsoAdminSnapIn.Core.dll" />
+      </Component>
+      <Component Id="VMRestSSOAdminSnapIn_Data_Dll_Comp" Guid="{F1926C8A-4834-49D7-9616-34F6CD562AF1}" Win64="yes">
+        <File Id="VMRestSSOAdminSnapIn_Data_Dll_File"
+              Name="Vmware.Tools.RestSsoAdminSnapIn.Data.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMRestSSOAdminSnapIn_Data_Dll_File"
+              AssemblyApplication="VMRestSSOAdminSnapIn_Data_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\Vmware.Tools.RestSsoAdminSnapIn.Data.dll" />
+      </Component>
+      <Component Id="VMRestSSOAdminSnapIn_Dto_Dll_Comp" Guid="{96ECCF2F-6263-4C79-9992-E41B7792A8C8}" Win64="yes">
+        <File Id="VMRestSSOAdminSnapIn_Dto_Dll_File"
+              Name="Vmware.Tools.RestSsoAdminSnapIn.Dto.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMRestSSOAdminSnapIn_Dto_Dll_File"
+              AssemblyApplication="VMRestSSOAdminSnapIn_Dto_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\Vmware.Tools.RestSsoAdminSnapIn.Dto.dll" />
+      </Component>
+      <Component Id="VMRestSSOAdminSnapIn_Service_Dll_Comp" Guid="{B82DA0B1-44A1-437C-AE0F-5F6108D8CBAE}" Win64="yes">
+        <File Id="VMRestSSOAdminSnapIn_Service_Dll_File"
+              Name="Vmware.Tools.RestSsoAdminSnapIn.Service.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMRestSSOAdminSnapIn_Service_Dll_File"
+              AssemblyApplication="VMRestSSOAdminSnapIn_Service_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\Vmware.Tools.RestSsoAdminSnapIn.Service.dll" />
+      </Component>
+    </ComponentGroup>
+
+
+    <ComponentGroup Id="RestSSO_reg_comp_group" Directory="TARGETDIR">
+      <Component Id="Reg_RestSSO_Comp" Guid="{6A36ADCF-3CEF-450F-BC93-8DB373C62059}" Win64="yes">
+        <RegistryKey Id="Reg_RestSSO_Key"
+                     Action="createAndRemoveOnUninstall"
+                     Key="Software\Microsoft\MMC\SnapIns\FX:{3E833CBA-48EF-4E0F-B5C0-0E2F6A6030C4}"
+                     Root="HKLM">
+          <RegistryKey Key="Standalone"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryKey Key="NodeTypes"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryValue Name="RuntimeVersion"
+                         Value="v4.0.30319"
+                         Type="string" />
+          <RegistryValue Name="UseCustomHelp"
+                         Value="0"
+                         Type="integer" />
+          <RegistryValue Name="ModuleName"
+                         Value="Vmware.Tools.RestSsoAdminSnapIn.dll"
+                         Type="string"
+                         KeyPath="yes"/>
+          <RegistryValue Name="NameString"
+                         Value="Vmware REST Sso Admin SnapIn"
+                         Type="string" />
+          <RegistryValue Name="ApplicationBase"
+                         Value="[APPLICATIONFOLDER]"
+                         Type="expandable" />
+          <RegistryValue Name="About"
+                         Value="{00000000-0000-0000-0000-000000000000}"
+                         Type="string" />
+          <RegistryValue Name="Description"
+                         Value="$(var.RestSSO_desc)"
+                         Type="string"  />
+          <RegistryValue Name="FxVersion"
+                         Value="3.0.0.0"
+                         Type="string" />
+          <RegistryValue Name="Type"
+                         Value="Vmware.Tools.RestSsoAdminSnapIn.RestSsoAdminSnapIn, Vmware.Tools.RestSsoAdminSnapIn, Version=$(var.VersionNumber), Culture=neutral, PublicKeyToken=null"
+                         Type="string" />
+          <RegistryValue Name="AssemblyName"
+                         Value="Vmware.Tools.RestSsoAdminSnapIn"
+                         Type="string" />
+          <RegistryValue Name="Version"
+                         Value="$(var.VersionNumber)"
+                         Type="string" />
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+
+	</Fragment>
+</Wix>

@@ -17,8 +17,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 
 import javax.ws.rs.container.ContainerRequestContext;
@@ -83,7 +86,11 @@ public class RelyingPartyResourceIT extends TestBase {
             // prepare test input
             relyingPartyHelper.addRelyingParty(DEFAULT_TENANT, RELYING_PARTY_NAME, RELYING_PARTY_URI);
             Collection<RelyingPartyDTO> result = rpResource.getAll();
-            assertEquals(1, result.size());
+            List<String> relyingPartyNames = new ArrayList<String>();
+            for(RelyingPartyDTO relyingParty : result) {
+                relyingPartyNames.add(relyingParty.getName());
+            }
+            assertTrue(relyingPartyNames.contains(RELYING_PARTY_NAME));
         } finally {
             relyingPartyHelper.deleteRelyingParty(DEFAULT_TENANT, RELYING_PARTY_NAME);
         }

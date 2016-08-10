@@ -101,3 +101,30 @@ VmDnsRpcClientFreeStringA(
 PSTR pszStr
 );
 
+DWORD
+VmDnsAllocateFromRpcRecordArray(
+    PVMDNS_RECORD_ARRAY pRecordArray,
+    PVMDNS_RECORD_ARRAY *ppRecordArray
+    );
+
+VOID
+VmDnsRpcClientFreeRpcRecordArray(
+    PVMDNS_RECORD_ARRAY pRecordArray
+    );
+
+DWORD
+VmDnsAllocateFromRpcZoneInfoArray(
+    PVMDNS_ZONE_INFO_ARRAY pZoneInfoArray,
+    PVMDNS_ZONE_INFO_ARRAY *ppZoneInfoArray
+    );
+
+VOID
+VmDnsRpcClientFreeZoneInfo(
+    PVMDNS_ZONE_INFO pZoneInfo
+    );
+
+
+VOID
+VmDnsRpcClientFreeZoneInfoArray(
+    PVMDNS_ZONE_INFO_ARRAY pZoneInfoArray
+    );

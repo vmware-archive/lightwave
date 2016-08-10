@@ -16,8 +16,6 @@ using System;
 using System.Collections.Generic;
 using AppKit;
 using Foundation;
-using VMDir.Common.Schema;
-using VmDirInterop.SuperLogging.Interfaces;
 using VMDir.Common;
 
 namespace VMDirSnapIn.DataSource
@@ -66,8 +64,6 @@ namespace VMDirSnapIn.DataSource
 						return (NSString)this.entries [row].ErrorCode;
 					else if (col.Identifier == "Duration")
 						return (NSString)this.entries [row].Duration;
-					else if (col.Identifier == "String")
-						return (NSString)this.entries [row].String;
                 } 
             } catch (Exception e) {
                 System.Diagnostics.Debug.WriteLine ("Error in List Operation " + e.Message);

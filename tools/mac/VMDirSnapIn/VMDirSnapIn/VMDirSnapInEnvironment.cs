@@ -16,7 +16,7 @@ using System;
 using System.IO;
 using System.Xml.Serialization;
 using AppKit;
-using VmIdentity.CommonUtils.Persistance;
+using VMDir.Common.Persistence;
 using Foundation;
 
 namespace VMDirSnapIn

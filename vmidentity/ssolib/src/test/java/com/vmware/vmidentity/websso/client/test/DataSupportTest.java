@@ -1,5 +1,5 @@
 /* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved. 
+ * Copyright 2012 VMware, Inc. All rights reserved.
  **********************************************************************************/
 package com.vmware.vmidentity.websso.client.test;
 
@@ -16,7 +16,7 @@ import com.vmware.identity.websso.client.WebssoClientException;
 
 /**
  * @author root
- * 
+ *
  */
 public class DataSupportTest {
 
@@ -46,7 +46,7 @@ public class DataSupportTest {
     public final void testAddMessageWithNoID() {
 
         Message message = new Message(MessageType.AUTHN_RESPONSE, null, "relay", null, null, null, null, null, null,
-                null, null);
+                null, null, false);
 
         int beforeSize = store.size();
         store.add(message);
@@ -63,7 +63,7 @@ public class DataSupportTest {
 
         String messageID = "100";
         Message message = new Message(MessageType.AUTHN_RESPONSE, messageID, null, null, null, null, null, null, null,
-                null, null);
+                null, null, false);
 
         int beforeSize = store.size();
         store.add(message);
@@ -84,13 +84,13 @@ public class DataSupportTest {
         int extra = 10;
         for (int i = 0; i < maxsize; i++) {
             Message message = new Message(MessageType.AUTHN_RESPONSE, Integer.toString(messageID + i), null, null,
-                    null, null, null, null, null, null, null);
+                    null, null, null, null, null, null, null, false);
             store.add(message);
         }
 
         for (int i = 0; i < extra; i++) {
             Message message = new Message(MessageType.AUTHN_RESPONSE, Integer.toString(messageID + i), null, null,
-                    null, null, null, null, null, null, null);
+                    null, null, null, null, null, null, null, false);
             store.add(message);
             Assert.assertEquals(maxsize, store.size());
         }
@@ -101,7 +101,7 @@ public class DataSupportTest {
      * Test method for
      * {@link com.vmware.identity.websso.client.MessageStoreImpl#add(com.vmware.identity.websso.client.Message)}
      * .
-     * 
+     *
      * @throws WebssoClientException
      */
     @Test
@@ -112,7 +112,7 @@ public class DataSupportTest {
         int removesize = 10;
         for (int i = 0; i < maxsize; i++) {
             Message message = new Message(MessageType.AUTHN_RESPONSE, Integer.toString(messageID + i), null, null,
-                    null, null, null, null, null, null, null);
+                    null, null, null, null, null, null, null, false);
             store.add(message);
         }
 

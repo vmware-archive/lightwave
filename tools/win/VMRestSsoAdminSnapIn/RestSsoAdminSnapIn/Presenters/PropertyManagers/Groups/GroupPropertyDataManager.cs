@@ -49,7 +49,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.PropertyManagers.Groups
                 userInfo = _service.Group.GetMembers(_server, _tenantName, _groupDto, GroupMemberType.GROUP, auth.Token);
                 memberInfo.Groups = userInfo.Groups == null ? new List<GroupDto>() : new List<GroupDto>(userInfo.Groups);
             }, auth);
-            if(memberInfo == null)
+            if (memberInfo == null)
                 memberInfo = new GroupMembershipDto();
             return memberInfo;
         }
@@ -66,7 +66,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.PropertyManagers.Groups
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_server, _tenantName);
             ActionHelper.Execute(delegate()
             {
-                
+
                 var users = members.Users.Where(x => x.State == State.ForDelete).ToList();
                 if (users.Count > 0)
                 {
@@ -93,7 +93,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.PropertyManagers.Groups
             if (members == null) return false;
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_server, _tenantName);
             ActionHelper.Execute(delegate()
-            {                
+            {
                 var users = members.Users.Where(x => x.State == State.ForAdd).ToList();
                 if (users.Count > 0)
                 {
@@ -114,27 +114,27 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.PropertyManagers.Groups
             }, auth);
             return true;
         }
-        public IList<GroupDto> GetAllGroups()
+        public IList<GroupDto> GetGroups(string name, string domainName)
         {
             var result = new List<GroupDto>();
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_server, _tenantName);
             ActionHelper.Execute(delegate()
             {
-                var membershipDto = SnapInContext.Instance.ServiceGateway.Tenant.Search(_server, _tenantName, _domainName, MemberType.GROUP, SearchType.NAME, auth.Token);
+                var membershipDto = _service.Tenant.Search(_server, _tenantName, domainName, MemberType.GROUP, SearchType.NAME, auth.Token, name);
                 result = membershipDto.Groups;
             }, auth);
             return result;
         }
-        public GroupMembershipDto GetAllMembers()
+        public IList<UserDto> GetUsers(string name, string domainName)
         {
-            var membershipDto = new GroupMembershipDto();
+            var result = new List<UserDto>();
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_server, _tenantName);
             ActionHelper.Execute(delegate()
             {
-                // all Users
-                membershipDto = SnapInContext.Instance.ServiceGateway.Tenant.Search(_server, _tenantName, _domainName, MemberType.ALL, SearchType.NAME, auth.Token);
+                var membershipDto = _service.Tenant.Search(_server, _tenantName, domainName, MemberType.USER, SearchType.NAME, auth.Token, name);
+                result = membershipDto.Users;
             }, auth);
-            return membershipDto;
+            return result;
         }
 
 
@@ -142,10 +142,21 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.PropertyManagers.Groups
         {
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_server, _tenantName);
             ActionHelper.Execute(delegate()
-            {   
+            {
                 groupDto = _service.Group.Update(_server, _tenantName, groupDto, auth.Token);
             }, auth);
             return groupDto;
+        }
+
+        public List<IdentityProviderDto> GetDomains()
+        {
+            var identityProviders = new List<IdentityProviderDto>();
+            var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_server, _tenantName);
+            ActionHelper.Execute(delegate()
+            {
+                identityProviders = _service.IdentityProvider.GetAll(_server, _tenantName, auth.Token);
+            }, auth);
+            return identityProviders;
         }
     }
 }

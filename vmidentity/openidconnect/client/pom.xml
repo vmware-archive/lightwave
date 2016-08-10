@@ -84,6 +84,7 @@
                         </goals>
                         <configuration>
                             <skipTests>${skip.integration.tests}</skipTests>
+                            <redirectTestOutputToFile>true</redirectTestOutputToFile>
                             <excludes>
                                 <exclude>**/*GssIT.java</exclude>
                             </excludes>
@@ -145,6 +146,12 @@
 
         <dependency>
             <groupId>com.vmware.identity</groupId>
+            <artifactId>openidconnect-protocol</artifactId>
+            <version>${vmware.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.vmware.identity</groupId>
             <artifactId>vmware-endpoint-certificate-store</artifactId>
             <version>${vmware.version}</version>
         </dependency>
@@ -155,6 +162,7 @@
             <version>${vmware.version}</version>
         </dependency>
 
+        <!-- Test Dependencies -->
         <dependency>
             <groupId>com.vmware.identity.rest.core</groupId>
             <artifactId>vmware-identity-rest-core-client</artifactId>
@@ -175,7 +183,18 @@
             <version>${vmware.version}</version>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>com.vmware.vmdir.rest</groupId>
+            <artifactId>vmware-directory-rest-client</artifactId>
+            <version>${vmware.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.vmware.vmdir.rest</groupId>
+            <artifactId>vmware-directory-rest-common</artifactId>
+            <version>${vmware.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>com.vmware.identity.rest.idm</groupId>
             <artifactId>vmware-identity-rest-idm-common</artifactId>

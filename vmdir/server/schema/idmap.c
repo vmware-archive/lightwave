@@ -87,7 +87,7 @@ VmDirSchemaAttrIdMapReadDB(
     BAIL_ON_VMDIR_ERROR(dwError);
     bHasTxn = TRUE;
 
-    dwError = beCtx.pBE->pfnBEStrkeyGetValues(
+    dwError = beCtx.pBE->pfnBEDupKeyGetValues(
             &beCtx, ATTR_ID_MAP_KEY, &pStringList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -184,7 +184,7 @@ VmDirSchemaAttrIdMapUpdateDB(
     BAIL_ON_VMDIR_ERROR( dwError );
     bHasTxn = TRUE;
 
-    dwError = beCtx.pBE->pfnBEStrKeySetValues(&beCtx, ATTR_ID_MAP_KEY, pMapStrList);
+    dwError = beCtx.pBE->pfnBEDupKeySetValues(&beCtx, ATTR_ID_MAP_KEY, pMapStrList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);

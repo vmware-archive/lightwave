@@ -130,7 +130,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
             {
                 ActionHelper.Execute(delegate
                 {
-                    var service = this.GetServiceGateway();
+                    var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
                     var dto = Tag as UserDto;
                     var generalManager = new UserGeneralPropertyManager(service, dto, _serverDto, _tenantName);
                     var userGeneralPage = new UserGeneralProperty(generalManager, _isSystemDomain) { Title = "General" };

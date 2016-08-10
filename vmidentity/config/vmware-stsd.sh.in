@@ -15,12 +15,6 @@ JARDIR=$PREFIX/jars
 CLASSPATH=$JAVA_HOME/jre/lib/ext/vmware-endpoint-certificate-store.jar:$JSVC_HOME/commons-daemon-1.0.15.jar:"$JARDIR/*.jar":$JARDIR/vmware-identity-idm-interface.jar:$JARDIR/vmware-identity-diagnostics.jar:$JARDIR/vmware-identity-idm-server.jar:$JARDIR/vmware-identity-platform.jar
 DAEMON_CLASS=org.apache.catalina.startup.Bootstrap
 
-# Start tomcat runtime instance
-if [ ! -d $VMWARE_INSTANCE ]; then
-    echo "Creating VMware STS Tomcat instance at $VMWARE_INSTANCE"
-    $VMWARE_HOME/sbin/vmware-sts-tc-setup.sh
-fi
-
 # JAVA Security Properties
 JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
 

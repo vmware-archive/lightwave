@@ -29,6 +29,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn.Service.IdentityProvider;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Security.Certificate;
 using VMwareMMCIDP.UI.Common.Utilities;
+using Vmware.Tools.RestSsoAdminSnapIn.Presenters;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
 {
@@ -37,8 +38,15 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
         private Steps _current;
         private string _domainName;
         private bool _createNew;
-        public IdentityProviderDto IdentityProviderDto;
         private AdvancedExternalDomain advancedSettings;
+
+        /* External Domain constants */
+        private const string AD_WIN_AUTH_TITLE = "External Domain (AD using Windows Integrated Auth)";
+        private const string AD_AS_LDAP_TITLE = "External Domain (AD as an LDAP server)";
+        private const string OPEN_LDAP_TITLE = "External Domain (Open LDAP server)";
+        private const string NEW_EXTERNAL_DOMAIN_TITLE = "Add External Domain";
+
+        public IdentityProviderDto IdentityProviderDto;
         public ServerDto ServerDto;
         public string TenantName;
         public AddExternalDomain()
@@ -62,20 +70,26 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             _createNew = IdentityProviderDto == null;
             if (_createNew)
             {
+                _current = Steps.One;
                 rdoADWindowsAuth.Checked = false;
                 rdoADLdap.Checked = true;
                 rdoAnyDomain.Checked = true;
                 IdentityProviderDto = new IdentityProviderDto();
+                this.Text = NEW_EXTERNAL_DOMAIN_TITLE;
             }
             else
             {
                 DtoToView();
+                _current = rdoADWindowsAuth.Checked ? Steps.Four : Steps.Two;
+                this.Text = rdoADWindowsAuth.Checked ? AD_WIN_AUTH_TITLE :
+                    rdoADLdap.Checked ? AD_AS_LDAP_TITLE :
+                    OPEN_LDAP_TITLE;
             }
 
             button11.Enabled = false;
             button1.Enabled = false;
             button2.Enabled = false;
-            _current = Steps.One;
+
             StepShow();
         }
 
@@ -179,7 +193,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
                 var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(ServerDto, TenantName);
                 ActionHelper.Execute(delegate()
                 {
-                    var adJoinInfoDto = SnapInContext.Instance.ServiceGateway.Adf.GetActiveDirectory(ServerDto, auth.Token);
+                    var service = ScopeNodeExtensions.GetServiceGateway(ServerDto.ServerName);
+                    var adJoinInfoDto = service.Adf.GetActiveDirectory(ServerDto, auth.Token);
                     if (adJoinInfoDto != null && adJoinInfoDto.JoinStatus == "DOMAIN")
                     {
                         _domainName = adJoinInfoDto.Name;
@@ -298,7 +313,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
                     var provider = ViewToDto();
                     if (_createNew)
                     {
-                        var result = SnapInContext.Instance.ServiceGateway.IdentityProvider.Create(ServerDto, TenantName, provider, auth.Token);
+                        var service = ScopeNodeExtensions.GetServiceGateway(ServerDto.ServerName);
+                        var result = service.IdentityProvider.Create(ServerDto, TenantName, provider, auth.Token);
                         if (result != null)
                         {
                             MMCDlgHelper.ShowWarning(string.Format("External domain {0} created successfully", result.Name));
@@ -306,7 +322,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
                     }
                     else
                     {
-                        var result = SnapInContext.Instance.ServiceGateway.IdentityProvider.Update(ServerDto, TenantName, provider, auth.Token);
+                        var service = ScopeNodeExtensions.GetServiceGateway(ServerDto.ServerName);
+                        var result = service.IdentityProvider.Update(ServerDto, TenantName, provider, auth.Token);
                         if (result != null)
                         {
                             MMCDlgHelper.ShowWarning(string.Format("External domain {0} updated successfully", result.Name));
@@ -404,7 +421,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
                 ActionHelper.Execute(delegate()
                 {
                     var provider = ViewToDto();
-                    var result = SnapInContext.Instance.ServiceGateway.IdentityProvider.Probe(ServerDto, TenantName, provider, auth.Token);
+                    var service = ScopeNodeExtensions.GetServiceGateway(ServerDto.ServerName);
+                    var result = service.IdentityProvider.Probe(ServerDto, TenantName, provider, auth.Token);
                     if (result != null)
                         MMCDlgHelper.ShowInformation("Test connection successful");
                 }, auth);
@@ -532,6 +550,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views.Wizard
             {
                 radioButton1_CheckedChanged(this, EventArgs.Empty);
             }
+            button3.Enabled = (!_createNew && !rdoADWindowsAuth.Checked && _current > Steps.Two) ||
+                (_createNew && _current != Steps.One);
         }
 
         public enum Steps

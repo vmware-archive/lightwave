@@ -19,6 +19,7 @@ using System.Text;
 using VMCA.Client;
 using System.IO;
 using System.Reflection;
+using VMCA.Utilities;
 
 namespace VMCA
 {
@@ -131,7 +132,18 @@ namespace VMCA
 
             return new X509Certificate2 (ASCIIEncoding.ASCII.GetBytes (certString));
         }
-
+        public X509Certificate2 GetVMCASignedCertificate(VMCAAdaptor.VMCA_PKCS_10_REQ_DATA certRequest, string privateKey, DateTime notBefore, DateTime notAfter)
+        {
+            IntPtr pCert = new IntPtr();
+            long nBefore = notBefore.ToTime_t();
+            long nAfter = notAfter.ToTime_t();
+            UInt32 dwError = VMCAAdaptor.VMCAGetSignedCertificateHA(_serverContext,
+                                 ServerName, certRequest, privateKey, "", nBefore, nAfter, out pCert);
+            VMCAError.Check(dwError);
+            string certString = Marshal.PtrToStringAnsi(pCert);
+            VMCAAdaptor.VMCAFreeCertificate(pCert);
+            return new X509Certificate2(ASCIIEncoding.ASCII.GetBytes(certString));
+        }
         public void AddRootCertificate (string rootCert, string passPhrase, string privateKey)
         {
             UInt32 dwError = VMCAAdaptor.VMCAAddRootCertificate (ServerName, rootCert, passPhrase, privateKey);

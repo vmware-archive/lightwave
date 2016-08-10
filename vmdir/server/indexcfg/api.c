@@ -12,224 +12,419 @@
  * under the License.
  */
 
-
-
-/*
- * Module Name: Directory indexer
- *
- * Filename: api.c
- *
- * Abstract:
- *
- * indexer api
- *
- */
-
 #include "includes.h"
 
-static
-PVDIR_CFG_ATTR_INDEX_DESC
-vdirAttrNameToIndexDesc(
-    PCSTR       pszName,        // name of the attribute
-    USHORT      usVersion,      // version of index cache to use
-    USHORT*     pusVersion,     // version of index cached used in his call
-    VDIR_CFG_ATTR_INDEX_USAGE_CTX    idxType
-    );
-
-/*
- * Bootstrap attribute index cache to initially open BDB index data files.
- * (During first time server startup, we need this function to create basic
- *  AttrIndexCache in order to write Schema Entry correctly.)
- */
 DWORD
-VmDirAttrIndexBootStrap(
-    VOID
+VmDirIndexCfgMap(
+    PLW_HASHMAP*    ppIndexCfgMap
     )
 {
-    static VDIR_CFG_ATTR_INDEX_DESC idxTbl[] = VDIR_CFG_INDEX_INITIALIZER;
-
-    BOOLEAN bInLock = FALSE;
     DWORD   dwError = 0;
-    USHORT  usCnt = 0;
-    PVDIR_ATTR_INDEX_INSTANCE   pAttrIdxCache = NULL;
-    USHORT usLive = gVdirAttrIndexGlobals.usLive;
+    VDIR_SERVER_STATE   vmdirState = VmDirdState();
 
-    dwError = VdirAttrIndexCacheAllocate(
-            &pAttrIdxCache,
-            (sizeof(idxTbl)/sizeof(idxTbl[0])) - 1);    // -1 to ignore last dummy entry
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (usCnt=0; usCnt < pAttrIdxCache->usNumIndex; usCnt++)
+    if (!ppIndexCfgMap)
     {
-        pAttrIdxCache->pSortName[usCnt].bIsUnique = idxTbl[usCnt].bIsUnique;
-        pAttrIdxCache->pSortName[usCnt].bIsNumeric = idxTbl[usCnt].bIsNumeric;
-        pAttrIdxCache->pSortName[usCnt].iTypes = idxTbl[usCnt].iTypes;
-        pAttrIdxCache->pSortName[usCnt].status = idxTbl[usCnt].status;
-        pAttrIdxCache->pSortName[usCnt].iId = usCnt;
-
-        dwError = VmDirAllocateStringA(
-                idxTbl[usCnt].pszAttrName,
-                &(pAttrIdxCache->pSortName[usCnt].pszAttrName));
+        dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    qsort(pAttrIdxCache->pSortName,
-          pAttrIdxCache->usNumIndex,
-          sizeof(VDIR_CFG_ATTR_INDEX_DESC),
-          VdirAttrIndexNameCmp);
-
-    VMDIR_LOCK_MUTEX(bInLock, gVdirAttrIndexGlobals.mutex);
-
-    // Bootstrap is called for the very first time server starts
-    assert(usLive == 0 && !gVdirAttrIndexGlobals.pCaches[usLive]);
-    gVdirAttrIndexGlobals.pCaches[usLive] = pAttrIdxCache;
-
-cleanup:
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirAttrIndexGlobals.mutex);
-
-    return dwError;
-
-error:
-    if (pAttrIdxCache)
+    if (vmdirState != VMDIRD_STATE_STARTUP)
     {
-        VdirAttrIdxCacheFree(pAttrIdxCache);
-    }
-
-    goto cleanup;
-}
-
-PVDIR_CFG_ATTR_INDEX_DESC
-VmDirAttrNameToReadIndexDesc(
-    PCSTR       pszName,        // name of the attribute
-    USHORT      usVersion,      // version of index cache to use
-    USHORT*     pusVersion      // version of index cached used in his call
-    )
-{
-    return vdirAttrNameToIndexDesc(
-                                pszName,
-                                usVersion,
-                                pusVersion,
-                                VDIR_CFG_ATTR_INDEX_READ);
-}
-
-PVDIR_CFG_ATTR_INDEX_DESC
-VmDirAttrNameToWriteIndexDesc(
-    PCSTR       pszName,        // name of the attribute
-    USHORT      usVersion,      // version of index cache to use
-    USHORT*     pusVersion      // version of index cached used in his call
-    )
-{
-    return vdirAttrNameToIndexDesc(
-                                pszName,
-                                usVersion,
-                                pusVersion,
-                                VDIR_CFG_ATTR_INDEX_WRITE);
-}
-
-/*
- * Get a list of attribute index in BDB to either (initialize/shutdown)
- * 1. open  index data files or
- * 2. close index data files
- *
- * Caller does NOT own *ppAttrIdxDesc
- */
-DWORD
-VmDirAttrIndexDescList(
-    USHORT*                     pusSize,    // size of *ppAttrIdxDesc
-    PVDIR_CFG_ATTR_INDEX_DESC*  ppAttrIdxDesc
-    )
-{
-    DWORD   dwError = 0;
-    USHORT  usLive = 0;
-    BOOLEAN bInLock = FALSE;
-    VDIR_SERVER_STATE vmdirState = VmDirdState();
-
-    assert(pusSize || ppAttrIdxDesc);
-
-    VMDIR_LOCK_MUTEX(bInLock, gVdirAttrIndexGlobals.mutex);
-    usLive = gVdirAttrIndexGlobals.usLive;
-
-    if (vmdirState != VMDIRD_STATE_STARTUP && vmdirState != VMDIRD_STATE_SHUTDOWN)
-    {   // Operation not allowed.
-        // This can only be called during startup or shutdown phase.
         dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    *pusSize = gVdirAttrIndexGlobals.pCaches[usLive]->usNumIndex;
-    *ppAttrIdxDesc = gVdirAttrIndexGlobals.pCaches[usLive]->pSortName;
+    *ppIndexCfgMap = gVdirIndexGlobals.pIndexCfgMap;
+
+error:
+    return dwError;
+}
+
+DWORD
+VmDirIndexCfgAcquire(
+    PCSTR               pszAttrName,
+    VDIR_INDEX_USAGE    usage,
+    PVDIR_INDEX_CFG*    ppIndexCfg
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bInLock = FALSE;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
+    PVMDIR_MUTEX    pMutex = NULL;
+
+    if (IsNullOrEmptyString(pszAttrName) || !ppIndexCfg)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppIndexCfg = NULL;
+
+    if (LwRtlHashMapFindKey(
+            gVdirIndexGlobals.pIndexCfgMap, (PVOID*)&pIndexCfg, pszAttrName))
+    {
+        goto cleanup;
+    }
+
+    pMutex = pIndexCfg->mutex;
+    VMDIR_LOCK_MUTEX(bInLock, pMutex);
+
+    if (pIndexCfg->status == VDIR_INDEXING_SCHEDULED &&
+            usage == VDIR_INDEX_READ)
+    {
+        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+    }
+    else if (pIndexCfg->status == VDIR_INDEXING_IN_PROGRESS &&
+            usage == VDIR_INDEX_READ)
+    {
+        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+    }
+    else if (pIndexCfg->status == VDIR_INDEXING_DISABLED ||
+            pIndexCfg->status == VDIR_INDEXING_DELETED)
+    {
+        goto cleanup;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pIndexCfg->usRefCnt++;
+    *ppIndexCfg = pIndexCfg;
 
 cleanup:
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirAttrIndexGlobals.mutex);
-
+    VMDIR_UNLOCK_MUTEX(bInLock, pMutex);
     return dwError;
 
 error:
-
-    *pusSize = 0;
-    *ppAttrIdxDesc = NULL;
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
 
     goto cleanup;
 }
 
-/*
- * 1. Query attribute index cache based on pszName.
- * 2. Use cache version "usVersion" to perform the query
- * 3. (*pusVersion) is set if usVersion=0, so subsequent call can use it as the
- *    second parameter - usVersion.  (to minimize mutex lock)
- */
-static
-PVDIR_CFG_ATTR_INDEX_DESC
-vdirAttrNameToIndexDesc(
-    PCSTR       pszName,        // name of the attribute
-    USHORT      usVersion,      // version of index cache to use
-    USHORT*     pusVersion,     // version of index cached used in his call
-    VDIR_CFG_ATTR_INDEX_USAGE_CTX    idxType
+VOID
+VmDirIndexCfgRelease(
+    PVDIR_INDEX_CFG pIndexCfg
     )
 {
-    BOOLEAN     bInLock = FALSE;
-    USHORT      usLive  = usVersion;
-    PVDIR_CFG_ATTR_INDEX_DESC   pAttrIdxDesc = NULL;
-    VDIR_CFG_ATTR_INDEX_DESC    key = {0};
+    BOOLEAN bInLock = FALSE;
 
-    if (usVersion == 0)
-    {   // Caller does not know the current live version, query for them.
-        VMDIR_LOCK_MUTEX(bInLock, gVdirAttrIndexGlobals.mutex);
-        usLive = gVdirAttrIndexGlobals.usLive;
-        VMDIR_UNLOCK_MUTEX(bInLock, gVdirAttrIndexGlobals.mutex);
-    }
-
-    assert(gVdirAttrIndexGlobals.pCaches[usLive]);
-
-    key.pszAttrName = (PSTR)pszName;
-    pAttrIdxDesc = (PVDIR_CFG_ATTR_INDEX_DESC) bsearch(
-            &key,
-            gVdirAttrIndexGlobals.pCaches[usLive]->pSortName,
-            gVdirAttrIndexGlobals.pCaches[usLive]->usNumIndex,
-            sizeof(VDIR_CFG_ATTR_INDEX_DESC),
-            VdirAttrIndexNameCmp);
-
-    if (pAttrIdxDesc)
+    if (pIndexCfg)
     {
-        if (idxType == VDIR_CFG_ATTR_INDEX_READ &&
-            pAttrIdxDesc->status != VDIR_CFG_ATTR_INDEX_ENABLED)
-        {
-            pAttrIdxDesc = NULL;
-        }
+        VMDIR_LOCK_MUTEX(bInLock, pIndexCfg->mutex);
+        pIndexCfg->usRefCnt--;
+        VMDIR_UNLOCK_MUTEX(bInLock, pIndexCfg->mutex);
+    }
+}
 
-        if (idxType == VDIR_CFG_ATTR_INDEX_WRITE                &&
-            pAttrIdxDesc->status != VDIR_CFG_ATTR_INDEX_ENABLED &&
-            pAttrIdxDesc->status != VDIR_CFG_ATTR_INDEX_BUILDING)
+BOOLEAN
+VmDirIndexExist(
+    PCSTR   pszAttrName
+    )
+{
+    BOOLEAN bExist = FALSE;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
+
+    if (!IsNullOrEmptyString(pszAttrName) &&
+            LwRtlHashMapFindKey(
+                    gVdirIndexGlobals.pIndexCfgMap,
+                    (PVOID*)&pIndexCfg,
+                    pszAttrName) == 0)
+    {
+        if (pIndexCfg->status != VDIR_INDEXING_DISABLED &&
+            pIndexCfg->status != VDIR_INDEXING_DELETED)
         {
-            pAttrIdxDesc = NULL;
+            bExist = TRUE;
         }
     }
 
-    if (pusVersion)
+    return bExist;
+}
+
+BOOLEAN
+VmDirIndexIsDefault(
+    PCSTR   pszAttrName
+    )
+{
+    BOOLEAN bIsDefault = FALSE;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
+
+    if (!IsNullOrEmptyString(pszAttrName) &&
+            LwRtlHashMapFindKey(
+                    gVdirIndexGlobals.pIndexCfgMap,
+                    (PVOID*)&pIndexCfg,
+                    pszAttrName) == 0)
     {
-        *pusVersion = usLive;
+        bIsDefault = pIndexCfg->bDefaultIndex;
     }
 
-    return pAttrIdxDesc;
+    return bIsDefault;
+}
+
+/*
+ * run-time
+ */
+DWORD
+VmDirIndexSchedule(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PCSTR               pszAttrName,
+    PCSTR               pszAttrSyntaxOid
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bInLock = FALSE;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
+
+    if (!pBECtx || IsNullOrEmptyString(pszAttrName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    VMDIR_LOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
+
+    if (LwRtlHashMapFindKey(
+            gVdirIndexGlobals.pIndexCfgMap, (PVOID*)&pIndexCfg, pszAttrName))
+    {
+        dwError = VmDirIndexCfgCreate(pszAttrName, &pIndexCfg);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pIndexCfg->bIsNumeric = VmDirSchemaSyntaxIsNumeric(pszAttrSyntaxOid);
+
+        dwError = LwRtlHashMapInsert(
+                gVdirIndexGlobals.pIndexCfgMap,
+                pIndexCfg->pszAttrName,
+                pIndexCfg,
+                NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else if (pIndexCfg->status == VDIR_INDEXING_DELETED)
+    {
+        pIndexCfg->status = VDIR_INDEXING_SCHEDULED;
+    }
+    else
+    {
+        dwError = ERROR_ALREADY_EXISTS;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirIndexCfgRecordProgress(pBECtx, pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    pIndexCfg = NULL;
+
+    dwError = VmDirConditionSignal(gVdirIndexGlobals.cond);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    VmDirFreeIndexCfg(pIndexCfg);
+    goto cleanup;
+}
+
+DWORD
+VmDirIndexDelete(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PCSTR               pszAttrName
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bInLock = FALSE;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
+
+    if (!pBECtx || IsNullOrEmptyString(pszAttrName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    VMDIR_LOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
+
+    if (LwRtlHashMapFindKey(
+            gVdirIndexGlobals.pIndexCfgMap, (PVOID*)&pIndexCfg, pszAttrName) ||
+            pIndexCfg->status == VDIR_INDEXING_DISABLED ||
+            pIndexCfg->status == VDIR_INDEXING_DELETED)
+    {
+        dwError = VMDIR_ERROR_NOT_FOUND;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pIndexCfg->bDefaultIndex)
+    {
+        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pIndexCfg->status = VDIR_INDEXING_DISABLED;
+
+    dwError = VmDirIndexCfgRecordProgress(pBECtx, pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirConditionSignal(gVdirIndexGlobals.cond);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    goto cleanup;
+}
+
+DWORD
+VmDirIndexAddUniquenessScope(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PCSTR               pszAttrName,
+    PCSTR*              ppszUniqScopes
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    BOOLEAN bInLock = FALSE;
+    PSTR    pszUniqScope = NULL;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
+
+    if (!pBECtx || IsNullOrEmptyString(pszAttrName) || !ppszUniqScopes)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    VMDIR_LOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
+
+    if (LwRtlHashMapFindKey(
+            gVdirIndexGlobals.pIndexCfgMap, (PVOID*)&pIndexCfg, pszAttrName) ||
+            pIndexCfg->status == VDIR_INDEXING_DISABLED ||
+            pIndexCfg->status == VDIR_INDEXING_DELETED)
+    {
+        dwError = VMDIR_ERROR_NOT_FOUND;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (!pIndexCfg->bScopeEditable ||
+         pIndexCfg->status == VDIR_INDEXING_VALIDATING_SCOPES)
+    {
+        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    for (i = 0; ppszUniqScopes[i]; i++)
+    {
+        if (LwRtlHashMapFindKey(
+                pIndexCfg->pUniqScopes, NULL, ppszUniqScopes[i]) == 0)
+        {
+            dwError = ERROR_ALREADY_EXISTS;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    for (i = 0; ppszUniqScopes[i]; i++)
+    {
+        dwError = VmDirAllocateStringA(ppszUniqScopes[i], &pszUniqScope);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLinkedListInsertHead(
+                pIndexCfg->pNewUniqScopes, pszUniqScope, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pszUniqScope = NULL;
+    }
+
+    dwError = VmDirIndexCfgRecordProgress(pBECtx, pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirConditionSignal(gVdirIndexGlobals.cond);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    VMDIR_SAFE_FREE_MEMORY(pszUniqScope);
+    goto cleanup;
+}
+
+DWORD
+VmDirIndexDeleteUniquenessScope(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PCSTR               pszAttrName,
+    PCSTR*              ppszUniqScopes
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    BOOLEAN bInLock = FALSE;
+    PSTR    pszUniqScope = NULL;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
+
+    if (!pBECtx || IsNullOrEmptyString(pszAttrName) || !ppszUniqScopes)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    VMDIR_LOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
+
+    if (LwRtlHashMapFindKey(
+            gVdirIndexGlobals.pIndexCfgMap, (PVOID*)&pIndexCfg, pszAttrName) ||
+            pIndexCfg->status == VDIR_INDEXING_DISABLED ||
+            pIndexCfg->status == VDIR_INDEXING_DELETED)
+    {
+        dwError = VMDIR_ERROR_NOT_FOUND;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (!pIndexCfg->bScopeEditable ||
+         pIndexCfg->status == VDIR_INDEXING_VALIDATING_SCOPES)
+    {
+        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    for (i = 0; ppszUniqScopes[i]; i++)
+    {
+        if (LwRtlHashMapFindKey(
+                pIndexCfg->pUniqScopes, NULL, ppszUniqScopes[i]) != 0)
+        {
+            dwError = VMDIR_ERROR_NOT_FOUND;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    for (i = 0; ppszUniqScopes[i]; i++)
+    {
+        dwError = VmDirAllocateStringA(ppszUniqScopes[i], &pszUniqScope);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLinkedListInsertHead(
+                pIndexCfg->pDelUniqScopes, pszUniqScope, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pszUniqScope = NULL;
+    }
+
+    dwError = VmDirIndexCfgRecordProgress(pBECtx, pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirConditionSignal(gVdirIndexGlobals.cond);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    VMDIR_SAFE_FREE_MEMORY(pszUniqScope);
+    goto cleanup;
 }

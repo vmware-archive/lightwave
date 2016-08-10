@@ -80,5 +80,9 @@ typedef struct _IDM_KRB_CONTEXT
 
 } IDM_KRB_CONTEXT, *PIDM_KRB_CONTEXT;
 
+typedef struct _IDM_AUTH_MUTEX
+{
+    pthread_mutex_t mutex;
+} IDM_AUTH_MUTEX, *PIDM_AUTH_MUTEX;
 #endif
 

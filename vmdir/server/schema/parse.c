@@ -42,6 +42,8 @@ VmDirSchemaATDescCreate(
     pATDesc->bNoUserModifiable = pLdapAt->bNoUserMod;
     pATDesc->bObsolete = pLdapAt->bObsolete;
     pATDesc->usage = pLdapAt->usage;
+    pATDesc->dwSearchFlags = pLdapAt->dwSearchFlags;
+    pATDesc->ppszUniqueScopes = pLdapAt->ppszUniqueScopes;
     pATDesc->pLdapAt = pLdapAt;
 
     pATDesc->pSyntax =
@@ -216,8 +218,13 @@ VmDirLdapAtParseVdirEntry(
     )
 {
     DWORD   dwError = 0;
+    DWORD   i = 0;
+    DWORD   dwVmwAttrUsage = 0;
+    DWORD   dwSearchFlags = 0;
+    PSTR*   ppszUniqueScopes = NULL;
     PVDIR_ATTRIBUTE     pAttr = NULL;
     LDAPAttributeType*  pSource = NULL;
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pAt = NULL;
 
     if (!pEntry || !ppAt)
     {
@@ -243,7 +250,7 @@ VmDirLdapAtParseVdirEntry(
         else if (VmDirStringCompareA(ATTR_VMW_ATTRIBUTE_USAGE,
                 pAttr->type.lberbv_val, FALSE) == 0)
         {
-            DWORD dwVmwAttrUsage = VmDirStringToIA(pAttr->vals[0].lberbv_val);
+            dwVmwAttrUsage = VmDirStringToIA(pAttr->vals[0].lberbv_val);
 
             pSource->at_no_user_mod = dwVmwAttrUsage & 0x8 ? 1 : 0;
 
@@ -292,11 +299,37 @@ VmDirLdapAtParseVdirEntry(
                     &pSource->at_desc);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
+        else if (VmDirStringCompareA(ATTR_SEARCH_FLAGS,
+                pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            dwSearchFlags = VmDirStringToIA(pAttr->vals[0].lberbv_val);
+        }
+        else if (VmDirStringCompareA(ATTR_UNIQUENESS_SCOPE,
+                pAttr->type.lberbv_val, FALSE) == 0)
+        {
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*)*(pAttr->numVals+1),
+                    (PVOID*)&ppszUniqueScopes);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            for (i = 0; i < pAttr->numVals; i++)
+            {
+                dwError = VmDirAllocateStringA(
+                        pAttr->vals[i].lberbv_val,
+                        &ppszUniqueScopes[i]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+        }
         pAttr = pAttr->next;
     }
 
-    dwError = VmDirLdapAtCreate(pSource, ppAt);
+    dwError = VmDirLdapAtCreate(pSource, &pAt);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    pAt->dwSearchFlags = dwSearchFlags;
+    pAt->ppszUniqueScopes = ppszUniqueScopes;
+
+    *ppAt = pAt;
 
 cleanup:
     return dwError;
@@ -306,6 +339,7 @@ error:
     {
         ldap_attributetype_free(pSource);
     }
+    VmDirFreeLdapAt(pAt);
     goto cleanup;
 }
 

@@ -110,14 +110,16 @@ VmDnsRegisterRpcServer(
                         pInterfaceSpec,
                         "VMware dns Service"
                         );
-    BAIL_ON_VMDNS_ERROR(dwError);
+    if (dwError == 0)
+    {
+        VmDnsLog(VMDNS_LOG_LEVEL_INFO, "RPC Endpoint registered successfully.");
+    }
 #endif
 
 #ifndef _WIN32
 /*
  * This does not work yet with DCERPC-WIN32 for release builds
  */
-    VmDnsLog(VMDNS_LOG_LEVEL_INFO, "RPC Endpoints registered successfully.");
 
     dwError = VmDnsRpcServerRegisterAuthInfo();
     BAIL_ON_VMDNS_ERROR(dwError);

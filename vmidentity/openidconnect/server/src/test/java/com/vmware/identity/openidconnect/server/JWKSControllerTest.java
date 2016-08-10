@@ -33,7 +33,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
-import com.vmware.identity.openidconnect.common.JSONUtils;
+import com.vmware.identity.openidconnect.protocol.JSONUtils;
 
 /**
  * @author Jun Sun

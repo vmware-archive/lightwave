@@ -30,19 +30,19 @@ import org.springframework.web.servlet.ModelAndView;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.client.CasIdmClient;
-import com.vmware.identity.openidconnect.common.AccessToken;
-import com.vmware.identity.openidconnect.common.AuthenticationErrorResponse;
-import com.vmware.identity.openidconnect.common.AuthenticationRequest;
-import com.vmware.identity.openidconnect.common.AuthenticationSuccessResponse;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.HttpRequest;
-import com.vmware.identity.openidconnect.common.HttpResponse;
-import com.vmware.identity.openidconnect.common.IDToken;
 import com.vmware.identity.openidconnect.common.ResponseTypeValue;
 import com.vmware.identity.openidconnect.common.SessionID;
-import com.vmware.identity.openidconnect.common.URIUtils;
+import com.vmware.identity.openidconnect.protocol.AccessToken;
+import com.vmware.identity.openidconnect.protocol.AuthenticationErrorResponse;
+import com.vmware.identity.openidconnect.protocol.AuthenticationRequest;
+import com.vmware.identity.openidconnect.protocol.AuthenticationSuccessResponse;
+import com.vmware.identity.openidconnect.protocol.HttpRequest;
+import com.vmware.identity.openidconnect.protocol.HttpResponse;
+import com.vmware.identity.openidconnect.protocol.IDToken;
+import com.vmware.identity.openidconnect.protocol.URIUtils;
 
 /**
  * @author Yehia Zayour
@@ -336,10 +336,10 @@ public class AuthenticationRequestProcessor {
         this.model.addAttribute("enable_password_auth",         this.tenantInfo.getAuthnPolicy().isPasswordAuthnEnabled());
         this.model.addAttribute("enable_windows_auth",          this.tenantInfo.getAuthnPolicy().isWindowsAuthnEnabled());
         this.model.addAttribute("enable_tlsclient_auth",        this.tenantInfo.getAuthnPolicy().isClientCertAuthnEnabled());
-        this.model.addAttribute("enable_rsaam_auth",            this.tenantInfo.getAuthnPolicy().isSecureIDAuthnEnabled());
+        this.model.addAttribute("enable_rsaam_auth",            this.tenantInfo.getAuthnPolicy().isSecurIDAuthnEnabled());
 
-        if (this.tenantInfo.getAuthnPolicy().isSecureIDAuthnEnabled()) {
-            this.model.addAttribute("rsaam_reminder", StringEscapeUtils.escapeEcmaScript(this.tenantInfo.getAuthnPolicy().getSecureIDLoginGuide()));
+        if (this.tenantInfo.getAuthnPolicy().isSecurIDAuthnEnabled()) {
+            this.model.addAttribute("rsaam_reminder", StringEscapeUtils.escapeEcmaScript(this.tenantInfo.getAuthnPolicy().getSecurIDLoginGuide()));
         }
 
         return new ModelAndView("unpentry");

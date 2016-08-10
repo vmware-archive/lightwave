@@ -24,10 +24,11 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.HttpTransport
     public class HttpTransportService
     {
         private HttpTransportCollection cachedCollection;
-
-        public HttpTransportService()
+        private readonly IServiceConfigManager _serviceConfigManager;
+        public HttpTransportService(IServiceConfigManager serviceConfigManager)
         {
             cachedCollection = new HttpTransportCollection(5000);
+            _serviceConfigManager = serviceConfigManager;
         }
 
         public void HandleMessage(WebMessageTrace messageTrace)
@@ -65,7 +66,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.HttpTransport
         private string MaskPassword(WebMessage message)
         {
             // OAuth login
-            if (message.AbsolutePath.StartsWith(ServiceConfigManager.LoginTokenFragments) &&
+            if (message.AbsolutePath.StartsWith(_serviceConfigManager.GetLoginTokenFragments()) &&
                 message.Details.Contains("grant_type=password"))
             {
 
@@ -87,7 +88,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.HttpTransport
             }
 
             // Add New Tenant
-            if (message.AbsolutePath.EndsWith(ServiceConfigManager.TenantString) && message.Method == "POST" && message.Details.Contains("credentials"))
+            if (message.AbsolutePath.EndsWith(_serviceConfigManager.GetTenantString()) && message.Method == "POST" && message.Details.Contains("credentials"))
             {
                 var index = message.Details.IndexOf("password");
                 var end = message.Details.Substring(index).IndexOf(",");
@@ -96,7 +97,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.HttpTransport
             }
 
             // Add New User
-            if (message.AbsolutePath.EndsWith(ServiceConfigManager.UsersString) && message.Method == "POST" && message.Details.Contains("passwordDetails"))
+            if (message.AbsolutePath.EndsWith(_serviceConfigManager.GetUsersString()) && message.Method == "POST" && message.Details.Contains("passwordDetails"))
             {
                 var index = message.Details.IndexOf("passwordDetails");
                 var payload = message.Details.Substring(0, index) + "passwordDetails:{\"password\":\"XXXX\"}}";
@@ -104,7 +105,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.HttpTransport
             }
 
             // Add New External Domain
-            if (message.AbsolutePath.EndsWith(ServiceConfigManager.ProvidersString) && message.Method == "POST" && !message.AbsolutePath.StartsWith("/idm/post"))
+            if (message.AbsolutePath.EndsWith(_serviceConfigManager.GetProvidersString()) && message.Method == "POST" && !message.AbsolutePath.StartsWith("/idm/post"))
             {
                 // Message payload will be like
                 var index = message.Details.IndexOf("password");

@@ -19,14 +19,22 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters
 {
     public static class ScopeNodeExtensions
     {
-        public static ServiceGateway GetServiceGateway(this ScopeNode node)
+        //public static ServiceGateway GetServiceGateway(this ScopeNode node)
+        //{
+        //    return SnapInContext.Instance.ServiceGatewayManager.GetAny();
+        //}
+        public static ServiceGateway GetServiceGateway(string server)
         {
-            return SnapInContext.Instance.ServiceGateway;
+            return SnapInContext.Instance.ServiceGatewayManager.Get(server);
         }
 
         public static SnapInContext GetApplicationContext(this ScopeNode node)
         {
             return SnapInContext.Instance;
+        }
+        public static ServiceGateway GetServiceGateway()
+        {
+            return SnapInContext.Instance.ServiceGatewayManager.GetAny();
         }
     }
 }

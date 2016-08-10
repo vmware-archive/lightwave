@@ -41,26 +41,17 @@
 	   xml.send(null);
    };
 
-   var isVCLogin = function isVCLogin() {
-	   if (tenant_brandname == null ||tenant_brandname == '') {
-	       return true;
-	   } else {
-	       return false;
-	   }
-   };
-
    // handle the response
    var handleResponse = function (evt) {
         var self = this;
         if (self.readyState == 4){
-            if (self.status == 302) {
-                // redirect back to original url
-                document.location = document.URL;
-             } else {
-                 if (self.status == 200) {
-                     // redirect to the response url
-                     document.location = self.responseURL;
-                 }
+            var redirect_url = self.getResponseHeader('CastleIDPRedirect');
+            if (redirect_url != null) {
+                // redirect to the external idp url
+                document.location = redirect_url;
+             } else if (self.status == 200) {
+                // redirect to the response url for local idp
+                document.location = self.responseURL;
              }
         }
    };

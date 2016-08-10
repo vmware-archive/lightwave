@@ -6,14 +6,14 @@
     <version>6.5.0</version>
 
     <properties>
-	<bouncycastle.version>1.47</bouncycastle.version>
         <java.version>1.7</java.version>
         <nimbus-jose-jwt.version>4.12</nimbus-jose-jwt.version>
         <commons-validator.version>1.4.0</commons-validator.version>
         <commons-lang3.version>3.3.2</commons-lang3.version>
-        <httpclient.version>4.5</httpclient.version>
+        <httpclient.version>4.5.1</httpclient.version>
         <javax.servlet-api.version>3.0.1</javax.servlet-api.version>
         <junit.version>4.12</junit.version>
+        <bouncycastle.version>1.47</bouncycastle.version>
         <outputDirectory>${basedir}/../../build/rpmbuild/BUILDROOT/opt/vmware/jars/</outputDirectory>
     </properties>
 
@@ -57,20 +57,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>${commons-lang3.version}</version>
-        </dependency>
-
-        <!-- Test Dependencies -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
             <version>${nimbus-jose-jwt.version}</version>
@@ -83,6 +69,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang3.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
             <version>${httpclient.version}</version>
@@ -92,6 +84,15 @@
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <version>${javax.servlet-api.version}</version>
+        </dependency>
+
+        <!-- Test Dependencies -->
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

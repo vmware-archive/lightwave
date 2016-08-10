@@ -63,7 +63,7 @@
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="VmDirInterop, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+    <Reference Include="VmDirInterop, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\interop\lib64\VmDirInterop.dll</HintPath>
     </Reference>
@@ -71,27 +71,63 @@
   <ItemGroup>
     <Compile Include="Persistence\LocalData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Resources.Designer.cs">
+    <Compile Include="Resource.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
+      <DependentUpon>Resource.resx</DependentUpon>
     </Compile>
-    <Compile Include="ScopeNodes\ListViews\DirectoryNodeDetailsView.cs" />
-    <Compile Include="ScopeNodes\ListViews\DirectoryNodeListView.cs" />
     <Compile Include="ScopeNodes\VMDirRootNode.cs" />
-    <Compile Include="ScopeNodes\DirectoryNode.cs" />
-    <Compile Include="ScopeNodes\ServerNode.cs" />
-    <Compile Include="UI\AddOrRemoveAttributes.cs">
+    <Compile Include="TreeNodes\BaseTreeNode.cs" />
+    <Compile Include="TreeNodes\DirectoryBaseNode.cs" />
+    <Compile Include="TreeNodes\DirectoryExpandableNode.cs" />
+    <Compile Include="TreeNodes\DirectoryNonExpandableNode.cs" />
+    <Compile Include="UI\AddGroup.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="UI\AddOrRemoveAttributes.Designer.cs">
-      <DependentUpon>AddOrRemoveAttributes.cs</DependentUpon>
+    <Compile Include="UI\AddGroup.Designer.cs">
+      <DependentUpon>AddGroup.cs</DependentUpon>
     </Compile>
-    <Compile Include="UI\AttributeEditorPropertyPage.cs">
+    <Compile Include="UI\AddToGroup.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\AddToGroup.Designer.cs">
+      <DependentUpon>AddToGroup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\AddUser.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\AddUser.Designer.cs">
+      <DependentUpon>AddUser.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\AttrInfoForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\AttrInfoForm.Designer.cs">
+      <DependentUpon>AttrInfoForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\CheckUserPwdForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\CheckUserPwdForm.Designer.cs">
+      <DependentUpon>CheckUserPwdForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ConditionsFromFile.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\ConditionsFromFile.Designer.cs">
+      <DependentUpon>ConditionsFromFile.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ExportResult.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\ExportResult.Designer.cs">
+      <DependentUpon>ExportResult.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\PropertiesControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="UI\AttributeEditorPropertyPage.Designer.cs">
-      <DependentUpon>AttributeEditorPropertyPage.cs</DependentUpon>
+    <Compile Include="UI\PropertiesControl.Designer.cs">
+      <DependentUpon>PropertiesControl.cs</DependentUpon>
     </Compile>
     <Compile Include="UI\CreateForm.cs">
       <SubType>Form</SubType>
@@ -99,30 +135,48 @@
     <Compile Include="UI\CreateForm.Designer.cs">
       <DependentUpon>CreateForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="UI\EditAttribute.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="UI\EditAttribute.Designer.cs">
-      <DependentUpon>EditAttribute.cs</DependentUpon>
-    </Compile>
     <Compile Include="UI\frmConnectToServer.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="UI\frmConnectToServer.Designer.cs">
       <DependentUpon>frmConnectToServer.cs</DependentUpon>
     </Compile>
-    <Compile Include="UI\PropertyPageMgmt\VMDirPropertyPage.cs" />
-    <Compile Include="UI\SchemaBrowser.cs">
+    <Compile Include="UI\SearchArgs.cs" />
+    <Compile Include="UI\SearchForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="UI\SchemaBrowser.Designer.cs">
-      <DependentUpon>SchemaBrowser.cs</DependentUpon>
+    <Compile Include="UI\SearchForm.Designer.cs">
+      <DependentUpon>SearchForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\SearchQueryControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UI\SearchQueryControl.Designer.cs">
+      <DependentUpon>SearchQueryControl.cs</DependentUpon>
     </Compile>
     <Compile Include="UI\SelectObjectClass.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="UI\SelectObjectClass.Designer.cs">
       <DependentUpon>SelectObjectClass.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\SetPageSizeForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\SetPageSizeForm.Designer.cs">
+      <DependentUpon>SetPageSizeForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\SubmitModConfirm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\SubmitModConfirm.Designer.cs">
+      <DependentUpon>SubmitModConfirm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\SubmitModStatus.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\SubmitModStatus.Designer.cs">
+      <DependentUpon>SubmitModStatus.cs</DependentUpon>
     </Compile>
     <Compile Include="UI\SuperLogBrowser.cs">
       <SubType>Form</SubType>
@@ -131,10 +185,24 @@
       <DependentUpon>SuperLogBrowser.cs</DependentUpon>
     </Compile>
     <Compile Include="UI\SuperLogFilterHelper.cs" />
-    <Compile Include="Utilities\KeyValueBag.cs" />
+    <Compile Include="UI\ResetUserPwdForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\ResetUserPwdForm.Designer.cs">
+      <DependentUpon>ResetUserPwdForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Utilities\LdapTypesService.cs" />
     <Compile Include="Utilities\MiscUtilsService.cs" />
     <Compile Include="Utilities\SearchListByKeyPress.cs" />
+    <Compile Include="TreeNodes\RootNode.cs" />
+    <Compile Include="TreeNodes\ServerNode.cs" />
+    <Compile Include="Views\ResultPaneControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Views\ResultPaneControl.Designer.cs">
+      <DependentUpon>ResultPaneControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\ResultPaneFormView.cs" />
     <Compile Include="VMDirEnvironment.cs" />
     <Compile Include="VMDirException.cs" />
     <Compile Include="VMDirImageIndex.cs" />
@@ -144,45 +212,74 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Images\Toolbar.bmp" />
-    <EmbeddedResource Include="Resources.resx">
+    <EmbeddedResource Include="Resource.resx">
       <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <LastGenOutput>Resource.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Include="UI\AddOrRemoveAttributes.resx">
-      <DependentUpon>AddOrRemoveAttributes.cs</DependentUpon>
-      <SubType>Designer</SubType>
+    <EmbeddedResource Include="UI\AddGroup.resx">
+      <DependentUpon>AddGroup.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="UI\AttributeEditorPropertyPage.resx">
-      <DependentUpon>AttributeEditorPropertyPage.cs</DependentUpon>
+    <EmbeddedResource Include="UI\AddToGroup.resx">
+      <DependentUpon>AddToGroup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\AddUser.resx">
+      <DependentUpon>AddUser.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\AttrInfoForm.resx">
+      <DependentUpon>AttrInfoForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\CheckUserPwdForm.resx">
+      <DependentUpon>CheckUserPwdForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\ConditionsFromFile.resx">
+      <DependentUpon>ConditionsFromFile.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\ExportResult.resx">
+      <DependentUpon>ExportResult.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\PropertiesControl.resx">
+      <DependentUpon>PropertiesControl.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\CreateForm.resx">
       <DependentUpon>CreateForm.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="UI\EditAttribute.resx">
-      <DependentUpon>EditAttribute.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="UI\frmConnectToServer.resx">
       <DependentUpon>frmConnectToServer.cs</DependentUpon>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\SearchForm.resx">
+      <DependentUpon>SearchForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\SearchQueryControl.resx">
+      <DependentUpon>SearchQueryControl.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\SelectObjectClass.resx">
       <DependentUpon>SelectObjectClass.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="UI\SchemaBrowser.resx">
-      <DependentUpon>SchemaBrowser.cs</DependentUpon>
+    <EmbeddedResource Include="UI\ResetUserPwdForm.resx">
+      <DependentUpon>ResetUserPwdForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\SetPageSizeForm.resx">
+      <DependentUpon>SetPageSizeForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\SubmitModConfirm.resx">
+      <DependentUpon>SubmitModConfirm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\SubmitModStatus.resx">
+      <DependentUpon>SubmitModStatus.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Views\ResultPaneControl.resx">
+      <DependentUpon>ResultPaneControl.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="UI\SuperLogBrowser.resx">
       <DependentUpon>SuperLogBrowser.cs</DependentUpon>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <WCFMetadata Include="Service References\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\common\VMDir.Common\VMDir.Common.csproj">
@@ -206,6 +303,66 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Images\ServerLog.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Directory.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Group.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\NextPage.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Object.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\PageSize.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ResetPassword.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Search.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\SearchBoxCollapse.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\ShowOperationalAttr.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\User.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Open.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Save.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\AddToGroup.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\delete.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\edit.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\refresh.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Export.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\OperationalAttr.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\OptionalAttr.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Images\Question.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

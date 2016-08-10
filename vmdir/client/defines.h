@@ -1062,7 +1062,7 @@ the buffer size will always be adequate.
 #define VMDIR_DFL_5_5 "5.5"
 #define VMDIR_DFL_6_0 "6.0"
 #define VMDIR_DFL_6_5 "6.5"
-#define VMDIR_DFL_7_0 "7.0"
+#define VMDIR_DFL_6_6 "6.6"
 #define VMDIR_DFL_DEFAULT 1
 
 #define VMDIR_DFL_VERSION_INITIALIZER   \
@@ -1070,5 +1070,5 @@ the buffer size will always be adequate.
     { 1, VMDIR_DFL_5_5 },               \
     { 1, VMDIR_DFL_6_0 },               \
     { 2, VMDIR_DFL_6_5 },               \
-    { 3, VMDIR_DFL_7_0 }                \
+    { 3, VMDIR_DFL_6_6 }                \
 }

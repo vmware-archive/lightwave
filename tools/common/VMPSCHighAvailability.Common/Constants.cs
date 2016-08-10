@@ -34,7 +34,7 @@ namespace VMPSCHighAvailability.Common
         public const int DefaultTimerRefreshInterval = 30;
         public const int CacheCycleRefreshInterval = 60;
         public const string DeleteServer = "Delete Server";
-        public const string RootNodeDisplayName = "Lightwave Servers";
+        public const string RootNodeDisplayName = "VMware Servers";
         public const string SnapIn = "SnapIn";
         public const string SuiteName = "Lightwave";
 
@@ -88,6 +88,8 @@ namespace VMPSCHighAvailability.Common
         public const string LocalDataFileName = "PSCHighAvailability.xml";
         public const string ToolsSuiteName = "LightwaveTools";
 		public const string PscLogFileName = "PscSiteManagement.log";
+		public const string PscTopologyFileName = "PscTopologyInfo.log";
+
 
         #endregion
 

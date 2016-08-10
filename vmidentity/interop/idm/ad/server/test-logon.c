@@ -29,6 +29,7 @@
  */
 
 #include "includes.h"
+#include "idmcommon.h"
 #include <gssapi/gssapi.h>
 #include <gssapi/gssapi_ext.h>
 #include <locale.h>
@@ -39,7 +40,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <stdint.h>
 
 #ifndef _WIN32
 /* getpass() prototype */
@@ -50,9 +50,6 @@ static char *argv0;
 static int argv0len;
 
 #ifdef _WIN32
-
-/* Different function name on Windows; probably more modern GSSAPI */
-#define gssspi_set_cred_option(a, b, c, d) gss_set_cred_option((a), &(b), (c), (d))
 
 #define snprintf _snprintf
 
@@ -158,6 +155,43 @@ char *getpass(char *prompt)
 #endif
 
 
+/*
+ * 1.3.6.1.4.1.6876.11711.2.1.1.1
+ *
+ * {iso(1) identified-organization(3) dod(6) internet(1) private(4)
+ *   enterprise(1) 6876 vmwSecurity(11711) vmwAuthentication(2) vmwGSSAPI(1)
+ *   vmwSRP(1) vmwSrpCredOptPwd(1)}
+ * Official registered GSSAPI_SRP password cred option OID
+ */
+#ifndef GSSAPI_SRP_CRED_OPT_PW
+#define GSSAPI_SRP_CRED_OPT_PW  \
+    "\x2b\x06\x01\x04\x01\xb5\x5c\xdb\x3f\x02\x01\x01\x01"
+#define GSSAPI_SRP_USERNAME  \
+    "\x2b\x06\x01\x04\x01\xb5\x5c\xdb\x3f\x02\x01\x01\x02"
+#endif
+
+#ifndef GSSAPI_SRP_CRED_OPT_PW_LEN
+#define GSSAPI_SRP_CRED_OPT_PW_LEN  13
+#endif
+
+/*
+ * 1.2.840.113554.1.2.10
+ *
+ * {iso(1) member-body(2) US(840) mit(113554) infosys(1) gssapi(2) srp(10)}
+ * "Made up" SRP OID,
+ * "Made up" SRP OID, which is actually in MIT GSSAPI OID namespace,
+ *  based on existing GSSAPI mech OIDs.
+ * This is being depricated in future releases.
+ */
+#ifndef GSS_SRP_MECH_OID
+#define GSS_SRP_MECH_OID_LENGTH 9
+#define GSS_SRP_MECH_OID "\x2a\x86\x48\x86\xf7\x12\x01\x02\x0a"
+#endif
+
+#ifndef SPNEGO_OID
+#define SPNEGO_OID_LENGTH 6
+#define SPNEGO_OID "\x2b\x06\x01\x05\x05\x02"
+#endif
 
 DWORD
 IDMAuthenticateUserSrp(
@@ -284,9 +318,9 @@ printf("UPN: %.*s\n", (int) disp_name_buf.length, (char *) disp_name_buf.value);
     gss_release_buffer(&min, &disp_name_buf);
     gss_pwd.value = pszPassword;
     gss_pwd.length = strlen(pszPassword);
-    maj = gssspi_set_cred_option(
+    maj = gss_set_cred_option(
               &min,
-              cred_handle_cli,
+              &cred_handle_cli,
               &gss_srp_password_oid,
               &gss_pwd);
     if (maj)
@@ -556,9 +590,9 @@ printf("UPN: %.*s\n", (int) disp_name_buf.length, (char *) disp_name_buf.value);
     gss_release_buffer(&min, &disp_name_buf);
     gss_pwd.value = pszPassword;
     gss_pwd.length = strlen(pszPassword);
-    maj = gssspi_set_cred_option(
+    maj = gss_set_cred_option(
               &min,
-              cred_handle_cli,
+              &cred_handle_cli,
               &gss_ntlm_password_oid,
               &gss_pwd);
     if (maj)
@@ -743,6 +777,75 @@ void usage(char *msg)
     exit(1);
 }
 
+#ifndef _WIN32
+struct AuthData {
+    PWSTR user;
+    PWSTR domain;
+    PWSTR pwd;
+};
+
+void *auth(void* authData) {
+    PIDM_USER_INFO pIdmUserInformation = NULL;
+    DWORD dwError = 0;
+    struct AuthData *ptr = (struct AuthData *)authData;
+    char * user = NULL;
+    DWORD ptid = (DWORD)pthread_self();
+
+    LwRtlCStringAllocateFromWC16String(&user, ptr->user);
+    printf("TID: %d Auth user: %s\n", ptid, user);
+
+    dwError = IDMAuthenticateUser(
+                      ptr->user,
+                      ptr->domain,
+                      ptr->pwd,
+                      &pIdmUserInformation);
+    if (dwError)
+    {
+        printf("TID: %d IDMAuthenticateUser: Failed 0x%x\n", ptid, dwError);
+        return NULL;
+    }
+    else
+    {
+        LwRtlCStringAllocateFromWC16String(
+            &user,
+            pIdmUserInformation->pszUserName);
+        printf("TID: %d Successfully logged on, User Name is: %s\n", ptid, user);
+        IDMFreeUserInfo(pIdmUserInformation);
+    }
+
+    return NULL;
+}
+
+void testAuthWithThreads(int threadCount) {
+    struct AuthData inputs[threadCount];
+    pthread_t auth_thread[threadCount];
+    char * user;
+    char * pwd;
+    int i=0;
+    for(i=0; i<threadCount; i++) {
+        LwRtlWC16StringAllocateFromCString(&inputs[i].domain, "ssolabs.com");
+        IDMAllocateStringA("aduser_0000", &user);
+        user[strlen(user) - 1] = '0' + i;
+        LwRtlWC16StringAllocateFromCString(&inputs[i].user, user);
+        IDMAllocateStringA("pwd_0000", &pwd);
+        pwd[strlen(pwd) - 1] = '0' + i;
+        LwRtlWC16StringAllocateFromCString(&inputs[i].pwd, pwd);
+
+        if(pthread_create(&auth_thread[i], NULL, auth, (void *) &(inputs[i]))) {
+            printf("Error creating thread\n");
+            return;
+        }
+    }
+
+    for(i=0; i<threadCount; i++) {
+        if(pthread_join(auth_thread[i], NULL)) {
+            printf("Error joining thread\n");
+            return;
+        }
+    }
+}
+#endif
+
 int main(int argc, char *argv[])
 {
     DWORD krb_err = 0;
@@ -756,6 +859,7 @@ int main(int argc, char *argv[])
     int optcnt = 1; /* Ignore argv[0] initially */
     int do_srp_auth = FALSE;
     int do_ntlm_auth = FALSE;
+    int do_threads = FALSE;
 
     setlocale(LC_ALL, "");
     argv0 = (argv0=strrchr(argv[0], '/')) ? argv0+1 : argv[0];
@@ -777,6 +881,11 @@ int main(int argc, char *argv[])
             do_ntlm_auth = TRUE;
             optcnt++;
         }
+        else if (optcnt < argc && strcmp(argv[optcnt], "--threads") == 0)
+        {
+            do_threads = TRUE;
+            optcnt++;
+        }
         /* else if (!strcmp(argv[optcnt], "--other-switches-here)) */
         else
         {
@@ -785,7 +894,7 @@ int main(int argc, char *argv[])
     } while (optcnt < argc);
     optcnt--; /* Remove argv[0] assumption */
 
-    if ((argc-optcnt) < 3)
+    if (!do_threads && (argc-optcnt) < 3)
     {
         usage(NULL);
     }
@@ -825,7 +934,15 @@ int main(int argc, char *argv[])
                       pwd,
                       &pIdmUserInformation);
         krb_err = dwError;
-    } else
+    }
+    else if(do_threads)
+    {
+#ifndef _WIN32
+        testAuthWithThreads(9);
+        IDMDestroySidCache();
+#endif
+    }
+    else
     {
         krb_err = IDMAuthenticateUser(
                       user,

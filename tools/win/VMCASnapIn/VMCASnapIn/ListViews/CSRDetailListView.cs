@@ -58,6 +58,7 @@ namespace VMCASnapIn.ListViews
                 serverDTO.SigningRequests.RemoveAt(this.ResultNodes.IndexOf(node));
                 this.ResultNodes.Remove(node);
             }
+            RefreshList();
         }
 
         protected override void OnSelectionChanged(SyncStatus status)
@@ -151,6 +152,7 @@ namespace VMCASnapIn.ListViews
                     this.ResultNodes.Add(resultNode);
                 }
             }
+            this.DescriptionBarText = this.ResultNodes.Count.ToString();
         }
     }
 }
