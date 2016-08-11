@@ -59,7 +59,7 @@ Preparing the build system
 
 1.  Start with a Photon 1.0 system
 
-2.  tdnf install likewise-open
+2.  tdnf install likewise-open-devel
 
 3.  tdnf install openjdk
 
@@ -73,6 +73,7 @@ Preparing the build system
 
 8. tdnf install apache-tomcat
 
+9. tdnf install boost-devel
  
 
 Building the container
