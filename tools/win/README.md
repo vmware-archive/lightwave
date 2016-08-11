@@ -192,3 +192,18 @@ This will generate three installers as mentioned before in the tools\win\x64\Deb
 	5. UI tools allows attributes to be created for 34 different attribute syntax at present.
 
 ```
+
+## How To
+
+I. PSC Site Management UI tool does not login to the MXN topology once a topology is deployed.
+
+Edit the hosts file on all the nodes of the topology and the machine running UI tool as follows:
+ <IP>	<FQDN> 	<HOSTNAME>
+	 
+example:
+190.160.1.2	contoso.vmware.com	photon-contoso
+
+Add entry for all the nodes in the hosts file
+
+For linux, hosts file is located under: /etc/hosts
+For windows, hosts file is located under: C:\Windows\System32\drivers\etc\hosts
