@@ -114,6 +114,14 @@ VmDirIndexCfgRecordProgress(
                 pIndexCfg->pszAttrName,
                 ppcszStatus[pIndexCfg->status] );
     }
+    else if (gVdirIndexGlobals.offset % 10000 == 0)
+    {
+        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,
+                "Indexing Progress: Attribute = %s, Status = %s (%ld)",
+                pIndexCfg->pszAttrName,
+                ppcszStatus[pIndexCfg->status],
+                gVdirIndexGlobals.offset );
+    }
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszStatusKey);
