@@ -164,7 +164,7 @@ In case you wish to cleanup the libs and links added by the Lightwave UI tool su
 	1. Not able to Add root certificate
 
 * Lightwave PSC Site Management Tool :  
-	1. Performance improvements for Mac UI and management UI hangs when PSC is down
+	1. Management UI shows inconsitent PSC list in management view when PSC is powered down
 
 * Lightwave Directory Schema Tool :  
 	1. When a class object is selected in left pane then attribute list show in right pane is not in alphabetic order in  mac
@@ -247,4 +247,18 @@ Example:
 The most probable cause for this error is that the folder path is inaccessible.
 You can resolve it using sudo chmod 777 <tools folder path>
 You need to perform this each time you are prompted this error typically after a cleanup.
+
+
+III. PSC Site Management UI tool does not login to the MXN topology once a topology is deployed.
+
+Edit the hosts file on all the nodes of the topology and the machine running UI tool as follows:
+ <IP>	<FQDN> 	<HOSTNAME>
+	 
+example:
+190.160.1.2	contoso.vmware.com	photon-contoso
+
+Add entry for all the nodes in the hosts file
+
+For linux, hosts file is located under: /etc/hosts
+For windows, hosts file is located under: C:\Windows\System32\drivers\etc\hosts
 

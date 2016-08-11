@@ -39,8 +39,20 @@ The Lightwave Admin UI is built on the following technology stack:
 * Java 8 Servlets (placed under: /vmidentity/lightwaveui/src)
 * Angular JS 1.5 + Bootstrap 3.3.6 (placed under: /vmidentity/lightwaveui/web)
 
+####Browsers Supported
+* Chrome 39
+* Mozilla Firefox 34
+* Safari 8
+* Microsoft Edge 13 (on Windows 10 onwards)
 
 ##Known Issues
 
-None
+* Cannot add, edit or delete Service Providers (relying party, external IDP, OIDC client)
+* Does not work on Internet Explorer browser
+* Improvement - Need a UI to add a user to multiple groups from Users tab
+* Token auto-refresh after expiration leads to UI refresh to Home page
+* Web Socket Exception is seen in browser console on Windows when user navigates to login page
+* Some places error message is missing from the error banner
+* Branding Policy needs all the text and Display checkbox checked before Save to enable the banner
+* Branding Policy needs all the text removed and  Display checkbox un-checked before Save to disable the banner
 
