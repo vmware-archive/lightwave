@@ -4,7 +4,7 @@ ENV container=docker
 VOLUME ["/sys/fs/cgroup"]
 
 # install systemd
-RUN tdnf update -y tdnf; \
+RUN tdnf update --refresh -y tdnf; \
     tdnf update -y rpm; \
     tdnf install -y systemd; \
     # Remove unused systemd services
