@@ -320,14 +320,17 @@ MdbValidateAttrUniqueness(
     DWORD   dwError = 0;
     size_t  entryDnLen = 0;
     PVDIR_BACKEND_INDEX_ITERATOR    pIterator = NULL;
-    PLW_HASHMAP     pOccupiedScopes = NULL;
-    LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
-    LW_HASHMAP_PAIR pair = {NULL, NULL};
+    PLW_HASHMAP             pOccupiedScopes = NULL;
+    LW_HASHMAP_ITER         iter = LW_HASHMAP_ITER_INIT;
+    LW_HASHMAP_PAIR         pair = {NULL, NULL};
+    PVDIR_LINKED_LIST_NODE  pNode = NULL;
     PSTR        pszVal = NULL;
     ENTRYID     eId = 0;
     VDIR_ENTRY  entry = {0};
     PSTR        pszScope = NULL;
+    PSTR        pszScopeCopy = NULL;
     PSTR        pszDN = NULL;
+    PSTR        pszDNCopy = NULL;
     PVMDIR_MUTEX    pMutex = NULL;
     BOOLEAN         bInLock = FALSE;
 
@@ -349,7 +352,8 @@ MdbValidateAttrUniqueness(
         goto cleanup;
     }
     // no uniqueness enforced
-    if (LwRtlHashMapGetCount(pIndexCfg->pUniqScopes) == 0)
+    if (LwRtlHashMapGetCount(pIndexCfg->pUniqScopes) == 0 &&
+        VmDirLinkedListGetSize(pIndexCfg->pNewUniqScopes) == 0)
     {
         goto cleanup;
     }
@@ -374,11 +378,13 @@ MdbValidateAttrUniqueness(
         dwError = VmDirMDBSimpleEIdToEntry(eId, &entry);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        pszDN = BERVAL_NORM_VAL(entry.dn);
+
+        // find occupied scopes in pUniqScopes
         LwRtlHashMapResetIter(&iter);
         while (LwRtlHashMapIterate(pIndexCfg->pUniqScopes, &iter, &pair))
         {
             pszScope = pair.pKey;
-            pszDN = BERVAL_NORM_VAL(entry.dn);
 
             if (VmDirStringCompareA(PERSISTED_DSE_ROOT_DN, pszScope, FALSE) == 0 ||
                 VmDirStringEndsWith(pszDN, pszScope, FALSE))
@@ -386,15 +392,18 @@ MdbValidateAttrUniqueness(
                 if (LwRtlHashMapFindKey(pOccupiedScopes, NULL, pszScope) != 0)
                 {
                     // create and store copies in the map
-                    dwError = VmDirAllocateStringA(pszScope, &pszScope);
+                    dwError = VmDirAllocateStringA(pszScope, &pszScopeCopy);
                     BAIL_ON_VMDIR_ERROR(dwError);
 
-                    dwError = VmDirAllocateStringA(pszDN, &pszDN);
+                    dwError = VmDirAllocateStringA(pszDN, &pszDNCopy);
                     BAIL_ON_VMDIR_ERROR(dwError);
 
                     dwError = LwRtlHashMapInsert(
-                            pOccupiedScopes, pszScope, pszDN, NULL);
+                            pOccupiedScopes, pszScopeCopy, pszDNCopy, NULL);
                     BAIL_ON_VMDIR_ERROR(dwError);
+
+                    pszScopeCopy = NULL;
+                    pszDNCopy = NULL;
                 }
                 else
                 {
@@ -402,6 +411,36 @@ MdbValidateAttrUniqueness(
                     assert(FALSE);
                 }
             }
+        }
+
+        // find occupied scopes in pNewUniqScopes
+        pNode = pIndexCfg->pNewUniqScopes->pTail;
+        while (pNode)
+        {
+            pszScope = (PSTR)pNode->pElement;
+
+            if (VmDirStringCompareA(PERSISTED_DSE_ROOT_DN, pszScope, FALSE) == 0 ||
+                VmDirStringEndsWith(pszDN, pszScope, FALSE))
+            {
+                if (LwRtlHashMapFindKey(pOccupiedScopes, NULL, pszScope) != 0)
+                {
+                    // create and store copies in the map
+                    dwError = VmDirAllocateStringA(pszScope, &pszScopeCopy);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+
+                    dwError = VmDirAllocateStringA(pszDN, &pszDNCopy);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+
+                    dwError = LwRtlHashMapInsert(
+                            pOccupiedScopes, pszScopeCopy, pszDNCopy, NULL);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+
+                    pszScopeCopy = NULL;
+                    pszDNCopy = NULL;
+                }
+            }
+
+            pNode = pNode->pNext;
         }
 
         VMDIR_SAFE_FREE_MEMORY(pszVal);
@@ -455,6 +494,8 @@ error:
                 "%s failed, error (%d)", __FUNCTION__, dwError );
     }
 
+    VMDIR_SAFE_FREE_MEMORY(pszScopeCopy);
+    VMDIR_SAFE_FREE_MEMORY(pszDNCopy);
     goto cleanup;
 }
 
