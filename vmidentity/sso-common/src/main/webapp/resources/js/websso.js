@@ -204,7 +204,7 @@
             {
               var versionStr = usrAgent.substr(versionNumberIndex , length);
 			  console.log('Safari versionStr: ' + versionStr);
-              if(versionStr.trim() > 9)
+              if(versionStr.trim() > 8)
                 return true;
             }
 
