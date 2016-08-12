@@ -192,7 +192,7 @@ JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
 LOTUS_DNS_FORWARDERS_ARG=
 
 if [ ! -z "$LOTUS_DNS_FORWARDERS" ]; then
-    LOTUS_DNS_FORWARDERS_ARG="--dns-forwarders $LOTUS_DNS_FORWADERS"
+    LOTUS_DNS_FORWARDERS_ARG="--dns-forwarders $LOTUS_DNS_FORWARDERS"
 fi
 
 case "$LOTUS_DEPLOYMENT" in
