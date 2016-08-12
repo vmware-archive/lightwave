@@ -335,6 +335,19 @@ VmwDeploySetupServerCommon(
                     pParams->pszPassword);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
+    if (!IsNullOrEmptyString(pParams->pszDNSForwarders))
+    {
+        VMW_DEPLOY_LOG_INFO("Setting up DNS Forwarders [%s]",
+                            pParams->pszDNSForwarders);
+
+        dwError = VmwDeploySetForwarders(
+                        pParams->pszDomainName,
+                        pszUsername,
+                        pParams->pszPassword,
+                        pParams->pszDNSForwarders);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     VMW_DEPLOY_LOG_INFO("Setting up VMware Certificate Authority");
 
     dwError = VmwDeployMakeRootCACert(

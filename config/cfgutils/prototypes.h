@@ -57,6 +57,16 @@ VmwDeployGetDomainDN(
     PSTR* ppszDomainDN
     );
 
+// dns.c
+
+DWORD
+VmwDeploySetForwarders(
+    PCSTR pszDomain,
+    PCSTR pszUsername,
+    PCSTR pszPassword,
+    PCSTR pszForwarders
+    );
+
 // logging.c
 
 VOID
