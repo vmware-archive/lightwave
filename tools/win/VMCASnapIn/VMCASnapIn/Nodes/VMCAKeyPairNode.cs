@@ -72,6 +72,7 @@ namespace VMCASnapIn.Nodes
                 {
                     ServerDTO.KeyPairs.Add(frm.DTO);
                     bResult = true;
+                    VMCASnapInEnvironment.Instance.SaveLocalData();
                 }
             });
             return bResult;

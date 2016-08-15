@@ -4,34 +4,38 @@ idl_srcdir=$(top_srcdir)/idl
 
 vmdird_SOURCES = \
     accountmgmt.c \
-    auth.c        \
-    globals.c     \
-    init.c        \
-    instance.c    \
-    ipcserver.c   \
+    auth.c \
+    globals.c \
+    index.c \
+    init.c \
+    instance.c \
+    ipcserver.c \
     ipclocalapi.c \
     ipcapihandler.c \
-    parseargs.c   \
-    main.c        \
-    regconfig.c   \
-    rpcserv.c     \
-    rpcsrpserv.c  \
-    rpcstring.c   \
-    rpc.c         \
-    service.c     \
-    shutdown.c    \
-    signal.c      \
-    srvthr.c      \
+    parseargs.c \
+    main.c \
+    regconfig.c \
+    rpcserv.c \
+    rpcsrpserv.c \
+    rpcstring.c \
+    rpc.c \
+    schema.c \
+    service.c \
+    shutdown.c \
+    signal.c \
+    srvthr.c \
     superlogging.c \
-    utils.c       \
-    krb.c       \
+    utils.c \
+    krb.c \
     vmdir_sstub.c \
     vmdirftp_sstub.c \
     vmdirdbcp_sstub.c \
     srp_verifier_sstub.c \
     vmdirsuperlog_sstub.c \
     vmevent.c \
-    partnerschema.c
+    urgentrepl.c \
+    tracklastlogin.c \
+    vmdirurgentrepl_sstub.c
 
 if HAVE_MDB_STORE
 VMDIRD_BACKEND_INCLUDES=
@@ -107,9 +111,12 @@ CLEANFILES = \
     srp_verifier_sstub.c \
     vmdirsuperlog_h.h \
     vmdirsuperlog_cstub.c \
-    vmdirsuperlog_sstrub.c
+    vmdirsuperlog_sstrub.c \
+    vmdirurgentrepl_h.h \
+    vmdirurgentrepl_cstub.c \
+    vmdirurgentrepl_sstub.c
 
-BUILT_SOURCES = vmdir_h.h vmdirftp_h.h vmdirdbcp_h.h srp_verifier_h.h vmdirsuperlog_h.h
+BUILT_SOURCES = vmdir_h.h vmdirftp_h.h vmdirdbcp_h.h srp_verifier_h.h vmdirsuperlog_h.h vmdirurgentrepl_h.h
 
 vmdir_h.h vmdir_sstub.c: $(idl_srcdir)/vmdir.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdir_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<
@@ -125,3 +132,6 @@ srp_verifier_h.h srp_verifier_sstub.c: $(idl_srcdir)/srp_verifier.idl
 
 vmdirsuperlog_h.h vmdirsuperlog_sstub.c: $(idl_srcdir)/vmdirsuperlog.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirsuperlog_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
+
+vmdirurgentrepl_h.h vmdirurgentrepl_sstub.c: $(idl_srcdir)/vmdirurgentrepl.idl
+	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirurgentrepl_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<

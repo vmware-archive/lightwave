@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include Definitions.wxi ?>
+	<Fragment>
+		<!-- TODO: Put your code here. -->
+    <ComponentGroup Id="VMCA_comp_group" Directory="APPLICATIONFOLDER">
+      <Component Id="vmca_msc_comp" Guid="{BBECAE90-B5EB-4909-8A30-6413BDF602A1}" Win64="yes">
+        <File Id="vmca_msc_file"
+              Name="Lightwave CA.msc"
+              KeyPath="yes"
+              DiskId="1"
+              Source="$(var.Resources)/Lightwave CA.msc" />
+      </Component>
+      <Component Id="VMCA_Client_Dll_Comp" Guid="{FF429159-CCDF-4A21-8260-C859424FC766}" Win64="yes">
+        <File Id="VMCA_Client_Dll_File"
+              Name="VMCA.Client.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMCA_Client_Dll_File"
+              AssemblyApplication="VMCA_Client_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\VMCA.Client.dll" />
+      </Component>
+      <Component Id="VMCA_Common_Dll_Comp" Guid="{0CE098F3-E23C-4EB7-BC41-022E31744361}" Win64="yes">
+        <File Id="VMCA_Common_Dll_File"
+              Name="VMCA.Common.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMCA_Common_Dll_File"
+              AssemblyApplication="VMCA_Common_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\VMCA.Common.dll" />
+      </Component>
+      <Component Id="VMCASnapIn_Dll_Comp" Guid="{D0D80CC3-EFAC-45BE-9A8C-8068235BBDC5}" Win64="yes">
+        <File Id="VMCASnapIn_Dll_File"
+              Name="VMCASnapIn.dll"
+              KeyPath="yes" Assembly=".net"
+              AssemblyManifest="VMCASnapIn_Dll_File"
+              AssemblyApplication="VMCASnapIn_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\VMCASnapIn.dll" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="VMCA_reg_comp_group" Directory="TARGETDIR">
+      <Component Id="Reg_VMCA_Comp" Guid="{7BB9FC3F-7920-491D-BC5A-EE71E7EA9169}" Win64="yes">
+        <RegistryKey Id="Reg_VMCA_Key"
+                     Action="createAndRemoveOnUninstall"
+                     Key="Software\Microsoft\MMC\SnapIns\FX:{4A40882B-8DDF-4DCD-9FAD-E6CB0274D221}"
+                     Root="HKLM">
+          <RegistryKey Key="Standalone"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryKey Key="NodeTypes"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryValue Name="RuntimeVersion"
+                         Value="v2.0.50727"
+                         Type="string" />
+          <RegistryValue Name="UseCustomHelp"
+                         Value="0"
+                         Type="integer" />
+          <RegistryValue Name="ModuleName"
+                         Value="VMCASnapIn.dll"
+                         Type="string"
+                         KeyPath="yes"/>
+          <RegistryValue Name="NameString"
+                         Value="VMware certificate server"
+                         Type="string" />
+          <RegistryValue Name="ApplicationBase"
+                         Value="[APPLICATIONFOLDER]"
+                         Type="expandable" />
+          <RegistryValue Name="About"
+                         Value="{00000000-0000-0000-0000-000000000000}"
+                         Type="string" />
+          <RegistryValue Name="Description"
+                         Value="$(var.CA_desc)"
+                         Type="string"  />
+          <RegistryValue Name="FxVersion"
+                         Value="3.0.0.0"
+                         Type="string" />
+          <RegistryValue Name="Type"
+                         Value="VMCASnapIn.VMCASnapIn, VMCASnapIn, Version=$(var.VersionNumber), Culture=neutral, PublicKeyToken=null"
+                         Type="string" />
+          <RegistryValue Name="AssemblyName"
+                         Value="VMCASnapIn"
+                         Type="string" />
+          <RegistryValue Name="Version"
+                         Value="$(var.VersionNumber)"
+                         Type="string" />
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+
+	</Fragment>
+</Wix>

@@ -337,6 +337,14 @@
     </Compile>
     <Compile Include="DataSources\SuperLogDataSource.cs" />
     <Compile Include="DataSources\SuperLogFilterDataSource.cs" />
+    <Compile Include="Views\AboutServer.cs" />
+    <Compile Include="Views\AboutServer.designer.cs">
+      <DependentUpon>AboutServer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AboutServerController.cs" />
+    <Compile Include="Views\AboutServerController.designer.cs">
+      <DependentUpon>AboutServerController.cs</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <InterfaceDefinition Include="Views\AddExistingTenant.xib" />
@@ -376,6 +384,7 @@
     <InterfaceDefinition Include="Views\ExtenalIdpDetailsView.xib" />
     <InterfaceDefinition Include="Views\SuperLogging.xib" />
     <InterfaceDefinition Include="Views\SuperLoggingFilter.xib" />
+    <InterfaceDefinition Include="Views\AboutServer.xib" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
   <ItemGroup>
@@ -433,6 +442,10 @@
     <ProjectReference Include="..\..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
       <Project>{CD959E2E-5B9C-4329-B085-352844CFDCDD}</Project>
       <Name>VMIdentity.CommonUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\VmIdentity.UI.Common\VmIdentity.UI.Common.csproj">
+      <Project>{35037B87-3B35-40FA-A9D3-7974DCDDABB5}</Project>
+      <Name>VmIdentity.UI.Common</Name>
     </ProjectReference>
   </ItemGroup>
 </Project>

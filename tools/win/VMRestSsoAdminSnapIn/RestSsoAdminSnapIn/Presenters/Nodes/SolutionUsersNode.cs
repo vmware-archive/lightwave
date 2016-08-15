@@ -102,7 +102,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
         {
             ActionHelper.Execute(delegate()
             {
-                var frm = new FindSolutionUserByCertDN(this.GetServiceGateway(), _serverDto);
+                var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
+                var frm = new FindSolutionUserByCertDN(service, _serverDto);
                 if(this.SnapIn.Console.ShowDialog(frm) == DialogResult.OK)
                 {
                     SolutionUsersControl.RefreshUsers(frm.CertDn, SearchType.CERT_SUBJECTDN);
@@ -114,14 +115,19 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
         {
             ActionHelper.Execute(delegate
             {
-                var ssoAdminSdkService = this.GetServiceGateway();
+                var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
                 var server = _serverDto;
-                var frm = new NewSolutionUserForm(ssoAdminSdkService, server, _tenantName);
-                frm.ShowDialog();
-                if (frm.SolutionUserDto != null)
+                var userForm = new NewSolutionUserForm(service, server, _tenantName);
+                var context = this.GetApplicationContext();
+                var dataContext = context.NavigationController.NavigateToView(this, userForm);
+                if (dataContext != null)
                 {
-                    MMCDlgHelper.ShowMessage(string.Format("Solution User {0} created successfully", frm.SolutionUserDto.Name));
-                    SolutionUsersControl.RefreshUsers(string.Empty);
+                    var userDto = (SolutionUserDto)dataContext;
+                    if (userDto != null)
+                    {
+                        MMCDlgHelper.ShowMessage(string.Format("Solution User {0} created successfully", userDto.Name));
+                        SolutionUsersControl.RefreshUsers(string.Empty);
+                    }
                 }
             } , null);
         }
@@ -149,7 +155,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes
             {
                 ActionHelper.Execute(delegate
                 {
-                    var service = this.GetServiceGateway();
+                    var service = ScopeNodeExtensions.GetServiceGateway(ServerDto.ServerName);
                     var dto = Tag as SolutionUserDto;
                     var propManager = new SolutionUserPropertyManager(service, dto, ServerDto, _tenantName);
 

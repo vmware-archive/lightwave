@@ -28,59 +28,6 @@
  *
  */
 
-// memory.c
-
-DWORD
-IDMAllocateMemory(
-    SIZE_T size,
-    PVOID* ppMemory
-    );
-
-VOID
-IDMFreeMemory(
-    PVOID pMemory
-    );
-
-DWORD
-IDMAllocateString(
-    PWSTR  pszString,
-    PWSTR* ppszString
-    );
-
-DWORD
-IDMAllocateStringA(
-    PSTR  pszString,
-    PSTR* ppszString
-    );
-
-VOID
-IDMFreeString(
-    PWSTR pszString
-    );
-
-DWORD
-IDMAllocateStringWFromA(
-    PCSTR pszSrc,
-    PWSTR* ppwszDst
-    );
-
-DWORD
-IDMAllocateStringAFromW(
-    PCWSTR pwszSrc,
-    PSTR*  ppszDst
-    );
-
-DWORD
-IDMCloneSid(
-    PSID  pSid,
-    PSID* ppNewSid
-    );
-
-VOID
-IDMFreeSid(
-    PSID pSid
-    );
-
 // sidcache.c
 
 DWORD

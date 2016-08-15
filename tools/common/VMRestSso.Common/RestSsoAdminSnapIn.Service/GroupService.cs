@@ -25,22 +25,24 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Group
 	public class GroupService
 	{
 		private readonly IWebRequestManager _webRequestManager;
-		public GroupService(IWebRequestManager webRequestManager)
+        private readonly IServiceConfigManager _serviceConfigManager;
+        public GroupService(IWebRequestManager webRequestManager, IServiceConfigManager serviceConfigManager)
 		{
 			_webRequestManager = webRequestManager;
+            _serviceConfigManager = serviceConfigManager;
 		}
 
 		public GroupDto Get(ServerDto serverDto, string tenantName, string group, Token token)
 		{
 			group = Uri.EscapeDataString(group);
 			tenantName = Uri.EscapeDataString(tenantName);
-			var url = string.Format(ServiceConfigManager.GetGroupPostEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName, group);
+			var url = string.Format(_serviceConfigManager.GetGroupPostEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName, group);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 			var requestConfig = new RequestSettings
 			{
 				Method = HttpMethod.Post,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
 			return JsonConvert.Deserialize<GroupDto>(response);
@@ -51,13 +53,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Group
 			var principalName = Uri.EscapeDataString(groupDto.GroupName + "@" + groupDto.GroupDomain);
 			tenant = Uri.EscapeDataString(tenant);
 			var json = JsonConvert.Serialize(groupDto);
-			var url = string.Format(ServiceConfigManager.GroupsEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName);
+            var url = string.Format(_serviceConfigManager.GetGroupsEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 			var requestConfig = new RequestSettings
 			{
 				Method = HttpMethod.Post,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
 			return JsonConvert.Deserialize<GroupDto>(response);
@@ -67,13 +69,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Group
 		{
 			var principalName = Uri.EscapeDataString(groupDto.GroupName + "@" + groupDto.GroupDomain);
 			tenant = Uri.EscapeDataString(tenant);
-			var url = string.Format(ServiceConfigManager.GroupEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName);
+            var url = string.Format(_serviceConfigManager.GetGroupEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 			var requestConfig = new RequestSettings
 			{
 				Method = HttpMethod.Delete,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			var json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
 			return string.IsNullOrEmpty(response);
@@ -82,7 +84,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Group
 		{
 			var principalName = Uri.EscapeDataString(groupDto.GroupName + "@" + groupDto.GroupDomain);
 			tenant = Uri.EscapeDataString(tenant);
-			var url = string.Format(ServiceConfigManager.GroupEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName);
+			var url = string.Format(_serviceConfigManager.GetGroupEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName);
 			var g = new GroupDto() { GroupDetails = new GroupDetailsDto { Description = groupDto.GroupDetails.Description } };
 			var json = JsonConvert.Serialize(g);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
@@ -90,7 +92,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Group
 			{
 				Method = HttpMethod.Put,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
 			return JsonConvert.Deserialize<GroupDto>(response);
@@ -101,13 +103,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Group
 			var principalName = Uri.EscapeDataString(groupDto.GroupName + "@" + groupDto.GroupDomain);
 			tenant = Uri.EscapeDataString(tenant);
 			var queryString = users.Select(x => "members=" + Uri.EscapeDataString(x.Name + "@" + x.Domain)).Aggregate((x, y) => string.Format("{0}&{1}", x, y));
-			var url = string.Format(ServiceConfigManager.MembersOfGroupEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName, queryString, GroupMemberType.USER);
+            var url = string.Format(_serviceConfigManager.GetMembersOfGroupEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName, queryString, GroupMemberType.USER);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 			var requestConfig = new RequestSettings
 			{
 				Method = HttpMethod.Put,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			var json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
 			return response != null;
@@ -117,13 +119,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Group
 			var principalName = Uri.EscapeDataString(groupDto.GroupName + "@" + groupDto.GroupDomain);
 			tenant = Uri.EscapeDataString(tenant);
 			var queryString = users.Select(x => "members=" + x.Name + "@" + x.Domain).Aggregate((x, y) => string.Format("{0}&{1}", x, y));
-			var url = string.Format(ServiceConfigManager.MembersOfGroupEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName, queryString, GroupMemberType.SOLUTIONUSER);
+            var url = string.Format(_serviceConfigManager.GetMembersOfGroupEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName, queryString, GroupMemberType.SOLUTIONUSER);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 			var requestConfig = new RequestSettings
 			{
 				Method = HttpMethod.Put,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			var json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
 			return response != null;
@@ -134,13 +136,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Group
 			var principalName = Uri.EscapeDataString(groupDto.GroupName + "@" + groupDto.GroupDomain);
 			tenant = Uri.EscapeDataString(tenant);
 			var queryString = groups.Select(x => "members=" + x.GroupName + "@" + x.GroupDomain).Aggregate((x, y) => string.Format("{0}&{1}", x, y));
-			var url = string.Format(ServiceConfigManager.MembersOfGroupEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName, queryString, GroupMemberType.GROUP);
+            var url = string.Format(_serviceConfigManager.GetMembersOfGroupEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName, queryString, GroupMemberType.GROUP);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 			var requestConfig = new RequestSettings
 			{
 				Method = HttpMethod.Put,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			var json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
 			return response != null;
@@ -150,13 +152,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Group
 		{
 			var principalName = Uri.EscapeDataString(groupDto.GroupName + "@" + groupDto.GroupDomain);
 			tenant = Uri.EscapeDataString(tenant);
-			var url = string.Format(ServiceConfigManager.GetAllMembersOfGroupPostEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName, type);
+			var url = string.Format(_serviceConfigManager.GetAllMembersOfGroupPostEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName, type);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 			var requestConfig = new RequestSettings
 			{
 				Method = HttpMethod.Post,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
 			return JsonConvert.Deserialize<GroupMembershipDto>(response);
@@ -167,13 +169,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Group
 			var principalName = Uri.EscapeDataString(groupDto.GroupName + "@" + groupDto.GroupDomain);
 			tenant = Uri.EscapeDataString(tenant);
 			var queryString = users.Select(x => "members=" + x.Name + "@" + x.Domain).Aggregate((x, y) => string.Format("{0}&{1}", x, y));
-			var url = string.Format(ServiceConfigManager.MembersOfGroupEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName, queryString, GroupMemberType.USER);
+            var url = string.Format(_serviceConfigManager.GetMembersOfGroupEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName, queryString, GroupMemberType.USER);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 			var requestConfig = new RequestSettings
 			{
 				Method = HttpMethod.Delete,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			var json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
 			return response != null;
@@ -184,13 +186,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Group
 			var principalName = Uri.EscapeDataString(groupDto.GroupName + "@" + groupDto.GroupDomain);
 			tenant = Uri.EscapeDataString(tenant);
 			var queryString = users.Select(x => "members=" + x.Name + "@" + x.Domain).Aggregate((x, y) => string.Format("{0}&{1}", x, y));
-			var url = string.Format(ServiceConfigManager.MembersOfGroupEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName, queryString, GroupMemberType.SOLUTIONUSER);
+            var url = string.Format(_serviceConfigManager.GetMembersOfGroupEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName, queryString, GroupMemberType.SOLUTIONUSER);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 			var requestConfig = new RequestSettings
 			{
 				Method = HttpMethod.Delete,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			var json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
 			return response != null;
@@ -201,13 +203,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Group
 			var principalName = Uri.EscapeDataString(groupDto.GroupName + "@" + groupDto.GroupDomain);
 			tenant = Uri.EscapeDataString(tenant);
 			var queryString = groups.Select(x => "members=" + x.GroupName + "@" + x.GroupDomain).Aggregate((x, y) => string.Format("{0}&{1}", x, y));
-			var url = string.Format(ServiceConfigManager.MembersOfGroupEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName, queryString, GroupMemberType.GROUP);
+            var url = string.Format(_serviceConfigManager.GetMembersOfGroupEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName, queryString, GroupMemberType.GROUP);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 			var requestConfig = new RequestSettings
 			{
 				Method = HttpMethod.Delete,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			var json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
 			return response != null;
@@ -217,13 +219,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Group
 		{
 			var principalName = Uri.EscapeDataString(groupDto.GroupName + "@" + groupDto.GroupDomain);
 			tenant = Uri.EscapeDataString(tenant);
-			var url = string.Format(ServiceConfigManager.GetParentsOfGroupPostEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName);
+			var url = string.Format(_serviceConfigManager.GetParentsOfGroupPostEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, principalName);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
 			var requestConfig = new RequestSettings
 			{
 				Method = HttpMethod.Post,
 			};
-			var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+			var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
 			var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
 			var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
 			return JsonConvert.Deserialize<List<GroupDto>>(response);

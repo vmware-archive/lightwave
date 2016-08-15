@@ -16,6 +16,7 @@ using System;
 using System.Windows.Forms;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
+using Vmware.Tools.RestSsoAdminSnapIn.Presenters;
 using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Views
@@ -38,8 +39,9 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 var auths = SnapInContext.Instance.AuthTokenManager.GetAuthTokens(_serverDto);
                 var auth = auths[0];
                 ActionHelper.Execute(delegate()
-                {                    
-                    _adJoinInfoDto = SnapInContext.Instance.ServiceGateway.Adf.JoinActiveDirectory(_serverDto, adJoinInfoDto, auth.Token);
+                {
+                    var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
+                    _adJoinInfoDto = service.Adf.JoinActiveDirectory(_serverDto, adJoinInfoDto, auth.Token);
                     MMCDlgHelper.ShowWarning("Join operation completed successfully. Please reboot the node/server for the changes to take effect");
                     Close();
                 }, auth);

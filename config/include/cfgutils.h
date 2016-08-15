@@ -57,6 +57,8 @@ typedef struct _VMW_IC_SETUP_PARAMS
     PSTR pszServer;
     PSTR pszSite;
 
+    PSTR pszDNSForwarders;
+
 } VMW_IC_SETUP_PARAMS, *PVMW_IC_SETUP_PARAMS;
 
 typedef struct _VMW_DEPLOY_LOG_CONTEXT* PVMW_DEPLOY_LOG_CONTEXT;

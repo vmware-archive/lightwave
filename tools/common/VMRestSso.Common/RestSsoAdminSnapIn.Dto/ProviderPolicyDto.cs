@@ -34,7 +34,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
             set { defaultProvider = value; }
         }
 
-        [DataMember(EmitDefaultValue = true)]
+        [DataMember(EmitDefaultValue = false, IsRequired = false)]
         private string defaultProviderAlias;
 
         [DescriptionAttribute("Default provider alias")]
@@ -44,11 +44,11 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
             set { defaultProviderAlias = value; }
         }
 
-         [DataMember]
+        [DataMember]
         private bool providerSelectionEnabled;
 
         [DescriptionAttribute("Is Provider Selection Enabled?")]
-         public bool ProviderSelectionEnabled
+        public bool ProviderSelectionEnabled
         {
             get { return providerSelectionEnabled; }
             set { providerSelectionEnabled = value; }

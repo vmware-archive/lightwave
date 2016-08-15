@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -26,6 +26,23 @@
  */
 
 #include "includes.h"
+
+static
+DWORD
+_VmDirGetAttributeMetadata(
+    PCSTR pszHostName,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszEntryDn,
+    PCSTR pszAttribute
+    );
+
+static
+VOID
+_VmDirPrintAttributeMetadata(
+    PVMDIR_METADATA pAttrMetadata
+    );
+
 
 static
 DWORD
@@ -100,19 +117,11 @@ _VmDirGetDCList(
 
     for (dwCnt=0; dwCnt<dwServerInfoCount; dwCnt++)
     {
-        PCSTR   pszTmp = VmDirStringChrA(pServerInfo[dwCnt].pszServerDN, ',');
-
-        if (pszTmp == NULL)
-        {
-            dwError = VMDIR_ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
 
         VMDIR_SAFE_FREE_MEMORY(pszName);
-        dwError = VmDirAllocateStringOfLenA(
-                    pServerInfo[dwCnt].pszServerDN+3,
-                    (DWORD)(pszTmp-pServerInfo[dwCnt].pszServerDN-3),
-                    &pszName);
+
+        dwError = VmDirDnLastRDNToCn(pServerInfo[dwCnt].pszServerDN,
+                                    &pszName);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirStringListAdd(pDCList, pszName);
@@ -148,17 +157,17 @@ _VmDirPrintReplState(
 
     if (pReplState)
     {
-        printf("Domain Controller: %s\n",VDIR_SAFE_STRING(pReplState->pszHost) );
-        printf("Invocation ID: %s\n",VDIR_SAFE_STRING(pReplState->pszInvocationId) );
-        printf("Replication cycle count: %d\n",pReplState->dwCycleCount );
-        printf("Max consumable  USN: %lu\n",pReplState->maxConsumableUSN );
-        printf("Max originating USN: %lu\n",pReplState->maxOriginatingUSN );
+        printf("Domain Controller: %s\n",VDIR_SAFE_STRING(pReplState->pszHost));
+        printf("Invocation ID: %s\n",VDIR_SAFE_STRING(pReplState->pszInvocationId));
+        printf("Replication cycle count: %d\n",pReplState->dwCycleCount);
+        printf("Max consumable  USN: %lu\n",pReplState->maxConsumableUSN);
+        printf("Max originating USN: %lu\n",pReplState->maxOriginatingUSN);
 
         pVector = pReplState->pReplUTDVec;
         while (pVector)
         {
             printf("Has seen %lu USN from %s\n",pVector->maxOriginatingUSN,
-                   VDIR_SAFE_STRING(pVector->pszPartnerInvocationId) );
+                   VDIR_SAFE_STRING(pVector->pszPartnerInvocationId));
             pVector = pVector->next;
         }
 
@@ -172,6 +181,29 @@ _VmDirPrintReplState(
 
         printf("\n\n");
     }
+}
+
+static
+VOID
+_VmDirPrintAttributeMetadata(
+    PVMDIR_METADATA pAttrMetadata
+    )
+{
+    if (pAttrMetadata)
+    {
+        printf("\tAttribute: %s\n", VDIR_SAFE_STRING(pAttrMetadata->pszAttribute));
+        printf("\tLocal USN: %lu\n", pAttrMetadata->localUsn);
+        printf("\tVersion: %u\n", pAttrMetadata->dwVersion);
+        printf("\tOriginating Id: %s\n", VDIR_SAFE_STRING(pAttrMetadata->pszOriginatingId));
+        printf("\tOriginating time: %s\n", VDIR_SAFE_STRING(pAttrMetadata->pszOriginatingTime));
+        printf("\tOriginating USN: %lu\n", pAttrMetadata->originatingUsn);
+    }
+    else
+    {
+        printf("\tAttribute metadata NOT found\n");
+    }
+
+    printf("\n");
 }
 
 static
@@ -199,13 +231,14 @@ VmDirGetFederationStatus(
     {
         VmDirConnectionClose( pConnection );
         pConnection = NULL;
-        dwError = _VmDirGetConnection( pDCList->pStringList[dwCnt],
-                                       pszUserName,
-                                       pszPassword,
-                                       &pConnection);
+        dwError = _VmDirGetConnection(
+                        pDCList->pStringList[dwCnt],
+                        pszUserName,
+                        pszPassword,
+                        &pConnection);
         if (dwError == VMDIR_ERROR_SERVER_DOWN)
         {
-            printf("Domain Controller: %s is NOT available\n\n", pDCList->pStringList[dwCnt] );
+            printf("Domain Controller: %s is NOT available\n\n", pDCList->pStringList[dwCnt]);
             dwError = 0;
             continue;
         }
@@ -216,7 +249,7 @@ VmDirGetFederationStatus(
         dwError = VmDirGetReplicationState(pConnection, &pReplState);
         if (dwError == VMDIR_ERROR_ENTRY_NOT_FOUND)
         {
-            printf("Domain Controller: %s is NOT supported\n\n", pDCList->pStringList[dwCnt] );
+            printf("Domain Controller: %s is NOT supported\n\n", pDCList->pStringList[dwCnt]);
             dwError = 0;
             continue;
         }
@@ -227,7 +260,7 @@ VmDirGetFederationStatus(
 
 cleanup:
     VmDirStringListFree(pDCList);
-    VmDirConnectionClose( pConnection );
+    VmDirConnectionClose(pConnection);
     VmDirFreeReplicationState(pReplState);
     return dwError;
 
@@ -344,6 +377,307 @@ VmDirShowServerInfo(
 }
 
 static
+DWORD
+_VdcLdapReplaceAttributeValues(
+    LDAP *pLd,
+    PCSTR pszDN,
+    PCSTR pszAttribute,
+    PCSTR *ppszAttributeValues
+    )
+{
+    DWORD    dwError = 0;
+    LDAPMod  addReplace;
+    LDAPMod *mods[2];
+
+    addReplace.mod_op     = LDAP_MOD_REPLACE;
+    addReplace.mod_type   = (PSTR) pszAttribute;
+    addReplace.mod_values = (PSTR*) ppszAttributeValues;
+
+    mods[0] = &addReplace;
+    mods[1] = NULL;
+
+    dwError = ldap_modify_ext_s(pLd, pszDN, mods, NULL, NULL);
+
+    return dwError;
+}
+
+static
+DWORD
+_VdcLdapGetAttributeValue(
+    LDAP *pLd,
+    PCSTR pszDCDN,
+    PCSTR pszAttribute,
+    BOOL  bOptional,
+    PSTR *ppszAttrVal
+    )
+{
+    DWORD dwError = 0;
+    PCSTR ppszAttrs[2] = {pszAttribute, NULL};
+    LDAPMessage *pResult = NULL;
+    PSTR  pszAttrVal = NULL;
+
+    dwError = ldap_search_ext_s(
+                pLd,
+                pszDCDN,
+                LDAP_SCOPE_BASE,
+                NULL,
+                (PSTR*)ppszAttrs,
+                0,
+                NULL,
+                NULL,
+                NULL,
+                -1,
+                &pResult);
+
+    if (ldap_count_entries(pLd, pResult) > 0)
+    {
+        LDAPMessage* pEntry = ldap_first_entry(pLd, pResult);
+
+        for (; pEntry != NULL;
+             pEntry = ldap_next_entry(pLd,pEntry))
+        {
+            dwError = VmDirGetSingleAttributeFromEntry(pLd,
+                                                       pEntry,
+                                                       (PSTR)pszAttribute,
+                                                       bOptional,
+                                                       &pszAttrVal);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    *ppszAttrVal = pszAttrVal;
+
+cleanup:
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
+
+    return dwError;
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszAttrVal);
+    goto cleanup;
+}
+
+/**
+ * This is an innocuous domain modification to trigger a USN change at all
+ * nodes in a domain. The write will be to the 'comment' attribute for each
+ * DCAccountDN listed in the given FQDN's 'Domain Controllers' entry for the
+ * domain as gleened from the user UPN. The value, or lack thereof, for the
+ * attribute will be restored after the write.
+ *
+ * @param pszHostName The FQDN of node to be written to. This will be used
+ *                    to create the DCAccountDN in form of:
+ *                    cn=<FQDN>,ou=Domain Controllers,dc=vsphere,dc=local
+ * @param pszUserName The user UPN in which to validate.
+ * @param pszPassword The password for the given user.
+ * @return 0 if successful, else a non-zero error code.
+ */
+DWORD
+_VmDirDummyDomainWrite(
+    PCSTR   pszHostName,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword
+)
+{
+    DWORD   dwError = 0;
+    PSTR    pszDomainName = NULL;
+    PSTR    pszDomainDN = NULL;
+    PSTR    pszServerName = NULL;
+    PSTR    pszName = NULL;
+    PSTR    pszAttrVal = NULL;
+    LDAP*   pLd = NULL;
+    PSTR    ppszVals [] = { "foobar", NULL };
+    PVMDIR_STRING_LIST pDCList = NULL;
+    DWORD   dwCnt = 0;
+
+    if( !pszPassword|| !pszHostName || !pszUserName ) {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError =  VmDirUPNToNameAndDomain(pszUserName, &pszName, &pszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSafeLDAPBind(&pLd, pszHostName, pszUserName, pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetDCDNList(
+                pLd,
+                pszDomainDN,
+                &pDCList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt=0; dwCnt<pDCList->dwCount; dwCnt++)
+    {
+        if (pLd)
+        {
+            ldap_unbind_ext_s(pLd, NULL, NULL);
+        }
+
+        VMDIR_SAFE_FREE_MEMORY(pszServerName);
+
+        dwError = VmDirDnLastRDNToCn(pDCList->pStringList[dwCnt], &pszServerName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSafeLDAPBind(&pLd,
+                                    pszServerName,
+                                    pszUserName,
+                                    pszPassword);
+
+        if (dwError)
+        {
+            printf("Domain Controller: %s is NOT available. Error [%d]\n\n",
+                   pszServerName,
+                   dwError);
+            pLd = NULL;
+            dwError = 0;
+            continue;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        /* Get current value of attribute to write back */
+        dwError = _VdcLdapGetAttributeValue(
+                        pLd,
+                        pDCList->pStringList[dwCnt],
+                        ATTR_COMMENT,
+                        TRUE,
+                        &pszAttrVal);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        /* write dummy value to attribute of the DC */
+        dwError = _VdcLdapReplaceAttributeValues(
+                        pLd,
+                        pDCList->pStringList[dwCnt],
+                        ATTR_COMMENT,
+                        (PCSTR*)ppszVals);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // restore previous value of attribute
+        ppszVals[0] = pszAttrVal;
+
+        dwError = _VdcLdapReplaceAttributeValues( pLd,
+                                                  pDCList->pStringList[dwCnt],
+                                                  ATTR_COMMENT,
+                                                  (PCSTR*) ppszVals);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    VmDirStringListFree(pDCList);
+    VMDIR_SAFE_FREE_STRINGA(pszAttrVal);
+    VMDIR_SAFE_FREE_STRINGA(pszName);
+    VMDIR_SAFE_FREE_STRINGA(pszServerName);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainName);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainDN);
+
+    if (pLd)
+    {
+        ldap_unbind_ext_s(pLd, NULL, NULL);
+    }
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirGetAttributeMetadata(
+    PCSTR pszHostName,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszEntryDn,
+    PCSTR pszAttribute
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwCnt = 0;
+    DWORD dwAttrs = 0;
+    PVMDIR_STRING_LIST pDCList = NULL;
+    PVMDIR_CONNECTION  pConnection = NULL;
+    PVMDIR_METADATA_LIST pMetadataList = NULL;
+
+    dwError = _VmDirGetDCList(
+                pszHostName,
+                pszUserName,
+                pszPassword,
+                &pDCList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt=0; dwCnt<pDCList->dwCount; dwCnt++)
+    {
+        // VOID function, no return value to check
+        VmDirConnectionClose(pConnection);
+
+        pConnection = NULL;
+
+        dwError = _VmDirGetConnection(
+                        pDCList->pStringList[dwCnt],
+                        pszUserName,
+                        pszPassword,
+                        &pConnection);
+
+        if (dwError == VMDIR_ERROR_SERVER_DOWN)
+        {
+            printf("Domain Controller: %s is NOT available\n\n", VDIR_SAFE_STRING(pDCList->pStringList[dwCnt]));
+
+            dwError = 0;
+            continue;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        printf("Domain Controller: %s\n", VDIR_SAFE_STRING(pDCList->pStringList[dwCnt]));
+
+        // VOID function, no return value to check
+        VmDirFreeMetadataList(pMetadataList);
+
+        pMetadataList = NULL;
+
+        dwError = VmDirGetAttributeMetadata(
+                        pConnection,
+                        pszEntryDn,
+                        pszAttribute,
+                        &pMetadataList);
+
+        if (dwError == LDAP_NO_SUCH_OBJECT)
+        {
+            printf("\tEntry NOT found\n\n");
+            dwError = 0;
+            continue;
+
+        }
+
+        if (dwError == VMDIR_ERROR_NO_SUCH_ATTRIBUTE)
+        {
+            printf("\tAttribute NOT found\n\n");
+            dwError = 0;
+            continue;
+
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        for (dwAttrs = 0; dwAttrs < pMetadataList->dwCount; dwAttrs++)
+        {
+            _VmDirPrintAttributeMetadata(pMetadataList->ppMetadataArray[dwAttrs]);
+        }
+    }
+
+cleanup:
+    VmDirStringListFree(pDCList);
+    VmDirConnectionClose(pConnection);
+    VmDirFreeMetadataList(pMetadataList);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
 int
 VmDirMain(int argc, char* argv[])
 {
@@ -356,11 +690,12 @@ VmDirMain(int argc, char* argv[])
     PSTR        pszSrcPassword = NULL;
     PSTR        pszTgtHostName = NULL;
     PSTR        pszTgtPort     = NULL;
+    PSTR        pszEntryDn     = NULL;
+    PSTR        pszAttribute   = NULL;
     BOOLEAN     bVerbose       = FALSE;
     BOOLEAN     bTwoWayRepl    = FALSE;
     PSTR        pszErrMsg      = NULL;
     CHAR        pszPasswordBuf[VMDIR_MAX_PWD_LEN + 1] = {0};
-
     PVMDIR_REPL_PARTNER_INFO    pReplPartnerInfo       = NULL;
     PVMDIR_REPL_PARTNER_STATUS  pReplPartnerStatus     = NULL;
     PVMDIR_SERVER_INFO          pServerInfo            = NULL;
@@ -374,9 +709,15 @@ VmDirMain(int argc, char* argv[])
     setlocale(LC_ALL,"");
 #endif
 
-    dwError = VmDirGetVmDirLogPath(pszPath, "vdcrepadmin.log");
+    dwError = VmDirGetVmDirLogPath(pszPath,
+                                   "vdcrepadmin.log");
     BAIL_ON_VMDIR_ERROR(dwError);
-    dwError = VmDirLogInitialize(pszPath, FALSE, NULL, VMDIR_LOG_INFO, VMDIR_LOG_MASK_ALL );
+    dwError = VmDirLogInitialize(
+                pszPath,
+                FALSE,
+                NULL,
+                VMDIR_LOG_INFO,
+                VMDIR_LOG_MASK_ALL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     //get commandline parameters
@@ -391,6 +732,8 @@ VmDirMain(int argc, char* argv[])
                     &pszSrcPassword,
                     &pszTgtHostName,
                     &pszTgtPort,
+                    &pszEntryDn,
+                    &pszAttribute,
                     &bVerbose
                     );
 
@@ -416,7 +759,9 @@ VmDirMain(int argc, char* argv[])
         pszSrcPassword = pszPasswordBuf;
     }
 
-    if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_PARTNERS, pszFeatureSet, TRUE) == 0 )
+    if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_PARTNERS,
+                             pszFeatureSet,
+                             TRUE) == 0 )
     {
         dwError = VmDirGetReplicationPartners(
                         pszSrcHostName,
@@ -435,7 +780,9 @@ VmDirMain(int argc, char* argv[])
 
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_PARTNER_STATUS, pszFeatureSet, TRUE) == 0 )
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_PARTNER_STATUS,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
     {
         dwError = VmDirGetReplicationPartnerStatus(
                         pszSrcHostName,
@@ -444,6 +791,7 @@ VmDirMain(int argc, char* argv[])
                         &pReplPartnerStatus,
                         &dwReplPartnerStatusCount
                         );
+
         BAIL_ON_VMDIR_ERROR(dwError);
 
         //Show replication partner info
@@ -453,7 +801,9 @@ VmDirMain(int argc, char* argv[])
                                 );
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_FEDERATION_STATUS, pszFeatureSet, TRUE) == 0 )
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_FEDERATION_STATUS,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
        {
            dwError = VmDirGetFederationStatus(
                            pszSrcHostName,
@@ -463,7 +813,9 @@ VmDirMain(int argc, char* argv[])
            BAIL_ON_VMDIR_ERROR(dwError);
 
        }
-    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_SERVER_ATTRIBUTE, pszFeatureSet, TRUE) == 0 )
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_SERVER_ATTRIBUTE,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
     {
         dwError = VmDirGetServers(
                         pszSrcHostName,
@@ -481,7 +833,9 @@ VmDirMain(int argc, char* argv[])
                                 );
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_CREATE_AGREEMENT, pszFeatureSet, TRUE) == 0 )
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_CREATE_AGREEMENT,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
     {
         dwError = VmDirAddReplicationAgreement(
                     bTwoWayRepl,
@@ -494,7 +848,9 @@ VmDirMain(int argc, char* argv[])
                     );
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_REMOVE_AGREEMENT, pszFeatureSet, TRUE) == 0 )
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_REMOVE_AGREEMENT,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
     {
         dwError = VmDirRemoveReplicationAgreement(
                     bTwoWayRepl,
@@ -507,7 +863,9 @@ VmDirMain(int argc, char* argv[])
                     );
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-    else if ( VmDirStringCompareA(VDCREPADMIN_QUERY_IS_FIRST_CYCLE_DONE, pszFeatureSet, TRUE) == 0 )
+    else if ( VmDirStringCompareA(VDCREPADMIN_QUERY_IS_FIRST_CYCLE_DONE,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
     {
         dwError = _VmDirGetReplicateStatusCycle(
                         pszSrcHostName,
@@ -516,6 +874,31 @@ VmDirMain(int argc, char* argv[])
                         );
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_DUMMY_DOMAIN_WRITE,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
+    {
+        dwError = _VmDirDummyDomainWrite(
+                        pszSrcHostName,
+                        pszSrcUserName,
+                        pszSrcPassword
+                        );
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SHOW_ATTRIBUTE_METADATA,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
+       {
+           dwError = _VmDirGetAttributeMetadata(
+                                pszSrcHostName,
+                                pszSrcUserName,
+                                pszSrcPassword,
+                                pszEntryDn,
+                                pszAttribute
+                                );
+           BAIL_ON_VMDIR_ERROR(dwError);
+
+       }
 
 cleanup:
     // Free internal memory used
@@ -544,8 +927,10 @@ cleanup:
     return dwError;
 
 error:
-    VmDirGetErrorMessage(dwError, &pszErrMsg ); // ignore error
-    printf("Vdcrepadmin failed. Error [%s] [%d]\n", VDIR_SAFE_STRING(pszErrMsg),dwError);
+    VmDirGetErrorMessage(dwError, &pszErrMsg); // ignore error
+    printf("Vdcrepadmin failed. Error [%s] [%d]\n",
+           VDIR_SAFE_STRING(pszErrMsg),
+           dwError);
     goto cleanup;
 }
 

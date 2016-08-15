@@ -15,6 +15,7 @@
 
 
 #include "includes.h"
+#include "ldap_pvt.h"
 
 #define START_ANY_ALLOC_SIZE    5
 
@@ -283,76 +284,6 @@ error:
     goto cleanup;
 }
 
-int
-AppendUSNChangedFilter(
-    VDIR_OPERATION *     op)
-{
-    int             retVal = LDAP_SUCCESS;
-    VDIR_FILTER *   f = NULL;
-    VDIR_FILTER *   usnChangedFilter = NULL;
-    char            usnStr[VMDIR_MAX_USN_STR_LEN + 1];
-    size_t          usnStrLen = 0;
-    VDIR_BERVALUE   usnBv = VDIR_BERVALUE_INIT;
-    PSTR            pszLocalErrMsg = NULL;
-
-    if ( op->syncReqCtrl != NULL )
-    {
-        retVal = VmDirAllocateMemory( sizeof( VDIR_FILTER ), (PVOID *)&f );
-        BAIL_ON_VMDIR_ERROR( retVal );
-
-        f->choice = LDAP_FILTER_AND;
-        retVal = VmDirAllocateMemory( sizeof( VDIR_FILTER ), (PVOID *)&usnChangedFilter );
-        BAIL_ON_VMDIR_ERROR( retVal );
-
-        usnChangedFilter->next = op->request.searchReq.filter;
-        f->filtComp.complex = usnChangedFilter;
-        f->next = NULL;
-
-        usnChangedFilter->choice = LDAP_FILTER_GE;
-        usnChangedFilter->filtComp.ava.type.lberbv.bv_val = ATTR_USN_CHANGED;
-        usnChangedFilter->filtComp.ava.type.lberbv.bv_len = ATTR_USN_CHANGED_LEN;
-
-        VmDirStringNPrintFA( usnStr, sizeof(usnStr), sizeof(usnStr) -1, "%ld",
-                  VmDirStringToLA( op->syncReqCtrl->value.syncReqCtrlVal.bvLastLocalUsnProcessed.lberbv.bv_val, NULL, 10 ) + 1);
-        usnBv.lberbv.bv_val = usnStr;
-        usnBv.lberbv.bv_len = usnStrLen = VmDirStringLenA( usnStr );
-        retVal = VmDirBervalContentDup( &usnBv, &usnChangedFilter->filtComp.ava.value );
-        BAIL_ON_VMDIR_ERROR( retVal );
-
-        if ((usnChangedFilter->filtComp.ava.pATDesc = VmDirSchemaAttrNameToDesc( op->pSchemaCtx,
-                                                                                 ATTR_USN_CHANGED )) == NULL)
-        {
-            retVal = VMDIR_ERROR_UNDEFINED_TYPE;
-            BAIL_ON_VMDIR_ERROR( retVal );
-        }
-        // Normalize DN value is owned by filter component, un-normalized value is owned by the caller.
-        retVal = VmDirSchemaBervalNormalize( op->pSchemaCtx,
-                                             usnChangedFilter->filtComp.ava.pATDesc,
-                                             &(usnChangedFilter->filtComp.ava.value) );
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BervalContentDup failed");
-
-        op->request.searchReq.filter = f;
-    }
-
-    retVal = LDAP_SUCCESS;
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-
-    return retVal;
-
-error:
-
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "AppendUSNChangedFilter: (%u)(%s)",
-                                retVal, VDIR_SAFE_STRING(pszLocalErrMsg) );
-
-    VMDIR_SAFE_FREE_MEMORY( f );
-    VMDIR_SAFE_FREE_MEMORY( usnChangedFilter );
-    goto cleanup;
-}
-
-
 /*
  * From RFC 4511, section 4.5.1.7:
  *     A filter of the "and" choice is TRUE if all the filters in the SET OF evaluate to TRUE, FALSE if at least one
@@ -516,8 +447,74 @@ DeleteFilter(
     }
 
     DeleteCandidates( &(f->candidates) );
+
+    if (f->pBer)
+    {
+        ber_free(f->pBer, 1);
+    }
+
     VMDIR_SAFE_FREE_MEMORY( f );
     VmDirLog( LDAP_DEBUG_TRACE, "DeleteFilter: End" );
+}
+
+DWORD
+StrFilterToFilter(
+    PCSTR pszString,
+    PVDIR_FILTER *ppFilter
+    )
+{
+    DWORD dwError = 0;
+    int res = 0;
+    BerElement *ber = NULL;
+    PVDIR_OPERATION pOperation = NULL;
+    VDIR_LDAP_RESULT lr = {0};
+    PVDIR_FILTER pFilter = NULL;
+
+    ber = ber_alloc_t(LBER_USE_DER);
+    if (ber == NULL)
+    {
+        dwError = LDAP_NO_MEMORY;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // Private function from libldap.
+    res = ldap_pvt_put_filter(ber, pszString);
+    if (res)
+    {
+        dwError = LDAP_FILTER_ERROR;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    ber_rewind(ber);
+
+    dwError = VmDirExternalOperationCreate(ber, -1, LDAP_REQ_SEARCH, NULL, &pOperation);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    res = ParseFilter(pOperation, &pFilter, &lr);
+    if (res)
+    {
+        dwError = LDAP_FILTER_ERROR;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pFilter->pBer = ber;
+    ber = NULL;
+
+    *ppFilter = pFilter;
+
+cleanup:
+    if (ber)
+    {
+        ber_free(ber, 1);
+    }
+    if (pOperation)
+    {
+        VmDirFreeOperation(pOperation);
+    }
+    return dwError;
+
+error:
+    goto cleanup;
 }
 
 DWORD

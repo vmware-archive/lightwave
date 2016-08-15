@@ -104,7 +104,7 @@ namespace VMDirSnapIn.UI
             {
                 if (_strOpDict.ContainsKey(StringFilter))
                 {
-                    return _strOpDict[StringFilter]((string)columnVal, FilterText);
+                    return _strOpDict[StringFilter](columnVal.ToString(), FilterText);
                 }
             }
             return false;

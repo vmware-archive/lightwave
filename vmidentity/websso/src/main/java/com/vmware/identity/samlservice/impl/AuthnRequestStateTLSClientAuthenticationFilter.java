@@ -63,9 +63,9 @@ AuthenticationFilter<AuthnRequestState> {
         Validate.notNull(accessor);
 
         // then check if required auth header is present
-        if (request.getParameter(Shared.REQUEST_AUTH_HEADER) == null) {
+        if (request.getParameter(Shared.REQUEST_AUTH_PARAM) == null) {
             // authentication not possible
-            log.debug(Shared.REQUEST_AUTH_HEADER + " is missing, requesting "
+            log.debug(Shared.REQUEST_AUTH_PARAM + " is missing, requesting "
                             + Shared.TLSCLIENT_AUTH_PREFIX);
             t.setWwwAuthenticate(Shared.TLSCLIENT_AUTH_PREFIX);
             ValidationResult vr = new ValidationResult(HttpServletResponse.SC_UNAUTHORIZED,

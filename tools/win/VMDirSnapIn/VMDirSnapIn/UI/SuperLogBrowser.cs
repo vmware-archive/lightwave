@@ -17,7 +17,7 @@ using System.Windows.Forms;
 using VmDirInterop.SuperLogging;
 using VmDirInterop.SuperLogging.Interfaces;
 using VMDir.Common.DTO;
-using VMDirSnapIn.Services;
+using VMDirSnapIn.Utilities;
 
 namespace VMDirSnapIn.UI
 {
@@ -128,18 +128,14 @@ namespace VMDirSnapIn.UI
 
         private void btnSuperLogOnOff_Click(object sender, EventArgs e)
         {
-            try
-            {
-                if (SuperLog.isEnabled())
-                    SuperLog.disable();
-                else
-                    SuperLog.enable();
-                UpdateStatus();
-            }
-            catch (Exception exp)
-            {
-                MessageBox.Show(exp.ToString());
-            }
+            MiscUtilsService.CheckedExec(delegate
+           {
+               if (SuperLog.isEnabled())
+                   SuperLog.disable();
+               else
+                   SuperLog.enable();
+               UpdateStatus();
+           });
         }
 
         private void btnClearEntries_Click(object sender, EventArgs e)
@@ -197,30 +193,26 @@ namespace VMDirSnapIn.UI
 
         private void lvLogInfo_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
         {
-            try
-            {
-                if (_cookie != null)
-                {
-                    FillCache(e.ItemIndex);
+            MiscUtilsService.CheckedExec(delegate
+           {
+               if (_cookie != null)
+               {
+                   FillCache(e.ItemIndex);
 
-                    if (ViewCache.ContainsKey(e.ItemIndex))
-                    {
-                        var dto = ViewCache[e.ItemIndex];
-                        e.Item = new ListViewItem(dto.getClientIP());
-                        e.Item.SubItems.Add(dto.getClientPort().ToString());
-                        e.Item.SubItems.Add(dto.getLoginDN());
-                        e.Item.SubItems.Add(dto.getOperation());
-                        e.Item.SubItems.Add(dto.getErrorCode().ToString());
+                   if (ViewCache.ContainsKey(e.ItemIndex))
+                   {
+                       var dto = ViewCache[e.ItemIndex];
+                       e.Item = new ListViewItem(dto.getClientIP());
+                       e.Item.SubItems.Add(dto.getClientPort().ToString());
+                       e.Item.SubItems.Add(dto.getLoginDN());
+                       e.Item.SubItems.Add(dto.getOperation());
+                       e.Item.SubItems.Add(dto.getErrorCode().ToString());
 
-                        var span = dto.getEndTime() - dto.getStartTime();
-                        e.Item.SubItems.Add(string.Format("{0} ms", span));
-                    }
-                }
-            }
-            catch (Exception exp)
-            {
-                MessageBox.Show(exp.ToString());
-            }
+                       var span = dto.getEndTime() - dto.getStartTime();
+                       e.Item.SubItems.Add(string.Format("{0} ms", span));
+                   }
+               }
+           });
         }
 
         private void btnChangeBufferSize_Click(object sender, EventArgs e)
@@ -292,6 +284,7 @@ namespace VMDirSnapIn.UI
 
         private void cbFilterColumn_SelectedIndexChanged(object sender, EventArgs e)
         {
+            cbFilterCriteria.SelectedIndex = -1;
             cbFilterCriteria.Items.Clear();
 
             if (cbFilterColumn.Text == "Duration")
@@ -315,6 +308,7 @@ namespace VMDirSnapIn.UI
             cbFilterCriteria.SelectedIndex = -1;
             txtFilter.Text = "";
             ApplyFilter();
+            RefreshList();
         }
 
         private void lvLogInfo_MouseDoubleClick(object sender, MouseEventArgs e)

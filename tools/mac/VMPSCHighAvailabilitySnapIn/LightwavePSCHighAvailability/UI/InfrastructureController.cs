@@ -28,6 +28,7 @@ using VMPSCHighAvailability.Common.Helpers;
 using VMPSCHighAvailability.Common;
 using VMPSCHighAvailability.Common.Service;
 using VMPSCHighAvailability.Nodes;
+using VMIdentity.CommonUtils.Utilities;
 
 namespace VMPSCHighAvailability.UI
 {
@@ -58,28 +59,21 @@ namespace VMPSCHighAvailability.UI
 
 		// Called when created from unmanaged code
 		public InfrastructureController (IntPtr handle) : base (handle)
-		{
-			Initialize ();
+		{	
 		}
 
 		// Called when created directly from a XIB file
 		[Export ("initWithCoder:")]
 		public InfrastructureController (NSCoder coder) : base (coder)
 		{
-			Initialize ();
 		}
 
 		// Call to load from the XIB/NIB file
 		public InfrastructureController (string nodeName, GlobalTopologyNode rootNode) : base ("Infrastructure", NSBundle.MainBundle)
 		{
-			Initialize ();
+			
 			_rootNode = rootNode;
 			_nodeName = nodeName;
-		}
-
-		// Shared initialization code
-		void Initialize ()
-		{
 		}
 
 		#endregion
@@ -97,7 +91,7 @@ namespace VMPSCHighAvailability.UI
 		public override void AwakeFromNib ()
 		{
 			base.AwakeFromNib ();
-			Initialize ();
+			IpAddressTextField.StringValue = Network.GetIpAddress (_nodeName);
 			_infrastructureDto = (InfrastructureDto) _rootNode.Hosts.First(x=>x.Name == _nodeName);
 			HotnametextField.StringValue = _infrastructureDto.Name;
 			SitenameTextField.StringValue = SiteName;

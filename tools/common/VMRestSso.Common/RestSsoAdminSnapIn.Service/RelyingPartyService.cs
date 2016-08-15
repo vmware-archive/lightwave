@@ -28,20 +28,22 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Tenant
     public class RelyingPartyService
     {
         private readonly IWebRequestManager _webRequestManager;
-        public RelyingPartyService(IWebRequestManager webRequestManager)
+        private readonly IServiceConfigManager _serviceConfigManager;
+        public RelyingPartyService(IWebRequestManager webRequestManager, IServiceConfigManager serviceConfigManager)
         {
             _webRequestManager = webRequestManager;
+            _serviceConfigManager = serviceConfigManager;
         }
         public List<RelyingPartyDto> GetAll(ServerDto serverDto, string tenant, Token token)
         {
             tenant = Uri.EscapeDataString(tenant);
-            var url = string.Format(ServiceConfigManager.GetRelyingPartysPostEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant);
+            var url = string.Format(_serviceConfigManager.GetRelyingPartysPostEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
             return JsonConvert.Deserialize<List<RelyingPartyDto>>(response);
@@ -50,13 +52,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Tenant
         {
             tenant = Uri.EscapeDataString(tenant);
             var rp = Uri.EscapeDataString(relyingParty.Name);
-            var url = string.Format(ServiceConfigManager.GetRelyingPartyPostEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, rp);
+            var url = string.Format(_serviceConfigManager.GetRelyingPartyPostEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, rp);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
                                     {
                                         Method = HttpMethod.Post,
                                     };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
             return JsonConvert.Deserialize<RelyingPartyDto>(response);
@@ -64,7 +66,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Tenant
         public RelyingPartyDto Create(ServerDto server, string tenant, RelyingPartyDto relyingParty, Token token)
         {
             tenant = Uri.EscapeDataString(tenant);
-            var url = string.Format(ServiceConfigManager.RelyingPartysEndPoint, server.Protocol, server.ServerName, server.Port, tenant);
+            var url = string.Format(_serviceConfigManager.GetRelyingPartysEndPoint(), server.Protocol, server.ServerName, server.Port, tenant);
             var json = JsonConvert.Serialize(relyingParty);
 			json = SerializationJsonHelper.Cleanup (json);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
@@ -72,7 +74,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Tenant
             {
                 Method = HttpMethod.Post,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return JsonConvert.Deserialize<RelyingPartyDto>(response);
@@ -81,13 +83,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Tenant
         {
             tenant = Uri.EscapeDataString(tenant);
             var rp = Uri.EscapeDataString(relyingParty.Name);
-            var url = string.Format(ServiceConfigManager.RelyingPartyEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant,rp);
+            var url = string.Format(_serviceConfigManager.GetRelyingPartyEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, rp);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
                                     {
                                         Method = HttpMethod.Delete,
                                     };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return string.IsNullOrEmpty(response);
@@ -96,7 +98,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Tenant
         {
             tenant = Uri.EscapeDataString(tenant);
             var rp = Uri.EscapeDataString(relyingParty.Name);
-            var url = string.Format(ServiceConfigManager.RelyingPartyEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, rp);
+            var url = string.Format(_serviceConfigManager.GetRelyingPartyEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, rp);
 			var dto = typeof(RelyingPartyDto).Assembly;
 			var json = JsonConvert.Serialize(relyingParty, "root", dto.GetTypes(), true);
 			json = SerializationJsonHelper.Cleanup (json);
@@ -105,7 +107,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Tenant
             {
                 Method = HttpMethod.Put,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return JsonConvert.Deserialize<RelyingPartyDto>(response);

@@ -32,8 +32,7 @@ do
    echo "cn: John-$i"
    echo "sn: Smith"
 #   echo "givenName: John-$i Smith"
-   echo "objectClass: person"
-   echo "objectClass: organizationalPerson"
+   echo "objectClass: user"
 #   echo "mail: john-$i@gmail.com"
    echo "telephoneNumber: 425-123-456-$i"
    echo "facsimileTelephoneNumber: 425-456-123-$i"
@@ -44,5 +43,8 @@ do
    echo "ou: Engineering"
    echo "title: engineer"
    echo "description: Employee of VMware"
+   echo "displayNamePrintable: John-$i Smith"
+   echo "labeledURI: https://internal.vmware.com/directory/eng/john-$i-smith"
+   echo "flags: $i"
    echo ""
 done

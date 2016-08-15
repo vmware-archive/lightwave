@@ -30,6 +30,7 @@ namespace VMCASnapIn.Nodes
     public class VMCAPersonalCertificatesNode : ChildScopeNode
     {
         const int ACTION_CREATE_SELF_SIGNED_CERT = 1;
+        const int ACTION_CREATE_CA_SIGNED_CERT = 2;
 
         public VMCAPersonalCertificatesNode(VMCAServerDTO dto)
             : base(dto)
@@ -54,6 +55,8 @@ namespace VMCASnapIn.Nodes
 
             this.ActionsPaneItems.Add(new Microsoft.ManagementConsole.Action("Create Self Signed Certificate",
                                        "Create Self Signed Certificate", -1, ACTION_CREATE_SELF_SIGNED_CERT));
+            this.ActionsPaneItems.Add(new Microsoft.ManagementConsole.Action("Create CA Signed Certificate",
+                                       "Create CA Signed Certificate", -1, ACTION_CREATE_CA_SIGNED_CERT));
         }
 
         protected override void OnAction(Microsoft.ManagementConsole.Action action, AsyncStatus status)
@@ -66,10 +69,34 @@ namespace VMCASnapIn.Nodes
                     if(CreateSelfSignedCert(ServerDTO))
                         OnRefresh(status);
                     break;
+                case ACTION_CREATE_CA_SIGNED_CERT:
+                    if (CreateCASignedCert(ServerDTO))
+                        OnRefresh(status);
+                    break;
             }
         }
 
-        public static bool CreateSelfSignedCert(VMCAServerDTO serverDTO)
+        private bool CreateCASignedCert(VMCAServerDTO ServerDTO)
+        {
+            var res = CertRequest((x, y) =>
+            {
+                return ServerDTO.VMCAClient.GetVMCASignedCertificate(x.GetRequestData(), y.PrivateKey.ToString(), y.NotBefore, y.NotAfter);
+            }, ServerDTO);
+
+            return res;
+        }
+
+        public bool CreateSelfSignedCert(VMCAServerDTO serverDTO)
+        {
+            var res= CertRequest((x,y) =>
+            {
+                var vmcaCert = x.GetSelfSignedCertificate(y.PrivateKey.ToString(), y.NotBefore, y.NotAfter);
+                return vmcaCert.GetX509Certificate2();
+            }, serverDTO);
+
+            return res;
+        }
+        private bool CertRequest(Func<VMCARequest, CertRequestDTO, X509Certificate2> func, VMCAServerDTO serverDTO)
         {
             bool bResult = false;
             MMCActionHelper.CheckedExec(delegate()
@@ -87,8 +114,7 @@ namespace VMCASnapIn.Nodes
 
                 var request = new VMCARequest(serverDTO.VMCAClient);
                 dto.FillRequest(request);
-                var vmcaCert = request.GetSelfSignedCertificate(dto.PrivateKey.ToString(), dto.NotBefore, dto.NotAfter);
-                var cert = vmcaCert.GetX509Certificate2();
+                var cert = func(request,dto);
                 X509Certificate2UI.DisplayCertificate(cert);
 
                 var localCertDTO = new PrivateCertificateDTO
@@ -97,6 +123,7 @@ namespace VMCASnapIn.Nodes
                 };
                 serverDTO.PrivateCertificates.Add(localCertDTO);
                 bResult = true;
+                VMCASnapInEnvironment.Instance.SaveLocalData();
             });
             return bResult;
         }

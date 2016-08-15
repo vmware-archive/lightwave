@@ -300,106 +300,42 @@ VmDirConfigSetDCAccountPassword(
     PCSTR pszDCAccountPassword,
     DWORD dwPasswordSize
     )
-#ifndef _WIN32
 {
     DWORD   dwError = 0;
-    PSTR    pszPasswordBuf = NULL;
+    PSTR    pszOldPassword = NULL;
 
-    if (IsNullOrEmptyString(pszDCAccountPassword) ||
-        dwPasswordSize == 0)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateMemory(
-                dwPasswordSize+1,
-                (PVOID*)&pszPasswordBuf);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirStringNCpyA(
-                pszPasswordBuf,
-                dwPasswordSize+1,
-                pszDCAccountPassword,
-                dwPasswordSize);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = RegUtilSetValue(
-                NULL,
-                HKEY_THIS_MACHINE,
-                VMDIR_CONFIG_PARAMETER_KEY_PATH,
-                NULL,
-                VMDIR_REG_KEY_DC_ACCOUNT_PWD,
-                REG_SZ,
-                (PVOID)pszPasswordBuf,
-                dwPasswordSize+1);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszPasswordBuf);
-    return dwError;
-error:
-    VmDirLog(LDAP_DEBUG_ANY, "VmDirConfigSetDCAccountPassword failed with error (%u)", dwError);
-    goto cleanup;
-}
-#else
-{
-    DWORD   dwError = 0;
-    HKEY    hKey = NULL;
-    PSTR    pszPasswordBuf = NULL;
-
-    if (IsNullOrEmptyString(pszDCAccountPassword) ||
-        dwPasswordSize == 0)
+    if (IsNullOrEmptyString(pszDCAccountPassword) || dwPasswordSize == 0)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateMemory(
-                dwPasswordSize+1,
-                (PVOID*)&pszPasswordBuf);
+    /*
+     * There might not be a current password so ignore any errors.
+     */
+    (VOID)VmDirReadDCAccountPassword(&pszOldPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirStringNCpyA(
-                pszPasswordBuf,
-                dwPasswordSize+1,
+    dwError = VmDirWriteDCAccountPassword(
                 pszDCAccountPassword,
                 dwPasswordSize);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = RegCreateKeyExA(
-                        HKEY_LOCAL_MACHINE,
-                        VMDIR_CONFIG_PARAMETER_KEY_PATH,
-                        0,
-                        NULL,
-                        REG_OPTION_NON_VOLATILE,
-                        KEY_WRITE,
-                        NULL,
-                        &hKey,
-                        NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = RegSetValueExA(
-                        hKey,
-                        VMDIR_REG_KEY_DC_ACCOUNT_PWD,
-                        0,
-                        REG_SZ,
-                        (BYTE*)pszPasswordBuf,
-                        dwPasswordSize+1);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (pszOldPassword != NULL)
+    {
+        dwError = VmDirWriteDCAccountOldPassword(
+                    pszOldPassword,
+                    (DWORD)strlen(pszOldPassword));
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszPasswordBuf);
-    if (hKey)
-    {
-        RegCloseKey(hKey);
-    }
+    VMDIR_SAFE_FREE_MEMORY(pszOldPassword);
     return dwError;
 error:
     VmDirLog(LDAP_DEBUG_ANY, "VmDirConfigSetDCAccountPassword failed with error (%u)", dwError);
     goto cleanup;
 }
-#endif
 
 DWORD
 VmDirConfigSetSZKey(

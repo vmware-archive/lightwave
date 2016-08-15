@@ -44,7 +44,8 @@ VmDnsDeleteNameEntry(
 DWORD
 VmDnsNameEntryListRecord(
     PVMDNS_NAME_ENTRY       pNameEntry,
-    PVMDNS_RECORD_ARRAY*    ppRecords
+    PVMDNS_RECORD_ARRAY*    ppRecords,
+    VMDNS_RR_TYPE           type
     );
 
 DWORD

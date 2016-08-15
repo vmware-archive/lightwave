@@ -30,6 +30,12 @@ namespace RestSsoAdminSnapIn
         public const string CERT_INTENDED_PURPOSES = "IntendedPurposes";
         public const string CERT_STATUS = "Status";
         public const string CERT_ISSUED_TO = "IssuedTo";
+
+		/* External Domain constants */
+		public const string AD_WIN_AUTH_TITLE = "External Domain (AD using Windows Integrated Auth)";
+		public const string AD_AS_LDAP_TITLE = "External Domain (AD as an LDAP server)";
+		public const string OPEN_LDAP_TITLE = "External Domain (Open LDAP server)";
+		public const string NEW_EXTERNAL_DOMAIN_TITLE = "Add External Domain";
     }
 }
 

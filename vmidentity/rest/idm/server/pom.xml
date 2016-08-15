@@ -370,7 +370,7 @@
   <properties>
     <war.warName>idm</war.warName>
     <outputDirectory>${basedir}/../../../build/vmware-sts/packages/</outputDirectory>
-    <warOutputDirectory>${basedir}/../../../build/rpmbuild/BUILDROOT/opt/vmware/webapps/</warOutputDirectory>
+    <warOutputDirectory>${basedir}/../../../build/rpmbuild/BUILDROOT/opt/vmware/vmware-sts/webapps/</warOutputDirectory>
   </properties>
 
 </project>

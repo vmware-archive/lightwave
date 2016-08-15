@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestSsoAdminSnapIn.Service"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMIdentity.CommonUtils", "..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj", "{CD959E2E-5B9C-4329-B085-352844CFDCDD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VmIdentity.UI.Common", "..\VmIdentity.UI.Common\VmIdentity.UI.Common.csproj", "{35037B87-3B35-40FA-A9D3-7974DCDDABB5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,14 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{35037B87-3B35-40FA-A9D3-7974DCDDABB5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{35037B87-3B35-40FA-A9D3-7974DCDDABB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{35037B87-3B35-40FA-A9D3-7974DCDDABB5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{35037B87-3B35-40FA-A9D3-7974DCDDABB5}.Debug|x64.Build.0 = Debug|Any CPU
+		{35037B87-3B35-40FA-A9D3-7974DCDDABB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{35037B87-3B35-40FA-A9D3-7974DCDDABB5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{35037B87-3B35-40FA-A9D3-7974DCDDABB5}.Release|x64.ActiveCfg = Release|Any CPU
+		{35037B87-3B35-40FA-A9D3-7974DCDDABB5}.Release|x64.Build.0 = Release|Any CPU
 		{36F56669-93E2-4647-8230-31B5E02F5BEA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{36F56669-93E2-4647-8230-31B5E02F5BEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{36F56669-93E2-4647-8230-31B5E02F5BEA}.Debug|x64.ActiveCfg = Debug|x64

@@ -2,7 +2,8 @@ lib_LTLIBRARIES = libcfgutils.la
 
 libcfgutils_la_SOURCES = \
     certificate.c \
-    cfgutils.c \
+    cfgutils.c    \
+    dns.c         \
     globals.c     \
     libmain.c     \
     logging.c     \
@@ -17,9 +18,11 @@ libcfgutils_la_CPPFLAGS = \
     @LW_INCLUDES@ \
     @VMCA_INCLUDES@ \
     @VMAFD_INCLUDES@ \
-    @VMDIR_INCLUDES@
+    @VMDIR_INCLUDES@ \
+    @VMDNS_INCLUDES@
 
 libcfgutils_la_LIBADD = \
+    @VMDNS_LIBS@ \
     @VMCA_LIBS@ \
     @VMAFD_LIBS@ \
     @VMDIR_LIBS@ \
@@ -30,6 +33,7 @@ libcfgutils_la_LIBADD = \
     @CRYPTO_LIBS@
 
 libcfgutils_la_LDFLAGS = \
+    @VMDNS_LDFLAGS@ \
     @VMCA_LDFLAGS@ \
     @VMAFD_LDFLAGS@ \
     @VMDIR_LDFLAGS@ \

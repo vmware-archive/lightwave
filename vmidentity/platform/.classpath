@@ -3,8 +3,8 @@
 	<classpathentry kind="src" path="src/test/java"/>
 	<classpathentry kind="src" path="src/main/java"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="var" path="TCROOT/noarch/jna-3.5.1/jna.jar"/>
-	<classpathentry kind="var" path="TCROOT/noarch/jna-3.5.1/platform.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/jna-4.2.1/jna.jar"/>
+	<classpathentry kind="var" path="TCROOT/noarch/jna-4.2.1/platform.jar"/>
 	<classpathentry kind="var" path="TCROOT/noarch/apache-commons-lang-2.5/commons-lang-2.5.jar"/>
 	<classpathentry kind="var" path="TCROOT/noarch/apache-commons-logging-1.1.1/commons-logging-1.1.1.jar"/>
 	<classpathentry kind="lib" path="/diagnostics/lib/log4j-1.2-api-2.0.2.jar"/>

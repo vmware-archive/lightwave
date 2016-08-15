@@ -57,7 +57,7 @@ public class RoleCheckTest {
             .role(Role.ADMINISTRATOR.getRoleName())
             .build();
 
-        AccessToken token = new JWTBearerToken(jwt, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD);
+        AccessToken token = new JWTBearerToken(jwt, Config.JWT_TYPE_FIELD, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD);
 
         ResourceAccessRequest request = new ResourceAccessRequest(TokenStyle.HEADER, TokenType.BEARER, token, null, false, null);
 
@@ -78,7 +78,7 @@ public class RoleCheckTest {
                 .groups(groups)
                 .build();
 
-            AccessToken token = new JWTBearerToken(jwt, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD);
+            AccessToken token = new JWTBearerToken(jwt, Config.JWT_TYPE_FIELD, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD);
 
             ResourceAccessRequest request = new ResourceAccessRequest(TokenStyle.HEADER, TokenType.BEARER, token, null, false, mapper);
 
@@ -101,7 +101,7 @@ public class RoleCheckTest {
             .groups(groups)
             .build();
 
-        AccessToken token = new JWTBearerToken(jwt, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD);
+        AccessToken token = new JWTBearerToken(jwt, Config.JWT_TYPE_FIELD, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD);
 
         ResourceAccessRequest request = new ResourceAccessRequest(TokenStyle.HEADER, TokenType.BEARER, token, null, false, mapper);
 
@@ -121,7 +121,7 @@ public class RoleCheckTest {
             .groups(groups)
             .build();
 
-        AccessToken token = new JWTBearerToken(jwt, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD);
+        AccessToken token = new JWTBearerToken(jwt, Config.JWT_TYPE_FIELD, Config.JWT_ROLE_FIELD, Config.JWT_GROUPS_FIELD);
 
         ResourceAccessRequest request = new ResourceAccessRequest(TokenStyle.HEADER, TokenType.BEARER, token, null, false, mapper);
 

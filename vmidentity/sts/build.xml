@@ -21,14 +21,10 @@
              value="${build.packages}/vmware-identity-idm-interface.jar" />
    <property name="build.packages.vmware-identity-idm-client"
              value="${build.packages}/vmware-identity-idm-client.jar" />
-   <property name="build.packages.admin-interfaces"
-             location="${build.packages}/admin-interfaces.jar" />
    <property name="build.packages.vmware-identity-diagnostics"
              value="${build.packages}/vmware-identity-diagnostics.jar" />
    <property name="build.packages.samltoken"
              value="${build.packages}/samltoken.jar" />
-   <property name="build.packages.wstauthz"
-             value="${build.packages}/wstauthz.jar" />
   <property unless:set="property" name="jax-ws.home" value="/var/opt/jaxws-ri-2.2.10"/>
 
    <path id="classpath.runtime-dependencies">
@@ -60,8 +56,6 @@
       <pathelement location="${build.packages.vmware-identity-idm-client}" />
       <pathelement location="${build.packages.vmware-identity-diagnostics}" />
       <pathelement location="${build.packages.samlauthority}" />
-      <pathelement location="${build.packages.admin-interfaces}" />
-      <pathelement location="${build.packages.wstauthz}" />
       <pathelement location="${jax-ws.home}/lib/FastInfoset.jar" />
       <pathelement location="${jax-ws.home}/lib/gmbal-api-only.jar" />
       <pathelement location="${jax-ws.home}/lib/ha-api.jar" />

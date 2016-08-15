@@ -27,8 +27,8 @@ namespace VMCASnapIn
     {
     }
 
-    [SnapInSettings("{4A40882B-8DDF-4DCD-9FAD-E6CB0274D221}", DisplayName = "Lightwave certificate server",
-         Description = "Lightwave certificate server")]
+    //[SnapInSettings("{D2608952-F746-496c-BCDE-A0A91277F711}", DisplayName = "VMware certificate server")]
+    //uncomment above line for local testing
     public class VMCASnapIn : SnapIn
     {
         public VMCASnapIn()

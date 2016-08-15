@@ -27,11 +27,16 @@ namespace VMDirInterop.Interfaces
         void SetVersion(int version);
         void SetOption(int option, IntPtr ptrVersion);
         void VmDirSafeLDAPBind(string host, string upn, string passwd);
+        ILdapMessage LdapSearchExtExS(string querybase, int scope, string filter, string[] attrs, int attrsonly, IntPtr timeout, int sizelimit, IntPtr[] ServerControls);
         ILdapMessage LdapSearchExtS(string querybase, int scope, string filter, string[] attrs, int attrsonly, IntPtr timeout, int sizelimit);
         void AddObject(string dn, LdapMod[] attrs);
         void ModifyObject(string basedn, LdapMod[] attrs);
         void DeleteObject(string dn);
         void CleanSearch();
         void LdapUnbindS();
+        IntPtr LdapCreatePageControl(int pagesize, IntPtr cookie, bool isCritical);
+        void LdapParseResult(ILdapMessage msg, ref IntPtr serverControls, bool fFreeIt);
+        void LdapParsePageControl(IntPtr serverControls, ref IntPtr cookie);
+        bool HasMorePages(IntPtr cookie);
     }
 }

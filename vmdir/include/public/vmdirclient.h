@@ -565,6 +565,24 @@ VmDirFreeReplicationState(
     );
 
 DWORD
+VmDirGetAttributeMetadata(
+    PVMDIR_CONNECTION pConnection,
+    PCSTR pszEntryDn,
+    PCSTR pszAttribute,
+    PVMDIR_METADATA_LIST* ppMetadataList
+    );
+
+VOID
+VmDirFreeMetadata(
+    PVMDIR_METADATA pMetadata
+    );
+
+VOID
+VmDirFreeMetadataList(
+    PVMDIR_METADATA_LIST pMetadataList
+    );
+
+DWORD
 VmDirSuperLogQueryServerData(
     PVMDIR_SERVER_CONTEXT pContext,
     PVMDIR_SUPERLOG_SERVER_DATA *ppServerData);
@@ -625,23 +643,6 @@ VmDirFreeSuperLogEntryLdapOperationArray(
 VOID
 VmDirFreeSuperLogTable(
     PVMDIR_SUPERLOG_TABLE pTable
-    );
-
-DWORD
-VmDirCompareSchema (
-    PSTR     pszBaseHostName ,
-    PSTR     pszUPN ,
-    PSTR     pszPassword ,
-    PVMDIR_SCHEMA_DIFF*  ppSchemaDiff ,
-    DWORD*   pdwInfoCount
-    );
-
-DWORD
-VmDirSyncVersionsInFederation(
-    PSTR    pszHostName,
-    PSTR    pszUPN,
-    PSTR    pszPassword,
-    PSTR*   ppszResult
     );
 
 DWORD
@@ -711,11 +712,16 @@ VmDirCloseDatabaseFile(
 );
 
 DWORD
-VmDirSchemaUpgrade(
-    PVMDIR_CONNECTION   pConnection,
-    PCSTR               pszSchemaFile,
-    BOOLEAN             bDryRun,
-    PSTR*               ppszErrMsg
+VmDirUrgentReplicationRequest(
+    PCSTR pszRemoteServerName
+    );
+
+DWORD
+VmDirUrgentReplicationResponse(
+    PCSTR    pszRemoteServerName,
+    PCSTR    pszUtdVector,
+    PCSTR    pszInvocationId,
+    PCSTR    pszHostName
     );
 
 #ifdef __cplusplus

@@ -45,7 +45,7 @@ typedef struct _VMDIR_REPLICATION_PAGE
     int iEntriesReceived;
     USN lastSupplierUsnProcessed;
     int iEntriesProcessed;
-    int iEntriesAddedErrorNoSuchObject;
+    int iEntriesOutOfSequence;
 } VMDIR_REPLICATION_PAGE, *PVMDIR_REPLICATION_PAGE;
 
 typedef struct _VMDIR_REPLICATION_PASSWORD

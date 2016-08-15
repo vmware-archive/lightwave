@@ -39,7 +39,6 @@ namespace VMCertStoreSnapIn.UI
 
             _certificateDTO.Alias = txtAlias.Text;
             _certificateDTO.Certificate = txtCertificate.Text;
-            _certificateDTO.AutoRefresh = chkAutoRefresh.Checked;
 
             this.Close();
         }

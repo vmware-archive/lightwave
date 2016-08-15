@@ -2,7 +2,7 @@ AC_PREREQ(2.59)
 
 AC_INIT([vmdir], [1.0.0], [support@vmware.com])
 AC_CANONICAL_SYSTEM
-AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_HEADERS([include/config.h])
 AC_CONFIG_MACRO_DIR([m4])
 m4_pattern_allow([AM_PROG_AR])
@@ -113,6 +113,8 @@ AC_ARG_WITH([datastore],
     [
         VMDIRD_DATASTORE="$withval"
     ])
+
+
 
 # client only build
 
@@ -509,6 +511,17 @@ AC_DEFINE_UNQUOTED(VMDIR_LOG_DIR, "$VMDIR_LOG_DIR", [Log directory])
 vmdirlogdir=/var/log/vmware/vmdir
 AC_SUBST(vmdirlogdir)
 
+vmdir_version=1.0
+AC_ARG_WITH([version],
+    [AC_HELP_STRING([--with-version], [set the version (default: 1.0)])],
+    [
+        vmdir_version="$withval"
+    ])
+AC_SUBST(vmdir_version)
+AS_AC_EXPAND(VDIR_PSC_VERSION, $vmdir_version)
+AC_DEFINE_UNQUOTED(VDIR_PSC_VERSION, "$VDIR_PSC_VERSION", [PSC version])
+
+
 vmdirconfdir="$datadir/config"
 AC_SUBST(vmdirconfdir)
 AS_AC_EXPAND(VMDIR_CONFIG_DIR, $vmdirconfdir)
@@ -558,7 +571,6 @@ AC_CONFIG_FILES([Makefile
                  tools/vdcsrp/Makefile
                  tools/vdcupgrade/Makefile
                  tools/vdcleavefed/Makefile
-                 tools/vdcschemaadmin/Makefile
                  tools/vdcresetMachineActCred/Makefile
                  tools/vdcmetric/Makefile
                  tools/test/Makefile
@@ -583,4 +595,3 @@ AC_CONFIG_FILES([Makefile
                  thirdparty/csrp/Makefile
                 ])
 AC_OUTPUT
-

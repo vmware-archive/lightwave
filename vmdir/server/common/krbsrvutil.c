@@ -240,7 +240,7 @@ _VmKdcParsePrincipalHeimdal(
 
     dwError = VmDirCopyMemory(pNewPrincipalName,
                               sizeof(CHAR) + dwLen,
-                              (PCVOID)pPrincipalName,
+                              (const PVOID)pPrincipalName,
                               dwLen);
     BAIL_ON_VMDIR_ERROR(dwError);
     pNewPrincipalName[dwLen] = '\0';

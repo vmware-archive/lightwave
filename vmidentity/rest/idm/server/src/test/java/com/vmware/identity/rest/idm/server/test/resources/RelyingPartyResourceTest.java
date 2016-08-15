@@ -21,6 +21,7 @@ import static org.easymock.EasyMock.replay;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Scanner;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.SecurityContext;
@@ -36,6 +38,7 @@ import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
 import org.junit.Before;
 import org.junit.Test;
+import org.w3c.dom.Document;
 
 import com.vmware.identity.idm.AssertionConsumerService;
 import com.vmware.identity.idm.Attribute;
@@ -68,6 +71,7 @@ public class RelyingPartyResourceTest {
     private static final String TENANT = "test.local";
     private static final String RELYING_PARTY_NAME = "testRelyingParty";
     private static final String RELYING_PARTY_URI = "https://dummy:8080";
+    private static final String TEST_DATA_RELYING_PARTY_PATH = "src/test/resources/data/relying_party.xml";
 
     // Assertion consumer service related test constants
     private static final String ASSERTION_CS_NAME = "testAssertionConsumerService";
@@ -170,6 +174,16 @@ public class RelyingPartyResourceTest {
 
         assertRelyingParty(resultRP);
 
+        mControl.verify();
+    }
+
+    @Test
+    public void testAddRelyingPartyViaXML() throws Exception {
+
+        String relyingPartyXML = new Scanner(new File(TEST_DATA_RELYING_PARTY_PATH)).useDelimiter("\\Z").next();
+        mockIDMClient.importTenantConfiguration(eq(TENANT), isA(Document.class));
+        mControl.replay();
+        rpResource.add(relyingPartyXML);
         mControl.verify();
     }
 

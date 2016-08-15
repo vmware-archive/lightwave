@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -74,6 +74,14 @@ VmDirMLAdd(
     dwError = VmDirInternalAddEntry(pOperation);
     BAIL_ON_VMDIR_ERROR( dwError );
 
+    if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
+    {
+        pOperation->pBEIF->pfnBESetMaxOriginatingUSN(pOperation->pBECtx,
+                                                     pOperation->pBECtx->wTxnUSN);
+    }
+
+    VmDirPerformUrgentReplIfRequired(pOperation, pOperation->pBECtx->wTxnUSN);
+
 cleanup:
     VmDirSendLdapResult( pOperation );
 
@@ -125,15 +133,19 @@ VmDirInternalAddEntry(
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
                                   retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)) );
 
+    // Acquire schema modification mutex
+    retVal = VmDirSchemaModMutexAcquire(pOperation);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Failed to lock schema mod mutex", retVal );
+
     // Parse Parent DN
     retVal = VmDirGetParentDN( &pEntry->dn, &pEntry->pdn );
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Get ParentDn failed - (%u)",  retVal );
 
+    retVal = VmDirExecutePreAddPlugins(pOperation, pEntry, retVal);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreAdd plugin failed - (%u)",  retVal );
+
     if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
     {
-        retVal = VmDirExecutePreAddPlugins(pOperation, pEntry, retVal);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreAdd plugin failed - (%u)",  retVal );
-
         // Entry schema check
         retVal = VmDirSchemaCheck(pEntry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "schema error - (%u)(%s)",
@@ -298,24 +310,23 @@ txnretry:
 
 cleanup:
 
-    if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
     {
-        if (retVal == LDAP_SUCCESS)
-        {
-            int iPostCommitPluginRtn  = 0;
+        int iPostCommitPluginRtn = 0;
 
-            // Execute post Add commit plugin logic
-            iPostCommitPluginRtn = VmDirExecutePostAddCommitPlugins(pOperation, pEntry, retVal);
-            if ( iPostCommitPluginRtn != LDAP_SUCCESS
-                 &&
-                 iPostCommitPluginRtn != pOperation->ldapResult.errCode    // pass through
-               )
-            {
-                VmDirLog( LDAP_DEBUG_ANY, "InternalAddEntry: VdirExecutePostAddCommitPlugins - code(%d)",
-                          iPostCommitPluginRtn);
-            }
+        // Execute post Add commit plugin logic
+        iPostCommitPluginRtn = VmDirExecutePostAddCommitPlugins(pOperation, pEntry, retVal);
+        if ( iPostCommitPluginRtn != LDAP_SUCCESS
+                &&
+                iPostCommitPluginRtn != pOperation->ldapResult.errCode    // pass through
+        )
+        {
+            VmDirLog( LDAP_DEBUG_ANY, "InternalAddEntry: VdirExecutePostAddCommitPlugins - code(%d)",
+                    iPostCommitPluginRtn);
         }
     }
+
+    // Release schema modification mutex
+    (VOID)VmDirSchemaModMutexRelease(pOperation);
 
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
 
@@ -542,29 +553,27 @@ _VmDirEntryAttrValueNormalize(
 {
     DWORD           dwError = 0;
     PVDIR_ATTRIBUTE pAttr = NULL;
-    USHORT          usVersion = 0;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
 
     assert(pEntry && pEntry->pSchemaCtx);
 
     for (pAttr = pEntry->attrs; pAttr; pAttr = pAttr->next)
     {
-        PVDIR_CFG_ATTR_INDEX_DESC pIdxDesc = NULL;
-
         if (bIndexAttributeOnly == TRUE)
         {
-            pIdxDesc = VmDirAttrNameToWriteIndexDesc(
-                            pAttr->type.lberbv.bv_val,
-                            usVersion,
-                            &usVersion);
+            dwError = VmDirIndexCfgAcquire(
+                    pAttr->type.lberbv.bv_val, VDIR_INDEX_WRITE, &pIndexCfg);
+            BAIL_ON_VMDIR_ERROR(dwError);
         }
 
-        if (bIndexAttributeOnly == FALSE || pIdxDesc != NULL)
+        if (bIndexAttributeOnly == FALSE || pIndexCfg)
         {
             unsigned int    iCnt = 0;
 
             if (pAttr->pATDesc == NULL)
             {
-                if ((pAttr->pATDesc = VmDirSchemaAttrNameToDesc( pEntry->pSchemaCtx, pAttr->type.lberbv.bv_val )) == NULL)
+                if ((pAttr->pATDesc = VmDirSchemaAttrNameToDesc(
+                        pEntry->pSchemaCtx, pAttr->type.lberbv.bv_val )) == NULL)
                 {
                     dwError = VMDIR_ERROR_NO_SUCH_ATTRIBUTE;
                     BAIL_ON_VMDIR_ERROR(dwError);
@@ -573,15 +582,17 @@ _VmDirEntryAttrValueNormalize(
 
             for (iCnt=0; iCnt < pAttr->numVals; iCnt++)
             {
-
-                dwError = VmDirSchemaBervalNormalize( pEntry->pSchemaCtx, pAttr->pATDesc, &pAttr->vals[iCnt]);
+                dwError = VmDirSchemaBervalNormalize(
+                        pEntry->pSchemaCtx, pAttr->pATDesc, &pAttr->vals[iCnt]);
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
         }
+        VmDirIndexCfgRelease(pIndexCfg);
+        pIndexCfg = NULL;
     }
 
 error:
-
+    VmDirIndexCfgRelease(pIndexCfg);
     return dwError;
 }
 
@@ -669,7 +680,8 @@ _VmDirAddPrepareObjectSD(
     BAIL_ON_VMDIR_ERROR(dwError);
     pObjectSdAttr = NULL;
 
-    dwError = _VmDirGenerateAttrMetaData(pEntry, ATTR_OBJECT_SECURITY_DESCRIPTOR);
+    dwError = _VmDirGenerateAttrMetaData(pEntry,
+                                         ATTR_OBJECT_SECURITY_DESCRIPTOR);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:

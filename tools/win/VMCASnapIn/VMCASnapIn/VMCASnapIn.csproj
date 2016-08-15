@@ -50,13 +50,6 @@
   <ItemGroup>
     <Compile Include="ListViews\CertificateDetailsListView.cs" />
     <Compile Include="ListViews\CSRDetailListView.cs" />
-    <Compile Include="ListViews\CertDetailsFormView.cs" />
-    <Compile Include="ListViews\CertDetailsListControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="ListViews\CertDetailsListControl.Designer.cs">
-      <DependentUpon>CertDetailsListControl.cs</DependentUpon>
-    </Compile>
     <Compile Include="ListViews\KeyPairDetailListView.cs" />
     <Compile Include="Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -101,9 +94,6 @@
     <Compile Include="VMCASnapInEnvironment.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="ListViews\CertDetailsListControl.resx">
-      <DependentUpon>CertDetailsListControl.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Images\Toolbar.bmp" />
     <EmbeddedResource Include="Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

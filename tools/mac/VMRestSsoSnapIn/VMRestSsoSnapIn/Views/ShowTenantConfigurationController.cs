@@ -116,6 +116,7 @@ namespace RestSsoAdminSnapIn
 				ViewToDto();
 				var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(ServerDto.ServerName);
 				SnapInContext.Instance.ServiceGateway.Tenant.UpdateConfig(ServerDto,TenantName,TenantConfigurationDto,auth.Token);
+				SnapInContext.Instance.ServiceGateway.Tenant.UpdatePasswordAndLockoutConfig(ServerDto,TenantName,TenantConfigurationDto,auth.Token);
 				this.Close ();
 				NSApplication.SharedApplication.StopModalWithCode (1);
 				});

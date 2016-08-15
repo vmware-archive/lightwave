@@ -16,25 +16,40 @@ package com.vmware.identity.openidconnect.client;
 
 import java.util.List;
 
+import org.apache.commons.lang3.Validate;
+
+import com.vmware.identity.openidconnect.common.TokenType;
+
 /**
  * Token Spec
  *
  * @author Jun Sun
  */
-public class TokenSpec {
+public final class TokenSpec {
 
-    public static final TokenSpec EMPTY = new TokenSpec(new Builder());
+    public static final TokenSpec EMPTY = new TokenSpec(new Builder(TokenType.BEARER));
 
+    private final TokenType tokenType;
     private final boolean refreshTokenRequested;
     private final GroupMembershipType idTokenGroupsRequested;
     private final GroupMembershipType accessTokenGroupsRequested;
     private final List<String> resourceServers;
 
     private TokenSpec(Builder builder) {
+        this.tokenType = builder.tokenType;
         this.refreshTokenRequested = builder.refreshTokenRequested;
         this.idTokenGroupsRequested = builder.idTokenGroupsRequested;
         this.accessTokenGroupsRequested = builder.accessTokenGroupsRequested;
         this.resourceServers = builder.resourceServers;
+    }
+
+    /**
+     * Get token type
+     *
+     * @return                          Token type
+     */
+    public TokenType getTokenType() {
+        return this.tokenType;
     }
 
     /**
@@ -77,6 +92,7 @@ public class TokenSpec {
      * Builder for TokenSpec class
      */
     public static class Builder {
+        private final TokenType tokenType;
         private boolean refreshTokenRequested;
         private GroupMembershipType idTokenGroupsRequested;
         private GroupMembershipType accessTokenGroupsRequested;
@@ -85,7 +101,9 @@ public class TokenSpec {
         /**
          * Constructor
          */
-        public Builder() {
+        public Builder(TokenType tokenType) {
+            Validate.notNull(tokenType, "tokenType");
+            this.tokenType = tokenType;
         }
 
         /**

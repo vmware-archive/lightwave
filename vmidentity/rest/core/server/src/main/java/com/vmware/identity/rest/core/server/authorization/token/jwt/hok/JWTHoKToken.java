@@ -25,8 +25,8 @@ public class JWTHoKToken extends JWTBearerToken {
     private JWKSet jwkset;
     private PublicKey key;
 
-    public JWTHoKToken(SignedJWT jwt,  String roleField, String groupsField, JWKSet jwkset, PublicKey key) throws ParseException {
-        super(jwt, roleField, groupsField);
+    public JWTHoKToken(SignedJWT jwt, String tokenTypeField, String roleField, String groupsField, JWKSet jwkset, PublicKey key) throws ParseException {
+        super(jwt, tokenTypeField, roleField, groupsField);
         this.jwkset = jwkset;
         this.key = key;
     }

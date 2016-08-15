@@ -17,84 +17,86 @@ using System.Collections.Generic;
 using AppKit;
 using Foundation;
 using System.Linq;
-using VMDir.Common.VMDirUtilities;
+using VMDir.Common.DTO;
+using VMDirInterop.LDAP;
 
 namespace VMDirSnapIn.DataSource
 {
-    public class CreateObjectTableViewDataSource: NSTableViewDataSource
-    {
-        public Dictionary<string,VMDirBagItem> Entries { get; set; }
+	public class CreateObjectTableViewDataSource : NSTableViewDataSource
+	{
+		public Dictionary<string, VMDirAttributeDTO> Entries { get; set; }
 
-        public Dictionary<string,string> PendingMod { get; set; }
-
-
-        public CreateObjectTableViewDataSource ()
-        {
-            Entries = new Dictionary<string,VMDirBagItem> ();
-            PendingMod = new Dictionary<string,string> ();
-        }
-
-        public CreateObjectTableViewDataSource (Dictionary<string,VMDirBagItem>  classList)
-        {
-            PendingMod = new Dictionary<string,string> ();
-            Entries = classList;
-        }
+		public Dictionary<string, string> PendingMod { get; set; }
 
 
-        // This method will be called by the NSTableView control to learn the number of rows to display.
-        [Export ("numberOfRowsInTableView:")]
-        public int NumberOfRowsInTableView (NSTableView table)
-        {
-            if (Entries != null)
-                return this.Entries.Count;
-            else
-                return 0;
-        }
+		public CreateObjectTableViewDataSource()
+		{
+			Entries = new Dictionary<string, VMDirAttributeDTO>();
+			PendingMod = new Dictionary<string, string>();
+		}
 
-        // This method will be called by the control for each column and each row.
-        [Export ("tableView:objectValueForTableColumn:row:")]
-        public NSObject ObjectValueForTableColumn (NSTableView table, NSTableColumn col, int row)
-        {
-            try {
-                if (Entries != null) {
-                    string key = this.Entries.Keys.ElementAt (row);
-                    if (col.Identifier.Equals ("Key"))
-                        return (NSString)key;
-                    else
-                        return (NSString)Utilities.LdapValueToString (this.Entries [key].Value);
-                }
-            } catch (Exception e) {
-                System.Diagnostics.Debug.WriteLine ("Error in List Operation " + e.Message);
-            }
-            return null;
-        }
+		public CreateObjectTableViewDataSource(Dictionary<string, VMDirAttributeDTO> classList)
+		{
+			PendingMod = new Dictionary<string, string>();
+			Entries = classList;
+		}
 
-        [Export ("tableView:setObjectValue:forTableColumn:row:")]
-        public override void SetObjectValue (NSTableView tableView, NSObject editedVal, NSTableColumn col, nint row)
-        {
-            try {
-                if (Entries != null && !string.IsNullOrEmpty (editedVal.ToString ())) {
-                    if (col.Identifier == "Value") {
-                        string currKey = this.Entries.Keys.ElementAt ((int)row);
-                        if (currKey != "objectClass") {
-                            VMDirBagItem currVal = this.Entries [currKey];
-                            this.Entries [currKey] = new VMDirBagItem {
-                                Description = currVal.Description,
-                                IsReadOnly = currVal.IsReadOnly,
-                                IsRequired = currVal.IsRequired,
-                                Value = Utilities.StringToLdapValue ((NSString)editedVal)
-                            };
-                            this.PendingMod.Add (currKey, (NSString)Utilities.LdapValueToString (this.Entries [currKey].Value));
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                System.Diagnostics.Debug.WriteLine ("Error in List Operation " + e.Message);
-            }
 
-        }
+		// This method will be called by the NSTableView control to learn the number of rows to display.
+		[Export("numberOfRowsInTableView:")]
+		public int NumberOfRowsInTableView(NSTableView table)
+		{
+			if (Entries != null)
+				return this.Entries.Count;
+			else
+				return 0;
+		}
 
-    }
+		// This method will be called by the control for each column and each row.
+		[Export("tableView:objectValueForTableColumn:row:")]
+		public NSObject ObjectValueForTableColumn(NSTableView table, NSTableColumn col, int row)
+		{
+			try
+			{
+				if (Entries != null)
+				{
+					string key = this.Entries.Keys.ElementAt(row);
+					if (col.Identifier.Equals("Key"))
+						return (NSString)key;
+					else
+						return (NSString)this.Entries[key].Values[0].StringValue;
+				}
+			}
+			catch (Exception e)
+			{
+				System.Diagnostics.Debug.WriteLine("Error in List Operation " + e.Message);
+			}
+			return null;
+		}
+
+		[Export("tableView:setObjectValue:forTableColumn:row:")]
+		public override void SetObjectValue(NSTableView tableView, NSObject editedVal, NSTableColumn col, nint row)
+		{
+			try
+			{
+				if (Entries != null && !string.IsNullOrEmpty(editedVal.ToString()))
+				{
+					if (col.Identifier == "Value")
+					{
+						string currKey = this.Entries.Keys.ElementAt((int)row);
+						LdapValue val = new LdapValue(editedVal.ToString());
+						this.Entries[currKey].Values = new List<VMDirInterop.LDAP.LdapValue>() { val };
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				System.Diagnostics.Debug.WriteLine("Error in List Operation " + e.Message);
+			}
+
+		}
+
+	}
 }
 
 

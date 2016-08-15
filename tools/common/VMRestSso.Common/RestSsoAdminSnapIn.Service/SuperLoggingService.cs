@@ -25,19 +25,21 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
     public class SuperLoggingService
     {
         private readonly IWebRequestManager _webRequestManager;
-        public SuperLoggingService(IWebRequestManager webRequestManager)
+        private readonly IServiceConfigManager _serviceConfigManager;
+        public SuperLoggingService(IWebRequestManager webRequestManager, IServiceConfigManager serviceConfigManager)
         {
             _webRequestManager = webRequestManager;
+            _serviceConfigManager = serviceConfigManager;
         }
         public bool Start(ServerDto server, string tenant,  Token token, int size=500)
         {
-            var url = string.Format(ServiceConfigManager.StartEventLogPostEndPoint, server.Protocol, server.ServerName, server.Port, tenant, size);
+            var url = string.Format(_serviceConfigManager.GetStartEventLogPostEndPoint(), server.Protocol, server.ServerName, server.Port, tenant, size);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
             return string.IsNullOrEmpty(response);
@@ -45,13 +47,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
 
         public bool Stop(ServerDto server, string tenant,  Token token)
         {
-            var url = string.Format(ServiceConfigManager.StopEventLogPostEndPoint, server.Protocol, server.ServerName, server.Port, tenant);
+            var url = string.Format(_serviceConfigManager.GetStopEventLogPostEndPoint(), server.Protocol, server.ServerName, server.Port, tenant);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
            return string.IsNullOrEmpty(response);
@@ -60,13 +62,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         public bool Delete(ServerDto serverDto, string tenant, Token token)
         {
             tenant = Uri.EscapeDataString(tenant);
-            var url = string.Format(ServiceConfigManager.EventLogEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant);
+            var url = string.Format(_serviceConfigManager.GetEventLogEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
                                     {
                                         Method = HttpMethod.Delete,
                                     };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return string.IsNullOrEmpty(response);
@@ -74,13 +76,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
 
         public List<EventLogDto> GetEventLogs(ServerDto server,  string tenant, Token token)
         {
-            var url = string.Format(ServiceConfigManager.GetEventLogPostEndPoint, server.Protocol, server.ServerName, server.Port, tenant);
+            var url = string.Format(_serviceConfigManager.GetEventLogPostEndPoint(), server.Protocol, server.ServerName, server.Port, tenant);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
             var eventlogs = JsonConvert.JsonDeserialize<List<EventLogDto>>(response);
@@ -89,13 +91,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
 
         public EventLogStatusDto GetStatus(ServerDto server, string tenant, Token token)
         {
-            var url = string.Format(ServiceConfigManager.StatusEventLogPostEndPoint, server.Protocol, server.ServerName, server.Port, tenant);
+            var url = string.Format(_serviceConfigManager.GetStatusEventLogPostEndPoint(), server.Protocol, server.ServerName, server.Port, tenant);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
             var eventlogStatus = JsonConvert.JsonDeserialize<EventLogStatusDto>(response);

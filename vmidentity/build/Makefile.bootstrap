@@ -1,3 +1,7 @@
+SRCROOT = ../../
+MAKEROOT=$(SRCROOT)/support/make
+include $(MAKEROOT)/makedefs.mk
+
 MKDIR=/bin/mkdir
 RM=/bin/rm
 CP=/bin/cp
@@ -23,7 +27,6 @@ RPMBUILD_DIRS= \
 SRCROOT=..
 
 CLEAN_OBJECTS = \
-    admin-interfaces \
     tomcat-extensions \
     config \
     depends \
@@ -44,8 +47,9 @@ CLEAN_OBJECTS = \
     commons \
     vmware-sts \
     websso \
+    lightwaveui \
     ssolib \
-    wstauthz \
+    ROOT \
     sts \
     wsTrustClient \
     install \
@@ -74,13 +78,15 @@ CLEAN_OBJECTS = \
     $(SRCROOT)/openidconnect/client/target \
     $(SRCROOT)/openidconnect/sample/target \
     $(SRCROOT)/openidconnect/common/target \
+    $(SRCROOT)/openidconnect/protocol/target \
     $(SRCROOT)/openidconnect/server/src/main/resources/css \
     $(SRCROOT)/openidconnect/server/src/main/resources/img \
     $(SRCROOT)/openidconnect/server/src/main/resources/js \
     $(SRCROOT)/openidconnect/server/src/main/webapp/views \
     $(SRCROOT)/openidconnect/server/src/main/resources/locale \
     $(SRCROOT)/openidconnect/server/src/main/resources/messages.properties \
-    $(SRCROOT)/openidconnect/server/src/main/resources/locale
+    $(SRCROOT)/openidconnect/server/src/main/resources/locale \
+    $(SRCROOT)/ROOT/target
 
 
 PKG_SPEC=vmware-sts.spec
@@ -101,12 +107,14 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_datadir /opt/vmware/share" \
               --define "_includedir /opt/vmware/include" \
               --define "_likewise_open_prefix /opt/likewise" \
-              --define "_commons_daemondir /var/opt/commons-daemon-1.0.15/" \
-              --define "_javahome /var/opt/OpenJDK-1.8.0.92-bin" \
-              --define "_antdir /var/opt/apache-ant-1.9.6" \
-              --define "_tomcatdir /var/opt/apache-tomcat-8.0.35" \
-              --define "_jaxwsdir /opt/jaxws-ri-2.2.10" \
-              --define "_mavendir /var/opt/apache-maven-3.3.9" \
+              --define "_commons_daemondir ${COMMONS_DAEMON}" \
+              --define "_javahome ${JAVA_HOME}" \
+              --define "_antdir ${ANT_HOME}" \
+              --define "_tomcatdir ${TOMCAT_HOME}" \
+              --define "_jaxwsdir ${JAXWS_HOME}" \
+              --define "_mavendir ${MAVEN_HOME}" \
+              --define "_version $(VMSTS_MAJOR_VER).$(VMSTS_MINOR_VER).$(VMSTS_RELEASE_VER)" \
+              --define "_patch $(VMSTS_PATCH_VER)" \
               --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
               SPECS/$(PKG_SPEC)
 

@@ -40,4 +40,21 @@
 		<url-pattern>/</url-pattern>
 	</servlet-mapping>
 
+	<security-constraint>
+		<web-resource-collection>
+			<web-resource-name>SmartcardAuthn</web-resource-name>
+			<url-pattern>/SAML2/SmartcardRealm/*</url-pattern>
+		</web-resource-collection>
+		<user-data-constraint>
+			<transport-guarantee>CONFIDENTIAL</transport-guarantee>
+		</user-data-constraint>
+		<auth-constraint>
+			<role-name>X509</role-name>
+		</auth-constraint>
+	</security-constraint>
+
+	<login-config>
+		<auth-method>CLIENT-CERT</auth-method>
+		<realm-name>SmartcardRealm</realm-name>
+	</login-config>
 </web-app>

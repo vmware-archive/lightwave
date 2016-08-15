@@ -25,8 +25,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         {
             return new Dictionary<HttpRequestHeader, string>
                        {
-                           {HttpRequestHeader.ContentType, mediaType ?? ServiceConfigManager.ContentType},
-                           {HttpRequestHeader.UserAgent, ServiceConfigManager.UserAgent}
+                           {HttpRequestHeader.ContentType, mediaType ?? ServiceConstants.ContentType},
+                           {HttpRequestHeader.UserAgent, ServiceConstants.UserAgent}
                        };
         }
 

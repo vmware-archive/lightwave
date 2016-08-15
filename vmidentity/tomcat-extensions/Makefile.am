@@ -1,7 +1,7 @@
 
 CLASSPATH=@TOOLS_CLASSPATH@:@ANT_CLASSPATH@
 
-vmstsjars_DATA= \
+vmstsbin_DATA= \
     @top_builddir@/vmware-sts/packages/vmware-identity-tomcat-extensions.jar
 
 @top_builddir@/vmware-sts/packages/vmware-identity-tomcat-extensions.jar : jar

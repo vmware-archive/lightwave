@@ -145,4 +145,5 @@ cpp_quote("#endif")
 	[in]				handle_t	hBinding,
 	[in]				UINT32	        vmdirLogMask
         );
+
 }

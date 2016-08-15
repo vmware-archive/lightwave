@@ -29,6 +29,12 @@ namespace VMDirInterop.LDAP
         private IntPtr _connection = IntPtr.Zero;
         private IntPtr _result = IntPtr.Zero;
 
+        private struct BerValue
+        {
+            public ulong length;
+            public string value;
+        }
+
         public LdapConnection()
         {
             _connection = IntPtr.Zero;
@@ -81,15 +87,29 @@ namespace VMDirInterop.LDAP
             ErrorCheckerHelper.Validate(returnError);
         }
 
-        public ILdapMessage LdapSearchExtS(string querybase, int scope, string filter, string[] attrs, int attrsonly, IntPtr timeout, int sizelimit)
+        public ILdapMessage LdapSearchExtExS(string querybase, int scope, string filter, string[] attrs, int attrsonly, IntPtr timeout, int sizelimit, IntPtr[] serverControls)
         {
             ILdapMessage message;
-            if(attrs!=null)
-                Array.Resize(ref attrs, attrs.Length + 1);/* NULL Termination */
-            var returnError = LdapClientLibrary.ldap_search_ext_s(this._connection, querybase, scope, filter, attrs, 0, 0, 0, timeout, sizelimit, ref this._result);
+
+            if (attrs != null)
+            {
+                Array.Resize(ref attrs, attrs.Length + 1); /* NULL Termination */
+            }
+
+            if (serverControls != null)
+            {
+                Array.Resize(ref serverControls, serverControls.Length + 1); /* NULL Termination */
+            }
+
+            var returnError = LdapClientLibrary.ldap_search_ext_s(this._connection, querybase, scope, filter, attrs, attrsonly, serverControls, null, timeout, sizelimit, ref this._result);
             ErrorCheckerHelper.Validate(returnError);
             message = new LdapMessage(this, _result);
             return message;
+        }
+
+        public ILdapMessage LdapSearchExtS(string querybase, int scope, string filter, string[] attrs, int attrsonly, IntPtr timeout, int sizelimit)
+        {
+            return LdapSearchExtExS(querybase, scope, filter, attrs, 0, timeout, sizelimit, null);
         }
 
         public void AddObject(string dn, LdapMod[] attrs)
@@ -116,8 +136,6 @@ namespace VMDirInterop.LDAP
             Marshal.FreeHGlobal(basednPtr);
 
             ErrorCheckerHelper.Validate((int)returnError);
-
-            return;
         }
 
 
@@ -160,6 +178,60 @@ namespace VMDirInterop.LDAP
             LdapClientLibrary.ldap_msgfree(this._result);
         }
 
+        public IntPtr LdapCreatePageControl(int pageSize, IntPtr cookie, bool isCritical)
+        {
+            IntPtr pageControl = IntPtr.Zero;
+
+            var returnError = LdapClientLibrary.ldap_create_page_control(
+                                _connection,
+                                pageSize,
+                                cookie,
+                                isCritical ? 1 : 0,
+                                out pageControl);
+            ErrorCheckerHelper.Validate((int)returnError);
+
+            return pageControl;
+        }
+
+        public void LdapParseResult(ILdapMessage msg, ref IntPtr serverControls, bool fFreeIt)
+        {
+            int errorCode = 0;
+
+            var returnError = LdapClientLibrary.ldap_parse_result(
+                                _connection,
+                                _result,
+                                out errorCode,
+                                null,
+                                null,
+                                null,
+                                ref serverControls,
+                                fFreeIt ? 1 : 0);
+            ErrorCheckerHelper.Validate((int)returnError);
+        }
+
+        public void LdapParsePageControl(IntPtr serverControls, ref IntPtr cookie)
+        {
+            ulong totalCount = 0;
+
+            var returnError = LdapClientLibrary.ldap_parse_page_control(
+                                _connection,
+                                serverControls,
+                                out totalCount,
+                                ref cookie);
+            ErrorCheckerHelper.Validate((int)returnError);
+        }
+
+        public bool HasMorePages(IntPtr cookie)
+        {
+            if (cookie == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            BerValue val = (BerValue)Marshal.PtrToStructure(cookie, typeof(BerValue));
+            return (val.length != 0);
+        }
+
         public void LdapUnbindS()
         {
             var returnError = LdapClientLibrary.ldap_unbind_s(this._connection);
@@ -170,7 +242,5 @@ namespace VMDirInterop.LDAP
         {
             return _connection;
         }
-
     }
-
 }

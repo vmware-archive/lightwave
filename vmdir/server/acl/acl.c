@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -113,23 +113,23 @@ _VmDirDCClientGroupAccessCheck(
         goto cleanup;
     }
 
-        if ( pOperation->reqCode == LDAP_REQ_ADD )
-        {
-            pBervDN = &(pOperation->request.addReq.pEntry->dn);
-        }
-        else if ( pOperation->reqCode == LDAP_REQ_DELETE )
-        {
-            pBervDN = &(pOperation->request.deleteReq.dn);
-        }
-        else if ( pOperation->reqCode == LDAP_REQ_MODIFY )
-        {
-            pBervDN = &(pOperation->request.modifyReq.dn);
-        }
-        else
-        {
-            dwError = VMDIR_ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
+    if ( pOperation->reqCode == LDAP_REQ_ADD )
+    {
+        pBervDN = &(pOperation->request.addReq.pEntry->dn);
+    }
+    else if ( pOperation->reqCode == LDAP_REQ_DELETE )
+    {
+        pBervDN = &(pOperation->request.deleteReq.dn);
+    }
+    else if ( pOperation->reqCode == LDAP_REQ_MODIFY )
+    {
+        pBervDN = &(pOperation->request.modifyReq.dn);
+    }
+    else
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     // for all other access request, target DN must be under service container
     dwError = VmDirIsAncestorDN( &(gVmdirServerGlobals.bvServicesRootDN), pBervDN, &bIsAllowAccess);
@@ -141,7 +141,7 @@ cleanup:
 
 error:
 
-    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "%s failed Access (%lu), error (%d)",
+    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "%s failed Access (%u), error (%d)",
                        __FUNCTION__, accessDesired, dwError);
 
     goto cleanup;
@@ -430,15 +430,13 @@ VmDirFreeAbsoluteSecurityDescriptor(
     VMDIR_SAFE_FREE_MEMORY(pSacl);
 
     *ppSecDesc = NULL;
-
-    return;
 }
 
 
 // Create access token for the bind
 DWORD
 VmDirSrvCreateAccessTokenWithDn(
-    PSTR            pszObjectDn,
+    PCSTR           pszObjectDn,
     PACCESS_TOKEN*  ppToken
     )
 {
@@ -700,7 +698,7 @@ error:
 
 DWORD
 VmDirGetObjectSidFromDn(
-    PSTR    pszObjectDn,
+    PCSTR   pszObjectDn,
     PSID *  ppSid
     )
 {
@@ -1009,11 +1007,11 @@ VmDirSrvAccessCheckIsAdminRole(
        goto cleanup;
     }
 
-                if (IsNullOrEmptyString(pszNormTargetDN))
-                {
-                    dwError = ERROR_INVALID_PARAMETER;
-                    BAIL_ON_VMDIR_ERROR(dwError);
-                }
+    if (IsNullOrEmptyString(pszNormTargetDN))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     BAIL_ON_INVALID_ACCESSINFO(pAccessInfo, dwError);
 

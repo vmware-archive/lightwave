@@ -49,20 +49,14 @@ namespace VMCertStoreSnapIn
         public override void AwakeFromNib ()
         {
             base.AwakeFromNib ();
-
-            AddButton.Activated += OnAddSecretKey;
-            CancelButton.Activated += (object sender, EventArgs e) => {
-                this.Close ();
-                NSApplication.SharedApplication.StopModalWithCode (0);
-            };
         }
 
         bool ValidateControls ()
         {
             try {
-                if (string.IsNullOrEmpty (AliasTextField.StringValue))
+				if (string.IsNullOrWhiteSpace (AliasTextField.StringValue))
                     throw new Exception ("Please enter an alias");
-                if (string.IsNullOrEmpty (SecretKeyView.Value))
+				if (string.IsNullOrWhiteSpace (SecretKeyTextField.StringValue))
                     throw new Exception ("Please enter a secret key");
                 return true;
             } catch (Exception exp) {
@@ -71,19 +65,34 @@ namespace VMCertStoreSnapIn
             return false;
         }
 
-        public void OnAddSecretKey (object sender, EventArgs args)
-        {
-            if (!ValidateControls ())
-                return;
+		partial void OnBrowse(NSObject sender)
+		{
+			try
+			{
+				SecretKeyTextField.StringValue=FileIOUtil.ReadAllTextFromFile("Select Secret Key", new string[]{"key","pem" });
+			}
+			catch (Exception exp)
+			{
+				UIErrorHelper.ShowError(exp.Message);
+			}
+		}
+		partial void OnAdd(NSObject sender)
+		{
+			if (!ValidateControls())
+				return;
 
-            _secretKeyDTO.Alias = AliasTextField.StringValue;
-            _secretKeyDTO.SecretKey = SecretKeyView.Value;
-            _secretKeyDTO.Password = PasswordField.StringValue;
+			_secretKeyDTO.Alias = AliasTextField.StringValue;
+			_secretKeyDTO.SecretKey = SecretKeyTextField.StringValue;
+			_secretKeyDTO.Password = PasswordField.StringValue;
 
-            this.Close ();
-            NSApplication.SharedApplication.StopModalWithCode (1);
-        }
-
+			this.Close();
+			NSApplication.SharedApplication.StopModalWithCode(1);
+		}
+		partial void OnCancel(NSObject sender)
+		{
+			this.Close();
+			NSApplication.SharedApplication.StopModalWithCode(0);
+		}
         //strongly typed window accessor
         public new AddSecretKeyWindow Window {
             get {

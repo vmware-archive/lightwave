@@ -21,6 +21,7 @@ namespace VMwareMMCIDP.UI
         public string UserName { get; set; }
         public string Password { get; set; }
         public string DomainName { get; set; }
+        public string Upn { get; set; }
 
         public frmLogin()
         {
@@ -30,9 +31,10 @@ namespace VMwareMMCIDP.UI
 
         private void btnOK_Click(object sender, EventArgs e)
         {
-            string upn = txtUser.Text;
-            var userAndDomain = upn.Split('@');
+            Upn = txtUser.Text.Trim();
+            var userAndDomain = Upn.Split('@');
             UserName = userAndDomain[0];
+            if(userAndDomain[1] != null)
             DomainName = userAndDomain[1];
             Password = txtPass.Text;
 

@@ -19,6 +19,7 @@ using System.Windows.Forms;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Serialization;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
+using Vmware.Tools.RestSsoAdminSnapIn.Presenters;
 using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Views
@@ -105,7 +106,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 {
                     try
                     {
-                        _userDto = SnapInContext.Instance.ServiceGateway.User.Create(_serverDto, _tenantName, _userDto, auth.Token);
+                        var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
+                        _userDto = service.User.Create(_serverDto, _tenantName, _userDto, auth.Token);
                         shouldClose = true;
                         this.DialogResult = DialogResult.OK;
                         Close();
@@ -122,6 +124,10 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                                 if (error.Cause == "Constraint violation")
                                 {
                                     MMCDlgHelper.ShowError("Password does not match the password policy set on the tenant. Check tenant configuration for password policy or contact administrator");
+                                }
+                                else
+                                {
+                                    MMCDlgHelper.ShowError(error.Details + " Cause - " + error.Cause);
                                 }
                             }
                             else

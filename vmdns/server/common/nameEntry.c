@@ -117,7 +117,8 @@ error:
 DWORD
 VmDnsNameEntryListRecord(
     PVMDNS_NAME_ENTRY       pNameEntry,
-    PVMDNS_RECORD_ARRAY*    ppRecords
+    PVMDNS_RECORD_ARRAY*    ppRecords,
+    VMDNS_RR_TYPE           type
     )
 {
     DWORD dwError = ERROR_SUCCESS;
@@ -133,32 +134,48 @@ VmDnsNameEntryListRecord(
     pEntry = pNameEntry->Records.Next;
     while (pEntry)
     {
-        ++dwRecords;
+        pRecordEntry = GET_RECORD_ENTRY(pEntry);
+
+        if (pRecordEntry->Record->dwType == type)
+        {
+            ++dwRecords;
+        }
+
         pEntry = pEntry->Next;
     }
 
-    dwError = VmDnsAllocateMemory(sizeof(VMDNS_RECORD_ARRAY), (VOID*)&pRecords);
+    dwError = VmDnsAllocateMemory(
+                    sizeof(VMDNS_RECORD_ARRAY),
+                    (VOID*)&pRecords);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     if (dwRecords > 0)
     {
-        dwError = VmDnsAllocateMemory(sizeof(VMDNS_RECORD)*dwRecords,
-                                      (VOID*)&(pRecords->Records));
+        dwError = VmDnsAllocateMemory(
+                        sizeof(VMDNS_RECORD) * dwRecords,
+                        (VOID*)&(pRecords->Records));
         BAIL_ON_VMDNS_ERROR(dwError);
 
         pEntry = pNameEntry->Records.Next;
-        while (pEntry)
+
+        while (pEntry && idx < dwRecords)
         {
             pRecordEntry = GET_RECORD_ENTRY(pEntry);
-            dwError = VmDnsCopyRecord(pRecordEntry->Record, &pRecords->Records[idx]);
-            BAIL_ON_VMDNS_ERROR(dwError);
+
+            if (pRecordEntry->Record->dwType == type)
+            {
+                dwError = VmDnsCopyRecord(
+                                pRecordEntry->Record,
+                                &pRecords->Records[idx]);
+                BAIL_ON_VMDNS_ERROR(dwError);
+
+                ++pRecords->dwCount;
+                ++idx;
+            }
 
             pEntry = pEntry->Next;
-            ++idx;
         }
     }
-
-    pRecords->dwCount = dwRecords;
 
     *ppRecords = pRecords;
 

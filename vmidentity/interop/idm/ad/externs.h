@@ -21,7 +21,7 @@
  *
  *        Identity Manager - Active Directory Integration
  *
- *        Extern Declarations 
+ *        Extern Declarations
  *
  * Authors: Sriram Nambakam (snambakam@vmware.com)
  *
@@ -30,6 +30,8 @@
 #ifndef _WIN32
 
 extern PIDM_KRB_CONTEXT pgIdmKrbContext;
+
+extern PIDM_AUTH_MUTEX pgIdmAuthMutex;
 
 #endif
 

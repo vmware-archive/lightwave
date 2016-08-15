@@ -13,6 +13,8 @@
  */
 package com.vmware.identity.rest.core.client;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -23,7 +25,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 
-public class BaseClient {
+public class BaseClient implements Closeable{
 
     private final ReadWriteLock tokenLock;
     private AccessToken token;
@@ -114,6 +116,29 @@ public class BaseClient {
     }
 
     /**
+     * Constructs a client with a variety of parameters. The {@code host} and
+     * {@code port} parameters are loaded into a {@link SimpleHostRetriever} with the
+     * assumption that the connection will be secure.
+     *
+     * @param host the hostname of the remote REST server.
+     * @param port the port to use when connecting to the remote REST server.
+     * @param verifier a {@link HostnameVerifier} for use when verifying the SSL
+     *  certificate hostname.
+     * @param sslContext a {@link SSLContext} that defines the trust relationship
+     *  with the SSL certificates.
+     *  @param token access token that authorize service calls
+     */
+    protected BaseClient(String host, int port, HostnameVerifier verifier, SSLContext sslContext, AccessToken token) {
+        this.host = new SimpleHostRetriever(host, port, true);
+        this.client = HttpClients.custom()
+                .setSSLHostnameVerifier(verifier)
+                .setSSLContext(sslContext)
+                .build();
+        this.token = token;
+        this.tokenLock = new ReentrantReadWriteLock();
+    }
+
+    /**
      * Constructs a client with a given {@link HostRetriever}.
      *
      * @param host a {@link HostRetriever} that will supply the URLs for the REST server.
@@ -195,6 +220,21 @@ public class BaseClient {
         AccessToken token = this.token;
         tokenLock.readLock().unlock();
         return token;
+    }
+
+
+    /**
+     * Deallocates all the resources held by http client.
+     */
+    @Override
+    public void close() {
+        try {
+            if(client != null) {
+                client.close();
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to deallocate client held resources");
+        }
     }
 
 }

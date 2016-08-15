@@ -28,7 +28,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
     public partial class OidcClientsControl : UserControl, IFormViewControl
     {
         OidcClientsFormView _formView;
-        private ServiceGateway _ssoAdminSdkService;
 
         public OidcClientsControl()
         {
@@ -59,7 +58,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
         {
             _formView = (OidcClientsFormView)parentSelectionFormView;
             _formView.SelectionData.ActionsPaneItems.Clear();
-            _ssoAdminSdkService = _formView.ScopeNode.GetServiceGateway();
             RefreshOidcClients();
         }
         public void RefreshOidcClients()
@@ -68,8 +66,9 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             var tenantName = GetTenantName();
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto, tenantName);
             ActionHelper.Execute(delegate
-                {   
-                    var externalIdps = _ssoAdminSdkService.OidcClient.GetAll(serverDto, tenantName, auth.Token);
+                {
+                    var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
+                    var externalIdps = service.OidcClient.GetAll(serverDto, tenantName, auth.Token);
                     lstOidcClients.Items.Clear();
                     if (externalIdps != null)
                     {
@@ -92,7 +91,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 ActionHelper.Execute(delegate
                 {
                     var tenantName = GetTenantName();
-                    var form = new NewOidcClient(idp, _ssoAdminSdkService, serverDto, tenantName);
+                    var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
+                    var form = new NewOidcClient(idp, service, serverDto, tenantName);
                     form.ShowDialog();
                 }, null);
                 RefreshOidcClients();
@@ -126,8 +126,9 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto, tenantName);
                     
                 ActionHelper.Execute(delegate
-                { 
-                    _formView.ScopeNode.GetServiceGateway().OidcClient.Delete(serverDto, tenantName, idp, auth.Token);
+                {
+                    var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
+                    service.OidcClient.Delete(serverDto, tenantName, idp, auth.Token);
                     RefreshOidcClients();
                 }, auth);
             }

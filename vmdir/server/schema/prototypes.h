@@ -39,11 +39,18 @@ VdirSchemaCtxAcquireInLock(
     PVDIR_SCHEMA_CTX* ppSchemaCtx
     );
 
-// attr2idmap.c
 DWORD
-VdirSchemaAttrToIdMapInit(
-    PVDIR_SCHEMA_INSTANCE    pSchema,
-    PVDIR_ENTRY              pEntry
+VmDirSchemaCRNameToDescriptor(
+    PVDIR_SCHEMA_CTX        pCtx,
+    PCSTR                   pszName,
+    PVDIR_SCHEMA_CR_DESC*   ppCRDesc
+    );
+
+BOOLEAN
+VmDirSchemaIsAncestorOC(
+    PVDIR_SCHEMA_CTX        pCtx,
+    PVDIR_SCHEMA_OC_DESC    pOCDesc,
+    PVDIR_SCHEMA_OC_DESC    pAncestorOCDesc
     );
 
 // check.c
@@ -53,86 +60,105 @@ VmDirSchemaGetEntryStructureOCDesc(
     PVDIR_SCHEMA_OC_DESC*   ppStructureOCDesc   // caller does not own *ppStructureOCDesc
     );
 
-// init.c
+// idmap.c
 DWORD
-VdirSchemaInstanceAllocate(
-    PVDIR_SCHEMA_INSTANCE* ppSchema,
-    USHORT   dwATSize,
-    USHORT   dwOCSize,
-    USHORT   dwContentSize,
-    USHORT   dwStructureSize,
-    USHORT   dwNameformSize
+VmDirSchemaAttrIdMapInit(
+    PVDIR_SCHEMA_ATTR_ID_MAP*   ppAttrIdMap
+    );
+
+DWORD
+VmDirSchemaAttrIdMapReadDB(
+    PVDIR_SCHEMA_ATTR_ID_MAP    pAttrIdMap
+    );
+
+DWORD
+VmDirSchemaAttrIdMapUpdateDB(
+    PVDIR_SCHEMA_ATTR_ID_MAP    pAttrIdMap
+    );
+
+DWORD
+VmDirSchemaAttrIdMapGetAttrId(
+    PVDIR_SCHEMA_ATTR_ID_MAP    pAttrIdMap,
+    PSTR                        pszAttrName,
+    USHORT*                     pusAttrId
+    );
+
+DWORD
+VmDirSchemaAttrIdMapAddNewAttr(
+    PVDIR_SCHEMA_ATTR_ID_MAP    pAttrIdMap,
+    PSTR                        pszAttrName,
+    USHORT                      usAttrId    // optional
     );
 
 VOID
-VdirSchemaInstanceFree(
+VmDirSchemaAttrIdMapRemoveAllPending(
+    PVDIR_SCHEMA_ATTR_ID_MAP    pAttrIdMap
+    );
+
+VOID
+VmDirFreeSchemaAttrIdMap(
+    PVDIR_SCHEMA_ATTR_ID_MAP    pAttrIdMap
+    );
+
+// instance.c
+DWORD
+VmDirSchemaInstanceCreate(
+    PVDIR_LDAP_SCHEMA           pRepository,
+    PVDIR_SCHEMA_ATTR_ID_MAP    pAttrIdMap,
+    PVDIR_SCHEMA_INSTANCE*      ppInstance
+    );
+
+DWORD
+VmDirSchemaInstanceGetATDescByName(
+    PVDIR_SCHEMA_INSTANCE   pSchema,
+    PCSTR                   pszName,
+    PVDIR_SCHEMA_AT_DESC*   ppATDesc
+    );
+
+DWORD
+VmDirSchemaInstanceGetATDescById(
+    PVDIR_SCHEMA_INSTANCE   pSchema,
+    USHORT                  usId,
+    PVDIR_SCHEMA_AT_DESC*   ppATDesc
+    );
+
+DWORD
+VmDirSchemaInstanceGetOCDescByName(
+    PVDIR_SCHEMA_INSTANCE   pSchema,
+    PCSTR                   pszName,
+    PVDIR_SCHEMA_OC_DESC*   ppOCDesc
+    );
+
+DWORD
+VmDirSchemaInstanceGetCRDescByName(
+    PVDIR_SCHEMA_INSTANCE   pSchema,
+    PCSTR                   pszName,
+    PVDIR_SCHEMA_CR_DESC*   ppCRDesc
+    );
+
+DWORD
+VmDirSchemaInstanceGetSRDescById(
+    PVDIR_SCHEMA_INSTANCE   pSchema,
+    PCSTR                   pszId,
+    PVDIR_SCHEMA_SR_DESC*   ppSRDesc
+    );
+
+DWORD
+VmDirSchemaInstanceGetNFDescByName(
+    PVDIR_SCHEMA_INSTANCE   pSchema,
+    PCSTR                   pszName,
+    PVDIR_SCHEMA_NF_DESC*   ppNFDesc
+    );
+
+VOID
+VmDirFreeSchemaInstance(
     PVDIR_SCHEMA_INSTANCE pSchema
     );
 
+// libmain.c
 DWORD
-UnitTestSchemaInstanceInit(
-    PSTR*    ppszDescs,
-    DWORD    dwDescsSize,
-    PVDIR_SCHEMA_INSTANCE*    ppSchema
-    );
-
-DWORD
-VdirSchemaInstanceInitViaEntry(
-    PVDIR_ENTRY                  pEntry,
-    PVDIR_SCHEMA_INSTANCE*  ppSchema
-    );
-
-DWORD
-VmDirSchemaInitalizeFileToEntry(
-    PCSTR           pszSchemaFilePath,
-    PVDIR_ENTRY*    ppEntry
-    );
-
-// load.c
-DWORD
-VmDirSchemaLoadInstance(
-    PVDIR_SCHEMA_INSTANCE    pSchema
-    );
-
-int
-VdirSchemaPCRNameCmp(
-    const void *p1,
-    const void *p2
-    );
-
-int
-VdirSchemaPATNameCmp(
-    const void *p1,
-    const void *p2
-    );
-
-int
-VdirSchemaPOCNameCmp(
-    const void *p1,
-    const void *p2
-    );
-
-/*  defined in schema.h already
-DWORD
-VmDirSchemaNameToOCDesc(
-    PVDIR_SCHEMA_OC_COLLECTION  pOCCollection,
-    PCSTR                       pszOCName,
-    PVDIR_SCHEMA_OC_DESC*       ppOCDesc
-    );
-
-DWORD
-VmDirSchemaNameToATDesc(
-    PVDIR_SCHEMA_AT_COLLECTION  pATCollection,
-    PCSTR                       pszATName,
-    PVDIR_SCHEMA_AT_DESC*       ppATDesc
-    );
-*/
-
-DWORD
-VmDirSchemaCRNameToDescriptor(
-    PVDIR_SCHEMA_CTX        pCtx,
-    PCSTR                   pszName,
-    PVDIR_SCHEMA_CR_DESC*   ppCRDesc
+VmDirSchemaLibLoadBootstrapTable(
+    VDIR_SCHEMA_BOOTSTRAP_TABLE bootstrapTable[]
     );
 
 // matchingrule.c
@@ -142,70 +168,67 @@ VdirMatchingRuleLoad(
     );
 
 PVDIR_MATCHING_RULE_DESC
-VdirMatchingRuleLookupByName(
-    PCSTR    pszName
+VdirEqualityMRLookupBySyntaxOid(
+    PCSTR    pszSyntaxOid
     );
 
-DWORD
-VdirMatchingRuleGetDefinition(
-    PSTR**    pppszOutStr,
-    USHORT*   pdwSize
+PVDIR_MATCHING_RULE_DESC
+VdirOrderingMRLookupBySyntaxOid(
+    PCSTR    pszSyntaxOid
+    );
+
+PVDIR_MATCHING_RULE_DESC
+VdirSubstrMRLookupBySyntaxOid(
+    PCSTR    pszSyntaxOid
     );
 
 // parse.c
-VOID
-VmDirSchemaATDescContentFree(
-    PVDIR_SCHEMA_AT_DESC pATDesc
-    );
-
-VOID
-VmDirSchemaOCDescContentFree(
-    PVDIR_SCHEMA_OC_DESC pOCDesc
-    );
-
-VOID
-VmDirSchemaContentDescContentFree(
-    PVDIR_SCHEMA_CR_DESC pContentDesc
-    );
-
-VOID
-VmDirSchemaStructureDescContentFree(
-    PVDIR_SCHEMA_SR_DESC pStructureDesc
-    );
-
-VOID
-VmDirSchemaNameformDescContentFree(
-    PVDIR_SCHEMA_NF_DESC pNameformDesc
+DWORD
+VmDirSchemaATDescCreate(
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pLdapAt,
+    PVDIR_SCHEMA_AT_DESC*       ppATDesc
     );
 
 DWORD
-VmDirSchemaParseStrToATDesc(
-    const char* pszStr,
-    PVDIR_SCHEMA_AT_DESC pATDesc
+VmDirSchemaOCDescCreate(
+    PVDIR_LDAP_OBJECT_CLASS pLdapOc,
+    PVDIR_SCHEMA_OC_DESC*   ppOCDesc
     );
 
 DWORD
-VmDirSchemaParseStrToOCDesc(
-    const char*             pszStr,
-    PVDIR_SCHEMA_OC_DESC    pOCDesc
+VmDirSchemaCRDescCreate(
+    PVDIR_LDAP_CONTENT_RULE pLdapCr,
+    PVDIR_SCHEMA_CR_DESC*   ppCRDesc
     );
 
 DWORD
-VmDirSchemaParseStrToContentDesc(
-    const char*             pStr,
-    PVDIR_SCHEMA_CR_DESC    pConetentDesc
+VmDirSchemaSRDescCreate(
+    PVDIR_LDAP_STRUCTURE_RULE   pLdapSr,
+    PVDIR_SCHEMA_SR_DESC*       ppSRDesc
     );
 
 DWORD
-VmDirSchemaParseStrToStructureDesc(
-    const char*            pStr,
-    PVDIR_SCHEMA_SR_DESC   pStructureDesc
+VmDirSchemaNFDescCreate(
+    PVDIR_LDAP_NAME_FORM    pLdapNf,
+    PVDIR_SCHEMA_NF_DESC*   ppNFDesc
     );
 
 DWORD
-VmDirSchemaParseStrToNameformDesc(
-    const char*                 pStr,
-    PVDIR_SCHEMA_NF_DESC  pNameformDesc
+VmDirLdapAtParseVdirEntry(
+    PVDIR_ENTRY                 pEntry,
+    PVDIR_LDAP_ATTRIBUTE_TYPE*  ppAt
+    );
+
+DWORD
+VmDirLdapOcParseVdirEntry(
+    PVDIR_ENTRY                 pEntry,
+    PVDIR_LDAP_OBJECT_CLASS*    ppOc
+    );
+
+DWORD
+VmDirLdapCrParseVdirEntry(
+    PVDIR_ENTRY                 pEntry,
+    PVDIR_LDAP_CONTENT_RULE*    ppCr
     );
 
 // syntax.c
@@ -230,36 +253,29 @@ syntaxOID(
     PVDIR_BERVALUE pBerv
     );
 
-// verify.c
-BOOLEAN
-VmDirSchemaVerifyIntegrity(
-    PVDIR_SCHEMA_INSTANCE    pSchema
+// legacy/legacyload.c
+DWORD
+VmDirSchemaAttrIdMapLoadSubSchemaSubEntry(
+    PVDIR_SCHEMA_ATTR_ID_MAP    pAttrIdMap,
+    PVDIR_ENTRY                 pSchemaEntry
     );
 
 DWORD
-VmDirSchemaInstancePatchCheck(
-    PVDIR_SCHEMA_INSTANCE   pSchema,
-    PVDIR_SCHEMA_INSTANCE   pInstance,
-    PBOOLEAN                pbCompatible,
-    PBOOLEAN                pbNeedPatch
+VmDirLdapSchemaLoadSubSchemaSubEntry(
+    PVDIR_LDAP_SCHEMA   pLdapSchema,
+    PVDIR_ENTRY         pSchemaEntry
     );
 
-VOID
-VdirSchemaVerifyATDescPrint(
-    PVDIR_SCHEMA_AT_DESC pATDesc,
-    PSTR*                ppszOut
-    );
-
-VOID
-VdirSchemaVerifyOCDescPrint(
-    PVDIR_SCHEMA_OC_DESC pOCDesc,
-    PSTR*                ppszOut
-    );
-
-// adcompatibleschema.c
 DWORD
-VdirSchemaADCompatibleSetup(
-    PVDIR_SCHEMA_INSTANCE   pSchema
+VmDirLegacySchemaLoadSubSchemaSubEntry(
+    PVDIR_LEGACY_SCHEMA pLegacySchema,
+    PVDIR_ENTRY         pSchemaEntry
+    );
+
+// legacy/legacyutil.c
+DWORD
+VmDirUpdateSubSchemaSubEntry(
+    PVDIR_LEGACY_SCHEMA_MOD pLegacySchemaMod
     );
 
 #ifdef __cplusplus

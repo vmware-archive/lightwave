@@ -60,8 +60,15 @@ namespace Vmware.Tools.RestSsoAdminSnapIn
         {
             get
             {
-                return _serviceGateway ?? (_serviceGateway = new ServiceGateway());
+				if (_serviceGateway == null) {
+					var serviceConfig = new ServiceConfigManager();
+					_serviceGateway = new ServiceGateway (serviceConfig);
+				}
+				return _serviceGateway;
             }
+			set{
+				_serviceGateway = value;
+			}
         }
     }
 }

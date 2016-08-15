@@ -10,20 +10,21 @@
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
  * License for the specific language governing permissions and limitations
  * under the License.
- */using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace VMDirSnapIn
-{
-    public class VMDirException : Exception
-    {
-        public UInt32 ErrorCode { get; set; }
-
-        public VMDirException(string function, UInt32 error):base(function)
-        {
-            ErrorCode = error;
-        }
-    }
+ */
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
+namespace VMDirSnapIn
+{
+    public class VMDirException : Exception
+    {
+        public UInt32 ErrorCode { get; set; }
+        public VMDirException(string function, UInt32 error)
+            : base(function)
+        {
+            ErrorCode = error;
+        }
+    }
 }

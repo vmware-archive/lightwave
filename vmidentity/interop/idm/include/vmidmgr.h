@@ -118,8 +118,11 @@ IDMGetUserInformationFromAuthContext(
 
 DWORD
 IDMLdapSaslBind(
-	LDAP*        pLd                       /* IN     */
-	);
+    LDAP*       pLd,                       /* IN     */
+    PWSTR       pszUser,                   /* IN     */
+    PWSTR       pszDomain,                 /* IN     */
+    PWSTR       pszPassword                /* IN     */
+    );
 
 #endif /* !_WIN32 */
 

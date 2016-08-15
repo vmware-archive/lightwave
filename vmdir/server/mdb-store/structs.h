@@ -13,20 +13,6 @@
  */
 
 
-
-/*
- * Module Name: Directory mdb-store
- *
- * Filename: structs.h
- *
- * Abstract:
- *
- * Directory mdb-store module
- *
- * Private Structures
- *
- */
-
 typedef struct _VDIR_CFG_MDB_DATAFILE_DESC
 {
     MDB_dbi     mdbDBi;
@@ -50,7 +36,7 @@ typedef struct _VDIR_MDB_ENTRY_DATABASE
 
 typedef struct _VDIR_MDB_INDEX_DATABASE
 {
-    PSTR                        pszAttrName;    // Not currently used
+    PSTR                        pszAttrName;    // Used as key in mdbIndexDBs
     USHORT                      usNumDataFiles;
 
     // Array of MDBDataFiles indexed by VDIR_CFG_ATTR_INDEX_DESC.iId
@@ -61,21 +47,24 @@ typedef struct _VDIR_MDB_INDEX_DATABASE
 
 } VDIR_MDB_INDEX_DATABASE, *PVDIR_MDB_INDEX_DATABASE;
 
-typedef struct _VDIR_MDB_INDEX_DB_COLLECTION
+typedef struct _VDIR_MDB_INDEX_ITERATOR
 {
-    USHORT                      usNumIndexAttribute;
-    USHORT                      usMaxSize;
-    PVDIR_MDB_INDEX_DATABASE    pIndexDBs;
+    PVDIR_DB_TXN    pTxn;
+    PVDIR_DB_DBC    pCursor;
+    PSTR            pszVal;
+    ENTRYID         eId;
+    BOOLEAN         bAbort;
 
-} VDIR_MDB_INDEX_DB_COLLECTION, *PVDIR_MDB_INDEX_DB_COLLECTION;
+} VDIR_MDB_INDEX_ITERATOR, *PVDIR_MDB_INDEX_ITERATOR;
 
 typedef struct _VDIR_MDB_GLOBALS
 {
     // NOTE: order of fields MUST stay in sync with struct initializer...
     VDIR_MDB_ENTRY_DATABASE         mdbEntryDB;
-    VDIR_MDB_INDEX_DB_COLLECTION    mdbIndexDBs;
+    PLW_HASHMAP                     mdbIndexDBs;
     MDB_env *                       mdbEnv;
     MDB_dbi                         mdbSeqDBi;
+    MDB_dbi                         mdbGenericDupKeyDBi;
+    MDB_dbi                         mdbGenericUniqKeyDBi;
 
 } VDIR_MDB_GLOBALS, *PVDIR_MDB_GLOBALS;
-

@@ -14,41 +14,41 @@ Deliverables
 
 2.  RPMs
 
-    1.  vmware-event-devel-1.0.0-0.x86\_64.rpm
+    1.  vmware-event-devel-6.6.0-0.x86\_64.rpm
 
-    2.  vmware-directory-client-6.0.2-0.x86\_64.rpm
+    2.  vmware-directory-client-6.6.0-0.x86\_64.rpm
 
-    3.  vmware-directory-6.0.2-0.x86\_64.rpm
+    3.  vmware-directory-6.6.0-0.x86\_64.rpm
 
-    4.  vmware-directory-client-devel-6.0.2-0.x86\_64.rpm
+    4.  vmware-directory-client-devel-6.6.0-0.x86\_64.rpm
 
-    5.  vmware-dns-client-6.0.0-0.x86\_64.rpm
+    5.  vmware-dns-client-6.6.0-0.x86\_64.rpm
 
-    6.  vmware-dns-6.0.0-0.x86\_64.rpm
+    6.  vmware-dns-6.6.0-0.x86\_64.rpm
 
-    7.  vmware-dns-client-devel-6.0.0-0.x86\_64.rpm
+    7.  vmware-dns-client-devel-6.6.0-0.x86\_64.rpm
 
-    8.  vmware-afd-client-6.0.2-0.x86\_64.rpm
+    8.  vmware-afd-client-6.6.0-0.x86\_64.rpm
 
-    9.  vmware-afd-6.0.2-0.x86\_64.rpm
+    9.  vmware-afd-6.6.0-0.x86\_64.rpm
 
-    10. vmware-afd-client-devel-6.0.2-0.x86\_64.rpm
+    10. vmware-afd-client-devel-6.6.0-0.x86\_64.rpm
 
-    11. vmware-ca-6.0.2-0.x86\_64.rpm
+    11. vmware-ca-6.6.0-0.x86\_64.rpm
 
-    12. vmware-ca-client-6.0.2-0.x86\_64.rpm
+    12. vmware-ca-client-6.6.0-0.x86\_64.rpm
 
-    13. vmware-ca-client-devel-6.0.2-0.x86\_64.rpm
+    13. vmware-ca-client-devel-6.6.0-0.x86\_64.rpm
 
-    14. vmware-sts-6.0.2-0.x86\_64.rpm
+    14. vmware-sts-6.6.0-0.x86\_64.rpm
 
-    15. vmware-sts-client-6.0.2-0.x86\_64.rpm
+    15. vmware-sts-client-6.6.0-0.x86\_64.rpm
 
-    16. vmware-ic-config-1.0.2-0.x86\_64.rpm
+    16. vmware-ic-config-6.6.0-0.x86\_64.rpm
 
-    17. vmware-lightwave-clients-6.0.2-0.x86\_64.rpm
+    17. vmware-lightwave-clients-6.6.0-0.x86\_64.rpm
 
-    18. vmware-lightwave-server-6.0.2-0.x86\_64.rpm
+    18. vmware-lightwave-server-6.6.0-0.x86\_64.rpm
 
  
 
@@ -57,44 +57,23 @@ Preparing the build system
 
  
 
-1.  Start with a Photon system
+1.  Start with a Photon 1.0 system
 
-2.  Make sure you have the yum repository for photon-extras configured
+2.  tdnf install likewise-open-devel
 
-    -   How to configure the photon-extras repository ?
+3.  tdnf install openjdk
 
-        Copy the following into /etc/yum.repos.d/photon-extras.repo
+4.  tdnf install apache-maven
 
-        [photon-extras]
+5.  tdnf install apache-ant
 
-        name=VMware Photon Extras 1.0(x86\_64)
+6.  tdnf install ant-contrib
 
-        baseurl=https://dl.bintray.com/vmware/photon\_extras
+7.  tdnf install jaxws-ri
 
-        gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY
+8. tdnf install apache-tomcat
 
-        gpgcheck=0
-
-        enabled=1
-
-        skip\_if\_unavailable=True
-
-3.  tdnf install likewise-open-6.2.8
-
-4.  tdnf install likewise-open-devel-6.2.8
-
-5.  tdnf install openjdk
-
-6.  tdnf install apache-maven
-
-7.  tdnf install apache-ant
-
-8.  tdnf install ant-contrib
-
-9.  tdnf install jaxws-ri
-
-10. tdnf install apache-tomcat
-
+9. tdnf install boost-devel
  
 
 Building the container
@@ -106,7 +85,11 @@ From workspace root, run “make container”.
 
  
 
-A successful build will yield the container at stage/vmware-lightwave-sts.tar
+A successful build will yield the container at stage/vmware-lightwave-sts.tar.
+This container will include lightwave packages from the local build tree.
+
+To build a container using lightwave packages from the extern yum repository,
+set your working directory to support/docker and run “docker build .”.
 
  
 

@@ -53,6 +53,11 @@ VmDirStringListInitialize(
     PVMDIR_STRING_LIST pStringList = NULL;
     DWORD dwAllocationSize = 0;
 
+    if (dwInitialCount < 4)
+    {
+        dwInitialCount = 4; // default to 4
+    }
+
     dwAllocationSize = dwInitialCount * sizeof(PSTR);
     if (dwAllocationSize < dwInitialCount)
     {
@@ -88,9 +93,10 @@ VmDirStringListAdd(
 {
     DWORD dwError = 0;
 
-    if (pStringList->dwCount == pStringList->dwSize)
+    // keep string list null-terminated
+    if (pStringList->dwCount + 1 == pStringList->dwSize)
     {
-        DWORD dwOldSize = pStringList->dwCount;
+        DWORD dwOldSize = pStringList->dwSize;
         DWORD dwNewSize = pStringList->dwSize * 2;
 
         //

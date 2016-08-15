@@ -46,6 +46,10 @@ public class AuthnRequestStateKerbAuthenticationFilter implements
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory
             .getLogger(AuthnRequestStateKerbAuthenticationFilter.class);
 
+    public static enum KerbAuthnType {
+        CIP, IWA
+     }
+
     @Override
     public void preAuthenticate(AuthnRequestState t)
             throws SamlServiceException {
@@ -58,7 +62,7 @@ public class AuthnRequestStateKerbAuthenticationFilter implements
         Validate.notNull(accessor);
 
         // then check if required auth header is present
-        if (request.getParameter(Shared.REQUEST_AUTH_HEADER) == null) {
+        if (request.getParameter(Shared.REQUEST_AUTH_PARAM) == null) {
             // authentication not possible
             log.debug("REQUEST_AUTH_HEADER is missing, requesting KERB_AUTH_PREFIX");
             t.setWwwAuthenticate(Shared.KERB_AUTH_PREFIX);
@@ -83,14 +87,33 @@ public class AuthnRequestStateKerbAuthenticationFilter implements
         GSSResult result = null;
 
         // call IDM to perform GSS auth
-        String authHeader = request.getParameter(Shared.REQUEST_AUTH_HEADER);
-        Validate.notNull(authHeader);
-        String authData = authHeader.replace(Shared.KERB_AUTH_PREFIX, "")
-                .trim();
-        String[] parts = authData.split(" ");
-        assert parts.length == 2;
+        String castleAuthParam = request.getParameter(Shared.REQUEST_AUTH_PARAM);
+        Validate.notNull(castleAuthParam);
+        castleAuthParam = castleAuthParam.replace(Shared.KERB_AUTH_PREFIX, "").trim();
+        String[] parts = castleAuthParam.split(" ");
+        Validate.isTrue(parts.length == 1 || parts.length == 2);
+
+        String browserAuthHeader = request.getHeader(Shared.IWA_AUTH_REQUEST_HEADER);
         String contextId = parts[0];
-        byte[] decodedAuthData = Base64.decode(parts[1]);
+        String encodedToken = null;
+
+        if (parts.length == 1) {
+            t.setKerbAuthnType(KerbAuthnType.IWA);
+            if (browserAuthHeader == null) {
+                t.setWwwAuthenticate(Shared.KERB_AUTH_PREFIX);
+                t.setValidationResult(new ValidationResult(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", null));
+                throw new SamlServiceException();
+            } else {
+                encodedToken = browserAuthHeader.replace(Shared.KERB_AUTH_PREFIX, "").trim();
+            }
+        } else {
+            t.setKerbAuthnType(KerbAuthnType.CIP);
+            encodedToken = parts[1];
+        }
+
+        Validate.notEmpty(contextId);
+        Validate.notEmpty(encodedToken);
+        byte[] decodedAuthData = Base64.decode(encodedToken);
 
         try {
             result = accessor.authenticate(contextId, decodedAuthData);
@@ -110,8 +133,12 @@ public class AuthnRequestStateKerbAuthenticationFilter implements
                 log.debug("Requesting more auth data");
                 String encodedAuthData = Shared.encodeBytes(result
                         .getServerLeg());
-                t.setWwwAuthenticate(Shared.KERB_AUTH_PREFIX + " " + contextId
-                        + " " + encodedAuthData);
+                if (t.getKerbAuthnType() == KerbAuthnType.CIP) {
+                    t.setWwwAuthenticate(Shared.KERB_AUTH_PREFIX + " " + contextId
+                            + " " + encodedAuthData);
+                } else {
+                    t.setWwwAuthenticate(Shared.KERB_AUTH_PREFIX + " " + encodedAuthData);
+                }
                 t.setValidationResult(new ValidationResult(
                         HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", null));
                 throw new SamlServiceException();

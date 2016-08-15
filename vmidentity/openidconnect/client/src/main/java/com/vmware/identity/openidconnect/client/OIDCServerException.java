@@ -22,7 +22,7 @@ import com.vmware.identity.openidconnect.common.State;
  *
  * @author Jun Sun
  */
-public class OIDCServerException extends Exception {
+public final class OIDCServerException extends Exception {
 
     private static final long serialVersionUID = 2L;
 

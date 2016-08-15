@@ -191,11 +191,12 @@ VmDirInitConnAcceptThread(
 
         *pdwPort = pdwLdapPorts[i];
 
-        VmDirSrvThrInit(
-                pThrInfo,
-                gVmdirGlobals.replCycleDoneMutex,     // alternative mutex
-                gVmdirGlobals.replCycleDoneCondition, // alternative cond
-                TRUE);  // join by main thr
+        dwError = VmDirSrvThrInit(
+                    &pThrInfo,
+                    gVmdirGlobals.replCycleDoneMutex,
+                    gVmdirGlobals.replCycleDoneCondition,
+                    TRUE);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirCreateThread(
                 &pThrInfo->tid,
@@ -212,11 +213,6 @@ VmDirInitConnAcceptThread(
     for (i = 0; gVmdirOpensslGlobals.bSSLInitialized && i < dwLdapsPorts; i++)
     {
         dwError = VmDirAllocateMemory(
-                sizeof(*pThrInfo),
-                (PVOID*)&pThrInfo);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirAllocateMemory(
                 sizeof(DWORD),
                 (PVOID)&pdwPort);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -224,7 +220,7 @@ VmDirInitConnAcceptThread(
         *pdwPort = pdwLdapsPorts[i];
 
         VmDirSrvThrInit(
-                pThrInfo,
+                &pThrInfo,
                 gVmdirGlobals.replCycleDoneMutex,     // alternative mutex
                 gVmdirGlobals.replCycleDoneCondition, // alternative cond
                 TRUE);  // join by main thr
@@ -247,10 +243,7 @@ cleanup:
 
 error:
 
-    if (pThrInfo)
-    {
-        VmDirSrvThrFree(pThrInfo);
-    }
+    VmDirSrvThrFree(pThrInfo);
 
     VMDIR_SAFE_FREE_MEMORY(pdwPort);
 
@@ -728,7 +721,7 @@ ProcessAConnection(
          BAIL_ON_VMDIR_ERROR( retVal );
       }
 
-      retVal = VmDirNewOperation(ber, msgid, tag, pConn, &pOperation);
+      retVal = VmDirExternalOperationCreate(ber, msgid, tag, pConn, &pOperation);
       if (retVal)
       {
           VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessAConnection: NewOperation() call failed." );
@@ -773,6 +766,9 @@ ProcessAConnection(
              break;
 
          case LDAP_REQ_MODDN:
+              retVal = VmDirPerformRename(pOperation);
+            break;
+
          case LDAP_REQ_COMPARE:
          case LDAP_REQ_ABANDON:
          case LDAP_REQ_EXTENDED:

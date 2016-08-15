@@ -140,7 +140,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.lblLastRefreshed.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblLastRefreshed.AutoSize = true;
             this.lblLastRefreshed.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblLastRefreshed.Location = new System.Drawing.Point(403, 129);
+            this.lblLastRefreshed.Location = new System.Drawing.Point(365, 129);
             this.lblLastRefreshed.Name = "lblLastRefreshed";
             this.lblLastRefreshed.Size = new System.Drawing.Size(35, 13);
             this.lblLastRefreshed.TabIndex = 18;
@@ -172,7 +172,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(330, 129);
+            this.label2.Location = new System.Drawing.Point(272, 129);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(71, 13);
             this.label2.TabIndex = 29;
@@ -238,7 +238,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.txtIpAddress.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.txtIpAddress.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.txtIpAddress.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtIpAddress.Location = new System.Drawing.Point(517, 93);
+            this.txtIpAddress.Location = new System.Drawing.Point(505, 93);
             this.txtIpAddress.Name = "txtIpAddress";
             this.txtIpAddress.ReadOnly = true;
             this.txtIpAddress.Size = new System.Drawing.Size(91, 13);
@@ -251,7 +251,7 @@ namespace VMPscHighAvailabilitySnapIn.UI
             this.label7.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label7.AutoSize = true;
             this.label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label7.Location = new System.Drawing.Point(454, 92);
+            this.label7.Location = new System.Drawing.Point(437, 92);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(61, 13);
             this.label7.TabIndex = 39;

@@ -24,8 +24,12 @@ using System.DirectoryServices.Protocols;
 using Microsoft.ManagementConsole.Advanced;
 using VMDir.Common.VMDirUtilities;
 using VMDirInterop.LDAP;
+using VMDir.Common;
+using VMDir.Common.DTO;
+using VMDir.Common.Schema;
+using VMDirInterop.Interfaces;
 
-namespace VMDirSnapIn.Services
+namespace VMDirSnapIn.Utilities
 {
     public static class MiscUtilsService
     {
@@ -37,19 +41,9 @@ namespace VMDirSnapIn.Services
             }
             catch (Exception exp)
             {
+                VMDirEnvironment.Instance.Logger.LogException(exp);
                 ShowError(exp);
             }
-        }
-        public static object GetInstanceFromType(string t)
-        {
-            var type = Type.GetType(t);
-            if (type == null) return "";
-            if (type.GetConstructor(Type.EmptyTypes) == null)
-            {
-                if (t == "System.DateTime") return DateTime.Now;
-                return "";
-            }
-            return Activator.CreateInstance(type);
         }
 
         public static Image GetResourceImage(string name)
@@ -75,7 +69,7 @@ namespace VMDirSnapIn.Services
         {
             string error = exp.Message;
             var vmdirExp = exp as VMDirException;
-            if(vmdirExp != null)
+            if (vmdirExp != null)
                 error = string.Format("{0}, Error Code: {1}", error, vmdirExp.ErrorCode);
             else if (exp is DirectoryOperationException)
                 error = (exp as DirectoryOperationException).Response.ErrorMessage;
@@ -116,39 +110,21 @@ namespace VMDirSnapIn.Services
 
             return VMDirEnvironment.Instance.SnapIn.Console.ShowDialog(msgParams) == DialogResult.Yes;
         }
-        public static void ConvertToKVData(Dictionary<string, VMDirBagItem> _properties, List<KeyValuePair<string,string>> _kvData)
+
+        public static string GetObjectClass(ILdapEntry entry)
         {
-            MiscUtilsService.CheckedExec(delegate
-            {
-                _kvData.Clear();
-                foreach (var entry in _properties)
-                {
-                    object value = entry.Value.Value;
-                    if (value != null)
-                    {
-                        Type valueType = value.GetType();
-                        if (valueType.IsArray)
-                        {
-                            LdapValue[] arr = value as LdapValue[];
-                            foreach (var arrayElement in arr)
-                            {
-                                _kvData.Add(new KeyValuePair<string, string>(entry.Key, arrayElement.StringValue));
-                            }
-                        }
-                        else
-                        {
-                            var LdapEntry = (LdapValue)value;
-                            _kvData.Add(new KeyValuePair<string, string>(entry.Key, value.ToString()));
-                        }
-                    }
-                    else
-                        _kvData.Add(new KeyValuePair<string, string>(entry.Key, string.Empty));
-                }
-                _kvData.Sort(delegate(KeyValuePair<string, string> x, KeyValuePair<string, string> y)
-                {
-                    return x.Key.CompareTo(y.Key);
-                });
-            });
+            var values = entry.getAttributeValues(VMDirConstants.ATTR_OBJECT_CLASS);
+            return values[(values.Count() - 1)].StringValue;
+        }
+
+        internal static int GetImgIndx(List<string> objectClass)
+        {
+            if (objectClass.Contains(VMDirConstants.USER_OC))
+                return (int)VMDirIconIndex.User;
+            else if (objectClass.Contains(VMDirConstants.GROUP_OC))
+                return (int)VMDirIconIndex.Group;
+            else
+                return (int)VMDirIconIndex.Object;
         }
     }
 }

@@ -237,6 +237,36 @@ CPPFLAGS="$CPPFLAGS $VMCA_INCLUDES $LW_INCLUDES"
 AC_CHECK_HEADERS(vmca.h)
 CPPFLAGS="$saved_CPPFLAGS"
 
+# vmdns component
+
+AC_ARG_WITH([vmdns],
+    [AC_HELP_STRING([--with-vmdns=<dir>], [use vmdns binaries rooted at prefix <dir> ])],
+    [
+        VMDNS_BASE_PATH="$withval"
+        VMDNS_INCLUDES="-I$withval/include"
+        VMDNS_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64"
+    ])
+
+AC_ARG_WITH([vmdns-includes],
+    [AC_HELP_STRING([--with-vmdns-includes=<dir>], [use vmdns headers located in prefix <dir> ])],
+    [
+        VMDNS_INCLUDES="-I$withval"
+    ])
+
+AC_ARG_WITH([vmdns-libs],
+    [AC_HELP_STRING([--with-vmdns-libs=<dir>], [use vmdns libraries located in prefix <dir> ])],
+    [
+        VMDNS_LDFLAGS="-L$withval"
+    ])
+
+AC_SUBST(VMDNS_INCLUDES)
+AC_SUBST(VMDNS_LDFLAGS)
+
+saved_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="$CPPFLAGS $VMDNS_INCLUDES $LW_INCLUDES"
+AC_CHECK_HEADERS(vmdns.h)
+CPPFLAGS="$saved_CPPFLAGS"
+
 # vmsts component
 
 AC_ARG_WITH([sts],
@@ -393,6 +423,12 @@ AC_CHECK_LIB(
     [VMCA_LIBS="-lvmcaclient"],
     [],
     [$VMCA_LDFLAGS -lvmcaclient $LW_LDFLAGS $DCERPC_LIBS $SCHANNEL_LIBS $LWMSG_LIBS $LWRSUTILS_LIBS $LWREG_LIBS $LWIO_LIBS $LWBASE_LIBS $LDAP_LIBS $PTHREAD_LIBS $UUID_LIBS $LWBASE_LIBS $GSSAPI_LIBS $OPENSSL_LDFLAGS $CRYPTO_LIBS])
+AC_CHECK_LIB(
+    [vmdnsclient],
+    [VmDnsOpenServerA],
+    [VMDNS_LIBS="-lvmdnsclient"],
+    [],
+    [$VMDNS_LDFLAGS -lvmdnsclient $LW_LDFLAGS $DCERPC_LIBS $SCHANNEL_LIBS $LWMSG_LIBS $LWRSUTILS_LIBS $LWREG_LIBS $LWIO_LIBS $LWBASE_LIBS $LDAP_LIBS $PTHREAD_LIBS $UUID_LIBS $LWBASE_LIBS $GSSAPI_LIBS $OPENSSL_LDFLAGS $CRYPTO_LIBS])
 
 AC_SUBST(DL_LIBS)
 AC_SUBST(PTHREAD_LIBS)
@@ -413,6 +449,7 @@ AC_SUBST(LDAP_LIBS)
 AC_SUBST(VMDIR_LIBS)
 AC_SUBST(VMAFD_LIBS)
 AC_SUBST(VMCA_LIBS)
+AC_SUBST(VMDNS_LIBS)
 
 #AC_PATH_PROG([IDL], [dceidl], [no], [$PATH:$DCERPC_PATH])
 
@@ -422,6 +459,12 @@ AC_SUBST(VMCA_LIBS)
 
 pscsetupbindir=$prefix/bin
 AC_SUBST(pscsetupbindir)
+
+systemddir=/lib/systemd/system
+AC_SUBST(systemddir)
+
+scriptsconfdir="$datadir/config"
+AC_SUBST(scriptsconfdir)
 
 pscsetupjarsdir=$prefix/jars
 AC_SUBST(pscsetupjarsdir)

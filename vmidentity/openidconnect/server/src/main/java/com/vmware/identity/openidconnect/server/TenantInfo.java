@@ -136,20 +136,20 @@ public class TenantInfo {
         private final boolean isPasswordAuthnEnabled;
         private final boolean isClientCertAuthnEnabled;
         private final boolean isWindowsAuthnEnabled;
-        private final boolean isSecureIdAuthnEnabled;
-        private final String secureIdLoginGuide;
+        private final boolean isSecurIdAuthnEnabled;
+        private final String securIdLoginGuide;
 
         public AuthnPolicy(
                 boolean isPasswordAuthnEnabled,
                 boolean isClientCertAuthnEnabled,
                 boolean isWindowsAuthnEnabled,
-                boolean isSecureIdAuthnEnabled,
-                String secureIdLoginGuide) {
+                boolean isSecurIdAuthnEnabled,
+                String securIdLoginGuide) {
             this.isPasswordAuthnEnabled = isPasswordAuthnEnabled;
             this.isClientCertAuthnEnabled = isClientCertAuthnEnabled;
             this.isWindowsAuthnEnabled = isWindowsAuthnEnabled;
-            this.isSecureIdAuthnEnabled = isSecureIdAuthnEnabled;
-            this.secureIdLoginGuide = secureIdLoginGuide;
+            this.isSecurIdAuthnEnabled = isSecurIdAuthnEnabled;
+            this.securIdLoginGuide = securIdLoginGuide;
         }
 
         public boolean isPasswordAuthnEnabled() {
@@ -164,12 +164,12 @@ public class TenantInfo {
             return this.isWindowsAuthnEnabled;
         }
 
-        public boolean isSecureIDAuthnEnabled() {
-            return this.isSecureIdAuthnEnabled;
+        public boolean isSecurIDAuthnEnabled() {
+            return this.isSecurIdAuthnEnabled;
         }
 
-        public String getSecureIDLoginGuide() {
-            return this.secureIdLoginGuide;
+        public String getSecurIDLoginGuide() {
+            return this.securIdLoginGuide;
         }
     }
 

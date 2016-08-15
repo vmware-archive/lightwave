@@ -12,106 +12,200 @@
  * under the License.
  */
 
-
-
-/*
- * Module Name: Directory indexer
- *
- * Filename: libmain.c
- *
- * Abstract:
- *
- * Library Entry points
- *
- */
-
 #include "includes.h"
 
-/*
- *
- */
+static
+VOID
+_FreeIdxCfgMapPair(
+    PLW_HASHMAP_PAIR    pPair,
+    LW_PVOID            pUnused
+    );
+
 DWORD
-VmDirAttrIndexLibInit(
+VmDirIndexLibInit(
     VOID
     )
 {
-    DWORD       dwError = 0;
-    VDIR_ENTRY       indiceEntry = {0};
-    PVDIR_BACKEND_INTERFACE pBE = NULL;
+    static VDIR_DEFAULT_INDEX_CFG defIdx[] = VDIR_INDEX_INITIALIZER;
 
-    VmDirLog( LDAP_DEBUG_TRACE, "InitializeAttrIndex: Begin" );
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PSTR    pszLastOffset = NULL;
+    ENTRYID maxEId = 0;
+    VDIR_BACKEND_CTX    beCtx = {0};
+    BOOLEAN             bHasTxn = FALSE;
+    PVDIR_INDEX_CFG     pIndexCfg = NULL;
 
-    // Initialize gVdirAttrIndexGlobals
-    dwError = VmDirAllocateMutex( &gVdirAttrIndexGlobals.mutex );
+    dwError = VmDirAllocateMutex(&gVdirIndexGlobals.mutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateCondition(&gVdirAttrIndexGlobals.condition);
+    dwError = VmDirAllocateCondition(&gVdirIndexGlobals.cond);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pBE = VmDirBackendSelect(CFG_INDEX_ENTRY_DN);
-    assert(pBE);
+    dwError = LwRtlCreateHashMap(
+            &gVdirIndexGlobals.pIndexCfgMap,
+            LwRtlHashDigestPstrCaseless,
+            LwRtlHashEqualPstrCaseless,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = pBE->pfnBESimpleIdToEntry(
-            CFG_INDEX_ENTRY_ID,
-            &indiceEntry);
-    if (dwError == 0)
+    beCtx.pBE = VmDirBackendSelect(NULL);
+
+    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    bHasTxn = TRUE;
+
+    // get fields to continue indexing from where it left last time
+    dwError = beCtx.pBE->pfnBEUniqKeyGetValue(
+            &beCtx, INDEX_LAST_OFFSET_KEY, &pszLastOffset);
+    if (dwError)
     {
-        dwError = VdirAttrIndexInitViaEntry(&indiceEntry);
+        dwError = beCtx.pBE->pfnBEMaxEntryId(&maxEId);
         BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else if (dwError == ERROR_BACKEND_ENTRY_NOTFOUND)
-    {
-        dwError = 0;  // no indices entry yet, lets continue.
+
+        if (maxEId == ENTRY_ID_SEQ_INITIAL_VALUE)
+        {
+            gVdirIndexGlobals.bFirstboot = TRUE;
+        }
+        else
+        {
+            gVdirIndexGlobals.bLegacyDB = TRUE;
+        }
+
+        // write lastoffset = -1 to indicate indexing has started
+        dwError = beCtx.pBE->pfnBEUniqKeySetValue(
+                &beCtx, INDEX_LAST_OFFSET_KEY, "-1");
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        gVdirIndexGlobals.offset = -1;
     }
     else
     {
-        BAIL_ON_VMDIR_ERROR(dwError);
+        gVdirIndexGlobals.offset = VmDirStringToIA(pszLastOffset);
     }
 
-#if 0
-    // fire up indexing thread
+    dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    bHasTxn = FALSE;
+
+    // open default indices
+    for (i = 0; defIdx[i].pszAttrName; i++)
+    {
+        dwError = VmDirDefaultIndexCfgInit(&defIdx[i], &pIndexCfg);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirIndexOpen(pIndexCfg);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pIndexCfg = NULL;
+    }
+
+    // VMIT support
+    dwError = VmDirIndexLibInitVMIT();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = InitializeIndexingThread();
     BAIL_ON_VMDIR_ERROR(dwError);
-#endif
 
 cleanup:
-
-    VmDirFreeEntryContent(&indiceEntry);
-
-    VmDirLog( LDAP_DEBUG_TRACE, "InitializeAttrIndex: End" );
-
+    if (bHasTxn)
+    {
+        beCtx.pBE->pfnBETxnAbort(&beCtx);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pszLastOffset);
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
 
+    VmDirFreeIndexCfg(pIndexCfg);
     goto cleanup;
 }
 
+/*
+ * should only be used during bootstrap
+ * maybe add state check?
+ */
+DWORD
+VmDirIndexOpen(
+    PVDIR_INDEX_CFG pIndexCfg
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bInLock = FALSE;
+    PVDIR_BACKEND_INTERFACE pBE = NULL;
+
+    if (!pIndexCfg)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    VMDIR_LOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
+
+    if (LwRtlHashMapFindKey(
+            gVdirIndexGlobals.pIndexCfgMap, NULL, pIndexCfg->pszAttrName) == 0)
+    {
+        dwError = ERROR_ALREADY_INITIALIZED;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = LwRtlHashMapInsert(
+            gVdirIndexGlobals.pIndexCfgMap,
+            pIndexCfg->pszAttrName,
+            pIndexCfg,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pBE = VmDirBackendSelect(NULL);
+    dwError = pBE->pfnBEIndexOpen(pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
+    return dwError;
+
+error:
+    goto cleanup;
+}
 
 VOID
-VmDirAttrIndexLibShutdown(
+VmDirIndexLibShutdown(
     VOID
     )
 {
-    int     iCnt = 0;
-    BOOLEAN bInLock = FALSE;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVdirAttrIndexGlobals.mutex);
-    for (iCnt = 0; iCnt <= gVdirAttrIndexGlobals.usLive; iCnt++)
+    if (gVdirIndexGlobals.pThrInfo)
     {
-        VdirAttrIdxCacheFree(gVdirAttrIndexGlobals.pCaches[iCnt]);
+        VmDirSrvThrShutdown(gVdirIndexGlobals.pThrInfo);
+        gVdirIndexGlobals.pThrInfo = NULL;
     }
-    if (gVdirAttrIndexGlobals.pNewCache)
+
+    if (gVdirIndexGlobals.pIndexCfgMap)
     {
-        VdirAttrIdxCacheFree(gVdirAttrIndexGlobals.pNewCache);
-        gVdirAttrIndexGlobals.pNewCache = NULL;
+        LwRtlHashMapClear(gVdirIndexGlobals.pIndexCfgMap, _FreeIdxCfgMapPair, NULL);
+        LwRtlFreeHashMap(&gVdirIndexGlobals.pIndexCfgMap);
+        gVdirIndexGlobals.pIndexCfgMap = NULL;
     }
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirAttrIndexGlobals.mutex);
 
-    // Un-Initialize gVdirAttrIndexGlobals
-    VMDIR_SAFE_FREE_CONDITION( gVdirAttrIndexGlobals.condition );
-    VMDIR_SAFE_FREE_MUTEX( gVdirAttrIndexGlobals.mutex );
+    VMDIR_SAFE_FREE_CONDITION(gVdirIndexGlobals.cond);
+    gVdirIndexGlobals.cond = NULL;
 
-    return;
+    VMDIR_SAFE_FREE_MUTEX(gVdirIndexGlobals.mutex);
+    gVdirIndexGlobals.mutex = NULL;
+
+    gVdirIndexGlobals.bFirstboot = FALSE;
+    gVdirIndexGlobals.bLegacyDB = FALSE;
 }
 
+static
+VOID
+_FreeIdxCfgMapPair(
+    PLW_HASHMAP_PAIR    pPair,
+    LW_PVOID            pUnused
+    )
+{
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
+
+    pIndexCfg = (PVDIR_INDEX_CFG)pPair->pValue;
+    VmDirFreeIndexCfg(pIndexCfg);
+}

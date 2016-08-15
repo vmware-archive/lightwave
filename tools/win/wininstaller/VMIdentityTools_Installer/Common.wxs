@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include Definitions.wxi ?>
+	<Fragment>
+		<!-- TODO: Put your code here. -->
+    <ComponentGroup Id="VM_common_comp_group" 
+                    Directory="APPLICATIONFOLDER">
+
+      <Component Id="VMWare_MMC_UI_Dll_Comp" 
+                 Guid="{1F4EF916-F52C-46ff-A6E9-FBD3E84ADB22}" 
+                 Win64="yes">
+        <File Id="VMWare_MMC_UI_Dll_File" 
+              Name="VMwareMMCIDP.UI.Common.dll" 
+              KeyPath="yes" 
+              Assembly=".net" 
+              AssemblyManifest="VMWare_MMC_UI_Dll_File" 
+              AssemblyApplication="VMWare_MMC_UI_Dll_File" 
+              DiskId="1" 
+              Source="$(var.VMIDPOutDir)\VMwareMMCIDP.UI.Common.dll" />
+      </Component>
+      
+      <Component Id="VMIdentity_CommonUtils_UI_Dll_Comp" 
+                 Guid="{696562FE-3F02-4299-A4C0-1F2446A775A5}" 
+                 Win64="yes">
+        <File Id="VMIdentity_CommonUtils_UI_Dll_File" 
+              Name="VMIdentity.CommonUtils.dll" 
+              KeyPath="yes" 
+              Assembly=".net" 
+              AssemblyManifest="VMIdentity_CommonUtils_UI_Dll_File" 
+              AssemblyApplication="VMIdentity_CommonUtils_UI_Dll_File" 
+              DiskId="1" 
+              Source="$(var.VMIDPOutDir)\VMIdentity.CommonUtils.dll" />
+      </Component>
+      
+      <Component Id="VM_Mmc_Exe_Config_Comp" 
+                 Guid="{BE6CC10C-8FD7-4F67-B35F-37A760ADCB99}">
+        <File Id="VM_Mmc_Exe_Config_File"
+              Name="mmc.exe.config"
+              KeyPath="yes"
+              DiskId="1"
+              Source="$(var.Resources)/mmc.exe.config" />
+      </Component>
+      
+      <Component Id="Brand_Config_Comp" 
+                 Guid="{7802BD83-2393-4CF8-9E98-64335C5E75DA}">
+        <File Id="Brand_Config_File"
+              Name="VMIdentity.CommonUtils.dll.config"
+              KeyPath="yes"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)/VMIdentity.CommonUtils.dll.config" />
+      </Component>
+
+      <Component Id="VMDirCommon_Dll_Comp" Guid="{E5C61F70-7C17-4760-B6D9-B414280E2B8E}" Win64="yes">
+        <File Id="VMDirCommon_Dll_File"
+              Name="VMDir.Common.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMDirCommon_Dll_File"
+              AssemblyApplication="VMDirCommon_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\VMDir.Common.dll" />
+      </Component>
+      <Component Id="VMDirInterop_Dll_Comp" Guid="{CF26DA4E-C173-40DA-A184-0865D6DE4089}" Win64="yes">
+        <File Id="VMDirInterop_Dll_File"
+              Name="VMDirInterop.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMDirInterop_Dll_File"
+              AssemblyApplication="VMDirInterop_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\VMDirInterop.dll" />
+      </Component>
+      
+    </ComponentGroup>
+    
+    <Component Id="VM_Mmc_Exe_Config_File_Copy_Comp" 
+               Guid="{7AF7E1A2-AA0E-4C31-A359-E12825BCA020}" 
+               Directory="TARGETDIR">
+      <RemoveFile Id="VM_Mmc_Exe_Config_File_Remove"
+                  Name="mmc.exe.config"
+                  On="install"
+                  Property="System32Dir"/>
+      <CopyFile Id="VM_Mmc_Exe_Config_File_Copy"
+                FileId="VM_Mmc_Exe_Config_File"
+                DestinationProperty="System32Dir" />
+    </Component>
+	</Fragment>
+</Wix>

@@ -105,6 +105,7 @@ VmDirSASLSRPBind(
     PSTR        pszLowerCaseUPN = NULL;
     LDAP*       pLd = NULL;
     const int   ldapVer = LDAP_VERSION3;
+    const int   iSaslNoCanon = 1;
     VMDIR_SASL_INTERACTIVE_DEFAULT srpDefault = {0};
     int         iCnt = 0;
 
@@ -126,6 +127,10 @@ VmDirSASLSRPBind(
         BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
         retVal = ldap_set_option(pLd, LDAP_OPT_PROTOCOL_VERSION, &ldapVer);
+        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+        // turn off SASL hostname canonicalization for SRP mech
+        retVal = ldap_set_option(pLd, LDAP_OPT_X_SASL_NOCANON, &iSaslNoCanon);
         BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
         retVal = ldap_sasl_interactive_bind_s( pLd,

@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VmIdentity.UI.Common", "..\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VMIdentity.CommonUtils", "..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj", "{CD959E2E-5B9C-4329-B085-352844CFDCDD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VmDirInterop", "..\..\..\vmdir\interop\csharp\VmDirInterop\VmDirInterop\VmDirInterop.csproj", "{CA2F370A-7C11-4173-8BDF-9FD143896E01}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -50,16 +48,6 @@ Global
 		{84EAD6E2-414C-4753-A512-6FA7B00474C0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{84EAD6E2-414C-4753-A512-6FA7B00474C0}.Release|x64.ActiveCfg = Release|Any CPU
 		{84EAD6E2-414C-4753-A512-6FA7B00474C0}.Release|x64.Build.0 = Release|Any CPU
-		{CA2F370A-7C11-4173-8BDF-9FD143896E01}.AppStore|Any CPU.ActiveCfg = Release|Any CPU
-		{CA2F370A-7C11-4173-8BDF-9FD143896E01}.AppStore|Any CPU.Build.0 = Release|Any CPU
-		{CA2F370A-7C11-4173-8BDF-9FD143896E01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CA2F370A-7C11-4173-8BDF-9FD143896E01}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CA2F370A-7C11-4173-8BDF-9FD143896E01}.Debug|x64.ActiveCfg = Debug|x64
-		{CA2F370A-7C11-4173-8BDF-9FD143896E01}.Debug|x64.Build.0 = Debug|x64
-		{CA2F370A-7C11-4173-8BDF-9FD143896E01}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CA2F370A-7C11-4173-8BDF-9FD143896E01}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CA2F370A-7C11-4173-8BDF-9FD143896E01}.Release|x64.ActiveCfg = Release|x64
-		{CA2F370A-7C11-4173-8BDF-9FD143896E01}.Release|x64.Build.0 = Release|x64
 		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.AppStore|Any CPU.ActiveCfg = Release|Any CPU
 		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.AppStore|Any CPU.Build.0 = Release|Any CPU
 		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -70,5 +58,9 @@ Global
 		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Release|x64.ActiveCfg = Release|Any CPU
 		{CD959E2E-5B9C-4329-B085-352844CFDCDD}.Release|x64.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		version = 0.2
+		outputpath = ..\x64\Debug
 	EndGlobalSection
 EndGlobal

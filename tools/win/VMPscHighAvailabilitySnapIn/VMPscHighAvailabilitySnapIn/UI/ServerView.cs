@@ -23,6 +23,7 @@ using VMPSCHighAvailability.Common.DTO;
 using VMPscHighAvailabilitySnapIn.ScopeNodes;
 using VMPscHighAvailabilitySnapIn.Utils;
 using VMPscHighAvailabilitySnapIn.SnapIn;
+using VMPSCHighAvailability.Common.Helpers;
 
 namespace VMPscHighAvailabilitySnapIn.UI
 {
@@ -132,7 +133,8 @@ namespace VMPscHighAvailabilitySnapIn.UI
             }
             catch(Exception exc)
             {
-                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                PscHighAvailabilityAppEnvironment.Instance.Logger.LogException(exc, custom);
                 MiscUtilsService.ShowError(exc);
             }
         }

@@ -97,7 +97,7 @@ namespace VMPscHighAvailabilitySnapIn.SnapIn
             {
                 if (_service == null)
                 {
-                    _service = new PscHighAvailabilityService(Logger);
+                    _service = new PscHighAvailabilityService(Logger, Instance);
                 }
                 return _service;
             }

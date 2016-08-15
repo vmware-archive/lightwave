@@ -48,17 +48,20 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         private HttpTransportService _httpTransport;
         private AdfService _adfService;
         private SuperLoggingService _superLoggingService;
+        private IServiceConfigManager _serviceConfigManager;
 
-        public ServiceGateway()
+        public ServiceGateway(IServiceConfigManager serviceConfigManager)
         {
+            _serviceConfigManager = serviceConfigManager;
             _webRequestManager = new HttpWebRequestManager();
             _webRequestManager.Subscribe(HttpTransport.HandleMessage);
         }
+
         public SamlTokenService SamlTokenService
         {
             get
             {
-                return _samlTokenService ?? (_samlTokenService = new SamlTokenService(_webRequestManager));
+                return _samlTokenService ?? (_samlTokenService = new SamlTokenService(_webRequestManager, _serviceConfigManager));
             }
         }
 
@@ -66,7 +69,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         {
             get
             {
-                return _jwtTokenService ?? (_jwtTokenService = new JwtTokenService(_webRequestManager));
+                return _jwtTokenService ?? (_jwtTokenService = new JwtTokenService(_webRequestManager, _serviceConfigManager));
             }
         }
 
@@ -74,7 +77,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         {
             get
             {
-                return _authenticationService ?? (_authenticationService = new AuthenticationService(_webRequestManager));
+                return _authenticationService ?? (_authenticationService = new AuthenticationService(_webRequestManager, _serviceConfigManager));
             }
         }
 
@@ -82,7 +85,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         {
             get
             {
-                return _userService ?? (_userService = new UserService(_webRequestManager));
+                return _userService ?? (_userService = new UserService(_webRequestManager, _serviceConfigManager));
             }
         }
 
@@ -90,7 +93,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         {
             get
             {
-                return _solutionUserService ?? (_solutionUserService = new SolutionUserService(_webRequestManager));
+                return _solutionUserService ?? (_solutionUserService = new SolutionUserService(_webRequestManager, _serviceConfigManager));
             }
         }
 
@@ -98,7 +101,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         {
             get
             {
-                return _tenant ?? (_tenant = new TenantService(_webRequestManager));
+                return _tenant ?? (_tenant = new TenantService(_webRequestManager, _serviceConfigManager));
             }
         }
 
@@ -106,7 +109,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         {
             get
             {
-                return _group ?? (_group = new GroupService(_webRequestManager));
+                return _group ?? (_group = new GroupService(_webRequestManager, _serviceConfigManager));
             }
         }
 
@@ -114,7 +117,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         {
             get
             {
-                return _certificate ?? (_certificate = new CertificateService(_webRequestManager));
+                return _certificate ?? (_certificate = new CertificateService(_webRequestManager, _serviceConfigManager));
             }
         }
 
@@ -122,7 +125,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         {
             get
             {
-                return _identityProvider ?? (_identityProvider = new IdentityProviderService(_webRequestManager));
+                return _identityProvider ?? (_identityProvider = new IdentityProviderService(_webRequestManager, _serviceConfigManager));
             }
         }
         public IExternalIdentityProviderService ExternalIdentityProvider
@@ -132,9 +135,9 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
                 if (_externalIdentityProvider == null)
                 {
                     if (SystemHelper.IsMacOSX)
-                        _externalIdentityProvider = new Mac.ExternalIdentityProviderService(_webRequestManager);
+                        _externalIdentityProvider = new Mac.ExternalIdentityProviderService(_webRequestManager, _serviceConfigManager);
                     else
-                        _externalIdentityProvider = new Win.ExternalIdentityProviderService(_webRequestManager);
+                        _externalIdentityProvider = new Win.ExternalIdentityProviderService(_webRequestManager, _serviceConfigManager);
                 }
                 return _externalIdentityProvider;
             }
@@ -143,14 +146,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         {
             get
             {
-                return _oidcClient ?? (_oidcClient = new OidcClientService(_webRequestManager));
+                return _oidcClient ?? (_oidcClient = new OidcClientService(_webRequestManager, _serviceConfigManager));
             }
         }
         public RelyingPartyService RelyingParty
         {
             get
             {
-                return _relyingParty ?? (_relyingParty = new RelyingPartyService(_webRequestManager));
+                return _relyingParty ?? (_relyingParty = new RelyingPartyService(_webRequestManager, _serviceConfigManager));
             }
         }
 
@@ -158,7 +161,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         {
             get
             {
-                return _httpTransport ?? (_httpTransport = new HttpTransportService());
+                return _httpTransport ?? (_httpTransport = new HttpTransportService(_serviceConfigManager));
             }
         }
 
@@ -166,14 +169,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         {
             get
             {
-                return _server ?? (_server = new ServerService(_webRequestManager));
+                return _server ?? (_server = new ServerService(_webRequestManager, _serviceConfigManager));
             }
         }
         public SuperLoggingService SuperLogging
         {
             get
             {
-                return _superLoggingService ?? (_superLoggingService = new SuperLoggingService(_webRequestManager));
+                return _superLoggingService ?? (_superLoggingService = new SuperLoggingService(_webRequestManager, _serviceConfigManager));
             }
         }
 
@@ -181,15 +184,15 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         {
             get
             {
-                return _adfService ?? (_adfService = new AdfService(_webRequestManager));
+                return _adfService ?? (_adfService = new AdfService(_webRequestManager, _serviceConfigManager));
             }
         }
 
         public string GetTenantEndpoint(bool legacy, string protocol, string server, string port, string tenant)
         {
-            return legacy 
-                ? string.Format(ServiceConfigManager.SamlLegacyEndPoint, protocol, server, port, tenant)
-					: string.Format(ServiceConfigManager.LoginEndPoint, protocol, server, port, tenant);
+            return legacy
+                ? string.Format(_serviceConfigManager.GetSamlLegacyEndPoint(), protocol, server, port, tenant)
+                    : string.Format(_serviceConfigManager.GetLoginEndPoint(), protocol, server, port, tenant);
         }
     }
 }

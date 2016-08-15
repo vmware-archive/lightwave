@@ -166,5 +166,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
             get;
             set;
         }
+
+		/// <summary>
+		/// Role of the user holding the token
+		/// </summary>
+		[ReadOnlyAttribute(true)]
+		public string Role {
+			get;
+			set;
+		}
     }
 }

@@ -34,6 +34,7 @@
 #include <winldap.h>
 
 #include <vmidmgr.h>
+#include <idmcommon.h>
 
 #include "defines.h"
 #include "structs.h"

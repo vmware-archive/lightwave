@@ -62,7 +62,8 @@ IDMKrbDetermineJoinState(
 static
 DWORD
 IDMKrbRenewCredentials(
-    PIDM_KRB_CONTEXT pKrbContext
+    PIDM_KRB_CONTEXT pKrbContext,
+    PWSTR pszPassword
     );
 
 static
@@ -75,13 +76,18 @@ IDMKrbGetPrincipal(
 
 DWORD
 IDMLdapSaslBind(
-    LDAP*        pLd                       /* IN     */
+    LDAP* pLd,                       /* IN     */
+    PWSTR pszUser,                   /* IN     */
+    PWSTR pszDomain,                 /* IN     */
+    PWSTR pszPassword                /* IN     */
     )
 {
     DWORD dwError = 0;
     DWORD dwCleanupError = 0;
     BOOLEAN bLocked = FALSE;
     PSTR  pszCachePath = NULL;
+    PSTR  user = NULL;
+    PSTR  domain = NULL;
 
     if (!pLd)
     {
@@ -96,9 +102,32 @@ IDMLdapSaslBind(
             dwError = IDMKrbDetermineJoinState(pgIdmKrbContext);
             BAIL_ON_ERROR(dwError);
 
+            // If the user is provided, use the user's credential.
+            if(pszUser) {
+                dwError = LwRtlCStringAllocateFromWC16String(&user, pszUser);
+                BAIL_ON_ERROR(dwError);
+
+                dwError = LwRtlCStringAllocateFromWC16String(&domain, pszDomain);
+                BAIL_ON_ERROR(dwError);
+
+                IDM_RWMUTEX_LOCK_EXCLUSIVE(&pgIdmKrbContext->mutex_rw, bLocked, dwError);
+                BAIL_ON_ERROR(dwError);
+
+                IDM_SAFE_FREE_MEMORY(pgIdmKrbContext->pszAccount);
+                pgIdmKrbContext->pszAccount = user;
+                user = NULL;
+
+                IDM_SAFE_FREE_MEMORY(pgIdmKrbContext->pszDomain);
+                pgIdmKrbContext->pszDomain = domain;
+                domain = NULL;
+
+                IDM_RWMUTEX_UNLOCK(&pgIdmKrbContext->mutex_rw, bLocked, dwError);
+                BAIL_ON_ERROR(dwError);
+            }
+
         case IDM_KRB_CONTEXT_STATE_JOINED:
 
-            dwError = IDMKrbRenewCredentials(pgIdmKrbContext);
+            dwError = IDMKrbRenewCredentials(pgIdmKrbContext, pszUser? pszPassword: NULL); // If the user is provided, use the user's credential.
             if (dwError)
             {
                // Refreshing credentials might fail if the system left
@@ -142,7 +171,6 @@ IDMLdapSaslBind(
     }
 
 cleanup:
-
     if (pszCachePath)
     {
         LwKrb5SetThreadDefaultCachePath(pszCachePath, NULL);
@@ -155,6 +183,11 @@ cleanup:
     {
         dwError = dwCleanupError;
     }
+
+    IDM_SAFE_FREE_MEMORY(user);
+
+    IDM_SAFE_FREE_MEMORY(domain);
+
     return dwError;
 
 error:
@@ -309,7 +342,8 @@ error:
 static
 DWORD
 IDMKrbRenewCredentials(
-    PIDM_KRB_CONTEXT pKrbContext
+    PIDM_KRB_CONTEXT pKrbContext,
+    PWSTR password
     )
 {
     DWORD   dwError = 0;
@@ -322,6 +356,7 @@ IDMKrbRenewCredentials(
     krb5_keytab    ktid   = 0;
     krb5_ccache    pCache = NULL;
     krb5_creds     creds = {0};
+    PSTR pszPassword = NULL;
 
     IDM_RWMUTEX_LOCK_SHARED(&pKrbContext->mutex_rw, bLocked, dwError);
     BAIL_ON_ERROR(dwError);
@@ -354,7 +389,6 @@ IDMKrbRenewCredentials(
     {
         krb5_error_code errKrb = 0;
         krb5_deltat    startTime = 0;
-        PSTR pszServiceName = NULL;
         krb5_get_init_creds_opt options = {0};
         krb5_timestamp origExpiryTime = pKrbContext->expiryTime;
 
@@ -379,14 +413,35 @@ IDMKrbRenewCredentials(
         krb5_get_init_creds_opt_init(&options);
         krb5_get_init_creds_opt_set_forwardable(&options, TRUE);
 
-        errKrb = krb5_get_init_creds_keytab(
+        if (password)
+        {
+            dwError = LwRtlCStringAllocateFromWC16String(
+                        &pszPassword,
+                        password);
+            BAIL_ON_ERROR(dwError);
+
+            errKrb = krb5_get_init_creds_password(
+                    pCtx,
+                    &creds,
+                    pPrincipal,
+                    pszPassword,
+                    NULL,
+                    NULL,
+                    startTime,
+                    NULL, // the default host/ service principal.
+                    &options);
+        }
+        else
+        {
+            errKrb = krb5_get_init_creds_keytab(
                     pCtx,
                     &creds,
                     pPrincipal,
                     ktid,
                     startTime,
-                    pszServiceName,
+                    NULL, // the default host/ service principal.
                     &options);
+        }
         BAIL_ON_KERBEROS_ERROR(NULL, errKrb, dwError);
 
         IDM_RWMUTEX_LOCK_EXCLUSIVE(&pKrbContext->mutex_rw, bLocked, dwError);
@@ -444,6 +499,8 @@ cleanup:
     {
         dwError = dwCleanupError;
     }
+
+    IDM_SAFE_FREE_MEMORY(pszPassword);
     return dwError;
 
 error:

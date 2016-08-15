@@ -73,8 +73,6 @@ VmDirFreeMemberships
 VmDirGetSiteName
 VmDirGetPartnerSiteName
 VmDirGetReplicationCycleCount
-VmDirCompareSchema
-VmDirSyncVersionsInFederation
 VmDirSuperLogQueryServerData
 VmDirSuperLogEnable
 VmDirSuperLogDisable
@@ -96,4 +94,8 @@ VmDirCloseDatabaseFile
 VmDirSetBackendState
 VmDirGetReplicationState
 VmDirFreeReplicationState
-VmDirSchemaUpgrade
+VmDirGetAttributeMetadata
+VmDirFreeMetadata
+VmDirFreeMetadataList
+VmDirUrgentReplicationRequest
+VmDirUrgentReplicationResponse

@@ -66,10 +66,10 @@ public class AuthnRequestStateRsaAmAuthenticationFilter implements
         String authData = getAuthData(request);
         if (authData == null) {
             // authentication not possible
-            log.debug(Shared.REQUEST_AUTH_HEADER + " is missing, requesting "
+            log.debug(Shared.REQUEST_AUTH_PARAM + " is missing, requesting "
                     + Shared.RSAAM_AUTH_PREFIX);
             t.setWwwAuthenticate(Shared.RSAAM_AUTH_PREFIX);
-            throw new SamlServiceException(Shared.REQUEST_AUTH_HEADER
+            throw new SamlServiceException(Shared.REQUEST_AUTH_PARAM
                     + " parameter is not found in the request.");
         }
     }
@@ -94,7 +94,7 @@ public class AuthnRequestStateRsaAmAuthenticationFilter implements
         RSAAMResult result = null;
 
         // call IDM to perform SecureID auth
-        String authParam = request.getParameter(Shared.REQUEST_AUTH_HEADER);
+        String authParam = request.getParameter(Shared.REQUEST_AUTH_PARAM);
         Validate.notNull(authParam);
         String[] parts = authData.split(" ");
         assert parts.length == 1 || parts.length == 2;
@@ -111,7 +111,7 @@ public class AuthnRequestStateRsaAmAuthenticationFilter implements
             decodedAuthData = Base64.decode(parts[1]);
         } else {
             throw new SamlServiceException(
-                    "Wrong castle parameter. Extra parameter found in "+Shared.REQUEST_AUTH_HEADER);
+                    "Wrong castle parameter. Extra parameter found in "+Shared.REQUEST_AUTH_PARAM);
         }
 
         try {
@@ -174,7 +174,7 @@ public class AuthnRequestStateRsaAmAuthenticationFilter implements
         String authData = null;
 
         // extract auth data
-        String authHeader = request.getParameter(Shared.REQUEST_AUTH_HEADER);
+        String authHeader = request.getParameter(Shared.REQUEST_AUTH_PARAM);
 
         if (authHeader != null
                 && authHeader.startsWith(Shared.RSAAM_AUTH_PREFIX)) {

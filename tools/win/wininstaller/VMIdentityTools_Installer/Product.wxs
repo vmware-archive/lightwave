@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <?include Definitions.wxi ?>
+  <Product Id="*"
+           Name="$(var.Product)"
+           Language="1033"
+           Version="$(var.VersionNumber)"
+           Manufacturer="$(var.Manufacturer)"
+           UpgradeCode="$(var.UpgradeCode)">
+
+    <Package InstallerVersion="301"
+             Compressed="yes"
+             InstallScope="perMachine"
+             Manufacturer="$(var.Manufacturer)"
+             Description="Installs $(var.Product) $(var.VersionNumber)"
+             Keywords="Installer,MSI"
+             Comments="(c) 2015 VMware Company"
+             Platform="x64" />
+
+    <MediaTemplate EmbedCab="yes" />
+    
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed."
+                  Schedule="afterInstallValidate"
+                  AllowDowngrades="no"
+                  AllowSameVersionUpgrades="yes"/>
+
+    <PropertyRef Id="LaunchConditionsFile" />
+    
+    <!--Directory structure-->
+    <Directory Id="TARGETDIR"
+               Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="VMwareRoot"
+                   Name="$(var.Manufacturer)" >
+          <Directory Id="APPLICATIONFOLDER"
+                     Name="$(var.Product)" >         
+          </Directory>
+        </Directory>
+        <Directory Id="ProgramMenuFolder">
+          <Directory Id="ApplicationProgramsFolder"
+                     Name="$(var.Product)" />
+        </Directory>
+      </Directory>
+    </Directory>
+
+    <!--shortcuts component group-->
+    <ComponentGroup Id="ApplicationShortcut" Directory="ApplicationProgramsFolder">
+      <Component Id="CMP_VMCertShortcut" Guid="{77F95B9A-EF6E-42B1-8D2B-307842D000A6}" Win64="yes">
+        <Shortcut Id="VMRestSingleSignOnAdminShortcut"
+                  Name="Lightwave SSO"
+                  Description="MMC Console for Lightwave SSO"
+                  Target="[APPLICATIONFOLDER]Lightwave SSO.msc"
+                  WorkingDirectory="TARGETDIR"/>
+        <Shortcut Id="VMDirSchemaShortcut"
+                  Name="Lightwave Directory Schema"
+                  Description="MMC console for Lightwave Directory Schema Browser"
+                  Target="[APPLICATIONFOLDER]Lightwave Directory Schema.msc"
+                  WorkingDirectory="TARGETDIR"/>
+        <Shortcut Id="VMCAShortcut"
+                  Name="Lightwave CA"
+                  Description="MMC console for Lightwave CA"
+                  Target="[APPLICATIONFOLDER]Lightwave CA.msc"
+                  WorkingDirectory="TARGETDIR"/>
+        <Shortcut Id="VMDirShortcut"
+                  Name="Lightwave Directory"
+                  Description="MMC console for Lightwave Directory"
+                  Target="[APPLICATIONFOLDER]Lightwave Directory.msc"
+                  WorkingDirectory="TARGETDIR"/>
+        <Shortcut Id="VMPSCHAShortcut"
+                  Name="Lightwave PSC Site Management"
+                  Description="MMC console to monitor the health of PSC sites and nodes."
+                  Target="[APPLICATIONFOLDER]Lightwave PSC Site Management.msc"
+                  WorkingDirectory="TARGETDIR"/>
+        <Shortcut Id="VMCertStoreShortcut"
+                  Name="Lightwave Certificate Store"
+                  Description="MMC console for Lightwave Certificate Store"
+                  Target="[APPLICATIONFOLDER]Lightwave Certificate Store.msc"
+                  WorkingDirectory="TARGETDIR"/>
+        <RemoveFile Id="XML" Name="*.xml" On="both" Directory="APPLICATIONFOLDER"/>
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
+        <RegistryValue Root="HKCU" Key="Software\VMware\$(var.Product)" Name="$(var.Product)" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+    </ComponentGroup>
+
+    <!--Features-->
+    <Feature Id="ProductFeature"
+             Title="Main Product"
+             Level="1">
+      <ComponentGroupRef Id="ApplicationShortcut"/>
+      <ComponentGroupRef Id="VM_common_comp_group"/>
+      <ComponentRef Id="VM_Mmc_Exe_Config_File_Copy_Comp"/>
+
+      <ComponentGroupRef Id="VMCert_comp_group"/>
+      <ComponentGroupRef Id="VMCert_reg_comp_group"/>
+
+      <ComponentGroupRef Id="VMCA_comp_group"/>
+      <ComponentGroupRef Id="VMCA_reg_comp_group"/>
+
+      <ComponentGroupRef Id="VMDir_comp_group"/>
+      <ComponentGroupRef Id="VMDir_reg_comp_group"/>
+      
+      <ComponentGroupRef Id="VMDirSchema_comp_group"/>
+      <ComponentGroupRef Id="VMDirSchema_reg_comp_group"/>
+
+      <ComponentGroupRef Id="RestSSO_comp_group"/>
+      <ComponentGroupRef Id="RestSSO_reg_comp_group"/>
+      
+      <ComponentGroupRef Id="VMPscHighAvailability_comp_group"/>
+      <ComponentGroupRef Id="VMPscHighAvailability_reg_comp_group"/>
+
+    </Feature>
+
+    <util:CloseApplication 
+      CloseMessage="yes"
+      Description="Please close all MMC Snapins before proceeding." 
+      RebootPrompt="no"
+      PromptToContinue="yes" 
+      Target="mmc.exe"/>
+
+
+    <UIRef Id="WixUI_Minimal" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.Resources)/LicenseAgreement.rtf" />
+    <WixVariable Id="WixUIBannerBmp" Value="$(var.Resources)/banner.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="$(var.Resources)/dialog.bmp" />
+    <Icon Id="add_remove_programs_icon" SourceFile="$(var.Resources)/SetupIcon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="add_remove_programs_icon" />
+    <Property Id="MSIRESTARTMANAGERCONTROL" Value="Disable"/>
+
+  </Product>
+</Wix>

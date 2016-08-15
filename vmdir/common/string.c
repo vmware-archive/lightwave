@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -153,38 +153,6 @@ VmDirStringCompareA(
     return LwRtlCStringCompare(pszStr1, pszStr2, bIsCaseSensitive);
 }
 
-/* a fixed time string comparision function */
-BOOLEAN
-VmDirIsValidSecret(
-    PCSTR pszTheirs,
-    PCSTR pszOurs
-    )
-{
-    ULONG ret = 0;
-    int  len = 0;
-    int  i = 0;
-    PCSTR p = NULL;
-
-    if (pszOurs == NULL)
-    {
-        return FALSE;
-    }
-
-    len = VmDirStringLenA(pszOurs);
-    if (pszTheirs == NULL || VmDirStringLenA(pszTheirs) != len)
-    {
-        ret = 1;
-        p = pszOurs;
-    } else
-    {
-        p = pszTheirs;
-    }
-
-    for (i = len - 1; i >= 0; i--)
-       ret |= p[i] ^ pszOurs[i];
-    return ret == 0;
-}
-
 LONG
 VmDirStringNCompareA(
     PCSTR pszStr1,
@@ -201,6 +169,39 @@ VmDirStringNCompareA(
     {
         return strncasecmp(pszStr1, pszStr2, n) ;
     }
+}
+
+BOOLEAN
+VmDirStringEndsWith(
+    PCSTR   pszStr,
+    PCSTR   pszSuffix,
+    BOOLEAN bIsCaseSensitive
+    )
+{
+    BOOLEAN bEndsWith = FALSE;
+
+    if (IsNullOrEmptyString(pszSuffix))
+    {
+        bEndsWith = TRUE;
+    }
+    else if (!IsNullOrEmptyString(pszStr))
+    {
+        size_t strlen = VmDirStringLenA(pszStr);
+        size_t suffixlen = VmDirStringLenA(pszSuffix);
+
+        if (strlen >= suffixlen)
+        {
+            size_t offset = strlen - suffixlen;
+
+            if (VmDirStringCompareA(
+                    pszStr + offset, pszSuffix, bIsCaseSensitive) == 0)
+            {
+                bEndsWith = TRUE;
+            }
+        }
+    }
+
+    return bEndsWith;
 }
 
 SIZE_T
@@ -501,6 +502,54 @@ error:
     }
 
     return dwError;
+}
+
+DWORD
+VmDirStringToTokenList(
+    PCSTR pszStr,
+    PCSTR pszDelimiter,
+    PVMDIR_STRING_LIST *ppStrList
+    )
+{
+    DWORD       dwError = 0;
+    PSTR        pszToken = NULL;
+    PSTR        pszLocal = NULL;
+    PSTR        pszSavePtr = NULL;
+    PVMDIR_STRING_LIST  pList = NULL;
+
+    if ( IsNullOrEmptyString(pszStr) || IsNullOrEmptyString(pszDelimiter) || ppStrList == NULL )
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirStringListInitialize(&pList, 10);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // make a local copy
+    dwError = VmDirAllocateStringA(
+                pszStr,
+                &pszLocal);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for ( pszToken = VmDirStringTokA(pszLocal, pszDelimiter, &pszSavePtr);
+          pszToken;
+          pszToken=VmDirStringTokA(NULL, pszDelimiter, &pszSavePtr))
+    {
+        dwError = VmDirStringListAddStrClone (pszToken, pList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppStrList = pList;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocal);
+
+    return dwError;
+
+error:
+    VmDirStringListFree(pList);
+    goto cleanup;
 }
 
 #endif //#ifndef _WIN32

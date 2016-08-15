@@ -61,12 +61,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes{    public class Gr
                 var context = this.GetApplicationContext();
                 if (SnapIn.Console.ShowDialog(form) == DialogResult.OK)
                 {
-                    this.GroupsControl.RefreshGroups(form.SearchString);
+                    if (GroupsControl != null)
+                        this.GroupsControl.RefreshGroups(form.SearchString);
                 }
             }, null);
         }
         void AddNewGroup()        {
-            var service = this.GetServiceGateway();
+            var service = ScopeNodeExtensions.GetServiceGateway(ServerDto.ServerName);
             var authTokenDto = SnapInContext.Instance.AuthTokenManager.GetAuthToken(ServerDto, _tenantName);
             ActionHelper.Execute(delegate
             {
@@ -76,7 +77,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes{    public class Gr
                     var group = (GroupDto) groupForm.DataContext;
                     group.GroupDomain = _domainName;                    
                     var success = service.Group.Create(ServerDto, TenantName, @group, authTokenDto.Token);
-                    GroupsControl.RefreshGroups(string.Empty);
+                    if (GroupsControl != null)
+                        GroupsControl.RefreshGroups(string.Empty);
                 }
             }, authTokenDto);        }
         void AddViewDescription()        {
@@ -94,10 +96,10 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes{    public class Gr
             base.OnAddPropertyPages(propertyPageCollection);
             var authTokenDto = SnapInContext.Instance.AuthTokenManager.GetAuthToken(ServerDto, TenantName);
             ActionHelper.Execute(delegate
-                {   
-                    var ssoAdminSdkService = this.GetServiceGateway();
+                {
+                    var service = ScopeNodeExtensions.GetServiceGateway(ServerDto.ServerName);
                     var groupDto = Tag as GroupDto;
-                    var presenter = new GroupPropertyDataManager(groupDto, ssoAdminSdkService, ServerDto, TenantName, _domainName);
+                    var presenter = new GroupPropertyDataManager(groupDto, service, ServerDto, TenantName, _domainName);
                     var generalPage = new GroupGeneralProperty(presenter, groupDto, IsSystemDomain) { Title = "General" };
                     propertyPageCollection.Add(generalPage.Page);
                 }, authTokenDto);
@@ -106,5 +108,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.Nodes{    public class Gr
         protected override void OnRefresh(AsyncStatus status)
         {
             base.OnRefresh(status);
-            this.GroupsControl.RefreshGroups(string.Empty);
+            if (GroupsControl != null)
+                this.GroupsControl.RefreshGroups(string.Empty);
         }    }}

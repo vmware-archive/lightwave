@@ -21,8 +21,8 @@ public enum ErrorMessage {
     BAD_REQUEST("BadRequest"),
     RESPONDER("Responder"),
     UNAUTHORIZED("Unauthorized"),
-    SECUREID_NEW_PIN_REQUIRED("Unauthorized.SecureIDNewPinRequired"),
-    SECUREID_NEXT_CODE("Unauthorized.SecureIDNextCode"),
+    SECURID_NEW_PIN_REQUIRED("Unauthorized.SecureIDNewPinRequired"),
+    SECURID_NEXT_CODE("Unauthorized.SecureIDNextCode"),
     NO_CLIENT_CERT("Unauthorized.NoClientCert"),
     LOGGED_OUT_TLS_SESSION("Unauthorized.LoggedOutTLSSession"),
     INVALID_CREDENTIAL("Unauthorized.InvalidCredential");

@@ -109,6 +109,7 @@ dequePush(
         pNode->pPrev = pDeque->pTail;
         pDeque->pTail = pNode;
     }
+    pDeque->iSize++;
 
 cleanup:
     return dwError;
@@ -153,6 +154,7 @@ dequePop(
         }
 
         VmDirFreeMemory(pNode);
+        pDeque->iSize--;
     }
     else
     {
@@ -203,6 +205,7 @@ dequePopLeft(
         }
 
         VmDirFreeMemory(pNode);
+        pDeque->iSize--;
     }
     else
     {
@@ -220,6 +223,20 @@ error:
     }
     VmDirLog(LDAP_DEBUG_TRACE, "queue_dequeue failed. Error(%u)", dwError);
     goto cleanup;
+}
+
+size_t
+dequeGetSize(
+    PDEQUE pDeque
+    )
+{
+    size_t    iRtn = 0;
+
+    if (pDeque)
+    {
+        iRtn = pDeque->iSize;
+    }
+    return iRtn;
 }
 
 BOOLEAN

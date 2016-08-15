@@ -96,13 +96,13 @@ public class TenantInfoRetriever {
             throw new ServerException(ErrorObject.serverError("idm error while retrieving tenant properties"), e);
         }
 
-        String secureIdLoginGuide = (authnPolicy.get_rsaAgentConfig() != null) ? authnPolicy.get_rsaAgentConfig().get_loginGuide() : null;
+        String securIdLoginGuide = (authnPolicy.get_rsaAgentConfig() != null) ? authnPolicy.get_rsaAgentConfig().get_loginGuide() : null;
         TenantInfo.AuthnPolicy tenantAuthnPolicy = new TenantInfo.AuthnPolicy(
                 authnPolicy.IsPasswordAuthEnabled(),
                 authnPolicy.IsTLSClientCertAuthnEnabled(),
                 authnPolicy.IsWindowsAuthEnabled(),
                 authnPolicy.IsRsaSecureIDAuthnEnabled(),
-                secureIdLoginGuide);
+                securIdLoginGuide);
 
         return new TenantInfo.Builder(tenant).
                 privateKey(privateKey).

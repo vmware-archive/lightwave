@@ -21,6 +21,8 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.util.Arrays;
+import java.util.Collection;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -46,6 +48,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
+import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
+import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.KnownSamlAttributes;
 import com.vmware.identity.saml.ext.DelegableType;
 import com.vmware.identity.saml.ext.RenewableType;
 import com.vmware.identity.saml.ext.impl.DelegableTypeBuilder;
@@ -63,41 +68,61 @@ import com.vmware.identity.session.SessionManager;
  *
  */
 public final class Shared {
+
+    private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(Shared.class);
+
     public static final String IDM_HOSTNAME = "localhost"; // where IDM server
                                                            // is
+
+    //Parameters for credentials passing.
     public static final String PASSWORD_ENTRY = "passwordEntry=1";
     public static final String PASSWORD_SUPPLIED = "passwordSupplied=1";
 
-    public static final String REQUEST_AUTH_HEADER = "CastleAuthorization";
+
+    public static final String RESPONSE_ERROR_HEADER = "CastleError";
+    public static final String RESPONSE_AUTH_HEADER = "CastleAuthorization";
+    public static final String REQUEST_AUTH_PARAM = "CastleAuthorization";
+    public static final String IWA_AUTH_REQUEST_HEADER = "Authorization";
+    public static final String IWA_AUTH_RESPONSE_HEADER = "WWW-Authenticate";
+
     public static final String KERB_AUTH_PREFIX = "Negotiate";
     public static final String PASSWORD_AUTH_PREFIX = "Basic";
     public static final String TLSCLIENT_AUTH_PREFIX = "TLSClient";
     public static final String RSAAM_AUTH_PREFIX = "RSAAM";
-    public static final String RELYINGPARTY_ENTITYID = "RelyingPartyEntityId";
+    public static final String RELYINGPARTY_ENTITYID = "RelyingPartyEntityId";  //for ssoSSLDummy endpoint
+
+    //IDP selection attribute and header names
     public static final String IDP_SELECTION_HEADER = "CastleIDPSelection";
+    public static final String IDP_SELECTION_REDIRECT_URL = "CastleIDPRedirect";
 
-    public static final String RESPONSE_ERROR_HEADER = "CastleError";
+    //RP selection attribute
+    public static final String RP_SELECTION_ENTITYID = "CastleRPSelection";
 
-    public static final String RESPONSE_AUTH_HEADER = "CastleAuthorization";
+    //Cookie names
     public static final String SESSION_COOKIE_NAME = "CastleSession";
     public static final String LOGOUT_SESSION_COOKIE_NAME = "CastleLoggedOut";
     public static final String TENANT_IDP_COOKIE_NAME = "CastleIDPId";
-    public static final int TOKEN_LIFETIME_MINUTES = 15;
-    public static final int SESSION_LIFETIME_MINUTES = 480;
-    public static final int NOTBEFORE_ADJUSTMENT_SECONDS = 150;
+    public static final String TENANT_SSPI_CONTEXT_ID_COOKIE_NAME = "CastleContextId";
 
-    public static final SAMLVersion REQUIRED_SAML_VERSION = SAMLVersion.VERSION_20;
-
+    //Standard SAML parameters
     public static final String SAML_REQUEST_PARAMETER = "SAMLRequest";
     public static final String SAML_RESPONSE_PARAMETER = "SAMLResponse";
     public static final String RELAY_STATE_PARAMETER = "RelayState";
     public static final String SIGNATURE_ALGORITHM_PARAMETER = "SigAlg";
     public static final String SIGNATURE_PARAMETER = "Signature";
 
+    //Other constants
+    public static final int TOKEN_LIFETIME_MINUTES = 15;
+    public static final int SESSION_LIFETIME_MINUTES = 480;
+    public static final int NOTBEFORE_ADJUSTMENT_SECONDS = 150;
+
+    public static final SAMLVersion REQUIRED_SAML_VERSION = SAMLVersion.VERSION_20;
     public static final String HTML_CONTENT_TYPE = "text/html";
     public static final String METADATA_CONTENT_TYPE = "application/samlmetadata+xml";
 
+    //Endpoint path constants
     public final static String ssoCACEndpoint = "/websso/SAML2/SSOCAC";
+    public final static String ssoSmartcardRealmEndpoint = "/websso/SAML2/SmartcardRealm";
     public final static String ssoEndpoint = "/websso/SAML2/SSO";
 
     /**
@@ -338,4 +363,70 @@ public final class Shared {
     {
         return Shared.TENANT_IDP_COOKIE_NAME + nameSuffix;
     }
+
+    // retrieve valid (non-expired) session from the browser cookie, or return null
+    public static Session getSession(SessionManager sessionManager, HttpServletRequest request, String tenant) {
+        Session retval = null;
+        Validate.notEmpty(tenant);
+
+        // first find session id in the cookies
+        String sessionId = Shared.getCookieValue(request.getCookies(),
+                Shared.getTenantSessionCookieName(tenant), null);
+
+        try {
+            if (sessionId != null) {
+                // get the session
+                retval = sessionManager.get(sessionId);
+                if (retval != null && !retval.isValid()) {
+                    // invalid session
+                    retval = null;
+                }
+            }
+        } catch (Exception e) {
+            retval = null; // something went wrong when looking for session
+        }
+
+        return retval;
+    }
+
+    /**
+     * Adding a browser session cookie to browser.
+     * @param cookieName
+     * @param cookieValue
+     * @param response
+     */
+    public static void addSessionCookie(String cookieName, String cookieValue, HttpServletResponse response) {
+        Validate.notNull(response);
+        if (cookieName == null || cookieName.isEmpty() || cookieValue == null || cookieValue.isEmpty()) {
+            log.warn("Cookie name/value is null or empty. Ignoring.");
+            return;
+        }
+        log.debug("Setting cookie " + cookieName
+                + " value " + cookieValue);
+        Cookie sessionCookie = new Cookie(cookieName, cookieValue);
+        sessionCookie.setPath("/");
+        sessionCookie.setSecure(true);
+        sessionCookie.setHttpOnly(true);
+        response.addCookie(sessionCookie);
+    }
+
+
+    /**
+     * @param identityFormat
+     * @return
+     */
+    public static Collection<String> buildTokenAttributeList(String identityFormat) {
+        log.debug("building Attribute Definition collection, identity format is "
+                + identityFormat);
+
+        Validate.notNull(identityFormat);
+
+        Collection<String> attributeNames = Arrays.asList(new String[] {
+                KnownSamlAttributes.ATTRIBUTE_USER_FIRST_NAME, KnownSamlAttributes.ATTRIBUTE_USER_LAST_NAME
+                , KnownSamlAttributes.ATTRIBUTE_USER_GROUPS,
+                KnownSamlAttributes.ATTRIBUTE_USER_SUBJECT_TYPE, identityFormat });
+
+        return attributeNames;
+    }
+
 }

@@ -82,11 +82,11 @@ public class IdmClientCertificateValidator {
      * @throws IdmCertificateRevokedException
      * @throws CertificatePathBuildingException
      */
-    public void validateCertificatePath(X509Certificate x509Certificate, Map<String, String> authStatExt)
+    public void validateCertificatePath(X509Certificate x509Certificate, String siteID, Map<String, String> authStatExt)
             throws CertificateRevocationCheckException,
  InvalidArgumentException, IdmCertificateRevokedException, CertificatePathBuildingException {
         IdmCertificatePathValidator checker = new IdmCertificatePathValidator(
-                trustStore, certPolicy, this.tenantName);
+                trustStore, certPolicy, this.tenantName, siteID);
         checker.validate(x509Certificate, authStatExt);
     }
 

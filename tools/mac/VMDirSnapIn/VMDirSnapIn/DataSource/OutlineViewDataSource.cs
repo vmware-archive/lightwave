@@ -20,83 +20,109 @@ using VMDirInterop.LDAPExceptions;
 
 namespace VMDirSnapIn.DataSource
 {
-    public class OutlineViewDataSource : NSOutlineViewDataSource
-    {
+	public class OutlineViewDataSource : NSOutlineViewDataSource
+	{
+		public ScopeNode RootNode { get; set; }
 
-        public ScopeNode RootNode { get; set; }
+		public OutlineViewDataSource(DirectoryNode node) : base()
+		{
+			RootNode = node;
+		}
 
-        public OutlineViewDataSource (DirectoryNode node) : base ()
-        {
-            RootNode = node;
-        }
+		public override nint GetChildrenCount(NSOutlineView outlineView, NSObject item)
+		{
+			// if null, it's asking about the root element
+			if (item == null)
+			{
+				return 1;
+			}
+			else {
+				DirectoryNode passedNode = item as DirectoryNode;
+				if (passedNode != null)
+				{
+					return passedNode.NumberOfChildren();
+				}
+				else {
+					System.Diagnostics.Debug.WriteLine("could not cast, there is a problem here");
 
-        public override nint GetChildrenCount (NSOutlineView outlineView, NSObject item)
-        {
-            // if null, it's asking about the root element
-            if (item == null) {
-                return 1;
-            } else {
-                ScopeNode passedNode = item as ScopeNode;
-                if (passedNode != null) {
-                    return passedNode.NumberOfChildren ();
-                } else {
-                    System.Diagnostics.Debug.WriteLine ("could not cast, there is a problem here");
-                    return 0;
-                }
-            }
-        }
+					return 0;
+				}
+			}
+		}
 
-        public override bool ItemExpandable (NSOutlineView outlineView, NSObject item)
-        {
-            if (item != null) {
-                try { 
-                    if (item is DirectoryNode) {
-                        DirectoryNode node = item as DirectoryNode;
-                        node.PopulateChildren (node.Name);
-                        return (node.NumberOfChildren () != 0);
-                    } else if (item is ScopeNode) {
-                        ScopeNode passedNode = item as ScopeNode; // cast to appropriate type of node
+		public override bool ItemExpandable(NSOutlineView outlineView, NSObject item)
+		{
+			if (item != null)
+			{
+				try
+				{
+					if (item is DirectoryNode)
+					{
+						DirectoryNode node = item as DirectoryNode;
+						if (node.isChildrenLoaded)
+							return (node.NumberOfChildren() != 0);
+						else
+							return true;
+					}
+					else if (item is ScopeNode)
+					{
+						ScopeNode passedNode = item as ScopeNode; // cast to appropriate type of node
 
-                        return (passedNode.NumberOfChildren () != 0);
-                    } else {
-                        System.Diagnostics.Debug.WriteLine ("passedNode cast failed.");
-                        return false;
-                    }
-                } catch (Exception e) {
-                    System.Diagnostics.Debug.WriteLine (e.Message);
-                    return false;
-                }
-            } else {
-                // if null, it's asking about the root element
-                return true;
-            }
-        }
+						return (passedNode.NumberOfChildren() != 0);
+					}
+					else {
+						System.Diagnostics.Debug.WriteLine("passedNode cast failed.");
+						return false;
+					}
+				}
+				catch (Exception e)
+				{
+					System.Diagnostics.Debug.WriteLine(e.Message);
 
-        public override NSObject GetObjectValue (NSOutlineView outlineView, NSTableColumn tableColumn, NSObject item)
-        {
-            if (item == null) {
-                System.Diagnostics.Debug.WriteLine ("passed null, returning empty String");
-                return new NSString (" ");
-            } else {
-                ScopeNode passedNode = item as ScopeNode;
-                if (passedNode != null) {
-                    return (NSString)passedNode.DisplayName;
-                } else {
-                    System.Diagnostics.Debug.WriteLine ("returning an empty string, cast failed.");
-                    return new NSString ();
-                }
-            }
-        }
+					return false;
+				}
+			}
+			else {
+				// if null, it's asking about the root element
+				return true;
+			}
+		}
 
-        public override NSObject GetChild (NSOutlineView outlineView, nint childIndex, NSObject item)
-        {
-            // null means it's asking for the root
-            if (item == null) {
-                return this.RootNode;
-            } else {
-                return (NSObject)((item as ScopeNode).ChildAtIndex ((int)childIndex));
-            }
-        }
-    }
+		public override NSObject GetObjectValue(NSOutlineView outlineView, NSTableColumn tableColumn, NSObject item)
+		{
+			if (item == null)
+			{
+				System.Diagnostics.Debug.WriteLine("passed null, returning empty String");
+				return new NSString(" ");
+			}
+			else {
+
+				DirectoryNode passedNode = item as DirectoryNode;
+				if (passedNode != null)
+				{
+					if (passedNode.morePages)
+						return (NSString)(passedNode.DisplayName + " ...");
+					else
+						return (NSString)passedNode.DisplayName;
+				}
+				else {
+					System.Diagnostics.Debug.WriteLine("returning an empty string, cast failed.");
+					return new NSString();
+				}
+			}
+		}
+
+		public override NSObject GetChild(NSOutlineView outlineView, nint childIndex, NSObject item)
+		{
+			// null means it's asking for the root
+			if (item == null)
+			{
+				return this.RootNode;
+			}
+			else {
+				return (NSObject)((item as ScopeNode).ChildAtIndex((int)childIndex));
+			}
+		}
+	}
 }
 

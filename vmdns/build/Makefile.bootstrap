@@ -1,7 +1,7 @@
 #
 # VMware dns Makefile
 #
-
+include ../../support/make/makedefs.mk
 
 MKDIR=/bin/mkdir
 RM=/bin/rm
@@ -73,6 +73,8 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_datadir /opt/vmware/share" \
               --define "_includedir /opt/vmware/include" \
               --define "_likewise_open_prefix /opt/likewise" \
+              --define "_version $(VMDNS_MAJOR_VER).$(VMDNS_MINOR_VER).$(VMDNS_RELEASE_VER)" \
+              --define "_patch $(VMDNS_PATCH_VER)" \
               --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
               SPECS/$(PKG_SPEC)
 

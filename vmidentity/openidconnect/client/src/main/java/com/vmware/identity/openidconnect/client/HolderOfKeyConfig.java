@@ -24,7 +24,7 @@ import org.apache.commons.lang3.Validate;
  *
  * @author Jun Sun
  */
-public class HolderOfKeyConfig {
+public final class HolderOfKeyConfig {
     private final RSAPrivateKey clientPrivateKey;
     private final X509Certificate clientCertificate;
 

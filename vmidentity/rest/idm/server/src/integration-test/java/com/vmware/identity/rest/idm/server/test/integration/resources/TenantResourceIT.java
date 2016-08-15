@@ -68,6 +68,8 @@ public class TenantResourceIT extends TestBase {
     private final String LOGON_BANNER_TITLE = "Test Logon Banner Title";
     private final String LOGON_BANNER_CONTENT = "Welcome to Unit Tests arena of RESTful IDM server !!";
 
+    private static final String DEFAULT_PROVIDER = "localos";
+
     private TenantResource tenantResource;
     private ContainerRequestContext request;
 
@@ -151,7 +153,7 @@ public class TenantResourceIT extends TestBase {
 
         assertEquals(DEFAULT_PROVIDER, config.getProviderPolicy().getDefaultProvider());
         assertNull(config.getProviderPolicy().getDefaultProviderAlias());
-        assertFalse(config.getProviderPolicy().isProviderSelectionEnabled());
+        assertTrue(config.getProviderPolicy().isProviderSelectionEnabled());
 
         // assert token policy related configs
         assertEquals(Long.valueOf(600000), config.getTokenPolicy().getClockToleranceMillis());
@@ -163,9 +165,9 @@ public class TenantResourceIT extends TestBase {
         // assert brand policy related configs. By default branding information is not set
         assertNull(config.getBrandPolicy().getLogonBannerTitle());
         assertNull(config.getBrandPolicy().getLogonBannerContent());
-        assertFalse(config.getBrandPolicy().isLogonBannerCheckboxEnabled());
+        assertTrue(config.getBrandPolicy().isLogonBannerCheckboxEnabled());
         assertTrue(config.getBrandPolicy().isLogonBannerDisabled());
-        assertNull(config.getBrandPolicy().getName());
+        assertEquals(BRAND_NAME,config.getBrandPolicy().getName());
     }
 
     @Test
@@ -179,22 +181,23 @@ public class TenantResourceIT extends TestBase {
             TokenPolicyDTO tokenBeforeUpdate = beforeUpdate.getTokenPolicy();
 
             LockoutPolicyDTO lockoutPolicyToUpdate =
-                            LockoutPolicyDTO.builder().withDescription("updated lockout policy").withAutoUnlockIntervalSec(lockoutBeforeUpdate.getAutoUnlockIntervalSec() + 1)
-                                            .withFailedAttemptIntervalSec(lockoutBeforeUpdate.getFailedAttemptIntervalSec() + 1).withMaxFailedAttempts(lockoutBeforeUpdate.getMaxFailedAttempts() + 1).build();
+                    LockoutPolicyDTO.builder().withDescription("updated lockout policy").withAutoUnlockIntervalSec(lockoutBeforeUpdate.getAutoUnlockIntervalSec() + 1)
+                    .withFailedAttemptIntervalSec(lockoutBeforeUpdate.getFailedAttemptIntervalSec() + 1).withMaxFailedAttempts(lockoutBeforeUpdate.getMaxFailedAttempts() + 1).build();
 
             PasswordPolicyDTO pwdPolicyToUpdate =
-                            PasswordPolicyDTO.builder().withDescription("updated password policy").withMaxIdenticalAdjacentCharacters(passwordBeforeUpdate.getMaxIdenticalAdjacentCharacters() + 1)
-                                            .withMaxLength(passwordBeforeUpdate.getMaxLength() + 1).withMinAlphabeticCount(passwordBeforeUpdate.getMinAlphabeticCount()).withMinLength(passwordBeforeUpdate.getMinLength())
-                                            .withMinLowercaseCount(passwordBeforeUpdate.getMinLowercaseCount()).withMinNumericCount(passwordBeforeUpdate.getMinNumericCount()).withMinSpecialCharCount(passwordBeforeUpdate.getMinSpecialCharCount())
-                                            .withMinUppercaseCount(passwordBeforeUpdate.getMinUppercaseCount()).withPasswordLifetimeDays(passwordBeforeUpdate.getPasswordLifetimeDays())
-                                            .withProhibitedPreviousPasswordCount(passwordBeforeUpdate.getProhibitedPreviousPasswordCount()).build();
+                    PasswordPolicyDTO.builder().withDescription("updated password policy").withMaxIdenticalAdjacentCharacters(passwordBeforeUpdate.getMaxIdenticalAdjacentCharacters() + 1)
+                    .withMaxLength(passwordBeforeUpdate.getMaxLength() + 1).withMinAlphabeticCount(passwordBeforeUpdate.getMinAlphabeticCount()).withMinLength(passwordBeforeUpdate.getMinLength())
+                    .withMinLowercaseCount(passwordBeforeUpdate.getMinLowercaseCount()).withMinNumericCount(passwordBeforeUpdate.getMinNumericCount()).withMinSpecialCharCount(passwordBeforeUpdate.getMinSpecialCharCount())
+                    .withMinUppercaseCount(passwordBeforeUpdate.getMinUppercaseCount()).withPasswordLifetimeDays(passwordBeforeUpdate.getPasswordLifetimeDays())
+                    .withProhibitedPreviousPasswordCount(passwordBeforeUpdate.getProhibitedPreviousPasswordCount()).build();
 
             TokenPolicyDTO tokenPolicyToUpdate =
-                            TokenPolicyDTO.builder().withClockToleranceMillis(tokenBeforeUpdate.getClockToleranceMillis() + 1).withDelegationCount(tokenBeforeUpdate.getDelegationCount() + 1).withRenewCount(tokenBeforeUpdate.getRenewCount() + 1)
-                                            .withMaxBearerTokenLifeTimeMillis(tokenBeforeUpdate.getMaxBearerTokenLifeTimeMillis() + 1)
-                                            .withMaxBearerRefreshTokenLifeTimeMillis(tokenBeforeUpdate.getMaxBearerRefreshTokenLifeTimeMillis() + 1).build();
+                    TokenPolicyDTO.builder().withClockToleranceMillis(tokenBeforeUpdate.getClockToleranceMillis() + 1).withDelegationCount(tokenBeforeUpdate.getDelegationCount() + 1).withRenewCount(tokenBeforeUpdate.getRenewCount() + 1)
+                    .withMaxBearerTokenLifeTimeMillis(tokenBeforeUpdate.getMaxBearerTokenLifeTimeMillis() + 1)
+                    .withMaxBearerRefreshTokenLifeTimeMillis(tokenBeforeUpdate.getMaxBearerRefreshTokenLifeTimeMillis() + 1).build();
 
             ProviderPolicyDTO providerPolicyToUpdate = ProviderPolicyDTO.builder()
+                    .withDefaultProvider(DEFAULT_PROVIDER)
                     .withDefaultProviderAlias(VSPHERE_LOCAL)
                     .withProviderSelectionEnabled(Boolean.TRUE)
                     .build();
@@ -208,19 +211,19 @@ public class TenantResourceIT extends TestBase {
                     .build();
 
             AuthenticationPolicyDTO authenticationPolicyToUpdate = AuthenticationPolicyDTO.builder()
-                                                                                          .withPasswordBasedAuthenticationEnabled(true)
-                                                                                          .withWindowsBasedAuthenticationEnabled(true)
-                                                                                          .withCertificateBasedAuthenticationEnabled(true)
-                                                                                          .build();
+                    .withPasswordBasedAuthenticationEnabled(true)
+                    .withWindowsBasedAuthenticationEnabled(true)
+                    .withCertificateBasedAuthenticationEnabled(true)
+                    .build();
 
             TenantConfigurationDTO tenantConfigToUpdate = TenantConfigurationDTO.builder()
-                                                                                .withLockoutPolicy(lockoutPolicyToUpdate)
-                                                                                .withPasswordPolicy(pwdPolicyToUpdate)
-                                                                                .withTokenPolicy(tokenPolicyToUpdate)
-                                                                                .withProviderPolicy(providerPolicyToUpdate)
-                                                                                .withBrandPolicy(brandPolicyToUpdate)
-                                                                                .withAuthenticationPolicy(authenticationPolicyToUpdate)
-                                                                                .build();
+                    .withLockoutPolicy(lockoutPolicyToUpdate)
+                    .withPasswordPolicy(pwdPolicyToUpdate)
+                    .withTokenPolicy(tokenPolicyToUpdate)
+                    .withProviderPolicy(providerPolicyToUpdate)
+                    .withBrandPolicy(brandPolicyToUpdate)
+                    .withAuthenticationPolicy(authenticationPolicyToUpdate)
+                    .build();
 
             TenantConfigurationDTO afterUpdate = tenantResource.updateConfig(DEFAULT_TENANT, tenantConfigToUpdate);
 
@@ -247,7 +250,7 @@ public class TenantResourceIT extends TestBase {
             assertTrue(afterUpdate.getBrandPolicy().isLogonBannerCheckboxEnabled());
             assertTrue(afterUpdate.getBrandPolicy().isLogonBannerDisabled());
 
-            assertEquals(VSPHERE_LOCAL, afterUpdate.getProviderPolicy().getDefaultProviderAlias());
+            assertNull(afterUpdate.getProviderPolicy().getDefaultProviderAlias());
             assertTrue(afterUpdate.getProviderPolicy().isProviderSelectionEnabled());
         } finally {
             tenantResource.updateConfig(DEFAULT_TENANT, beforeUpdate);
@@ -302,10 +305,9 @@ public class TenantResourceIT extends TestBase {
         String SOLUTION_USERNAME = "testSolutionUser";
 
         try{
-        // Create a solution user
+            // Create a solution user
             solutionUserHelper.createSolutionUser(DEFAULT_SYSTEM_DOMAIN, SOLUTION_USERNAME);
             SolutionUser solutionUser = solutionUserHelper.findSolutionUser(DEFAULT_SYSTEM_DOMAIN, SOLUTION_USERNAME);
-            System.out.println("CERT SUBJECT DN : " + solutionUser.getCert().getSubjectDN().getName());
             tenantResource.searchMembers(DEFAULT_TENANT, MemberType.SOLUTIONUSER.name(), DEFAULT_SYSTEM_DOMAIN, 10, SearchType.CERT_SUBJECTDN.name(), solutionUser.getCert().getSubjectDN().getName());
         } finally {
             solutionUserHelper.deleteSolutionUser(DEFAULT_SYSTEM_DOMAIN, SOLUTION_USERNAME);

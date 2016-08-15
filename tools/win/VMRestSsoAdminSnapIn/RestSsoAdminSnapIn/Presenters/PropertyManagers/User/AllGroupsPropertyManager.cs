@@ -18,7 +18,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Service;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.PropertyManagers.User
 {
-    class AllGroupsPropertyManager : IPropertyDataManager
+    public class AllGroupsPropertyManager
     {
         private readonly ServiceGateway _service;
         private readonly ServerDto _serverDto;
@@ -33,13 +33,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Presenters.PropertyManagers.User
             _tenantName = tenantName;
         }
 
-        public object GetData()
+        public List<GroupDto> Search(string name)
         {
             var groupsDto = new List<GroupDto>();
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_serverDto, _tenantName);
             ActionHelper.Execute(delegate()
-            {                
-                var membershipDto = SnapInContext.Instance.ServiceGateway.Tenant.Search(_serverDto, _tenantName, _domainName, MemberType.GROUP, SearchType.NAME, auth.Token);
+            {
+                var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
+                var membershipDto = service.Tenant.Search(_serverDto, _tenantName, _domainName, MemberType.GROUP, SearchType.NAME, auth.Token, name);
                 groupsDto = membershipDto.Groups;// _service.Group.GetAll(_serverDto, _tenantName, auth.Token, _domainName);
             }, auth);
             return groupsDto;

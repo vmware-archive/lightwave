@@ -315,9 +315,6 @@ _srp_gss_auth_init(
     gss_buffer_t disp_name = NULL;
     gss_OID disp_name_OID = NULL;
     char *srp_upn_name = NULL;
-    char *srp_secret = NULL;
-    unsigned char *srp_secret_str = NULL;
-    unsigned int srp_secret_str_len = 0;
     int srp_decode_mda_len = 0;
     int srp_decode_salt_len = 0;
     const unsigned char *srp_mda = NULL;
@@ -328,11 +325,12 @@ _srp_gss_auth_init(
     const unsigned char *srp_bytes_B = NULL;
     int srp_bytes_B_len = 0;
     const unsigned char *srp_session_key = NULL;
+    unsigned char *ret_srp_session_key = NULL;
     int srp_session_key_len = 0;
     ber_int_t gss_srp_version_maj = 0;
     ber_int_t gss_srp_version_min = 0;
     PVMDIR_SERVER_CONTEXT hServer = NULL;
-    srp_verifier_handle_t hSrp = NULL;
+    srp_verifier_handle_t hSrp = NULL; /* aliased / cast to "ver" variable */
 
     ber_ctx.bv_val = (void *) input_token->value;
     ber_ctx.bv_len = input_token->length;
@@ -415,9 +413,6 @@ _srp_gss_auth_init(
              (int) disp_name_buf.length,
              (char *) disp_name_buf.value);
 
-    /* Used in generating Kerberos keyblock salt value */
-    srp_context_handle->upn_name = srp_upn_name;
-    srp_upn_name = NULL;
 
     maj = _srp_gss_auth_create_machine_acct_binding(
               &min,
@@ -427,13 +422,12 @@ _srp_gss_auth_init(
         maj = GSS_S_FAILURE;
         goto error;
     }
-    srp_context_handle->hServer = hServer;
 
     sts = cli_rpc_srp_verifier_new(
             hServer ? hServer->hBinding : NULL,
             hash_alg,
             ng_type,
-            srp_context_handle->upn_name,
+            srp_upn_name,
             ber_bytes_A->bv_val, (int) ber_bytes_A->bv_len,
             &srp_bytes_B, &srp_bytes_B_len,
             &srp_salt, &srp_decode_salt_len,
@@ -446,7 +440,7 @@ _srp_gss_auth_init(
         min = sts;
         goto error;
     }
-    ver = (struct SRPVerifier *) hSrp;
+    ver = (struct SRPVerifier *) hSrp, hSrp = NULL;
 
     if (!srp_bytes_B)
     {
@@ -508,11 +502,10 @@ _srp_gss_auth_init(
     }
     output_token->length = flatten->bv_len;
     memcpy(output_token->value, flatten->bv_val, flatten->bv_len);
-    srp_context_handle->srp_ver = ver;
 
     sts = cli_rpc_srp_verifier_get_session_key(
         hServer ? hServer->hBinding : NULL,
-        srp_context_handle->srp_ver,
+        ver,
         &srp_session_key,
         &srp_session_key_len);
     if (sts)
@@ -524,26 +517,46 @@ _srp_gss_auth_init(
 
     if (srp_session_key && srp_session_key_len > 0)
     {
-        srp_context_handle->srp_session_key =
+        ret_srp_session_key =
             calloc(srp_session_key_len, sizeof(unsigned char));
-        if (!srp_context_handle->srp_session_key)
+        if (!ret_srp_session_key)
         {
             maj = GSS_S_FAILURE;
             min = ENOMEM;
             goto error;
         }
-        memcpy(srp_context_handle->srp_session_key,
-               srp_session_key,
-               srp_session_key_len);
-        srp_context_handle->srp_session_key_len = srp_session_key_len;
-
-        srp_print_hex(srp_session_key, srp_session_key_len,
-                      "_srp_gss_auth_init(accept_sec_ctx) got session key");
     }
+    memcpy(ret_srp_session_key,
+           srp_session_key,
+           srp_session_key_len);
 
+    /* Set context handle/return values here; all previous calls succeeded */
     maj = GSS_S_CONTINUE_NEEDED;
+    srp_context_handle->hServer = hServer, hServer = NULL;
+
+    /* Used in generating Kerberos keyblock salt value */
+    srp_context_handle->upn_name = srp_upn_name, srp_upn_name = NULL;
+    srp_context_handle->srp_ver = ver, ver = NULL;
+
+    /* Return the SRP session key in the context handle */
+    srp_context_handle->srp_session_key_len = srp_session_key_len;
+    srp_context_handle->srp_session_key = ret_srp_session_key, ret_srp_session_key = NULL;
+
+    srp_print_hex(srp_session_key, srp_session_key_len,
+                  "_srp_gss_auth_init(accept_sec_ctx) got session key");
 
 error:
+    if (ver)
+    {
+        cli_rpc_srp_verifier_delete(
+            hServer ? hServer->hBinding : NULL,
+            (void **) &ver);
+    }
+    VmDirCloseServer(hServer);
+    if (srp_upn_name)
+    {
+        free(srp_upn_name);
+    }
     if (ber_upn)
     {
         ber_bvfree(ber_upn);
@@ -560,16 +573,6 @@ error:
     {
         gss_release_buffer(&min_tmp, disp_name);
     }
-    if (srp_secret)
-    {
-        free(srp_secret);
-    }
-    if (srp_secret_str)
-    {
-        /* Allocated by VmDirGetSRPSecret, not GSSAPI, so safe to call free */
-        memset(srp_secret_str, 0, srp_secret_str_len);
-        free(srp_secret_str);
-    }
     if (srp_bytes_B)
     {
         free((void *) srp_bytes_B);
@@ -585,6 +588,10 @@ error:
     if (srp_session_key)
     {
         free((void *) srp_session_key);
+    }
+    if (ret_srp_session_key)
+    {
+        free((void *) ret_srp_session_key);
     }
 
     if (maj)

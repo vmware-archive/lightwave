@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -41,6 +41,13 @@ CheckIfAnAttrValAlreadyExists(
 
 static
 int
+GenerateNewParent(
+    PVDIR_ENTRY pEntry,
+    PVDIR_ATTRIBUTE pDnAttr
+    );
+
+static
+int
 DelAttrValsFromEntryStruct(
    PVDIR_SCHEMA_CTX  pSchemaCtx,
    VDIR_ENTRY *      e,
@@ -54,12 +61,10 @@ RemoveAttrVals(
    VDIR_ATTRIBUTE * eAttr,
    VDIR_ATTRIBUTE * modAttr);
 
-static
-int
-ModifyEntryStructureRuleCheck(
-    PVDIR_OPERATION      pOperation,
-    VDIR_MODIFICATION*   pMods,
-    PVDIR_ENTRY          pEntry);
+static int
+VmDirGenerateRenameAttrsMods(
+    PVDIR_OPERATION pOperation
+    );
 
 static
 int
@@ -85,6 +90,9 @@ VmDirModifyEntryCoreLogic(
 {
     int       retVal = LDAP_SUCCESS;
     PSTR      pszLocalErrMsg = NULL;
+    BOOLEAN   bDnModified = FALSE;
+    BOOLEAN   bLeafNode = FALSE;
+    PVDIR_ATTRIBUTE pAttrMemberOf = NULL;
 
     retVal = pOperation->pBEIF->pfnBEIdToEntry( pOperation->pBECtx,
                                                 pOperation->pSchemaCtx,
@@ -105,9 +113,32 @@ VmDirModifyEntryCoreLogic(
                                   "VmDirSrvAccessCheck failed - (%u)", retVal);
 
     // Apply modify operations to the current entry (in pack format)
-    retVal = VmDirApplyModsToEntryStruct( pOperation->pSchemaCtx, modReq, pEntry, &pszLocalErrMsg );
+    retVal = VmDirApplyModsToEntryStruct( pOperation->pSchemaCtx, modReq, pEntry, &bDnModified, &pszLocalErrMsg );
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
                                   "ApplyModsToEntryStruct failed - (%d)(%s)", retVal, pszLocalErrMsg);
+
+    if (bDnModified)
+    {
+        retVal = pOperation->pBEIF->pfnBEChkIsLeafEntry(
+                                        pOperation->pBECtx,
+                                        entryId,
+                                        &bLeafNode);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        if (bLeafNode == FALSE)
+        {
+            retVal = LDAP_NOT_ALLOWED_ON_NONLEAF;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Rename of a non-leaf node is not allowed." );
+        }
+
+        // Verify not a member of any groups
+        retVal = VmDirFindMemberOfAttribute(pEntry, &pAttrMemberOf);
+        if (pAttrMemberOf && pAttrMemberOf->numVals > 0)
+        {
+            retVal = LDAP_UNWILLING_TO_PERFORM;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Rename of a node with memberships is not allowed." );
+        }
+    }
 
     if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
     {
@@ -115,10 +146,6 @@ VmDirModifyEntryCoreLogic(
         retVal = VmDirSchemaCheck(pEntry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Schema check failed - (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)));
-
-        // Schema structure rule check
-        retVal = ModifyEntryStructureRuleCheck(pOperation, modReq->mods, pEntry);
-        BAIL_ON_VMDIR_ERROR( retVal );
 
         // check and read lock dn referenced entries
         retVal = pOperation->pBEIF->pfnBEChkDNReference( pOperation->pBECtx, pEntry );
@@ -137,6 +164,7 @@ VmDirModifyEntryCoreLogic(
 
 cleanup:
 
+    VmDirFreeAttribute(pAttrMemberOf);
     VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
 
     return retVal;
@@ -185,6 +213,14 @@ VmDirMLModify(
 
     dwError = VmDirInternalModifyEntry( pOperation);
     BAIL_ON_VMDIR_ERROR( dwError );
+
+    if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
+    {
+        pOperation->pBEIF->pfnBESetMaxOriginatingUSN(pOperation->pBECtx,
+                                                     pOperation->pBECtx->wTxnUSN);
+    }
+
+    VmDirPerformUrgentReplIfRequired(pOperation, pOperation->pBECtx->wTxnUSN);
 
 cleanup:
 
@@ -236,12 +272,21 @@ VmDirInternalModifyEntry(
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
                                   retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)) );
 
+    // Acquire schema modification mutex
+    retVal = VmDirSchemaModMutexAcquire(pOperation);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Failed to lock schema mod mutex", retVal );
+
+
     if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
     {
-        // Execute pre modify plugin logic
-        retVal = VmDirExecutePreModApplyModifyPlugins(pOperation, NULL, retVal);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreModApplyModify plugin failed - (%u)",  retVal );
+        // Generate mods based on MODN request
+        retVal = VmDirGenerateRenameAttrsMods( pOperation );
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "GenerateDeleteAttrsMods failed - (%u)", retVal);
     }
+
+    // Execute pre modify plugin logic
+    retVal = VmDirExecutePreModApplyModifyPlugins(pOperation, NULL, retVal);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreModApplyModify plugin failed - (%u)",  retVal );
 
     // Normalize attribute values in mods
     retVal = VmDirNormalizeMods( pOperation->pSchemaCtx, modReq->mods, &pszLocalErrMsg );
@@ -345,7 +390,7 @@ txnretry:
 cleanup:
 
     {
-        int iPostCommitPluginRtn  = 0;
+        int iPostCommitPluginRtn = 0;
 
         // Execute post modify plugin logic
         iPostCommitPluginRtn = VmDirExecutePostModifyCommitPlugins(pOperation, &entry, retVal);
@@ -358,6 +403,9 @@ cleanup:
                       iPostCommitPluginRtn);
         }
     }
+
+    // Release schema modification mutex
+    (VOID)VmDirSchemaModMutexRelease(pOperation);
 
     VmDirFreeEntryContent ( &entry );
     VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
@@ -564,6 +612,7 @@ VmDirApplyModsToEntryStruct(
     PVDIR_SCHEMA_CTX    pSchemaCtx,
     ModifyReq *         modReq,
     PVDIR_ENTRY         pEntry,
+    PBOOLEAN            pbDnModified,
     PSTR*               ppszErrorMsg
     )
 {
@@ -673,6 +722,18 @@ VmDirApplyModsToEntryStruct(
                     }
                     else // Real replace attribute values case
                     {
+                        // If DN is being modified, may need to re-parent
+                        if (VmDirStringCompareA(attr->type.lberbv.bv_val, ATTR_DN, FALSE) == 0)
+                        {
+                            if (pbDnModified)
+                            {
+                                *pbDnModified = TRUE;
+                            }
+
+                            retVal = GenerateNewParent(pEntry, &(currMod->attr));
+                            BAIL_ON_VMDIR_ERROR(retVal);
+                        }
+
                         // Setup Delete attribute and Add attribute mods. Change currMod->operation to ADD, and
                         // insert a DELETE mod for this attribute before this mod.
 
@@ -848,6 +909,7 @@ VmDirGenerateModsNewMetaData(
                              "%s:%d:%s:%s:%s", pUsnChangedMod->attr.vals[0].lberbv.bv_val, currentVersion + 1,
                              gVmdirServerGlobals.invocationId.lberbv.bv_val,
                              origTimeStamp, pUsnChangedMod->attr.vals[0].lberbv.bv_val );
+
     }
 
 cleanup:
@@ -995,6 +1057,14 @@ _VmDirExternalModsSanityCheck(
                     retVal = VMDIR_ERROR_BAD_ATTRIBUTE_DATA;
                     BAIL_ON_VMDIR_ERROR(retVal);
                 }
+            }
+        }
+        else if (pLocalMod->operation == MOD_OP_DELETE)
+        {
+            if (VmDirStringCompareA(pLocalMod->attr.type.lberbv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE) == 0)
+            {
+                retVal = VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
+                BAIL_ON_VMDIR_ERROR(retVal);
             }
         }
     }
@@ -1330,45 +1400,155 @@ RemoveAttrVals(
 }
 
 /*
- * if pMods contain objectclass, verify structure rule integrity.
- * *
- * *********************************************************************************************
- * BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG - this is NOT complete
- * Correct logic is -
- * 1. check if structure objectclass is been modified
- * 2. check new structure objectclass is ok by its parent
- * 3. check new structure objectclass is ok by its children
- *
- * For now, only allow ADD new auxiliary objectclass.
- * Reject REPLACE and DELETE objectclass mod.
- * *********************************************************************************************
- *
- * RETURN:
- * LDAP_OPERATIONS_ERROR    - all other errors
+ * TODO: Should not allow renaming computers, domain controllers, replication
+ * agreements, server objects
  */
-static
-int
-ModifyEntryStructureRuleCheck(
-    PVDIR_OPERATION      pOperation,
-    VDIR_MODIFICATION*   pMods,
-    PVDIR_ENTRY          pEntry)
+static int
+VmDirGenerateRenameAttrsMods(
+    PVDIR_OPERATION pOperation
+    )
 {
-    int     iRetVal = 0;
-    VDIR_MODIFICATION*   pTmpMods = NULL;
+    int                 retVal = 0;
+    ModifyReq *         modReq = &(pOperation->request.modifyReq);
+    VDIR_BERVALUE       parentdn = VDIR_BERVALUE_INIT;
+    VDIR_BERVALUE       NewDn = VDIR_BERVALUE_INIT;
+    VDIR_BERVALUE       OldRdn = VDIR_BERVALUE_INIT;
+    VDIR_BERVALUE       NewRdn = VDIR_BERVALUE_INIT;
+    PSTR pszOldRdnAttrName = NULL;
+    PSTR pszOldRdnAttrVal = NULL;
+    PSTR pszNewRdnAttrName = NULL;
+    PSTR pszNewRdnAttrVal = NULL;
 
-    assert(pOperation && pEntry);
-
-    for (pTmpMods = pMods; pTmpMods != NULL; pTmpMods = pTmpMods->next)
+    if (modReq->newrdn.lberbv.bv_len == 0)
     {
-        if (VmDirStringCompareA(pTmpMods->attr.type.lberbv.bv_val, "objectclass", FALSE) == 0)
+        goto cleanup; // Nothing to do
+    }
+
+    if (strchr(modReq->newrdn.lberbv.bv_val, RDN_SEPARATOR_CHAR)) // FIXME : Need to handle escape
+    {
+        retVal = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+        //BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "New RDN has more than one component");
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    if (modReq->newSuperior.lberbv.bv_len)
+    {
+        retVal = VmDirNormalizeDN( &(modReq->newSuperior), pOperation->pSchemaCtx);
+        //BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
+        //                              retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)) );
+        BAIL_ON_VMDIR_ERROR(retVal)
+
+        retVal = VmDirCatDN(&modReq->newrdn, &modReq->newSuperior, &NewDn);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+    else
+    {
+        retVal = VmDirGetParentDN(&modReq->dn, &parentdn);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        retVal = VmDirCatDN(&modReq->newrdn, &parentdn, &NewDn);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    retVal = VmDirNormalizeDN( &NewDn, pOperation->pSchemaCtx);
+    //BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
+    //                              retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)) );
+    BAIL_ON_VMDIR_ERROR( retVal );
+
+    retVal = VmDirGetRdn(&NewDn, &NewRdn);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    retVal = VmDirRdnToNameValue(&NewRdn, &pszNewRdnAttrName, &pszNewRdnAttrVal);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    retVal = VmDirGetRdn(&modReq->dn, &OldRdn);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    retVal = VmDirRdnToNameValue(&OldRdn, &pszOldRdnAttrName, &pszOldRdnAttrVal);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    // Change DN
+    retVal = VmDirAppendAMod(pOperation, MOD_OP_REPLACE, ATTR_DN, ATTR_DN_LEN, NewDn.bvnorm_val, NewDn.bvnorm_len);
+    BAIL_ON_VMDIR_ERROR( retVal );
+
+
+    if (strcmp(pszNewRdnAttrName, pszOldRdnAttrName) == 0)
+    {
+        if (strcmp(pszNewRdnAttrVal, pszOldRdnAttrVal) != 0)
         {
-            if (pTmpMods->operation != MOD_OP_ADD)
+            // Change was like CN=User1,... to CN=User2,... then may want to
+            // modify CN if bDeleteOldRdn
+            if (modReq->bDeleteOldRdn)
             {
-                iRetVal = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-                break;
+                retVal = VmDirAppendAMod(pOperation, MOD_OP_DELETE, pszOldRdnAttrName, (int) VmDirStringLenA(pszOldRdnAttrName), pszOldRdnAttrVal, VmDirStringLenA(pszOldRdnAttrVal));
+                BAIL_ON_VMDIR_ERROR( retVal );
             }
+
+            retVal = VmDirAppendAMod(pOperation, MOD_OP_ADD, pszNewRdnAttrName, (int)VmDirStringLenA(pszNewRdnAttrName), pszNewRdnAttrVal, VmDirStringLenA(pszNewRdnAttrVal));
+            BAIL_ON_VMDIR_ERROR( retVal );
+        }
+    }
+    else
+    {
+        // If change was like CN=User1,... to OU=MyOU,... then
+        // need to add attribute OU=MyOu and potentially delete attribute CN=User1
+        retVal = VmDirAppendAMod(pOperation, MOD_OP_ADD, pszNewRdnAttrName, (int)VmDirStringLenA(pszNewRdnAttrName), pszNewRdnAttrVal, VmDirStringLenA(pszNewRdnAttrVal));
+        BAIL_ON_VMDIR_ERROR( retVal );
+
+        if (modReq->bDeleteOldRdn)
+        {
+            retVal = VmDirAppendAMod(pOperation, MOD_OP_DELETE, pszOldRdnAttrName,(int) VmDirStringLenA(pszOldRdnAttrName), NULL, 0);
+            BAIL_ON_VMDIR_ERROR( retVal );
         }
     }
 
-    return iRetVal;
+cleanup:
+
+    VmDirFreeBervalContent(&parentdn);
+    VmDirFreeBervalContent(&NewDn);
+    VmDirFreeBervalContent(&OldRdn);
+    VmDirFreeBervalContent(&NewRdn);
+    VMDIR_SAFE_FREE_STRINGA(pszOldRdnAttrName);
+    VMDIR_SAFE_FREE_STRINGA(pszOldRdnAttrVal);
+    VMDIR_SAFE_FREE_STRINGA(pszNewRdnAttrName);
+    VMDIR_SAFE_FREE_STRINGA(pszNewRdnAttrVal);
+    return retVal;
+
+error:
+    goto cleanup;
+}
+
+static
+int
+GenerateNewParent(
+    PVDIR_ENTRY pEntry,
+    PVDIR_ATTRIBUTE pDnAttr
+    )
+{
+    int retVal = 0;
+    VDIR_BERVALUE  NewParent = VDIR_BERVALUE_INIT;
+
+    if (!pEntry->pdn.bvnorm_val)
+    {
+        VmDirFreeBervalContent(&pEntry->pdn);
+
+        retVal = VmDirGetParentDN(&pEntry->dn, &pEntry->pdn);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    retVal = VmDirGetParentDN(&pDnAttr->vals[0], &NewParent);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    if (VmDirStringCompareA(pEntry->pdn.bvnorm_val, NewParent.bvnorm_val,
+FALSE) != 0)
+    {
+        retVal = VmDirBervalContentDup(&NewParent, &pEntry->newpdn);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+cleanup:
+    VmDirFreeBervalContent(&NewParent);
+    return retVal;
+error:
+    goto cleanup;
 }

@@ -96,6 +96,7 @@ VmDirFreeEntryContent(
 
       VmDirFreeBervalContent( &(e->dn) );
       VmDirFreeBervalContent( &(e->pdn) );
+      VmDirFreeBervalContent( &(e->newpdn) );
 
       if (e->allocType == ENTRY_STORAGE_FORMAT_PACK)
       {
@@ -238,8 +239,42 @@ VmDirFreeEntry(
     PVDIR_ENTRY pEntry
     )
 {
-    VmDirFreeEntryContent(pEntry);
-    VMDIR_SAFE_FREE_MEMORY(pEntry);
+    if (pEntry)
+    {
+        VmDirFreeEntryContent(pEntry);
+        VMDIR_SAFE_FREE_MEMORY(pEntry);
+    }
+}
+
+void
+VmDirFreeEntryArrayContent(
+    PVDIR_ENTRY_ARRAY   pEntryAry
+    )
+{
+    size_t  iCnt = 0;
+
+    if ( pEntryAry )
+    {
+        for (iCnt = 0; iCnt < pEntryAry->iSize; iCnt++)
+        {
+            VmDirFreeEntryContent((pEntryAry->pEntry)+iCnt);
+        }
+
+        VMDIR_SAFE_FREE_MEMORY(pEntryAry->pEntry);
+        pEntryAry->iSize = 0;
+    }
+}
+
+void
+VmDirFreeEntryArray(
+    PVDIR_ENTRY_ARRAY   pEntryAry
+    )
+{
+    if (pEntryAry)
+    {
+        VmDirFreeEntryArrayContent(pEntryAry);
+        VMDIR_SAFE_FREE_MEMORY(pEntryAry);
+    }
 }
 
 /* ***************************************************
@@ -295,6 +330,55 @@ cleanup:
 
 error:
 
+    goto cleanup;
+}
+
+/*
+ * Add an array of bervalue attribute values into an entry.
+ */
+DWORD
+VmDirEntryAddBervArrayAttribute(
+    PVDIR_ENTRY     pEntry,
+    PCSTR           pszAttrName,
+    VDIR_BERVARRAY  attrVals,
+    USHORT          usNumVals
+    )
+{
+    DWORD           dwError = 0;
+    PVDIR_ATTRIBUTE pAttr = NULL;
+    USHORT          usCnt = 0;
+
+    if (!pEntry || !pEntry->pSchemaCtx || !pszAttrName || !attrVals)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (usNumVals)
+    {
+        dwError = VmDirAttributeAllocate(
+                pszAttrName,
+                usNumVals,
+                pEntry->pSchemaCtx,
+                &pAttr);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        for (usCnt=0; usCnt < usNumVals; usCnt++)
+        {
+            dwError = VmDirBervalContentDup(
+                    &attrVals[usCnt], &pAttr->vals[usCnt]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        dwError = VmDirEntryAddAttribute(pEntry, pAttr);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VmDirFreeAttribute(pAttr);
     goto cleanup;
 }
 
@@ -711,6 +795,37 @@ VmDirFreeAttribute(
 }
 
 /*
+ * Allocate string into pDupBerval
+ */
+DWORD
+VmDirStringToBervalContent(
+    PSTR               pszBerval,
+    PVDIR_BERVALUE     pDupBerval
+    )
+{
+    DWORD    dwError = 0;
+
+    VmDirFreeBervalContent(pDupBerval);
+
+    dwError = VmDirAllocateStringA(pszBerval, &pDupBerval->lberbv.bv_val);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pDupBerval->bOwnBvVal = TRUE;
+
+    pDupBerval->lberbv.bv_len = VmDirStringLenA(pDupBerval->lberbv.bv_val);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmDirFreeBervalContent(pDupBerval);
+
+    goto cleanup;
+}
+
+/*
  * Duplicate content of pBerval into pDupBerval
  */
 DWORD
@@ -819,6 +934,57 @@ VmDirFreeBervalContent(
     return;
 }
 
+DWORD
+VmDirNewEntry(
+    PCSTR pszDn,
+    PVDIR_ENTRY* ppEntry
+    )
+{
+    DWORD dwError = 0;
+    PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
+    PVDIR_ENTRY pEntry = NULL;
+
+    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*) &pEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pEntry->allocType = ENTRY_STORAGE_FORMAT_NORMAL;
+
+    pEntry->pSchemaCtx = VmDirSchemaCtxClone(pSchemaCtx);
+    if (!pEntry->pSchemaCtx)
+    {
+        dwError = ERROR_NO_MEMORY;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateStringA(
+            pszDn,
+            &pEntry->dn.lberbv.bv_val);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pEntry->dn.bOwnBvVal = TRUE;
+    pEntry->dn.lberbv.bv_len = VmDirStringLenA(pEntry->dn.lberbv.bv_val);
+
+    dwError = VmDirNormalizeDN( &(pEntry->dn), pEntry->pSchemaCtx );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppEntry = pEntry;
+
+cleanup:
+    if (pSchemaCtx)
+    {
+        VmDirSchemaCtxRelease(pSchemaCtx);
+    }
+    return dwError;
+error:
+    if (pEntry)
+    {
+        VmDirFreeEntry(pEntry);
+    }
+    goto cleanup;
+}
 
 DWORD
 VmDirAttrListToNewEntry(

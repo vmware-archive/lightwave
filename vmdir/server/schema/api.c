@@ -27,20 +27,6 @@
 
 #include "includes.h"
 
-static
-BOOLEAN
-vdirIsLiveSchema(
-    PVDIR_SCHEMA_INSTANCE    pSchema
-    );
-
-static
-BOOLEAN
-_VmDirIsNameInCaseIgnoreList(
-    PCSTR   pszName,
-    PCSTR*  ppszList,
-    size_t  iSize
-    );
-
 DWORD
 VdirSchemaCtxAcquireInLock(
     BOOLEAN    bHasLock,    // TRUE if owns gVdirSchemaGlobals.mutex already
@@ -59,19 +45,21 @@ VdirSchemaCtxAcquireInLock(
 
     if (!bHasLock)
     {
-        VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
+        VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.ctxMutex);
     }
 
-    pCtx->pSchema = gVdirSchemaGlobals.pSchema;
-    assert(pCtx->pSchema);
+    pCtx->pLdapSchema = gVdirSchemaGlobals.pLdapSchema;
+    pCtx->pVdirSchema = gVdirSchemaGlobals.pVdirSchema;
+    assert(pCtx->pLdapSchema);
+    assert(pCtx->pVdirSchema);
 
-    VMDIR_LOCK_MUTEX(bInLockNest, pCtx->pSchema->mutex);
-    pCtx->pSchema->usRefCount++;
+    VMDIR_LOCK_MUTEX(bInLockNest, pCtx->pVdirSchema->mutex);
+    pCtx->pVdirSchema->usRefCount++;
 
 error:
 
-    VMDIR_UNLOCK_MUTEX(bInLockNest, pCtx->pSchema->mutex);
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
+    VMDIR_UNLOCK_MUTEX(bInLockNest, pCtx->pVdirSchema->mutex);
+    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.ctxMutex);
 
     if (dwError != ERROR_SUCCESS)
     {
@@ -112,14 +100,15 @@ VmDirSchemaCtxClone(
             (PVOID*)&pCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pCtx->pSchema = pOrgCtx->pSchema;
+    pCtx->pLdapSchema = pOrgCtx->pLdapSchema;
+    pCtx->pVdirSchema = pOrgCtx->pVdirSchema;
 
-    VMDIR_LOCK_MUTEX(bInLock, pCtx->pSchema->mutex);
-    pCtx->pSchema->usRefCount++;
+    VMDIR_LOCK_MUTEX(bInLock, pCtx->pVdirSchema->mutex);
+    pCtx->pVdirSchema->usRefCount++;
 
 cleanup:
 
-    VMDIR_UNLOCK_MUTEX(bInLock, pCtx->pSchema->mutex);
+    VMDIR_UNLOCK_MUTEX(bInLock, pCtx->pVdirSchema->mutex);
 
     return pCtx;
 
@@ -144,25 +133,25 @@ VmDirSchemaCtxRelease(
 
     if ( pCtx )
     {
-        if (  pCtx->pSchema )
+        if (  pCtx->pVdirSchema )
         {
-            VMDIR_LOCK_MUTEX(bInLock, pCtx->pSchema->mutex);
+            VMDIR_LOCK_MUTEX(bInLock, pCtx->pVdirSchema->mutex);
 
-            pCtx->pSchema->usRefCount--;
-            usRefCnt = pCtx->pSchema->usRefCount;
-            usSelfRef = pCtx->pSchema->usNumSelfRef;
+            pCtx->pVdirSchema->usRefCount--;
+            usRefCnt = pCtx->pVdirSchema->usRefCount;
+            usSelfRef = pCtx->pVdirSchema->usNumSelfRef;
 
-            VMDIR_UNLOCK_MUTEX(bInLock, pCtx->pSchema->mutex);
+            VMDIR_UNLOCK_MUTEX(bInLock, pCtx->pVdirSchema->mutex);
 
             if (usRefCnt == usSelfRef)
             {   // only self reference within pSchema exists, free pSchema itself.
                 // self references are established during init before normal references.
                 VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,
                                 "Free unreferenced schema instance (%p)",
-                                pCtx->pSchema);
-#if 0 /* BUGBUG - reenable this when Purify report is clean */
-                VdirSchemaInstanceFree(pCtx->pSchema);
-#endif
+                                pCtx->pVdirSchema);
+
+                VmDirFreeSchemaInstance(pCtx->pVdirSchema);
+                VmDirFreeLdapSchema(pCtx->pLdapSchema);
             }
         }
 
@@ -213,8 +202,8 @@ VmDirSchemaCtxIsBootStrap(
     BOOLEAN bRtn = FALSE;
 
     if ( pCtx           &&
-         pCtx->pSchema  &&
-         pCtx->pSchema->bIsBootStrapSchema
+         pCtx->pVdirSchema  &&
+         pCtx->pVdirSchema->bIsBootStrapSchema
        )
     {
         bRtn = TRUE;
@@ -223,203 +212,6 @@ VmDirSchemaCtxIsBootStrap(
     return bRtn;
 }
 
-/*
- * Before modify schema cache, make sure new schema is valid.
- * 1. schema of pSchemaEntry must be live one
- * 2. create new schema instance via pEntry
- * 3. check active and new schema compatibility
- *    NOT compatible - reject this operation
- *    Compatible but NO semantic change - update schema entry
- *    Compatible and has semantic change - update schema entry and cache
- * 4. make new instance pending in gVdirSchemaGlobals
- */
-DWORD
-VmDirSchemaCacheModifyPrepare(
-    PVDIR_OPERATION      pOperation,
-    VDIR_MODIFICATION*   pMods,
-    PVDIR_ENTRY          pSchemaEntry
-    )
-{
-    DWORD dwError = 0;
-    BOOLEAN                 bInLock = FALSE;
-    PSTR                    pszLocalErrMsg = NULL;
-    BOOLEAN                 bOwnNewInstance = FALSE;
-    BOOLEAN                 bCompatible = FALSE;            // schema compatible
-    BOOLEAN                 bNeedCachePatch = FALSE;        // schema semantic/cache change
-    PVDIR_SCHEMA_INSTANCE   pNewInstance = NULL;            // DO NOT free, pEntry should take over it.
-    PVDIR_SCHEMA_INSTANCE   pEntryOrgSchemaInstance = NULL;
-
-    if ( !pMods || !pSchemaEntry || !pOperation )
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
-    {
-        PVDIR_MODIFICATION  pLocalMods = NULL;
-        PCSTR               immutableList[] = VDIR_IMMUTABLE_SCHEMA_ELEMENT_INITIALIZER;
-        int                 iImmutableSize = sizeof(immutableList)/sizeof(immutableList[0]);
-
-        for (pLocalMods = pMods; pLocalMods; pLocalMods = pLocalMods->next)
-        {
-            BOOLEAN bImmutableElement = _VmDirIsNameInCaseIgnoreList( pLocalMods->attr.pATDesc->pszName,
-                                                                      immutableList,
-                                                                      iImmutableSize);
-            if ( bImmutableElement )
-            {
-                dwError = ERROR_OPERATION_NOT_PERMITTED;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
-                                             "modify (%s) not allowed", pLocalMods->attr.pATDesc->pszName);
-            }
-        }
-    }
-
-    // make sure pEntry uses live schema
-    if (! vdirIsLiveSchema(pSchemaEntry->pSchemaCtx->pSchema))
-    {
-        dwError = LDAP_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "Out dated schema");
-    }
-
-    pEntryOrgSchemaInstance = pSchemaEntry->pSchemaCtx->pSchema;
-    // instantiate a schema cache - pNewInstance
-    // If this call succeed, do NOT free pNewInstance.  pEntry->pSchemaCtx takes it over.
-    dwError = VdirSchemaInstanceInitViaEntry(   pSchemaEntry,
-                                                &pNewInstance);
-    if ( dwError != 0
-         &&
-         pSchemaEntry->pSchemaCtx->pSchema != pNewInstance )
-    {
-        // we still own pNewInstance and need to free it.
-        bOwnNewInstance = TRUE;
-    }
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "Entry to schema instance failed (%d)", dwError);
-
-    // check if two instances are compatible and if schema patching is needed
-    dwError = VmDirSchemaInstancePatchCheck( pEntryOrgSchemaInstance,
-                                             pNewInstance,
-                                             &bCompatible,
-                                             &bNeedCachePatch);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "VmDirSchemaInstancePatch (%d)", dwError);
-
-    if ( !bCompatible )
-    {
-        dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "Schema NOT compatible (%d)", dwError);
-    }
-
-    if ( bNeedCachePatch )
-    {
-        // need schema entry and cache update
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Prepare schema entry and instance update (%p)", pNewInstance);
-
-        VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
-        gVdirSchemaGlobals.bHasPendingChange = TRUE;
-        VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
-    }
-    else
-    {
-        // no semantic change,
-        // 1. do not modify schema entry if coming from INTERNAL (schema patch -u route).
-        //    to avoid unecessary metadata version bump.
-        // 2. allow modify schema entry if coming from REPL (copypartnerschema).
-        // 3. allow modify schema entry if coming from external LDAP (force sync metadata version).
-        if ( pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL )
-        {
-            dwError = VMDIR_ERROR_SCHEMA_UPDATE_PASSTHROUGH;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "Schema pass through (%d)", dwError);
-        }
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Prepare schema entry update");
-    }
-
-
-cleanup:
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
-
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-
-    return dwError;
-
-error:
-
-    if ( bOwnNewInstance )
-    {
-        VdirSchemaInstanceFree( pNewInstance );
-    }
-
-    VMDIR_SET_LDAP_RESULT_ERROR( &pOperation->ldapResult, dwError, pszLocalErrMsg );
-
-    goto cleanup;
-}
-
-
-/*
- * Commit schema modification into cache.
- *
- * 1. commit pending cache to go live
- * 2. create self reference ctx
- * 3. release old self reference ctx
- * 4. update pEntry to have new live schema ctx association
- */
-VOID
-VmDirSchemaCacheModifyCommit(
-    PVDIR_ENTRY  pSchemaEntry
-    )
-{
-    DWORD               dwError = 0;
-    BOOLEAN             bInLock = FALSE;
-    PVDIR_SCHEMA_CTX    pOldCtx = NULL;
-
-    if ( !pSchemaEntry || !pSchemaEntry->pSchemaCtx )
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
-
-    if ( ! gVdirSchemaGlobals.bHasPendingChange )
-    {
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Schema cache update pass through" );
-        goto cleanup;   // no schema definition change, just pass through.
-    }
-
-    gVdirSchemaGlobals.bHasPendingChange = FALSE;
-    gVdirSchemaGlobals.pSchema = pSchemaEntry->pSchemaCtx->pSchema;
-
-    pOldCtx = gVdirSchemaGlobals.pCtx;
-    gVdirSchemaGlobals.pCtx = NULL;
-
-    VdirSchemaCtxAcquireInLock(TRUE, &gVdirSchemaGlobals.pCtx); // add global instance self reference
-    assert(gVdirSchemaGlobals.pCtx);
-
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Enable schema instance (%p)", gVdirSchemaGlobals.pSchema);
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
-
-cleanup:
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
-
-    if (pOldCtx)
-    {
-        VmDirSchemaCtxRelease(pOldCtx);
-    }
-
-    return;
-
-error:
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSchemaCacheModifyCommit failed (%d)", dwError);
-
-    goto cleanup;
-}
-
-/*
- * PVDIR_SCHEMA_AT_DESC lookup
- */
 DWORD
 VmDirSchemaAttrNameToDescriptor(
     PVDIR_SCHEMA_CTX        pCtx,
@@ -427,39 +219,12 @@ VmDirSchemaAttrNameToDescriptor(
     PVDIR_SCHEMA_AT_DESC*   ppATDesc
     )
 {
-    DWORD                   dwError = 0;
-    PVDIR_SCHEMA_AT_DESC    pLocalATDesc = NULL;
-    VDIR_SCHEMA_AT_DESC     key = {0};
-
     if (!pCtx || !pszName || !ppATDesc)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        return ERROR_INVALID_PARAMETER;
     }
-
-    key.pszName = (PSTR)pszName;
-
-    pLocalATDesc = (PVDIR_SCHEMA_AT_DESC) bsearch(  &key,
-                                                    pCtx->pSchema->ats.pATSortName,
-                                                    pCtx->pSchema->ats.usNumATs,
-                                                    sizeof(VDIR_SCHEMA_AT_DESC),
-                                                    VdirSchemaPATNameCmp);
-
-    if (!pLocalATDesc)
-    {
-        dwError = ERROR_NO_SUCH_ATTRIBUTE;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    *ppATDesc = pLocalATDesc;
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    goto cleanup;
+    return VmDirSchemaInstanceGetATDescByName(
+            pCtx->pVdirSchema, pszName, ppATDesc);
 }
 
 DWORD
@@ -469,39 +234,12 @@ VmDirSchemaOCNameToDescriptor(
     PVDIR_SCHEMA_OC_DESC*   ppOCDesc
     )
 {
-    DWORD                   dwError = 0;
-    PVDIR_SCHEMA_OC_DESC    pLocalOCDesc = NULL;
-    VDIR_SCHEMA_OC_DESC     key = {0};
-
     if (!pCtx || !pszName || !ppOCDesc)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        return ERROR_INVALID_PARAMETER;
     }
-
-    key.pszName = (PSTR)pszName;
-
-    pLocalOCDesc = (PVDIR_SCHEMA_OC_DESC) bsearch(  &key,
-                                                    pCtx->pSchema->ocs.pOCSortName,
-                                                    pCtx->pSchema->ocs.usNumOCs,
-                                                    sizeof(VDIR_SCHEMA_OC_DESC),
-                                                    VdirSchemaPOCNameCmp);
-
-    if (!pLocalOCDesc)
-    {
-        dwError = ERROR_NO_SUCH_OBJECTCLASS;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    *ppOCDesc = pLocalOCDesc;
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    goto cleanup;
+    return VmDirSchemaInstanceGetOCDescByName(
+            pCtx->pVdirSchema, pszName, ppOCDesc);
 }
 
 DWORD
@@ -511,39 +249,12 @@ VmDirSchemaCRNameToDescriptor(
     PVDIR_SCHEMA_CR_DESC*   ppCRDesc
     )
 {
-    DWORD                   dwError = 0;
-    PVDIR_SCHEMA_CR_DESC    pLocalCRDesc = NULL;
-    VDIR_SCHEMA_CR_DESC     key = {0};
-
     if (!pCtx || !pszName || !ppCRDesc)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        return ERROR_INVALID_PARAMETER;
     }
-
-    key.pszName = (PSTR)pszName;
-
-    pLocalCRDesc = (PVDIR_SCHEMA_CR_DESC) bsearch(  &key,
-                                                    pCtx->pSchema->contentRules.pContentSortName,
-                                                    pCtx->pSchema->contentRules.usNumContents,
-                                                    sizeof(VDIR_SCHEMA_CR_DESC),
-                                                    VdirSchemaPCRNameCmp);
-
-    if (!pLocalCRDesc)
-    {
-        dwError = ERROR_NO_SUCH_DITCONTENTRULES;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    *ppCRDesc = pLocalCRDesc;
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    goto cleanup;
+    return VmDirSchemaInstanceGetCRDescByName(
+            pCtx->pVdirSchema, pszName, ppCRDesc);
 }
 
 BOOLEAN
@@ -562,20 +273,64 @@ VmDirSchemaIsStructureOC(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSchemaOCNameToDescriptor( pCtx, pszName, &pOCDesc );
+    dwError = VmDirSchemaOCNameToDescriptor(pCtx, pszName, &pOCDesc);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if ( pOCDesc && pOCDesc->type == VDIR_OC_STRUCTURAL )
+    if (pOCDesc && pOCDesc->type == VDIR_LDAP_STRUCTURAL_CLASS)
     {
         bRet = TRUE;
     }
 
 cleanup:
-
     return bRet;
 
 error:
+    goto cleanup;
+}
 
+BOOLEAN
+VmDirSchemaIsAncestorOC(
+    PVDIR_SCHEMA_CTX        pCtx,
+    PVDIR_SCHEMA_OC_DESC    pOCDesc,
+    PVDIR_SCHEMA_OC_DESC    pAncestorOCDesc
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bRtn = FALSE;
+    PVDIR_SCHEMA_OC_DESC pCurOC = NULL;
+
+    if (!pOCDesc || !pAncestorOCDesc)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pCurOC = pOCDesc;
+    while (pCurOC)
+    {
+        if (pCurOC == pAncestorOCDesc)
+        {
+            bRtn = TRUE;
+            goto cleanup;
+        }
+
+        if (VmDirStringCompareA(OC_TOP, pCurOC->pszName, FALSE) == 0)
+        {
+            pCurOC = NULL;
+        }
+        else
+        {
+            dwError = VmDirSchemaOCNameToDescriptor(
+                    pCtx, pCurOC->pszSup, &pCurOC);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    return bRtn;
+
+error:
+    bRtn = FALSE;
     goto cleanup;
 }
 
@@ -586,9 +341,8 @@ VmDirSchemaAttrNameToDesc(
     PCSTR               pszName
     )
 {
-    DWORD    dwError = 0;
+    DWORD dwError = 0;
     PVDIR_SCHEMA_AT_DESC pResult = NULL;
-    VDIR_SCHEMA_AT_DESC key = {0};
 
     if (!pCtx || !pszName)
     {
@@ -602,25 +356,17 @@ VmDirSchemaAttrNameToDesc(
                     &pCtx->pszErrorMsg);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
-
         return NULL;
     }
 
-    key.pszName = (PSTR)pszName;
-
-    pResult = (PVDIR_SCHEMA_AT_DESC) bsearch(
-            &key,
-            pCtx->pSchema->ats.pATSortName,
-            pCtx->pSchema->ats.usNumATs,
-            sizeof(VDIR_SCHEMA_AT_DESC),
-            VdirSchemaPATNameCmp);
+    dwError = VmDirSchemaInstanceGetATDescByName(
+            pCtx->pVdirSchema, pszName, &pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-
     return pResult;
 
 error:
-
     goto cleanup;
 }
 
@@ -630,37 +376,20 @@ VmDirSchemaAttrIdToDesc(
     USHORT              usId
     )
 {
-    DWORD    dwError = 0;
+    DWORD dwError = 0;
     PVDIR_SCHEMA_AT_DESC pResult = NULL;
 
-    if (!pCtx)
+    if (pCtx)
     {
-        return NULL;
-    }
-
-    if (usId >= pCtx->pSchema->ats.usNextId)
-    {
-        pCtx->dwErrorCode = ERROR_INVALID_PARAMETER;
-
-        VMDIR_SAFE_FREE_MEMORY(pCtx->pszErrorMsg);
-        dwError = VmDirAllocateStringAVsnprintf(
-                &pCtx->pszErrorMsg,
-                "Lookup id(%d) > max id(%d)",
-                usId,
-                pCtx->pSchema->ats.usNextId - 1);
+        dwError = VmDirSchemaInstanceGetATDescById(
+                pCtx->pVdirSchema, usId, &pResult);
         BAIL_ON_VMDIR_ERROR(dwError);
-
-        return NULL;
     }
-
-    pResult = pCtx->pSchema->ats.ppATSortIdMap[usId - 1];
 
 cleanup:
-
-    return pResult ? pResult : NULL;
+    return pResult;
 
 error:
-
     goto cleanup;
 }
 
@@ -670,9 +399,21 @@ VmDirSchemaAttrNameToId(
     PCSTR               pszName
     )
 {
-    PVDIR_SCHEMA_AT_DESC pResult = VmDirSchemaAttrNameToDesc(pCtx,pszName);
+    DWORD dwError = 0;
+    PVDIR_SCHEMA_AT_DESC pResult = NULL;
 
+    if (pCtx)
+    {
+        dwError = VmDirSchemaInstanceGetATDescByName(
+                pCtx->pVdirSchema, pszName, &pResult);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
     return pResult ? pResult->usAttrID : NO_ATTR_ID_MAP;
+
+error:
+    goto cleanup;
 }
 
 PCSTR
@@ -681,37 +422,62 @@ VmDirSchemaAttrIdToName(
     USHORT              usId
     )
 {
-    DWORD    dwError = 0;
+    DWORD dwError = 0;
     PVDIR_SCHEMA_AT_DESC pResult = NULL;
 
-    if (!pCtx)
+    if (pCtx)
     {
-        return NULL;
-    }
-
-    if (usId >= pCtx->pSchema->ats.usNextId)
-    {
-        pCtx->dwErrorCode = ERROR_INVALID_PARAMETER;
-
-        VMDIR_SAFE_FREE_MEMORY(pCtx->pszErrorMsg);
-        dwError = VmDirAllocateStringAVsnprintf(
-                &pCtx->pszErrorMsg,
-                "Lookup id(%d) > max id(%d)",
-                usId,
-                pCtx->pSchema->ats.usNextId - 1);
+        dwError = VmDirSchemaInstanceGetATDescById(
+                pCtx->pVdirSchema, usId, &pResult);
         BAIL_ON_VMDIR_ERROR(dwError);
-
-        return NULL;
     }
-
-    pResult = pCtx->pSchema->ats.ppATSortIdMap[usId - 1];
 
 cleanup:
-
     return pResult ? pResult->pszName : NULL;
 
 error:
+    goto cleanup;
+}
 
+DWORD
+VmDirSchemaAttrList(
+    PVDIR_SCHEMA_CTX        pCtx,
+    PVDIR_SCHEMA_AT_DESC**  pppATDescList
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCount = 0, i =0;
+    PVDIR_SCHEMA_AT_COLLECTION  pATColl = NULL;
+    PVDIR_SCHEMA_AT_DESC*       ppATDescList = NULL;
+    LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
+    LW_HASHMAP_PAIR pair = {NULL, NULL};
+
+    if (!pCtx || !pppATDescList)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pATColl = &pCtx->pVdirSchema->attributeTypes;
+    dwCount = LwRtlHashMapGetCount(pATColl->byName);
+
+    dwError = VmDirAllocateMemory(
+            sizeof(PVDIR_SCHEMA_AT_DESC) * (dwCount + 1),
+            (PVOID*)&ppATDescList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    while (LwRtlHashMapIterate(pATColl->byName, &iter, &pair))
+    {
+        ppATDescList[i++] = (PVDIR_SCHEMA_AT_DESC)pair.pValue;
+    }
+
+    *pppATDescList = ppATDescList;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(ppATDescList);
     goto cleanup;
 }
 
@@ -731,7 +497,7 @@ VmDirSchemaIsNameEntryLeafStructureOC(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSchemaGetEntryStructureOCDesc( pEntry, &pOCDesc );
+    dwError = VmDirSchemaGetEntryStructureOCDesc(pEntry, &pOCDesc);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if ( pOCDesc &&
@@ -742,93 +508,51 @@ VmDirSchemaIsNameEntryLeafStructureOC(
     }
 
 cleanup:
-
     return bRet;
 
 error:
     goto cleanup;
 }
 
-/*
- * Numeric ordering attribute has matching rule integerMatch or integerOrderingMatch
- */
 BOOLEAN
-VmDirSchemaAttrHasIntegerMatchingRule(
-    PVDIR_SCHEMA_CTX    pCtx,
-    PCSTR               pszName
+VmDirSchemaSyntaxIsNumeric(
+    PCSTR   pszSyntaxOid
     )
 {
-    DWORD                   dwError = 0;
-    BOOLEAN                 bIsNumericOrdering = FALSE;
-    PVDIR_SCHEMA_AT_DESC    pATDesc = NULL;
+    BOOLEAN bIsNumeric = FALSE;
 
-    if (pCtx && pszName)
+    if (!IsNullOrEmptyString(pszSyntaxOid) &&
+         VmDirStringCompareA(pszSyntaxOid, VDIR_OID_INTERGER, FALSE) == 0)
     {
-        pATDesc = VmDirSchemaAttrNameToDesc(pCtx,pszName);
-        if (!pATDesc)
-        {
-            dwError = ERROR_NO_SUCH_ATTRIBUTE;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        if ((pATDesc->pszEqualityMRName &&
-             VmDirStringCompareA(pATDesc->pszEqualityMRName, VDIR_MATCHING_RULE_INTEGER_MATCH, FALSE) == 0)
-            ||
-            (pATDesc->pszOrderingMRName &&
-             VmDirStringCompareA(pATDesc->pszOrderingMRName, VDIR_MATCHING_RULE_INTEGER_ORDERING_MATCH, FALSE) == 0)
-           )
-        {
-            bIsNumericOrdering = TRUE;
-        }
+        bIsNumeric = TRUE;
     }
 
-error:
-
-    return bIsNumericOrdering;
+    return bIsNumeric;
 }
 
-/*
- * Get the Entry used to startup/load schema for the very first time from file.
- * Caller owns pEntry.
- */
-PVDIR_ENTRY
-VmDirSchemaAcquireAndOwnStartupEntry(
-    VOID
+BOOLEAN
+VmDirSchemaAttrIsNumeric(
+    PVDIR_SCHEMA_AT_DESC    pATDesc
     )
 {
-    BOOLEAN     bInLock = FALSE;
-    PVDIR_ENTRY      pEntry = NULL;
+    BOOLEAN bIsNumeric = FALSE;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
+    if (pATDesc && pATDesc->pSyntax)
+    {
+        bIsNumeric = VmDirSchemaSyntaxIsNumeric(pATDesc->pSyntax->pszOid);
+    }
 
-    pEntry = gVdirSchemaGlobals.pLoadFromFileEntry;
-    gVdirSchemaGlobals.pLoadFromFileEntry = NULL;
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
-
-    return pEntry;
+    return bIsNumeric;
 }
-
-/* in check.c
- * Entry schema check
- *
-DWORD
-VmDirSchemaCheck(
-    PVDIR_SCHEMA_CTX pCtx,
-    PEntry           pEntry
-    )
- */
-
 
 /*
  * Berval syntax check
  */
-
 DWORD
 VmDirSchemaBervalSyntaxCheck(
     PVDIR_SCHEMA_CTX        pCtx,
     PVDIR_SCHEMA_AT_DESC    pATDesc,
-    PVDIR_BERVALUE                 pBerv
+    PVDIR_BERVALUE          pBerv
     )
 {
     DWORD dwError = 0;
@@ -849,10 +573,8 @@ VmDirSchemaBervalSyntaxCheck(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    //TODO, if NO pSyntax, i.e. this syntax is NOT supported yet.
-    // just bypass checking and move on.
     if (pATDesc->pSyntax &&
-        pATDesc->pSyntax->pValidateFunc(pBerv) == FALSE)
+            pATDesc->pSyntax->pValidateFunc(pBerv) == FALSE)
     {
         pCtx->dwErrorCode = ERROR_INVALID_SYNTAX;
 
@@ -862,45 +584,18 @@ VmDirSchemaBervalSyntaxCheck(
                 "%s value (%s) is not a valid (%s) syntax",
                 pATDesc->pszName,
                 VDIR_SAFE_STRING(pBerv->lberbv.bv_val),
-                VDIR_SAFE_STRING(pATDesc->pszSyntaxName));
+                VDIR_SAFE_STRING(pATDesc->pszSyntaxOid));
 
         dwError = ERROR_INVALID_SYNTAX;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
 cleanup:
-
     return dwError;
 
 error:
-
     goto cleanup;
 }
-
-/*
-DWORD
-VmDirSchemaBervalArraySyntaxCheck(
-    PVDIR_SCHEMA_CTX        pCtx,
-    PVDIR_SCHEMA_AT_DESC    pATDesc,
-    DWORD                   dwNumBervs,
-    PBerval*                ppBervs
-    )
-{
-    DWORD dwError = 0;
-
-    if (!pCtx || !pATDesc || !ppBervs)
-    {
-        //
-    }
-cleanup:
-
-    return dwError;
-
-error:
-
-    goto cleanup;
-}
-*/
 
 /*
  * Berval value normalization
@@ -944,11 +639,9 @@ VmDirSchemaBervalNormalize(
     }
 
 cleanup:
-
     return dwError;
 
 error:
-
     goto cleanup;
 }
 
@@ -963,38 +656,17 @@ VmDirIsLiveSchemaCtx(
 
     if ( pCtx )
     {
-        VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
+        VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.ctxMutex);
 
-        pLiveSchema = gVdirSchemaGlobals.pSchema;
+        pLiveSchema = gVdirSchemaGlobals.pVdirSchema;
 
-        VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
+        VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.ctxMutex);
 
-        bRtn = (pCtx->pSchema == pLiveSchema) ? TRUE:FALSE;
+        bRtn = (pCtx->pVdirSchema == pLiveSchema) ? TRUE:FALSE;
     }
 
     return bRtn;
 }
-
-/*
-DWORD
-VmdirSchemaBervalArrayNormalize(
-    PVDIR_SCHEMA_CTX        pCtx,
-    PVDIR_SCHEMA_AT_DESC    pATDesc,
-    DWORD                   dwNumBervs,
-    PBerval*                ppBervs
-    )
-{
-    DWORD dwError = 0;
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    goto cleanup;
-}
-*/
 
 /*
  * Berval value comparison
@@ -1058,48 +730,4 @@ VmDirSchemaBervalCompare(
     }
 
     return FALSE;
-}
-
-static
-BOOLEAN
-vdirIsLiveSchema(
-    PVDIR_SCHEMA_INSTANCE    pSchema
-    )
-{
-    BOOLEAN bInLock = FALSE;
-    PVDIR_SCHEMA_INSTANCE    pLiveSchema = NULL;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
-
-    pLiveSchema = gVdirSchemaGlobals.pSchema;
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.mutex);
-
-    return (pSchema == pLiveSchema);
-}
-
-static
-BOOLEAN
-_VmDirIsNameInCaseIgnoreList(
-    PCSTR   pszName,
-    PCSTR*  ppszList,
-    size_t  iSize
-    )
-{
-    BOOLEAN     bRtn = FALSE;
-    size_t      iCnt = 0;
-
-    if ( pszName && ppszList )
-    {
-        for (iCnt=0; iCnt < iSize; iCnt++)
-        {
-            if (VmDirStringCompareA( pszName, ppszList[iCnt], FALSE) == 0)
-            {
-                bRtn = TRUE;
-                break;
-            }
-        }
-    }
-
-    return bRtn;
 }

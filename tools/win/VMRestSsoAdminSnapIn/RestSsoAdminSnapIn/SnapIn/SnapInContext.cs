@@ -27,7 +27,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn
         private string _applicationPath;
         private static SnapInContext _instance;
         private NavigationController _navigationController;
-        private ServiceGateway _serviceGateway;
+        private ServiceGatewayManager _serviceGatewayManager;
         private SnapInContext()
         {
             SessionId = string.Format("{0}", DateTime.Now.ToString("MMddyy_hhmmssfff"));
@@ -48,19 +48,21 @@ namespace Vmware.Tools.RestSsoAdminSnapIn
             }
         }
         public AuthTokenManager AuthTokenManager { get; set; }
-        public ServiceGateway ServiceGateway
-        {
-            get
-            {
-                return _serviceGateway ?? (_serviceGateway = new ServiceGateway());
-            }
-        }
-
+       
         public NavigationController NavigationController
         {
             get
             {
                 return _navigationController ?? (_navigationController = new NavigationController());
+            }
+        }
+
+
+        public ServiceGatewayManager ServiceGatewayManager
+        {
+            get
+            {
+                return _serviceGatewayManager ?? (_serviceGatewayManager = new ServiceGatewayManager());
             }
         }
     }

@@ -67,6 +67,36 @@ namespace VMCASnapIn.Nodes
                 cwc.Dispose ();
             }
         }
+
+        public void CreateCASignedCertificate (object sender, EventArgs args)
+        {
+            var dto = new CertRequestDTO ();
+            CreateCertificateWindowController cwc = new CreateCertificateWindowController (dto);
+            NSApplication.SharedApplication.BeginSheet (cwc.Window, VMCAAppEnvironment.Instance.MainWindow, () => {
+            });
+            try {
+                nint result = NSApplication.SharedApplication.RunModalForWindow (cwc.Window);
+                if (result == (nint)Constants.DIALOGOK) {
+                    using (var request = new VMCARequest (this.ServerDTO.VMCAClient)) {
+                        dto.FillRequest (request);
+                        var vmcaCert = ServerDTO.VMCAClient.GetVMCASignedCertificate (request.GetRequestData(), dto.PrivateKey.ToString (), dto.NotBefore, dto.NotAfter);
+
+                        var localCertDTO = new PrivateCertificateDTO {
+                            Certificate = Convert.ToBase64String (vmcaCert.RawData)
+                        };
+                        UIErrorHelper.ShowAlert ("", "Successfully Created A CA Signed Certificate");
+                        this.ServerDTO.PrivateCertificates.Add (localCertDTO);
+                        NSNotificationCenter.DefaultCenter.PostNotificationName ("ReloadTableView", this);
+                        CertificateService.DisplayX509Certificate2 (this, vmcaCert);
+                    }
+                }
+            } catch (Exception e) {
+                UIErrorHelper.ShowAlert (e.Message, "Operation could not complete successfully.");
+            } finally {
+                VMCAAppEnvironment.Instance.MainWindow.EndSheet (cwc.Window);
+                cwc.Dispose ();
+            }
+        }
     }
 }
 

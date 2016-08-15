@@ -1,5 +1,4 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using VMDirInterop;
 using VMDirInterop.Interfaces;
 using VMDirInterop.LDAP;
@@ -9,13 +8,11 @@ namespace LdapTest
     /// <summary>
     /// Summary description for UnitTest1
     /// </summary>
-    [TestClass]
     public class LdapConnectionTest
     {
         static string myDN;
         static string hostName;
         static string password;
-        static string dllPath;
         static int portNumber;
         static string upn;
 
@@ -25,11 +22,10 @@ namespace LdapTest
         static int portNumber_F;
         static string upn_F;
 
-        [ClassInitialize()]
-        public static void MyClassInitialize(TestContext testContext)
+        public static void RunTests(Credentials cred)
         {
-            var path = @"..\..\..\input.xml";
-            Credentials cred = Input.ReadXML(path);
+            System.Console.WriteLine("Running connection tests ...");
+
             myDN = cred.myDN;
             hostName = cred.hostName;
             upn = cred.upn;
@@ -43,13 +39,16 @@ namespace LdapTest
             password_F = cred.password_F;
             portNumber_F = cred.portNumber_F;
 
-            dllPath = @"C:\Users\aalokr\workspaces_new\aalokr_lotus_ws_2k8_dev_new\lotus\lotus-main\vmdir\interop\csharp\VmDirInterop\LdapTest\";        //put all the dll in the LdapTest Folder
-
-            Dll.SetDllDirectory(dllPath);
+            LdapConnect_Init_Success();
+            LdapConnect_Init_Failure();
+            LdapConnect_Simple_Bind_Success();
+            LdapConnect_Simple_Bind_Failure();
+            LdapConnect_SASL_Bind_Success();
+            LdapConnect_SASL_Bind_Failure();
+            LdapConnect_Unbind_S_Success();
         }
 
-        [TestMethod]
-        public void LdapConnect_Init_Success()
+        public static void LdapConnect_Init_Success()
         {
             ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
 
@@ -57,15 +56,14 @@ namespace LdapTest
             {
                 ldapConnection.LdapSimpleBindS(myDN, password);
             }
-            catch (Exception exp)
+            catch (Exception)
             {
                 Assert.Fail();
             }
 
         }
 
-        [TestMethod]
-        public void LdapConnect_Init_Failure()
+        public static void LdapConnect_Init_Failure()
         {
             try
             {
@@ -73,13 +71,12 @@ namespace LdapTest
                 ldapConnection.LdapSimpleBindS(myDN, password);
                 Assert.Fail();
             }
-            catch (Exception exp)
+            catch (Exception)
             {
             }
         }
 
-        [TestMethod]
-        public void LdapConnect_Simple_Bind_Success()
+        public static void LdapConnect_Simple_Bind_Success()
         {
             ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
 
@@ -87,14 +84,13 @@ namespace LdapTest
             {
                 ldapConnection.LdapSimpleBindS(myDN, password);
             }
-            catch(Exception exp)
+            catch(Exception)
             {
                 Assert.Fail();
             }
         }
 
-        [TestMethod]
-        public void LdapConnect_Simple_Bind_Failure()
+        public static void LdapConnect_Simple_Bind_Failure()
         {
             ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
 
@@ -103,13 +99,12 @@ namespace LdapTest
                 ldapConnection.LdapSimpleBindS(myDN_F, password_F);
                 Assert.Fail();
             }
-            catch(Exception exp)
+            catch(Exception)
             {
             }
         }
 
-        [TestMethod]
-        public void LdapConnect_SASL_Bind_Success()
+        public static void LdapConnect_SASL_Bind_Success()
         {
             ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
 
@@ -117,14 +112,13 @@ namespace LdapTest
             {
                 ldapConnection.VmDirSafeLDAPBind(hostName, upn, password);
             }
-            catch(Exception exp)
+            catch(Exception)
             {
                 Assert.Fail();
             }
         }
 
-        [TestMethod]
-        public void LdapConnect_SASL_Bind_Failure()
+        public static void LdapConnect_SASL_Bind_Failure()
         {
             ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
 
@@ -133,13 +127,12 @@ namespace LdapTest
                 ldapConnection.VmDirSafeLDAPBind(hostName_F, upn_F, password_F);
                 Assert.Fail();
             }
-            catch (Exception exp)
+            catch (Exception)
             {
             }
         }
 
-        [TestMethod]
-        public void LdapConnect_Unbind_S_Success()
+        public static void LdapConnect_Unbind_S_Success()
         {
             ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
 
@@ -147,23 +140,9 @@ namespace LdapTest
             {
                 ldapConnection.LdapUnbindS();
             }
-            catch (Exception exp)
+            catch (Exception)
             {
                 Assert.Fail();
-            }
-        }
-
-        [TestMethod]
-        public void LdapConnect_Unbind_S_Failure()
-        {
-            ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName_F, portNumber_F);
-            try
-            {
-                ldapConnection.LdapUnbindS();
-                Assert.Fail();
-            }
-            catch (Exception exp)
-            {
             }
         }
     }

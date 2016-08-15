@@ -516,6 +516,7 @@ IDMAuthenticateUser(
     char *pwd = NULL;
     PIDM_AUTH_CONTEXT pAuthContext = NULL;
     int i = 0;
+    BOOL bMutexObtained = FALSE;
 
     nterr = LwRtlCStringAllocateFromWC16String(
                 &domain_name,
@@ -556,6 +557,11 @@ IDMAuthenticateUser(
     {
         domain_name_uppercase[i] = toupper((int) domain_name_uppercase[i]);
     }
+
+    IDM_MUTEX_LOCK(&pgIdmAuthMutex->mutex, bMutexObtained, dwError);
+
+    BAIL_ON_ERROR(dwError);
+
     nterr = idm_krb5_get_in_tkt(
                 user_name,
                 domain_name_uppercase,
@@ -581,8 +587,11 @@ IDMAuthenticateUser(
 
     dwError = IDMCreateAuthContext(NULL, &pAuthContext);
     BAIL_ON_ERROR(dwError);
- 
+
     dwError = idm_logon_gssapi(pAuthContext);
+    BAIL_ON_ERROR(dwError);
+
+    IDM_MUTEX_UNLOCK(&pgIdmAuthMutex->mutex, bMutexObtained, dwError);
     BAIL_ON_ERROR(dwError);
 
     dwError = IDMGetUserInformationFromAuthContext(
@@ -602,6 +611,8 @@ error:
     IDM_SAFE_FREE_MEMORY(princ_name);
     IDM_SAFE_FREE_MEMORY(pwd);
     IDMFreeAuthContext(pAuthContext);
+    IDM_MUTEX_UNLOCK(&pgIdmAuthMutex->mutex, bMutexObtained, dwError);
+
     return krb_err;
 }
 
@@ -958,7 +969,7 @@ IDMAuthenticate2(
         }
         else
         {
-            dwError = VMDIR_ERROR_USER_INVALID_CREDENTIAL;
+            dwError = IDM_ERROR_USER_INVALID_CREDENTIAL;
             BAIL_ON_ERROR(dwError);
         }
     }

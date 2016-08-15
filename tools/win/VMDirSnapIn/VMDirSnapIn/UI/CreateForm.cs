@@ -22,10 +22,11 @@ using System.Windows.Forms;
 using VMDir.Common.DTO;
 using VMDirSnapIn.Utilities;
 using VMDir.Common.Schema;
-using VMDirSnapIn.Services;
+using VMDirSnapIn.Utilities;
 using VMDir.Common.VMDirUtilities;
 using VMDirInterop.LDAP;
-using VMDir.Common.VMDirUtilities;
+using VMwareMMCIDP.UI.Common.Utilities;
+using VMDir.Common;
 
 namespace VMDirSnapIn.UI
 {
@@ -33,49 +34,107 @@ namespace VMDirSnapIn.UI
     {
         string _objectClass;
         VMDirServerDTO _serverDTO;
-        KeyValueBag _properties;
+        Dictionary<string, VMDirAttributeDTO> _properties;
+        private string _parentDn;
+        public string Rdn;
 
-        public KeyValueBag Attributes { get { return _properties; } }
+        public Dictionary<string, VMDirAttributeDTO> Attributes { get { return _properties; } }
 
-        public CreateForm(string objectClass, VMDirServerDTO serverDTO)
+        public CreateForm(string objectClass, VMDirServerDTO serverDTO,string parentDn)
         {
             _objectClass = objectClass;
             _serverDTO = serverDTO;
+            _parentDn = parentDn;
 
             InitializeComponent();
+            ColumnHeader attrColumnHeader = new ColumnHeader();
+            attrColumnHeader.Text = "Attribute";
+            attrColumnHeader.Width = 200;
+            listViewProp.Columns.Add(attrColumnHeader);
+            ColumnHeader valColumnHeader = new ColumnHeader();
+            valColumnHeader.Text = "Value";
+            valColumnHeader.Width = 200;
+            listViewProp.Columns.Add(valColumnHeader);
             Bind();
-            VMDir.Common.VMDirUtilities.Utilities.RemoveDontShowAttributes(_properties);
         }
 
         void Bind()
         {
             this.Text = "New " + _objectClass;
-            var requiredProps = _serverDTO.Connection.SchemaManager.GetRequiredAttributesWithContentRules(_objectClass);
-
-            _properties = new KeyValueBag();
+            textBoxParentDn.Text = _parentDn;
+            MiscUtilsService.CheckedExec(delegate
+            { 
+            var requiredProps = _serverDTO.Connection.SchemaManager.GetRequiredAttributes(_objectClass);
+            _properties = new Dictionary<string, VMDirAttributeDTO>();
             foreach (var prop in requiredProps)
             {
-                var val = MiscUtilsService.GetInstanceFromType(prop.Type);
-                var item = new VMDirBagItem { Value = val, Description = prop.Description, IsRequired = true, IsReadOnly=prop.ReadOnly };
-                _properties.Add(prop.Name, item);
+                VMDirAttributeDTO dto = new VMDirAttributeDTO(prop.Name, new List<LdapValue>(), prop);
+                _properties.Add(prop.Name, dto);
             }
-            var oc = _properties["objectClass"];
-            oc.IsReadOnly = true;
-            oc.Value = _objectClass;
+            var oc = _properties[VMDirConstants.ATTR_OBJECT_CLASS];
+            LdapValue val = new LdapValue(_objectClass);
+            oc.Values = new List<LdapValue>() { val };
+            VMDir.Common.VMDirUtilities.Utilities.RemoveDontShowAttributes(_properties);
 
-            VMDirBagItem itemCN = null;
-            if (!_properties.TryGetValue("cn", out itemCN))
+            foreach (var item in _properties)
             {
-                _properties.Add("cn", new VMDirBagItem { Value = "", Description="", IsRequired = true });
+                foreach (var values in item.Value.Values)
+                {
+                    ListViewItem lvi = new ListViewItem(new string[] { item.Key, values.StringValue });
+                    this.listViewProp.Items.Add(lvi);
+                }
+                if (item.Value.Values.Count == 0)
+                {
+                    ListViewItem lvi = new ListViewItem(new string[] { item.Key, string.Empty });
+                    this.listViewProp.Items.Add(lvi);
+                }
             }
-
-            props.SelectedObject = _properties;
+            });
         }
 
+        void listViewProp_DoubleClick(object sender, System.EventArgs e)
+        {
+            ListViewItem lvi = listViewProp.SelectedItems[0];
+            if (!string.Equals(lvi.SubItems[0].Text, VMDirConstants.ATTR_OBJECT_CLASS))
+            {
+                System.Windows.Forms.ListViewItem.ListViewSubItem lvsi = lvi.SubItems[1];
+                textBoxEdit.Bounds = new Rectangle(
+                    listViewProp.Bounds.Left + lvsi.Bounds.Left,
+                    listViewProp.Bounds.Top + lvsi.Bounds.Top,
+                    lvsi.Bounds.Width,
+                    lvsi.Bounds.Height);
+                var type = String.Empty;
+                textBoxEdit.Text = lvsi.Text;
+                textBoxEdit.Visible = true;
+                textBoxEdit.Focus();
+
+            }
+        }
+
+        void textBoxEdit_LostFocus(object sender, System.EventArgs e)
+        {
+            exitEditing();
+        }
+        void textBoxEdit_KeyPress(object sender, System.Windows.Forms.KeyPressEventArgs e)
+        {
+            if (e.KeyChar == (char)Keys.Enter)
+                exitEditing();
+        }
+
+        private void exitEditing()
+        {
+            ListViewItem lvi = listViewProp.SelectedItems[0];
+            System.Windows.Forms.ListViewItem.ListViewSubItem lvsi = lvi.SubItems[1];
+            lvsi.Text = textBoxEdit.Text;
+            textBoxEdit.Visible = false;
+            LdapValue val = new LdapValue(lvsi.Text);
+            _properties[lvi.SubItems[0].Text].Values = new List<LdapValue>() { val };
+        }
         private void btnOK_Click(object sender, EventArgs e)
         {
             if (DoValidate())
             {
+                Rdn = textBoxRdn.Text;
                 DialogResult = DialogResult.OK;
                 this.Close();
             }
@@ -83,76 +142,25 @@ namespace VMDirSnapIn.UI
 
         bool DoValidate()
         {
-            var requiredPropsNotFilled = _properties.Where(x =>
+            if (string.IsNullOrWhiteSpace(textBoxParentDn.Text))
             {
-                var val = x.Value;
-                if (val.IsRequired)
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_DN_ENT);
+                return false;
+            }
+            if (string.IsNullOrWhiteSpace(textBoxRdn.Text))
+            {
+                MMCDlgHelper.ShowWarning(VMDirConstants.WRN_RDN_ENT);
+                return false;
+            }
+            foreach (ListViewItem item in this.listViewProp.Items)
+            {
+                if (string.IsNullOrWhiteSpace(item.SubItems[1].Text))
                 {
-                    if (val.Value == null) return true;
-                    if (val.Value is string)
-                        return string.IsNullOrEmpty(val.Value as string);
-                    else if (val.Value is List<string>)
-                        return (val.Value as List<string>).Count == 0;
+                    MMCDlgHelper.ShowWarning(item.SubItems[0].Text + " is required.");
+                    return false;
                 }
-                return false;
-            });
-            if (requiredPropsNotFilled.Count() > 0)
-            {
-                string error = string.Format("{0} is a required property", requiredPropsNotFilled.First().Key);
-                MiscUtilsService.ShowError(error);
-                return false;
             }
             return true;
-        }
-
-        private void tsDelete_Click(object sender, EventArgs e)
-        {
-            var item = props.SelectedGridItem;
-            if ((item.PropertyDescriptor as KeyValuePropertyDescriptor).IsRequired)
-                MiscUtilsService.ShowError(item.Label + " is a required attribute and cannot be deleted");
-            else
-            {
-                _properties.Remove(item.Label);
-                props.Refresh();
-            }
-
-        }
-
-        private void tsAdd_Click(object sender, EventArgs e)
-        {
-            var attr = _serverDTO.Connection.SchemaManager.GetAttributeType("description");
-            var val = MiscUtilsService.GetInstanceFromType(attr.Type);
-            _properties.Add(attr.Name, new VMDirBagItem { Value = val, Description = attr.Description });
-            props.Refresh();
-        }
-
-        IEnumerable<KeyValuePair<string, string>> GetCurrentOptionalProperties()
-        {
-            return _properties.Where(x => !x.Value.IsRequired)
-                .Select(x => new KeyValuePair<string, string>(x.Key, x.Value.Description));
-        }
-
-        private void btnManageAttributes_Click(object sender, EventArgs e)
-        {
-            var optionalProps = GetCurrentOptionalProperties();
-            var frm = new AddOrRemoveAttributes(_objectClass, optionalProps, _serverDTO);
-            if (frm.ShowDialog() == DialogResult.OK)
-            {
-                var retainList = frm.NewOptionalAttributes.Intersect(optionalProps);
-                var removeList = optionalProps.Except(retainList).ToList();
-                foreach (var item in removeList)
-                {
-                    _properties.Remove(item.Key);
-                }
-                var addList = frm.NewOptionalAttributes.Except(retainList);
-                foreach (var item in addList)
-                {
-                    var dto = _serverDTO.Connection.SchemaManager.GetAttributeType(item.Key);
-                    var val = MiscUtilsService.GetInstanceFromType(dto.Type);
-                    _properties.Add(item.Key, new VMDirBagItem { Description = dto.Description, IsReadOnly = dto.ReadOnly, Value = val });
-                }
-                props.Refresh();
-            }
         }
     }
 }

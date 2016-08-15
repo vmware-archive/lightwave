@@ -25,23 +25,24 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.OidcClient
     public class OidcClientService
     {
         private readonly IWebRequestManager _webRequestManager;
-
-        public OidcClientService(IWebRequestManager webRequestManager)
+        private readonly IServiceConfigManager _serviceConfigManager;
+        public OidcClientService(IWebRequestManager webRequestManager, IServiceConfigManager serviceConfigManager)
         {
             _webRequestManager = webRequestManager;
+            _serviceConfigManager = serviceConfigManager;
         }
 
         public bool Delete(ServerDto serverDto, string tenant, OidcClientDto oidcClientDto, Token token)
         {
             tenant = Uri.EscapeDataString(tenant);
             var  clientId = Uri.EscapeDataString(oidcClientDto.ClientId);
-            var url = string.Format(ServiceConfigManager.OidcClientEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant,clientId);
+            var url = string.Format(_serviceConfigManager.GetOidcClientEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, clientId);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Delete,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var result = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return string.IsNullOrEmpty(result);
@@ -51,13 +52,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.OidcClient
         {
             tenant = Uri.EscapeDataString(tenant);
             var json = JsonConvert.Serialize(oidcClientMetadataDto);
-            var url = string.Format(ServiceConfigManager.OidcClientsEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant);
+            var url = string.Format(_serviceConfigManager.GetOidcClientsEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return JsonConvert.Deserialize<OidcClientDto>(response);
@@ -66,13 +67,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.OidcClient
         {
             tenant = Uri.EscapeDataString(tenant);
             var clientId = Uri.EscapeDataString(oidcClientDto.ClientId);
-            var url = string.Format(ServiceConfigManager.OidcClientPostEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, clientId);
+            var url = string.Format(_serviceConfigManager.GetOidcClientPostEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, clientId);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return JsonConvert.Deserialize<OidcClientDto>(response);
@@ -80,13 +81,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.OidcClient
         public List<OidcClientDto> GetAll(ServerDto serverDto, string tenant, Token token)
         {
             tenant = Uri.EscapeDataString(tenant);
-            var url = string.Format(ServiceConfigManager.OidcClientsPostEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant);
+            var url = string.Format(_serviceConfigManager.GetOidcClientsPostEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return JsonConvert.Deserialize <List<OidcClientDto>>(response);
@@ -97,13 +98,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.OidcClient
             tenant = Uri.EscapeDataString(tenant);
             clientId = Uri.EscapeDataString(clientId);
             var json = JsonConvert.Serialize(oidcClientDto);
-            var url = string.Format(ServiceConfigManager.OidcClientEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, clientId);
+            var url = string.Format(_serviceConfigManager.GetOidcClientEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, clientId);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Put,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return JsonConvert.Deserialize<OidcClientDto>(response);

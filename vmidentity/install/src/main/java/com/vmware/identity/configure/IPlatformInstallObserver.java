@@ -1,5 +1,5 @@
 /* **********************************************************************
- * Copyright 2015 VMware, Inc.  All rights reserved. 
+ * Copyright 2015 VMware, Inc.  All rights reserved.
  * *********************************************************************/
 
 package com.vmware.identity.configure;
@@ -16,4 +16,12 @@ public interface IPlatformInstallObserver {
     void endComponentInstall(String component, boolean status);
 
     void endInstall(boolean status);
+
+    void beginUpgrade(List<PlatformInstallComponent> components);
+
+    void beginComponentUpgrade(String component);
+
+    void endComponentUpgrade(String component, boolean status);
+
+    void endUpgrade(boolean status);
 }

@@ -29,13 +29,13 @@ import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.HttpRequest;
-import com.vmware.identity.openidconnect.common.HttpResponse;
-import com.vmware.identity.openidconnect.common.IDToken;
-import com.vmware.identity.openidconnect.common.LogoutErrorResponse;
-import com.vmware.identity.openidconnect.common.LogoutRequest;
-import com.vmware.identity.openidconnect.common.LogoutSuccessResponse;
 import com.vmware.identity.openidconnect.common.SessionID;
+import com.vmware.identity.openidconnect.protocol.HttpRequest;
+import com.vmware.identity.openidconnect.protocol.HttpResponse;
+import com.vmware.identity.openidconnect.protocol.IDToken;
+import com.vmware.identity.openidconnect.protocol.LogoutErrorResponse;
+import com.vmware.identity.openidconnect.protocol.LogoutRequest;
+import com.vmware.identity.openidconnect.protocol.LogoutSuccessResponse;
 
 /**
  * @author Yehia Zayour
@@ -118,12 +118,12 @@ public class LogoutRequestProcessor {
 
             Pair<LogoutSuccessResponse, Cookie> result = processInternal();
             LogoutSuccessResponse logoutSuccessResponse = result.getLeft();
-            Cookie clientCertLoggedOutCookie = result.getRight();
+            Cookie personUserCertificateLoggedOutCookie = result.getRight();
 
             HttpResponse httpResponse = logoutSuccessResponse.toHttpResponse();
             httpResponse.addCookie(loggedOutSessionCookie());
-            if (clientCertLoggedOutCookie != null) {
-                httpResponse.addCookie(clientCertLoggedOutCookie);
+            if (personUserCertificateLoggedOutCookie != null) {
+                httpResponse.addCookie(personUserCertificateLoggedOutCookie);
             }
             return httpResponse;
         } catch (ServerException e) {
@@ -147,11 +147,11 @@ public class LogoutRequestProcessor {
 
         validateIDToken(this.logoutRequest.getIDTokenHint(), entry);
 
-        Cookie clientCertLoggedOutCookie = null;
+        Cookie personUserCertificateLoggedOutCookie = null;
         if (entry != null) {
             this.sessionManager.remove(sessionId);
-            if (entry.getLoginMethod() == LoginMethod.CLIENT_CERTIFICATE) {
-                clientCertLoggedOutCookie = clientCertLoggedOutCookie();
+            if (entry.getLoginMethod() == LoginMethod.PERSON_USER_CERTIFICATE) {
+                personUserCertificateLoggedOutCookie = personUserCertificateLoggedOutCookie();
             }
         }
 
@@ -173,7 +173,7 @@ public class LogoutRequestProcessor {
                 sessionId,
                 logoutUris);
 
-        return Pair.of(logoutSuccessResponse, clientCertLoggedOutCookie);
+        return Pair.of(logoutSuccessResponse, personUserCertificateLoggedOutCookie);
     }
 
     private void validateIDToken(IDToken idToken, SessionManager.Entry entry) throws ServerException {
@@ -224,8 +224,8 @@ public class LogoutRequestProcessor {
         return cookie;
     }
 
-    private Cookie clientCertLoggedOutCookie() {
-        Cookie cookie = new Cookie(SessionManager.getClientCertificateLoggedOutCookieName(this.tenant), "");
+    private Cookie personUserCertificateLoggedOutCookie() {
+        Cookie cookie = new Cookie(SessionManager.getPersonUserCertificateLoggedOutCookieName(this.tenant), "");
         cookie.setPath("/openidconnect");
         cookie.setSecure(true);
         cookie.setHttpOnly(true);

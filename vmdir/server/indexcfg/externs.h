@@ -26,6 +26,4 @@
  *
  */
 
-extern VDIR_ATTR_INDEX_GLOBALS      gVdirAttrIndexGlobals;
-
-extern PVDIR_CFG_ATTR_INDEX_DESC    pBootStrapIdxAttrDesc;
+extern VDIR_INDEX_GLOBALS      gVdirIndexGlobals;

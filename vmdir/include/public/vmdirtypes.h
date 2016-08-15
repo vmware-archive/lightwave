@@ -113,20 +113,6 @@ typedef struct _VMDIR_SERVER_INFO
     CHAR*       pszServerDN;
 } VMDIR_SERVER_INFO, *PVMDIR_SERVER_INFO;
 
-typedef struct _VMDIR_SCHEMA_DIFF
-{
-    PSTR*       baseHostDiffList;
-    PSTR*       partnerHostDiffList;
-    DWORD       dwBaseHostDiffCount;
-    DWORD       dwPartnerHostDiffCount;
-    PSTR        pszBaseHostName ;
-    PSTR        pszPartnerHostName ;
-    BOOLEAN     bIsServerDown ;
-    BOOLEAN     bIsMetadataVersionOutofSync;
-    PSTR        pszMetadataVerison ;
-
-} VMDIR_SCHEMA_DIFF, *PVMDIR_SCHEMA_DIFF;
-
 typedef struct VMDIR_DC_VERSION_INFO
 {
     DWORD dwSize;
@@ -134,6 +120,20 @@ typedef struct VMDIR_DC_VERSION_INFO
     PSTR *ppszVersion;
     DWORD dwMaxDomainFuncLvl;
 } VMDIR_DC_VERSION_INFO, * PVMDIR_DC_VERSION_INFO;
+
+typedef struct _VMDIR_METADATA {
+    PSTR  pszAttribute;
+    USN   localUsn;
+    DWORD dwVersion;
+    PSTR  pszOriginatingId;
+    PSTR  pszOriginatingTime;
+    USN   originatingUsn;
+} VMDIR_METADATA, *PVMDIR_METADATA;
+
+typedef struct _VMDIR_METADATA_LIST {
+    PVMDIR_METADATA *ppMetadataArray;
+    DWORD dwCount;
+} VMDIR_METADATA_LIST, *PVMDIR_METADATA_LIST;
 
 // opaque type PVMDIR_LOG_CTX
 typedef struct _VMDIR_LOG_CTX* PVMDIR_LOG_CTX;
@@ -149,7 +149,8 @@ typedef enum
     VMDIRD_STATE_STARTUP,
     VMDIRD_STATE_READ_ONLY,   // Process only read/search requests. Originating and replication updates fail with UNWILLING_TO_PERFORM error
     VMDIRD_STATE_NORMAL,      // Process read-write requests. The normal mode
-    VMDIRD_STATE_SHUTDOWN
+    VMDIRD_STATE_SHUTDOWN,
+    VMDIRD_STATE_FAILURE      // Server has failed in unrecoverable manner
 
 } VDIR_SERVER_STATE;
 

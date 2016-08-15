@@ -19,10 +19,9 @@
 /*
  * MDB configuration are done in two stages -
  * 1. startup stage for fix DB (i.e. non configurable one like ENTRY)
- *    in InitBdbConfig()
- * 2. cn=indices stage to open all index DB
- *    in MDBInitializeIndexDB
- *
+ *    in VmDirMDBInitializeDB()
+ * 2. schema initialization stage to open all custom index DB
+ *    using VmDirMDBIndexOpen()
  */
 DWORD
 MDBInitConfig()
@@ -50,14 +49,6 @@ MDBInitConfig()
 
    gVdirMdbGlobals.mdbEntryDB.btKeyCmpFcn = NULL;
 
-   // Set hard limit of MAX index attribute
-   //TODO, could make this configurable
-   gVdirMdbGlobals.mdbIndexDBs.usMaxSize = BE_DB_MAX_INDEX_ATTRIBUTE;
-
-   dwError = VmDirAllocateMemory( sizeof(VDIR_MDB_INDEX_DATABASE) * BE_DB_MAX_INDEX_ATTRIBUTE,
-                                  (PVOID)&gVdirMdbGlobals.mdbIndexDBs.pIndexDBs);
-   BAIL_ON_VMDIR_ERROR(dwError);
-
    VmDirLog( LDAP_DEBUG_TRACE, "InitMdbConfig: End" );
 
 cleanup:
@@ -66,5 +57,29 @@ cleanup:
 
 error:
 
+    goto cleanup;
+}
+
+DWORD
+VmDirMDBConfigureFsync(
+    BOOLEAN bFsyncOn
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = mdb_env_set_flags(gVdirMdbGlobals.mdbEnv, MDB_NOSYNC, !bFsyncOn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = mdb_env_sync(gVdirMdbGlobals.mdbEnv, 1);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, mdb error (%d)", __FUNCTION__, dwError );
+
+    VMDIR_SET_BACKEND_ERROR(dwError);
     goto cleanup;
 }

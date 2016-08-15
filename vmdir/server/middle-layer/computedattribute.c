@@ -34,10 +34,6 @@
     VMDIR_SF_INIT(.pfnComputedAttr, _VmDirBuildMemberOfAttribute)                               \
     },                                                                                          \
     {                                                                                           \
-    VMDIR_SF_INIT(.pszComputedAttributeName, ATTR_ALLOWD_CHILD_CLASSES_EFFECTIVE),              \
-    VMDIR_SF_INIT(.pfnComputedAttr, _VmDirBuildAllowedChildClassesEffectiveAttribute)           \
-    },                                                                                          \
-    {                                                                                           \
     VMDIR_SF_INIT(.pszComputedAttributeName, ATTR_HIGHEST_COMMITTED_USN),                       \
     VMDIR_SF_INIT(.pfnComputedAttr, _VmDirBuildHighestCommittedUSNfAttribute)                   \
     },                                                                                          \
@@ -62,14 +58,6 @@ _VmDirBuildHighestCommittedUSNfAttribute(
 static
 DWORD
 _VmDirBuildMemberOfAttribute(
-    PVDIR_OPERATION     pOperation,
-    PVDIR_ENTRY         pEntry,
-    PVDIR_ATTRIBUTE*	ppComputedAttr
-    );
-
-static
-DWORD
-_VmDirBuildAllowedChildClassesEffectiveAttribute(
     PVDIR_OPERATION     pOperation,
     PVDIR_ENTRY         pEntry,
     PVDIR_ATTRIBUTE*	ppComputedAttr
@@ -207,36 +195,6 @@ error:
 
     goto cleanup;
 }
-
-static
-DWORD
-_VmDirBuildAllowedChildClassesEffectiveAttribute(
-    PVDIR_OPERATION     pOperation,
-    PVDIR_ENTRY         pEntry,
-    PVDIR_ATTRIBUTE*	ppComputedAttr
-    )
-{
-    DWORD                   dwError = 0;
-    PVDIR_ATTRIBUTE         pAlloedChildClassesEffectiveAttr = NULL;
-
-    dwError = VmDirSchemaGetComputedAttribute( ATTR_ALLOWD_CHILD_CLASSES_EFFECTIVE,
-	                                           pEntry,
-	                                           &pAlloedChildClassesEffectiveAttr );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppComputedAttr = pAlloedChildClassesEffectiveAttr;
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirBuildAllowedChildClassesEffectiveAttribute failed (%u)", dwError);
-    VmDirFreeAttribute( pAlloedChildClassesEffectiveAttr );
-    goto cleanup;
-}
-
 
 /* BuildMemberOfAttribute: For the given DN (dn), find out to which groups it belongs (appears in the member attribute),
  * including nested memberships. Return these group DNs as memberOf attribute (memberOfAttr).

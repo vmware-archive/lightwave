@@ -27,6 +27,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Contracts
         List<ExternalIdentityProviderDto> GetAll(ServerDto serverDto, string tenantName, Token token);
         ExternalIdentityProviderDto Get(ServerDto serverDto, string tenantName, ExternalIdentityProviderDto externalIdentityProvider, Token token);
         ExternalIdentityProviderDto Create(ServerDto server, string tenantName, ExternalIdentityProviderDto externalIdentityProvider, Token token);
+        ExternalIdentityProviderDto Create(ServerDto server, string tenantName, string xmlMetadata, Token token);
         bool Delete(ServerDto serverDto, string tenant, ExternalIdentityProviderDto externalIdentityProvider, Token token);
         ExternalIdentityProviderDto Update(ServerDto serverDto, string tenant, ExternalIdentityProviderDto externalIdentityProvider, Token token);
     }

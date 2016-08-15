@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <?include ../VMIdentityTools_Installer/Definitions.wxi ?>
+
+  <Bundle Name="$(var.Product)"
+          Version="$(var.VersionNumber)"
+          Manufacturer="$(var.Manufacturer)"
+          UpgradeCode="$(var.PrerequisiteUpgradeCode)">
+
+    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense" >
+      <bal:WixStandardBootstrapperApplication
+        LicenseFile="$(var.ResourcesForOtherProject)/LicenseAgreement.rtf"
+        SuppressOptionsUI="yes"
+        LogoFile="$(var.ResourcesForOtherProject)/InstallerLogo.bmp" ShowVersion="yes"/>
+    </BootstrapperApplicationRef>
+
+    <util:RegistrySearch
+      Id="VCSERVER"
+      Variable="VCSERVER"
+      Root="HKLM"
+      Key="SOFTWARE\VMware, Inc.\vCenter Server"
+      Value="ProductVersion"
+      Result="exists"
+      Win64="yes"/>
+    
+    <bal:Condition Message="The vCenter server has been detected on this machine.&#xD;&#xA;It is recommended to use VMIdentityTools_Installer.msi for installation on a server.">
+      NOT VCSERVER OR (WixBundleInstalled AND WixBundleAction = 3)
+    </bal:Condition>
+    
+    <Chain>
+      <MsiPackage SourceFile="$(var.MSIPath)\vmware-cyrus-sasl.msi" Vital="yes" ForcePerMachine="yes"/>
+      <MsiPackage SourceFile="$(var.MSIPath)\kfw.msi" Vital="yes"/>
+      <MsiPackage SourceFile="$(var.MSIPath)\vmware-platform-sdk-windows.msi" Vital="yes"/>
+      <MsiPackage SourceFile="$(var.MSIPath)\vmware-vmca-client-msi.msi" Vital="yes"/>
+      <MsiPackage SourceFile="$(var.MSIPath)\vmware-directory-client-msi.msi" Vital="yes"/>
+      <MsiPackage SourceFile="$(var.MSIPath)\vmware-afd.msi" Vital="yes"/>
+    </Chain>
+  </Bundle>
+</Wix>
