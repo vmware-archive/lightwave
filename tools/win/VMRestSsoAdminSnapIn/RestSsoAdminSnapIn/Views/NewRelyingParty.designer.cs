@@ -59,6 +59,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.btnAddAttributeConsumerService = new System.Windows.Forms.Button();
             this.btnAddSloService = new System.Windows.Forms.Button();
             this.btnRemoveSloService = new System.Windows.Forms.Button();
+            this.chkSigned = new System.Windows.Forms.CheckBox();
+            this.btnViewCertificate = new System.Windows.Forms.Button();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             this.label7 = new System.Windows.Forms.Label();
             this.lstSignatureAlgorithms = new System.Windows.Forms.ListView();
@@ -68,7 +70,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.label1 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
-            this.chkSigned = new System.Windows.Forms.CheckBox();
             this.label2 = new System.Windows.Forms.Label();
             this.lstAssertionConsumerServices = new System.Windows.Forms.ListView();
             this.columnHeader1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
@@ -85,7 +86,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.columnHeader5 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader8 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnHeader11 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.btnViewCertificate = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // horizontalLine
@@ -299,6 +299,33 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.btnRemoveSloService.UseVisualStyleBackColor = true;
             this.btnRemoveSloService.Click += new System.EventHandler(this.btnRemoveSloService_Click);
             // 
+            // chkSigned
+            // 
+            this.chkSigned.AutoSize = true;
+            this.helpProvider1.SetHelpKeyword(this.chkSigned, "RelyingParty");
+            this.helpProvider1.SetHelpString(this.chkSigned, "Sign Auth requests?");
+            this.chkSigned.Location = new System.Drawing.Point(69, 90);
+            this.chkSigned.Name = "chkSigned";
+            this.helpProvider1.SetShowHelp(this.chkSigned, true);
+            this.chkSigned.Size = new System.Drawing.Size(121, 17);
+            this.chkSigned.TabIndex = 5;
+            this.chkSigned.Text = "Sign Auth requests?";
+            this.chkSigned.UseVisualStyleBackColor = true;
+            // 
+            // btnViewCertificate
+            // 
+            this.helpProvider1.SetHelpKeyword(this.btnViewCertificate, "RelyingParty");
+            this.helpProvider1.SetHelpString(this.btnViewCertificate, "View certificate");
+            this.btnViewCertificate.Location = new System.Drawing.Point(352, 64);
+            this.btnViewCertificate.Name = "btnViewCertificate";
+            this.helpProvider1.SetShowHelp(this.btnViewCertificate, true);
+            this.btnViewCertificate.Size = new System.Drawing.Size(24, 23);
+            this.btnViewCertificate.TabIndex = 53;
+            this.btnViewCertificate.Text = "V";
+            this.toolTip1.SetToolTip(this.btnViewCertificate, "View certificate");
+            this.btnViewCertificate.UseVisualStyleBackColor = true;
+            this.btnViewCertificate.Click += new System.EventHandler(this.btnViewCertificate_Click);
+            // 
             // toolTip1
             // 
             this.toolTip1.AutoPopDelay = 2000;
@@ -373,19 +400,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.label5.Size = new System.Drawing.Size(57, 13);
             this.label5.TabIndex = 41;
             this.label5.Text = "Certificate:";
-            // 
-            // chkSigned
-            // 
-            this.chkSigned.AutoSize = true;
-            this.helpProvider1.SetHelpKeyword(this.chkSigned, "RelyingParty");
-            this.helpProvider1.SetHelpString(this.chkSigned, "Sign Auth requests?");
-            this.chkSigned.Location = new System.Drawing.Point(69, 90);
-            this.chkSigned.Name = "chkSigned";
-            this.helpProvider1.SetShowHelp(this.chkSigned, true);
-            this.chkSigned.Size = new System.Drawing.Size(121, 17);
-            this.chkSigned.TabIndex = 5;
-            this.chkSigned.Text = "Sign Auth requests?";
-            this.chkSigned.UseVisualStyleBackColor = true;
             // 
             // label2
             // 
@@ -512,20 +526,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.columnHeader11.Text = "Binding";
             this.columnHeader11.Width = 120;
             // 
-            // btnViewCertificate
-            // 
-            this.helpProvider1.SetHelpKeyword(this.btnViewCertificate, "RelyingParty");
-            this.helpProvider1.SetHelpString(this.btnViewCertificate, "View certificate");
-            this.btnViewCertificate.Location = new System.Drawing.Point(352, 64);
-            this.btnViewCertificate.Name = "btnViewCertificate";
-            this.helpProvider1.SetShowHelp(this.btnViewCertificate, true);
-            this.btnViewCertificate.Size = new System.Drawing.Size(24, 23);
-            this.btnViewCertificate.TabIndex = 53;
-            this.btnViewCertificate.Text = "V";
-            this.toolTip1.SetToolTip(this.btnViewCertificate, "View certificate");
-            this.btnViewCertificate.UseVisualStyleBackColor = true;
-            this.btnViewCertificate.Click += new System.EventHandler(this.btnViewCertificate_Click);
-            // 
             // NewRelyingParty
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -560,7 +560,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.Controls.Add(this.btnCreate);
             this.Controls.Add(this.btnClose);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
-            this.HelpButton = true;
             this.helpProvider1.SetHelpString(this, "Relying party for the server");
             this.MaximizeBox = false;
             this.MinimizeBox = false;

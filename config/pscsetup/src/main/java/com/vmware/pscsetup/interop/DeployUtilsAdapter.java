@@ -41,7 +41,8 @@ public class DeployUtilsAdapter extends NativeAdapter {
 		DeployUtilsParamsNative paramsNative = new DeployUtilsParamsNative(
 				params.getHostname(), params.getDomainName(),
 				params.getPassword(), DirectorySetupMode.STANDALONE.getCode(),
-				null, params.getSite());
+				null, params.getSite(),
+                                params.getDNSForwarders());
 
 		setupInstance(paramsNative);
 	}
@@ -52,7 +53,8 @@ public class DeployUtilsAdapter extends NativeAdapter {
 		DeployUtilsParamsNative paramsNative = new DeployUtilsParamsNative(
 				params.getHostname(), params.getDomainName(), params.getPassword(),
 				DirectorySetupMode.PARTNER.getCode(), params.getServer(),
-				params.getSite());
+				params.getSite(),
+                                params.getDNSForwarders());
 
 		setupInstance(paramsNative);
 

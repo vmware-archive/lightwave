@@ -15,6 +15,7 @@
 using System;
 using AppKit;
 using VmIdentity.UI.Common;
+using VMDirSnapIn.UI;
 
 namespace VMDirSnapIn
 {
@@ -27,7 +28,6 @@ namespace VMDirSnapIn
             /* Workaround for a Bug in Xamarin. Cant load Views referenced in external project without referencing the assembly before NSApplication.Main
             ref -https://forums.xamarin.com/discussion/1771/creating-a-custom-control-view-xamarin-mac#latest
             */
-            Console.WriteLine (typeof(SplitViewMMC).Assembly);
             Console.WriteLine (typeof(LoginWindow).Assembly);
             NSApplication.Main (args);
         }

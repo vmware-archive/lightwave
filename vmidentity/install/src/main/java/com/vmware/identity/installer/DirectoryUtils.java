@@ -440,8 +440,8 @@ public class DirectoryUtils {
      */
     public ILdapMessage getTenantCertChains(String baseDn) {
 
-        String searchFilter = String.format("(objectclass=%s)",
-                TRUSTED_CERT_CHAIN_OBJECT_CLASS);
+        String searchFilter = String.format("(&(objectclass=%s)(cn=%s-*))",
+                TRUSTED_CERT_CHAIN_OBJECT_CLASS, CERT_CHAIN_PREFIX);
         ILdapMessage message = lookupObject(baseDn, LdapScope.SCOPE_SUBTREE,
                 searchFilter);
         return message;

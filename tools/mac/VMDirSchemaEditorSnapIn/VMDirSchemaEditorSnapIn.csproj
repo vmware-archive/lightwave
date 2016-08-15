@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectTypeGuids>{A3F8F2AB-B479-4A4A-A458-A89E7DC349F1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>{5582610B-7753-49A3-B687-A558C4505E12}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>VMDirSchemaEditorSnapIn</RootNamespace>
+    <MonoMacResourcePrefix>Resources</MonoMacResourcePrefix>
+    <AssemblyName>Lightwave Directory Schema</AssemblyName>
+    <UseXamMacFullFramework>true</UseXamMacFullFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\x64\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <UseRefCounting>true</UseRefCounting>
+    <UseSGen>true</UseSGen>
+    <IncludeMonoRuntime>false</IncludeMonoRuntime>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <CodeSigningKey>Mac Developer</CodeSigningKey>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <CreatePackage>false</CreatePackage>
+    <PackageSigningKey>Developer ID Installer</PackageSigningKey>
+    <XamMacArch>x86_64</XamMacArch>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Optimize>false</Optimize>
+    <OutputPath>..\x64\Release</OutputPath>
+    <WarningLevel>4</WarningLevel>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <UseRefCounting>false</UseRefCounting>
+    <UseSGen>false</UseSGen>
+    <IncludeMonoRuntime>true</IncludeMonoRuntime>
+    <CreatePackage>false</CreatePackage>
+    <CodeSigningKey>Developer ID Application</CodeSigningKey>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <PackageSigningKey>Developer ID Installer</PackageSigningKey>
+    <XamMacArch>x86_64</XamMacArch>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Xamarin.Mac" />
+    <Reference Include="VmDirInterop">
+      <HintPath>..\..\interop\lib64\VmDirInterop.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+    <Folder Include="UI\" />
+    <Folder Include="Nodes\" />
+    <Folder Include="ListViews\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Info.plist" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Main.cs" />
+    <Compile Include="UI\AppDelegate.cs" />
+    <Compile Include="UI\AppDelegate.designer.cs">
+      <DependentUpon>AppDelegate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\VMDirSchemaMainWindowControllerFactory.cs" />
+    <Compile Include="UI\VMDirSchemaMainWindowController.cs" />
+    <Compile Include="VMDirSchemaSnapInEnvironment.cs" />
+    <Compile Include="VMDirSchemaConstants.cs" />
+    <Compile Include="Nodes\VMDirSchemaServerNode.cs" />
+    <Compile Include="Nodes\VMDirSchemaClassBaseNode.cs" />
+    <Compile Include="Nodes\VMDirSchemaAttributeBaseNode.cs" />
+    <Compile Include="Nodes\VMDirSchemaClassEntryNode.cs" />
+    <Compile Include="Nodes\VMDirSchemaAttributeEntryNode.cs" />
+    <Compile Include="Nodes\VMDirSchemaRootScopeNode.cs" />
+    <Compile Include="ListViews\AttributesEntryListView.cs" />
+    <Compile Include="ListViews\NodesListView.cs" />
+    <Compile Include="ListViews\ClassAttributesEntryListView.cs" />
+    <Compile Include="UI\AttributeTypeWindow.cs" />
+    <Compile Include="UI\AttributeTypeWindow.designer.cs">
+      <DependentUpon>AttributeTypeWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\AttributeTypeWindowController.cs" />
+    <Compile Include="UI\AttributeTypeWindowController.designer.cs">
+      <DependentUpon>AttributeTypeWindowController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ObjectClassWindow.cs" />
+    <Compile Include="UI\ObjectClassWindow.designer.cs">
+      <DependentUpon>ObjectClassWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ObjectClassWindowController.cs" />
+    <Compile Include="UI\ObjectClassWindowController.designer.cs">
+      <DependentUpon>ObjectClassWindowController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ListViews\ObjectClassListView.cs" />
+    <Compile Include="UI\SchemaFederationView.cs" />
+    <Compile Include="UI\SchemaFederationViewController.cs" />
+    <Compile Include="UI\SchemaFederationView.designer.cs">
+      <DependentUpon>SchemaFederationView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\SchemaFederationViewController.designer.cs">
+      <DependentUpon>SchemaFederationViewController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\SelectListItemsWindow.cs" />
+    <Compile Include="UI\SelectListItemsWindow.designer.cs">
+      <DependentUpon>SelectListItemsWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\SelectListItemsWindowController.cs" />
+    <Compile Include="UI\SelectListItemsWindowController.designer.cs">
+      <DependentUpon>SelectListItemsWindowController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ListViews\StringItemsListView.cs" />
+    <Compile Include="UI\SelectObjectClassWindow.cs" />
+    <Compile Include="UI\SelectObjectClassWindow.designer.cs">
+      <DependentUpon>SelectObjectClassWindow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\SelectObjectClassWindowController.cs" />
+    <Compile Include="UI\SelectObjectClassWindowController.designer.cs">
+      <DependentUpon>SelectObjectClassWindowController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\CustomOutlineView.cs" />
+    <Compile Include="UI\CustomTableView.cs" />
+    <Compile Include="Nodes\FederationNode.cs" />
+    <Compile Include="Nodes\FederationNodeBase.cs" />
+    <Compile Include="UI\OutlineViewDataSource.cs" />
+    <Compile Include="UI\ViewDiff.cs" />
+    <Compile Include="UI\ViewDiff.designer.cs">
+      <DependentUpon>ViewDiff.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ViewDiffController.cs" />
+    <Compile Include="UI\ViewDiffController.designer.cs">
+      <DependentUpon>ViewDiffController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ListViews\DiffListView.cs" />
+    <Compile Include="UI\DiffDetailViewer.cs" />
+    <Compile Include="UI\DiffDetailViewer.designer.cs">
+      <DependentUpon>DiffDetailViewer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\DiffDetailViewerController.cs" />
+    <Compile Include="UI\DiffDetailViewerController.designer.cs">
+      <DependentUpon>DiffDetailViewerController.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
+      <Project>{CD959E2E-5B9C-4329-B085-352844CFDCDD}</Project>
+      <Name>VMIdentity.CommonUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VmIdentity.UI.Common\VmIdentity.UI.Common.csproj">
+      <Project>{35037B87-3B35-40FA-A9D3-7974DCDDABB5}</Project>
+      <Name>VmIdentity.UI.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\common\VMDir.Common\VMDir.Common.csproj">
+      <Project>{76109B16-B0AE-47EB-8545-EB135EB92E2A}</Project>
+      <Name>VMDir.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <InterfaceDefinition Include="UI\MainMenu.xib" />
+    <InterfaceDefinition Include="UI\AttributeTypeWindow.xib" />
+    <InterfaceDefinition Include="UI\ObjectClassWindow.xib" />
+    <InterfaceDefinition Include="UI\SchemaFederationView.xib" />
+    <InterfaceDefinition Include="UI\SelectListItemsWindow.xib" />
+    <InterfaceDefinition Include="UI\SelectObjectClassWindow.xib" />
+    <InterfaceDefinition Include="UI\ViewDiff.xib" />
+    <InterfaceDefinition Include="UI\DiffDetailViewer.xib" />
+  </ItemGroup>
+  <ItemGroup>
+    <BundleResource Include="Resources\object.png" />
+    <BundleResource Include="Resources\directoryObject.png" />
+    <BundleResource Include="Resources\home.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </BundleResource>
+    <BundleResource Include="Resources\global.png" />
+    <BundleResource Include="Resources\provider.png" />
+    <BundleResource Include="Resources\service.png" />
+    <BundleResource Include="Resources\Record.png" />
+    <BundleResource Include="Resources\Schema.icns" />
+    <BundleResource Include="Resources\Info.plist" />
+    <BundleResource Include="Resources\nodeupicon.png" />
+    <BundleResource Include="Resources\comparison.png_48x48.png" />
+    <BundleResource Include="Resources\nodedownicon.png" />
+  </ItemGroup>
+</Project>

@@ -32,46 +32,35 @@ int
 VmDirMain(int argc, char* argv[])
 {
     DWORD   dwError = 0;
-
-    PSTR    pszHostURI = NULL;
-    PSTR    pszLoginUserDN = NULL;
-    PSTR    pszLoginPassword = NULL;
-    PSTR    pszNewPassword = NULL;
-    PSTR    pszUserDN = NULL;
     CHAR    pszPasswordBuf[VMDIR_MAX_PWD_LEN + 1] = {0};
+    COMMAND_LINE_STATE State = { 0 };
 
+    dwError = VmDirParseArguments(
+                &CommandLineOptions,
+                &State,
+                argc,
+                argv);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    setlocale(LC_ALL, "");
-
-    dwError = VmDirParseArgs(
-                        argc, argv,
-                        &pszHostURI,
-                        &pszLoginUserDN,
-                        &pszLoginPassword,
-                        &pszNewPassword,
-                        &pszUserDN);
-
-    if (dwError != ERROR_SUCCESS)
+    if (State.pszLoginPassword == NULL)
     {
-        ShowUsage();
-        goto cleanup;
+        // read password from stdin
+        VmDirReadString(
+            "password: ",
+            pszPasswordBuf,
+            sizeof(pszPasswordBuf),
+            TRUE);
+        State.pszLoginPassword = pszPasswordBuf;
     }
 
-    if (pszLoginPassword == NULL)
-    {
-        // read passowrd from stdin
-        VmDirReadString("password: ", pszPasswordBuf, VMDIR_MAX_PWD_LEN, TRUE);
-        pszLoginPassword = pszPasswordBuf;
-    }
-
-    if (pszUserDN) //set password
+    if (State.pszUserUPN) //set password
     {
         dwError = VmDirSetPassword(
-                            pszHostURI,
-                            pszLoginUserDN,
-                            pszLoginPassword,
-                            pszUserDN,
-                            pszNewPassword);
+                            State.pszHostName,
+                            State.pszLoginUserUPN,
+                            State.pszLoginPassword,
+                            State.pszUserUPN,
+                            State.pszNewPassword);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         printf("password was set successfully.\n");
@@ -79,10 +68,10 @@ VmDirMain(int argc, char* argv[])
     else //change password
     {
         dwError = VmDirChangePassword(
-                            pszHostURI,
-                            pszLoginUserDN,
-                            pszLoginPassword,
-                            pszNewPassword);
+                            State.pszHostName,
+                            State.pszLoginUserUPN,
+                            State.pszLoginPassword,
+                            State.pszNewPassword);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         printf("password was changed successfully.\n");
@@ -95,7 +84,7 @@ cleanup:
     return dwError;
 
 error:
-    printf("Vdcpass failed.");
+    printf("Vdcpass failed with error code %d.\n", dwError);
 
     goto cleanup;
 }
@@ -137,6 +126,8 @@ error:
 
 int main(int argc, char* argv[])
 {
+    setlocale(LC_ALL, "");
+
     return VmDirMain(argc, argv);
 }
 

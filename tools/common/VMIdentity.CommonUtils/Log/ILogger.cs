@@ -22,5 +22,6 @@ namespace VMIdentity.CommonUtils.Log
         void Stop();
         void Log(string message, LogLevel level);
         void LogException(Exception exception);
+        void LogException(Exception exception, string custom);
     }
 }

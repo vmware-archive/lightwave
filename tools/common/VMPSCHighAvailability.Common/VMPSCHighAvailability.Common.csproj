@@ -66,6 +66,7 @@
     <Compile Include="DTO\ManagementDto.cs" />
     <Compile Include="DTO\NodeDto.cs" />
     <Compile Include="DTO\ServiceDto.cs" />
+    <Compile Include="Helpers\CustomExceptionExtractor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DTO\ServerDto.cs" />
     <Compile Include="DTO\PscDto.cs" />

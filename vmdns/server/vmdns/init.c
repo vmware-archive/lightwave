@@ -45,7 +45,7 @@ VmDnsInit()
     dwError = VmDnsAllocateMutex(&gVmdnsGlobals.pMutex);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsCoreInit();
+    dwError = VmDnsCoreInit(TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmwSockInitialize();

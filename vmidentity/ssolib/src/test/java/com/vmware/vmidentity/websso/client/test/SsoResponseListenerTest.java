@@ -1,5 +1,5 @@
 /* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved. 
+ * Copyright 2012 VMware, Inc. All rights reserved.
  **********************************************************************************/
 package com.vmware.vmidentity.websso.client.test;
 
@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opensaml.saml2.core.Response;
 import org.slf4j.Logger;
@@ -30,7 +31,7 @@ import com.vmware.identity.websso.client.endpoint.SsoResponseListener;
 
 /**
  * SamlUtils
- * 
+ *
  */
 public class SsoResponseListenerTest {
 
@@ -52,7 +53,7 @@ public class SsoResponseListenerTest {
 
     /**
      * setup for the test class
-     * 
+     *
      * @throws java.lang.Exception
      */
     @Before
@@ -82,22 +83,23 @@ public class SsoResponseListenerTest {
     @Test
     public final void successResponseTest() {
         log.info("\nsuccessResponseTest: ");
-        this.assertionTestSuccess("saml-assertion.xml");
+        this.assertionTestSuccess("saml-assertion.xml",false);
     }
 
     /**
      * Test a signed assertion created from Castle. This is signature test case.
-     * 
+     *
      * Note: I have to disable this test since it contain the condition that has
      * expired. We can't remove the condition since there is signature in there.
      * To do sanity check, enable it locally and disable it before checking in.
      * This test is expected to pass signature validation but fail in condition
      * validation.
      */
-    // @Test
+    @Ignore
+    @Test
     public final void signedAssertionTest() {
         log.info("\nsignedAssertionTest: ");
-        this.assertionTestSuccess("signed-assertion.xml");
+        this.assertionTestSuccess("signed-assertion.xml", false);
     }
 
     /**
@@ -108,14 +110,27 @@ public class SsoResponseListenerTest {
     @Test
     public final void castleAssertionTest() {
         log.info("\ncastleAssertionTest: ");
-        this.assertionTestSuccess("castle-assertion.xml");
+        this.assertionTestSuccess("castle-assertion.xml",false);
     }
+
+
+    /**
+     * Test a castle assertion with signature and notOnOrAfter condition
+     * removed. Note: the response is signed. So this should be a valid
+     * response.
+     */
+    @Test
+    public final void idpSSOSuccessTest() {
+        log.info("\ncastleAssertionTest: ");
+        this.assertionTestSuccess("castle-assertion.xml",true);
+    }
+
 
     /**
      * @param assertionRsourceName
      *            the file name of assertion test file in resource folder.
      */
-    private void assertionTestSuccess(String assertionRsourceName) {
+    private void assertionTestSuccess(String assertionRsourceName,boolean idpInitiated) {
         try {
 
             StringBuffer sbResponseUrl = new StringBuffer();
@@ -123,7 +138,7 @@ public class SsoResponseListenerTest {
             // Add a message entry in the message store so the response
             // validation process can match it.
 
-            if (SsoResponseListenerTest.controller.getMessageStore().get(SsoResponseListenerTest.ssoRequestID) == null) {
+            if (SsoResponseListenerTest.controller.getMessageStore().get(SsoResponseListenerTest.ssoRequestID) == null && !idpInitiated) {
                 Message ssoMessage = new Message(MessageType.AUTHN_REQUEST, SsoResponseListenerTest.ssoRequestID, null, // relay
                                                                                                                         // state
                         null, TestConfig.spEntityID, TestConfig.SsoService_loc, // target
@@ -131,11 +146,12 @@ public class SsoResponseListenerTest {
                         null, // substatus
                         null, // session index
                         null, // MessageDatda
-                        null); // tag
+                        null, // tag
+                        false); //IdpInitiated;
                 SsoResponseListenerTest.controller.getMessageStore().add(ssoMessage);
             }
             Document token = TestUtils.readToken(assertionRsourceName);
-            Response authnResponse = TestUtils.createSamlAuthnResponse(SsoResponseListenerTest.ssoRequestID, token);
+            Response authnResponse = TestUtils.createSamlAuthnResponse(idpInitiated? null:SsoResponseListenerTest.ssoRequestID, token);
             sbResponseUrl.append(authnResponse.getDestination());
 
             String samlResponseParameter = SamlUtils.encodeSAMLObject(authnResponse, false);

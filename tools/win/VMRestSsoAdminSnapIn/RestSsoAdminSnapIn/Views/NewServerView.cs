@@ -19,6 +19,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Core.Web;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Service;
 using VMwareMMCIDP.UI.Common.Utilities;
+using VMIdentity.CommonUtils;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Views
 {
@@ -43,6 +44,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             cbIsSsl.Checked = true;
             lblStsUrl.Visible = cbSAML.Checked;
             txtStsUrl.Visible = cbSAML.Checked;
+            this.txtDefaultTenant.Text = MMCMiscUtil.GetBrandConfig(CommonConstants.TENANT);
             UpdateUrlPreview();
         }
         void UpdateUrlPreview()

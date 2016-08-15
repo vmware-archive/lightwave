@@ -43,7 +43,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.vmware.identity.openidconnect.common.JWTUtils;
+import com.vmware.identity.openidconnect.protocol.JWTUtils;
 
 /**
  * @author Yehia Zayour

@@ -98,6 +98,7 @@ namespace RestSsoAdminSnapIn
             NSNotificationCenter.DefaultCenter.AddObserver ((NSString)"RefreshTableView", RefreshTableView);
             NSNotificationCenter.DefaultCenter.AddObserver ((NSString)"LoggedInSessionExpired", LoggedInSessionExpired);
             NSNotificationCenter.DefaultCenter.AddObserver ((NSString)"RefreshToken", RefreshToken);
+			NSNotificationCenter.DefaultCenter.AddObserver ((NSString)"LoginAsUser", LoginAsUser);
         }
 
         public override void Close ()
@@ -323,9 +324,9 @@ namespace RestSsoAdminSnapIn
             HttptransportToolbarItem.Active = false;
         }
 
-        private void ShowLogin ()
+		private void ShowLogin (string username)
         {
-            var form = new LoginController (){ ServerDto = _serverDto };
+			var form = new LoginController (){ ServerDto = _serverDto, Username = string.IsNullOrEmpty(username) ? null : username };
             NSApplication.SharedApplication.BeginSheet (form.Window, this.Window, () => {
             });
             try {
@@ -334,6 +335,11 @@ namespace RestSsoAdminSnapIn
                     Servernode.IsLoggedIn = false;
                     Servernode.LoginDto = form.LoginDto;
                     Servernode.Login ();
+
+					if(Servernode.IsLoggedIn)
+					{	
+						splitViewController.MainOutlineView.SelectRow(0,true);
+					}
                 }
             } finally {
                 Window.EndSheet (form.Window);
@@ -344,7 +350,7 @@ namespace RestSsoAdminSnapIn
 
         public void ConnectToServer ()
         {
-            ShowLogin ();
+            ShowLogin (null);
             //Servernode.ShowLogin();
             if (Servernode.IsLoggedIn)
                 InitialiseViews ();
@@ -413,25 +419,25 @@ namespace RestSsoAdminSnapIn
                     if (item is UsersNode) {
                         datasource = new UsersDataSource{ Entries = result.Users };
                         columns = new List<ColumnOptions> { 
-                            new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 100 },
-                            new ColumnOptions{ DisplayName = "First Name", Id = "FirstName", Width = 100 },
-                            new ColumnOptions{ DisplayName = "Last Name", Id = "LastName", Width = 100 },
-                            new ColumnOptions{ DisplayName = "Email", Id = "Email", Width = 80 },
-                            new ColumnOptions{ DisplayName = "Description", Id = "Description", Width = 150 }
+                            new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 350 },
+                            //new ColumnOptions{ DisplayName = "First Name", Id = "FirstName", Width = 100 },
+                            //new ColumnOptions{ DisplayName = "Last Name", Id = "LastName", Width = 100 },
+                            //new ColumnOptions{ DisplayName = "Email", Id = "Email", Width = 80 },
+                            new ColumnOptions{ DisplayName = "Description", Id = "Description", Width = 350 }
                         };
                     } else if (item is SolutionUsersNode) {
                         datasource = new SolutionUsersDataSource{ Entries = result.SolutionUsers };
                         columns = new List<ColumnOptions> { 
-                            new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 150 },
+                            new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 350 },
                             new ColumnOptions{ DisplayName = "Disabled", Id = "Disabled", Width = 60 },
-                            new ColumnOptions{ DisplayName = "Description", Id = "Description", Width = 250 }
+                            new ColumnOptions{ DisplayName = "Description", Id = "Description", Width = 350 }
                         };
                     } else if (item is GroupsNode) {
                         datasource = new GroupsDataSource{ Entries = result.Groups };
                         columns = new List<ColumnOptions> { 
-                            new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 150 },
-                            new ColumnOptions{ DisplayName = "Domain", Id = "Domain", Width = 150 },
-                            new ColumnOptions{ DisplayName = "Description", Id = "Description", Width = 250 }
+                            new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 350 },
+                            //new ColumnOptions{ DisplayName = "Domain", Id = "Domain", Width = 150 },
+                            new ColumnOptions{ DisplayName = "Description", Id = "Description", Width = 350 }
                         };
                     } 
                 } else if (item is RelyingPartyNode) {
@@ -439,7 +445,7 @@ namespace RestSsoAdminSnapIn
                     var nodes = source.Entries.FindAll (x => x.Name.Contains (sender.StringValue));
                     datasource = new RelyingPartyDataSource{ Entries = nodes };
                     columns = new List<ColumnOptions> { 
-                        new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 150 },
+                        new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 350 },
                         new ColumnOptions{ DisplayName = "Url", Id = "Url", Width = 250 }
                     };
                 } else if (item is TrustedCertificateNode) {
@@ -459,7 +465,7 @@ namespace RestSsoAdminSnapIn
                     var nodes = source.Entries.FindAll (x => x.EntityID.Contains (sender.StringValue));
                     datasource = new IdentityProvidersDataSource{ Entries = nodes };
                     columns = new List<ColumnOptions> { 
-                        new ColumnOptions{ DisplayName = "Entity Id", Id = "Name", Width = 250 },
+                        new ColumnOptions{ DisplayName = "Entity Id", Id = "Name", Width = 350 },
                         new ColumnOptions{ DisplayName = "Jit", Id = "Jit", Width = 60 }
                     };
                 } else if (item is OidcClientNode) {
@@ -467,7 +473,7 @@ namespace RestSsoAdminSnapIn
                     var nodes = source.Entries.FindAll (x => x.ClientId.Contains (sender.StringValue));
                     datasource = new OidcClientDataSource{ Entries = nodes };
                     columns = new List<ColumnOptions> { 
-                        new ColumnOptions{ DisplayName = "Client Id", Id = "Name", Width = 250 },
+                        new ColumnOptions{ DisplayName = "Client Id", Id = "Name", Width = 350 },
                         new ColumnOptions{ DisplayName = "Certificate DN", Id = "CertificateDN", Width = 350 }
                     };
                 } else {
@@ -477,7 +483,7 @@ namespace RestSsoAdminSnapIn
                     columns = new List<ColumnOptions> { new ColumnOptions {
                             DisplayName = "Name",
                             Id = "Name",
-                            Width = 250,
+                            Width = 350,
                         }
                     };
                 }
@@ -534,8 +540,19 @@ namespace RestSsoAdminSnapIn
 
         public void LoggedInSessionExpired (NSNotification notification)
         {
-            ShowLogin ();
+            ShowLogin (null);
         }
+
+		public void LoginAsUser(NSNotification notification){
+			
+			var row = (int)splitViewController.MainTableView.SelectedRow;
+			if (row >= 0) {
+				ActionHelper.Execute (delegate() {
+					var user = ((UsersDataSource)splitViewController.MainTableView.DataSource).Entries [row];
+					ShowLogin (user.Name);
+				});
+			}
+		}
 
         public void RefreshTableView (NSNotification notification)
         {
@@ -689,11 +706,11 @@ namespace RestSsoAdminSnapIn
                         var users = node.GetUsers (string.Empty);
                         datasource = new UsersDataSource{ Entries = users };
                         columns = new List<ColumnOptions> { 
-                            new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 100 },
-                            new ColumnOptions{ DisplayName = "First Name", Id = "FirstName", Width = 100 },
-                            new ColumnOptions{ DisplayName = "Last Name", Id = "LastName", Width = 100 },
-                            new ColumnOptions{ DisplayName = "Email", Id = "Email", Width = 80 },
-                            new ColumnOptions{ DisplayName = "Description", Id = "Description", Width = 150 }
+                            new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 350 },
+                            //new ColumnOptions{ DisplayName = "First Name", Id = "FirstName", Width = 100 },
+                            //new ColumnOptions{ DisplayName = "Last Name", Id = "LastName", Width = 100 },
+                            //new ColumnOptions{ DisplayName = "Email", Id = "Email", Width = 80 },
+                            new ColumnOptions{ DisplayName = "Description", Id = "Description", Width = 350 }
                         };
                     } else if (item is SolutionUsersNode) {
                         var node = item as SolutionUsersNode;
@@ -704,9 +721,10 @@ namespace RestSsoAdminSnapIn
                         var users = node.GetUsers (string.Empty);
                         datasource = new SolutionUsersDataSource{ Entries = users };
                         columns = new List<ColumnOptions> { 
-                            new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 100 },
-                            new ColumnOptions{ DisplayName = "Description", Id = "Description", Width = 150 },
-                            new ColumnOptions{ DisplayName = "Disabled", Id = "Disabled", Width = 60 }
+                            new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 350 },
+							new ColumnOptions{ DisplayName = "Disabled", Id = "Disabled", Width = 60 },
+                            new ColumnOptions{ DisplayName = "Description", Id = "Description", Width = 350 }
+                            
                         };
                     } else if (item is GroupsNode) {
                         var node = item as GroupsNode;
@@ -717,9 +735,9 @@ namespace RestSsoAdminSnapIn
                         var users = node.GetGroups (string.Empty);
                         datasource = new GroupsDataSource{ Entries = users };
                         columns = new List<ColumnOptions> { 
-                            new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 100 },
-                            new ColumnOptions{ DisplayName = "Domain", Id = "Domain", Width = 100 },
-                            new ColumnOptions{ DisplayName = "Description", Id = "Description", Width = 150 }
+                            new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 350 },
+                            //new ColumnOptions{ DisplayName = "Domain", Id = "Domain", Width = 100 },
+                            new ColumnOptions{ DisplayName = "Description", Id = "Description", Width = 350 }
                         };
                     } else if (item is RelyingPartyNode) {
                         _controller.AddToolbarItem.Label = "Add Relying Party";
@@ -730,7 +748,7 @@ namespace RestSsoAdminSnapIn
                         var users = node.GetRelyingParty ();
                         datasource = new RelyingPartyDataSource{ Entries = users };
                         columns = new List<ColumnOptions> { 
-                            new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 100 },
+                            new ColumnOptions{ DisplayName = "Name", Id = "Name", Width = 350 },
                             new ColumnOptions{ DisplayName = "Url", Id = "Url", Width = 150 }
                         };
                     } else if (item is IdentityProvidersNode) {
@@ -742,7 +760,7 @@ namespace RestSsoAdminSnapIn
                         var users = node.GetIdentityProviders ();
                         datasource = new IdentityProvidersDataSource{ Entries = users };
                         columns = new List<ColumnOptions> { 
-                            new ColumnOptions{ DisplayName = "Entity Id", Id = "Name", Width = 150 },
+                            new ColumnOptions{ DisplayName = "Entity Id", Id = "Name", Width = 350 },
                             new ColumnOptions{ DisplayName = "Jit", Id = "Jit", Width = 60 }
                         };
                     } else if (item is OidcClientNode) {
@@ -754,7 +772,7 @@ namespace RestSsoAdminSnapIn
                         var users = node.GetOidcClients ();
                         datasource = new OidcClientDataSource{ Entries = users };
                         columns = new List<ColumnOptions> { 
-                            new ColumnOptions{ DisplayName = "Client Id", Id = "Name", Width = 150 },
+                            new ColumnOptions{ DisplayName = "Client Id", Id = "Name", Width = 350 },
                             new ColumnOptions{ DisplayName = "Certificate DN", Id = "CertificateDN", Width = 150 }
                         };
                     } else if (item is ServerNode) {
@@ -767,7 +785,7 @@ namespace RestSsoAdminSnapIn
                         columns = new List<ColumnOptions> { new ColumnOptions {
                                 DisplayName = "Name",
                                 Id = "Name",
-                                Width = 250,
+                                Width = 350,
                             }
                         };
                     } else if (item is ExternalDomainsNode) {
@@ -780,7 +798,7 @@ namespace RestSsoAdminSnapIn
                         columns = new List<ColumnOptions> { new ColumnOptions {
                                 DisplayName = "Name",
                                 Id = "Name",
-                                Width = 250,
+                                Width = 350,
                             }
                         };
                     } else if (item is ExternalDomainNode) {
@@ -793,7 +811,7 @@ namespace RestSsoAdminSnapIn
                         columns = new List<ColumnOptions> { new ColumnOptions {
                                 DisplayName = "Name",
                                 Id = "Name",
-                                Width = 250,
+                                Width = 350,
                             }
                         };
                     } else if (item is TenantNode) {
@@ -807,7 +825,7 @@ namespace RestSsoAdminSnapIn
                         columns = new List<ColumnOptions> { new ColumnOptions {
                                 DisplayName = "Name",
                                 Id = "Name",
-                                Width = 250,
+                                Width = 350,
                             }
                         };
                     } else {
@@ -818,7 +836,7 @@ namespace RestSsoAdminSnapIn
                         columns = new List<ColumnOptions> { new ColumnOptions {
                                 DisplayName = "Name",
                                 Id = "Name",
-                                Width = 250,
+                                Width = 350,
                             }
                         };
                     }
@@ -928,13 +946,9 @@ namespace RestSsoAdminSnapIn
 								var tenant = node.GetTenant ();
 								var user = ((GroupsDataSource)ob.splitViewController.MainTableView.DataSource).Entries [row];
 								var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (ob._serverDto.ServerName);
-								var memberInfo = new GroupMembershipDto ();
+								var memberInfo = new GroupMembershipDto();
 								var userInfo = SnapInContext.Instance.ServiceGateway.Group.GetMembers (ob._serverDto, tenant, user, GroupMemberType.USER, auth.Token);
 								memberInfo.Users = userInfo.Users == null ? new List<UserDto> () : new List<UserDto> (userInfo.Users);
-								if (node.IsSystemDomain) {
-									userInfo = SnapInContext.Instance.ServiceGateway.Group.GetMembers (ob._serverDto, tenant, user, GroupMemberType.SOLUTIONUSER, auth.Token);
-									memberInfo.SolutionUsers = userInfo.SolutionUsers == null ? new List<SolutionUserDto> () : new List<SolutionUserDto> (userInfo.SolutionUsers);
-								}
 								userInfo = SnapInContext.Instance.ServiceGateway.Group.GetMembers (ob._serverDto, tenant, user, GroupMemberType.GROUP, auth.Token);
 								memberInfo.Groups = userInfo.Groups == null ? new List<GroupDto> () : new List<GroupDto> (userInfo.Groups);
 

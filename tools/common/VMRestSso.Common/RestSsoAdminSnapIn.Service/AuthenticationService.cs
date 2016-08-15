@@ -29,18 +29,20 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Authentication
     public class AuthenticationService
     {
         private readonly IWebRequestManager _webRequestManager;
-        public AuthenticationService(IWebRequestManager webRequestManager)
+        private readonly IServiceConfigManager _serviceConfigManager;
+        public AuthenticationService(IWebRequestManager webRequestManager, IServiceConfigManager serviceConfigManager)
         {
             _webRequestManager = webRequestManager;
+            _serviceConfigManager = serviceConfigManager;
         }
 
         public AuthTokenDto Login(ServerDto serverDto, LoginDto loginDto, string clientId)
         {
             IAuthenticationService tokenService = null;
-            if(serverDto.TokenType == TokenType.SAML) 
-                tokenService = new SamlTokenService(_webRequestManager);
-            else 
-                tokenService = new JwtTokenService(_webRequestManager);
+            if(serverDto.TokenType == TokenType.SAML)
+                tokenService = new SamlTokenService(_webRequestManager, _serviceConfigManager);
+            else
+                tokenService = new JwtTokenService(_webRequestManager, _serviceConfigManager);
             return tokenService.Authenticate(serverDto, loginDto, clientId);
         }
 
@@ -48,9 +50,9 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Authentication
         {
             IAuthenticationService tokenService = null;
             if (serverDto.TokenType == TokenType.SAML)
-                tokenService = new SamlTokenService(_webRequestManager);
+                tokenService = new SamlTokenService(_webRequestManager, _serviceConfigManager);
             else
-                tokenService = new JwtTokenService(_webRequestManager);
+                tokenService = new JwtTokenService(_webRequestManager, _serviceConfigManager);
             return tokenService.Refresh(serverDto, loginDto, tokenToRefresh);
         }        
     }

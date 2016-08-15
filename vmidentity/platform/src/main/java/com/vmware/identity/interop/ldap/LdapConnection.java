@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.logging.Log;
@@ -124,13 +125,13 @@ class LdapConnection implements ILdapConnectionExWithGetConnectionString
 
         ILdapClientLibrary ldapClientLibrary = getLdapLibrary();
 
-        long startedAt = System.currentTimeMillis();
+        long startedAt = System.nanoTime();
         try {
             ldapClientLibrary.ldap_bind_s( this._connectionContext, dn, cred, method.getCode() );
         }finally {
             if (perfLog.isTraceEnabled()) {
                 perfLog.trace(String.format(
-                    "bindConnection took [%d]ms", System.currentTimeMillis() - startedAt));
+                    "bindConnection took [%d]ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)));
             }
         }
     }
@@ -142,7 +143,7 @@ class LdapConnection implements ILdapConnectionExWithGetConnectionString
 
         ILdapClientLibrary ldapClientLibrary = getLdapLibrary();
 
-        long startedAt = System.currentTimeMillis();
+        long startedAt = System.nanoTime();
         try{
             ldapClientLibrary.ldap_sasl_bind_s(this._connection, userName, domainName, userPassword);
         }
@@ -150,7 +151,7 @@ class LdapConnection implements ILdapConnectionExWithGetConnectionString
         {
             if (perfLog.isTraceEnabled()) {
                 perfLog.trace(String.format(
-                    "bindConnection took [%d]ms", System.currentTimeMillis() - startedAt));
+                    "bindConnection took [%d]ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)));
             }
         }
     }
@@ -664,13 +665,13 @@ class LdapConnection implements ILdapConnectionExWithGetConnectionString
 
         ILdapClientLibrary ldapClientLibrary = getLdapLibrary();
 
-        long startedAt = System.currentTimeMillis();
+        long startedAt = System.nanoTime();
         try {
             ldapClientLibrary.ldap_sasl_srp_bind_s(this._connection, upn, userPassword);
         }finally {
             if (perfLog.isTraceEnabled()) {
                 perfLog.trace(String.format(
-                    "bindSaslSrpConnection took [%d]ms", System.currentTimeMillis() - startedAt));
+                    "bindSaslSrpConnection took [%d]ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)));
             }
         }
     }
@@ -709,7 +710,7 @@ class LdapConnection implements ILdapConnectionExWithGetConnectionString
     private <T> T execute(Callable<T> ldapOp)
     {
         T result  = null;
-        long startedAt = System.currentTimeMillis();
+        long startedAt = System.nanoTime();
         try {
           result = ldapOp.call();
         }
@@ -725,7 +726,7 @@ class LdapConnection implements ILdapConnectionExWithGetConnectionString
             if (perfLog.isTraceEnabled())
             {
                 perfLog.trace(String.format(
-                    "ldap operation took [%d]ms", System.currentTimeMillis() - startedAt));
+                    "ldap operation took [%d]ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)));
             }
         }
 

@@ -322,6 +322,28 @@ error:
     return dwError;
 }
 
+DWORD
+VmDirConditionBroadcast(
+    PVMDIR_COND pCondition
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+
+    if ((pCondition == NULL) ||
+        (pCondition->bInitialized == FALSE))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = pthread_cond_broadcast(&(pCondition->cond));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+error:
+
+    return dwError;
+}
+
 static
 PVOID
 ThreadFunction(

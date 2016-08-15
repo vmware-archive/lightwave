@@ -11,7 +11,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
- 
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -24,6 +24,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Core.Crypto;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Helpers;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
+using Vmware.Tools.RestSsoAdminSnapIn.Presenters;
 using Vmware.Tools.RestSsoAdminSnapIn.Service;
 using VMwareMMCIDP.UI.Common.Utilities;
 
@@ -42,9 +43,10 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
         void UpdateUrlPreview()
         {
             var protocol = cbIsSsl.Checked ? "https" : "http";
+            var service = ScopeNodeExtensions.GetServiceGateway();
             var urlPreview = cbSaml.Checked
-                ? SnapInContext.Instance.ServiceGateway.GetTenantEndpoint(true, protocol, txtServer.Text, txtPort.Text, txtStsUri.Text + "/" + txtDefaultTenant.Text)
-                : SnapInContext.Instance.ServiceGateway.GetTenantEndpoint(false, protocol, txtServer.Text, txtPort.Text, txtDefaultTenant.Text);
+                ? service.GetTenantEndpoint(true, protocol, txtServer.Text, txtPort.Text, txtStsUri.Text + "/" + txtDefaultTenant.Text)
+                : service.GetTenantEndpoint(false, protocol, txtServer.Text, txtPort.Text, txtDefaultTenant.Text);
             lnkURLPreview.Text = urlPreview;
         }
         private string GetProtocol()
@@ -61,7 +63,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 txtRefreshToken.Text = string.Empty;
                 if (ValidateInputs())
                 {
-                    var service = SnapInContext.Instance.ServiceGateway;
+                    var service = ScopeNodeExtensions.GetServiceGateway();
                     var serverDto = new ServerDto() { Tenant = txtDefaultTenant.Text, ServerName = txtServer.Text, Port = txtPort.Text, Protocol = GetProtocol() };
                     serverDto.TokenType = cbSaml.Checked ? TokenType.SAML : TokenType.Bearer;
                     serverDto.Url = lnkURLPreview.Text;
@@ -175,7 +177,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
 
         private AuthTokenDto GetJwtTokenByCertificate(ServiceGateway service, ServerDto serverDto)
         {
-            var cert = new X509Certificate2(txtCertificate.Text);
+            var cert = new X509Certificate2(txtCertificate.Text);            
             var rsaKey = ShaWithRsaSigner.PrivatePemKeyToRSACryptoServiceProvider(txtPrivateKey.Text);
             return service.JwtTokenService.GetTokenFromCertificate(serverDto, cert, rsaKey);
         }

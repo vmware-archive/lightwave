@@ -115,6 +115,7 @@
     <Compile Include="Presenters\Nodes\UsersAndGroupsNode.cs" />
     <Compile Include="Presenters\Nodes\UsersNode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SnapIn\ServiceGatewayManager.cs" />
     <Compile Include="SnapIn\SnapInContext.cs" />
     <Compile Include="SnapIn\SsoAdminSnapInException.cs" />
     <Compile Include="TreeImageIndex.cs" />
@@ -165,6 +166,12 @@
     </Compile>
     <Compile Include="Views\AdvancedExternalDomain.designer.cs">
       <DependentUpon>AdvancedExternalDomain.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Views\AboutServerView.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Views\AboutServerView.designer.cs">
+      <DependentUpon>AboutServerView.cs</DependentUpon>
     </Compile>
     <Compile Include="Views\Probe.cs">
       <SubType>Form</SubType>
@@ -483,6 +490,9 @@
     <EmbeddedResource Include="Views\AdvancedExternalDomain.resx">
       <DependentUpon>AdvancedExternalDomain.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Views\AboutServerView.resx">
+      <DependentUpon>AboutServerView.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Views\Probe.resx">
       <DependentUpon>Probe.cs</DependentUpon>
     </EmbeddedResource>
@@ -642,6 +652,10 @@
     <EmbeddedResource Include="Images\User.ico" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
+      <Project>{cd959e2e-5b9c-4329-b085-352844cfdcdd}</Project>
+      <Name>VMIdentity.CommonUtils</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\common\VMRestSso.Common\RestSsoAdminSnapIn.Core\RestSsoAdminSnapIn.Core.csproj">
       <Project>{b64d4a16-c162-4fcd-943a-aeb556769d3c}</Project>
       <Name>RestSsoAdminSnapIn.Core</Name>

@@ -25,16 +25,16 @@ import org.powermock.api.easymock.PowerMock;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import com.vmware.identity.openidconnect.common.AccessToken;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.GSSTicketGrant;
-import com.vmware.identity.openidconnect.common.HttpResponse;
-import com.vmware.identity.openidconnect.common.IDToken;
 import com.vmware.identity.openidconnect.common.ParseException;
-import com.vmware.identity.openidconnect.common.RefreshToken;
-import com.vmware.identity.openidconnect.common.TokenErrorResponse;
-import com.vmware.identity.openidconnect.common.TokenSuccessResponse;
+import com.vmware.identity.openidconnect.protocol.AccessToken;
+import com.vmware.identity.openidconnect.protocol.GSSTicketGrant;
+import com.vmware.identity.openidconnect.protocol.HttpResponse;
+import com.vmware.identity.openidconnect.protocol.IDToken;
+import com.vmware.identity.openidconnect.protocol.RefreshToken;
+import com.vmware.identity.openidconnect.protocol.TokenErrorResponse;
+import com.vmware.identity.openidconnect.protocol.TokenSuccessResponse;
 
 /**
  * Negotiate GSS Response Test
@@ -54,10 +54,10 @@ public class NegotiateGssResponseTest {
     private static HttpResponse httpResponseGssContinueWrongClientId;
     private static HttpResponse httpResponseGssSuccess;
     private static HttpResponse httpResponseError;
-    private static TokenSpec tokenSpec = PowerMock.createMock(TokenSpec.class);
+    private static TokenSpec tokenSpec = TokenSpec.EMPTY;
     private static URI tokenEndpointURI = URI.create("https://abc.com/token");
-    private static ClientID clientId = new ClientID();
-    private static HolderOfKeyConfig holderOfKeyConfig = PowerMock.createMock(HolderOfKeyConfig.class);
+    private static ClientID clientId = new ClientID("__client_id__");
+    private static HolderOfKeyConfig holderOfKeyConfig = null;
     private static KeyStore keyStore = PowerMock.createMock(KeyStore.class);
     private static String contextId = "abcd1234";
     private static String wrongContextId = "efgh5678";

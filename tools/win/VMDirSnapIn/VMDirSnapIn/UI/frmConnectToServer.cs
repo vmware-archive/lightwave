@@ -14,9 +14,11 @@
 using System;
 using System.Windows.Forms;
 using VMDir.Common.DTO;
-using VMDirSnapIn.Services;
+using VMDirSnapIn.Utilities;
 using VMDir.Common.VMDirUtilities;
 using VMwareMMCIDP.UI.Common.Utilities;
+using VMIdentity.CommonUtils;
+using System.Text;
 
 namespace VMDirSnapIn.UI
 {
@@ -29,9 +31,6 @@ namespace VMDirSnapIn.UI
         public frmConnectToServer()
         {
             InitializeComponent();
-
-            txtBaseDN.Text = "dc=lightwave,dc=local";
-            txtBindUPN.Text = "Administrator@lightwave.local";
         }
 
         public frmConnectToServer(VMDirServerDTO dto)
@@ -39,35 +38,47 @@ namespace VMDirSnapIn.UI
         {
             _dto = dto;
             txtDirectoryServer.Text = dto.Server;
+            var tenant = MMCMiscUtil.GetBrandConfig(CommonConstants.TENANT);
+
+            if (string.IsNullOrWhiteSpace(dto.BindDN))
+            {
+                txtBindUPN.Text = "Administrator@" + tenant;
+            }
+            else
+            {
+                txtBindUPN.Text = dto.BindDN;
+            }
+            if (string.IsNullOrWhiteSpace(dto.BaseDN))
+            {
+                txtBaseDN.Text = CommonConstants.GetDNFormat(tenant);
+            }
+            else{
+                txtBaseDN.Text = dto.BaseDN;
+            }
         }
 
         private void btnOK_Click(object sender, EventArgs e)
         {
-            try
-            {
-                if (!ValidateForm())
-                {
-                    this.DialogResult = DialogResult.None;
-                    return;
-                }
+            MiscUtilsService.CheckedExec(delegate
+           {
+               if (!ValidateForm())
+               {
+                   this.DialogResult = DialogResult.None;
+                   return;
+               }
 
-                if (_dto == null)
-                    _dto = VMDirServerDTO.CreateInstance();
+               if (_dto == null)
+                   _dto = VMDirServerDTO.CreateInstance();
 
-                _dto.Server = (txtDirectoryServer.Text).Trim();
-                _dto.BaseDN = (txtBaseDN.Text).Trim();
-                _dto.BindDN = (txtBindUPN.Text).Trim();
-                _dto.Password = txtPassword.Text;
+               _dto.Server = (txtDirectoryServer.Text).Trim();
+               _dto.BaseDN = (txtBaseDN.Text).Trim();
+               _dto.BindDN = (txtBindUPN.Text).Trim();
+               _dto.Password = txtPassword.Text;
 
-                _dto.Connection = new LdapConnectionService(_dto.Server, _dto.BindDN, _dto.Password);
-                _dto.Connection.CreateConnection();
+               _dto.Connection = new LdapConnectionService(_dto.Server, _dto.BindDN, _dto.Password);
 
-                this.Close();
-            }
-            catch (Exception exp)
-            {
-                MiscUtilsService.ShowError(exp);
-            }
+               this.Close();
+           });
         }
 
         private bool ValidateForm()

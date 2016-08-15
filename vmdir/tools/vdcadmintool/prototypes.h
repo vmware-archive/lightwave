@@ -56,4 +56,9 @@ VdcadminSetSRPAuthData(
     VOID
     );
 
+VOID
+VdcadminUrgentReplicationRequest(
+    VOID
+    );
+
 #endif

@@ -22,11 +22,12 @@ VmDirModificationFree(
     PVDIR_MODIFICATION pMod
     )
 {
-    if (pMod != NULL)
+    if (pMod)
     {
-        VmDirFreeBervalArrayContent( pMod->attr.vals, pMod->attr.numVals );
-        VMDIR_SAFE_FREE_MEMORY( pMod->attr.vals );
-        VMDIR_SAFE_FREE_MEMORY( pMod );
+        VmDirFreeBervalContent(&pMod->attr.type);
+        VmDirFreeBervalArrayContent(pMod->attr.vals, pMod->attr.numVals);
+        VMDIR_SAFE_FREE_MEMORY(pMod->attr.vals);
+        VMDIR_SAFE_FREE_MEMORY(pMod);
     }
 }
 
@@ -119,9 +120,9 @@ DWORD
 VmDirAppendAMod(
     PVDIR_OPERATION   pOperation,
     int               modOp,
-    char *            attrName,
+    const char *      attrName,
     int               attrNameLen,
-    char *            attrVal,
+    const char *      attrVal,
     size_t            attrValLen
     )
 {
@@ -154,7 +155,7 @@ VmDirAppendAMod(
         dwError = VmDirAllocateMemory( attrValLen + 1, (PVOID *)&(mod->attr.vals[0].lberbv.bv_val) );
         BAIL_ON_VMDIR_ERROR( dwError );
 
-        dwError = VmDirCopyMemory( mod->attr.vals[0].lberbv.bv_val, attrValLen + 1, attrVal, attrValLen);
+        dwError = VmDirCopyMemory( mod->attr.vals[0].lberbv.bv_val, attrValLen + 1, (const PVOID)attrVal, attrValLen);
         BAIL_ON_VMDIR_ERROR( dwError );
 
         mod->attr.vals[0].lberbv.bv_len = attrValLen;
@@ -224,7 +225,7 @@ VmDirModAddSingleValueAttribute(
                     (PVOID*)&pMod->attr.vals[0].lberbv.bv_val );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirCopyMemory( pMod->attr.vals[0].lberbv.bv_val, iAttrValueLen + 1, (PCVOID)pszAttrValue, iAttrValueLen );
+    dwError = VmDirCopyMemory( pMod->attr.vals[0].lberbv.bv_val, iAttrValueLen + 1, pszAttrValue, iAttrValueLen );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pMod->attr.vals[0].bOwnBvVal = TRUE;

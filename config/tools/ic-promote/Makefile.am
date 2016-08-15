@@ -6,10 +6,16 @@ ic_promote_SOURCES = \
 ic_promote_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
+    @VMDIR_INCLUDES@ \
+    @VMAFD_INCLUDES@ \
     @LW_INCLUDES@
 
 ic_promote_LDADD = \
     @top_builddir@/cfgutils/libcfgutils.la \
+    @VMAFD_LIBS@ \
+    @VMDNS_LIBS@ \
+    @VMCA_LIBS@ \
+    @VMDIR_LIBS@ \
     @LWSM_LIBS@ \
     @LWADVAPI_LIBS@ \
     @LWIO_LIBS@ \
@@ -24,6 +30,7 @@ ic_promote_LDADD = \
     @PTHREAD_LIBS@
 
 ic_promote_LDFLAGS = \
+    @VMDNS_LDFLAGS@ \
     @VMCA_LDFLAGS@ \
     @VMAFD_LDFLAGS@ \
     @VMDIR_LDFLAGS@ \

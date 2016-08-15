@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.21022</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{79AAC091-FAA1-4E15-80C4-DBD4731F387C}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>VMDNSSnapIn</RootNamespace>
+    <AssemblyName>VMDNSSnapIn</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>3.5</OldToolsVersion>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="microsoft.managementconsole, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+    </Reference>
+    <Reference Include="VMDNS.Client, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\interop\lib64\VMDNS.Client.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration.Install" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data.DataSetExtensions">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ListViews\DNSRecordListView.cs" />
+    <Compile Include="ListViews\ZoneDetailsListview.cs" />
+    <Compile Include="Nodes\VMDNSForwardZonesNode.cs" />
+    <Compile Include="Nodes\VMDNSReverseZonesNode.cs" />
+    <Compile Include="Nodes\VMDNSRootNode.cs" />
+    <Compile Include="Nodes\VMDNSServerNode.cs" />
+    <Compile Include="Nodes\VMDNSZoneEntryNode.cs" />
+    <Compile Include="Nodes\VMDNSZonesBaseNode.cs" />
+    <Compile Include="Nodes\VMDNSZonesNode.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Helpers\ResourceHelper.cs" />
+    <Compile Include="Helpers\UIErrorHelper.cs" />
+    <Compile Include="UI\AddNewForwardZone.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\AddNewForwardZone.Designer.cs">
+      <DependentUpon>AddNewForwardZone.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\AddNewRecord.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\RecordViews\AddNewRecord.Designer.cs">
+      <DependentUpon>AddNewRecord.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\AddNewReverseZone.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\AddNewReverseZone.Designer.cs">
+      <DependentUpon>AddNewReverseZone.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\frmLogin.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\frmLogin.designer.cs">
+      <DependentUpon>frmLogin.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\ChooseRecordType.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\RecordViews\ChooseRecordType.Designer.cs">
+      <DependentUpon>ChooseRecordType.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\RecordClassA.cs" />
+    <Compile Include="UI\RecordViews\RecordClassAAAA.cs" />
+    <Compile Include="UI\RecordViews\RecordClassBase.cs" />
+    <Compile Include="UI\RecordViews\RecordClassCName.cs" />
+    <Compile Include="UI\RecordViews\RecordClassNS.cs" />
+    <Compile Include="UI\RecordViews\RecordClassPtr.cs" />
+    <Compile Include="UI\RecordViews\RecordClassSOA.cs" />
+    <Compile Include="UI\RecordViews\RecordClassSRV.cs" />
+    <Compile Include="UI\RecordViews\RecordFactory.cs" />
+    <Compile Include="UI\ServerOptions.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\ServerOptions.Designer.cs">
+      <DependentUpon>ServerOptions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ZoneProperties.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\ZoneProperties.Designer.cs">
+      <DependentUpon>ZoneProperties.cs</DependentUpon>
+    </Compile>
+    <Compile Include="VMDNSSnapIn.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="VMDNSSnapInEnvironment.cs" />
+    <Compile Include="VMDNSTreeImageIndex.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\common\VMDNS.Common\VMDNS.Common.csproj">
+      <Project>{e643dc2d-59b2-40b0-8277-462172f21ed1}</Project>
+      <Name>VMDNS.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
+      <Project>{cd959e2e-5b9c-4329-b085-352844cfdcdd}</Project>
+      <Name>VMIdentity.CommonUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\VMwareMMCIDP.UI.Common\VMwareMMCIDP.UI.Common.csproj">
+      <Project>{474831ab-37de-415c-b944-37e2d10d1e85}</Project>
+      <Name>VMwareMMCIDP.UI.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Images\Toolbar.bmp" />
+    <EmbeddedResource Include="UI\AddNewForwardZone.resx">
+      <DependentUpon>AddNewForwardZone.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\RecordViews\AddNewRecord.en.resx">
+      <DependentUpon>AddNewRecord.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\RecordViews\AddNewRecord.resx">
+      <DependentUpon>AddNewRecord.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\AddNewReverseZone.resx">
+      <DependentUpon>AddNewReverseZone.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\frmLogin.resx">
+      <DependentUpon>frmLogin.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\RecordViews\ChooseRecordType.resx">
+      <DependentUpon>ChooseRecordType.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\ServerOptions.resx">
+      <DependentUpon>ServerOptions.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\ZoneProperties.resx">
+      <DependentUpon>ZoneProperties.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

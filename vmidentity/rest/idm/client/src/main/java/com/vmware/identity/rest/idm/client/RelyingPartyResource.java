@@ -73,6 +73,27 @@ public class RelyingPartyResource extends ClientResource {
     }
 
     /**
+     * Register a new Relying Party.
+     *
+     * <p><b>Required Role:</b> {@code administrator}.
+     *
+     * @param tenant the name of the tenant to register the relying party with.
+     * @param relyingPartyConfigData the XML formatted content of the relying party being registered.
+     * @return the newly registered relying party.
+     * @throws ClientException if a client side error occurs.
+     * @throws ClientProtocolException in case of an http protocol error.
+     * @throws WebApplicationException in the event of an application error.
+     * @throws HttpException if there was a generic error with the remote call.
+     * @throws IOException if there was an error with the IO stream.
+     */
+    public RelyingPartyDTO register(String tenant, String relyingPartyConfigData) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
+        URI uri = buildURI(parent.getHostRetriever(), RELYING_PARTY_URI, tenant);
+
+        HttpPost post = RequestFactory.createPostRequest(uri, parent.getToken(), relyingPartyConfigData);
+        return execute(parent.getClient(), post, RelyingPartyDTO.class);
+    }
+
+    /**
      * Request the list of Relying Parties associated with a tenant.
      *
      * <p><b>Required Role:</b> {@code administrator}.

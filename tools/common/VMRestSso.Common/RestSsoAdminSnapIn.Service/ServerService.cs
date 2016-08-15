@@ -24,19 +24,36 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Server
     public class ServerService
     {
         private readonly IWebRequestManager _webRequestManager;
-        public ServerService(IWebRequestManager webRequestManager)
+        private readonly IServiceConfigManager _serviceConfigManager;
+        public ServerService(IWebRequestManager webRequestManager, IServiceConfigManager serviceConfigManager)
         {
             _webRequestManager = webRequestManager;
+            _serviceConfigManager = serviceConfigManager;
         }
+
+        public ServerInfoDto GetServerInfo(ServerDto server, Token token)
+        {
+            var url = string.Format(_serviceConfigManager.GetServerAboutInfoEndPoint(), server.Protocol, server.ServerName, server.Port);
+            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+            var requestConfig = new RequestSettings
+            {
+                Method = HttpMethod.Get,
+            };
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
+            headers.Add(HttpRequestHeader.Authorization, "Bearer " + token.AccessToken);
+            var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, null);
+            var serverInfo = JsonConvert.Deserialize<ServerInfoDto>(response);
+            return serverInfo;
+        } 
         public IList<ComputerDto> GetComputers(ServerDto server, Token token)
         {
-            var url = string.Format(ServiceConfigManager.GetServerComputersPostEndPoint, server.Protocol, server.ServerName, server.Port);
+            var url = string.Format(_serviceConfigManager.GetServerComputersPostEndPoint(), server.Protocol, server.ServerName, server.Port);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
             var computers = JsonConvert.Deserialize<List<ComputerDto>>(response);
@@ -45,7 +62,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Server
 
         public string GetStatus(ServerDto server, Token token)
         {
-            var url = string.Format(ServiceConfigManager.GetServerStatusPostEndPoint, server.Protocol, server.ServerName, server.Port);
+            var url = string.Format(_serviceConfigManager.GetServerStatusPostEndPoint(), server.Protocol, server.ServerName, server.Port);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {

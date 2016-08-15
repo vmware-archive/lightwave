@@ -58,6 +58,14 @@ VmDirMLDelete(
     dwError = VmDirInternalDeleteEntry( pOperation );
     BAIL_ON_VMDIR_ERROR( dwError );
 
+    if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
+    {
+        pOperation->pBEIF->pfnBESetMaxOriginatingUSN(pOperation->pBECtx,
+                                                     pOperation->pBECtx->wTxnUSN);
+    }
+
+    VmDirPerformUrgentReplIfRequired(pOperation, pOperation->pBECtx->wTxnUSN);
+
 cleanup:
 
     VmDirSendLdapResult( pOperation );
@@ -107,12 +115,9 @@ VmDirInternalDeleteEntry(
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
                                   retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)) );
 
-    if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
-    {
-        // Execute pre modify apply Delete plugin logic
-        retVal = VmDirExecutePreModApplyDeletePlugins(pOperation, NULL, retVal);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreModApplyDelete plugin failed - (%u)",  retVal );
-    }
+    // Execute pre modify apply Delete plugin logic
+    retVal = VmDirExecutePreModApplyDeletePlugins(pOperation, NULL, retVal);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreModApplyDelete plugin failed - (%u)",  retVal );
 
     retVal = VmDirNormalizeMods( pOperation->pSchemaCtx, modReq->mods, &pszLocalErrMsg );
     BAIL_ON_VMDIR_ERROR( retVal );
@@ -288,7 +293,8 @@ txnretry:
         BAIL_ON_VMDIR_ERROR( retVal );
 
         // Apply modify operations to the current entry in the DB.
-        retVal = VmDirApplyModsToEntryStruct( pOperation->pSchemaCtx, modReq, pEntry, &pszLocalErrMsg );
+        retVal = VmDirApplyModsToEntryStruct( pOperation->pSchemaCtx, modReq,
+pEntry, NULL, &pszLocalErrMsg );
         BAIL_ON_VMDIR_ERROR( retVal );
 
         // Update DBs
@@ -349,27 +355,27 @@ txnretry:
 
 cleanup:
 
+    {
+        int iPostCommitPluginRtn  = 0;
+
+        // Execute post Delete commit plugin logic
+        iPostCommitPluginRtn = VmDirExecutePostDeleteCommitPlugins(pOperation, pEntry, retVal);
+        if ( iPostCommitPluginRtn != LDAP_SUCCESS
+                &&
+                iPostCommitPluginRtn != pOperation->ldapResult.errCode    // pass through
+        )
+        {
+            VmDirLog( LDAP_DEBUG_ANY, "InternalDeleteEntry: VdirExecutePostDeleteCommitPlugins - code(%d)",
+                    iPostCommitPluginRtn);
+        }
+    }
+
     if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
     {
-        if (retVal == LDAP_SUCCESS)
-        {
-            int iPostCommitPluginRtn  = 0;
-
-            // Execute post Delete commit plugin logic
-            iPostCommitPluginRtn = VmDirExecutePostDeleteCommitPlugins(pOperation, pEntry, retVal);
-            if ( iPostCommitPluginRtn != LDAP_SUCCESS
-                 &&
-                 iPostCommitPluginRtn != pOperation->ldapResult.errCode    // pass through
-               )
-            {
-                VmDirLog( LDAP_DEBUG_ANY, "InternalDeleteEntry: VdirExecutePostDeleteCommitPlugins - code(%d)",
-                          iPostCommitPluginRtn);
-            }
-        }
-
         // In case of replication, modReq is owned by the Replication thread/logic
         DeleteMods ( modReq );
     }
+
     VmDirFreeEntryContent ( &entry );
 
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
@@ -546,7 +552,7 @@ DeleteRefAttributesValue(
     mr.mods = &mod;
     mr.numMods = 1;
 
-    retVal = pOperation->pBEIF->pfnBEGetCandidates( pOperation->pBECtx, f);
+    retVal = pOperation->pBEIF->pfnBEGetCandidates(pOperation->pBECtx, f, 0);
     if ( retVal != 0 )
     {
         if (retVal == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
@@ -617,7 +623,7 @@ GenerateDeleteAttrsMods(
     for ( attr = pEntry->attrs; attr != NULL; attr = attr->next )
     {
         // Retain the following kind of attributes
-        if (attr->pATDesc->usage != VDIR_ATTRIBUTETYPE_USER_APPLICATIONS ||
+        if (attr->pATDesc->usage != VDIR_LDAP_USER_APPLICATIONS_ATTRIBUTE ||
             VmDirStringCompareA( attr->type.lberbv.bv_val, ATTR_OBJECT_CLASS, FALSE ) == 0)
         {
             continue;

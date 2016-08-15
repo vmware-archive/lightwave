@@ -23,6 +23,7 @@ using Org.BouncyCastle.Crypto;
 using System.IO;
 using Org.BouncyCastle.X509;
 using System.Security.Cryptography;
+using Org.BouncyCastle.Asn1.X509;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Core.Crypto
 {
@@ -91,5 +92,17 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Core.Crypto
             rsaKey.ImportParameters(rsaParameters);
             return rsaKey;
         }
+
+        public static string GetX500SubjectDN(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate)
+        {
+            var bCert = DotNetUtilities.FromX509Certificate(certificate);
+            return bCert.SubjectDN.ToString(true, X509Name.RFC2253Symbols);
+        }
+
+        public static string GetX500IssuerDN(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate)
+        {
+            var bCert = DotNetUtilities.FromX509Certificate(certificate);
+            return bCert.IssuerDN.ToString(true, X509Name.RFC2253Symbols);
+        }    
     }
 }

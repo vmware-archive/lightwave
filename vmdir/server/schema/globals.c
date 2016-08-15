@@ -30,12 +30,13 @@
 VDIR_SCHEMA_GLOBALS gVdirSchemaGlobals =
     {
         // NOTE: order of fields MUST stay in sync with struct definition...
-        VMDIR_SF_INIT(.mutex, NULL),
-        VMDIR_SF_INIT(.pszDN, NULL),
         VMDIR_SF_INIT(.pCtx, NULL),
-        VMDIR_SF_INIT(.pSchema, NULL),
-        VMDIR_SF_INIT(.bHasPendingChange, FALSE),
-        VMDIR_SF_INIT(.pLoadFromFileEntry, NULL)
+        VMDIR_SF_INIT(.pLdapSchema, NULL),
+        VMDIR_SF_INIT(.pVdirSchema, NULL),
+        VMDIR_SF_INIT(.pPendingLdapSchema, NULL),
+        VMDIR_SF_INIT(.ctxMutex, NULL),
+        VMDIR_SF_INIT(.cacheModMutex, NULL),
+        VMDIR_SF_INIT(.pAttrIdMap, NULL)
     };
 
 VDIR_SYNTAX_GLOBALS gVdirSyntaxGlobals =
@@ -48,6 +49,10 @@ VDIR_SYNTAX_GLOBALS gVdirSyntaxGlobals =
 VDIR_MATCHING_RULE_GLOBALS gVdirMatchingRuleGlobals =
     {
         // NOTE: order of fields MUST stay in sync with struct definition...
-        VMDIR_SF_INIT(.usSize, 0),
-        VMDIR_SF_INIT(.pMatchingRule, NULL)
+        VMDIR_SF_INIT(.usEqualityMRSize, 0),
+        VMDIR_SF_INIT(.pEqualityMatchingRule, NULL),
+        VMDIR_SF_INIT(.usOrderingMRSize, 0),
+        VMDIR_SF_INIT(.pOrderingMatchingRule, NULL),
+        VMDIR_SF_INIT(.usSubstrMRSize, 0),
+        VMDIR_SF_INIT(.pSubstrMatchingRule, NULL)
     };

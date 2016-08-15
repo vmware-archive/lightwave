@@ -28,13 +28,15 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
     public class SamlTokenService : IAuthenticationService
     {
         private readonly IWebRequestManager _webRequestManager;
-        public SamlTokenService(IWebRequestManager webRequestManager)
+        private readonly IServiceConfigManager _serviceConfigManager;
+        public SamlTokenService(IWebRequestManager webRequestManager, IServiceConfigManager serviceConfigManager)
         {
             _webRequestManager = webRequestManager;
+            _serviceConfigManager = serviceConfigManager;
         }
         public AuthTokenDto Authenticate(ServerDto serverDto, LoginDto loginDto, string clientId)
         {
-			var url = string.Format(ServiceConfigManager.SamlLegacyEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, serverDto.StsUrl + "/" + loginDto.TenantName);
+            var url = string.Format(_serviceConfigManager.GetSamlLegacyEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, serverDto.StsUrl + "/" + loginDto.TenantName);
             string soapString = XmlResourceHelper.GetResourceXml("Vmware.Tools.RestSsoAdminSnapIn.Service.xml.SAMLRequest.xml");
 
             int lifeInSeconds = 300;
@@ -62,6 +64,9 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
                 doc.Load(reader);
             var node = doc.GetElementsByTagName("saml2:Assertion")[0];
             var signature = doc.GetElementsByTagName("ds:SignatureValue")[0];
+			var groups = doc.GetElementsByTagName ("saml2:AttributeValue");
+
+			var role = GetRole (loginDto.TenantName, groups);
             var rawToken = string.Empty;
             if (node != null)
             {
@@ -69,10 +74,50 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
             }
             byte[] bytes = System.Text.Encoding.UTF8.GetBytes(rawToken);
             rawToken = Convert.ToBase64String(bytes);
-            var token = new Token(rawToken, serverDto.TokenType) { Raw = rawToken, ClientId = clientId, Signature = signature.InnerXml,TokenType = TokenType.SAML.ToString()};
+			var token = new Token(rawToken, serverDto.TokenType) { 
+				Raw = rawToken, 
+				ClientId = clientId, 
+				Signature = signature.InnerXml,
+				TokenType = TokenType.SAML.ToString(), 
+				Role = role
+			};
             return new AuthTokenDto(Refresh) { Token = token, ClaimsPrincipal = null, Login = loginDto, ServerDto = serverDto };
             throw new Exception(responseFromServer);
         }
+
+		private string GetRole(string domain, XmlNodeList groups){
+
+			var role = string.Empty;
+			var adminGroup = domain + "\\Administrators";
+			var usersGroup = domain + "\\Users";
+			var everyoneGroup = domain + "\\Everyone";
+
+			if (groups != null) {
+				bool isAdmin = false;
+				bool isUser = false;
+				bool isGuest = false;
+				foreach (XmlNode group in groups) {
+					if (group.InnerText == adminGroup) {
+						isAdmin = true;
+					}
+					if (group.InnerText == usersGroup) {
+						isUser = true;;
+					}
+					if (group.InnerText == everyoneGroup) {
+						isGuest = true;
+					}
+				}
+
+				if (isAdmin) {
+					role = "Administrator";
+				} else if (isUser) {
+					role = "RegularUser";
+				} else if (isGuest) {
+					role = "GuestUser";
+				}
+			}
+			return role;
+		}
         public string GetSamlTokenFromToken(ServerDto serverDto, string tokenXML, X509Certificate2 cert, RSACryptoServiceProvider rsaKey)
         {            
             var soapString = XmlResourceHelper.GetResourceXml("Vmware.Tools.RestSsoAdminSnapIn.Service.xml.SamlTokenByToken.xml");

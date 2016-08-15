@@ -1,5 +1,5 @@
 /* *************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved. 
+ * Copyright 2012 VMware, Inc. All rights reserved.
  * ************************************************************************/
 package com.vmware.identity.websso.client;
 
@@ -15,7 +15,7 @@ import org.joda.time.DateTime;
  * Message is a structure which holds single WebSSO message data. It has a
  * number of properties with getters and setters. Many values are get-only
  * though.
- * 
+ *
  */
 public class Message implements Serializable {
 
@@ -49,13 +49,14 @@ public class Message implements Serializable {
     private ValidationResult validationResult; // setable. default is null.
                                                // client library side validation
                                                // result.
+    private boolean isIdpInitiated;    //idp-inited SSO or SLO response. Applicable to response message types.
 
     // required by subclass of serializable
     protected Message() {
     }
 
     public Message(MessageType type, String id, String relayState, DateTime issueInstant, String source, String target,
-            String status, String substatus, String sessionIndex, MessageData messageData, Object tag) {
+            String status, String substatus, String sessionIndex, MessageData messageData, Object tag, boolean isIdpInitiated) {
 
         this.type = type;
         this.id = id;
@@ -70,6 +71,7 @@ public class Message implements Serializable {
         this.tag = tag;
         this.associatedMessages = new LinkedList<Message>();
         this.validationResult = null;
+        this.isIdpInitiated = isIdpInitiated;
     }
 
     public MessageType getType() {
@@ -98,7 +100,7 @@ public class Message implements Serializable {
 
     /**
      * available only in a response message
-     * 
+     *
      */
     public String getStatus() {
         return status;
@@ -106,7 +108,7 @@ public class Message implements Serializable {
 
     /**
      * available only in a response message
-     * 
+     *
      */
     public String getSubstatus() {
         return substatus;
@@ -122,10 +124,6 @@ public class Message implements Serializable {
 
     public Object getTag() {
         return tag;
-    }
-
-    public void setTag(Object tag) {
-        this.tag = tag;
     }
 
     /**
@@ -144,7 +142,7 @@ public class Message implements Serializable {
 
     /**
      * @return the client library validation result
-     * 
+     *
      *         Client code should always check validationResult for
      *         authentication error discovered.
      */
@@ -159,5 +157,11 @@ public class Message implements Serializable {
     public void setValidationResult(ValidationResult validationResult) {
         this.validationResult = validationResult;
     }
+
+    public boolean isIdpInitiated() {
+
+        return isIdpInitiated;
+    }
+
 
 }

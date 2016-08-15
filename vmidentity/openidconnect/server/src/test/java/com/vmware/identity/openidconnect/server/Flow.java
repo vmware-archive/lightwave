@@ -24,9 +24,9 @@ public enum Flow {
     PASSWORD,
     SOLUTION_USER_CREDS,
     CLIENT_CREDS,
-    CLIENT_CERT,
+    PERSON_USER_CERT,
     GSS_TICKET,
-    SECUREID,
+    SECURID,
     REFRESH_TOKEN;
 
     public boolean isImplicit() {
@@ -46,9 +46,9 @@ public enum Flow {
                 this.equals(Flow.PASSWORD) ||
                 this.equals(Flow.CLIENT_CREDS) ||
                 this.equals(Flow.SOLUTION_USER_CREDS) ||
-                this.equals(Flow.CLIENT_CERT) ||
+                this.equals(Flow.PERSON_USER_CERT) ||
                 this.equals(Flow.GSS_TICKET) ||
-                this.equals(Flow.SECUREID) ||
+                this.equals(Flow.SECURID) ||
                 this.equals(Flow.REFRESH_TOKEN);
     }
 }

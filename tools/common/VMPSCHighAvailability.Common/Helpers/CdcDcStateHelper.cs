@@ -104,7 +104,7 @@ namespace VMPSCHighAvailability.Common.Helpers
                 description = Constants.LegacyHealth;
             }
             return description;
-        }
+        }  
 
         public static string GetActiveServiceDesc(InfrastructureDto dc)
         {

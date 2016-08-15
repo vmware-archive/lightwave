@@ -269,22 +269,26 @@ extern "C" {
         }                                           \
     } while(0)
 
-#define VMDIR_LOCK_MUTEX(bInLock, mutex) \
-    do {                                 \
-        if (!(bInLock))                  \
-        {                                \
-            VmDirLockMutex(mutex);       \
-            (bInLock) = TRUE;            \
-        }                                \
+#define VMDIR_LOCK_MUTEX(bInLock, mutex)        \
+    do {                                        \
+        if (!(bInLock))                         \
+        {                                       \
+            if (VmDirLockMutex(mutex) == 0)     \
+            {                                   \
+                (bInLock) = TRUE;               \
+            }                                   \
+        }                                       \
     } while (0)
 
-#define VMDIR_UNLOCK_MUTEX(bInLock, mutex) \
-    do {                                  \
-        if ((bInLock))                    \
-        {                                 \
-            VmDirUnLockMutex(mutex);      \
-            (bInLock) = FALSE;            \
-        }                                 \
+#define VMDIR_UNLOCK_MUTEX(bInLock, mutex)      \
+    do {                                        \
+        if ((bInLock))                          \
+        {                                       \
+            if (VmDirUnLockMutex(mutex) == 0)   \
+            {                                   \
+                (bInLock) = FALSE;              \
+            }                                   \
+        }                                       \
     } while (0)
 
 #define BAIL_WITH_VMDIR_ERROR(dwError, ERROR_CODE)                          \
@@ -558,6 +562,9 @@ extern "C" {
 #define LDAP_DEBUG_TRACE (1)
 #endif
 
+#define METADATA_TOKEN_COUNT 6
+#define HIGHWATER_USN_STEP   100
+#define HIGHWATER_USN_REPL_BUFFER 10000
 
 #define VMDIR_ASCII_aTof(c)     ( (c) >= 'a' && (c) <= 'f' )
 #define VMDIR_ASCII_AToF(c)     ( (c) >= 'A' && (c) <= 'F' )
@@ -673,6 +680,7 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 //#define VMDIR_IPC_GET_SRP_SECRET       3
 #define VMDIR_IPC_SET_SRP_SECRET       4
 #define VMDIR_IPC_GENERATE_PASSWORD    5
+#define VMDIR_IPC_GET_SERVER_STATE     6
 
 //VERSIONS
 #define VER1_INPUT 0

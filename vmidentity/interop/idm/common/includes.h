@@ -21,18 +21,19 @@
  *
  *        Identity Manager - Common utilities
  *
- *        Common header 
+ *        Common header
  *
  * Authors: Sriram Nambakam (snambakam@vmware.com)
  *
  */
 
 #include <config.h>
-#include <vmstssys.h>
 
 #ifdef HAVE_LWMEM_H
 #include <lwmem.h>
 #endif
+
+#include <vmstssys.h>
 
 #include "defines.h"
 

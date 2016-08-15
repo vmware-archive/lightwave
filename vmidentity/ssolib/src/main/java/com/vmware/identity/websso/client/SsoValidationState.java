@@ -1,5 +1,5 @@
 /* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved. 
+ * Copyright 2012 VMware, Inc. All rights reserved.
  **********************************************************************************/
 package com.vmware.identity.websso.client;
 
@@ -38,7 +38,7 @@ import com.vmware.identity.websso.client.endpoint.SsoResponseListener;
 
 /**
  * ValidationState implementation for sso controller.
- * 
+ *
  */
 public class SsoValidationState extends ValidationState {
 
@@ -56,7 +56,7 @@ public class SsoValidationState extends ValidationState {
     /**
      * This function decode sso response and cache response attributes as
      * following members: status subStatus issuerVa issueInstant messageData
-     * 
+     *
      * @param
      * @throws Exception
      */
@@ -91,8 +91,10 @@ public class SsoValidationState extends ValidationState {
         this.validateDestination();
         Message requestMessage = this.validateInResponseTo();
 
-        // remove the request message from the message store as we
-        this.controller.getMessageStore().remove(requestMessage.getId());
+        // remove the request message from the message store as we are done validation of inresponseto.
+        if (null != requestMessage) {
+            this.controller.getMessageStore().remove(requestMessage.getId());
+        }
         if (statusCode.getValue().equals(StatusCode.SUCCESS_URI)) {
 
             this.validateAssertion();
@@ -112,7 +114,6 @@ public class SsoValidationState extends ValidationState {
         // 1. extract and decode saml response.
 
         String samlResponseStr = this.getRequest().getParameter(SamlUtils.SAML_RESPONSE_PARAMETER);
-        logger.debug("Coded SAML Response is " + samlResponseStr);
 
         Validate.notEmpty(samlResponseStr, "Empty SSO response string");
         String decodedResponseStr = new String(Base64.decode(samlResponseStr), "UTF-8");
@@ -139,12 +140,17 @@ public class SsoValidationState extends ValidationState {
     /**
      * @param opensamlResponse2
      */
+    /**
+     * @return The matching request Message object or null.
+     * @throws ValidationException
+     */
     private Message validateInResponseTo() throws ValidationException {
 
         // this is login request ID
         String responseTo = this.opensamlResponse.getInResponseTo();
         logger.info("Validating optional request ID: " + responseTo);
         if (responseTo == null) {
+            this.isIdpInitiated = true;
             return null;
         }
         // else the value must match to a request message.
@@ -161,7 +167,7 @@ public class SsoValidationState extends ValidationState {
 
     /**
      * Validate assertion
-     * 
+     *
      * @throws Exception
      */
     private void validateAssertion() throws Exception {
@@ -183,9 +189,9 @@ public class SsoValidationState extends ValidationState {
         try {
             cert = SamlUtils.getIDPCertByIssuer(this.controller.getMetadataSettings(), this.getIssuerVal());
         } catch (Exception e) {
-            logger.info("Can't find IDP certificate with IDP: " + this.getIssuerVal());
-            this.setValidationResult(new ValidationResult(HttpServletResponse.SC_FORBIDDEN, Error.BAD_REQUEST,
-                    Error.ISSUER));
+            logger.error("Can't find IDP certificate with IDP: " + this.getIssuerVal());
+            this.setValidationResult(new ValidationResult(HttpServletResponse.SC_FORBIDDEN, Error.BAD_RESPONSE,
+                    null)); //No details should be included in error sent to SP.
             throw e;
         }
 
@@ -222,7 +228,7 @@ public class SsoValidationState extends ValidationState {
 
     /**
      * Parse and validate Assertion. Construct AuthnData and return it
-     * 
+     *
      * @return MessageData (AuthnData)
      * @throws ValidationException
      * @throws WebssoClientException
@@ -358,7 +364,7 @@ public class SsoValidationState extends ValidationState {
      * exist. In that case we collect attributes across statements into one
      * attribute list. Maybe we should just look at one statement and leave that
      * as restriction.
-     * 
+     *
      * @return List of Attribute
      */
     private List<Attribute> parseAttributes(List<AttributeStatement> statements) {
@@ -389,7 +395,7 @@ public class SsoValidationState extends ValidationState {
 
     /**
      * Create a List of String representing attribute value in SAML 2 Assertion
-     * 
+     *
      * @return List of string.
      */
     private List<String> parseSamlAttributeValues(List<org.opensaml.xml.XMLObject> list) {

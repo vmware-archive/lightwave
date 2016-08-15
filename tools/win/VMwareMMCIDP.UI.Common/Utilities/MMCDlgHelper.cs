@@ -77,7 +77,6 @@ namespace VMwareMMCIDP.UI.Common.Utilities
                 Text = msg
             };
             snapIn.Console.ShowDialog(msgParams);
-
         }
     }
 }

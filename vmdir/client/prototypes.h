@@ -240,7 +240,8 @@ VmDirLdapSetupRemoteHostRA(
     PCSTR pszHostName,
     PCSTR pszUsername,
     PCSTR pszPassword,
-    PCSTR pszReplHostName
+    PCSTR pszReplHostName,
+    DWORD dwHighWatermark
     );
 
 DWORD
@@ -562,6 +563,11 @@ VmDirLocalInitializeHost(
 );
 
 DWORD
+VmDirLocalGetServerState(
+    UINT32  *pServerState
+    );
+
+DWORD
 VmDirLocalInitializeTenant(
     PWSTR   pwszNamingContext,
     PWSTR   pwszUserName,
@@ -672,9 +678,37 @@ VmDirFreeReplicationStateInternal(
     );
 
 DWORD
-VmDirSchemaUpgradeInternal(
-    PVMDIR_CONNECTION   pConnection,
-    PCSTR               pszSchemaFile,
-    BOOLEAN             bDryRun,
-    PSTR*               ppszErrMsg
+VmDirParseMetadata(
+    PCSTR  pszMetadata,
+    PVMDIR_METADATA *ppMetadata
     );
+
+VOID
+VmDirFreeMetadataInternal(
+    PVMDIR_METADATA pMetadata
+    );
+
+VOID
+VmDirFreeMetadataListInternal(
+    PVMDIR_METADATA_LIST pMetadataList
+    );
+
+DWORD
+VmDirGetAttributeMetadataInternal(
+    PVMDIR_CONNECTION   pConnection,
+    PCSTR               pszEntryDn,
+    PCSTR               pszAttribute,
+    PVMDIR_METADATA_LIST*    ppMetadataList
+    );
+
+DWORD
+VmDirLdapGetHighWatermark(
+    LDAP*      pLocalLd,
+    PCSTR      pszLocalHost,
+    PCSTR      pszPartnerHost,
+    PCSTR      pszDomainName,
+    PCSTR      pszUsername,
+    PCSTR      pszPassword,
+    USN*       pLastLocalUsn
+    );
+

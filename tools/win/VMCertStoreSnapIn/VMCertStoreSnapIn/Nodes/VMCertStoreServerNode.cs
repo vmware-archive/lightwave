@@ -109,7 +109,7 @@ namespace VMCertStoreSnapIn.Nodes
                         String[] user = ServerDTO.UserName.Split('@');
                         ServerDTO.UserName = user[0];
                     }
-                    var frmLogin = new LoginForm(ServerDTO.Server, ServerDTO.UserName, ServerDTO.Password, ServerDTO.DomainName);
+                    var frmLogin = new LoginForm(ServerDTO.Server, ServerDTO.UserName, ServerDTO.DomainName);
                     if (this.SnapIn.Console.ShowDialog(frmLogin) == DialogResult.OK)
                     {
                         

@@ -88,7 +88,7 @@ error:
 }
 
 int
-VmDirNewOperation(
+VmDirExternalOperationCreate(
     BerElement*       ber,
     ber_int_t         msgId,
     ber_tag_t         reqCode,
@@ -109,6 +109,7 @@ VmDirNewOperation(
    pOperation->ber = ber;
    pOperation->msgId = msgId;
    pOperation->conn = pConn;
+   pOperation->opType = VDIR_OPERATION_TYPE_EXTERNAL;
 
    retVal = VmDirAllocateMemory( sizeof(*pOperation->pBECtx), (PVOID)&(pOperation->pBECtx));
    BAIL_ON_VMDIR_ERROR( retVal );
@@ -128,12 +129,13 @@ VmDirNewOperation(
    *ppOperation = pOperation;
 
 cleanup:
-   VmDirLog( LDAP_DEBUG_TRACE, "NewOperation: End" );
+   VmDirLog( LDAP_DEBUG_TRACE, "%s: End", __FUNCTION__ );
 
    return retVal;
 
 error:
-   VmDirLog( LDAP_DEBUG_TRACE, "NewOperation: acquire schema context failed" );
+   VmDirLog( LDAP_DEBUG_TRACE, "%s: acquire schema context failed",
+           __FUNCTION__ );
 
    VmDirFreeOperation(pOperation);
    *ppOperation = NULL;
@@ -212,6 +214,7 @@ VmDirFreeOperationContent(
                  break;
 
             case LDAP_REQ_MODIFY:
+            case LDAP_REQ_MODDN:
                  VmDirFreeModifyRequest(&op->request.modifyReq, FALSE);
                  break;
 
@@ -234,23 +237,4 @@ VmDirFreeOperationContent(
             VmDirDeleteConnection( &(op->conn)); // passing &conn to be freed seems a bit strange
         }
    }
-}
-
-void
-VmDirFreeEntryArrayContent(
-    PVDIR_ENTRY_ARRAY   pEntryAry
-    )
-{
-    size_t  iCnt = 0;
-
-    if ( pEntryAry )
-    {
-        for (iCnt = 0; iCnt < pEntryAry->iSize; iCnt++)
-        {
-            VmDirFreeEntryContent((pEntryAry->pEntry)+iCnt);
-        }
-
-        VMDIR_SAFE_FREE_MEMORY(pEntryAry->pEntry);
-        pEntryAry->iSize = 0;
-    }
 }

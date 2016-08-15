@@ -33,6 +33,22 @@ extern "C" {
 // accountmgmt.c
 
 DWORD
+VmDirCreateAccount(
+    PCSTR   pszUPNName,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword,            // optional
+    PCSTR   pszEntryDN
+    );
+
+DWORD
+VmDirUPNToAccountDN(
+    PCSTR       pszUPNName,
+    PCSTR       pszAccountRDNAttr,
+    PCSTR       pszAccountRDNValue,
+    PSTR*       ppszContainerDN
+    );
+
+DWORD
 VmDirCreateAccountEx(
     PVMDIR_SRV_ACCESS_TOKEN       pAccessToken,
     PVMDIR_USER_CREATE_PARAMS_RPC pCreateParams
@@ -93,15 +109,15 @@ VmDirFreeMemberships(
     DWORD dwMemberships
     );
 
+DWORD
+VmDirLoadIndex(
+    BOOLEAN bFirstboot
+    );
+
 // init.c
 DWORD
 VmDirInit(
     VOID
-    );
-
-DWORD
-VmDirSchemaPatchViaFile(
-    PCSTR       pszSchemaFilePath
     );
 
 DWORD
@@ -150,6 +166,28 @@ VmDirRpcAllocateStringW(
     PWSTR* ppwszDst
     );
 
+// schema.c
+
+DWORD
+VmDirLoadSchema(
+    PBOOLEAN    pbWriteSchemaEntry,
+    PBOOLEAN    pbLegacyDataLoaded
+    );
+
+DWORD
+InitializeSchemaEntries(
+    PVDIR_SCHEMA_CTX    pSchemaCtx
+    );
+
+DWORD
+VmDirSchemaPatchViaFile(
+    PCSTR       pszSchemaFilePath
+    );
+
+DWORD
+VmDirSchemaPatchLegacyViaFile(
+    PCSTR       pszSchemaFilePath
+    );
 
 /* service.c */
 
@@ -266,6 +304,10 @@ VmDirSrvSetSRPSecret(
     PWSTR       pwszSecret
     );
 
+DWORD
+VmDirSrvGetServerState(
+    PDWORD   pServerState
+    );
 
 #ifndef _WIN32
 
@@ -417,6 +459,15 @@ VmDirIpcInitializeHost(
     );
 
 DWORD
+VmDirIpcGetServerState(
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+DWORD
 VmDirIpcInitializeTenant(
     PVM_DIR_SECURITY_CONTEXT pSecurityContext,
     PBYTE pRequest,
@@ -472,20 +523,11 @@ VmDirLoadEventLogLibrary(
     PFEVENTLOG_ADD *ppfEventLogAdd
     );
 
-// partnerschema.c
-DWORD
-VmDirCopyPartnerSchema(
-    PCSTR pszFQDomainName,
-    PCSTR pszUsername,
-    PCSTR pszPassword,
-    PCSTR pszReplURI
-    );
+// tracklastlogin.c
 
 DWORD
-VmDirSchemaPatchSetOPMod(
-    PVDIR_OPERATION     pOperation,
-    PVDIR_ENTRY         pEntry,
-    PCSTR               pszSchemaFile
+VmDirInitTrackLastLoginThread(
+    VOID
     );
 
 #ifdef __cplusplus

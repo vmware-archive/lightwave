@@ -24,22 +24,24 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Certificate
     public class CertificateService
     {
         private readonly IWebRequestManager _webRequestManager;
-        public CertificateService(IWebRequestManager webRequestManager)
+        private readonly IServiceConfigManager _serviceConfigManager;
+        public CertificateService(IWebRequestManager webRequestManager, IServiceConfigManager serviceConfigManager)
         {
             _webRequestManager = webRequestManager;
+            _serviceConfigManager = serviceConfigManager;
         }
 
         public List<CertificateChainDto> GetCertificates(ServerDto serverDto, string tenantName, CertificateScope scope, Token token)
         {
             tenantName = Uri.EscapeDataString(tenantName);
-            var url = string.Format(ServiceConfigManager.GetCertificatesPostEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName);
+            var url = string.Format(_serviceConfigManager.GetCertificatesPostEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName);
             url += "?scope=" + scope;
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
             return JsonConvert.Deserialize<List<CertificateChainDto>>(response);
@@ -49,14 +51,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Certificate
         {
             tenantName = Uri.EscapeDataString(tenantName);
             var queryString = string.Format("?fingerprint={0}", fingerprint);
-            var url = string.Format(ServiceConfigManager.CertificatesEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName);
+            var url = string.Format(_serviceConfigManager.GetCertificatesEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName);
             url = url + queryString;
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Delete
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return string.IsNullOrEmpty(response);
@@ -65,7 +67,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Certificate
         public bool Create(ServerDto serverDto, string tenantName, CertificateDto certificate, Token token)
         {
             tenantName = Uri.EscapeDataString(tenantName);
-            var url = string.Format(ServiceConfigManager.CertificatesEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName);
+            var url = string.Format(_serviceConfigManager.GetCertificatesEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName);
             var json = JsonConvert.Serialize(certificate);
 			json = SerializationJsonHelper.Cleanup (json);
 			ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
@@ -73,7 +75,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Certificate
             {
                 Method = HttpMethod.Post,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return string.IsNullOrEmpty(response);
@@ -82,13 +84,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Certificate
         public PrivateKeyDto GetPrivateKey(ServerDto serverDto, string tenantName, Token token)
         {
             tenantName = Uri.EscapeDataString(tenantName);
-            var url = string.Format(ServiceConfigManager.GetCertificatePrivateKeyPostEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName);
+            var url = string.Format(_serviceConfigManager.GetCertificatePrivateKeyPostEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             var requestConfig = new RequestSettings
             {
                 Method = HttpMethod.Post
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             var postData = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower();
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, postData);
             return JsonConvert.Deserialize<PrivateKeyDto>(response);
@@ -97,7 +99,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Certificate
         public bool SetTenantCredentials(ServerDto serverDto, string tenantName, TenantCredentialsDto credentials, Token token)
         {
             tenantName = Uri.EscapeDataString(tenantName);
-            var url = string.Format(ServiceConfigManager.CertificatePrivateKeyEndPoint, serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName);
+            var url = string.Format(_serviceConfigManager.GetCertificatePrivateKeyEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenantName);
             var json = JsonConvert.Serialize(credentials);
 			json = SerializationJsonHelper.Cleanup (json);
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
@@ -105,7 +107,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Certificate
             {
                 Method = HttpMethod.Post,
             };
-            var headers = ServiceHelper.AddHeaders(ServiceConfigManager.JsonContentType);
+            var headers = ServiceHelper.AddHeaders(ServiceConstants.JsonContentType);
             json = "access_token=" + token.AccessToken + "&token_type=" + token.TokenType.ToString().ToLower() + "&" + json;
             var response = _webRequestManager.GetResponse(url, requestConfig, headers, null, json);
             return string.IsNullOrEmpty(response);

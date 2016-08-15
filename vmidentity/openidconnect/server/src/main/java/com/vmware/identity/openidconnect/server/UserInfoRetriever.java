@@ -16,6 +16,7 @@ package com.vmware.identity.openidconnect.server;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -24,6 +25,8 @@ import org.apache.commons.lang3.Validate;
 
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeValuePair;
+import com.vmware.identity.idm.DomainType;
+import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.KnownSamlAttributes;
 import com.vmware.identity.idm.client.CasIdmClient;
@@ -70,18 +73,19 @@ public class UserInfoRetriever {
             familyName = idmPersonUser.getDetail().getLastName();
         }
 
-        String adminServerRole = null;
-        if (scope.contains(ScopeValue.RESOURCE_SERVER_ADMIN_SERVER)) {
-            adminServerRole = computeAdminServerRole(user);
-        }
-
         List<String> groupMembership = null;
         if (
                 scope.contains(ScopeValue.ID_TOKEN_GROUPS) ||
                 scope.contains(ScopeValue.ID_TOKEN_GROUPS_FILTERED) ||
                 scope.contains(ScopeValue.ACCESS_TOKEN_GROUPS) ||
-                scope.contains(ScopeValue.ACCESS_TOKEN_GROUPS_FILTERED)) {
+                scope.contains(ScopeValue.ACCESS_TOKEN_GROUPS_FILTERED) ||
+                scope.contains(ScopeValue.RESOURCE_SERVER_ADMIN_SERVER)) {
             groupMembership = computeGroupMembership(user);
+        }
+
+        String adminServerRole = null;
+        if (scope.contains(ScopeValue.RESOURCE_SERVER_ADMIN_SERVER)) {
+            adminServerRole = computeAdminServerRole(user, groupMembership);
         }
 
         boolean filteredGroupsRequested =
@@ -162,18 +166,34 @@ public class UserInfoRetriever {
         return attributeValuePair.getValues();
     }
 
-    private String computeAdminServerRole(User user) throws ServerException {
+    private String computeAdminServerRole(User user, List<String> groupMembership) throws ServerException {
+        String systemDomainName = getSystemDomainName(user);
+        String groupNamePrefix = systemDomainName.toLowerCase() + "\\";
+        Set<String> groupMembershipLowerCase = toLowerCase(groupMembership);
+
         String role;
-        if (isMemberOfGroup(user, "administrators")) {
+        if (groupMembershipLowerCase.contains(groupNamePrefix + "administrators")) {
             role = "Administrator";
-        } else if (isMemberOfGroup(user, "systemconfiguration.administrators")) {
+        } else if (groupMembershipLowerCase.contains(groupNamePrefix + "systemconfiguration.administrators")) {
             role = "ConfigurationUser";
-        } else if (isMemberOfGroup(user, "users")) {
+        } else if (groupMembershipLowerCase.contains(groupNamePrefix + "users")) {
             role = "RegularUser";
         } else {
             role = "GuestUser";
         }
         return role;
+    }
+
+    private String getSystemDomainName(User user) throws ServerException {
+        Collection<IIdentityStoreData> identityStores;
+        try {
+            identityStores = this.idmClient.getProviders(user.getTenant(), EnumSet.of(DomainType.SYSTEM_DOMAIN));
+        } catch (Exception e) {
+            throw new ServerException(ErrorObject.serverError("idm error while retrieving system domain"), e);
+        }
+        assert identityStores != null && identityStores.size() == 1;
+        IIdentityStoreData identityStore = identityStores.iterator().next();
+        return identityStore.getName();
     }
 
     private static Set<String> toLowerCase(Collection<String> collection) {

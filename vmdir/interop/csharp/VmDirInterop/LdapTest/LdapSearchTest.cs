@@ -1,5 +1,4 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using VMDirInterop;
 using VMDirInterop.Interfaces;
@@ -7,7 +6,6 @@ using VMDirInterop.LDAP;
 
 namespace LdapTest
 {
-    [TestClass]
     public class LdapSearchTest
     {
         static string myDN;
@@ -15,7 +13,6 @@ namespace LdapTest
         static string password;
         static string attribute;
         static string value;
-        static string dllPath;
         static string filter;
         static int portNumber;
         static string upn;
@@ -27,11 +24,10 @@ namespace LdapTest
         static string upn_F;
         static string filter_F;
 
-        [ClassInitialize()]
-        public static void MyClassInitialize(TestContext testContext)
+        public static void RunTests(Credentials cred)
         {
-            var path = @"..\..\..\input.xml";
-            Credentials cred = Input.ReadXML(path);
+            System.Console.WriteLine("Running search tests ...");
+
             myDN = cred.myDN;
             hostName = cred.hostName;
             upn = cred.upn;
@@ -45,19 +41,22 @@ namespace LdapTest
             password_F = cred.password_F;
             portNumber_F = cred.portNumber_F;
 
-            filter = "(&(objectClass=person)(cn=ws2k8r2-aalok-d.eng.vmware.com))";
+            filter = "(&(objectClass=person)(cn=Administrator))";
 
-            attribute = "cs";                               //same as what you are searching
-            value = "ws2k8r2-aalok-d.eng.vmware.com";       //same as what you are searching
+            attribute = "cn";                               //same as what you are searching
+            value = "Administrator";                        //same as what you are searching
 
             filter_F = "(&(objectClass=person)(cn=ws2k8r2-aalok-f.eng.vmware.com))";
-            dllPath = @"C:\Users\aalokr\workspaces_new\aalokr_lotus_ws_2k8_dev_new\lotus\lotus-main\vmdir\interop\csharp\VmDirInterop\LdapTest\";        //put all the dll in the LdapTest Folder
 
-            Dll.SetDllDirectory(dllPath);
+            LdapSearch_SimpleBind_Success();
+            LdapSearch_SASLBind_Success();
+            LdapSearch_SimpleBind_Failure();
+            LdapSearch_SASLBind_Failure();
+
+            LdapPagedSearch();
         }
 
-        [TestMethod]
-        public void LdapSearch_SimpleBind_Success()
+        public static void LdapSearch_SimpleBind_Success()
         {
             ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
             Assert.IsNotNull(ldapConnection);
@@ -85,13 +84,14 @@ namespace LdapTest
 
                     foreach (LdapValue attributeValue in attributeValues)
                     {
-                        if(attributeName == attribute)
-                            Assert.Equals(attributeValue.StringValue, value);
+                        if (attributeName == attribute)
+                        {
+                            Assert.IsTrue(attributeValue.StringValue == value);
+                        }
                     }
                 }
             }
             ldapConnection.CleanSearch();
-            //msg.FreeMessage();
 
             try
             {
@@ -103,8 +103,7 @@ namespace LdapTest
             }
         }
 
-        [TestMethod]
-        public void LdapSearch_SASLBind_Success()
+        public static void LdapSearch_SASLBind_Success()
         {
             ILdapMessage msg = null;
 
@@ -130,14 +129,18 @@ namespace LdapTest
 
                 List<string> attributeNames = entry.getAttributeNames();
                 Assert.IsNotNull(attributeNames);
+
                 foreach (string attributeName in attributeNames)
                 {
                     List<LdapValue> attributeValues = entry.getAttributeValues(attributeName);
                     Assert.IsNotNull(attributeValues);
+
                     foreach (LdapValue attributeValue in attributeValues)
                     {
                         if (attributeName == attribute)
-                            Assert.Equals(attributeValue.StringValue, value);
+                        {
+                            Assert.IsTrue(attributeValue.StringValue == value);
+                        }
                     }
                 }
             }
@@ -152,8 +155,7 @@ namespace LdapTest
             }
         }
 
-        [TestMethod]
-        public void LdapSearch_SimpleBind_Failure()
+        public static void LdapSearch_SimpleBind_Failure()
         {
             ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
             Assert.IsNotNull(ldapConnection);
@@ -178,8 +180,7 @@ namespace LdapTest
             }
         }
 
-        [TestMethod]
-        public void LdapSearch_SASLBind_Failure()
+        public static void LdapSearch_SASLBind_Failure()
         {
             ILdapMessage msg = null;
 
@@ -210,15 +211,72 @@ namespace LdapTest
             }
         }
 
-        [TestMethod]
-        public void MemoryLeak_NotPresent()
+        public static void LdapPagedSearch()
         {
-            int i = 0;
-            while (i < 10000)
+            ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
+            Assert.IsNotNull(ldapConnection);
+
+            ldapConnection.LdapSimpleBindS(myDN, password);
+
+            int totalCount = 0;
+            int pageNumber = 1;
+            bool morePages = false;
+            int pageSize = 2;
+            IntPtr cookie = IntPtr.Zero;
+            IntPtr returnedControls = IntPtr.Zero;
+            IntPtr[] serverControls = {IntPtr.Zero};
+            ILdapMessage msg = null;
+            string searchBase = "cn=users,dc=vsphere,dc=local";
+            string filter = "(objectClass=user)";
+
+            System.Console.WriteLine("The entries returned were:");
+
+            do
             {
-                LdapSearch_SimpleBind_Success();
-                i++;
-            }
+                serverControls[0] = ldapConnection.LdapCreatePageControl(pageSize, cookie, true);
+
+                msg = ldapConnection.LdapSearchExtExS(searchBase, (int)LdapScope.SCOPE_SUBTREE, filter, null, 0, IntPtr.Zero, 0, serverControls);
+
+                ldapConnection.LdapParseResult(msg, ref returnedControls, false);
+                if (cookie != IntPtr.Zero)
+                {
+                    LdapClientLibrary.ber_bvfree(cookie);
+                    cookie = IntPtr.Zero;
+                }
+
+                ldapConnection.LdapParsePageControl(returnedControls, ref cookie);
+
+                morePages = ldapConnection.HasMorePages(cookie);
+
+                if (returnedControls != IntPtr.Zero)
+                {
+                    LdapClientLibrary.ldap_controls_free(returnedControls);
+                    returnedControls = IntPtr.Zero;
+                }
+                LdapClientLibrary.ldap_control_free(serverControls[0]);
+                serverControls[0] = IntPtr.Zero;
+
+                if (morePages)
+                {
+                    System.Console.WriteLine("===== Page : {0} =====", pageNumber);
+                }
+
+                totalCount += msg.GetEntriesCount();
+
+                foreach (var entry in msg.GetEntries())
+                {
+                    System.Console.WriteLine("dn: {0}", entry.getDN());
+                }
+
+                ldapConnection.CleanSearch();
+                pageNumber++;
+            } while (morePages);
+
+            System.Console.WriteLine("{0} entries found during the search", totalCount);
+            LdapClientLibrary.ber_bvfree(cookie);
+            cookie = IntPtr.Zero;
+
+            ldapConnection.LdapUnbindS();
         }
     }
 }

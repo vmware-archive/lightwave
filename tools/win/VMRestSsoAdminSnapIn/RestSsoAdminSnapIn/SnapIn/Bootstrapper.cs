@@ -17,6 +17,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Core.Cache;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Persistence;
 using Vmware.Tools.RestSsoAdminSnapIn.Data.Storage;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
+using Vmware.Tools.RestSsoAdminSnapIn.Presenters;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn
 {
@@ -36,14 +37,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn
             _httpTransportStore = new HttpTransportLocalFileStorage(httpTransportFilePath);
 
             var httpData = _httpTransportStore.Load();
-            var service = SnapInContext.Instance.ServiceGateway;
+            var service = ScopeNodeExtensions.GetServiceGateway();
             service.HttpTransport.SetAll(httpData);
         }
 
         public void Shutdown()
         {
             _store.Save(SnapInContext.Instance.AuthTokenManager.GetAuthTokenCache());
-            var service = SnapInContext.Instance.ServiceGateway;
+            var service = ScopeNodeExtensions.GetServiceGateway();
             _httpTransportStore.Save(service.HttpTransport.GetAll());
         }
     }

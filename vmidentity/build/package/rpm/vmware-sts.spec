@@ -1,18 +1,20 @@
 Name:    vmware-sts
 Summary: VMware Secure Token Service
-Version: 6.5.0
-Release: 0
+Version: %{_version}
+Release: %{_patch}
 Group:   Applications/System
 Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, likewise-open >= 6.2.9, vmware-directory >= 6.5.0, vmware-afd >= 6.5.0, vmware-ca >= 6.5.0, openjre >= 1.8.0.92, commons-daemon >= 1.0.15, apache-tomcat >= 8.0.35, %{name}-client >= %{version}
-BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >= 6.2.9, vmware-directory-client-devel >= 6.5.0, vmware-afd-client-devel >= 6.5.0, vmware-ca-client-devel >= 6.5.0, openjdk >= 1.8.0.92, apache-ant >= 1.9.4
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, likewise-open >= 6.2.9, vmware-directory >= 6.6.0, vmware-afd >= 6.6.0, vmware-ca >= 6.6.0, openjre >= 1.8.0.92, commons-daemon >= 1.0.15, apache-tomcat >= 8.0.35, %{name}-client >= %{version}
+BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >= 6.2.9, vmware-directory-client-devel >= 6.6.0, vmware-afd-client-devel >= 6.6.0, vmware-ca-client-devel >= 6.6.0, openjdk >= 1.8.0.92, apache-ant >= 1.9.4
 
 %define _dbdir %_localstatedir/lib/vmware/vmsts
 %define _jarsdir %_prefix/jars
-%define _webappsdir %_prefix/webapps
+%define _binsdir %_prefix/bin
+%define _webappsdir %_prefix/vmware-sts/webapps
+%define _backupdir /tmp/sso
 
 %if 0%{?_javahome:1} == 0
 %define _javahome %_javahome
@@ -23,7 +25,7 @@ VMware Secure Token Server
 
 %package client
 Summary: VMware Secure Token Service Client
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, openjre >= 1.8.0.45, vmware-directory-client >= 6.5.0, likewise-open >= 6.2.9 
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, openjre >= 1.8.0.45, vmware-directory-client >= 6.6.0, likewise-open >= 6.2.9 
 %description client
 Client libraries to communicate with VMware Secure Token Service
 
@@ -54,12 +56,18 @@ cd build && make install DESTDIR=%{buildroot}
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
-
+if [[ $1 -gt 1 ]]
+then
+    if [ ! -d %{_backupdir} ];
+    then
+        /bin/mkdir "%{_backupdir}"
+    fi
+    /bin/cp "%{_prefix}/vmware-sts/conf/server.xml" "%{_backupdir}/server.xml"
+fi
 %post
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
-
     /sbin/ldconfig
 
     /bin/mkdir -m 700 -p %{_dbdir}
@@ -83,6 +91,7 @@ case "$1" in
         ;;
 
     2)
+        %{_sbindir}/configure-build.sh "%{_backupdir}"
         ;;
 esac
 
@@ -130,10 +139,15 @@ fi
 /lib/systemd/system/vmware-stsd.service
 %{_sbindir}/vmware-idmd.sh
 %{_sbindir}/vmware-stsd.sh
-%{_sbindir}/vmware-sts-tc-setup.sh
+%{_sbindir}/configure-build.sh
+%{_sbindir}/sso-config.sh
 %{_lib64dir}/*.so*
+%{_binsdir}/test-ldapbind
+%{_binsdir}/test-logon
+%{_binsdir}/test-svr
 %{_jarsdir}/openidconnect-client-lib.jar
 %{_jarsdir}/openidconnect-common.jar
+%{_jarsdir}/openidconnect-protocol.jar
 %{_jarsdir}/samlauthority.jar
 %{_jarsdir}/vmware-identity-diagnostics.jar
 %{_jarsdir}/vmware-identity-idm-server.jar
@@ -141,14 +155,26 @@ fi
 %{_jarsdir}/vmware-identity-rest-core-server.jar
 %{_jarsdir}/vmware-identity-rest-idm-server.jar
 %{_jarsdir}/vmware-identity-install.jar
-%{_jarsdir}/vmware-identity-tomcat-extensions.jar
+%{_jarsdir}/vmware-identity-sso-config.jar
 %{_webappsdir}/idm.war
 %{_webappsdir}/afd.war
 %{_webappsdir}/openidconnect.war
 %{_webappsdir}/sts.war
 %{_webappsdir}/websso.war
+%{_webappsdir}/lightwaveui.war
+%{_webappsdir}/ROOT.war
+%{_webappsdir}/vmdir.war
 %{_datadir}/config/idm/*
-%{_datadir}/config/sts/*
+%config %attr(600, root, root) %{_prefix}/vmware-sts/bin/setenv.sh
+%config %attr(600, root, root) %{_prefix}/vmware-sts/bin/vmware-identity-tomcat-extensions.jar
+
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/catalina.policy
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/catalina.properties
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/context.xml
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/logging.properties
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/server.xml
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/web.xml
+%config %attr(600, root, root) %{_prefix}/vmware-sts/conf/tomcat-users.xml
 
 %exclude %{_lib64dir}/*.la
 %exclude %{_lib64dir}/*.a
@@ -161,8 +187,6 @@ fi
 %{_jarsdir}/vmware-identity-websso-client.jar
 %{_jarsdir}/vmware-identity-platform.jar
 %{_jarsdir}/vmware-identity-wsTrustClient.jar
-%{_jarsdir}/admin-interfaces.jar
-%{_jarsdir}/wstauthz.jar
 %{_jarsdir}/vmware-identity-rest-afd-common.jar
 %{_jarsdir}/openidconnect-common.jar
 %{_jarsdir}/vmware-identity-depends.jar

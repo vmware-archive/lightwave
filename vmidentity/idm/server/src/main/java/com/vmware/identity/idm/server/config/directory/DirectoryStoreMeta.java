@@ -35,6 +35,8 @@ import java.util.Stack;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.AlternativeOCSP;
+import com.vmware.identity.idm.AlternativeOCSPList;
 import com.vmware.identity.idm.AssertionConsumerService;
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeConsumerService;
@@ -1744,7 +1746,7 @@ final class ClientCertPolicyLdapObject extends BaseLdapObject<TenantClientCertPo
                                      }
                                  }
                          ),
-                         new PropertyMapperMetaInfo<TenantClientCertPolicy>(
+                         new PropertyMapperMetaInfo<TenantClientCertPolicy>(  //obsoleted
                                  PROPERTY_CLIENT_CERT_CRL_CHECK_OCSP_URL,
                                  -1,
                                  true,
@@ -1773,7 +1775,7 @@ final class ClientCertPolicyLdapObject extends BaseLdapObject<TenantClientCertPo
                                      }
                                  }
                          ),
-                         new PropertyMapperMetaInfo<TenantClientCertPolicy>(
+                         new PropertyMapperMetaInfo<TenantClientCertPolicy>(  //obsoleted
                                  PROPERTY_CLIENT_CERT_CRL_CHECK_OCSP_CERT,
                                  -1,
                                  true,
@@ -1891,6 +1893,206 @@ final class ClientCertPolicyLdapObject extends BaseLdapObject<TenantClientCertPo
     }
 }
 
+final class AlternativeOCSPListLdapObject extends BaseLdapObject<AlternativeOCSPList> {
+
+    private static AlternativeOCSPListLdapObject _instance = new AlternativeOCSPListLdapObject();
+
+    public static AlternativeOCSPListLdapObject getInstance() {
+        return _instance;
+    }
+    private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory
+            .getLogger(AlternativeOCSPListLdapObject.class);
+
+    public static final String PROPERTY_NAME = CN;
+    public static final String OBJECT_CLASS = "vmwSTSTenantAltOCSPRespondersSite";
+    private static final String PROPERTY_OCSP_SITEID = "vmwSTSPscSiteID";
+
+
+    @SuppressWarnings("unchecked")
+    private AlternativeOCSPListLdapObject()
+    {
+        super(
+                OBJECT_CLASS,
+                new PropertyMapperMetaInfo[]{
+                        new PropertyMapperMetaInfo<AlternativeOCSPList>(
+                                PROPERTY_NAME,
+                                0,
+                                true,
+                                new IPropertyGetterSetter<AlternativeOCSPList>() {
+                                    @Override
+                                    public void SetLdapValue(AlternativeOCSPList object, LdapValue[] value)
+                                    {
+                                        throw new IllegalStateException("name cannot be set on AlternativeOCSPList;");
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(AlternativeOCSPList object)
+                                    {
+                                        ValidateUtil.validateNotNull( object, "object");
+                                        return ServerUtils.getLdapValue( object.get_siteID() );
+                                    }
+                                },
+                                false // cannot update in ldap
+                         ),
+                         new PropertyMapperMetaInfo<AlternativeOCSPList>(
+                                 PROPERTY_OCSP_SITEID,
+                                 -1,
+                                 true,
+                                 new IPropertyGetterSetter<AlternativeOCSPList>() {
+                                     @Override
+                                     public void SetLdapValue(AlternativeOCSPList object, LdapValue[] value) {
+                                         //do nothing
+                                     }
+                                     @Override
+                                     public LdapValue[] GetLdapValue(AlternativeOCSPList object) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+
+                                         return ServerUtils.getLdapValue(object.get_siteID());
+                                     }
+                                 },
+                                 false
+                         ),
+
+                }
+          );
+    }
+    @Override
+    protected AlternativeOCSPList createObject(List<LdapValue[]> ctorParams) {
+        if ( (ctorParams == null) || (ctorParams.size() < 1) )
+        {
+            throw new IllegalArgumentException("ctorParams");
+        }
+
+        return new AlternativeOCSPList(
+                ServerUtils.getStringValue(ctorParams.get(0)),
+                null
+                );
+    }
+}
+
+
+final class TenantAlternativeOCSPLdapObject extends BaseLdapObject<TenantAlternativeOCSP> {
+
+    private static TenantAlternativeOCSPLdapObject _instance = new TenantAlternativeOCSPLdapObject();
+
+    public static TenantAlternativeOCSPLdapObject getInstance() {
+        return _instance;
+    }
+    private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory
+            .getLogger(TenantAlternativeOCSPLdapObject.class);
+
+    public static final String PROPERTY_NAME = CN;
+    public static final String OBJECT_CLASS = "vmwSTSTenantAltOCSPResponder";
+    private static final String PROPERTY_OCSP_URL = "vmwSTSClientCertOCSPUrl";
+    private static final String PROPERTY_OCSP_CERT = "userCertificate";
+
+
+    @SuppressWarnings("unchecked")
+    private TenantAlternativeOCSPLdapObject()
+    {
+        super(
+                OBJECT_CLASS,
+                new PropertyMapperMetaInfo[]{
+                        new PropertyMapperMetaInfo<TenantAlternativeOCSP>(
+                                PROPERTY_NAME,
+                                0,
+                                true,
+                                new IPropertyGetterSetter<TenantAlternativeOCSP>() {
+                                    @Override
+                                    public void SetLdapValue(TenantAlternativeOCSP object, LdapValue[] value)
+                                    {
+                                        throw new IllegalStateException("name cannot be set on AlternativeOCSP;");
+                                    }
+                                    @Override
+                                    public LdapValue[] GetLdapValue(TenantAlternativeOCSP object)
+                                    {
+                                        ValidateUtil.validateNotNull( object, "object");
+                                        return ServerUtils.getLdapValue( object.getCn() );
+                                    }
+                                },
+                                false // cannot update in ldap
+                         ),
+                         new PropertyMapperMetaInfo<TenantAlternativeOCSP>(
+                                 PROPERTY_OCSP_URL,
+                                 1,
+                                 true,
+                                 new IPropertyGetterSetter<TenantAlternativeOCSP>() {
+                                     @Override
+                                     public void SetLdapValue(TenantAlternativeOCSP object, LdapValue[] value) {
+                                         //do nothing
+                                     }
+                                     @Override
+                                     public LdapValue[] GetLdapValue(TenantAlternativeOCSP object) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+
+                                         return ServerUtils.getLdapValue(object.getAlternativeOCSP().get_responderURL().toString());
+                                     }
+                                 },
+                                 false
+                         ),
+                         new PropertyMapperMetaInfo<TenantAlternativeOCSP>(
+                                 PROPERTY_OCSP_CERT,
+                                 2,
+                                 true,
+                                 new IPropertyGetterSetter<TenantAlternativeOCSP>() {
+                                     @Override
+                                     public void SetLdapValue(TenantAlternativeOCSP object, LdapValue[] value) {
+                                         throw new IllegalStateException( "property is not settable.");
+                                     }
+                                     @Override
+                                     public LdapValue[] GetLdapValue(TenantAlternativeOCSP object) {
+                                         ValidateUtil.validateNotNull( object, "object" );
+                                         return ServerUtils.getLdapValue(object.getAlternativeOCSP().get_responderSigningCert());
+                                     }
+                                 },
+                                 true
+                         ),
+
+                }
+          );
+    }
+    @Override
+    protected TenantAlternativeOCSP createObject(List<LdapValue[]> ctorParams) {
+        if ( (ctorParams == null) || (ctorParams.size() != 3) )
+        {
+            throw new IllegalArgumentException("ctorParams");
+        }
+
+        URL ocspURL;
+        try {
+            ocspURL = new URL(ServerUtils.getStringValue(ctorParams.get(1)));
+        } catch (MalformedURLException e) {
+            logger.error("MalformedURLException thrown in creating URL from ldap value "+ServerUtils.getStringValue(ctorParams.get(0)));
+            return null;
+        }
+        return new TenantAlternativeOCSP( ServerUtils.getStringValue(ctorParams.get(0)), new AlternativeOCSP(
+                    ocspURL,
+                    ServerUtils.getCertificateValue(ctorParams.get(2))
+                    ));
+    }
+}
+final class TenantAlternativeOCSP
+{
+    private final String _cn;
+    private final AlternativeOCSP _ocsp;
+
+    public TenantAlternativeOCSP( String cn, AlternativeOCSP ocsp )
+    {
+        ValidateUtil.validateNotEmpty( cn, "cn" );
+        ValidateUtil.validateNotNull( ocsp, "ocsp" );
+        this._ocsp = ocsp;
+        this._cn = cn;
+    }
+
+    public String getCn()
+    {
+        return this._cn;
+    }
+
+    public AlternativeOCSP getAlternativeOCSP()
+    {
+        return this._ocsp;
+    }
+}
 final class TenantLdapObject extends BaseLdapObject<Tenant>
 {
     private static TenantLdapObject _instance = new TenantLdapObject();
@@ -3093,8 +3295,6 @@ final class IdentityProviderLdapObject extends BaseLdapObject<IIdentityStoreData
                                 new IPropertyGetterSetter<IIdentityStoreData>() {
                                     @Override
                                     public void SetLdapValue(IIdentityStoreData object, LdapValue[] value) {
-                                        IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(IdentityManager.class);
-                                        //log.info("VALUE LENGHT" + value.length);
                                         if(value != null && value.length > 0) {
                                             ServerIdentityStoreData serverIdentityStoreData =
                                                     getServerIdentityStoreData(object);
@@ -3405,6 +3605,12 @@ final class ContainerLdapObject extends BaseLdapObject<String>
 
     // Client Certificate Policy container
     public static final String CONTAINER_CLIENT_CERT_POLICIES = "ClientCertificatePolicies";
+
+    // Alternative OCSP lists container
+    public static final String CONTAINER_CLIENT_CERT_OCSP_LISTS = "ClientCertificateOcspLists";
+
+    // Alternative OCSP container
+    public static final String CONTAINER_OCSPs = "SiteOcspResponders";
 
     //RSA agent configuration containers
     public static final String CONTAINER_RSA_CONFIGURATIONS = "RSAAgentConfigurations";

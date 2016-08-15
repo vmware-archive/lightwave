@@ -223,6 +223,7 @@ typedef struct _VMW_DNS_DRIVER_GLOBALS
     PVMDNS_ZONE_LIST            pZoneList;
     PVMDNS_FORWARDER_CONETXT    pForwarderContext;
     PVMDNS_SOCK_CONTEXT         pSockContext;
-	VMDNS_STATE                 state;
+    VMDNS_STATE                 state;
+    BOOL                        bUseDirectoryStore;
 } VMW_DNS_DRIVER_GLOBALS, *PVMW_DNS_DRIVER_GLOBALS;
 

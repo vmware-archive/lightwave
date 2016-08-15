@@ -19,6 +19,14 @@
 
 // add.c
 int
+VmDirParseBerToEntry(
+    BerElement *ber,
+    PVDIR_ENTRY e,
+    ber_int_t *pErrCode,
+    PSTR *ppszErrMsg
+    );
+
+int
 VmDirParseEntry(
     VDIR_OPERATION * op
     );
@@ -108,6 +116,12 @@ WriteSyncStateControl(
    PSTR*              ppszErrorMsg
    );
 
+int
+WriteConsistencyWriteDoneControl(
+    VDIR_OPERATION *       pOp,
+    BerElement *           pBer
+    );
+
 // delete.c
 int
 VmDirPerformDelete(
@@ -146,6 +160,12 @@ FilterToStrFilter(
    PVDIR_BERVALUE strFilter
    );
 
+DWORD
+StrFilterToFilter(
+    PCSTR pszString,
+    PVDIR_FILTER *ppFilter
+    );
+
 int
 ParseFilter(
    VDIR_OPERATION *   op,
@@ -165,7 +185,7 @@ VmDirOpensslShutdown(
 
 // operation.c
 int
-VmDirNewOperation(
+VmDirExternalOperationCreate(
     BerElement*       ber,
     ber_int_t         msgId,
     ber_tag_t         reqCode,
@@ -176,16 +196,6 @@ VmDirNewOperation(
 void
 VmDirFreeOperation(
     PVDIR_OPERATION pOperation
-    );
-
-void
-VmDirFreeOperationContent(
-    PVDIR_OPERATION op
-    );
-
-void
-VmDirFreeEntryArrayContent(
-    PVDIR_ENTRY_ARRAY   pArray
     );
 
 // result.c
@@ -209,6 +219,12 @@ void
 VmDirFreeModifyRequest(
    ModifyReq * mr,
    BOOLEAN     freeSelf
+   );
+
+// rename.c
+int
+VmDirPerformRename(
+   PVDIR_OPERATION pOperation
    );
 
 // search.c

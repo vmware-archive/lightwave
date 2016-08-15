@@ -28,7 +28,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
     public partial class UsersControl : UserControl, IFormViewControl
     {
         UsersFormView _formView;
-        private ServiceGateway _ssoAdminSdkService;
 
         public UsersControl()
         {
@@ -75,7 +74,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
         {
             _formView = (UsersFormView)parentSelectionFormView;
             _formView.SelectionData.ActionsPaneItems.Clear();
-            _ssoAdminSdkService = _formView.ScopeNode.GetServiceGateway();
             RefreshUsers(string.Empty);
             SetContextMenu(IsSystemDomain);
         }
@@ -95,7 +93,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto, tenantName);
             ActionHelper.Execute(delegate
                 {
-                    var membership = _formView.ScopeNode.GetServiceGateway().Tenant.Search(serverDto, tenantName, domainName, MemberType.USER, SearchType.NAME, auth.Token, searchString);
+                    var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
+                    var membership = service.Tenant.Search(serverDto, tenantName, domainName, MemberType.USER, SearchType.NAME, auth.Token, searchString);
                     lstUsers.Items.Clear();
                     if (membership.Users != null)
                     {
@@ -104,8 +103,10 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                             var lvItem =
                                 new ListViewItem(new[]
                         {
-                            user.Name, user.PersonDetails.FirstName, user.PersonDetails.LastName,
-                            user.PersonDetails.EmailAddress, user.PersonDetails.Description,
+                            user.Name, 
+                            user.PersonDetails.FirstName, 
+                            user.PersonDetails.LastName, 
+                            user.PersonDetails.Description,
                             user.Locked ? "YES" : "NO", user.Disabled? "YES" : "NO"
                         }) { Tag = user };
                             lvItem.ImageIndex = (int)TreeImageIndex.User;
@@ -124,7 +125,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto, tenantName);
             ActionHelper.Execute(delegate
             {
-                var dto = _formView.ScopeNode.GetServiceGateway().User.Get(serverDto, user, tenantName, auth.Token);
+                var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
+                var dto = service.User.Get(serverDto, user, tenantName, auth.Token);
                 if (dto != null)
                 {
                     _formView.ScopeNode.Tag = dto;
@@ -162,7 +164,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
 
                 ActionHelper.Execute(delegate
                 {
-                    _formView.ScopeNode.GetServiceGateway().User.Delete(serverDto, tenantName, user, auth.Token);
+                    var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
+                    service.User.Delete(serverDto, tenantName, user, auth.Token);
                     RefreshUsers(string.Empty);
                 }, auth);
             }
@@ -184,11 +187,11 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             var serverDto = GetServerDto();
             var tenantName = GetTenantName();
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto, tenantName);
-            var ssoAdminSdkService = _formView.ScopeNode.GetServiceGateway();
+            var service = ScopeNodeExtensions.GetServiceGateway(serverDto.ServerName);
 
             ActionHelper.Execute(delegate
                  {
-                     var x = ssoAdminSdkService.User.Get(serverDto, userDto, tenantName, auth.Token);
+                     var x = service.User.Get(serverDto, userDto, tenantName, auth.Token);
                      var dto = new UserDto
                      {
                          PersonDetails = new PersonUserDto
@@ -250,7 +253,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 if (dataContext != null)
                 {
                     var tenantName = GetTenantName();
-                    _ssoAdminSdkService.User.UpdatePassword(auth.ServerDto, tenantName, userDto, frm.PasswordResetDto, auth.Token);
+                    var service = ScopeNodeExtensions.GetServiceGateway(auth.ServerDto.ServerName);
+                    service.User.UpdatePassword(auth.ServerDto, tenantName, userDto, frm.PasswordResetDto, auth.Token);
                 }
             });
         }

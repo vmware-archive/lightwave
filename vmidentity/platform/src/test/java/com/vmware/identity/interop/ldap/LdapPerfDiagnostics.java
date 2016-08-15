@@ -15,6 +15,7 @@ package com.vmware.identity.interop.ldap;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import junit.framework.Assert;
 
@@ -99,19 +100,19 @@ public class LdapPerfDiagnostics
                                     );
                 boolean getAttrsOnly = false;
 
-                long batchStarted = System.currentTimeMillis();
+                long batchStarted = System.nanoTime();
                 for (String filter : filters) {
-                    long searchStarted = System.currentTimeMillis();
+                    long searchStarted = System.nanoTime();
                     ILdapMessage message = connection.search(baseDN, LdapScope.SCOPE_SUBTREE,
                                     filter, Arrays.asList(attrs), getAttrsOnly
                                     );
                     System.out.println(String.format("search [%s] took [%d] ms",
                             filter,
-                            System.currentTimeMillis() - searchStarted));
+                            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - searchStarted)));
                     ILdapEntry[] entries = message.getEntries();
                     assert (entries.length > 0);
                 }
-                System.out.println(String.format("3 searches took [%d] ms\n", System.currentTimeMillis() - batchStarted));
+                System.out.println(String.format("3 searches took [%d] ms\n", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - batchStarted)));
             }
             catch (Exception e) {
                 e.printStackTrace();
@@ -123,35 +124,35 @@ public class LdapPerfDiagnostics
 
     private ILdapConnectionEx initByHostNamePort()
     {
-        long startedAt = System.currentTimeMillis();
+        long startedAt = System.nanoTime();
         ILdapConnectionEx connection =
                 new LdapConnection(hostname, port);
-        long initDone = System.currentTimeMillis();
-        System.out.println(String.format("HostnamePort init connection takes [%d] ms", initDone - startedAt));
+        long initDone = System.nanoTime();
+        System.out.println(String.format("HostnamePort init connection takes [%d] ms", TimeUnit.NANOSECONDS.toMillis(initDone - startedAt)));
         Assert.assertNotNull(connection);
         return connection;
     }
 
     private ILdapConnectionEx initByURI()
     {
-        long startedAt = System.currentTimeMillis();
+        long startedAt = System.nanoTime();
         ILdapConnectionEx connection =
                 LdapConnectionFactoryEx.getInstance().getLdapConnection(hostname,
                         port);
-        long initDone = System.currentTimeMillis();
-        System.out.println(String.format("URI init connection takes [%d] ms", initDone - startedAt));
+        long initDone = System.nanoTime();
+        System.out.println(String.format("URI init connection takes [%d] ms", TimeUnit.NANOSECONDS.toMillis(initDone - startedAt)));
         Assert.assertNotNull(connection);
         return connection;
     }
 
     private void setOptionAndBind(final ILdapConnectionEx connection)
     {
-        long startedAt = System.currentTimeMillis();
+        long startedAt = System.nanoTime();
         connection.setOption(LdapOption.LDAP_OPT_PROTOCOL_VERSION,
                 LdapConstants.LDAP_VERSION3);
 
         connection.bindConnection(bindDN, password,
                 LdapBindMethod.LDAP_BIND_SIMPLE);
-        System.out.println(String.format("bind connection takes [%d] ms", System.currentTimeMillis() - startedAt));
+        System.out.println(String.format("bind connection takes [%d] ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)));
     }
 }

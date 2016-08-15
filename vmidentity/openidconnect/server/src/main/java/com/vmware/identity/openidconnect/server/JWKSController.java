@@ -33,7 +33,7 @@ import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.HttpResponse;
+import com.vmware.identity.openidconnect.protocol.HttpResponse;
 import com.vmware.identity.openidconnect.common.StatusCode;
 
 /**

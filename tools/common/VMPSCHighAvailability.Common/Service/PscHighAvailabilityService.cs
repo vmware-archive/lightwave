@@ -29,15 +29,19 @@ using VMIdentity.CommonUtils.Utilities;
 using VMDirInterop.LDAP;
 using VMDirInterop.Interfaces;
 using VMIdentity.CommonUtils.Log;
+using VmIdentity.CommonUtils;
+using System.Text;
 
 namespace VMPSCHighAvailability.Common.Service
 {
     public class PscHighAvailabilityService : IPscHighAvailabilityService
     {
         private ILogger _logger;
-        public PscHighAvailabilityService(ILogger logger)
+		private VMBaseSnapInEnvironment _snapInEnv;
+        public PscHighAvailabilityService(ILogger logger,VMBaseSnapInEnvironment snapInEnv)
         {
             _logger = logger;
+			_snapInEnv = snapInEnv;
         }
         /// <summary>
         /// Gets the infrastructure nodes.
@@ -79,7 +83,8 @@ namespace VMPSCHighAvailability.Common.Service
             {
                 message =  "VmDirGetDCInfos API returned error for Server: " + serverDto.Server;
                 _logger.Log(message, LogLevel.Error);
-                _logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                _logger.LogException(exc, custom);
             }
             return nodes;
         }
@@ -152,7 +157,8 @@ namespace VMPSCHighAvailability.Common.Service
                             {
                                 message = string.Format("VmAfdGetSiteName returned error for Server: {0} ", s.Server);
                                 _logger.Log(message, LogLevel.Info);
-                                _logger.LogException(exc);
+                                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                                _logger.LogException(exc, custom);
                             }
                         });
                     }
@@ -161,7 +167,8 @@ namespace VMPSCHighAvailability.Common.Service
             }
             catch(Exception exc)
             {
-                _logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                _logger.LogException(exc, custom);
             }
             return nodes.ToList();
         }
@@ -178,6 +185,7 @@ namespace VMPSCHighAvailability.Common.Service
             List<NodeDto> list1 = null, list2 = null;
             var t1 = Task.Run(() => { list1 = GetInfrastructureNodes(serverDto, dcName); });
             var t2 = Task.Run(() => { list2 = GetManagementNodes(serverDto, dcName, siteName); });
+
             var tasks = new Task[] { t1, t2 };
             var result = Task.WaitAll(tasks, Constants.TopologyTimeout * Constants.MilliSecsMultiplier);
 
@@ -190,7 +198,27 @@ namespace VMPSCHighAvailability.Common.Service
                 if (t2.Exception != null)
                     throw t2.Exception;
             }
-            if (list2 != null)
+			//For test automation consumption 
+			var filePath = Path.Combine(_snapInEnv.GetApplicationPath(), Constants.PscTopologyFileName);
+			StringBuilder sb = new StringBuilder();
+			if (list1 != null)
+			{
+				sb.Append("Infrastructure Nodes: ");
+				foreach (var item in list1)
+					sb.Append(item.Ip + ", ");
+				sb.Append(Environment.NewLine);
+			}
+			if (list2 != null)
+			{
+				sb.Append("Management Nodes: ");
+				foreach (var item in list2)
+					sb.Append(item.Ip + ", ");
+				sb.Append(Environment.NewLine);
+			}
+			File.WriteAllText(filePath, sb.ToString());
+			//
+
+			if (list2 != null)
             {
                 list2.AddRange(list1);
                 return list2;
@@ -243,7 +271,8 @@ namespace VMPSCHighAvailability.Common.Service
             }
             catch(Exception exc)
             {
-                _logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                _logger.LogException(exc, custom);
                 throw;
             }
         }
@@ -435,7 +464,8 @@ namespace VMPSCHighAvailability.Common.Service
             }
             catch (Exception exc)
             {
-                _logger.LogException(exc);
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                _logger.LogException(exc, custom);
                 dto = null;
             }
             return dto;
@@ -466,7 +496,8 @@ namespace VMPSCHighAvailability.Common.Service
                 {
                     message = string.Format("Method: GetManagementNodeDetails - CdcGetCurrentState API call for Server: {0} failed", serverDto.Server);
                     _logger.Log(message, LogLevel.Error);
-                    _logger.LogException(exc);
+                    var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                    _logger.LogException(exc, custom);
                 }
                 
                 try
@@ -483,7 +514,8 @@ namespace VMPSCHighAvailability.Common.Service
                 {
                     message = string.Format("Method: GetManagementNodeDetails - VmAfdGetSiteName API call for Server: {0} failed", serverDto.Server);
                     _logger.Log(message, LogLevel.Error);
-                    _logger.LogException(exc);
+                    var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                    _logger.LogException(exc, custom);
                 }
                 dto.Active = true;
                 dto.Ip = Network.GetIpAddress(dto.Name);
@@ -502,7 +534,8 @@ namespace VMPSCHighAvailability.Common.Service
                     {
                         Name = dcInfo.pszDCName,
                         NodeType = NodeType.Infrastructure,
-                        Domain = dcInfo.pszDomainName
+                        Domain = dcInfo.pszDomainName,
+						Ip = Network.GetIpAddress(dcInfo.pszDCName)
                     };
                     
                 }
@@ -510,7 +543,8 @@ namespace VMPSCHighAvailability.Common.Service
                 {
                     message = string.Format("Method: GetManagementNodeDetails - CdcGetDCName API call for Server: {0} failed", serverDto.Server);
                     _logger.Log(message, LogLevel.Error);
-                    _logger.LogException(exc);
+                    var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                    _logger.LogException(exc, custom);
                     dto.DomainController = new InfrastructureDto
                     {
                         Name = string.Empty,
@@ -547,8 +581,8 @@ namespace VMPSCHighAvailability.Common.Service
                                 Active = info.bIsAlive == 1,
                                 Sitename = info.pszSiteName,
                                 LastPing = DateTimeConverter.FromUnixToDateTime(info.dwLastPing),
-                                Services = new List<ServiceDto>()
-
+                                Services = new List<ServiceDto>(),
+								Ip = Network.GetIpAddress(entry)
                             };
 
                             if (hbStatus.info != null)
@@ -572,7 +606,8 @@ namespace VMPSCHighAvailability.Common.Service
                         {
                             message = string.Format("Method: GetManagementNodeDetails - CdcGetDCStatus API call for Server: {0} failed", serverDto.Server);
                             _logger.Log(message, LogLevel.Error);
-                            _logger.LogException(exc);
+                            var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                            _logger.LogException(exc, custom);
                             dto.DomainController = new InfrastructureDto
                             {
                                 Name = string.Empty,
@@ -586,7 +621,8 @@ namespace VMPSCHighAvailability.Common.Service
                 {
                     message = string.Format("Method: GetManagementNodeDetails - CdcEnumDCEntries API call for Server: {0} failed", serverDto.Server);
                     _logger.Log(message, LogLevel.Error);
-                    _logger.LogException(exc);
+                    var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                    _logger.LogException(exc, custom);
                     dto.DomainController = new InfrastructureDto
                     {
                         Name = string.Empty,
@@ -624,7 +660,8 @@ namespace VMPSCHighAvailability.Common.Service
             }
             catch (Exception exc)
             {
-                _logger.LogException(exc);               
+                var custom = new CustomExceptionExtractor().GetCustomMessage(exc);
+                _logger.LogException(exc, custom);              
             }
             return dfl;
         }

@@ -18,7 +18,6 @@
  *        memory.c
  *
  * Abstract:
- *                      
  *        Identity Manager - Common Routines
  *
  *        Memory Management

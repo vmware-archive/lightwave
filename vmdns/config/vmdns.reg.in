@@ -31,7 +31,7 @@
 }
 [HKEY_THIS_MACHINE\Services\vmdns\Parameters]
 "EnableDNSProtocol" = {
-    default = dword:00000000
-    value   = dword:00000000
+    default = dword:00000001
+    value   = dword:00000001
     doc = "Set to '1' to allow DNS Protocol Listener"
 }

@@ -26,8 +26,8 @@
 #endif
 
 #include <cfgdefs.h>
-
+#include <cfgerrors.h>
 #include <cfgutils.h>
 
-
-
+#include <vmdirerrors.h>
+#include <vmafdclient.h>

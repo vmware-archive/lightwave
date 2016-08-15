@@ -34,14 +34,20 @@ public class JWTBearerTokenBuilder implements AccessTokenBuilder {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(JWTBearerTokenBuilder.class);
 
+    protected String tokenTypeField;
     protected String roleField;
     protected String groupsField;
     protected StringManager sm;
 
-    public JWTBearerTokenBuilder(String roleField, String groupsField) {
+    public JWTBearerTokenBuilder(String tokenTypeField, String roleField, String groupsField) {
+        this.tokenTypeField = tokenTypeField;
         this.roleField = roleField;
         this.groupsField = groupsField;
         this.sm = StringManager.getManager(Config.LOCALIZATION_PACKAGE_NAME);
+    }
+
+    public String getTokenTypeField() {
+        return tokenTypeField;
     }
 
     public String getRoleField() {
@@ -56,7 +62,7 @@ public class JWTBearerTokenBuilder implements AccessTokenBuilder {
     public AccessToken build(TokenInfo info) throws InvalidTokenException {
         try {
             SignedJWT jwt = SignedJWT.parse(info.getToken());
-            return new JWTBearerToken(jwt, roleField, groupsField);
+            return new JWTBearerToken(jwt, tokenTypeField, roleField, groupsField);
         } catch (ParseException e) {
             log.error("Error parsing the JWT Bearer Token", e);
             throw new InvalidTokenException(sm.getString("auth.ite.parse.malformed"));

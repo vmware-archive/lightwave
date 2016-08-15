@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="9059" systemVersion="14F27" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="9059"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="ChooseRecordTypeController">
+            <connections>
+                <outlet property="ApplyButton" destination="4PP-f1-aHW" id="V5D-kS-00L"/>
+                <outlet property="CancelButton" destination="zgE-Hp-ddD" id="Ah5-8R-yLB"/>
+                <outlet property="OnCancel" destination="zgE-Hp-ddD" id="YjD-lC-G8l"/>
+                <outlet property="ZoneName" destination="ucI-9d-tkX" id="4eL-k1-LBC"/>
+                <outlet property="ZoneTypeOptions" destination="a9S-ME-ORx" id="zMs-CS-xIt"/>
+                <outlet property="window" destination="2" id="6"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <window title="Choose Record Type" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" oneShot="NO" animationBehavior="default" id="2" customClass="ChooseRecordType">
+            <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
+            <rect key="contentRect" x="131" y="74" width="486" height="162"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1280" height="778"/>
+            <value key="minSize" type="size" width="486" height="162"/>
+            <value key="maxSize" type="size" width="486" height="162"/>
+            <view key="contentView" id="3">
+                <rect key="frame" x="0.0" y="0.0" width="486" height="162"/>
+                <autoresizingMask key="autoresizingMask"/>
+                <subviews>
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="nZd-7K-YOc">
+                        <rect key="frame" x="58" y="118" width="44" height="17"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Zone :" id="ldH-kz-M7Z">
+                            <font key="font" metaFont="system"/>
+                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <popUpButton verticalHuggingPriority="750" id="a9S-ME-ORx">
+                        <rect key="frame" x="124" y="59" width="355" height="26"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <popUpButtonCell key="cell" type="push" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" id="fUj-yz-NXE">
+                            <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="menu"/>
+                            <menu key="menu" id="fci-W6-SFJ">
+                                <items>
+                                    <menuItem title="A" id="1qO-5r-9PX">
+                                        <accessibility identifier="1"/>
+                                    </menuItem>
+                                    <menuItem title="AAAA" tag="1" id="aR9-rs-FJE"/>
+                                    <menuItem title="SRV" tag="2" id="Kt5-1i-Ntt"/>
+                                    <menuItem title="NS" tag="3" id="J2q-YD-B2s"/>
+                                    <menuItem title="PTR" tag="4" id="7Lz-Ly-Q3B"/>
+                                    <menuItem title="CNAME" tag="5" id="eeb-7e-aAD"/>
+                                </items>
+                            </menu>
+                        </popUpButtonCell>
+                    </popUpButton>
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="4Z7-h2-tYw">
+                        <rect key="frame" x="13" y="66" width="89" height="17"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Record Type :" id="bA5-xs-8Dl">
+                            <font key="font" metaFont="system"/>
+                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <button verticalHuggingPriority="750" id="4PP-f1-aHW">
+                        <rect key="frame" x="403" y="13" width="76" height="32"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <buttonCell key="cell" type="push" title="Apply" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="cta-DM-bEm">
+                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system"/>
+                            <modifierMask key="keyEquivalentModifierMask" command="YES"/>
+                        </buttonCell>
+                        <connections>
+                            <action selector="OnApply:" target="-2" id="bK1-Cd-C5t"/>
+                        </connections>
+                    </button>
+                    <button verticalHuggingPriority="750" id="zgE-Hp-ddD">
+                        <rect key="frame" x="306" y="13" width="83" height="32"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <buttonCell key="cell" type="push" title="Cancel" bezelStyle="rounded" alignment="center" borderStyle="border" imageScaling="proportionallyDown" inset="2" id="EI4-F8-Lws">
+                            <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
+                            <font key="font" metaFont="system"/>
+                            <string key="keyEquivalent" base64-UTF8="YES">
+Gw
+</string>
+                        </buttonCell>
+                        <connections>
+                            <action selector="OnCancel:" target="-2" id="SEf-U2-yj2"/>
+                        </connections>
+                    </button>
+                    <textField verticalHuggingPriority="750" id="ucI-9d-tkX">
+                        <rect key="frame" x="126" y="115" width="350" height="22"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" enabled="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" placeholderString="Enter a Zone Name" drawsBackground="YES" id="6x1-Sr-wn9">
+                            <font key="font" metaFont="system"/>
+                            <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                </subviews>
+            </view>
+            <connections>
+                <outlet property="delegate" destination="h4j-KD-8Ds" id="v7E-1O-Hj2"/>
+            </connections>
+            <point key="canvasLocation" x="280" y="304"/>
+        </window>
+        <customObject id="h4j-KD-8Ds" customClass="ChooseRecordType"/>
+    </objects>
+</document>

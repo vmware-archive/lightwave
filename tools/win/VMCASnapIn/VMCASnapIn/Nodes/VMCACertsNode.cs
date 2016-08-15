@@ -23,8 +23,6 @@ namespace VMCASnapIn.Nodes
 {
     public class VMCACertsNode : ChildScopeNode
     {
-        public CertDetailsListControl ListControl { get; set; }
-
         public VMCACertsNode(VMCAServerDTO dto):base(dto)
         {
             this.EnabledStandardVerbs = StandardVerbs.Delete | StandardVerbs.Refresh;
@@ -38,10 +36,13 @@ namespace VMCASnapIn.Nodes
             DoRefresh();
         }
 
-        void DoRefresh()
+        public void DoRefresh()
         {
-            if (ListControl != null)
-                ListControl.RefreshList();
+            if (ListView != null)
+            {
+                var list = ListView as CertificateDetailsListView;
+                list.RefreshList();
+            }
         }
     }
 }

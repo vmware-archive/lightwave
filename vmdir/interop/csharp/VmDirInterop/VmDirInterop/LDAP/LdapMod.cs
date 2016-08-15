@@ -22,7 +22,6 @@ using System.Runtime.InteropServices;
 
 namespace VMDirInterop.LDAP
 {
-
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
     public struct LdapModData
     {
@@ -55,8 +54,8 @@ namespace VMDirInterop.LDAP
             this.lModData = new LdapModData();
 
             this.operationType = 0;
-            this.attributeName = null ;
-            this.attributeValues = null ;
+            this.attributeName = null;
+            this.attributeValues = null;
 
         }
 
@@ -78,8 +77,7 @@ namespace VMDirInterop.LDAP
 
             int sizeOfIntPtr = 0;
             int counter = 0 ;
-            int Length = attributeValues.Length ;
-
+            int Length = attributeValues.Length;
 
             sizeOfIntPtr = Marshal.SizeOf(typeof(IntPtr));
 
@@ -89,16 +87,18 @@ namespace VMDirInterop.LDAP
 
             lModData.secondvalue = attributeNamePtr;
 
-            lModData.values = Marshal.AllocHGlobal( sizeOfIntPtr * Length );
+            //
+            // +1 for terminating NULL
+            //
+            lModData.values = Marshal.AllocHGlobal(sizeOfIntPtr * (Length + 1));
 
-            for (counter = 0; counter < Length - 1; counter++)
+            for (counter = 0; counter < Length; counter++)
             {
                 strIntPtr = Marshal.StringToHGlobalAnsi(attributeValues[counter]);
                 Marshal.WriteIntPtr(this.lModData.values, counter * sizeOfIntPtr, strIntPtr);
             }
 
-
-            Marshal.WriteIntPtr(this.lModData.values, counter * sizeOfIntPtr, zeroIntPtr);  /* for NULL value termianation */
+            Marshal.WriteIntPtr(this.lModData.values, counter * sizeOfIntPtr, zeroIntPtr);  /* for NULL value termination */
 
             //  Now  Convert to IntPtr
 
@@ -121,6 +121,5 @@ namespace VMDirInterop.LDAP
                 Marshal.FreeHGlobal(lModData.values);
             }
         }
-
     }
 }

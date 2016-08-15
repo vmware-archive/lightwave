@@ -78,4 +78,11 @@ public interface AccessToken {
      */
     public String getSubject();
 
+    /**
+     * Retrieve the type from the access token.
+     *
+     * @return the type of the token.
+     */
+    public String getTokenType();
+
 }

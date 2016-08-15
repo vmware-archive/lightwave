@@ -64,7 +64,7 @@ public class JWTBearerTokenBuilderTest extends AccessTokenBuilderTest {
             .groups(groups)
             .build();
 
-        JWTBearerTokenBuilder builder = new JWTBearerTokenBuilder(JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM);
+        JWTBearerTokenBuilder builder = new JWTBearerTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM);
 
         AccessToken token = build(jwt, TokenStyle.HEADER, TokenType.BEARER, builder);
 
@@ -82,7 +82,7 @@ public class JWTBearerTokenBuilderTest extends AccessTokenBuilderTest {
             .role("Junk")
             .build();
 
-        JWTBearerTokenBuilder builder = new JWTBearerTokenBuilder(JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM);
+        JWTBearerTokenBuilder builder = new JWTBearerTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM);
 
         AccessToken token = build(jwt, TokenStyle.HEADER, TokenType.BEARER, builder);
 
@@ -93,7 +93,7 @@ public class JWTBearerTokenBuilderTest extends AccessTokenBuilderTest {
     @Test(expected = InvalidTokenException.class)
     public void testBuilding_BadToken() {
         TokenInfo info = new TokenInfo(TokenStyle.HEADER, TokenType.BEARER, "ABCDEFG", null);
-        JWTBearerTokenBuilder builder = new JWTBearerTokenBuilder(JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM);
+        JWTBearerTokenBuilder builder = new JWTBearerTokenBuilder(JWTBuilder.TOKEN_TYPE_CLAIM, JWTBuilder.ROLE_CLAIM, JWTBuilder.GROUPS_CLAIM);
         builder.build(info);
     }
 

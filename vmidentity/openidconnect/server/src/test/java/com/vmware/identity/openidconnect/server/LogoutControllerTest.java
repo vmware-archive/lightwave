@@ -117,7 +117,7 @@ public class LogoutControllerTest {
     }
 
     @Test
-    public void testLogoutFromClientCertLogin() throws Exception {
+    public void testLogoutFromPersonUserCertLogin() throws Exception {
         Map<String, String> params = logoutRequestParameters();
 
         SessionManager sessionManager = new SessionManager();
@@ -129,7 +129,7 @@ public class LogoutControllerTest {
                 LOGOUT_URI,
                 CLIENT_CERT_SUBJECT_DN,
                 0L /* authnRequestClientAssertionLifetimeMs */);
-        sessionManager.add(sessionId, PERSON_USER, LoginMethod.CLIENT_CERTIFICATE, clientInfo);
+        sessionManager.add(sessionId, PERSON_USER, LoginMethod.PERSON_USER_CERTIFICATE, clientInfo);
 
         LogoutController controller = logoutController();
         controller.setSessionManager(sessionManager);
@@ -138,7 +138,7 @@ public class LogoutControllerTest {
         MockHttpServletResponse response = doRequest(params, sessionId, controller, false /* isPost */);
         validateLogoutSuccessResponse(response, false /* expectingLogoutUriLinks */);
         Assert.assertTrue("sessionManager.get(sessionId)==null", sessionManager.get(sessionId) == null);
-        Assert.assertNotNull("client_cert_logged_out", response.getCookie(SessionManager.getClientCertificateLoggedOutCookieName(TENANT_NAME)));
+        Assert.assertNotNull("person_user_cert_logged_out", response.getCookie(SessionManager.getPersonUserCertificateLoggedOutCookieName(TENANT_NAME)));
     }
 
     @Test
@@ -176,7 +176,7 @@ public class LogoutControllerTest {
     public void testLogoutClientAssertionInvalidAudience() throws Exception {
         Map<String, String> params = logoutRequestParameters();
         JWTClaimsSet.Builder claimsBuilder = clientAssertionClaims();
-        claimsBuilder = claimsBuilder.audience("non_matching_audience");
+        claimsBuilder = claimsBuilder.audience("https://sso.com/invalid_logout_endpoint");
         params.put("client_assertion", TestUtil.sign(claimsBuilder.build(), CLIENT_PRIVATE_KEY).serialize());
         assertErrorResponse(params, "invalid_client", "client_assertion audience does not match request URI");
     }
@@ -505,7 +505,7 @@ public class LogoutControllerTest {
         validateLogoutSuccessResponse(
                 response,
                 expectingLogoutUriLinks);
-        Assert.assertNull("client_cert_logged_out", response.getCookie(SessionManager.getClientCertificateLoggedOutCookieName(TENANT_NAME)));
+        Assert.assertNull("person_user_cert_logged_out", response.getCookie(SessionManager.getPersonUserCertificateLoggedOutCookieName(TENANT_NAME)));
     }
 
     private static void assertErrorResponse(

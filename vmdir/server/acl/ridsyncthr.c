@@ -30,16 +30,8 @@ VmDirInitRidSynchThr(
     DWORD               dwError = 0;
     PVDIR_THREAD_INFO   pThrInfo = NULL;
 
-    dwError = VmDirAllocateMemory(
-                sizeof(*pThrInfo),
-                (PVOID)&pThrInfo);
+    dwError = VmDirSrvThrInit(&pThrInfo, NULL, NULL, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    VmDirSrvThrInit(
-                pThrInfo,
-                NULL,
-                NULL,
-                TRUE);   // join by main thr
 
     dwError = VmDirCreateThread(
                 &pThrInfo->tid,
@@ -56,11 +48,7 @@ cleanup:
     return dwError;
 
 error:
-
-    if (pThrInfo)
-    {
-        VmDirSrvThrFree(pThrInfo);
-    }
+    VmDirSrvThrFree(pThrInfo);
 
     goto cleanup;
 }

@@ -10,28 +10,44 @@
 noinst_LTLIBRARIES = libcommon.la
 
 libcommon_la_SOURCES = \
-    logging.c \
     circularbuffer.c \
-    ldapschemautil.c \
-    memory.c  \
+    deque.c \
+    krbmisc.c \
+    krbutil.c \
+    ldapbind.c \
+    linkedlist.c \
+    logging.c \
     marshalutil.c \
+    memory.c  \
     networkutil.c \
     networkutiluniximpl.c \
     opensslclient.c  \
+    parsearguments.c \
     rpcmemory.c  \
-    string.c  \
-    stringlist.c \
-    threading.c  \
-    synchronizing.c  \
     securityutil.c \
     securityutiluniximpl.c \
-    util.c \
-    deque.c \
+    string.c  \
+    stringlist.c \
+    superlogutil.c \
+    synchronizing.c  \
+    threading.c  \
     tsstack.c \
-    ldapbind.c \
-    krbutil.c \
-    parsearguments.c \
-    superlogutil.c
+    util.c \
+    schema/compat.c \
+    schema/copy.c \
+    schema/deflist.c \
+    schema/diff.c \
+    schema/file.c \
+    schema/globals.c \
+    schema/load.c \
+    schema/merge.c \
+    schema/parse.c \
+    schema/resolve.c \
+    schema/schema.c \
+    schema/verify.c \
+    schema/legacy/legacyschema.c \
+    schema/legacy/legacyschemamod.c \
+    schema/legacy/legacyutil.c
 
 libcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/include \

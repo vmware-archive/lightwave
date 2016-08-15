@@ -19,7 +19,8 @@ import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.opensaml.saml2.core.Response;
+import org.apache.commons.lang.Validate;
+import org.opensaml.saml2.core.AuthnRequest;
 import org.springframework.context.MessageSource;
 import org.w3c.dom.Document;
 
@@ -27,8 +28,10 @@ import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.samlservice.AuthenticationFilter;
 import com.vmware.identity.samlservice.AuthnRequestState;
+import com.vmware.identity.samlservice.SAMLResponseSender;
+import com.vmware.identity.samlservice.SAMLResponseSenderFactory;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
-import com.vmware.identity.samlservice.Shared;
+import com.vmware.identity.samlservice.impl.SAMLAuthnResponseSenderFactory;
 import com.vmware.identity.session.SessionManager;
 
 /**
@@ -83,40 +86,39 @@ public abstract class BaseSsoController {
 
                 // if proxying the request.  We are in async state.
                 // The response is handled in logonProcessor
-                if (requestState.isProxying()) {
+                if (requestState.isProxying() && requestState.getValidationResult().isValid()) {
                     return;
                 }
             }
+            ValidationResult vr = requestState.getValidationResult();
+            Validate.notNull(vr, "Null validation result.");
+
             requestState.addResponseHeaders(response);
-            Response samlResponse = requestState.generateResponseForTenant(
-                    tenant, token);
-            if (samlResponse == null) {
-                // use validation result code to return redirect or error to
-                // client
-                ValidationResult vr = requestState.getValidationResult();
-                if (vr.needsLogonView()) {
-                	requestState.setNeedLoginView(true);
-                } else if (vr.isRedirect()) {
-					response.sendRedirect(vr.getStatus());
-					logger.error("SSO Request responded with REDIRECT {} Substatus code: ",
-					        vr.getResponseCode(),vr.getSubstatus());
-				} else {
-					String message = vr.getMessage(messageSource, locale);
-                    response.addHeader(
-                            Shared.RESPONSE_ERROR_HEADER,
-                            Shared.encodeString(message));
-                    response.sendError(vr.getResponseCode(), message);
-                    logger.error("Sending error to browser. ERROR: {}, message ",vr.getResponseCode(), message);
-                }
-            } else {
-                String samlResponseForm = requestState
-                        .generateResponseFormForTenant(samlResponse, tenant);
-				if (samlResponseForm == null || samlResponseForm.isEmpty()) {
-					logger.error("Invalid SAML Response Form");
-				}
-                // write response
-                Shared.sendResponse(response, Shared.HTML_CONTENT_TYPE, samlResponseForm);
+            if (vr.needsLogonView()) {
+                //Post login form
+                requestState.setNeedLoginView(true);
+                return;
             }
+
+            SAMLResponseSenderFactory responseSenderFactory =
+                    new SAMLAuthnResponseSenderFactory();
+
+            SAMLResponseSender responseSender = responseSenderFactory.buildResponseSender
+                    (tenant, response, locale,
+                    null,  //for IDP initiated, no relay state in post Response to SP
+                    requestState,
+                    requestState.getAuthnMethod(),
+                    requestState.getSessionId(),
+                    requestState.getPrincipalId(),
+                    messageSource,sessionManager);
+
+            AuthnRequest authnReq = requestState.getAuthnRequest();
+            String rpID = authnReq == null? null:authnReq.getIssuer().getValue();   //It is possible rpID is not available due to bad request message
+
+            responseSender.sendResponseToRP(rpID, token);
+
+            logger.info("End processing SP-Initiated SSO response. Session was created.");
+
         } catch (IOException e) {
             logger.error("Caught IO exception " + e.toString());
         }

@@ -67,6 +67,7 @@ VmDirApplyModsToEntryStruct(
     PVDIR_SCHEMA_CTX    pSchemaCtx,
     ModifyReq *         modReq,
     PVDIR_ENTRY         pEntry,
+    PBOOLEAN            pbDnModified,
     PSTR*               ppszErrorMsg
     );
 
@@ -129,6 +130,26 @@ VmDirGetParentDN(
     VDIR_BERVALUE * pdn
     );
 
+DWORD
+VmDirGetRdn(
+    VDIR_BERVALUE * dn,
+    VDIR_BERVALUE * rdn
+    );
+
+DWORD
+VmDirRdnToNameValue(
+    VDIR_BERVALUE * rdn,
+    PSTR *ppszName,
+    PSTR *ppszValue
+    );
+
+DWORD
+VmDirCatDN(
+    PVDIR_BERVALUE pRdn,
+    PVDIR_BERVALUE pDn,
+    PVDIR_BERVALUE pResult
+    );
+
 // search.c
 
 int
@@ -139,15 +160,6 @@ VmDirMLSearch(
 int
 VmDirInternalSearch(
     PVDIR_OPERATION pOperation
-    );
-
-DWORD
-VmDirSimpleEqualFilterInternalSearch(
-    PCSTR               pszBaseDN,
-    int                 searchScope,
-    PCSTR               pszAttrName,
-    PCSTR               pszAttrValue,
-    PVDIR_ENTRY_ARRAY   pEntryArray
     );
 
 DWORD

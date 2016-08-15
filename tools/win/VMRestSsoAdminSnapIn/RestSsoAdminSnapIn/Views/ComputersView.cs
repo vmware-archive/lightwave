@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Windows.Forms;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
+using Vmware.Tools.RestSsoAdminSnapIn.Presenters;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Views
 {
@@ -47,7 +48,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             
             ActionHelper.Execute(delegate()
             {
-                var computers = SnapInContext.Instance.ServiceGateway.Server.GetComputers(_serverDto, auth.Token);
+                var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
+                var computers = service.Server.GetComputers(_serverDto, auth.Token);
                 foreach (var computer in computers)
                 {
                     var item = new ListViewItem(new[] { computer.HostName, computer.DomainController?"YES":"NO" }) { ImageIndex = (int)TreeImageIndex.Computers };

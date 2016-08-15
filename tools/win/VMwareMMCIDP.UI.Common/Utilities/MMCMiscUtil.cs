@@ -18,12 +18,14 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
+using VMIdentity.CommonUtils;
+using System.Xml.Serialization;
 
 namespace VMwareMMCIDP.UI.Common.Utilities
 {
     public static class MMCMiscUtil
     {
-        public static void SaveDataToFile(string data, string dialogTitle, string dialogFilter)
+        public static bool SaveDataToFile(string data, string dialogTitle, string dialogFilter)
         {
             using (var sfd = new SaveFileDialog())
             {
@@ -32,7 +34,10 @@ namespace VMwareMMCIDP.UI.Common.Utilities
                 if (sfd.ShowDialog() == DialogResult.OK)
                 {
                     File.WriteAllText(sfd.FileName, data);
+                    return true;
                 }
+                else
+                    return false;
             }
         }
         public static string SelectFile(string dialogTitle, string dialogFilter)
@@ -47,6 +52,65 @@ namespace VMwareMMCIDP.UI.Common.Utilities
                 }
                 return String.Empty;
             }
+        }
+
+        public static string ReadAllFromFile(string dialogTitle, string dialogFilter)
+        {
+            using (var ofd = new OpenFileDialog())
+            {
+                ofd.Title = dialogTitle;
+                ofd.Filter = dialogFilter;
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    return File.ReadAllText(ofd.FileName);
+                }
+                return String.Empty;
+            }
+        }
+
+        public static string GetBrandConfig(string key)
+        {
+            try
+            {
+                return CommonConstants.GetConfigValue(key);
+            }
+            catch (Exception)
+            {
+                MessageBox.Show(CommonConstants.CONFIG_NOT_FOUND);
+                return string.Empty;
+            }
+        }
+        public static void SaveObjectToFile(object data, string dialogTitle, string dialogFilter)
+        {
+            using (var ms = new MemoryStream())
+            {
+                var xmlSerializer = new XmlSerializer(data.GetType());
+                xmlSerializer.Serialize(ms, data);
+
+                using (var sfd = new SaveFileDialog())
+                {
+                    sfd.Title = dialogTitle;
+                    sfd.Filter = dialogFilter;
+                    if (sfd.ShowDialog() == DialogResult.OK)
+                    {
+                        File.WriteAllBytes(sfd.FileName, ms.ToArray());
+                    }
+                }
+            }
+        }
+
+        public static void SetDoubleBuffered(System.Windows.Forms.Control c)
+        {
+            if (System.Windows.Forms.SystemInformation.TerminalServerSession)
+                return;
+
+            System.Reflection.PropertyInfo aProp =
+                  typeof(System.Windows.Forms.Control).GetProperty(
+                        "DoubleBuffered",
+                        System.Reflection.BindingFlags.NonPublic |
+                        System.Reflection.BindingFlags.Instance);
+
+            aProp.SetValue(c, true, null);
         }
     }
 }

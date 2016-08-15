@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="10117" systemVersion="15F34" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="10117"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="VmdirSplitViewController">
+            <connections>
+                <outlet property="VmdirOutlineColumn" destination="SWg-xr-xBS" id="ffX-lD-CWL"/>
+                <outlet property="VmdirOutlineView" destination="jKk-km-OON" id="4Kf-GZ-voe"/>
+                <outlet property="VmdirPropView" destination="se5-r1-hHq" id="eQL-b5-bhY"/>
+                <outlet property="view" destination="4" id="17"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <customView id="4" customClass="VmdirSplitView">
+            <rect key="frame" x="0.0" y="0.0" width="1016" height="678"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews>
+                <splitView dividerStyle="thin" vertical="YES" id="wcM-pK-HyT">
+                    <rect key="frame" x="0.0" y="0.0" width="1016" height="678"/>
+                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                    <subviews>
+                        <customView id="wkJ-Js-0yP">
+                            <rect key="frame" x="0.0" y="0.0" width="255" height="678"/>
+                            <autoresizingMask key="autoresizingMask"/>
+                            <subviews>
+                                <scrollView autohidesScrollers="YES" horizontalLineScroll="17" horizontalPageScroll="10" verticalLineScroll="17" verticalPageScroll="10" usesPredominantAxisScrolling="NO" id="vui-46-dsg">
+                                    <rect key="frame" x="0.0" y="0.0" width="257" height="678"/>
+                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                    <clipView key="contentView" drawsBackground="NO" copiesOnScroll="NO" id="C4G-6y-rH9">
+                                        <rect key="frame" x="1" y="0.0" width="255" height="677"/>
+                                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                        <subviews>
+                                            <outlineView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" selectionHighlightStyle="sourceList" multipleSelection="NO" autosaveColumns="NO" headerView="EQs-1P-fAG" indentationPerLevel="14" outlineTableColumn="SWg-xr-xBS" id="jKk-km-OON" customClass="VmdirOutlineView">
+                                                <rect key="frame" x="0.0" y="0.0" width="255" height="17"/>
+                                                <autoresizingMask key="autoresizingMask"/>
+                                                <size key="intercellSpacing" width="3" height="0.0"/>
+                                                <color key="backgroundColor" name="_sourceListBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
+                                                <tableColumns>
+                                                    <tableColumn width="252" minWidth="40" maxWidth="1000" id="SWg-xr-xBS">
+                                                        <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left">
+                                                            <font key="font" metaFont="smallSystem"/>
+                                                            <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
+                                                            <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
+                                                        </tableHeaderCell>
+                                                        <textFieldCell key="dataCell" lineBreakMode="truncatingTail" selectable="YES" editable="YES" alignment="left" id="a3K-mT-WQD">
+                                                            <font key="font" metaFont="system"/>
+                                                            <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                                            <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                                        </textFieldCell>
+                                                        <tableColumnResizingMask key="resizingMask" resizeWithTable="YES" userResizable="YES"/>
+                                                    </tableColumn>
+                                                </tableColumns>
+                                                <connections>
+                                                    <action selector="OnClickAction:" target="-2" id="S1L-x1-2wG"/>
+                                                </connections>
+                                            </outlineView>
+                                        </subviews>
+                                        <nil key="backgroundColor"/>
+                                    </clipView>
+                                    <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="jjd-gb-TCF">
+                                        <rect key="frame" x="1" y="729" width="253" height="16"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                    </scroller>
+                                    <scroller key="verticalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="NO" id="tpl-YL-Sl1">
+                                        <rect key="frame" x="224" y="17" width="15" height="102"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                    </scroller>
+                                    <tableHeaderView key="headerView" id="EQs-1P-fAG">
+                                        <rect key="frame" x="0.0" y="0.0" width="255" height="23"/>
+                                        <autoresizingMask key="autoresizingMask"/>
+                                    </tableHeaderView>
+                                </scrollView>
+                            </subviews>
+                        </customView>
+                        <customView id="se5-r1-hHq">
+                            <rect key="frame" x="256" y="0.0" width="760" height="678"/>
+                            <autoresizingMask key="autoresizingMask"/>
+                        </customView>
+                    </subviews>
+                    <holdingPriorities>
+                        <real value="250"/>
+                        <real value="250"/>
+                    </holdingPriorities>
+                </splitView>
+            </subviews>
+            <point key="canvasLocation" x="437" y="406"/>
+        </customView>
+    </objects>
+</document>

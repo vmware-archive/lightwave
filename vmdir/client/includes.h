@@ -67,5 +67,7 @@ typedef void *VMCISLIB_BIND_T;
 #include "vmdirftp_h.h"
 #include "vmdirdbcp_h.h"
 #include "vmdirsuperlog_h.h"
+#include "vmdirurgentrepl_h.h"
 #include "prototypes.h"
+#include "schema/prototypes.h"
 #include "externs.h"

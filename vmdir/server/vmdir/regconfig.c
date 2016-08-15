@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -205,6 +205,34 @@ VmDirSrvUpdateConfig(
                     TRUE))
         {
             gVmdirGlobals.bAllowImportOpAttrs = pEntry->dwValue ? TRUE : FALSE;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_LDAP_SEARCH_TIMEOUT_SEC,
+                    TRUE))
+        {
+            gVmdirGlobals.dwLdapSearchTimeoutSec = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_TRACK_LAST_LOGIN_TIME,
+                    TRUE))
+        {
+            gVmdirGlobals.bTrackLastLoginTime = pEntry->dwValue ? TRUE : FALSE;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_URGENT_REPL_TIMEOUT_MSEC,
+                    TRUE))
+        {
+            gVmdirUrgentRepl.dwUrgentReplTimeout = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD,
+                    TRUE))
+        {
+            gVmdirGlobals.bPagedSearchReadAhead = !!pEntry->dwValue;
         }
     }
 

@@ -24,7 +24,6 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
@@ -40,11 +39,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
-import javax.crypto.Cipher;
 import javax.security.auth.login.LoginException;
 
 import org.apache.commons.lang.ArrayUtils;
@@ -69,6 +67,7 @@ import com.vmware.identity.auth.passcode.spi.AuthenticationSecret;
 import com.vmware.identity.auth.passcode.spi.AuthenticationSession;
 import com.vmware.identity.auth.passcode.spi.AuthenticationSessionFactory;
 import com.vmware.identity.auth.passcode.spi.AuthenticationResult;
+import com.vmware.identity.auth.passcode.spi.SessionFactoryProvider;
 import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsContextScope;
@@ -352,6 +351,7 @@ implements IIdentityManager
     private static final String PORT_MACRO = "<PORT>"; // to be substituted with StsTomcat ipaddress
 
     private static final String PROVIDER_TYPE_RSA_SECURID = "RsaSecureID";
+    private static final String PASSCODE_PROVIDER_TYPE = "RSA";
 
     private static SsoHealthStatistics ssoHealthStatistics = new SsoHealthStatistics();
 
@@ -876,6 +876,10 @@ implements IIdentityManager
                 throw new NoSuchIdpException(errMessage);
             }
 
+            if (policy.IsRsaSecureIDAuthnEnabled()) {
+                checkPasscodeAuthProviderConfigured();
+            }
+
             // Set authentication policy for identity source
             _configStore.setAuthnTypesForProvider(tenantName, providerName,
                     policy.IsPasswordAuthEnabled(),
@@ -1040,53 +1044,6 @@ implements IIdentityManager
         }
     }
 
-    static
-    void
-    validatePrivateKeyWithCertificate(
-            PrivateKey privateKey,
-            Certificate cert
-            ) throws Exception
-            {
-        if (!privateKey.getAlgorithm().equals(
-                cert.getPublicKey().getAlgorithm()))
-        {
-            throw new IllegalArgumentException
-            ("Private key algorithm does not match " +
-                    "algorithm of public key in certificate (at index 0)");
-        }
-
-        try
-        {
-            byte[] origBuf = "encrypted".getBytes();
-            byte[] encrpytedText = null;
-            byte[] decrpytedText = null;
-
-            // Encrypt orgBuf with 'cert'
-            Cipher cipher = Cipher.getInstance(privateKey.getAlgorithm());
-            cipher.init(Cipher.ENCRYPT_MODE, cert);
-            encrpytedText = cipher.doFinal(origBuf);
-
-            // Decrypt encrptedText with "privateKey"
-            cipher.init(Cipher.DECRYPT_MODE, privateKey);
-            decrpytedText = cipher.doFinal(encrpytedText);
-
-            if (!Arrays.equals(origBuf, decrpytedText))
-            {
-                throw new IllegalArgumentException
-                ("private key does not match certificate (at index 0)");
-            }
-        }
-        catch (NoSuchAlgorithmException noSuchAlgorithmEx)
-        {
-            throw new IllegalArgumentException(noSuchAlgorithmEx.getMessage());
-        }
-        catch (Exception e)
-        {
-            throw new IllegalArgumentException
-            ("private key does not match certificate (at index 0)");
-        }
-            }
-
     private
     List<Certificate>
     validateCertificateChain(
@@ -1130,8 +1087,8 @@ implements IIdentityManager
             {
                 // (2) The certChain must be ordered and
                 // contain a Certificate at index 0 corresponding to the private key
-                validatePrivateKeyWithCertificate(tenantPrivateKey,
-                        (Certificate)(certChainWithNoDup.toArray())[0]);
+                Certificate cert = certChainWithNoDup.get(0);
+                new PrivateKeyWithCertificateSignatureValidator().validate(tenantPrivateKey, cert);
             }
 
             return certChainWithNoDup;
@@ -2879,6 +2836,9 @@ implements IIdentityManager
                 else if (protocol == DirectoryStoreProtocol.LDAPS)
                 {
                     ValidateUtil.validateNotEmpty(idsData.getExtendedIdentityStoreData().getCertificates(), "IdentityStore certificates");
+                    for (X509Certificate cert : idsData.getExtendedIdentityStoreData().getCertificates()) {
+                        ValidateUtil.validateCertificate(cert);
+                    }
                 }
                 connections.append(connectionStr + " ");
             } catch (URISyntaxException e) {
@@ -3307,10 +3267,8 @@ implements IIdentityManager
      *             any other exceptions
      */
     private PrincipalId authenticate(String tenantName,
- X509Certificate[] tlsCertChain) throws IDMLoginException,
-                    CertificateRevocationCheckException,
-                    InvalidArgumentException, IdmCertificateRevokedException,
-                    IDMException {
+                X509Certificate[] tlsCertChain) throws IDMLoginException,CertificateRevocationCheckException,
+                InvalidArgumentException, IdmCertificateRevokedException, IDMException{
 
         TenantInformation info;
 
@@ -3363,7 +3321,14 @@ implements IIdentityManager
 
         Map<String, String> authStatsExtension = new HashMap<String, String> ();
         recorder.add(authStatsExtension);
-        certValidator.validateCertificatePath(tlsCertChain[0], authStatsExtension);
+        String clusterID;
+
+        try {
+            clusterID = this.getClusterId();
+        } catch (Exception e1) {
+            throw new IDMException("Failed to retrieve PSC cluster ID.");
+        }
+        certValidator.validateCertificatePath(tlsCertChain[0], clusterID, authStatsExtension);
 
         long startTime = System.nanoTime();
         String upn = certValidator.extractUPN(tlsCertChain[0]);
@@ -11945,9 +11910,14 @@ implements IIdentityManager
             _configStore.setClientCertPolicy(tenantName, policy.getClientCertPolicy());
 
             RSAAgentConfig rsaConfig = policy.get_rsaAgentConfig();
-            if (policy.IsRsaSecureIDAuthnEnabled() && rsaConfig == null) {
-                // create a default tenant-wide settings
-                rsaConfig = new RSAAgentConfig();
+            if (policy.IsRsaSecureIDAuthnEnabled()) {
+
+                checkPasscodeAuthProviderConfigured();
+
+                if (rsaConfig == null) {
+                    //create a default tenant-wide settings
+                    rsaConfig = new RSAAgentConfig();
+                }
             }
             _configStore.setRsaAgentConfig(tenantName, rsaConfig);
             _tenantCache.deleteTenant(tenantName);
@@ -11997,6 +11967,8 @@ implements IIdentityManager
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
             Validate.notNull(rsaAgentConfig, "rsaAgentConfig");
 
+            checkPasscodeAuthProviderConfigured();
+
             _configStore.setRsaAgentConfig(tenantName, rsaAgentConfig);
             _tenantCache.deleteTenant(tenantName);
         } catch (Exception ex) {
@@ -12039,6 +12011,8 @@ implements IIdentityManager
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
             Validate.notNull(instInfo, "instInfo");
 
+            checkPasscodeAuthProviderConfigured();
+
             _configStore.addRSAInstanceInfo(tenantName, instInfo);
             _tenantCache.deleteTenant(tenantName);
         } catch (Exception ex) {
@@ -12050,6 +12024,12 @@ implements IIdentityManager
             throw ServerUtils.getRemoteException(ex);
         }
 
+    }
+
+    private void checkPasscodeAuthProviderConfigured() {
+        List<SessionFactoryProvider> providers = PasscodeAuthenticationServiceProvider.getInstance().getProviders(PASSCODE_PROVIDER_TYPE);
+        if (providers.size() == 0)
+            throw new IllegalStateException("Passcode authentication provider implementation not found");
     }
 
     @Override

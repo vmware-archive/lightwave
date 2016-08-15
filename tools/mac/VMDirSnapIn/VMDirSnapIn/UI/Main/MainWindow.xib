@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="10117" systemVersion="15G31" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+    <dependencies>
+        <development version="5000" identifier="xcode"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="10117"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner" customClass="MainWindowController">
+            <connections>
+                <outlet property="AddGroupToolBarItem" destination="4N0-IB-VDY" id="cDt-o3-tJr"/>
+                <outlet property="AddObjectToolBarItem" destination="83" id="100"/>
+                <outlet property="AddUserToolBarItem" destination="jvu-kW-zSR" id="hjp-tR-3hn"/>
+                <outlet property="BackForwardToolBarItem" destination="wOM-jE-s3t" id="9hQ-VD-nwq"/>
+                <outlet property="ContainerView" destination="7" id="16"/>
+                <outlet property="DeleteObjectToolBarItem" destination="79" id="103"/>
+                <outlet property="FetchNextPageToolBarItem" destination="yk9-cN-umY" id="u0H-UR-4C2"/>
+                <outlet property="FetchNextToolBatItem" destination="yk9-cN-umY" id="CKr-4u-yj7"/>
+                <outlet property="OperationalToolBarItem" destination="dMy-Yk-tkb" id="GWg-TD-ic9"/>
+                <outlet property="OptionalAttributeToolBarItem" destination="mId-3O-THE" id="gSs-MV-GAH"/>
+                <outlet property="OptionalToolBarItem" destination="mId-3O-THE" id="of9-r2-mnF"/>
+                <outlet property="PageSizeToolBarItem" destination="cpO-bk-e2V" id="Vyj-ee-aQD"/>
+                <outlet property="PropertiesToolBarItem" destination="82" id="101"/>
+                <outlet property="RefreshToolBarItem" destination="7cf-ae-wcN" id="ujb-3O-Gy0"/>
+                <outlet property="SchemaToolBarItem" destination="81" id="102"/>
+                <outlet property="SearchToolBarItem" destination="oD2-9n-hSl" id="JhO-AH-jhW"/>
+                <outlet property="ServerToolBarItem" destination="84" id="99"/>
+                <outlet property="StatusLabel" destination="dUt-mC-ey0" id="t3V-HG-bBo"/>
+                <outlet property="SuperLogToolBarItem" destination="V3d-Mz-kRb" id="hyX-yh-2JZ"/>
+                <outlet property="window" destination="2" id="6"/>
+            </connections>
+        </customObject>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <window title="Lightwave Directory" autorecalculatesKeyViewLoop="NO" oneShot="NO" animationBehavior="default" id="2" customClass="MainWindow">
+            <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
+            <windowCollectionBehavior key="collectionBehavior" fullScreenAuxiliary="YES"/>
+            <rect key="contentRect" x="351" y="220" width="1024" height="700"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1440" height="877"/>
+            <value key="minSize" type="size" width="1024" height="700"/>
+            <value key="minFullScreenContentSize" type="size" width="1024" height="700"/>
+            <view key="contentView" id="3">
+                <rect key="frame" x="0.0" y="0.0" width="1024" height="700"/>
+                <autoresizingMask key="autoresizingMask"/>
+                <subviews>
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" id="dUt-mC-ey0">
+                        <rect key="frame" x="5" y="2" width="436" height="17"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" id="Qqe-0Z-YlT">
+                            <font key="font" metaFont="system"/>
+                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <customView id="7">
+                        <rect key="frame" x="4" y="22" width="1015" height="678"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                    </customView>
+                </subviews>
+            </view>
+            <toolbar key="toolbar" implicitIdentifier="FE36DD6A-C84E-4D20-A045-B50F20A3B5C4" autosavesConfiguration="NO" displayMode="iconAndLabel" sizeMode="small" id="8">
+                <allowedToolbarItems>
+                    <toolbarItem implicitItemIdentifier="NSToolbarShowColorsItem" id="12"/>
+                    <toolbarItem implicitItemIdentifier="NSToolbarShowFontsItem" id="11"/>
+                    <toolbarItem implicitItemIdentifier="NSToolbarPrintItem" id="9"/>
+                    <toolbarItem implicitItemIdentifier="NSToolbarSpaceItem" id="13"/>
+                    <toolbarItem implicitItemIdentifier="NSToolbarFlexibleSpaceItem" id="10"/>
+                    <toolbarItem implicitItemIdentifier="8A797D04-C71F-464E-A4D1-73BAA3B51167" label="Delete Object" paletteLabel="DeleteItem" tag="-1" image="delete" id="79" customClass="ActivatableToolBarItem">
+                        <connections>
+                            <action selector="DeleteObject:" target="-2" id="92"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="7ECE2461-E414-4FBF-A814-8D5CF6C09356" label="Schema" paletteLabel="SchemaIcon" tag="-1" image="View_Schema_64" id="81" customClass="ActivatableToolBarItem">
+                        <connections>
+                            <action selector="ShowSchema:" target="-2" id="93"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="FF007395-4CBD-4923-B1A6-3B9D6ABFBDF9" label="Properties" paletteLabel="PropertiesIcon" tag="-1" image="Edit_Properties_64" id="82" customClass="ActivatableToolBarItem">
+                        <connections>
+                            <action selector="ViewProperties:" target="-2" id="94"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="A1781114-AC8E-4F46-A7F5-31278D6DF3D0" label="Add Object" paletteLabel="AddIcon" tag="-1" image="Add_Object_64" id="83" customClass="ActivatableToolBarItem">
+                        <connections>
+                            <action selector="AddObject:" target="-2" id="95"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="0F2D3DFA-B0A9-45C0-954F-7A86E9C87363" label="Connect" paletteLabel="ServerIcon" tag="-1" image="connect" id="84" customClass="ActivatableToolBarItem">
+                        <connections>
+                            <action selector="HandleConnection:" target="-2" id="4tk-eC-59p"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="D698208C-F8E7-402D-A61B-4E30308FD28C" label="Add User" paletteLabel="AddUser" tag="-1" image="Add_User_64" id="jvu-kW-zSR" customClass="ActivatableToolBarItem">
+                        <size key="minSize" width="20" height="20"/>
+                        <size key="maxSize" width="20" height="20"/>
+                        <connections>
+                            <action selector="AddUser:" target="-2" id="dcS-S1-Vg4"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="63960026-A18B-467F-950E-21F932ED5487" label="Add Group" paletteLabel="AddGroup" tag="-1" image="Add_Group_64" id="4N0-IB-VDY" customClass="ActivatableToolBarItem">
+                        <connections>
+                            <action selector="AddGroup:" target="-2" id="UE2-Nd-dmD"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="61136502-73B5-46C9-A8B9-3F4CD10E78FD" label="" paletteLabel="BackForward" id="wOM-jE-s3t" customClass="ActivatableToolBarItem">
+                        <nil key="toolTip"/>
+                        <size key="minSize" width="61" height="25"/>
+                        <size key="maxSize" width="100" height="25"/>
+                        <segmentedControl key="view" verticalHuggingPriority="750" id="WLO-vQ-Etx">
+                            <rect key="frame" x="6" y="14" width="65" height="25"/>
+                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                            <segmentedCell key="cell" borderStyle="border" alignment="left" style="separated" trackingMode="selectOne" id="rzK-gA-Rf4">
+                                <font key="font" metaFont="system"/>
+                                <segments>
+                                    <segment label="&lt;"/>
+                                    <segment label="&gt;" tag="1"/>
+                                </segments>
+                            </segmentedCell>
+                        </segmentedControl>
+                        <connections>
+                            <action selector="BackForwardAction:" target="-2" id="A3M-bL-Qs1"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="7D579AA8-09B1-4B64-8D81-D24EFFEB2214" label="Refresh" paletteLabel="Refresh" tag="-1" image="RefreshImg" id="7cf-ae-wcN" customClass="ActivatableToolBarItem">
+                        <connections>
+                            <action selector="OnRefresh:" target="-2" id="uj6-xk-O1W"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="A9C3D707-2177-495F-B0E2-8DDA24CF1F54" label="SuperLog" paletteLabel="SuperLog" tag="-1" image="NSMultipleDocuments" id="V3d-Mz-kRb" customClass="ActivatableToolBarItem">
+                        <connections>
+                            <action selector="ShowSuperLogWindow:" target="-2" id="eaL-bi-BnT"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="4349610A-CB38-4BC3-B409-7C2586AF1476" label="Page Size" paletteLabel="Page Size" tag="-1" image="PageSizeImg" id="cpO-bk-e2V" customClass="ActivatableToolBarItem">
+                        <connections>
+                            <action selector="OnPageSizeToolBarItem:" target="-2" id="8jG-oJ-KOr"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="24932C95-77F3-4BE8-92BB-3BE1E26D6C38" label="Operational Attribute" paletteLabel="Operational Attribute" tag="-1" image="OperationalAttrImg" id="dMy-Yk-tkb" customClass="ActivatableToolBarItem">
+                        <connections>
+                            <action selector="OnOperationalToolBarItem:" target="-2" id="9mN-X1-Acr"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="5C4B1BB5-F8DB-4FD6-B967-8AD6C82408A4" label="Search" paletteLabel="Search" tag="-1" image="SearchImg" id="oD2-9n-hSl" customClass="ActivatableToolBarItem">
+                        <connections>
+                            <action selector="OnSearchToolBarItem:" target="-2" id="UYD-v1-WwX"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="90A13DBF-8C94-474C-B30A-99EDFADB77BF" label="Next Page" paletteLabel="FetchNextPage" tag="-1" image="NextPageImg" id="yk9-cN-umY" customClass="ActivatableToolBarItem">
+                        <connections>
+                            <action selector="OnFetchNextPageToolBarItem:" target="-2" id="sQt-9U-bnu"/>
+                        </connections>
+                    </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="40735594-53FD-4581-A5CC-4EEA90BE934E" label="Optional Attribute" paletteLabel="OptionalAttribute" tag="-1" image="OptionalAttrImg" id="mId-3O-THE" customClass="ActivatableToolBarItem">
+                        <connections>
+                            <action selector="OnOptionalToolBatItem:" target="-2" id="XZo-U1-idW"/>
+                        </connections>
+                    </toolbarItem>
+                </allowedToolbarItems>
+                <defaultToolbarItems>
+                    <toolbarItem reference="10"/>
+                    <toolbarItem reference="84"/>
+                    <toolbarItem reference="cpO-bk-e2V"/>
+                    <toolbarItem reference="yk9-cN-umY"/>
+                    <toolbarItem reference="dMy-Yk-tkb"/>
+                    <toolbarItem reference="mId-3O-THE"/>
+                    <toolbarItem reference="oD2-9n-hSl"/>
+                    <toolbarItem reference="83"/>
+                    <toolbarItem reference="jvu-kW-zSR"/>
+                    <toolbarItem reference="4N0-IB-VDY"/>
+                    <toolbarItem reference="79"/>
+                    <toolbarItem reference="7cf-ae-wcN"/>
+                    <toolbarItem reference="V3d-Mz-kRb"/>
+                    <toolbarItem reference="10"/>
+                </defaultToolbarItems>
+            </toolbar>
+            <contentBorderThickness minY="22"/>
+            <connections>
+                <outlet property="delegate" destination="14" id="19"/>
+            </connections>
+            <point key="canvasLocation" x="214" y="420"/>
+        </window>
+        <customObject id="14" customClass="MainWindow"/>
+    </objects>
+    <resources>
+        <image name="Add_Group_64" width="64" height="64"/>
+        <image name="Add_Object_64" width="64" height="64"/>
+        <image name="Add_User_64" width="64" height="64"/>
+        <image name="Edit_Properties_64" width="128" height="128"/>
+        <image name="NSMultipleDocuments" width="32" height="32"/>
+        <image name="NextPageImg" width="64" height="64"/>
+        <image name="OperationalAttrImg" width="128" height="128"/>
+        <image name="OptionalAttrImg" width="128" height="128"/>
+        <image name="PageSizeImg" width="64" height="64"/>
+        <image name="RefreshImg" width="128" height="128"/>
+        <image name="SearchImg" width="64" height="64"/>
+        <image name="View_Schema_64" width="64" height="64"/>
+        <image name="connect" width="64" height="64"/>
+        <image name="delete" width="64" height="64"/>
+    </resources>
+</document>

@@ -20,17 +20,22 @@ using Vecs;
 using AppKit;
 using Foundation;
 using VmIdentity.UI.Common.Utilities;
+using VMCertStore.Common.DTO;
 
 namespace VMCertStoreSnapIn
 {
     public class SecretKeysListView : NSTableViewDataSource
     {
-        List<CertDTO> Entries;
+        public List<CertDTO> Entries;
         VecsSecretKeysNode node;
+		public VMCertStoreServerDTO ServerDto { get; set; }
+		public string Store { get; set; }
 
-        public SecretKeysListView (List<CertDTO> certList)
+        public SecretKeysListView (List<CertDTO> certList,VMCertStoreServerDTO dto,String store)
         {
             Entries = certList;
+			ServerDto = dto;
+			Store = store;
         }
 
         // This method will be called by the NSTableView control to learn the number of rows to display.

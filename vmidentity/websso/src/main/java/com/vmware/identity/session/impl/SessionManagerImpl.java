@@ -13,8 +13,12 @@
  */
 package com.vmware.identity.session.impl;
 
+import java.security.NoSuchAlgorithmException;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
@@ -24,6 +28,11 @@ import org.apache.commons.lang.Validate;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.IDPConfig;
+import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.saml.SamlTokenSpec.AuthenticationData.AuthnMethod;
+import com.vmware.identity.samlservice.SamlServiceException;
+import com.vmware.identity.samlservice.Shared;
 import com.vmware.identity.session.Session;
 import com.vmware.identity.session.SessionManager;
 import com.vmware.identity.session.SessionParticipant;
@@ -62,6 +71,7 @@ public class SessionManagerImpl implements SessionManager {
      * com.vmware.identity.session.SessionManager#add(com.vmware.identity.session
      * .Session)
      */
+    @Override
     public void add(Session session) {
         Validate.notNull(session);
         log.debug("Adding " + session.toString());
@@ -84,11 +94,47 @@ public class SessionManagerImpl implements SessionManager {
         }
     }
 
+    /**
+     * createSession() create a new session
+     * @param externalIDPSessionId  -  optional external idp session id,
+     *  only used for external authentication workflow.
+     * @throws SamlServiceException
+     */
+    @Override
+    public Session createSession(PrincipalId principal, AuthnMethod authMethod,
+            String externalIDPSessionId, String idpEntId)
+                    throws SamlServiceException {
+
+        Validate.notNull(principal, "user principalId");
+
+        // create a new session here
+        Calendar calendar = new GregorianCalendar();
+        calendar.add(Calendar.MINUTE, Shared.SESSION_LIFETIME_MINUTES);
+        Date sessionEndTime = calendar.getTime();
+        try {
+            Session currentSession =
+                new Session(principal, sessionEndTime
+                        , authMethod);
+            if (externalIDPSessionId != null) {
+                Validate.notEmpty(idpEntId, "Need idpEntId for creating external authenticated session");
+
+                currentSession.setUsingExtIDP(true);
+                currentSession.setExtIDPToUsed(new IDPConfig(idpEntId));
+                currentSession.setExtIDPSessionID(externalIDPSessionId);
+             }
+            add(currentSession);
+            return currentSession;
+        } catch (NoSuchAlgorithmException e) {
+            throw new SamlServiceException(e);
+        }
+    }
+
     /*
      * (non-Javadoc)
      *
      * @see com.vmware.identity.session.SessionManager#getAll()
      */
+    @Override
     public Collection<Session> getAll() {
         log.debug("Returning all sessions");
 
@@ -106,6 +152,7 @@ public class SessionManagerImpl implements SessionManager {
      *
      * @see com.vmware.identity.session.SessionManager#get(java.lang.String)
      */
+    @Override
     public Session get(String sessionId) {
         Validate.notNull(sessionId);
         log.debug("Querying " + sessionId);
@@ -132,6 +179,7 @@ public class SessionManagerImpl implements SessionManager {
      * com.vmware.identity.session.SessionManager#getByParticipant(java.lang
      * .String)
      */
+    @Override
     public Session getByParticipant(String participantSessionId) {
         Validate.notNull(participantSessionId);
         log.debug("Querying participant " + participantSessionId);
@@ -161,6 +209,7 @@ public class SessionManagerImpl implements SessionManager {
      *
      * @see com.vmware.identity.session.SessionManager#remove(java.lang.String)
      */
+    @Override
     public void remove(String sessionId) {
         Validate.notNull(sessionId);
         log.debug("Removing " + sessionId);
@@ -187,6 +236,7 @@ public class SessionManagerImpl implements SessionManager {
      *
      * @see com.vmware.identity.session.SessionManager#removeAll()
      */
+    @Override
     public void clear() {
         log.debug("Removing all sessions");
 
@@ -201,6 +251,7 @@ public class SessionManagerImpl implements SessionManager {
         }
     }
 
+    @Override
     public void update(Session session) {
         Validate.notNull(session);
         log.debug("Updating " + session);
@@ -210,6 +261,7 @@ public class SessionManagerImpl implements SessionManager {
         add(session);
     }
 
+    @Override
     public Session getByLogoutRequestId(String logoutRequestId) {
         Validate.notNull(logoutRequestId);
         log.debug("Querying by logout request " + logoutRequestId);

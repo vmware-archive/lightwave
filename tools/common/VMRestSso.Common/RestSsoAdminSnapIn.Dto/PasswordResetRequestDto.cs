@@ -22,17 +22,17 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
     [Serializable]
     public class PasswordResetRequestDto : IDataContext
     {
-        [DataMember]
-        private string currentPassword;
+        //[DataMember]
+        //private string currentPassword;
 
         [DataMember]
         private string newPassword;
 
-        public string CurrentPassword
-        {
-            get { return currentPassword; }
-            set { currentPassword = value; }
-        }
+        //public string CurrentPassword
+        //{
+        //    get { return currentPassword; }
+        //    set { currentPassword = value; }
+        //}
 
         public string NewPassword
         {

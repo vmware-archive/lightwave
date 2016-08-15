@@ -14,7 +14,7 @@
 
     <!-- Set appropriate log levels for third party packages -->
     <Loggers>
-    <Logger additivity="false" name="com.vmware.identity" level = "info">
+    <Logger additivity="false" name="com.vmware.identity" level = "debug">
         <AppenderRef ref="WEBSSO_LOGFILE"/>
     </Logger>
     <Root level = "info">

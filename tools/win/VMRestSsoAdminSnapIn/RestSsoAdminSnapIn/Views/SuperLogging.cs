@@ -25,6 +25,7 @@ using Vmware.Tools.RestSsoAdminSnapIn.Core.Extensions;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Serialization;
 using Vmware.Tools.RestSsoAdminSnapIn.Dto;
 using Vmware.Tools.RestSsoAdminSnapIn.Helpers;
+using Vmware.Tools.RestSsoAdminSnapIn.Presenters;
 using Vmware.Tools.RestSsoAdminSnapIn.Service;
 
 namespace Vmware.Tools.RestSsoAdminSnapIn.Views
@@ -86,11 +87,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                 if (!_status)
                 {
                     int size = (int)txtEventsToCapture.Value;
-                    var success = SnapInContext.Instance.ServiceGateway.SuperLogging.Start(_serverDto, _tenant, auth.Token, size);
+                    var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
+                    var success = service.SuperLogging.Start(_serverDto, _tenant, auth.Token, size);
                 }
                 else
                 {
-                    var success = SnapInContext.Instance.ServiceGateway.SuperLogging.Stop(_serverDto, _tenant, auth.Token);
+                    var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
+                    var success = service.SuperLogging.Stop(_serverDto, _tenant, auth.Token);
                 }
                 _status = !_status;
                 SetSuperLoggingStatus(_status);
@@ -195,7 +198,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_serverDto, _tenant);
             ActionHelper.Execute(delegate
             {
-                var eventLogStatus = SnapInContext.Instance.ServiceGateway.SuperLogging.GetStatus(_serverDto, _tenant, auth.Token);
+                var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
+                var eventLogStatus = service.SuperLogging.GetStatus(_serverDto, _tenant, auth.Token);
                 txtEventsToCapture.Value = (decimal)eventLogStatus.Size;
                 _status = eventLogStatus.Enabled;
                 if (_status)
@@ -215,7 +219,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_serverDto, _tenant);
             ActionHelper.Execute(delegate
             {
-                _eventLogs = SnapInContext.Instance.ServiceGateway.SuperLogging.GetEventLogs(_serverDto, _tenant, auth.Token);
+                var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
+                _eventLogs = service.SuperLogging.GetEventLogs(_serverDto, _tenant, auth.Token);
                 _eventLogs = _eventLogs.OrderByDescending(x => x.Start).ToList();
                 var filteredEventLogs = _serviceHelper.ApplyFilter(_eventLogs, _filters);
                 BindControls(filteredEventLogs);
@@ -327,7 +332,8 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                     var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_serverDto, _tenant);
                     ActionHelper.Execute(delegate
                     {
-                        var success = SnapInContext.Instance.ServiceGateway.SuperLogging.Delete(_serverDto, _tenant, auth.Token);
+                        var service = ScopeNodeExtensions.GetServiceGateway(_serverDto.ServerName);
+                        var success = service.SuperLogging.Delete(_serverDto, _tenant, auth.Token);
                         if (success)
                         {
                             RefreshView();

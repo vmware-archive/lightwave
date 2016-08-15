@@ -32,115 +32,154 @@
 extern "C" {
 #endif
 
-extern PVDIR_CFG_ATTR_INDEX_DESC    pBootStrapIdxAttrDesc;
+typedef enum
+{
+    VDIR_INDEXING_SCHEDULED,
+    VDIR_INDEXING_IN_PROGRESS,
+    VDIR_INDEXING_VALIDATING_SCOPES,
+    VDIR_INDEXING_COMPLETE,
+    VDIR_INDEXING_DISABLED,
+    VDIR_INDEXING_DELETED
+
+} VDIR_INDEXING_STATUS;
 
 typedef enum
 {
-    VDIR_CFG_ATTR_INDEX_ENABLED = 0,
-    VDIR_CFG_ATTR_INDEX_DISABLED,
-    VDIR_CFG_ATTR_INDEX_BUILDING,
-    VDIR_CFG_ATTR_INDEX_ABORTED
+    VDIR_INDEX_READ,
+    VDIR_INDEX_WRITE
 
-} VDIR_CFG_ATTR_INDEX_STATUS;
+} VDIR_INDEX_USAGE;
 
-typedef enum
+typedef struct _VDIR_INDEX_CFG
 {
-    VDIR_CFG_ATTR_INDEX_READ = 0,  // Index ready for read/search ops.
-    VDIR_CFG_ATTR_INDEX_WRITE,     // Index require update/create for write ops.
-    VDIR_CFG_ATTR_INDEX_ALL
+    PSTR                    pszAttrName;
+    BOOLEAN                 bDefaultIndex;
+    BOOLEAN                 bScopeEditable;
+    BOOLEAN                 bGlobalUniq; // Note: this is default index only property
+    BOOLEAN                 bIsNumeric;
+    int                     iTypes;
+    PLW_HASHMAP             pUniqScopes;
 
-} VDIR_CFG_ATTR_INDEX_USAGE_CTX;
+    // fields for indexing progress tracking
+    PVDIR_LINKED_LIST       pNewUniqScopes;
+    PVDIR_LINKED_LIST       pDelUniqScopes;
+    PVDIR_LINKED_LIST       pBadUniqScopes;
+    VDIR_INDEXING_STATUS    status;
+    ENTRYID                 initOffset;
 
-typedef struct _VDIR_CFG_ATTR_INDEX_DESC
-{
-    VDIR_CFG_ATTR_INDEX_STATUS  status;
-    PSTR        pszAttrName;
-    int         iTypes;
-    BOOLEAN     bIsUnique;
-    BOOLEAN     bIsNumeric;
+    PVMDIR_MUTEX            mutex;
+    USHORT                  usRefCnt;
 
-    int         iId; // index into array of PVDIR_BDB_INDEX_DATABASE
-
-} VDIR_CFG_ATTR_INDEX_DESC, *PVDIR_CFG_ATTR_DESC;
+} VDIR_INDEX_CFG;
 
 ///////////////////////////////////////////////////////////////////////////////
 // indexer library initialize / shutdown
 // indexer cache instantiation
 ///////////////////////////////////////////////////////////////////////////////
+
 /*
  * Initialize indexer library
  */
 DWORD
-VmDirAttrIndexLibInit(
+VmDirIndexLibInit(
     VOID
     );
 
 /*
  * Shutdown indexer library
  */
-void
-VmDirAttrIndexLibShutdown(
-    void
-    );
-
-/*
- * Bootstrap Attribute Index cache to startup BDB with minimum set of db files.
- */
-DWORD
-VmDirAttrIndexBootStrap(
-    VOID
-    );
-
-///////////////////////////////////////////////////////////////////////////////
-// Attribute index cache modification
-//
-// NOTE, cache modify check and commit calls are serialized at the entry modify level.
-///////////////////////////////////////////////////////////////////////////////
-/*
- * 1. Verify modify contents
- * 2. Create new cache version including new attribute with building flag
- *    (but not yet make this version of cache live)
- */
-DWORD
-VmDirCFGAttrIndexModifyPrepare(
-    VDIR_MODIFICATION*   pMods,
-    PVDIR_ENTRY          pEntry
-    );
-/*
- * Commit attribute index modification into cache. (i.e. make it live version)
- */
 VOID
-VmDirCFGAttrIndexModifyCommit(
+VmDirIndexLibShutdown(
     VOID
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+// Set of functions used to open custom indices during bootstrap
+///////////////////////////////////////////////////////////////////////////////
+
+BOOLEAN
+VmDirIndexIsDefault(
+    PCSTR   pszAttrName
+    );
+
+DWORD
+VmDirCustomIndexCfgInit(
+    PVDIR_SCHEMA_AT_DESC    pATDesc,
+    PVDIR_INDEX_CFG*        ppIndexCfg
+    );
+
+DWORD
+VmDirIndexOpen(
+    PVDIR_INDEX_CFG pIndexCfg
+    );
+
+VOID
+VmDirFreeIndexCfg(
+    PVDIR_INDEX_CFG pIndexCfg
     );
 
 ///////////////////////////////////////////////////////////////////////////////
 // Attribute Index lookup
 ///////////////////////////////////////////////////////////////////////////////
 
-PVDIR_CFG_ATTR_INDEX_DESC
-VmDirAttrNameToReadIndexDesc(
-    PCSTR       pszName,        // name of the attribute
-    USHORT      usVersion,      // version of index cache to use
-    USHORT*     pusVersion      // version of index cache used in his call
-    );
-
-PVDIR_CFG_ATTR_INDEX_DESC
-VmDirAttrNameToWriteIndexDesc(
-    PCSTR       pszName,        // name of the attribute
-    USHORT      usVersion,      // version of index cache to use
-    USHORT*     pusVersion      // version of index cache used in his call
-    );
-
-/*
- * Should only call this during server startup/shutdown to help open/close db files.
- */
 DWORD
-VmDirAttrIndexDescList(
-    USHORT*     pusSize,       // size of pAttrIdxDesc
-    PVDIR_CFG_ATTR_INDEX_DESC* ppAttrIdxDesc
+VmDirIndexCfgAcquire(
+    PCSTR               pszAttrName,
+    VDIR_INDEX_USAGE    usage,
+    PVDIR_INDEX_CFG*    ppIndexCfg
     );
 
+VOID
+VmDirIndexCfgRelease(
+    PVDIR_INDEX_CFG pIndexCfg
+    );
+
+BOOLEAN
+VmDirIndexExist(
+    PCSTR   pszAttrName
+    );
+
+DWORD
+VmDirIndexCfgMap(
+    PLW_HASHMAP*    ppIndexCfgMap
+    );
+
+DWORD
+VmDirIndexCfgGetAllScopesInStrArray(
+    PVDIR_INDEX_CFG pIndexCfg,
+    PSTR**          pppszScopes
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+// Attribute Index open/schedule/delete functions
+///////////////////////////////////////////////////////////////////////////////
+
+DWORD
+VmDirIndexSchedule(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PCSTR               pszAttrName,
+    PCSTR               pszAttrSyntaxOid
+    );
+
+DWORD
+VmDirIndexDelete(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PCSTR               pszAttrName
+    );
+
+DWORD
+VmDirIndexAddUniquenessScope(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PCSTR               pszAttrName,
+    PCSTR*              ppszUniqScopes
+    );
+
+DWORD
+VmDirIndexDeleteUniquenessScope(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PCSTR               pszAttrName,
+    PCSTR*              ppszUniqScopes
+    );
 
 #ifdef __cplusplus
 }

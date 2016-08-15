@@ -26,49 +26,50 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
     {
         private readonly GroupPropertyDataManager _presenter;
         private GroupMembershipDto _groupMembershipDto;
+        private enum MemberTypeFilter { All = 0, Users, Groups };
         public SelectGroupMembers(GroupPropertyDataManager presenter)
         {
             _presenter = presenter;
             InitializeComponent();
-
-            var il = new ImageList();
-            il.Images.AddStrip(ResourceHelper.GetToolbarImage());
-            lstGroupMembers.SmallImageList = il;
-            BindData();
         }
 
-        void BindData()
+        private void SearchMembers(string name, string domain, MemberTypeFilter filter)
         {
-            var membershipInfo = _presenter.GetAllMembers();
             lstGroupMembers.Items.Clear();
 
-            if (membershipInfo.Users != null)
+            if (filter != MemberTypeFilter.Groups)
             {
-                foreach (var member in membershipInfo.Users)
+                var users = _presenter.GetUsers(name, domain);
+
+                if (users != null)
                 {
-                    var item = new ListViewItem(member.Name, 4) { Tag = member, ImageIndex = (int)TreeImageIndex.User };
-                    lstGroupMembers.Items.Add(item);
+                    foreach (var member in users)
+                    {
+                        var item = new ListViewItem(member.Name, 4) { Tag = member, ImageIndex = (int)TreeImageIndex.User };
+                        lstGroupMembers.Items.Add(item);
+                    }
+                }
+
+            }
+
+            if (filter != MemberTypeFilter.Users)
+            {
+                var groups = _presenter.GetGroups(name, domain);
+                if (groups != null)
+                {
+                    foreach (var member in groups)
+                    {
+                        var item = new ListViewItem(member.GroupName, 5) { Tag = member, ImageIndex = (int)TreeImageIndex.Group };
+                        lstGroupMembers.Items.Add(item);
+                    }
                 }
             }
 
-            if (membershipInfo.SolutionUsers != null)
-            {
-                foreach (var member in membershipInfo.SolutionUsers)
-                {
-                    var item = new ListViewItem(member.Name, 4) { Tag = member, ImageIndex = (int)TreeImageIndex.SolutionUser };
-                    lstGroupMembers.Items.Add(item);
-                }
-            }
+            lblWarning.Text = string.Format("Warning: Showing top {0} results. Please specify a more specific search criteria..", lstGroupMembers.Items.Count);
+            lblWarning.Visible = lstGroupMembers.Items.Count > 100;
 
-            if (membershipInfo.Groups != null)
-            {
-                foreach (var member in membershipInfo.Groups)
-                {
-                    var item = new ListViewItem(member.GroupName, 5) { Tag = member, ImageIndex = (int)TreeImageIndex.Group };
-                    lstGroupMembers.Items.Add(item);
-                }
-            }
-        }
+        }
+
         private void btnAdd_Click(object sender, EventArgs e)
         {
             GetSelectedMembers();
@@ -111,6 +112,39 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             get
             {
                 return _groupMembershipDto;
+            }
+        }
+
+        private void SelectGroupMembers_Load(object sender, EventArgs e)
+        {
+            var il = new ImageList();
+            il.Images.AddStrip(ResourceHelper.GetToolbarImage());
+            lstGroupMembers.SmallImageList = il;
+
+            var domains = _presenter.GetDomains();
+            cbDomain.DataSource = domains;
+            cbDomain.DisplayMember = "Name";
+            cbDomain.ValueMember = "Name";
+            if (domains.Count > 0)
+            {
+                cbDomain.SelectedIndex = 0;
+                cbMemberType.SelectedIndex = 0;
+                SearchMembers(null, domains[0].Name, MemberTypeFilter.All);
+            }
+            else
+            {
+                btnSearch.Enabled = false;
+                cbMemberType.Enabled = false;
+            }
+        }
+
+        private void btnSearch_Click(object sender, EventArgs e)
+        {
+            if (cbMemberType.SelectedIndex > -1 && cbDomain.SelectedIndex > -1)
+            {
+                var domain = cbDomain.SelectedValue.ToString();
+                var type = (MemberTypeFilter)cbMemberType.SelectedIndex;
+                SearchMembers(txtMemberName.Text, domain, type);
             }
         }
     }

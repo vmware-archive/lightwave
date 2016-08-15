@@ -106,11 +106,30 @@ namespace VMIdentity.CommonUtils.Log
                 , stackTrace == null ? "N/A" : stackTrace);
         }
 
+        private string GetFormattedLog(string message, LogLevel level, string stackTrace, string custom)
+        {
+            return string.Format("TIMESTAMP: {0}\t\tLEVEL: {1}\t\tDETAILS: {2}\t\t STACKTRACE: {3} {4}\n"
+                , DateTime.Now.ToString("dd-MMM-yyyy hh:mm:ss")
+                , level
+                , message
+                , stackTrace == null ? "N/A" : stackTrace,
+                custom);
+        }
+
         public void LogException(Exception exception)
         {
             if (_canLog)
             {
                 var log = GetFormattedLog(exception.Message, LogLevel.Error, exception.StackTrace);
+                File.AppendAllLines(_filePath, new List<string> { log });
+            }
+        }
+
+        public void LogException(Exception exception, string custom)
+        {
+            if (_canLog)
+            {
+                var log = GetFormattedLog(exception.Message, LogLevel.Error, exception.StackTrace, custom);
                 File.AppendAllLines(_filePath, new List<string> { log });
             }
         }

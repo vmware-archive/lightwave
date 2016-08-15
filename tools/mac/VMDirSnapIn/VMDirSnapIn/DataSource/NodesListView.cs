@@ -22,56 +22,61 @@ using Foundation;
 
 namespace VMDirSnapIn.DataSource
 {
-    public class NodesListView : NSTableViewDataSource
-    {
-        public List<ScopeNode> Entries { get; set; }
+	public class NodesListView : NSTableViewDataSource
+	{
+		public List<ScopeNode> Entries { get; set; }
+		public VMDirServerDTO ServerDTO { get; set; }
 
-        public VMDirServerDTO ServerDTO { get; set; }
+		public NodesListView()
+		{
+			Entries = new List<ScopeNode>();
+		}
 
-        public NodesListView ()
-        {
-            Entries = new List<ScopeNode> ();
-        }
+		public NodesListView(List<ScopeNode> nodesList)
+		{
+			Entries = nodesList;
 
-        public NodesListView (List<ScopeNode> nodesList)
-        {
-            Entries = nodesList;
+		}
 
-        }
+		// This method will be called by the NSTableView control to learn the number of rows to display.
+		[Export("numberOfRowsInTableView:")]
+		public int NumberOfRowsInTableView(NSTableView table)
+		{
+			if (Entries != null)
+				return Entries.Count;
+			else
+				return 0;
+		}
 
-        // This method will be called by the NSTableView control to learn the number of rows to display.
-        [Export ("numberOfRowsInTableView:")]
-        public int NumberOfRowsInTableView (NSTableView table)
-        {
-            if (Entries != null)
-                return Entries.Count;
-            else
-                return 0;
-        }
-
-        // This method will be called by the control for each column and each row.
-        [Export ("tableView:objectValueForTableColumn:row:")]
-        public NSObject ObjectValueForTableColumn (NSTableView table, NSTableColumn col, int row)
-        {
-            try {
-                if (Entries != null) {
-                    switch (col.Identifier) {
-                    case "Key":
-                        return (NSString)(this.Entries [row]).DisplayName;
-                    case "Value":
-                        if (this.Entries [row] is DirectoryNode) {
-                            return (NSString)(this.Entries [row] as DirectoryNode).Name;
-                        }
-                        break;
-                    default:
-                        break;
-                    }
-                }
-            } catch (Exception e) {
-                System.Diagnostics.Debug.WriteLine ("Error in List Operation " + e.Message);
-            }
-            return null;
-        }
-    }
+		// This method will be called by the control for each column and each row.
+		[Export("tableView:objectValueForTableColumn:row:")]
+		public NSObject ObjectValueForTableColumn(NSTableView table, NSTableColumn col, int row)
+		{
+			try
+			{
+				if (Entries != null)
+				{
+					switch (col.Identifier)
+					{
+						case "Key":
+							return (NSString)(this.Entries[row]).DisplayName;
+						case "Value":
+							if (this.Entries[row] is DirectoryNode)
+							{
+								return (NSString)(this.Entries[row] as DirectoryNode).Dn;
+							}
+							break;
+						default:
+							break;
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				System.Diagnostics.Debug.WriteLine("Error in List Operation " + e.Message);
+			}
+			return null;
+		}
+	}
 }
 

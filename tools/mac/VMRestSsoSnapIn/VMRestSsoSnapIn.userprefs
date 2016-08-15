@@ -1,0 +1,26 @@
+﻿<Properties StartupItem="VMRestSsoSnapIn/Lightwave SSO.csproj">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State name="__root__">
+          <Node name="VMRestSsoSnapIn" expanded="True">
+            <Node name="VMRestSsoSnapIn" expanded="True" selected="True" />
+          </Node>
+        </State>
+      </Pad>
+      <Pad Id="MonoDevelop.Debugger.WatchPad">
+        <State />
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore>
+      <Breakpoint file="/Users/nbhonsale/Perforce/nbhonsale_lotus_main_mac/depot/lotus/lotus-main/tools/mac/VMRestSsoSnapIn/VMRestSsoSnapIn/VMRestSsoSnapIn/Views/LeaveActiveDirectoryController.cs" line="68" column="1" />
+    </BreakpointStore>
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+  <DisabledProjects>
+    <String>../../../Nimish share/VMDir final/mac/VmIdentity.UI.Common/VmIdentity.UI.Common.csproj</String>
+  </DisabledProjects>
+</Properties>

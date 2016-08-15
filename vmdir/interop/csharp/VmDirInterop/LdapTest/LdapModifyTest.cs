@@ -1,5 +1,4 @@
 ﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.Generic;
 using VMDirInterop;
 using VMDirInterop.Interfaces;
@@ -7,37 +6,30 @@ using VMDirInterop.LDAP;
 
 namespace LdapTest
 {
-    [TestClass]
     public class LdapModifyTest
     {
-
         static string myDN;
         static string hostName;
         static string password;
-        static string dllPath;
         static int portNumber;
         static string upn;
-        static string basedn;
 
         static string myDN_F;
         static string hostName_F;
         static string password_F;
         static int portNumber_F;
         static string upn_F;
-        static string basedn_F;
+        static ILdapConnection ldapConnection;
 
-
-        [ClassInitialize()]
-        public static void MyClassInitialize(TestContext testContext)
+        public static void RunTests(Credentials cred)
         {
-            var path = @"..\..\..\input.xml";
-            Credentials cred = Input.ReadXML(path);
+            System.Console.WriteLine("Running modify tests ...");
+
             myDN = cred.myDN;
             hostName = cred.hostName;
             upn = cred.upn;
             password = cred.password;
             portNumber = cred.portNumber;
-            basedn = "cn=Cap15,cn=Users,dc=vsphere,dc=local";
 
             //False credentials
             myDN_F = cred.myDN_F;
@@ -45,33 +37,28 @@ namespace LdapTest
             upn_F = cred.upn_F;
             password_F = cred.password_F;
             portNumber_F = cred.portNumber_F;
-            basedn_F = "cn=Cap150,cn=Users,dc=vsphere,dc=local";
 
-            dllPath = @"C:\Users\aalokr\workspaces_new\aalokr_lotus_ws_2k8_dev_new\lotus\lotus-main\vmdir\interop\csharp\VmDirInterop\LdapTest\";        //put all the dll in the LdapTest Folder
-
-            Dll.SetDllDirectory(dllPath);
-        }
-
-
-        [TestMethod]
-        public void LdapModify_AddAttribute_Success()
-        {
-
-            ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
+            ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
             Assert.IsNotNull(ldapConnection);
 
             ldapConnection.LdapSimpleBindS(myDN, password);
+            LdapUser user = LdapUser.CreateRandomUser(ldapConnection);
 
-            string basedn = "cn=lModAdd,cn=Users,dc=vsphere,dc=local";
+            LdapModify_AddAttribute_Success(ldapConnection, user);
+            LdapModify_AddAttribute_Failure(ldapConnection, user);
+            LdapModify_ReplaceAttribute_Success(ldapConnection, user);
+            LdapModify_DeleteAttribute_Success(ldapConnection, user);
+        }
 
+        public static void LdapModify_AddAttribute_Success(ILdapConnection ldapConnection, LdapUser user)
+        {
             LdapMod[] lMods = new LdapMod[1];
 
-            lMods[0] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_ADD, "sn", new string[] { "Allen", null });
-
+            lMods[0] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_ADD, "sn", new string[] { "Allen" });
 
             try
             {
-                ldapConnection.ModifyObject(basedn, lMods);
+                ldapConnection.ModifyObject(user.DN, lMods);
             }
             catch
             {
@@ -79,76 +66,48 @@ namespace LdapTest
             }
         }
 
-        [TestMethod]
-        public void LdapModify_AddAttribute_Failure()
+        public static void LdapModify_AddAttribute_Failure(ILdapConnection ldapConnection, LdapUser user)
         {
-
-            ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
-            Assert.IsNotNull(ldapConnection);
-
-            ldapConnection.LdapSimpleBindS(myDN, password);
-
-            string basedn = "cn=lModAdd,cn=Users,dc=vsphere,dc=local";
-
             LdapMod[] lMods = new LdapMod[1];
 
-            lMods[0] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_ADD, "cn", new string[] { "Allen", null });
-
+            lMods[0] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_ADD, "cn", new string[] { "Allen" });
 
             try
             {
-                ldapConnection.ModifyObject(basedn, lMods);
+                ldapConnection.ModifyObject(user.DN, lMods);
                 Assert.Fail();
             }
             catch
             {
                 //Expected Exception
             }
-
         }
 
-        [TestMethod]
-        public void LdapModify_ReplaceAttribute_Success()
+        public static void LdapModify_ReplaceAttribute_Success(ILdapConnection ldapConnection, LdapUser user)
         {
-            ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
-            Assert.IsNotNull(ldapConnection);
-
-            ldapConnection.LdapSimpleBindS(myDN, password);
-
-            string basedn = "cn=lModReplace,cn=Users,dc=vsphere,dc=local";
-
             LdapMod[] lMods = new LdapMod[1];
 
-            lMods[0] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_REPLACE, "sn", new string[] { "Barry", null });
+            lMods[0] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_REPLACE, "sn", new string[] { "Barry" });
 
             try
             {
-                ldapConnection.ModifyObject(basedn, lMods);
+                ldapConnection.ModifyObject(user.DN, lMods);
             }
             catch
             {
                 Assert.Fail();
             }
-
         }
 
-        [TestMethod]
-        public void LdapModify_DeleteAttribute_Success()
+        public static void LdapModify_DeleteAttribute_Success(ILdapConnection ldapConnection, LdapUser user)
         {
-            ILdapConnection ldapConnection = LdapConnection.LdapInit(hostName, portNumber);
-            Assert.IsNotNull(ldapConnection);
-
-            ldapConnection.LdapSimpleBindS(myDN, password);
-
-            string basedn = "cn=lModAdd,cn=Users,dc=vsphere,dc=local";
-
             LdapMod[] lMods = new LdapMod[1];
 
-            lMods[0] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_DELETE, "sn", new string[] { "Allen", null });
+            lMods[0] = new LdapMod((int)LdapMod.mod_ops.LDAP_MOD_DELETE, "sn", new string[] { "Barry" });
 
             try
             {
-                ldapConnection.ModifyObject(basedn, lMods);
+                ldapConnection.ModifyObject(user.DN, lMods);
             }
             catch
             {

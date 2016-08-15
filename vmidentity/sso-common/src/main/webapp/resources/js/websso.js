@@ -35,8 +35,6 @@
    var _url = null;
    var _sspiCtxId = null;
    var _rsaSessionID = null;
-   // get the language version of the browser
-   var browserLocale = navigator.language || navigator.browserLanguage;
 
    var api = {
       logging: {},
@@ -127,6 +125,9 @@
       }
       // on check of sspi enable login button
       if (windows_auth == "true") {
+          if (!isMac) {
+              $('#sspiCheckbox').attr('disabled', false);
+          }
           $('#sspiCheckbox').on('change', enableLoginButton);
       }
       //on change of smartcard enable login button
@@ -134,10 +135,7 @@
           $('#smartcardCheckbox').on('change', enableLoginButton);
       }
 
-      // softdetect - this will detect quickly if the plugin is installed.
-      if (isMac || (DetectPlugin() == false)) {
-         setCSDInstalled();
-      }
+      setCSDInstalled();
 
       //create the actual CSD object. this will also enable/disable
       //sspi depending upon whether the plugin call succeeds or not
@@ -166,7 +164,8 @@
             return true;
          }
       }
-      if ((result = ieReg.exec(usrAgent)) !== null) {
+      /*
+	  if ((result = ieReg.exec(usrAgent)) !== null) {
          if (result[IE_VERSION_INDEX] >= 10) {
             return true;
          }
@@ -176,11 +175,42 @@
             return true;
          }
       }
+	  */
       if ((result = firefoxReg.exec(usrAgent)) !== null) {
          if (result[FF_VERSION_INDEX] >= 34) {
             return true;
          }
       }
+
+	  console.log('Edge useragent: ' + usrAgent);
+      var edgeIndex = usrAgent.toLowerCase().indexOf('edge/');
+      if( edgeIndex > -1) {
+        return true;
+      }
+	  
+	  console.log('Safari useragent: ' + usrAgent);
+      var safariIndex = usrAgent.toLowerCase().indexOf('safari/');
+      if( safariIndex > -1) {
+		console.log('Safari safariIndex: ' + safariIndex);
+        var versionIndex = usrAgent.toLowerCase().indexOf('version/');
+		console.log('Safari versionIndex: ' + versionIndex);
+        if(versionIndex > -1) {
+
+            var versionNumberIndex = versionIndex + 8;
+			console.log('Safari versionNumberIndex: ' + versionNumberIndex);
+            var length = safariIndex - versionNumberIndex;
+
+            if(length > 0)
+            {
+              var versionStr = usrAgent.substr(versionNumberIndex , length);
+			  console.log('Safari versionStr: ' + versionStr);
+              if(versionStr.trim() > 8)
+                return true;
+            }
+
+        }
+      }
+
       return false;
    };
 
@@ -247,7 +277,7 @@
          );
       };
 
-      conn.onfail = function(evt) {
+      conn.onerror = function(evt) {
          var message = evt == null ? "None" : evt.data;
          console.log("No Plugin Detected ... Connection error: " + message);
          doLog("No Plugin Detected ... Connection error: " + message);
@@ -262,14 +292,11 @@
       };
    }
 
+   // if CIP is installed, writes to browser localStorage to set var "vmwCIPInstalled" to "true"
+   // if CIP is not installed, set var to "false"
    var setCSDInstalled = function setCSDInstalled(){
       if (this._VersionStr != null || !isVCLogin()) {
          $('#footer').html('');
-         // If the plugin is there and we are running on Windows,
-         // allow SSPI login to be enabled.
-         if (!isMac) {
-             $('#sspiCheckbox').attr('disabled', false);
-         }
          writeCSDInstalled(true);
       } else {
          if (!isMac) {
@@ -387,16 +414,9 @@
             }
             document.getElementById('submit').disabled = status;
 
-            // Regardless of the status passed, SSPI should be disabled if the plugin
-            // is not installed. Once installed, it follows the regular status passed to
-            // this function.
             var sspiCheckboxEle = document.getElementById('sspiCheckbox');
             if (sspiCheckboxEle != null) {
-                if (this._VersionStr != null && !isMac) {
-                    sspiCheckboxEle.disabled = status;
-                } else {
-                    sspiCheckboxEle.disabled = true;
-                }
+                sspiCheckboxEle.disabled = status;
             }
             var smartcardEle = document.getElementById('smartcardCheckbox');
             if ( smartcardEle != null) {
@@ -420,7 +440,6 @@
             var passwordField = document.getElementById('password');
             if (cb.checked) {
                doLog("enableSspi : getting the userNamer for this logged on User");
-               api.sspi.getADUserName({}, onGetADUserName);
                usernameField.disabled = false;
                passwordField.disabled = false;
                // Get the ad name,
@@ -680,6 +699,10 @@
        }
    }
 
+   function generatateSspiCxtId() {
+	   return Math.floor(1000000000 + Math.random() * 9000000000);
+   }
+
    function onNegotiateSSPI(result, err) {
       if (result == null || err != null || _sspiCtxId == null) {
          handleSspiError('negotiateSSPI', err);
@@ -700,7 +723,6 @@
       xml.setRequestHeader('Cache-Control', 'no-cache');
       xml.setRequestHeader('Pragma', 'no-cache');
       xml.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-      xml.setRequestHeader("Accept-Language", browserLocale);
       xml.send(params);
       doLog("OnNegotiateSSPI : Logging in now using final SSPI negotiation");
    }
@@ -745,10 +767,11 @@
          // Disable the fields.
          disableFields(true);
          _xml = null;
-         if (sspiLogin) {
-            doLog("Using Windows SSPI Authentication to login. spn is : [ " + spn + " ]");
+         if (DetectPlugin() == "true" && sspiLogin) {
+            doLog("Using CIP Windows SSPI Authentication to login. spn is : [ " + spn + " ]");
             _xml = xml;
             try {
+               api.sspi.getADUserName({}, onGetADUserName);
                // 1st leg of Negotiate SSP
                api.sspi.initialize( {providerName: 'Negotiate', target: spn}, onInitializeSSPI);
             } catch (err) {
@@ -773,6 +796,10 @@
              } else {
                 authType = "RSAAM " + unp;
              }
+          } else if (sspiLogin) {
+             doLog("Using browser IWA to login.");
+             var sspiContextId = generatateSspiCxtId();
+             authType = 'Negotiate ' + sspiContextId;
           } else if (password_auth == "true") {
              authType = 'Basic ' + unp;
           }
@@ -782,7 +809,6 @@
           xml.setRequestHeader('Cache-Control', 'no-cache');
           xml.setRequestHeader('Pragma', 'no-cache');
           xml.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-          xml.setRequestHeader("Accept-Language", browserLocale);
           // send request
           xml.send(params);
       } else {
@@ -804,14 +830,13 @@
       }
       base64SspiToken = base64SspiToken.replace(/\r\n/g, '');
       // generate a 10-digit random number
-      var sspiContextId = Math.floor(1000000000 + Math.random() * 9000000000);
+      var sspiContextId = generatateSspiCxtId();
       _sspiCtxId = sspiContextId;
       var params = 'CastleAuthorization=' + encodeURIComponent('Negotiate ' + sspiContextId + ' ' + base64SspiToken);
       // disable http caching
       xml.setRequestHeader('Cache-Control', 'no-cache');
       xml.setRequestHeader('Pragma', 'no-cache');
       xml.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-      xml.setRequestHeader("Accept-Language", browserLocale);
       xml.send(params);
    }
 

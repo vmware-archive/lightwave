@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectTypeGuids>{A3F8F2AB-B479-4A4A-A458-A89E7DC349F1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>{890EF1D0-5B33-478F-8421-850E5812C310}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>VMDNS</RootNamespace>
+    <MonoMacResourcePrefix>Resources</MonoMacResourcePrefix>
+    <AssemblyName>LightwaveDNS</AssemblyName>
+    <UseXamMacFullFramework>true</UseXamMacFullFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\x64\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <UseRefCounting>true</UseRefCounting>
+    <UseSGen>true</UseSGen>
+    <IncludeMonoRuntime>false</IncludeMonoRuntime>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <CodeSigningKey>Mac Developer</CodeSigningKey>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <CreatePackage>false</CreatePackage>
+    <PackageSigningKey>Developer ID Installer</PackageSigningKey>
+    <XamMacArch>x86_64</XamMacArch>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>full</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\x64\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <UseRefCounting>true</UseRefCounting>
+    <UseSGen>true</UseSGen>
+    <IncludeMonoRuntime>true</IncludeMonoRuntime>
+    <CreatePackage>false</CreatePackage>
+    <CodeSigningKey>Developer ID Application</CodeSigningKey>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <XamMacArch>x86_64</XamMacArch>
+    <PackageSigningKey>Developer ID Installer</PackageSigningKey>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Xamarin.Mac" />
+    <Reference Include="System.Xml" />
+    <Reference Include="VMDNS.Client">
+      <HintPath>..\..\..\interop\lib64\VMDNS.Client.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+    <Folder Include="UI\" />
+    <Folder Include="Nodes\" />
+    <Folder Include="ListViews\" />
+    <Folder Include="UI\RecordViews\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Main.cs" />
+    <Compile Include="UI\VMDNSMainWindowControllerFactory.cs" />
+    <Compile Include="UI\AppDelegate.cs" />
+    <Compile Include="UI\AppDelegate.designer.cs">
+      <DependentUpon>AppDelegate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\VMDNSMainWindowController.cs" />
+    <Compile Include="VMDNSSnapInEnvironment.cs" />
+    <Compile Include="Nodes\VMDNSRootScopeNode.cs" />
+    <Compile Include="Nodes\VMDNSServerNode.cs" />
+    <Compile Include="Nodes\VMDNSZonesNode.cs" />
+    <Compile Include="UI\AddNewZone.cs" />
+    <Compile Include="UI\AddNewZone.designer.cs">
+      <DependentUpon>AddNewZone.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\AddNewZoneController.cs" />
+    <Compile Include="UI\AddNewZoneController.designer.cs">
+      <DependentUpon>AddNewZoneController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ZoneProperties.cs" />
+    <Compile Include="UI\ZoneProperties.designer.cs">
+      <DependentUpon>ZoneProperties.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ZonePropertiesController.cs" />
+    <Compile Include="UI\ZonePropertiesController.designer.cs">
+      <DependentUpon>ZonePropertiesController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ServerOptions.cs" />
+    <Compile Include="UI\ServerOptions.designer.cs">
+      <DependentUpon>ServerOptions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ServerOptionsController.cs" />
+    <Compile Include="UI\ServerOptionsController.designer.cs">
+      <DependentUpon>ServerOptionsController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="OutlineViewDataSource.cs" />
+    <Compile Include="UI\DNSOutlineView.cs" />
+    <Compile Include="UI\DNSTableView.cs" />
+    <Compile Include="Nodes\VMDNSForwardZonesNode.cs" />
+    <Compile Include="Nodes\VMDNSReverseZonesNode.cs" />
+    <Compile Include="ListViews\NodesListView.cs" />
+    <Compile Include="ListViews\ZoneDetailsListView.cs" />
+    <Compile Include="ListViews\DnsRecordListView.cs" />
+    <Compile Include="Nodes\VMDNSZonesBaseNode.cs" />
+    <Compile Include="Nodes\VMDNSZoneEntryNode.cs" />
+    <Compile Include="UI\RecordViews\AddNewRecord.cs" />
+    <Compile Include="UI\RecordViews\AddNewRecord.designer.cs">
+      <DependentUpon>AddNewRecord.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\AddNewRecordController.cs" />
+    <Compile Include="UI\RecordViews\AddNewRecordController.designer.cs">
+      <DependentUpon>AddNewRecordController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\ChooseRecordType.cs" />
+    <Compile Include="UI\RecordViews\ChooseRecordType.designer.cs">
+      <DependentUpon>ChooseRecordType.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\ChooseRecordTypeController.cs" />
+    <Compile Include="UI\RecordViews\ChooseRecordTypeController.designer.cs">
+      <DependentUpon>ChooseRecordTypeController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\ARecord.cs" />
+    <Compile Include="UI\RecordViews\ARecordController.cs" />
+    <Compile Include="UI\RecordViews\ARecord.designer.cs">
+      <DependentUpon>ARecord.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\ARecordController.designer.cs">
+      <DependentUpon>ARecordController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\AAAARecord.cs" />
+    <Compile Include="UI\RecordViews\AAAARecordController.cs" />
+    <Compile Include="UI\RecordViews\AAAARecord.designer.cs">
+      <DependentUpon>AAAARecord.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\AAAARecordController.designer.cs">
+      <DependentUpon>AAAARecordController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\PtrRecord.cs" />
+    <Compile Include="UI\RecordViews\PtrRecordController.cs" />
+    <Compile Include="UI\RecordViews\PtrRecord.designer.cs">
+      <DependentUpon>PtrRecord.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\PtrRecordController.designer.cs">
+      <DependentUpon>PtrRecordController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\CNameRecord.cs" />
+    <Compile Include="UI\RecordViews\CNameRecordController.cs" />
+    <Compile Include="UI\RecordViews\CNameRecord.designer.cs">
+      <DependentUpon>CNameRecord.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\CNameRecordController.designer.cs">
+      <DependentUpon>CNameRecordController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\SRVRecord.cs" />
+    <Compile Include="UI\RecordViews\SRVRecordController.cs" />
+    <Compile Include="UI\RecordViews\SRVRecord.designer.cs">
+      <DependentUpon>SRVRecord.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\SRVRecordController.designer.cs">
+      <DependentUpon>SRVRecordController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\NSRecord.cs" />
+    <Compile Include="UI\RecordViews\NSRecordController.cs" />
+    <Compile Include="UI\RecordViews\NSRecord.designer.cs">
+      <DependentUpon>NSRecord.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\NSRecordController.designer.cs">
+      <DependentUpon>NSRecordController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\RecordControllerBase.cs" />
+    <Compile Include="ListViews\ForwardersListView.cs" />
+    <Compile Include="UI\RecordViews\FilterRecords.cs" />
+    <Compile Include="UI\RecordViews\FilterRecordsController.cs" />
+    <Compile Include="UI\RecordViews\FilterRecords.designer.cs">
+      <DependentUpon>FilterRecords.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\FilterRecordsController.designer.cs">
+      <DependentUpon>FilterRecordsController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\SOARecord.cs" />
+    <Compile Include="UI\RecordViews\SOARecordController.cs" />
+    <Compile Include="UI\RecordViews\SOARecord.designer.cs">
+      <DependentUpon>SOARecord.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\RecordViews\SOARecordController.designer.cs">
+      <DependentUpon>SOARecordController.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <InterfaceDefinition Include="UI\MainMenu.xib" />
+    <InterfaceDefinition Include="UI\AddNewZone.xib" />
+    <InterfaceDefinition Include="UI\ZoneProperties.xib" />
+    <InterfaceDefinition Include="UI\ServerOptions.xib" />
+    <InterfaceDefinition Include="UI\RecordViews\AddNewRecord.xib" />
+    <InterfaceDefinition Include="UI\RecordViews\ChooseRecordType.xib" />
+    <InterfaceDefinition Include="UI\RecordViews\ARecord.xib" />
+    <InterfaceDefinition Include="UI\RecordViews\AAAARecord.xib" />
+    <InterfaceDefinition Include="UI\RecordViews\PtrRecord.xib" />
+    <InterfaceDefinition Include="UI\RecordViews\CNameRecord.xib" />
+    <InterfaceDefinition Include="UI\RecordViews\SRVRecord.xib" />
+    <InterfaceDefinition Include="UI\RecordViews\NSRecord.xib" />
+    <InterfaceDefinition Include="UI\RecordViews\FilterRecords.xib" />
+    <InterfaceDefinition Include="UI\RecordViews\SOARecord.xib" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\VmIdentity.UI.Common\VmIdentity.UI.Common.csproj">
+      <Project>{35037B87-3B35-40FA-A9D3-7974DCDDABB5}</Project>
+      <Name>VmIdentity.UI.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMIdentity.CommonUtils\VMIdentity.CommonUtils.csproj">
+      <Project>{CD959E2E-5B9C-4329-B085-352844CFDCDD}</Project>
+      <Name>VMIdentity.CommonUtils</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\VMDNS.Common\VMDNS.Common.csproj">
+      <Project>{E643DC2D-59B2-40B0-8277-462172F21ED1}</Project>
+      <Name>VMDNS.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <BundleResource Include="Resources\DNS.icns">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </BundleResource>
+    <BundleResource Include="Resources\DNSHome.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </BundleResource>
+    <BundleResource Include="Resources\ArrowLeft.png" />
+    <BundleResource Include="Resources\ArrowRight.png" />
+    <BundleResource Include="Resources\DNSZone.png" />
+    <BundleResource Include="Resources\DNSZones.png" />
+    <BundleResource Include="Resources\DNSRecord.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Info.plist" />
+  </ItemGroup>
+</Project>

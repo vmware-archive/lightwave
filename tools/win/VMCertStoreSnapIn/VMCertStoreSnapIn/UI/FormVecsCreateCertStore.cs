@@ -37,7 +37,7 @@ namespace VMCertStoreSnapIn.UI
         public bool ValidateForm()
         {
             string msg = null;
-            if (string.IsNullOrEmpty(textBoxStoreName.Text))
+            if (string.IsNullOrWhiteSpace(textBoxStoreName.Text))
                 msg = MMCUIConstants.STORE_ENT;
             if (msg != null)
             {

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <?include Definitions.wxi ?>
+	<Fragment>
+		<!-- TODO: Put your code here. -->
+    <ComponentGroup Id="VMDNS_comp_group" Directory="APPLICATIONFOLDER">
+     <Component Id="Vmware_DNS_comp" Guid="{479A9BE6-0AE3-47CE-A354-8BCA55241B8E}" Win64="yes">
+        <File Id="Vmware_Dns_Msc_file"
+              Name="Lightwave DNS.msc"
+              KeyPath="yes"
+              DiskId="1"
+              Source="$(var.Resources)/Lightwave DNS.msc" />
+      </Component>
+      <Component Id="VMDNSSnapIn_Dll_Comp" Guid="{93F83396-1194-4E26-A66B-49C97270F4C0}" Win64="yes">
+        <File Id="VMDNSSnapIn_Dll_File"
+              Name="VMDNSSnapIn.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMDNSSnapIn_Dll_File"
+              AssemblyApplication="VMDNSSnapIn_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\VMDNSSnapIn.dll" />
+      </Component>
+      <Component Id="VMDNS_Client_Dll_Comp" Guid="{CF2C802A-B1AD-4365-83CC-27B5ABE1EDDC}" Win64="yes">
+        <File Id="VMDNS_Client_Dll_File"
+              Name="VMDNS.Client.dll"
+              KeyPath="yes"
+              Assembly=".net"
+              AssemblyManifest="VMDNS_Client_Dll_File"
+              AssemblyApplication="VMDNS_Client_Dll_File"
+              DiskId="1"
+              Source="$(var.VMIDPOutDir)\VMDNS.Client.dll" />
+      </Component>
+      <Component Id="VMDNSSnapIn_Common_Dll_Comp" Guid="{A7AFD738-9EA4-4E21-854E-53B233B42AF5}" Win64="yes">
+        <File Id="VMDNSSnapIn_Common_Dll_File"
+			  Name="VMDNS.Common.dll"
+			  KeyPath="yes"
+			  Assembly=".net"
+			  AssemblyManifest="VMDNSSnapIn_Common_Dll_File"
+			  AssemblyApplication="VMDNSSnapIn_Common_Dll_File"
+			  DiskId="1"
+			  Source="$(var.VMIDPOutDir)\VMDNS.Common.dll" />
+      </Component>
+    </ComponentGroup>
+
+    <ComponentGroup Id="VMDNS_reg_comp_group" Directory="TARGETDIR">
+      <Component Id="Reg_DNS_Comp" Guid="{1DE9C4FB-AF6C-40E4-B301-344806C83495}" Win64="yes">
+        <RegistryKey Id="Reg_DNS_Key"
+                     Action="createAndRemoveOnUninstall"
+                     Key="Software\Microsoft\MMC\SnapIns\FX:{0166FD3C-B39D-475A-BFEF-C7B59F4C5E19}"
+                     Root="HKLM">
+          <RegistryKey Key="Standalone"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryKey Key="NodeTypes"
+                       Action="createAndRemoveOnUninstall" />
+          <RegistryValue Name="RuntimeVersion"
+                         Value="v4.0.30319"
+                         Type="string" />
+          <RegistryValue Name="UseCustomHelp"
+                         Value="0"
+                         Type="integer" />
+          <RegistryValue Name="ModuleName"
+                         Value="VMDNSSnapIn.dll"
+                         Type="string"
+                         KeyPath="yes"/>
+          <RegistryValue Name="NameString"
+                         Value="VMWare Domain Name Server"
+                         Type="string" />
+          <RegistryValue Name="ApplicationBase"
+                         Value="[APPLICATIONFOLDER]"
+                         Type="expandable" />
+          <RegistryValue Name="About"
+                         Value="{00000000-0000-0000-0000-000000000000}"
+                         Type="string" />
+          <RegistryValue Name="Description"
+                         Value="$(var.DNS_desc)"
+                         Type="string"  />
+          <RegistryValue Name="FxVersion"
+                         Value="3.0.0.0"
+                         Type="string" />
+          <RegistryValue Name="Type"
+                         Value="VMDNSSnapIn.VMDNSSnapIn, VMDNSSnapIn, Version=$(var.VersionNumber), Culture=neutral, PublicKeyToken=null"
+                         Type="string" />
+          <RegistryValue Name="AssemblyName"
+                         Value="VMDNSSnapIn"
+                         Type="string" />
+          <RegistryValue Name="Version"
+                         Value="$(var.VersionNumber)"
+                         Type="string" />
+        </RegistryKey>
+      </Component>
+    </ComponentGroup>
+
+	</Fragment>
+</Wix>

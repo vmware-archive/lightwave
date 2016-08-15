@@ -32,5 +32,6 @@ typedef struct _VDIR_BACKEND_USN_LIST
     USN*                pUSNAry;
     USN                 maxOutstandingUSN;  // max Outstanding USN
     USN                 maxUsedMainUSN;     // max USN used (BECtx.wTxnUSN in pUSNAry list)
+    USN                 maxOriginatingUSN;  // max Originating USN
 
 } VDIR_BACKEND_USN_LIST;

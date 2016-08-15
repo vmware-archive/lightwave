@@ -38,12 +38,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
         private bool ValidateControls()
         {
             var status = true;
-            if (string.IsNullOrWhiteSpace(TxtCurrentPassword.Text))
-            {
-                status = false;
-                MMCDlgHelper.ShowWarning(MMCUIConstants.INVALID_CURRENT_PASSWORD);
-            }
-            else if (string.IsNullOrWhiteSpace(txtPassword.Text))
+            if (string.IsNullOrWhiteSpace(txtPassword.Text))
             {
                 status = false;
                 MMCDlgHelper.ShowWarning(MMCUIConstants.INVALID_NEW_PASSWORD);
@@ -61,7 +56,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
         {
             if (ValidateControls())
             {
-                PasswordResetDto = new PasswordResetRequestDto { NewPassword = txtPassword.Text, CurrentPassword = TxtCurrentPassword.Text };
+                PasswordResetDto = new PasswordResetRequestDto { NewPassword = txtPassword.Text};//, CurrentPassword = TxtCurrentPassword.Text };
                 DialogResult = DialogResult.OK;
             }
             else

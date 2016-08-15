@@ -179,6 +179,11 @@ ParseRequestControls(
                 op->showMasterKeyCtrl = *control;
             }
 
+            if (VmDirStringCompareA((*control)->type, LDAP_CONTROL_CONSISTENT_WRITE, TRUE ) == 0)
+            {
+                op->strongConsistencyWriteCtrl = *control;
+            }
+
             if (VmDirStringCompareA( (*control)->type, LDAP_CONTROL_PAGEDRESULTS, TRUE ) == 0)
             {
                 retVal = _ParsePagedResultControlVal( op,
@@ -831,7 +836,11 @@ _ParsePagedResultControlVal(
         BAIL_ON_VMDIR_ERROR(retVal);
     }
 
-    VmDirStringNCpyA( pageResultCtrlVal->cookie, VMDIR_MAX_I64_ASCII_STR_LEN, pszCookie, VMDIR_MAX_I64_ASCII_STR_LEN-1);
+    VmDirStringNCpyA(
+        pageResultCtrlVal->cookie,
+        VMDIR_ARRAY_SIZE(pageResultCtrlVal->cookie),
+        pszCookie,
+        VMDIR_ARRAY_SIZE(pageResultCtrlVal->cookie) - 1);
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "pageSize:%d", pageResultCtrlVal->pageSize );
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "cookie:%s", pageResultCtrlVal->cookie );
@@ -851,3 +860,55 @@ error:
     goto cleanup;
 }
 
+/* Generates the LdapControl to be communicated to the client
+   in the case of Strong Consistency Write task */
+int
+WriteConsistencyWriteDoneControl(
+    VDIR_OPERATION *       pOp,
+    BerElement *           pBer
+    )
+{
+    int                 retVal = LDAP_OPERATIONS_ERROR;
+    BerElementBuffer    ctrlValBerbuf;
+    BerElement *        pCtrlValBer = (BerElement *) &ctrlValBerbuf;
+    VDIR_BERVALUE       bvCtrlVal = VDIR_BERVALUE_INIT;
+    DWORD               dwStatus = 0;
+    PSTR                pControlsString = NULL;
+
+    if (pOp == NULL || pBer == NULL)
+    {
+       VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "WriteConsistencyWriteDoneControl: VDIR_OPERATION or BerElement is NULL failed");
+       BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    (void) memset((char *)&ctrlValBerbuf, '\0', sizeof(BerElementBuffer));
+    ber_init2(pCtrlValBer, NULL, LBER_USE_DER);
+
+    dwStatus = pOp->strongConsistencyWriteCtrl->value.scwDoneCtrlVal.status;
+    pControlsString = pOp->strongConsistencyWriteCtrl->type;
+
+    if (ber_printf(pCtrlValBer, "{i}", dwStatus) == -1)
+    {
+       VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "WriteConsistencyWriteDoneControl: ber_printf (to print status...) failed");
+       BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    bvCtrlVal.lberbv.bv_val = pCtrlValBer->ber_buf;
+    bvCtrlVal.lberbv.bv_len = pCtrlValBer->ber_ptr - pCtrlValBer->ber_buf;
+
+    if (ber_printf(pBer, "t{{sO}}", LDAP_TAG_CONTROLS, pControlsString, &bvCtrlVal.lberbv) == -1)
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "WriteConsistencyWriteDoneControl: ber_printf (to print ldapControl...) failed");
+	BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    retVal = LDAP_SUCCESS;
+
+cleanup:
+    ber_free_buf(pCtrlValBer);
+    return retVal;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "WriteConsistencyWriteDoneControl: failed");
+    goto cleanup;
+}

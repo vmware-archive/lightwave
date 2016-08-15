@@ -29,6 +29,7 @@ import static com.vmware.identity.openidconnect.server.TestContext.REDIRECT_URI;
 import static com.vmware.identity.openidconnect.server.TestContext.SCOPE_VALUE_RSX;
 import static com.vmware.identity.openidconnect.server.TestContext.SESSION_ID;
 import static com.vmware.identity.openidconnect.server.TestContext.STATE;
+import static com.vmware.identity.openidconnect.server.TestContext.TENANT_CERT;
 import static com.vmware.identity.openidconnect.server.TestContext.TENANT_NAME;
 import static com.vmware.identity.openidconnect.server.TestContext.TENANT_PRIVATE_KEY;
 import static com.vmware.identity.openidconnect.server.TestContext.TENANT_PUBLIC_KEY;
@@ -36,10 +37,12 @@ import static com.vmware.identity.openidconnect.server.TestContext.USERNAME;
 import static com.vmware.identity.openidconnect.server.TestContext.clientAssertionClaims;
 import static com.vmware.identity.openidconnect.server.TestContext.idmClientBuilder;
 import static com.vmware.identity.openidconnect.server.TestContext.initialize;
+import static com.vmware.identity.openidconnect.server.TestContext.personUserAssertionClaims;
+import static com.vmware.identity.openidconnect.server.TestContext.qualifyGroupMembership;
 import static com.vmware.identity.openidconnect.server.TestContext.refreshTokenClaims;
 import static com.vmware.identity.openidconnect.server.TestContext.refreshTokenClaimsClient;
 import static com.vmware.identity.openidconnect.server.TestContext.refreshTokenClaimsSltn;
-import static com.vmware.identity.openidconnect.server.TestContext.sltnAssertionClaims;
+import static com.vmware.identity.openidconnect.server.TestContext.solutionUserAssertionClaims;
 import static com.vmware.identity.openidconnect.server.TestContext.tokenController;
 import static com.vmware.identity.openidconnect.server.TestContext.tokenRequestParameters;
 import static com.vmware.identity.openidconnect.server.TestContext.tokenRequestParametersClient;
@@ -55,7 +58,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -74,10 +76,7 @@ import com.nimbusds.jwt.SignedJWT;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.ResourceServer;
 import com.vmware.identity.idm.client.CasIdmClient;
-import com.vmware.identity.openidconnect.common.AuthenticationRequest;
 import com.vmware.identity.openidconnect.common.AuthorizationCode;
-import com.vmware.identity.openidconnect.common.Base64Utils;
-import com.vmware.identity.openidconnect.common.ClientAssertion;
 import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.identity.openidconnect.common.CorrelationID;
 import com.vmware.identity.openidconnect.common.Nonce;
@@ -86,6 +85,9 @@ import com.vmware.identity.openidconnect.common.ResponseType;
 import com.vmware.identity.openidconnect.common.Scope;
 import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.State;
+import com.vmware.identity.openidconnect.protocol.AuthenticationRequest;
+import com.vmware.identity.openidconnect.protocol.Base64Utils;
+import com.vmware.identity.openidconnect.protocol.ClientAssertion;
 
 /**
  * @author Yehia Zayour
@@ -109,7 +111,7 @@ public class TokenControllerTest {
         Flow flow = Flow.AUTHZ_CODE;
         Map<String, String> params = tokenRequestParametersClient(flow);
         params.remove("client_assertion");
-        params.put("solution_user_assertion", TestUtil.sign(sltnAssertionClaims().build(), CLIENT_PRIVATE_KEY).serialize());
+        params.put("solution_user_assertion", TestUtil.sign(solutionUserAssertionClaims().build(), CLIENT_PRIVATE_KEY).serialize());
         assertErrorResponse(flow, params, "invalid_request", "client_assertion parameter is required for authz code grant");
     }
 
@@ -155,7 +157,7 @@ public class TokenControllerTest {
     @Test
     public void testAuthzCodeFlowNonMatchingClientId() throws Exception {
         Flow flow = Flow.AUTHZ_CODE;
-        ClientID clientId = new ClientID();
+        ClientID clientId = new ClientID("__new_client_id__");
         JWTClaimsSet.Builder claimsBuilder = clientAssertionClaims();
         claimsBuilder = claimsBuilder.issuer(clientId.getValue());
         claimsBuilder = claimsBuilder.subject(clientId.getValue());
@@ -255,7 +257,7 @@ public class TokenControllerTest {
         Flow flow = Flow.CLIENT_CREDS;
         Map<String, String> params = tokenRequestParametersClient(flow);
         params.remove("client_assertion");
-        params.put("solution_user_assertion", TestUtil.sign(sltnAssertionClaims().build(), CLIENT_PRIVATE_KEY).serialize());
+        params.put("solution_user_assertion", TestUtil.sign(solutionUserAssertionClaims().build(), CLIENT_PRIVATE_KEY).serialize());
         assertErrorResponse(flow, params, "invalid_request", "client_assertion parameter is required for client credentials grant");
     }
 
@@ -321,7 +323,7 @@ public class TokenControllerTest {
     public void testSolutionUserCredentialsFlowIncorrectTokenClass() throws Exception {
         Flow flow = Flow.SOLUTION_USER_CREDS;
         Map<String, String> params = tokenRequestParametersSltn(flow);
-        JWTClaimsSet.Builder claimsBuilder = sltnAssertionClaims();
+        JWTClaimsSet.Builder claimsBuilder = solutionUserAssertionClaims();
         claimsBuilder = claimsBuilder.claim("token_class", "client_assertion");
         params.put("solution_user_assertion", TestUtil.sign(claimsBuilder.build(), CLIENT_PRIVATE_KEY).serialize());
         assertErrorResponse(flow, params, "invalid_request", "solution_user_assertion has incorrect token_class claim");
@@ -365,49 +367,59 @@ public class TokenControllerTest {
     }
 
     @Test
-    public void testClientCertFlow() throws Exception {
-        Flow flow = Flow.CLIENT_CERT;
+    public void testPersonUserCertFlow() throws Exception {
+        Flow flow = Flow.PERSON_USER_CERT;
         Map<String, String> params = tokenRequestParameters(flow);
         assertSuccessResponse(flow, params);
     }
 
     @Test
-    public void testClientCertFlowSltn() throws Exception {
-        Flow flow = Flow.CLIENT_CERT;
+    public void testPersonUserCertFlowSltn() throws Exception {
+        Flow flow = Flow.PERSON_USER_CERT;
         Map<String, String> params = tokenRequestParametersSltn(flow);
         assertSuccessResponse(flow, params);
     }
 
     @Test
-    public void testClientCertFlowClient() throws Exception {
-        Flow flow = Flow.CLIENT_CERT;
+    public void testPersonUserCertFlowClient() throws Exception {
+        Flow flow = Flow.PERSON_USER_CERT;
         Map<String, String> params = tokenRequestParametersClient(flow);
         assertSuccessResponse(flow, params);
     }
 
     @Test
-    public void testClientCertFlowMissingCert() throws Exception {
-        Flow flow = Flow.CLIENT_CERT;
+    public void testPersonUserCertFlowMissingCert() throws Exception {
+        Flow flow = Flow.PERSON_USER_CERT;
         Map<String, String> params = tokenRequestParameters(flow);
-        params.remove("client_certificate_chain");
-        assertErrorResponse(flow, params, "invalid_request", "missing client_certificate_chain parameter");
+        params.remove("person_user_certificate");
+        assertErrorResponse(flow, params, "invalid_request", "missing person_user_certificate parameter");
     }
 
     @Test
-    public void testClientCertFlowInvalidCert() throws Exception {
-        Flow flow = Flow.CLIENT_CERT;
+    public void testPersonUserCertFlowInvalidCert() throws Exception {
+        Flow flow = Flow.PERSON_USER_CERT;
         Map<String, String> params = tokenRequestParameters(flow);
-        params.put("client_certificate_chain", "not_a_cert");
-        assertErrorResponse(flow, params, "invalid_request", "failed to parse client_certificate_chain parameter");
+        params.put("person_user_certificate", "not_a_cert");
+        assertErrorResponse(flow, params, "invalid_request", "failed to parse person_user_certificate parameter");
     }
 
     @Test
-    public void testClientCertFlowIncorrectCert() throws Exception {
-        Flow flow = Flow.CLIENT_CERT;
+    public void testPersonUserCertFlowIncorrectCert() throws Exception {
+        Flow flow = Flow.PERSON_USER_CERT;
         Map<String, String> params = tokenRequestParameters(flow);
-        String certString64 = params.get("client_certificate_chain");
-        params.put("client_certificate_chain", String.format("%s %s", certString64, certString64));
-        assertErrorResponse(flow, params, "invalid_grant", "invalid client cert");
+        CasIdmClient idmClient = idmClientBuilder().clientCertificate(TENANT_CERT).build();
+        TokenController controller = tokenController(idmClient);
+        assertErrorResponse(flow, params, "invalid_grant", "invalid person user cert", controller);
+    }
+
+    @Test
+    public void testPersonUserCertFlowIncorrectTokenClass() throws Exception {
+        Flow flow = Flow.PERSON_USER_CERT;
+        Map<String, String> params = tokenRequestParameters(flow);
+        JWTClaimsSet.Builder claimsBuilder = personUserAssertionClaims();
+        claimsBuilder = claimsBuilder.claim("token_class", "solution_user_assertion");
+        params.put("person_user_assertion", TestUtil.sign(claimsBuilder.build(), CLIENT_PRIVATE_KEY).serialize());
+        assertErrorResponse(flow, params, "invalid_request", "person_user_assertion has incorrect token_class claim");
     }
 
     @Test
@@ -460,77 +472,77 @@ public class TokenControllerTest {
     }
 
     @Test
-    public void testSecureIdFlow() throws Exception {
-        Flow flow = Flow.SECUREID;
+    public void testSecurIdFlow() throws Exception {
+        Flow flow = Flow.SECURID;
         Map<String, String> params = tokenRequestParameters(flow);
         assertSuccessResponse(flow, params);
     }
 
     @Test
-    public void testSecureIdFlow2Legged() throws Exception {
-        Flow flow = Flow.SECUREID;
+    public void testSecurIdFlow2Legged() throws Exception {
+        Flow flow = Flow.SECURID;
         Map<String, String> params = tokenRequestParameters(flow);
         String sessionId = "_session_id_xyz_";
-        CasIdmClient idmClient = idmClientBuilder().secureIdSessionId(sessionId).build();
+        CasIdmClient idmClient = idmClientBuilder().securIdSessionId(sessionId).build();
         TokenController controller = tokenController(idmClient);
         String sessionIdBase64 = Base64Utils.encodeToString(sessionId);
-        String expectedErrorMessage = String.format("secureid_next_code_required:%s", sessionIdBase64);
+        String expectedErrorMessage = String.format("securid_next_code_required:%s", sessionIdBase64);
         assertErrorResponse(flow, params, "invalid_grant", expectedErrorMessage, controller);
     }
 
     @Test
-    public void testSecureIdFlowSltnn() throws Exception {
-        Flow flow = Flow.SECUREID;
+    public void testSecurIdFlowSltnn() throws Exception {
+        Flow flow = Flow.SECURID;
         Map<String, String> params = tokenRequestParametersSltn(flow);
         assertSuccessResponse(flow, params);
     }
 
     @Test
-    public void testSecureIdFlowClient() throws Exception {
-        Flow flow = Flow.SECUREID;
+    public void testSecurIdFlowClient() throws Exception {
+        Flow flow = Flow.SECURID;
         Map<String, String> params = tokenRequestParametersClient(flow);
         assertSuccessResponse(flow, params);
     }
 
     @Test
-    public void testSecureIdFlowWithoutSessionId() throws Exception {
-        Flow flow = Flow.SECUREID;
+    public void testSecurIdFlowWithoutSessionId() throws Exception {
+        Flow flow = Flow.SECURID;
         Map<String, String> params = tokenRequestParameters(flow);
         params.remove("session_id");
         assertSuccessResponse(flow, params);
     }
 
     @Test
-    public void testSecureIdFlowMissingUsername() throws Exception {
-        Flow flow = Flow.SECUREID;
+    public void testSecurIdFlowMissingUsername() throws Exception {
+        Flow flow = Flow.SECURID;
         Map<String, String> params = tokenRequestParameters(flow);
         params.remove("username");
         assertErrorResponse(flow, params, "invalid_request", "missing username parameter");
     }
 
     @Test
-    public void testSecureIdFlowMissingPasscode() throws Exception {
-        Flow flow = Flow.SECUREID;
+    public void testSecurIdFlowMissingPasscode() throws Exception {
+        Flow flow = Flow.SECURID;
         Map<String, String> params = tokenRequestParameters(flow);
         params.remove("passcode");
         assertErrorResponse(flow, params, "invalid_request", "missing passcode parameter");
     }
 
     @Test
-    public void testSecureIdFlowIncorrectPasscode() throws Exception {
-        Flow flow = Flow.SECUREID;
+    public void testSecurIdFlowIncorrectPasscode() throws Exception {
+        Flow flow = Flow.SECURID;
         Map<String, String> params = tokenRequestParameters(flow);
         params.put("passcode", params.get("passcode") + "non_matching");
-        assertErrorResponse(flow, params, "invalid_grant", "incorrect secureid username or passcode");
+        assertErrorResponse(flow, params, "invalid_grant", "incorrect securid username or passcode");
     }
 
     @Test
-    public void testSecureIdFlowNewPinRequired() throws Exception {
-        Flow flow = Flow.SECUREID;
+    public void testSecurIdFlowNewPinRequired() throws Exception {
+        Flow flow = Flow.SECURID;
         Map<String, String> params = tokenRequestParameters(flow);
-        CasIdmClient idmClient = idmClientBuilder().secureIdNewPinRequired(true).build();
+        CasIdmClient idmClient = idmClientBuilder().securIdNewPinRequired(true).build();
         TokenController controller = tokenController(idmClient);
-        assertErrorResponse(flow, params, "invalid_grant", "new secureid pin required", controller);
+        assertErrorResponse(flow, params, "invalid_grant", "new securid pin required", controller);
     }
 
     @Test
@@ -929,8 +941,8 @@ public class TokenControllerTest {
         Flow flow = Flow.PASSWORD;
         Map<String, String> params = tokenRequestParameters(flow);
         params.put("scope", "openid rs_admin_server");
-        Set<String> systemGroupMembership = new HashSet<String>(Arrays.asList("x", "users", "systemconfiguration.administrators", "administrators"));
-        CasIdmClient idmClient = idmClientBuilder().systemGroupMembership(systemGroupMembership).build();
+        Set<String> groupMembership = qualifyGroupMembership(Arrays.asList("x", "users", "systemconfiguration.administrators", "administrators"));
+        CasIdmClient idmClient = idmClientBuilder().groupMembership(groupMembership).build();
         TokenController controller = tokenController(idmClient);
         Set<String> expectedIdTokenGroups     = GROUP_MEMBERSHIP;
         Set<String> expectedAccessTokenGroups = GROUP_MEMBERSHIP;
@@ -943,8 +955,8 @@ public class TokenControllerTest {
         Flow flow = Flow.PASSWORD;
         Map<String, String> params = tokenRequestParameters(flow);
         params.put("scope", "openid rs_admin_server");
-        Set<String> systemGroupMembership = new HashSet<String>(Arrays.asList("x", "users", "systemconfiguration.administrators"));
-        CasIdmClient idmClient = idmClientBuilder().systemGroupMembership(systemGroupMembership).build();
+        Set<String> groupMembership = qualifyGroupMembership(Arrays.asList("x", "users", "systemconfiguration.administrators"));
+        CasIdmClient idmClient = idmClientBuilder().groupMembership(groupMembership).build();
         TokenController controller = tokenController(idmClient);
         Set<String> expectedIdTokenGroups     = GROUP_MEMBERSHIP;
         Set<String> expectedAccessTokenGroups = GROUP_MEMBERSHIP;
@@ -957,8 +969,8 @@ public class TokenControllerTest {
         Flow flow = Flow.PASSWORD;
         Map<String, String> params = tokenRequestParameters(flow);
         params.put("scope", "openid rs_admin_server");
-        Set<String> systemGroupMembership = new HashSet<String>(Arrays.asList("x", "users"));
-        CasIdmClient idmClient = idmClientBuilder().systemGroupMembership(systemGroupMembership).build();
+        Set<String> groupMembership = qualifyGroupMembership(Arrays.asList("x", "users"));
+        CasIdmClient idmClient = idmClientBuilder().groupMembership(groupMembership).build();
         TokenController controller = tokenController(idmClient);
         Set<String> expectedIdTokenGroups     = GROUP_MEMBERSHIP;
         Set<String> expectedAccessTokenGroups = GROUP_MEMBERSHIP;
@@ -971,8 +983,8 @@ public class TokenControllerTest {
         Flow flow = Flow.PASSWORD;
         Map<String, String> params = tokenRequestParameters(flow);
         params.put("scope", "openid rs_admin_server");
-        Set<String> systemGroupMembership = new HashSet<String>(Arrays.asList("x"));
-        CasIdmClient idmClient = idmClientBuilder().systemGroupMembership(systemGroupMembership).build();
+        Set<String> groupMembership = qualifyGroupMembership(Arrays.asList("x"));
+        CasIdmClient idmClient = idmClientBuilder().groupMembership(groupMembership).build();
         TokenController controller = tokenController(idmClient);
         Set<String> expectedIdTokenGroups     = GROUP_MEMBERSHIP;
         Set<String> expectedAccessTokenGroups = GROUP_MEMBERSHIP;
@@ -1078,7 +1090,7 @@ public class TokenControllerTest {
     public void testBothAssertionsDisallowed() throws Exception {
         Flow flow = Flow.PASSWORD;
         Map<String, String> params = tokenRequestParametersClient(flow);
-        params.put("solution_user_assertion", TestUtil.sign(sltnAssertionClaims().build(), CLIENT_PRIVATE_KEY).serialize());
+        params.put("solution_user_assertion", TestUtil.sign(solutionUserAssertionClaims().build(), CLIENT_PRIVATE_KEY).serialize());
         assertErrorResponse(flow, params, "invalid_request", "client_assertion and solution_user_assertion in the same request is not allowed");
     }
 
@@ -1105,7 +1117,7 @@ public class TokenControllerTest {
     @Test
     public void testSolutionUserAssertionIssuerAndSubjectMismatch() throws Exception {
         Flow flow = Flow.PASSWORD;
-        JWTClaimsSet.Builder claimsBuilder = sltnAssertionClaims();
+        JWTClaimsSet.Builder claimsBuilder = solutionUserAssertionClaims();
         claimsBuilder = claimsBuilder.issuer(ISSUER + "non_matching");
         Map<String, String> params = tokenRequestParametersSltn(flow, claimsBuilder.build());
         String expectedErrorMessage = "solution_user_assertion issuer and subject must be the same";
@@ -1135,12 +1147,32 @@ public class TokenControllerTest {
     }
 
     @Test
-    public void testAssertionInvalidAudience() throws Exception {
+    public void testAssertionIncorrectAudience() throws Exception {
         Flow flow = Flow.AUTHZ_CODE;
         JWTClaimsSet.Builder claimsBuilder = clientAssertionClaims();
-        claimsBuilder = claimsBuilder.audience("http://invalid_token_endpoint");
+        claimsBuilder = claimsBuilder.audience("https://sso.com/invalid_token_endpoint");
         Map<String, String> params = tokenRequestParametersClient(flow, claimsBuilder.build());
         String expectedErrorMessage = "client_assertion audience does not match request URI";
+        assertErrorResponse(flow, params, "invalid_client", expectedErrorMessage);
+    }
+
+    @Test
+    public void testAssertionMultiValuedAudience() throws Exception {
+        Flow flow = Flow.AUTHZ_CODE;
+        JWTClaimsSet.Builder claimsBuilder = clientAssertionClaims();
+        claimsBuilder = claimsBuilder.audience(Arrays.asList("v1", "v2"));
+        Map<String, String> params = tokenRequestParametersClient(flow, claimsBuilder.build());
+        String expectedErrorMessage = "client_assertion audience should be single-valued";
+        assertErrorResponse(flow, params, "invalid_client", expectedErrorMessage);
+    }
+
+    @Test
+    public void testAssertionInvalidAudienceURI() throws Exception {
+        Flow flow = Flow.AUTHZ_CODE;
+        JWTClaimsSet.Builder claimsBuilder = clientAssertionClaims();
+        claimsBuilder = claimsBuilder.audience("this_is_not_a_valid_uri");
+        Map<String, String> params = tokenRequestParametersClient(flow, claimsBuilder.build());
+        String expectedErrorMessage = "client_assertion audience should be a valid URI";
         assertErrorResponse(flow, params, "invalid_client", expectedErrorMessage);
     }
 

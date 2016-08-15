@@ -27,7 +27,7 @@ public final class AuthenticationCodeResponse {
     private final State state;
     private final AuthorizationCode authzCode;
 
-    public AuthenticationCodeResponse(State state, AuthorizationCode authzCode) {
+    AuthenticationCodeResponse(State state, AuthorizationCode authzCode) {
         Validate.notNull(state, "state");
         Validate.notNull(authzCode, "authzCode");
         this.state = state;

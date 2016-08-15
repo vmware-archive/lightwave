@@ -39,7 +39,7 @@ VmDirCleanupGlobals(
 VOID
 VmDirShutdown(
     PBOOLEAN pbWaitTimeOut
-)
+    )
 {
     PVDIR_BACKEND_INTERFACE pBE = NULL;
 
@@ -96,6 +96,12 @@ VmDirShutdown(
     VmDirSASLShutdown();
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: SASL shutdown complete.", __func__);
 
+    VmDirSchemaLibShutdown();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: shutdown schema complete.", __func__ );
+
+    VmDirIndexLibShutdown();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: shutdown indexing complete.", __func__);
+
     if ( pBE )
     {
         pBE->pfnBEShutdown();
@@ -103,14 +109,12 @@ VmDirShutdown(
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s shutdown backend complete.", __func__);
     }
 
-    VmDirAttrIndexLibShutdown();
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: shutdown indexing complete.", __func__);
-
-    VmDirSchemaLibShutdown();
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: shutdown schema complete.", __func__ );
-
     VmDirCleanupGlobals();
 
+    (VOID)VmDirSetRegKeyValueDword(
+            VMDIR_CONFIG_PARAMETER_KEY_PATH,
+            VMDIR_REG_KEY_DIRTY_SHUTDOWN,
+            FALSE);
 done:
     return;
 }
@@ -183,10 +187,12 @@ VmDirCleanupGlobals(
     VmDirFreeBervalContent(&gVmdirServerGlobals.bvServicesRootDN);
     VmDirFreeBervalContent(&gVmdirServerGlobals.serverObjDN);
     VmDirFreeBervalContent(&gVmdirServerGlobals.utdVector);
+    VmDirFreeBervalContent(&gVmdirServerGlobals.bvServerObjName);
 
     // Free vmdir global 'gVmdirGlobals' upon shutdown
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBDBHome);
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBootStrapSchemaFile);
+    VMDIR_SAFE_FREE_MEMORY(gVmdirUrgentRepl.pUTDVector);
 
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.replCycleDoneMutex );
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.replAgrsMutex );
@@ -194,9 +200,18 @@ VmDirCleanupGlobals(
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.pMutexIPCConnection );
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.pFlowCtrlMutex );
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.mutex );
+    VMDIR_SAFE_FREE_MUTEX( gVmdirUrgentRepl.pUrgentReplMutex );
+    VMDIR_SAFE_FREE_MUTEX( gVmdirUrgentRepl.pUrgentReplResponseRecvMutex );
+    VMDIR_SAFE_FREE_MUTEX( gVmdirUrgentRepl.pUrgentReplThreadMutex );
+    VMDIR_SAFE_FREE_MUTEX( gVmdirUrgentRepl.pUrgentReplDoneMutex );
+    VMDIR_SAFE_FREE_MUTEX( gVmdirUrgentRepl.pUrgentReplStartMutex );
 
     VMDIR_SAFE_FREE_CONDITION(gVmdirGlobals.replCycleDoneCondition);
     VMDIR_SAFE_FREE_CONDITION(gVmdirGlobals.replAgrsCondition);
+    VMDIR_SAFE_FREE_CONDITION(gVmdirUrgentRepl.pUrgentReplResponseRecvCondition);
+    VMDIR_SAFE_FREE_CONDITION(gVmdirUrgentRepl.pUrgentReplThreadCondition);
+    VMDIR_SAFE_FREE_CONDITION(gVmdirUrgentRepl.pUrgentReplDoneCondition);
+    VMDIR_SAFE_FREE_CONDITION(gVmdirUrgentRepl.pUrgentReplStartCondition);
 
     VMDIR_SAFE_FREE_SYNCCOUNTER(gVmdirGlobals.pOperationThrSyncCounter);
 
@@ -207,4 +222,8 @@ VmDirCleanupGlobals(
 
     VMDIR_SAFE_FREE_MUTEX( gVmdirKrbGlobals.pmutex );
     VMDIR_SAFE_FREE_CONDITION(gVmdirKrbGlobals.pcond);
+
+    VMDIR_SAFE_FREE_MUTEX( gVmdirTrackLastLoginTime.pMutex );
+    VMDIR_SAFE_FREE_CONDITION(gVmdirTrackLastLoginTime.pCond);
+    // ignore gVmdirTrackLastLoginTime.pTSStack
 }

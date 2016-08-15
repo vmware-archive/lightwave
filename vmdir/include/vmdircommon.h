@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -46,7 +46,6 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 #include <dce/dcethread.h>
 
 #include <ldap.h>
-#include <ldap_schema.h>
 #include <openssl/ssl.h>
 #include <type_spec.h>
 
@@ -60,6 +59,8 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 #define MAX_INSTALL_PARAMETER_LEN 260
 
 #define VMDIR_GUID_STR_LEN             (32 + 4 /* -s */ + 1 /* \0 */) // "%08x-%04x-%04x-%04x-%04x%08x"
+#define VMDIR_SSL_DISABLED_PROTOCOL_LEN 64
+#define VMDIR_SSL_CIPHER_SUITE_LEN     256
 #define VMDIR_MAX_DN_LEN               1024 // including \0
 #define VMDIR_MAX_PASSWORD_LEN         128 /* As specified in schema for userPassword and replBindPassword attributes */
 #define VMDIR_MAX_I64_ASCII_STR_LEN     (19 + 1 /* null byte terminator */) /* Max value for i64_t is 9,223,372,036,854,775,807 */
@@ -91,13 +92,31 @@ typedef struct _DEQUE_NODE
     PVOID               pElement;
     struct _DEQUE_NODE* pPrev;
     struct _DEQUE_NODE* pNext;
-} DEQUE_NODE, * PDEQUE_NODE;
+} DEQUE_NODE, *PDEQUE_NODE;
 
 typedef struct _DEQUE
 {
     PDEQUE_NODE pHead;
     PDEQUE_NODE pTail;
+    size_t      iSize;
 } DEQUE, * PDEQUE;
+
+typedef struct _VDIR_LINKED_LIST_NODE
+{
+    PVOID                           pElement;
+    struct _VDIR_LINKED_LIST_NODE*  pPrev;
+    struct _VDIR_LINKED_LIST_NODE*  pNext;
+    struct _VDIR_LINKED_LIST*       pList;
+
+} VDIR_LINKED_LIST_NODE, *PVDIR_LINKED_LIST_NODE;
+
+typedef struct _VDIR_LINKED_LIST
+{
+    PVDIR_LINKED_LIST_NODE  pHead;
+    PVDIR_LINKED_LIST_NODE  pTail;
+    size_t                  iSize;
+
+} VDIR_LINKED_LIST, *PVDIR_LINKED_LIST;
 
 typedef struct _VMDIR_TSSTACK
 {
@@ -187,61 +206,6 @@ typedef HINSTANCE   VMDIR_LIB_HANDLE;
 typedef VOID*       VMDIR_LIB_HANDLE;
 #endif
 
-typedef struct _VMDIR_LDAP_ATTRIBUTETYPES
-{
-    PSTR                pszOrgDef;  // original string
-    PSTR                pszNormDef; // normalized string
-    BOOLEAN             bLegacyFix;
-    LDAPAttributeType*  pLdapAT;
-} VMDIR_LDAP_ATTRIBUTETYPES, *PVMDIR_LDAP_ATTRIBUTETYPES;
-
-typedef struct _VMDIR_LDAP_OBJECTCLASSES
-{
-    PSTR                pszOrgDef;  // original string
-    PSTR                pszNormDef; // normalized string
-    BOOLEAN             bLegacyFix;
-    LDAPObjectClass*    pLdapOC;
-} VMDIR_LDAP_OBJECTCLASSES, *PVMDIR_LDAP_OBJECTCLASSES;
-
-typedef struct _VMDIR_LDAP_CONTENTRULES
-{
-    PSTR                pszOrgDef;  // original string
-    PSTR                pszNormDef; // normalized string
-    BOOLEAN             bLegacyFix;
-    LDAPContentRule*    pLdapCR;
-} VMDIR_LDAP_CONTENTRULES, *PVMDIR_LDAP_CONTENTRULES;
-
-typedef struct _VMDIR_LDAP_SCHEMA_DEF_STR
-{
-    PVMDIR_STRING_LIST   pATStrList;
-    PVMDIR_STRING_LIST   pOCStrList;
-    PVMDIR_STRING_LIST   pCRStrList;
-} VMDIR_LDAP_SCHEMA_DEF_STR, *PVMDIR_LDAP_SCHEMA_DEF_STR;
-
-typedef struct _VMDIR_LDAP_SCHEMA_MOD_STR
-{
-    PVMDIR_STRING_LIST   pAddATStrList;
-    PVMDIR_STRING_LIST   pAddOCStrList;
-    PVMDIR_STRING_LIST   pAddCRStrList;
-    PVMDIR_STRING_LIST   pDelATStrList;
-    PVMDIR_STRING_LIST   pDelOCStrList;
-    PVMDIR_STRING_LIST   pDelCRStrList;
-} VMDIR_LDAP_SCHEMA_MOD_STR, *PVMDIR_LDAP_SCHEMA_MOD_STR;
-
-typedef struct _VMDIR_LDAP_SCHEMA_STRUCT
-{
-    size_t                      dwATSize;
-    PVMDIR_LDAP_ATTRIBUTETYPES  pATArray;
-    size_t                      dwOCSize;
-    PVMDIR_LDAP_OBJECTCLASSES   pOCArray;
-    size_t                      dwCRSize;
-    PVMDIR_LDAP_CONTENTRULES    pCRArray;
-
-    PLW_HASHMAP                 pATMap; // point to pATArray
-    PLW_HASHMAP                 pOCMap;
-    PLW_HASHMAP                 pCRMap;
-} VMDIR_LDAP_SCHEMA_STRUCT, *PVMDIR_LDAP_SCHEMA_STRUCT;
-
 ULONG
 VmDirRpcAllocateMemory(
     size_t size,
@@ -275,7 +239,7 @@ DWORD
 VmDirCopyMemory(
     PVOID   pDestination,
     size_t  destinationSize,
-    PCVOID  pSource,
+    const void* pSource,
     size_t  maxCount
     );
 
@@ -439,9 +403,10 @@ VmDirStringNCompareA(
     );
 
 BOOLEAN
-VmDirIsValidSecret(
-    PCSTR pszTheirs,
-    PCSTR pszOurs
+VmDirStringEndsWith(
+    PCSTR   pszStr,
+    PCSTR   pszSuffix,
+    BOOLEAN bIsCaseSensitive
     );
 
 SIZE_T
@@ -551,17 +516,9 @@ VmDirStringNPrintFA(
     ...
 );
 
-DWORD
-VmDirStringGetTokenByIdx(
-    PCSTR   pszTarget,      // target string to find token
-    PCSTR   pszDelimiter,   // delimiter
-    DWORD   dwIdx,          // must be >= 1
-    PSTR*   ppszResult
-    );
-
 VOID
-VmdDirSchemaParseNormalizeElement(
-    PSTR        pszElement
+VmdDirNormalizeString(
+    PSTR    pszString
     );
 
 #ifdef _WIN32
@@ -876,7 +833,7 @@ typedef enum
 #ifndef _WIN32
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH     "Services\\Vmdir"
 #define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "Services\\Vmdir\\Parameters"
-#define VMDIR_LINUX_DB_PATH                 "/storage/db/vmware-vmdir/"
+#define VMDIR_LINUX_DB_PATH                 VMDIR_DB_DIR "/"
 #else
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH     "SYSTEM\\CurrentControlSet\\services\\VMWareDirectoryService"
 #define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "SYSTEM\\CurrentControlSet\\services\\VMWareDirectoryService\\Parameters"
@@ -912,7 +869,10 @@ typedef enum
 #define VMDIR_REG_KEY_MAXIMUM_LOG_SIZE      "MaximumLogSize"
 #define VMDIR_REG_KEY_MAXIMUM_DB_SIZE_MB    "MaximumDbSizeMb"
 #define VMDIR_REG_KEY_DISABLE_VECS_INTEGRATION    "DisableVECSIntegration"
-
+#define VMDIR_REG_KEY_SSL_DISABLED_PROTOCOLS "SslDisabledProtocols"
+#define VMDIR_REG_KEY_SSL_CIPHER_SUITE       "SslCipherSuite"
+#define VMDIR_REG_KEY_DIRTY_SHUTDOWN         "DirtyShutdown"
+#define VMDIR_REG_KEY_ENABLE_RENAME          "EnableRename"
 #define VMAFD_REG_KEY_KRB5_CONF             "Krb5Conf"
 
 #ifdef _WIN32
@@ -976,6 +936,11 @@ VmDirConditionSignal(
     PVMDIR_COND pCondition
 );
 
+DWORD
+VmDirConditionBroadcast(
+    PVMDIR_COND pCondition
+);
+
 #if defined(_WIN32) && !defined(HAVE_PTHREADS_WIN32)
 #ifdef WIN2008
 DWORD
@@ -1008,11 +973,17 @@ VmDirConditionSignal2008(
     PVMDIR_COND_2008 pCondition
 );
 
+DWORD
+VmDirConditionBroadcast2008(
+    PVMDIR_COND_2008 pCondition
+);
+
 #define VmDirAllocateCondition                  VmDirAllocateCondition2008
 #define VmDirFreeCondition                      VmDirFreeCondition2008
 #define VmDirConditionWait                      VmDirConditionWait2008
 #define VmDirConditionTimedWait                 VmDirConditionTimedWait2008
 #define VmDirConditionSignal                    VmDirConditionSignal2008
+#define VmDirConditionBroadcast                 VmDirConditionBroadcast2008
 
 
 #else
@@ -1047,11 +1018,17 @@ VmDirConditionSignal2003(
     PVMDIR_COND_2003 pCondition
 );
 
+DWORD
+VmDirConditionBroadcast2003(
+    PVMDIR_COND_2003 pCondition
+);
+
 #define VmDirAllocateCondition                  VmDirAllocateCondition2003
 #define VmDirFreeCondition                      VmDirFreeCondition2003
 #define VmDirConditionWait                      VmDirConditionWait2003
 #define VmDirConditionTimedWait                 VmDirConditionTimedWait2003
 #define VmDirConditionSignal                    VmDirConditionSignal2003
+#define VmDirConditionBroadcast                 VmDirConditionBroadcast2003
 
 
 #endif
@@ -1172,7 +1149,7 @@ VmDirAllocateStringFromSocket(
 
 DWORD
 VmDirGenerateGUID(
-    PSTR pszGuid
+    PSTR*   ppszGuid
     );
 
 VOID
@@ -1223,9 +1200,66 @@ dequePopLeft(
     PVOID* ppElement
     );
 
+size_t
+dequeGetSize(
+    PDEQUE pDeque
+    );
+
 BOOLEAN
 dequeIsEmpty(
     PDEQUE pDeque
+    );
+
+DWORD
+VmDirLinkedListCreate(
+    PVDIR_LINKED_LIST*  ppLinkedList
+    );
+
+DWORD
+VmDirLinkedListGetHead(
+    PVDIR_LINKED_LIST       pLinkedList,
+    PVDIR_LINKED_LIST_NODE* ppHead
+    );
+
+DWORD
+VmDirLinkedListGetTail(
+    PVDIR_LINKED_LIST       pLinkedList,
+    PVDIR_LINKED_LIST_NODE* ppTail
+    );
+
+DWORD
+VmDirLinkedListInsertHead(
+    PVDIR_LINKED_LIST       pLinkedList,
+    PVOID                   pElement,
+    PVDIR_LINKED_LIST_NODE* ppHead
+    );
+
+DWORD
+VmDirLinkedListInsertTail(
+    PVDIR_LINKED_LIST       pLinkedList,
+    PVOID                   pElement,
+    PVDIR_LINKED_LIST_NODE* ppTail
+    );
+
+DWORD
+VmDirLinkedListRemove(
+    PVDIR_LINKED_LIST       pLinkedList,
+    PVDIR_LINKED_LIST_NODE  pNode
+    );
+
+size_t
+VmDirLinkedListGetSize(
+    PVDIR_LINKED_LIST   pLinkedList
+    );
+
+BOOLEAN
+VmDirLinkedListIsEmpty(
+    PVDIR_LINKED_LIST   pLinkedList
+    );
+
+VOID
+VmDirFreeLinkedList(
+    PVDIR_LINKED_LIST   pLinkedList
     );
 
 DWORD
@@ -1240,22 +1274,26 @@ VmDirGetLotusServerName(
     );
 
 DWORD
-VmDirStoreDCAccountPassword(
-    PBYTE   pPassword,
-    DWORD   dwPasswordSize
+VmDirWriteDCAccountPassword(
+    PCSTR pszPassword,
+    DWORD dwLength /* Length of the string, not including null */
+    );
+
+DWORD
+VmDirWriteDCAccountOldPassword(
+    PCSTR pszPassword,
+    DWORD dwLength /* Length of the string, not including null */
     );
 
 DWORD
 VmDirReadDCAccountPassword(
-    PSTR* ppszPassword);
+    PSTR* ppszPassword
+    );
 
 DWORD
 VmDirReadDCAccountOldPassword(
-    PSTR* ppszPassword);
-
-DWORD
-VmDirValidateDCAccountPassword(
-    PSTR pszPassword);
+    PSTR* ppszPassword
+    );
 
 DWORD
 VmDirRegReadDCAccount(
@@ -1299,6 +1337,14 @@ VmDirSetRegKeyValueDword(
     PCSTR pszConfigParamKeyPath,
     PCSTR pszKey,
     DWORD dwValue
+    );
+
+DWORD
+VmDirSetRegKeyValueString(
+    PCSTR pszConfigParamKeyPath,
+    PCSTR pszKey,
+    PCSTR pszValue,
+    DWORD dwLength /* Should not include +1 for terminating null */
     );
 
 DWORD
@@ -1379,6 +1425,12 @@ VmDirKeyTabMakeRecord(
     PVMDIR_KEYTAB_ENTRY pKtEntry,
     PBYTE *ppKtRecord,
     PDWORD pdwRecordLen);
+
+
+DWORD
+VmDirDestroyDefaultKRB5CC(
+    VOID
+    );
 
 DWORD
 VmDirAllocASCIILowerToUpper(
@@ -1544,6 +1596,10 @@ VmDirHaveLegacy(
     );
 
 // util.c
+uint64_t
+VmDirGetTimeInMilliSec(
+    VOID
+    );
 
 DWORD
 VmDirAllocateUserCreateParamsWFromA(
@@ -1578,12 +1634,6 @@ VmDirUPNToNameAndDomain(
     PCSTR   pszUPN,
     PSTR*   ppszName,
     PSTR*   ppszDomain
-    );
-
-DWORD
-VmDirUPNToUserName(
-    PCSTR pszUPN,
-    PSTR* ppszSrcUserName
     );
 
 //IPC
@@ -1840,122 +1890,6 @@ VmDirRpcFreeSuperLogEntryLdapOperationArray(
     PVMDIR_SUPERLOG_ENTRY_LDAPOPERATION_ARRAY pRpcEntries
     );
 
-// Utility functions for Schema Comparison
-DWORD
-VmDirGetSchemaEntry (
-    LDAP**  ppLd ,
-    PSTR    pszHostName ,
-    PSTR    pszUPN ,
-    PSTR    pszPasswordBuf ,
-    PSTR    pszAtrrs[],
-    LDAPMessage**  ppEntry ,
-    LDAPMessage**  ppResult
-    );
-
-DWORD
-VmDirGetSchemaAttributeValue (
-    LDAP*        pLd   ,
-    LDAPMessage* pEntry ,
-    PSTR         pszAttributeName ,
-    DWORD        dwAttibuteIndex ,
-    PSTR*        pszAttributeValues[] ,
-    DWORD*       dwValueCount,
-    BOOLEAN      bNormalizeValue
-    );
-
-DWORD
-VmDirCompareSchemaValues (
-    PSTR*   pszBaseAttributeValues[] ,
-    PSTR*   pszPartnerAttributeValues[] ,
-    DWORD   dwIndex,
-    DWORD   dwBaseValueCount ,
-    DWORD   dwPartnerValueCount ,
-    PVMDIR_SCHEMA_DIFF  pSchemaDiff ,
-    DWORD   dwHostNumber
-    );
-
-DWORD
-VmDirExtractSchemaValues (
-    PSTR       pszCurrentHost ,
-    PSTR       pszUPN ,
-    PSTR       pszPassWord,
-    PSTR       pszAttributes[],
-    DWORD      dwAttributeCount,
-    PSTR*      pszAttributeValues[] ,
-    DWORD      dwPartnerValueCount[],
-    BOOLEAN    bNormalizeValue
-    );
-
-
-DWORD
-VmDirCheckSchemaAttrVersion (
-    PSTR*   pszBaseAttributeValues[],
-    PSTR*   pszPartnerAttributeValues[],
-    DWORD   dwIndex ,
-    DWORD   dwValueCount,
-    PVMDIR_SCHEMA_DIFF  pSchemaDiff,
-    DWORD   dwCurrentDiffCount
-    );
-
-DWORD
-VmDirCnFromRdn (
-    PSTR  pszURI ,
-    PSTR* ppszHostName
-    );
-
-DWORD
-VmDirGetSubstringBeforeToken(
-    PCSTR  pszMetaDataValue ,
-    PSTR*  ppszMetaDataType ,
-    CHAR   delimiter
-);
-
-DWORD
-VmDirNormalizeHostName(
-    PSTR   pszHostName,
-    PSTR*  ppszNormalisedName
-);
-
-VOID
-VmDirSchemaDiffFree (
-    PVMDIR_SCHEMA_DIFF  pSchemaDiff,
-    DWORD  dwSchemaDiffSize
-);
-
-VOID
-VmDirSchemaAttributesFree (
-    PSTR**  pszAttributeValues,
-    DWORD   dwValueCount[],
-    DWORD   dwNumAttributes
-);
-
-DWORD
-VmDirSynchSchemaAttrMetadataVersion(
-    PSTR   pszBaseHostName ,
-    PSTR   pszUPN ,
-    PSTR   pszPassword ,
-    PSTR   pszAttributeName
-);
-
-DWORD
-VmDirFindMostUpdatedNodeWithAttribute(
-    PVMDIR_SERVER_INFO pServerInfo,
-    DWORD  dwNumServer,
-    PSTR   pszAttributeName,
-    PSTR   pszUPN,
-    PSTR   pszPassword,
-    PSTR*  ppszHostName
-);
-
-DWORD
-VmDirGetMetaDataVersionForAttribute(
-    PSTR     pszHostName,
-    PSTR     pszUPN,
-    PSTR     pszPassword,
-    PSTR     pszAttributeName,
-    DWORD*   pdwVersion
-);
-
 DWORD
 VmDirCircularBufferCreate(
     DWORD dwCapacity,
@@ -1963,7 +1897,8 @@ VmDirCircularBufferCreate(
     PVMDIR_CIRCULAR_BUFFER *ppCircularBuffer
     );
 
-VOID VmDirCircularBufferFree(
+VOID
+VmDirCircularBufferFree(
     PVMDIR_CIRCULAR_BUFFER pCircularBuffer
     );
 
@@ -2045,94 +1980,64 @@ VmDirStringListAddStrClone(
 
 int
 VmDirQsortCaseExactCompareString(
-    const void*             ppStr1,
-    const void*             ppStr2
+    const void* ppStr1,
+    const void* ppStr2
     );
 
 int
 VmDirQsortCaseIgnoreCompareString(
-    const void*             ppStr1,
-    const void*             ppStr2
+    const void* ppStr1,
+    const void* ppStr2
     );
 
 DWORD
-VmDirReadSchemaFile(
-    PCSTR                       pszSchemaFilePath,
-    PVMDIR_LDAP_SCHEMA_DEF_STR pSchemaDef
+VmDirCopyStrArray(
+    PSTR*   ppszOrgArray,
+    PSTR**  pppszCopyArray
     );
 
 DWORD
-VmDirGetSchemaFromLocalFile(
-    PCSTR                       pszFile,
-    PVMDIR_LDAP_SCHEMA_STRUCT*  ppLdapSchema
+VmDirMergeStrArray(
+    PSTR*   ppszSetCur,
+    PSTR*   ppszSetNew,
+    PSTR**  pppszOutSet
     );
 
 DWORD
-VmDirGetSchemaFromPartner(
-    LDAP*                       pLd,
-    PVMDIR_LDAP_SCHEMA_STRUCT*  ppLdapSchema
-    );
-
-DWORD
-VmDirGetSchemaFromDefStr(
-    PVMDIR_LDAP_SCHEMA_DEF_STR  pSchemaDefs,
-    PVMDIR_LDAP_SCHEMA_STRUCT*  ppLdapSchema
-    );
-
-DWORD
-VmDirAnalyzeSchemaUpgrade(
-    PVMDIR_LDAP_SCHEMA_STRUCT  pExistingSchema,
-    PVMDIR_LDAP_SCHEMA_STRUCT  pNewSchema,
-    PVMDIR_LDAP_SCHEMA_MOD_STR pModStr
-    );
-
-DWORD
-VmDirInitModStrContent(
-    PVMDIR_LDAP_SCHEMA_MOD_STR  pModStr
-    );
-
-VOID
-VmDirFreeModStrContent(
-    PVMDIR_LDAP_SCHEMA_MOD_STR  pModStr
-    );
-
-DWORD
-VmDirInitLdapSchemaDefsContent(
-    PVMDIR_LDAP_SCHEMA_DEF_STR  pSchemaDefs
-    );
-
-VOID
-VmDirFreeLdapSchemaDefsContent(
-    PVMDIR_LDAP_SCHEMA_DEF_STR  pSchemaDefs
-    );
-
-VOID
-VmDirFreeLdapSchemaStruct(
-    PVMDIR_LDAP_SCHEMA_STRUCT pSchemaStruct
+VmDirGetStrArrayDiffs(
+    PSTR*   ppszArray1,
+    PSTR*   ppszArray2,
+    PSTR**  pppszNotArray1,
+    PSTR**  pppszNotArray2
     );
 
 BOOLEAN
-VmDirIsSortedSuperSetof(
-    PSTR* ppszSuper,
-    PSTR* ppszSub
+VmDirIsStrArraySuperSet(
+    PSTR*   ppszSuper,
+    PSTR*   ppszSub
     );
 
 BOOLEAN
-VmDirIsSortedSetIdentical(
-    PSTR* ppszSet1,
-    PSTR* ppszSet2
-    );
-
-DWORD
-VmDirMergeSet(
-    PSTR* ppszSetCur,
-    PSTR* ppszSetNew,
-    PSTR** pppszOutSet
+VmDirIsStrArrayIdentical(
+    PSTR*   ppszSet1,
+    PSTR*   ppszSet2
     );
 
 VOID
 VmDirFreeStrArray(
     PSTR*   ppszArray
+    );
+
+VOID
+VmDirNoopHashMapPairFree(
+    PLW_HASHMAP_PAIR    pPair,
+    PVOID               pUnused
+    );
+
+VOID
+VmDirSimpleHashMapPairFree(
+    PLW_HASHMAP_PAIR    pPair,
+    PVOID               pUnused
     );
 
 #ifdef _WIN32
@@ -2145,12 +2050,57 @@ VmDirGetCfgPath(
 #endif
 
 DWORD
-VmDirGetDefaultSchemaFile(
-    PSTR*   ppszSchemaFile
+VmDirGetSingleAttributeFromEntry(
+    LDAP*        pLd,
+    LDAPMessage* pEntry,
+    PCSTR        pszAttribute,
+    BOOL         bOptional,
+    PSTR*        ppszOut
+    );
+
+DWORD
+VmDirGetDCDNList(
+    LDAP* pLd,
+    PCSTR pszDomainDN,
+    PVMDIR_STRING_LIST*  ppDCList
+    );
+
+DWORD
+VmDirDnLastRDNToCn(
+    PCSTR   pszDN,
+    PSTR*   ppszCN
+    );
+
+DWORD
+VmDirStringToTokenList(
+    PCSTR pszStr,
+    PCSTR pszDelimiter,
+    PVMDIR_STRING_LIST *ppStrList
+    );
+
+DWORD
+VmDirUTDVectorToStruct(
+    PCSTR   pszStr,
+    PVMDIR_REPL_UTDVECTOR*  ppVector
+    );
+
+DWORD
+VmDirStrToNameAndNumber(
+    PCSTR   pszStr,
+    CHAR    del,
+    PSTR*   ppszName,
+    USN*    pUSN
+    );
+
+VOID
+VmDirFreeReplVector(
+    PVMDIR_REPL_UTDVECTOR  pVector
     );
 
 #ifdef __cplusplus
 }
 #endif
+
+#include <vmdircommon_schema.h>
 
 #endif /* _VMDIR_COMMON_H__ */

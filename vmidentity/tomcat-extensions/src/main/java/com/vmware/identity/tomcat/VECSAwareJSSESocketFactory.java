@@ -53,7 +53,7 @@ public class VECSAwareJSSESocketFactory extends JSSESocketFactory {
 
         if ("VKS".equalsIgnoreCase(type)) {
 
-            System.out.println("Store name from server.xml is ::::: " + store);
+            System.out.println("Store name in server.xml- " + store);
             String keystoreName = store;
             if (keystoreName == null || keystoreName.isEmpty()) {
                 throw new IOException(

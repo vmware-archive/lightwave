@@ -32,7 +32,15 @@ import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.TrustStrategy;
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.DERObjectIdentifier;
+import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.DERTaggedObject;
+import org.bouncycastle.asn1.DERUTF8String;
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.GeneralName;
+import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -47,13 +55,13 @@ import com.nimbusds.jose.JWSSigner;
 import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.vmware.identity.openidconnect.common.AccessToken;
-import com.vmware.identity.openidconnect.common.AuthorizationGrant;
-import com.vmware.identity.openidconnect.common.Base64Utils;
+import com.vmware.directory.rest.client.VmdirClient;
 import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.JWTID;
-import com.vmware.identity.openidconnect.common.RefreshTokenGrant;
 import com.vmware.identity.openidconnect.common.TokenType;
+import com.vmware.identity.openidconnect.protocol.AuthorizationGrant;
+import com.vmware.identity.openidconnect.protocol.Base64Utils;
+import com.vmware.identity.openidconnect.protocol.RefreshTokenGrant;
 import com.vmware.identity.rest.afd.client.AfdClient;
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.idm.client.IdmClient;
@@ -65,7 +73,7 @@ import com.vmware.identity.rest.idm.client.IdmClient;
  */
 class TestUtils {
 
-    static X509Certificate generateCertificate(KeyPair keyPair, String dn) throws Exception {
+    static X509Certificate generateCertificate(KeyPair keyPair, String dn, String subjectAltName) throws Exception {
         ContentSigner sigGen = new JcaContentSignerBuilder("SHA1withRSA").build(keyPair.getPrivate());
 
         Date startDate = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000);
@@ -78,6 +86,12 @@ class TestUtils {
                         endDate,
                         new X500Name("CN=" + dn),
                         keyPair.getPublic());
+        if (subjectAltName != null) {
+            v3CertGen.addExtension(Extension.subjectAlternativeName, true, new GeneralNames(
+                    new GeneralName(GeneralName.otherName, new DERSequence(new ASN1Encodable[] {
+                            new DERObjectIdentifier("1.3.6.1.4.1.311.20.2.3"),
+                            new DERTaggedObject(true, 0, new DERUTF8String(subjectAltName))}))));
+        }
 
         X509CertificateHolder certHolder = v3CertGen.build(sigGen);
         X509Certificate x509Certificate = new JcaX509CertificateConverter().getCertificate(certHolder);
@@ -112,13 +126,13 @@ class TestUtils {
             TokenSpec tokenSpec) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
         OIDCTokens oidcTokens = oidclient.acquireTokens(authorizationGrant, tokenSpec);
         Assert.assertNotNull(oidcTokens.getAccessToken());
-        Assert.assertNotNull(oidcTokens.getClientIDToken());
+        Assert.assertNotNull(oidcTokens.getIDToken());
         Assert.assertNotNull(oidcTokens.getRefreshToken());
 
-        RefreshTokenGrant refreshTokenGrant = new RefreshTokenGrant(oidcTokens.getRefreshToken());
+        RefreshTokenGrant refreshTokenGrant = new RefreshTokenGrant(oidcTokens.getRefreshToken().getRefreshToken());
         oidcTokens = oidclient.acquireTokens(refreshTokenGrant, TokenSpec.EMPTY);
         Assert.assertNotNull(oidcTokens.getAccessToken());
-        Assert.assertNotNull(oidcTokens.getClientIDToken());
+        Assert.assertNotNull(oidcTokens.getIDToken());
         Assert.assertNull(oidcTokens.getRefreshToken());
     }
 
@@ -126,15 +140,15 @@ class TestUtils {
             OIDCClient oidclient,
             GSSNegotiationHandler gssNegotiationHandler,
             TokenSpec tokenSpec) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
-        OIDCTokens oidcTokens = oidclient.acquireTokens(gssNegotiationHandler, tokenSpec);
+        OIDCTokens oidcTokens = oidclient.acquireTokensByGSS(gssNegotiationHandler, tokenSpec);
         Assert.assertNotNull(oidcTokens.getAccessToken());
-        Assert.assertNotNull(oidcTokens.getClientIDToken());
+        Assert.assertNotNull(oidcTokens.getIDToken());
         Assert.assertNotNull(oidcTokens.getRefreshToken());
 
-        RefreshTokenGrant refreshTokenGrant = new RefreshTokenGrant(oidcTokens.getRefreshToken());
+        RefreshTokenGrant refreshTokenGrant = new RefreshTokenGrant(oidcTokens.getRefreshToken().getRefreshToken());
         oidcTokens = oidclient.acquireTokens(refreshTokenGrant, TokenSpec.EMPTY);
         Assert.assertNotNull(oidcTokens.getAccessToken());
-        Assert.assertNotNull(oidcTokens.getClientIDToken());
+        Assert.assertNotNull(oidcTokens.getIDToken());
         Assert.assertNull(oidcTokens.getRefreshToken());
     }
 
@@ -144,7 +158,7 @@ class TestUtils {
             TokenSpec tokenSpec) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
         OIDCTokens oidcTokens = oidclient.acquireTokens(authorizationGrant, tokenSpec);
         Assert.assertNotNull(oidcTokens.getAccessToken());
-        Assert.assertNotNull(oidcTokens.getClientIDToken());
+        Assert.assertNotNull(oidcTokens.getIDToken());
         Assert.assertNull(oidcTokens.getRefreshToken());
     }
 
@@ -152,9 +166,9 @@ class TestUtils {
             OIDCClient oidclient,
             GSSNegotiationHandler gssNegotiationHandler,
             TokenSpec tokenSpec) throws OIDCClientException, OIDCServerException, TokenValidationException, SSLConnectionException {
-        OIDCTokens oidcTokens = oidclient.acquireTokens(gssNegotiationHandler, tokenSpec);
+        OIDCTokens oidcTokens = oidclient.acquireTokensByGSS(gssNegotiationHandler, tokenSpec);
         Assert.assertNotNull(oidcTokens.getAccessToken());
-        Assert.assertNotNull(oidcTokens.getClientIDToken());
+        Assert.assertNotNull(oidcTokens.getIDToken());
         Assert.assertNull(oidcTokens.getRefreshToken());
     }
 
@@ -181,7 +195,7 @@ class TestUtils {
             String exceptionMessage) throws OIDCServerException, TokenValidationException, SSLConnectionException {
         boolean catched = false;
         try {
-            oidclient.acquireTokens(gssNegotiationHandler, tokenSpec);
+            oidclient.acquireTokensByGSS(gssNegotiationHandler, tokenSpec);
         } catch (OIDCClientException e) {
             if (e.getMessage().equals(exceptionMessage)) {
                 catched = true;
@@ -246,10 +260,31 @@ class TestUtils {
                 new DefaultHostnameVerifier(),
                 sslContext);
         com.vmware.identity.rest.core.client.AccessToken restAccessToken =
-                new com.vmware.identity.rest.core.client.AccessToken(accessToken.serialize(),
+                new com.vmware.identity.rest.core.client.AccessToken(accessToken.getValue(),
                         com.vmware.identity.rest.core.client.AccessToken.Type.JWT);
         idmClient.setToken(restAccessToken);
         return idmClient;
+    }
+
+    static VmdirClient createVMdirClient(
+            AccessToken accessToken,
+            String domainControllerFQDN,
+            int domainControllerPort,
+            KeyStore keyStore) throws Exception {
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init(keyStore);
+        SSLContext sslContext = SSLContext.getInstance("SSL");
+        sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
+        VmdirClient vmdirClient = new VmdirClient(
+                domainControllerFQDN,
+                domainControllerPort,
+                new DefaultHostnameVerifier(),
+                sslContext);
+        com.vmware.identity.rest.core.client.AccessToken restAccessToken =
+                new com.vmware.identity.rest.core.client.AccessToken(accessToken.getValue(),
+                        com.vmware.identity.rest.core.client.AccessToken.Type.JWT);
+        vmdirClient.setToken(restAccessToken);
+        return vmdirClient;
     }
 
     static String convertToBase64PEMString(X509Certificate x509Certificate) throws Exception {

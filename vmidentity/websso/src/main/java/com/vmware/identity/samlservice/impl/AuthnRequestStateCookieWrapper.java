@@ -77,7 +77,7 @@ public class AuthnRequestStateCookieWrapper implements AuthenticationFilter<Auth
         Validate.notNull(sessionManager);
 
         Validate.notNull(t.getIdmAccessor());
-        Session currentSession = getSession(sessionManager, request, t.getIdmAccessor().getTenant());
+        Session currentSession = Shared.getSession(sessionManager, request, t.getIdmAccessor().getTenant());
         if (currentSession == null) {
             if (this.getAuthenticator() != null) {
                 // fall back to stored authenticator
@@ -86,31 +86,6 @@ public class AuthnRequestStateCookieWrapper implements AuthenticationFilter<Auth
                 // will fall back to login page in authenticate()
             }
         }
-    }
-
-    // retrieve valid (non-expired) session from the browser cookie, or return null
-    private Session getSession(SessionManager sessionManager, HttpServletRequest request, String tenant) {
-        Session retval = null;
-        Validate.notEmpty(tenant);
-
-        // first find session id in the cookies
-        String sessionId = Shared.getCookieValue(request.getCookies(),
-                Shared.getTenantSessionCookieName(tenant), null);
-
-        try {
-            if (sessionId != null) {
-                // get the session
-                retval = sessionManager.get(sessionId);
-                if (retval != null && !retval.isValid()) {
-                    // invalid session
-                    retval = null;
-                }
-            }
-        } catch (Exception e) {
-            retval = null; // something went wrong when looking for session
-        }
-
-        return retval;
     }
 
     @Override
@@ -123,7 +98,7 @@ public class AuthnRequestStateCookieWrapper implements AuthenticationFilter<Auth
         Validate.notNull(request, "request");
         SessionManager sessionManager = t.getSessionManager();
         Validate.notNull(sessionManager, "sessionManager");
-        Session currentSession = getSession(sessionManager, request,t.getIdmAccessor().getTenant());
+        Session currentSession = Shared.getSession(sessionManager, request,t.getIdmAccessor().getTenant());
         if (currentSession != null) {
             log.debug("Found existing session {}", currentSession);
             // use session data here to determine identity
@@ -140,15 +115,16 @@ public class AuthnRequestStateCookieWrapper implements AuthenticationFilter<Auth
             // fall back to stored authenticator: currently it could be kerbros,pw, external.
             if (t.isProxying() && getExternalAuthenticator() != null)
                 getExternalAuthenticator().authenticate(t);
-            else if (!t.isProxying() && getAuthenticator() != null)
+            else if (!t.isProxying() && getAuthenticator() != null) {
                 getAuthenticator().authenticate(t);
+                t.createSession(null, null);
+            }
             else {
                 log.error("externel authenticator is not intialized! ");
                 throw new SamlServiceException();
             }
-            t.createSession(null);
         } else {
-            // fall back to sending browser the login page. 
+            // fall back to sending browser the login page.
             ValidationResult vr = new ValidationResult(
                     HttpServletResponse.SC_FOUND, null, null);
             t.setValidationResult(vr);

@@ -267,7 +267,7 @@ namespace VMCertStoreSnapIn
                     if (Servernode.StoresInfo.ContainsKey(storeName))
                         certList = Servernode.StoresInfo[storeName].SecretKeys;
 
-                    splitViewController.MainTableView.DataSource = new SecretKeysListView(certList);
+                    splitViewController.MainTableView.DataSource = new SecretKeysListView(certList,Servernode.ServerDTO, storeName);
                 });
         }
 

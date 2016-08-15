@@ -1,5 +1,5 @@
 /* **********************************************************************
- * Copyright 2015 VMware, Inc.  All rights reserved. 
+ * Copyright 2015 VMware, Inc.  All rights reserved.
  * *********************************************************************/
 
 package com.vmware.identity.configure;
@@ -35,6 +35,7 @@ public class LinuxInstallerHelper implements InstallerHelper {
     @Override
     public String[] getIDMServiceStartCommand() {
         return new String[] { "systemctl", "restart", "vmware-idmd" };
+
     }
 
     @Override
@@ -56,11 +57,6 @@ public class LinuxInstallerHelper implements InstallerHelper {
     @Override
     public String[] getSTSServiceStartCommand() {
         return new String[] { "systemctl", "restart", "vmware-stsd" };
-    }
-
-    @Override
-    public String getTCSetenvName() {
-        return "setenv.sh";
     }
 
     @Override
@@ -149,7 +145,7 @@ public class LinuxInstallerHelper implements InstallerHelper {
 
     @Override
     public String getCertoolPath() {
-        return "/usr/lib/vmware-vmca/bin/certool";
+        return "/opt/vmware/bin/certool";
     }
 
     @Override
@@ -182,27 +178,12 @@ public class LinuxInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String getGcLogFile() {
-        return "gclogFile";
-    }
-
-    @Override
     public String getSSOHomePath() {
-        return "/opt/vmware";
-    }
-
-    @Override
-    public String getSetEnvReplacement() {
-        return "";
-    }
-
-    @Override
-    public String getInitTcInstancePath() {
-        return "";
+        return "/usr/lib/vmware-sso";
     }
 
     @Override
     public String getIdmLoginPath(){
-        return "/opt/vmware/lib64";
+        return "/etc/vmware-sso/keys/";
     }
 }

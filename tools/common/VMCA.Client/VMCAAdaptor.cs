@@ -203,6 +203,31 @@ namespace VMCA
             UInt32 dwErrorCode,
             out IntPtr errorMsg);
 
+        [DllImport(LIBNAME)]
+        public static extern UInt32
+        VMCAGetSignedCertificateFromCSRHA(
+            IntPtr pServerContext,
+            string pszServerName,
+            string pCertRequest,
+            Int64 tmNotBefore,
+            Int64 tmNotAfter,
+            out IntPtr ppCertificate
+        );
+
+
+        [DllImport(LIBNAME)]
+        public static extern UInt32
+        VMCAGetSignedCertificateHA(
+            IntPtr pServerContext,
+            string pszServerName,
+            VMCA_PKCS_10_REQ_DATA pCertRequest,
+            string pszPrivateKey,
+            string pszPassPhrase,
+            Int64 tmNotBefore,
+            Int64 tmNotAfter,
+            out IntPtr ppCertificate
+        );
+
         public static void VMCAFreeString(IntPtr pString)
         {
             VMCAFreeKey(pString);

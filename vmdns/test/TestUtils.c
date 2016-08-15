@@ -85,7 +85,7 @@ typedef struct _PtrNameTestData
     DWORD dwError;
 } PtrNameTestData;
 
-void VmDnsTestGenerateReversZoneNameFromNetworkId(
+void TestPtrName(
     CuTest* tc
     )
 {
@@ -120,6 +120,29 @@ void VmDnsTestGenerateReversZoneNameFromNetworkId(
         }
         VMDNS_SAFE_FREE_STRINGA(ptrTestData[idx].pszNetworkId);
         VMDNS_SAFE_FREE_STRINGA(ptrTestData[idx].pszZoneName);
+    }
+}
+
+void TestReverseZoneName(CuTest* tc)
+{
+    DWORD dwError = 0;
+    DWORD idx = 0;
+    int family = AF_INET;
+    PSTR pszPtrName = NULL;
+    PCSTR pszNetworkIds[] = {
+        "192.168.1.1",
+        "127.0.0.1",
+        "fc00:10:20:116:41d1:2e00:1760:cd2b",
+        "fc00:10:20::41d1:2e00:1760:cd2b",
+        "fc00:10:20::2e00:1760:cd2b",
+        "fe80::20c:29ff:fe35:1e05",
+        "::1"
+    };
+
+    for (; idx < sizeof(pszNetworkIds)/sizeof(PCSTR); ++idx)
+    {
+        dwError = VmDnsGeneratePtrNameFromIp(pszNetworkIds[idx], &family, &pszPtrName);
+        CuAssert(tc, "Generating PTR name from ip address should succeed.", !dwError);
     }
 }
 
@@ -169,7 +192,8 @@ CuSuite* CuGetUtilSuite(void)
 	CuSuite* suite = CuSuiteNew();
 
 	SUITE_ADD_TEST(suite, TestTrimDomainName);
-	SUITE_ADD_TEST(suite, VmDnsTestGenerateReversZoneNameFromNetworkId);
+    SUITE_ADD_TEST(suite, TestPtrName);
+    SUITE_ADD_TEST(suite, TestReverseZoneName);
 	SUITE_ADD_TEST(suite, VmDnsTestTrimString);
 
 	return suite;

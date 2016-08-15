@@ -28,7 +28,7 @@ namespace VMDirInterop.LDAP
             {
                 var errorPointer = LdapClientLibrary.ldap_err2string(error);
                 var errorString = Marshal.PtrToStringAnsi(errorPointer);
-                var message = string.Format("{0}-{1}", "Exception thrown from LDAP", errorString);
+                var message = string.Format("{0}-{1} (error code = {2})", "Exception thrown from LDAP", errorString, error);
                 var exception = new LdapException(message);
                 exception.LdapError = (LdapStatus)Enum.Parse(typeof(LdapStatus), error.ToString(), false);
                 throw exception;
