@@ -352,6 +352,13 @@ VmDirReplGetUrgentReplCoordinatorTableEntry_InLock(
         //Append to the list
         pUrgentReplPartnerTable->next = gVmdirUrgentRepl.pUrgentReplPartnerTable;
         gVmdirUrgentRepl.pUrgentReplPartnerTable = pUrgentReplPartnerTable;
+    } else if (pUrgentReplPartnerTable->isDeleted == TRUE)
+    {
+        //Add back previous deleted partner, and initialize time stamps and lastConfirmedUSN.
+        pUrgentReplPartnerTable->isDeleted = FALSE;
+        memset((PVOID)pUrgentReplPartnerTable->lastNotifiedTimeStamp, '\0', VMDIR_ORIG_TIME_STR_LEN);
+        memset((PVOID)pUrgentReplPartnerTable->lastConfirmedTimeStamp,'\0', VMDIR_ORIG_TIME_STR_LEN);
+        pUrgentReplPartnerTable->lastConfirmedUSN = 0;
     }
 
 cleanup:
@@ -699,7 +706,7 @@ VmDirUrgentReplUpdateConsensus(
     VOID
     )
 {
-    USN      minUSN = 0;
+    USN      minUSN = USN_SEQ_MAX_VALUE;
     BOOLEAN  bInLock = FALSE;
     BOOLEAN  bUpdated = FALSE;
     PVMDIR_STRONG_WRITE_PARTNER_CONTENT pUrgentReplPartnerTable = NULL;
@@ -710,7 +717,10 @@ VmDirUrgentReplUpdateConsensus(
 
     if (pUrgentReplPartnerTable != NULL)
     {
-        minUSN = pUrgentReplPartnerTable->lastConfirmedUSN;
+        if ( pUrgentReplPartnerTable->isDeleted == FALSE)
+        {
+            minUSN = pUrgentReplPartnerTable->lastConfirmedUSN;
+        }
 
         while (pUrgentReplPartnerTable != NULL)
         {
@@ -724,7 +734,12 @@ VmDirUrgentReplUpdateConsensus(
 
         if (gVmdirUrgentRepl.consensusUSN < minUSN)
         {
-            gVmdirUrgentRepl.consensusUSN = minUSN;
+            if (minUSN != USN_SEQ_MAX_VALUE)
+            {
+                // In case all partners were deleted, gVmdirUrgentRepl.consensusUSN should
+                // preserve priviously valid value instead of being set to USN_SEQ_MAX_VALUE
+                gVmdirUrgentRepl.consensusUSN = minUSN;
+            }
             bUpdated = TRUE;
         }
         VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
