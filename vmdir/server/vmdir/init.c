@@ -72,7 +72,6 @@ static
 DWORD
 _VmDirGenerateInvocationId(VOID);
 
-static
 int
 LoadServerGlobals(BOOLEAN *pbWriteInvocationId);
 
@@ -789,7 +788,6 @@ error:
 //    case the new invocation ID needs to be generated here.
 
 
-static
 int
 LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
 {
