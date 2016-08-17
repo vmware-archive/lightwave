@@ -41,6 +41,7 @@ VmDirParseArgs(
     PSTR*    ppszTgtPort,
     PSTR*    ppszEntryDn,
     PSTR*    ppszAttribute,
+    PSTR*    ppszMode,
     PBOOLEAN pbVerbose
     )
 {
@@ -54,6 +55,7 @@ VmDirParseArgs(
     PSTR    pszTgtPort     = DEFAULT_LDAPS_PORT_STR;
     PSTR    pszEntryDn     = NULL;
     PSTR    pszAttribute   = NULL;
+    PSTR    pszMode        = NULL;
     BOOLEAN bVerbose       = FALSE;
     BOOLEAN bTwoWayRepl    = FALSE;
 
@@ -129,6 +131,10 @@ VmDirParseArgs(
 
             case VDCREPADMIN_OPTION_ATTRIBUTE:
                 pszAttribute = optarg;
+                break;
+
+            case VDCREPADMIN_OPTION_MODE:
+                pszMode = optarg;
                 break;
 
             default:
@@ -207,6 +213,12 @@ VmDirParseArgs(
                                          TRUE) == 0)
             {
                 VmDirGetCmdLineOption(argc, argv, &i, &pszAttribute);
+            }
+            else if (VmDirStringCompareA(VDCREPADMIN_OPTION_MODE,
+                                         argv[i],
+                                         TRUE) == 0)
+            {
+                VmDirGetCmdLineOption(argc, argv, &i, &pszMode);
             }
 
         }
@@ -350,6 +362,34 @@ VmDirParseArgs(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SET_MODE,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
+    {
+        if (
+                pszSrcHostName == NULL
+             || pszSrcUserName == NULL
+             || pszMode        == NULL
+           )
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_GET_MODE,
+                                  pszFeatureSet,
+                                  TRUE) == 0 )
+    {
+        if (
+               pszSrcHostName == NULL
+            || pszSrcUserName == NULL
+
+           )
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
     else
     {
         dwError = ERROR_INVALID_PARAMETER;
@@ -367,6 +407,7 @@ VmDirParseArgs(
     *ppszAttribute   = pszAttribute;
     *pbVerbose       = bVerbose;
     *pbTwoWayRepl    = bTwoWayRepl;
+    *ppszMode        = pszMode;
 
 cleanup:
     return dwError;
@@ -416,5 +457,15 @@ ShowUsage(
         "                   -e <entry_dn> [-a <attribute>]\n"
         "                   -h <source_hostname> [-p <source_portnumber>]\n"
         "                   -u <source_username> [-w <source_password>]\n"
+        "       vdcrepadmin -f setreplicationmode\n"
+        "                   -h <source_hostname>\n"
+        "                   -m <mode (NORMAL|STANDALONE)>\n"
+        "                   -u <admin UPN, e.g. Administrator@vsphere.local>\n"
+        "                    [-w <source_password>]\n"
+        "       vdcrepadmin -f getreplicationmode\n"
+        "                   -h <source_hostname>\n"
+        "                   -u <admin UPN, e.g. Administrator@vsphere.local>\n"
+        "                    [-w <source_password>]\n"
+
       );
 }

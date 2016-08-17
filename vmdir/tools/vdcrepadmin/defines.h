@@ -26,7 +26,8 @@
 #define VDCREPADMIN_FEATURE_DUMMY_DOMAIN_WRITE         "dummydomainwrite"
 #define VDCREPADMIN_QUERY_IS_FIRST_CYCLE_DONE          "isfirstcycledone"
 #define VDCREPADMIN_FEATURE_SHOW_ATTRIBUTE_METADATA    "showattributemetadata"
-
+#define VDCREPADMIN_FEATURE_SET_MODE                   "setreplicationmode"
+#define VDCREPADMIN_FEATURE_GET_MODE                   "getreplicationmode"
 
 #ifndef _WIN32
 
@@ -41,7 +42,8 @@
 #define VDCREPADMIN_OPTION_FEATURE_SET        'f'
 #define VDCREPADMIN_OPTION_ENTRY_DN           'e'
 #define VDCREPADMIN_OPTION_ATTRIBUTE          'a'
-#define VDCREPADMIN_OPTIONS_VALID             "2h:H:p:P:D:u:w:vf:e:a:"
+#define VDCREPADMIN_OPTION_MODE               'm'
+#define VDCREPADMIN_OPTIONS_VALID             "2h:H:p:P:D:u:w:vf:e:a:m:"
 
 #else
 #define VDCREPADMIN_OPTION_SOURCE_HOSTNAME    "-h"
@@ -55,6 +57,7 @@
 #define VDCREPADMIN_OPTION_FEATURE_SET        "-f"
 #define VDCREPADMIN_OPTION_ENTRY_DN           "-e"
 #define VDCREPADMIN_OPTION_ATTRIBUTE          "-a"
+#define VDCREPADMIN_OPTION_MODE               "-m"
 
 #endif
 
