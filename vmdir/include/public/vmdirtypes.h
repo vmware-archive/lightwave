@@ -153,7 +153,14 @@ typedef enum
     VMDIRD_STATE_FAILURE      // Server has failed in unrecoverable manner
 
 } VDIR_SERVER_STATE;
-
+    
+typedef enum _VMDIR_RUNMODE
+{
+    VMDIR_RUNMODE_NORMAL,
+    VMDIR_RUNMODE_STANDALONE,
+    VMDIR_RUNMODE_RESTORE
+} VMDIR_RUNMODE;
+    
 #ifndef ENUM_VMDIR_LOG_LEVEL
 #define ENUM_VMDIR_LOG_LEVEL
 typedef enum
