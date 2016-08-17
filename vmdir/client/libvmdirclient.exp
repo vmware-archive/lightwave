@@ -99,3 +99,5 @@ VmDirFreeMetadata
 VmDirFreeMetadataList
 VmDirUrgentReplicationRequest
 VmDirUrgentReplicationResponse
+VmDirGetMode
+VmDirSetMode
