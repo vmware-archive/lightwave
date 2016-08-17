@@ -158,7 +158,7 @@ ParseRequestControls(
 
                     retVal = lr->errCode = LDAP_UNWILLING_TO_PERFORM;
                     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                                 "ParseRequestControls: Server in not in normal mode, not allowing outward replication.");
+                                 "ParseRequestControls: Server not in normal mode, not allowing outward replication.");
                 }
 
                 if ((retVal = ParseSyncRequestControlVal( op, &lberBervCtlValue, &((*control)->value.syncReqCtrlVal),
