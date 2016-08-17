@@ -419,6 +419,7 @@ VmDirGetAllRAToHost(
 DWORD
 VmDirIsPartnerReplicationUpToDate(
     LDAP *pLD,
+    PCSTR pszPartnerName,
     PCSTR pszDomain,
     PCSTR pszServerName,
     PCSTR pszUserName,

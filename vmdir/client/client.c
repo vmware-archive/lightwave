@@ -1339,7 +1339,14 @@ _VmDirLeaveFederationSelf(
         startTime = time(NULL);
         do
         {
-            dwError = VmDirIsPartnerReplicationUpToDate(ppLDArray[dwCnt], pszDomain, pszDCAccount, pszUserName, pszPassword, &bUpToDate);
+            dwError = VmDirIsPartnerReplicationUpToDate(
+                                        ppLDArray[dwCnt],
+                                        ppszPartnerHosts[dwCnt],
+                                        pszDomain,
+                                        pszDCAccount,
+                                        pszUserName,
+                                        pszPassword,
+                                        &bUpToDate);
             if (dwError || !bUpToDate)
             {
                VmDirSleep(1000);
