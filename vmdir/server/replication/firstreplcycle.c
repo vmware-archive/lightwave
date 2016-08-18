@@ -41,6 +41,9 @@ VmDirCreateBindingHandleA(
     handle_t   *ppBinding
     );
 
+int
+LoadServerGlobals(BOOLEAN *pbWriteInvocationId);
+
 static
 int
 _VmDirGetRemoteDBUsingRPC(
@@ -95,6 +98,7 @@ VmDirFirstReplicationCycle(
 {
     int                     retVal = LDAP_SUCCESS;
     PSTR                    pszLocalErrorMsg = NULL;
+    BOOLEAN                 bWriteInvocationId = FALSE;
 #ifndef _WIN32
     const char  *dbHomeDir = VMDIR_DB_DIR;
 #else
@@ -135,6 +139,10 @@ VmDirFirstReplicationCycle(
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
             "VmDirFirstReplicationCycle: _VmDirWrapUpFirstReplicationCycle() call failed, error: %d.", retVal );
 
+    retVal = LoadServerGlobals(&bWriteInvocationId);
+
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
+            "VmDirFirstReplicationCycle: LoadServerGlobals call failed, error: %d.", retVal );
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
     return retVal;

@@ -32,6 +32,8 @@ DWORD
 _VmDirGetReplicationCookieForHost(
     LDAP* pLD,
     PCSTR pszHost,
+
+    PCSTR pszPartner,
     PVMDIR_REPLICATION_COOKIE *ppCookie
    );
 
@@ -130,7 +132,7 @@ _VmDirGetUtdAndIdForHostFromRADN(
     PSTR        pszInvocationId = NULL;
 
     /*
-     * Given labeledUri=ldaps://server:636,cn=Relplication Agreements,cn=foo,...
+     * Given labeledUri=ldaps://server:636,cn=Replication Agreements,cn=foo,...
      * we want just the cn=foo,...
      */
     pszEndOfRADN = pszRADN + strlen(pszRADN);
@@ -290,8 +292,9 @@ DWORD
 _VmDirGetReplicationCookieForHost(
     LDAP* pLD,
     PCSTR pszHost,
+    PCSTR pszPartner,
     PVMDIR_REPLICATION_COOKIE *ppCookie
-   )
+    )
 {
     DWORD       dwError=0;
     DWORD       dwSize=0;
@@ -301,6 +304,9 @@ _VmDirGetReplicationCookieForHost(
     USN         usn = 0;
     PSTR        pszUtdVector = NULL;
     PSTR        pszInvocationId = NULL;
+    PSTR        pszPartnerRA = NULL;
+    PSTR        pszCN = ",cn=";
+    PSTR        pszEndOfRA = NULL;
 
     dwError = VmDirGetAllRAToHost( pLD, pszHost, &ppszRADNs, &dwSize );
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -309,6 +315,36 @@ _VmDirGetReplicationCookieForHost(
     {
         VMDIR_SAFE_FREE_STRINGA(pszUtdVector);
         VMDIR_SAFE_FREE_STRINGA(pszInvocationId);
+
+        if (pszPartner != NULL)
+        {
+            pszEndOfRA = ppszRADNs[dwCnt] + strlen(ppszRADNs[dwCnt]);
+            pszPartnerRA = VmDirStringStrA(ppszRADNs[dwCnt], VMDIR_REPL_AGRS_CONTAINER_NAME);
+
+            if(pszPartnerRA == NULL)
+            {
+                dwError = ERROR_INVALID_PARAMETER;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+
+            pszPartnerRA += strlen(VMDIR_REPL_AGRS_CONTAINER_NAME);
+            if (pszPartnerRA >= pszEndOfRA || *pszPartnerRA != ',')
+            {
+                dwError = ERROR_INVALID_PARAMETER;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            pszPartnerRA += strlen(pszCN);
+            if (pszPartnerRA >= pszEndOfRA)
+            {
+                dwError = ERROR_INVALID_PARAMETER;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+
+            if (VmDirStringNCompareA(pszPartner, pszPartnerRA, strlen(pszPartner), FALSE) != 0)
+            {
+                continue;
+            }
+        }
 
         dwError = VmDirGetLastLocalUsnProcessedForHostFromRADN(pLD, ppszRADNs[dwCnt], &usn);
         if (dwError == 0)
@@ -458,10 +494,11 @@ error:
 DWORD
 VmDirIsPartnerReplicationUpToDate(
     LDAP *pLD,
+    PCSTR pszPartnerName,
     PCSTR pszDomain,
     PCSTR pszServerName,
     PCSTR pszUserName,
-    PCSTR pszPassowrd,
+    PCSTR pszPassword,
     PBOOLEAN pbUpToDate
     )
 {
@@ -470,16 +507,16 @@ VmDirIsPartnerReplicationUpToDate(
     PVMDIR_REPLICATION_COOKIE pCookie = NULL;
 
     if (pLD == NULL || pszDomain == NULL || pszServerName == NULL ||
-        pszUserName == NULL || pszPassowrd == NULL || pbUpToDate == NULL)
+        pszUserName == NULL || pszPassword == NULL || pbUpToDate == NULL)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = _VmDirGetReplicationCookieForHost(pLD, pszServerName, &pCookie);
+    dwError = _VmDirGetReplicationCookieForHost(pLD, pszServerName, pszPartnerName, &pCookie);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VmDirReplicationEntriesExist(pszDomain, pszServerName, pszUserName, pszPassowrd, pCookie, &bEntriesExist);
+    dwError = _VmDirReplicationEntriesExist(pszDomain, pszServerName, pszUserName, pszPassword, pCookie, &bEntriesExist);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *pbUpToDate = !bEntriesExist;
@@ -681,7 +718,7 @@ VmDirGetPartnerReplicationStatus(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = _VmDirGetReplicationCookieForHost(pLD, pszAccount, &pCookie);
+    dwError = _VmDirGetReplicationCookieForHost(pLD, pszAccount, pPartnerStatus->pszHost, &pCookie);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirGetReplicationPartnerUsnLag(pCookie, &pPartnerStatus->targetUsn);

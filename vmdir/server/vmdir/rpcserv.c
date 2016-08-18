@@ -1983,3 +1983,79 @@ error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirUrgentReplicationResponse failed status (%u)", dwError );
     goto cleanup;
 }
+
+UINT32
+Srv_RpcVmDirSetMode(
+    handle_t hBinding,
+    UINT32   dwMode)
+{
+    DWORD dwError = 0;
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // Supporting Normal and Standalone modes
+    if ( (dwMode != VMDIR_RUNMODE_NORMAL
+          && dwMode != VMDIR_RUNMODE_STANDALONE) )
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    VmDirdSetRunMode(dwMode);
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: Set vmdird runmode to: %u", __FUNCTION__, dwMode );
+
+cleanup:
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)(%u)", __FUNCTION__, dwError, dwMode );
+    goto cleanup;
+}
+
+UINT32
+Srv_RpcVmDirGetMode(
+    handle_t    hBinding,
+    UINT32*     pdwMode
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+
+    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (!pdwMode)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *pdwMode = VmDirdGetRunMode();
+
+cleanup:
+    if (pAccessToken)
+    {
+        VmDirSrvReleaseAccessToken(pAccessToken);
+    }
+    return dwError;
+
+error:
+    goto cleanup;
+}

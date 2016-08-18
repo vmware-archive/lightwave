@@ -1393,6 +1393,10 @@ _VmDirPluginReplAgrPostDeleteCommit(
             break;
         }
     }
+    if (pReplAgr && pReplAgr->isDeleted)
+    {
+        VmDirReplUpdateUrgentReplCoordinatorTableForDelete(pReplAgr);
+    }
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
 
 cleanup:

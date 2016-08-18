@@ -220,6 +220,15 @@
             " USAGE directoryOperation )")                              \
     },                                                                  \
     {                                                                   \
+    VMDIR_SF_INIT(.usAttrID, 99),                                       \
+    VMDIR_SF_INIT(.pszDesc, "attributeTypes: ("                         \
+            " VMWare.DIR.attribute.0.59"                                \
+            " NAME 'attributeValueMetaData'"                            \
+            " SYNTAX 1.3.6.1.4.1.1466.115.121.1.40"                     \
+            " NO-USER-MODIFICATION"                                     \
+            " USAGE directoryOperation )")                              \
+    },                                                                  \
+    {                                                                   \
     VMDIR_SF_INIT(.usAttrID, 0),                                        \
     VMDIR_SF_INIT(.pszDesc, NULL)                                       \
     },                                                                  \

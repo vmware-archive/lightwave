@@ -309,6 +309,8 @@ _BuildAllKeyStrs(
     )
 {
     DWORD   dwError = 0;
+    DWORD   i = 0;
+    PSTR    pszAttrName = NULL;
     PSTR    pszStatusKey = NULL;
     PSTR    pszInitOffsetKey = NULL;
     PSTR    pszScopesKey = NULL;
@@ -326,12 +328,20 @@ _BuildAllKeyStrs(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    dwError = VmDirAllocateStringA(pIndexCfg->pszAttrName, &pszAttrName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i = 0; i < VmDirStringLenA(pszAttrName); i++)
+    {
+        pszAttrName[i] = tolower(pszAttrName[i]);
+    }
+
     dwError = VmDirAllocateStringPrintf(
             &pszStatusKey,
             "%s%s%s%s%s",
             INDEX_TKN,
             INDEX_SEP,
-            pIndexCfg->pszAttrName,
+            pszAttrName,
             INDEX_SEP,
             INDEX_STATUS_TKN);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -341,7 +351,7 @@ _BuildAllKeyStrs(
             "%s%s%s%s%s",
             INDEX_TKN,
             INDEX_SEP,
-            pIndexCfg->pszAttrName,
+            pszAttrName,
             INDEX_SEP,
             INDEX_INIT_OFFSET_TKN);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -351,7 +361,7 @@ _BuildAllKeyStrs(
             "%s%s%s%s%s",
             INDEX_TKN,
             INDEX_SEP,
-            pIndexCfg->pszAttrName,
+            pszAttrName,
             INDEX_SEP,
             INDEX_SCOPES_TKN);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -361,7 +371,7 @@ _BuildAllKeyStrs(
             "%s%s%s%s%s%s",
             INDEX_TKN,
             INDEX_SEP,
-            pIndexCfg->pszAttrName,
+            pszAttrName,
             INDEX_SEP,
             INDEX_NEW_TKN,
             INDEX_SCOPES_TKN);
@@ -372,7 +382,7 @@ _BuildAllKeyStrs(
             "%s%s%s%s%s%s",
             INDEX_TKN,
             INDEX_SEP,
-            pIndexCfg->pszAttrName,
+            pszAttrName,
             INDEX_SEP,
             INDEX_DEL_TKN,
             INDEX_SCOPES_TKN);
@@ -385,6 +395,7 @@ _BuildAllKeyStrs(
     *ppszDelScopesKey = pszDelScopesKey;
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszAttrName);
     return dwError;
 
 error:

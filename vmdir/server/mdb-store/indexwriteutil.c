@@ -414,33 +414,36 @@ MdbValidateAttrUniqueness(
         }
 
         // find occupied scopes in pNewUniqScopes
-        pNode = pIndexCfg->pNewUniqScopes->pTail;
-        while (pNode)
+        if (pIndexCfg->status == VDIR_INDEXING_VALIDATING_SCOPES)
         {
-            pszScope = (PSTR)pNode->pElement;
-
-            if (VmDirStringCompareA(PERSISTED_DSE_ROOT_DN, pszScope, FALSE) == 0 ||
-                VmDirStringEndsWith(pszDN, pszScope, FALSE))
+            pNode = pIndexCfg->pNewUniqScopes->pTail;
+            while (pNode)
             {
-                if (LwRtlHashMapFindKey(pOccupiedScopes, NULL, pszScope) != 0)
+                pszScope = (PSTR)pNode->pElement;
+
+                if (VmDirStringCompareA(PERSISTED_DSE_ROOT_DN, pszScope, FALSE) == 0 ||
+                    VmDirStringEndsWith(pszDN, pszScope, FALSE))
                 {
-                    // create and store copies in the map
-                    dwError = VmDirAllocateStringA(pszScope, &pszScopeCopy);
-                    BAIL_ON_VMDIR_ERROR(dwError);
+                    if (LwRtlHashMapFindKey(pOccupiedScopes, NULL, pszScope) != 0)
+                    {
+                        // create and store copies in the map
+                        dwError = VmDirAllocateStringA(pszScope, &pszScopeCopy);
+                        BAIL_ON_VMDIR_ERROR(dwError);
 
-                    dwError = VmDirAllocateStringA(pszDN, &pszDNCopy);
-                    BAIL_ON_VMDIR_ERROR(dwError);
+                        dwError = VmDirAllocateStringA(pszDN, &pszDNCopy);
+                        BAIL_ON_VMDIR_ERROR(dwError);
 
-                    dwError = LwRtlHashMapInsert(
-                            pOccupiedScopes, pszScopeCopy, pszDNCopy, NULL);
-                    BAIL_ON_VMDIR_ERROR(dwError);
+                        dwError = LwRtlHashMapInsert(
+                                pOccupiedScopes, pszScopeCopy, pszDNCopy, NULL);
+                        BAIL_ON_VMDIR_ERROR(dwError);
 
-                    pszScopeCopy = NULL;
-                    pszDNCopy = NULL;
+                        pszScopeCopy = NULL;
+                        pszDNCopy = NULL;
+                    }
                 }
-            }
 
-            pNode = pNode->pNext;
+                pNode = pNode->pNext;
+            }
         }
 
         VMDIR_SAFE_FREE_MEMORY(pszVal);
@@ -464,7 +467,7 @@ MdbValidateAttrUniqueness(
             // reject in order to preserve uniqueness
             dwError = VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
 
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                     "%s detected that attr '%s' value '%s' "
                     "already exists in scope '%s', "
                     "will return error %d",
