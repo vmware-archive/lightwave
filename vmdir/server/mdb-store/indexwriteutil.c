@@ -467,7 +467,7 @@ MdbValidateAttrUniqueness(
             // reject in order to preserve uniqueness
             dwError = VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
 
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                     "%s detected that attr '%s' value '%s' "
                     "already exists in scope '%s', "
                     "will return error %d",
