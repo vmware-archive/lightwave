@@ -100,6 +100,14 @@ error:
     goto cleanup;
 }
 
+uint64_t
+_VmDirUnixTimeToFileTime(time_t t)
+{
+    uint64_t filetime = 0;
+    filetime = t * (uint64_t)10000000 + (uint64_t)WIN_EPOCH;
+    return filetime;
+}
+
 /*
  * Update LastLogonTimeStamp of this DN
  */
@@ -131,7 +139,7 @@ VmDirAddTrackLastLoginItem(
         dwError = VmDirAllocateMemory(sizeof(pLoginTime), (PVOID*)&pLoginTime);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pLoginTime->loginTime = time(NULL);
+        pLoginTime->loginTime = _VmDirUnixTimeToFileTime(time(NULL));
         dwError = VmDirAllocateStringA(pszDN, &(pLoginTime->pszDN) );
         BAIL_ON_VMDIR_ERROR(dwError);
 
