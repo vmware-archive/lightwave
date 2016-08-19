@@ -43,6 +43,8 @@
 #define VMDIR_ADDR_INFO_FLAGS( ifa ) ifa->ifa_flags
 #define VMDIR_ADDR_INFO_ADDR( ifa ) ifa->ifa_addr
 
+#define WIN_EPOCH 116444736000000000LL
+
 #else // #ifndef _WIN32
 
 #define REG_DATA_TYPE DWORD
