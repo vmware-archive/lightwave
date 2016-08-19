@@ -310,7 +310,15 @@ VmDirIndexCfgValidateUniqueScopeMods(
                     BAIL_ON_VMDIR_ERROR(dwError);
 
                     dwError = VmDirLinkedListRemove(pNewScopes, pNode);
-                    BAIL_ON_VMDIR_ERROR(dwError);
+                    BAIL_ON_VMDIR_ERROR(dwError);        
+
+                    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                            "%s will revert the scope '%s' for attr '%s' "
+                            "because it detected multiple of value '%s' ",
+                            __FUNCTION__,
+                            pszScope,
+                            pIndexCfg->pszAttrName,
+                            pszLastVal );
                 }
                 else
                 {
