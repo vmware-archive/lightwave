@@ -315,9 +315,9 @@ typedef DWORD (*PFN_BACKEND_INDEX_DELETE)(
  * ERROR_BACKEND_ERROR:             all others
  */
 typedef DWORD (*PFN_BACKEND_INDEX_POPULATE)(
-                    PVDIR_INDEX_CFG*    ppIndexCfgs,
-                    ENTRYID             startEntryId,
-                    DWORD               dwBatchSize
+                    PLW_HASHMAP pIndexCfgs,
+                    ENTRYID     startEntryId,
+                    DWORD       dwBatchSize
                     );
 /*
  * Initialize index table iterator

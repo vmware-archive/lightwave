@@ -54,15 +54,6 @@ VmDirIndexCfgRecordProgress(
     PSTR    pszDelScopesKey = NULL;
     PSTR    pszDelScopesVal = NULL;
 
-    static PCSTR    ppcszStatus[] = {
-            "SCHEDULED",
-            "IN_PROGRESS",
-            "VALIDATING_SCOPES",
-            "COMPLETE",
-            "DISABLED",
-            "DELETED"
-    };
-
     if (!pBECtx || !pIndexCfg)
     {
         dwError = ERROR_INVALID_PARAMETER;
@@ -106,22 +97,6 @@ VmDirIndexCfgRecordProgress(
     dwError = pBECtx->pBE->pfnBEUniqKeySetValue(
             pBECtx, pszDelScopesKey, VDIR_SAFE_STRING(pszDelScopesVal));
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (pIndexCfg->status != VDIR_INDEXING_IN_PROGRESS)
-    {
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
-                "Indexing Progress: Attribute = %s, Status = %s",
-                pIndexCfg->pszAttrName,
-                ppcszStatus[pIndexCfg->status] );
-    }
-    else if (gVdirIndexGlobals.offset % 10000 == 0)
-    {
-        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,
-                "Indexing Progress: Attribute = %s, Status = %s (%ld)",
-                pIndexCfg->pszAttrName,
-                ppcszStatus[pIndexCfg->status],
-                gVdirIndexGlobals.offset );
-    }
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszStatusKey);
