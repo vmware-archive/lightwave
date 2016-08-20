@@ -92,6 +92,7 @@ VmDirVMITIndexCfgInit(
     PSTR    pszScope = NULL;
     BOOLEAN bRestore = FALSE;
     PVDIR_INDEX_CFG pIndexCfg = NULL;
+    PSTR            pszIdxStatus = NULL;
     VDIR_BACKEND_CTX    beCtx = {0};
     BOOLEAN             bHasTxn = FALSE;
 
@@ -137,6 +138,11 @@ VmDirVMITIndexCfgInit(
     dwError = VmDirIndexCfgRecordProgress(&beCtx, pIndexCfg);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirIndexCfgStatusStringfy(pIndexCfg, &pszIdxStatus);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszIdxStatus );
+
     dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
     bHasTxn = FALSE;
@@ -148,6 +154,7 @@ cleanup:
     {
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
+    VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
     return dwError;
 
 error:
