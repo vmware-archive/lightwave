@@ -2573,6 +2573,82 @@ error:
 }
 
 DWORD
+VmAfdJoinValidateDomainCredentialsA(
+    PCSTR pszDomainName,     /* IN              */
+    PCSTR pszUserName,       /* IN              */
+    PCSTR pszPassword        /* IN              */
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszUserName = NULL;
+    PWSTR pwszPassword = NULL;
+    PWSTR pwszDomainName = NULL;
+
+    if (IsNullOrEmptyString(pszDomainName) ||
+    	IsNullOrEmptyString(pszUserName) ||
+        IsNullOrEmptyString(pszPassword))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringWFromA(pszDomainName, &pwszDomainName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszUserName, &pwszUserName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszPassword, &pwszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdJoinValidateDomainCredentialsW(
+                   pwszDomainName,
+                   pwszUserName,
+                   pwszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszUserName);
+    VMAFD_SAFE_FREE_MEMORY(pwszPassword);
+    VMAFD_SAFE_FREE_MEMORY(pwszDomainName);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdJoinValidateDomainCredentialsW(
+    PCWSTR pwszDomainName,     /* IN              */
+    PCWSTR pwszUserName,       /* IN              */
+    PCWSTR pwszPassword        /* IN              */
+    )
+{
+    DWORD dwError = 0;
+
+    if (IsNullOrEmptyString(pwszDomainName) ||
+        IsNullOrEmptyString(pwszUserName) ||
+        IsNullOrEmptyString(pwszPassword))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdLocalJoinValidateDomainCredentials(
+                      pwszDomainName,
+                      pwszUserName,
+                      pwszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+error:
+
+    return dwError;
+}
+
+DWORD
 VmAfdJoinVmDirA(
     PCSTR pszServerName,      /* IN              */
     PCSTR pszUserName,        /* IN              */

@@ -265,6 +265,13 @@ VmAfdLocalDemoteVmDir(
 );
 
 DWORD
+VmAfdLocalJoinValidateDomainCredentials(
+    PCWSTR pwszDomainName,
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword
+    );
+
+DWORD
 VmAfdLocalJoinVmDir(
     PCWSTR pwszServerName,
     PCWSTR pwszUserName,

@@ -1202,6 +1202,15 @@ VmAfdIpcDemoteVmDir(
     );
 
 DWORD
+VmAfdIpcJoinValidateCredentials(
+	PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+	PBYTE pRequest,
+	DWORD dwRequestSize,
+	PBYTE * ppResponse,
+	PDWORD pdwResponseSize
+	);
+
+DWORD
 VmAfdIpcJoinVmDir(
     PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
     PBYTE pRequest,

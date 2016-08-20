@@ -582,6 +582,18 @@ VmAfdLocalAPIHandler(
                             );
             break;
 
+        case VMAFD_IPC_JOIN_VALIDATE_CREDENTIALS:
+
+        	dwError = VmAfdIpcJoinValidateCredentials(
+        					pConnectionContext,
+        					pRequest,
+        					dwRequestSize,
+        					&pResponse,
+        					&dwResponseSize
+        					);
+
+        	break;
+
         case CDC_IPC_GET_DC_NAME:
             dwError = CdcIpcGetDCName(
                             pConnectionContext,
