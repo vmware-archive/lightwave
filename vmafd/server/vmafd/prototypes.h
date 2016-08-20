@@ -839,7 +839,7 @@ VmAfdShutdownPassRefreshThread(
 
 typedef struct _IDM_USER_IDENTITY_
 {
-	unsigned long clientProcessID;//TODO change to ULONG
+    unsigned long clientProcessID;//TODO change to ULONG
 } IDM_USER_IDENTITY, *PSECURITY_IDENTITY;
 
 
@@ -859,12 +859,12 @@ VmAfdIpcServerShutDown(
 
 DWORD
 VmAfdLocalAPIHandler(
-	PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
-	PBYTE pRequest,
-	DWORD dwRequestSize,
-	PBYTE * ppResponse,
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
     DWORD * pdwResponseSize
-	);
+    );
 
 //ipclocalapi.c
 
@@ -1194,6 +1194,15 @@ VmAfdIpcPromoteVmDir(
 
 DWORD
 VmAfdIpcDemoteVmDir(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+DWORD
+VmAfdIpcJoinValidateCredentials(
     PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
     PBYTE pRequest,
     DWORD dwRequestSize,

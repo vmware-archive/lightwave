@@ -457,9 +457,9 @@ VmAfSrvDemoteVmDir(
 
     if (!pwszServerNameLocal)
     {
-	dwError = VmAfdAllocateStringWFromA("localhost", &pwszServerName1);
+    dwError = VmAfdAllocateStringWFromA("localhost", &pwszServerName1);
         BAIL_ON_VMAFD_ERROR(dwError);
-	pwszServerNameLocal = pwszServerName1;
+    pwszServerNameLocal = pwszServerName1;
     }
 
     dwError = VmAfdAllocateStringAFromW(pwszUserName, &pszUserName);
@@ -472,26 +472,26 @@ VmAfSrvDemoteVmDir(
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvUnconfigureDNSW(
-			pwszServerNameLocal,
-			pwszDomainName,
-			pwszUserName,
-			pwszPassword);
+            pwszServerNameLocal,
+            pwszDomainName,
+            pwszUserName,
+            pwszPassword);
 
     if (dwError)
     {
-	VmAfdLog(
-	    VMAFD_DEBUG_ANY,
-	    "%s failed to uninitialize dns. Error(%u)",
-	    __FUNCTION__,
-	    dwError);
-	dwError = 0;
+    VmAfdLog(
+        VMAFD_DEBUG_ANY,
+        "%s failed to uninitialize dns. Error(%u)",
+        __FUNCTION__,
+        dwError);
+    dwError = 0;
     }
     else
     {
-	VmAfdLog(
-	    VMAFD_DEBUG_ANY,
-	    "%s successfully uninitialized dns.",
-	    __FUNCTION__);
+    VmAfdLog(
+        VMAFD_DEBUG_ANY,
+        "%s successfully uninitialized dns.",
+        __FUNCTION__);
     }
 
     dwError = VmDirDemote(pszUserName, pszPassword);
@@ -527,6 +527,56 @@ error:
     VmAfdLog(VMAFD_DEBUG_ANY,
              "%s failed. Error(%u)",
              __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfSrvJoinValidateCredentials(
+    PWSTR pwszDomainName,       /* IN            */
+    PWSTR pwszUserName,         /* IN            */
+    PWSTR pwszPassword          /* IN            */
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszDomainName = NULL;
+    PSTR pszUserName = NULL;
+    PSTR pszPassword = NULL;
+    PSTR pszDCHostname = NULL;
+    PSTR pszDCAddress = NULL;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(pwszDomainName, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(pwszUserName, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(pwszPassword, dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszDomainName, &pszDomainName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszUserName, &pszUserName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszPassword, &pszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdGetDomainController(
+                    pszDomainName,
+                    pszUserName,
+                    pszPassword,
+                    &pszDCHostname,
+                    &pszDCAddress);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VMAFD_SAFE_FREE_STRINGA(pszDomainName);
+    VMAFD_SAFE_FREE_STRINGA(pszUserName);
+    VMAFD_SAFE_FREE_STRINGA(pszPassword);
+    VMAFD_SAFE_FREE_STRINGA(pszDCHostname);
+    VMAFD_SAFE_FREE_STRINGA(pszDCAddress);
+
+    return dwError;
+
+error:
 
     goto cleanup;
 }
