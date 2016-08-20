@@ -45,6 +45,12 @@ VmwDeploySetupServerCommon(
 
 static
 DWORD
+VmwDeploySetupClientWithDC(
+    PVMW_IC_SETUP_PARAMS pParams
+    );
+
+static
+DWORD
 VmwDeploySetupClient(
     PVMW_IC_SETUP_PARAMS pParams
     );
@@ -94,7 +100,14 @@ VmwDeploySetupInstance(
 
         case VMW_DIR_SVC_MODE_CLIENT:
 
-            dwError = VmwDeploySetupClient(pParams);
+        	if (IsNullOrEmptyString(pParams->pszServer))
+        	{
+                dwError = VmwDeploySetupClient(pParams);
+        	}
+        	else
+        	{
+        		dwError = VmwDeploySetupClientWithDC(pParams);
+        	}
 
             break;
 
@@ -436,7 +449,7 @@ error:
 
 static
 DWORD
-VmwDeploySetupClient(
+VmwDeploySetupClientWithDC(
     PVMW_IC_SETUP_PARAMS pParams
     )
 {
@@ -454,8 +467,15 @@ VmwDeploySetupClient(
     PSTR pszSSLCert = NULL;
 
     VMW_DEPLOY_LOG_INFO(
-            "Setting up system as client to Infrastructure node at [%s]",
+            "Joining system to domain [%s] using controller at [%s]",
+            VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszDomainName),
             VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszServer));
+
+    if (IsNullOrEmptyString(pParams->pszServer))
+    {
+    	dwError = ERROR_INVALID_PARAMETER;
+    	BAIL_ON_DEPLOY_ERROR(dwError);
+    }
 
     dwError = VmwDeployValidatePartnerCredentials(
                     pParams->pszServer,
@@ -547,6 +567,130 @@ cleanup:
     if (pszCACert)
     {
         VmwDeployFreeMemory(pszCACert);
+    }
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmwDeploySetupClient(
+    PVMW_IC_SETUP_PARAMS pParams
+    )
+{
+    DWORD dwError = 0;
+    PCSTR ppszServices[]=
+    {
+        VMW_DCERPC_SVC_NAME,
+        VMW_VMAFD_SVC_NAME
+    };
+    PCSTR pszHostname = "localhost";
+    PCSTR pszUsername = VMW_ADMIN_NAME;
+    int iSvc = 0;
+    PSTR pszPrivateKey = NULL;
+    PSTR pszCACert = NULL;
+    PSTR pszSSLCert = NULL;
+    PSTR pszDC = NULL;
+
+    VMW_DEPLOY_LOG_INFO(
+            "Joining system to domain [%s]",
+            VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszDomainName));
+
+    VMW_DEPLOY_LOG_INFO(
+            "Validating Domain credentials for user [%s@%s]",
+            VMW_DEPLOY_SAFE_LOG_STRING(pszUsername),
+            VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszDomainName));
+
+    dwError = VmAfdJoinValidateDomainCredentialsA(
+                    pParams->pszDomainName,
+                    pszUsername,
+                    pParams->pszPassword);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    for (; iSvc < sizeof(ppszServices)/sizeof(ppszServices[0]); iSvc++)
+    {
+        PCSTR pszService = ppszServices[iSvc];
+
+        VMW_DEPLOY_LOG_INFO("Starting service [%s]", pszService);
+
+        dwError = VmwDeployStartService(pszService);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    VMW_DEPLOY_LOG_INFO("Setting configuration values");
+
+    dwError = VmAfdSetCAPathA(pszHostname, VMW_DEFAULT_CA_PATH);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    VMW_DEPLOY_LOG_INFO("Performing domain join operation");
+
+    dwError = VmAfdJoinVmDir2A(
+    		        pParams->pszDomainName,
+                    pszUsername,
+                    pParams->pszPassword,
+                    pParams->pszHostname,
+                    NULL, /* Org Unit */
+                    0     /* Flags    */);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = VmAfdGetDCNameA(pszHostname, &pszDC);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    VMW_DEPLOY_LOG_INFO(
+                    "Get root certificate from VMware Certificate Authority");
+
+    dwError = VmwDeployGetRootCACert(
+                    pszDC,
+                    pParams->pszDomainName,
+                    pszUsername,
+                    pParams->pszPassword,
+                    &pszCACert);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    VMW_DEPLOY_LOG_INFO(
+         "Adding VMCA's root certificate to VMware endpoint certificate store");
+
+    dwError = VmwDeployAddTrustedRoot(pszDC, pszCACert);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    VMW_DEPLOY_LOG_INFO("Generating Machine SSL cert");
+
+    dwError = VmwDeployCreateMachineSSLCert(
+                    pszDC,
+                    pParams->pszDomainName,
+                    pszUsername,
+                    pParams->pszPassword,
+                    pParams->pszHostname,
+                    &pszPrivateKey,
+                    &pszSSLCert);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    VMW_DEPLOY_LOG_INFO("Setting Machine SSL certificate");
+
+    dwError = VmAfdSetSSLCertificate(pszHostname, pszSSLCert, pszPrivateKey);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+cleanup:
+
+    if (pszPrivateKey)
+    {
+        VmwDeployFreeMemory(pszPrivateKey);
+    }
+    if (pszSSLCert)
+    {
+        VmwDeployFreeMemory(pszSSLCert);
+    }
+    if (pszCACert)
+    {
+        VmwDeployFreeMemory(pszCACert);
+    }
+    if (pszDC)
+    {
+    	VmwDeployFreeMemory(pszDC);
     }
 
     return dwError;

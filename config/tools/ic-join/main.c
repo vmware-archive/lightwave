@@ -333,16 +333,11 @@ VmwDeployBuildParams(
 
     if (IsNullOrEmptyString(pszDomainController))
     {
-        VMW_DEPLOY_LOG_ERROR("Error : Missing or invalid domain controller.\n");
-
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_DEPLOY_ERROR(dwError);
-    }
-
-    dwError = VmwDeployAllocateStringA(
+        dwError = VmwDeployAllocateStringA(
                         pszDomainController,
                         &pSetupParams->pszServer);
-    BAIL_ON_DEPLOY_ERROR(dwError);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
 
     dwError = VmwDeployGetHostname(&pSetupParams->pszHostname);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -476,9 +471,9 @@ ShowUsage(
     VOID
     )
 {
-    printf("Usage : ic-domain-join { arguments }\n"
+    printf("Usage : ic-join { arguments }\n"
            "Arguments:\n"
-           "--domain-controller <domain controller's hostname or IP Address>\n"
+           "[--domain-controller <domain controller's hostname or IP Address>]\n"
            "[--domain    <fully qualified domain name. default: vsphere.local>]\n"
            "[--password  <password to administrator account>]\n");
 }
