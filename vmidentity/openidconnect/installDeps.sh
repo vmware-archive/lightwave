@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION=6.0.0
+VERSION=6.5.1
 PACKAGE_BASE=../../vmidentity/build/vmware-sts/packages
 
 GROUP_BASE=com.vmware.identity.idm
@@ -27,15 +27,14 @@ do
                            -Dpackaging=jar
 done
 
-GOBUILD_RD_AUTHENTICATION_FRAMEWORK=$(find ../../build/gobuild/compcache/rd-authentication-framework/* -type d -prune -exec ls -d {} \; |tail -1)
-
-mvn install:install-file -Dfile=$GOBUILD_RD_AUTHENTICATION_FRAMEWORK/publish/lib64/client-domain-controller-cache.jar \
+AUTHENTICATION_FRAMEWORK=../../vmafd/build/authentication-framework/packages/
+mvn install:install-file -Dfile=$AUTHENTICATION_FRAMEWORK/client-domain-controller-cache.jar \
                          -DgroupId=$GROUP_BASE \
                          -DartifactId=client-domain-controller-cache \
                          -Dversion=$VERSION \
                          -Dpackaging=jar
 
-mvn install:install-file -Dfile=$GOBUILD_RD_AUTHENTICATION_FRAMEWORK/publish/lib64/vmware-endpoint-certificate-store.jar \
+mvn install:install-file -Dfile=$AUTHENTICATION_FRAMEWORK/vmware-endpoint-certificate-store.jar \
                          -DgroupId=$GROUP_BASE \
                          -DartifactId=vmware-endpoint-certificate-store \
                          -Dversion=$VERSION \

@@ -24,7 +24,6 @@ REPO_ID=lightwave
 
 #publish non-native maven projects, version number in pom.xml files need to be manually changed
 artifactList=(
-"com.vmware.identity admin-interfaces ../../vmidentity/build/vmware-sts/packages/admin-interfaces.jar ../../vmidentity/admin-interfaces/pom.xml" \
 "com.vmware.identity diagnostics ../../vmidentity/build/vmware-sts/packages/vmware-identity-diagnostics.jar ../../vmidentity/diagnostics/pom.xml" \
 "com.vmware.identity.idm vmware-identity-idm-client ../../vmidentity/build/vmware-sts/packages/vmware-identity-idm-client.jar ../../vmidentity/idm/client/pom.xml" \
 "com.vmware.identity.idm vmware-identity-idm-interface ../../vmidentity/build/vmware-sts/packages/vmware-identity-idm-interface.jar ../../vmidentity/idm/interface/pom.xml" \
