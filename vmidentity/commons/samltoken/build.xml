@@ -7,7 +7,7 @@
    <property name="target-sets" value="main,test,osgi-bundle" />
 
    <property file="../product.properties" />
-   <property name="MAINSRCROOT" value="${basedir}/.." />
+   <property name="MAINSRCROOT" value="${basedir}/../" />
    <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
    <property name="lightwave-repo-url" value="http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave/" />
    <property name="lightwave-server-id" value="lightwave" />
@@ -20,7 +20,6 @@
    <typedef resource="org/apache/maven/artifact/ant/antlib.xml"
              uri="antlib:org.apache.maven.artifact.ant"
              classpathref="maven-ant-tasks.classpath" />
-
 
    <import file="${MAINSRCROOT}/build/ant/presets.xml" />
    <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
@@ -41,7 +40,7 @@
    </path>
 
 
-   <artifact:pom id="pom-samltoken" groupId="com.vmware.identity" artifactId="samltoken" version="6.5.0" name="VMwareIdentity-STS-Samltoken" >
+   <artifact:pom id="pom-samltoken" groupId="com.vmware.identity" artifactId="samltoken" version="6.5.1" name="VMwareIdentity-STS-Samltoken" >
     <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />
     <dependency groupId="org.apache.logging.log4j" artifactId="log4j-1.2-api" version="2.0.2" />
     <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />
