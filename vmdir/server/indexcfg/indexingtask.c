@@ -192,11 +192,9 @@ VmDirIndexingTaskPopulateIndices(
     )
 {
     DWORD   dwError = 0;
-    DWORD   i = 0;
-    size_t  iSize = 0;
     PVDIR_LINKED_LIST_NODE  pNode = NULL;
     PVDIR_BACKEND_INTERFACE pBE = NULL;
-    PVDIR_INDEX_CFG*    ppIndexCfgs  = NULL;
+    PLW_HASHMAP pIndexCfgs  = NULL;
 
     if (!pTask)
     {
@@ -205,11 +203,12 @@ VmDirIndexingTaskPopulateIndices(
     }
 
     pBE = VmDirBackendSelect(NULL);
-    iSize = VmDirLinkedListGetSize(pTask->pIndicesToPopulate) + 1;
 
-    dwError = VmDirAllocateMemory(
-            sizeof(PVDIR_INDEX_CFG) * iSize,
-            (PVOID*)&ppIndexCfgs);
+    dwError = LwRtlCreateHashMap(
+            &pIndexCfgs,
+            LwRtlHashDigestPstrCaseless,
+            LwRtlHashEqualPstrCaseless,
+            NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pNode = pTask->pIndicesToPopulate->pTail;
@@ -226,16 +225,20 @@ VmDirIndexingTaskPopulateIndices(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
-        ppIndexCfgs[i++] = pIndexCfg;
+        dwError = LwRtlHashMapInsert(
+                pIndexCfgs, pIndexCfg->pszAttrName, pIndexCfg, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         pNode = pNextNode;
     }
 
     dwError = pBE->pfnBEIndexPopulate(
-            ppIndexCfgs,  gVdirIndexGlobals.offset, INDEXING_BATCH_SIZE);
+            pIndexCfgs,  gVdirIndexGlobals.offset, INDEXING_BATCH_SIZE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(ppIndexCfgs);
+    LwRtlHashMapClear(pIndexCfgs, VmDirNoopHashMapPairFree, NULL);
+    LwRtlFreeHashMap(&pIndexCfgs);
     return dwError;
 
 error:
@@ -384,6 +387,19 @@ VmDirIndexingTaskRecordProgress(
         dwError = VmDirIndexCfgRecordProgress(&beCtx, pIndexCfg);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        // log populate progress every 10000
+        if (gVdirIndexGlobals.offset % 10000 == 0)
+        {
+            PSTR pszIdxStatus = NULL;
+
+            dwError = VmDirIndexCfgStatusStringfy(pIndexCfg, &pszIdxStatus);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            VMDIR_LOG_INFO( LDAP_DEBUG_INDEX,
+                    "%s (%ld)", pszIdxStatus, gVdirIndexGlobals.offset );
+            VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
+        }
+
         pNode = pNextNode;
     }
 
@@ -404,9 +420,16 @@ VmDirIndexingTaskRecordProgress(
     {
         PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
         PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pNode->pElement;
+        PSTR pszIdxStatus = NULL;
 
         dwError = VmDirIndexCfgRecordProgress(&beCtx, pIndexCfg);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirIndexCfgStatusStringfy(pIndexCfg, &pszIdxStatus);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszIdxStatus );
+        VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
 
         pNode = pNextNode;
     }
@@ -416,9 +439,16 @@ VmDirIndexingTaskRecordProgress(
     {
         PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
         PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pNode->pElement;
+        PSTR pszIdxStatus = NULL;
 
         dwError = VmDirIndexCfgRecordProgress(&beCtx, pIndexCfg);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirIndexCfgStatusStringfy(pIndexCfg, &pszIdxStatus);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszIdxStatus );
+        VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
 
         pNode = pNextNode;
     }

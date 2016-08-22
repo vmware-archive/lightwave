@@ -24,8 +24,8 @@ _FreeIdxDBMapPair(
 static
 DWORD
 _NewIndexedAttrValueNormalize(
-    PVDIR_ENTRY         pEntry,
-    PVDIR_INDEX_CFG*    ppIndexCfgs
+    PVDIR_ENTRY pEntry,
+    PLW_HASHMAP pIndexCfgs
     );
 
 DWORD
@@ -195,16 +195,15 @@ error:
  */
 DWORD
 VmDirMDBIndicesPopulate(
-    PVDIR_INDEX_CFG*    ppIndexCfgs,
-    ENTRYID             startEntryId,
-    DWORD               dwBatchSize
+    PLW_HASHMAP pIndexCfgs,
+    ENTRYID     startEntryId,
+    DWORD       dwBatchSize
     )
 {
     DWORD   dwError = 0;
     DWORD   dwCnt = 0;
 
     PVDIR_DB_TXN        pTxn = NULL;
-    VDIR_ENTRY          targetEntry = {0};
     PVDIR_ENTRY         pEntry = NULL;
     PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
     VDIR_BACKEND_CTX    mdbBECtx = {0};
@@ -212,117 +211,66 @@ VmDirMDBIndicesPopulate(
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = mdb_txn_begin(gVdirMdbGlobals.mdbEnv, BE_DB_PARENT_TXN_NULL, BE_DB_FLAGS_ZERO, &pTxn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // use mdbBECtx just to make VmDirMDBEIdToEntry happy
+    mdbBECtx.pBEPrivate = pTxn;
+
     for (dwCnt = 0; dwCnt < dwBatchSize; dwCnt ++)
     {
-        DWORD   dwRetries = 0;
-        BOOLEAN bIndexDone = FALSE;
+        VDIR_ENTRY entry = {0};
+        PVDIR_ATTRIBUTE pAttr = NULL;
 
-        // indexing is not simple and cheap to restart, so give it more chances
-        // to retry deadlock.
-        // MDB has NO DEADLOCK scenario, keep this to match with MDB code
-        while (dwRetries < MAX_DEADLOCK_RETRIES * 2)
+        dwError = VmDirMDBEIdToEntry(   &mdbBECtx,
+                                        pSchemaCtx,
+                                        startEntryId + dwCnt,
+                                        &entry,
+                                        VDIR_BACKEND_ENTRY_LOCK_WRITE);  // acquire write lock
+
+        if (dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
         {
-            PVDIR_ATTRIBUTE  pAttr = NULL;
-            BOOLEAN          bRetry = FALSE;
-
-            if (pEntry)
-            {
-                VmDirFreeEntryContent(pEntry);
-                pEntry = NULL;
-
-                mdbBECtx.pBEPrivate = NULL;
-                VmDirBackendCtxContentFree(&mdbBECtx);
-            }
-            memset(&targetEntry, 0 , sizeof(targetEntry));
-
-            assert(!pTxn);
-
-            dwError = mdb_txn_begin( gVdirMdbGlobals.mdbEnv, BE_DB_PARENT_TXN_NULL, BE_DB_FLAGS_ZERO, &pTxn );
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            // use mdbBECtx just to make VmDirMDBEIdToEntry happy
-            mdbBECtx.pBEPrivate = pTxn;
-            dwError = VmDirMDBEIdToEntry(   &mdbBECtx,
-                                            pSchemaCtx,
-                                            startEntryId + dwCnt,
-                                            &targetEntry,
-                                            VDIR_BACKEND_ENTRY_LOCK_WRITE);  // acquire write lock
-            if (dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
-            {
-                dwError = 0;
-                mdb_txn_abort(pTxn);
-                pTxn = NULL;
-                break;  // exit retry while loop, move on to next entryid
-            }
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            pEntry = &targetEntry;
-
-            // normalize only newly indexed attributes
-            dwError = _NewIndexedAttrValueNormalize(pEntry, ppIndexCfgs);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            for (pAttr = pEntry->attrs; pAttr != NULL && !bRetry; pAttr = pAttr->next)
-            {
-                DWORD   dwNum = 0;
-                for (dwNum = 0; ppIndexCfgs[dwNum] && !bRetry; dwNum++)
-                {
-                    if (0 == VmDirStringCompareA(pAttr->type.lberbv.bv_val, ppIndexCfgs[dwNum]->pszAttrName, FALSE))
-                    {
-                        // create indices
-                        dwError = MdbUpdateIndicesForAttr(  pTxn,
-                                                            &pEntry->dn,
-                                                            &pAttr->type,
-                                                            pAttr->vals,
-                                                            pAttr->numVals,
-                                                            pEntry->eId,
-                                                            BE_INDEX_OP_TYPE_UPDATE);
-                        if (dwError != 0)
-                        {
-                            mdb_txn_abort(pTxn);
-                            pTxn = NULL;
-                            BAIL_ON_VMDIR_ERROR(dwError);
-                        }
-                    }
-                }
-            }   // for (pAttr...
-
-            if (!bRetry)
-            {
-                bIndexDone = TRUE;
-                break;  // retry while loop
-            }
-
-            // reset dwError in while loop
             dwError = 0;
+            continue;  // move on to next entryid
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-        }   // while (retries...
+        pEntry = &entry;
 
-        if (pTxn)
+        // normalize only newly indexed attributes
+        dwError = _NewIndexedAttrValueNormalize(pEntry, pIndexCfgs);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        for (pAttr = pEntry->attrs; pAttr; pAttr = pAttr->next)
         {
-            if (bIndexDone)
-            {
-                dwError = mdb_txn_commit(pTxn);
-                pTxn = NULL;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-            else
-            {   // reach retry limit, bail.
-                mdb_txn_abort(pTxn);
-                pTxn = NULL;
+            PSTR pszAttrName = pAttr->type.lberbv.bv_val;
 
-                dwError = VMDIR_ERROR_BACKEND_MAX_RETRY;
+            if (LwRtlHashMapFindKey(pIndexCfgs, NULL, pszAttrName) == 0)
+            {
+                // create indices
+                dwError = MdbUpdateIndicesForAttr(  pTxn,
+                                                    &pEntry->dn,
+                                                    &pAttr->type,
+                                                    pAttr->vals,
+                                                    pAttr->numVals,
+                                                    pEntry->eId,
+                                                    BE_INDEX_OP_TYPE_UPDATE);
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
         }
+
+        VmDirFreeEntryContent(pEntry);
+        pEntry = NULL;
     }
 
+    dwError = mdb_txn_commit(pTxn);
+    pTxn = NULL;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
-    mdb_txn_abort(pTxn);
-    VmDirFreeEntryContent(pEntry);
-    VmDirSchemaCtxRelease(pSchemaCtx);
     mdbBECtx.pBEPrivate = NULL;
     VmDirBackendCtxContentFree(&mdbBECtx);
+    VmDirSchemaCtxRelease(pSchemaCtx);
     return dwError;
 
 error:
@@ -337,6 +285,9 @@ error:
     {
         dwError = VMDIR_ERROR_BACKEND_ERROR;
     }
+
+    mdb_txn_abort(pTxn);
+    VmDirFreeEntryContent(pEntry);
     goto cleanup;
 }
 
@@ -390,30 +341,28 @@ _FreeIdxDBMapPair(
 static
 DWORD
 _NewIndexedAttrValueNormalize(
-    PVDIR_ENTRY         pEntry,
-    PVDIR_INDEX_CFG*    ppIndexCfgs
+    PVDIR_ENTRY pEntry,
+    PLW_HASHMAP pIndexCfgs
     )
 {
     DWORD   dwError = 0;
     VDIR_ATTRIBUTE* pAttr = NULL;
 
-    assert (pEntry && ppIndexCfgs);
+    assert (pEntry && pIndexCfgs);
 
     for (pAttr = pEntry->attrs; pAttr; pAttr = pAttr->next)
     {
-        unsigned int iCnt = 0;
-        for (iCnt = 0; ppIndexCfgs[iCnt]; iCnt++)
+        PSTR pszAttrName = pAttr->type.lberbv.bv_val;
+
+        if (LwRtlHashMapFindKey(pIndexCfgs, NULL, pszAttrName) == 0)
         {
-            if (0 == VmDirStringCompareA(pAttr->type.lberbv.bv_val, ppIndexCfgs[iCnt]->pszAttrName, FALSE))
+            unsigned int iNum = 0;
+            for (iNum=0; iNum < pAttr->numVals; iNum++)
             {
-                unsigned int iNum = 0;
-                for (iNum=0; iNum < pAttr->numVals; iNum++)
-                {
-                    dwError = VmDirSchemaBervalNormalize(   pEntry->pSchemaCtx,
-                                                            pAttr->pATDesc,
-                                                            &pAttr->vals[iNum]);
-                    BAIL_ON_VMDIR_ERROR(dwError);
-                }
+                dwError = VmDirSchemaBervalNormalize(   pEntry->pSchemaCtx,
+                                                        pAttr->pATDesc,
+                                                        &pAttr->vals[iNum]);
+                BAIL_ON_VMDIR_ERROR(dwError);
             }
         }
     }
