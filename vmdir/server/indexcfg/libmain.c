@@ -72,12 +72,11 @@ VmDirIndexLibInit(
             gVdirIndexGlobals.bLegacyDB = TRUE;
         }
 
-        // write lastoffset = -1 to indicate indexing has started
+        // set index_last_offset = -1 to indicate indexing has started
+        gVdirIndexGlobals.offset = -1;
         dwError = beCtx.pBE->pfnBEUniqKeySetValue(
                 &beCtx, INDEX_LAST_OFFSET_KEY, "-1");
         BAIL_ON_VMDIR_ERROR(dwError);
-
-        gVdirIndexGlobals.offset = -1;
     }
     else
     {

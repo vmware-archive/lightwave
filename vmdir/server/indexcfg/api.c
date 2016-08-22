@@ -172,6 +172,7 @@ VmDirIndexSchedule(
     DWORD   dwError = 0;
     BOOLEAN bInLock = FALSE;
     PVDIR_INDEX_CFG pIndexCfg = NULL;
+    PSTR            pszIdxStatus = NULL;
 
     if (!pBECtx || IsNullOrEmptyString(pszAttrName))
     {
@@ -208,13 +209,19 @@ VmDirIndexSchedule(
 
     dwError = VmDirIndexCfgRecordProgress(pBECtx, pIndexCfg);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirIndexCfgStatusStringfy(pIndexCfg, &pszIdxStatus);
+    BAIL_ON_VMDIR_ERROR(dwError);
     pIndexCfg = NULL;
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszIdxStatus );
 
     dwError = VmDirConditionSignal(gVdirIndexGlobals.cond);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
+    VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
     return dwError;
 
 error:
@@ -234,6 +241,7 @@ VmDirIndexDelete(
     DWORD   dwError = 0;
     BOOLEAN bInLock = FALSE;
     PVDIR_INDEX_CFG pIndexCfg = NULL;
+    PSTR            pszIdxStatus = NULL;
 
     if (!pBECtx || IsNullOrEmptyString(pszAttrName))
     {
@@ -263,11 +271,17 @@ VmDirIndexDelete(
     dwError = VmDirIndexCfgRecordProgress(pBECtx, pIndexCfg);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirIndexCfgStatusStringfy(pIndexCfg, &pszIdxStatus);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszIdxStatus );
+
     dwError = VmDirConditionSignal(gVdirIndexGlobals.cond);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
+    VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
     return dwError;
 
 error:

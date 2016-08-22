@@ -60,6 +60,12 @@ VmDirIndexCfgRevertBadUniqueScopeMods(
     PVDIR_INDEX_CFG pIndexCfg
     );
 
+DWORD
+VmDirIndexCfgStatusStringfy(
+    PVDIR_INDEX_CFG pIndexCfg,
+    PSTR*           ppszStatus
+    );
+
 VOID
 VmDirIndexCfgClear(
     PVDIR_INDEX_CFG pIndexCfg
