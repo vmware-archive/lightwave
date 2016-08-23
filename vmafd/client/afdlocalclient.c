@@ -1018,6 +1018,53 @@ error:
 }
 
 DWORD
+VmAfdLocalJoinValidateDomainCredentials(
+    PCWSTR pwszDomainName,
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword
+    )
+{
+	DWORD dwError = 0;
+    UINT32 apiType = VMAFD_IPC_JOIN_VALIDATE_CREDENTIALS;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    VMW_TYPE_SPEC input_spec[] = JOIN_VALIDATE_CREDENTIALS_INPUT_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+
+    noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    input_spec[0].data.pWString = (PWSTR) pwszDomainName;
+    input_spec[1].data.pWString = (PWSTR) pwszUserName;
+    input_spec[2].data.pWString = (PWSTR) pwszPassword;
+
+    dwError = VecsLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    input_spec,
+                    output_spec);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VmAfdFreeTypeSpecContent(output_spec, noOfArgsOut);
+    return dwError;
+
+error:
+
+    VmAfdLog(
+    	VMAFD_DEBUG_ANY,
+    	"VmAfdLocalJoinValidateDomainCredentials failed. Error(%u)",
+    	dwError);
+
+    goto cleanup;
+}
+
+DWORD
 VmAfdLocalJoinVmDir(
     PCWSTR pwszServerName,
     PCWSTR pwszUserName,

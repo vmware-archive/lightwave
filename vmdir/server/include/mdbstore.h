@@ -222,9 +222,9 @@ VmDirMDBIndexDelete(
 
 DWORD
 VmDirMDBIndicesPopulate(
-    PVDIR_INDEX_CFG*    ppIndexCfgs,
-    ENTRYID             startEntryId,
-    DWORD               dwBatchSize
+    PLW_HASHMAP pIndexCfgs,
+    ENTRYID     startEntryId,
+    DWORD       dwBatchSize
     );
 
 // iterate.c

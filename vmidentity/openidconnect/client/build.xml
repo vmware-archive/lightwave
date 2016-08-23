@@ -5,7 +5,7 @@
 
     <property name="M2_HOME" value="${tcRoot}/noarch/apache-maven-3.1.1" />
     <property name="GROUP_BASE" value="com.vmware.identity" />
-    <property name="IDM_VERSION" value="6.5.0" />
+    <property name="IDM_VERSION" value="6.5.1" />
 
     <condition property="maven" value="${M2_HOME}/bin/mvn.bat" else="${M2_HOME}/bin/mvn">
         <os family="windows" />

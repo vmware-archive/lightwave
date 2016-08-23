@@ -356,6 +356,20 @@ VmAfdDemoteVmDirW(
     );
 
 DWORD
+VmAfdJoinValidateDomainCredentialsW(
+    PCWSTR pwszDomainName,  /* IN              */
+    PCWSTR pwszUserName,    /* IN              */
+    PCWSTR pwszPassword     /* IN              */
+    );
+
+DWORD
+VmAfdJoinValidateDomainCredentialsA(
+    PCSTR pszDomainName,     /* IN              */
+    PCSTR pszUserName,       /* IN              */
+    PCSTR pszPassword        /* IN              */
+    );
+
+DWORD
 VmAfdJoinVmDirA(
     PCSTR pszServerName,     /* IN     OPTIONAL */
     PCSTR pszUserName,       /* IN              */

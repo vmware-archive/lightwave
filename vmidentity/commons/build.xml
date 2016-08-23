@@ -2,7 +2,7 @@
 <!--
        Copyright VMware, Inc. All rights reserved.
 -->
-<project name="vmidentity-dist" default="build">
+<project name="vmidentity-dist" default="build" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
    <property name="MAINSRCROOT" value="${basedir}/.." />
    <property file="../product.properties" />
    <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
@@ -13,7 +13,9 @@
    <property name="build.dist" location="${COMPONENT_DIST_DIR}" />
    <property name="PUBLISH_DIR" location="${buildRoot}/publish" />
    <property name="build.publish" location="${PUBLISH_DIR}" />
-
+   <property name="samltoken-jar" value="${buildRoot}/packages/samltoken.jar" />
+   <property name="lightwave-repo-url" value="http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave/" />
+   <property name="lightwave-server-id" value="lightwave" />
    <target name="module.samltoken">
       <make-module dir="samltoken" />
    </target>
@@ -37,8 +39,17 @@
 
    <target name="publish" depends="module.publish"/>
 
-   <target name="deploy" depends="module.deploy"/>
-
+   <target name="deploy" depends="build" description="Deploy samltoken-VERSION.jar to artifact instance">
+   <!-- Deploy samltoken-VERSION.jar to artifact instance -->
+     <artifact:mvn>
+       <arg value="org.apache.maven.plugins:maven-deploy-plugin:2.6:deploy-file" />
+       <arg value="-Durl=${lightwave-repo-url}" />
+       <arg value="-DrepositoryId=${lightwave-server-id}" />
+       <arg value="-DpomFile=samltoken/pom.xml" />
+       <arg value="-Dfile=${samltoken-jar}" />
+       <arg value="-Pgpg" />
+     </artifact:mvn>
+   </target>
    <target name="clean" depends="import-helper-tasks">
 
       <delete dir="${buildRoot}/${PRODUCT_NAME}" />

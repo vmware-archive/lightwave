@@ -834,6 +834,25 @@ typedef struct _VMW_TYPE_SPEC_
   }\
 }
 
+#define JOIN_VALIDATE_CREDENTIALS_INPUT_PARAMS \
+{\
+  {\
+    "Domain Name",\
+    VMW_IPC_TYPE_WSTRING,\
+    {NULL}\
+  },\
+  {\
+    "User Name",\
+    VMW_IPC_TYPE_WSTRING,\
+    {NULL}\
+  },\
+  {\
+    "Password",\
+    VMW_IPC_TYPE_WSTRING,\
+    {NULL}\
+  }\
+}
+
 #define JOIN_VMDIR_INPUT_PARAMS \
 {\
     {\

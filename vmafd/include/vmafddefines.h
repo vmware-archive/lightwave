@@ -282,6 +282,7 @@ if ( VMAFD_ASCII_UPPER(c) )             \
 #define VMAFD_IPC_JOIN_VMDIR_2               50
 #define VMAFD_IPC_REFRESH_SITE_NAME          51
 #define VMAFD_IPC_CONFIGURE_DNS              52
+#define VMAFD_IPC_JOIN_VALIDATE_CREDENTIALS  53
 
 #define CDC_IPC_ENABLE_DEFAULT_HA            60
 #define CDC_IPC_ENABLE_LEGACY_HA             61

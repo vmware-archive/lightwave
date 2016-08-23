@@ -83,6 +83,7 @@ VmDirDefaultIndexCfgInit(
     PSTR    pszScope = NULL;
     BOOLEAN bRestore = FALSE;
     PVDIR_INDEX_CFG pIndexCfg = NULL;
+    PSTR            pszIdxStatus = NULL;
     VDIR_BACKEND_CTX    beCtx = {0};
     BOOLEAN             bHasTxn = FALSE;
 
@@ -132,6 +133,11 @@ VmDirDefaultIndexCfgInit(
     dwError = VmDirIndexCfgRecordProgress(&beCtx, pIndexCfg);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirIndexCfgStatusStringfy(pIndexCfg, &pszIdxStatus);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszIdxStatus );
+
     dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
     bHasTxn = FALSE;
@@ -143,6 +149,7 @@ cleanup:
     {
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
+    VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
     return dwError;
 
 error:
@@ -162,6 +169,7 @@ VmDirCustomIndexCfgInit(
     PSTR    pszScope = NULL;
     BOOLEAN bRestore = FALSE;
     PVDIR_INDEX_CFG pIndexCfg = NULL;
+    PSTR            pszIdxStatus = NULL;
     VDIR_BACKEND_CTX    beCtx = {0};
     BOOLEAN             bHasTxn = FALSE;
 
@@ -211,6 +219,11 @@ VmDirCustomIndexCfgInit(
     dwError = VmDirIndexCfgRecordProgress(&beCtx, pIndexCfg);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirIndexCfgStatusStringfy(pIndexCfg, &pszIdxStatus);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszIdxStatus );
+
     dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
     bHasTxn = FALSE;
@@ -222,6 +235,7 @@ cleanup:
     {
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
+    VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
     return dwError;
 
 error:
@@ -236,6 +250,7 @@ VmDirIndexCfgValidateUniqueScopeMods(
     )
 {
     DWORD   dwError = 0;
+    int64_t iCnt = 0;
     PVDIR_BACKEND_INTERFACE pBE = NULL;
     PVDIR_BACKEND_INDEX_ITERATOR  pIterator = NULL;
     PVDIR_LINKED_LIST       pNewScopes = NULL;
@@ -246,6 +261,7 @@ VmDirIndexCfgValidateUniqueScopeMods(
     PSTR        pszVal = NULL;
     ENTRYID     eId = 0;
     VDIR_ENTRY  entry = {0};
+    PSTR        pszIdxStatus = NULL;
 
     if (!pIndexCfg)
     {
@@ -262,6 +278,11 @@ VmDirIndexCfgValidateUniqueScopeMods(
             NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirIndexCfgStatusStringfy(pIndexCfg, &pszIdxStatus);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszIdxStatus );
+
     pBE = VmDirBackendSelect(NULL);
     dwError = pBE->pfnBEIndexIteratorInit(pIndexCfg, NULL, &pIterator);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -271,6 +292,13 @@ VmDirIndexCfgValidateUniqueScopeMods(
      */
     while (pIterator->bHasNext && !VmDirLinkedListIsEmpty(pNewScopes))
     {
+        // log validate progress every 10000
+        if (iCnt % 10000 == 0)
+        {
+            VMDIR_LOG_INFO( LDAP_DEBUG_INDEX, "%s (%ld)", pszIdxStatus, iCnt );
+        }
+        iCnt++;
+
         dwError = pBE->pfnBEIndexIterate(pIterator, &pszVal, &eId);
         BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -339,6 +367,7 @@ cleanup:
     VmDirFreeEntryContent(&entry);
     VMDIR_SAFE_FREE_MEMORY(pszLastVal);
     VMDIR_SAFE_FREE_MEMORY(pszVal);
+    VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
     return dwError;
 
 error:
@@ -551,6 +580,49 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError );
 
+    goto cleanup;
+}
+
+DWORD
+VmDirIndexCfgStatusStringfy(
+    PVDIR_INDEX_CFG pIndexCfg,
+    PSTR*           ppszStatus
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszStatus = NULL;
+
+    static PCSTR    ppcszStatuses[] = {
+            "SCHEDULED",
+            "IN_PROGRESS",
+            "VALIDATING_SCOPES",
+            "COMPLETE",
+            "DISABLED",
+            "DELETED"
+    };
+
+    if (!pIndexCfg || !ppszStatus)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateStringPrintf(&pszStatus,
+            "Indexing Progress: Attribute = %s, Status = %s",
+            pIndexCfg->pszAttrName,
+            ppcszStatuses[pIndexCfg->status]);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppszStatus = pszStatus;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    VMDIR_SAFE_FREE_MEMORY(pszStatus);
     goto cleanup;
 }
 
