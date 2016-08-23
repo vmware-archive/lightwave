@@ -52,9 +52,12 @@
     <Compile Include="DTO\VMDirServerDTO.cs" />
     <Compile Include="Schema\AttributeTypeDTO.cs" />
     <Compile Include="Schema\AttributeTypeManager.cs" />
+    <Compile Include="Schema\ManagerBase.cs" />
     <Compile Include="Schema\ObjectClassDTO.cs" />
     <Compile Include="Schema\ObjectClassManager.cs" />
+    <Compile Include="Schema\ParserHelperDTO.cs" />
     <Compile Include="Schema\SchemaManager.cs" />
+    <Compile Include="Schema\SchemaValueParser.cs" />
     <Compile Include="Schema\SyntaxDefs.cs" />
     <Compile Include="VMDirUtilities\LdapConnectionService.cs" />
     <Compile Include="VMDirUtilities\Utilities.cs" />

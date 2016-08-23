@@ -19,8 +19,9 @@ using VMDirInterop.LDAP;
 using System.Linq;
 
 namespace VMDir.Common.Schema
-{
-    public class AttributeTypeManager
+{
+
+    public class AttributeTypeManager : ManagerBase
     {
         /*Declaring local constants here ,as these are case sensitive and to be used only in the function below
          * Not to be confused with similar contants being used in the Application in other places.
@@ -39,35 +40,130 @@ namespace VMDir.Common.Schema
         public AttributeTypeManager(Dictionary<string, Dictionary<string,object>> dict)
         {
             AddAttributeTypeDTO(dict);
-        }
-
-
-        private void AddAttributeTypeDTO(Dictionary<string, Dictionary<string,object>> dict)
-        {
-            foreach (var key in dict.Keys)
-            {
-                var dto = new AttributeTypeDTO
-                {
-                    Name = key
-                };
-                Dictionary<string, object> attributes = dict[key];
-                LdapValue[] val;
-                val = Utilities.FetchLdapValueFromAttributesDictionary(AttributeDescription, attributes);
-                dto.Description = val != null ? val[0].StringValue : string.Empty;
-                val = Utilities.FetchLdapValueFromAttributesDictionary(AttributeSyntax, attributes);
-                dto.AttributeSyntax = val != null ? val[0].StringValue : string.Empty;
-                dto.Type = "System.String";
-                var syntax = VMDirCommonEnvironment.Instance.SyntaxDefs[dto.AttributeSyntax];
-                if (syntax != null)
-                    dto.Type = syntax.Name;
-                val = Utilities.FetchLdapValueFromAttributesDictionary(AttributeSingleValued, attributes);
-                dto.SingleValue = val != null ? Convert.ToBoolean(val[0].StringValue) : true;
-                val = Utilities.FetchLdapValueFromAttributesDictionary(AttributeID, attributes);
-                dto.AttributeID = val != null ? val[0].StringValue : string.Empty;
-                val = Utilities.FetchLdapValueFromAttributesDictionary(ObjectClass, attributes);
-                dto.ObjectClass = val != null ? val.Select(data => data.StringValue).ToList() : null;
-                _data[key] = dto;
-            }
+        }
+
+
+
+
+
+        private void AddAttributeTypeDTO(Dictionary<string, Dictionary<string,object>> dict)
+
+        {
+
+            foreach (var key in dict.Keys)
+
+            {
+
+                var dto = new AttributeTypeDTO
+
+                {
+
+                    Name = key
+
+                };
+
+                Dictionary<string, object> attributes = dict[key];
+
+                LdapValue[] val;
+
+                val = Utilities.FetchLdapValueFromAttributesDictionary(AttributeDescription, attributes);
+
+                dto.Description = val != null ? val[0].StringValue : string.Empty;
+
+                val = Utilities.FetchLdapValueFromAttributesDictionary(AttributeSyntax, attributes);
+
+                dto.AttributeSyntax = val != null ? val[0].StringValue : string.Empty;
+
+                dto.Type = "System.String";
+
+                var syntax = VMDirCommonEnvironment.Instance.SyntaxDefs[dto.AttributeSyntax];
+
+                if (syntax != null)
+
+                    dto.Type = syntax.Name;
+
+                val = Utilities.FetchLdapValueFromAttributesDictionary(AttributeSingleValued, attributes);
+
+                dto.SingleValue = val != null ? Convert.ToBoolean(val[0].StringValue) : true;
+
+                val = Utilities.FetchLdapValueFromAttributesDictionary(AttributeID, attributes);
+
+                dto.AttributeID = val != null ? val[0].StringValue : string.Empty;
+
+                val = Utilities.FetchLdapValueFromAttributesDictionary(ObjectClass, attributes);
+
+                dto.ObjectClass = val != null ? val.Select(data => data.StringValue).ToList() : null;
+
+                _data[key] = dto;
+
+            }
+
+        }
+
+        public AttributeTypeManager(List<string> items)
+        {
+            InitSchemaDefinition();
+            ParseAndAdd(items);
+        }
+
+        private void InitSchemaDefinition()
+        {
+            _defs = new List<SchemaComponentDef> {
+                new SchemaComponentDef{ Name = "NAME", Parser = SchemaValueParsers.SingleOrMultipleQuoted },
+                new SchemaComponentDef{ Name = "DESC", Parser = SchemaValueParsers.SingleQuotedString },
+                new SchemaComponentDef{ Name = "EQUALITY", Parser = SchemaValueParsers.SingleValue },
+                new SchemaComponentDef{ Name = "SUBSTR", Parser = SchemaValueParsers.SingleValue },
+                new SchemaComponentDef{ Name = "SYNTAX", Parser = SchemaValueParsers.SingleValue },
+                new SchemaComponentDef{ Name = "SINGLE-VALUE", Parser = SchemaValueParsers.IsDefined },
+                new SchemaComponentDef{ Name = "NO-USER-MODIFICATION", Parser = SchemaValueParsers.IsDefined },
+                new SchemaComponentDef{ Name = "USAGE", Parser = SchemaValueParsers.SingleValue },
+            };
+        }
+
+        private void ParseAndAdd(List<string> items)
+        {
+            foreach (var item in items)
+            {
+                var dict = Parse(item);
+                AddAttributeType(dict);
+            }
+        }
+
+        private void AddAttributeType(Dictionary<string, object> dict)
+        {
+            var val = dict["NAME"];
+            if (val is string)
+                AddAttributeType(val as string, dict);
+            else
+            {
+                foreach (var name in val as List<string>)
+                    AddAttributeType(name, dict);
+            }
+
+        }
+        private void AddAttributeType(string name, Dictionary<string, object> dict)
+        {
+            var dto = new AttributeTypeDTO { Name = name };
+            dto.Description = dict["DESC"] as string;
+            if (dto.Description == null)
+                dto.Description = "";
+
+            dto.AttributeSyntax = dict["SYNTAX"] as string;
+
+            if (VMDirCommonEnvironment.Instance.SyntaxDefs != null)
+            {
+                var syntax = VMDirCommonEnvironment.Instance.SyntaxDefs[dto.AttributeSyntax];
+                if (syntax == null)
+                {
+                    dto.Type = "System.String";
+                }
+                else
+                {
+                    dto.Type = syntax.Name;
+                }
+                dto.SingleValue = (bool)dict["SINGLE-VALUE"];
+                _data[name] = dto;
+            }
         }
     }
 }

@@ -33,36 +33,70 @@ namespace VMDir.Common.Schema
 
         public SchemaManager(LdapConnectionService conn)
         {
-            _conn = conn;
-        }
-
+            _conn = conn;
+        }
+
+
+
         public void RefreshSchema()
-        {
-            const string baseDN = "cn=schemacontext";
-            ILdapMessage ldMsg = null;
-			try
-			{
-				List<ILdapEntry> attributesResponse = _conn.SearchAndGetEntries(baseDN, LdapScope.SCOPE_SUBTREE, "(objectclass=attributeschema)", null, 0, ref ldMsg);
-				List<ILdapEntry> schemaResponse = _conn.SearchAndGetEntries(baseDN, LdapScope.SCOPE_SUBTREE, "(objectclass=classschema)", null, 0, ref ldMsg);
+        {
+            try
+            {
+                const string baseDN = "cn=schemacontext";
+                ILdapMessage ldMsg = null;
+                try
+                {
+                    List<ILdapEntry> attributesResponse = _conn.SearchAndGetEntries(baseDN, LdapScope.SCOPE_SUBTREE, "(objectclass=attributeschema)", null, 0, ref ldMsg);
+                    List<ILdapEntry> schemaResponse = _conn.SearchAndGetEntries(baseDN, LdapScope.SCOPE_SUBTREE, "(objectclass=classschema)", null, 0, ref ldMsg);
 
-				if (attributesResponse.Count == 0 || schemaResponse.Count == 0)
-					throw new Exception("Failed to get schema, possibly server version is incompatible.");
+                    if (attributesResponse.Count == 0 || schemaResponse.Count == 0)
+                        throw new Exception("Failed to get schema");
 
-				var schemaDict = new Dictionary<string, Dictionary<string, object>>();
-				var attrDict = new Dictionary<string, Dictionary<string, object>>();
+                    var schemaDict = new Dictionary<string, Dictionary<string, object>>();
+                    var attrDict = new Dictionary<string, Dictionary<string, object>>();
 
-				CollectData(schemaResponse, OBJECTCLASSES, schemaDict);
-				CollectData(attributesResponse, ATTRIBUTETYPES, attrDict);
-				ParseAttributes(attrDict);
-				ParseObjectClasses(schemaDict);
-			}
-			finally
-			{
-				if (ldMsg != null)
-					(ldMsg as LdapMessage).FreeMessage();
-			}
-
-        }
+                    CollectData(schemaResponse, OBJECTCLASSES, schemaDict);
+                    CollectData(attributesResponse, ATTRIBUTETYPES, attrDict);
+                    ParseAttributes(attrDict);
+                    ParseObjectClasses(schemaDict);
+                }
+                finally
+                {
+                    if (ldMsg != null)
+                        (ldMsg as LdapMessage).FreeMessage();
+                }
+            }
+            catch(Exception e)
+            {
+                if (string.Equals(e.Message, "Failed to get schema"))
+                {
+                    const string baseDN = "cn=aggregate,cn=schemacontext";
+                    var attribs = new string[] { ATTRIBUTETYPES, OBJECTCLASSES };
+                    ILdapMessage ldMsg = null;
+                    try
+                    {
+                        List<ILdapEntry> response = _conn.SearchAndGetEntries(baseDN, LdapScope.SCOPE_SUBTREE, "(objectClass=*)", attribs, 0, ref ldMsg);
+                        if (response.Count == 0)
+                            throw new Exception("Failed to get schema, possibly server version is incompatible.");
+
+                        LdapEntry baseEntry = (LdapEntry)response[0];
+                        var dict = CollectData(baseEntry);
+                        ParseAttributes(dict[ATTRIBUTETYPES]);
+                        ParseObjectClasses(dict[OBJECTCLASSES]);
+                    }
+                    finally
+                    {
+                        if (ldMsg != null)
+                            (ldMsg as LdapMessage).FreeMessage();
+                    }
+                }
+                else
+                {
+                    throw e;
+                }
+            }
+        }
+
 
         private void CollectData(List<ILdapEntry> baseEntry, string attrib, Dictionary<string, Dictionary<string,object>> dict)
         {
@@ -171,6 +205,36 @@ namespace VMDir.Common.Schema
         public AttributeTypeManager GetAttributeTypeManager()
         {
             return _attributeTypes;
-        }
+        }
+
+
+        private Dictionary<string, List<string>> CollectData(LdapEntry baseEntry)
+        {
+            var dict = new Dictionary<string, List<string>> {
+                { ATTRIBUTETYPES, new List<string> () },
+                { OBJECTCLASSES, new List<string> () }
+            };
+
+            foreach (var entry in dict)
+            {
+                //get attributes and values for each entry
+                LdapValue[] val = baseEntry.getAttributeValues(entry.Key).ToArray();// .GetAttributeValues(entry.Key);
+                var list = entry.Value;
+                int count = val.Count();
+                for (int i = 0; i < count; ++i)
+                    list.Add(val[i].StringValue);
+            }
+            return dict;
+        }
+        private void ParseAttributes(List<string> items)
+        {
+            _attributeTypes = new AttributeTypeManager(items);
+        }
+
+        private void ParseObjectClasses(List<string> items)
+        {
+            _objectClasses = new ObjectClassManager(items);
+        }
+
     }
 }
