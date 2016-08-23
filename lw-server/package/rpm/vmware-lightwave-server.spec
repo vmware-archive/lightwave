@@ -1,7 +1,7 @@
 Name:    vmware-lightwave-server
 Summary: VMware Lightwave Server
-Version: 6.6.0
-Release: 0
+Version: %{_version}
+Release: %{_patch}
 Group:   Applications/System
 Vendor:  VMware, Inc.
 License: VMware

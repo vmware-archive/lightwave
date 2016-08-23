@@ -1,7 +1,7 @@
 Name:    vmware-lightwave-clients
 Summary: VMware Infrastructure Client
-Version: 6.6.0
-Release: 0
+Version: %{_version}
+Release: %{_patch}
 Group:   Applications/System
 Vendor:  VMware, Inc.
 License: VMware
