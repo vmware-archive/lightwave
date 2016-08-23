@@ -47,7 +47,7 @@
       <fileset refid="jar-set.clover" />
    </path>
  
-   <artifact:pom id="pom-wsTrustClient" groupId="com.vmware.identity" artifactId="wsTrustClient" version="6.5.1" name="VMwareIdentity-STS-wstclient" >
+   <artifact:pom id="pom-wsTrustClient" groupId="com.vmware.identity" artifactId="wsTrustClient" version="6.6.0" name="VMwareIdentity-STS-wstclient" >
       <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />
       <dependency groupId="org.apache.logging.log4j" artifactId="log4j-1.2-api" version="2.0.2" />
       <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />
@@ -55,7 +55,7 @@
       <dependency groupId="org.slf4j" artifactId="slf4j-api" version="1.7.10" />
       <dependency groupId="org.slf4j" artifactId="jcl-over-slf4j" version="1.7.10" />
       <dependency groupId="commons-codec" artifactId="commons-codec" version="1.4" />
-      <dependency groupId="com.vmware.identity" artifactId="samltoken" version="6.5.1" />
+      <dependency groupId="com.vmware.identity" artifactId="samltoken" version="6.6.0" />
    </artifact:pom>
 
    <artifact:writepom pomRefId="pom-wsTrustClient" file="pom.xml"/>
