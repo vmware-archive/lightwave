@@ -4,18 +4,18 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.vmware.identity.idm</groupId>
   <artifactId>vmware-identity-idm-client</artifactId>
-  <version>6.5.1</version>
+  <version>6.6.0</version>
   <name>VMwareIdentity-STS-IDM-Client</name>
   <dependencies>
     <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>diagnostics</artifactId>
-      <version>6.5.1</version>
+      <version>6.6.0</version>
     </dependency>
     <dependency>
       <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-interface</artifactId>
-      <version>6.5.1</version>
+      <version>6.6.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
@@ -46,16 +46,6 @@
       <groupId>org.slf4j</groupId>
       <artifactId>jcl-over-slf4j</artifactId>
       <version>1.7.10</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vmware.identity</groupId>
-      <artifactId>diagnostics</artifactId>
-      <version>6.5.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.vmware.identity.idm</groupId>
-      <artifactId>vmware-identity-idm-interface</artifactId>
-      <version>6.5.1</version>
     </dependency>
     <dependency>
       <groupId>xalan</groupId>

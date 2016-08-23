@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION=6.5.1
+VERSION=6.6.0
 GROUP_BASE=com.vmware.identity
 PACKAGE_BASE=../../vmidentity/build/vmware-sts/packages
 
