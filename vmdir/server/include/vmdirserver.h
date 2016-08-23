@@ -522,6 +522,11 @@ VmDirReplGetUrgentReplResponseCount(
     VOID
     );
 
+DWORD
+VmDirReplGetUrgentReplResponseCount_InLock(
+    VOID
+    );
+
 VOID
 VmDirReplUpdateUrgentReplResponseCount(
     VOID
@@ -542,8 +547,18 @@ VmDirReplSetUrgentReplResponseRecvCondition(
     BOOLEAN bUrgentReplResponseRecv
     );
 
+VOID
+VmDirReplSetUrgentReplResponseRecvCondition_InLock(
+    BOOLEAN bUrgentReplResponseRecv
+    );
+
 BOOLEAN
 VmDirReplGetUrgentReplResponseRecvCondition(
+    VOID
+    );
+
+BOOLEAN
+VmDirReplGetUrgentReplResponseRecvCondition_InLock(
     VOID
     );
 
@@ -595,6 +610,11 @@ VmDirGetUrgentReplConsensus(
 USN
 VmDirGetUrgentReplConsensus_InLock(
     VOID
+    );
+
+VOID
+VmDirSetUrgentReplConsensus_InLock(
+    USN
     );
 
 BOOLEAN
