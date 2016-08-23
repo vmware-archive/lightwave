@@ -351,11 +351,16 @@ MdbValidateAttrUniqueness(
     {
         goto cleanup;
     }
+
     // no uniqueness enforced
-    if (LwRtlHashMapGetCount(pIndexCfg->pUniqScopes) == 0 &&
-        VmDirLinkedListGetSize(pIndexCfg->pNewUniqScopes) == 0)
+    if (LwRtlHashMapGetCount(pIndexCfg->pUniqScopes) == 0)
     {
-        goto cleanup;
+        // use pNewUniqScopes if VDIR_INDEXING_VALIDATING_SCOPES
+        if (pIndexCfg->status != VDIR_INDEXING_VALIDATING_SCOPES ||
+            VmDirLinkedListIsEmpty(pIndexCfg->pNewUniqScopes))
+        {
+            goto cleanup;
+        }
     }
 
     dwError = VmDirMDBIndexIteratorInit(pIndexCfg, pszAttrVal, &pIterator);

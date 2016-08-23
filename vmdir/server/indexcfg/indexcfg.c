@@ -631,31 +631,32 @@ VmDirIndexCfgClear(
     PVDIR_INDEX_CFG pIndexCfg
     )
 {
-    PVDIR_LINKED_LIST_NODE  pNode = NULL;
+    PVDIR_LINKED_LIST   pList = NULL;
+
     if (pIndexCfg)
     {
         LwRtlHashMapClear(pIndexCfg->pUniqScopes,
                 VmDirSimpleHashMapPairFree, NULL);
 
-        pNode = pIndexCfg->pNewUniqScopes->pHead;
-        while (pNode)
+        pList = pIndexCfg->pNewUniqScopes;
+        while (!VmDirLinkedListIsEmpty(pList))
         {
-            VMDIR_SAFE_FREE_MEMORY(pNode->pElement);
-            pNode = pNode->pPrev;
+            VMDIR_SAFE_FREE_MEMORY(pList->pHead->pElement);
+            VmDirLinkedListRemove(pList, pList->pHead);
         }
 
-        pNode = pIndexCfg->pDelUniqScopes->pHead;
-        while (pNode)
+        pList = pIndexCfg->pDelUniqScopes;
+        while (!VmDirLinkedListIsEmpty(pList))
         {
-            VMDIR_SAFE_FREE_MEMORY(pNode->pElement);
-            pNode = pNode->pPrev;
+            VMDIR_SAFE_FREE_MEMORY(pList->pHead->pElement);
+            VmDirLinkedListRemove(pList, pList->pHead);
         }
 
-        pNode = pIndexCfg->pBadUniqScopes->pHead;
-        while (pNode)
+        pList = pIndexCfg->pBadUniqScopes;
+        while (!VmDirLinkedListIsEmpty(pList))
         {
-            VMDIR_SAFE_FREE_MEMORY(pNode->pElement);
-            pNode = pNode->pPrev;
+            VMDIR_SAFE_FREE_MEMORY(pList->pHead->pElement);
+            VmDirLinkedListRemove(pList, pList->pHead);
         }
     }
 }
