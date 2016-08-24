@@ -31,12 +31,11 @@ artifactList=(
 "com.vmware.identity samltoken ../../vmidentity/build/vmware-sts/packages/samltoken.jar ../../vmidentity/commons/samltoken/pom.xml" \
 "com.vmware.identity vmware-identity-websso-client ../../vmidentity/build/vmware-sts/packages/vmware-identity-websso-client.jar ../../vmidentity/ssolib/pom.xml" \
 "com.vmware.identity wsTrustClient ../../vmidentity/build/vmware-sts/packages/vmware-identity-wsTrustClient.jar ../../vmidentity/wsTrustClient/pom.xml" \
-"com.vmware.identity wstauthz ../../vmidentity/build/vmware-sts/packages/wstauthz.jar ../../vmidentity/wstauthz/pom.xml" \
 "com.vmware.identity authentication-framework ../../vmafd/build/authentication-framework/packages/authentication-framework.jar" \
-"com.vmware.identity client-domain-controller-cache ../../vmafd/build/authentication-framework/packages/client-domain-controller-cache.jar" \
-"com.vmware.identity vmware-endpoint-certificate-store ../../vmafd/build/authentication-framework/packages/vmware-endpoint-certificate-store.jar" \
+"com.vmware.identity client-domain-controller-cache ../../vmafd/build/authentication-framework/packages/client-domain-controller-cache.jar ../../vmafd/interop/java/cdc/pom.xml" \
+"com.vmware.identity vmware-endpoint-certificate-store  ../../vmafd/build/authentication-framework/packages/vmware-endpoint-certificate-store.jar ../../vmafd/interop/java/vks/pom.xml"
 "com.vmware.identity vmware-vmca-client ../../vmca/build/packages/vmware-vmca-client.jar" \
-"com.vmware.identity vmware-identity-depends ../../vmidentity/build/vmware-sts/packages/vmware-identity-depends.jar"
+"com.vmware.identity vmware-identity-depends ../../vmidentity/build/vmware-sts/packages/vmware-identity-depends.jar" \
 )
 
 for i in "${artifactList[@]}"; do
@@ -70,5 +69,6 @@ done
 mvn -f ../../vmidentity/openidconnect/common/pom.xml deploy
 mvn -f ../../vmidentity/openidconnect/client/pom.xml deploy
 mvn -f ../../vmidentity/openidconnect/sample/pom.xml deploy
+mvn -f ../../vmidentity/openidconnect/protocol/pom.xml deploy
 mvn -f ../../vmidentity/rest/pom.xml deploy
 
