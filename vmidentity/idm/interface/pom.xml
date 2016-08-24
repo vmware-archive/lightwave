@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.vmware.identity.idm</groupId>
   <artifactId>vmware-identity-idm-interface</artifactId>
-  <version>6.5.1</version>
+  <version>6.6.0</version>
   <name>VMwareIdentity-STS-IDM-Interface</name>
   <dependencies>
     <dependency>
@@ -45,7 +45,7 @@
     <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>diagnostics</artifactId>
-      <version>6.5.1</version>
+      <version>6.6.0</version>
     </dependency>
   </dependencies>
 </project>
