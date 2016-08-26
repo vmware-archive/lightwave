@@ -98,6 +98,7 @@ VmDirSchemaLibLoadBootstrapTable(
     DWORD   dwError = 0;
     DWORD   i = 0;
     PVDIR_LDAP_SCHEMA   pLdapSchema = NULL;
+    PVDIR_SCHEMA_INSTANCE   pVdirSchema = NULL;
     PVDIR_SCHEMA_ATTR_ID_MAP    pAttrIdMap = NULL;
 
     pLdapSchema = gVdirSchemaGlobals.pPendingLdapSchema;
@@ -123,6 +124,11 @@ VmDirSchemaLibLoadBootstrapTable(
         }
     }
 
+    dwError = VmDirSchemaInstanceCreate(pLdapSchema, &pVdirSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    gVdirSchemaGlobals.pPendingVdirSchema = pVdirSchema;
+
 cleanup:
     return dwError;
 
@@ -130,6 +136,7 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError );
 
+    VmDirFreeSchemaInstance(pVdirSchema);
     goto cleanup;
 }
 
@@ -142,6 +149,7 @@ VmDirSchemaLibPrepareUpdateViaFile(
     PVDIR_LDAP_SCHEMA   pCurLdapSchema = NULL;
     PVDIR_LDAP_SCHEMA   pTmpLdapSchema = NULL;
     PVDIR_LDAP_SCHEMA   pNewLdapSchema = NULL;
+    PVDIR_SCHEMA_INSTANCE   pNewVdirSchema = NULL;
     LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
     LW_HASHMAP_PAIR pair = {NULL, NULL};
 
@@ -173,7 +181,11 @@ VmDirSchemaLibPrepareUpdateViaFile(
         }
     }
 
+    dwError = VmDirSchemaInstanceCreate(pNewLdapSchema, &pNewVdirSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     gVdirSchemaGlobals.pPendingLdapSchema = pNewLdapSchema;
+    gVdirSchemaGlobals.pPendingVdirSchema = pNewVdirSchema;
 
 cleanup:
     VmDirFreeLdapSchema(pTmpLdapSchema);
@@ -184,6 +196,7 @@ error:
             "%s failed, error (%d)", __FUNCTION__, dwError );
 
     VmDirFreeLdapSchema(pNewLdapSchema);
+    VmDirFreeSchemaInstance(pNewVdirSchema);
     goto cleanup;
 }
 
@@ -197,6 +210,7 @@ VmDirSchemaLibPrepareUpdateViaEntries(
     DWORD   i = 0;
     PVDIR_LDAP_SCHEMA   pCurLdapSchema = NULL;
     PVDIR_LDAP_SCHEMA   pNewLdapSchema = NULL;
+    PVDIR_SCHEMA_INSTANCE   pNewVdirSchema = NULL;
 
     if (!pAtEntries || !pOcEntries)
     {
@@ -244,7 +258,11 @@ VmDirSchemaLibPrepareUpdateViaEntries(
     dwError = VmDirLdapSchemaResolveAndVerifyAll(pNewLdapSchema);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirSchemaInstanceCreate(pNewLdapSchema, &pNewVdirSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     gVdirSchemaGlobals.pPendingLdapSchema = pNewLdapSchema;
+    gVdirSchemaGlobals.pPendingVdirSchema = pNewVdirSchema;
 
 cleanup:
     return dwError;
@@ -254,6 +272,7 @@ error:
             "%s failed, error (%d)", __FUNCTION__, dwError );
 
     VmDirFreeLdapSchema(pNewLdapSchema);
+    VmDirFreeSchemaInstance(pNewVdirSchema);
     goto cleanup;
 }
 
@@ -270,6 +289,7 @@ VmDirSchemaLibPrepareUpdateViaModify(
     PSTR            pszClass = NULL;
     PVDIR_LDAP_SCHEMA   pCurLdapSchema = NULL;
     PVDIR_LDAP_SCHEMA   pNewLdapSchema = NULL;
+    PVDIR_SCHEMA_INSTANCE   pNewVdirSchema = NULL;
     PVDIR_LDAP_ATTRIBUTE_TYPE   pAt = NULL;
     PVDIR_LDAP_OBJECT_CLASS     pOc = NULL;
     PVDIR_LDAP_CONTENT_RULE     pCr = NULL;
@@ -359,7 +379,11 @@ VmDirSchemaLibPrepareUpdateViaModify(
             "Not a schema object entry");
 
 updatelib:
+    dwError = VmDirSchemaInstanceCreate(pNewLdapSchema, &pNewVdirSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     gVdirSchemaGlobals.pPendingLdapSchema = pNewLdapSchema;
+    gVdirSchemaGlobals.pPendingVdirSchema = pNewVdirSchema;
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
@@ -377,6 +401,7 @@ error:
     VmDirFreeLdapOc(pOc);
     VmDirFreeLdapCr(pCr);
     VmDirFreeLdapSchema(pNewLdapSchema);
+    VmDirFreeSchemaInstance(pNewVdirSchema);
     goto cleanup;
 }
 
@@ -400,24 +425,19 @@ VmDirSchemaLibUpdate(
 
     VMDIR_LOCK_MUTEX(bInLock, gVdirSchemaGlobals.ctxMutex);
 
-    // take ownership of pending LdapSchema
+    // replace LdapSchema and VdirSchema with pending ones
     pNewLdapSchema = gVdirSchemaGlobals.pPendingLdapSchema;
+    pNewVdirSchema = gVdirSchemaGlobals.pPendingVdirSchema;
     gVdirSchemaGlobals.pPendingLdapSchema = NULL;
+    gVdirSchemaGlobals.pPendingVdirSchema = NULL;
+    gVdirSchemaGlobals.pLdapSchema = pNewLdapSchema;
+    gVdirSchemaGlobals.pVdirSchema = pNewVdirSchema;
 
     // get reference to current schema context, to clean up later
     pLiveCtx = gVdirSchemaGlobals.pCtx;
 
     // clean up if there was a prior error
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    // create a new pVdirSchema and add self reference
-    dwError = VmDirSchemaInstanceCreate(pNewLdapSchema,
-            gVdirSchemaGlobals.pAttrIdMap,
-            &pNewVdirSchema);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    gVdirSchemaGlobals.pLdapSchema = pNewLdapSchema;
-    gVdirSchemaGlobals.pVdirSchema = pNewVdirSchema;
 
     dwError = VdirSchemaCtxAcquireInLock(TRUE, &gVdirSchemaGlobals.pCtx);
     BAIL_ON_VMDIR_ERROR(dwError);

@@ -186,9 +186,10 @@ typedef struct _VDIR_SCHEMA_GLOBALS
     // pVdirSchema is created from pLdapSchema
     PVDIR_SCHEMA_INSTANCE   pVdirSchema;    // active pVdirSchema
 
-    // pending modified schema cache which will replace live
-    // pLdapSchema after internal process completes successfully
+    // pending schema caches will replace live caches after
+    // schema update process completes successfully
     PVDIR_LDAP_SCHEMA       pPendingLdapSchema;
+    PVDIR_SCHEMA_INSTANCE   pPendingVdirSchema;
 
     // mutex to synchronize ctx manipulation
     PVMDIR_MUTEX    ctxMutex;

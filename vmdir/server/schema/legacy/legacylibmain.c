@@ -78,6 +78,7 @@ VmDirSchemaLibPrepareUpdateViaSubSchemaSubEntry(
     PVDIR_LDAP_SCHEMA   pCurLdapSchema = NULL;
     PVDIR_LDAP_SCHEMA   pTmpLdapSchema = NULL;
     PVDIR_LDAP_SCHEMA   pNewLdapSchema = NULL;
+    PVDIR_SCHEMA_INSTANCE   pNewVdirSchema = NULL;
 
     pCurLdapSchema = gVdirSchemaGlobals.pLdapSchema;
 
@@ -94,7 +95,11 @@ VmDirSchemaLibPrepareUpdateViaSubSchemaSubEntry(
             pCurLdapSchema, pTmpLdapSchema, &pNewLdapSchema);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirSchemaInstanceCreate(pNewLdapSchema, &pNewVdirSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     gVdirSchemaGlobals.pPendingLdapSchema = pNewLdapSchema;
+    gVdirSchemaGlobals.pPendingVdirSchema = pNewVdirSchema;
 
 cleanup:
     VmDirFreeLdapSchema(pTmpLdapSchema);
@@ -104,5 +109,7 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError );
 
+    VmDirFreeLdapSchema(pNewLdapSchema);
+    VmDirFreeSchemaInstance(pNewVdirSchema);
     goto cleanup;
 }

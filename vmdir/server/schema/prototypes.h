@@ -104,7 +104,6 @@ VmDirFreeSchemaAttrIdMap(
 DWORD
 VmDirSchemaInstanceCreate(
     PVDIR_LDAP_SCHEMA           pRepository,
-    PVDIR_SCHEMA_ATTR_ID_MAP    pAttrIdMap,
     PVDIR_SCHEMA_INSTANCE*      ppInstance
     );
 
@@ -237,9 +236,10 @@ VdirSyntaxLoad(
     VOID
     );
 
-PVDIR_SYNTAX_DESC
+DWORD
 VdirSyntaxLookupByOid(
-    PCSTR    pszOid
+    PCSTR               pszOid,
+    PVDIR_SYNTAX_DESC*  ppSyntax
     );
 
 DWORD
