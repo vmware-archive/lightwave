@@ -1596,6 +1596,12 @@ VmDirHaveLegacy(
     );
 
 // util.c
+int
+VmDirCompareVersion(
+    PSTR    pszVerA,
+    PSTR    pszVerB
+    );
+
 uint64_t
 VmDirGetTimeInMilliSec(
     VOID
