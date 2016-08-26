@@ -17,12 +17,12 @@
 DWORD
 VmDirSchemaInstanceCreate(
     PVDIR_LDAP_SCHEMA           pLdapSchema,
-    PVDIR_SCHEMA_ATTR_ID_MAP    pAttrIdMap,
     PVDIR_SCHEMA_INSTANCE*      ppInstance
     )
 {
     DWORD dwError = 0;
-    PVDIR_SCHEMA_INSTANCE pInstance = NULL;
+    PVDIR_SCHEMA_ATTR_ID_MAP    pAttrIdMap = NULL;
+    PVDIR_SCHEMA_INSTANCE   pInstance = NULL;
     LW_HASHMAP_ITER atIter = LW_HASHMAP_ITER_INIT;
     LW_HASHMAP_ITER ocIter = LW_HASHMAP_ITER_INIT;
     LW_HASHMAP_ITER crIter = LW_HASHMAP_ITER_INIT;
@@ -35,6 +35,8 @@ VmDirSchemaInstanceCreate(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+
+    pAttrIdMap = gVdirSchemaGlobals.pAttrIdMap;
 
     dwError = VmDirAllocateMemory(
             sizeof(VDIR_SCHEMA_INSTANCE),
