@@ -48,6 +48,7 @@ typedef enum
 typedef struct _VMW_IC_SETUP_PARAMS
 {
     PSTR pszHostname;
+    PSTR pszMachineAccount;
 
     PSTR pszDomainName;
     PSTR pszPassword;

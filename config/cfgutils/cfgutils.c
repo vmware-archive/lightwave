@@ -145,6 +145,10 @@ VmwDeployFreeSetupParams(
     {
         VmwDeployFreeMemory(pParams->pszHostname);
     }
+    if (pParams->pszMachineAccount)
+    {
+        VmwDeployFreeMemory(pParams->pszMachineAccount);
+    }
     if (pParams->pszDomainName)
     {
         VmwDeployFreeMemory(pParams->pszDomainName);
@@ -477,6 +481,15 @@ VmwDeploySetupClientWithDC(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    dwError = VmwDeployValidateHostname(pParams->pszHostname);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    if (pParams->pszMachineAccount)
+    {
+        dwError = VmwDeployValidateHostname(pParams->pszMachineAccount);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     dwError = VmwDeployValidatePartnerCredentials(
                     pParams->pszServer,
                     pParams->pszPassword,
@@ -515,7 +528,8 @@ VmwDeploySetupClientWithDC(
                     pParams->pszServer,
                     pszUsername,
                     pParams->pszPassword,
-                    pParams->pszHostname,
+                    pParams->pszMachineAccount ?
+                            pParams->pszMachineAccount : pParams->pszHostname,
                     pParams->pszDomainName,
                     NULL /* Org Unit */);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -600,6 +614,15 @@ VmwDeploySetupClient(
             "Joining system to domain [%s]",
             VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszDomainName));
 
+    dwError = VmwDeployValidateHostname(pParams->pszHostname);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    if (pParams->pszMachineAccount)
+    {
+        dwError = VmwDeployValidateHostname(pParams->pszMachineAccount);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     VMW_DEPLOY_LOG_INFO(
             "Validating Domain credentials for user [%s@%s]",
             VMW_DEPLOY_SAFE_LOG_STRING(pszUsername),
@@ -632,7 +655,8 @@ VmwDeploySetupClient(
                     pParams->pszDomainName,
                     pszUsername,
                     pParams->pszPassword,
-                    pParams->pszHostname,
+                    pParams->pszMachineAccount ?
+                            pParams->pszMachineAccount : pParams->pszHostname,
                     NULL, /* Org Unit */
                     0     /* Flags    */);
     BAIL_ON_DEPLOY_ERROR(dwError);
