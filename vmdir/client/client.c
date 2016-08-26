@@ -120,7 +120,7 @@ _VmDirAllocateSuperLogEntryLdapOperationArray(
 
 static
 DWORD
-_VmDirMapVersionToDFL(
+_VmDirMapVersionToMaxDFL(
     PCSTR pszLocalVersion,
     PDWORD pdwDFL
     );
@@ -5249,7 +5249,7 @@ VmDirGetDCNodesVersion (
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // Update max DFL to lower value
-        dwError = _VmDirMapVersionToDFL(pszThisVer, &dwCurDfl );
+        dwError = _VmDirMapVersionToMaxDFL(pszThisVer, &dwCurDfl );
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // MaxDFL of zero has not been set.
@@ -5346,7 +5346,7 @@ error:
 
 static
 DWORD
-_VmDirMapVersionToDFL(
+_VmDirMapVersionToMaxDFL(
     PCSTR	pszVersion,
     PDWORD	pdwDFL
     )
@@ -5631,8 +5631,8 @@ _VmDirJoinPreCondition(
     )
 {
     DWORD   dwError = 0;
-    DWORD   dwDfl = 0;
     PSTR    pszVersion = NULL;
+    int     iVerCmp65 = 0;
     PSTR    pszSchemaFile = NULL;
     PVMDIR_CONNECTION   pConnection = NULL;
     PVDIR_LDAP_SCHEMA   pFileSchema = NULL;
@@ -5657,15 +5657,13 @@ _VmDirJoinPreCondition(
     dwError = VmDirLdapSchemaLoadFile(pFileSchema, pszSchemaFile);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // determine DFL version of remote node
+    // get PSC version of remote node
     dwError = VmDirGetPSCVersionInternal(pConnection->pLd, &pszVersion);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VmDirMapVersionToDFL(pszVersion, &dwDfl);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     // patch remote node so its schema is union of itself and file
-    if (dwDfl < 2)
+    iVerCmp65 = VmDirCompareVersion(pszVersion, "6.5");
+    if (iVerCmp65 < 0)
     {
         dwError = VmDirAllocateStringAVsnprintf(&pszErrMsg,
                 "Partner version %s < 6.5.0. "
@@ -5676,7 +5674,7 @@ _VmDirJoinPreCondition(
         dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-    else if (dwDfl < 3)
+    else if (iVerCmp65 == 0)
     {
         dwError = VmDirPatchRemoteSubSchemaSubEntry(
                 pConnection->pLd, pFileSchema);
