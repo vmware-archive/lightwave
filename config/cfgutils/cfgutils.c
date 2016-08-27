@@ -57,6 +57,12 @@ VmwDeploySetupClient(
 
 static
 DWORD
+VmwDeployDisableAfdListener(
+    void
+    );
+
+static
+DWORD
 VmwDeployGetVmDirConfigPath(
     PSTR* ppszPath
     );
@@ -144,6 +150,10 @@ VmwDeployFreeSetupParams(
     if (pParams->pszHostname)
     {
         VmwDeployFreeMemory(pParams->pszHostname);
+    }
+    if (pParams->pszMachineAccount)
+    {
+        VmwDeployFreeMemory(pParams->pszMachineAccount);
     }
     if (pParams->pszDomainName)
     {
@@ -477,11 +487,33 @@ VmwDeploySetupClientWithDC(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    dwError = VmwDeployValidateHostname(pParams->pszHostname);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    if (pParams->pszMachineAccount)
+    {
+        dwError = VmwDeployValidateHostname(pParams->pszMachineAccount);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     dwError = VmwDeployValidatePartnerCredentials(
                     pParams->pszServer,
                     pParams->pszPassword,
                     pParams->pszDomainName);
     BAIL_ON_DEPLOY_ERROR(dwError);
+
+    if (pParams->bDisableAfdListener)
+    {
+        VMW_DEPLOY_LOG_INFO("Disabling AFD Listener");
+
+        dwError = VmwDeployDisableAfdListener();
+        BAIL_ON_DEPLOY_ERROR(dwError);
+
+        VMW_DEPLOY_LOG_INFO("Stopping the VMAFD Service...");
+
+        dwError = VmwDeployStopService(VMW_VMAFD_SVC_NAME);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
 
     for (; iSvc < sizeof(ppszServices)/sizeof(ppszServices[0]); iSvc++)
     {
@@ -515,7 +547,8 @@ VmwDeploySetupClientWithDC(
                     pParams->pszServer,
                     pszUsername,
                     pParams->pszPassword,
-                    pParams->pszHostname,
+                    pParams->pszMachineAccount ?
+                            pParams->pszMachineAccount : pParams->pszHostname,
                     pParams->pszDomainName,
                     NULL /* Org Unit */);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -600,6 +633,15 @@ VmwDeploySetupClient(
             "Joining system to domain [%s]",
             VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszDomainName));
 
+    dwError = VmwDeployValidateHostname(pParams->pszHostname);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    if (pParams->pszMachineAccount)
+    {
+        dwError = VmwDeployValidateHostname(pParams->pszMachineAccount);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     VMW_DEPLOY_LOG_INFO(
             "Validating Domain credentials for user [%s@%s]",
             VMW_DEPLOY_SAFE_LOG_STRING(pszUsername),
@@ -610,6 +652,19 @@ VmwDeploySetupClient(
                     pszUsername,
                     pParams->pszPassword);
     BAIL_ON_DEPLOY_ERROR(dwError);
+
+    if (pParams->bDisableAfdListener)
+    {
+        VMW_DEPLOY_LOG_INFO("Disabling AFD Listener");
+
+        dwError = VmwDeployDisableAfdListener();
+        BAIL_ON_DEPLOY_ERROR(dwError);
+
+        VMW_DEPLOY_LOG_INFO("Stopping the VMAFD Service...");
+
+        dwError = VmwDeployStopService(VMW_VMAFD_SVC_NAME);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
 
     for (; iSvc < sizeof(ppszServices)/sizeof(ppszServices[0]); iSvc++)
     {
@@ -632,7 +687,8 @@ VmwDeploySetupClient(
                     pParams->pszDomainName,
                     pszUsername,
                     pParams->pszPassword,
-                    pParams->pszHostname,
+                    pParams->pszMachineAccount ?
+                            pParams->pszMachineAccount : pParams->pszHostname,
                     NULL, /* Org Unit */
                     0     /* Flags    */);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -691,6 +747,72 @@ cleanup:
     if (pszDC)
     {
         VmwDeployFreeMemory(pszDC);
+    }
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmwDeployDisableAfdListener(
+    void
+    )
+{
+    DWORD dwError = 0;
+    HANDLE hConnection = NULL;
+    HKEY   hRootKey = NULL;
+    HKEY   hParamKey = NULL;
+    DWORD  dwValue = 0;
+
+    dwError = RegOpenServer(&hConnection);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = RegOpenKeyExA(
+                    hConnection,
+                    NULL,
+                    "HKEY_THIS_MACHINE",
+                    0,
+                    KEY_READ,
+                    &hRootKey);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = RegOpenKeyExA(
+                    hConnection,
+                    hRootKey,
+                    "Services\\vmafd\\Parameters",
+                    0,
+                    KEY_SET_VALUE,
+                    &hParamKey);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = RegSetValueExA(
+                    hConnection,
+                    hParamKey,
+                    "EnableDCERPC",
+                    0,
+                    REG_DWORD,
+                    (PBYTE)&dwValue,
+                    sizeof(dwValue));
+     BAIL_ON_DEPLOY_ERROR(dwError);
+
+cleanup:
+
+    if (hConnection)
+    {
+        if (hParamKey)
+        {
+            RegCloseKey(hConnection, hParamKey);
+        }
+        if (hRootKey)
+        {
+            RegCloseKey(hConnection, hRootKey);
+        }
+
+        RegCloseServer(hConnection);
     }
 
     return dwError;

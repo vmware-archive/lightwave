@@ -29,7 +29,9 @@ DWORD
 VmwDeployBuildParams(
     PCSTR pszDomainController,
     PCSTR pszDomain,
+    PCSTR pszMachineAccount,
     PCSTR pszPassword,
+    BOOLEAN bDisableAfdListener,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     );
 
@@ -187,13 +189,16 @@ ParseArgs(
     DWORD dwError     = 0;
     PSTR  pszDomainController   = NULL;
     PSTR  pszDomain = NULL;
+    PSTR  pszMachineAccount = NULL;
     PSTR  pszPassword = NULL;
+    BOOLEAN bDisableAfdListener = FALSE;
     enum PARSE_MODE
     {
         PARSE_MODE_OPEN = 0,
         PARSE_MODE_DOMAIN_CONTROLLER,
         PARSE_MODE_DOMAIN,
         PARSE_MODE_PASSWORD,
+        PARSE_MODE_MACHINE_ACCOUNT
     } parseMode = PARSE_MODE_OPEN;
     int iArg = 0;
     PVMW_IC_SETUP_PARAMS pSetupParams = NULL;
@@ -216,6 +221,14 @@ ParseArgs(
                 else if (!strcmp(pszArg, "--domain"))
                 {
                     parseMode = PARSE_MODE_DOMAIN;
+                }
+                else if (!strcmp(pszArg, "--machine-account-name"))
+                {
+                	parseMode = PARSE_MODE_MACHINE_ACCOUNT;
+                }
+                else if (!strcmp(pszArg, "--disable-afd-listener"))
+                {
+                        bDisableAfdListener = TRUE;
                 }
                 else if (!strcmp(pszArg, "--help"))
                 {
@@ -272,6 +285,20 @@ ParseArgs(
 
                 break;
 
+            case PARSE_MODE_MACHINE_ACCOUNT:
+
+                if (pszMachineAccount)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszMachineAccount = pszArg;
+
+                parseMode = PARSE_MODE_OPEN;
+
+                break;
+
             default:
 
                 dwError = ERROR_INVALID_PARAMETER;
@@ -284,7 +311,9 @@ ParseArgs(
     dwError = VmwDeployBuildParams(
                     pszDomainController,
                     pszDomain,
+                    pszMachineAccount,
                     pszPassword,
+                    bDisableAfdListener,
                     &pSetupParams);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
@@ -311,7 +340,9 @@ DWORD
 VmwDeployBuildParams(
     PCSTR pszDomainController,
     PCSTR pszDomain,
+    PCSTR pszMachineAccount,
     PCSTR pszPassword,
+    BOOLEAN bDisableAfdListener,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     )
 {
@@ -347,6 +378,14 @@ VmwDeployBuildParams(
                         &pSetupParams->pszDomainName);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
+    if (!IsNullOrEmptyString(pszMachineAccount))
+    {
+    	dwError = VmwDeployAllocateStringA(
+    					pszMachineAccount,
+    					&pSetupParams->pszMachineAccount);
+    	BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     if (!pszPassword)
     {
         dwError = VmwDeployReadPassword(
@@ -360,6 +399,8 @@ VmwDeployBuildParams(
 
     dwError = VmwDeployAllocateStringA(pszPassword, &pSetupParams->pszPassword);
     BAIL_ON_DEPLOY_ERROR(dwError);
+
+    pSetupParams->bDisableAfdListener = bDisableAfdListener;
 
     *ppSetupParams = pSetupParams;
 
@@ -475,5 +516,7 @@ ShowUsage(
            "Arguments:\n"
            "[--domain-controller <domain controller's hostname or IP Address>]\n"
            "[--domain    <fully qualified domain name. default: vsphere.local>]\n"
+    	   "[--machine-account-name <preferred computer account name. default: <hostname>\n"
+           "[--disable-afd-listener]\n"
            "[--password  <password to administrator account>]\n");
 }

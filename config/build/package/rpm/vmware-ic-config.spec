@@ -106,7 +106,7 @@ cd build && make install DESTDIR=%{buildroot}
 
     fi
 
-c%postun
+%postun
 
     /sbin/ldconfig
 
