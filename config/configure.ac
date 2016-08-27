@@ -127,6 +127,8 @@ saved_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS $LW_INCLUDES $OPENSSL_INCLUDES"
 AC_CHECK_HEADERS(lw/base.h lw/types.h uuid/uuid.h lwrpcrt/lwrpcrt.h dce/rpc.h)
 AC_CHECK_HEADERS(lwsm/lwsm.h)
+AC_CHECK_HEADERS(reg/lwreg.h)
+AC_CHECK_HEADERS(reg/regutil.h)
 CPPFLAGS="$saved_CPPFLAGS"
 
 # VMDIR component

@@ -57,6 +57,12 @@ VmwDeploySetupClient(
 
 static
 DWORD
+VmwDeployDisableAfdListener(
+    void
+    );
+
+static
+DWORD
 VmwDeployGetVmDirConfigPath(
     PSTR* ppszPath
     );
@@ -496,6 +502,19 @@ VmwDeploySetupClientWithDC(
                     pParams->pszDomainName);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
+    if (pParams->bDisableAfdListener)
+    {
+        VMW_DEPLOY_LOG_INFO("Disabling AFD Listener");
+
+        dwError = VmwDeployDisableAfdListener();
+        BAIL_ON_DEPLOY_ERROR(dwError);
+
+        VMW_DEPLOY_LOG_INFO("Stopping the VMAFD Service...");
+
+        dwError = VmwDeployStopService(VMW_VMAFD_SVC_NAME);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     for (; iSvc < sizeof(ppszServices)/sizeof(ppszServices[0]); iSvc++)
     {
         PCSTR pszService = ppszServices[iSvc];
@@ -634,6 +653,19 @@ VmwDeploySetupClient(
                     pParams->pszPassword);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
+    if (pParams->bDisableAfdListener)
+    {
+        VMW_DEPLOY_LOG_INFO("Disabling AFD Listener");
+
+        dwError = VmwDeployDisableAfdListener();
+        BAIL_ON_DEPLOY_ERROR(dwError);
+
+        VMW_DEPLOY_LOG_INFO("Stopping the VMAFD Service...");
+
+        dwError = VmwDeployStopService(VMW_VMAFD_SVC_NAME);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     for (; iSvc < sizeof(ppszServices)/sizeof(ppszServices[0]); iSvc++)
     {
         PCSTR pszService = ppszServices[iSvc];
@@ -715,6 +747,72 @@ cleanup:
     if (pszDC)
     {
         VmwDeployFreeMemory(pszDC);
+    }
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmwDeployDisableAfdListener(
+    void
+    )
+{
+    DWORD dwError = 0;
+    HANDLE hConnection = NULL;
+    HKEY   hRootKey = NULL;
+    HKEY   hParamKey = NULL;
+    DWORD  dwValue = 0;
+
+    dwError = RegOpenServer(&hConnection);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = RegOpenKeyExA(
+                    hConnection,
+                    NULL,
+                    "HKEY_THIS_MACHINE",
+                    0,
+                    KEY_READ,
+                    &hRootKey);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = RegOpenKeyExA(
+                    hConnection,
+                    hRootKey,
+                    "Services\\vmafd\\Parameters",
+                    0,
+                    KEY_SET_VALUE,
+                    &hParamKey);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = RegSetValueExA(
+                    hConnection,
+                    hParamKey,
+                    "EnableDCERPC",
+                    0,
+                    REG_DWORD,
+                    (PBYTE)&dwValue,
+                    sizeof(dwValue));
+     BAIL_ON_DEPLOY_ERROR(dwError);
+
+cleanup:
+
+    if (hConnection)
+    {
+        if (hParamKey)
+        {
+            RegCloseKey(hConnection, hParamKey);
+        }
+        if (hRootKey)
+        {
+            RegCloseKey(hConnection, hRootKey);
+        }
+
+        RegCloseServer(hConnection);
     }
 
     return dwError;
