@@ -1,7 +1,6 @@
 [Unit]
 Description=Lightwave Server Configuration Service
-After=syslog.target network.target lwsmd.service
-Requires=lwsmd.service
+After=syslog.target network.target
 
 [Service]
 Type=oneshot
