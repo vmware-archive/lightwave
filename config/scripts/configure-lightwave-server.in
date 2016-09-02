@@ -1,5 +1,16 @@
 #!/bin/bash
 
+LW_BIN_DIR=/opt/likewise/bin
+LW_SBIN_DIR=/opt/likewise/sbin
+
+_exit(){
+    if [ $RUN_LWSM ]; then
+        $LW_BIN_DIR/lwsm shutdown
+    fi
+    
+    exit $1
+}
+
 #
 # Main
 #
@@ -195,10 +206,19 @@ fi
 
 # Setup vmafd, vmdir and SSO STS server.
 JAVA_HOME=@JAVA_HOME@
-CLASSPATH=$CLASSPATH:/opt/vmware/jars/*
 JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
-
+VMWARE_DIR=/opt/vmware
+CLASSPATH=$CLASSPATH:$VMWARE_DIR/jars/*
+BIN_DIR=$VMWARE_DIR/bin
+SBIN_DIR=$VMWARE_DIR/sbin
 LOTUS_DNS_FORWARDERS_ARG=
+VMAFD_PARAM_KEY="[HKEY_THIS_MACHINE\\Services\\vmafd\\Parameters]"
+
+# Start Likewise services
+if [ -z "`pidof lwsmd`" ]; then
+    $LW_SBIN_DIR/lwsmd --start-as-daemon --syslog
+    RUN_LWSM=1
+fi
 
 if [ ! -z "$LOTUS_DNS_FORWARDERS" ]; then
     LOTUS_DNS_FORWARDERS_ARG="--dns-forwarders $LOTUS_DNS_FORWARDERS"
@@ -207,42 +227,75 @@ fi
 case $DISABLE_DNS in
     1)
         echo "Disabling DNS Listener..."
-        /opt/likewise/bin/lwregshell set_value '[HKEY_THIS_MACHINE\Services\vmdns\Parameters]' EnableDNSProtocol 0
+        $LW_BIN_DIR/lwregshell set_value '[HKEY_THIS_MACHINE\Services\vmdns\Parameters]' EnableDNSProtocol 0
         if [ $? -ne 0 ]; then
             echo "Failed to disable DNS Listener"
-            exit 1
+            _exit 1
         fi
         ;;
     *)
         ;;
 esac
 
-case "$LOTUS_DEPLOYMENT" in
-    "standalone")
-        $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -cp $CLASSPATH \
-           com.vmware.pscsetup.PlatformServicesControllerDeploy \
-           --mode "standalone" --domain $LOTUS_DOMAIN_DEFAULT --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
-           --site $LOTUS_SITE_NAME \
-           --hostname $LOTUS_HOSTNAME \
-           $LOTUS_DNS_FORWARDERS_ARG
-           ;;
-    "partner")
-        $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -cp $CLASSPATH \
-           com.vmware.pscsetup.PlatformServicesControllerDeploy \
-           --mode "partner" --domain $LOTUS_DOMAIN_DEFAULT --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
-           --site $LOTUS_SITE_NAME \
-           --server $LOTUS_PARTNER_HOSTNAME \
-           --hostname $LOTUS_HOSTNAME \
-           $LOTUS_DNS_FORWARDERS_ARG
-           ;;
-esac
+# Check registry if this instance has already been deployed
+DOMAIN_STATE=`/opt/likewise/bin/lwregshell list_values "$VMAFD_PARAM_KEY" | \
+        grep -i 'DomainState' | sed -r 's/\+?[ \t]*//'`
 
-if [ $? -ne 0 ]; then
-     echo  "PSC Installation failed."
-     exit 1
+if [ ! -z "$DOMAIN_STATE" ]; then
+    # Get the hex value and convert it to integer
+    DOMAIN_STATE=$((`echo $DOMAIN_STATE | cut -d ' ' -f3`))
+
 fi
 
+# check if it's a promoted container
+if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ `pidof init` -eq 1 ]]; then
 
-echo "Setup complete."
-exit 0
+    # perform vmdir upgrade
+    $BIN_DIR/vmdir_upgrade.sh --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
+                              --domainname $LOTUS_DOMAIN_DEFAULT
 
+    if [ $? -ne 0 ]; then
+        echo  "Upgrade failed."
+        _exit 1
+    fi
+
+    # perform vmidentity upgrade
+    #
+
+    # Upgrade successful, restart lwsm to insure all changes are applied and node is replicating
+    if [ -z $RUN_LWSM ]; then
+        systemctl restart lwsmd
+    fi
+    
+    echo "Upgrade complete."
+    exit 0
+
+else
+    case "$LOTUS_DEPLOYMENT" in
+        "standalone")
+            $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -cp $CLASSPATH \
+                                com.vmware.pscsetup.PlatformServicesControllerDeploy \
+                                --mode "standalone" --domain $LOTUS_DOMAIN_DEFAULT --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
+                                --site $LOTUS_SITE_NAME \
+                                --hostname $LOTUS_HOSTNAME \
+                                $LOTUS_DNS_FORWARDERS_ARG
+            ;;
+        "partner")
+            $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -cp $CLASSPATH \
+                                com.vmware.pscsetup.PlatformServicesControllerDeploy \
+                                --mode "partner" --domain $LOTUS_DOMAIN_DEFAULT --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
+                                --site $LOTUS_SITE_NAME \
+                                --server $LOTUS_PARTNER_HOSTNAME \
+                                --hostname $LOTUS_HOSTNAME \
+                                $LOTUS_DNS_FORWARDERS_ARG
+            ;;
+    esac
+
+    if [ $? -ne 0 ]; then
+        echo  "PSC Installation failed."
+        _exit 1
+    fi
+
+    echo "Setup complete."
+    _exit 0
+fi
