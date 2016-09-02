@@ -19,10 +19,18 @@ public class DeployUtilsParamsNative extends Structure {
 	public String pszServer;
 	public String pszSite;
         public String pszDNSForwarders;
+        public String pszSubjectName;
+        public String pszSubjectAltName;
         public int    bDisableVmAfdListener;
 
-	public DeployUtilsParamsNative(String hostname, String domainName,
-			String password, int mode, String server, String site, String forwarders) {
+	public DeployUtilsParamsNative(
+	        String hostname,
+	        String domainName,
+			String password,
+			int mode,
+			String server,
+			String site,
+			String forwarders) {
 
 		this.pszHostname = hostname;
                 this.pszMachineAccount = "";
@@ -38,8 +46,15 @@ public class DeployUtilsParamsNative extends Structure {
 
 	@Override
 	protected List<String> getFieldOrder() {
-		return Arrays.asList(new String[] { "pszHostname", "pszMachineAccount", "pszDomainName",
-				"pszPassword", "dir_svc_mode", "pszServer", "pszSite", "pszDNSForwarders", "bDisableVmAfdListener" });
+		return Arrays.asList(new String[] {
+		        "pszHostname",
+		        "pszDomainName",
+				"pszPassword",
+				"dir_svc_mode",
+				"pszServer",
+				"pszSite",
+				"pszDNSForwarders",
+				"pszSubjectName",
+				"pszSubjectAltName"});
 	}
-
 }

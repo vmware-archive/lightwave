@@ -222,7 +222,8 @@ VmwDeployCreateMachineSSLCert(
     PCSTR pszDomain,
     PCSTR pszUsername,
     PCSTR pszPassword,
-    PCSTR pszHostname,
+    PCSTR pszSubjectName,
+    PCSTR pszSubjectAltName,
     PSTR* ppszPrivateKey,
     PSTR* ppszCert
     )
@@ -248,7 +249,13 @@ VmwDeployCreateMachineSSLCert(
     if (IsNullOrEmptyString(pszServername) ||
         IsNullOrEmptyString(pszUsername) ||
         !pszPassword ||
-        IsNullOrEmptyString(pszHostname))
+        IsNullOrEmptyString(pszSubjectName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    if (pszSubjectAltName && !VmwDeployIsIPAddress(pszSubjectAltName))
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_DEPLOY_ERROR(dwError);
@@ -275,22 +282,22 @@ VmwDeployCreateMachineSSLCert(
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     dwError = VMCAInitPKCS10DataA(
-                    pszHostname,
+                    pszSubjectName,
                     pszOrganization,
                     pszOU,
                     pszState,
                     pszCountry,
                     pszEmail,
-                    VmwDeployIsIPAddress(pszHostname) ? pszHostname : NULL,
+                    pszSubjectAltName,
                     pCertRequest);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
-    if (!VmwDeployIsIPAddress(pszHostname))
+    if (!VmwDeployIsIPAddress(pszSubjectName))
     {
         dwError = VMCASetCertValueA(
                               VMCA_OID_DNS,
                               pCertRequest,
-                              (PSTR)pszHostname
+                              (PSTR)pszSubjectName
                               );
         BAIL_ON_DEPLOY_ERROR(dwError);
     }

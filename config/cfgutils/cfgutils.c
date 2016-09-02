@@ -171,6 +171,18 @@ VmwDeployFreeSetupParams(
     {
         VmwDeployFreeMemory(pParams->pszSite);
     }
+    if (pParams->pszDNSForwarders)
+    {
+        VmwDeployFreeMemory(pParams->pszDNSForwarders);
+    }
+    if (pParams->pszSubjectName)
+    {
+        VmwDeployFreeMemory(pParams->pszSubjectName);
+    }
+    if (pParams->pszSubjectAltName)
+    {
+        VmwDeployFreeMemory(pParams->pszSubjectAltName);
+    }
     VmwDeployFreeMemory(pParams);
 }
 
@@ -394,7 +406,9 @@ VmwDeploySetupServerCommon(
                     pParams->pszDomainName,
                     pszUsername,
                     pParams->pszPassword,
-                    pParams->pszHostname,
+                    pParams->pszSubjectName ?
+                            pParams->pszSubjectName : pParams->pszHostname,
+                    pParams->pszSubjectAltName,
                     &pszPrivateKey,
                     &pszSSLCert);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -577,7 +591,9 @@ VmwDeploySetupClientWithDC(
                     pParams->pszDomainName,
                     pszUsername,
                     pParams->pszPassword,
-                    pParams->pszHostname,
+                    pParams->pszSubjectName ?
+                            pParams->pszSubjectName : pParams->pszHostname,
+                    pParams->pszSubjectAltName,
                     &pszPrivateKey,
                     &pszSSLCert);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -688,7 +704,7 @@ VmwDeploySetupClient(
                     pszUsername,
                     pParams->pszPassword,
                     pParams->pszMachineAccount ?
-                            pParams->pszMachineAccount : pParams->pszHostname,
+                        pParams->pszMachineAccount : pParams->pszHostname,
                     NULL, /* Org Unit */
                     0     /* Flags    */);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -720,7 +736,9 @@ VmwDeploySetupClient(
                     pParams->pszDomainName,
                     pszUsername,
                     pParams->pszPassword,
-                    pParams->pszHostname,
+                    pParams->pszSubjectName ?
+                            pParams->pszSubjectName : pParams->pszHostname,
+                    pParams->pszSubjectAltName,
                     &pszPrivateKey,
                     &pszSSLCert);
     BAIL_ON_DEPLOY_ERROR(dwError);

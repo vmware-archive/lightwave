@@ -59,6 +59,8 @@ typedef struct _VMW_IC_SETUP_PARAMS
     PSTR pszSite;
 
     PSTR pszDNSForwarders;
+    PSTR pszSubjectName;
+    PSTR pszSubjectAltName;
 
     BOOLEAN bDisableAfdListener;
 
