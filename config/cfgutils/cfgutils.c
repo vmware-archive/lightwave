@@ -171,6 +171,14 @@ VmwDeployFreeSetupParams(
     {
         VmwDeployFreeMemory(pParams->pszSite);
     }
+    if (pParams->pszDNSForwarders)
+    {
+        VmwDeployFreeMemory(pParams->pszDNSForwarders);
+    }
+    if (pParams->pszSubjectAltName)
+    {
+        VmwDeployFreeMemory(pParams->pszSubjectAltName);
+    }
     VmwDeployFreeMemory(pParams);
 }
 
@@ -395,6 +403,8 @@ VmwDeploySetupServerCommon(
                     pszUsername,
                     pParams->pszPassword,
                     pParams->pszHostname,
+                    pParams->pszSubjectAltName ?
+                        pParams->pszSubjectAltName : pParams->pszHostname,
                     &pszPrivateKey,
                     &pszSSLCert);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -578,6 +588,8 @@ VmwDeploySetupClientWithDC(
                     pszUsername,
                     pParams->pszPassword,
                     pParams->pszHostname,
+                    pParams->pszSubjectAltName ?
+                        pParams->pszSubjectAltName : pParams->pszHostname,
                     &pszPrivateKey,
                     &pszSSLCert);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -688,7 +700,7 @@ VmwDeploySetupClient(
                     pszUsername,
                     pParams->pszPassword,
                     pParams->pszMachineAccount ?
-                            pParams->pszMachineAccount : pParams->pszHostname,
+                        pParams->pszMachineAccount : pParams->pszHostname,
                     NULL, /* Org Unit */
                     0     /* Flags    */);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -721,6 +733,8 @@ VmwDeploySetupClient(
                     pszUsername,
                     pParams->pszPassword,
                     pParams->pszHostname,
+                    pParams->pszSubjectAltName ?
+                        pParams->pszSubjectAltName : pParams->pszHostname,
                     &pszPrivateKey,
                     &pszSSLCert);
     BAIL_ON_DEPLOY_ERROR(dwError);

@@ -40,7 +40,8 @@ VmwDeployCreateMachineSSLCert(
     PCSTR pszDomain,
     PCSTR pszUsername,
     PCSTR pszPassword,
-    PCSTR pszHostname,
+    PCSTR pszSubjectName,
+    PCSTR pszSubjectAltName,
     PSTR* ppszPrivateKey,
     PSTR* ppszCert
     );
