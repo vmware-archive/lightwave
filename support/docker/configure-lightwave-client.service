@@ -1,0 +1,12 @@
+[Unit]
+Description=Lightwave Client Configuration Service
+After=syslog.target network.target lwsmd.service
+Requires=lwsmd.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/vmware/bin/ic-join --help
+
+[Install]
+WantedBy=multi-user.target
