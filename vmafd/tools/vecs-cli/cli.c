@@ -503,7 +503,7 @@ VecsCliGetCertificateA(
     {
         fprintf(
             stream,
-            "%s\n",
+            "%s",
             pCertEntry->pszCertificate?pCertEntry->pszCertificate:""
             );
 
@@ -517,7 +517,7 @@ VecsCliGetCertificateA(
     {
         fprintf (
               stdout,
-              "%s\n",
+              "%s",
               pCertEntry->pszCertificate?pCertEntry->pszCertificate:""
               );
     }
@@ -622,7 +622,7 @@ DWORD VecsCliGetKeyA(
     {
         fprintf(
             stream,
-            "%s\n",
+            "%s",
             pszKey?pszKey:""
             );
 
@@ -636,7 +636,7 @@ DWORD VecsCliGetKeyA(
     {
         fprintf (
               stdout,
-              "%s\n",
+              "%s",
               pszKey?pszKey:""
               );
     }
