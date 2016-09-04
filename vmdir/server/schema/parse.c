@@ -46,8 +46,9 @@ VmDirSchemaATDescCreate(
     pATDesc->ppszUniqueScopes = pLdapAt->ppszUniqueScopes;
     pATDesc->pLdapAt = pLdapAt;
 
-    pATDesc->pSyntax =
-            VdirSyntaxLookupByOid(pATDesc->pszSyntaxOid);
+    dwError = VdirSyntaxLookupByOid(pATDesc->pszSyntaxOid, &pATDesc->pSyntax);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     pATDesc->pEqualityMR =
             VdirEqualityMRLookupBySyntaxOid(pATDesc->pszSyntaxOid);
     pATDesc->pOrderingMR =

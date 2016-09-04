@@ -154,14 +154,12 @@ VdirEqualityMatchingRuleLoad(
 
     for (dwCnt = 0; dwCnt < gVdirMatchingRuleGlobals.usEqualityMRSize; dwCnt++)
     {
-        PVDIR_SYNTAX_DESC pSyntax = VdirSyntaxLookupByOid(
-                gVdirMatchingRuleGlobals.pEqualityMatchingRule[dwCnt].pszSyntaxOid);
+        PSTR pszOid = gVdirMatchingRuleGlobals.pEqualityMatchingRule[dwCnt].pszSyntaxOid;
+        PVDIR_SYNTAX_DESC pSyntax = NULL;
 
-        if (!pSyntax)
-        {
-            dwError = ERROR_INVALID_SCHEMA;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
+        dwError = VdirSyntaxLookupByOid(pszOid, &pSyntax);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         gVdirMatchingRuleGlobals.pEqualityMatchingRule[dwCnt].pSyntax = pSyntax;
     }
 
@@ -209,14 +207,12 @@ VdirOrderingMatchingRuleLoad(
 
     for (dwCnt = 0; dwCnt < gVdirMatchingRuleGlobals.usOrderingMRSize; dwCnt++)
     {
-        PVDIR_SYNTAX_DESC pSyntax = VdirSyntaxLookupByOid(
-                gVdirMatchingRuleGlobals.pOrderingMatchingRule[dwCnt].pszSyntaxOid);
+        PSTR pszOid = gVdirMatchingRuleGlobals.pOrderingMatchingRule[dwCnt].pszSyntaxOid;
+        PVDIR_SYNTAX_DESC pSyntax = NULL;
 
-        if (!pSyntax)
-        {
-            dwError = ERROR_INVALID_SCHEMA;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
+        dwError = VdirSyntaxLookupByOid(pszOid, &pSyntax);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         gVdirMatchingRuleGlobals.pOrderingMatchingRule[dwCnt].pSyntax = pSyntax;
     }
 
@@ -264,14 +260,12 @@ VdirSubstrMatchingRuleLoad(
 
     for (dwCnt = 0; dwCnt < gVdirMatchingRuleGlobals.usSubstrMRSize; dwCnt++)
     {
-        PVDIR_SYNTAX_DESC pSyntax = VdirSyntaxLookupByOid(
-                gVdirMatchingRuleGlobals.pSubstrMatchingRule[dwCnt].pszSyntaxOid);
+        PSTR pszOid = gVdirMatchingRuleGlobals.pSubstrMatchingRule[dwCnt].pszSyntaxOid;
+        PVDIR_SYNTAX_DESC pSyntax = NULL;
 
-        if (!pSyntax)
-        {
-            dwError = ERROR_INVALID_SCHEMA;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
+        dwError = VdirSyntaxLookupByOid(pszOid, &pSyntax);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         gVdirMatchingRuleGlobals.pSubstrMatchingRule[dwCnt].pSyntax = pSyntax;
     }
 

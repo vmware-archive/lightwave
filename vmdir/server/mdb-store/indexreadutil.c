@@ -819,6 +819,18 @@ MdbScanIndex(
                 break;  // break loop if no more cursor data
             }
 
+            // In case of exact match, check if we passed the key that we are looking for
+            if (bIsExactMatch)
+            {
+                if (pKey->mv_size != currKey.mv_size ||
+                    memcmp(pKey->mv_data, currKey.mv_data, pKey->mv_size))
+                {
+                    // Note: this check is normally not necessary, but for some edge cases
+                    // where mdb_cursor_get does not return MDB_NOTFOUND
+                    break;
+                }
+            }
+
             // In case of partial match, check if we are passed the partial key match that we are looking for.
             if (bIsPartialMatch && memcmp(pKey->mv_data, currKey.mv_data, pKey->mv_size) != 0)
             {

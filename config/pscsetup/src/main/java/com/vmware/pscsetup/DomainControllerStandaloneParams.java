@@ -11,6 +11,7 @@ public class DomainControllerStandaloneParams {
     private String site;
     private String domainName;
     private String dns_forwarders;
+    private String subjectAltName;
 
     public String getDomainName() {
 	return domainName;
@@ -50,5 +51,13 @@ public class DomainControllerStandaloneParams {
 
     public String getDNSForwarders() {
         return dns_forwarders;
+    }
+
+    public void setSubjectAltName(String subject) {
+        this.subjectAltName = subject;
+    }
+
+    public String getSubjectAltName() {
+        return subjectAltName;
     }
 }

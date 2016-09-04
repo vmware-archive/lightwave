@@ -107,8 +107,8 @@ the buffer size will always be adequate.
     } \
 }
 
-#define VMDIR_DEFAULT_SERVICE_PRINCIPAL_INITIALIZER { "ldap", "vmca", "host" }
-#define VMDIR_CLIENT_SERVICE_PRINCIPAL_INITIALIZER { "host" }
+#define VMDIR_DEFAULT_SERVICE_PRINCIPAL_INITIALIZER { "ldap", "vmca", "host", "http" }
+#define VMDIR_CLIENT_SERVICE_PRINCIPAL_INITIALIZER { "host", "http" }
 
 // Error handling
 // vmdir ldap error space using macros defined in ldap.h

@@ -136,43 +136,75 @@
    UTC Time                        Y  1.3.6.1.4.1.1466.115.121.1.53
  */
 
-#define VDIR_SYNTAX_ATTRIBUTE_TYPE_DESC   "Attribute Type Description"
-#define VDIR_SYNTAX_BINARY                "Binary"
-#define VDIR_SYNTAX_BIT_STRING            "Bit String"
-#define VDIR_SYNTAX_BOOLEAN               "Boolean"
-#define VDIR_SYNTAX_DN                    "DN"
-#define VDIR_SYNTAX_DIRECTORY_STRING      "Directory String"
-#define VDIR_SYNTAX_FAX_NUMBER            "Facsimile Telephone Number"
-#define VDIR_SYNTAX_GEN_TIME              "Generalized Time"
-#define VDIR_SYNTAX_IA5_STRING            "IA5 String"
-#define VDIR_SYNTAX_INTERGER              "INTEGER"
-#define VDIR_SYNTAX_NUMERIC_STRING        "Numeric String"
-#define VDIR_SYNTAX_OBJECTCLASS_DESC      "Object Class Description"
-#define VDIR_SYNTAX_OCTET_STRING          "Octet String"
-#define VDIR_SYNTAX_OID                   "OID"
-#define VDIR_SYNTAX_POSTAL_ADDRESS        "Postal Address"
-#define VDIR_SYNTAX_PRINTABLE_STRING      "Printable String"
-#define VDIR_SYNTAX_TELEPHONE_NUMBER      "Telephone Number"
-#define VDIR_SYNTAX_UTC_TIME              "UCT Time"
+// RFC Syntaxes
+#define VDIR_SYNTAX_ATTRIBUTE_TYPE_DESC     "Attribute Type Description"
+#define VDIR_SYNTAX_BINARY                  "Binary"
+#define VDIR_SYNTAX_BIT_STRING              "Bit String"
+#define VDIR_SYNTAX_BOOLEAN                 "Boolean"
+#define VDIR_SYNTAX_DN                      "DN"
+#define VDIR_SYNTAX_DIRECTORY_STRING        "Directory String"
+#define VDIR_SYNTAX_DIT_STRUCTURE_RULE_DESC "DIT Structure Rule Description"
+#define VDIR_SYNTAX_ENHANCED_GUID           "Enhanced Guide"
+#define VDIR_SYNTAX_FAX_NUMBER              "Facsimile Telephone Number"
+#define VDIR_SYNTAX_GEN_TIME                "Generalized Time"
+#define VDIR_SYNTAX_IA5_STRING              "IA5 String"
+#define VDIR_SYNTAX_INTERGER                "INTEGER"
+#define VDIR_SYNTAX_NAME_FORM_DESC          "Name Form Description"
+#define VDIR_SYNTAX_NUMERIC_STRING          "Numeric String"
+#define VDIR_SYNTAX_OBJECTCLASS_DESC        "Object Class Description"
+#define VDIR_SYNTAX_OCTET_STRING            "Octet String"
+#define VDIR_SYNTAX_OID                     "OID"
+#define VDIR_SYNTAX_POSTAL_ADDRESS          "Postal Address"
+#define VDIR_SYNTAX_PRESENTATION_ADDRESS    "Presentation Address"
+#define VDIR_SYNTAX_PRINTABLE_STRING        "Printable String"
+#define VDIR_SYNTAX_PROTOCOL_INFORMATION    "Protocol Information"
+#define VDIR_SYNTAX_SUPPORTED_ALGORITHM     "Supported Algorithm"
+#define VDIR_SYNTAX_TELEPHONE_NUMBER        "Telephone Number"
+#define VDIR_SYNTAX_UTC_TIME                "UTC Time"
+#define VDIR_SYNTAX_UUID                    "UUID"
 
-#define VDIR_OID_ATTRIBUTE_TYPE_DESC    "1.3.6.1.4.1.1466.115.121.1.3"
-#define VDIR_OID_BINARY                 "1.3.6.1.4.1.1466.115.121.1.5"
-#define VDIR_OID_BIT_STRING             "1.3.6.1.4.1.1466.115.121.1.6"
-#define VDIR_OID_BOOLEAN                "1.3.6.1.4.1.1466.115.121.1.7"
-#define VDIR_OID_DN                     "1.3.6.1.4.1.1466.115.121.1.12"
-#define VDIR_OID_DIRECTORY_STRING       "1.3.6.1.4.1.1466.115.121.1.15"
-#define VDIR_OID_FAX_NUMBER             "1.3.6.1.4.1.1466.115.121.1.22"
-#define VDIR_OID_GEN_TIME               "1.3.6.1.4.1.1466.115.121.1.24"
-#define VDIR_OID_IA5_STRING             "1.3.6.1.4.1.1466.115.121.1.26"
-#define VDIR_OID_INTERGER               "1.3.6.1.4.1.1466.115.121.1.27"
-#define VDIR_OID_NUMERIC_STRING         "1.3.6.1.4.1.1466.115.121.1.36"
-#define VDIR_OID_OBJECTCLASS_DESC       "1.3.6.1.4.1.1466.115.121.1.37"
-#define VDIR_OID_OCTET_STRING           "1.3.6.1.4.1.1466.115.121.1.40"
-#define VDIR_OID_OID                    "1.3.6.1.4.1.1466.115.121.1.38"
-#define VDIR_OID_POSTAL_ADDRESS         "1.3.6.1.4.1.1466.115.121.1.41"
-#define VDIR_OID_PRINTABLE_STRING       "1.3.6.1.4.1.1466.115.121.1.44"
-#define VDIR_OID_TELEPHONE_NUMBER       "1.3.6.1.4.1.1466.115.121.1.50"
-#define VDIR_OID_UTC_TIME               "1.3.6.1.4.1.1466.115.121.1.53"
+// AD Syntaxes
+#define VDIR_SYNTAX_LARGE_INTEGER           "LargeInteger"
+#define VDIR_SYNTAX_OBJECT_DN_BINARY        "Object(DN-Binary)"
+#define VDIR_SYNTAX_OBJECT_DN_STRING        "Object(DN-String)"
+#define VDIR_SYNTAX_OBJECT_REPLICA_LINK     "Object(Replica-Link)"
+#define VDIR_SYNTAX_STRING_NT_SEC_DESC      "String(NT-Sec-Desc)"
+#define VDIR_SYNTAX_STRING_TELETEX          "String(Teletex)"
+
+// RFC Syntax OIDs
+#define VDIR_OID_ATTRIBUTE_TYPE_DESC        "1.3.6.1.4.1.1466.115.121.1.3"
+#define VDIR_OID_BINARY                     "1.3.6.1.4.1.1466.115.121.1.5"
+#define VDIR_OID_BIT_STRING                 "1.3.6.1.4.1.1466.115.121.1.6"
+#define VDIR_OID_BOOLEAN                    "1.3.6.1.4.1.1466.115.121.1.7"
+#define VDIR_OID_DN                         "1.3.6.1.4.1.1466.115.121.1.12"
+#define VDIR_OID_DIRECTORY_STRING           "1.3.6.1.4.1.1466.115.121.1.15"
+#define VDIR_OID_DIT_STRUCTURE_RULE_DESC    "1.3.6.1.4.1.1466.115.121.1.17"
+#define VDIR_OID_ENHANCED_GUID              "1.3.6.1.4.1.1466.115.121.1.21"
+#define VDIR_OID_FAX_NUMBER                 "1.3.6.1.4.1.1466.115.121.1.22"
+#define VDIR_OID_GEN_TIME                   "1.3.6.1.4.1.1466.115.121.1.24"
+#define VDIR_OID_IA5_STRING                 "1.3.6.1.4.1.1466.115.121.1.26"
+#define VDIR_OID_INTERGER                   "1.3.6.1.4.1.1466.115.121.1.27"
+#define VDIR_OID_NAME_FORM_DESC             "1.3.6.1.4.1.1466.115.121.1.35"
+#define VDIR_OID_NUMERIC_STRING             "1.3.6.1.4.1.1466.115.121.1.36"
+#define VDIR_OID_OBJECTCLASS_DESC           "1.3.6.1.4.1.1466.115.121.1.37"
+#define VDIR_OID_OCTET_STRING               "1.3.6.1.4.1.1466.115.121.1.40"
+#define VDIR_OID_OID                        "1.3.6.1.4.1.1466.115.121.1.38"
+#define VDIR_OID_POSTAL_ADDRESS             "1.3.6.1.4.1.1466.115.121.1.41"
+#define VDIR_OID_PRESENTATION_ADDRESS       "1.3.6.1.4.1.1466.115.121.1.43"
+#define VDIR_OID_PRINTABLE_STRING           "1.3.6.1.4.1.1466.115.121.1.44"
+#define VDIR_OID_PROTOCOL_INFORMATION       "1.3.6.1.4.1.1466.115.121.1.42"
+#define VDIR_OID_SUPPORTED_ALGORITHM        "1.3.6.1.4.1.1466.115.121.1.49"
+#define VDIR_OID_TELEPHONE_NUMBER           "1.3.6.1.4.1.1466.115.121.1.50"
+#define VDIR_OID_UTC_TIME                   "1.3.6.1.4.1.1466.115.121.1.53"
+#define VDIR_OID_UUID                       "1.3.6.1.1.16.1"
+
+// AD Syntax OIDs
+#define VDIR_OID_LARGE_INTEGER              "1.2.840.113556.1.4.906"
+#define VDIR_OID_OBJECT_DN_BINARY           "1.2.840.113556.1.4.903"
+#define VDIR_OID_OBJECT_DN_STRING           "1.2.840.113556.1.4.904"
+#define VDIR_OID_OBJECT_REPLICA_LINK        "OctetString"
+#define VDIR_OID_STRING_NT_SEC_DESC         "1.2.840.113556.1.4.907"
+#define VDIR_OID_STRING_TELETEX             "1.2.840.113556.1.4.905"
 
 // NOTE: order of fields MUST stay in sync with struct definition...
 #define VDIR_SYNTAX_INIT_TABLE_INITIALIZER                            \
@@ -181,7 +213,7 @@
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_ATTRIBUTE_TYPE_DESC),     \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_ATTRIBUTE_TYPE_DESC),         \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxAttrTypeDesc)             \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
     },                                                                \
    {                                                                  \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_BINARY),                  \
@@ -193,7 +225,7 @@
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_BIT_STRING),              \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_BIT_STRING),                  \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_NO),  \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxBitString)                \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_BOOLEAN),                 \
@@ -205,7 +237,7 @@
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_DN),                      \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_DN),                          \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxDN)                       \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_DIRECTORY_STRING),        \
@@ -214,10 +246,22 @@
         VMDIR_SF_INIT(.pValidateFunc, syntaxDirectoryString)          \
     },                                                                \
     {                                                                 \
+        VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_DIT_STRUCTURE_RULE_DESC), \
+        VMDIR_SF_INIT(.pszOid, VDIR_OID_DIT_STRUCTURE_RULE_DESC),     \
+        VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+    },                                                                \
+    {                                                                 \
+        VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_ENHANCED_GUID),           \
+        VMDIR_SF_INIT(.pszOid, VDIR_OID_ENHANCED_GUID),               \
+        VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+    },                                                                \
+    {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_FAX_NUMBER),              \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_FAX_NUMBER),                  \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxFaxNumber)                \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_GEN_TIME),                \
@@ -238,6 +282,12 @@
         VMDIR_SF_INIT(.pValidateFunc, syntaxInteger)                  \
     },                                                                \
     {                                                                 \
+        VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_NAME_FORM_DESC),          \
+        VMDIR_SF_INIT(.pszOid, VDIR_OID_NAME_FORM_DESC),              \
+        VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+    },                                                                \
+    {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_NUMERIC_STRING),          \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_NUMERIC_STRING),              \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
@@ -247,13 +297,13 @@
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_OCTET_STRING),            \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_OCTET_STRING),                \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxOctetString)              \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_OBJECTCLASS_DESC),        \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_OBJECTCLASS_DESC),            \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxObjectClassDesc)          \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_OID),                     \
@@ -265,7 +315,13 @@
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_POSTAL_ADDRESS),          \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_POSTAL_ADDRESS),              \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxPostalAddress)            \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+    },                                                                \
+    {                                                                 \
+        VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_PRESENTATION_ADDRESS),    \
+        VMDIR_SF_INIT(.pszOid, VDIR_OID_PRESENTATION_ADDRESS),        \
+        VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_PRINTABLE_STRING),        \
@@ -274,16 +330,70 @@
         VMDIR_SF_INIT(.pValidateFunc, syntaxPrintableString)          \
     },                                                                \
     {                                                                 \
+        VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_PROTOCOL_INFORMATION),    \
+        VMDIR_SF_INIT(.pszOid, VDIR_OID_PROTOCOL_INFORMATION),        \
+        VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+    },                                                                \
+    {                                                                 \
+        VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_SUPPORTED_ALGORITHM),     \
+        VMDIR_SF_INIT(.pszOid, VDIR_OID_SUPPORTED_ALGORITHM),         \
+        VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_NO),  \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+    },                                                                \
+    {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_TELEPHONE_NUMBER),        \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_TELEPHONE_NUMBER),            \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxTelephoneNumber)          \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_UTC_TIME),                \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_UTC_TIME),                    \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxUTCTime)                  \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+    },                                                                \
+    {                                                                 \
+        VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_UUID),                    \
+        VMDIR_SF_INIT(.pszOid, VDIR_OID_UUID),                        \
+        VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+    },                                                                \
+    {                                                                 \
+        VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_LARGE_INTEGER),           \
+        VMDIR_SF_INIT(.pszOid, VDIR_OID_LARGE_INTEGER),               \
+        VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+    },                                                                \
+    {                                                                 \
+        VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_OBJECT_DN_BINARY),        \
+        VMDIR_SF_INIT(.pszOid, VDIR_OID_OBJECT_DN_BINARY),            \
+        VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_NO),  \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+    },                                                                \
+    {                                                                 \
+        VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_OBJECT_DN_STRING),        \
+        VMDIR_SF_INIT(.pszOid, VDIR_OID_OBJECT_DN_STRING),            \
+        VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+    },                                                                \
+    {                                                                 \
+        VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_OBJECT_REPLICA_LINK),     \
+        VMDIR_SF_INIT(.pszOid, VDIR_OID_OBJECT_REPLICA_LINK),         \
+        VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+    },                                                                \
+    {                                                                 \
+        VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_STRING_NT_SEC_DESC),      \
+        VMDIR_SF_INIT(.pszOid, VDIR_OID_STRING_NT_SEC_DESC),          \
+        VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_NO),  \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+    },                                                                \
+    {                                                                 \
+        VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_STRING_TELETEX),          \
+        VMDIR_SF_INIT(.pszOid, VDIR_OID_STRING_TELETEX),              \
+        VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
     },                                                                \
 };
 

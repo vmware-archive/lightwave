@@ -333,6 +333,12 @@ ProcessJoin(
     {
         pszLogin = "Administrator";
     }
+    else if (strchr(pszLogin, (int)'@') != NULL)
+    {
+        fprintf(stderr, "Error: Username may not include domain\n");
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     dwError = VmAfdJoinDomain(pszDomain, pszLogin, pszPassword);
     BAIL_ON_VMAFD_ERROR(dwError);

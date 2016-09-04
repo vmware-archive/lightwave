@@ -45,19 +45,7 @@ syntaxGetNextInteger(
 
 static
 BOOLEAN
-syntaxAttrTypeDesc(
-    PVDIR_BERVALUE pBerv
-    );
-
-static
-BOOLEAN
 syntaxBinary(
-    PVDIR_BERVALUE pBerv
-    );
-
-static
-BOOLEAN
-syntaxBitString(
     PVDIR_BERVALUE pBerv
     );
 
@@ -81,12 +69,6 @@ syntaxNumericString(
 
 static
 BOOLEAN
-syntaxDN(
-    PVDIR_BERVALUE pBerv
-    );
-
-static
-BOOLEAN
 syntaxIA5String(
     PVDIR_BERVALUE pBerv
     );
@@ -99,49 +81,19 @@ syntaxDirectoryString(
 
 static
 BOOLEAN
-syntaxFaxNumber(
-    PVDIR_BERVALUE pBerv
-    );
-
-static
-BOOLEAN
 syntaxGeneralizedTime(
     PVDIR_BERVALUE pBerv
     );
 
 static
 BOOLEAN
-syntaxObjectClassDesc(
-    PVDIR_BERVALUE pBerv
-    );
-
-static
-BOOLEAN
-syntaxOctetString(
-    PVDIR_BERVALUE pBerv
-    );
-
-static
-BOOLEAN
-syntaxPostalAddress(
-    PVDIR_BERVALUE pBerv
-    );
-
-static
-BOOLEAN
-syntaxTelephoneNumber(
-    PVDIR_BERVALUE pBerv
-    );
-
-static
-BOOLEAN
-syntaxUTCTime(
-    PVDIR_BERVALUE pBerv
-    );
-
-static
-BOOLEAN
 syntaxPrintableString(
+    PVDIR_BERVALUE pBerv
+    );
+
+static
+BOOLEAN
+syntaxNotImplemented(
     PVDIR_BERVALUE pBerv
     );
 
@@ -194,17 +146,20 @@ VdirSyntaxLoad(
     return dwError;
 }
 
-PVDIR_SYNTAX_DESC
+DWORD
 VdirSyntaxLookupByOid(
-    PCSTR    pszOid
+    PCSTR               pszOid,
+    PVDIR_SYNTAX_DESC*  ppSyntax
     )
 {
+    DWORD   dwError = 0;
     PVDIR_SYNTAX_DESC pSyntax = NULL;
     VDIR_SYNTAX_DESC  key = {0};
 
-    if (!pszOid)
+    if (IsNullOrEmptyString(pszOid) || !ppSyntax)
     {
-        return NULL;
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     key.pszOid = (PSTR)pszOid;
@@ -216,7 +171,18 @@ VdirSyntaxLookupByOid(
             sizeof(VDIR_SYNTAX_DESC),
             syntaxPOIDCmp);
 
-    return pSyntax;
+    dwError = pSyntax ? 0 : VMDIR_ERROR_NO_SUCH_SYNTAX;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppSyntax = pSyntax;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+    goto cleanup;
 }
 
 /*
@@ -355,30 +321,10 @@ syntaxGetNextInteger(
 
 static
 BOOLEAN
-syntaxAttrTypeDesc(
-    PVDIR_BERVALUE pBerv
-    )
-{
-    // Defer this to schema cache load process (ATDesc)
-    return TRUE;
-}
-
-static
-BOOLEAN
 syntaxBinary(
     PVDIR_BERVALUE pBerv
     )
 {
-    return TRUE;
-}
-
-static
-BOOLEAN
-syntaxBitString(
-    PVDIR_BERVALUE pBerv
-    )
-{
-    //TODO,
     return TRUE;
 }
 
@@ -466,16 +412,6 @@ syntaxNumericString(
 
 static
 BOOLEAN
-syntaxDN(
-    PVDIR_BERVALUE pBerv
-    )
-{
-    //TODO
-    return TRUE;
-}
-
-static
-BOOLEAN
 syntaxIA5String(
     PVDIR_BERVALUE pBerv
     )
@@ -507,18 +443,6 @@ syntaxDirectoryString(
 
     return syntaxUTF8(pBerv->lberbv.bv_val, pBerv->lberbv.bv_len);
 }
-
-static
-BOOLEAN
-syntaxFaxNumber(
-    PVDIR_BERVALUE pBerv
-    )
-{
-    //TODO
-    return TRUE;
-}
-
-
 
 /*
  * GeneralizedTime YYYYmmddHH[MM[SS]][(./,)d...](Z|(+/-)HH[MM])
@@ -630,26 +554,6 @@ syntaxGeneralizedTime(
     return TRUE;
 }
 
-static
-BOOLEAN
-syntaxObjectClassDesc(
-    PVDIR_BERVALUE pBerv
-    )
-{
-    // Defer this to schema cache load process (OCDesc)
-    return TRUE;
-}
-
-static
-BOOLEAN
-syntaxOctetString(
-    PVDIR_BERVALUE pBerv
-    )
-{
-    //TODO,
-    return TRUE;
-}
-
 // NOT compliance....
 BOOLEAN
 syntaxOID(
@@ -672,16 +576,6 @@ syntaxOID(
         return FALSE;
     }
 
-    return TRUE;
-}
-
-static
-BOOLEAN
-syntaxPostalAddress(
-    PVDIR_BERVALUE pBerv
-    )
-{
-    //TODO,
     return TRUE;
 }
 
@@ -711,21 +605,10 @@ syntaxPrintableString(
 
 static
 BOOLEAN
-syntaxTelephoneNumber(
+syntaxNotImplemented(
     PVDIR_BERVALUE pBerv
     )
 {
-    //TODO,
-    return TRUE;
-}
-
-static
-BOOLEAN
-syntaxUTCTime(
-    PVDIR_BERVALUE pBerv
-    )
-{
-    //TODO,
     return TRUE;
 }
 

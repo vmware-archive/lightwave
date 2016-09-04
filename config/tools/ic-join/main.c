@@ -31,6 +31,7 @@ VmwDeployBuildParams(
     PCSTR pszDomain,
     PCSTR pszMachineAccount,
     PCSTR pszPassword,
+    PCSTR pszSubjectAltName,
     BOOLEAN bDisableAfdListener,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     );
@@ -190,6 +191,7 @@ ParseArgs(
     PSTR  pszDomainController   = NULL;
     PSTR  pszDomain = NULL;
     PSTR  pszMachineAccount = NULL;
+    PSTR  pszSubjectAltName = NULL;
     PSTR  pszPassword = NULL;
     BOOLEAN bDisableAfdListener = FALSE;
     enum PARSE_MODE
@@ -198,7 +200,8 @@ ParseArgs(
         PARSE_MODE_DOMAIN_CONTROLLER,
         PARSE_MODE_DOMAIN,
         PARSE_MODE_PASSWORD,
-        PARSE_MODE_MACHINE_ACCOUNT
+        PARSE_MODE_MACHINE_ACCOUNT,
+        PARSE_MODE_SSL_SUBJECT_ALT_NAME
     } parseMode = PARSE_MODE_OPEN;
     int iArg = 0;
     PVMW_IC_SETUP_PARAMS pSetupParams = NULL;
@@ -224,7 +227,7 @@ ParseArgs(
                 }
                 else if (!strcmp(pszArg, "--machine-account-name"))
                 {
-                	parseMode = PARSE_MODE_MACHINE_ACCOUNT;
+                    parseMode = PARSE_MODE_MACHINE_ACCOUNT;
                 }
                 else if (!strcmp(pszArg, "--disable-afd-listener"))
                 {
@@ -234,6 +237,10 @@ ParseArgs(
                 {
                     dwError = ERROR_INVALID_PARAMETER;
                     BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+                else if (!strcmp(pszArg, "--ssl-subject-alt-name"))
+                {
+                    parseMode = PARSE_MODE_SSL_SUBJECT_ALT_NAME;
                 }
                 else
                 {
@@ -299,6 +306,20 @@ ParseArgs(
 
                 break;
 
+            case PARSE_MODE_SSL_SUBJECT_ALT_NAME:
+
+                if (pszSubjectAltName)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszSubjectAltName = pszArg;
+
+                parseMode = PARSE_MODE_OPEN;
+
+                break;
+
             default:
 
                 dwError = ERROR_INVALID_PARAMETER;
@@ -313,6 +334,7 @@ ParseArgs(
                     pszDomain,
                     pszMachineAccount,
                     pszPassword,
+                    pszSubjectAltName,
                     bDisableAfdListener,
                     &pSetupParams);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -342,6 +364,7 @@ VmwDeployBuildParams(
     PCSTR pszDomain,
     PCSTR pszMachineAccount,
     PCSTR pszPassword,
+    PCSTR pszSubjectAltName,
     BOOLEAN bDisableAfdListener,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     )
@@ -380,10 +403,10 @@ VmwDeployBuildParams(
 
     if (!IsNullOrEmptyString(pszMachineAccount))
     {
-    	dwError = VmwDeployAllocateStringA(
-    					pszMachineAccount,
-    					&pSetupParams->pszMachineAccount);
-    	BAIL_ON_DEPLOY_ERROR(dwError);
+        dwError = VmwDeployAllocateStringA(
+                        pszMachineAccount,
+                        &pSetupParams->pszMachineAccount);
+        BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
     if (!pszPassword)
@@ -395,6 +418,14 @@ VmwDeployBuildParams(
         BAIL_ON_DEPLOY_ERROR(dwError);
 
         pszPassword = pszPassword1;
+    }
+
+    if (!IsNullOrEmptyString(pszSubjectAltName))
+    {
+        dwError = VmwDeployAllocateStringA(
+                        pszSubjectAltName,
+                        &pSetupParams->pszSubjectAltName);
+        BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
     dwError = VmwDeployAllocateStringA(pszPassword, &pSetupParams->pszPassword);
@@ -516,7 +547,8 @@ ShowUsage(
            "Arguments:\n"
            "[--domain-controller <domain controller's hostname or IP Address>]\n"
            "[--domain    <fully qualified domain name. default: vsphere.local>]\n"
-    	   "[--machine-account-name <preferred computer account name. default: <hostname>\n"
+           "[--machine-account-name <preferred computer account name. default: <hostname>\n"
            "[--disable-afd-listener]\n"
-           "[--password  <password to administrator account>]\n");
+           "[--password  <password to administrator account>]\n"
+           "[--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n");
 }

@@ -29,14 +29,17 @@ all: $(LIGHTWAVE_STAGE_DIR) $(PACKAGES)
 
 container: $(DOCKER_IMAGE)
 
-$(DOCKER_IMAGE) : $(PACKAGES) $(LIGHTWAVE_STAGE_DIR)/Dockerfile $(LIGHTWAVE_STAGE_DIR)/configure-lightwave-server.service
+$(DOCKER_IMAGE) : $(PACKAGES)
+	$(CP) -f $(DOCKER_SRCROOT)/Dockerfile $(LIGHTWAVE_STAGE_DIR)/Dockerfile
+	$(CP) -f $(DOCKER_SRCROOT)/configure-lightwave-server.service $(LIGHTWAVE_STAGE_DIR)/configure-lightwave-server.service
 	$(DOCKER_BUILDER) $(LIGHTWAVE_STAGE_DIR) $@
 
-$(LIGHTWAVE_STAGE_DIR)/Dockerfile : $(DOCKER_SRCROOT)/Dockerfile
-	$(CP) -f $< $@
+client-container: $(DOCKER_CLIENT_IMAGE)
 
-$(LIGHTWAVE_STAGE_DIR)/configure-lightwave-server.service : $(DOCKER_SRCROOT)/configure-lightwave-server.service
-	$(CP) -f $< $@
+$(DOCKER_CLIENT_IMAGE) : $(PACKAGES)
+	$(CP) -f $(DOCKER_SRCROOT)/Dockerfile.client $(LIGHTWAVE_STAGE_DIR)/Dockerfile
+	$(CP) -f $(DOCKER_SRCROOT)/configure-lightwave-client.service $(LIGHTWAVE_STAGE_DIR)/configure-lightwave-client.service
+	$(DOCKER_CLIENT_BUILDER) $(LIGHTWAVE_STAGE_DIR) $@
 
 $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LW_SERVER_RPM): $(LW_SERVER_PKGDIR)/$(LW_SERVER_RPM)
 	$(CP) -f $< $@

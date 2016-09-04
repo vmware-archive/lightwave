@@ -3504,3 +3504,70 @@ VmDirGetTimeInMilliSec(
     return  iTimeInMSec;
 }
 
+/*
+ * Compares two version strings. If one has more dots than the other,
+ * it will compare up to the end of shorter one.
+ *
+ * For example:
+ * 6.5 vs 6.6 => -1
+ * 6.6 vs 6.6 => 0
+ * 6.7 vs 6.6 => 1
+ * 6.6 vs 6.6.1 => 0
+ * 6.6.1 vs 6.6.1 => 0
+ * 6.6.3 vs 6.6.1 => 1
+ */
+int
+VmDirCompareVersion(
+    PSTR    pszVerA,
+    PSTR    pszVerB
+    )
+{
+    char    bufA[128] = {0};
+    char    bufB[128] = {0};
+    PSTR    pszTokA = NULL;
+    PSTR    pszTokB = NULL;
+    int     iTokA = 0;
+    int     iTokB = 0;
+    char*   saveA = NULL;
+    char*   saveB = NULL;
+
+    if (IsNullOrEmptyString(pszVerA) && IsNullOrEmptyString(pszVerB))
+    {
+        return 0;
+    }
+    else if (IsNullOrEmptyString(pszVerA))
+    {
+        return -1;
+    }
+    else if (IsNullOrEmptyString(pszVerB))
+    {
+        return 1;
+    }
+
+    VmDirStringCpyA(bufA, 128, pszVerA);
+    VmDirStringCpyA(bufB, 128, pszVerB);
+
+    pszTokA = VmDirStringTokA(bufA, ".", &saveA);
+    pszTokB = VmDirStringTokA(bufB, ".", &saveB);
+
+    while (pszTokA && pszTokB)
+    {
+        iTokA = VmDirStringToIA(pszTokA);
+        iTokB = VmDirStringToIA(pszTokB);
+
+        if (iTokA < iTokB)
+        {
+            return -1;
+        }
+        else if (iTokA > iTokB)
+        {
+            return 1;
+        }
+
+        pszTokA = VmDirStringTokA(NULL, ".", &saveA);
+        pszTokB = VmDirStringTokA(NULL, ".", &saveB);
+    }
+
+    return 0;
+}
+
