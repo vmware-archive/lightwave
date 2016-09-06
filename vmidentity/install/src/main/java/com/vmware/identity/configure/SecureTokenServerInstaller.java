@@ -259,9 +259,10 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
 
     @Override
     public void upgrade() {
-        log.debug("SecureTokenServerInstaller : Upgrade");
-        mergeServerXMl();
-
+        if ( params.getBackupDir() != null) {
+            log.debug("SecureTokenServerInstaller : Upgrade");
+            mergeServerXMl();
+        }
     }
 
     @Override
