@@ -215,14 +215,15 @@ error:
 
     goto cleanup;
 }
-
 DWORD
+
 VmwDeployCreateMachineSSLCert(
     PCSTR pszServername,
     PCSTR pszDomain,
     PCSTR pszUsername,
     PCSTR pszPassword,
-    PCSTR pszHostname,
+    PCSTR pszSubjectName,
+    PCSTR pszSubjectAltName,
     PSTR* ppszPrivateKey,
     PSTR* ppszCert
     )
@@ -248,7 +249,7 @@ VmwDeployCreateMachineSSLCert(
     if (IsNullOrEmptyString(pszServername) ||
         IsNullOrEmptyString(pszUsername) ||
         !pszPassword ||
-        IsNullOrEmptyString(pszHostname))
+        IsNullOrEmptyString(pszSubjectName))
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_DEPLOY_ERROR(dwError);
@@ -275,23 +276,32 @@ VmwDeployCreateMachineSSLCert(
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     dwError = VMCAInitPKCS10DataA(
-                    pszHostname,
+                    pszSubjectName,
                     pszOrganization,
                     pszOU,
                     pszState,
                     pszCountry,
                     pszEmail,
-                    VmwDeployIsIPAddress(pszHostname) ? pszHostname : NULL,
+                    NULL,
                     pCertRequest);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
-    if (!VmwDeployIsIPAddress(pszHostname))
+    if (!IsNullOrEmptyString(pszSubjectAltName))
     {
-        dwError = VMCASetCertValueA(
+        if (VmwDeployIsIPAddress(pszSubjectAltName))
+        {
+            dwError = VMCASetCertValueA(
+                              VMCA_OID_IPADDRESS,
+                              pCertRequest,
+                              (PSTR)pszSubjectAltName);
+        }
+        else
+        {
+            dwError = VMCASetCertValueA(
                               VMCA_OID_DNS,
                               pCertRequest,
-                              (PSTR)pszHostname
-                              );
+                              (PSTR)pszSubjectAltName);
+        }
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
