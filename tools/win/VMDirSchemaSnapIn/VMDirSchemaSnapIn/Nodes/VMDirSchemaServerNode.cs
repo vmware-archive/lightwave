@@ -20,7 +20,8 @@ using Microsoft.ManagementConsole;
 using VMDirSchemaSnapIn;
 using VMwareMMCIDP.UI;
 using System.Windows.Forms;
-using VMwareMMCIDP.UI.Common.Utilities;
+using VMwareMMCIDP.UI.Common.Utilities;
+using VMwareMMCIDP.UI.Common;
 using VMDirSchemaSnapIn.UI;
 using VMIdentity.CommonUtils;
 using VMDirSchemaSnapIn.Nodes;
@@ -57,13 +58,6 @@ namespace VMDirSchemaEditorSnapIn.Nodes
             {
                 case ACTION_LOGIN:
                     await DoLogin();
-                    if (IsLoggedIn)
-                    {
-                        this.ActionsPaneItems.Remove(LoginAction);
-                       // this.ActionsPaneItems.Add(new Microsoft.ManagementConsole.Action(VMDirSchemaConstants.COMPARE_SCHEMA, VMDirSchemaConstants.COMPARE_SCHEMA, -1, ACTION_SCHEMACOMPARE));
-                        AddLogoutActions();
-                        PopulateChildren();
-                    }
                     break;
                 case ACTION_SCHEMACOMPARE:
                      var frm = new SchemaMetadataComparisionWindow(this);
@@ -99,7 +93,7 @@ namespace VMDirSchemaEditorSnapIn.Nodes
 
         void RemoveServer()
         {
-            var result = MMCDlgHelper.ShowQuestion(MMCUIConstants.CONFIRM);
+            var result = MMCDlgHelper.ShowConfirm(MMCUIConstants.CONFIRM);
             if (result)
             {
                 CloseConnection();
@@ -156,21 +150,32 @@ namespace VMDirSchemaEditorSnapIn.Nodes
                 this.Children.Add(attrNode);
             }
             else
-            {
-                UIErrorHelper.ShowError(MMCUIConstants.UNABLE_TO_LOGIN);
+            {
+
+                MMCDlgHelper.ShowException(new Exception(MMCUIConstants.UNABLE_TO_LOGIN));
             }
         }
 
         public async Task DoLogin()
         {
             try
-            {
-                var frmLogin = new frmLogin();
+            {
+                string user=string.Empty;
+                string domain=string.Empty;
+                if(!string.IsNullOrWhiteSpace(ServerDTO.BindDN))
+                {
+                    var userAndDomain = ServerDTO.BindDN.Split('@');
+                    user = userAndDomain[0];
+                    if(userAndDomain[1] != null)
+                        domain = userAndDomain[1];
+                }
+                var frmLogin = new LoginForm(ServerDTO.Server,user,domain);
                 if (SnapIn.Console.ShowDialog(frmLogin) == DialogResult.OK)
                 {
-                    string Upn = frmLogin.UserName;
-
-                    ServerDTO.BindDN = frmLogin.Upn;
+                    string Upn = frmLogin.UserName;
+
+                    ServerDTO.Server = frmLogin.Server;
+                    ServerDTO.BindDN = frmLogin.UserName+"@"+frmLogin.DomainName;
                     ServerDTO.Password = frmLogin.Password;
                     if (string.IsNullOrWhiteSpace(ServerDTO.BindDN) || string.IsNullOrWhiteSpace(ServerDTO.Password))
                         throw new Exception(MMCUIConstants.VALUES_EMPTY);
@@ -178,21 +183,39 @@ namespace VMDirSchemaEditorSnapIn.Nodes
                     Task t = new Task(ServerConnect);
                     t.Start();
                     if (await Task.WhenAny(t, Task.Delay(VMDirSchemaConstants.VMDIRSERVER_TIMEOUT)) == t)
-                    {
-                        if (ret == 1)
-                            IsLoggedIn = true;
-                        else
-                            UIErrorHelper.ShowError(CommonConstants.INVALID_CREDENTIAL);
+                    {
+                        if (ret == 1)
+                        {
+
+                            IsLoggedIn = true;
+                        }
+
+                        else
+
+                            MMCDlgHelper.ShowException(new Exception(CommonConstants.INVALID_CREDENTIAL));
                     }
                     else
-                    {
-                        UIErrorHelper.ShowError(VMDirSchemaConstants.TIME_OUT);
+                    {
+
+                        MMCDlgHelper.ShowException(new Exception(VMDirSchemaConstants.TIME_OUT));
                     }
+                }
+                if (IsLoggedIn)
+                {
+                    this.DisplayName = ServerDTO.Server;
+                    this.ActionsPaneItems.Remove(LoginAction);
+
+                    // this.ActionsPaneItems.Add(new Microsoft.ManagementConsole.Action(VMDirSchemaConstants.COMPARE_SCHEMA, VMDirSchemaConstants.COMPARE_SCHEMA, -1, ACTION_SCHEMACOMPARE));
+
+                    AddLogoutActions();
+
+                    PopulateChildren();
+
                 }
              }
             catch (Exception e)
             {
-                UIErrorHelper.ShowError(e.Message);
+                MMCDlgHelper.ShowException(e);
             }
 
             

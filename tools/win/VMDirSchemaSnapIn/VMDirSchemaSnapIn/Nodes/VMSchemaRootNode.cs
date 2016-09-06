@@ -20,7 +20,8 @@ using System.Text;
 using System.Windows.Forms;
 using VMDir.Common.DTO;
 using VMDirSchemaEditorSnapIn.Nodes;
-using VMwareMMCIDP.UI.Common;
+using VMwareMMCIDP.UI.Common;
+using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace VMDirSchemaSnapIn.Nodes
 {
@@ -101,8 +102,29 @@ namespace VMDirSchemaSnapIn.Nodes
             }
         }
 
-        void AddServer()
-        {
+        async void AddServer()
+        {
+            try
+            {
+                var ServerDTO = VMDirServerDTO.CreateInstance();
+                ServerDTO.Server = "";
+                var node = new VMDirSchemaServerNode(ServerDTO);
+                await node.DoLogin();
+                if (node.IsLoggedIn)
+                {
+                    VMDirSchemaSnapInEnvironment.Instance.LocalData.AddServer(ServerDTO.Server);
+                    this.Children.Add(node);
+                }
+            }
+            catch (Exception e)
+            {
+                MMCDlgHelper.ShowException(e);
+            }
+            finally
+            {
+                VMDirSchemaSnapInEnvironment.Instance.SaveLocalData();
+            }
+            /*
             var frm = new SelectComputerUI();
             // frm.Text = "Add Afd server";
             if (SnapIn.Console.ShowDialog(frm) == DialogResult.OK)
@@ -111,7 +133,7 @@ namespace VMDirSchemaSnapIn.Nodes
                 serverDTO.Server = frm.ServerName;
                 VMDirSchemaSnapInEnvironment.Instance.LocalData.AddServer(serverDTO.Server);
                 RefreshMethod(serverDTO);
-            }
+            }*/
         }
     }
 }

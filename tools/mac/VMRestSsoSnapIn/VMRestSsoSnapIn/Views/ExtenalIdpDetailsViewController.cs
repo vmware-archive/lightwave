@@ -30,6 +30,8 @@ namespace RestSsoAdminSnapIn
 	public partial class ExtenalIdpDetailsViewController : AppKit.NSViewController
 	{
 		public ExternalIdentityProviderDto ExternalIdentityProviderDto { get; set; }
+		public ServerDto ServerDto { get; set; }
+		public string TenantName { get; set; }
 
 		#region Constructors
 
@@ -93,6 +95,23 @@ namespace RestSsoAdminSnapIn
 				}
 			};
 
+			EditButton.Activated += (object sender, EventArgs e) => {
+				ActionHelper.Execute (delegate() {
+					var form = new AddNewExternalIdentityProviderController
+					{
+						ServerDto = ServerDto,
+						TenantName = TenantName,
+						ExternalIdentityProviderDto = ExternalIdentityProviderDto
+					};
+					var result = NSApplication.SharedApplication.RunModalForWindow (form.Window);
+					if (result == VMIdentityConstants.DIALOGOK) {
+						if (form.ExternalIdentityProviderDto != null) {
+							UIErrorHelper.ShowAlert ("External IDP " + form.ExternalIdentityProviderDto.EntityID + " updated successfully", "Information");
+							Refresh (sender, e);
+						}
+					}
+				});
+			};
 		}
 		private void ReloadTableView(NSTableView tableView, Dictionary<string,string> datasource)
 		{
@@ -229,6 +248,11 @@ namespace RestSsoAdminSnapIn
 					}
 				});
 			}
-		}	
+		}
+
+		public virtual void Refresh (object sender, EventArgs e)
+		{
+			NSNotificationCenter.DefaultCenter.PostNotificationName ("RefreshTableView", this);
+		}
 	}
 }

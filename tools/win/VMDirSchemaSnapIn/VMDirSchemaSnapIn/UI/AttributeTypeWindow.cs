@@ -89,8 +89,7 @@ namespace VMDirSchemaSnapIn.UI
 
         private void DoValidateControls()
         {
-            if (string.IsNullOrWhiteSpace(this.NameTextBox.Text) || string.IsNullOrWhiteSpace(this.AttributeSyntaxCombo.SelectedItem.ToString())
-                || string.IsNullOrWhiteSpace(this.AttributeIdentifierTextbox.Text))
+            if (string.IsNullOrWhiteSpace(this.NameTextBox.Text) || string.IsNullOrWhiteSpace(this.AttributeIdentifierTextbox.Text))
                 throw new Exception(VMwareMMCIDP.UI.Common.Utilities.MMCUIConstants.VALUES_EMPTY);
         }
 
@@ -128,14 +127,16 @@ namespace VMDirSchemaSnapIn.UI
         }
 
         private void AddButton_Click_1(object sender, EventArgs e)
-        {
-            UIErrorHelper.CheckedExec(delegate()
+        {
+
+            UIErrorHelper.CheckedExecNonModal(delegate()
                 {
                     if (this.AddButton.Text == VMwareMMCIDP.UI.Common.Utilities.MMCUIConstants.EDIT)
                     {
                         SetUIToolsEditability();
                         this.AddButton.Text = VMwareMMCIDP.UI.Common.Utilities.MMCUIConstants.UPDATE;
-                    }
+                    }
+
                     else if (UIErrorHelper.ShowConfirm(VMwareMMCIDP.UI.Common.Utilities.MMCUIConstants.CONFIRM) == DialogResult.Yes)
                     {
                         DoValidateControls();

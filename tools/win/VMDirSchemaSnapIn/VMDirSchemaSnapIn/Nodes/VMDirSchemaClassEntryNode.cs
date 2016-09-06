@@ -19,7 +19,8 @@ using VMDir.Common.Schema;
 using VMDirSchemaSnapIn;
 using VMDirSchemaSnapIn.ListViews;
 using VMDirSchemaSnapIn.Nodes;
-using VMDirSchemaSnapIn.UI;
+using VMDirSchemaSnapIn.UI;
+using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace VMDirSchemaEditorSnapIn.Nodes
 {
@@ -81,7 +82,7 @@ namespace VMDirSchemaEditorSnapIn.Nodes
                  this.ServerNode.ServerDTO.Connection.ModifyObjectClass(frm.ObjectClassModDTO);
                  this.ServerNode.ServerDTO.Connection.SchemaManager.RefreshSchema();
                  (this.Parent as VMDirSchemaClassBaseNode).RefreshChildren();
-                 UIErrorHelper.ShowMessage(VMDirSchemaConstants.CLASS_MODIFY_MESSAGE);
+                 MMCDlgHelper.ShowInformation(VMDirSchemaConstants.CLASS_MODIFY_MESSAGE);
                  });
             }
         }

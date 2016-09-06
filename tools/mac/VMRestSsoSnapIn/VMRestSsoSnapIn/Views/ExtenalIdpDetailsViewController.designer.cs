@@ -1,6 +1,6 @@
 // WARNING
 //
-// This file has been generated automatically by Xamarin Studio to store outlets and
+// This file has been generated automatically by Xamarin Studio Business to store outlets and
 // actions made in the UI designer. If it is removed, they will be lost.
 // Manual changes to this file may not be handled correctly.
 //
@@ -22,6 +22,9 @@ namespace RestSsoAdminSnapIn
 		AppKit.NSTableView CertificateTableView { get; set; }
 
 		[Outlet]
+		AppKit.NSButton EditButton { get; set; }
+
+		[Outlet]
 		AppKit.NSTableView NameFormatTableView { get; set; }
 
 		[Outlet]
@@ -41,11 +44,6 @@ namespace RestSsoAdminSnapIn
 		
 		void ReleaseDesignerOutlets ()
 		{
-			if (TxtAlias != null) {
-				TxtAlias.Dispose ();
-				TxtAlias = null;
-			}
-
 			if (BtnJit != null) {
 				BtnJit.Dispose ();
 				BtnJit = null;
@@ -81,9 +79,19 @@ namespace RestSsoAdminSnapIn
 				SubjectFormatTableView = null;
 			}
 
+			if (TxtAlias != null) {
+				TxtAlias.Dispose ();
+				TxtAlias = null;
+			}
+
 			if (TxtEntityName != null) {
 				TxtEntityName.Dispose ();
 				TxtEntityName = null;
+			}
+
+			if (EditButton != null) {
+				EditButton.Dispose ();
+				EditButton = null;
 			}
 		}
 	}

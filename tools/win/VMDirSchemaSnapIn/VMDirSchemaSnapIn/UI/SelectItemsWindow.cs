@@ -21,7 +21,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using VMDir.Common;
+using VMDir.Common;
+using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace VMDirSchemaSnapIn.UI
 {
@@ -60,11 +61,12 @@ namespace VMDirSchemaSnapIn.UI
                 string selectedItem = this.FromList.SelectedValue.ToString();
                 if ((currentItems != null && currentItems.Contains(selectedItem)) || (parentItems != null && parentItems.Contains(selectedItem)))
                 {
-                    UIErrorHelper.ShowMessage(VMDirConstants.WRN_SEL_ITEM_PRESENT);
+                    MMCDlgHelper.ShowWarning(VMDirConstants.WRN_SEL_ITEM_PRESENT);
                 }
                 else if (SelectedItemsList.Contains(selectedItem))
-                {
-                    UIErrorHelper.ShowMessage(VMDirConstants.WRN_ITEM_ALRDY_SLCTD);
+                {
+
+                    MMCDlgHelper.ShowWarning(VMDirConstants.WRN_ITEM_ALRDY_SLCTD);
                 }
                 else
                 {
