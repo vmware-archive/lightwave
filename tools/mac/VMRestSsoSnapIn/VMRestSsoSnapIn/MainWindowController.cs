@@ -297,12 +297,12 @@ namespace RestSsoAdminSnapIn
             BackForwardToolbarItem.Active = true;
             AddToolbarItem.Active = false;
 			DeleteToolbarItem.Active = enable;
-            PropertiesToolbarItem.Active = true;
+			PropertiesToolbarItem.Active = enable;
 			SuperLoggingToolbarItem.Active = true;
             RefreshToolbarItem.Active = true;
             TokenWizardToolbarItem.Active = true;
 			//ADToolbarItem.Active = false;
-            ComputerToolbarItem.Active = true;
+			ComputerToolbarItem.Active = enable;
             HttptransportToolbarItem.Active = true;
 
         }
@@ -986,8 +986,11 @@ namespace RestSsoAdminSnapIn
 								var node = ob.CurrentSelectedNode as IdentityProvidersNode;
 								var rp = ((IdentityProvidersDataSource)ob.splitViewController.MainTableView.DataSource).Entries [row];
 								var rpLatest = node.GetIdentityProvider (rp);
+								var tenant = node.GetTenant ();
 								controller = new ExtenalIdpDetailsViewController () {
-									ExternalIdentityProviderDto = rpLatest
+									ExternalIdentityProviderDto = rpLatest,
+									ServerDto = ob._serverDto,
+									TenantName = tenant
 								};
 							} else {
 								controller = new DefaultViewController ();

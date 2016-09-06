@@ -20,7 +20,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using VMDirSchemaEditorSnapIn.Nodes;
-using VMDirSchemaSnapIn.UI;
+using VMDirSchemaSnapIn.UI;
+using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace VMDirSchemaSnapIn.ListViews
 {
@@ -116,7 +117,7 @@ namespace VMDirSchemaSnapIn.ListViews
                         (this.ScopeNode as VMDirSchemaAttributeBaseNode).ServerNode.ServerDTO.Connection.SchemaManager.RefreshSchema();
                         (this.ScopeNode as VMDirSchemaAttributeBaseNode).RefreshNode();
                         this.Refresh();
-                        UIErrorHelper.ShowMessage(VMDirSchemaConstants.ATTR_MODIFY_MESSAGE);
+                        MMCDlgHelper.ShowMessage(VMDirSchemaConstants.ATTR_MODIFY_MESSAGE);
                     });
             }
         }
