@@ -179,7 +179,7 @@ public class LinuxInstallerHelper implements InstallerHelper {
 
     @Override
     public String getSSOHomePath() {
-        return "/usr/lib/vmware-sso";
+        return "/opt/vmware";
     }
 
     @Override
