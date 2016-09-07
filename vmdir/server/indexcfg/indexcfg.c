@@ -23,9 +23,9 @@ VmDirIndexCfgCreate(
     DWORD   dwError = 0;
     PVDIR_INDEX_CFG pIndexCfg = NULL;
 
-    if (!ppIndexCfg)
+    if (IsNullOrEmptyString(pszAttrName) || !ppIndexCfg)
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -62,6 +62,7 @@ VmDirIndexCfgCreate(
     pIndexCfg->bGlobalUniq = FALSE;
     pIndexCfg->bIsNumeric = FALSE;
     pIndexCfg->iTypes = INDEX_TYPE_EQUALITY;
+    pIndexCfg->usRefCnt = 1;
 
     *ppIndexCfg = pIndexCfg;
 
@@ -89,7 +90,7 @@ VmDirDefaultIndexCfgInit(
 
     if (!pDefIdxCfg || !ppIndexCfg)
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -175,7 +176,7 @@ VmDirCustomIndexCfgInit(
 
     if (!pATDesc || !ppIndexCfg)
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -245,6 +246,115 @@ error:
 }
 
 DWORD
+VmDirIndexCfgCopy(
+    PVDIR_INDEX_CFG     pIndexCfg,
+    PVDIR_INDEX_CFG*    ppIndexCfgCpy
+    )
+{
+    DWORD   dwError = 0;
+    LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
+    LW_HASHMAP_PAIR pair = {NULL, NULL};
+    PVDIR_LINKED_LIST_NODE  pNode = NULL;
+    PSTR    pszOrg = NULL;
+    PSTR    pszCpy = NULL;
+    PVDIR_INDEX_CFG pIndexCfgCpy = NULL;
+
+    if (!pIndexCfg || !ppIndexCfgCpy)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirIndexCfgCreate(pIndexCfg->pszAttrName, &pIndexCfgCpy);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    while (LwRtlHashMapIterate(pIndexCfg->pUniqScopes, &iter, &pair))
+    {
+        pszOrg = (PSTR)pair.pKey;
+
+        dwError = VmDirAllocateStringA(pszOrg, &pszCpy);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = LwRtlHashMapInsert(
+                pIndexCfgCpy->pUniqScopes, pszCpy, NULL, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pszCpy = NULL;
+    }
+
+    pNode = pIndexCfg->pNewUniqScopes->pTail;
+    while (pNode)
+    {
+        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
+        pszOrg = (PSTR)pNode->pElement;
+
+        dwError = VmDirAllocateStringA(pszOrg, &pszCpy);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLinkedListInsertHead(
+                pIndexCfgCpy->pNewUniqScopes, pszCpy, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pszCpy = NULL;
+
+        pNode = pNextNode;
+    }
+
+    pNode = pIndexCfg->pDelUniqScopes->pTail;
+    while (pNode)
+    {
+        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
+        pszOrg = (PSTR)pNode->pElement;
+
+        dwError = VmDirAllocateStringA(pszOrg, &pszCpy);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLinkedListInsertHead(
+                pIndexCfgCpy->pDelUniqScopes, pszCpy, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pszCpy = NULL;
+
+        pNode = pNextNode;
+    }
+
+    pNode = pIndexCfg->pBadUniqScopes->pTail;
+    while (pNode)
+    {
+        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
+        pszOrg = (PSTR)pNode->pElement;
+
+        dwError = VmDirAllocateStringA(pszOrg, &pszCpy);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLinkedListInsertHead(
+                pIndexCfgCpy->pBadUniqScopes, pszCpy, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pszCpy = NULL;
+
+        pNode = pNextNode;
+    }
+
+    pIndexCfgCpy->bDefaultIndex = pIndexCfg->bDefaultIndex;
+    pIndexCfgCpy->bScopeEditable = pIndexCfg->bScopeEditable;
+    pIndexCfgCpy->bGlobalUniq = pIndexCfg->bGlobalUniq;
+    pIndexCfgCpy->bIsNumeric = pIndexCfg->bIsNumeric;
+    pIndexCfgCpy->iTypes = pIndexCfg->iTypes;
+    pIndexCfgCpy->status = pIndexCfg->status;
+    pIndexCfgCpy->initOffset = pIndexCfg->initOffset;
+
+    *ppIndexCfgCpy = pIndexCfgCpy;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    VMDIR_SAFE_FREE_MEMORY(pszCpy);
+    VmDirFreeIndexCfg(pIndexCfgCpy);
+    goto cleanup;
+}
+
+DWORD
 VmDirIndexCfgValidateUniqueScopeMods(
     PVDIR_INDEX_CFG pIndexCfg
     )
@@ -265,7 +375,7 @@ VmDirIndexCfgValidateUniqueScopeMods(
 
     if (!pIndexCfg)
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -292,9 +402,15 @@ VmDirIndexCfgValidateUniqueScopeMods(
      */
     while (pIterator->bHasNext && !VmDirLinkedListIsEmpty(pNewScopes))
     {
-        // log validate progress every 10000
+        // check vmdir state and log validate progress at every 10000
         if (iCnt % 10000 == 0)
         {
+            if (VmDirdState() != VMDIRD_STATE_NORMAL)
+            {
+                dwError = ERROR_INVALID_STATE;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+
             VMDIR_LOG_INFO( LDAP_DEBUG_INDEX, "%s (%ld)", pszIdxStatus, iCnt );
         }
         iCnt++;
@@ -371,8 +487,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    if (dwError != ERROR_INVALID_STATE)
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                "%s failed, error (%d)", __FUNCTION__, dwError );
+    }
 
     goto cleanup;
 }
@@ -392,7 +511,7 @@ VmDirIndexCfgApplyUniqueScopeMods(
 
     if (!pIndexCfg)
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -466,8 +585,15 @@ VmDirIndexCfgRevertBadUniqueScopeMods(
 
     if (!pIndexCfg)
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pBadScopes = pIndexCfg->pBadUniqScopes;
+
+    if (VmDirLinkedListIsEmpty(pBadScopes))
+    {
+        goto cleanup;
     }
 
     dwError = VmDirAllocateStringPrintf(&pszDn,
@@ -489,12 +615,9 @@ VmDirIndexCfgRevertBadUniqueScopeMods(
     ldapOp.request.modifyReq.dn.lberbv_val = ldapOp.reqDn.lberbv_val;
     ldapOp.request.modifyReq.dn.lberbv_len = ldapOp.reqDn.lberbv_len;
 
-    pBadScopes = pIndexCfg->pBadUniqScopes;
-
     pNode = pBadScopes->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
         PSTR pszScope = (PSTR)pNode->pElement;
 
         dwError = VmDirAppendAMod(&ldapOp,
@@ -505,16 +628,18 @@ VmDirIndexCfgRevertBadUniqueScopeMods(
                 VmDirStringLenA(pszScope));
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirLinkedListRemove(pBadScopes, pNode);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        VMDIR_SAFE_FREE_MEMORY(pszScope);
-
-        pNode = pNextNode;
+        pNode = pNode->pNext;
     }
 
     dwError = VmDirInternalModifyEntry(&ldapOp);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    while (!VmDirLinkedListIsEmpty(pBadScopes))
+    {
+        VMDIR_SAFE_FREE_MEMORY(pBadScopes->pHead->pElement);
+        dwError = VmDirLinkedListRemove(pBadScopes, pBadScopes->pHead);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
     VmDirFreeOperationContent(&ldapOp);
@@ -542,7 +667,7 @@ VmDirIndexCfgGetAllScopesInStrArray(
 
     if (!pIndexCfg || !pppszScopes)
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -603,7 +728,7 @@ VmDirIndexCfgStatusStringfy(
 
     if (!pIndexCfg || !ppszStatus)
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -680,4 +805,14 @@ VmDirFreeIndexCfg(
 
         VMDIR_SAFE_FREE_MEMORY(pIndexCfg);
     }
+}
+
+VOID
+VmDirFreeIndexCfgMapPair(
+    PLW_HASHMAP_PAIR    pPair,
+    LW_PVOID            pUnused
+    )
+{
+    PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pPair->pValue;
+    VmDirIndexCfgRelease(pIndexCfg);
 }
