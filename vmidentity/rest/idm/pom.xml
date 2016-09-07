@@ -16,9 +16,9 @@
 
   <modules>
     <module>common</module>
-
     <module>server</module>
     <module>client</module>
-  </modules>
+    <module>samples</module>	 
+ </modules>
 
 </project>
