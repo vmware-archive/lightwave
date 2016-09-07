@@ -89,7 +89,7 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
         log.info("Configuring STS");
         configureSTS();
 
-        String tcSTSBase = "";
+        String tcSTSBase = InstallerUtils.getInstallerHelper().getTCBase(); 
         Path tomcatTempDir = Paths.get(tcSTSBase, "temp");
         if (!Files.exists(tomcatTempDir)) {
             Files.createDirectories(tomcatTempDir);
