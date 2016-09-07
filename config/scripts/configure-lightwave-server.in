@@ -266,7 +266,13 @@ if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ `pidof init` -eq 1 ]]; then
 
     # perform vmidentity upgrade
     #
-
+    $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
+          -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller --upgrade 
+          
+    if [ $? -ne 0 ]; then
+        echo "VMIdentity upgrade failed."
+        _exit 1
+    fi 
     # Upgrade successful, restart lwsm to insure all changes are applied and node is replicating
     if [ -z $RUN_LWSM ]; then
         systemctl restart lwsmd

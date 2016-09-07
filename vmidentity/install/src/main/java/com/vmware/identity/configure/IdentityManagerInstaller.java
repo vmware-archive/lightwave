@@ -32,10 +32,11 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
     private String password;
     private String username;
     private boolean setReverseProxy = false;
+    private boolean startService = false;
 
     public IdentityManagerInstaller(String username, String domainName,
 
-    String password, boolean setReverseProxy, boolean isUpgrade) {
+    String password, boolean setReverseProxy, boolean isUpgrade, boolean startService) {
         if (!isUpgrade) {
             Validate.validateNotEmpty(username, "Username");
             Validate.validateNotEmpty(domainName, "Domain name");
@@ -45,7 +46,10 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
             this.password = password;
             this.username = username;
             this.setReverseProxy = setReverseProxy;
+        }else {
+            this.startService = startService;
         }
+        
     }
 
     @Override
@@ -70,9 +74,10 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
     }
 
     @Override
-    public void upgrade() {
-        // TODO Auto-generated method stub
-
+    public void upgrade() throws Exception{
+        if (startService) {
+           IdentityManagerUtil.startService(); 
+        }
     }
 
     @Override
@@ -111,7 +116,6 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
     private void configureIDM() throws Exception {
         IdentityManagerUtil idmUtil = new IdentityManagerUtil(username,
                 domainName, password);
-
         idmUtil.install();
     }
 

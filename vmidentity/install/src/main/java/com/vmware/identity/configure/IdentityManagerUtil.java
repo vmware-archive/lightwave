@@ -63,6 +63,7 @@ public class IdentityManagerUtil {
         _idmClientCtxtProvider = new ServiceContextProvider();
     }
 
+
     public void install() throws Exception {
 
         log.info("Creating signing certs");
@@ -125,7 +126,7 @@ public class IdentityManagerUtil {
 		return new String(result);
     }
 
-    private void startService() throws IdentityManagerInstallerException {
+    public static void startService() throws IdentityManagerInstallerException {
         String[] svcCommand = InstallerUtils.getInstallerHelper()
                 .getIDMServiceStartCommand();
         ProcessBuilder pb = new ProcessBuilder(svcCommand);
