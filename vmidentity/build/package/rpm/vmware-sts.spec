@@ -199,5 +199,9 @@ fi
 %{_webappsdir}/openidconnect-sample-rp.war
 # %doc ChangeLog README COPYING
 
+%files samples
+%defattr(-,root,root)
+%{_jarsdir}/vmware-identity-rest-idm-samples.jar
+
 %changelog
 
