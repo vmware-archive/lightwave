@@ -63,6 +63,16 @@ public class IdentityManagerUtil {
         _idmClientCtxtProvider = new ServiceContextProvider();
     }
 
+    public IdentityManagerUtil() {
+        _idmClientCtxtProvider = new ServiceContextProvider();
+        this.domainName = "";
+        this.password = "";
+    }
+
+    public void startServiceForUpgrade() throws Exception {
+	startService();
+    }
+ 
     public void install() throws Exception {
 
         log.info("Creating signing certs");
