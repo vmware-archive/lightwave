@@ -70,7 +70,7 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
     }
 
     @Override
-    public void upgrade() {
+    public void upgrade() throws Exception{
         // TODO Auto-generated method stub
 
     }
