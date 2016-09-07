@@ -44,9 +44,12 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 				var service = SnapInContext.Instance.ServiceGateway;
 				var identityProviders = service.IdentityProvider.GetAll (_serverDto, _tenantName, auth.Token);
 				var tenantConfig = new TenantConfigurationDto ();
-				ActionHelper.Execute (delegate() {
+				try{
 					tenantConfig = service.Tenant.GetConfig (_serverDto, _tenantName, auth.Token, TenantConfigType.PROVIDER);
-				});
+				} catch(Exception exc)
+				{
+					// do nothing
+				}
 				var systemDomains = identityProviders.Where (x => x.DomainType == DomainType.SYSTEM_DOMAIN.ToString ());
 				if (systemDomains != null) {
 					foreach (var provider in systemDomains) {

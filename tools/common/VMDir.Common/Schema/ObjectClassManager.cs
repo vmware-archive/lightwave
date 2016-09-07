@@ -40,8 +40,9 @@ namespace VMDir.Common.Schema
 
         public const string MustContain = "mustContain";
         public const string ObjectClass = "objectClass";
-        public const string AuxiliaryClass = "auxiliaryClass";
-
+        public const string AuxiliaryClass = "auxiliaryClass";
+
+        public const string SystemAuxiliaryClass = "systemAuxiliaryClass";
         public ObjectClassManager(Dictionary<string, Dictionary<string,object>> dict)
         {
             AddObjectClassDTO(dict);
@@ -134,7 +135,17 @@ namespace VMDir.Common.Schema
 
                 dto.Aux = val != null ? val.Select(data => data.StringValue).ToList() : null;
 
+                val = Utilities.FetchLdapValueFromAttributesDictionary(SystemAuxiliaryClass, objectclasses);
+                if (val != null)
+                {
+                    if (dto.Aux != null)
 
+                        dto.Aux.AddRange(val.Select(data => data.StringValue));
+
+                    else
+
+                        dto.Aux = val.Select(data => data.StringValue).ToList();
+                }
 
 
 

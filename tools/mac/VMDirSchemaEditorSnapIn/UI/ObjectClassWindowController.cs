@@ -196,7 +196,7 @@ namespace VMDirSchemaEditorSnapIn
         {
             if (AuxiliaryClassesListView.Enabled == true)
             {
-                SelectListItemsWindowController swc = new SelectListItemsWindowController(allClassesList, auxiliaryClassesList, null);
+				SelectListItemsWindowController swc = new SelectListItemsWindowController(auxiliaryClasses, auxiliaryClassesList, null);
                 nint ret = NSApplication.SharedApplication.RunModalForWindow(swc.Window);
                 if (ret == VMIdentityConstants.DIALOGOK)
                 {
@@ -325,6 +325,7 @@ namespace VMDirSchemaEditorSnapIn
                 ObjectDTO.GovernsID = GovernsIDField.StringValue;
                 ObjectDTO.May = optionalAttributesList;
                 ObjectDTO.Must = mandatoryAttributesList;
+				ObjectDTO.Aux = auxiliaryClassesList;
                 ObjectDTO.ClassType = (ObjectClassDTO.ObjectClassType)((int)ClassTypePopup.IndexOfSelectedItem) + 1;
             }
             else

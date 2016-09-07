@@ -26,7 +26,8 @@ using VmDirInterop.Schema.Definitions;
 using VmDirInterop.Schema.Diffs;
 using VmDirInterop.Schema.Entries;
 using VmDirInterop.Schema.Metadata;
-using VMDirSchemaEditorSnapIn.Nodes;
+using VMDirSchemaEditorSnapIn.Nodes;
+using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace VMDirSchemaSnapIn.UI
 {
@@ -172,9 +173,11 @@ namespace VMDirSchemaSnapIn.UI
         }
 
         public void ViewDiffButtonClicked(object sender, EventArgs e)
-        {
-
-            UIErrorHelper.CheckedExec(delegate()
+        {
+
+
+
+            UIErrorHelper.CheckedExecNonModal(delegate()
             {
                 Button button = sender as Button;
                 if (button.Text == VMDirSchemaConstants.DIFF_ATTRIBUTETYPE)
@@ -182,7 +185,7 @@ namespace VMDirSchemaSnapIn.UI
                     ParseAttrType();
                     if (AttrDiff == null || AttrDiff.Count == 0)
                     {
-                        UIErrorHelper.ShowMessage("No Diff Found");
+                        MMCDlgHelper.ShowInformation("No Diff Found");
                     }
                     else
                     {
@@ -195,8 +198,9 @@ namespace VMDirSchemaSnapIn.UI
                 {
                     ParseObjectClass();
                     if (ObjectClassDiff == null || ObjectClassDiff.Count == 0)
-                    {
-                        UIErrorHelper.ShowMessage("No Diff Found");
+                    {
+
+                        MMCDlgHelper.ShowInformation("No Diff Found");
                     }
                     else
                     {
@@ -209,7 +213,7 @@ namespace VMDirSchemaSnapIn.UI
                     ParseMetaData();
                     if (MetaDataDiff == null || MetaDataDiff.Count == 0)
                     {
-                        UIErrorHelper.ShowMessage("No Diff Found");
+                        MMCDlgHelper.ShowInformation("No Diff Found");
                     }
                     else
                     {
@@ -244,7 +248,7 @@ namespace VMDirSchemaSnapIn.UI
             }
             catch (Exception ex)
             {
-                UIErrorHelper.ShowMessage(ex.Message);
+                MMCDlgHelper.ShowError(ex.Message);
             }
         }
     }

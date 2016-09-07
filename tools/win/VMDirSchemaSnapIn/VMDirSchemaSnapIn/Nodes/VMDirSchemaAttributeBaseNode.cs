@@ -21,7 +21,8 @@ using VMDirSchemaSnapIn.Nodes;
 using Microsoft.ManagementConsole;
 using VMDirSchemaSnapIn.ListViews;
 using VMDirSchemaSnapIn.UI;
-using System.Windows.Forms;
+using System.Windows.Forms;
+using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace VMDirSchemaEditorSnapIn.Nodes
 {
@@ -99,7 +100,7 @@ namespace VMDirSchemaEditorSnapIn.Nodes
         public void AddNewAttribute()
         {
             var frm = new AttributeTypeWindow();
-            if (frm.ShowDialog() == DialogResult.OK)
+            if (MMCDlgHelper.ShowForm(frm))
             {
               UIErrorHelper.CheckedExec(delegate()
               {
@@ -107,7 +108,7 @@ namespace VMDirSchemaEditorSnapIn.Nodes
                   this.ServerNode.ServerDTO.Connection.SchemaManager.RefreshSchema();
                   this.RefreshNode();
                   this.ListView.Refresh();
-                  UIErrorHelper.ShowMessage(VMDirSchemaConstants.ATTR_ADD_MESSAGE);
+                  MMCDlgHelper.ShowMessage(VMDirSchemaConstants.ATTR_ADD_MESSAGE);
               });
             }
         }
