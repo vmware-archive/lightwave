@@ -176,7 +176,7 @@ public class VMIdentityController {
         List<IPlatformComponentInstaller> components = new ArrayList<IPlatformComponentInstaller>();
         components.add(new IdentityManagerInstaller(standaloneParams
                 .getUsername(), standaloneParams.getDomainName(),
-                standaloneParams.getPassword(),false, standaloneParams.isUpgradeMode()));
+                standaloneParams.getPassword(),false, standaloneParams.isUpgradeMode(), standaloneParams.getServiceStart()));
         components.add(new SecureTokenServerInstaller(standaloneParams));
         components.add(new LightwaveUIInstaller(standaloneParams));
 		System.out.println("\nAdded Lightwave UI installer");
