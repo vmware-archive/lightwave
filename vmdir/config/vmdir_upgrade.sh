@@ -6,22 +6,29 @@ LW_BIN_DIR="$LW_DIR/bin"
 LW_SBIN_DIR="$LW_DIR/sbin"
 VM_DIR="/opt/vmware"
 VM_BIN_DIR="$VM_DIR/bin"
-VM_SBIN_DIR="$VM_DIR/sbin/"
+VM_SBIN_DIR="$VM_DIR/sbin"
 VM_CONFIG_DIR="$VM_DIR/share/config"
 VM_LOG_DIR="/var/log/lightwave"
 
 # registry keys
 VMAFD_PARAM_KEY="[HKEY_THIS_MACHINE\\Services\\vmafd\\Parameters]"
 VMDIR_KEY="[HKEY_THIS_MACHINE\\Services\\vmdir]"
-
+VMDIR_UPGRADE_KEY="[HKEY_THIS_MACHINE\\Services\\vmdir-upgrade]"
 ADMIN="Administrator"
 LIST_VALUES="list_values"
-USAGE="vmdir_upgrade.sh [--password <password>] [--domainname <domain-name>]"
+USAGE="vmdir_upgrade.sh [--password <password>] [--domainname <domain-name>][--recover]"
 
 exit_upgrade(){
     if [ $RUN_LWSM ]; then
         echo "Stopping Likewise services"
         $LW_BIN_DIR/lwsm shutdown
+    fi
+
+    # Successful Upgrade
+    if [ $1 -eq 0 ]; then
+        echo "Directory upgrade success."
+    else
+        echo "Directory upgrade failure."
     fi
 
     exit $1
@@ -41,6 +48,10 @@ if [ $# -gt 0 ]; then
                         ;;
                     "--domainname")
                         STATE="domainname"
+                        ;;
+                    "--recover")
+                        RECOVER=1
+                        STATE="options"
                         ;;
                     *)
                         echo "Invalid parameter: $arg"
@@ -73,9 +84,9 @@ fi
 $LW_BIN_DIR/lwsm stop vmdir
 echo "Running schema patch"
 $VM_SBIN_DIR/vmdird -u -c -f $VM_CONFIG_DIR/vmdirschema.ldif >$VM_LOG_DIR/schema-patch.log 2>&1
+echo "Schema patch finished"
 
-$LW_BIN_DIR/lwsm start vmdir
-
+# Begin vdcupgrade
 if [ -z "$DOMAIN_NAME" ]; then
     # get domain name from registry
 
@@ -97,12 +108,11 @@ if [ -z "$DCACCOUNTDN" ]; then
 fi
 
 ADMIN_NAME="$ADMIN@$DOMAIN_NAME"
-SAMACCOUNT=`hostname -f`
 
 if [ -z "$PASSWORD" ]; then
     if ! exec </dev/tty; then
         echo "To finish upgrading VMware Directory Service, run the following command to configure the server:"
-        echo $VM_BIN_DIR/vdcupgrade -H localhost -D "$ADMIN_NAME" -d "$DCACCOUNTDN" -s  "$SAMACCOUNT"
+        echo $VM_BIN_DIR/vdcupgrade -H localhost -D "$ADMIN_NAME" -d "$DCACCOUNTDN"
     else
 
         echo "Enter password for $ADMIN_NAME >>> "
@@ -111,9 +121,16 @@ if [ -z "$PASSWORD" ]; then
     fi
 fi
 
+# Restart vmdir and put it into standalone mode
+echo "Starting vmdir in standalone mode"
+$LW_BIN_DIR/lwsm start vmdir
+
+if [ $RECOVER ]; then
+    echo "$PASSWORD" | $VM_BIN_DIR/vdcrepadmin -f setreplicationmode -h localhost -m "STANDALONE" -u "$ADMIN_NAME"
+fi
 echo "Running vdcupgrade"
 echo "$PASSWORD" | $VM_BIN_DIR/vdcupgrade -H localhost -D "$ADMIN_NAME" -d "$DCACCOUNTDN" \
-    -s  "$SAMACCOUNT" >$VM_LOG_DIR/vdcupgrade.log 2>&1
+                                          >$VM_LOG_DIR/vdcupgrade.log 2>&1
 if [ $? -ne 0 ]; then
     echo "vdcupgrade failed. Resolve issues in $VM_LOG_DIR/vdcupgrade.log before retrying."
     exit_upgrade 1

@@ -878,7 +878,6 @@ PasswdModifyRequestCheck(
     BOOLEAN         bPasswdDelete    = FALSE;
     BOOLEAN         bPasswdAdd       = FALSE;
     BOOLEAN         bPasswdReplace   = FALSE;
-    BOOLEAN         bModifyHasOthers = FALSE;
     PVDIR_MODIFICATION   pMod          = NULL;
 
     assert(pOperation && ppModNewPasswd && ppModOldPasswd);
@@ -925,10 +924,6 @@ PasswdModifyRequestCheck(
                 break;
             }
         }
-        else
-        {
-            bModifyHasOthers = TRUE;
-        }
     }
 
     // password change: DELETE + ADD must come in pair
@@ -937,13 +932,6 @@ PasswdModifyRequestCheck(
     {
         dwError = LDAP_UNWILLING_TO_PERFORM;
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "Password add and delete must come in pair" );
-    }
-
-    // password change/set must be a stand alone request
-    if (bModifyHasOthers && (bPasswdAdd || bPasswdDelete || bPasswdReplace))
-    {
-        dwError = LDAP_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "Password modification must be a stand alone request" );
     }
 
 cleanup:

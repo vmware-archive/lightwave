@@ -50,15 +50,20 @@ namespace RestSsoAdminSnapIn
 		public override void AwakeFromNib ()
 		{
 			base.AwakeFromNib ();
-			ExternalIdentityProviderDto = new ExternalIdentityProviderDto () {
-				NameIDFormats = new List<string>(),
-				SubjectFormats = new Dictionary<string, string>(),
-				SsoServices = new List<ServiceEndpointDto>(),
-				SloServices = new List<ServiceEndpointDto>(),
-				SigningCertificates = new CertificateChainDto{
-					Certificates = new List<CertificateDto>()
-				}
-			};
+
+			if (ExternalIdentityProviderDto == null) {
+				ExternalIdentityProviderDto = new ExternalIdentityProviderDto () {
+					NameIDFormats = new List<string> (),
+					SubjectFormats = new Dictionary<string, string> (),
+					SsoServices = new List<ServiceEndpointDto> (),
+					SloServices = new List<ServiceEndpointDto> (),
+					SigningCertificates = new CertificateChainDto {
+						Certificates = new List<CertificateDto> ()
+					}
+				};
+			} else {
+				DtoToView ();
+			}
 
 			// Name Id formats
 			BtnAddNameIdFormat.Activated += (object sender, EventArgs e) => {
@@ -200,6 +205,14 @@ namespace RestSsoAdminSnapIn
 				}
 			};
 		}
+
+		private void DtoToView(){
+			TxtUniqueId.StringValue = ExternalIdentityProviderDto.EntityID;
+			TxtUniqueId.Enabled = false;
+			TxtAlias.StringValue = ExternalIdentityProviderDto.Alias;
+			ChkJit.StringValue = ExternalIdentityProviderDto.JitEnabled ? "1" : "0";
+		}
+
 		private void ReloadTableView(NSTableView tableView, List<string> datasource)
 		{
 			tableView.Delegate = new TableDelegate ();
@@ -290,6 +303,10 @@ namespace RestSsoAdminSnapIn
 			if(string.IsNullOrEmpty(TxtSsoName.StringValue))
 			{
 				UIErrorHelper.ShowAlert ("Sso service name cannot be empty", "Alert");
+				return false;
+			} else if(string.IsNullOrEmpty(TxtAlias.StringValue))
+			{
+				UIErrorHelper.ShowAlert ("Alias cannot be empty", "Alert");
 				return false;
 			} else if(string.IsNullOrEmpty(TxtSsoBinding.StringValue))
 			{
