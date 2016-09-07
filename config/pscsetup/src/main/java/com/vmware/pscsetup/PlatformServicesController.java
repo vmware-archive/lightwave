@@ -131,7 +131,7 @@ public class PlatformServicesController {
 	    components.add(new AuthenticationFrameworkInstaller(standaloneParams));
 		components.add(new IdentityManagerInstaller("Administrator",
 		        standaloneParams.getDomainName(), standaloneParams
-						.getPassword(), true, false));
+						.getPassword(), true, false,false));
 		components.add(new SecureTokenServerInstaller());
 		String domain = standaloneParams.getDomainName();
 		String hostname = standaloneParams.getHostname();

@@ -22,6 +22,7 @@ public class VMIdentityStandaloneInstaller {
             } catch (DomainControllerNativeException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
+                System.exit(1);
             }
         } else if (params.getPassword() == null || params.getPassword().isEmpty()) {
             Console cons = System.console();
@@ -41,6 +42,7 @@ public class VMIdentityStandaloneInstaller {
             } catch (DomainControllerNativeException e) {
                 System.err.printf("Errorcode: " + e.getErrorCode());
                 e.printStackTrace(System.err);
+                System.exit(1);
             }
         }
     }
@@ -66,7 +68,9 @@ public class VMIdentityStandaloneInstaller {
                     mode = ParseMode.PARSE_MODE_BACKUPDIR;
                 } else if (arg.equals("--identity-conf-file-path")) {
                     mode = ParseMode.PARSE_MODE_VMIDENTITY_CONF;
-                }
+                } else if (arg.equals("--start-service")) {
+                    params.setServiceStart();
+		}
                 break;
             case PARSE_MODE_HOSTNAME:
                 params.setHostname(arg);
