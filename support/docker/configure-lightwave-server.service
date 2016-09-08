@@ -1,11 +1,13 @@
 [Unit]
 Description=Lightwave Server Configuration Service
 After=syslog.target network.target
+Before=lwsmd.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/opt/vmware/bin/configure-lightwave-server --config-file /var/lib/vmware/config/lightwave-server.cfg
+KillMode=none
 
 [Install]
 WantedBy=multi-user.target
