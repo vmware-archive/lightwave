@@ -24,6 +24,8 @@ function IdentityProviderService(Configuration, HttpService, HandleHttpResponse)
     var service = {};
     service.GetAll = GetAll;
     service.Get = Get;
+    service.Delete = Delete;
+    service.Create = Create;
     return service;
 
     function Get(context, name) {
@@ -37,6 +39,20 @@ function IdentityProviderService(Configuration, HttpService, HandleHttpResponse)
         var endpoint = Configuration.getIdentityProvidersEndpoint(context.server, context.tenant);
         return HttpService
             .getResponse(endpoint, 'GET', context.token)
+            .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
+    }
+
+    function Delete(context, name) {
+        var endpoint = Configuration.getIdentityProviderEndpoint(context.server, context.tenant, name);
+        return HttpService
+            .getResponse(endpoint, 'DELETE', context.token)
+            .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
+    }
+
+    function Create(context, idp) {
+        var endpoint = Configuration.getIdentityProvidersEndpoint(context.server, context.tenant);
+        return HttpService
+            .getResponse(endpoint, 'POST', context.token, idp)
             .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
     }
 }

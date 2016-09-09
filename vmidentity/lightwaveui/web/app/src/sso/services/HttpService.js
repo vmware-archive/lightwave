@@ -25,16 +25,16 @@ function HttpService($http, HttpConfiguration, AuthenticationService, $window, $
     service.getResponse = getResponse;
     return service;
 
-    function getResponse(endpoint, verb, token, postData, isText) {
+    function getResponse(endpoint, verb, token, postData, isText, contentType) {
 
-        var contentType = isText ? 'application/x-www-form-urlencoded; charset=utf-8' : 'application/json';
+        var cType = contentType ? contentType : isText ? 'application/x-www-form-urlencoded; charset=utf-8' : 'application/json';
 
         return $http({
             url: endpoint,
             dataType: 'json',
             method: verb,
             data: postData != null && postData!= undefined ? postData : 'data',
-            headers: HttpConfiguration.getHeaders(token, contentType)
+            headers: HttpConfiguration.getHeaders(token, cType)
         }).then(handleSuccess, handleFailure);
     }
 
@@ -43,7 +43,6 @@ function HttpService($http, HttpConfiguration, AuthenticationService, $window, $
     }
 
     function handleFailure(response){
-        console.log('Failure response:' + JSON.stringify(response));
         if(response.status == 401 && response.data.error == 'invalid_token') {
             var redirectUri = '/lightwaveui/Login?tenant=' + $rootScope.globals.currentUser.tenant;
             $window.sessionStorage.currentUser = 'logout';

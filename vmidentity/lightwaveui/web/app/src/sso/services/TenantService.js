@@ -24,6 +24,7 @@ function TenantService(Configuration, HttpService, HandleHttpResponse) {
     var service = {};
     service.Create = Create;
     service.Delete = Delete;
+    service.Cleanup = Cleanup;
     service.GetConfiguration = GetConfiguration;
     service.UpdateConfiguration = UpdateConfiguration;
     service.UpdateDirConfiguration = UpdateDirConfiguration;
@@ -61,6 +62,12 @@ function TenantService(Configuration, HttpService, HandleHttpResponse) {
         var endpoint = Configuration.getTenantEndpoint(context.server, context.tenant);
         return HttpService
             .getResponse(endpoint, 'DELETE', context.token)
+            .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
+    }
+    function Cleanup(context) {
+        var endpoint = Configuration.getTenantCleanupEndpoint(context.server, context.tenant);
+        return HttpService
+            .getResponse(endpoint, 'GET', null, false, "text/html")
             .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
     }
 }
