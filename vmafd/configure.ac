@@ -106,9 +106,19 @@ AC_ARG_WITH([boost-libs],
         BOOST_LDFLAGS="-L$withval"
     ])
 
+AC_ARG_WITH([boost-python-lib],
+    [AC_HELP_STRING([--with-boost-python-lib=<dir>], [use BOOST Python library extension ])],
+    [
+        BOOST_PYTHON_EXT="$withval"
+        BOOST_PYTHON_LDFLAGS="$BOOST_BASE_PATH/lib/libboost_python-$BOOST_PYTHON_EXT.a"
+    ])
+
+
 AC_SUBST(BOOST_BASE_PATH)
 AC_SUBST(BOOST_INCLUDES)
 AC_SUBST(BOOST_LDFLAGS)
+AC_SUBST(BOOST_PYTHON_EXT)
+AC_SUBST(BOOST_PYTHON_LDFLAGS)
 
 saved_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS $BOOST_INCLUDES"
@@ -551,9 +561,9 @@ AC_CHECK_LIB([shadow], [getspnam], [SHADOW_LIBS="-lshadow"])
 AC_CHECK_LIB([crypt], [crypt_r], [CRYPT_LIBS="-lcrypt"])
 AC_LANG_PUSH([C++])
 AC_CHECK_LIB(
-        [boost_unit_test_framework-gcc41-mt-1_47],
+        [boost_unit_test_framework],
         [main],
-        [BOOST_LIBS="-lboost_system-gcc41-mt-1_47 -lboost_filesystem-gcc41-mt-1_47 -lboost_program_options-gcc41-mt-1_47"],
+        [BOOST_LIBS="-lboost_thread -lboost_system -lboost_filesystem -lboost_program_options"],
         [],
         [$BOOST_LDFLAGS])
 AC_LANG_POP([C++])
