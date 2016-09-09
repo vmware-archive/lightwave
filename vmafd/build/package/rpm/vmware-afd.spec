@@ -8,7 +8,7 @@ License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
 Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.9, vmware-directory-client >= 6.6.0, vmware-afd-client = %{version}, vmware-dns-client >= 6.6.0
-BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.9, vmware-directory-client-devel >= 6.6.0, sqlite-autoconf, python2-devel >= 2.7.8, openjdk >= 1.8.0.45, apache-ant >= 1.9.4, ant-contrib >= 1.0b3, vmware-dns-client-devel >= 6.6.0, apache-maven >= 3.3.9
+BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.9, vmware-directory-client-devel >= 6.6.0, sqlite-autoconf, python2-devel >= 2.7.8, openjdk >= 1.8.0.45, apache-ant >= 1.9.4, ant-contrib >= 1.0b3, vmware-dns-client-devel >= 6.6.0, apache-maven >= 3.3.9, boost = 1.60.0
 
 %define _dbdir %_localstatedir/lib/vmware/vmafd
 %define _vecsdir %{_dbdir}/vecs
@@ -16,6 +16,7 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-s
 %define _jarsdir  %{_prefix}/jars
 %define _logdir /var/log/lightwave
 %define _logconfdir /etc/syslog-ng/lightwave.conf.d
+%define _pymodulesdir /opt/vmware/site-packages/identity
 
 %if 0%{?_javahome:1} == 0
 %define _javahome %{_javahome}
@@ -53,6 +54,12 @@ Requires: vmware-afd-client = %{version}
 %description client-devel
 Development Libraries to communicate with VMware Authentication Framework Service
 
+%package client-python
+Summary: VMware Authentication Framework Python Files
+Requires: vmware-afd-client, boost = 1.60.0
+%description client-python
+Python files included in vmafd
+
 %build
 
 export CFLAGS="-Wno-pointer-sign -Wno-unused-but-set-variable -Wno-implicit-function-declaration -Wno-address"
@@ -69,7 +76,8 @@ autoreconf -mif .. &&
             --with-python=/usr \
             --with-jdk=%{_javahome} \
             --with-ant=%{_anthome} \
-            --with-maven=%{_mavendir}
+            --with-maven=%{_mavendir} \
+            --with-boost=/usr
 
 %install
 
@@ -231,6 +239,11 @@ cd build && make install DESTDIR=%{buildroot}
 %{_lib64dir}/libvmafcfgapi.so*
 %{_lib64dir}/libvmafdclient.so*
 %{_lib64dir}/libvmeventclient.so*
+
+%files client-python 
+%defattr(-,root,root)
+%{_pymodulesdir}/vmafd.*
+%{_pymodulesdir}/*.py
 
 %files client-devel
 %defattr(-,root,root)
