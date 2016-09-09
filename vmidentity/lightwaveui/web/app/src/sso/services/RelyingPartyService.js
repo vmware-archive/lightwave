@@ -24,6 +24,9 @@ function RelyingPartyService(Configuration, HttpService, HandleHttpResponse) {
     var service = {};
     service.GetAll = GetAll;
     service.Get = Get;
+    service.Delete = Delete;
+    service.Create = Create;
+    service.Update = Update;
     return service;
 
     function Get(context, name) {
@@ -37,6 +40,26 @@ function RelyingPartyService(Configuration, HttpService, HandleHttpResponse) {
         var endpoint = Configuration.getRelyingPartiesEndpoint(context.server, context.tenant);
         return HttpService
             .getResponse(endpoint, 'GET', context.token)
+            .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
+    }
+
+    function Delete(context, name) {
+        var endpoint = Configuration.getRelyingPartyEndpoint(context.server, context.tenant, name);
+        return HttpService
+            .getResponse(endpoint, 'DELETE', context.token)
+            .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
+    }
+
+    function Create(context, rp) {
+        var endpoint = Configuration.getIdentityProvidersEndpoint(context.server, context.tenant);
+        return HttpService
+            .getResponse(endpoint, 'POST', context.token, rp)
+            .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
+    }
+    function Update(context, rp) {
+        var endpoint = Configuration.getRelyingPartyEndpoint(context.server, context.tenant, idp.name);
+        return HttpService
+            .getResponse(endpoint, 'PUT', context.token, rp)
             .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
     }
 }

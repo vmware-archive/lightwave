@@ -138,6 +138,7 @@ module.controller('TenantCntrl', ['$scope', '$rootScope', 'TenantService', 'Oidc
 
             function setprivatekeycontent(tenant, contents) {
 
+                //tenant.privateKeyFilePath = "(selected)";
                 tenant.credentials.privateKey = {
                     algorithm: 'RSA',
                     encoded: contents
@@ -146,6 +147,7 @@ module.controller('TenantCntrl', ['$scope', '$rootScope', 'TenantService', 'Oidc
 
             function setcertificatecontent(tenant, contents) {
 
+                tenant.certFilePath = "(selected)";
                 var metadata = Util.getCertificateDetails(contents);
                 var certificate = {
                     encoded: contents,

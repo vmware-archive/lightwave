@@ -31,6 +31,9 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
 
             $scope.vm.getallrelyingparty = getallrelyingparty;
             $scope.vm.viewrelyingparty = viewrelyingparty;
+            $scope.vm.addNewRelyingParty = addNewRelyingParty;
+            $scope.vm.editRelyingParty = editRelyingParty;
+            $scope.vm.deleteRelyingParty = deleteRelyingParty;
 
             /* Identity Providers */
             $scope.vm.identityproviders = [];
@@ -40,6 +43,9 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
 
             $scope.vm.getallidentityprovider = getallidentityprovider;
             $scope.vm.viewidentityprovider = viewidentityprovider;
+            $scope.vm.addNewIdentityProvider = addNewIdentityProvider;
+            $scope.vm.editIdentityProvider = editIdentityProvider;
+            $scope.vm.deleteIdentityProvider = deleteIdentityProvider;
 
             /* OIDC Clients */
             $scope.vm.oidcclients = [];
@@ -49,11 +55,125 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
 
             $scope.vm.getalloidcclient = getalloidcclient;
             $scope.vm.viewoidcclient = viewoidcclient;
+            $scope.vm.addNewOidcClient = addNewOidcClient;
+            $scope.vm.editOidcClient = editOidcClient;
+            $scope.vm.deleteOidcClient = deleteOidcClient;
 
             init();
 
             function init() {
                 getallrelyingparty();
+            }
+
+            function addNewRelyingParty(){
+                var template = 'sso/serviceproviders/relyingparty/relyingparty.add.html';
+                var controller = 'RelyingPartyCntrl';
+                popupUtil.open($scope, template, controller);
+            }
+
+            function editRelyingParty(relyingParty){
+                if(relyingParty) {
+                    $scope.vm.selectedRelyingParty = relyingParty;
+                    var template = 'sso/serviceproviders/relyingparty/relyingparty.edit.html';
+                    var controller = 'RelyingPartyCntrl';
+                    popupUtil.open($scope, template, controller);
+                }
+            }
+
+            function deleteRelyingParty(relyingParty){
+
+                if(relyingParty) {
+                    $scope.error = '';
+                    RelyingPartyService
+                        .Delete($rootScope.globals.currentUser, relyingParty.name)
+                        .then(function (res) {
+                            if (res.status == 200 || res.status == 204) {
+                                $rootScope.globals.errors = {
+                                    details: 'Relying Party ' + relyingParty.name + ' deleted successfully',
+                                    success: true
+                                };
+                                $scope.vm.selectedRelyingParty = null;
+                                getallrelyingparty();
+                            }
+                            else {
+                                $rootScope.globals.errors = res.data;
+                            }
+                        });
+                }
+            }
+
+            function addNewIdentityProvider(){
+                var template = 'sso/serviceproviders/identityprovider/identityprovider.add.html';
+                var controller = 'IdentityProviderCntrl';
+                popupUtil.open($scope, template, controller);
+            }
+
+            function editIdentityProvider(idp){
+                if(idp) {
+                    $scope.vm.selectedIdentityProvider = idp;
+                    var template = 'sso/serviceproviders/identityprovider/identityprovider.edit.html';
+                    var controller = 'IdentityProviderCntrl';
+                    popupUtil.open($scope, template, controller);
+                }
+            }
+
+            function deleteIdentityProvider(idp){
+
+                if(idp) {
+                    $scope.error = '';
+                    IdentityProviderService
+                        .Delete($rootScope.globals.currentUser, idp.entityID)
+                        .then(function (res) {
+                            if (res.status == 200 || res.status == 204) {
+                                $rootScope.globals.errors = {
+                                    details: 'Identity Provider ' + idp.entityID + ' deleted successfully',
+                                    success: true
+                                };
+                                $scope.vm.selectedIdentityProvider = null;
+                                getallidentityprovider();
+                            }
+                            else {
+                                $rootScope.globals.errors = res.data;
+                            }
+                        });
+                }
+            }
+
+            function addNewOidcClient(){
+                var template = 'sso/serviceproviders/oidcclient/oidcclient.add.html';
+                var controller = 'OidcClientCntrl';
+                popupUtil.open($scope, template, controller);
+            }
+
+            function editOidcClient(oidcClient){
+                if(oidcClient) {
+                    $scope.vm.selectedOIDCClient = oidcClient;
+                    var template = 'sso/serviceproviders/oidcclient/oidcclient.edit.html';
+                    var controller = 'OidcClientCntrl';
+                    popupUtil.open($scope, template, controller);
+                }
+            }
+
+            function deleteOidcClient(oidc){
+
+                if(oidc) {
+                    $scope.error = '';
+                    OidcClientService
+                        .Delete($rootScope.globals.currentUser, oidc.clientId)
+                        .then(function (res) {
+                            if (res.status == 200 || res.status == 204) {
+                                $rootScope.globals.errors = {
+                                    details: 'OIDC Client ' + oidc.clientId + ' deleted successfully',
+                                    success: true
+                                };
+                                $scope.vm.selectedIdentityProvider = null;
+                                getalloidcclient();
+                            }
+                            else {
+                                $rootScope.globals.errors = res.data;
+                            }
+                        });
+                }
             }
 
             function getallrelyingparty(searchText) {

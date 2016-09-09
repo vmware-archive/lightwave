@@ -25,6 +25,8 @@ function OidcClientService(Configuration, HttpService, HandleHttpResponse) {
     service.GetAll = GetAll;
     service.Get = Get;
     service.Create = Create;
+    service.Delete = Delete;
+    service.Update = Update;
     service.AddClientId = AddClientId;
     return service;
 
@@ -53,6 +55,20 @@ function OidcClientService(Configuration, HttpService, HandleHttpResponse) {
         var endpoint = Configuration.addClientId(server, tenant, clientId);
         return HttpService
             .getResponse(endpoint, 'GET', token, clientId)
+            .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
+    }
+
+    function Delete(context, name) {
+        var endpoint = Configuration.getOpenIdConnectClientEndpoint(context.server, context.tenant, name);
+        return HttpService
+            .getResponse(endpoint, 'DELETE', context.token)
+            .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
+    }
+
+    function Update(context, client) {
+        var endpoint = Configuration.getOpenIdConnectClientEndpoint(context.server, context.tenant, client.clientId);
+        return HttpService
+            .getResponse(endpoint, 'PUT', token, client)
             .then(HandleHttpResponse.Success, HandleHttpResponse.Failure);
     }
 }

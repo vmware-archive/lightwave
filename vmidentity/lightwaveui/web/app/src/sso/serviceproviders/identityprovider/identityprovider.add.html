@@ -1,0 +1,246 @@
+<div class="popup-container">
+    <div class="header-20px">
+        Add Identity Provider
+    </div>
+    <div class='error' ng-show="globals.popup_errors && !globals.popup_errors.success">
+        <img src="../app/assets/error.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}} {{globals.popup_errors.cause}}
+    </div>
+    <div class='success' ng-show="globals.popup_errors && globals.popup_errors.success">
+        <img src="../app/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}}
+    </div>
+    <div class="row">
+        <form name="editIdentityProviderForm"
+              ng-submit="vm.addIdentityProvider(vm.selectedIdentityProvider)"
+              role="form">
+            <div class="row content popup-content">
+                <div class="col-xs-12 popup-row">
+                    <div class="col-xs-4">
+                        Alias
+                    </div>
+                    <div class="col-xs-8">
+                        <input type="text"
+                               id="alias"
+                               name="alias"
+                               autofocus="autofocus"
+                               ng-model="vm.selectedIdentityProvider.alias"
+                               class="form-control pull-left" required
+                               placeholder="contoso"/>
+                    </div>
+                </div>
+                <div class="col-xs-12 popup-row">
+                    <div class="col-xs-4">
+                        JIT Enabled?
+                    </div>
+                    <div class="col-xs-8">
+                        <input type="checkbox"
+                               id="jitEnabled"
+                               name="jitEnabled"
+                               ng-model="vm.selectedIdentityProvider.jitEnabled"
+                               class="pull-left" style="margin-right:10px;"/> JIT Enabled
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Add Name ID Format
+                    </div>
+                    <div class="col-xs-8">
+                        <input type="text"
+                               id="nameIDFormat"
+                               name="nameIDFormat"
+                               autofocus="autofocus"
+                               ng-model="vm.selectedIdentityProvider.nameIDFormat"
+                               class="form-control pull-left"
+                               placeholder="{{name: firstname}}"/>
+                        <button type="button"
+                                class="btn-xs btn-default pull-right btn-popup-footer"
+                                ng-click="vm.addNameIdFormat(vm.selectedIdentityProvider.nameIDFormat)">
+                            Add
+                        </button>
+                    </div>
+                </div>
+                <div class="col-xs-12 popup-row">
+                    <div class="col-xs-4">
+                        Name ID Formats
+                    </div>
+                    <div class="col-xs-8">
+                        <div ng-show="!vm.selectedIdentityProvider.nameIDFormats">
+                            No name ID format specified
+                        </div>
+                        <div ng-repeat="nameIDFormat in vm.selectedIdentityProvider.nameIDFormats"
+                             ng-show="vm.selectedIdentityProvider.nameIDFormats">
+                            {{nameIDFormat}}
+                            <button class="btn btn-xs btn-link"
+                                    type="button"
+                                    ng-click="vm.removeNameIdFormat(vm.selectedIdentityProvider.nameIDFormats, nameIDFormat)"
+                                    uib-tooltip="Remove Name ID Format">
+                                X
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+
+                    </div>
+                    <div class="col-xs-8">
+                        <button class="btn btn-xs btn-link"
+                                type="button"
+                                ng-click="vm.addSubjectFormat()"
+                                uib-tooltip="Add  Subject Format">
+                            Add  Subject Format
+                        </button>
+                    </div>
+                </div>
+                <div class="col-xs-12 popup-row">
+                    <div class="col-xs-4">
+                        Subject Format
+                    </div>
+                    <div class="col-xs-8">
+                        <div ng-show="!vm.selectedIdentityProvider.subjectFormats">
+                            No subject format specified
+                        </div>
+                        <div ng-repeat="(key, value) in vm.selectedIdentityProvider.subjectFormats"
+                             ng-show="vm.selectedIdentityProvider.subjectFormats">
+                            {{key}} ({{value}})
+                            <button class="btn btn-xs btn-link"
+                                    type="button"
+                                    ng-click="vm.removeSubjectFormat(vm.selectedIdentityProvider.subjectFormats, key, value)"
+                                    uib-tooltip="Remove Name ID Format">
+                                X
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Choose Certificate
+                    </div>
+                    <div class="col-xs-8"
+                         ng-class="{ 'has-error': newtenantform.encodedcertfilepath.$invalid }">
+                        <input type="file"
+                               on-read-file="vm.setCertificate(vm.selectedIdentityProvider.signingCertificates, contents)"
+                               id="vm.selectedIdentityProvider.certfilepath"
+                               name="encodedcertfilepath"
+                               ng-model="vm.selectedIdentityProvider.certFilePath"/>
+                    </div>
+                </div>
+                <div class="col-xs-12 popup-row">
+                    <div class="col-xs-4">
+                        Certificates
+                    </div>
+                    <div class="col-xs-8">
+                        <div ng-show="!vm.selectedIdentityProvider.signingCertificates">
+                            No certificates specified
+                        </div>
+                        <div ng-repeat="certificate in vm.selectedIdentityProvider.signingCertificates.certificates"
+                             ng-show="vm.selectedIdentityProvider.signingCertificates && vm.selectedIdentityProvider.signingCertificates.certificates">
+                            <button type="button"
+                                    class="btn btn-link"
+                                    ng-click="vm.viewCertificate(certificate)"
+                                    uib-tooltip="{{certificate.metadata.subject}}"
+                                    style="margin-left:-10px;word-wrap: break-word;word-break: break-all">
+                                {{
+                                certificate.metadata.subject.length> 20 ?
+                                certificate.metadata.subject.substring(0,20) + '...' :
+                                certificate.metadata.subject;
+                                }}
+                            </button>
+                            <button class="btn btn-xs btn-link"
+                                    type="button"
+                                    ng-click="vm.removeCertificate(vm.selectedIdentityProvider.signingCertificates.certificates, certificate)"
+                                    uib-tooltip="Remove Certificate">
+                                X
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+
+                    </div>
+                    <div class="col-xs-8">
+                        <button class="btn btn-xs btn-link"
+                                type="button"
+                                ng-click="vm.addSso()"
+                                uib-tooltip="Add SSO Service">
+                            Add SSO Service
+                        </button>
+                    </div>
+                </div>
+                <div class="col-xs-12 popup-row">
+                    <div class="col-xs-4">
+                        SSO Services
+                    </div>
+                    <div class="col-xs-8">
+                        <div ng-show="!vm.selectedIdentityProvider.ssoServices">
+                            No SSO Services specified
+                        </div>
+                        <div ng-repeat="sso in vm.selectedIdentityProvider.ssoServices"
+                             ng-show="vm.selectedIdentityProvider.ssoServices">
+                            {{sso.name}}  - {{sso.endpoint}} ({{sso.binding}})
+                            <button class="btn btn-xs btn-link"
+                                    type="button"
+                                    ng-click="vm.removeSso(vm.selectedIdentityProvider.ssoServices, sso)"
+                                    uib-tooltip="Remove Name ID Format">
+                                X
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+
+                    </div>
+                    <div class="col-xs-8">
+                        <button class="btn btn-xs btn-link"
+                                type="button"
+                                ng-click="vm.addSlo()"
+                                uib-tooltip="Add SLO Service">
+                            Add SLO Service
+                        </button>
+                    </div>
+                </div>
+                <div class="col-xs-12 popup-row">
+                    <div class="col-xs-4">
+                        SLO Services
+                    </div>
+                    <div class="col-xs-8">
+                        <div ng-show="!vm.selectedIdentityProvider.sloServices">
+                            No SLO Services specified
+                        </div>
+                        <div ng-repeat="slo in vm.selectedIdentityProvider.sloServices"
+                             ng-show="vm.selectedIdentityProvider.sloServices">
+                            {{slo.name}} - {{ slo.endpoint }} ({{slo.binding}})
+                            <button class="btn btn-xs btn-link"
+                                    type="button"
+                                    ng-click="vm.removeSlo(vm.selectedIdentityProvider.sloServices, slo)"
+                                    uib-tooltip="Remove Name ID Format">
+                                X
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="popup-row col-xs-12">
+                <button type="submit"
+                        class="btn btn-primary pull-right btn-popup-footer"
+                        ng-disabled="editIdentityProviderForm.$invalid && !isValidIdentityProvider(vm.selectedIdentityProvider)">Save</button>
+                <button type="button"
+                        class="btn btn-default pull-right btn-popup-footer"
+                        ng-click="closeThisDialog('cancel')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>

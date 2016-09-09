@@ -31,6 +31,26 @@
                 <div class="tab-container">
 
                     <div style="margin-bottom:5px;">
+                        <button type="button" class="btn btn-link"
+                                ng-show="globals.currentUser.role == 'Administrator'"
+                                ng-click="vm.addNewRelyingParty()"
+                                style="float:left;margin-left:10px;">
+                            ADD
+                        </button>
+                        <button type="button" class="btn btn-link"
+                                ng-click="vm.editRelyingParty(vm.selectedRelyingParty)"
+                                ng-show="globals.currentUser.role == 'Administrator' && vm.selectedRelyingParty"
+                                style="float:left;margin-left:10px;">
+                            EDIT
+                        </button>
+                        <button type="button" class="btn btn-link"
+                                ng-click="vm.deleteRelyingParty(vm.selectedRelyingParty)"
+                                ng-show="globals.currentUser.role == 'Administrator' && vm.selectedRelyingParty"
+                                style="float:left;margin-left:10px;"
+                                confirmed-click="deleteRelyingParty(vm.selectedRelyingParty)"
+                                ng-confirm-click="Do you want to delete relying party {{vm.selectedRelyingParty.name}}?">
+                            DELETE
+                        </button>
                         <form name="form"
                               ng-submit="vm.getallrelyingparty(vm.searchrelyingparty)"
                               role="form"
@@ -110,6 +130,26 @@
                 <div class="tab-container">
 
                     <div style="margin-bottom:5px;">
+                        <button type="button" class="btn btn-link"
+                                ng-show="globals.currentUser.role == 'Administrator'"
+                                ng-click="vm.addNewIdentityProvider()"
+                                style="float:left;margin-left:10px;">
+                            ADD
+                        </button>
+                        <button type="button" class="btn btn-link"
+                                ng-click="vm.editIdentityProvider(vm.selectedIdentityProvider)"
+                                ng-show="globals.currentUser.role == 'Administrator' && vm.selectedIdentityProvider"
+                                style="float:left;margin-left:10px;">
+                            EDIT
+                        </button>
+                        <button type="button" class="btn btn-link"
+                                ng-click="vm.deleteIdentityProvider(vm.selectedIdentityProvider)"
+                                ng-show="globals.currentUser.role == 'Administrator' && vm.selectedIdentityProvider"
+                                style="float:left;margin-left:10px;"
+                                confirmed-click="deleteIdentityProvider(vm.selectedIdentityProvider)"
+                                ng-confirm-click="Do you want to delete identity provider {{vm.selectedIdentityProvider.clientId}}?">
+                            DELETE
+                        </button>
                         <!-- Search box to search all the relying party -->
                         <form name="form"
                               ng-submit="vm.getallidentityprovider(vm.searchidentityprovider)"
@@ -202,249 +242,29 @@
 
             <!-- Open Id Connect Client tab -->
             <uib-tab index="2" select="vm.getalloidcclient(vm.searchoidcclient)" heading="Open ID Connect Client">
-                <!-- Open Id Connect Client tab: Content -->
-                <!--<div class="tab-container">
-
-                    &lt;!&ndash; Search box to search all the open Id Connect Clients &ndash;&gt;
-                    <form name="form"
-                          ng-submit="vm.getalloidcclient(vm.searchoidcclient)"
-                          role="form"
-                          class="text-center">
-                        <input type="text" name="searchoidcclient"
-                               id="searchoidcclient"
-                               ng-model="vm.searchoidcclient"
-                               class="search-box-in-tab"
-                               placeholder="Search by Open Id Connect Client Id"/>
-                        <button type="submit"
-                                class="btn btn-primary btn-xs">
-                            Search
-                        </button>
-                       &lt;!&ndash; <button type="button"
-                                class="btn btn-default btn-xs item-menu-button"
-                                ng-click="vm.addoidcclient = false">
-                            Add New Open Id Connect Client
-                        </button>&ndash;&gt;
-                    </form>
-
-                    &lt;!&ndash; Add a new open Id Connect Client &ndash;&gt;
-                   &lt;!&ndash; <div uib-collapse="vm.addoidcclient"
-                         class="box row">
-                        <div class="box-header">
-                            Add New Open Id Connect Client
-                        </div>
-                        <div class="box-content">
-                            <form name="addnewoidcclientform"
-                                  role="addnewoidcclientform"
-                                  ng-submit="savenewoidcclient(newoidcclient)">
-                                <div class="section-help">
-                                    Fill out the form and click Save to add a new Open Id Connect Client<br/>
-                                </div>
-                            </form>
-                        </div>
-                    </div>&ndash;&gt;
-
-                    &lt;!&ndash; Total open Id Connect Clients header &ndash;&gt;
-                    <div style="bottom:0px; height:20px;">
-                        <div ng-if="vm.oidcclients"
-                             class="text-right total-members">
-                            Total Open Id Connect Client: {{vm.oidcclients.length}}
-                        </div>
-                    </div>
-
-                    <img ng-if="vm.oidcdataLoading"
-                         src="../app/assets/progress.gif"
-                         style="padding:20px;"/>
-                    &lt;!&ndash; List all the open Id Connect Clients &ndash;&gt;
-                    <uib-accordion close-others="true">
-                        <uib-accordion-group ng-repeat="currentoidcclient in vm.oidcclients" ng-if="vm.oidcclients">
-                            <uib-accordion-heading>
-                                <div>
-                                    <img src="../app/assets/serviceprovider.png"
-                                         width="16px"
-                                         height="16px"
-                                         ng-click="getoidcclient(currentoidcclient.clientId)"/>
-                                    <small>
-                                        <strong ng-click="getoidcclient(currentoidcclient.clientId)">
-                                            {{currentoidcclient.clientId}}
-                                        </strong>
-                                    </small>
-                                </div>
-                            </uib-accordion-heading>
-                            <br/><br/>
-                            <form name="currentoidcclientform">
-                                <div ng-if="currentoidcclient">
-                                    <div class="form-group col-xs-12 pull-left">
-                                        <div class="col-xs-1">
-                                            <label class="control-label pull-right"
-                                                   for="currentoidcclient.clientId">
-                                                Client ID
-                                            </label>
-                                        </div>
-                                        <div class="col-xs-5">
-                                            <input type="text"
-                                                   id="currentoidcclient.clientId"
-                                                   name="clientId"
-                                                   ng-model="currentoidcclient.clientId"
-                                                   class="input-md pull-left"
-                                                   style="width:300px;"
-                                                   readonly="readonly"/>
-                                        </div>
-                                        <div class="col-xs-1">
-                                            <label class="control-label pull-right"
-                                                   for="currentoidcclient.oidcclientMetadataDTO.CertSubjectDN">
-                                                Certificate DN
-                                            </label>
-                                        </div>
-                                        <div class="col-xs-5">
-                                            <input type="text"
-                                                   id="currentoidcclient.oidcclientMetadataDTO.CertSubjectDN"
-                                                   name="CertSubjectDN"
-                                                   ng-model="currentoidcclient.oidcclientMetadataDTO.CertSubjectDN"
-                                                   class="input-md pull-left" readonly="readonly"
-                                                   style="width:300px;"/>
-
-                                        </div>
-                                    </div>
-                                    <div class="form-group col-xs-12 pull-left">
-                                        <div class="col-xs-1">
-                                            <label class="control-label pull-right">
-                                                Token Auth Method
-                                            </label>
-                                        </div>
-                                        <div class="col-xs-5">
-                                            <select ng-model="currentoidcclient.oidcclientMetadataDTO.tokenEndpointAuthMethod"
-                                                    ng-options="t as t.name for t in vm.tokenauthmethods"
-                                                    style="height:48px;width:120px;margin-left:5px;" disabled="disabled">
-                                            </select>
-                                        </div>
-                                        <div class="col-xs-1">
-                                            <label class="control-label pull-right"
-                                                   for="currentoidcclient.oidcclientMetadataDTO.logoutUri">
-                                                Logout URI
-                                            </label>
-                                        </div>
-                                        <div class="col-xs-5 small">
-                                            <input type="text"
-                                                   id="currentoidcclient.oidcclientMetadataDTO.logoutUri"
-                                                   name="logoutUri"
-                                                   ng-model="currentoidcclient.oidcclientMetadataDTO.logoutUri"
-                                                   class="input-md pull-left" readonly="readonly"
-                                                   style="width:300px;"/>
-                                        </div>
-                                    </div>
-                                    <div class="form-group col-xs-12 pull-left">
-                                        <div class="col-xs-1">
-                                            <label class="control-label pull-right">
-                                                Redirect URI
-                                            </label>
-                                        </div>
-                                        <div class="col-xs-5">
-                                            <div class="small small-grid" style="overflow-x:scroll">
-                                                <div class="small-grid-header">
-                                                    <div class="col-xs-4">
-                                                        <strong>
-                                                           URI
-                                                        </strong>
-                                                    </div>
-                                                </div>
-                                                <div ng-show="!currentoidcclient.oidcclientMetadataDTO.redirectUris">
-                                                    <br/>
-                                                     <span style="padding-left:10px;">
-                                                        No redirect URI specified
-                                                     </span>
-                                                    <br/>
-                                                </div>
-                                                <div ng-repeat="redirectUri in currentoidcclient.oidcclientMetadataDTO.redirectUris"
-                                                     ng-show="currentoidcclient.oidcclientMetadataDTO.redirectUris"
-                                                     class="col-xs-4"
-                                                     style="width:100%;"
-                                                     ng-if="redirectUri"
-                                                     uib-tooltip="{{redirectUri}}"
-                                                     ng-class-odd="'small-grid-row-odd'">
-                                                        {{
-                                                            redirectUri.length > 50
-                                                                ? redirectUri.substring(0,50) + '...'
-                                                                : redirectUri
-                                                        }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-xs-1">
-                                            <label class="control-label pull-right">
-                                                Post Logout Redirect URI
-                                            </label>
-                                        </div>
-                                        <div class="col-xs-5">
-                                            <div class="small small-grid" style="overflow-x:scroll">
-                                                <div class="small-grid-header">
-                                                    <div class="col-xs-4">
-                                                        <strong>
-                                                            URI
-                                                        </strong>
-                                                    </div>
-                                                </div>
-                                                <div ng-show="!currentoidcclient.oidcclientMetadataDTO.postLogoutRedirectUris">
-                                                    <br/>
-                                                     <span style="padding-left:10px;">
-                                                        No post logout redirect URI specified
-                                                     </span>
-                                                    <br/>
-                                                </div>
-                                                <div ng-repeat="postlogoutRedirectUri in currentoidcclient.oidcclientMetadataDTO.postLogoutRedirectUris"
-                                                     ng-show="currentoidcclient.oidcclientMetadataDTO.postLogoutRedirectUris"
-                                                     ng-class-odd="'small-grid-row-odd'"
-                                                     class="col-xs-4"
-                                                     style="width:100%;"
-                                                     ng-if="postlogoutRedirectUri"
-                                                     uib-tooltip="{{postlogoutRedirectUri}}">
-                                                        {{
-                                                            postlogoutRedirectUri.length > 50
-                                                            ? postlogoutRedirectUri.substring(0,50) + '...'
-                                                            : postlogoutRedirectUri
-                                                        }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
-                            <br/><br/>
-                            &lt;!&ndash;<div class="form-group col-xs-9">
-                                <div class="col-xs-3 col-xs-offset-6">
-                                    <form name="currentoidcclientform"
-                                          ng-submit="vm.savecurrentoidcclient(currentoidcclient)"
-                                          role="currentoidcclientform"
-                                          class="text-left">
-                                        <button class="btn btn-xs btn-primary"
-                                                type="submit"
-                                                uib-tooltip="Save Open Id Connect Client"
-                                                style="float:left;margin-right:10px;">
-                                            Save
-                                        </button>
-                                    </form>
-                                    <form name="deletecurrentoidcclientform"
-                                          ng-submit="vm.deletecurrentoidcclient(currentoidcclient.clientId)"
-                                          role="deletecurrentoidcclientform"
-                                          class="text-left">
-                                        <button class="btn btn-xs btn-danger"
-                                                type="submit"
-                                                uib-tooltip="Delete Open Id Connect Client"
-                                                style="float:left;margin-right:10px;">
-                                            Delete
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>&ndash;&gt;
-                        </uib-accordion-group>
-                        <div ng-if="!vm.oidcdataLoading && (!vm.oidcclients || vm.oidcclients.length == 0)" style="padding:60px;" class="row">
-                            No Open Id Connect Clients found.
-                        </div>
-                    </uib-accordion>
-                </div>-->
-
                 <div class="tab-container">
 
                     <div style="margin-bottom:5px;">
+                        <button type="button" class="btn btn-link"
+                                ng-show="globals.currentUser.role == 'Administrator'"
+                                ng-click="vm.addNewOidcClient()"
+                                style="float:left;margin-left:10px;">
+                            ADD
+                        </button>
+                        <button type="button" class="btn btn-link"
+                                ng-click="vm.editOidcClient(vm.selectedOIDCClient)"
+                                ng-show="globals.currentUser.role == 'Administrator' && vm.selectedOIDCClient"
+                                style="float:left;margin-left:10px;">
+                            EDIT
+                        </button>
+                        <button type="button" class="btn btn-link"
+                                ng-click="vm.deleteOidcClient(vm.selectedOIDCClient)"
+                                ng-show="globals.currentUser.role == 'Administrator' && vm.selectedOIDCClient"
+                                style="float:left;margin-left:10px;"
+                                confirmed-click="vm.deleteOidcClient(vm.selectedOidcClient)"
+                                ng-confirm-click="Do you want to delete OIDC Client {{vm.selectedOIDCClient.entityID}}?">
+                            DELETE
+                        </button>
                         <!-- Search box to search all the relying party -->
                         <form name="form"
                               ng-submit="vm.getalloidcclient(vm.searchoidcclient)"

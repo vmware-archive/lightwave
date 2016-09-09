@@ -1,0 +1,83 @@
+<div class="popup-container">
+    <div class='error' ng-show="globals.popup_errors && !globals.popup_errors.success">
+        <img src="../app/assets/error.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}} {{globals.popup_errors.cause}}
+    </div>
+    <div class='success' ng-show="globals.popup_errors && globals.popup_errors.success">
+        <img src="../app/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}}
+    </div>
+    <div class="row">
+        <form name="addSignatureAlgorithmForm"
+              ng-submit="saveSignatureAlgorithm(newSignatureAlgorithm)"
+              role="form">
+            <div class="row content popup-content">
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Priority
+                    </div>
+                    <div class="col-xs-8"
+                         ng-class="{ 'has-error': addSignatureAlgorithmForm.priority.$invalid}">
+                        <input type="number"
+                               min="1"
+                               max="9999"
+                               id="priority"
+                               name="priority"
+                               ng-model="newSignatureAlgorithm.priority"
+                               required
+                               class="form-control pull-left"
+                               placeholder="1"/>
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Min Key Size
+                    </div>
+                    <div class="col-xs-8"
+                         ng-class="{ 'has-error': addSignatureAlgorithmForm.endpoint.$invalid}">
+                        <input type="number"
+                               min="1"
+                               max="999999"
+                               id="minKeySize"
+                               name="minKeySize"
+                               ng-model="newSignatureAlgorithm.minKeySize"
+                               class="form-control pull-left"
+                               placeholder="128"/>
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Max Key Size
+                    </div>
+                    <div class="col-xs-8"
+                         ng-class="{ 'has-error': addSignatureAlgorithmForm.binding.$invalid}">
+                        <input type="number"
+                               min="1"
+                               max="999999"
+                               id="maxKeySize"
+                               name="maxKeySize"
+                               ng-model="newSignatureAlgorithm.binding"
+                               class="form-control pull-left"
+                               placeholder="256"/>
+                    </div>
+                </div>
+            </div>
+            <div class="popup-row col-xs-12">
+                <button type="submit"
+                        class="btn btn-primary pull-right btn-popup-footer"
+                        ng-disabled="addSignatureAlgorithmForm.$invalid && !isValidSignatureAlgorithm(newSignatureAlgorithm)">Save</button>
+                <button type="button"
+                        class="btn btn-default pull-right btn-popup-footer"
+                        ng-click="closeThisDialog('cancel')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
