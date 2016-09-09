@@ -92,6 +92,7 @@ module.controller('ServerMgmtCntrl', ['$scope',  '$rootScope','ServerService', '
                     .Delete($rootScope.globals.currentUser)
                     .then(function (res) {
                         if (res.status == 200 || res.status == 204) {
+                            TenantService.Cleanup($rootScope.globals.currentUser);
                             AuthenticationService.redirectToHome();
                         }
                         else {

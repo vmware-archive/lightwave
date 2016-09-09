@@ -34,6 +34,7 @@
                     <div class="col-xs-8"
                          ng-class="{ 'has-error': editSolutionUserForm.encodedcertfilepath.$invalid }">
                         <input type="file"
+                               autofocus="autofocus"
                                on-read-file="setSelectedCertificate(vm.selectedSolutionUser, contents)"
                                id="encodedcertfilepath"
                                name="encodedcertfilepath"

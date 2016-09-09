@@ -24,6 +24,11 @@ function Configuration() {
         return 'https://' + server + ':443/';
     }
 
+    // Lightwave UI
+    function getLightwaveUri(server) {
+        return 'https://' + server + '/lightwaveui';
+    }
+
     // Open Id Connect login endpoint
     function getLoginEndpoint(server, tenant) {
         var serverUri = getServerUri(server);
@@ -58,6 +63,12 @@ function Configuration() {
         return idmEndpoint + '/tenant/' + tenant;
     }
 
+    // Tenant cleanup endpoint
+    function getTenantCleanupEndpoint(server, tenant) {
+
+        var lightwaveEndpoint = getLightwaveUri(server);
+        return lightwaveEndpoint + '/CleanupTenant?tenant=' + tenant;
+    }
     // Open Id Connect login arguments
     function getLoginArgument(username, password) {
         username = username.replace('@', '%40');
@@ -281,5 +292,6 @@ function Configuration() {
     service.getUserPasswordEndpoint = getUserPasswordEndpoint;
     service.getDirConfigEndpoint = getDirConfigEndpoint;
     service.addClientId = addClientId;
+    service.getTenantCleanupEndpoint = getTenantCleanupEndpoint;
     return service;
 }

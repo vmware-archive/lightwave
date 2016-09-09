@@ -37,35 +37,36 @@ function certUtil(dateUtil, popupUtil) {
     }
 
     function getCertificateDetails(pem) {
-        var c = new X509();
-        c.readCertPEM(pem);
-        var issuer = c.getIssuerString();
-        issuer = issuer.replace('undefined','DC');
-        issuer = reverse(issuer, '/');
-        var subject = c.getSubjectString();
-        subject = subject.replace('undefined','DC');
-        subject = reverse(subject, '/');
-        var after = c.getNotAfter();
-        var expired = checkexpired(after);
-        after = dateUtil.toDate(after);
-        var before = c.getNotBefore();
-        before = dateUtil.toDate(before);
-        //var fingerprint = getfingerprint(c.hex);
 
+        var issuer='', subject= '', after = '', expired = '', before = '';
 
-        var metadata = {
+        try {
+
+            var c = new X509();
+            c.readCertPEM(pem);
+            issuer = c.getIssuerString();
+            issuer = issuer.replace('undefined', 'DC');
+            issuer = reverse(issuer, '/');
+            subject = c.getSubjectString();
+            subject = subject.replace('undefined', 'DC');
+            subject = reverse(subject, '/');
+            after = c.getNotAfter();
+            expired = checkexpired(after);
+            after = dateUtil.toDate(after);
+            before = c.getNotBefore();
+            before = dateUtil.toDate(before);
+        }
+        catch(e)
+        {
+
+        }
+        return {
             "issuer" : issuer,
             "subject" : subject ,
             "after" : after,
             "before" : before,
             "expired": expired
         };
-
-        return metadata;
-    }
-
-    function getfingerprint(s) {
-        return KJUR.crypto.Util.hashString(s, 'sha1');
     }
 
     function reverse(text, delimiter)

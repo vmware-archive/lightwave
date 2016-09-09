@@ -14,6 +14,7 @@
 
 package com.vmware.lightwaveui;
 import java.io.IOException;
+import java.lang.StringBuilder;
 import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -100,7 +101,8 @@ public class Home extends HttpServlet {
 		builder.append("URI: " + uri + querystring);
 		response.getWriter().append("Test Served at: ").append(builder.toString());
 		
-		String hostname = uri.split("://")[1].split("/")[0].split(":")[0];
+		//String hostname = uri.split("://")[1].split("/")[0].split(":")[0];
+		String hostname = new ServerHelper().getHostname();
 		String baseuri = "https://" + hostname + "/lightwaveui/app/index.html#/home?";
 		String stateUri = "state=" + value_state;
 		String idTokenUri = "id_token=" + value_id_token;
