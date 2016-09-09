@@ -70,7 +70,15 @@ tools/win/VMDNSSnapIn/VMDNSSnapIn/obj
 tools/win/VMDirSchemaSnapIn/VMDirSchemaSnapIn/obj
 tools/win/logs
 tools/x64
+config/m4/
+vmevent/m4/
+vmdns/m4/
+vmafd/m4/
+vmdir/m4/
+vmca/m4/
+vmca/include/config.h.in        
 vmidentity/lightwaveui/target
+vmidentity/sso-config/Makefile.in
 tools/win/wininstaller/wininstaller.v12.suo
 */m4
 */**/Makefile.in
