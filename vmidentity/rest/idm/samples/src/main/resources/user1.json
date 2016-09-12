@@ -1,0 +1,16 @@
+{
+  "name" : "user1",
+  "domain" : "vsphere.local",
+  "details" : {
+    "email" : "Email@vmware.com",
+    "upn" : "user1@vsphere.local",
+    "firstName" : "Firstname",
+    "lastName" : "Lastname",
+    "description" : "test description"
+  },
+  "disabled" : false,
+  "locked" : false,
+  "passwordDetails" : {
+    "password": "Password!23"
+  }
+}

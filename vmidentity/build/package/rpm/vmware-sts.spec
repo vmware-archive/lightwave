@@ -29,6 +29,12 @@ Requires:  coreutils >= 8.22, openssl >= 1.0.2, openjre >= 1.8.0.45, vmware-dire
 %description client
 Client libraries to communicate with VMware Secure Token Service
 
+%package samples
+Summary: VMware Secure Token Service Samples
+Requires:  vmware-sts-client >= 6.6.0
+%description samples
+Samples for VMware Secure Token Service
+
 %build
 
 cd build
@@ -196,8 +202,12 @@ fi
 %{_jarsdir}/vmware-identity-rest-afd-client.jar
 %{_jarsdir}/vmware-identity-rest-core-client.jar
 %{_jarsdir}/vmware-identity-rest-idm-client.jar
-%{_webappsdir}/openidconnect-sample-rp.war
 # %doc ChangeLog README COPYING
+
+%files samples
+%{_webappsdir}/openidconnect-sample-rp.war
+%{_jarsdir}/vmware-identity-rest-idm-samples.jar
+
 
 %changelog
 
