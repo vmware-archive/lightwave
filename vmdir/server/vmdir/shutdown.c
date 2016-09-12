@@ -96,11 +96,11 @@ VmDirShutdown(
     VmDirSASLShutdown();
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: SASL shutdown complete.", __func__);
 
-    VmDirSchemaLibShutdown();
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: shutdown schema complete.", __func__ );
-
     VmDirIndexLibShutdown();
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: shutdown indexing complete.", __func__);
+
+    VmDirSchemaLibShutdown();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: shutdown schema complete.", __func__ );
 
     if ( pBE )
     {

@@ -61,6 +61,7 @@
                             <input type="radio"
                                    name="identitySourceType"
                                    ng-click="vm.setIdentitySourceType(1)"
+                                   autofocus="autofocus"
                                    ng-checked="vm.newIdentitySource.type == 'IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING'"/>
                             Active Directory as LDAP
                             <br/>
@@ -88,6 +89,7 @@
                             <input type="text"
                                    id="name"
                                    name="name"
+                                   autofocus="autofocus"
                                    ng-model="vm.newIdentitySource.name"
                                    class="form-control pull-left"
                                    placeholder="Contoso"
@@ -228,6 +230,7 @@
                             <input type="text"
                                    id="username"
                                    name="username"
+                                   autofocus="autofocus"
                                    ng-model="vm.newIdentitySource.username"
                                    class="form-control pull-left"
                                    placeholder="administrator"

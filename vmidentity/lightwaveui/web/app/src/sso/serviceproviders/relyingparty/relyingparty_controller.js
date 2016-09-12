@@ -15,29 +15,192 @@
 'use strict';
 
 var module = angular.module('lightwave.ui.sso');
-module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupUtil',
-        function($scope, $rootScope, Util, popupUtil) {
+module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupUtil', 'RelyingPartyService',
+        function($scope, $rootScope, Util, popupUtil, RelyingPartyService) {
 
-            $scope.relyingpartyvm = {};
-            $scope.relyingpartyvm.viewcertificate = viewcertificate;
-            $scope.relyingpartyvm.viewSlo = viewSlo;
-            $scope.relyingpartyvm.viewAttributeConsumerServices = viewAttributeConsumerServices;
-            $scope.relyingpartyvm.viewAssertionConsumerServices = viewAssertionConsumerServices;
+            $scope.vm.viewCertificate = viewCertificate;
+            $scope.vm.setAddCertificate = setAddCertificate;
+            $scope.vm.setEditCertificate = setEditCertificate;
+            $scope.vm.removeCertificate = removeCertificate;
+
+            $scope.vm.addSignatureAlgorithm = addSignatureAlgorithm;
+            $scope.vm.editSignatureAlgorithm = editSignatureAlgorithm;
+            $scope.vm.removeSignatureAlgorithm = removeSignatureAlgorithm;
+
+            $scope.vm.viewSlo = viewSlo;
+            $scope.vm.addSlo = addSlo;
+            $scope.vm.editSlo = editSlo;
+            $scope.vm.removeSlo = removeSlo;
+
+            $scope.vm.viewAttributeConsumerServices = viewAttributeConsumerServices;
+            $scope.vm.addAttributeConsumerService = addAttributeConsumerService;
+            $scope.vm.editAttributeConsumerService = editAttributeConsumerService;
+            $scope.vm.removeAttributeConsumerService = removeAttributeConsumerService;
+
+            $scope.vm.viewAssertionConsumerServices = viewAssertionConsumerServices;
+            $scope.vm.addAssertionConsumerService = addAssertionConsumerService;
+            $scope.vm.editAssertionConsumerService = editAssertionConsumerService;
+            $scope.vm.removeAssertionConsumerService = removeAssertionConsumerService;
+
+            $scope.vm.saveRelyingParty = saveRelyingParty;
+            $scope.vm.updateRelyingParty = updateRelyingParty;
+            $scope.vm.isValidRelyingParty = isValidRelyingParty;
 
             init();
 
             function init(){
                 $rootScope.globals.errors = '';
                 $rootScope.globals.popup_errors = null;
+                $scope.vm.newRelyingParty = {};
             }
 
+            function setAddCertificate(rp, contents){
 
-            function viewcertificate(){
+                var metadata = Util.getCertificateDetails(contents);
+                $scope.vm.newRelyingParty.certificate = {
+                    encoded: contents,
+                    metadata: metadata
+                };
+            }
+
+            function setEditCertificate(rp, contents){
+
+                var metadata = Util.getCertificateDetails(contents);
+                $scope.vm.selectedRelyingParty.certificate = {
+                    encoded: contents,
+                    metadata: metadata
+                };
+            }
+
+            function removeCertificate(rp) {
+
+                rp.certificate = null
+            }
+
+            function addSignatureAlgorithm() {
                 $rootScope.globals.popup_errors = null;
-                if($scope.vm.selectedRelyingParty.certificate) {
+                $scope.vm.isAddRelyingParty = true;
+                var template = 'sso/serviceproviders/relyingparty/signatureAlgorithm/signatureAlgorithm.add.html';
+                var controller = 'SignatureAlgorithmCntrl';
+                popupUtil.open($scope, template, controller);
+            }
+
+            function addSlo() {
+                $rootScope.globals.popup_errors = null;
+                $scope.vm.isAddRelyingParty = true;
+                var template = 'sso/serviceproviders/relyingparty/singleLogoutService/singleLogoutService.add.html';
+                var controller = 'SingleLogoutCntrl';
+                popupUtil.open($scope, template, controller);
+            }
+
+            function addAttributeConsumerService() {
+                $rootScope.globals.popup_errors = null;
+                $scope.vm.isAddRelyingParty = true;
+                var template = 'sso/serviceproviders/relyingparty/attributeConsumerService/attributeConsumerService.add.html';
+                var controller = 'AttributeConsumerServiceCntrl';
+                popupUtil.open($scope, template, controller);
+            }
+
+            function addAssertionConsumerService() {
+                $rootScope.globals.popup_errors = null;
+                $scope.vm.isAddRelyingParty = true;
+                var template = 'sso/serviceproviders/relyingparty/assertionConsumerService/assertConsumerService.add.html';
+                var controller = 'AssertionConsumerServiceCntrl';
+                popupUtil.open($scope, template, controller);
+            }
+
+            function editSignatureAlgorithm() {
+                $rootScope.globals.popup_errors = null;
+                $scope.vm.isAddRelyingParty = false;
+                var template = 'sso/serviceproviders/relyingparty/signatureAlgorithm/signatureAlgorithm.add.html';
+                var controller = 'SignatureAlgorithmCntrl';
+                popupUtil.open($scope, template, controller);
+            }
+
+            function editSlo() {
+                $rootScope.globals.popup_errors = null;
+                $scope.vm.isAddRelyingParty = false;
+                var template = 'sso/serviceproviders/relyingparty/singleLogoutService/singleLogoutService.add.html';
+                var controller = 'SingleLogoutCntrl';
+                popupUtil.open($scope, template, controller);
+            }
+
+            function editAttributeConsumerService() {
+                $rootScope.globals.popup_errors = null;
+                $scope.vm.isAddRelyingParty = false;
+                var template = 'sso/serviceproviders/relyingparty/attributeConsumerService/attributeConsumerService.add.html';
+                var controller = 'AttributeConsumerServiceCntrl';
+                popupUtil.open($scope, template, controller);
+            }
+
+            function editAssertionConsumerService() {
+                $rootScope.globals.popup_errors = null;
+                $scope.vm.isAddRelyingParty = false;
+                var template = 'sso/serviceproviders/relyingparty/assertionConsumerService/assertConsumerService.add.html';
+                var controller = 'AssertionConsumerServiceCntrl';
+                popupUtil.open($scope, template, controller);
+            }
+
+            function removeSlo(slos, slo){
+
+                if(slos && slo) {
+                    for (var i = 0; i < slos.length; i++) {
+
+                        if (slos[i].name == slo.name) {
+                            slos.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            function removeAttributeConsumerService(slos, slo){
+
+                if(slos && slo) {
+                    for (var i = 0; i < slos.length; i++) {
+
+                        if (slos[i].name == slo.name) {
+                            slos.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            function removeAssertionConsumerService(slos, slo){
+
+                if(slos && slo) {
+                    for (var i = 0; i < slos.length; i++) {
+
+                        if (slos[i].name == slo.name) {
+                            slos.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            function removeSignatureAlgorithm(signs, sign){
+
+                if(signs && sign) {
+                    for (var i = 0; i < signs.length; i++) {
+
+                        if (signs[i].priority == sign.priority &&
+                            signs[i].minKeySize == sign.minKeySize &&
+                            signs[i].maxKeySize == sign.maxKeySize) {
+                            signs.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            function viewCertificate(rp){
+                $rootScope.globals.popup_errors = null;
+                if(rp.certificate) {
                     var template = 'shared/components/certificate/certificate.view.html';
                     var controller = 'CertificateViewerCntrl';
-                    Util.viewCertificate($scope, $scope.vm.selectedRelyingParty.certificate.encoded, template, controller);
+                    Util.viewCertificate($scope, rp.certificate.encoded, template, controller);
                 }
             }
 
@@ -45,8 +208,8 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
                 $rootScope.globals.popup_errors = null;
                 if(slo) {
                     $scope.vm.selectedSlo = slo;
-                    var template = 'sso/serviceproviders/relyingparty/singleLogoutService.view.html';
-                    var controller = 'RelyingPartyCntrl';
+                    var template = 'sso/serviceproviders/relyingparty/singleLogoutService/singleLogoutService.view.html';
+                    var controller = 'SingleLogoutCntrl';
                     popupUtil.open($scope, template, controller);
                 }
             }
@@ -54,8 +217,8 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
                 $rootScope.globals.popup_errors = null;
                 if(acs) {
                     $scope.vm.selectedAttributeConsumerService = acs;
-                    var template = 'sso/serviceproviders/relyingparty/attributeConsumerService.view.html';
-                    var controller = 'RelyingPartyCntrl';
+                    var template = 'sso/serviceproviders/relyingparty/attributeConsumerService/attributeConsumerService.view.html';
+                    var controller = 'AttributeConsumerServiceCntrl';
                     popupUtil.open($scope, template, controller);
                 }
             }
@@ -63,10 +226,54 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
                 $rootScope.globals.popup_errors = null;
                 if(acs) {
                     $scope.vm.selectedAssertionConsumerService = acs;
-                    var template = 'sso/serviceproviders/relyingparty/assertConsumerService.view.html';
-                    var controller = 'RelyingPartyCntrl';
+                    var template = 'sso/serviceproviders/relyingparty/assertionConsumerService/assertConsumerService.view.html';
+                    var controller = 'AssertionConsumerServiceCntrl';
                     popupUtil.open($scope, template, controller);
                 }
+            }
+
+            function updateRelyingParty(rp){
+                $rootScope.globals.errors = '';
+                RelyingPartyService
+                    .Update($rootScope.globals.currentUser, rp)
+                    .then(function (res) {
+                        if (res.status == 200) {
+                            $rootScope.globals.errors = {details: 'Relying Party ' + rp.name + ' added successfully', success:true};
+                            $scope.selectedRelyingParty = {};
+                            $scope.vm.getallrelyingparty();
+                            $scope.closeThisDialog('save');
+                        }
+                        else {
+                            $rootScope.globals.popup_errors = res.data;
+                        }
+                    });
+            }
+
+            function saveRelyingParty(rp){
+                $rootScope.globals.errors = '';
+                RelyingPartyService
+                    .Create($rootScope.globals.currentUser, rp)
+                    .then(function (res) {
+                        if (res.status == 200) {
+                            $rootScope.globals.errors = {details: 'Relying Party ' + rp.name + ' added successfully', success:true};
+                            $scope.newRelyingParty = {};
+                            $scope.vm.getallrelyingparty();
+                            $scope.closeThisDialog('save');
+                        }
+                        else {
+                            $rootScope.globals.popup_errors = res.data;
+                        }
+                    });
+            }
+
+            function isValidRelyingParty(rp) {
+
+                return (rp &&
+                    rp.name && rp.url && rp.certificate &&
+                    rp.signatureAlgorithms && rp.signatureAlgorithms.length > 0 &&
+                    rp.singleLogoutServices && rp.singleLogoutServices.length > 0 &&
+                    rp.assertionConsumerServices && rp.assertionConsumerServices.length > 0 &&
+                    rp.attributeConsumerServices && rp.attributeConsumerServices.length > 0);
             }
 
         }]);

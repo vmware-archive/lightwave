@@ -6,6 +6,10 @@ LW_SBIN_DIR=/opt/likewise/sbin
 _exit(){
     if [ $RUN_LWSM ]; then
         $LW_BIN_DIR/lwsm shutdown
+
+        while [ `pidof lwsmd` ];  do
+            sleep 1
+        done
     fi
 
     exit $1
@@ -263,20 +267,24 @@ if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ `pidof init` -eq 1 ]]; then
     #
     $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
           -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller --upgrade --start-service
-          
+
     if [ $? -ne 0 ]; then
         echo "VMIdentity upgrade failed."
         _exit 1
-    fi 
+    fi
     # Upgrade successful, restart lwsm to insure all changes are applied and node is replicating
     if [ -z $RUN_LWSM ]; then
         systemctl restart lwsmd
     fi
 
     echo "Upgrade complete."
-    exit 0
+    _exit 0
 
 else
+    if [ $RUN_LWSM ]; then
+        $LW_BIN_DIR/lwsm autostart
+    fi
+
     case "$LOTUS_DEPLOYMENT" in
         "standalone")
             $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -cp $CLASSPATH \

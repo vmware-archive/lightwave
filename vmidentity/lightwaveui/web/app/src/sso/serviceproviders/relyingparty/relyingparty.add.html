@@ -1,0 +1,251 @@
+<div class="popup-container">
+    <div class="header-20px">
+        Add Relying Party
+    </div>
+    <div class='error' ng-show="globals.popup_errors && !globals.popup_errors.success">
+        <img src="../app/assets/error.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}} {{globals.popup_errors.cause}}
+    </div>
+    <div class='success' ng-show="globals.popup_errors && globals.popup_errors.success">
+        <img src="../app/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}}
+    </div>
+    <div class="row">
+        <form name="rpAddForm"
+              ng-submit="vm.saveRelyingParty(vm.newRelyingParty)"
+              role="form">
+            <div class="row content popup-content">
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Name
+                    </div>
+                    <div class="col-xs-8">
+                        <input type="text"
+                               id="name"
+                               name="name"
+                               autofocus="autofocus"
+                               ng-model="vm.newRelyingParty.name"
+                               class="form-control pull-left"
+                               placeholder="Contoso"/>
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        URL
+                    </div>
+                    <div class="col-xs-8">
+                        <input type="text"
+                               id="url"
+                               name="url"
+                               ng-model="vm.newRelyingParty.url"
+                               class="form-control pull-left"
+                               placeholder="http://contoso.com"/>
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                    </div>
+                    <div class="col-xs-8">
+                        <input type="checkbox"
+                               id="sign"
+                               name="sign"
+                               ng-model="vm.newRelyingParty.authnRequestsSigned"
+                               class="pull-left"
+                               style="margin-right:10px;"/>
+                        Sign
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Certificate
+                    </div>
+                    <div class="col-xs-8 ">
+                        <input type="file"
+                               on-read-file="vm.setAddCertificate(null, contents)"
+                               id="vm.certfilepath"
+                               name="encodedcertfilepath"
+                               ng-model="vm.certFilePath"/><br/>
+                        <div>
+                            <button type="button"
+                                    class="btn btn-link"
+                                    ng-show="vm.newRelyingParty.certificate"
+                                    ng-click="vm.viewCertificate(vm.newRelyingParty)"
+                                    uib-tooltip="{{vm.newRelyingParty.certificate.metadata.subject}}"
+                                    style="margin-left:-10px;word-wrap: break-word;word-break: break-all">
+                                {{
+                                vm.newRelyingParty.certificate.metadata.subject.length> 20 ?
+                                vm.newRelyingParty.certificate.metadata.subject.substring(0,20) + '...' :
+                                vm.newRelyingParty.certificate.metadata.subject;
+                                }}
+                            </button>
+                            <button class="btn btn-xs btn-link"
+                                    type="button"
+                                    ng-show="vm.newRelyingParty.certificate"
+                                    ng-click="vm.removeCertificate(vm.newRelyingParty)"
+                                    uib-tooltip="Remove Certificate">
+                                X
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Signature Algorithms
+                    </div>
+                    <div class="col-xs-8">
+                        <button class="btn btn-xs btn-link"
+                                type="button"
+                                ng-click="vm.addSignatureAlgorithm(vm.newRelyingParty.signatureAlgorithms)"
+                                uib-tooltip="Add Signature Algorithm">
+                            Add Signature Algorithm
+                        </button><br/><br/>
+                        <div ng-repeat="signatureAlgorithm in vm.newRelyingParty.signatureAlgorithms"
+                             ng-show="vm.newRelyingParty.signatureAlgorithms"
+                             ng-class-odd="'-grid-row-odd'">
+                            {{ signatureAlgorithm.priority }} - size ({{ signatureAlgorithm.minKeySize }} - {{ signatureAlgorithm.maxKeySize }})
+                            <button class="btn btn-xs btn-link"
+                                    type="button"
+                                    ng-click="vm.removeSignatureAlgorithm(vm.newRelyingParty.signatureAlgorithms, signatureAlgorithm)"
+                                    uib-tooltip="Remove Signature Algorithm">
+                                X
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Single Logout Services
+                    </div>
+                    <div class="col-xs-8">
+                        <button class="btn btn-xs btn-link"
+                                type="button"
+                                ng-click="vm.addSlo(vm.newRelyingParty.singleLogoutServices)"
+                                uib-tooltip="Add Single Logout Service">
+                            Add Single Logout Service
+                        </button><br/><br/>
+                        <div ng-show="!vm.newRelyingParty.singleLogoutServices ||
+                                                            vm.newRelyingParty.singleLogoutServices.length <= 0 ">
+                            No single logout services specified
+                        </div>
+                        <div ng-repeat="slo in vm.newRelyingParty.singleLogoutServices"
+                             ng-show="vm.newRelyingParty.singleLogoutServices">
+                            <button type="button"
+                                    class="btn btn-link"
+                                    ng-click="vm.viewSlo(slo)"
+                                    uib-tooltip="{{slo.name}}"
+                                    style="margin-left:-10px;word-wrap: break-word;word-break: break-all">
+                                {{
+                                slo.name.length> 20 ?
+                                slo.name.substring(0,20) + '...' :
+                                slo.name;
+                                }}
+                            </button>
+                            <button class="btn btn-xs btn-link"
+                                    type="button"
+                                    ng-click="vm.removeSlo(vm.newRelyingParty.singleLogoutServices, slo)"
+                                    uib-tooltip="Remove Single Logout Service">
+                                X
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Assertion Consumers
+                    </div>
+                    <div class="col-xs-8">
+                        <button class="btn btn-xs btn-link"
+                                type="button"
+                                ng-click="vm.addAssertionConsumerService(vm.newRelyingParty.assertionConsumerServices)"
+                                uib-tooltip="Add Assertion Consumer Service">
+                            Add Assertion Consumer Service
+                        </button><br/><br/>
+                        <div ng-show="!vm.newRelyingParty.assertionConsumerServices">
+                            No assertion consumer services specified
+                        </div>
+                        <div ng-repeat="assert in vm.newRelyingParty.assertionConsumerServices"
+                             ng-show="vm.newRelyingParty.assertionConsumerServices">
+                            <button type="button"
+                                    class="btn btn-link"
+                                    ng-click="vm.viewAssertionConsumerServices(assert)"
+                                    uib-tooltip="{{assert.name}}"
+                                    style="margin-left:-10px;word-wrap: break-word;word-break: break-all">
+                                {{
+                                assert.name.length> 20 ?
+                                assert.name.substring(0,20) + '...' :
+                                assert.name;
+                                }}
+                            </button>
+                             <span ng-show="vm.newRelyingParty.defaultAssertionConsumerService == assert.name">
+                                (default)
+                            </span>
+                            <button class="btn btn-xs btn-link"
+                                    type="button"
+                                    ng-click="vm.removeAssertionConsumerService(vm.newRelyingParty.assertionConsumerServices, assert)"
+                                    uib-tooltip="Remove Assertion Consumer Service">
+                                X
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Attribute Consumers
+                    </div>
+                    <div class="col-xs-8">
+                        <button class="btn btn-xs btn-link"
+                                type="button"
+                                ng-click="vm.addAttributeConsumerService(vm.newRelyingParty.attributeConsumerServices)"
+                                uib-tooltip="Add Attribute Consumer Service">
+                            Add Attribute Consumer Service
+                        </button><br/><br/>
+                        <div ng-show="!vm.newRelyingParty.attributeConsumerServices">
+                            No attribute consumer services specified
+                        </div>
+                        <div ng-repeat="attribute in vm.newRelyingParty.attributeConsumerServices"
+                             ng-show="vm.newRelyingParty.attributeConsumerServices">
+                            <button type="button"
+                                    class="btn btn-link"
+                                    ng-click="vm.viewAttributeConsumerServices(attribute)"
+                                    uib-tooltip="{{attribute.name}}"
+                                    style="margin-left:-10px;word-wrap: break-word;word-break: break-all">
+                                {{
+                                attribute.name.length> 20 ?
+                                attribute.name.substring(0,20) + '...' :
+                                attribute.name;
+                                }}
+
+                                 - {{attribute.attributes.length}} attributes
+                            </button>
+                             <span ng-show="vm.newRelyingParty.defaultAttributeConsumerService == attribute.name">
+                                (default)
+                            </span>
+                            <button class="btn btn-xs btn-link"
+                                    type="button"
+                                    ng-click="vm.removeAttributeConsumerService(vm.newRelyingParty.attributeConsumerServices, attribute)"
+                                    uib-tooltip="Remove Attribute Consumer Service">
+                                X
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="popup-row col-xs-12">
+                <button type="submit"
+                        class="btn btn-primary pull-right btn-popup-footer"
+                        ng-disabled="!vm.isValidRelyingParty(vm.newRelyingParty)">Save</button>
+                <button type="button"
+                        class="btn btn-default pull-right btn-popup-footer"
+                        ng-click="closeThisDialog('cancel')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>

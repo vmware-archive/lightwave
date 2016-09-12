@@ -14,13 +14,6 @@
 
 #include "includes.h"
 
-static
-VOID
-_FreeIdxCfgMapPair(
-    PLW_HASHMAP_PAIR    pPair,
-    LW_PVOID            pUnused
-    );
-
 DWORD
 VmDirIndexLibInit(
     VOID
@@ -181,10 +174,14 @@ VmDirIndexLibShutdown(
 
     if (gVdirIndexGlobals.pIndexCfgMap)
     {
-        LwRtlHashMapClear(gVdirIndexGlobals.pIndexCfgMap, _FreeIdxCfgMapPair, NULL);
+        LwRtlHashMapClear(gVdirIndexGlobals.pIndexCfgMap,
+                VmDirFreeIndexCfgMapPair, NULL);
         LwRtlFreeHashMap(&gVdirIndexGlobals.pIndexCfgMap);
         gVdirIndexGlobals.pIndexCfgMap = NULL;
     }
+
+    VmDirIndexUpdFree(gVdirIndexGlobals.pIndexUpd);
+    gVdirIndexGlobals.pIndexUpd = NULL;
 
     VMDIR_SAFE_FREE_CONDITION(gVdirIndexGlobals.cond);
     gVdirIndexGlobals.cond = NULL;
@@ -194,17 +191,4 @@ VmDirIndexLibShutdown(
 
     gVdirIndexGlobals.bFirstboot = FALSE;
     gVdirIndexGlobals.bLegacyDB = FALSE;
-}
-
-static
-VOID
-_FreeIdxCfgMapPair(
-    PLW_HASHMAP_PAIR    pPair,
-    LW_PVOID            pUnused
-    )
-{
-    PVDIR_INDEX_CFG pIndexCfg = NULL;
-
-    pIndexCfg = (PVDIR_INDEX_CFG)pPair->pValue;
-    VmDirFreeIndexCfg(pIndexCfg);
 }

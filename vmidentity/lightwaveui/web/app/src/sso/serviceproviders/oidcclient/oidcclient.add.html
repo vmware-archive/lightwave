@@ -1,0 +1,176 @@
+<div class="popup-container">
+    <div class="header-20px">
+        Add OIDC Client
+    </div>
+   <div class='error' ng-show="globals.popup_errors && !globals.popup_errors.success">
+        <img src="../app/assets/error.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}} {{globals.popup_errors.cause}}
+    </div>
+    <div class='success' ng-show="globals.popup_errors && globals.popup_errors.success">
+        <img src="../app/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}}
+    </div>
+    <div class="row">
+        <form name="addOidcClientForm"
+              ng-submit="vm.saveOidcClient(vm.newOIDCClient)"
+              role="form">
+            <div class="row content popup-content">
+                <div class="col-xs-12 popup-row">
+                    <div class="col-xs-4">
+                        Certificate DN
+                    </div>
+                    <div class="col-xs-8">
+                        <input type="text"
+                               id="certSubjectDN"
+                               name="certSubjectDN"
+                               autofocus="autofocus"
+                               ng-model="vm.newOIDCClient.oidcclientMetadataDTO.certSubjectDN"
+                               class="form-control pull-left"
+                               placeholder="CN=contoso, DC=com"/>
+                    </div>
+                </div>
+                <div class="col-xs-12 popup-row">
+                    <div class="col-xs-4">
+                        Token Auth Method
+                    </div>
+                    <div class="col-xs-8">
+                        <input type="radio"
+                               id="tokenEndpointAuthMethodNone"
+                               name="tokenEndpointAuthMethod"
+                               value="none"
+                               ng-model="vm.newOIDCClient.oidcclientMetadataDTO.tokenEndpointAuthMethod"
+                               style="margin-right:5px;"/>  None
+                        <input type="radio"
+                               id="tokenEndpointAuthMethodPrivateKey"
+                               name="tokenEndpointAuthMethod"
+                               value="private_key_jwt"
+                               ng-model="vm.newOIDCClient.oidcclientMetadataDTO.tokenEndpointAuthMethod"
+                               style="margin-right:5px;"/>  Private Key
+                    </div>
+                </div>
+                <div class="col-xs-12 popup-row">
+                    <div class="col-xs-4">
+                        Logout URI
+                    </div>
+                    <div class="col-xs-8">
+                        <input type="text"
+                               id="logoutUri"
+                               name="logoutUri"
+                               autofocus="autofocus"
+                               ng-model="vm.newOIDCClient.oidcclientMetadataDTO.logoutUri"
+                               class="form-control pull-left" required
+                               placeholder="https://contoso.com/logout"/>
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Redirect URI
+                    </div>
+                    <div class="col-xs-8">
+                        <input type="text"
+                               id="redirectUri"
+                               name="redirectUri"
+                               autofocus="autofocus"
+                               ng-model="vm.newOIDCClient.oidcclientMetadataDTO.redirectUri"
+                               class="form-control pull-left"
+                               placeholder="https://contoso.com/redirect"/>
+                        <button type="button"
+                                class="btn-xs btn-default pull-right btn-popup-footer"
+                                style="margin-top: 5px;margin-bottom:10px;"
+                                ng-click="vm.addRedirectAddUri(vm.newOIDCClient.oidcclientMetadataDTO.redirectUri)">
+                            Add
+                        </button>
+                    </div>
+                </div>
+                <div class="col-xs-12 popup-row">
+                    <div class="col-xs-4">
+                    </div>
+                    <div class="col-xs-8">
+                        <div ng-show="!vm.newOIDCClient.oidcclientMetadataDTO.redirectUris">
+                            No redirect URI specified
+                        </div>
+                        <div ng-repeat="redirectUri in vm.newOIDCClient.oidcclientMetadataDTO.redirectUris"
+                             ng-show="vm.newOIDCClient.oidcclientMetadataDTO.redirectUris"
+                             ng-if="redirectUri"
+                             uib-tooltip="{{redirectUri}}">
+                            {{
+                            redirectUri.length > 50
+                            ? redirectUri.substring(0,50) + '...'
+                            : redirectUri
+                            }}
+                            <button class="btn btn-xs btn-link"
+                                    type="button"
+                                    ng-click="vm.removeUri(vm.newOIDCClient.oidcclientMetadataDTO.redirectUris, redirectUri)"
+                                    uib-tooltip="Remove Redirect Uri">
+                                X
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Post Logout Redirect URI
+                    </div>
+                    <div class="col-xs-8">
+                        <input type="text"
+                               id="postLogoutRedirectUri"
+                               name="postLogoutRedirectUri"
+                               autofocus="autofocus"
+                               ng-model="vm.newOIDCClient.oidcclientMetadataDTO.postLogoutRedirectUri"
+                               class="form-control pull-left"
+                               placeholder="https://contoso.com/postlogout"/>
+                        <button type="button"
+                                class="btn-xs btn-default pull-right btn-popup-footer"
+                                style="margin-top: 5px;margin-bottom:10px;"
+                                ng-click="vm.addPRedirectAddUri(vm.newOIDCClient.oidcclientMetadataDTO.postLogoutRedirectUri)">
+                            Add
+                        </button>
+                    </div>
+                </div>
+                <div class="col-xs-12 popup-row">
+                    <div class="col-xs-4">
+                    </div>
+                    <div class="col-xs-8">
+                        <div ng-show="!vm.newOIDCClient.oidcclientMetadataDTO.postLogoutRedirectUris">
+                            No post logout redirect URI specified
+                        </div>
+                        <div ng-repeat="postlogoutRedirectUri in vm.newOIDCClient.oidcclientMetadataDTO.postLogoutRedirectUris"
+                             ng-show="vm.newOIDCClient.oidcclientMetadataDTO.postLogoutRedirectUris"
+                             ng-if="postlogoutRedirectUri"
+                             uib-tooltip="{{postlogoutRedirectUri}}">
+                            {{
+                            postlogoutRedirectUri.length > 50
+                            ? postlogoutRedirectUri.substring(0,50) + '...'
+                            : postlogoutRedirectUri
+                            }}
+                            <button class="btn btn-xs btn-link"
+                                    type="button"
+                                    ng-click="vm.removeUri(vm.newOIDCClient.oidcclientMetadataDTO.postLogoutRedirectUris, postlogoutRedirectUri)"
+                                    uib-tooltip="Remove Post Logout Redirect Uri">
+                                X
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="popup-row col-xs-12">
+                <button type="submit"
+                        class="btn btn-primary pull-right btn-popup-footer"
+                        ng-disabled="!vm.isValidOidcClient(vm.newOIDCClient)">Save</button>
+                <button type="button"
+                        class="btn btn-default pull-right btn-popup-footer"
+                        ng-click="closeThisDialog('cancel')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -46,6 +46,12 @@ VmDirDefaultIndexCfgInit(
     );
 
 DWORD
+VmDirIndexCfgCopy(
+    PVDIR_INDEX_CFG     pIndexCfg,
+    PVDIR_INDEX_CFG*    ppIndexCfgCpy
+    );
+
+DWORD
 VmDirIndexCfgValidateUniqueScopeMods(
     PVDIR_INDEX_CFG pIndexCfg
     );
@@ -69,6 +75,12 @@ VmDirIndexCfgStatusStringfy(
 VOID
 VmDirIndexCfgClear(
     PVDIR_INDEX_CFG pIndexCfg
+    );
+
+VOID
+VmDirFreeIndexCfgMapPair(
+    PLW_HASHMAP_PAIR    pPair,
+    LW_PVOID            pUnused
     );
 
 // indexingtask.c
@@ -99,7 +111,8 @@ VmDirIndexingTaskDeleteIndices(
 
 DWORD
 VmDirIndexingTaskRecordProgress(
-    PVDIR_INDEXING_TASK pTask
+    PVDIR_INDEXING_TASK pTask,
+    PVDIR_INDEX_UPD     pIndexUpd
     );
 
 BOOLEAN
@@ -121,6 +134,29 @@ InitializeIndexingThread(
 DWORD
 VmDirIndexingThreadFun(
     PVOID   pArg
+    );
+
+// indexupd.c
+DWORD
+VmDirIndexUpdInit(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PVDIR_INDEX_UPD*    ppIndexUpd
+    );
+
+DWORD
+VmDirIndexUpdCopy(
+    PVDIR_INDEX_UPD     pSrcIdxUpd,
+    PVDIR_INDEX_UPD     pTgtIdxUpd
+    );
+
+DWORD
+VmDirIndexUpdApply(
+    PVDIR_INDEX_UPD     pIndexUpd
+    );
+
+VOID
+VmDirIndexUpdFree(
+    PVDIR_INDEX_UPD     pIndexUpd
     );
 
 // progress.c

@@ -81,6 +81,12 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
         function init() {
             $scope.error = '';
             $scope.vm.usersdataLoading = true;
+            if($rootScope.globals.tabs == null)
+            {
+                $rootScope.globals.tabs = {}
+            }
+            $rootScope.globals.tabs.usersAndGroups = 0;
+
 
             IdentitySourceService
                 .GetAll($rootScope.globals.currentUser)
@@ -169,6 +175,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
             $scope.error = '';
             $scope.vm.usersdataLoading = true;
             $scope.currentTab = 0;
+            $rootScope.globals.tabs.usersAndGroups = $scope.currentTab;
             $scope.vm.selectedUser = null;
             if (provider) {
                 $scope.currentuser = {};
@@ -285,6 +292,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
             $scope.newgroup = {};
             $scope.addNewGroup = true;
             $scope.currentTab = 2;
+            $rootScope.globals.tabs.usersAndGroups = $scope.currentTab;
             $scope.vm.selectedGroup = null;
             if (providers != null) {
                 var provider_name = '';
@@ -430,6 +438,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
             $scope.error = '';
             $scope.vm.solutionusersdataLoading = true;
             $scope.currentTab = 1;
+            $rootScope.globals.tabs.usersAndGroups = $scope.currentTab;
             $scope.vm.selectedSolutionUser = null;
 
             var value = "NAME";
