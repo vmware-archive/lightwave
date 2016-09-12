@@ -33,6 +33,7 @@ VDIR_INDEX_GLOBALS gVdirIndexGlobals =
         VMDIR_SF_INIT(.mutex, NULL),
         VMDIR_SF_INIT(.cond, NULL),
         VMDIR_SF_INIT(.pIndexCfgMap, NULL),
+        VMDIR_SF_INIT(.pIndexUpd, NULL),
         VMDIR_SF_INIT(.bFirstboot, FALSE),
         VMDIR_SF_INIT(.bLegacyDB, FALSE),
         VMDIR_SF_INIT(.offset, 0),

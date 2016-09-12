@@ -24,6 +24,8 @@ RUN tdnf update --refresh -y tdnf; \
                     boost; \
     tdnf install -y likewise-open-6.2.10; \
     tdnf install -y vmware-lightwave-server; \
+    rm -f /usr/lib/systemd/system/firewall.service \
+    rm -f /etc/systemd/system/multi-user.target.wants/firewall.service \
     rm -rf /usr/share/doc/*; \
     rm -rf /usr/share/man/*; \
     rm -rf /usr/include/*;

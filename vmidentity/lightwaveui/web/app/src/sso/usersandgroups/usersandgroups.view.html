@@ -19,7 +19,7 @@
         {{globals.errors.details}}
     </div>
     <div style="margin-top:5px;">
-        <uib-tabset active="active">
+        <uib-tabset active="indexTab">
             <uib-tab index="0" select="getusers(vm.identitysource, vm.search)" heading="Users">
                 <div class="tab-container">
                     <span class='error-display'>{{error}}</span>
@@ -144,13 +144,11 @@
                                          width="16px"
                                          height="16px"
                                          ng-show="!user.disabled"
-                                         uib-tooltip="Account is enabled"
                                          style="float:right;margin-right:10px;"/>
                                     <img src="../app/assets/disabled.png"
                                          width="16px"
                                          height="16px"
                                          ng-show="user.disabled"
-                                         uib-tooltip="Account is disabled"
                                          style="float:right;margin-right:10px;"/>
                                 </div>
                                 <div class="large-grid-header-cell col-xs-1">
@@ -158,13 +156,11 @@
                                          width="16px"
                                          height="16px"
                                          ng-show="!user.locked"
-                                         uib-tooltip="User account is not locked"
                                          style="float:right;margin-right:10px;"/>
                                     <img src="../app/assets/lock.png"
                                          width="16px"
                                          height="16px"
                                          ng-show="user.locked"
-                                         uib-tooltip="User account is locked"
                                          style="float:right;margin-right:10px;"/>
                                 </div>
                             </div>

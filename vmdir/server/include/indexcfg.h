@@ -72,6 +72,17 @@ typedef struct _VDIR_INDEX_CFG
 
 } VDIR_INDEX_CFG;
 
+typedef struct _VDIR_INDEX_UPD
+{
+    PLW_HASHMAP         pUpdIndexCfgMap;
+    PVDIR_BACKEND_CTX   pBECtx;
+
+    BOOLEAN             bOwnBECtx;
+    BOOLEAN             bHasBETxn;
+    BOOLEAN             bInLock;
+
+} VDIR_INDEX_UPD;
+
 ///////////////////////////////////////////////////////////////////////////////
 // indexer library initialize / shutdown
 // indexer cache instantiation
@@ -151,32 +162,60 @@ VmDirIndexCfgGetAllScopesInStrArray(
     );
 
 ///////////////////////////////////////////////////////////////////////////////
-// Attribute Index open/schedule/delete functions
+// Attribute Index update functions
 ///////////////////////////////////////////////////////////////////////////////
+/*
+ * In order to use these APIs, you must call them in the
+ * right sequence:
+ *
+ * 1. VmDirIndexUpdateBegin
+ * 2. Any combination of:
+ *    - VmDirIndexSchedule
+ *    - VmDirIndexDelete
+ *    - VmDirIndexAddUniquenessScope
+ *    - VmDirIndexDeleteUniquenessScope
+ * 3. VmDirIndexUpdateCommit (if step 2 succeeded)
+ * 4. VmDirIndexUpdateAbort (if step 2 or 3 failed)
+ */
+DWORD
+VmDirIndexUpdateBegin(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PVDIR_INDEX_UPD*    ppIndexUpd
+    );
+
+DWORD
+VmDirIndexUpdateCommit(
+    PVDIR_INDEX_UPD     pIndexUpd
+    );
+
+DWORD
+VmDirIndexUpdateAbort(
+    PVDIR_INDEX_UPD     pIndexUpd
+    );
 
 DWORD
 VmDirIndexSchedule(
-    PVDIR_BACKEND_CTX   pBECtx,
+    PVDIR_INDEX_UPD     pIndexUpd,
     PCSTR               pszAttrName,
     PCSTR               pszAttrSyntaxOid
     );
 
 DWORD
 VmDirIndexDelete(
-    PVDIR_BACKEND_CTX   pBECtx,
+    PVDIR_INDEX_UPD     pIndexUpd,
     PCSTR               pszAttrName
     );
 
 DWORD
 VmDirIndexAddUniquenessScope(
-    PVDIR_BACKEND_CTX   pBECtx,
+    PVDIR_INDEX_UPD     pIndexUpd,
     PCSTR               pszAttrName,
     PCSTR*              ppszUniqScopes
     );
 
 DWORD
 VmDirIndexDeleteUniquenessScope(
-    PVDIR_BACKEND_CTX   pBECtx,
+    PVDIR_INDEX_UPD     pIndexUpd,
     PCSTR               pszAttrName,
     PCSTR*              ppszUniqScopes
     );

@@ -6,6 +6,10 @@ LW_SBIN_DIR=/opt/likewise/sbin
 _exit(){
     if [ $RUN_LWSM ]; then
         $LW_BIN_DIR/lwsm shutdown
+
+        while [ `pidof lwsmd` ];  do
+            sleep 1
+        done
     fi
 
     exit $1
@@ -274,9 +278,13 @@ if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ `pidof init` -eq 1 ]]; then
     fi
 
     echo "Upgrade complete."
-    exit 0
+    _exit 0
 
 else
+    if [ $RUN_LWSM ]; then
+        $LW_BIN_DIR/lwsm autostart
+    fi
+
     case "$LOTUS_DEPLOYMENT" in
         "standalone")
             $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -cp $CLASSPATH \

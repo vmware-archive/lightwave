@@ -75,8 +75,8 @@ VmDirIndexingTaskCompute(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    // compute offset for new task
     pBE = VmDirBackendSelect(NULL);
-
     if (gVdirIndexGlobals.offset < 0)
     {
         gVdirIndexGlobals.offset = 0;
@@ -157,7 +157,7 @@ VmDirIndexingTaskCompute(
         }
         else if (pIndexCfg->status == VDIR_INDEXING_DISABLED)
         {
-            if (pIndexCfg->usRefCnt == 0)
+            if (pIndexCfg->usRefCnt == 1)
             {
                 dwError = VmDirLinkedListInsertHead(
                         pTask->pIndicesToDelete, pIndexCfg, NULL);
@@ -296,7 +296,7 @@ error:
     {
         dwError = ERROR_INVALID_STATE;
     }
-    else
+    else if (dwError != ERROR_INVALID_STATE)
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                 "%s failed, error (%d)", __FUNCTION__, dwError );
@@ -326,11 +326,15 @@ VmDirIndexingTaskDeleteIndices(
         PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
         PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pNode->pElement;
 
-        dwError = pBE->pfnBEIndexDelete(pIndexCfg);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        // in case of resume, it may be already deleted
+        if (pIndexCfg->status == VDIR_INDEXING_DISABLED)
+        {
+            dwError = pBE->pfnBEIndexDelete(pIndexCfg);
+            BAIL_ON_VMDIR_ERROR(dwError);
 
-        pIndexCfg->status = VDIR_INDEXING_DELETED;
-        VmDirIndexCfgClear(pIndexCfg);
+            pIndexCfg->status = VDIR_INDEXING_DELETED;
+            VmDirIndexCfgClear(pIndexCfg);
+        }
 
         pNode = pNextNode;
     }
@@ -354,14 +358,30 @@ error:
 
 DWORD
 VmDirIndexingTaskRecordProgress(
-    PVDIR_INDEXING_TASK pTask
+    PVDIR_INDEXING_TASK pTask,
+    PVDIR_INDEX_UPD     pIndexUpd
     )
 {
     DWORD   dwError = 0;
     PSTR    pszOffset = NULL;
     VDIR_BACKEND_CTX    beCtx = {0};
     BOOLEAN             bHasTxn = FALSE;
+    PLW_HASHMAP             pUpdCfgMap = NULL;
     PVDIR_LINKED_LIST_NODE  pNode = NULL;
+    PSTR                    pszStatus = NULL;
+
+    if (VmDirIndexingTaskIsNoop(pTask))
+    {
+        // nothing to record
+        goto cleanup;
+    }
+
+    if (pIndexUpd)
+    {
+        // always check pUpdCfgMap to avoid overwriting progress records
+        // from VmDirIndexUpdateCommit
+        pUpdCfgMap = pIndexUpd->pUpdIndexCfgMap;
+    }
 
     beCtx.pBE = VmDirBackendSelect(NULL);
     dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE);
@@ -381,76 +401,89 @@ VmDirIndexingTaskRecordProgress(
     pNode = pTask->pIndicesToPopulate->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
-        PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pNode->pElement;
+        PVDIR_INDEX_CFG pCurCfg = (PVDIR_INDEX_CFG)pNode->pElement;
+        PVDIR_INDEX_CFG pUpdCfg = NULL;
+        PSTR pszAttrName = pCurCfg->pszAttrName;
 
-        dwError = VmDirIndexCfgRecordProgress(&beCtx, pIndexCfg);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (LwRtlHashMapFindKey(pUpdCfgMap, (PVOID*)&pUpdCfg, pszAttrName))
+        {
+            dwError = VmDirIndexCfgRecordProgress(&beCtx, pCurCfg);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
 
         // log populate progress every 10000
-        if (gVdirIndexGlobals.offset % 10000 == 0)
+        if (gVdirIndexGlobals.offset % 10000 == 0 &&
+            (!pUpdCfg || pUpdCfg->status == VDIR_INDEXING_IN_PROGRESS))
         {
-            PSTR pszIdxStatus = NULL;
-
-            dwError = VmDirIndexCfgStatusStringfy(pIndexCfg, &pszIdxStatus);
+            VMDIR_SAFE_FREE_MEMORY(pszStatus);
+            dwError = VmDirIndexCfgStatusStringfy(pCurCfg, &pszStatus);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             VMDIR_LOG_INFO( LDAP_DEBUG_INDEX,
-                    "%s (%ld)", pszIdxStatus, gVdirIndexGlobals.offset );
-            VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
+                    "%s (%ld)", pszStatus, gVdirIndexGlobals.offset );
         }
 
-        pNode = pNextNode;
+        pNode = pNode->pNext;
     }
 
     pNode = pTask->pIndicesToValidate->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
-        PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pNode->pElement;
+        PVDIR_INDEX_CFG pCurCfg = (PVDIR_INDEX_CFG)pNode->pElement;
+        PVDIR_INDEX_CFG pUpdCfg = NULL;
+        PSTR pszAttrName = pCurCfg->pszAttrName;
 
-        dwError = VmDirIndexCfgRecordProgress(&beCtx, pIndexCfg);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (LwRtlHashMapFindKey(pUpdCfgMap, (PVOID*)&pUpdCfg, pszAttrName))
+        {
+            dwError = VmDirIndexCfgRecordProgress(&beCtx, pCurCfg);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
 
-        pNode = pNextNode;
+        pNode = pNode->pNext;
     }
 
     pNode = pTask->pIndicesToDelete->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
-        PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pNode->pElement;
-        PSTR pszIdxStatus = NULL;
+        PVDIR_INDEX_CFG pCurCfg = (PVDIR_INDEX_CFG)pNode->pElement;
+        PVDIR_INDEX_CFG pUpdCfg = NULL;
+        PSTR pszAttrName = pCurCfg->pszAttrName;
 
-        dwError = VmDirIndexCfgRecordProgress(&beCtx, pIndexCfg);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (LwRtlHashMapFindKey(pUpdCfgMap, (PVOID*)&pUpdCfg, pszAttrName))
+        {
+            dwError = VmDirIndexCfgRecordProgress(&beCtx, pCurCfg);
+            BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirIndexCfgStatusStringfy(pIndexCfg, &pszIdxStatus);
-        BAIL_ON_VMDIR_ERROR(dwError);
+            VMDIR_SAFE_FREE_MEMORY(pszStatus);
+            dwError = VmDirIndexCfgStatusStringfy(pCurCfg, &pszStatus);
+            BAIL_ON_VMDIR_ERROR(dwError);
 
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszIdxStatus );
-        VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszStatus );
+        }
 
-        pNode = pNextNode;
+        pNode = pNode->pNext;
     }
 
     pNode = pTask->pIndicesCompleted->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
-        PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pNode->pElement;
-        PSTR pszIdxStatus = NULL;
+        PVDIR_INDEX_CFG pCurCfg = (PVDIR_INDEX_CFG)pNode->pElement;
+        PVDIR_INDEX_CFG pUpdCfg = NULL;
+        PSTR pszAttrName = pCurCfg->pszAttrName;
 
-        dwError = VmDirIndexCfgRecordProgress(&beCtx, pIndexCfg);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (LwRtlHashMapFindKey(pUpdCfgMap, (PVOID*)&pUpdCfg, pszAttrName))
+        {
+            dwError = VmDirIndexCfgRecordProgress(&beCtx, pCurCfg);
+            BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirIndexCfgStatusStringfy(pIndexCfg, &pszIdxStatus);
-        BAIL_ON_VMDIR_ERROR(dwError);
+            VMDIR_SAFE_FREE_MEMORY(pszStatus);
+            dwError = VmDirIndexCfgStatusStringfy(pCurCfg, &pszStatus);
+            BAIL_ON_VMDIR_ERROR(dwError);
 
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszIdxStatus );
-        VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszStatus );
+        }
 
-        pNode = pNextNode;
+        pNode = pNode->pNext;
     }
 
     dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
@@ -463,6 +496,7 @@ cleanup:
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
     VMDIR_SAFE_FREE_MEMORY(pszOffset);
+    VMDIR_SAFE_FREE_MEMORY(pszStatus);
     return dwError;
 
 error:

@@ -31,6 +31,7 @@
                          ng-class="{ 'has-error': editLockoutPolicyForm.maxFailedAttempts.$invalid }">
                         <input type="text"
                                id="maxFailedAttempts"
+                               autofocus="autofocus"
                                name="maxFailedAttempts"
                                ng-model="vm.policies.lockoutPolicy.maxFailedAttempts"
                                class="form-control pull-left"

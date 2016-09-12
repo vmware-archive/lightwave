@@ -40,6 +40,7 @@ typedef struct _VDIR_INDEX_GLOBALS
     PVMDIR_MUTEX        mutex;
     PVMDIR_COND         cond;
     PLW_HASHMAP         pIndexCfgMap;
+    PVDIR_INDEX_UPD     pIndexUpd;
 
     // fields used to determine index status during bootstrap
     BOOLEAN             bFirstboot;
