@@ -196,6 +196,7 @@ fi
 %{_jarsdir}/vmware-identity-rest-afd-client.jar
 %{_jarsdir}/vmware-identity-rest-core-client.jar
 %{_jarsdir}/vmware-identity-rest-idm-client.jar
+%{_jarsdir}/vmware-identity-rest-idm-samples.jar
 %{_webappsdir}/openidconnect-sample-rp.war
 # %doc ChangeLog README COPYING
 
