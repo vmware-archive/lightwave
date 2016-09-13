@@ -21,7 +21,6 @@
 //TODO, move to gVmafdGlobals?
 int  vmafd_syslog_level = 0;
 int  vmafd_syslog = 0;
-int  vmafd_debug = 0;
 
 static
 DWORD
@@ -33,7 +32,7 @@ main(
    char  * argv[])
 {
     DWORD        dwError = 0;
-    int          logLevel = 0;
+    int          logLevel = VMAFD_DEBUG_ERROR;
     BOOLEAN      bEnableSysLog = FALSE;
     BOOLEAN      bEnableConsole = FALSE;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;

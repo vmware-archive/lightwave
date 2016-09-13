@@ -46,19 +46,27 @@ extern "C" {
 #define VMAFD_PATH_MAX         512
 
 #ifndef VMAFD_DEBUG_ANY
-#define VMAFD_DEBUG_ANY (-2)
-#endif
-
-#ifndef VMAFD_DEBUG_DEBUG
-#define VMAFD_DEBUG_DEBUG (-3)
+#define VMAFD_DEBUG_ANY (1)
 #endif
 
 #ifndef VMAFD_DEBUG_ERROR
-#define VMAFD_DEBUG_ERROR (1)
+#define VMAFD_DEBUG_ERROR (2)
+#endif
+
+#ifndef VMAFD_DEBUG_WARNING
+#define VMAFD_DEBUG_WARNING (3)
+#endif
+
+#ifndef VMAFD_DEBUG_INFO
+#define VMAFD_DEBUG_INFO (4)
 #endif
 
 #ifndef VMAFD_DEBUG_TRACE
-#define VMAFD_DEBUG_TRACE (-1)
+#define VMAFD_DEBUG_TRACE (5)
+#endif
+
+#ifndef VMAFD_DEBUG_DEBUG
+#define VMAFD_DEBUG_DEBUG (6)
 #endif
 
 #ifdef _WIN32

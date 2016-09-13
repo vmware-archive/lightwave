@@ -18,4 +18,3 @@
 
 int  vmafd_syslog = 0;
 int  vmafd_syslog_level = 0;
-int  vmafd_debug = 0;
