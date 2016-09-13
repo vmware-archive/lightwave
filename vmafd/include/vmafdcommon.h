@@ -64,7 +64,6 @@ typedef struct
 
 // Logging
 extern int  vmafd_syslog;
-extern int  vmafd_debug;
 extern int  vmafd_syslog_level;
 
 #define ENTER_LOG() \

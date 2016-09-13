@@ -130,7 +130,7 @@ VmAfdLog(
    va_list     va;
    const char* logLevelTag = "";
 
-   if (level >= vmafd_syslog_level)
+   if (level <= vmafd_syslog_level)
    {
       va_start( va, fmt );
       vsnprintf( logMessage, sizeof(logMessage), fmt, va );
@@ -183,9 +183,14 @@ logLevelToTag(
          return "TRACE";
       case VMAFD_DEBUG_ERROR:
          return "ERROR";
+      case VMAFD_DEBUG_WARNING:
+         return "WARNING";
       case VMAFD_DEBUG_DEBUG:
-      default:
          return "DEBUG";
+      case VMAFD_DEBUG_INFO:
+         return "INFO";
+      default:
+         return "UKNOWN";
    }
 }
 
@@ -201,9 +206,14 @@ logLevelToSysLogLevel(
          return LOG_NOTICE;
       case VMAFD_DEBUG_ERROR:
          return LOG_ERR;
+      case VMAFD_DEBUG_WARNING:
+         return LOG_WARNING;
       case VMAFD_DEBUG_DEBUG:
-      default:
          return LOG_DEBUG;
+      case VMAFD_DEBUG_INFO:
+         return LOG_INFO;
+      default:
+         return LOG_ERR;
    }
 }
 
@@ -212,19 +222,14 @@ VOID
 _VmAfdSetLogLevel(
     )
 {
-    if (vmafd_debug)
-    {
-        setlogmask(LOG_UPTO(LOG_DEBUG));
-        vmafd_syslog_level = VMAFD_DEBUG_DEBUG;
-    }
-    else if (vmafd_syslog_level)
+    if (vmafd_syslog_level)
     {
         setlogmask(LOG_UPTO(logLevelToSysLogLevel(vmafd_syslog_level)));
     }
     else
     {
-        setlogmask(LOG_UPTO(LOG_INFO));
-        vmafd_syslog_level = VMAFD_DEBUG_ANY;
+        setlogmask(LOG_UPTO(LOG_ERR));
+        vmafd_syslog_level = VMAFD_DEBUG_ERROR;
     }
 }
 
