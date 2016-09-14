@@ -195,6 +195,9 @@ $(VMSTS_PKGDIR)/$(VMSTS_SERVER_RPM): $(LIGHTWAVE_STAGE_DIR) vmca-client-install
 vmsts-client-install: $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_CLIENT_RPM)
 	$(RPM) -Uvh --force $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_CLIENT_RPM)
 
+vmsts-samples-install: $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_SAMPLES_RPM)
+	$(RPM) -Uvh --force $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_SAMPLES_RPM)
+
 $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_CLIENT_RPM):$(VMSTS_PKGDIR)/$(VMSTS_CLIENT_RPM)
 	$(CP) -f $< $@
 
@@ -209,7 +212,7 @@ vmsts-clean:
 $(LIGHTWAVE_STAGE_DIR)/x86_64/$(CFG_RPM) : $(CFG_PKGDIR)/$(CFG_RPM)
 	$(CP) -f $< $@
 
-$(CFG_PKGDIR)/$(CFG_RPM): $(LIGHTWAVE_STAGE_DIR) vmca-client-install vmsts-client-install
+$(CFG_PKGDIR)/$(CFG_RPM): $(LIGHTWAVE_STAGE_DIR) vmca-client-install vmsts-client-install vmsts-samples-install
 	@cd $(SRCROOT)/config/build && make -f Makefile.bootstrap
 
 config-clean:
