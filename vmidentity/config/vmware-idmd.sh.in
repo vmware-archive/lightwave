@@ -37,6 +37,18 @@ StartService()
     echo "Configuring IDM registry entries in likewise from : $IDM_REGISTRY_FILE_PATH"
     $LIKEWISE_LWREGSHELL import $IDM_REGISTRY_FILE_PATH
     rc=$?
+    while [ -z `pidof vmdird` ]; do 
+	sleep 5
+    done
+
+    while [ -z `pidof vmafdd` ]; do 
+	sleep 5
+    done
+
+    while [ -z `pidof vmcad` ]; do 
+	sleep 5
+    done
+
     if [ $rc -ne 0 ]; then
         echo "Failed to configure IDM registry entries in likewise. Error code : $rc"
     fi

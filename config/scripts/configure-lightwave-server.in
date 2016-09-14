@@ -265,6 +265,9 @@ if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ `pidof init` -eq 1 ]]; then
 
     # perform vmidentity upgrade
     #
+    if [ $RUN_LWSM ]; then
+        $LW_BIN_DIR/lwsm autostart
+    fi
     $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
           -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller --upgrade --start-service
     if [ $? -ne 0 ]; then
