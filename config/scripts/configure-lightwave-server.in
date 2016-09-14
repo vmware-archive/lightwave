@@ -253,7 +253,9 @@ fi
 
 # check if it's a promoted container
 if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ `pidof init` -eq 1 ]]; then
-
+    # stop the STS and IDMD service
+    systemctl stop vmware-stsd
+    systemctl stop vmware-idmd
     # perform vmdir upgrade
     $BIN_DIR/vmdir_upgrade.sh --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
                               --domainname $LOTUS_DOMAIN_DEFAULT --recover
@@ -265,6 +267,9 @@ if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ `pidof init` -eq 1 ]]; then
 
     # perform vmidentity upgrade
     #
+    if [ $RUN_LWSM ]; then
+        $LW_BIN_DIR/lwsm autostart
+    fi
     $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
           -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller --upgrade --start-service
     if [ $? -ne 0 ]; then
