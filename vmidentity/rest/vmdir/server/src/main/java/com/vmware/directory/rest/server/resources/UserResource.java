@@ -89,12 +89,22 @@ public class UserResource extends BaseSubResource {
     public UserDTO create(UserDTO user) {
         Validate.isTrue(getSystemDomain().equalsIgnoreCase(user.getDomain()), sm.getString("valid.not.systemdomain", user.getDomain(), tenant));
         try {
+
+            boolean disabled = user.isDisabled();
+            boolean locked = user.isLocked();
+            if (disabled && locked) {
+                throw new BadRequestException("A disabled user cannot be locked");
+            }
+
             PersonUser personUser = UserMapper.getPersonUser(user);
             String name = personUser.getId().getName();
             PersonDetail personDetail = personUser.getDetail();
             char[] password = user.getPasswordDetails().getPassword().toCharArray();
-
             PrincipalId principal = getIDMClient().addPersonUser(tenant, name, personDetail, password);
+            if (disabled) {
+                getIDMClient().disableUserAccount(tenant, personUser.getId());
+            }
+
             return UserMapper.getUserDTO(getIDMClient().findPersonUser(tenant, principal), true);
         } catch (NoSuchTenantException e) {
             log.debug("Failed to create user '{}'", user.getName(), e);
