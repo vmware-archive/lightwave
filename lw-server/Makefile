@@ -1,3 +1,7 @@
+SRCROOT := ../
+MAKEROOT=$(SRCROOT)/support/make
+include $(MAKEROOT)/makedefs.mk
+
 MKDIR=/bin/mkdir
 RM=/bin/rm
 CP=/bin/cp
@@ -40,6 +44,8 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_bindir /opt/vmware/bin" \
               --define "_sbindir /opt/vmware/sbin" \
               --define "_lib64dir /opt/vmware/lib64" \
+              --define "_version $(LW_SERVER_MAJOR_VER).$(LW_SERVER_MINOR_VER).$(LW_SERVER_RELEASE_VER)" \
+              --define "_patch $(LW_SERVER_PATCH_VER)" \
               --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
               SPECS/$(PKG_SPEC)
 

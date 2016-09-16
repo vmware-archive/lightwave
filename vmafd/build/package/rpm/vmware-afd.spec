@@ -7,8 +7,8 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.9, vmware-directory-client >= 6.6.0, vmware-afd-client = %{version}, vmware-dns-client >= 6.6.0
-BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.9, vmware-directory-client-devel >= 6.6.0, sqlite-autoconf, python2-devel >= 2.7.8, openjdk >= 1.8.0.45, apache-ant >= 1.9.4, ant-contrib >= 1.0b3, vmware-dns-client-devel >= 6.6.0, apache-maven >= 3.3.9, boost = 1.60.0
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, vmware-directory-client = %{_version}, vmware-afd-client = %{version}, vmware-dns-client = %{version}
+BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.10, vmware-directory-client-devel = %{version}, sqlite-autoconf, python2-devel >= 2.7.8, openjdk >= 1.8.0.45, apache-ant >= 1.9.4, ant-contrib >= 1.0b3, vmware-dns-client-devel = %{version}, apache-maven >= 3.3.9, boost = 1.60.0
 
 %define _dbdir %_localstatedir/lib/vmware/vmafd
 %define _vecsdir %{_dbdir}/vecs

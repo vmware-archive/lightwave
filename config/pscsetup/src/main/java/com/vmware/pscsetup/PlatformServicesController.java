@@ -16,10 +16,10 @@ import com.vmware.identity.configure.DeployUtilsErrors;
 import com.vmware.identity.configure.DomainControllerNativeException;
 import com.vmware.identity.configure.IPlatformComponentInstaller;
 import com.vmware.identity.configure.IPlatformInstallObserver;
-import com.vmware.identity.configure.IdentityManagerInstaller;
+//import com.vmware.identity.configure.IdentityManagerInstaller;
 import com.vmware.identity.configure.PlatformInstallComponent;
-import com.vmware.identity.configure.SecureTokenServerInstaller;
-import com.vmware.identity.configure.LightwaveUIInstaller;
+//import com.vmware.identity.configure.SecureTokenServerInstaller;
+//import com.vmware.identity.configure.LightwaveUIInstaller;
 import com.vmware.identity.interop.Validate;
 import com.vmware.pscsetup.interop.DeployUtilsAdapter;
 
@@ -129,7 +129,7 @@ public class PlatformServicesController {
 			DomainControllerStandaloneParams standaloneParams) {
 		List<IPlatformComponentInstaller> components = new ArrayList<IPlatformComponentInstaller>();
 	    components.add(new AuthenticationFrameworkInstaller(standaloneParams));
-		components.add(new IdentityManagerInstaller("Administrator",
+		/*components.add(new IdentityManagerInstaller("Administrator",
 		        standaloneParams.getDomainName(), standaloneParams
 						.getPassword(), true, false,false));
 		components.add(new SecureTokenServerInstaller());
@@ -137,7 +137,7 @@ public class PlatformServicesController {
 		String hostname = standaloneParams.getHostname();
 		String username = "Administrator";
 		String password = standaloneParams.getPassword();
-		components.add(new LightwaveUIInstaller(hostname, domain, username, password));
+		components.add(new LightwaveUIInstaller(hostname, domain, username, password)); */
 		return components;
 	}
 
