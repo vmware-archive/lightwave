@@ -189,6 +189,10 @@ vmca-clean:
 $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_SERVER_RPM):$(VMSTS_PKGDIR)/$(VMSTS_SERVER_RPM)
 	$(CP) -f $< $@
 
+@echo "Copying samples RPM to stage"
+$(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_SAMPLES_RPM):$(VMSTS_PKGDIR)/$(VMSTS_SAMPLES_RPM)
+	$(CP) -f $< $@
+
 $(VMSTS_PKGDIR)/$(VMSTS_SERVER_RPM): $(LIGHTWAVE_STAGE_DIR) vmca-client-install
 	@cd $(SRCROOT)/vmidentity/build && make -f Makefile.bootstrap
 
@@ -197,6 +201,10 @@ vmsts-client-install: $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_CLIENT_RPM)
 
 $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_CLIENT_RPM):$(VMSTS_PKGDIR)/$(VMSTS_CLIENT_RPM)
 	$(CP) -f $< $@
+
+@echo "Copying samples RPM to stage-2"
+$(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_SAMPLES_RPM):$(VMSTS_PKGDIR)/$(VMSTS_SAMPLES_RPM)
+        $(CP) -f $< $@
 
 $(VMSTS_PKGDIR)/$(VMSTS_CLIENT_RPM):$(VMSTS_PKGDIR)/$(VMSTS_SERVER_RPM)
 
