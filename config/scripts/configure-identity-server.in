@@ -1,0 +1,82 @@
+#!/bin/bash
+JAVA_HOME=/var/opt/OpenJDK-1.8.0.92-bin
+JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
+VMWARE_DIR=/opt/vmware
+CLASSPATH=$CLASSPATH:$VMWARE_DIR/jars/*
+BIN_DIR=$VMWARE_DIR/bin
+SBIN_DIR=$VMWARE_DIR/sbin
+LOTUS_CONFIG_FILE="/var/lib/vmware/config/lightwave-server.cfg"
+
+AWK=
+if [ -x /bin/awk ]; then
+    AWK=/bin/awk
+elif [ -x /usr/bin/awk ]; then
+    AWK=/usr/bin/awk
+fi
+
+if [ -f "$LOTUS_CONFIG_FILE" ]; then
+    LOTUS_DEPLOYMENT=$(grep "^deployment=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_DOMAIN_DEFAULT=$(grep "^domain=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_ADMIN_DEFAULT=$(grep "^admin=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_ADMIN_PASSWORD_DEFAULT=$(grep "^password=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_PARTNER_HOSTNAME=$(grep "^replication-partner-hostname=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_SITE_NAME=$(grep "^site-name=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_HOSTNAME=$(grep "^hostname=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+fi
+VERSION=`rpm -qid vmware-sts | grep Version`
+STS_VERSION=""
+for word in $VERSION
+do
+   if [[ $word != "Version" ]]  || [[ $word != ":" ]]; then
+      STS_VERSION=$word
+   fi
+done
+echo "Running $STS_VERSION version"
+
+if [[ `systemctl is-active vmware-idmd` == "active" ]] &&  [[ `systemctl is-active vmware-stsd` == "active" ]]; then
+   echo "vmare-idmd and VMware-stsd services are active"
+   exit $?
+fi
+REG_VAL=`/opt/likewise/bin/lwregshell list_values '[HKEY_THIS_MACHINE\Software\VMware\Identity]'`
+if [[ $REG_VAL != *"Description"* ]]; then
+   echo "Installing VMIDENTITY"
+   $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
+          -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller \
+          --hostname $LOTUS_HOSTNAME --username "Administrator" --domain $LOTUS_DOMAIN_DEFAULT --password $LOTUS_ADMIN_PASSWORD_DEFAULT
+   if [ $? -ne 0 ]; then
+       echo "VMIdentity Install failed"
+       exit 1
+   fi
+   /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\Software\VMware\Identity]' "Version" REG_SZ $STS_VERSION
+   exit 0
+fi
+REG_VAL=`echo "$REG_VAL" | grep "Version"`
+INSTALL_VER=
+if [[ $REG_VAL == *"Version"* ]]; then
+    for word in $REG_VAL
+    do
+        if [[ $word != "Version" ]] && [[ $word != "REG_SZ" ]]; then
+             INSTALL_VER=`sed -e 's/^"//' -e 's/"$//' <<< $word`
+
+        fi
+    done
+fi
+echo $INSTALL_VER
+if [[ $REG_VAL != *"Version"* ]] || [[ $INSTALL_VER != $STS_VERSION ]]; then
+    #perform upgrade
+    $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
+           -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller --upgrade --start-service
+    if [ $? -ne 0 ]; then
+        echo "VMIdentity upgrade failed."
+        exit 1
+    fi
+    if [[ $REG_VAL != *"Version"*  ]]; then
+       /opt/likewise/bin/lwregshell add_value '[HKEY_THIS_MACHINE\Software\VMware\Identity]' "Version" REG_SZ $STS_VERSION
+    else
+       /opt/likewise/bin/lwregshell set_value '[HKEY_THIS_MACHINE\Software\VMware\Identity]' "Version" $STS_VERSION
+    fi
+    echo "perform Upgrade"
+else
+    systemctl restart vmware-idmd
+    systemctl restart vmware-stsd
+fi
