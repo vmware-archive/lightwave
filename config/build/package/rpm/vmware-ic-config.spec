@@ -7,8 +7,8 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, likewise-open >= 6.2.9, vmware-directory-client >= 6.6.0, vmware-afd-client >= 6.6.0, vmware-ca-client >= 6.6.0, gawk >= 4.1.3
-BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >= 6.2.9, vmware-directory-client-devel >= 6.6.0, vmware-afd-client-devel >= 6.6.0, vmware-ca-client-devel >= 6.6.0
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, likewise-open >= 6.2.10, vmware-directory-client = %{version}, vmware-afd-client = %{version}, vmware-ca-client = %{version}, gawk >= 4.1.3
+BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >= 6.2.10, vmware-directory-client-devel = %{version}, vmware-afd-client-devel = %{version}, vmware-ca-client-devel = %{version}
 
 %define _jarsdir %{_prefix}/jars
 %define _bindir %{_prefix}/bin
