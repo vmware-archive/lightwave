@@ -22,6 +22,7 @@ import static org.easymock.EasyMock.isA;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.security.Principal;
 import java.util.Collection;
@@ -260,6 +261,39 @@ public class UserResourceTest {
         assertEquals(UPN, userCreated.getDetails().getUPN());
 
         mControl.verify();
+    }
+
+    @Test
+    public void testCreateUserWithDisabledStatus() throws Exception {
+
+        PersonDetail personDetail = new PersonDetail.Builder().firstName(FIRST_NAME).lastName(LAST_NAME).description(DESC).emailAddress(EMAIL).userPrincipalName(UPN).build();
+        PrincipalId personUserId = new PrincipalId(TEST_USERNAME, TEST_DOMAIN);
+        PrincipalId aliasId = new PrincipalId(TEST_ALIAS, TEST_ALIAS_DOMAIN);
+        PersonUser user = new PersonUser(personUserId, aliasId, null, personDetail, true, false);
+
+        PrincipalId userId = new PrincipalId(TEST_USERNAME, TEST_DOMAIN);
+        expect(mockCasIDMClient.addPersonUser(eq(TENANT), eq(TEST_USERNAME), isA(PersonDetail.class), aryEq("testUser!23".toCharArray()))).andReturn(userId);
+        expect(mockCasIDMClient.findPersonUser(eq(TENANT), isA(PrincipalId.class))).andReturn(user);
+        expect(mockCasIDMClient.getProviders(eq(TENANT), isA(EnumSet.class))).andReturn(TestDataGenerator.getTestSystemIDP(TENANT));
+        expect(mockCasIDMClient.disableUserAccount(eq(TENANT), isA(PrincipalId.class))).andReturn(Boolean.TRUE);
+
+        mControl.replay();
+
+        PrincipalDTO alias = new PrincipalDTO(TEST_ALIAS, TEST_ALIAS_DOMAIN);
+        PasswordDetailsDTO passwordDetails = PasswordDetailsDTO.builder().withPassword("testUser!23").build();
+        UserDTO userToCreate = UserDTO.builder()
+                      .withName(TEST_USERNAME)
+                      .withDomain(TEST_DOMAIN)
+                      .withAlias(alias)
+                      .withDetails(getTestPersonDetailDTO())
+                      .withLocked(false)
+                      .withDisabled(true)
+                      .withPasswordDetails(passwordDetails)
+                      .build();
+        UserDTO userCreated = userResource.create(userToCreate);
+        assertTrue(userCreated.isDisabled());
+        assertFalse(userCreated.isLocked());
+
     }
 
     @Test(expected=BadRequestException.class)
