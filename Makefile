@@ -189,6 +189,9 @@ vmca-clean:
 $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_SERVER_RPM):$(VMSTS_PKGDIR)/$(VMSTS_SERVER_RPM)
 	$(CP) -f $< $@
 
+$(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_SAMPLES_RPM):$(VMSTS_PKGDIR)/$(VMSTS_SAMPLES_RPM)
+	$(CP) -f $< $@
+
 $(VMSTS_PKGDIR)/$(VMSTS_SERVER_RPM): $(LIGHTWAVE_STAGE_DIR) vmca-client-install
 	@cd $(SRCROOT)/vmidentity/build && make -f Makefile.bootstrap
 
