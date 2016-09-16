@@ -793,7 +793,7 @@ first_pass:
                 retVal = BuildCandidateList(pOperation, nextFilter, eStartingId);
                 BAIL_ON_VMDIR_ERROR( retVal );
 
-                if ( nextFilter->candidates != NULL && nextFilter->candidates->size > 0 &&
+                if ( nextFilter->candidates != NULL && nextFilter->candidates->size >= 0 &&
                      nextFilter->candidates->positive == TRUE )
                 {
                     if (nextFilter->candidates->size <= iSmallCandidateSet )
@@ -822,7 +822,7 @@ first_pass:
                 retVal = BuildCandidateList(pOperation, nextFilter, eStartingId);
                 BAIL_ON_VMDIR_ERROR( retVal );
 
-                if ( nextFilter->candidates != NULL && nextFilter->candidates->size > 0 &&
+                if ( nextFilter->candidates != NULL && nextFilter->candidates->size >= 0 &&
                      nextFilter->candidates->positive == TRUE)
                 {
                     if (nextFilter->candidates->size <= iSmallCandidateSet )
