@@ -7,8 +7,8 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.9, vmware-directory-client >= 6.6.0, vmware-afd-client >= 6.6.0, boost = 1.60.0
-BuildRequires:  boost-devel = 1.60.0, coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.9, vmware-directory-client-devel >= 6.6.0, vmware-afd-client-devel >= 6.6.0, sqlite-autoconf, boost = 1.60.0
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, vmware-directory-client = %{version}, vmware-afd-client = %{version}, boost = 1.60.0
+BuildRequires:  boost-devel = 1.60.0, coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open-devel >= 6.2.10, vmware-directory-client-devel = %{version}, vmware-afd-client-devel = %{version}, sqlite-autoconf, boost = 1.60.0
 
 %define _dbdir %_localstatedir/lib/vmware/vmca
 %define _jarsdir %{_prefix}/jars

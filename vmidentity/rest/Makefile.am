@@ -10,7 +10,8 @@ vmstsjars_DATA= \
     @top_builddir@/vmware-sts/packages/vmware-identity-rest-core-common.jar \
     @top_builddir@/vmware-sts/packages/vmware-identity-rest-core-client.jar \
     @top_builddir@/vmware-sts/packages/vmware-identity-rest-idm-client.jar \
-    @top_builddir@/vmware-sts/packages/vmware-identity-rest-afd-client.jar
+    @top_builddir@/vmware-sts/packages/vmware-identity-rest-afd-client.jar \
+    @top_builddir@/vmware-sts/packages/vmware-identity-rest-idm-samples.jar 
 
 @top_builddir@/vmware-sts/packages/vmware-identity-rest-idm-server.jar : jar
 @top_builddir@/vmware-sts/packages/vmware-identity-rest-idm-common.jar : jar
@@ -21,6 +22,7 @@ vmstsjars_DATA= \
 @top_builddir@/vmware-sts/packages/vmware-identity-rest-core-client.jar : jar
 @top_builddir@/vmware-sts/packages/vmware-identity-rest-idm-client.jar : jar
 @top_builddir@/vmware-sts/packages/vmware-identity-rest-afd-client.jar : jar
+@top_builddir@/vmware-sts/packages/vmware-identity-rest-idm-samples.jar : jar
 
 all: jar
 

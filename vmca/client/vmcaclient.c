@@ -1961,9 +1961,6 @@ VMCAJavaGenCertA(
     DWORD dwError = 0;
     PVMCA_PKCS_10_REQ_DATAA pCertReqData = NULL;
     PVMCA_CSR pCSR = NULL;
-#ifdef JAVA_DEBUG
-    printf("1: In call VMCAJavaGenCert");
-#endif
 
     dwError = VMCAAllocatePKCS10DataA(&pCertReqData);
     BAIL_ON_ERROR(dwError);
@@ -2007,9 +2004,6 @@ VMCAJavaGenCertA(
     dwError = VMCASetKeyUsageConstraintsA(pCertReqData,dwKeyUsageConstraints);
     BAIL_ON_ERROR(dwError);
 
-#ifdef JAVA_DEBUG
-    printf("2: Values Setup");
-#endif
 //
 // Create a Signing Request CSR ( PKCS10)
 //
@@ -2019,10 +2013,6 @@ VMCAJavaGenCertA(
                    NULL,
                    &pCSR);
     BAIL_ON_ERROR(dwError);
-
-#ifdef JAVA_DEBUG
-    printf("3: CSR Generated");
-#endif
 
 
 //
@@ -2035,10 +2025,6 @@ VMCAJavaGenCertA(
                    tmNotAfter,
                    ppCertificate);
     BAIL_ON_ERROR(dwError);
-
-#ifdef JAVA_DEBUG
-    printf("3: Cert Generation Done");
-#endif
 
 
 error :
@@ -2085,9 +2071,6 @@ VMCAJavaGenCertHA(
     DWORD dwError = 0;
     PVMCA_PKCS_10_REQ_DATAA pCertReqData = NULL;
     PVMCA_CSR pCSR = NULL;
-#ifdef JAVA_DEBUG
-    printf("1: In call VMCAJavaGenCert");
-#endif
 
     if (!pContext)
     {
@@ -2137,9 +2120,6 @@ VMCAJavaGenCertHA(
     dwError = VMCASetKeyUsageConstraintsA(pCertReqData,dwKeyUsageConstraints);
     BAIL_ON_ERROR(dwError);
 
-#ifdef JAVA_DEBUG
-    printf("2: Values Setup");
-#endif
 //
 // Create a Signing Request CSR ( PKCS10)
 //
@@ -2149,10 +2129,6 @@ VMCAJavaGenCertHA(
                    NULL,
                    &pCSR);
     BAIL_ON_ERROR(dwError);
-
-#ifdef JAVA_DEBUG
-    printf("3: CSR Generated");
-#endif
 
 
 //
@@ -2166,10 +2142,6 @@ VMCAJavaGenCertHA(
                    tmNotAfter,
                    ppCertificate);
     BAIL_ON_ERROR(dwError);
-
-#ifdef JAVA_DEBUG
-    printf("3: Cert Generation Done");
-#endif
 
 
 error :

@@ -7,8 +7,8 @@ Vendor:  VMware, Inc.
 License: VMware
 URL:     http://www.vmware.com
 BuildArch: x86_64
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, likewise-open >= 6.2.9, vmware-directory >= 6.6.0, vmware-afd >= 6.6.0, vmware-ca >= 6.6.0, openjre >= 1.8.0.92, commons-daemon >= 1.0.15, apache-tomcat >= 8.0.35, %{name}-client >= %{version}
-BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >= 6.2.9, vmware-directory-client-devel >= 6.6.0, vmware-afd-client-devel >= 6.6.0, vmware-ca-client-devel >= 6.6.0, openjdk >= 1.8.0.92, apache-ant >= 1.9.4
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, likewise-open >= 6.2.10, vmware-directory = %{version}, vmware-afd = %{version}, vmware-ca = %{version}, openjre >= 1.8.0.92, commons-daemon >= 1.0.15, apache-tomcat >= 8.0.35, %{name}-client = %{version}
+BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >= 6.2.10, vmware-directory-client-devel = %{version}, vmware-afd-client-devel = %{version}, vmware-ca-client-devel = %{version}, openjdk >= 1.8.0.92, apache-ant >= 1.9.4
 
 %define _dbdir %_localstatedir/lib/vmware/vmsts
 %define _jarsdir %_prefix/jars
@@ -28,6 +28,12 @@ Summary: VMware Secure Token Service Client
 Requires:  coreutils >= 8.22, openssl >= 1.0.2, openjre >= 1.8.0.45, vmware-directory-client >= 6.6.0, likewise-open >= 6.2.9 
 %description client
 Client libraries to communicate with VMware Secure Token Service
+
+%package samples
+Summary: VMware Secure Token Service Samples
+Requires:  vmware-sts-client >= 6.6.0
+%description samples
+Samples for VMware Secure Token Service
 
 %build
 
@@ -196,8 +202,12 @@ fi
 %{_jarsdir}/vmware-identity-rest-afd-client.jar
 %{_jarsdir}/vmware-identity-rest-core-client.jar
 %{_jarsdir}/vmware-identity-rest-idm-client.jar
-%{_webappsdir}/openidconnect-sample-rp.war
 # %doc ChangeLog README COPYING
+
+%files samples
+%{_webappsdir}/openidconnect-sample-rp.war
+%{_jarsdir}/vmware-identity-rest-idm-samples.jar
+
 
 %changelog
 
