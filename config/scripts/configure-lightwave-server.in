@@ -12,6 +12,13 @@ _exit(){
         done
     fi
 
+    # if failed container upgrade, keep vmdir in standalone mode
+    if [ $1 -eq 2 ]; then
+        while true; do
+            sleep 5
+        done
+    fi
+
     exit $1
 }
 
@@ -262,7 +269,7 @@ if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ `pidof init` -eq 1 ]]; then
 
     if [ $? -ne 0 ]; then
         echo  "Upgrade failed."
-        _exit 1
+        _exit 2
     fi
 
     # perform vmidentity upgrade
@@ -274,7 +281,7 @@ if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ `pidof init` -eq 1 ]]; then
           -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller --upgrade --start-service
     if [ $? -ne 0 ]; then
         echo "VMIdentity upgrade failed."
-        _exit 1
+        _exit 2
     fi
 
     # Upgrade successful, restart lwsm to insure all changes are applied and node is replicating
