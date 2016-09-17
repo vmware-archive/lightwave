@@ -196,13 +196,15 @@ VmDirRefreshActPassword(
                                            ATTR_PASS_EXP_IN_DAY,
                                            (PBYTE*)&pszExpInDays,
                                            &dwLen);
-    if ( dwError == VMDIR_ERROR_NO_SUCH_ATTRIBUTE)
-    {
-        dwError = 0;
-    }
-    else
+
+    if (!dwError)
     {
         iExpInDays = atoi(pszExpInDays);
+    }
+    else if (dwError == LDAP_NO_SUCH_ATTRIBUTE ||
+             dwError == VMDIR_ERROR_NO_SUCH_ATTRIBUTE)
+    {
+        dwError = 0;
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 

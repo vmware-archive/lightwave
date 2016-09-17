@@ -57,6 +57,11 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 			});
 		}
 
+		public virtual void Refresh (object sender, EventArgs e)
+		{
+			NSNotificationCenter.DefaultCenter.PostNotificationName ("RefreshTableView", this);
+		}
+
 		public override string GetDisplayTitle ()
 		{
 			return string.Format ("{0} -> {1} -> {2}", Parent.Parent.DisplayName, Parent.DisplayName, DisplayName);

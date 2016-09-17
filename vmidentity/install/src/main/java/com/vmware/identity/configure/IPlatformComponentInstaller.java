@@ -9,7 +9,7 @@ public interface IPlatformComponentInstaller {
 
     void install() throws Exception;
 
-    void upgrade();
+    void upgrade() throws Exception;
 
     void uninstall();
 }

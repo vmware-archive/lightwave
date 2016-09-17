@@ -7,6 +7,7 @@ libindexcfg_la_SOURCES = \
     indexcfg.c \
     indexingtask.c \
     indexingthr.c \
+    indexupd.c \
     libmain.c \
     progress.c \
     vmit.c

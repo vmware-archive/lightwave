@@ -89,7 +89,7 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
         log.info("Configuring STS");
         configureSTS();
 
-        String tcSTSBase = "";
+        String tcSTSBase = InstallerUtils.getInstallerHelper().getTCBase(); 
         Path tomcatTempDir = Paths.get(tcSTSBase, "temp");
         if (!Files.exists(tomcatTempDir)) {
             Files.createDirectories(tomcatTempDir);
@@ -258,10 +258,14 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
     }
 
     @Override
-    public void upgrade() {
-        log.debug("SecureTokenServerInstaller : Upgrade");
-        mergeServerXMl();
-
+    public void upgrade() throws Exception{
+        if ( params.getBackupDir() != null) {
+            log.debug("SecureTokenServerInstaller : Upgrade");
+            mergeServerXMl();
+        }
+        if (params.getServiceStart()){
+            startSTSService();
+        }
     }
 
     @Override

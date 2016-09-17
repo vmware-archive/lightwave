@@ -39,6 +39,7 @@ module.controller('ChainCntrl', ['$scope', '$rootScope', 'CertificateService', '
                 chain = {};
             }
 
+            //chain.privateKeyFilePath = "(selected)";
             chain.privateKey = {
                 algorithm : 'RSA',
                 encoded : contents
@@ -51,6 +52,7 @@ module.controller('ChainCntrl', ['$scope', '$rootScope', 'CertificateService', '
                 chain = {};
             }
 
+            //chain.certFilePath = "(selected)";
             if(!chain.certificates) {
                 chain.certificates = [];
             }

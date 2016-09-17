@@ -65,9 +65,7 @@
                     </div>
                     <div ng-repeat="attribute in vm.selectedAttributeConsumerService.attributes"
                          ng-if="vm.selectedAttributeConsumerService.attributes && vm.selectedAttributeConsumerService.attributes.length > 0">
-                        <strong>{{attribute.friendlyName}}</strong><br/> {{attribute.name}} - {{attribute.nameFormat}}
-                        <br/>
-                        <br/>
+                        <strong>{{attribute.friendlyName}}</strong> ({{attribute.name}} - {{attribute.nameFormat}})
                     </div>
                 </div>
             </div>

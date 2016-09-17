@@ -36,7 +36,7 @@ public class VmIdentityCORSResponseFilter implements ContainerResponseFilter {
     private static final String HEADER_ACCESS_CONTROL_ALLOWED_METHODS = "Access-Control-Allow-Methods";
     private static final String HEADER_ACCESS_CONTROL_ALLOWED_HEADERS = "Access-Control-Allow-Headers";
     private static final String VMIDENITY_ALLOWED_ORIGIN = "*"; // All domains are allowed
-    private static final String VMIDENTITY_ALLOWED_METHODS = "GET. POST, DELETE, PUT, OPTIONS";
+    private static final String VMIDENTITY_ALLOWED_METHODS = "GET, POST, DELETE, PUT, OPTIONS";
     private static final String VMIDENTITY_ALLOWED_HEADERS = "x-requested-with,Content-Type,Authorization";
 
     @Override

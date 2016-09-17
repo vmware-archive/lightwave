@@ -56,22 +56,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             InitializeComponent();
 
             txtEntityId.ReadOnly = true;
-            btnCreate.Visible = false;
-            btnAddCert.Visible = false;
-            btnRemoveCert.Visible = false;
-            btnAddNameIdFormat.Visible = false;
-            btnRemoveNameIdFormat.Visible = false;
-            btnAddSsoService.Visible = false;
-            btnRemoveSsoService.Visible = false;
-            btnAddSubjectFormat.Visible = false;
-            btnRemoveSubjectFormat.Visible = false;
-            btnSloService.Visible = false;
-            btnRemoveSloService.Visible = false;
-            lstNameIdFormats.Enabled = false;
-            lstSubjectFormat.Enabled= false;
-            lstSloServices.Enabled = false;
-            lstSsoServices.Enabled = false;            
-            chkJit.Enabled = false;
             DtoToView(_externalIdentityProviderDtoOrig);
             if (lstCertificateChain.Items.Count > 0)
                 lstCertificateChain.Items[0].Selected = true;
@@ -162,14 +146,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
                     };
 
                     IExternalIdentityProviderService idp = _service.ExternalIdentityProvider;
-                    if (_externalIdentityProviderDtoOrig == null)
-                    {
-                        _externalIdentityProviderDtoOrig = idp.Create(_serverDto, _tenantName, externalIdentityProviderDto, auth.Token);
-                    }
-                    else
-                    {
-                        _externalIdentityProviderDtoOrig = idp.Update(_serverDto, _tenantName, externalIdentityProviderDto, auth.Token);
-                    }
+                    _externalIdentityProviderDtoOrig = idp.Create(_serverDto, _tenantName, externalIdentityProviderDto, auth.Token);                   
                 }, auth);
                 this.DialogResult = DialogResult.OK;
             }

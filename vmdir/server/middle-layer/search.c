@@ -689,7 +689,6 @@ BuildCandidateList(
 {
     int             retVal = LDAP_SUCCESS;
     VDIR_FILTER *   nextFilter = NULL;
-    PVDIR_INDEX_CFG pIndexCfg = NULL;
 
     if (f->computeResult != FILTER_RES_NORMAL)
     {
@@ -732,13 +731,19 @@ BuildCandidateList(
                 if (nextFilter->choice == LDAP_FILTER_EQUALITY)
                 {
                     //look for equality match filter on a unique indexed attribute
+                    PVDIR_INDEX_CFG pIndexCfg = NULL;
+                    BOOLEAN bFoundGlobalUniqIdx = FALSE;
+
                     retVal = VmDirIndexCfgAcquire(
                             nextFilter->filtComp.ava.type.lberbv.bv_val,
                             VDIR_INDEX_READ,
                             &pIndexCfg);
                     BAIL_ON_VMDIR_ERROR( retVal );
 
-                    if (pIndexCfg && pIndexCfg->bGlobalUniq)
+                    bFoundGlobalUniqIdx = pIndexCfg && pIndexCfg->bGlobalUniq;
+                    VmDirIndexCfgRelease(pIndexCfg);
+
+                    if (bFoundGlobalUniqIdx)
                     {
                         specialFilter = nextFilter;
                         break;
@@ -788,7 +793,7 @@ first_pass:
                 retVal = BuildCandidateList(pOperation, nextFilter, eStartingId);
                 BAIL_ON_VMDIR_ERROR( retVal );
 
-                if ( nextFilter->candidates != NULL && nextFilter->candidates->size > 0 &&
+                if ( nextFilter->candidates != NULL && nextFilter->candidates->size >= 0 &&
                      nextFilter->candidates->positive == TRUE )
                 {
                     if (nextFilter->candidates->size <= iSmallCandidateSet )
@@ -817,7 +822,7 @@ first_pass:
                 retVal = BuildCandidateList(pOperation, nextFilter, eStartingId);
                 BAIL_ON_VMDIR_ERROR( retVal );
 
-                if ( nextFilter->candidates != NULL && nextFilter->candidates->size > 0 &&
+                if ( nextFilter->candidates != NULL && nextFilter->candidates->size >= 0 &&
                      nextFilter->candidates->positive == TRUE)
                 {
                     if (nextFilter->candidates->size <= iSmallCandidateSet )
@@ -958,7 +963,6 @@ candidate_build_done:
     }
 
 cleanup:
-    VmDirIndexCfgRelease(pIndexCfg);
     return retVal;
 
 error:

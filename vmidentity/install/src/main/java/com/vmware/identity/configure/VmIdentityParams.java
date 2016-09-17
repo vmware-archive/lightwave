@@ -11,6 +11,7 @@ public class VmIdentityParams {
     private String password;
     private String domainName;
     private boolean isUpgrade = false;
+    private boolean isStartService = false;
     private String backupDir;
     private String vmidentityConfFile;
 
@@ -68,5 +69,11 @@ public class VmIdentityParams {
 
     public String getVmIdentityConf() {
         return this.vmidentityConfFile;
+    }
+    public void setServiceStart() {
+        isStartService = true;
+    }
+    public boolean getServiceStart() {
+        return isStartService;
     }
 }

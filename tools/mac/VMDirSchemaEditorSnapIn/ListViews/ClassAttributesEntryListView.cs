@@ -40,6 +40,7 @@ namespace VMDirSchemaEditorSnapIn.ListViews
                 optional.ForEach(x => x.IsOptional = true);
                 AttributeEntries = required;
                 AttributeEntries.AddRange(optional);
+				AttributeEntries.Sort((x, y) => string.Compare(x.Name,y.Name));
             }
         }
 

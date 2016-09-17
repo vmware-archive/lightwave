@@ -71,6 +71,20 @@ resume:
 
         if (!bResume)
         {
+            PVDIR_INDEX_UPD pIndexUpd = gVdirIndexGlobals.pIndexUpd;
+
+            // record current progress
+            dwError = VmDirIndexingTaskRecordProgress(pTask, pIndexUpd);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            // apply index updates
+            dwError = VmDirIndexUpdApply(pIndexUpd);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            VmDirIndexUpdFree(pIndexUpd);
+            gVdirIndexGlobals.pIndexUpd = NULL;
+
+            // compute new task
             VmDirFreeIndexingTask(pTask);
             dwError = VmDirIndexingTaskCompute(&pTask);
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -95,9 +109,6 @@ resume:
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirIndexingTaskDeleteIndices(pTask);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirIndexingTaskRecordProgress(pTask);
         BAIL_ON_VMDIR_ERROR(dwError);
         bResume = FALSE;
     }

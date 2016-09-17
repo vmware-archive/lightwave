@@ -21,7 +21,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using VMDir.Common.Schema;
 using VMDirSchemaEditorSnapIn.Nodes;
-using VMDirSchemaSnapIn.UI;
+using VMDirSchemaSnapIn.UI;
+using VMwareMMCIDP.UI.Common.Utilities;
 
 namespace VMDirSchemaSnapIn.ListViews
 {
@@ -115,8 +116,9 @@ namespace VMDirSchemaSnapIn.ListViews
                     (this.ScopeNode as VMDirSchemaClassBaseNode).ServerNode.ServerDTO.Connection.ModifyObjectClass(frm.ObjectClassModDTO);
                     (this.ScopeNode as VMDirSchemaClassBaseNode).ServerNode.ServerDTO.Connection.SchemaManager.RefreshSchema();
                     (this.ScopeNode as VMDirSchemaClassBaseNode).RefreshChildren();
-                    this.Refresh();
-                    UIErrorHelper.ShowMessage(VMDirSchemaConstants.CLASS_MODIFY_MESSAGE);
+                    this.Refresh();
+
+                    MMCDlgHelper.ShowMessage(VMDirSchemaConstants.CLASS_MODIFY_MESSAGE);
                 });
             }
         }

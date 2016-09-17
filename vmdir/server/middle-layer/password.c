@@ -878,7 +878,6 @@ PasswdModifyRequestCheck(
     BOOLEAN         bPasswdDelete    = FALSE;
     BOOLEAN         bPasswdAdd       = FALSE;
     BOOLEAN         bPasswdReplace   = FALSE;
-    BOOLEAN         bModifyHasOthers = FALSE;
     PVDIR_MODIFICATION   pMod          = NULL;
 
     assert(pOperation && ppModNewPasswd && ppModOldPasswd);
@@ -925,10 +924,6 @@ PasswdModifyRequestCheck(
                 break;
             }
         }
-        else
-        {
-            bModifyHasOthers = TRUE;
-        }
     }
 
     // password change: DELETE + ADD must come in pair
@@ -937,13 +932,6 @@ PasswdModifyRequestCheck(
     {
         dwError = LDAP_UNWILLING_TO_PERFORM;
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "Password add and delete must come in pair" );
-    }
-
-    // password change/set must be a stand alone request
-    if (bModifyHasOthers && (bPasswdAdd || bPasswdDelete || bPasswdReplace))
-    {
-        dwError = LDAP_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "Password modification must be a stand alone request" );
     }
 
 cleanup:
@@ -1001,24 +989,28 @@ PasswdModifyMetaDataCreate(
 
         pOldPasswdAttr = VmDirFindAttrByName(pEntry, ATTR_OLD_USER_PASSWORD);
 
-        // TODO, could consider cache this in Operation if multiple lookup needed
         dwError = VdirGetPasswdAndLockoutPolicy(
                         BERVAL_NORM_VAL(pOperation->request.modifyReq.dn),
                         &policy);
-        // ignore error - if no policy, use default value PASSWD_DEFAULT_RETENTION_COUNT.
+        if (dwError == 0 && policy.bEnabled && policy.iRecycleCnt > 0)
+        {   // if we have an enabled policy, do recycle related task/check
+            dwError = OldPasswdRetention(
+                            pOperation,
+                            pOldPasswdAttr ? (&(pOldPasswdAttr->vals[0])) : NULL, // current retended blob
+                            pCurrentPassValue,              // current (before modify) passwd blob
+                            policy.iRecycleCnt,
+                            &bvRetendedBlob);               // new retended blob
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "Old password save failed");
 
-        dwError = OldPasswdRetention(
-                        pOperation,
-                        pOldPasswdAttr ? (&(pOldPasswdAttr->vals[0])) : NULL, // current retended blob
-                        pCurrentPassValue,              // current (befoer modify) passwd blob
-                        policy.iRecycleCnt ? policy.iRecycleCnt : PASSWD_DEFAULT_RETENTION_COUNT,
-                        &bvRetendedBlob);               // new retended blob
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "Old password save failed");
-
-        dwError = OldPasswdRecycleCheck(
-                        pszNewClearPasswd,
-                        &bvRetendedBlob);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "Password recycle");
+            dwError = OldPasswdRecycleCheck(
+                            pszNewClearPasswd,
+                            &bvRetendedBlob);
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "Password recycle");
+        }
+        else if (dwError)
+        {
+            dwError = 0; // ignore policy lookup error
+        }
     }
 
 cleanup:

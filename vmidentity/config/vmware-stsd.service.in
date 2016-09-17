@@ -7,6 +7,7 @@ Requires=vmware-idmd.service
 Type=forking
 ExecStart=/opt/vmware/sbin/vmware-stsd.sh start
 SuccessExitStatus=143
+PIDFile=/var/log/vmware/sso/tcserver.pid
 
 [Install]
 WantedBy=multi-user.target
