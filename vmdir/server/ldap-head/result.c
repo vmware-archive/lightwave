@@ -588,6 +588,12 @@ IsAttrInReplScope(
     {
         ; // always send uSNChanged. (PR 1573117)
     }
+    else if ( attrType != NULL && gVmdirServerGlobals.dwDomainFunctionalLevel >= VDIR_DFL_MODDN &&
+              (VmDirStringCompareA( attrType, ATTR_OBJECT_GUID, FALSE) == 0))
+    {
+        ; // always send objectGUID to uniquely identify entries, regardless
+          // which node the entry was created. (PR 1730608)
+    }
     else if (VmDirStringCompareA( origInvocationId,
                   op->syncReqCtrl->value.syncReqCtrlVal.reqInvocationId.lberbv.bv_val,TRUE ) == 0)
     {
@@ -596,11 +602,6 @@ IsAttrInReplScope(
         attrMetaData[0] = '\0';
         *inScope = FALSE;
         goto cleanup;
-    }
-    else if ( attrType != NULL && gVmdirServerGlobals.dwDomainFunctionalLevel >= VDIR_DFL_MODDN &&
-              (VmDirStringCompareA( attrType, ATTR_OBJECT_GUID, FALSE) == 0))
-    {
-        ; // always send objectGUID to uniquely identify entries.
     }
     else
     {

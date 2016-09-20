@@ -2,6 +2,46 @@
 
 LW_BIN_DIR=/opt/likewise/bin
 LW_SBIN_DIR=/opt/likewise/sbin
+LW_DEFAULT_VERSION="6.6.0"
+LW_KEY="[HKEY_THIS_MACHINE\\Services\\lw-server]"
+
+_get_lw_version(){
+
+    LW_VERSION=`rpm -qid vmware-lightwave-server | grep -i Version | cut -d ':' -f2 | tr -d '[[:space:]]'`
+
+    if [ -z $LW_VERSION ]; then
+        LW_VERSION=$LW_DEFAULT_VERSION
+    fi
+}
+
+_get_installed_version(){
+
+    INSTALLED_VERSION=`$LW_BIN_DIR/lwregshell list_values "$LW_KEY" | \
+        grep 'Version' | sed 's/+//' | cut -d '"' -f4`
+}
+
+_set_installed_version(){
+
+    # Does key exist?
+    $LW_BIN_DIR/lwregshell list_keys "[HKEY_THIS_MACHINE\\Services]" | grep 'lw-server'
+
+    # Key doesn't exist, create it
+    if [ $? -ne 0 ]; then
+        $LW_BIN_DIR/lwregshell add_key '[HKEY_THIS_MACHINE\Services\lw-server]'
+    fi
+
+    # Does value exist?
+    $LW_BIN_DIR/lwregshell list_values "$LW_KEY" | grep 'Version'
+
+    # If value doesn't exist, create it. Otherwise, set it.
+    if [ $? -ne 0 ]; then
+        #Add Value
+        $LW_BIN_DIR/lwregshell add_value $LW_KEY "Version" REG_SZ "$LW_VERSION"
+    else
+        #Set Value
+        $LW_BIN_DIR/lwregshell set_value $LW_KEY "Version" "$LW_VERSION"
+    fi
+}
 
 _exit(){
     if [ $RUN_LWSM ]; then
@@ -266,22 +306,36 @@ fi
 
 # check if it's a promoted container
 if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ `pidof init` -eq 1 ]]; then
-    # perform vmdir upgrade
-    $BIN_DIR/vmdir_upgrade.sh --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
-                              --domainname $LOTUS_DOMAIN_DEFAULT --recover
 
-    if [ $? -ne 0 ]; then
-        echo  "Upgrade failed."
-        _exit 2
+    #check current version
+    _get_lw_version
+
+    #check installed version
+    _get_installed_version
+
+    # Check if versions are different
+    if [ "$INSTALLED_VERSION" != "$LW_VERSION" ]; then
+
+        # perform vmdir upgrade
+        $BIN_DIR/vmdir_upgrade.sh --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
+                                  --domainname $LOTUS_DOMAIN_DEFAULT --recover
+
+        if [ $? -ne 0 ]; then
+            echo  "Upgrade failed."
+            _exit 2
+        fi
+
+        # Upgrade successful, restart lwsm to insure all changes are applied and node is replicating
+        if [ -z $RUN_LWSM ]; then
+            systemctl restart lwsmd
+        fi
+
+        # Update installed version on upgrade success
+        _set_installed_version
+        
+        echo "Upgrade complete."
+        _exit 0
     fi
-
-    # Upgrade successful, restart lwsm to insure all changes are applied and node is replicating
-    if [ -z $RUN_LWSM ]; then
-        systemctl restart lwsmd
-    fi
-
-    echo "Upgrade complete."
-    _exit 0
 
 else
     if [ $RUN_LWSM ]; then
@@ -312,6 +366,9 @@ else
         echo  "PSC Installation failed."
         _exit 1
     fi
+
+    # Set installed version on installation success.
+    _set_installed_version
 
     echo "Setup complete."
     _exit 0
