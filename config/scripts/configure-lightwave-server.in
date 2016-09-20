@@ -298,11 +298,11 @@ if [ ! -z "$DOMAIN_STATE" ]; then
 
 fi
 
+#check current version
+_get_lw_version
+
 # check if it's a promoted container
 if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ `pidof init` -eq 1 ]]; then
-
-    #check current version
-    _get_lw_version
 
     #check installed version
     _get_installed_version
@@ -343,8 +343,9 @@ if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ `pidof init` -eq 1 ]]; then
         _set_installed_version
         
         echo "Upgrade complete."
-        _exit 0
     fi
+
+    _exit 0
 
 else
     if [ $RUN_LWSM ]; then
