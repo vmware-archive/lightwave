@@ -241,6 +241,12 @@ if [ -x /etc/init.d/vmware-license ]; then
      /etc/init.d/vmware-license stop
 fi
 
+if [ `pidof init` -eq 1 ]; then
+    systemctl disable vmware-idmd
+    systemctl disable vmware-stsd
+    systemctl daemon-reload
+fi
+
 # Configure syslog-ng
 LINE='@include "lightwave.conf.d"'
 FILE=/etc/syslog-ng/syslog-ng.conf
@@ -310,27 +316,12 @@ if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ `pidof init` -eq 1 ]]; then
     # Check if versions are different
     if [ "$INSTALLED_VERSION" != "$LW_VERSION" ]; then
 
-        # stop the STS and IDMD service
-        systemctl stop vmware-stsd
-        systemctl stop vmware-idmd
         # perform vmdir upgrade
         $BIN_DIR/vmdir_upgrade.sh --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
                                   --domainname $LOTUS_DOMAIN_DEFAULT --recover
 
         if [ $? -ne 0 ]; then
             echo  "Upgrade failed."
-            _exit 2
-        fi
-
-        # perform vmidentity upgrade
-        #
-        if [ $RUN_LWSM ]; then
-            $LW_BIN_DIR/lwsm autostart
-        fi
-        $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
-                            -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller --upgrade --start-service
-        if [ $? -ne 0 ]; then
-            echo "VMIdentity upgrade failed."
             _exit 2
         fi
 
@@ -341,7 +332,7 @@ if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ `pidof init` -eq 1 ]]; then
 
         # Update installed version on upgrade success
         _set_installed_version
-        
+
         echo "Upgrade complete."
         _exit 0
     fi
@@ -370,6 +361,13 @@ else
                                 $LOTUS_DNS_FORWARDERS_ARG
             ;;
     esac
+
+    # configure vmidentity if we are not running in a container
+    if [ `pidof init` -ne 1 ]; then
+           $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
+                    -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller \
+                    --hostname $LOTUS_HOSTNAME --username $LOTUS_ADMIN_DEFAULT  --domain $LOTUS_DOMAIN_DEFAULT --password $LOTUS_ADMIN_PASSWORD_DEFAULT
+    fi
 
     if [ $? -ne 0 ]; then
         echo  "PSC Installation failed."
