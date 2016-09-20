@@ -1,0 +1,93 @@
+#!/bin/bash
+#This script is used to configure the Identity service in a container
+JAVA_HOME=@JAVA_HOME@
+JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
+VMWARE_DIR=/opt/vmware
+CLASSPATH=$CLASSPATH:$VMWARE_DIR/jars/*
+BIN_DIR=$VMWARE_DIR/bin
+SBIN_DIR=$VMWARE_DIR/sbin
+LOTUS_CONFIG_FILE="/var/lib/vmware/config/lightwave-server.cfg"
+LWREG_BIN="/opt/likewise/bin/lwregshell"
+LWREG_IDENTITY_KEY="[HKEY_THIS_MACHINE\\Software\\VMware\\Identity]"
+
+AWK=
+if [ -x /bin/awk ]; then
+    AWK=/bin/awk
+elif [ -x /usr/bin/awk ]; then
+    AWK=/usr/bin/awk
+else
+    echo "Failed to find AWK"
+    exit 1
+fi
+
+# Get the configuration parameters
+if [ -f "$LOTUS_CONFIG_FILE" ]; then
+    LOTUS_DEPLOYMENT=$(grep "^deployment=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_DOMAIN_DEFAULT=$(grep "^domain=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_ADMIN_DEFAULT=$(grep "^admin=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_ADMIN_PASSWORD_DEFAULT=$(grep "^password=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_PARTNER_HOSTNAME=$(grep "^replication-partner-hostname=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_SITE_NAME=$(grep "^site-name=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_HOSTNAME=$(grep "^hostname=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+fi
+
+# Extract the version of the vmware-sts rpm
+VERSION=`rpm -qid vmware-sts | grep Version`
+STS_VERSION=
+for word in $VERSION
+do
+   if [[ $word != "Version" ]]  || [[ $word != ":" ]]; then
+      STS_VERSION=$word
+   fi
+done
+echo "Running $STS_VERSION version"
+
+# Check if the VMware-identity services have been configured
+REG_VAL=`$LWREG_BIN list_values $LWREG_IDENTITY_KEY`
+
+# If "Description" is present then the service was configured and we are attempting to perform an upgrade or restart the services
+if [[ $REG_VAL != *"Description"* ]]; then
+   echo "Configuring VMware Identity Services"
+   $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
+          -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller \
+          --hostname $LOTUS_HOSTNAME --username $LOTUS_ADMIN_DEFAULT  --domain $LOTUS_DOMAIN_DEFAULT --password $LOTUS_ADMIN_PASSWORD_DEFAULT
+   if [ $? -ne 0 ]; then
+       echo "Failed to configure VMware Identity Services"
+       exit 1
+   fi
+   $LWREG_BIN add_value $LWREG_IDENTITY_KEY "Version" REG_SZ $STS_VERSION
+   exit 0
+fi
+
+# Get the version from likewise registry
+REG_VAL=`echo "$REG_VAL" | grep "Version"`
+INSTALL_VER=
+if [[ $REG_VAL == *"Version"* ]]; then
+    for word in $REG_VAL
+    do
+        if [[ $word != "Version" ]] && [[ $word != "REG_SZ" ]]; then
+             INSTALL_VER=`sed -e 's/^"//' -e 's/"$//' <<< $word`
+        fi
+    done
+fi
+
+# Check if we need to perform an upgrade or restart the service
+if [[ $REG_VAL != *"Version"* ]] || [[ $INSTALL_VER != $STS_VERSION ]]; then
+    #perform upgrade
+    $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
+           -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller --upgrade --start-service
+    if [ $? -ne 0 ]; then
+        echo "VMIdentity upgrade failed."
+        exit 1
+    fi
+    if [[ $REG_VAL != *"Version"*  ]]; then
+       $LWREG_BIN add_value $LWREG_IDENTITY_KEY "Version" REG_SZ $STS_VERSION
+    else
+       $LWREG_BIN set_value $LWREG_IDENTITY_KEY "Version" $STS_VERSION
+    fi
+    echo "perform Upgrade"
+else
+    # Starting STS should restart the IDM Service also
+    systemctl restart vmware-stsd
+fi
+exit 0
