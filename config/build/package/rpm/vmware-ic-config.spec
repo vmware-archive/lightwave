@@ -118,6 +118,7 @@ cd build && make install DESTDIR=%{buildroot}
 %{_bindir}/ic-promote
 %{_bindir}/ic-join
 %{_bindir}/configure-lightwave-server
+%{_bindir}/configure-identity-server
 %{_bindir}/domainjoin.sh
 %{_lib64dir}/*.so*
 %{_jarsdir}/*.jar

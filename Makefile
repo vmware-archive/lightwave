@@ -33,6 +33,7 @@ container: $(DOCKER_IMAGE)
 $(DOCKER_IMAGE) : $(PACKAGES)
 	$(CP) -f $(DOCKER_SRCROOT)/Dockerfile $(LIGHTWAVE_STAGE_DIR)/Dockerfile
 	$(CP) -f $(DOCKER_SRCROOT)/configure-lightwave-server.service $(LIGHTWAVE_STAGE_DIR)/configure-lightwave-server.service
+	$(CP) -f $(DOCKER_SRCROOT)/configure-identity-server.service $(LIGHTWAVE_STAGE_DIR)/configure-identity-server.service
 	$(DOCKER_BUILDER) $(LIGHTWAVE_STAGE_DIR) $@
 
 client-container: $(DOCKER_CLIENT_IMAGE)
