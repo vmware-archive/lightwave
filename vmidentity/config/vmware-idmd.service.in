@@ -1,6 +1,7 @@
 [Unit]
 Description=VMware Identity Manager Service
 After=syslog.target network.target
+Requires=lwsmd.service
 
 [Service]
 Type=forking

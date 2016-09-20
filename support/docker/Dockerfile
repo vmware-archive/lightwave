@@ -31,8 +31,11 @@ RUN tdnf update --refresh -y tdnf; \
     rm -rf /usr/include/*;
 
 ADD configure-lightwave-server.service /usr/lib/systemd/system/
+ADD configure-identity-server.service /usr/lib/systemd/system/
 RUN ln -s /usr/lib/systemd/system/configure-lightwave-server.service \
           /etc/systemd/system/multi-user.target.wants/configure-lightwave-server.service
+RUN ln -s /usr/lib/systemd/system/configure-identity-server.service \
+          /etc/systemd/system/multi-user.target.wants/configure-identity-server.service
 
 EXPOSE 22 53/udp 53 88/udp 88 389 636 2012 2014 2020
 
