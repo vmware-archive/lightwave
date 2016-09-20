@@ -480,6 +480,7 @@ AC_CONFIG_FILES([Makefile
                  tools/ic-join/Makefile
                  scripts/Makefile
                  scripts/configure-lightwave-server
+                 scripts/configure-identity-server
                 ])
 AC_OUTPUT
 
