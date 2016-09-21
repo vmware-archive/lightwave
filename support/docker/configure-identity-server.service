@@ -1,0 +1,13 @@
+[Unit]
+Description=Identity Server Configuration Service
+After=syslog.target network.target lwsmd.service
+Requires=lwsmd.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/opt/vmware/bin/configure-identity-server
+KillMode=none
+
+[Install]
+WantedBy=multi-user.target
