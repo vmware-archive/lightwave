@@ -31,6 +31,7 @@ import com.vmware.identity.idm.IIdmServiceContext;
 import com.vmware.identity.idm.IdmServiceContextFactory;
 import com.vmware.identity.idm.PasswordExpiration;
 import com.vmware.identity.idm.Tenant;
+import com.vmware.identity.installer.ReleaseUtil;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.idm.client.IServiceContextProvider;
 import com.vmware.identity.interop.ldap.LdapConstants;
@@ -192,6 +193,11 @@ public class IdentityManagerUtil {
 
         client.updatePasswordExpirationConfiguration(tenantName,
                 PasswordExpiration.createDefaultSettings());
+
+	// Set default brand name for LIGHTWAVE
+        if(ReleaseUtil.isLightwave()) {
+            client.setBrandName(tenantName, "LIGHTWAVE Single Sign On");
+	}
 
         client.authenticate(tenantName, getAdminUser(), getAdminPassword());
     }
