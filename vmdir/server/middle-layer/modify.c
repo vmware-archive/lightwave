@@ -1539,8 +1539,9 @@ GenerateNewParent(
     retVal = VmDirGetParentDN(&pDnAttr->vals[0], &NewParent);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    if (VmDirStringCompareA(pEntry->pdn.bvnorm_val, NewParent.bvnorm_val,
-FALSE) != 0)
+    if (pEntry->pdn.bvnorm_val == NULL ||
+        NewParent.bvnorm_val == NULL ||
+        VmDirStringCompareA(pEntry->pdn.bvnorm_val, NewParent.bvnorm_val, FALSE) != 0)
     {
         retVal = VmDirBervalContentDup(&NewParent, &pEntry->newpdn);
         BAIL_ON_VMDIR_ERROR(retVal);
