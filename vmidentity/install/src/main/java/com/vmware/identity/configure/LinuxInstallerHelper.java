@@ -186,4 +186,9 @@ public class LinuxInstallerHelper implements InstallerHelper {
     public String getIdmLoginPath(){
         return "/etc/vmware-sso/keys/";
     }
+    
+    @Override
+    public String getConfigDirectoryRootKey() {
+        return "Services\\vmdir";
+    }
 }

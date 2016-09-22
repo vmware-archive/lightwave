@@ -12,10 +12,32 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.vmware.identity.interop.ldap.ILdapConnectionEx;
+import com.vmware.identity.interop.ldap.LdapBindMethod;
+import com.vmware.identity.interop.ldap.LdapConnectionFactoryEx;
+import com.vmware.identity.interop.ldap.LdapConstants;
+import com.vmware.identity.interop.ldap.LdapOption;
+import com.vmware.identity.interop.ldap.LdapScope;
+import com.vmware.identity.interop.registry.IRegistryAdapter;
+import com.vmware.identity.interop.registry.IRegistryKey;
+import com.vmware.identity.interop.registry.RegKeyAccess;
+import com.vmware.identity.interop.registry.RegistryAdapterFactory;
+import com.vmware.identity.interop.vmafd.VmAfdFactory;
+import com.vmware.identity.interop.vmafd.VmAfdStatus;
 
 public class VMIdentityController {
 
+    private DirectoryBindInformation _bindInformation = null;
     private IPlatformInstallObserver observer = null;
+    private static String CONFIG_DIRECTORY_ROOT_KEY;
+    private static String CONFIG_DIRECTORY_PARAMETERS_KEY;
+    private static final String CONFIG_DIRECTORY_DCACCOUNT_DN_VALUE =
+                                        "dcAccountDN";
+    private static String CONFIG_DIRECTORY_CREDS_ROOT_KEY;
+    private static final String CONFIG_DIRECTORY_DCACCOUNT_PASSWORD =
+                                    "dcAccountPassword";
+    private static final String CONFIG_DIRECTORY_LDAP_PORT_VALUE =
+                                    "LdapPort";
 
     public boolean setupInstanceStandalone(
             VmIdentityParams standaloneParams)
@@ -43,13 +65,9 @@ public class VMIdentityController {
         // check services vmafd, vmca and vmdir if they are confgiured.
         try {
             // check authentication services
-            // TODO: Need to figure out if we are going
-            //  check the status of the VMAFD Service
-            //checkVMAFDService();
+            checkVMAFDService();
 
             // check directory services
-            // TODO: Need to figure out if we are going 
-            // check the status of the VMDIR service
             checkVMDIRService();
 
             // check certificate services
@@ -222,30 +240,155 @@ public class VMIdentityController {
 
     }
 
-    private void checkVMDIRService() throws Exception {/*
+    private void checkVMDIRService() throws Exception {
 
         System.out.println("\n-----Checking Directory service-----");
         try{
-            STSInstaller installer = new STSInstaller();
-            installer.check_dir_svc();
+            DirectoryBindInformation bindInfo = getBindInformation();
+            ILdapConnectionEx connection = null;
+            try
+            {
+                connection = getConnection(bindInfo);
+                connection.search(
+                    "",
+                    LdapScope.SCOPE_BASE,
+                    "(objectclass=*)",
+                    new String [] {},
+                    false);
+            }
+            finally
+            {
+                connection.close();
+            }
         } catch(Exception ex){
             throw new ServiceCheckException("Failed to check directory service. Cannot configure IDM or STS.", ex);
         }
         System.out.println("Directory Service checked successfully.");
-        */
     }
 
-    private void checkVMAFDService() throws Exception { /*
+    private void checkVMAFDService() throws Exception {
 
         System.out.println("\n\n-----Checking Authentication service-----");
-        try {
-            STSInstaller installer = new STSInstaller();
-            installer.check_vmafd_svc();
-        } catch (Exception ex) {
-            throw new ServiceCheckException("Failed to check authentication service. Cannot configure IDM or STS.",
-                    ex);
+        int status = VmAfdFactory.getInstance().GetStatus();
+        if (
+           ( status != VmAfdStatus.VMAFD_STATUS_INITIALIZING.getCode() ) &&
+           ( status != VmAfdStatus.VMAFD_STATUS_RUNNING.getCode() ) )
+        {
+           throw new ServiceCheckException("Failed to check authentication service. Cannot configure IDM or STS.");
         }
+
         System.out.println("Authentication Service checked successfully.");
-       */
     }
+
+    private synchronized DirectoryBindInformation getBindInformation()
+    {
+
+        if (_bindInformation == null)
+        {
+            IRegistryAdapter regAdapter =
+                       RegistryAdapterFactory.getInstance().getRegistryAdapter();
+
+            IRegistryKey rootKey = regAdapter.openRootKey(
+                                           (int) RegKeyAccess.KEY_READ);
+
+            CONFIG_DIRECTORY_ROOT_KEY = InstallerUtils
+                    .getInstallerHelper().getConfigDirectoryRootKey();
+            CONFIG_DIRECTORY_CREDS_ROOT_KEY = CONFIG_DIRECTORY_ROOT_KEY;
+            CONFIG_DIRECTORY_PARAMETERS_KEY = CONFIG_DIRECTORY_ROOT_KEY + "\\Parameters";
+            try
+            {
+                String adminDN = regAdapter.getStringValue(
+                                                rootKey,
+                                                CONFIG_DIRECTORY_ROOT_KEY,
+                                                CONFIG_DIRECTORY_DCACCOUNT_DN_VALUE,
+                                                false);
+
+                Integer port = regAdapter.getIntValue(
+                        rootKey,
+                        CONFIG_DIRECTORY_PARAMETERS_KEY,
+                        CONFIG_DIRECTORY_LDAP_PORT_VALUE,
+                        true);
+                // fall back to lotus default port
+                if (port == null || port == 0)
+                {
+                    port = LdapConstants.LDAP_PORT_LOTUS;
+                }
+
+                String adminPassword = regAdapter.getStringValue(
+                                                rootKey,
+                                                CONFIG_DIRECTORY_CREDS_ROOT_KEY,
+                                                CONFIG_DIRECTORY_DCACCOUNT_PASSWORD,
+                                                false);
+
+                _bindInformation = new DirectoryBindInformation(
+                                            adminDN,
+                                            adminPassword,
+                                            port);
+            }
+            finally
+            {
+                rootKey.close();
+            }
+        }
+        return _bindInformation;
+    }
+
+    private static class DirectoryBindInformation
+    {
+        private final String  _bindDN;
+        private Integer _port;
+        private final String  _password;
+
+        public DirectoryBindInformation(String dn, String password, Integer port)
+        {
+            _bindDN = dn;
+            _password = password;
+            if (port == null || port == 0)
+            {
+                _port = LdapConstants.LDAP_PORT;
+            }
+            else
+            {
+                _port = port;
+            }
+        }
+
+        public String getBindDN()
+        {
+            return _bindDN;
+        }
+
+        public String getPassword()
+        {
+            return _password;
+        }
+
+        public int getPort()
+        {
+            return _port;
+        }
+    }
+
+    private ILdapConnectionEx getConnection(DirectoryBindInformation bindInfo ){
+        ILdapConnectionEx connection =
+                LdapConnectionFactoryEx.getInstance().getLdapConnection(
+                        "localhost",
+                        bindInfo.getPort());
+
+            connection.setOption(
+                    LdapOption.LDAP_OPT_PROTOCOL_VERSION,
+                    LdapConstants.LDAP_VERSION3);
+
+           connection.setOption(
+                    LdapOption.LDAP_OPT_REFERRALS,
+                    false);
+
+            connection.bindConnection(
+                    bindInfo.getBindDN(),
+                    bindInfo.getPassword(),
+                    LdapBindMethod.LDAP_BIND_SIMPLE);
+
+        return connection;
+    }
+
 }
