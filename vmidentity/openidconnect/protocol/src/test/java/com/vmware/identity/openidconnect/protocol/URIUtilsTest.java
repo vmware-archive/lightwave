@@ -42,20 +42,38 @@ public class URIUtilsTest {
     }
 
     @Test
-    public void testParseURISuccessOnLocalHostname() throws ParseException {
-        String uriString = "https://hostname";
+    public void testParseSuccessOnLocalTLD() throws ParseException {
+        String uriString = "https://lw.photon.local";
         URI uri = URIUtils.parseURI(uriString);
         Assert.assertEquals("uriString", uriString, uri.toString());
     }
 
     @Test
-    public void testParseFailOnInvalidScheme() {
-        String uriString = "http://identity.vmware.com"; // should be https
+    public void testParseSuccessOnHostname() throws ParseException {
+        String uriString = "https://localhost";
+        URI uri = URIUtils.parseURI(uriString);
+        Assert.assertEquals("uriString", uriString, uri.toString());
+    }
+
+    @Test
+    public void testParseFail() {
+        String uriString = "https://identity.vmware.com\\";
         try {
             URIUtils.parseURI(uriString);
             Assert.fail("expecting ParseException");
         } catch (ParseException e) {
-            Assert.assertEquals("e.getMessage()", "uri is not a valid https url", e.getMessage());
+            Assert.assertEquals("e.getMessage()", "failed to parse uri", e.getMessage());
+        }
+    }
+
+    @Test
+    public void testParseFailOnMissingScheme() {
+        String uriString = "identity.vmware.com";
+        try {
+            URIUtils.parseURI(uriString);
+            Assert.fail("expecting ParseException");
+        } catch (ParseException e) {
+            Assert.assertEquals("e.getMessage()", "uri must have a scheme", e.getMessage());
         }
     }
 
