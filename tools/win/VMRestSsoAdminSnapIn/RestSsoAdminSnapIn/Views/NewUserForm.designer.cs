@@ -62,6 +62,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.btnCreate = new System.Windows.Forms.Button();
             this.btnClose = new System.Windows.Forms.Button();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.chkDisabled = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // txtDescription
@@ -195,7 +196,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             // 
             // horizontalLine
             // 
-            this.horizontalLine.Location = new System.Drawing.Point(22, 233);
+            this.horizontalLine.Location = new System.Drawing.Point(22, 230);
             this.horizontalLine.Name = "horizontalLine";
             this.horizontalLine.Size = new System.Drawing.Size(367, 3);
             this.horizontalLine.TabIndex = 37;
@@ -203,7 +204,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             // 
             // btnCreate
             // 
-            this.btnCreate.Location = new System.Drawing.Point(231, 260);
+            this.btnCreate.Location = new System.Drawing.Point(231, 307);
             this.btnCreate.Name = "btnCreate";
             this.btnCreate.Size = new System.Drawing.Size(75, 23);
             this.btnCreate.TabIndex = 34;
@@ -215,7 +216,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             // btnClose
             // 
             this.btnClose.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnClose.Location = new System.Drawing.Point(313, 260);
+            this.btnClose.Location = new System.Drawing.Point(313, 307);
             this.btnClose.Name = "btnClose";
             this.btnClose.Size = new System.Drawing.Size(75, 23);
             this.btnClose.TabIndex = 35;
@@ -230,12 +231,23 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             this.toolTip1.ToolTipIcon = System.Windows.Forms.ToolTipIcon.Info;
             this.toolTip1.ToolTipTitle = "New User";
             // 
+            // chkDisabled
+            // 
+            this.chkDisabled.AutoSize = true;
+            this.chkDisabled.Location = new System.Drawing.Point(330, 249);
+            this.chkDisabled.Name = "chkDisabled";
+            this.chkDisabled.Size = new System.Drawing.Size(61, 17);
+            this.chkDisabled.TabIndex = 38;
+            this.chkDisabled.Text = "Disable";
+            this.chkDisabled.UseVisualStyleBackColor = true;
+            // 
             // NewUserForm
             // 
             this.AcceptButton = this.btnCreate;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(408, 292);
+            this.ClientSize = new System.Drawing.Size(408, 341);
+            this.Controls.Add(this.chkDisabled);
             this.Controls.Add(this.txtDescription);
             this.Controls.Add(this.label7);
             this.Controls.Add(this.txtEmail);
@@ -285,5 +297,6 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
         private System.Windows.Forms.Button btnCreate;
         private System.Windows.Forms.Button btnClose;
         private System.Windows.Forms.ToolTip toolTip1;
+        private System.Windows.Forms.CheckBox chkDisabled;
     }
 }
