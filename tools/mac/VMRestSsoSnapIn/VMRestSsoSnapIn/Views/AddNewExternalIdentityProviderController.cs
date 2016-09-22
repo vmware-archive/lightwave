@@ -132,7 +132,7 @@ namespace RestSsoAdminSnapIn
 				var result = openPanel.RunModal();
 				if (result == 1)
 				{
-					var filePath = openPanel.Url.AbsoluteString.Replace("file://",string.Empty);
+					var filePath = Uri.UnescapeDataString (openPanel.Url.AbsoluteString.Replace("file://",string.Empty));
 					var cert = new X509Certificate2 ();
 					ActionHelper.Execute (delegate() {
 						cert.Import (filePath);
@@ -166,6 +166,9 @@ namespace RestSsoAdminSnapIn
 			this.BtnSave.Activated += (object sender, EventArgs e) => {
 				if (string.IsNullOrEmpty (TxtUniqueId.StringValue)) {
 					UIErrorHelper.ShowAlert ("Please choose a Unique Id", "Alert");
+				} else if(string.IsNullOrEmpty(TxtAlias.StringValue))
+				{
+					UIErrorHelper.ShowAlert ("Alias cannot be empty", "Alert");
 				} else if (ExternalIdentityProviderDto.NameIDFormats.Count() < 1) {
 					UIErrorHelper.ShowAlert ("Please choose a Name Id format", "Alert");
 				} else if (ExternalIdentityProviderDto.SubjectFormats.Count() < 1) {
@@ -303,10 +306,6 @@ namespace RestSsoAdminSnapIn
 			if(string.IsNullOrEmpty(TxtSsoName.StringValue))
 			{
 				UIErrorHelper.ShowAlert ("Sso service name cannot be empty", "Alert");
-				return false;
-			} else if(string.IsNullOrEmpty(TxtAlias.StringValue))
-			{
-				UIErrorHelper.ShowAlert ("Alias cannot be empty", "Alert");
 				return false;
 			} else if(string.IsNullOrEmpty(TxtSsoBinding.StringValue))
 			{

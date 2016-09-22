@@ -155,7 +155,8 @@ namespace RestSsoAdminSnapIn
 			this.BtnApply.Activated += (object sender, EventArgs e) => {
 
 				ActionHelper.Execute (delegate() {
-					if (string.IsNullOrEmpty (TxtCertificateDN.StringValue)) {
+					var value = (NSString)CbTokenAuthMethod.SelectedValue;
+					if (value == "private_key_jwt" && string.IsNullOrEmpty (TxtCertificateDN.StringValue)) {
 						UIErrorHelper.ShowAlert ("Please choose a valid certificate", "Alert");
 					} else if (string.IsNullOrEmpty (TxtLogoutUrl.StringValue)) {
 						UIErrorHelper.ShowAlert ("Please enter valid logout uri", "Alert");
@@ -163,7 +164,8 @@ namespace RestSsoAdminSnapIn
 						UIErrorHelper.ShowAlert ("Please enter a valid redirect URI", "Alert");
 					} else if (OidcClientDto.OidcClientMetadataDTO.PostLogoutRedirectUris.Count == 0) {
 						UIErrorHelper.ShowAlert ("Please enter a valid post logout redirect URI", "Alert");
-					} else {
+					}
+						else {
 						OidcClientDto.OidcClientMetadataDTO.LogoutUri = TxtLogoutUrl.StringValue;
 						OidcClientDto.OidcClientMetadataDTO.TokenEndpointAuthMethod = (NSString)CbTokenAuthMethod.SelectedValue;
 						OidcClientDto.OidcClientMetadataDTO.CertSubjectDN = TxtCertificateDN.StringValue;

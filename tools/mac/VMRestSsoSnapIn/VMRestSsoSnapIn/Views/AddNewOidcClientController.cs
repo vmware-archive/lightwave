@@ -127,7 +127,8 @@ namespace RestSsoAdminSnapIn
 			};
 
 			this.BtnSave.Activated += (object sender, EventArgs e) => {
-				if (string.IsNullOrEmpty (TxtCertificateDN.StringValue)) {
+				var value = (NSString)CbAuthTokenMethod.SelectedValue;
+				if (value == "private_key_jwt" && string.IsNullOrEmpty (TxtCertificateDN.StringValue)) {
 					UIErrorHelper.ShowAlert ("Please choose a valid certificate", "Alert");
 				} else if (string.IsNullOrEmpty (TxtLogoutUri.StringValue) || !WebUtil.IsValidHttpUrl(TxtLogoutUri.StringValue)) {
 					UIErrorHelper.ShowAlert ("Please enter valid logout uri", "Alert");

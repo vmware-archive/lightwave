@@ -49,13 +49,13 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Dto
         /// <summary>
         /// Is the user account disabled
         /// </summary>
-        [DataMember(EmitDefaultValue = false)]
+        [DataMember]
         bool disabled { get; set; }
 
         /// <summary>
         /// Is the user account locked?
         /// </summary>
-        [DataMember(EmitDefaultValue = false)]
+        [DataMember]
         bool locked { get; set; }
 
         /// <summary>
