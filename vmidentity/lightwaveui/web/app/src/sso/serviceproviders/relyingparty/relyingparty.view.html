@@ -64,13 +64,13 @@
                 <div class="col-xs-8 ">
                     <button type="button"
                             class="btn btn-link"
-                            ng-click="vm.viewCertificate()"
-                            uib-tooltip="{{vm.selectedRelyingParty.certificate.subject}}"
+                            ng-click="vm.viewCertificate(vm.selectedRelyingParty)"
+                            uib-tooltip="{{vm.selectedRelyingParty.certificate.metadata.subject}}"
                             style="margin-left:-10px;word-wrap: break-word;word-break: break-all">
                         {{
-                            vm.selectedRelyingParty.certificate.subject.length> 20 ?
-                            vm.selectedRelyingParty.certificate.subject.substring(0,20) + '...' :
-                            vm.selectedRelyingParty.certificate.subject;
+                            vm.selectedRelyingParty.certificate.metadata.subject.length> 20 ?
+                            vm.selectedRelyingParty.certificate.metadata.subject.substring(0,20) + '...' :
+                            vm.selectedRelyingParty.certificate.metadata.subject;
                         }}
                     </button>
                 </div>

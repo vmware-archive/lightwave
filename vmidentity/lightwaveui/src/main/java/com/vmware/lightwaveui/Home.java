@@ -101,8 +101,8 @@ public class Home extends HttpServlet {
 		builder.append("URI: " + uri + querystring);
 		response.getWriter().append("Test Served at: ").append(builder.toString());
 		
-		//String hostname = uri.split("://")[1].split("/")[0].split(":")[0];
-		String hostname = new ServerHelper().getHostname();
+		String hostname = uri.split("://")[1].split("/")[0].split(":")[0];
+		//String hostname = new ServerHelper().getHostname();
 		String baseuri = "https://" + hostname + "/lightwaveui/app/index.html#/home?";
 		String stateUri = "state=" + value_state;
 		String idTokenUri = "id_token=" + value_id_token;

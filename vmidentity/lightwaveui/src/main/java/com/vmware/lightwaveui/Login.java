@@ -62,8 +62,8 @@ public class Login extends HttpServlet {
 			}
 			
 			String uri = request.getRequestURL().toString();
-			//String server = uri.split("://")[1].split("/")[0].split(":")[0];
-			String server = new ServerHelper().getHostname();
+			String server = uri.split("://")[1].split("/")[0].split(":")[0];
+			//String server = new ServerHelper().getHostname();
 			String client_id = getClientId(tenantName);
 			String redirect_uri = "https://" + server + "/lightwaveui/Home";
 			String openIdConnectUri = "https://" + server + "/openidconnect/oidc/authorize/" + tenantName;

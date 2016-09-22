@@ -52,6 +52,9 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
                 $rootScope.globals.errors = '';
                 $rootScope.globals.popup_errors = null;
                 $scope.vm.newRelyingParty = {};
+
+                if($scope.vm.selectedRelyingParty && $scope.vm.selectedRelyingParty.certificate)
+                $scope.vm.selectedRelyingParty.certificate.isValid = true;
             }
 
             function setAddCertificate(rp, contents){
@@ -61,6 +64,15 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
                     encoded: contents,
                     metadata: metadata
                 };
+
+                if($scope.vm.newRelyingParty.certificate.metadata.subject != "DC=" &&
+                    $scope.vm.newRelyingParty.certificate.metadata.subject.indexOf('undefined') == -1)
+                {
+                    $scope.vm.newRelyingParty.certificate.isValid = true;
+                }
+                else {
+                    $scope.vm.newRelyingParty.certificate.isValid = false;
+                }
             }
 
             function setEditCertificate(rp, contents){
@@ -70,6 +82,14 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
                     encoded: contents,
                     metadata: metadata
                 };
+                if($scope.vm.selectedRelyingParty.certificate.metadata.subject != "DC=" &&
+                    $scope.vm.selectedRelyingParty.certificate.metadata.subject.indexOf('undefined') == -1)
+                {
+                    $scope.vm.selectedRelyingParty.certificate.isValid = true;
+                }
+                else {
+                    $scope.vm.selectedRelyingParty.certificate.isValid = false;
+                }
             }
 
             function removeCertificate(rp) {
@@ -273,7 +293,9 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
                     rp.signatureAlgorithms && rp.signatureAlgorithms.length > 0 &&
                     rp.singleLogoutServices && rp.singleLogoutServices.length > 0 &&
                     rp.assertionConsumerServices && rp.assertionConsumerServices.length > 0 &&
-                    rp.attributeConsumerServices && rp.attributeConsumerServices.length > 0);
+                    rp.attributeConsumerServices && rp.attributeConsumerServices.length > 0 &&
+                    rp.certificate.metadata.subject != "DC=" &&
+                    rp.certificate.metadata.subject.indexOf('undefined') == -1);
             }
 
         }]);
