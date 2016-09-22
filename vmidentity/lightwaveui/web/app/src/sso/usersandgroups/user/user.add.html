@@ -129,7 +129,18 @@
                                     password & confirm mis-match</span>
                         </div>
                     </div>
-
+ 				   <div class="popup-row col-xs-12">
+                    	<div class="col-xs-4">
+                    	</div>
+                    	<div class="col-xs-8"
+                         	 ng-class="{ 'has-error': addnewuserform.disabled.$invalid}">
+                        	<input type="checkbox"
+                               id="disabled"
+                               name="disabled"
+                               ng-model="newuser.disabled"
+                               class="pull-left" style="margin-right:10px;"/> Disabled
+                   		</div>
+                	</div>
             </div>
             <div class="popup-row col-xs-12">
                     <button type="submit"
