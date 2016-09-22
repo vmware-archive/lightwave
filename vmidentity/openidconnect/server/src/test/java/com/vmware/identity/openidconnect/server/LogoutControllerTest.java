@@ -236,7 +236,7 @@ public class LogoutControllerTest {
     @Test
     public void testInvalidRedirectUri() throws Exception {
         Map<String, String> params = logoutRequestParameters();
-        params.put("post_logout_redirect_uri", "http://a.com/redirect"); // should be https
+        params.put("post_logout_redirect_uri", "a.com/redirect");
         String expectedErrorMessage = "invalid_request: invalid post_logout_redirect_uri parameter";
         assertErrorResponseMessage(params, expectedErrorMessage);
     }
