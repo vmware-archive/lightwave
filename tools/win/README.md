@@ -183,13 +183,19 @@ This will generate three installers as mentioned before in the tools\win\x64\Deb
 ## Known Issues
 
 ```
+*Installer
+	1. Only administrator users are allowed to install tools.
+
+* Lightwave REST SSO Tool : 
+	1. Tool doesn't work with the latest super-main (TSL enabled) vSphere builds.
+
+* Lightwave PSC Site Management Tool :  
+	1. Tool does not support partial topology load.
+	2. Tool does not show PSC status as UNKNOWN when Heartbeat API throws error.
 
 * Lightwave Directory Schema Tool :  
-	1. VMDirSchema MMC tool  is in authore mode where as other tool in the rd-identity tools are not.
-	2. Add server pop up windows is not in SYC with other MMC tool add server pop up windows
-	3. After doing several operation alert/Confirm windows is getting opened behind the main tool Windows
-	4. Many attribute types are showing syntax as System.String in Right Pane
-	5. UI tools allows attributes to be created for 34 different attribute syntax at present.
+	1. Many attribute types are showing syntax as System.String in Right Pane
+	2. UI tools allows attributes to be created for 34 different attribute syntax at present.
 
 ```
 
