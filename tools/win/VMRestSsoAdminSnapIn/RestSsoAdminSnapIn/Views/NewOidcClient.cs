@@ -129,7 +129,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
         }
         private bool ValidateInputs()
         {
-            if (string.IsNullOrEmpty(txtSubjectDN.Text))
+            if (cbTokenAuth.SelectedIndex == 1 && string.IsNullOrEmpty(txtSubjectDN.Text))
             {
                 MMCDlgHelper.ShowWarning("Enter a valid certificate subject DN");
                 return false;

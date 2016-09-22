@@ -66,9 +66,9 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Mac
             tenantName = Uri.EscapeDataString(tenantName);
             var url = string.Format(_serviceConfigManager.GetExternalIdentityProvidersEndPoint(), server.Protocol, server.ServerName, server.Port, tenantName);
             var dto = typeof(ExternalIdentityProviderDto).Assembly;
-            var json = JsonConvert.Serialize(externalIdentityProvider, "root", dto.GetTypes(), true);
-            json = SerializationJsonHelper.Cleanup(json);
-
+            //var json = JsonConvert.Serialize(externalIdentityProvider, "root", dto.GetTypes(), true);
+            //json = SerializationJsonHelper.Cleanup(json);
+			var json = JsonConvert.Serialize(externalIdentityProvider, true);
             ServicePointManager.ServerCertificateValidationCallback = delegate
             {
                 return true;
@@ -118,8 +118,9 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service.Mac
         public ExternalIdentityProviderDto Update(ServerDto serverDto, string tenant, ExternalIdentityProviderDto externalIdentityProvider, Token token)
 		{
             var url = string.Format(_serviceConfigManager.GetExternalIdentityProviderEndPoint(), serverDto.Protocol, serverDto.ServerName, serverDto.Port, tenant, externalIdentityProvider.EntityID);
-			var json = JsonConvert.JsonSerialize (externalIdentityProvider);
-			json = SerializationJsonHelper.Cleanup (json);
+			//var json = JsonConvert.JsonSerialize (externalIdentityProvider);
+			//json = SerializationJsonHelper.Cleanup (json);
+			var json = JsonConvert.Serialize(externalIdentityProvider, true);
 			ServicePointManager.ServerCertificateValidationCallback = delegate {
 				return true;
 			};

@@ -87,7 +87,8 @@ namespace RestSsoAdminSnapIn
 					},
 					PasswordDetails = new PasswordDetailsDto {
 						Password = TxtPassword.StringValue
-					}
+					},
+					Disabled = chkDisabled.StringValue == "1"
 				};
 				this.Close ();
 				NSApplication.SharedApplication.StopModalWithCode (1);
