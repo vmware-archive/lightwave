@@ -47,4 +47,6 @@ public interface InstallerHelper {
     public String getSSOHomePath();
 
     public String getIdmLoginPath();
+
+    public String getConfigDirectoryRootKey();
 }

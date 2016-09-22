@@ -11,4 +11,8 @@ public class ServiceCheckException extends Exception {
     public ServiceCheckException(String message, Exception e) {
         super(message, e);
     }
+
+    public ServiceCheckException(String message) {
+        super(message);
+    }
 }
