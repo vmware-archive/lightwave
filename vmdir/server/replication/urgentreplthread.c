@@ -121,9 +121,9 @@ VmDirUrgentReplSignalUrgentReplCoordinatorThreadResponseRecv(
     DWORD      dwError = 0;
     BOOLEAN    bInUrgentReplResponseRecvLock = FALSE;
 
-    VMDIR_LOCK_MUTEX(bInUrgentReplResponseRecvLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VmDirReplSetUrgentReplResponseRecvCondition(TRUE);
 
-    VmDirReplSetUrgentReplResponseRecvCondition_InLock(TRUE);
+    VMDIR_LOCK_MUTEX(bInUrgentReplResponseRecvLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
 
     dwError = VmDirConditionSignal(gVmdirUrgentRepl.pUrgentReplResponseRecvCondition);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -371,19 +371,19 @@ _VmDirWaitForUrgentReplResponse(
     DWORD    dwMilliseconds = 0;
     DWORD    timeoutCount = 0;
 
+    VmDirReplSetUrgentReplResponseRecvCondition(FALSE);
     dwMilliseconds = 3000; // Timeout of 3 seconds
 
     VMDIR_LOCK_MUTEX(bInUrgentReplResponseRecvLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
-    VmDirReplSetUrgentReplResponseRecvCondition_InLock(FALSE);
 
     // Either urgent replication response from repl Partner or main thread shutdown will exit condition wait call below
-    while (VmDirReplGetUrgentReplResponseRecvCondition_InLock() == FALSE && VmDirdState() != VMDIRD_STATE_SHUTDOWN)
+    while (VmDirReplGetUrgentReplResponseRecvCondition() == FALSE && VmDirdState() != VMDIRD_STATE_SHUTDOWN)
     {
         /*
          * Time out or condition met break out of the loop
          */
         if (timeoutCount >= 20 ||
-            VmDirReplGetUrgentReplResponseCount_InLock() == dwRpcRequestsSent)
+            VmDirReplGetUrgentReplResponseCount() == dwRpcRequestsSent)
         {
             break;
         }
