@@ -277,7 +277,7 @@ VmDirReplUpdateUrgentReplCoordinatorTableForResponse(
     DWORD    dwError = 0;
     PVMDIR_STRONG_WRITE_PARTNER_CONTENT  pReplicationPartnerEntry = NULL;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     dwError = VmDirReplGetUrgentReplCoordinatorTableEntry_InLock(
                   pszRemoteServerInvocationId,
@@ -298,7 +298,7 @@ VmDirReplUpdateUrgentReplCoordinatorTableForResponse(
     }
 
 cleanup:
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
     return;
 
 error:
@@ -431,7 +431,7 @@ VmDirReplUpdateUrgentReplCoordinatorTableForRequest(
             "VmDirReplUpdateUrgentReplCoordinatorTableForRequest: failed to obtain time stamp");
     }
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     pUrgentReplPartnerTable = gVmdirUrgentRepl.pUrgentReplPartnerTable;
     while (pUrgentReplPartnerTable != NULL)
@@ -448,7 +448,7 @@ VmDirReplUpdateUrgentReplCoordinatorTableForRequest(
         pUrgentReplPartnerTable = pUrgentReplPartnerTable->next;
     }
 
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     return;
 }
@@ -460,9 +460,9 @@ VmDirReplFreeUrgentReplCoordinatorTable(
 {
     BOOLEAN    bInLock = FALSE;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
     VmDirReplFreeUrgentReplCoordinatorTable_InLock();
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     return;
 }
@@ -509,20 +509,13 @@ VmDirReplGetUrgentReplResponseCount(
     BOOLEAN   bInLock = FALSE;
     DWORD    dwUrgentReplResponseCount = 0;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
-    dwUrgentReplResponseCount = VmDirReplGetUrgentReplResponseCount_InLock();
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
+    dwUrgentReplResponseCount = gVmdirUrgentRepl.dwUrgentReplResponseCount;
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     return dwUrgentReplResponseCount;
 }
 
-DWORD
-VmDirReplGetUrgentReplResponseCount_InLock(
-    VOID
-    )
-{
-    return gVmdirUrgentRepl.dwUrgentReplResponseCount;
-}
 VOID
 VmDirReplUpdateUrgentReplResponseCount(
     VOID
@@ -530,9 +523,9 @@ VmDirReplUpdateUrgentReplResponseCount(
 {
     BOOLEAN   bInLock = FALSE;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
     gVmdirUrgentRepl.dwUrgentReplResponseCount++;
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     return;
 }
@@ -544,9 +537,9 @@ VmDirReplResetUrgentReplResponseCount(
 {
     BOOLEAN   bInLock = FALSE;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
     VmDirReplResetUrgentReplResponseCount_InLock();
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     return;
 }
@@ -566,19 +559,11 @@ VmDirReplSetUrgentReplResponseRecvCondition(
 {
     BOOLEAN   bInLock = FALSE;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
-    VmDirReplSetUrgentReplResponseRecvCondition_InLock(bUrgentReplResponseRecv);
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
+    gVmdirUrgentRepl.bUrgentReplResponseRecv = bUrgentReplResponseRecv;
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     return;
-}
-
-VOID
-VmDirReplSetUrgentReplResponseRecvCondition_InLock(
-    BOOLEAN bUrgentReplResponseRecv
-    )
-{
-    gVmdirUrgentRepl.bUrgentReplResponseRecv = bUrgentReplResponseRecv;
 }
 
 BOOLEAN
@@ -589,19 +574,11 @@ VmDirReplGetUrgentReplResponseRecvCondition(
     BOOLEAN   bInLock = FALSE;
     BOOLEAN   bUrgentReplResponseRecv = FALSE;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
-    bUrgentReplResponseRecv = VmDirReplGetUrgentReplResponseRecvCondition_InLock();
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
+    bUrgentReplResponseRecv = gVmdirUrgentRepl.bUrgentReplResponseRecv;
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     return bUrgentReplResponseRecv;
-}
-
-BOOLEAN
-VmDirReplGetUrgentReplResponseRecvCondition_InLock(
-    VOID
-    )
-{
-    return gVmdirUrgentRepl.bUrgentReplResponseRecv;
 }
 
 VOID
@@ -641,9 +618,9 @@ VmDirReplGetUrgentReplCoordinatorTable(
     BOOLEAN bInLock = FALSE;
     PVMDIR_STRONG_WRITE_PARTNER_CONTENT pUrgentReplPartnerTable = NULL;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
     pUrgentReplPartnerTable = VmDirReplGetUrgentReplCoordinatorTable_InLock();
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     return pUrgentReplPartnerTable;
 }
@@ -709,9 +686,9 @@ VmDirGetUrgentReplConsensus(
     USN      consensusUSN = 0;
     BOOLEAN  bInLock = FALSE;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
     consensusUSN = VmDirGetUrgentReplConsensus_InLock();
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     return consensusUSN;
 }
@@ -724,14 +701,6 @@ VmDirGetUrgentReplConsensus_InLock(
     return gVmdirUrgentRepl.consensusUSN;
 }
 
-VOID
-VmDirSetUrgentReplConsensus_InLock(
-    USN consensusUSN
-    )
-{
-    gVmdirUrgentRepl.consensusUSN = consensusUSN;
-}
-
 BOOLEAN
 VmDirUrgentReplUpdateConsensus(
     VOID
@@ -742,7 +711,7 @@ VmDirUrgentReplUpdateConsensus(
     BOOLEAN  bUpdated = FALSE;
     PVMDIR_STRONG_WRITE_PARTNER_CONTENT pUrgentReplPartnerTable = NULL;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     pUrgentReplPartnerTable = VmDirReplGetUrgentReplCoordinatorTable_InLock();
 
@@ -763,13 +732,13 @@ VmDirUrgentReplUpdateConsensus(
             pUrgentReplPartnerTable = pUrgentReplPartnerTable->next;
         }
 
-        if (VmDirGetUrgentReplConsensus_InLock() < minUSN)
+        if (gVmdirUrgentRepl.consensusUSN < minUSN)
         {
             if (minUSN != USN_SEQ_MAX_VALUE)
             {
                 // In case all partners were deleted, gVmdirUrgentRepl.consensusUSN should
                 // preserve priviously valid value instead of being set to USN_SEQ_MAX_VALUE
-            VmDirSetUrgentReplConsensus_InLock(minUSN);
+                gVmdirUrgentRepl.consensusUSN = minUSN;
             }
             bUpdated = TRUE;
         }
@@ -778,7 +747,7 @@ VmDirUrgentReplUpdateConsensus(
                          __func__, minUSN, gVmdirUrgentRepl.consensusUSN);
     }
 
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     return bUpdated;
 }
@@ -907,7 +876,7 @@ VmDirReplUpdateUrgentReplCoordinatorTableForDelete(
     PSTR      pszPartnerHostName = NULL;
     PVMDIR_STRONG_WRITE_PARTNER_CONTENT   pUrgentReplPartnerTable = NULL;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
 
     pUrgentReplPartnerTable = gVmdirUrgentRepl.pUrgentReplPartnerTable;
     while (pUrgentReplPartnerTable != NULL)
@@ -928,7 +897,7 @@ VmDirReplUpdateUrgentReplCoordinatorTableForDelete(
     }
 
 cleanup:
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirUrgentRepl.pUrgentReplMutex);
     VMDIR_SAFE_FREE_MEMORY(pszPartnerHostName);
     return;
 
