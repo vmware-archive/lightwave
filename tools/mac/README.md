@@ -101,7 +101,7 @@ These are placed at:
 
 /lightwave/vmdir/dotnet/VMDIR.Client/VMDIR.Client.sln
 
-/lightwave/vmdir/interop/csharp/VmDirInterop/VmDirInterop.sln - Build only VMDirInterop project by changing target framework to 4.0
+/lightwave/vmdir/interop/csharp/VmDirInterop/VmDirInterop.sln - Building only VMDirInterop project inside solution is sufficient (change project target framework to 4.0).
 
 Other projects in VmDirInterop solution are not required and if you want to build them then their target framework also requires to be changed to 4.0
 
@@ -159,10 +159,12 @@ In case you wish to cleanup the libs and links added by the Lightwave UI tool su
 
 * Lightwave REST SSO Tool : 
 	1. Tool doesn't work with the latest super-main (TSL enabled) vSphere builds.
+	2. External identity provider gives error 400 bad request.
 
 * Lightwave PSC Site Management Tool :  
 	1. Tool does not support partial topology load.
 	2. Tool does not show PSC status as UNKNOWN when Heartbeat API throws error.
+	3. Multiple pop up thrown, stating "null argument" when vmafdd service is brought down.
 
 * Lightwave Directory Schema Tool :  
 	1. Many attribute types are showing syntax as System.String in Right Pane

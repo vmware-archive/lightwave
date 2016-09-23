@@ -66,6 +66,7 @@ The source code is developed and tested against following environment:
 
 * .NET framework 4.5
 * Visual Studio 2013
+  - .NET framework 3.5 may also require in case of community edition
 * Wix v3.8 (stable)
 
 
