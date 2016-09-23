@@ -1,3 +1,5 @@
+%global __os_install_post %{nil}
+
 Name:    vmware-directory
 Summary: Directory Service
 Version: %{_version}

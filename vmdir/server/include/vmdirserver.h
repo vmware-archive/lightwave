@@ -461,6 +461,12 @@ VmDirSendAllUrgentReplicationResponse(
     VOID
     );
 
+VOID
+VmDirSendAllRAReplicationResponse(
+    VOID
+    );
+
+
 DWORD
 VmDirdUrgentReplSetUtdVector(
     PCSTR pUTDVector
@@ -733,5 +739,3 @@ VmDirAddTrackLastLoginItem(
 #endif
 
 #endif /* __VMDIRMAIN_H__ */
-
-

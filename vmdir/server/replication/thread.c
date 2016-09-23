@@ -435,6 +435,15 @@ vdirReplicationThrFun(
                 VmDirSendAllUrgentReplicationResponse();
             }
         }
+        else
+        {
+            DWORD   iLocalRetVal = 0;
+            iLocalRetVal = VmDirdUrgentReplSetUtdVector(gVmdirServerGlobals.utdVector.lberbv.bv_val);
+            if (iLocalRetVal == 0)
+            {
+                VmDirSendAllRAReplicationResponse();
+            }
+        }
 
         for (i=0; i<gVmdirServerGlobals.replInterval; i++)
         {

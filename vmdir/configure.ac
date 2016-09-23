@@ -31,7 +31,7 @@ esac
 CPPFLAGS="$CPPFLAGS -D_REENTRANT -D_GNU_SOURCE -fPIC"
 
 AM_CPPFLAGS="$AM_CPPFLAGS -I${top_srcdir}/include"
-AM_CFLAGS="$AM_CFLAGS -Wall -Werror -fno-strict-aliasing"
+AM_CFLAGS="$AM_CFLAGS -Wall -Werror -fno-strict-aliasing -fprofile-arcs -ftest-coverage -ggdb"
 
 AC_SUBST(AM_CPPFLAGS)
 AC_SUBST(AM_CFLAGS)

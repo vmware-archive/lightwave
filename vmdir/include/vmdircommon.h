@@ -1023,6 +1023,13 @@ VmDirConditionBroadcast2003(
     PVMDIR_COND_2003 pCondition
 );
 
+DWORD
+VmDirConditionTimedWaitMilliSeconds(
+                PVMDIR_COND pCondition,
+                PVMDIR_MUTEX pMutex,
+                DWORD dwMilliseconds
+);
+
 #define VmDirAllocateCondition                  VmDirAllocateCondition2003
 #define VmDirFreeCondition                      VmDirFreeCondition2003
 #define VmDirConditionWait                      VmDirConditionWait2003
