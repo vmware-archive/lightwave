@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -252,6 +252,47 @@ VmDirConditionWait(
     dwError = pthread_cond_wait(
         &(pCondition->cond),
         &(pMutex->critSect)
+    );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+error:
+
+    return dwError;
+}
+
+DWORD
+VmDirConditionTimedWaitMilliSeconds(
+                PVMDIR_COND pCondition,
+                PVMDIR_MUTEX pMutex,
+                DWORD dwMilliseconds
+)
+{
+    DWORD dwError = ERROR_SUCCESS;
+    struct timespec ts = {0};
+    DWORD dwTimeout = 0;
+
+    if ( ( pCondition == NULL )
+         ||
+         ( pCondition->bInitialized == FALSE )
+         ||
+         ( pMutex == NULL )
+         ||
+         ( pMutex->bInitialized == FALSE )
+       )
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwTimeout =  dwMilliseconds + VmDirGetTimeInMilliSec();
+
+    ts.tv_sec = dwTimeout / 1000;
+    ts.tv_nsec = (dwTimeout % 1000) * 1000000;
+
+    dwError = pthread_cond_timedwait(
+        &(pCondition->cond),
+        &(pMutex->critSect),
+        &ts
     );
     BAIL_ON_VMDIR_ERROR(dwError);
 

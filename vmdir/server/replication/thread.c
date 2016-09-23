@@ -435,6 +435,10 @@ vdirReplicationThrFun(
                 VmDirSendAllUrgentReplicationResponse();
             }
         }
+        else
+        {
+            VmDirSendAllRAReplicationResponse();
+        }
 
         for (i=0; i<gVmdirServerGlobals.replInterval; i++)
         {
