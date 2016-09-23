@@ -30,6 +30,10 @@
 
 #define VMDIR_URGENT_REPL_RPC_RESPONSE_TIMEOUT (3 * SECONDS_IN_MINUTE)
 
+#ifndef LOG_MUTEX
+#define LOG_MUTEX(a)  VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "[%s:%d]: LOG_MUTEX %s", __FUNCTION__, __LINE__, a);
+#endif
+
 static
 DWORD
 VmDirReplUrgentReplCoordinatorThreadFun(
@@ -122,6 +126,7 @@ VmDirUrgentReplSignalUrgentReplCoordinatorThreadResponseRecv(
     BOOLEAN    bInUrgentReplResponseRecvLock = FALSE;
 
     VMDIR_LOCK_MUTEX(bInUrgentReplResponseRecvLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    LOG_MUTEX("lock");
 
     VmDirReplSetUrgentReplResponseRecvCondition_InLock(TRUE);
 
@@ -130,6 +135,7 @@ VmDirUrgentReplSignalUrgentReplCoordinatorThreadResponseRecv(
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bInUrgentReplResponseRecvLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    LOG_MUTEX("unlock");
     return;
 
 error:
@@ -180,6 +186,9 @@ VmDirTimedWaitForUrgentReplDone(
         }
         else
         {
+            // should we not check for success first??
+
+            
             dwError = ETIMEDOUT;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
@@ -374,6 +383,8 @@ _VmDirWaitForUrgentReplResponse(
     dwMilliseconds = 3000; // Timeout of 3 seconds
 
     VMDIR_LOCK_MUTEX(bInUrgentReplResponseRecvLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    LOG_MUTEX("lock");
+
     VmDirReplSetUrgentReplResponseRecvCondition_InLock(FALSE);
 
     // Either urgent replication response from repl Partner or main thread shutdown will exit condition wait call below
@@ -387,11 +398,14 @@ _VmDirWaitForUrgentReplResponse(
         {
             break;
         }
+        LOG_MUTEX("ConditionTimedWait start");
 
         dwError = VmDirConditionTimedWait(gVmdirUrgentRepl.pUrgentReplResponseRecvCondition,
                                           gVmdirUrgentRepl.pUrgentReplResponseRecvMutex,
                                           dwMilliseconds
                                           );
+        LOG_MUTEX("ConditionTimedWait finish");
+
         /*
          * Total time out is 60 seconds, but in the case of server shutdown
          * we might have to exit execution as soon as possible. In order to accomplish that
@@ -413,6 +427,8 @@ _VmDirWaitForUrgentReplResponse(
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bInUrgentReplResponseRecvLock, gVmdirUrgentRepl.pUrgentReplResponseRecvMutex);
+    LOG_MUTEX("unlock");
+
     return;
 
 error:
