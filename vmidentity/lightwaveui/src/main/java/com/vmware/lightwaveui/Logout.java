@@ -12,6 +12,7 @@
  *  under the License.
  */
 
+
 package com.vmware.lightwaveui;
 import java.io.IOException;
 import javax.servlet.ServletException;
@@ -59,8 +60,8 @@ public class Logout extends HttpServlet {
 		}
 		
 		String uri = request.getRequestURL().toString();
-		String server = uri.split("://")[1].split("/")[0].split(":")[0];
-		//String server = new ServerHelper().getHostname();
+		//String server = uri.split("://")[1].split("/")[0].split(":")[0];
+		String server = new ServerHelper().getHostname();
 		String postLogoutRedirectUri = "https://" + server + "/lightwaveui";
 		String openIdConnectUri = "https://" + server + "/openidconnect/logout/" + value_tenant;
 		String args = "?id_token_hint=" + value_id_token +
