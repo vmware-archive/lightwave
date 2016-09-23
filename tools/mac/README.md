@@ -73,7 +73,7 @@ mac ui source files are under lightwave/tools/mac
 The code can be build either using the build script or manually using Xamarin Studio.
 
 ###Pre-requisite client binaries
-Install the client pre-built binaries (from the link below) to satisfy dependencies before attempting to build.:
+Install the client pre-built binaries (from the link below) to satisfy dependencies before attempting to run tools after building.:
 
 https://vmware.bintray.com/lightwave_ui/v1.0/rc/for_developers/mac
 
@@ -158,18 +158,15 @@ In case you wish to cleanup the libs and links added by the Lightwave UI tool su
 ```
 
 * Lightwave REST SSO Tool : 
-	1. The get computer option should be disabled for non system tenant.
-
-* Lightwave CA Tool :  
-	1. Not able to Add root certificate
+	1. Tool doesn't work with the latest super-main (TSL enabled) vSphere builds.
 
 * Lightwave PSC Site Management Tool :  
-	1. Management UI shows inconsitent PSC list in management view when PSC is powered down
+	1. Tool does not support partial topology load.
+	2. Tool does not show PSC status as UNKNOWN when Heartbeat API throws error.
 
 * Lightwave Directory Schema Tool :  
-	1. When a class object is selected in left pane then attribute list show in right pane is not in alphabetic order in  mac
-	2. Many attribute types are showing syntax as System.String in Right Pane
-	3. UI tools allows attributes to be created for 34 different attribute syntax at present.
+	1. Many attribute types are showing syntax as System.String in Right Pane
+	2. UI tools allows attributes to be created for 34 different attribute syntax at present.
 	
 ```
 
