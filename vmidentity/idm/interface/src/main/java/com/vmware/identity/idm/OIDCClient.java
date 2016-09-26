@@ -17,10 +17,10 @@
 package com.vmware.identity.idm;
 
 import java.io.Serializable;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.UUID;
-
-import org.apache.commons.validator.UrlValidator;
 
 //The semantic of OIDC client fields can be found in the following links:
 //OAUTH: https://tools.ietf.org/html/rfc6749#section-2
@@ -237,10 +237,20 @@ public class OIDCClient implements Serializable {
             }
         }
 
-        private boolean isValidUri(String uri) {
-            String[] schemes = { "https" };
-            UrlValidator urlValidator = new UrlValidator(schemes);
-            return urlValidator.isValid(uri);
+        private boolean isValidUri(String uriString) {
+            URI uri;
+
+            try {
+                uri = new URI(uriString);
+            } catch (URISyntaxException e) {
+                return false;
+            }
+
+            if (uri.getScheme() == null) {
+                return false;
+            }
+
+            return true;
         }
     }
 }

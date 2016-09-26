@@ -63,7 +63,11 @@
                                on-read-file="vm.setEditCertificate(null, contents)"
                                id="vm.certfilepath"
                                name="encodedcertfilepath"
-                               ng-model="vm.certFilePath"/><br/>
+                               ng-model="vm.certFilePath"/>
+                         <span style="color:red" ng-show="vm.selectedRelyingParty.certificate && !vm.selectedRelyingParty.certificate.isValid">
+                            Invalid certificate
+                        </span>
+                        <br/>
                         <div>
                             <button type="button"
                                     class="btn btn-link"

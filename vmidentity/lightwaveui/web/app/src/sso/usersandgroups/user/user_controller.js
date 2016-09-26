@@ -44,6 +44,11 @@ module.controller('UserCntrl', [ '$scope', '$rootScope', 'UserService', 'Util',
                 user.details.upn = user.name + "@" + provider.name;
                 user.alias = { name: user.name, domain: provider.name };
                 user.domain = provider.name;
+
+                if(!user.disabled) {
+                    user.disabled = false;
+                }
+				user.locked = false;
                 UserService
                     .Add($rootScope.globals.currentUser, user)
                     .then(function (res) {

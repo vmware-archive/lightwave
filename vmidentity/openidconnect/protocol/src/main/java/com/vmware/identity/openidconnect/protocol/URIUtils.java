@@ -23,7 +23,6 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.Validate;
-import org.apache.commons.validator.routines.UrlValidator;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.message.BasicNameValuePair;
@@ -141,10 +140,8 @@ public final class URIUtils {
             throw new ParseException("failed to parse uri", e);
         }
 
-        String[] allowedSchemes = { "https" };
-        UrlValidator urlValidator = new UrlValidator(allowedSchemes, UrlValidator.ALLOW_LOCAL_URLS);
-        if (!urlValidator.isValid(uri.toString())) {
-            throw new ParseException("uri is not a valid https url");
+        if (uri.getScheme() == null) {
+            throw new ParseException("uri must have a scheme");
         }
 
         return uri;

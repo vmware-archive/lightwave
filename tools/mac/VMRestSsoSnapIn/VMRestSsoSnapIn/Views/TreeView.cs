@@ -62,11 +62,15 @@ namespace RestSsoAdminSnapIn
 							aboutServer.Image.Size = new CGSize{ Width = (float)16.0, Height = (float)16.0 };
 							menu.AddItem (aboutServer);
 
-							NSMenuItem getComputers = new NSMenuItem ("Computers", serverNode.OnShowComputers);
-							image = NSImage.ImageNamed ("NSComputer");
-							getComputers.Image = image;
-							getComputers.Image.Size = new CGSize{ Width = (float)16.0, Height = (float)16.0 };
-							menu.AddItem (getComputers);
+							var enable = serverNode != null && serverNode.Children.Count > 0 && ((TenantNode)serverNode.Children [0]).IsSystemTenant;
+
+							if (enable) {
+								NSMenuItem getComputers = new NSMenuItem ("Computers", serverNode.OnShowComputers);
+								image = NSImage.ImageNamed ("NSComputer");
+								getComputers.Image = image;
+								getComputers.Image.Size = new CGSize{ Width = (float)16.0, Height = (float)16.0 };
+								menu.AddItem (getComputers);
+							}
 
 							NSMenuItem tokenWizard = new NSMenuItem ("Diagnostics", serverNode.ShowTokenWizard);
 							image = NSImage.ImageNamed ("NSSmartBadgeTemplate");

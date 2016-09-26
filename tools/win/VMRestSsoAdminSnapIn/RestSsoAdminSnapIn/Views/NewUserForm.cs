@@ -90,8 +90,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             };
             _userDto.Domain = _systemDomain;
             _userDto.Alias = new PrincipalDto { Name = _userDto.Name, Domain = _domainName };
-            _userDto.Disabled = false;
-            _userDto.Locked = false;
+            _userDto.Disabled = chkDisabled.Checked;
             _userDto.PersonDetails.UserPrincipalName = string.Format("{0}@{1}", _userDto.Name, _userDto.Domain);
         }
 
@@ -100,7 +99,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Views
             shouldClose = false;
             if (ValidateControls())
             {
-                ViewToDataContext();                
+                ViewToDataContext();              
                 var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(_serverDto, _tenantName);
                 ActionHelper.Execute(delegate
                 {
