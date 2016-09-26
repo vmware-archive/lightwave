@@ -56,8 +56,9 @@ module.controller('ServerMgmtCntrl', ['$scope',  '$rootScope','ServerService', '
                                 if (!searchText || searchText == '') {
                                     $scope.vm.computers = comps;
                                 } else if (comps != null) {
+                                    $scope.vm.computers = [];
                                     for (var i = 0; i < comps.length; i++) {
-                                        if (comps[i].domainController.indexOf(searchText) > -1) {
+                                        if (comps[i].hostname.indexOf(searchText) > -1) {
                                             $scope.vm.computers.push(comps[i]);
                                         }
                                     }

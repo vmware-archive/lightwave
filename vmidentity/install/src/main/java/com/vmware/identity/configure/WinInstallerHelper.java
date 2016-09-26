@@ -270,6 +270,11 @@ public class WinInstallerHelper implements InstallerHelper {
         return readRegEdit(VMIDM_ROOT_KEY, INSTALL_PATH);
     }
 
+    @Override
+    public String getConfigDirectoryRootKey() {
+        return "System\\CurrentControlset\\Services\\VMwareDirectoryService";
+    }
+
     public String joinPath(String path1, String path2) {
         return String.format("%s%s%s", path1, File.separator, path2);
     }
