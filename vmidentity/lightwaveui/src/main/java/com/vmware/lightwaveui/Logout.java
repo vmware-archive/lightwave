@@ -52,7 +52,7 @@ public class Logout extends HttpServlet {
 		if(values_tenant != null && values_tenant.length > 0){
 			value_tenant = values_tenant[0];
 		}
-		
+		value_tenant = value_tenant.toLowerCase();
 		String[] values_state = request.getParameterValues("state");
 		String value_state = "";
 		if(values_state != null && values_state.length > 0){

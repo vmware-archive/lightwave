@@ -61,6 +61,7 @@ public class Login extends HttpServlet {
 				return;
 			}
 			
+			tenantName = tenantName.toLowerCase();
 			String uri = request.getRequestURL().toString();
 			//String server = uri.split("://")[1].split("/")[0].split(":")[0];
 			String server = new ServerHelper().getHostname();
@@ -106,7 +107,7 @@ public class Login extends HttpServlet {
 	        	NodeList children = node.getChildNodes();
 	        	String name = children.item(0).getTextContent();
 	        	
-	        	if(name.equals(domain)){
+	        	if(name.toLowerCase().equals(domain)){
 	        		clientId = children.item(1).getTextContent();
 	        		found = true;
 	        		break;
