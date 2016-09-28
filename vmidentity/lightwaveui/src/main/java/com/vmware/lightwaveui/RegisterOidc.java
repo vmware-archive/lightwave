@@ -62,7 +62,7 @@ public class RegisterOidc extends HttpServlet {
 			response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No tenant specifed.");
 			return;
 		}
-		
+		tenantName = tenantName.toLowerCase();
 		String[] clientIds = request.getParameterValues("clientId");
 		String clientId = "";
 		if(clientIds != null && clientIds.length > 0){

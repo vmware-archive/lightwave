@@ -1,4 +1,18 @@
 /*
+ * Copyright © 2014-2015 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+/*
  * Copyright (C) 2006,2008 by the Massachusetts Institute of Technology.
  * All rights reserved.
  *
@@ -27,6 +41,7 @@
  * Copyright 2004 Sun Microsystems, Inc.  All rights reserved.
  * Use is subject to license terms.
  */
+
 /*
  * Copyright (c) 2006-2008, Novell, Inc.
  * All rights reserved.
@@ -56,8 +71,6 @@
  */
 
 /*
- * Copyright (C) 2014, 2015 VMware Inc. All rights reserved.
- *
  * Module: srp_mech_desc_srp10.c
  * Abstract:
  *     VMware GSSAPI UNIX Authentication Plugin
