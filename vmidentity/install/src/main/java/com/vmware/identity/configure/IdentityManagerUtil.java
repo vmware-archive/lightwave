@@ -196,7 +196,7 @@ public class IdentityManagerUtil {
 
 	// Set default brand name for LIGHTWAVE
         if(ReleaseUtil.isLightwave()) {
-            client.setBrandName(tenantName, "LIGHTWAVE Single Sign On");
+            client.setBrandName(tenantName, "LIGHTWAVE<br/>Single Sign On");
 	}
 
         client.authenticate(tenantName, getAdminUser(), getAdminPassword());
