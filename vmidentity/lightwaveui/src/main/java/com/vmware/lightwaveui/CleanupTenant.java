@@ -60,7 +60,7 @@ public class CleanupTenant extends HttpServlet {
 				response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No tenant specifed.");
 				return;
 			}
-			
+			tenantName = tenantName.toLowerCase();
 			//deleteXmlNode(tenantName);
 			deleteXmlDomNode(tenantName);
 		} catch(Exception exc)
