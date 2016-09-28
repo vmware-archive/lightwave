@@ -16,71 +16,78 @@ body {  /*specify a transparent nutual color background so frame embedding will 
         -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#CCFFFFFF, endColorstr=#33FFFFFF)"; /* IE8 */
 
         background-repeat:no-repeat;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
         margin: 0;
-        font-size:12px;
-        font-family:Arial, Helvetica, sans-serif;
-        color: black;
+        height: auto;
+        font-size: 14px;
+        color: #565656;
+        background: #fff;
+}
+
+input [type=checkbox] {
+ border: 1px solid black;
 }
 
 
 #tenantBrand {
    position: absolute;
-        top: 150px;
-        /*width: 800px;*/
-        left: 44px;
-   font-family: "Gotham", sans-serif,Arial, Helvetica;
-   font-size:24px;
-    color: #000000;
+   top: 200px;
+   left: 96px;
+   font-size: 32px;
+   line-height: 36px;
+   margin-top: 24px;
+   font-weight: 200;
+   color: black;
 }
 
 #loginForm {
-   position: absolute;
-   top: 320px;
-   width: 405px;
-   padding-left: 44px;
-   z-index:3;
-
-   background-position:right;
-   background-repeat:repeat-y;
+   width: 312px;
+   position: relative;
+   margin-left:96px;
+   top:308px;
 }
 
 .margeTextInput {
-   float:right;
-   margin-right: 44px;
-   width:200px;
-
+   width:90%;
+   display: block;
+   height: 24px;
+   padding: 6px 12px;
+   font-size: 14px;
+   line-height: 1.42857143;
+   color: #555;
+   background-color: #fff;
+   background-image: none;
+   border-bottom: 1px solid #ccc;
+   border-top:0px;
+   border-left:0px;
+   border-right:0px;
 }
 
 .loginLabel {
-   font-weight:bold;
-    color: #000000;
-
    text-align:left;
    display:block;
    padding-top:4px;
-
    float:left;
+   display:none;
 }
 
 .loginRow {
    display:block;
-   padding-top:20px;
+   width:100%;
 }
 
 #sessionID {
    clear:both;
-   float:right;
-   width:248px;
+   width:100%;
    text-align:left;
-   margin-top:8px;
+   margin-top:12px;
 }
 
 #smartcardID {
    clear:both;
-   float:right;
-   width:248px;
    text-align:left;
-   margin-top:8px;
+   margin-top:12px;
+   width:100%;
 }
 
 #logonBannerID {
@@ -101,6 +108,18 @@ body {  /*specify a transparent nutual color background so frame embedding will 
    font-family:Arial;
    font-size:20px;
    color:#44535f;
+}
+
+#bg-banner:after {
+  content:'';
+  display: block;
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  background: url('../../resources/img/bg-static.png') no-repeat 0 0;
+  background-size: 100% auto;
+  height:100%;
+  min-width: 50%;
 }
 
 .close-button {
@@ -153,9 +172,7 @@ body {  /*specify a transparent nutual color background so frame embedding will 
 
 #loginButtonRow {
    clear: both;
-   float:right;
-   margin-right:40px;
-   margin-top:20px;
+   margin-top:40px;
 }
 
 #smartcardCheckbox {
@@ -199,17 +216,29 @@ body {  /*specify a transparent nutual color background so frame embedding will 
 
 .button {
    display: inline-block;
-   zoom: 1; /* zoom and *display = ie7 hack for display:inline-block */
-   *display: inline;
-   vertical-align: baseline;
-   margin: 0 2px;
-   outline: none;
-   cursor: pointer;
-   text-align: center;
-   text-decoration: none;
-   padding: 0px 30px;
-   height:24px;
-   font-size:12px;
+    padding: 6px 12px;
+    width:100%;
+    height:36px;
+    margin-bottom: 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.42857143;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    -ms-touch-action: manipulation;
+    touch-action: manipulation;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-image: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
+   color: #fff;
+   background-color: #337ab7;
+   border-color: #2e6da4;
 }
 .button:hover {
    text-decoration: none;
@@ -219,13 +248,11 @@ body {  /*specify a transparent nutual color background so frame embedding will 
    top: 1px;
 }
 
+.button:after {
+  content:"LOG IN";
+}
+
 .blue {
-   color: #fff;
-   border: solid 2px #1d4772;
-   background: #0095cd;
-   background: -webkit-gradient(linear, left top, left bottom, from(#0c6fb9), to(#014781));
-   background: -moz-linear-gradient(top,  #0c6fb9,  #014781);
-   filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#0c6fb9', endColorstr='#014781');
 }
 .blue:hover {
    background: #007ead;
@@ -260,18 +287,22 @@ body {  /*specify a transparent nutual color background so frame embedding will 
 
 #productName {
    position: absolute;
-   top: 345px;
-   left:499px;
-   color:#FFF;
-   font-size:23px;
+   top: 100px;
+   left:96px;
+   width:400px;
+   word-wrap: break-word;
 }
 
 #response {
-    background:url(../../resources/img/error.png) left center no-repeat;
-    margin-top: 20px;
-    font-size: 12.5px;
+    background:url(../../resources/img/error_red.png) left center no-repeat;
+    background-size: 20px auto;
+    color: #A32100;
+    background-color: #F5DBD9;
+    font-size:13px;
     padding-left: 20px;
-    color: #FF7F50;
+    line-height: 36px;
+    vertical-align: middle;
+    border-radius: 5px;
 }
 
 #progressBar {
@@ -287,7 +318,8 @@ body {  /*specify a transparent nutual color background so frame embedding will 
    font-weight: bold;
    padding: 10px;
    color: #7B7E81;
-   padding-left: 44px
+   padding-left: 44px;
+   display:none;
 }
 
 .footer a {
