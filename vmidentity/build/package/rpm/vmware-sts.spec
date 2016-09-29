@@ -202,6 +202,7 @@ fi
 %{_jarsdir}/vmware-identity-rest-afd-client.jar
 %{_jarsdir}/vmware-identity-rest-core-client.jar
 %{_jarsdir}/vmware-identity-rest-idm-client.jar
+%{_jarsdir}/vmware-directory-rest-client.jar
 # %doc ChangeLog README COPYING
 
 %files samples
