@@ -33,6 +33,12 @@ and can be used for backup and restore operations.
 
     # docker run -d --name backup --volumes-from lw_data -v $(pwd)/backup-6-6-0:/backup vmware/lightwave-sts
 
+**Install tar**
+
+For upgrading from lightwave 1.0 beta or rc, tar must be installed
+
+    # docker exec backup tdnf install tar
+
 **Create tars of all data volumes**
 
     # docker exec backup tar cvfP /backup/lib-vmware.tar /var/lib/vmware
