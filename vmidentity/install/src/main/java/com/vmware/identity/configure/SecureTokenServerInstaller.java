@@ -51,6 +51,8 @@ import org.xml.sax.SAXException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.vmware.identity.configure.STSHealthChecker;
+
 public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
 
     private static final String ID = "vmware-secure-token-service";
@@ -74,12 +76,15 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
     private String sslImplementationName="";
     private String keyAlias ="";
     private String keyStoreType ="";
+    private STSHealthChecker stsHealthChecker;
 
     public SecureTokenServerInstaller() {
         params = null;
+	stsHealthChecker = new STSHealthChecker();
     }
     public SecureTokenServerInstaller(VmIdentityParams installParams) {
         params = installParams;
+	stsHealthChecker = new STSHealthChecker();
     }
 
     @Override
@@ -100,6 +105,9 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
         startSTSService();
         //TODO: Properly install ROOT hosting index.html SSO landing page
         //configureInfraNodeHomePage();
+
+	// Validate to make sure all STS service endpoints are up and listening
+        stsHealthChecker.checkHealth();
     }
 
     private void initialize() {

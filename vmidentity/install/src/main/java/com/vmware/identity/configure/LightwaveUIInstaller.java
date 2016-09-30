@@ -98,8 +98,6 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
     @Override
     public void install() throws Exception {
     	
-    	// Todo: Add exponential wait logic with watch for war explosion and endpoint reachability.
-    	Thread.sleep(120000);
     	String servername = params.getHostname();
     	String domain = params.getDomainName();
     	String username = params.getUsername();
