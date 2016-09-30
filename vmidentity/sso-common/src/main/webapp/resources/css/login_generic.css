@@ -45,13 +45,14 @@ input [type=checkbox] {
    position: relative;
    margin-left:96px;
    top:308px;
+   margin-top:40px;
 }
 
 .margeTextInput {
    width:90%;
    display: block;
    height: 24px;
-   padding: 6px 12px;
+   padding: 0px 6px;
    font-size: 14px;
    line-height: 1.42857143;
    color: #555;
@@ -119,7 +120,7 @@ input [type=checkbox] {
   background: url('../../resources/img/bg-static.png') no-repeat 0 0;
   background-size: 100% auto;
   height:100%;
-  min-width: 50%;
+  min-width: 65%;
 }
 
 .close-button {
@@ -235,10 +236,11 @@ input [type=checkbox] {
     user-select: none;
     background-image: none;
     border: 1px solid transparent;
-    border-radius: 4px;
+    border-radius: 3px;
    color: #fff;
    background-color: #337ab7;
    border-color: #2e6da4;
+   text-transform: uppercase;
 }
 .button:hover {
    text-decoration: none;
@@ -294,15 +296,16 @@ input [type=checkbox] {
 }
 
 #response {
-    background:url(../../resources/img/error_red.png) left center no-repeat;
+    background: url(../../resources/img/error_red.png) left center no-repeat;
     background-size: 20px auto;
     color: #A32100;
     background-color: #F5DBD9;
-    font-size:13px;
+    font-size: 13px;
     padding-left: 20px;
-    line-height: 36px;
+    line-height: 24px;
     vertical-align: middle;
     border-radius: 5px;
+    background-position-y: 2px;
 }
 
 #progressBar {
