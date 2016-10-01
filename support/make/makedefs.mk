@@ -140,7 +140,9 @@ CFG_RPM=$(CFG_PKG_NAME)-$(CFG_VERSION).$(ARCH).rpm
 
 DOCKER_SRCROOT=$(SRCROOT)/support/docker
 DOCKER_BUILDER=$(DOCKER_SRCROOT)/build-lightwave-container.sh
-DOCKER_IMAGE=$(LIGHTWAVE_STAGE_DIR)/vmware-lightwave-sts.tar
+DOCKER_IMAGE_VERSION=1.0.0
+DOCKER_IMAGE_TAG=vmware/lightwave-sts:$(DOCKER_IMAGE_VERSION)
+DOCKER_IMAGE=$(LIGHTWAVE_STAGE_DIR)/vmware-lightwave-sts-$(DOCKER_IMAGE_VERSION).tar
 
 DOCKER_CLIENT_SRCROOT=$(SRCROOT)/support/docker
 DOCKER_CLIENT_BUILDER=$(DOCKER_SRCROOT)/build-lightwave-client-container.sh
