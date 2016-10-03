@@ -32,13 +32,7 @@ libvmdirclient_la_SOURCES = \
     vmdirlocalclient.c \
     srp_verifier_cstub.c \
     vmdirsuperlog_cstub.c \
-    vmdirurgentrepl_cstub.c \
-    schema/load.c \
-    schema/parse.c \
-    schema/patch.c \
-    schema/legacy/legacyload.c \
-    schema/legacy/legacypatch.c \
-    schema/legacy/legacyutil.c
+    vmdirurgentrepl_cstub.c
 
 libvmdirclient_la_LIBADD = \
     @top_builddir@/common/libcommon.la \

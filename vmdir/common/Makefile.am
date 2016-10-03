@@ -35,6 +35,7 @@ libcommon_la_SOURCES = \
     util.c \
     schema/compat.c \
     schema/copy.c \
+    schema/def.c \
     schema/deflist.c \
     schema/diff.c \
     schema/file.c \
@@ -42,9 +43,12 @@ libcommon_la_SOURCES = \
     schema/load.c \
     schema/merge.c \
     schema/parse.c \
+    schema/patch.c \
     schema/resolve.c \
     schema/schema.c \
     schema/verify.c \
+    schema/legacy/legacyload.c \
+    schema/legacy/legacypatch.c \
     schema/legacy/legacyschema.c \
     schema/legacy/legacyschemamod.c \
     schema/legacy/legacyutil.c

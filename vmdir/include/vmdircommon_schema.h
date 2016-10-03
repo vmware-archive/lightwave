@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2016 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -190,6 +190,62 @@ VmDirLdapNfDeepCopy(
     PVDIR_LDAP_NAME_FORM*   ppCopyNf
     );
 
+// def.c
+DWORD
+VmDirLdapAtCreate(
+    LDAPAttributeType*          pSource,
+    PVDIR_LDAP_ATTRIBUTE_TYPE*  ppAt
+    );
+
+DWORD
+VmDirLdapOcCreate(
+    LDAPObjectClass*            pSource,
+    PVDIR_LDAP_OBJECT_CLASS*    ppOc
+    );
+
+DWORD
+VmDirLdapCrCreate(
+    LDAPContentRule*            pSource,
+    PVDIR_LDAP_CONTENT_RULE*    ppCr
+    );
+
+DWORD
+VmDirLdapSrCreate(
+    LDAPStructureRule*          pSource,
+    PVDIR_LDAP_STRUCTURE_RULE*  ppSr
+    );
+
+DWORD
+VmDirLdapNfCreate(
+    LDAPNameForm*           pSource,
+    PVDIR_LDAP_NAME_FORM*   ppNf
+    );
+
+VOID
+VmDirFreeLdapAt(
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pAt
+    );
+
+VOID
+VmDirFreeLdapOc(
+    PVDIR_LDAP_OBJECT_CLASS pOc
+    );
+
+VOID
+VmDirFreeLdapCr(
+    PVDIR_LDAP_CONTENT_RULE pCr
+    );
+
+VOID
+VmDirFreeLdapSr(
+    PVDIR_LDAP_STRUCTURE_RULE   pSr
+    );
+
+VOID
+VmDirFreeLdapNf(
+    PVDIR_LDAP_NAME_FORM    pNf
+    );
+
 // diff.c
 DWORD
 VmDirLdapSchemaGetDiff(
@@ -232,6 +288,12 @@ VmDirLdapSchemaLoadFile(
     PCSTR               pszSchemaFilePath
     );
 
+DWORD
+VmDirLdapSchemaLoadRemoteSchema(
+    PVDIR_LDAP_SCHEMA   pSchema,
+    LDAP*               pLd
+    );
+
 // merge.c
 DWORD
 VmDirLdapSchemaMerge(
@@ -241,36 +303,6 @@ VmDirLdapSchemaMerge(
     );
 
 // parse.c
-DWORD
-VmDirLdapAtCreate(
-    LDAPAttributeType*          pSource,
-    PVDIR_LDAP_ATTRIBUTE_TYPE*  ppAt
-    );
-
-DWORD
-VmDirLdapOcCreate(
-    LDAPObjectClass*            pSource,
-    PVDIR_LDAP_OBJECT_CLASS*    ppOc
-    );
-
-DWORD
-VmDirLdapCrCreate(
-    LDAPContentRule*            pSource,
-    PVDIR_LDAP_CONTENT_RULE*    ppCr
-    );
-
-DWORD
-VmDirLdapSrCreate(
-    LDAPStructureRule*          pSource,
-    PVDIR_LDAP_STRUCTURE_RULE*  ppSr
-    );
-
-DWORD
-VmDirLdapNfCreate(
-    LDAPNameForm*           pSource,
-    PVDIR_LDAP_NAME_FORM*   ppNf
-    );
-
 DWORD
 VmDirLdapAtParseStr(
     PCSTR                       pcszStr,
@@ -299,6 +331,27 @@ DWORD
 VmDirLdapNfParseStr(
     PCSTR                   pcszStr,
     PVDIR_LDAP_NAME_FORM*   ppNf
+    );
+
+DWORD
+VmDirLdapAtParseLDAPEntry(
+    LDAP*                       pLd,
+    LDAPMessage*                pEntry,
+    PVDIR_LDAP_ATTRIBUTE_TYPE*  ppAt
+    );
+
+DWORD
+VmDirLdapOcParseLDAPEntry(
+    LDAP*                       pLd,
+    LDAPMessage*                pEntry,
+    PVDIR_LDAP_OBJECT_CLASS*    ppOc
+    );
+
+DWORD
+VmDirLdapCrParseLDAPEntry(
+    LDAP*                       pLd,
+    LDAPMessage*                pEntry,
+    PVDIR_LDAP_CONTENT_RULE*    ppCr
     );
 
 DWORD
@@ -331,29 +384,11 @@ VmDirLdapNfToStr(
     PSTR*                   ppszStr
     );
 
-VOID
-VmDirFreeLdapAt(
-    PVDIR_LDAP_ATTRIBUTE_TYPE   pAt
-    );
-
-VOID
-VmDirFreeLdapOc(
-    PVDIR_LDAP_OBJECT_CLASS pOc
-    );
-
-VOID
-VmDirFreeLdapCr(
-    PVDIR_LDAP_CONTENT_RULE pCr
-    );
-
-VOID
-VmDirFreeLdapSr(
-    PVDIR_LDAP_STRUCTURE_RULE   pSr
-    );
-
-VOID
-VmDirFreeLdapNf(
-    PVDIR_LDAP_NAME_FORM    pNf
+// patch.c
+DWORD
+VmDirPatchRemoteSchemaObjects(
+    LDAP*               pLd,
+    PVDIR_LDAP_SCHEMA   pNewSchema
     );
 
 // resolve.c
@@ -456,6 +491,20 @@ typedef struct _VDIR_LEGACY_SCHEMA_MOD
 
 } VDIR_LEGACY_SCHEMA_MOD, *PVDIR_LEGACY_SCHEMA_MOD;
 
+// legacy/legacyload.c
+DWORD
+VmDirLegacySchemaLoadRemoteSchema(
+    PVDIR_LEGACY_SCHEMA pLegacySchema,
+    LDAP*               pLd
+    );
+
+// legacy/legacypatch.c
+DWORD
+VmDirPatchRemoteSubSchemaSubEntry(
+    LDAP*               pLd,
+    PVDIR_LDAP_SCHEMA   pNewSchema
+    );
+
 // legacy/legacyschema.c
 DWORD
 VmDirLegacySchemaInit(
@@ -487,14 +536,16 @@ VmDirFreeLegacySchemaMod(
 
 // legacy/legacyutil.c
 DWORD
+VmDirLdapSearchSubSchemaSubEntry(
+    LDAP*           pLd,
+    LDAPMessage**   ppResult,
+    LDAPMessage**   ppEntry
+    );
+
+DWORD
 VmDirFixLegacySchemaDefSyntaxErr(
     PSTR    pszDef,
     PSTR*   ppszFixedDef
-    );
-
-BOOLEAN
-VmDirIsMultiNameAttribute(
-    PSTR    pszName
     );
 
 #ifdef __cplusplus

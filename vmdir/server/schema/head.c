@@ -35,9 +35,12 @@ VmDirSubSchemaSubEntry(
     USHORT  usNumAt = 0;
     USHORT  usNumOc = 0;
     USHORT  usNumCr = 0;
+    USHORT  usNumSx = 0;
     PVDIR_BERVALUE  pBervAt = NULL;
     PVDIR_BERVALUE  pBervOc = NULL;
     PVDIR_BERVALUE  pBervCr = NULL;
+    PSTR*           ppszSx = NULL;
+    PVDIR_ATTRIBUTE pAttrSx = NULL;
     LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
     LW_HASHMAP_PAIR pair = {NULL, NULL};
     PVDIR_LDAP_OBJECT_CLASS pTop = NULL;
@@ -78,6 +81,7 @@ VmDirSubSchemaSubEntry(
             (PVOID*)&pBervCr);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // attributetypes
     while (LwRtlHashMapIterate(pLdapSchema->attributeTypes, &iter, &pair))
     {
         PVDIR_LDAP_ATTRIBUTE_TYPE pAt = (PVDIR_LDAP_ATTRIBUTE_TYPE)pair.pValue;
@@ -93,6 +97,7 @@ VmDirSubSchemaSubEntry(
             pEntry, ATTR_ATTRIBUTETYPES, pBervAt, usNumAt);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // objectclasses
     i = 0;
     LwRtlHashMapResetIter(&iter);
     while (LwRtlHashMapIterate(pLdapSchema->objectClasses, &iter, &pair))
@@ -121,6 +126,7 @@ VmDirSubSchemaSubEntry(
             pEntry, ATTR_OBJECTCLASSES, pBervOc, usNumOc);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // ditcontentrules
     i = 0;
     LwRtlHashMapResetIter(&iter);
     while (LwRtlHashMapIterate(pLdapSchema->contentRules, &iter, &pair))
@@ -138,6 +144,29 @@ VmDirSubSchemaSubEntry(
             pEntry, ATTR_DITCONTENTRULES, pBervCr, usNumCr);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // ldapsyntaxes
+    dwError = VdirSyntaxGetDefinition(&ppszSx, &usNumSx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAttributeAllocate(
+            ATTR_LDAPSYNTAXES, usNumSx, pSchemaCtx, &pAttrSx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (i = 0; i < usNumSx; i++)
+    {
+        dwError = VmDirAllocateStringA(
+                ppszSx[i], &pAttrSx->vals[i].lberbv_val);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pAttrSx->vals[i].bOwnBvVal = TRUE;
+        pAttrSx->vals[i].lberbv_len =
+                VmDirStringLenA(pAttrSx->vals[i].lberbv_val);
+    }
+
+    dwError = VmDirEntryAddAttribute(pEntry, pAttrSx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    pAttrSx = NULL;
+
     *ppEntry = pEntry;
 
 cleanup:
@@ -148,6 +177,8 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pBervAt);
     VMDIR_SAFE_FREE_MEMORY(pBervOc);
     VMDIR_SAFE_FREE_MEMORY(pBervCr);
+    VmDirFreeStrArray(ppszSx);
+    VmDirFreeAttribute(pAttrSx);
     VmDirFreeLdapOc(pTop);
     return dwError;
 
