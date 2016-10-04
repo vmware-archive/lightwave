@@ -107,7 +107,7 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
         //configureInfraNodeHomePage();
 
 	// Validate to make sure all STS service endpoints are up and listening
-        stsHealthChecker.checkHealth();
+        stsHealthChecker.checkHealth(hostnameURL);
     }
 
     private void initialize() {
