@@ -1,5 +1,3 @@
-package com.vmware.identity.configure;
-
 /*
  *  Copyright (c) 2016 VMware, Inc.  All Rights Reserved.
  *
@@ -13,6 +11,8 @@ package com.vmware.identity.configure;
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
+
+package com.vmware.identity.configure;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -43,17 +43,15 @@ public class STSHealthChecker {
 
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(STSHealthChecker.class);
 
-    // Endpoint candidates for health check 
+    // Endpoint candidates for health check
     private static final String REST_AFD = "/afd/vecs/ssl";
     private static final String REST_IDM = "/idm/";
     private static final String OPENIDCONNECT = "/openidconnect/jwks";
     private static final String STS = "/sts/STSService";
-    
     private static final String STS_HTTP_PORT = "443";
     private static final String STS_BASE_URL = "https://%s:" + STS_HTTP_PORT;
     private static final String VKS_KEYSTORE_INSTANCE = "VKS";
     private static final String VKS_KEYSTORE_NAME = "TRUSTED_ROOTS";
-    
     private static final long MAX_TIME_TO_WAIT_MILLIS = 120000 ; // 2 minutes
     private static final long WAIT_TIME_PER_ITERATION = 5000; // 5 seconds
 
@@ -64,17 +62,16 @@ public class STSHealthChecker {
             add(getStsUrl(OPENIDCONNECT));
             add(getStsUrl(STS));
         }
-        
         private String getStsUrl(String contextPath) {
             return STS_BASE_URL + contextPath;
         }
     };
 
     public void checkHealth(String hostname) throws Exception {
-    	
-        // Load the VKS keystore 
+
+        // Load the VKS keystore
         KeyStore vksKeyStore = getVksKeyStore();
-        
+
         // Initialize TrustManager and SSLFactory
         TrustManagerFactory trustMgrFactory = TrustManagerFactory.getInstance("PKIX");
         trustMgrFactory.init(vksKeyStore);
@@ -111,7 +108,7 @@ public class STSHealthChecker {
             }
         }
     }
-    
+
     /**
      * Get VKS keystore by calling VECS
      */
