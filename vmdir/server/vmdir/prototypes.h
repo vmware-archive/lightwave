@@ -158,6 +158,13 @@ VmDirSrvFreeConfig(
     VOID
     );
 
+DWORD
+VmDirRegGetMultiSZ(
+    PCSTR   pszKeyPath,
+    PCSTR   pszKeyName,
+    PVMDIR_STRING_LIST* ppStrList
+    );
+
 // rpcstring.c
 
 ULONG
