@@ -1,7 +1,9 @@
-FROM vmware/photon:latest
+FROM vmware/photon:1.0
 MAINTAINER "Jonathan Brown" <brownj@vmware.com>
 ENV container=docker
 VOLUME ["/sys/fs/cgroup"]
+LABEL vendor="VMware, Inc."
+LABEL com.vmware.lightwave.version="1.0.0"
 
 # install systemd
 RUN tdnf update --refresh -y tdnf; \

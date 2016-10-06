@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -18,9 +18,12 @@
 // actions made in the UI designer. If it is removed, they will be lost.
 // Manual changes to this file may not be handled correctly.
 //
-using Foundation;
-
-namespace VMDirSnapIn.UI
+using Foundation;
+
+
+
+namespace VMDirSnapIn.UI
+
 {
 	[Register("SelectObjectClassWindowController")]
 	partial class SelectObjectClassWindowController
@@ -62,5 +65,7 @@ namespace VMDirSnapIn.UI
 		void ReleaseDesignerOutlets()
 		{
 		}
-	}
-}
+	}
+
+}
+

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2016 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -27,20 +27,20 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <conio.h>
+#include <io.h>
 #include <assert.h>
 #include <errno.h>
 #include <tchar.h>
 
 #endif
 
-#include <ldap.h>
-
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>
-#include <vmdirerrorcode.h>
 #include <vmdirerrors.h>
 #include <vmdircommon.h>
 #include <vmdirclient.h>
 
+#include "structs.h"
 #include "prototypes.h"

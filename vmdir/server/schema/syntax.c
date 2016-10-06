@@ -193,14 +193,15 @@ error:
 DWORD
 VdirSyntaxGetDefinition(
     PSTR**    pppszOutStr,
-    USHORT*   pdwSize
+    USHORT*   pusSize
     )
 {
     DWORD dwError = 0;
     DWORD dwCnt = 0;
+    USHORT usSize = 0;
     PSTR*  ppszBuf = NULL;
 
-    if (!pppszOutStr || !pdwSize)
+    if (!pppszOutStr || !pusSize)
     {
         return ERROR_INVALID_PARAMETER;
     }
@@ -212,39 +213,32 @@ VdirSyntaxGetDefinition(
 
     for (dwCnt = 0; dwCnt < gVdirSyntaxGlobals.usSize; dwCnt++)
     {
-        char pszTmp[256] = {0};
+        if (gVdirSyntaxGlobals.pSyntax[dwCnt].bPublic)
+        {
+            char pszTmp[256] = {0};
 
-        dwError = VmDirStringNPrintFA(
-            pszTmp, 256, 255, "( %s DESC '%s' )",
-            gVdirSyntaxGlobals.pSyntax[dwCnt].pszOid,
-            gVdirSyntaxGlobals.pSyntax[dwCnt].pszName
-        );
-        BAIL_ON_VMDIR_ERROR(dwError);
+            dwError = VmDirStringNPrintFA(
+                    pszTmp, 256, 255, "( %s DESC '%s' )",
+                    gVdirSyntaxGlobals.pSyntax[dwCnt].pszOid,
+                    gVdirSyntaxGlobals.pSyntax[dwCnt].pszName
+            );
+            BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirAllocateStringA(
-                pszTmp,
-                &ppszBuf[dwCnt]);
-        BAIL_ON_VMDIR_ERROR(dwError);
+            dwError = VmDirAllocateStringA(
+                    pszTmp,
+                    &ppszBuf[usSize++]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
     }
 
     *pppszOutStr = ppszBuf;
-    *pdwSize = gVdirSyntaxGlobals.usSize;
+    *pusSize = usSize;
 
 cleanup:
-
     return dwError;
 
 error:
-
-    *pppszOutStr = NULL;
-    *pdwSize = 0;
-
-    if (ppszBuf)
-    {
-        VmDirFreeStringArrayA(ppszBuf);
-        VMDIR_SAFE_FREE_MEMORY(ppszBuf);
-    }
-
+    VmDirFreeStrArray(ppszBuf);
     goto cleanup;
 }
 

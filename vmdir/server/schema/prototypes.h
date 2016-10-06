@@ -245,7 +245,7 @@ VdirSyntaxLookupByOid(
 DWORD
 VdirSyntaxGetDefinition(
     PSTR**    pppszOutStr,
-    USHORT*   pdwSize
+    USHORT*   pusSize
     );
 
 BOOLEAN
