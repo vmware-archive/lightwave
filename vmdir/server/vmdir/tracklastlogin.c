@@ -20,6 +20,9 @@
  * Registry key to turn on/off this feature:
  * services\vmdir\parameters\TrackLastLoginTime 0(default)/1
  *
+ * Registry key to suppress TrackLastLoginTime for certain accounts under a container:
+ * services\vmdir\parameters\SuppressTrackLLTContainer REG_MULTI_SZ - can specify multiple containers.
+ *
  */
 
 #include "includes.h"
@@ -27,6 +30,7 @@
 #define MAX_PENDING_SIZE    256
 
 static PVDIR_THREAD_INFO   _gpTrackLastLoginThrInfo = NULL;
+static PVMDIR_STRING_LIST  _gpSuppressDNList = NULL;
 
 static
 DWORD
@@ -54,6 +58,12 @@ _VmDirGetAccountType(
     PBOOLEAN    pIsComputer
     );
 
+static
+BOOLEAN
+_VmDirSuppressDN(
+    PCSTR       pszDN
+    );
+
 DWORD
 VmDirInitTrackLastLoginThread(
     VOID
@@ -66,6 +76,20 @@ VmDirInitTrackLastLoginThread(
     {
         dwError = VMDIR_ERROR_INVALID_CONFIGURATION;
         BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // if key configure correctly, get suppress DN list
+    if (VmDirRegGetMultiSZ(VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                           VMDIR_REG_KEY_SUPPRES_TRACK_LLT,
+                           &_gpSuppressDNList) == 0)
+    {
+        DWORD i = 0;
+
+        for (i = 0; i < _gpSuppressDNList->dwCount; ++i)
+        {
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "TrackLastLogonTime suppress container (%s)",
+                            _gpSuppressDNList->pStringList[i]);
+        }
     }
 
     dwError = VmDirSrvThrInit(
@@ -136,19 +160,22 @@ VmDirAddTrackLastLoginItem(
             goto cleanup;
         }
 
-        dwError = VmDirAllocateMemory(sizeof(pLoginTime), (PVOID*)&pLoginTime);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (!_VmDirSuppressDN(pszDN))
+        {
+            dwError = VmDirAllocateMemory(sizeof(pLoginTime), (PVOID*)&pLoginTime);
+            BAIL_ON_VMDIR_ERROR(dwError);
 
-        pLoginTime->loginTime = _VmDirUnixTimeToFileTime(time(NULL));
-        dwError = VmDirAllocateStringA(pszDN, &(pLoginTime->pszDN) );
-        BAIL_ON_VMDIR_ERROR(dwError);
+            pLoginTime->loginTime = _VmDirUnixTimeToFileTime(time(NULL));
+            dwError = VmDirAllocateStringA(pszDN, &(pLoginTime->pszDN) );
+            BAIL_ON_VMDIR_ERROR(dwError);
 
-        // TODO, could have checked whether this DN exists in the stack or not.
-        // pTSStack owns pLoginTime
-        dwError = VmDirPushTSStack(gVmdirTrackLastLoginTime.pTSStack, pLoginTime);
-        BAIL_ON_VMDIR_ERROR(dwError);
+            // TODO, could have checked whether this DN exists in the stack or not.
+            // pTSStack owns pLoginTime
+            dwError = VmDirPushTSStack(gVmdirTrackLastLoginTime.pTSStack, pLoginTime);
+            BAIL_ON_VMDIR_ERROR(dwError);
 
-        VmDirSrvThrSignal(_gpTrackLastLoginThrInfo);
+            VmDirSrvThrSignal(_gpTrackLastLoginThrInfo);
+        }
     }
 
 cleanup:
@@ -161,6 +188,34 @@ error:
     _VmDirFreeLoginTime(pLoginTime);
 
     goto cleanup;
+}
+
+static
+BOOLEAN
+_VmDirSuppressDN(
+    PCSTR       pszDN
+    )
+{
+    BOOLEAN rtn = FALSE;
+    DWORD   i = 0;
+    PCSTR   pszTmp = NULL;
+
+    if (_gpSuppressDNList)
+    {
+        for (i = 0; i < _gpSuppressDNList->dwCount; ++i)
+        {
+            if ((pszTmp = VmDirStringCaseStrA(pszDN, _gpSuppressDNList->pStringList[i])) != NULL
+                    &&
+                (pszTmp[VmDirStringLenA(_gpSuppressDNList->pStringList[i])] == '\0')
+               )
+            {
+               rtn = TRUE;
+               break;
+            }
+        }
+    }
+
+    return rtn;
 }
 
 static
@@ -303,6 +358,10 @@ _VmDirTrackLastLoginTimeThreadFun(
     }
 
 cleanup:
+    if (_gpSuppressDNList)
+    {
+        VmDirStringListFree(_gpSuppressDNList);
+    }
     // we may have leak pLoginIime(s), but exiting anyway.
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Exit track last login time thread" );
 
