@@ -270,6 +270,8 @@ extern "C" {
 #define ATTR_OBJECTCLASSES_LEN              sizeof(ATTR_OBJECTCLASSES)-1
 #define ATTR_DITCONTENTRULES                "ditcontentrules"
 #define ATTR_DITCONTENTRULES_LEN            sizeof(ATTR_DITCONTENTRULES)-1
+#define ATTR_LDAPSYNTAXES                   "ldapsyntaxes"
+#define ATTR_LDAPSYNTAXES_LEN               sizeof(ATTR_LDAPSYNTAXES)-1
 
 // ADSI support related attribute
 #define ATTR_ALLOWD_CHILD_CLASSES_EFFECTIVE     "allowedChildClassesEffective"

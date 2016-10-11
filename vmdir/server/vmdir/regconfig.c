@@ -78,6 +78,13 @@ VmDirRegConfigMultiStringToDwords(
     DWORD*  pdwValues
     );
 
+static
+DWORD
+VmDirRegConfigMultiStringToStrList(
+    PCSTR               pszValues,
+    PVMDIR_STRING_LIST* ppStrList
+    );
+
 DWORD
 VmDirSrvUpdateConfig(
     VOID
@@ -265,6 +272,63 @@ VmDirSrvFreeConfig(
 
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pdwLdapsConnectPorts);
     gVmdirGlobals.dwLdapsConnectPorts = 0;
+}
+
+DWORD
+VmDirRegGetMultiSZ(
+    PCSTR   pszKeyPath,
+    PCSTR   pszKeyName,
+    PVMDIR_STRING_LIST* ppStrList
+    )
+{
+    DWORD               dwError = 0;
+    PSTR                pszValue = NULL;
+    PVMDIR_STRING_LIST  pStrList = NULL;
+
+    PVMDIR_CONFIG_CONNECTION_HANDLE pCfgHandle = NULL;
+
+    if (!pszKeyPath || !pszKeyName || !ppStrList)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirRegConfigHandleOpen(&pCfgHandle);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRegConfigGetMultiString(
+                            pCfgHandle,
+                            pszKeyPath,
+                            pszKeyName,
+                            &pszValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRegConfigMultiStringToStrList(pszValue, &pStrList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // bail if there is no content in pStrList
+    if (!pStrList || pStrList->dwCount == 0)
+    {
+        dwError = VMDIR_ERROR_INVALID_CONFIGURATION;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppStrList = pStrList; pStrList = NULL;
+
+cleanup:
+    if (pCfgHandle)
+    {
+        VmDirRegConfigHandleClose(pCfgHandle);
+    }
+    if (pStrList)
+    {
+        VmDirStringListFree(pStrList);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pszValue);
+
+    return dwError;
+error:
+    goto cleanup;
 }
 
 static
@@ -699,6 +763,54 @@ cleanup:
 
 error:
     VMDIR_SAFE_FREE_MEMORY(pdwValues);
+    goto cleanup;
+}
+
+static
+DWORD
+VmDirRegConfigMultiStringToStrList(
+    PCSTR               pszValues,
+    PVMDIR_STRING_LIST* ppStrList
+    )
+{
+    DWORD               dwError = 0;
+    DWORD               dwValuesLen = 0;
+    PCSTR               pszIter = NULL;
+    PVMDIR_STRING_LIST  pStrList = NULL;
+
+    if (pszValues)
+    {
+        pszIter = pszValues;
+        while (pszIter != NULL && *pszIter != '\0')
+        {
+            dwValuesLen++;
+
+            pszIter += VmDirStringLenA(pszIter) + 1;
+        }
+
+        dwError = VmDirStringListInitialize(&pStrList, dwValuesLen);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pszIter = pszValues;
+        while (pszIter != NULL && *pszIter != '\0')
+        {
+            dwError = VmDirStringListAddStrClone(pszIter, pStrList);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            pszIter += VmDirStringLenA(pszIter) + 1;
+        }
+
+        *ppStrList = pStrList; pStrList = NULL;
+    }
+
+cleanup:
+    if (pStrList)
+    {
+        VmDirStringListFree(pStrList);
+    }
+    return dwError;
+
+error:
     goto cleanup;
 }
 

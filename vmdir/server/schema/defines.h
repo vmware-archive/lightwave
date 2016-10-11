@@ -213,187 +213,218 @@
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_ATTRIBUTE_TYPE_DESC),     \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_ATTRIBUTE_TYPE_DESC),         \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, TRUE)                                 \
     },                                                                \
    {                                                                  \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_BINARY),                  \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_BINARY),                      \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_NO),  \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxBinary)                   \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxBinary),                  \
+        VMDIR_SF_INIT(.bPublic, TRUE)                                 \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_BIT_STRING),              \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_BIT_STRING),                  \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_NO),  \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, TRUE)                                 \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_BOOLEAN),                 \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_BOOLEAN),                     \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxBoolean)                  \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxBoolean),                 \
+        VMDIR_SF_INIT(.bPublic, TRUE)                                 \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_DN),                      \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_DN),                          \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, TRUE)                                 \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_DIRECTORY_STRING),        \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_DIRECTORY_STRING),            \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxDirectoryString)          \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxDirectoryString),         \
+        VMDIR_SF_INIT(.bPublic, TRUE)                                 \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_DIT_STRUCTURE_RULE_DESC), \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_DIT_STRUCTURE_RULE_DESC),     \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_ENHANCED_GUID),           \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_ENHANCED_GUID),               \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_FAX_NUMBER),              \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_FAX_NUMBER),                  \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_GEN_TIME),                \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_GEN_TIME),                    \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxGeneralizedTime)          \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxGeneralizedTime),         \
+        VMDIR_SF_INIT(.bPublic, TRUE)                                 \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_IA5_STRING),              \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_IA5_STRING),                  \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxIA5String)                \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxIA5String),               \
+        VMDIR_SF_INIT(.bPublic, TRUE)                                 \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_INTERGER),                \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_INTERGER),                    \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxInteger)                  \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxInteger),                 \
+        VMDIR_SF_INIT(.bPublic, TRUE)                                 \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_NAME_FORM_DESC),          \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_NAME_FORM_DESC),              \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_NUMERIC_STRING),          \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_NUMERIC_STRING),              \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNumericString)            \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNumericString),           \
+        VMDIR_SF_INIT(.bPublic, TRUE)                                 \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_OCTET_STRING),            \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_OCTET_STRING),                \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, TRUE)                                 \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_OBJECTCLASS_DESC),        \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_OBJECTCLASS_DESC),            \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, TRUE)                                 \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_OID),                     \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_OID),                         \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxOID)                      \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxOID),                     \
+        VMDIR_SF_INIT(.bPublic, TRUE)                                 \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_POSTAL_ADDRESS),          \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_POSTAL_ADDRESS),              \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_PRESENTATION_ADDRESS),    \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_PRESENTATION_ADDRESS),        \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_PRINTABLE_STRING),        \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_PRINTABLE_STRING),            \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxPrintableString)          \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxPrintableString),         \
+        VMDIR_SF_INIT(.bPublic, TRUE)                                 \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_PROTOCOL_INFORMATION),    \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_PROTOCOL_INFORMATION),        \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_SUPPORTED_ALGORITHM),     \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_SUPPORTED_ALGORITHM),         \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_NO),  \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_TELEPHONE_NUMBER),        \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_TELEPHONE_NUMBER),            \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_UTC_TIME),                \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_UTC_TIME),                    \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_UUID),                    \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_UUID),                        \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, TRUE)                                 \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_LARGE_INTEGER),           \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_LARGE_INTEGER),               \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_OBJECT_DN_BINARY),        \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_OBJECT_DN_BINARY),            \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_NO),  \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_OBJECT_DN_STRING),        \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_OBJECT_DN_STRING),            \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_OBJECT_REPLICA_LINK),     \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_OBJECT_REPLICA_LINK),         \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_STRING_NT_SEC_DESC),      \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_STRING_NT_SEC_DESC),          \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_NO),  \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
     {                                                                 \
         VMDIR_SF_INIT(.pszName, VDIR_SYNTAX_STRING_TELETEX),          \
         VMDIR_SF_INIT(.pszOid, VDIR_OID_STRING_TELETEX),              \
         VMDIR_SF_INIT(.readableFlag, VDIR_SYNTAX_HUMAN_READABLE_YES), \
-        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented)           \
+        VMDIR_SF_INIT(.pValidateFunc, syntaxNotImplemented),          \
+        VMDIR_SF_INIT(.bPublic, FALSE)                                \
     },                                                                \
 };
 

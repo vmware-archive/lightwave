@@ -197,7 +197,7 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
                 var decodedAccessJwt = Util.decodeJWT(access_token);
                 $rootScope.globals = {
                     currentUser: {
-                        server: getserver(decodedJwt.header.iss),//$location.host(),
+                        server: $location.host(),
                         tenant: decodedJwt.header.tenant,
                         username: decodedJwt.header.sub,
                         first_name: decodedJwt.header.given_name,

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *  Copyright (c) 2012-2016 VMware, Inc.  All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License.  You may obtain a copy
@@ -52,7 +52,7 @@ public class Logout extends HttpServlet {
 		if(values_tenant != null && values_tenant.length > 0){
 			value_tenant = values_tenant[0];
 		}
-		
+		value_tenant = value_tenant.toLowerCase();
 		String[] values_state = request.getParameterValues("state");
 		String value_state = "";
 		if(values_state != null && values_state.length > 0){

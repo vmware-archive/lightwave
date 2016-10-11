@@ -33,14 +33,11 @@
 
 #endif
 
-#include <ldap.h>
-
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>
 #include <vmdirerrorcode.h>
 #include <vmdirerrors.h>
 #include <vmdircommon.h>
-#include <vmdirclient.h>
 
 #include "prototypes.h"

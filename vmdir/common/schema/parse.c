@@ -15,205 +15,6 @@
 #include "includes.h"
 
 DWORD
-VmDirLdapAtCreate(
-    LDAPAttributeType*          pSource,
-    PVDIR_LDAP_ATTRIBUTE_TYPE*  ppAt
-    )
-{
-    DWORD   dwError = 0;
-    PVDIR_LDAP_DEFINITION   pDef = NULL;
-    PVDIR_LDAP_ATTRIBUTE_TYPE   pAt = NULL;
-
-    if (!pSource || !ppAt)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateMemory(
-            sizeof(VDIR_LDAP_DEFINITION), (PVOID*)&pDef);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pAt = &pDef->data.at;
-    pAt->pszName = pSource->at_names[0];
-    pAt->pszOid = pSource->at_oid;
-    pAt->pszDesc = pSource->at_desc;
-    pAt->ppszAliases = pSource->at_names;
-    pAt->pszSyntaxOid = pSource->at_syntax_oid;
-    pAt->bSingleValue = pSource->at_single_value;
-    pAt->bCollective = pSource->at_collective;
-    pAt->bNoUserMod = pSource->at_no_user_mod;
-    pAt->bObsolete = pSource->at_obsolete;
-    pAt->usage = pSource->at_usage;
-    pAt->pSource = pSource;
-    pDef->type = VDIR_LDAP_DEFINITION_TYPE_AT;
-    pDef->pszName = pAt->pszName;
-    *ppAt = pAt;
-
-cleanup:
-    return dwError;
-
-error:
-    VmDirFreeLdapAt(pAt);
-    goto cleanup;
-}
-
-DWORD
-VmDirLdapOcCreate(
-    LDAPObjectClass*            pSource,
-    PVDIR_LDAP_OBJECT_CLASS*    ppOc
-    )
-{
-    DWORD   dwError = 0;
-    PVDIR_LDAP_DEFINITION   pDef = NULL;
-    PVDIR_LDAP_OBJECT_CLASS pOc = NULL;
-
-    if (!pSource || !ppOc)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateMemory(
-            sizeof(VDIR_LDAP_DEFINITION), (PVOID*)&pDef);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pOc = &pDef->data.oc;
-    pOc->pszName = pSource->oc_names[0];
-    pOc->pszOid = pSource->oc_oid;
-    pOc->pszDesc = pSource->oc_desc;
-    pOc->pszSup = pSource->oc_sup_oids ? pSource->oc_sup_oids[0] : NULL;
-    pOc->ppszMust = pSource->oc_at_oids_must;
-    pOc->ppszMay = pSource->oc_at_oids_may;
-    pOc->bObsolete = pSource->oc_obsolete;
-    pOc->type = pSource->oc_kind;
-    pOc->pSource = pSource;
-    pDef->type = VDIR_LDAP_DEFINITION_TYPE_OC;
-    pDef->pszName = pOc->pszName;
-    *ppOc = pOc;
-
-cleanup:
-    return dwError;
-
-error:
-    VmDirFreeLdapOc(pOc);
-    goto cleanup;
-}
-
-DWORD
-VmDirLdapCrCreate(
-    LDAPContentRule*            pSource,
-    PVDIR_LDAP_CONTENT_RULE*    ppCr
-    )
-{
-    DWORD   dwError = 0;
-    PVDIR_LDAP_DEFINITION   pDef = NULL;
-    PVDIR_LDAP_CONTENT_RULE pCr = NULL;
-
-    if (!pSource || !ppCr)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateMemory(
-            sizeof(VDIR_LDAP_DEFINITION), (PVOID*)&pDef);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pCr = &pDef->data.cr;
-    pCr->pszName = pSource->cr_names[0];
-    pCr->pszOid = pSource->cr_oid;
-    pCr->ppszMust = pSource->cr_at_oids_must;
-    pCr->ppszMay = pSource->cr_at_oids_may;
-    pCr->ppszNot = pSource->cr_at_oids_not;
-    pCr->ppszAux = pSource->cr_oc_oids_aux;
-    pCr->bObsolete = pSource->cr_obsolete;
-    pCr->pSource = pSource;
-    pDef->type = VDIR_LDAP_DEFINITION_TYPE_CR;
-    pDef->pszName = pCr->pszName;
-    *ppCr = pCr;
-
-cleanup:
-    return dwError;
-
-error:
-    VmDirFreeLdapCr(pCr);
-    goto cleanup;
-}
-
-DWORD
-VmDirLdapSrCreate(
-    LDAPStructureRule*          pSource,
-    PVDIR_LDAP_STRUCTURE_RULE*  ppSr
-    )
-{
-    DWORD   dwError = 0;
-    PVDIR_LDAP_DEFINITION   pDef = NULL;
-    PVDIR_LDAP_STRUCTURE_RULE   pSr = NULL;
-
-    if (!pSource || !ppSr)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateMemory(
-            sizeof(VDIR_LDAP_DEFINITION), (PVOID*)&pDef);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pSr = &pDef->data.sr;
-    pSr->pszName = pSource->sr_names ? pSource->sr_names[0] : NULL;
-    // TODO
-    pSr->pSource = pSource;
-    pDef->type = VDIR_LDAP_DEFINITION_TYPE_SR;
-    pDef->pszName = pSr->pszName;
-    *ppSr = pSr;
-
-cleanup:
-    return dwError;
-
-error:
-    VmDirFreeLdapSr(pSr);
-    goto cleanup;
-}
-
-DWORD
-VmDirLdapNfCreate(
-    LDAPNameForm*           pSource,
-    PVDIR_LDAP_NAME_FORM*   ppNf
-    )
-{
-    DWORD   dwError = 0;
-    PVDIR_LDAP_DEFINITION   pDef = NULL;
-    PVDIR_LDAP_NAME_FORM    pNf = NULL;
-
-    if (!pSource || !ppNf)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateMemory(
-            sizeof(VDIR_LDAP_DEFINITION), (PVOID*)&pDef);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pNf = &pDef->data.nf;
-    pNf->pszName = pSource->nf_names ? pSource->nf_names[0] : NULL;
-    // TODO
-    pNf->pSource = pSource;
-    pDef->type = VDIR_LDAP_DEFINITION_TYPE_NF;
-    pDef->pszName = pNf->pszName;
-    *ppNf = pNf;
-
-cleanup:
-    return dwError;
-
-error:
-    VmDirFreeLdapNf(pNf);
-    goto cleanup;
-}
-
-DWORD
 VmDirLdapAtParseStr(
     PCSTR                       pcszStr,
     PVDIR_LDAP_ATTRIBUTE_TYPE*  ppAt
@@ -461,6 +262,492 @@ error:
 }
 
 DWORD
+VmDirLdapAtParseLDAPEntry(
+    LDAP*                       pLd,
+    LDAPMessage*                pEntry,
+    PVDIR_LDAP_ATTRIBUTE_TYPE*  ppAt
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    DWORD   dwVmwAttrUsage = 0;
+    DWORD   dwSearchFlags = 0;
+    PSTR*   ppszUniqueScopes = NULL;
+    BerValue**  ppBerVals = NULL;
+    LDAPAttributeType*  pSource = NULL;
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pAt = NULL;
+
+    if (!pEntry || !ppAt)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(
+            sizeof(LDAPAttributeType), (PVOID*)&pSource);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_IS_SINGLE_VALUED);
+    if (ppBerVals && ppBerVals[0])
+    {
+        pSource->at_single_value =
+                VmDirStringCompareA(
+                        "TRUE", ppBerVals[0]->bv_val, FALSE) == 0;
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_VMW_ATTRIBUTE_USAGE);
+    if (ppBerVals && ppBerVals[0])
+    {
+        dwVmwAttrUsage = VmDirStringToIA(ppBerVals[0]->bv_val);
+
+        pSource->at_no_user_mod = dwVmwAttrUsage & 0x8 ? 1 : 0;
+
+        pSource->at_usage = 0;
+        dwVmwAttrUsage &= 0x7;
+        while (dwVmwAttrUsage)
+        {
+            pSource->at_usage++;
+            dwVmwAttrUsage >>= 1;
+        }
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_CN);
+    if (ppBerVals && ppBerVals[0])
+    {
+        dwError = VmDirAllocateMemory(
+                sizeof(char*) * 2, (PVOID*)&pSource->at_names);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirAllocateStringA(
+                ppBerVals[0]->bv_val, &pSource->at_names[0]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_ATTRIBUTE_SYNTAX);
+    if (ppBerVals && ppBerVals[0])
+    {
+        dwError = VmDirAllocateStringA(
+                ppBerVals[0]->bv_val, &pSource->at_syntax_oid);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_ATTRIBUTE_ID);
+    if (ppBerVals && ppBerVals[0])
+    {
+        dwError = VmDirAllocateStringA(
+                ppBerVals[0]->bv_val, &pSource->at_oid);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_DESCRIPTION);
+    if (ppBerVals && ppBerVals[0])
+    {
+        dwError = VmDirAllocateStringA(
+                ppBerVals[0]->bv_val, &pSource->at_desc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_SEARCH_FLAGS);
+    if (ppBerVals && ppBerVals[0])
+    {
+        dwSearchFlags = VmDirStringToIA(ppBerVals[0]->bv_val);
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_UNIQUENESS_SCOPE);
+    if (ppBerVals)
+    {
+        DWORD dwNumVals = ldap_count_values_len(ppBerVals);
+        if (dwNumVals > 0)
+        {
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*) * (dwNumVals + 1),
+                    (PVOID*)&ppszUniqueScopes);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            for (i = 0; i < dwNumVals; i++)
+            {
+                dwError = VmDirAllocateStringA(
+                        ppBerVals[i]->bv_val, &ppszUniqueScopes[i]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+        }
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    dwError = VmDirLdapAtCreate(pSource, &pAt);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pAt->dwSearchFlags = dwSearchFlags;
+    pAt->ppszUniqueScopes = ppszUniqueScopes;
+
+    *ppAt = pAt;
+
+cleanup:
+    return dwError;
+
+error:
+    if (pSource)
+    {
+        ldap_attributetype_free(pSource);
+    }
+    if (ppBerVals)
+    {
+        ldap_value_free_len(ppBerVals);
+    }
+    VmDirFreeLdapAt(pAt);
+    goto cleanup;
+}
+
+DWORD
+VmDirLdapOcParseLDAPEntry(
+    LDAP*                       pLd,
+    LDAPMessage*                pEntry,
+    PVDIR_LDAP_OBJECT_CLASS*    ppOc
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    BerValue**  ppBerVals = NULL;
+    LDAPObjectClass*    pSource = NULL;
+
+    if (!pEntry || !ppOc)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(
+            sizeof(LDAPObjectClass), (PVOID*)&pSource);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_SUBCLASSOF);
+    if (ppBerVals && ppBerVals[0])
+    {
+        dwError = VmDirAllocateMemory(
+                sizeof(char*) * 2, (PVOID*)&pSource->oc_sup_oids);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirAllocateStringA(
+                ppBerVals[0]->bv_val, &pSource->oc_sup_oids[0]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_CN);
+    if (ppBerVals && ppBerVals[0])
+    {
+        dwError = VmDirAllocateMemory(
+                sizeof(char*) * 2, (PVOID*)&pSource->oc_names);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirAllocateStringA(
+                ppBerVals[0]->bv_val, &pSource->oc_names[0]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_GOVERNSID);
+    if (ppBerVals && ppBerVals[0])
+    {
+        dwError = VmDirAllocateStringA(
+                ppBerVals[0]->bv_val, &pSource->oc_oid);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_DESCRIPTION);
+    if (ppBerVals && ppBerVals[0])
+    {
+        dwError = VmDirAllocateStringA(
+                ppBerVals[0]->bv_val, &pSource->oc_desc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_OBJECTCLASS_CATEGORY);
+    if (ppBerVals && ppBerVals[0])
+    {
+        pSource->oc_kind = VmDirStringToIA(ppBerVals[0]->bv_val);
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_SYSTEMMUSTCONTAIN);
+    if (ppBerVals)
+    {
+        DWORD dwNumVals = ldap_count_values_len(ppBerVals);
+        if (dwNumVals > 0)
+        {
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*) * (dwNumVals + 1),
+                    (PVOID*)&pSource->oc_at_oids_must);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            for (i = 0; i < dwNumVals; i++)
+            {
+                dwError = VmDirAllocateStringA(
+                        ppBerVals[i]->bv_val, &pSource->oc_at_oids_must[i]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+        }
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_SYSTEMMAYCONTAIN);
+    if (ppBerVals)
+    {
+        DWORD dwNumVals = ldap_count_values_len(ppBerVals);
+        if (dwNumVals > 0)
+        {
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*) * (dwNumVals + 1),
+                    (PVOID*)&pSource->oc_at_oids_may);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            for (i = 0; i < dwNumVals; i++)
+            {
+                dwError = VmDirAllocateStringA(
+                        ppBerVals[i]->bv_val, &pSource->oc_at_oids_may[i]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+        }
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    dwError = VmDirLdapOcCreate(pSource, ppOc);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    if (pSource)
+    {
+        ldap_objectclass_free(pSource);
+    }
+    if (ppBerVals)
+    {
+        ldap_value_free_len(ppBerVals);
+    }
+    goto cleanup;
+}
+
+DWORD
+VmDirLdapCrParseLDAPEntry(
+    LDAP*                       pLd,
+    LDAPMessage*                pEntry,
+    PVDIR_LDAP_CONTENT_RULE*    ppCr
+    )
+{
+    BOOLEAN bHasCr = FALSE;
+    DWORD   dwError = 0;
+    DWORD   i = 0, dwAux = 0;
+    BerValue**  ppBerVals = NULL;
+    LDAPContentRule*    pSource = NULL;
+
+    if (!pEntry || !ppCr)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(
+            sizeof(LDAPContentRule), (PVOID*)&pSource);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_CN);
+    if (ppBerVals && ppBerVals[0])
+    {
+        dwError = VmDirAllocateMemory(
+                sizeof(char*) * 2, (PVOID*)&pSource->cr_names);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirAllocateStringA(
+                ppBerVals[0]->bv_val, &pSource->cr_names[0]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_GOVERNSID);
+    if (ppBerVals && ppBerVals[0])
+    {
+        dwError = VmDirAllocateStringA(
+                ppBerVals[0]->bv_val, &pSource->cr_oid);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_MUSTCONTAIN);
+    if (ppBerVals)
+    {
+        DWORD dwNumVals = ldap_count_values_len(ppBerVals);
+        if (dwNumVals > 0)
+        {
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*) * (dwNumVals + 1),
+                    (PVOID*)&pSource->cr_at_oids_must);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            for (i = 0; i < dwNumVals; i++)
+            {
+                dwError = VmDirAllocateStringA(
+                        ppBerVals[i]->bv_val, &pSource->cr_at_oids_must[i]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+
+            bHasCr = TRUE;
+        }
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_MAYCONTAIN);
+    if (ppBerVals)
+    {
+        DWORD dwNumVals = ldap_count_values_len(ppBerVals);
+        if (dwNumVals > 0)
+        {
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*) * (dwNumVals + 1),
+                    (PVOID*)&pSource->cr_at_oids_may);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            for (i = 0; i < dwNumVals; i++)
+            {
+                dwError = VmDirAllocateStringA(
+                        ppBerVals[i]->bv_val, &pSource->cr_at_oids_may[i]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+
+            bHasCr = TRUE;
+        }
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_AUXILIARY_CLASS);
+    if (ppBerVals)
+    {
+        DWORD dwNumVals = ldap_count_values_len(ppBerVals);
+        if (dwNumVals > 0)
+        {
+            dwError = VmDirAllocateMemory(
+                    sizeof(char*) * (dwNumVals + 1),
+                    (PVOID*)&pSource->cr_oc_oids_aux);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            for (i = 0; i < dwNumVals; i++)
+            {
+                dwError = VmDirAllocateStringA(
+                        ppBerVals[i]->bv_val, &pSource->cr_oc_oids_aux[i]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+
+            dwAux = dwNumVals;
+            bHasCr = TRUE;
+        }
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    ppBerVals = ldap_get_values_len(pLd, pEntry, ATTR_SYSTEMAUXILIARY_CLASS);
+    if (ppBerVals)
+    {
+        DWORD dwNumVals = ldap_count_values_len(ppBerVals);
+        if (dwNumVals > 0)
+        {
+            dwError = VmDirReallocateMemoryWithInit(
+                    (PVOID)pSource->cr_oc_oids_aux,
+                    (PVOID*)&pSource->cr_oc_oids_aux,
+                    sizeof(char*) * (dwAux + dwNumVals + 1),
+                    dwAux ? sizeof(char*) * (dwAux + 1) : 0);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            for (i = 0; i < dwNumVals; i++, dwAux++)
+            {
+                dwError = VmDirAllocateStringA(
+                        ppBerVals[i]->bv_val, &pSource->cr_oc_oids_aux[dwAux]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+
+            bHasCr = TRUE;
+        }
+
+        ldap_value_free_len(ppBerVals);
+        ppBerVals = NULL;
+    }
+
+    if (!bHasCr)
+    {
+        goto error;
+    }
+
+    dwError = VmDirLdapCrCreate(pSource, ppCr);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    if (pSource)
+    {
+        ldap_contentrule_free(pSource);
+    }
+    if (ppBerVals)
+    {
+        ldap_value_free_len(ppBerVals);
+    }
+    if (ppCr)
+    {
+        *ppCr = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
 VmDirLdapAtToStr(
     PVDIR_LDAP_ATTRIBUTE_TYPE   pAt,
     PSTR*                       ppszStr
@@ -606,115 +893,4 @@ cleanup:
 error:
     VMDIR_SAFE_FREE_MEMORY(pszStr);
     goto cleanup;
-}
-
-VOID
-VmDirFreeLdapAt(
-    PVDIR_LDAP_ATTRIBUTE_TYPE   pAt
-    )
-{
-    if (pAt)
-    {
-        if (pAt->pSource)
-        {
-            ldap_attributetype_free(pAt->pSource);
-            pAt->pSource = NULL;
-        }
-        VmDirFreeStrArray(pAt->ppszUniqueScopes);
-        VMDIR_SAFE_FREE_MEMORY(pAt);
-    }
-}
-
-VOID
-VmDirFreeLdapOc(
-    PVDIR_LDAP_OBJECT_CLASS pOc
-    )
-{
-    if (pOc)
-    {
-        if (pOc->pSource)
-        {
-            ldap_objectclass_free(pOc->pSource);
-            pOc->pSource = NULL;
-        }
-        VMDIR_SAFE_FREE_MEMORY(pOc);
-    }
-}
-
-VOID
-VmDirFreeLdapCr(
-    PVDIR_LDAP_CONTENT_RULE pCr
-    )
-{
-    if (pCr)
-    {
-        if (pCr->pSource)
-        {
-            ldap_contentrule_free(pCr->pSource);
-            pCr->pSource = NULL;
-        }
-        VMDIR_SAFE_FREE_MEMORY(pCr);
-    }
-}
-
-VOID
-VmDirFreeLdapSr(
-    PVDIR_LDAP_STRUCTURE_RULE   pSr
-    )
-{
-    if (pSr)
-    {
-        if (pSr->pSource)
-        {
-            ldap_structurerule_free(pSr->pSource);
-            pSr->pSource = NULL;
-        }
-        VMDIR_SAFE_FREE_MEMORY(pSr);
-    }
-}
-
-VOID
-VmDirFreeLdapNf(
-    PVDIR_LDAP_NAME_FORM    pNf
-    )
-{
-    if (pNf)
-    {
-        if (pNf->pSource)
-        {
-            ldap_nameform_free(pNf->pSource);
-            pNf->pSource = NULL;
-        }
-        VMDIR_SAFE_FREE_MEMORY(pNf);
-    }
-}
-
-VOID
-VmDirFreeLdapDef(
-    PVDIR_LDAP_DEFINITION  pDef
-    )
-{
-    if (pDef)
-    {
-        if (pDef->type == VDIR_LDAP_DEFINITION_TYPE_AT)
-        {
-            VmDirFreeLdapAt(&pDef->data.at);
-        }
-        else if (pDef->type == VDIR_LDAP_DEFINITION_TYPE_OC)
-        {
-            VmDirFreeLdapOc(&pDef->data.oc);
-        }
-        else if (pDef->type == VDIR_LDAP_DEFINITION_TYPE_CR)
-        {
-            VmDirFreeLdapCr(&pDef->data.cr);
-        }
-        else if (pDef->type == VDIR_LDAP_DEFINITION_TYPE_SR)
-        {
-            VmDirFreeLdapSr(&pDef->data.sr);
-        }
-        else if (pDef->type == VDIR_LDAP_DEFINITION_TYPE_NF)
-        {
-            VmDirFreeLdapNf(&pDef->data.nf);
-        }
-    }
 }

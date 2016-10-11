@@ -36,6 +36,18 @@ $(DOCKER_IMAGE) : $(PACKAGES)
 	$(CP) -f $(DOCKER_SRCROOT)/configure-identity-server.service $(LIGHTWAVE_STAGE_DIR)/configure-identity-server.service
 	$(DOCKER_BUILDER) $(LIGHTWAVE_STAGE_DIR) $@
 
+container-published : container-published-prepare
+	docker build -t $(DOCKER_IMAGE_TAG) --no-cache $(LIGHTWAVE_STAGE_DIR)/docker-published && \
+	docker save $(DOCKER_IMAGE_TAG) > $(DOCKER_IMAGE) && \
+	docker rmi $(DOCKER_IMAGE_TAG)
+
+container-published-prepare: $(LIGHTWAVE_STAGE_DIR)
+	$(MKDIR) -p $(LIGHTWAVE_STAGE_DIR)/docker-published && \
+	$(CP) -f $(DOCKER_SRCROOT)/Dockerfile $(LIGHTWAVE_STAGE_DIR)/docker-published/Dockerfile && \
+	$(CP) -f $(DOCKER_SRCROOT)/configure-lightwave-server.service $(LIGHTWAVE_STAGE_DIR)/docker-published/configure-lightwave-server.service && \
+	$(CP) -f $(DOCKER_SRCROOT)/configure-identity-server.service $(LIGHTWAVE_STAGE_DIR)/docker-published/configure-identity-server.service && \
+	systemctl start docker
+
 client-container: $(DOCKER_CLIENT_IMAGE)
 
 $(DOCKER_CLIENT_IMAGE) : $(PACKAGES)
@@ -48,6 +60,9 @@ $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LW_SERVER_RPM): $(LW_SERVER_PKGDIR)/$(LW_SERVER_
 
 $(LW_SERVER_PKGDIR)/$(LW_SERVER_RPM):
 	@cd $(SRCROOT)/lw-server && make
+
+lw-build-clean:
+	$(RMDIR) $(LW_BUILD_SRCROOT)
 
 lw-server-clean:
 	@cd $(SRCROOT)/lw-server && make clean
@@ -206,6 +221,10 @@ vmsts-clean:
 	@if [ -d $(LIGHTWAVE_STAGE_DIR)/x86_64 ]; then \
 	    cd $(LIGHTWAVE_STAGE_DIR)/x86_64 && $(RM) -f $(VMSTS_RPMS); \
 	fi
+	$(RMDIR) $(VMSTS_REST_VMDIR_CLIENT_TARGET)
+	$(RMDIR) $(VMSTS_REST_VMDIR_COMMON_TARGET)
+	$(RMDIR) $(VMSTS_REST_VMDIR_SERVER_TARGET)
+	$(RMDIR) $(VMSTS_REST_IDM_TARGET)
 
 $(LIGHTWAVE_STAGE_DIR)/x86_64/$(CFG_RPM) : $(CFG_PKGDIR)/$(CFG_RPM)
 	$(CP) -f $< $@
@@ -219,7 +238,10 @@ config-clean:
 	    cd $(LIGHTWAVE_STAGE_DIR)/x86_64 && $(RM) -f $(CFG_RPM); \
 	fi
 
-clean: config-clean vmca-clean vmafd-clean vmdns-clean vmdir-clean vmevent-clean lw-server-clean lw-clients-clean vmsts-clean
+docker-clean:
+	@$(RM) -rf $(LIGHTWAVE_STAGE_DIR)/docker-published
+
+clean: config-clean vmca-clean vmafd-clean vmdns-clean vmdir-clean vmevent-clean lw-server-clean lw-clients-clean vmsts-clean docker-clean lw-build-clean
 	@if [ -d $(LIGHTWAVE_STAGE_DIR) ]; then \
 	    $(RMDIR) $(LIGHTWAVE_STAGE_DIR); \
 	fi
@@ -227,3 +249,4 @@ clean: config-clean vmca-clean vmafd-clean vmdns-clean vmdir-clean vmevent-clean
 
 $(LIGHTWAVE_STAGE_DIR):
 	@$(MKDIR) -p $@/x86_64
+

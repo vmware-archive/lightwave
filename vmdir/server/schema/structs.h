@@ -43,6 +43,7 @@ typedef struct _VDIR_SYNTAX_DESC
     PSTR    pszOid;
     VDIR_SYNTAX_READABLE_FLAG        readableFlag;
     VDIR_SYNTAX_VALIDATION_FUNCTION  pValidateFunc;
+    BOOLEAN bPublic;
 
 } VDIR_SYNTAX_DESC;
 

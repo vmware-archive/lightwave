@@ -19,15 +19,15 @@ else
     echo "Failed to find AWK"
     exit 1
 fi
-
+LOTUS_DOMAIN_DEFAULT=lightwave.local
+LOTUS_ADMIN_DEFAULT=Administrator
+LOTUS_ADMIN_PASSWORD_DEFAULT=
+LOTUS_HOSTNAME=
 # Get the configuration parameters
 if [ -f "$LOTUS_CONFIG_FILE" ]; then
-    LOTUS_DEPLOYMENT=$(grep "^deployment=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     LOTUS_DOMAIN_DEFAULT=$(grep "^domain=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     LOTUS_ADMIN_DEFAULT=$(grep "^admin=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     LOTUS_ADMIN_PASSWORD_DEFAULT=$(grep "^password=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
-    LOTUS_PARTNER_HOSTNAME=$(grep "^replication-partner-hostname=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
-    LOTUS_SITE_NAME=$(grep "^site-name=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     LOTUS_HOSTNAME=$(grep "^hostname=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
 fi
 
@@ -48,9 +48,19 @@ REG_VAL=`$LWREG_BIN list_values $LWREG_IDENTITY_KEY`
 # If "Description" is present then the service was configured and we are attempting to perform an upgrade or restart the services
 if [[ $REG_VAL != *"Description"* ]]; then
    echo "Configuring VMware Identity Services"
-   $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
-          -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller \
-          --hostname $LOTUS_HOSTNAME --username $LOTUS_ADMIN_DEFAULT  --domain $LOTUS_DOMAIN_DEFAULT --password $LOTUS_ADMIN_PASSWORD_DEFAULT
+  
+   JAVA_ARGS=" -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
+               -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller \
+               --username $LOTUS_ADMIN_DEFAULT  --domain $LOTUS_DOMAIN_DEFAULT --password $LOTUS_ADMIN_PASSWORD_DEFAULT"
+
+   HOST_NAME_OPTION=
+
+   if [ ! -z $LOTUS_HOSTNAME ]; then 
+       HOST_NAME_OPTION=" --hostname $LOTUS_HOSTNAME"       
+   fi
+   JAVA_ARGS=$JAVA_ARGS$HOST_NAME_OPTION
+  
+   $JAVA_HOME/bin/java $JAVA_ARGS 
    if [ $? -ne 0 ]; then
        echo "Failed to configure VMware Identity Services"
        exit 1

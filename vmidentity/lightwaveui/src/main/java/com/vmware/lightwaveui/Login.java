@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012-2015 VMware, Inc.  All Rights Reserved.
+ *  Copyright (c) 2012-2016 VMware, Inc.  All Rights Reserved.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License.  You may obtain a copy
@@ -61,6 +61,7 @@ public class Login extends HttpServlet {
 				return;
 			}
 			
+			tenantName = tenantName.toLowerCase();
 			String uri = request.getRequestURL().toString();
 			//String server = uri.split("://")[1].split("/")[0].split(":")[0];
 			String server = new ServerHelper().getHostname();
@@ -106,7 +107,7 @@ public class Login extends HttpServlet {
 	        	NodeList children = node.getChildNodes();
 	        	String name = children.item(0).getTextContent();
 	        	
-	        	if(name.equals(domain)){
+	        	if(name.toLowerCase().equals(domain)){
 	        		clientId = children.item(1).getTextContent();
 	        		found = true;
 	        		break;
