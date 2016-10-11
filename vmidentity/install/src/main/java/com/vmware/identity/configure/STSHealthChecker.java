@@ -96,7 +96,8 @@ public class STSHealthChecker {
                         String message = String.format("The webapp '%s' is either being still deployed or still being deployed. Waiting to complete deployment", endpoint);
                         throw new STSWebappNotDeployedException(message);
                     } else {
-                    	System.out.println(String.format("The endpoint : '%s' is deployed successfully", endpoint));
+                        System.out.println(String.format("The endpoint : '%s' is deployed successfully", endpoint));
+                        break;
                     }
                 }catch(Exception e) {
                     log.error(e.getMessage());
@@ -104,7 +105,6 @@ public class STSHealthChecker {
                     if(totalTimeElapsedMillis > MAX_TIME_TO_WAIT_MILLIS) throw e;
                     Thread.sleep(WAIT_TIME_PER_ITERATION);
                 }
-                break;
             }
         }
     }
