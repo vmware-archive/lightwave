@@ -3494,9 +3494,9 @@ VmDirGetTimeInMilliSec(
 
     struct timespec     timeValue = {0};
 
-    if (clock_gettime(CLOCK_MONOTONIC, &timeValue) == 0)
+    if (clock_gettime(CLOCK_REALTIME, &timeValue) == 0)
     {
-        iTimeInMSec = (timeValue.tv_sec * NSECS_PER_SEC + timeValue.tv_nsec ) / NSECS_PER_MSEC;
+        iTimeInMSec = timeValue.tv_sec * MSECS_PER_SEC + timeValue.tv_nsec / NSECS_PER_MSEC;
     }
 
 #endif
