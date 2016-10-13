@@ -104,6 +104,7 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
     	String password = params.getPassword();
         log.info("Configuring Lightwave UI for domain : " + domain);
         registerOidcClientForLightwaveUI(servername, domain, username, password);
+        configureLandingPage();
     }
 
     private TrustManager[] trustAllCerts = new TrustManager[]{
@@ -265,6 +266,39 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
         StreamResult result = new StreamResult(xmlFile);
         transformer.transform(source, result);
 	}
+
+        private void configureLandingPage()
+                throws SecureTokenServerInstallerException {
+
+            String webappDir = InstallerUtils.joinPath(InstallerUtils
+                    .getInstallerHelper().getTCBase(), "webapps");
+            log.info("Configure ROOT index.jsp for Lightwave ");
+
+            String rootPagePath = InstallerUtils.joinPath(webappDir, "ROOT",
+                    "index.jsp");
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(
+                    rootPagePath))) {
+
+                writer.append("<html>");
+                writer.append(System.lineSeparator());
+                writer.append("<head>");
+                writer.append(System.lineSeparator());
+                writer.append(String
+                        .format("<meta http-equiv=\"refresh\" content=\"0;URL=lightwaveui\">%s",
+                                System.lineSeparator()));
+                writer.append("</head>");
+                writer.append(System.lineSeparator());
+                writer.append("<body> </body>");
+                writer.append(System.lineSeparator());
+                writer.append("</html>");
+                writer.append(System.lineSeparator());
+
+            } catch (IOException e) {
+                log.error("Failed to configure Landing Page", e);
+                throw new SecureTokenServerInstallerException(
+                        "Failed to configure Landing Page", e);
+            }
+        }
 	
 	public void registerOidcClientForLightwaveUI(String hostname, String domain, String username, String password){
 		try {
