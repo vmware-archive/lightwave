@@ -47,31 +47,28 @@ public class Login extends HttpServlet {
 	 * @see HttpServlet#doGet(HttpServletRequest request, HttpServletResponse response)
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		
 		try{
 			String[] tenant = request.getParameterValues("tenant");
 			String tenantName = "";
 			if(tenant != null && tenant.length > 0){
 				tenantName = tenant[0];
 			}
-			
 			if(tenantName == null || tenantName == "")
 			{
 				response.sendError(HttpServletResponse.SC_BAD_REQUEST, "No tenant specifed.");
 				return;
 			}
-			
 			tenantName = tenantName.toLowerCase();
 			String uri = request.getRequestURL().toString();
-			//String server = uri.split("://")[1].split("/")[0].split(":")[0];
-			String server = new ServerHelper().getHostname();
+			String protocol = uri.split("://")[0];
+			String hostname = uri.split("://")[1].split("/")[0];
 			String client_id = getClientId(tenantName);
-			String redirect_uri = "https://" + server + "/lightwaveui/Home";
-			String openIdConnectUri = "https://" + server + "/openidconnect/oidc/authorize/" + tenantName;
+			String redirect_uri = protocol + "://" + hostname + "/lightwaveui/Home";
+			String openIdConnectUri = protocol + "://" + hostname + "/openidconnect/oidc/authorize/" + tenantName;
 			String args = "?response_type=id_token%20token&response_mode=form_post&client_id=" +
-						  client_id + 
-						  "&redirect_uri=" + 
-						  redirect_uri + 
+						  client_id +
+						  "&redirect_uri=" +
+						  redirect_uri +
 						  "&state=_state_lmn_&nonce=_nonce_lmn_&scope=openid%20rs_admin_server";
 			String authorizeUri = openIdConnectUri + args;
 			response.sendRedirect(authorizeUri);

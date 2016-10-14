@@ -92,19 +92,24 @@ function redirect(){
 		}
 	else
 		{
-			var server = getserver(location.href);
-			var uri = "https://" + server + "/lightwaveui/Login?tenant=" + tenantName;
+			var parts = getserver(location.href);
+			var protocol = parts[0]
+			var hostname = parts[1]
+			var uri = protocol + "://" + hostname + "/lightwaveui/Login?tenant=" + tenantName;
 			window.location = uri;
 		}
 }
 
 function getserver(uri){
 
-    var server_uri = uri.split('//')[1];
+	var parts = uri.split('://');
+	var protocol = parts[0];
+    var server_uri = parts[1];
     var server_with_port = server_uri.split('/')[0];
-    var server_name = server_with_port.split(':')[0];
-    return server_name;
+    //var server_name = server_with_port.split(':')[0];
+    return [protocol, server_with_port];
 }
+
 </script>
 </body>
 </html>

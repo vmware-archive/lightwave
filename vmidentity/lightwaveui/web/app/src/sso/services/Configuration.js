@@ -21,7 +21,8 @@ function Configuration() {
 
     // Server Uri
     function getServerUri(server) {
-        return 'https://' + server + ':443/';
+        var port = server.port && server.port != '' ? ':' + server.port + '/' : '';
+        return server.protocol + '://' + server.host + port;
     }
 
     // Lightwave UI
@@ -293,5 +294,6 @@ function Configuration() {
     service.getDirConfigEndpoint = getDirConfigEndpoint;
     service.addClientId = addClientId;
     service.getTenantCleanupEndpoint = getTenantCleanupEndpoint;
+    service.getServerUri = getServerUri;
     return service;
 }
