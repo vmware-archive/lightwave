@@ -241,8 +241,7 @@ if [ -x /etc/init.d/vmware-license ]; then
      /etc/init.d/vmware-license stop
 fi
 
-INIT_PID=`pidof init`
-if [[ ! -z $INIT_PID ]] && [[ $INIT_PID -eq 1 ]]; then
+if [ -f /.dockerenv ]; then
     systemctl disable vmware-idmd
     systemctl disable vmware-stsd
     systemctl daemon-reload
@@ -309,7 +308,7 @@ fi
 _get_lw_version
 
 # check if it's a promoted container
-if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ "$INIT_PID" == "1"  ]]; then
+if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ -f /.dockerenv ]]; then
 
     #check installed version
     _get_installed_version
@@ -365,7 +364,7 @@ else
     esac
 
     # configure vmidentity if we are not running in a container
-    if [[ -z $INIT_PID ]] || [[ $INIT_PID  -ne 1 ]]; then
+    if [ ! -f /.dockerenv ]; then
            $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
                     -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller \
                     --hostname $LOTUS_HOSTNAME --username $LOTUS_ADMIN_DEFAULT  --domain $LOTUS_DOMAIN_DEFAULT --password $LOTUS_ADMIN_PASSWORD_DEFAULT
