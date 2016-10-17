@@ -45,7 +45,7 @@
         <delete dir="${buildRoot}" />
    </target>
 
-   <artifact:pom id="pom-idm-interface" groupId="com.vmware.identity.idm" artifactId="vmware-identity-idm-interface" version="6.6.0" name="VMwareIdentity-STS-IDM-Interface" >
+   <artifact:pom id="pom-idm-interface" groupId="com.vmware.identity.idm" artifactId="vmware-identity-idm-interface" version="6.6.1" name="VMwareIdentity-STS-IDM-Interface" >
         <dependency groupId="commons-lang" artifactId="commons-lang" version="2.5" />
         <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />
     	<dependency groupId="org.apache.logging.log4j" artifactId="log4j-1.2-api" version="2.0.2" />
@@ -53,12 +53,12 @@
     	<dependency groupId="org.apache.logging.log4j" artifactId="log4j-slf4j-impl" version="2.2" />
     	<dependency groupId="org.slf4j" artifactId="slf4j-api" version="1.7.10" />
     	<dependency groupId="org.slf4j" artifactId="jcl-over-slf4j" version="1.7.10" />
-	<dependency groupId="com.vmware.identity" artifactId="diagnostics" version="6.6.0" />
+	<dependency groupId="com.vmware.identity" artifactId="diagnostics" version="6.6.1" />
    </artifact:pom>
 
-   <artifact:pom id="pom-idm-client" groupId="com.vmware.identity.idm" artifactId="vmware-identity-idm-client" version="6.6.0" name="VMwareIdentity-STS-IDM-Client" >
-      <dependency groupId="com.vmware.identity" artifactId="diagnostics" version="6.6.0" />
-      <dependency groupId="com.vmware.identity.idm" artifactId="vmware-identity-idm-interface" version="6.6.0" />
+   <artifact:pom id="pom-idm-client" groupId="com.vmware.identity.idm" artifactId="vmware-identity-idm-client" version="6.6.1" name="VMwareIdentity-STS-IDM-Client" >
+      <dependency groupId="com.vmware.identity" artifactId="diagnostics" version="6.6.1" />
+      <dependency groupId="com.vmware.identity.idm" artifactId="vmware-identity-idm-interface" version="6.6.1" />
       <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />
       <dependency groupId="org.apache.logging.log4j" artifactId="log4j-1.2-api" version="2.0.2" />
       <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />

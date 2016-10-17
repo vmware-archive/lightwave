@@ -10,7 +10,7 @@
   <property name="AFD_PACKAGE_BASE" value="${MAINSRCROOT}/../vmafd/build/authentication-framework/packages" />  
   
   <!-- Artifacts of REST Project -->
-  <property name="IDM_VERSION" value="6.6.0" />
+  <property name="IDM_VERSION" value="6.6.1" />
   <property name="VERSION" value="1.0-SNAPSHOT" />
   
  <property name="idmClient" value="vmware-identity-idm-client.jar"/>

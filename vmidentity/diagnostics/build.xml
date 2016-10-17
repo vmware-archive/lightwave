@@ -41,7 +41,7 @@
     </path>
 -->
 
-  <artifact:pom id="pom-diagnostics" groupId="com.vmware.identity" artifactId="diagnostics" version="6.6.0" name="VMware Identity-STS-Diagnostics">
+  <artifact:pom id="pom-diagnostics" groupId="com.vmware.identity" artifactId="diagnostics" version="6.6.1" name="VMware Identity-STS-Diagnostics">
     <dependency groupId="junit" artifactId="junit" version="4.1" scope="test"/>
     <dependency groupId="org.apache.logging.log4j" artifactId="log4j-core" version="2.2" />
     <dependency groupId="org.apache.logging.log4j" artifactId="log4j-1.2-api" version="2.0.2" />
