@@ -3,7 +3,7 @@ MAINTAINER "Jonathan Brown" <brownj@vmware.com>
 ENV container=docker
 VOLUME ["/sys/fs/cgroup"]
 LABEL vendor="VMware, Inc."
-LABEL com.vmware.lightwave.version="1.0.0"
+LABEL com.vmware.lightwave.version="1.0.1"
 
 # install systemd
 RUN tdnf update --refresh -y tdnf; \
