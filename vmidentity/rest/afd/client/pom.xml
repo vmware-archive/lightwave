@@ -7,7 +7,7 @@
   <parent>
     <groupId>com.vmware.identity.rest.afd</groupId>
     <artifactId>vmware-identity-rest-afd</artifactId>
-    <version>6.6.0</version>
+    <version>6.6.1</version>
   </parent>
 
   <artifactId>vmware-identity-rest-afd-client</artifactId>

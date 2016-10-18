@@ -243,7 +243,7 @@ VmwDeployCreateMachineSSLCert(
     PVMCA_CERTIFICATE pCert = NULL;
     PSTR      pszCert = NULL;
     PSTR      pszPrivateKey = NULL;
-    time_t tmNotBefore = time(NULL);
+    time_t tmNotBefore = time(NULL) - VMW_CERT_EXPIRY_START_LAG;
     time_t tmNotAfter = tmNotBefore + VMW_DEFAULT_CERT_VALIDITY;
 
     if (IsNullOrEmptyString(pszServername) ||

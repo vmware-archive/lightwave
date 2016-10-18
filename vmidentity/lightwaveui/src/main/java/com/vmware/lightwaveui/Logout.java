@@ -58,12 +58,11 @@ public class Logout extends HttpServlet {
 		if(values_state != null && values_state.length > 0){
 			value_state = values_state[0];
 		}
-		
 		String uri = request.getRequestURL().toString();
-		//String server = uri.split("://")[1].split("/")[0].split(":")[0];
-		String server = new ServerHelper().getHostname();
-		String postLogoutRedirectUri = "https://" + server + "/lightwaveui";
-		String openIdConnectUri = "https://" + server + "/openidconnect/logout/" + value_tenant;
+		String protocol = uri.split("://")[0];
+		String hostname = uri.split("://")[1].split("/")[0];
+		String postLogoutRedirectUri = protocol + "://" + hostname + "/lightwaveui";
+		String openIdConnectUri = protocol + "://" + hostname + "/openidconnect/logout/" + value_tenant;
 		String args = "?id_token_hint=" + value_id_token +
 					  "&post_logout_redirect_uri=" + postLogoutRedirectUri +
 					  "&state=" + value_state;

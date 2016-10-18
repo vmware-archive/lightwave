@@ -7,7 +7,7 @@
     <property name="PACKAGE_BASE" value="../../../build/${PRODUCT_NAME}/packages" />
     <property name="GROUP_BASE" value="com.vmware.identity" />
     <property name="GROUP_BASE_IDM" value="com.vmware.identity.idm" />
-    <property name="IDM_VERSION" value="6.6.0" />
+    <property name="IDM_VERSION" value="6.6.1" />
 
     <condition property="maven" value="${M2_HOME}/bin/mvn.bat" else="${M2_HOME}/bin/mvn">
         <os family="windows" />
