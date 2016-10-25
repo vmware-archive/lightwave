@@ -44,7 +44,8 @@ echo "Running $STS_VERSION version"
 
 # Check if the VMware-identity services have been configured
 REG_VAL=`$LWREG_BIN list_values $LWREG_IDENTITY_KEY`
-
+rm -f /var/run/vmware-idmd.pid
+rm -f /var/log/vmware/sso/tcserver.pid
 # If "Description" is present then the service was configured and we are attempting to perform an upgrade or restart the services
 if [[ $REG_VAL != *"Description"* ]]; then
    echo "Configuring VMware Identity Services"

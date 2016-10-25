@@ -59,6 +59,10 @@
     default = dword:00093a80
     doc     = "Maximum Ticket Renewable Lifetime"
 }
+"SslDisabledProtocols" = {
+    default = "TLSv1"
+    doc     = "List of protocols to disable"
+}
 
 [HKEY_THIS_MACHINE\Services\vmdir\Parameters\Credentials]
 @security = O:SYG:S-1-22-2-0D:(A;;RCFAFRFWFXKAKRKWKXNW;;;WD)(A;;RCFAFRFWFXKAKRKWKXNW;;;S-1-22-2-0)(A;;RCSDWDWOFAFRFWFXKAKRKWKXNRNWNX;;;SY)
