@@ -243,7 +243,7 @@ VmDirCheckForDirtyShutdown(
      * Get the DirtyShutdown value (if it doesn't exist it's not dirty).
      */
     (VOID)VmDirGetRegKeyValueDword(
-            VMDIR_CONFIG_PARAMETER_KEY_PATH,
+            VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
             VMDIR_REG_KEY_DIRTY_SHUTDOWN,
             &dwDirtyShutdown,
             FALSE);
@@ -254,7 +254,7 @@ VmDirCheckForDirtyShutdown(
      * cleanly shutdown we'll update this value.
      */
     dwError = VmDirSetRegKeyValueDword(
-                VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
                 VMDIR_REG_KEY_DIRTY_SHUTDOWN,
                 TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);

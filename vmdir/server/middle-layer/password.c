@@ -182,6 +182,13 @@ VmDirPasswordSchemeInit(
     int         iSize  = sizeof(initPasswordSchemeTbl)/sizeof(initPasswordSchemeTbl[0]);
     PVDIR_PASSWORD_HASH_SCHEME  pNewScheme = NULL;
     PVDIR_PASSWORD_HASH_SCHEME  pScheme = NULL;
+    DWORD       dwOverrideSchemeId = 0;
+
+    (VOID) VmDirGetRegKeyValueDword(
+                VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                VMDIR_REG_KEY_OVERRIDE_PASS_SCHEME,
+                &dwOverrideSchemeId,
+                FALSE);
 
     for (iCnt = iSize; iCnt > 0; iCnt--)
     {
@@ -200,13 +207,22 @@ VmDirPasswordSchemeInit(
 
         assert(pScheme->uDigestSizeInByte <= MAX_PASSWROD_DIGEST_LEN);
 
+        if (dwOverrideSchemeId == (DWORD)iCnt)
+        {
+            gpVdirPasswdSchemeGlobals = pScheme;
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Override pass scheme to (%d)", dwOverrideSchemeId);
+        }
+
         // Add pScheme to front of list
         pScheme->pNext = pNewScheme;
         pNewScheme = pScheme;
     }
 
-    // always make the first scheme VDIR_PASSWORD_SCHEME_INITIALIZER the default one
-    gpVdirPasswdSchemeGlobals = pScheme;
+    if (!gpVdirPasswdSchemeGlobals)
+    {
+        // no reg override, make the first scheme VDIR_PASSWORD_SCHEME_INITIALIZER the default one
+        gpVdirPasswdSchemeGlobals = pScheme;
+    }
 
 cleanup:
 
