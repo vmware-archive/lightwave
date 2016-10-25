@@ -21,9 +21,10 @@ RUN tdnf update --refresh -y tdnf; \
     tdnf install -y sed; \
     sed -i 's/#Storage=auto/Storage=persistent/' /etc/systemd/journald.conf; \
     tdnf install -y procps-ng; \
-    tdnf install -y commons-daemon \
-                    apache-tomcat \
-                    boost; \
+    tdnf install -y commons-daemon-1.0.15-6.ph1.x86_64 \
+                    openjre-1.8.0.92 \
+                    apache-tomcat-8.0.35 \
+                    boost-1.60.0; \
     tdnf install -y likewise-open-6.2.10; \
     tdnf install -y vmware-lightwave-server; \
     rm -f /usr/lib/systemd/system/firewall.service \
