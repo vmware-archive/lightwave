@@ -53,7 +53,7 @@
                    keyAlias="__MACHINE_CERT"
                    store="MACHINE_SSL_CERT"
                    sslImplementationName="com.vmware.identity.tomcat.VECSAwareSSLImplementation"
-                   sslEnabledProtocols="TLSv1,TLSv1.1,TLSv1.2"
+                   sslEnabledProtocols="TLSv1.1,TLSv1.2"
                    maxKeepAliveRequests="-1"
                    port="${bio-ssl-localhost.https.port}"
                    protocol="org.apache.coyote.http11.Http11Protocol"
