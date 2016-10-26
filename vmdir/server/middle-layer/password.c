@@ -27,6 +27,8 @@
 
 #include "includes.h"
 
+PVDIR_PASSWORD_HASH_SCHEME _gpDefaultScheme = NULL;
+
 // NOTE: the first scheme in the table is the default scheme
 // NOTE: order of fields MUST stay in sync with struct definition...
 #define VDIR_PASSWORD_SCHEME_INITIALIZER                \
@@ -209,7 +211,7 @@ VmDirPasswordSchemeInit(
 
         if (dwOverrideSchemeId == (DWORD)iCnt)
         {
-            gpVdirPasswdSchemeGlobals = pScheme;
+            _gpDefaultScheme = pScheme;
             VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Override pass scheme to (%d)", dwOverrideSchemeId);
         }
 
@@ -218,10 +220,11 @@ VmDirPasswordSchemeInit(
         pNewScheme = pScheme;
     }
 
-    if (!gpVdirPasswdSchemeGlobals)
+    gpVdirPasswdSchemeGlobals = pScheme; // gpVdirPasswdSchemeGlobals points to the first scheme in table
+    if (!_gpDefaultScheme)
     {
-        // no reg override, make the first scheme VDIR_PASSWORD_SCHEME_INITIALIZER the default one
-        gpVdirPasswdSchemeGlobals = pScheme;
+        // no reg key override, default to first scheme
+        _gpDefaultScheme = gpVdirPasswdSchemeGlobals;
     }
 
 cleanup:
@@ -250,6 +253,7 @@ VmDirPasswordSchemeFree(
 
     LwRtlFreeHashTable(&gVdirLockoutCache.pHashTbl);
     gVdirLockoutCache.pHashTbl = NULL;
+    _gpDefaultScheme = NULL;
 }
 
 DWORD
@@ -655,15 +659,15 @@ error:
 }
 
 /*
- * get default (the first) password scheme
+ * get default password scheme
  */
 PVDIR_PASSWORD_HASH_SCHEME
 VdirDefaultPasswordScheme(
     VOID)
 {
-    assert(gpVdirPasswdSchemeGlobals);
+    assert(_gpDefaultScheme);
 
-    return gpVdirPasswdSchemeGlobals;
+    return _gpDefaultScheme;
 }
 
 /*
