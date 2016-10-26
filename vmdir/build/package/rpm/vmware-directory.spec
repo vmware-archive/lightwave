@@ -198,14 +198,14 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
         if [ `grep -c  "1.2.840.113554.1.2.10" %{_krb5_gss_conf_dir}/mech` -lt 1 ]; then
             echo "srp  1.2.840.113554.1.2.10 libgssapi_srp.so" >> %{_krb5_gss_conf_dir}/mech
         fi
+    fi
 
-        # Comment out the NTLM mech oid; interferes with SRP authentication.
-        if [ `grep -c  "^ntlm " %{_krb5_gss_conf_dir}/mech` -ge 1 ]; then
-            mv %{_krb5_gss_conf_dir}/mech %{_krb5_gss_conf_dir}/mech-$$
-            cat %{_krb5_gss_conf_dir}/mech-$$ | sed 's|^ntlm|#ntlm|' > %{_krb5_gss_conf_dir}/mech
-            if [ -s %{_krb5_gss_conf_dir}/mech ]; then
-                rm %{_krb5_gss_conf_dir}/mech-$$
-            fi
+    # Restore commented out NTLM mech oid if found
+    if [ `grep -c  "#ntlm " %{_krb5_gss_conf_dir}/mech` -ge 1 ]; then
+        /bin/mv %{_krb5_gss_conf_dir}/mech %{_krb5_gss_conf_dir}/mech-$$
+        /bin/cat %{_krb5_gss_conf_dir}/mech-$$ | sed 's|^#ntlm|ntlm|' > %{_krb5_gss_conf_dir}/mech
+        if [ -s %{_krb5_gss_conf_dir}/mech ]; then
+            /bin/rm %{_krb5_gss_conf_dir}/mech-$$
         fi
     fi
 
@@ -286,6 +286,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
                 /bin/systemctl restart lwsmd
                 %{_likewise_open_bindir}/lwsm autostart
             fi
+
             ;;
     esac
 
@@ -308,15 +309,6 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
                     if [ -s /tmp/mech-$$ ]; then
                         /bin/mv "/tmp/mech-$$" %{_krb5_gss_conf_dir}/mech
                     fi
-                fi
-            fi
-
-            # Restore commented out NTLM mech oid if found
-            if [ `grep -c  "#ntlm " %{_krb5_gss_conf_dir}/mech` -ge 1 ]; then
-                /bin/mv %{_krb5_gss_conf_dir}/mech %{_krb5_gss_conf_dir}/mech-$$
-                /bin/cat %{_krb5_gss_conf_dir}/mech-$$ | sed 's|^#ntlm|ntlm|' > %{_krb5_gss_conf_dir}/mech
-                if [ -s %{_krb5_gss_conf_dir}/mech ]; then
-                    /bin/rm %{_krb5_gss_conf_dir}/mech-$$
                 fi
             fi
 
