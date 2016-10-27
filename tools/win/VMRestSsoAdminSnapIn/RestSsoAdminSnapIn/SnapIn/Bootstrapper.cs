@@ -1,5 +1,5 @@
 ﻿/*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -13,6 +13,7 @@
  */
 
 using System.IO;
+using System.Net;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Cache;
 using Vmware.Tools.RestSsoAdminSnapIn.Core.Persistence;
 using Vmware.Tools.RestSsoAdminSnapIn.Data.Storage;
@@ -39,6 +40,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn
             var httpData = _httpTransportStore.Load();
             var service = ScopeNodeExtensions.GetServiceGateway();
             service.HttpTransport.SetAll(httpData);
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | SecurityProtocolType.Tls12;
         }
 
         public void Shutdown()

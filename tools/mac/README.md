@@ -93,7 +93,7 @@ To build the tools indiviudally using Xamarin Studio, you need to build the pre-
 If you have opened the .sln file for a tool, you would need to close it before you perform these steps.
 Perform the following steps before you open the solution for a tool.
 
-There are 3 pre-requisite interop projects that you need to build. 
+There are 3 pre-requisite interop projects that you need to build.
 
 These are placed at:
 
@@ -157,19 +157,32 @@ In case you wish to cleanup the libs and links added by the Lightwave UI tool su
 
 ```
 
-* Lightwave REST SSO Tool : 
-	1. Tool doesn't work with the latest super-main (TSL enabled) vSphere builds.
+* Lightwave REST SSO Tool :
+
+	1. Tool doesn't work with the TLS 1.1,1.2 enabled builds. To make it to work,
+	   please enable TLSv1 by editing /opt/vmware/vmware-sts/conf/server.xml
+
+		From:
+		       <Connector SSLEnabled="true"
+		 …
+		        sslEnabledProtocols="TLSv1.1,TLSv1.2"
+
+		To:
+		        sslEnabledProtocols="TLSv1,TLSv1.1,TLSv1.2"
+
+		and restart the STS service
+
+		        systemctl restart vmware-stsd
 	2. External identity provider gives error 400 bad request.
 
-* Lightwave PSC Site Management Tool :  
+* Lightwave PSC Site Management Tool :
 	1. Tool does not support partial topology load.
 	2. Tool does not show PSC status as UNKNOWN when Heartbeat API throws error.
 	3. Multiple pop up thrown, stating "null argument" when vmafdd service is brought down.
 
-* Lightwave Directory Schema Tool :  
+* Lightwave Directory Schema Tool :
 	1. Many attribute types are showing syntax as System.String in Right Pane
 	2. UI tools allows attributes to be created for 34 different attribute syntax at present.
-	
 ```
 
 ##How To
@@ -252,7 +265,7 @@ III. PSC Site Management UI tool does not login to the MXN topology once a topol
 
 Edit the hosts file on all the nodes of the topology and the machine running UI tool as follows:
  <IP>	<FQDN> 	<HOSTNAME>
-	 
+
 example:
 190.160.1.2	contoso.vmware.com	photon-contoso
 
