@@ -40,6 +40,6 @@ RUN ln -s /usr/lib/systemd/system/configure-lightwave-server.service \
 RUN ln -s /usr/lib/systemd/system/configure-identity-server.service \
           /etc/systemd/system/multi-user.target.wants/configure-identity-server.service
 
-EXPOSE 22 53/udp 53 88/udp 88 389 636 2012 2014 2020
+EXPOSE 22 53/udp 53 88/udp 88 389 443 636 2012 2014 2015 2020
 
 ENTRYPOINT ["/usr/sbin/init"]
