@@ -38,7 +38,7 @@ module.controller('LockoutPolicyCntrl', [ '$scope', '$rootScope', 'TenantService
                     .then(function (res) {
                         if (res.status == 200) {
                             $rootScope.globals.errors = {details: 'Lockout policy updated successfully', success:true};
-                            $scope.getConfig();
+                            $scope.refresh();
                             $scope.closeThisDialog('save');
                         }
                         else {

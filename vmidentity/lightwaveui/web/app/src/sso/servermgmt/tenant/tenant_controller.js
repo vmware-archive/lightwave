@@ -85,10 +85,9 @@ module.controller('TenantCntrl', ['$scope', '$rootScope', 'TenantService', 'Oidc
                             .then(function (res1) {
                                 if (res1.status == 200) {
 
-                                    //var uri = "https://" + $rootScope.globals.currentUser.server + "/lightwaveui";
                                     var serverConfig = $rootScope.globals.currentUser.server;
                                     var serverUri = Configuration.getServerUri(serverConfig);
-                                    var uri = serverUri + "/lightwaveui";
+                                    var uri = serverUri + "lightwaveui";
                                     var client = {
                                         "redirectUris": [uri + "/Home"],
                                         "tokenEndpointAuthMethod": "none",

@@ -19,6 +19,7 @@ module.controller('PolicyCntrl', ['$scope',  '$rootScope', 'popupUtil', 'TenantS
     function($scope, $rootScope, popupUtil, TenantService, Util) {
 
         $scope.vm = this;
+        $scope.refresh = refresh;
         $scope.getConfig = getConfig;
         $scope.showEditLockoutPolicy = showEditLockoutPolicy;
         $scope.showEditTokenPolicy = showEditTokenPolicy;
@@ -30,15 +31,16 @@ module.controller('PolicyCntrl', ['$scope',  '$rootScope', 'popupUtil', 'TenantS
         $scope.showpasswordpolicy = showpasswordpolicy;
         $scope.viewcertificate = viewcertificate;
 
-        init();
+        refresh();
 
-        function init() {
+        function refresh() {
             if($rootScope.globals.currentUser.isSystemTenant) {
                 getConfig();
-                $scope.vm.policyTab = 1;
+
             } else {
-                $rootScope.globals.errors = "The tenant is either not a system tenant or you do not have access to this page";
+                getConfigPartial();
             }
+            $scope.vm.policyTab = 1;
         }
 
         function showlockoutpolicy() {
@@ -76,9 +78,28 @@ module.controller('PolicyCntrl', ['$scope',  '$rootScope', 'popupUtil', 'TenantS
                 });
         }
 
-        function populatemetadata(chains) {
+        function getConfigPartial() {
+            $rootScope.globals.errors = null;
+            var configs = ['LOCKOUT', 'PASSWORD', 'TOKEN', 'BRAND', 'AUTHENTICATION'];
+            TenantService
+                .GetConfiguration($rootScope.globals.currentUser, configs)
+                .then(function (res) {
+                    if (res.status == 200) {
+                        $scope.vm.policies = res.data;
 
-
+                        if($scope.vm.policies.authenticationPolicy
+                            && $scope.vm.policies.authenticationPolicy.clientCertificatePolicy
+                            && $scope.vm.policies.authenticationPolicy.clientCertificatePolicy.trustedCACertificates) {
+                            var certs = $scope.vm.policies.authenticationPolicy.clientCertificatePolicy.trustedCACertificates;
+                            for (var i = 0; i < certs.length; i++) {
+                                certs[i].metadata = Util.getCertificateDetails(certs[i].encoded);
+                            }
+                        }
+                    }
+                    else {
+                        $rootScope.globals.errors = res.data;
+                    }
+                });
         }
 
         function showEditLockoutPolicy() {

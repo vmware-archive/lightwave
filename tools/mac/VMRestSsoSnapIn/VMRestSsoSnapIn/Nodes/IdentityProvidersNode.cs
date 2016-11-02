@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -68,25 +68,25 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 		}
 
 		public List<ExternalIdentityProviderDto> GetIdentityProviders()
-		{ 
+		{
 			var list = new List<ExternalIdentityProviderDto> ();
 			ActionHelper.Execute (delegate() {
 				var serverDto = GetServerDto ();
 				var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (serverDto.ServerName);
 				var tenantName = GetTenant ();
-				list = SnapInContext.Instance.ServiceGateway.ExternalIdentityProvider.GetAll (serverDto, tenantName, auth.Token);
+				list = SnapInContext.Instance.ServiceGateway.MacExternalIdentityProviderService.GetAll (serverDto, tenantName, auth.Token);
 			});
 			return list;
-		}	
+		}
 
 		public ExternalIdentityProviderDto GetIdentityProvider(ExternalIdentityProviderDto provider)
-		{ 
+		{
 			var idp = new ExternalIdentityProviderDto ();
 			ActionHelper.Execute (delegate() {
 				var serverDto = GetServerDto ();
 				var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (serverDto.ServerName);
 				var tenantName = GetTenant ();
-				idp = SnapInContext.Instance.ServiceGateway.ExternalIdentityProvider.Get (serverDto, tenantName, provider, auth.Token);
+				idp = SnapInContext.Instance.ServiceGateway.MacExternalIdentityProviderService.Get (serverDto, tenantName, provider, auth.Token);
 			});
 			return idp;
 		}
@@ -96,7 +96,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 			var serverDto = GetServerDto ();
 			var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(serverDto.ServerName);
 			var tenantName = GetTenant();
-			return SnapInContext.Instance.ServiceGateway.ExternalIdentityProvider.Create(serverDto, tenantName, idp, auth.Token);
+			return SnapInContext.Instance.ServiceGateway.MacExternalIdentityProviderService.Create(serverDto, tenantName, idp, auth.Token);
 		}
 		public void DeleteExternalIdentityProvider(ExternalIdentityProviderDto dto)
 		{
@@ -104,7 +104,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Nodes
 				var serverDto = GetServerDto ();
 				var tenant = GetTenant ();
 				var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken (serverDto.ServerName);
-				var success = SnapInContext.Instance.ServiceGateway.ExternalIdentityProvider.Delete (serverDto, tenant, dto, auth.Token);
+				var success = SnapInContext.Instance.ServiceGateway.MacExternalIdentityProviderService.Delete (serverDto, tenant, dto, auth.Token);
 				if (success) {
 					UIErrorHelper.ShowAlert ("External Identity Provider " + dto.EntityID + " deleted successfully", "Information");
 				} else {
