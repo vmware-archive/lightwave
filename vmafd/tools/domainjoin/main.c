@@ -442,6 +442,7 @@ ProcessLeave(
 
     DWORD dwError = 0;
     DWORD idx = 0;
+    DWORD dwForceLeave = 0;
     PSTR pszLogin = NULL;
     PSTR pszPassword = NULL;
     PSTR pszPasswordNew = NULL;
@@ -462,6 +463,11 @@ ProcessLeave(
                 else if (!VmAfdStringCompareA(pszArg, "--password", TRUE))
                 {
                     mode = PARSE_MODE_PASSWORD;
+                }
+                else if (!VmAfdStringCompareA(pszArg, "--force", TRUE))
+                {
+                    dwForceLeave = 1;
+                    mode = PARSE_MODE_OPEN;
                 }
                 else
                 {
@@ -503,7 +509,7 @@ ProcessLeave(
         pszPassword = pszPasswordNew;
     }
 
-    dwError = VmAfdLeaveDomain( pszLogin, pszPassword );
+    dwError = VmAfdLeaveDomain( pszLogin, pszPassword, dwForceLeave );
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
@@ -568,6 +574,7 @@ ShowUsage(
         "\tleave\n"
         "\t     [ --username <account name> ]\n"
         "\t     [ --password <password> ]\n"
+        "\t     [ --force ]\n"
         "\tinfo\n"
         "\thelp\n");
 }

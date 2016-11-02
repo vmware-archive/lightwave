@@ -956,12 +956,58 @@ error:
 }
 
 DWORD
+VmAfSrvForceLeave()
+{
+    DWORD   dwError = 0;
+
+    dwError = RegUtilDeleteValue(
+              NULL,
+              HKEY_THIS_MACHINE,
+              VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+              NULL,
+              VMAFD_REG_KEY_DC_ACCOUNT);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = RegUtilDeleteValue(
+              NULL,
+              HKEY_THIS_MACHINE,
+              VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+              NULL,
+              VMAFD_REG_KEY_DC_ACCOUNT_DN);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = RegUtilDeleteValue(
+              NULL,
+              HKEY_THIS_MACHINE,
+              VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+              NULL,
+              VMAFD_REG_KEY_DC_PASSWORD);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = RegUtilDeleteValue(
+              NULL,
+              HKEY_THIS_MACHINE,
+              VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+              NULL,
+              VMAFD_REG_KEY_MACHINE_GUID);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+error:
+    goto cleanup;
+}
+
+DWORD
 VmAfSrvLeaveVmDir(
     PWSTR    pwszUserName,      /* IN              */
-    PWSTR    pwszPassword       /* IN              */
+    PWSTR    pwszPassword,      /* IN              */
+    PUINT32  pbIsForce          /* IN              */
     )
 {
     DWORD dwError = 0;
+    DWORD dwLeaveSucceeded = 0;
     PSTR pszServerName = NULL;
     PSTR pszUserName = NULL;
     PSTR pszPassword = NULL;
@@ -995,9 +1041,33 @@ VmAfSrvLeaveVmDir(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    // Machine credentials will be used if the user name and password are NULL.
-    dwError = VmDirClientLeave(pszServerName, pszUserName, pszPassword);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    // Machine credentials will be used if the user name or password are NULL.
+    if (    IsNullOrEmptyString(pszUserName) &&
+            IsNullOrEmptyString(pszPassword) )
+    {
+        VmAfdGetMachineAccountInfoA(
+                    NULL,
+                    &pszUserName,
+                    &pszPassword
+                    );
+    }
+
+    dwLeaveSucceeded = VmDirClientLeave(
+                    pszServerName,
+                    pszUserName,
+                    pszPassword
+                    );
+    if (    (dwLeaveSucceeded != 0) &&
+            (*pbIsForce != 0) ) //TODO: Add check for administrator access
+    {
+        VmAfdLog(VMAFD_DEBUG_TRACE, "VmDirClientLeave failed. Error [%d].", dwLeaveSucceeded);
+        dwError = VmAfSrvForceLeave();
+        BAIL_ON_VMAFD_ERROR(dwError);
+    } else
+    {
+        dwError = dwLeaveSucceeded;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
     BAIL_ON_VMAFD_ERROR(dwError);

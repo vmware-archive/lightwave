@@ -1216,7 +1216,7 @@ VmAfdCliLeaveVmDir(
     }
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdLeaveVmDirA(pContext->pszServerName, pszAccount, pszPassword);
+    dwError = VmAfdLeaveVmDirA(pContext->pszServerName, pszAccount, pszPassword, 0);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
