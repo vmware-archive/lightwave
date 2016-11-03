@@ -12,7 +12,7 @@
         <easymock.version>3.2</easymock.version>
         <bouncycastle.version>1.52</bouncycastle.version>
         <powermock.version>1.6.2</powermock.version>
-        <outputDirectory>${basedir}/../../build/rpmbuild/BUILDROOT/opt/vmware/jars/</outputDirectory>
+        <outputDirectory>${basedir}/../../build/vmware-sts/packages/</outputDirectory>
     </properties>
 
     <profiles>

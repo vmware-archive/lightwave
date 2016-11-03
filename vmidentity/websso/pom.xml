@@ -9,11 +9,10 @@
     <version>6.6.1</version>
   </parent>
 
-  <artifactId>lightwaveui</artifactId>
+  <artifactId>websso</artifactId>
   <version>6.6.1</version>
-  <packaging>war</packaging>
-  <name>Lightwave Admin UI</name>
-  <url>http://maven.apache.org</url>
+  <packaging>jar</packaging>
+  <name>websso</name>
 
   <build>
     <finalName>${project.artifactId}</finalName>
@@ -70,12 +69,12 @@
            <archiveClasses>true</archiveClasses>
            <archive>
             <manifestEntries>
-              <Specification-Title>${lightwaveui.title}</Specification-Title>
-              <Specification-Version>${lightwaveui.version}</Specification-Version>
-              <Specification-Vendor>${lightwaveui.vendor}</Specification-Vendor>
-              <Implementation-Title>${lightwaveui.title}</Implementation-Title>
-              <Implementation-Version>${lightwaveui.version}</Implementation-Version>
-              <Implementation-Vendor>${lightwaveui.vendor}</Implementation-Vendor>
+              <Specification-Title>${websso.title}</Specification-Title>
+              <Specification-Version>${websso.version}</Specification-Version>
+              <Specification-Vendor>${websso.vendor}</Specification-Vendor>
+              <Implementation-Title>${websso.title}</Implementation-Title>
+              <Implementation-Version>${websso.version}</Implementation-Version>
+              <Implementation-Vendor>${websso.vendor}</Implementation-Vendor>
             </manifestEntries>
           </archive>
          </configuration>
@@ -397,14 +396,14 @@
 
  <properties>
     <outputDirectory>${basedir}/../build/${PRODUCT_NAME}/packages</outputDirectory>
-    <classesOutputDirectory>${basedir}/../build/${PRODUCT_NAME}/lightwaveui/classes</classesOutputDirectory>
+    <classesOutputDirectory>${basedir}/../build/${PRODUCT_NAME}/websso/classes</classesOutputDirectory>
     <resDirectory>${basedir}/src/main/resources</resDirectory>
     <ssoCommonResources>${basedir}/../sso-common/src/main/resources/</ssoCommonResources>
     <skip.unit.tests>false</skip.unit.tests>
     <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
-    <lightwaveui.title>lightwaveui</lightwaveui.title>
-    <lightwaveui.version>0.0.1.dev</lightwaveui.version>
-    <lightwaveui.vendor>VMWare, Inc.</lightwaveui.vendor>
+    <websso.title>websso</websso.title>
+    <websso.version>0.0.1.dev</websso.version>
+    <websso.vendor>VMWare, Inc.</websso.vendor>
  </properties>
 
 </project>

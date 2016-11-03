@@ -74,7 +74,7 @@
         <version>2.6</version>
         <configuration>
           <webXml>${basedir}/src/main/webapp/WEB-INF/web.xml</webXml>
-          <outputDirectory>${warOutputDirectory}</outputDirectory>
+          <outputDirectory>${outputDirectory}</outputDirectory>
         </configuration>
         <executions>
           <execution>
@@ -291,19 +291,19 @@
     </dependency>
 
     <dependency>
-      <groupId>com.vmware.identity</groupId>
+      <groupId>com.vmware.identity.commons</groupId>
       <artifactId>samltoken</artifactId>
       <version>${vmware.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>com.vmware.identity</groupId>
+      <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-client</artifactId>
       <version>${vmware.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>com.vmware.identity</groupId>
+      <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-interface</artifactId>
       <version>${vmware.version}</version>
     </dependency>
@@ -361,7 +361,7 @@
   <properties>
     <war.warName>vmdir</war.warName>
     <outputDirectory>${basedir}/../../../build/vmware-sts/packages/</outputDirectory>
-    <warOutputDirectory>${basedir}/../../../build/rpmbuild/BUILDROOT/opt/vmware/vmware-sts/webapps/</warOutputDirectory>
+    <warOutputDirectory>${basedir}/../../../build/vmware-sts/webapps/</warOutputDirectory>
   </properties>
 
 </project>
