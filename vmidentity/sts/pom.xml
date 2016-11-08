@@ -450,7 +450,7 @@
     <skip.unit.tests>false</skip.unit.tests>
     <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
     <sts.title>STS</sts.title>
-    <sts.version>0.0.1.dev</sts.version>
+    <sts.version>${vmware.version}</sts.version>
     <sts.vendor>VMWare, Inc.</sts.vendor>
  </properties>
 

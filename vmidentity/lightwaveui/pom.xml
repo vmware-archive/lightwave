@@ -403,7 +403,7 @@
     <skip.unit.tests>false</skip.unit.tests>
     <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
     <lightwaveui.title>lightwaveui</lightwaveui.title>
-    <lightwaveui.version>0.0.1.dev</lightwaveui.version>
+    <lightwaveui.version>${vmware.version}</lightwaveui.version>
     <lightwaveui.vendor>VMWare, Inc.</lightwaveui.vendor>
  </properties>
 
