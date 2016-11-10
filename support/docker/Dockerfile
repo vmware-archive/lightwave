@@ -31,7 +31,7 @@ RUN tdnf install -y \
         procps-ng-3.3.11 \
         sed-4.2.2 \
         systemd-228 \
-        vmware-lightwave-server-6.6.1
+        vmware-lightwave-server-6.6.2
 
 # Remove unused files and systemd services, and configure services
 RUN rm -f /etc/systemd/system/*.wants/* && \
