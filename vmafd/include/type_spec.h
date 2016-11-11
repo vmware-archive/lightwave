@@ -1236,5 +1236,45 @@ typedef struct _VMW_TYPE_SPEC_
     }\
 }
 
+#define GET_DOMAIN_NAME_LIST_PARAMS \
+{ \
+    {\
+       "Domain Name", \
+        VMW_IPC_TYPE_STRING, \
+        {NULL}\
+    },\
+    { \
+       "User Name", \
+       VMW_IPC_TYPE_STRING, \
+        {NULL}\
+    },\
+    { \
+       "Password", \
+       VMW_IPC_TYPE_STRING, \
+        {NULL}\
+    },\
+}
 
-
+#define GET_DOMAIN_LIST_OUTPUT_PARAMS \
+{ \
+    {\
+        "Return Code",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+    {\
+        "Count",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+    {\
+        "DC List Array",\
+        VMW_IPC_TYPE_BLOB,\
+        {NULL}\
+    },\
+    {\
+        "DC List Blob Size",\
+        VMW_IPC_TYPE_BLOB_SIZE,\
+        {NULL}\
+    }\
+}
