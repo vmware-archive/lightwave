@@ -3244,6 +3244,48 @@ error:
 }
 
 DWORD
+VmAfdGetDCList (
+    PCSTR  pszServerName,
+    PCSTR  pszDomain,
+    PCSTR  pszUserName,
+    PCSTR  pszPassword,
+    PDWORD pdwServerCount,
+    PVMAFD_DC_INFO_W *ppVmAfdDCInfoList
+    )
+{
+   DWORD dwError = 0;
+
+   if (!pdwServerCount || !ppVmAfdDCInfoList || !pszUserName
+          || !pszDomain || !pszPassword )
+   {
+       dwError = ERROR_INVALID_PARAMETER;
+       BAIL_ON_VMAFD_ERROR(dwError);
+   }
+   if (pszServerName == NULL || (strlen(pszServerName) == 0)
+            || VmAfdIsLocalHost(pszServerName))
+   {
+       dwError = VmAfdLocalGetDCList(
+                           pszDomain,
+                           pszUserName,
+                           pszPassword,
+                           pdwServerCount,
+                           ppVmAfdDCInfoList
+                           );
+       BAIL_ON_VMAFD_ERROR(dwError);
+   }
+   else
+   {
+       dwError = ERROR_INVALID_PARAMETER;
+       BAIL_ON_VMAFD_ERROR(dwError);
+   }
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+
+DWORD
 VmAfdQueryADW(
     PCWSTR pwszServerName,         /* IN       OPTIONAL  */
     PWSTR *ppwszComputer,          /*    OUT             */
