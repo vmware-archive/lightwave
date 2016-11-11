@@ -261,7 +261,7 @@ if [[ ! -f /.dockerenv ]]; then
 fi
 
 # Setup vmafd, vmdir and SSO STS server.
-JAVA_HOME=@JAVA_HOME@
+JAVA_HOME=${JAVA_HOME:-@JAVA_HOME@}
 JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
 VMWARE_DIR=/opt/vmware
 CLASSPATH=$CLASSPATH:$VMWARE_DIR/jars/*

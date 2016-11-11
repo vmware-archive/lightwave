@@ -180,9 +180,9 @@ DOCKER_CLIENT_SRCROOT=$(SRCROOT)/support/docker
 DOCKER_CLIENT_BUILDER=$(DOCKER_SRCROOT)/build-lightwave-client-container.sh
 DOCKER_CLIENT_IMAGE=$(LIGHTWAVE_STAGE_DIR)/vmware-lightwave-client.tar
 
-JAVA_HOME=/var/opt/OpenJDK-1.8.0.102-bin
-COMMONS_DAEMON=/var/opt/commons-daemon-1.0.15
-ANT_HOME=/var/opt/apache-ant-1.9.6
-TOMCAT_HOME=/var/opt/apache-tomcat-8.0.37
-JAXWS_HOME=/opt/jaxws-ri-2.2.10
-MAVEN_HOME=/var/opt/apache-maven-3.3.9
+JAVA_HOME?=/var/opt/OpenJDK-1.8.0.102-bin
+COMMONS_DAEMON?=/var/opt/commons-daemon-1.0.15
+ANT_HOME?=/var/opt/apache-ant-1.9.6
+TOMCAT_HOME?=/var/opt/apache-tomcat-8.0.37
+JAXWS_HOME?=/opt/jaxws-ri-2.2.10
+MAVEN_HOME?=/var/opt/apache-maven-3.3.9

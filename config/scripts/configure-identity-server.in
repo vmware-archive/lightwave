@@ -1,6 +1,6 @@
 #!/bin/bash
 #This script is used to configure the Identity service in a container
-JAVA_HOME=@JAVA_HOME@
+JAVA_HOME=${JAVA_HOME:-@JAVA_HOME@}
 JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
 VMWARE_DIR=/opt/vmware
 CLASSPATH=$CLASSPATH:$VMWARE_DIR/jars/*
