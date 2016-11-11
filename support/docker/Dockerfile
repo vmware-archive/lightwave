@@ -8,21 +8,18 @@ LABEL com.vmware.lightwave.version="1.0.2"
 EXPOSE 22 53/udp 53 88/udp 88 389 443 636 2012 2014 2015 2020
 ENTRYPOINT ["/usr/sbin/init"]
 
-# Update tdnf and rpm
+# Build hook
+
 RUN tdnf update --refresh -y \
         tdnf \
         rpm-4.11.2 \
         pcre-8.39 \
         openssl-1.0.2j \
-        nss-3.25 \
-        glibc-2.22 \
         filesystem-1.0 \
         expat-2.2.0 \
         curl-7.47.1 \
-        bzip2-1.0.6
-
-# Install needed packages
-RUN tdnf install -y \
+        bzip2-1.0.6 && \
+    tdnf install -y \
         apache-tomcat-8.0.37 \
         boost-1.60.0 \
         commons-daemon-1.0.15 \
@@ -31,10 +28,8 @@ RUN tdnf install -y \
         procps-ng-3.3.11 \
         sed-4.2.2 \
         systemd-228 \
-        vmware-lightwave-server-6.6.2
-
-# Remove unused files and systemd services, and configure services
-RUN rm -f /etc/systemd/system/*.wants/* && \
+        vmware-lightwave-server-6.6.2 && \
+    rm -f /etc/systemd/system/*.wants/* && \
     rm -f /lib/systemd/system/sysinit.target.wants/systemd-tmpfiles-setup.service && \
     rm -f /lib/systemd/system/multi-user.target.wants/* && \
     rm -f /lib/systemd/system/local-fs.target.wants/* && \
