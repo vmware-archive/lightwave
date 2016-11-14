@@ -380,36 +380,20 @@ systemddir="/lib/systemd/system"
 AC_SUBST(systemddir)
 
 AC_CONFIG_FILES([Makefile
-                 config/Makefile
                  config/setenv.sh
                  config/vmware-idmd.sh
                  config/vmware-idmd.service
                  config/vmware-stsd.sh
                  config/vmware-stsd.service
                  config/configure-build.sh
-                 diagnostics/Makefile
-                 idm/Makefile
-                 tomcat-extensions/Makefile
-                 ROOT/Makefile
                  interop/Makefile
                  interop/idm/Makefile
                  interop/idm/ad/Makefile
                  interop/idm/ad/server/Makefile
                  interop/idm/common/Makefile
                  interop/idm/localos/Makefile
-                 jdepends/Makefile
-                 openidconnect/Makefile
-                 platform/Makefile
-                 samlauthority/Makefile
-                 commons/Makefile
-                 ssolib/Makefile
-                 websso/Makefile
-	         lightwaveui/Makefile
-                 wsTrustClient/Makefile
-                 sts/Makefile
-                 rest/Makefile
-                 install/Makefile
-                 sso-config/Makefile
+                 build-maven/Makefile
+                 make-target/Makefile
                 ])
 AC_OUTPUT
 

@@ -68,7 +68,7 @@ module.controller('AuthenticationPolicyCntrl', [ '$scope', '$rootScope', 'Util',
                     .then(function (res) {
                         if (res.status == 200) {
                             $rootScope.globals.errors = {details: 'Authentication policy updated successfully', success:true};
-                            $scope.getConfig();
+                            $scope.refresh();
                             $scope.closeThisDialog('save');
                         }
                         else {

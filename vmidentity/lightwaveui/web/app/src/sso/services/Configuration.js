@@ -21,7 +21,7 @@ function Configuration() {
 
     // Server Uri
     function getServerUri(server) {
-        var port = server.port && server.port != '' ? ':' + server.port + '/' : '';
+        var port = server.port && server.port != '' ? ':' + server.port + '/' : '/';
         return server.protocol + '://' + server.host + port;
     }
 

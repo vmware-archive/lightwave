@@ -74,7 +74,7 @@
         <version>2.6</version>
         <configuration>
           <webXml>${basedir}/src/main/webapp/WEB-INF/web.xml</webXml>
-          <outputDirectory>${warOutputDirectory}</outputDirectory>
+          <outputDirectory>${outputDirectory}</outputDirectory>
         </configuration>
         <executions>
           <execution>
@@ -259,19 +259,19 @@
     </dependency>
 
     <dependency>
-      <groupId>com.vmware.identity</groupId>
+      <groupId>com.vmware.identity.commons</groupId>
       <artifactId>samltoken</artifactId>
       <version>${vmware.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>com.vmware.identity</groupId>
+      <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-client</artifactId>
       <version>${vmware.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>com.vmware.identity</groupId>
+      <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-interface</artifactId>
       <version>${vmware.version}</version>
     </dependency>

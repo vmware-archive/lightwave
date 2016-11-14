@@ -2738,6 +2738,11 @@ ParseArgsLeaveVmDir(
                 {
                     parseMode = PARSE_MODE_LEAVE_VM_DIR_PASSWORD;
                 }
+                else if (!strcmp(pszArg, "--force"))
+                {
+                    pContext->dwForceVmDirLeave = 1;
+                    parseMode = PARSE_MODE_LEAVE_VM_DIR_OPEN;
+                }
                 else
                 {
                     dwError = ERROR_LOCAL_OPTION_UNKNOWN;

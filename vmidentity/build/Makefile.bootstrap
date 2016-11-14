@@ -86,7 +86,23 @@ CLEAN_OBJECTS = \
     $(SRCROOT)/openidconnect/server/src/main/resources/locale \
     $(SRCROOT)/openidconnect/server/src/main/resources/messages.properties \
     $(SRCROOT)/openidconnect/server/src/main/resources/locale \
-    $(SRCROOT)/ROOT/target
+    $(SRCROOT)/ROOT/target \
+    $(SRCROOT)/jdepends/target \
+    $(SRCROOT)/diagnostics/target \
+    $(SRCROOT)/platform/target \
+    $(SRCROOT)/idm/interface/target \
+    $(SRCROOT)/idm/client/target \
+    $(SRCROOT)/idm/server/target \
+    $(SRCROOT)/commons/samltoken/target \
+    $(SRCROOT)/ssolib/target \
+    $(SRCROOT)/samlauthority/target \
+    $(SRCROOT)/tomcat-extensions/target \
+    $(SRCROOT)/install/target \
+    $(SRCROOT)/wsTrustClient/target \
+    $(SRCROOT)/sts/target \
+    $(SRCROOT)/websso/target \
+    $(SRCROOT)/lightwaveui/target \
+    $(SRCROOT)/sso-config/target
 
 
 PKG_SPEC=vmware-sts.spec

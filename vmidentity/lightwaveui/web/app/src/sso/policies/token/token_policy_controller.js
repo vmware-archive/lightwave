@@ -38,7 +38,7 @@ module.controller('TokenPolicyCntrl', [ '$scope', '$rootScope', 'TenantService',
                     .then(function (res) {
                         if (res.status == 200) {
                             $rootScope.globals.errors = {details: 'Token policy updated successfully', success: true};
-                            $scope.getConfig();
+                            $scope.refresh();
                             $scope.closeThisDialog('save');
                         }
                         else {

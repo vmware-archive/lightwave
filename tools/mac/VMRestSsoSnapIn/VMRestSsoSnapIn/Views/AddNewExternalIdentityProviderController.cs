@@ -186,7 +186,7 @@ namespace RestSsoAdminSnapIn
 
 					ActionHelper.Execute(delegate {
 						var auth = SnapInContext.Instance.AuthTokenManager.GetAuthToken(ServerDto.ServerName);
-						SnapInContext.Instance.ServiceGateway.ExternalIdentityProvider.Create(ServerDto,TenantName,ExternalIdentityProviderDto,auth.Token);
+						SnapInContext.Instance.ServiceGateway.MacExternalIdentityProviderService.Create(ServerDto,TenantName,ExternalIdentityProviderDto,auth.Token);
 						this.Close ();
 						NSApplication.SharedApplication.StopModalWithCode (1);
 					});

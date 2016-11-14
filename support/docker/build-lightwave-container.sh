@@ -29,9 +29,11 @@ tmpfile=$(mktemp /tmp/lw.XXXXXX)
 cat >$tmpfile <<EOF
 COPY x86_64 /tmp/vmware/lightwave/x86_64
 COPY repodata /tmp/vmware/lightwave/repodata
-RUN tdnf install -y sed; sed -i -e "s/https:\/\/dl.bintray.com/file:\/\/\/tmp/" -e "s/gpgcheck=1/gpgcheck=0/" /etc/yum.repos.d/lightwave.repo
+RUN tdnf makecache && \
+    tdnf install -y sed && \
+    sed -i -e "s/https:\/\/dl.bintray.com/file:\/\/\/tmp/" -e "s/gpgcheck=1/gpgcheck=0/" /etc/yum.repos.d/lightwave.repo
 EOF
-sed -i -e "/# install systemd/r $tmpfile" -e "//d" $DOCKERFILE_PATH/Dockerfile
+sed -i -e "/# Build hook/r $tmpfile" -e "//d" $DOCKERFILE_PATH/Dockerfile
 rm $tmpfile
 
 # build vmware/lightwave-sts docker image

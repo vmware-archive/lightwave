@@ -937,6 +937,11 @@ typedef struct _VMW_TYPE_SPEC_
         "Password",\
         VMW_IPC_TYPE_WSTRING,\
         {NULL}\
+    },\
+    {\
+        "dwForceLeave",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
     }\
 }
 

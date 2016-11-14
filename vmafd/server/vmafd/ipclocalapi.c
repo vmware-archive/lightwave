@@ -4167,6 +4167,7 @@ VmAfdIpcLeaveVmDir(
     PWSTR pwszServerName = NULL;
     PWSTR pwszUserName = NULL;
     PWSTR pwszPassword = NULL;
+    PUINT32 dwForceLeave = NULL;
     VMW_TYPE_SPEC input_spec[] = LEAVE_VMDIR_INPUT_PARAMS;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
 
@@ -4197,6 +4198,7 @@ VmAfdIpcLeaveVmDir(
     pwszServerName  = input_spec[0].data.pWString;
     pwszUserName    = input_spec[1].data.pWString;
     pwszPassword    = input_spec[2].data.pWString;
+    dwForceLeave      = input_spec[3].data.pUint32;
 
     if (!VmAfdIsRootSecurityContext(pConnectionContext))
     {
@@ -4207,7 +4209,8 @@ VmAfdIpcLeaveVmDir(
 
     uResult = VmAfSrvLeaveVmDir(
                       pwszUserName,
-                      pwszPassword
+                      pwszPassword,
+                      dwForceLeave
                       );
 
     // Allocate a buffer, marshall the response

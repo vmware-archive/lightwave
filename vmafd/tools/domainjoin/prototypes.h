@@ -34,13 +34,14 @@ VmAfdJoinDomain(
  *                                 domain
  * @param[in,optional] pszPassword Password of the account specified as part of
  *                                 pszUsername
- *
+ * @param[in,optional] pbIsForce If domain leave force option is passed
  */
 
 DWORD
 VmAfdLeaveDomain(
     PCSTR pszUsername,
-    PCSTR pszPassword
+    PCSTR pszPassword,
+    DWORD dwForceLeave
     );
 
 /**

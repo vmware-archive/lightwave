@@ -4,6 +4,12 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
 
+  <parent>
+    <groupId>com.vmware.identity</groupId>
+    <artifactId>vmware-identity</artifactId>
+    <version>6.6.1</version>
+  </parent>
+
   <groupId>com.vmware.identity</groupId>
   <artifactId>ROOT</artifactId>
   <version>6.6.1</version>
@@ -12,23 +18,17 @@
 
   <properties>
     <outputDirectory>${basedir}/../build/vmware-sts/packages</outputDirectory>
-    <springframework.version>4.0.6.RELEASE</springframework.version>
     <maven.war.plugin.version>2.6</maven.war.plugin.version>
-    <javax.servlet.version>3.1.0</javax.servlet.version>
-    <maven.compiler.plugin.version>3.1</maven.compiler.plugin.version>
-    <java.version>1.7</java.version>
   </properties>
 
   <dependencies>
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-webmvc</artifactId>
-        <version>${springframework.version}</version>
       </dependency>
       <dependency>
 	<groupId>javax.servlet</groupId>
 	<artifactId>javax.servlet-api</artifactId>
-	<version>${javax.servlet.version}</version>
         <scope>provided</scope>
       </dependency>
   </dependencies>

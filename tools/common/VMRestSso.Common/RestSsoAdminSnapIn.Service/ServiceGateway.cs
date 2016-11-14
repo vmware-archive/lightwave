@@ -49,6 +49,7 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
         private AdfService _adfService;
         private SuperLoggingService _superLoggingService;
         private IServiceConfigManager _serviceConfigManager;
+        private Mac.ExternalIdentityProviderService _macExternalIdentityProviderService;
 
         public ServiceGateway(IServiceConfigManager serviceConfigManager)
         {
@@ -185,6 +186,14 @@ namespace Vmware.Tools.RestSsoAdminSnapIn.Service
             get
             {
                 return _adfService ?? (_adfService = new AdfService(_webRequestManager, _serviceConfigManager));
+            }
+        }
+
+        public Mac.ExternalIdentityProviderService MacExternalIdentityProviderService
+        {
+            get
+            {
+                return _macExternalIdentityProviderService ?? (_macExternalIdentityProviderService = new Mac.ExternalIdentityProviderService(_webRequestManager, _serviceConfigManager));
             }
         }
 

@@ -188,7 +188,8 @@ VmAfSrvJoinVmDir2(
 DWORD
 VmAfSrvLeaveVmDir(
     PWSTR    pwszUserName,      /* IN              */
-    PWSTR    pwszPassword       /* IN              */
+    PWSTR    pwszPassword,      /* IN              */
+    PUINT32  pbIsForce          /* IN              */
     );
 
 DWORD

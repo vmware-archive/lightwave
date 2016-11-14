@@ -38,7 +38,7 @@ module.controller('PasswordPolicyCntrl', [ '$scope', '$rootScope', 'TenantServic
                     .then(function (res) {
                         if (res.status == 200) {
                             $rootScope.globals.errors = {details: 'Password policy updated successfully', success:true};
-                            $scope.getConfig();
+                            $scope.refresh();
                             $scope.closeThisDialog('save');
                         }
                         else {

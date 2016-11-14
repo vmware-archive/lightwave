@@ -1170,7 +1170,8 @@ DWORD
 VmAfdLocalLeaveVmDir(
     PCWSTR pwszServerName,
     PCWSTR pwszUserName,
-    PCWSTR pwszPassword
+    PCWSTR pwszPassword,
+    DWORD  dwForceLeave
 )
 {
     DWORD dwError = 0;
@@ -1186,6 +1187,7 @@ VmAfdLocalLeaveVmDir(
     input_spec[0].data.pWString = (PWSTR) pwszServerName;
     input_spec[1].data.pWString = (PWSTR) pwszUserName;
     input_spec[2].data.pWString = (PWSTR) pwszPassword;
+    input_spec[3].data.pUint32  = (PDWORD) &dwForceLeave;
 
     dwError = VecsLocalIPCRequest(
                     apiType,

@@ -80,7 +80,7 @@ module.controller('NavigationCntrl', [ '$scope', '$rootScope', '$location',
                         header: false,
                         href: "#ssopolicies",
                         roles: ['Administrator', 'RegularUser'],
-                        tenantType: 'System'
+                        tenantType: 'All'
                     },
                     {
                         name: "Tenants",
