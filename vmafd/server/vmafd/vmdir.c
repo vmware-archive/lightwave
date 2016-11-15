@@ -1003,7 +1003,7 @@ DWORD
 VmAfSrvLeaveVmDir(
     PWSTR    pwszUserName,      /* IN              */
     PWSTR    pwszPassword,      /* IN              */
-    PUINT32  pbIsForce          /* IN              */
+    DWORD    dwLeaveFlags       /* IN              */
     )
 {
     DWORD dwError = 0;
@@ -1058,7 +1058,7 @@ VmAfSrvLeaveVmDir(
                     pszPassword
                     );
     if (    (dwLeaveSucceeded != 0) &&
-            (*pbIsForce != 0) ) //TODO: Add check for administrator access
+            (dwLeaveFlags & VMAFD_DOMAIN_LEAVE_FLAGS_FORCE) ) //TODO: Add check for administrator access
     {
         VmAfdLog(VMAFD_DEBUG_TRACE, "VmDirClientLeave failed. Error [%d].", dwLeaveSucceeded);
         dwError = VmAfSrvForceLeave();

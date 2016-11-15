@@ -417,4 +417,7 @@ typedef struct _VMAFD_CRED_CONTEXT_W
 #define VMAFD_REG_VALUE_LAST_PING     "LastPing"
 #define VMAFD_REG_VALUE_PING_TIME     "PingTime"
 
+//domainJoinFlag
+#define VMAFD_DOMAIN_LEAVE_FLAGS_FORCE 0x00000001
+
 #endif /* __VMAFDDEFINES_H__ */
