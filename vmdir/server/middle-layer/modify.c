@@ -85,6 +85,7 @@ VmDirModifyEntryCoreLogic(
     VDIR_OPERATION *    pOperation, /* IN */
     ModifyReq *         modReq, /* IN */
     ENTRYID             entryId, /* IN */
+    BOOLEAN             bNoRaftLog, /* IN */
     VDIR_ENTRY *        pEntry  /* OUT */
     )
 {
@@ -93,6 +94,7 @@ VmDirModifyEntryCoreLogic(
     BOOLEAN   bDnModified = FALSE;
     BOOLEAN   bLeafNode = FALSE;
     PVDIR_ATTRIBUTE pAttrMemberOf = NULL;
+    extern DWORD VmDirModifyRaftPreCommit(PVDIR_SCHEMA_CTX, ENTRYID, char *, PVDIR_MODIFICATION, PVDIR_OPERATION);
 
     retVal = pOperation->pBEIF->pfnBEIdToEntry( pOperation->pBECtx,
                                                 pOperation->pSchemaCtx,
@@ -162,6 +164,16 @@ VmDirModifyEntryCoreLogic(
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEEntryModify, (%u)(%s)", retVal,
                                   VDIR_SAFE_STRING(pOperation->pBEErrorMsg) );
 
+    if (bNoRaftLog == FALSE)
+    {
+        //Generate raft log only on the orignal Add/Modify/Delete, but not on the derived operation.
+        // For instance, a delete may cause a Modify on the referenced entry which shouldn't
+        //     initiate a raft log generation.
+        retVal = VmDirModifyRaftPreCommit(pEntry->pSchemaCtx, entryId, modReq->dn.bvnorm_val,  modReq->mods, pOperation);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "VmDirModifyRaftPreCommit, (%u)(%s)", retVal,
+                                  VDIR_SAFE_STRING(pOperation->pBEErrorMsg) );
+    }
+
 cleanup:
 
     VmDirFreeAttribute(pAttrMemberOf);
@@ -207,6 +219,12 @@ VmDirMLModify(
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg, "Not bind/authenticate yet" );
     }
 
+    if (VmDirRaftDisallowUpdates("Modify"))
+    {
+        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+        BAIL_ON_VMDIR_ERROR( dwError );
+    }
+
     // Mod request sanity check
     dwError = _VmDirExternalModsSanityCheck( pOperation, pOperation->request.modifyReq.mods );
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -219,8 +237,6 @@ VmDirMLModify(
         pOperation->pBEIF->pfnBESetMaxOriginatingUSN(pOperation->pBECtx,
                                                      pOperation->pBECtx->wTxnUSN);
     }
-
-    VmDirPerformUrgentReplIfRequired(pOperation, pOperation->pBECtx->wTxnUSN);
 
 cleanup:
 
@@ -292,13 +308,6 @@ VmDirInternalModifyEntry(
     retVal = VmDirNormalizeMods( pOperation->pSchemaCtx, modReq->mods, &pszLocalErrMsg );
     BAIL_ON_VMDIR_ERROR( retVal );
 
-    // make sure VDIR_BACKEND_CTX has usn change number by now
-    if ( pOperation->pBECtx->wTxnUSN <= 0 )
-    {
-        retVal = VMDIR_ERROR_NO_USN;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BECtx.wTxnUSN not set");
-    }
-
     // ************************************************************************************
     // transaction retry loop begin.  make sure all function within are retry agnostic.
     // ************************************************************************************
@@ -363,7 +372,7 @@ txnretry:
 
         pEntry = &entry;
 
-        if ((retVal = VmDirModifyEntryCoreLogic( pOperation, &pOperation->request.modifyReq, entryId, pEntry )) != 0)
+        if ((retVal = VmDirModifyEntryCoreLogic( pOperation, &pOperation->request.modifyReq, entryId, FALSE, pEntry )) != 0)
         {
             switch (retVal)
             {
@@ -494,6 +503,59 @@ VmDirInternalEntryAttributeReplace(
 cleanup:
 
     VmDirFreeOperationContent(&ldapOp);
+
+    if (pMod)
+    {
+        VmDirModificationFree(pMod);
+    }
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+//Add one more single value replace mod onto the LdapOp's mods
+DWORD
+VmDirAddModSingleAttributeReplace(
+    PVDIR_OPERATION     pLdapOp,
+    PCSTR               pszNormDN,
+    PCSTR               pszAttrName,
+    PVDIR_BERVALUE      pBervAttrValue
+    )
+{
+    DWORD               dwError = 0;
+    PVDIR_MODIFICATION  pMod = NULL;
+
+    if ( !pszNormDN || !pszAttrName || !pBervAttrValue)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pLdapOp->reqDn.lberbv.bv_val = (PSTR)pszNormDN;
+    pLdapOp->reqDn.lberbv.bv_len = VmDirStringLenA(pszNormDN);
+
+    dwError = VmDirAllocateMemory( sizeof(*pMod)*1, (PVOID)&pMod);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pMod->operation = MOD_OP_REPLACE;
+    dwError = VmDirModAddSingleValueAttribute(
+                    pMod,
+                    pLdapOp->pSchemaCtx,
+                    pszAttrName,
+                    pBervAttrValue->lberbv.bv_val,
+                    pBervAttrValue->lberbv.bv_len);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pLdapOp->request.modifyReq.dn.lberbv.bv_val = (PSTR)pszNormDN;
+    pLdapOp->request.modifyReq.dn.lberbv.bv_len = VmDirStringLenA(pszNormDN);
+    pMod->next = pLdapOp->request.modifyReq.mods;
+    pLdapOp->request.modifyReq.mods = pMod;
+    pLdapOp->request.modifyReq.numMods++;
+    pMod = NULL;
+
+cleanup:
 
     if (pMod)
     {
@@ -846,6 +908,9 @@ VmDirGenerateModsNewMetaData(
     char                 origTimeStamp[VMDIR_ORIG_TIME_STR_LEN];
     int                  currentVersion = 0;
     PSTR                 pszLocalErrMsg = NULL;
+
+    if (1)
+       return 0;
 
     // Look for Replace USN_MODIFIED mod
     for (pMod = pmods; pMod; pMod = pMod->next)
@@ -1539,9 +1604,8 @@ GenerateNewParent(
     retVal = VmDirGetParentDN(&pDnAttr->vals[0], &NewParent);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    if (pEntry->pdn.bvnorm_val == NULL ||
-        NewParent.bvnorm_val == NULL ||
-        VmDirStringCompareA(pEntry->pdn.bvnorm_val, NewParent.bvnorm_val, FALSE) != 0)
+    if (VmDirStringCompareA(pEntry->pdn.bvnorm_val, NewParent.bvnorm_val,
+FALSE) != 0)
     {
         retVal = VmDirBervalContentDup(&NewParent, &pEntry->newpdn);
         BAIL_ON_VMDIR_ERROR(retVal);

@@ -317,26 +317,8 @@ VmDirMDBAddEntry(
     }
     else
     {
-        VDIR_DB_DBT     EIDkey = {0};
-        VDIR_DB_DBT     EIDvalue  = {0};
-        unsigned char   EIDKeyBytes[sizeof( ENTRYID )] = {0};
-        unsigned char   EIDValueBytes[sizeof( ENTRYID )] = {0};
-
-        EIDkey.mv_data = &EIDKeyBytes[0];
-        MDBEntryIdToDBT(BE_MDB_ENTRYID_SEQ_KEY, &EIDkey);
-
-        dwError =  mdb_get(pTxn, gVdirMdbGlobals.mdbSeqDBi, &EIDkey, &EIDvalue);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        assert( EIDvalue.mv_size == sizeof(ENTRYID) );
-        entryId = *((ENTRYID*)EIDvalue.mv_data);
-
-        *((ENTRYID*)&EIDValueBytes[0]) = entryId + 1;
-        EIDvalue.mv_data = &EIDValueBytes[0];
-        EIDvalue.mv_size = sizeof(ENTRYID);
-
-        dwError =  mdb_put(pTxn, gVdirMdbGlobals.mdbSeqDBi, &EIDkey, &EIDvalue, BE_DB_FLAGS_ZERO);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        VmDirRaftNextNewEntryId(&entryId);
+        pEntry->eId = entryId;
     }
 
     assert( entryId > 0 );
@@ -407,9 +389,7 @@ VmDirMDBAddEntry(
     }
 
 cleanup:
-
     VMDIR_SAFE_FREE_MEMORY( encodedEntry.lberbv.bv_val );
-
     return dwError;
 
 error:
@@ -492,28 +472,53 @@ VmDirMDBDeleteEntry(
     PVDIR_ENTRY         pEntry
     )
 {
-    DWORD   dwError = 0;
+    DWORD                   dwError = 0;
+    VDIR_MODIFICATION *     mod = NULL;
+    PVDIR_DB_TXN            pTxn = NULL;
 
-    assert( pBECtx && pBECtx->pBEPrivate && pEntry );
+    assert( pBECtx && pBECtx->pBEPrivate && pMods && pEntry );
 
-    dwError = VmDirMDBModifyEntry( pBECtx, pMods, pEntry);
-    BAIL_ON_VMDIR_ERROR( dwError );
+    pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
+
+    // Delete child from the parentId index
+    dwError = MDBDeleteParentIdIndex( pBECtx, &(pEntry->pdn), pEntry->eId );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (mod = pMods; mod != NULL; mod = mod->next)
+    {
+        switch (mod->operation)
+        {
+            case MOD_OP_DELETE:
+                if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
+                                                       pEntry->eId, BE_INDEX_OP_TYPE_DELETE )) != 0)
+                {
+                    dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
+                                                VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
+                    BAIL_ON_VMDIR_ERROR( dwError );
+                }
+                break;
+            default:
+                assert( FALSE );
+        }
+    }
+
+    // Delete Entry Blob
+    if ((dwError = MDBDeleteEntryBlob(pBECtx, pEntry->eId)) != 0)
+    {
+        dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx, "MDBDeleteEntryBlob");
+        BAIL_ON_VMDIR_ERROR( dwError );
+    }
 
 cleanup:
-
-    return dwError;
+     return dwError;
 
 error:
-
-    VMDIR_LOG_ERROR( LDAP_DEBUG_BACKEND, "BEDeleteEntry DN (%s) failed, (%u)(%s)",
-                              VDIR_SAFE_STRING( pEntry->dn.bvnorm_val),
-                              dwError, VDIR_SAFE_STRING(pBECtx->pszBEErrorMsg) );
-
     VMDIR_SET_BACKEND_ERROR(dwError);   // if dwError no in BE space, set to ERROR_BACKEND_ERROR
 
-    goto cleanup;
+    VMDIR_LOG_ERROR(LDAP_DEBUG_BACKEND, "VmDirMDBDeleteEntry: failed: error=%d,DN=%s",
+                    dwError, VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val));
+     goto cleanup;
 }
-
 
 /* VmDirMDBDNToEntry: For a given entry DN, reads an entry from the entry DB.
  *

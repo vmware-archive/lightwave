@@ -262,6 +262,12 @@ typedef int  (MDB_cmp_func)(const MDB_val *a, const MDB_val *b);
  */
 typedef void (MDB_rel_func)(MDB_val *item, void *oldptr, void *newptr, void *relctx);
 
+/** @brief A callback function invoked before committing a txn
+ * The transaction will be aborted if this callback return non zero
+ * Used for Raft implementation to commit a log
+ */
+typedef int  (MDB_commit_hook_func)(void);
+
 /** @defgroup	mdb_env	Environment Flags
  *	@{
  */
@@ -1133,6 +1139,9 @@ int  mdb_set_relfunc(MDB_txn *txn, MDB_dbi dbi, MDB_rel_func *rel);
 	 *	<li>EINVAL - an invalid parameter was specified.
 	 * </ul>
 	 */
+
+void mdb_set_commit_hook_func(MDB_env *env, MDB_commit_hook_func *commit_hook_func);
+
 int  mdb_set_relctx(MDB_txn *txn, MDB_dbi dbi, void *ctx);
 
 	/** @brief Get items from a database.

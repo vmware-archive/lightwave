@@ -63,12 +63,19 @@ extern "C" {
 #define CFG_INDEX_ORGANIZATION_DN               "cn=organization,cn=config"
 #define SERVER_STATUS_DN                        "cn=serverstatus"
 #define REPLICATION_STATUS_DN                   "cn=replicationstatus"
+#define RAFT_CONTEXT_DN                         "cn=raftcontext"
+#define RAFT_LOGS_CONTAINER_DN                  "cn=logs,cn=raftcontext"
+#define RAFT_PERSIST_STATE_DN                   "cn=persiststate,cn=raftcontext"
 
 #define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Domain Controllers"
 #define VMDIR_COMPUTERS_RDN_VAL                 "Computers"
 #define VMDIR_MSAS_RDN_VAL                      "Managed Service Accounts"
 #define VMDIR_CONFIGURATION_CONTAINER_NAME      "Configuration"
 #define VMDIR_CA_CONTAINER_NAME                 "Certificate-Authorities"
+
+#define RAFT_CONTEXT_CONTAINER_NAME             "raftcontext"
+#define RAFT_PERSIST_STATE_NAME                 "persiststate"
+#define RAFT_LOGS_CONTAINER_NAME                "logs"
 
 #define FSP_CONTAINER_RDN_ATTR                  "cn"
 #define FSP_CONTAINER_RDN_ATTR_VALUE            "ForeignSecurityPrincipals"
@@ -92,6 +99,10 @@ extern "C" {
 #define CFG_ORGANIZATION_ENTRY_ID      6
 #define DEL_ENTRY_CONTAINER_ENTRY_ID   7
 #define DEFAULT_ADMINISTRATOR_ENTRY_ID 8
+#define RAFT_CONTEXT_ENTRY_ID          9
+#define RAFT_CONTEXT_PS_ENTRY_ID       10
+#define RAFT_LOGS_CONTAINER_ENTRY_ID   11
+#define RAFT_PERSIST_STATE_ENTRY_ID    12
 
 // Schema related constants.
 
@@ -270,8 +281,6 @@ extern "C" {
 #define ATTR_OBJECTCLASSES_LEN              sizeof(ATTR_OBJECTCLASSES)-1
 #define ATTR_DITCONTENTRULES                "ditcontentrules"
 #define ATTR_DITCONTENTRULES_LEN            sizeof(ATTR_DITCONTENTRULES)-1
-#define ATTR_LDAPSYNTAXES                   "ldapsyntaxes"
-#define ATTR_LDAPSYNTAXES_LEN               sizeof(ATTR_LDAPSYNTAXES)-1
 
 // ADSI support related attribute
 #define ATTR_ALLOWD_CHILD_CLASSES_EFFECTIVE     "allowedChildClassesEffective"
@@ -333,6 +342,14 @@ extern "C" {
 #define ATTR_AUXILIARY_CLASS                "auxiliaryclass"
 #define ATTR_AUXILIARY_CLASS_LEN            sizeof(ATTR_AUXILIARY_CLASS)-1
 
+//Raft attributes
+#define ATTR_RAFT_LOGINDEX                  "vmwRaftLogindex"
+#define ATTR_RAFT_TERM                      "vmwRaftTerm"
+#define ATTR_RAFT_LAST_APPLIED              "vmwRaftLastApplied"
+#define ATTR_RAFT_VOTEDFOR_TERM             "vmwRaftVotedForTerm"
+#define ATTR_RAFT_VOTEDFOR                  "vmwRaftVotedFor"
+#define ATTR_RAFT_LOG_ENTRIES               "vmwRaftLogEntries"
+
 // Object classes
 #define OC_TOP                              "top"
 #define OC_TOP_LEN                          sizeof(OC_TOP)-1
@@ -382,6 +399,9 @@ extern "C" {
 #define OC_ATTRIBUTE_SCHEMA_LEN         sizeof(OC_ATTRIBUTE_SCHEMA)-1
 #define OC_CLASS_SCHEMA                 "classschema"
 #define OC_CLASS_SCHEMA_LEN             sizeof(OC_CLASS_SCHEMA)-1
+#define OC_CLASS_RAFT_PERSIST_STATE     "vmwraftpersiststate"
+#define OC_CLASS_RAFT_LOG_ENTRY         "vmwraftlogentry"
+#define RAFT_CONTEXT_DN_MAX_LEN         64
 
 #define CM_COMPONENTMANAGER             "ComponentManager"
 #define CM_SITE                         "CMSites"

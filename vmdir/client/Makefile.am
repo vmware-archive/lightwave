@@ -32,7 +32,14 @@ libvmdirclient_la_SOURCES = \
     vmdirlocalclient.c \
     srp_verifier_cstub.c \
     vmdirsuperlog_cstub.c \
-    vmdirurgentrepl_cstub.c
+    vmdirurgentrepl_cstub.c \
+    schema/load.c \
+    schema/parse.c \
+    schema/patch.c \
+    schema/legacy/legacyload.c \
+    schema/legacy/legacypatch.c \
+    schema/legacy/legacyutil.c \
+    vmdirraft_cstub.c
 
 libvmdirclient_la_LIBADD = \
     @top_builddir@/common/libcommon.la \
@@ -74,9 +81,11 @@ CLEANFILES = \
     vmdirsuperlog_sstub.c \
     vmdirurgentrepl_h.h \
     vmdirurgentrepl_cstub.c \
-    vmdirurgentrepl_sstub.c
+    vmdirurgentrepl_sstub.c \
+    vmdirsuperlog_sstub.c \
+    vmdirraft_sstub.c
 
-BUILT_SOURCES = vmdir_h.h vmdirftp_h.h vmdirdbcp_h.h srp_verifier_h.h vmdirsuperlog_h.h vmdirurgentrepl_h.h
+BUILT_SOURCES = vmdir_h.h vmdirftp_h.h vmdirdbcp_h.h srp_verifier_h.h vmdirsuperlog_h.h vmdirurgentrepl_h.h vmdirraft_h.h
 
 vmdir_h.h vmdir_cstub.c: $(idl_srcdir)/vmdir.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdir_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<
@@ -95,3 +104,6 @@ vmdirsuperlog_h.h vmdirsuperlog_cstub.c: $(idl_srcdir)/vmdirsuperlog.idl
 
 vmdirurgentrepl_h.h vmdirurgentrepl_cstub.c: $(idl_srcdir)/vmdirurgentrepl.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirurgentrepl_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<
+
+vmdirraft_h.h vmdirraft_cstub.c: $(idl_srcdir)/vmdirraft.idl
+	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirraft_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<

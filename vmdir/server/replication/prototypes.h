@@ -40,8 +40,8 @@ InitializeReplicationThread(
 
 int
 VmDirFirstReplicationCycle(
-    PCSTR                           pszHostname,
-    VMDIR_REPLICATION_AGREEMENT *   pReplAgr);
+    PSTR pPeerHostURI
+    );
 
 int
 VmDirReplUpdateCookies(

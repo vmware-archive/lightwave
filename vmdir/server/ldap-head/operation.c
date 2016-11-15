@@ -238,3 +238,72 @@ VmDirFreeOperationContent(
         }
    }
 }
+
+//Clone a operation struct that share the same
+//transaction context with pOp
+DWORD
+VmDirCloneStackOperation(
+    PVDIR_OPERATION         pOp,
+    PVDIR_OPERATION         pOutOp,
+    VDIR_OPERATION_TYPE     opType,
+    ber_tag_t               requestCode,
+    PVDIR_SCHEMA_CTX        pSchemaCtx
+    )
+{
+    DWORD               dwError = 0;
+    PVDIR_SCHEMA_CTX    pLocalSchemaCtx = NULL;
+
+    BAIL_ON_VMDIR_INVALID_POINTER( pOp, dwError );
+    BAIL_ON_VMDIR_INVALID_POINTER( pOutOp, dwError );
+
+    pOutOp->opType  = opType;
+    pOutOp->reqCode = requestCode;
+
+    if ( pOutOp->reqCode == LDAP_REQ_ADD )
+    {
+        dwError = VmDirAllocateMemory( sizeof(*(pOutOp->request.addReq.pEntry)),
+                                       (PVOID)&(pOutOp->request.addReq.pEntry) );
+        BAIL_ON_VMDIR_ERROR( dwError );
+    }
+
+    if ( pSchemaCtx )
+    {
+        pLocalSchemaCtx = VmDirSchemaCtxClone( pSchemaCtx );
+        if ( !pLocalSchemaCtx )
+        {
+            dwError = ERROR_NO_SCHEMA;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+    else
+    {
+        dwError = VmDirSchemaCtxAcquire(&pLocalSchemaCtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateAndCopyMemory(pOp->pBECtx, sizeof(*pOutOp->pBECtx ), (PVOID) &(pOutOp->pBECtx));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if ( pOutOp->opType == VDIR_OPERATION_TYPE_INTERNAL )
+    {   // needs dummy conn->VDIR_ACCESS_INFO for ACL check
+        dwError = VmDirAllocateMemory( sizeof( *pOutOp->conn), (PVOID) &(pOutOp->conn) );
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pOutOp->pSchemaCtx = pLocalSchemaCtx;
+    pLocalSchemaCtx = NULL;
+
+cleanup:
+
+   return dwError;
+
+error:
+
+    if ( pLocalSchemaCtx )
+    {
+        VmDirSchemaCtxRelease( pLocalSchemaCtx );
+    }
+    VmDirFreeOperationContent(pOutOp);
+
+   goto cleanup;
+}

@@ -31,14 +31,16 @@ DWORD
 VmDirParseArgs(
     int     argc,
     char*   argv[],
-    PSTR*   ppszServerName,
+    PSTR*   ppszRaftLeader,
+    PSTR*   ppszServerToLeave,
     PSTR*   ppszUserName,
     PSTR*   ppszPassword
     )
 {
     DWORD   dwError = ERROR_SUCCESS;
 
-    PSTR    pszServerName = NULL;
+    PSTR    pszRaftLeader = NULL;
+    PSTR    pszServerToLeave = NULL;
     PSTR    pszUserName = NULL;
     PSTR    pszPassword = NULL;
 #ifndef _WIN32
@@ -48,7 +50,7 @@ VmDirParseArgs(
 	PSTR optarg = NULL;
 #endif
 
-    if (ppszServerName == NULL || ppszUserName == NULL || ppszPassword == NULL )
+    if (ppszRaftLeader == NULL || ppszServerToLeave == NULL || ppszUserName == NULL || ppszPassword == NULL )
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -59,8 +61,12 @@ VmDirParseArgs(
     {
         switch ( opt )
         {
-            case VMDIR_OPTION_HOST:
-                pszServerName = optarg;
+            case VMDIR_OPTION_RAFT_LEADER:
+                pszRaftLeader = optarg;
+                break;
+
+            case VMDIR_OPTION_HOST_TO_REMOVE:
+                pszServerToLeave = optarg;
                 break;
 
             case VMDIR_OPTION_USER_LOGIN:
@@ -82,9 +88,12 @@ VmDirParseArgs(
     {
         if (VmDirIsCmdLineOption(argv[i]) != FALSE)
         {
-            if (VmDirStringCompareA(VMDIR_OPTION_HOST, argv[i], TRUE) == 0)
+            if (VmDirStringCompareA(VMDIR_OPTION_RAFT_LEADER, argv[i], TRUE) == 0)
             {
-                VmDirGetCmdLineOption(argc, argv, &i, &pszServerName);
+                VmDirGetCmdLineOption(argc, argv, &i, &pszRaftLeader);
+            } else if (VmDirStringCompareA(VMDIR_OPTION_RAFT_SERVR_TO_LEAVE, argv[i], TRUE) == 0)
+            {
+                VmDirGetCmdLineOption(argc, argv, &i, &pszServerToLeave);
             }
             else if (VmDirStringCompareA(VMDIR_OPTION_USER_LOGIN, argv[i], TRUE) == 0)
             {
@@ -101,12 +110,13 @@ VmDirParseArgs(
         i++;
     }
 #endif
-    if (!pszUserName)
+    if (!pszUserName || !pszRaftLeader || !pszServerToLeave)
     {
          dwError = ERROR_INVALID_PARAMETER;
          BAIL_ON_VMDIR_ERROR(dwError);
     }
-    *ppszServerName = pszServerName;
+    *ppszRaftLeader = pszRaftLeader;
+    *ppszServerToLeave = pszServerToLeave;
     *ppszUserName = pszUserName;
     *ppszPassword = pszPassword;
 
@@ -123,7 +133,6 @@ ShowUsage(
     )
 {
     printf(
-      "Usage: vdcleavefed [ -h <server name in FQDN> ] -u <administrator user name> [-w <administrator password>]\n"
-      "        implying offline mode if <server name> is provided, and the server must have been down.\n"
-      "        implying online mode if <server name> is not provided\n" );
+      "Usage: vdcleavefed -H <Raft leader in FQDN> -h <server to leave in FQDN>  -u <administrator user name> [-w <administrator password>]\n"
+      "        server to remove must have been down\n");
 }

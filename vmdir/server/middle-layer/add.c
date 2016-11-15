@@ -32,9 +32,8 @@ _VmDirGenerateAttrMetaData(
     PSTR           pszAttributeName
     );
 
-static
 int
-_VmDirEntryAttrValueNormalize(
+VmDirEntryAttrValueNormalize(
     PVDIR_ENTRY    pEntry,
     BOOLEAN   bIndexAttributeOnly
     );
@@ -71,6 +70,12 @@ VmDirMLAdd(
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg, "Not bind/authenticate yet" );
     }
 
+    if (VmDirRaftDisallowUpdates("Add"))
+    {
+        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+        BAIL_ON_VMDIR_ERROR( dwError );
+    }
+
     dwError = VmDirInternalAddEntry(pOperation);
     BAIL_ON_VMDIR_ERROR( dwError );
 
@@ -79,8 +84,6 @@ VmDirMLAdd(
         pOperation->pBEIF->pfnBESetMaxOriginatingUSN(pOperation->pBECtx,
                                                      pOperation->pBECtx->wTxnUSN);
     }
-
-    VmDirPerformUrgentReplIfRequired(pOperation, pOperation->pBECtx->wTxnUSN);
 
 cleanup:
     VmDirSendLdapResult( pOperation );
@@ -114,6 +117,7 @@ VmDirInternalAddEntry(
     BOOLEAN         bHasTxn = FALSE;
     PSTR            pszLocalErrMsg = NULL;
     PVDIR_ENTRY     pEntry = pOperation->request.addReq.pEntry;
+    extern DWORD    VmDirAddRaftPreCommit(PVDIR_ENTRY pEntry, PVDIR_OPERATION pAddOp);
 
     assert(pOperation && pOperation->pBECtx->pBE);
 
@@ -157,7 +161,7 @@ VmDirInternalAddEntry(
     }
 
     // Normalize all attribute value
-    retVal = _VmDirEntryAttrValueNormalize(pEntry, FALSE /*all attributes*/);
+    retVal = VmDirEntryAttrValueNormalize(pEntry, FALSE /*all attributes*/);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Attr value normalization failed - (%u)", retVal );
 
     {
@@ -167,13 +171,6 @@ VmDirInternalAddEntry(
         retVal = _VmDirEntryDupAttrValueCheck(pEntry, &pszDupAttributeName);
         BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "Invalid or duplicate (%s)",
                                                              VDIR_SAFE_STRING(pszDupAttributeName));
-    }
-
-    // make sure VDIR_BACKEND_CTX has usn change number by now
-    if ( pOperation->pBECtx->wTxnUSN <= 0 )
-    {
-        retVal = VMDIR_ERROR_NO_USN;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BECtx.wTxnUSN not set");
     }
 
     // ************************************************************************************
@@ -297,6 +294,9 @@ txnretry:
             }
         }
 
+        retVal = VmDirAddRaftPreCommit(pEntry, pOperation);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "VmDirAddRaftPreCommit error (%u)", retVal);
+
         retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx );
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
@@ -320,8 +320,8 @@ cleanup:
                 iPostCommitPluginRtn != pOperation->ldapResult.errCode    // pass through
         )
         {
-            VmDirLog( LDAP_DEBUG_ANY, "InternalAddEntry: VdirExecutePostAddCommitPlugins - code(%d)",
-                    iPostCommitPluginRtn);
+            VmDirLog( LDAP_DEBUG_ANY, "InternalAddEntry: VdirExecutePostAddCommitPlugins %s - code(%d)",
+                    pEntry->dn.lberbv_val, iPostCommitPluginRtn);
         }
     }
 
@@ -487,6 +487,9 @@ _VmDirGenerateAttrMetaData(
     char             origTimeStamp[VMDIR_ORIG_TIME_STR_LEN];
     PSTR             pszLocalErrMsg = NULL;
 
+    if (1)
+       return 0;
+
     assert( pEntry );
 
     usnCreated = VmDirEntryFindAttribute( ATTR_USN_CREATED, pEntry );
@@ -544,9 +547,8 @@ error:
     goto cleanup;
 }
 
-static
 int
-_VmDirEntryAttrValueNormalize(
+VmDirEntryAttrValueNormalize(
     PVDIR_ENTRY     pEntry,
     BOOLEAN         bIndexAttributeOnly
     )

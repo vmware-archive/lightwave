@@ -53,28 +53,6 @@ _VmDirFindAllReplPartnerHost(
     );
 
 static
-DWORD
-_VmDirDeleteReplAgreementToHost(
-    LDAP*    pLD,
-    PCSTR    pszHost
-    );
-
-static
-DWORD
-_VmDirLeaveFederationOffline(
-    PCSTR pszServerName,
-    PCSTR pszUserName,
-    PCSTR pszPassword
-    );
-
-static
-DWORD
-_VmDirLeaveFederationSelf(
-    PCSTR pszUserName,
-    PCSTR pszPassword
-    );
-
-static
 BOOLEAN
 _VmDirIsRemoteServerDown(
     PCSTR    pszServerName,
@@ -127,20 +105,37 @@ _VmDirMapVersionToMaxDFL(
 
 static
 DWORD
-_VmDirDeleteSelfDCActInOtherDC(
-    PCSTR   pszSelfDC,
-    PCSTR   pszDomain,
-    PCSTR   pszUserName,
-    PCSTR   pszPassword);
-
-static
-DWORD
 _VmDirJoinPreCondition(
     PCSTR       pszHostName,
     PCSTR       pszDomainName,
     PCSTR       pszUserName,
     PCSTR       pszPassword,
     PSTR*       ppszErrMsg
+    );
+
+DWORD
+VmDirRaftRequestVote(
+    PVMDIR_SERVER_CONTEXT    hBinding,
+    /* [in] */ UINT32 term,
+    /* [in] */ char *candidateId,
+    /* [in] */ unsigned long long lastLogIndex,
+    /* [in] */ UINT32 lastLogTerm,
+    /* [out] */ UINT32 *currentTerm,
+    /* [out] */ UINT32 *voteGranted
+    );
+
+DWORD
+VmDirRaftAppendEntries(
+    PVMDIR_SERVER_CONTEXT    hBinding,
+    /* [in] */               UINT32 term,
+    /* [in, string] */       char * leader,
+    /* [in] */               unsigned long long preLogIndex,
+    /* [in] */               UINT32 prevLogTerm,
+    /* [in] */               unsigned long long leaderCommit,
+                             int entriesSize,
+    /* [in] */               unsigned char *entries,
+    /* [out] */              UINT32 * currentTerm,
+    /* [out] */              UINT32 * status
     );
 
 /*
@@ -196,15 +191,13 @@ VmDirRefreshActPassword(
                                            ATTR_PASS_EXP_IN_DAY,
                                            (PBYTE*)&pszExpInDays,
                                            &dwLen);
-
-    if (!dwError)
-    {
-        iExpInDays = atoi(pszExpInDays);
-    }
-    else if (dwError == LDAP_NO_SUCH_ATTRIBUTE ||
-             dwError == VMDIR_ERROR_NO_SUCH_ATTRIBUTE)
+    if ( dwError == VMDIR_ERROR_NO_SUCH_ATTRIBUTE)
     {
         dwError = 0;
+    }
+    else
+    {
+        iExpInDays = atoi(pszExpInDays);
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -887,13 +880,17 @@ VmDirDemote(
 {
     DWORD   dwError = 0;
 
+    dwError = VMDIR_ERROR_INVALID_PARAMETER;
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirDemote is not supported for Raft based directory service." );
+    BAIL_ON_VMDIR_ERROR( dwError );
+
     // admin privileges is required to call VmDirSetState.
     dwError = VmDirSetState( NULL, VMDIRD_STATE_READ_ONLY );
     BAIL_ON_VMDIR_ERROR( dwError );
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Vmdir in read only mode" );
 
     // let partner caughtup with me, then cleanup my node specific entries.
-    dwError = VmDirLeaveFederation( NULL, (PSTR)pszUserName, (PSTR)pszPassword );
+    dwError = VmDirLeaveFederation(NULL, NULL, (PSTR)pszUserName, (PSTR)pszPassword );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // destroy default cred cache.
@@ -955,8 +952,7 @@ VmDirJoin(
 
     printf("System Host Name: %s\n", pszLotusServerNameCanon);
 
-    dwError = VmDirGetServerName( pszPartnerHostName, &pszPartnerServerName);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    pszPartnerServerName = (PSTR)pszPartnerHostName;
     printf("Partner Server Name: %s\n", pszPartnerServerName);
 
     dwError = VmDirGetDomainName( pszPartnerServerName, &pszDomainName );
@@ -1057,14 +1053,14 @@ VmDirJoin(
         dwHighWatermark= (DWORD)VMDIR_MAX(pReplState->maxVisibleUSN - HIGHWATER_USN_REPL_BUFFER, 1);
     }
 
-    dwError = VmDirLdapSetupRemoteHostRA(
-                                    pszDomainName,
-                                    pszPartnerServerName,
-                                    pszUserName,    /* we use same username and password */
-                                    pszPassword,
-                                    pszLotusServerNameCanon,
-                                    dwHighWatermark);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    //dwError = VmDirLdapSetupRemoteHostRA(
+    //                                pszDomainName,
+    //                                pszPartnerServerName,
+    //                                pszUserName,    /* we use same username and password */
+    //                                pszPassword,
+    //                                pszLotusServerNameCanon,
+    //                                dwHighWatermark);
+    //BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
                     "VmDirJoin (%s)(%s)(%s) passed",
@@ -1074,7 +1070,6 @@ VmDirJoin(
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszDomainName);
-    VMDIR_SAFE_FREE_MEMORY(pszPartnerServerName);
     VMDIR_SAFE_FREE_MEMORY(pszLotusServerNameCanon);
     VMDIR_SAFE_FREE_MEMORY(pszCurrentServerObjectDN);
     VMDIR_SAFE_FREE_MEMORY(pszErrMsg);
@@ -1249,270 +1244,6 @@ cleanup:
 error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirClientLeave failed. Error(%u)", dwError);
 
-    goto cleanup;
-}
-
-/*
- * In order for a node to leave federation, we need to clean up -
- * 1. Make sure at least one partner is up-to-date with respect to us
- *    Wait until the first partner has caughtup with my changes.
- *    Max wait time is 2.5 mins.
- *
- * 2. All replication agreements that have this node as partner
- *
- * 3. ServerObject sub tree of this node.
- *
- * 4. Its domain controller object on all partners.
- *
- */
-static
-DWORD
-_VmDirLeaveFederationSelf(
-    PCSTR pszUserName,
-    PCSTR pszPassword
-    )
-{
-    DWORD       dwError=0;
-    PSTR        pszServerDN=NULL;
-    PSTR        pszDomain=NULL;
-    PSTR        pszDCAccount=NULL;
-    PSTR*       ppszPartnerHosts=NULL;
-    DWORD       dwNumHost=0;
-    DWORD       dwCnt=0;
-    LDAP*       pLD=NULL;
-    PCSTR       pszServiceTable[] = VMDIR_DEFAULT_SERVICE_PRINCIPAL_INITIALIZER;
-    int         iCnt = 0;
-    BOOLEAN     bUpToDate = FALSE;
-    time_t      startTime = 0;
-    DWORD       dwPartnerConnected = 0;
-    BOOLEAN     bFinishedOnePartner = FALSE;
-    BOOLEAN     bWaitForPartner = TRUE;
-    LDAP**      ppLDArray = NULL;
-
-    dwError = VmDirRegReadDCAccount( &pszDCAccount );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirGetDomainName( pszDCAccount, &pszDomain );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirGetServerDN( pszDCAccount, &pszServerDN );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // find hosts with myself as the partner
-    dwError = _VmDirFindAllReplPartnerHost(pszDCAccount, pszUserName, pszPassword,  &ppszPartnerHosts, &dwNumHost );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (dwNumHost > 0)
-    {
-        dwError = VmDirAllocateMemory(sizeof(ppLDArray)*(dwNumHost), (PVOID*)&ppLDArray);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-    {
-       goto cleanup;
-    }
-
-    // connect to reachable partners
-    for (dwCnt=0; dwCnt < dwNumHost; dwCnt++)
-    {
-        pLD = NULL;
-        dwError = _VmDirCreateServerPLD(ppszPartnerHosts[dwCnt], pszDomain, pszUserName, pszPassword, &pLD );
-        if (dwError == 0)
-        {
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationSelf, partner (%s) connected", ppszPartnerHosts[dwCnt] );
-            ppLDArray[dwCnt] = pLD;
-            dwPartnerConnected++;
-        }
-        else
-        {
-            VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationSelf, partner (%s) not available (%u)", ppszPartnerHosts[dwCnt], dwError );
-            dwError=0;
-        }
-    }
-
-    // best effort to wait for one partner to pick up all my changes
-    for (dwCnt=0; !bUpToDate && dwCnt < dwNumHost; dwCnt++)
-    {
-        if (ppLDArray[dwCnt] == NULL)
-        {
-            continue;
-        }
-
-        startTime = time(NULL);
-        do
-        {
-            dwError = VmDirIsPartnerReplicationUpToDate(
-                                        ppLDArray[dwCnt],
-                                        ppszPartnerHosts[dwCnt],
-                                        pszDomain,
-                                        pszDCAccount,
-                                        pszUserName,
-                                        pszPassword,
-                                        &bUpToDate);
-            if (dwError || !bUpToDate)
-            {
-               VmDirSleep(1000);
-            }
-
-        } while (bUpToDate == FALSE &&
-                 bWaitForPartner    &&
-                 time(NULL) - startTime < 2.5 * SECONDS_IN_MINUTE); // default idle pLD idle timeout is 3 mins, so set max wait to 2.5 mins.
-
-        bWaitForPartner = FALSE;
-
-        if (!bUpToDate)
-        {
-            VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationSelf, partner (%s) is not up to date", ppszPartnerHosts[dwCnt]);
-        }
-        else
-        {
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationSelf, partner (%s) is up to date", ppszPartnerHosts[dwCnt]);
-        }
-    }
-
-    // clean up node specific entires in one partner
-    for (dwCnt=0; dwCnt < dwNumHost; dwCnt++)
-    {
-        if (ppLDArray[dwCnt] == NULL)
-        {
-            continue;
-        }
-
-        for (iCnt = 0; iCnt < sizeof(pszServiceTable)/sizeof(pszServiceTable[0]); iCnt++)
-        {
-            dwError = VmDirLdapDeleteServiceAccount(
-                                        ppLDArray[dwCnt],
-                                        pszDomain,
-                                        pszServiceTable[iCnt],
-                                        pszDCAccount,
-                                        TRUE);
-            // TODO, we should have an RPC api to get server state.
-            // first partner write operaton, hanlde partner in read only mode scenario.
-            if (dwError == LDAP_UNWILLING_TO_PERFORM)
-            {
-                VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationSelf, partner (%s) is in read only mode", ppszPartnerHosts[dwCnt]);
-                break;
-            }
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        if (dwError == LDAP_UNWILLING_TO_PERFORM)
-        {
-            dwError = 0;
-            continue; // try next partner
-        }
-
-        dwError = _VmDirDeleteReplAgreementToHost( ppLDArray[dwCnt], pszDCAccount );
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirDeleteDITSubtree( ppLDArray[dwCnt], pszServerDN );
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirLdapDeleteDCAccount( ppLDArray[dwCnt], pszDomain, pszDCAccount, TRUE);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        bFinishedOnePartner = TRUE;
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationSelf, clean up done on partner (%s)", ppszPartnerHosts[dwCnt]);
-        break;
-    }
-
-    if (bFinishedOnePartner)
-    {
-        // ignore error, best effort to delete pszDCAccount on all other DC.
-        // this helps VC repointing race condition where deleted act has not yet been replicated and
-        // causes constraint violcation.
-        _VmDirDeleteSelfDCActInOtherDC(pszDCAccount, pszDomain, pszUserName, pszPassword);
-    }
-
-    if (dwPartnerConnected == 0)
-    {
-        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationSelf, no partner available" );
-    }
-    else if (!bFinishedOnePartner)
-    {
-        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationSelf, clean up effort is NOT successful" );
-    }
-    else if (!bUpToDate)
-    {
-        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationSelf, partner may not have my up to date changes" );
-    }
-
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationSelf passed");
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszServerDN);
-    VMDIR_SAFE_FREE_MEMORY(pszDomain);
-    VMDIR_SAFE_FREE_MEMORY(pszDCAccount);
-    for (dwCnt=0; dwCnt < dwNumHost; dwCnt++)
-    {
-        VMDIR_SAFE_FREE_MEMORY( ppszPartnerHosts[dwCnt] );
-        if (ppLDArray[dwCnt])
-        {
-            ldap_unbind_ext_s(ppLDArray[dwCnt], NULL, NULL);
-        }
-    }
-    VMDIR_SAFE_FREE_MEMORY( ppszPartnerHosts );
-    VMDIR_SAFE_FREE_MEMORY( ppLDArray );
-
-    return dwError;
-
-error:
-    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationSelf failed (%u)", dwError );
-
-    goto cleanup;
-}
-
-/*
- * Best effort to delete selfDC account in all other DCs.
- */
-static
-DWORD
-_VmDirDeleteSelfDCActInOtherDC(
-    PCSTR   pszSelfDC,
-    PCSTR   pszDomain,
-    PCSTR   pszUserName,
-    PCSTR   pszPassword)
-{
-    DWORD   dwError = 0;
-    LDAP*   pLD = NULL;
-    DWORD   dwCnt = 0;
-    PVMDIR_STRING_LIST  pDCStrList = NULL;
-
-    dwError = _VmDirCreateServerPLD(pszSelfDC, pszDomain, pszUserName, pszPassword, &pLD );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirGetAllDCInternal(pLD, pszDomain, &pDCStrList);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (dwCnt=0; dwCnt<pDCStrList->dwCount; dwCnt++)
-    {
-        if (pLD)
-        {
-            ldap_unbind_ext_s(pLD, NULL, NULL);
-            pLD = NULL;
-        }
-
-        if (VmDirStringCompareA(pszSelfDC, pDCStrList->pStringList[dwCnt],FALSE) == 0)
-        {   // no need to delete self
-            continue;
-        }
-
-        // ignore error
-        dwError = _VmDirCreateServerPLD(pDCStrList->pStringList[dwCnt], pszDomain, pszUserName, pszPassword, &pLD );
-        if (dwError == 0)
-        {   // ignore error
-            VmDirLdapDeleteDCAccount( pLD, pszDomain, pszSelfDC, TRUE);
-        }
-    }
-
-cleanup:
-    if (pLD)
-    {
-        ldap_unbind_ext_s(pLD, NULL, NULL);
-    }
-    VmDirStringListFree(pDCStrList);
-    return dwError;
-
-error:
     goto cleanup;
 }
 
@@ -3482,7 +3213,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirGetState failed. Error[%d]\n", dwError );
+    //VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirGetState failed. Error[%d]\n", dwError );
     goto cleanup;
 }
 
@@ -4248,6 +3979,7 @@ _VmDirLdapCheckVmDirStatus(
 
         if (dwError == 0)
         {
+            VmDirSleep(2000);
             break;
         }
 
@@ -4408,58 +4140,6 @@ error:
         VMDIR_SAFE_FREE_MEMORY(ppszLocal[dwCnt]);
     }
     VMDIR_SAFE_FREE_MEMORY(ppszLocal);
-
-    goto cleanup;
-}
-
-/*
- *  Delete all replication agreements that has pszHost as partner
- */
-static
-DWORD
-_VmDirDeleteReplAgreementToHost(
-   LDAP*    pLD,
-   PCSTR    pszHost
-   )
-{
-    DWORD       dwError=0;
-    DWORD       dwSize=0;
-    DWORD       dwCnt=0;
-    PSTR*       ppszRADNs=NULL;
-
-    dwError = VmDirGetAllRAToHost( pLD, pszHost, &ppszRADNs, &dwSize );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (dwCnt=0; dwCnt < dwSize; dwCnt++)
-    {
-        dwError = ldap_delete_ext_s( pLD, ppszRADNs[dwCnt], NULL, NULL );
-        switch (dwError)
-        {
-            case LDAP_NO_SUCH_OBJECT:
-                dwError = LDAP_SUCCESS;
-                break;
-
-            case LDAP_SUCCESS:
-                VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "(%s) deleted successfully.", ppszRADNs[dwCnt]);
-                break;
-
-            default:
-                VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "(%s) deletion failed, error (%d).", ppszRADNs[dwCnt], dwError);
-                break;
-        }
-    }
-
-cleanup:
-    for (dwCnt=0; dwCnt < dwSize; dwCnt++)
-    {
-        VMDIR_SAFE_FREE_MEMORY( ppszRADNs[dwCnt] );
-    }
-    VMDIR_SAFE_FREE_MEMORY(ppszRADNs);
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirDeleteReplAgreementToHost failed (%u)", dwError);
 
     goto cleanup;
 }
@@ -4639,44 +4319,18 @@ error:
     goto cleanup;
 }
 
-DWORD
-VmDirLeaveFederation(
-    PSTR pszServerName,
-    PSTR pszUserName,
-    PSTR pszPassword
-    )
-{
-    DWORD dwError = 0;
-
-    if (pszServerName)
-    {
-        dwError = _VmDirLeaveFederationOffline(pszServerName, pszUserName, pszPassword);
-    } else
-    {
-        dwError = _VmDirLeaveFederationSelf(pszUserName, pszPassword);
-    }
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
 /*
- * Make server (pszServerName) leave Federation Offline.
+ * Make server (pszServerToLeave) leave Federation
  * The server must be down to proceed.
- * The cleanup is performed on the local server
  * This function is tring to do cleanup in an idempotence way,
  * i.e, if the entry to be removed doesn't exist,
  * then it proceeds to clean up remaining entries associcated
- * with the pszServerName.
+ * with the pszServerToLeave.
  */
-static
 DWORD
-_VmDirLeaveFederationOffline(
-    PCSTR pszServerName,
+VmDirLeaveFederation(
+    PCSTR pszRaftLeader,
+    PCSTR pszServerToLeave,
     PCSTR pszUserName,
     PCSTR pszPassword
     )
@@ -4688,91 +4342,67 @@ _VmDirLeaveFederationOffline(
     DWORD i = 0;
     PSTR  pszLocalErrMsg = NULL;
     PSTR  pszDCAccount = NULL;
-    PSTR  pszServerDN = NULL;
 
-    dwError = VmDirRegReadDCAccount( &pszDCAccount );
+    dwError = VmDirGetDomainName( pszRaftLeader, &pszDomain );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirGetDomainName( pszDCAccount, &pszDomain );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (!_VmDirIsRemoteServerDown(pszServerName, pszUserName, pszPassword, pszDomain))
+    if (!_VmDirIsRemoteServerDown(pszServerToLeave, pszUserName, pszPassword, pszDomain))
     {
          dwError = LDAP_OPERATIONS_ERROR;
          BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
-             "You must shutdown domain controller/client %s before it can be removed from federation",
-             pszServerName);
+             "You must shutdown domain server %s before it can be removed from federation",
+             pszServerToLeave);
     }
 
-    // Connect to local server
-    dwError = _VmDirCreateServerPLD( pszDCAccount, pszDomain, pszUserName, pszPassword, &pLD);
+    // Connect to Raft leader
+    dwError = _VmDirCreateServerPLD( pszRaftLeader, pszDomain, pszUserName, pszPassword, &pLD);
     BAIL_ON_VMDIR_ERROR(dwError);
+
     if (pLD == NULL)
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationOffline: fail to bind to local server");
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederation: fail to bind to Raft leader server");
         dwError = LDAP_OPERATIONS_ERROR;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = _VmDirRemoveComputer(pLD, pszDomain, pszServerName);
+    dwError = _VmDirRemoveComputer(pLD, pszDomain, pszServerToLeave);
     if (dwError == LDAP_SUCCESS)
     {
-        //The server is a management node, done if if the computer is removed successfully.
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationOffline: passed for domain client %s", pszServerName);
+        //The serverToLeave is a management node, done if if the computer is removed successfully.
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederation: passed for domain client %s", pszServerToLeave);
         goto cleanup;
     } else if (dwError != LDAP_NO_SUCH_OBJECT)
     {
         //Failed to remove the computer
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
-             "fail to remove domain clinet %s", pszServerName);
+             "fail to remove domain clinet %s", pszServerToLeave);
     }
+
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
-         "_VmDirLeaveFederationOffline: proceed to cleanup entries associated with domain controller %s", pszServerName);
-
-    //The server is not a management node, then assume it is a domain controller
-    dwError = VmDirLdapCreateReplHostNameDN(&pszServerDN, pLD, pszServerName);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "fail to get server DN for domain controller %s", pszServerName);
-    if (pszServerDN)
-    {
-        //An example of the subtree to be deleted (cn=sea2-office-dhcp-97-183.eng.vmware.com,cn=Servers,...):
-        //labeledURI=ldap://sea2-office-dhcp-97-124.eng.vmware.com,cn=Replication Agreements,cn=sea2-office-dhcp-97-183.eng.vmware.com,cn=Servers,...
-        //cn=Replication Agreements,cn=sea2-office-dhcp-97-183.eng.vmware.com,cn=Servers,...
-        //cn=sea2-office-dhcp-97-183.eng.vmware.com,cn=Servers,...
-        dwError = VmDirDeleteDITSubtree( pLD, pszServerDN );
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
-             "fail to delete subtree under  %s", pszServerDN);
-    }
-
-    //Proceed cleaning up entries related to pszServerName even if VmDirLdapCreateReplHostNameDN doesn't found the server.
-
-    //Remove RAs that lead to the server (pszServerName).
-    dwError = _VmDirDeleteReplAgreementToHost( pLD, pszServerName);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "fail to delete RA(s) to domain controller %s", pszServerName);
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationOffline: deleted RA(s) to domain controller %s", pszServerName);
+         "_VmDirLeaveFederation: proceed to cleanup entries associated with domain controller %s", pszServerToLeave);
 
     //Remove entries associated with the server under Domain Controllers
-    dwError = VmDirLdapDeleteDCAccount( pLD, pszDomain, pszServerName, TRUE);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "fail to VmDirLdapDeleteDCAccount for domain controller %s", pszServerName)
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationOffline: complete deleting DC account for domain controller %s", pszServerName);
+    dwError = VmDirLdapDeleteDCAccount( pLD, pszDomain, pszServerToLeave, TRUE);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "fail to VmDirLdapDeleteDCAccount for domain controller %s", pszServerToLeave);
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederation: complete deleting DC account for domain controller %s", pszServerToLeave);
 
     //Remove Service Accounts
     for (i = 0; i < sizeof(pszServiceTable)/sizeof(pszServiceTable[0]); i++)
     {
-        dwError = VmDirLdapDeleteServiceAccount( pLD, pszDomain, pszServiceTable[i], pszServerName, TRUE);
+        dwError = VmDirLdapDeleteServiceAccount( pLD, pszDomain, pszServiceTable[i], pszServerToLeave, TRUE);
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
                          "fail to delete Service Account %s associated with domain controller %s",
-                         pszServiceTable[i], pszServerName);
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationOffline: complete deleting Service Account %s associated with domain controller %s",
-                         pszServiceTable[i], pszServerName);
+                         pszServiceTable[i], pszServerToLeave);
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirLeaveFederation: complete deleting Service Account %s associated with domain controller %s",
+                         pszServiceTable[i], pszServerToLeave);
     }
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationOffline passed");
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederation: server %s is successfully removed from Raft cluster", pszServerToLeave);
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszDomain);
     VMDIR_SAFE_FREE_MEMORY(pszDCAccount);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-    VMDIR_SAFE_FREE_MEMORY(pszServerDN);
     if ( pLD )
     {
         ldap_unbind_ext_s(pLD, NULL, NULL);
@@ -4780,7 +4410,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationOffline failed, %s (%u)", pszLocalErrMsg, dwError );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirLeaveFederation failed, %s (%u)", pszLocalErrMsg, dwError );
     goto cleanup;
 }
 
@@ -5940,5 +5570,84 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s Error[%d]\n", __FUNCTION__, dwError );
+    goto cleanup;
+}
+
+DWORD
+VmDirRaftAppendEntries(
+    PVMDIR_SERVER_CONTEXT    hBinding,
+    /* [in] */               UINT32 term,
+    /* [in, string] */       char * leader,
+    /* [in] */               unsigned long long preLogIndex,
+    /* [in] */               UINT32 prevLogTerm,
+    /* [in] */               unsigned long long leaderCommit,
+                             int entriesSize,
+    /* [in] */               unsigned char *entries,
+    /* [out] */              UINT32 * currentTerm,
+    /* [out] */              UINT32 * status
+    )
+{
+    DWORD dwError = 0;
+    UINT32 iCurrentTerm = 0;
+    UINT32 iStatus = 0;
+    chglog_container chglogEntries = {0};
+    chglogEntries.chglog_size = entriesSize;
+    chglogEntries.chglog_bytes = entries;
+
+    *currentTerm = 0;
+    *status = 1;
+
+    VMDIR_RPC_TRY
+    {
+        dwError =  RpcVmDirRaftAppendEntries(hBinding->hBinding, term, (idl_char *)leader, preLogIndex,
+                                             prevLogTerm, leaderCommit, &chglogEntries, &iCurrentTerm, &iStatus);
+    }
+    VMDIR_RPC_CATCH
+    {
+        VMDIR_RPC_GETERROR_CODE(dwError);
+    }
+    VMDIR_RPC_ENDTRY;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *currentTerm = iCurrentTerm;
+    *status = iStatus;
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+
+DWORD
+VmDirRaftRequestVote(
+    PVMDIR_SERVER_CONTEXT    hBinding,
+    /* [in] */ UINT32 term,
+    /* [in] */ char candidateId[],
+    /* [in] */ unsigned long long lastLogIndex,
+    /* [in] */ UINT32 lastLogTerm,
+    /* [out] */ UINT32 *currentTerm,
+    /* [out] */ UINT32 *voteGranted
+)
+{
+    DWORD   dwError = 0;
+
+    VMDIR_RPC_TRY
+    {
+        dwError =  RpcVmDirRaftRequestVote( hBinding->hBinding, term, (idl_char *)candidateId,
+                                            lastLogIndex, lastLogTerm, currentTerm, voteGranted);
+    }
+    VMDIR_RPC_CATCH
+    {
+        VMDIR_RPC_GETERROR_CODE(dwError);
+    }
+    VMDIR_RPC_ENDTRY;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
     goto cleanup;
 }

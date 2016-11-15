@@ -79,6 +79,7 @@
 #include "srp_verifier_h.h"
 #include "vmdirsuperlog_h.h"
 #include "vmdirurgentrepl_h.h"
+#include "vmdirraft_h.h"
 #include "prototypes.h"
 
 #include "externs.h"

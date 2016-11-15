@@ -54,12 +54,6 @@ VmDirVmAclInit(
     dwError = VmDirInitSidGenState(&gSidGenState);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateTSStack(8, &(gSidGenState.pStack));
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirInitRidSynchThr( &(gSidGenState.pRIDSyncThr) );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
 cleanup:
     return dwError;
 
@@ -72,23 +66,6 @@ VmDirVmAclShutdown(
     VOID
     )
 {
-    PLW_HASHTABLE_NODE    pNode = NULL;
-    LW_HASHTABLE_ITER     iter = LW_HASHTABLE_ITER_INIT;
-
-    if (gSidGenState.pHashtable)
-    {
-        while ((pNode = LwRtlHashTableIterate(gSidGenState.pHashtable, &iter)))
-        {
-            DWORD                      RidSeq = 0;
-            PVDIR_DOMAIN_SID_GEN_STATE pState = (PVDIR_DOMAIN_SID_GEN_STATE)LW_STRUCT_FROM_FIELD(pNode, VDIR_DOMAIN_SID_GEN_STATE, Node);
-            VmDirFindDomainRidSequenceWithDN( pState->pszDomainDn, &RidSeq);
-            if (RidSeq > 0)
-            {
-                (VOID)VmDirSyncRIDSeqToDB(pState->pszDomainDn, RidSeq);
-            }
-        }
-    }
-
     if ( gSidGenState.pStack )
     {
         VmDirFreeTSStack( gSidGenState.pStack );

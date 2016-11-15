@@ -203,11 +203,15 @@ VmDirInitBackend(
         dwError = _VmDirGenerateInvocationId(); // to be used in replication meta data for the entries created in
         BAIL_ON_VMDIR_ERROR(dwError);           // InitializeVmdirdSystemEntries()
 
+        dwError = VmDirInitRaftPsState();
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         dwError = InitializeVmdirdSystemEntries();
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = _VmDirSrvCreatePersistedDSERoot();
         BAIL_ON_VMDIR_ERROR(dwError);
+
     }
 
 cleanup:
@@ -243,7 +247,7 @@ VmDirCheckForDirtyShutdown(
      * Get the DirtyShutdown value (if it doesn't exist it's not dirty).
      */
     (VOID)VmDirGetRegKeyValueDword(
-            VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+            VMDIR_CONFIG_PARAMETER_KEY_PATH,
             VMDIR_REG_KEY_DIRTY_SHUTDOWN,
             &dwDirtyShutdown,
             FALSE);
@@ -254,7 +258,7 @@ VmDirCheckForDirtyShutdown(
      * cleanly shutdown we'll update this value.
      */
     dwError = VmDirSetRegKeyValueDword(
-                VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                VMDIR_CONFIG_PARAMETER_KEY_PATH,
                 VMDIR_REG_KEY_DIRTY_SHUTDOWN,
                 TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1114,10 +1118,11 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
     bHasTxn = FALSE;
     BAIL_ON_VMDIR_ERROR( dwError );
 
+/*
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Server ID (%d), InvocationID (%s)",
                                         gVmdirServerGlobals.serverId,
                                         gVmdirServerGlobals.invocationId.lberbv_val);
-
+*/
     // Set the domain functional level
     // TODO: update global when dfl is changed.
     dwError = VmDirSrvGetDomainFunctionalLevel(&dwCurrentDfl);

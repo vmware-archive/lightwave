@@ -101,3 +101,5 @@ VmDirUrgentReplicationRequest
 VmDirUrgentReplicationResponse
 VmDirGetMode
 VmDirSetMode
+VmDirRaftRequestVote
+VmDirRaftAppendEntries

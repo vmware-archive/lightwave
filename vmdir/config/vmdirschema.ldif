@@ -166,6 +166,33 @@ objectClasses: (
          )
     )
 
+objectClasses: (
+    VMWare.DIR.objectclass.11
+    NAME 'vmwRaftLogEntry'
+    DESC 'a Raft log entry'
+    SUP top
+    STRUCTURAL
+    MUST ( vmwRaftTerm
+         $ vmwRaftLogindex
+         $ vmwRaftLogEntries
+         )
+    )
+
+objectClasses: (
+    VMWare.DIR.objectclass.12
+    NAME 'vmwRaftPersistState'
+    DESC 'Raft persistent state'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         $ vmwRaftTerm
+         $ vmwRaftLastApplied
+         $ vmwRaftVotedForTerm
+         )
+    MAY  ( vmwRaftVotedFor
+         )
+    )
+
 attributeTypes: (
     VMWare.DIR.attribute.0.1
     NAME 'vmwAttributeToIdMap'
@@ -1678,6 +1705,67 @@ attributeTypes: (
     VMWare.DIR.attribute.1.7
     NAME 'vmwAttrUniquenessScope'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.8
+    NAME 'vmwRaftTerm'
+    DESC 'VMware Raft Election Term'
+    EQUALITY integerMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.9
+    NAME 'vmwRaftLastApplied'
+    DESC 'VMware Raft highest log entry applied'
+    EQUALITY integerMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.10
+    NAME 'vmwRaftVotedForTerm'
+    DESC 'VMware Raft voted Term'
+    EQUALITY integerMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.11
+    NAME 'vmwRaftLogindex'
+    DESC 'VMware Raft Log index'
+    EQUALITY integerMatch
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.12
+    NAME 'vmwRaftLogEntries'
+    DESC 'VMware Raft log entry'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.13
+    NAME 'vmwRaftVotedFor'
+    DESC 'VMware Raft server name voted for'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
     )
 
 attributeTypes: (

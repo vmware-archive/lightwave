@@ -196,12 +196,11 @@ VmDirSrvSetupHostInstance(
     char                 pszHostName[VMDIR_MAX_HOSTNAME_LEN];
     VDIR_BERVALUE        bv = VDIR_BERVALUE_INIT;
 
-    BOOLEAN                       bInLockReplCycle = FALSE;
-    PVMDIR_REPLICATION_AGREEMENT  pReplAgr = NULL;
     BOOLEAN                       bInLock = FALSE;
     PSTR                          pszUserDN = NULL;
     PCSTR                         pszUsersContainerName    = "Users";
     PSTR                          pszUsersContainerDN   = NULL; // CN=Users,<domain DN>
+    PSTR pszPartnerHostName = NULL;
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
                    "Setting up a host instance (%s).",
@@ -429,8 +428,7 @@ VmDirSrvSetupHostInstance(
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // Create Deleted Objects container
-        dwError = VmDirSrvCreateContainerWithEID( pSchemaCtx, pszDelObjsContainerDN, pszDelObjsContainerName,
-                                                 DEL_ENTRY_CONTAINER_ENTRY_ID );
+        dwError = VmDirSrvCreateContainer( pSchemaCtx, pszDelObjsContainerDN, pszDelObjsContainerName);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // Create Domain Controllers container
@@ -462,31 +460,28 @@ VmDirSrvSetupHostInstance(
         dwError = VmDirSrvCreateServerObj( pSchemaCtx );
         BAIL_ON_VMDIR_ERROR(dwError);
 
+/**
         // Create Replication Agreements container
         dwError = VmDirSrvCreateReplAgrsContainer( pSchemaCtx );
         BAIL_ON_VMDIR_ERROR(dwError);
-
         // 1st replica => no replication agreements => 1st replication cycle done
-        VMDIR_LOCK_MUTEX(bInLockReplCycle, gVmdirGlobals.replCycleDoneMutex);
-        VmDirConditionSignal(gVmdirGlobals.replCycleDoneCondition);
-        VMDIR_UNLOCK_MUTEX(bInLockReplCycle, gVmdirGlobals.replCycleDoneMutex);
+**/
+        //wake up repliation thread so that it can dynamically adding peers
+        VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+        VmDirConditionSignal(gVmdirGlobals.replAgrsCondition);
+        VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
     }
     else
     {
-        dwError = VmDirAllocateStringAVsnprintf( &pszReplAgrDN, "labeledURI=%s,%s", pszReplURI, pszReplAgrsContainerDN );
+        extern VOID VmDirNewPartner(PCSTR);
+
+        dwError = VmDirReplURIToHostname((PSTR)pszReplURI, &pszPartnerHostName);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirConstructReplAgr( pSchemaCtx, pszReplURI,
-                                         VMDIR_DEFAULT_REPL_LAST_USN_PROCESSED, pszReplAgrDN, &pReplAgr );
-        BAIL_ON_VMDIR_ERROR(dwError);
+        VmDirNewPartner(pszPartnerHostName);
 
-        gFirstReplCycleMode = firstReplCycleMode;
-
+        // Wake up replication thread waiting on adding self to Raft cluster
         VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-        pReplAgr->next = gVmdirReplAgrs;
-        gVmdirReplAgrs = pReplAgr; // ownership transfer
-        // wake up replication thread waiting on the existence
-        // of a replication agreement.
         VmDirConditionSignal(gVmdirGlobals.replAgrsCondition);
         VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
     }
@@ -498,6 +493,7 @@ cleanup:
         VmDirSchemaCtxRelease(pSchemaCtx);
     }
 
+    VMDIR_SAFE_FREE_MEMORY(pszPartnerHostName);
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
     VMDIR_SAFE_FREE_MEMORY(pszDelObjsContainerDN);
     VMDIR_SAFE_FREE_MEMORY(pszConfigContainerDN);

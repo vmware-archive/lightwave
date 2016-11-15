@@ -41,7 +41,8 @@ VmDirMain(
 {
     DWORD   dwError = 0;
     CHAR    pszPath[MAX_PATH];
-    PSTR   pszServerName = NULL;
+    PSTR   pszRaftLeader = NULL;
+    PSTR   pszServerToLeave = NULL;
     PSTR   pszUserName = NULL;
     PSTR   pszPassword = NULL;
     CHAR   pszPasswordBuf[VMDIR_MAX_PWD_LEN + 1] = {0};
@@ -59,16 +60,15 @@ VmDirMain(
 
     VmDirLogSetLevel( VMDIR_LOG_VERBOSE );
 
-    dwError = VmDirParseArgs( argc, argv, &pszServerName, &pszUserName, &pszPassword);
+    dwError = VmDirParseArgs( argc, argv, &pszRaftLeader, &pszServerToLeave, &pszUserName, &pszPassword);
     if (dwError != 0)
     {
         ShowUsage();
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (pszUserName == NULL)
+    if (pszUserName == NULL || pszServerToLeave == NULL || pszRaftLeader == NULL)
     {
-        //Must use administrator as userName
         ShowUsage();
         BAIL_ON_VMDIR_ERROR(dwError);
     }
@@ -84,18 +84,7 @@ VmDirMain(
         pszPassword = pszPasswordBuf;
     }
 
-    if (pszServerName == NULL)
-    {
-        //local leavefe instead of offline
-        printf("vdcleavefd for local server\n");
-        dwError = _VdcSetReadOnlyState();
-        BAIL_ON_VMDIR_ERROR(dwError);
-    } else
-    {
-         printf("vdcleavefd offline for server %s\n", pszServerName);
-    }
-
-    dwError = VmDirLeaveFederation(pszServerName, pszUserName, pszPassword);
+    dwError = VmDirLeaveFederation(pszRaftLeader, pszServerToLeave, pszUserName, pszPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     printf(" Leave federation cleanup done\n");

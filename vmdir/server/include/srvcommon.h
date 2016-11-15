@@ -82,7 +82,6 @@ extern "C" {
 #define ATTR_ID_MAP_KEY   "1VmdirAttrIDToNameTb"
 
 typedef struct _VDIR_INDEX_CFG*             PVDIR_INDEX_CFG;
-typedef struct _VDIR_INDEX_UPD*             PVDIR_INDEX_UPD;
 typedef struct _VDIR_BACKEND_INTERFACE*     PVDIR_BACKEND_INTERFACE;
 typedef struct _VDIR_SCHEMA_CTX*            PVDIR_SCHEMA_CTX;
 typedef struct _VDIR_SCHEMA_DIFF*           PVDIR_SCHEMA_DIFF;
@@ -286,6 +285,7 @@ typedef struct _VDIR_ENTRY
    // encodedEntry is used in PACK format (in-place for dn and bvs)
    // (though NORMAL entry could have this value as well e.g. modify op could reencode)
    unsigned char *              encodedEntry;
+   UINT32                       encodedEntrySize; //memory size of encodedEntry.
 
    // make sure entry does not out live its schema context
    // if we do not allow live schema update, then we can eliminate this and

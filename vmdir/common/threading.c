@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -269,7 +269,6 @@ VmDirConditionTimedWait(
 {
     DWORD dwError = ERROR_SUCCESS;
     struct timespec ts = {0};
-    uint64_t iTimeInMSec = 0;
 
     if ( ( pCondition == NULL )
          ||
@@ -284,10 +283,8 @@ VmDirConditionTimedWait(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    iTimeInMSec =  dwMilliseconds + VmDirGetTimeInMilliSec();
-
-    ts.tv_sec = iTimeInMSec / MSECS_PER_SEC;
-    ts.tv_nsec = (iTimeInMSec % MSECS_PER_SEC) * NSECS_PER_MSEC;
+    ts.tv_sec = time(NULL) + dwMilliseconds/1000;
+    ts.tv_nsec = 0;
 
     dwError = pthread_cond_timedwait(
         &(pCondition->cond),

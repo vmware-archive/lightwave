@@ -542,9 +542,10 @@ VmDirCloseServer(
 
 DWORD
 VmDirLeaveFederation(
-    PSTR pszServerName,
-    PSTR pszUserName,
-    PSTR pszPassword
+    PCSTR pszRaftLeader,
+    PCSTR pszServerToLeave,
+    PCSTR pszUserName,
+    PCSTR pszPassword
     );
 
 DWORD

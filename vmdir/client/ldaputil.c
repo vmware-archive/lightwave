@@ -1498,6 +1498,7 @@ VmDirLdapSetupRemoteHostRA(
     dwError = VmDirLdapCreateReplHostNameDN(&pszReplHostNameDN, pLd, pszHostName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+/***
     dwError = VmDirAllocateStringAVsnprintf(
                                     &pszReplAgrDN,
                                     "labeledURI=%s,cn=%s,%s",
@@ -1566,6 +1567,7 @@ VmDirLdapSetupRemoteHostRA(
         dwError = ldap_add_ext_s(pLd, pszReplAgrDN, &pReplAgrObjAttrs[0], NULL, NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+***/
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszReplURI);

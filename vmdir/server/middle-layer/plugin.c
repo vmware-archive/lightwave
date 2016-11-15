@@ -240,18 +240,6 @@
     VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSchemaLibUpdatePreModApplyDelete), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
-    {                                                               \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplaceOpAttrsPreModApplyModify), \
-    VMDIR_SF_INIT(.pNext, NULL )                                    \
-    },                                                              \
-    {                                                               \
-    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
-    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSetDeletedObjAttrsPreModApplyDelete), \
-    VMDIR_SF_INIT(.pNext, NULL )                                    \
-    },                                                              \
 }
 
 // NOTE: order of fields MUST stay in sync with struct definition...
@@ -424,13 +412,6 @@ _VmDirPluginMapAclStringAttributePreModApplyModify(
     PVDIR_ENTRY      pEntry,
     DWORD            dwPriorResult
     );
-
-static
-DWORD
-_VmDirPluginSetDeletedObjAttrsPreModApplyDelete(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult);
 
 static
 DWORD
@@ -1041,8 +1022,6 @@ _VmDirPluginAddOpAttrsPreAdd(
     DWORD            dwPriorResult)
 {
     DWORD        dwError = 0;
-    USN          usn = 0;
-    char         usnStr[VMDIR_MAX_USN_STR_LEN];
     char         pszTimeBuf[GENERALIZED_TIME_STR_LEN + 1] = {0};
     uuid_t       guid;
     char         objectGuidStr[VMDIR_GUID_STR_LEN];
@@ -1050,23 +1029,6 @@ _VmDirPluginAddOpAttrsPreAdd(
     PCSTR        pszCreatorsDN = NULL;
     PVDIR_ATTRIBUTE pAttrModifyTimeStamp = VmDirFindAttrByName(pEntry,ATTR_MODIFYTIMESTAMP);
     PVDIR_ATTRIBUTE pAttrCreateTimeStamp = VmDirFindAttrByName(pEntry,ATTR_CREATETIMESTAMP);
-
-    // Get/create USN value
-    pszErrorContext = "Get next USN";
-    dwError = pOperation->pBEIF->pfnBEGetNextUSN( pOperation->pBECtx, &usn );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VmDirStringNPrintFA( usnStr, sizeof(usnStr), sizeof(usnStr) - 1, "%ld", usn);
-
-    // Append usnCreated attribute
-    pszErrorContext = "Add USN create attribute";
-    dwError = VmDirEntryAddSingleValueStrAttribute(pEntry, ATTR_USN_CREATED, usnStr);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // Append usnChanged attribute
-    pszErrorContext = "Add USN change attribute";
-    dwError = VmDirEntryAddSingleValueStrAttribute(pEntry, ATTR_USN_CHANGED, usnStr);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     // Append DN attribute
     pszErrorContext = "Add DN attribute";
@@ -1284,82 +1246,17 @@ _VmDirPluginReplAgrPostAddCommit(
     PVDIR_ENTRY      pEntry,
     DWORD            dwPriorResult)
 {
-    DWORD                           dwError = 0;
-    PVMDIR_REPLICATION_AGREEMENT    replAgr = NULL;
-    PVMDIR_REPLICATION_AGREEMENT    pCurrReplAgr = NULL;
-    PVDIR_ATTRIBUTE                 pAttr = NULL;
-    unsigned int                    i = 0;
-    BOOLEAN                         bInLock = FALSE;
-    PCSTR                           pszErrorContext = NULL;
+    DWORD dwError = 0;
+    PCSTR pszErrorContext = "VmDirAddRaftProxy";
 
-    if ( gVmdirServerGlobals.serverObjDN.bvnorm_val != NULL) // Skip processing "initial" objects.
-    {
-        if (pEntry->dn.bvnorm_val == NULL)
-        {
-            pszErrorContext = "Normalize DN";
-            dwError = VmDirNormalizeDN( &(pEntry->dn), pEntry->pSchemaCtx);
-            BAIL_ON_VMDIR_ERROR( dwError );
-        }
-
-        if ((pEntry->dn.bvnorm_len > gVmdirServerGlobals.serverObjDN.bvnorm_len) &&
-            (VmDirStringCompareA( gVmdirServerGlobals.serverObjDN.bvnorm_val,
-                     pEntry->dn.bvnorm_val + (pEntry->dn.bvnorm_len - gVmdirServerGlobals.serverObjDN.bvnorm_len), TRUE) == 0))
-        {
-            pAttr = VmDirEntryFindAttribute( ATTR_OBJECT_CLASS, pEntry );
-            if (pAttr != NULL)
-            {
-                for (i = 0 ; i < pAttr->numVals; i++)
-                {
-                    if (VmDirStringCompareA( pAttr->vals[i].lberbv.bv_val, OC_REPLICATION_AGREEMENT, FALSE ) == 0)
-                    {
-                        pszErrorContext = "Add Replication Agreement into cache";
-                        if (VmDirReplAgrEntryToInMemory( pEntry, &replAgr ) != 0)
-                        {
-                            dwError = LDAP_OPERATIONS_ERROR;
-                            BAIL_ON_VMDIR_ERROR( dwError );
-                        }
-
-                        VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-                        // Insert replAgr in gVmdirReplAgrs if not already present.
-                        // Note: 1st RA is created first in memory then in DB, so it would already exist in gVmdirReplAgrs
-                        for (pCurrReplAgr = gVmdirReplAgrs; pCurrReplAgr != NULL; pCurrReplAgr = pCurrReplAgr->next )
-                        {
-                            if (pCurrReplAgr->isDeleted == FALSE &&
-                                VmDirStringCompareA(pCurrReplAgr->ldapURI, replAgr->ldapURI, FALSE)  == 0)
-                            {
-                                break; // found a non-deleted match
-                            }
-                        }
-                        if (pCurrReplAgr == NULL) // match not found, insert it in front
-                        {
-                            replAgr->next = gVmdirReplAgrs;
-                            gVmdirReplAgrs = replAgr;
-                            replAgr = NULL;
-                        }
-
-                        // wake up replication thread waiting on the existence
-                        // of a replication agreement.
-                        VmDirConditionSignal(gVmdirGlobals.replAgrsCondition);
-                        VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-
-                        break; // breaks from objectClass values loop
-                    }
-                }
-            }
-        }
-    }
+    dwError = VmDirAddRaftProxy(pEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-
     return dwError;
 
 error:
-
     VMDIR_APPEND_ERROR_MSG(pOperation->ldapResult.pszErrMsg, pszErrorContext);
-    VmDirFreeReplicationAgreement(replAgr);
-
     goto cleanup;
 }
 
@@ -1392,10 +1289,6 @@ _VmDirPluginReplAgrPostDeleteCommit(
             pReplAgr->isDeleted = TRUE;
             break;
         }
-    }
-    if (pReplAgr && pReplAgr->isDeleted)
-    {
-        VmDirReplUpdateUrgentReplCoordinatorTableForDelete(pReplAgr);
     }
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
 
@@ -1437,23 +1330,11 @@ _VmDirPluginReplaceOpAttrsPreModApplyModify(
     DWORD           dwPriorResult)
 {
     DWORD   dwError = 0;
-    USN     usn = 0;
-    char    usnStr[VMDIR_MAX_USN_STR_LEN];
     char    pszTimeBuf[GENERALIZED_TIME_STR_LEN + 1] = {0};
     PCSTR   pszErrorContext = NULL;
     PCSTR   pszModifiersDN = NULL;
 
     // Get/create USN value
-
-    pszErrorContext = "Get next USN";
-    dwError = pOperation->pBEIF->pfnBEGetNextUSN( pOperation->pBECtx, &usn );
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-    VmDirStringNPrintFA( usnStr, sizeof(usnStr), sizeof(usnStr) - 1, "%ld", usn);
-
-    pszErrorContext = "Replace USN change attribute";
-    dwError = VmDirAppendAMod( pOperation, MOD_OP_REPLACE, ATTR_USN_CHANGED, ATTR_USN_CHANGED_LEN, usnStr, VmDirStringLenA( usnStr ) );
-    BAIL_ON_VMDIR_ERROR( dwError );
 
     VmDirCurrentGeneralizedTime(pszTimeBuf, sizeof(pszTimeBuf));
 
@@ -1535,41 +1416,6 @@ _VmDIrPluginHandleFSPsPreModApplyModify(
     }
 
 cleanup:
-    return dwError;
-
-error:
-
-    VMDIR_APPEND_ERROR_MSG(pOperation->ldapResult.pszErrMsg, pszErrorContext);
-    goto cleanup;
-}
-
-static
-DWORD
-_VmDirPluginSetDeletedObjAttrsPreModApplyDelete(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,     // pEntry is NULL
-    DWORD            dwPriorResult
-    )
-{
-    DWORD           dwError = 0;
-    PCSTR           pszErrorContext = NULL;
-
-    VmDirLog( LDAP_DEBUG_TRACE, "pluginSetDeletedObjAttrsPreModApplyDelete: Begin, entry DN = %s",
-              pOperation->request.deleteReq.dn.lberbv.bv_val );
-
-    pszErrorContext = "Add ATTR_IS_DELETED attribute";
-    dwError = VmDirAppendAMod( pOperation, MOD_OP_ADD, ATTR_IS_DELETED, ATTR_IS_DELETED_LEN,
-                          VMDIR_IS_DELETED_TRUE_STR, VMDIR_IS_DELETED_TRUE_STR_LEN );
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-    pszErrorContext = "Add ATTR_LAST_KNOWN_DN attribute";
-    dwError = VmDirAppendAMod( pOperation, MOD_OP_ADD, ATTR_LAST_KNOWN_DN, ATTR_LAST_KNOWN_DN_LEN,
-                               pOperation->request.deleteReq.dn.lberbv.bv_val, pOperation->request.deleteReq.dn.lberbv.bv_len );
-    BAIL_ON_VMDIR_ERROR( dwError );
-
-cleanup:
-    VmDirLog( LDAP_DEBUG_TRACE, "pluginSetDeletedObjAttrsPreModApplyDelete: End." );
-
     return dwError;
 
 error:

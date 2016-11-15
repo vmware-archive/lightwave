@@ -113,7 +113,7 @@ VmDirSyncCounterWaitEvent(
 
     VMDIR_LOCK_MUTEX(bInLock, pSyncCounter->pMutex);
 
-    while ( pSyncCounter->iCounter != pSyncCounter->iSyncValue
+    while ( pSyncCounter->iCounter < pSyncCounter->iSyncValue
             &&
             bWaitTimeOut == FALSE
            )
@@ -235,4 +235,34 @@ VmDirSyncCounterDecrement(
     )
 {
     return VmDirSyncCounterChange(pSyncCounter, -1);
+}
+
+DWORD
+VmDirSyncCounterReset(
+    PVMDIR_SYNCHRONIZE_COUNTER     pSyncCounter,
+    int syncValue
+    )
+{
+    DWORD   dwError = ERROR_SUCCESS;
+    BOOLEAN bInLock = FALSE;
+
+    if ((pSyncCounter == NULL) || (pSyncCounter->bInitialized == FALSE))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    VMDIR_LOCK_MUTEX(bInLock, pSyncCounter->pMutex);
+    if (syncValue > 0)
+    {
+        pSyncCounter->iSyncValue = syncValue;
+    }
+    pSyncCounter->iCounter = 0;
+    VMDIR_UNLOCK_MUTEX(bInLock, pSyncCounter->pMutex);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
 }

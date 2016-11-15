@@ -16,12 +16,14 @@
 
 #ifndef _WIN32
 
-#define VMDIR_OPTION_HOST               'h'
+#define VMDIR_OPTION_RAFT_LEADER        'H'
+#define VMDIR_OPTION_HOST_TO_REMOVE     'h'
 #define VMDIR_OPTION_USER_LOGIN         'u'
 #define VMDIR_OPTION_PASSWORD_LOGIN     'w'
-#define VMDIR_OPTIONS_VALID "h:u:w:"
+#define VMDIR_OPTIONS_VALID "H:h:u:w:"
 #else
-#define VMDIR_OPTION_HOST               "-h"
+#define VMDIR_OPTION_HOST_RAFT_LEADER   "-H"
+#define VMDIR_OPTION_HOST_TO_REMOVE     "-h"
 #define VMDIR_OPTION_USER_LOGIN         "-u"
 #define VMDIR_OPTION_PASSWORD_LOGIN     "-w"
 

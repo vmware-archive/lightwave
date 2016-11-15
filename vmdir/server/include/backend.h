@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 
-#define BE_REAL_EID_SIZE(eId)  4 /* (eId <= 0xff ? 1 : (eId <= 0xffff ? 2 : (eId <= 0xffffff ? 3 : (eId <= 0xffffffff ?
+#define BE_REAL_EID_SIZE(eId)  8 /* (eId <= 0xff ? 1 : (eId <= 0xffff ? 2 : (eId <= 0xffffff ? 3 : (eId <= 0xffffffff ?
                                     4 : 5)))) */
 
 #define BE_MAX_DB_NAME_LEN              100

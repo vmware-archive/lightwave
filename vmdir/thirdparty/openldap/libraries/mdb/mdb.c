@@ -1118,6 +1118,7 @@ struct MDB_env {
 #endif
 	void		*me_userctx;	 /**< User-settable context */
 	MDB_assert_func *me_assert_func; /**< Callback for assertion failures */
+        MDB_commit_hook_func *me_commit_hook_func; /** Commit hook function used for Raft committing a log **/
 };
 
 	/** Nested transaction */
@@ -3110,6 +3111,7 @@ mdb_txn_commit(MDB_txn *txn)
 
 	if ((rc = mdb_page_flush(txn, 0)) ||
 		(rc = mdb_env_sync(env, 0)) ||
+                (env->me_commit_hook_func && (rc = env->me_commit_hook_func())) || 
 		(rc = mdb_env_write_meta(txn)))
 		goto fail;
 
@@ -8584,4 +8586,10 @@ mdb_env_set_state(MDB_env *env, int fileTransferState, unsigned long *last_xlog_
     UNLOCK_MUTEX_W(env);
     return ret;
 }
+
+void mdb_set_commit_hook_func(MDB_env *env, MDB_commit_hook_func *commit_hook_func)
+{
+    env->me_commit_hook_func = commit_hook_func;
+}
+
 /** @} */

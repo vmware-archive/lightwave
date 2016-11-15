@@ -129,6 +129,9 @@ MdbUpdateAttrMetaData(
     unsigned char *       pWriter = NULL;
     PVDIR_INDEX_CFG       pIndexCfg = NULL;
 
+    if(1)
+       return 0;
+
     // E.g. while deleting a user, and therefore updating the member attribute of the groups to which the user belongs,
     // member attrMetaData of the group object is left unchanged (at least in the current design, SJ-TBD).
     if (ulOPMask == BE_INDEX_OP_TYPE_UPDATE && VmDirStringLenA( attr->metaData ) == 0)
@@ -634,6 +637,44 @@ error:
 
     VMDIR_SET_BACKEND_ERROR(dwError);
 
+    goto cleanup;
+}
+
+/*
+ * DeleteEntryBlob()
+ *
+ * Return values:
+ *     On Success: 0
+ *     On Error: BE error
+ */
+DWORD
+MDBDeleteEntryBlob(
+    PVDIR_BACKEND_CTX   pBECtx,
+    ENTRYID             eId)
+{
+    int             dwError = 0;
+    VDIR_DB_DBT     key = {0};
+    VDIR_DB         mdbDBi = 0;
+    BOOLEAN         bIsUniqueVal = FALSE;
+    unsigned char   eIdBytes[sizeof( ENTRYID )] = {0};
+
+    assert(pBECtx && pBECtx->pBEPrivate);
+
+    mdbDBi = gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].mdbDBi;
+    bIsUniqueVal = gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].bIsUnique;
+    assert( bIsUniqueVal );
+
+    key.mv_data = &eIdBytes[0];
+    MDBEntryIdToDBT(eId, &key);
+
+    dwError = mdb_del((PVDIR_DB_TXN)pBECtx->pBEPrivate, mdbDBi, &key, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SET_BACKEND_ERROR(dwError);
     goto cleanup;
 }
 

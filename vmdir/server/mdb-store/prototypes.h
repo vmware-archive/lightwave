@@ -149,4 +149,10 @@ MDBDropDB(
     VDIR_DB    mdbDBi
     );
 
+DWORD
+MDBDeleteEntryBlob(
+    PVDIR_BACKEND_CTX   pBECtx,
+    ENTRYID             entryId
+    );
+
 #endif /* MDB_H_ */
