@@ -15,7 +15,6 @@ RUN tdnf update --refresh -y \
         rpm-4.11.2 \
         pcre-8.39 \
         openssl-1.0.2j \
-        filesystem-1.0 \
         expat-2.2.0 \
         curl-7.47.1 \
         bzip2-1.0.6 && \
