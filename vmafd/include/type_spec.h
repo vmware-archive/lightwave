@@ -939,7 +939,7 @@ typedef struct _VMW_TYPE_SPEC_
         {NULL}\
     },\
     {\
-        "dwForceLeave",\
+        "dwLeaveFlags",\
         VMW_IPC_TYPE_UINT32,\
         {NULL}\
     }\

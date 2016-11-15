@@ -41,7 +41,7 @@ DWORD
 VmAfdLeaveDomain(
     PCSTR pszUsername,
     PCSTR pszPassword,
-    DWORD dwForceLeave
+    DWORD dwLeaveFlags
     );
 
 /**

@@ -75,5 +75,5 @@ typedef struct _VM_AFD_CLI_CONTEXT
     DWORD              dwPort;
     VMAFD_DOMAIN_STATE domainState;
     VMAFD_STATUS       status;
-    DWORD              dwForceVmDirLeave;
+    DWORD              dwLeaveFlags;
 } VM_AFD_CLI_CONTEXT, *PVM_AFD_CLI_CONTEXT;

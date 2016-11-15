@@ -296,7 +296,7 @@ VmAfdLocalLeaveVmDir(
     PCWSTR pwszServerName,
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,
-    DWORD  dwForceLeave
+    DWORD  dwLeaveFlags
 );
 
 DWORD

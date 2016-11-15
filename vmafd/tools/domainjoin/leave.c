@@ -13,12 +13,12 @@ DWORD
 VmAfdLeaveDomain(
     PCSTR pszUsername,
     PCSTR pszPassword,
-    DWORD dwForceLeave
+    DWORD dwLeaveFlags
     )
 {
     DWORD dwError = ERROR_SUCCESS;
 
-    dwError = VmAfdLeaveVmDirA(NULL, pszUsername, pszPassword, dwForceLeave);
+    dwError = VmAfdLeaveVmDirA(NULL, pszUsername, pszPassword, dwLeaveFlags);
     if (dwError == ERROR_NOT_JOINED)
     {
         dwError = ERROR_SUCCESS;
