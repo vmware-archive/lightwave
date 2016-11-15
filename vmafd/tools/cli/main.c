@@ -2740,7 +2740,7 @@ ParseArgsLeaveVmDir(
                 }
                 else if (!strcmp(pszArg, "--force"))
                 {
-                    pContext->dwForceVmDirLeave = 1;
+                    pContext->dwLeaveFlags = 1;
                     parseMode = PARSE_MODE_LEAVE_VM_DIR_OPEN;
                 }
                 else

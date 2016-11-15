@@ -2881,7 +2881,7 @@ VmAfdLeaveVmDirA(
     PCSTR pszServerName,    /* IN              */
     PCSTR pszUserName,      /* IN              */
     PCSTR pszPassword,      /* IN              */
-    DWORD dwForceLeave      /* IN              */
+    DWORD dwLeaveFlags      /* IN              */
 )
 {
     DWORD dwError = 0;
@@ -2912,7 +2912,7 @@ VmAfdLeaveVmDirA(
                   pwszServerName,
                   pwszUserName,
                   pwszPassword,
-                  dwForceLeave);
+                  dwLeaveFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
@@ -2933,7 +2933,7 @@ VmAfdLeaveVmDirW(
     PCWSTR pwszServerName,  /* IN              */
     PCWSTR pwszUserName,    /* IN              */
     PCWSTR pwszPassword,    /* IN              */
-    DWORD dwForceLeave      /* IN              */
+    DWORD dwLeaveFlags      /* IN              */
 )
 {
     DWORD dwError = 0;
@@ -2942,7 +2942,7 @@ VmAfdLeaveVmDirW(
                       pwszServerName,
                       pwszUserName,
                       pwszPassword,
-                      dwForceLeave);
+                      dwLeaveFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
