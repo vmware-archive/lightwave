@@ -1,0 +1,23 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                      http://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <mirrors>
+     <mirror>
+       <id>Central-maven-repo</id>
+       <name>Central maven repo</name>
+       <url>http://central.maven.org/maven2</url>
+       <mirrorOf>external:*</mirrorOf>
+     </mirror>
+  </mirrors>
+
+  <servers>
+    <server>
+      <id>Central-maven-repo</id>
+      <configuration>
+        <useCache>true</useCache>
+      </configuration>
+    </server>
+  </servers>
+
+</settings>

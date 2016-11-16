@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2010-2011 VMware, Inc. All rights reserved. .
+-->
+<project name="websso" default="build" basedir="." xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
+
+  <property name="target-sets" value="main, webapp, test" />
+
+   <!-- webapp manifest properties -->
+   <property name="websso.title" value="websso" />
+   <property name="websso.version" value="0.0.1.${BUILD_NUMBER}" />
+   <property name="websso.vendor" value="VMWare, Inc." />
+
+   <property file="../product.properties" />
+   <property name="MAINSRCROOT" value="${basedir}/.." />
+   <property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
+   <property name="TomcatHome" value="${tomcat.home}" />
+
+   <import file="${MAINSRCROOT}/build/ant/defaults.xml" />
+
+   <property name="build.packages.vmware-identity-idm-client"
+             value="${build.packages}/vmware-identity-idm-client.jar" />
+   <property name="build.packages.vmware-identity-idm-interface"
+             value="${build.packages}/vmware-identity-idm-interface.jar" />
+   <property name="build.packages.websso"
+             value="${build.packages}/websso.jar" />
+   <property name="build.packages.samlauthority"
+             value="${build.packages}/samlauthority.jar" />
+   <property name="build.packages.websso-client"
+             value="${build.packages}/vmware-identity-websso-client.jar" />
+   <property name="build.packages.samltoken"
+             value="${build.packages}/samltoken.jar" />
+ 
+   <path id="classpath.runtime-dependencies">
+      <pathelement location="${TomcatHome}/lib/servlet-api.jar" />
+      <fileset refid="jar-set.LOG4J2"/>
+      <fileset refid="jar-set.opensaml.endorsed" />
+      <fileset refid="jar-set.spring-framework-4.0.6" />
+      <fileset refid="jar-set.jstl-1.2" />
+      <fileset refid="jar-set.asm" />
+      <fileset refid="jar-set.apache-commons-lang" />
+      <fileset refid="jar-set.opensaml-lib" />
+      <fileset refid="jar-set.apache-httpclient" />
+      <fileset refid="jar-set.cglib" />
+      <fileset refid="jar-set.velocity" />
+      <fileset refid="jar-set.commons-collections" />
+      <fileset refid="jar-set.esapi" />
+      <fileset refid="jar-set.bouncy-castle" />
+      <pathelement location="${build.packages.samlauthority}"/>
+      <pathelement location="${build.packages.vmware-identity-idm-client}"/>
+      <pathelement location="${build.packages.vmware-identity-idm-interface}"/>
+      <pathelement location="${build.packages.websso-client}"/>
+      <pathelement location="${build.packages.samltoken}"/>
+      <pathelement location="${buildRoot}/packages/vmware-identity-diagnostics.jar" />
+      <restrict>
+       <fileset refid="jar-set.opensaml-lib" />
+         <rsel:not>
+            <rsel:name name="opensaml-2.5.2?lib?servlet-api-*.jar" />
+         </rsel:not>
+      </restrict>
+   </path>
+
+   <path id="classpath.webapp-libs">
+      <pathelement location="${build.packages.main}" />
+      <path refid="classpath.runtime-dependencies" />
+   </path>
+
+   <path id="classpath.main">
+      <path refid="classpath.runtime-dependencies" />
+      <fileset refid="jar-set.apache-httpclient" />
+   </path>
+
+   <path id="classpath.test">
+      <path refid="classpath.main" />
+      <pathelement location="${build.packages.main}"/>
+      <fileset refid="jar-set.junit" />
+      <fileset refid="jar-set.easymock" />
+      <fileset refid="jar-set.objenesis" />
+   </path>
+
+   <target name="generate-webapp-manifest" if="target-set.webapp">
+      <manifest file="${build.packing.webapp-manifest_mf}">
+            <!-- Main Section:-->
+       <attribute name="Specification-Title" value="${websso.title}" />
+       <attribute name="Specification-Version" value="${websso.version}" />
+       <attribute name="Specification-Vendor" value="${websso.vendor}" />
+       <attribute name="Implementation-Title" value="${websso.title}" />
+       <attribute name="Implementation-Version" value="${websso.version}" />
+       <attribute name="Implementation-Vendor" value="${websso.vendor}" />
+      </manifest>
+   </target>
+
+   <target name="package-webapp" depends="generate-webapp-manifest" if="target-set.webapp">
+      <war
+         destfile="${build.packages.webapp}"
+         basedir="${build.packing.webapp}"
+         manifest="${build.packing.webapp-manifest_mf}"
+         webxml="${src.conf.web_xml}">
+
+         <zipfileset prefix="resources/"  dir="../sso-common/src/main/webapp/resources/"/>
+         <zipfileset prefix="WEB-INF/views/" dir="../sso-common/src/main/webapp/WEB-INF/views/"/>
+      </war>
+   </target>
+
+<import file="${MAINSRCROOT}/build/ant/buildcycle-template.xml" />
+
+</project>

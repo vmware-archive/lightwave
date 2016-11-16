@@ -112,19 +112,19 @@
     </dependency>
 
     <dependency>
-      <groupId>com.vmware.identity.commons</groupId>
+      <groupId>com.vmware.identity</groupId>
       <artifactId>samltoken</artifactId>
       <version>${vmware.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>com.vmware.identity.idm</groupId>
+      <groupId>com.vmware.identity</groupId>
       <artifactId>vmware-identity-idm-client</artifactId>
       <version>${vmware.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>com.vmware.identity.idm</groupId>
+      <groupId>com.vmware.identity</groupId>
       <artifactId>vmware-identity-idm-interface</artifactId>
       <version>${vmware.version}</version>
     </dependency>

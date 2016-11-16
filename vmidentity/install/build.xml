@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2010-2011 VMware, Inc. All rights reserved.
+-->
+<project name="vmware-identity-install" default="build" xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
+
+	<property name="target-sets" value="main" />
+
+	<property name="install.title" value="install" />
+	<property name="install.version" value="0.0.1.${BUILD_NUMBER}" />
+	<property name="install.vendor" value="VMWare, Inc." />
+
+	<property file="../product.properties" />
+        <property name="MAINSRCROOT" value="${basedir}/.." />
+	<property name="buildRoot" value="${MAINSRCROOT}/build/${PRODUCT_NAME}" />
+        <property name="AFD_PACKAGE_BASE" value="${MAINSRCROOT}/../vmafd/build/authentication-framework/packages" />
+        <property name="VMCA_PACKAGE_BASE" value="${MAINSRCROOT}/../vmca/build/packages" />
+        <property name="build.packages.vmware-identity-server" value="${GOBUILD_RD_IDENTITY_SERVER_ROOT}" />
+	<import file="${MAINSRCROOT}/build/ant/defaults.xml" />
+	<import file="${MAINSRCROOT}/build/ant/presets.xml" />
+
+        <path id="maven-ant-tasks.classpath" path="${ant.home}/lib/maven-ant-tasks-2.1.3.jar" />
+        <typedef resource="org/apache/maven/artifact/ant/antlib.xml"
+             uri="antlib:org.apache.maven.artifact.ant"
+             classpathref="maven-ant-tasks.classpath" />
+
+	 <property name="build.packages.vmware-identity-idm-interface"
+             value="${build.packages}/vmware-identity-idm-interface.jar" />
+         <property name="build.packages.samltoken"
+             value="${build.packages}/samltoken.jar" />
+         <property name="build.packages.vmware-identity-platform"
+             value="${build.packages}/vmware-identity-platform.jar" />
+         <property name="build.packages.vmware-identity-idm-client"
+             value="${build.packages}/vmware-identity-idm-client.jar" />
+         <property name="build.packages.vmware-identity-diagnostics"
+             value="${build.packages}/vmware-identity-diagnostics.jar" />
+         <property name="build.packages.authentication-framework"
+             value="${AFD_PACKAGE_BASE}/authentication-framework.jar" />
+         <property name="build.packages.vmware-endpoint-certificate-store"
+             value="${AFD_PACKAGE_BASE}/vmware-endpoint-certificate-store.jar" />
+         <property name="build.packages.vmware-ca-client"
+             value="${VMCA_PACKAGE_BASE}/vmware-vmca-client.jar" />
+
+	<path id="classpath.main">
+                <pathelement location="${build.packages.samltoken}" />
+                <pathelement location="${build.packages.vmware-identity-platform}" />
+                <pathelement location="${build.packages.vmware-identity-idm-interface}" />
+                <pathelement location="${build.packages.vmware-identity-idm-client}" />
+                <pathelement location="${build.packages.vmware-identity-diagnostics}" />
+                <pathelement location="${build.packages.vmware-identity-idm-server}" />
+                <pathelement location="${build.packages.vmware-endpoint-certificate-store}" />
+                <pathelement location="${build.packages.authentication-framework}" />
+		<pathelement location="${build.packages.vmware-ca-client}" />              
+		<fileset refid="jar-set.LOG4J2" />  
+                <fileset refid="jar-set.apache-commons-logging" />
+		<fileset refid="jar-set.commons-codec" />
+		<fileset refid="jar-set.apache-commons-lang" />
+
+	</path>
+
+	<import file="${MAINSRCROOT}/build/ant/buildcycle-template.xml" />
+</project>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="vmware-identity-openidconnect-client-lib" default="build">
+    <property name="MAINSRCROOT" value="${basedir}/../../.." />
+    <import file="${MAINSRCROOT}/ant/defaults.xml" />
+
+    <property name="M2_HOME" value="${tcRoot}/noarch/apache-maven-3.1.1" />
+    <property name="GROUP_BASE" value="com.vmware.identity" />
+    <property name="IDM_VERSION" value="6.6.1" />
+
+    <condition property="maven" value="${M2_HOME}/bin/mvn.bat" else="${M2_HOME}/bin/mvn">
+        <os family="windows" />
+    </condition>
+
+    <target name="install.vmware-dependencies">
+        <exec executable="${maven}" failonerror="true">
+            <env key="M2_HOME" value="${M2_HOME}" />
+            <arg line=" -s ../settings.xml install:install-file -Dfile=${GOBUILD_RD_AUTHENTICATION_FRAMEWORK_ROOT}/lib64/client-domain-controller-cache.jar -DgroupId=${GROUP_BASE} -DartifactId=client-domain-controller-cache -Dversion=${IDM_VERSION} -Dpackaging=jar" />
+        </exec>
+        <exec executable="${maven}" failonerror="true">
+            <env key="M2_HOME" value="${M2_HOME}" />
+            <arg line=" -s ../settings.xml install:install-file -Dfile=${GOBUILD_RD_AUTHENTICATION_FRAMEWORK_ROOT}/lib64/vmware-endpoint-certificate-store.jar -DgroupId=${GROUP_BASE} -DartifactId=vmware-endpoint-certificate-store -Dversion=${IDM_VERSION} -Dpackaging=jar" />
+        </exec>
+    </target>
+
+    <target name="build" depends="install.vmware-dependencies">
+        <exec executable="${maven}" failonerror="true">
+            <env key="M2_HOME" value="${M2_HOME}" />
+            <arg line=" -s ../settings.xml clean install" />
+        </exec>
+    </target>
+
+</project>
