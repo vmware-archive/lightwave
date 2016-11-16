@@ -72,7 +72,6 @@ extern "C" {
 #define VMDIR_MSAS_RDN_VAL                      "Managed Service Accounts"
 #define VMDIR_CONFIGURATION_CONTAINER_NAME      "Configuration"
 #define VMDIR_CA_CONTAINER_NAME                 "Certificate-Authorities"
-
 #define RAFT_CONTEXT_CONTAINER_NAME             "raftcontext"
 #define RAFT_PERSIST_STATE_NAME                 "persiststate"
 #define RAFT_LOGS_CONTAINER_NAME                "logs"
@@ -281,6 +280,8 @@ extern "C" {
 #define ATTR_OBJECTCLASSES_LEN              sizeof(ATTR_OBJECTCLASSES)-1
 #define ATTR_DITCONTENTRULES                "ditcontentrules"
 #define ATTR_DITCONTENTRULES_LEN            sizeof(ATTR_DITCONTENTRULES)-1
+#define ATTR_LDAPSYNTAXES                   "ldapsyntaxes"
+#define ATTR_LDAPSYNTAXES_LEN               sizeof(ATTR_LDAPSYNTAXES)-1
 
 // ADSI support related attribute
 #define ATTR_ALLOWD_CHILD_CLASSES_EFFECTIVE     "allowedChildClassesEffective"
@@ -341,7 +342,6 @@ extern "C" {
 #define ATTR_MAYCONTAIN_LEN                 sizeof(ATTR_MAYCONTAIN)-1
 #define ATTR_AUXILIARY_CLASS                "auxiliaryclass"
 #define ATTR_AUXILIARY_CLASS_LEN            sizeof(ATTR_AUXILIARY_CLASS)-1
-
 //Raft attributes
 #define ATTR_RAFT_LOGINDEX                  "vmwRaftLogindex"
 #define ATTR_RAFT_TERM                      "vmwRaftTerm"

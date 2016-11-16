@@ -33,12 +33,6 @@ libvmdirclient_la_SOURCES = \
     srp_verifier_cstub.c \
     vmdirsuperlog_cstub.c \
     vmdirurgentrepl_cstub.c \
-    schema/load.c \
-    schema/parse.c \
-    schema/patch.c \
-    schema/legacy/legacyload.c \
-    schema/legacy/legacypatch.c \
-    schema/legacy/legacyutil.c \
     vmdirraft_cstub.c
 
 libvmdirclient_la_LIBADD = \

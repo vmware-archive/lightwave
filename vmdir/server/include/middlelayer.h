@@ -76,6 +76,7 @@ VmDirModifyEntryCoreLogic(
     VDIR_OPERATION *    pOperation, /* IN */
     ModifyReq *         modReq, /* IN */
     ENTRYID             entryId, /* IN */
+    BOOLEAN             bRaftLog,
     VDIR_ENTRY *        pEntry  /* OUT */
     );
 

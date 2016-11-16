@@ -20,7 +20,8 @@ DWORD
 VmDirParseArgs(
     int     argc,
     char*   argv[],
-    PSTR*   ppszServerName,
+    PSTR*   ppszRaftLeader,
+    PSTR*   ppszServerToLeave,
     PSTR*   ppszUserName,
     PSTR*   ppszPassword
     );
