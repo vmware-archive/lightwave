@@ -1,6 +1,6 @@
 [Unit]
 Description=VMware Identity Manager Service
-After=syslog.target network.target
+After=syslog.target network.target lwsmd.service
 Requires=lwsmd.service
 
 [Service]

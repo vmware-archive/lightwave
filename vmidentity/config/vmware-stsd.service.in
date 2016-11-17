@@ -1,6 +1,6 @@
 [Unit]
 Description=VMware Secure Token Service
-After=syslog.target network.target
+After=syslog.target network.target vmware-idmd.service
 Requires=vmware-idmd.service
 
 [Service]
