@@ -75,9 +75,7 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
 
     @Override
     public void upgrade() throws Exception{
-        if (startService) {
-           //IdentityManagerUtil.startService(); 
-        }
+        IdentityManagerUtil.createIDMLoginFile();
     }
 
     @Override

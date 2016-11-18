@@ -82,13 +82,14 @@ public class IdentityManagerUtil {
         configureService(certs);
     }
 
-	private void createIDMLoginFile() throws IdentityManagerInstallerException {
+	public static void createIDMLoginFile() throws IdentityManagerInstallerException,IOException {
 
 		char[] CHARSET_AZ_09 = PSCConstants.CHARSET_ALPHANUMERIC
 				.toCharArray();
 		String idmFile = InstallerUtils.joinPath(InstallerUtils
 				.getInstallerHelper().getIdmLoginPath(),
 				PSCConstants.IDM_LOGIN_FILE);
+                BufferedWriter bw = null;
 		try {
 			File file = new File(InstallerUtils
 					.getInstallerHelper().getIdmLoginPath());
@@ -97,7 +98,7 @@ public class IdentityManagerUtil {
 			}
 
 			file= new File(idmFile);
-			BufferedWriter bw = new BufferedWriter(
+			bw = new BufferedWriter(
 					new FileWriter(file));
 			String ranString = randomString(CHARSET_AZ_09, 70);
 			bw.write(ranString, 0, ranString.length());
@@ -113,7 +114,11 @@ public class IdentityManagerUtil {
 			log.error("Error while creating idm login", ex);
             throw new IdentityManagerInstallerException(
 					"Error creating idm login file", ex);
-        }
+                } finally {
+                       if(bw != null){
+                         bw.close();
+                       }
+                }
     }
 
 	private static String randomString(char[] characterSet, int length) {
