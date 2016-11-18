@@ -142,6 +142,7 @@ VmDirMDBInitializeDB(
     mdb_mode_t      oflags;
     uint64_t        db_max_mapsize = BE_MDB_ENV_MAX_MEM_MAPSIZE;
     DWORD           db_max_size_mb = 0;
+    extern int      VmDirRaftCommitHook(VOID);
 
     // TODO: fix the hard coded Database dir path
 #ifndef _WIN32
@@ -200,6 +201,8 @@ VmDirMDBInitializeDB(
 
      dwError = mdb_env_set_maxdbs ( gVdirMdbGlobals.mdbEnv, BE_MDB_ENV_MAX_DBS );
      BAIL_ON_VMDIR_ERROR( dwError );
+
+     mdb_set_commit_hook_func(gVdirMdbGlobals.mdbEnv, VmDirRaftCommitHook);
 
 #ifdef MDB_NOTLS
      envFlags = MDB_NOTLS; // Required for versions of mdb which have this flag

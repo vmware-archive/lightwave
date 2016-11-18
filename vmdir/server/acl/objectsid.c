@@ -36,20 +36,12 @@ VmDirGenerateDomainGuidSid_inlock(
     PSTR*   ppszDomainSid
     );
 
-static
 DWORD
 VmDirGenerateObjectRid(
     PDWORD  pdwRidSequence,
     PDWORD  pdwObjectRid
     );
 
-static
-DWORD
-_VmDirSynchronizeRidSequence(
-    PVDIR_DOMAIN_SID_GEN_STATE  pDomainSidState
-    );
-
-static
 DWORD
 _VmDirAllocateSidGenStackNode(
     PVMDIR_SID_GEN_STACK_NODE *ppSidGenStackNode,
@@ -168,7 +160,8 @@ VmDirGenerateObjectSid(
     BOOLEAN                     bInLock = FALSE;
     // Do not free ref
     PVDIR_DOMAIN_SID_GEN_STATE  pSidGenState = NULL;
-    DWORD                       dwObjectRid = 0;
+    UINT32                      objectRidLow = 0;
+    UINT32                      objectRidHigh = 0;
     PSTR                        pszObjectSid = NULL;
     PSTR                        pszObjectDN = NULL;
     PSTR                        pszDomainDn = NULL;
@@ -212,47 +205,17 @@ VmDirGenerateObjectSid(
     // for non-domain object, generate RID
     if (!IsDomainObject)
     {
-        dwError = VmDirGenerateObjectRid(&pSidGenState->dwDomainRidSeqence,
-                                         &dwObjectRid);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        extern UINT64 VmDirRaftLogIndexToCommit();
+        UINT64 raftCommitIndex = VmDirRaftLogIndexToCommit();
 
-        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,
-                           "allocate objectsid: (%s)(%u)(%u)(%u)",
-                           VDIR_SAFE_STRING(pSidGenState->pszDomainSid),
-                           gVmdirServerGlobals.serverId,
-                           dwObjectRid,
-                           pSidGenState->dwDomainRidSeqence);
+        objectRidHigh = (UINT32)(raftCommitIndex >> 32);
+        objectRidLow = (UINT32)raftCommitIndex;
 
-        pSidGenState->dwCount++;
-        if (pSidGenState->dwCount >= MAX_COUNT_PRIOR_WRITE)
-        {
-            dwError = _VmDirAllocateSidGenStackNode(
-                        &pSidGenStackNode,
-                        pSidGenState->dwDomainRidSeqence,
-                        pSidGenState->pszDomainDn);
-            BAIL_ON_VMDIR_ERROR(dwError);
+        //VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "allocate objectsid: (%s)(%u)(%u)",
+        //                VDIR_SAFE_STRING(pSidGenState->pszDomainSid), objectRidHigh, objectRidLow);
 
-            if (VmDirPushTSStack(gSidGenState.pStack, pSidGenStackNode) != 0)
-            {
-                VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
-                                   "gSidGenState.pStack push failed, (%s)",
-                                   pSidGenStackNode->pszDomainDn);
-            }
-            else
-            {
-                pSidGenStackNode = NULL;
-                pSidGenState->dwCount = 0;
-                VmDirSrvThrSignal( gSidGenState.pRIDSyncThr );
-            }
-        }
-
-        dwError = VmDirAllocateStringPrintf(
-                        &pszObjectSid,
-                        "%s-%u-%u",
-                        pSidGenState->pszDomainSid,
-                        gVmdirServerGlobals.serverId,
-                        dwObjectRid
-                        );
+        dwError = VmDirAllocateStringPrintf(&pszObjectSid, "%s-%u-%u",
+                                            pSidGenState->pszDomainSid, objectRidHigh, objectRidLow);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     else
@@ -578,9 +541,7 @@ VmDirGetSidGenStateIfDomain_inlock(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    pOrgState->dwDomainRidSeqence = dwDomainRidSequence;
-    dwError = _VmDirSynchronizeRidSequence( pOrgState );
-    BAIL_ON_VMDIR_ERROR(dwError);
+    pOrgState->dwDomainRidSeqence = dwDomainRidSequence++;
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
                     "Init Sid cache (%s) RID (%u)",
@@ -737,7 +698,6 @@ error:
  * Get the next value from our per-domain counter. This value constitutes
  * part of the object's SID.
  */
-static
 DWORD
 VmDirGenerateObjectRid(
     PDWORD pdwRidSequence,
@@ -765,95 +725,4 @@ error:
     }
 
     return dwError;
-}
-
-/*
- * Called during PVDIR_DOMAIN_SID_GEN_STATE instantiation.
- *
- * Make sure rid sequence number from db is up-to-date.
- * For example, if vmdird is not shutdown properly, rid sequence number in DB will be old.
- * If we do NOT re-synchronize, we will see ldap error (19) for ldap add operations.
- */
-static
-DWORD
-_VmDirSynchronizeRidSequence(
-    PVDIR_DOMAIN_SID_GEN_STATE  pDomainSidState
-    )
-{
-    DWORD               dwError = 0;
-    VDIR_ENTRY_ARRAY    entryArray = {0};
-    PSTR                pszObjectSid = NULL;
-    DWORD               dwCnt = 0;
-    VDIR_BERVALUE       bvRID = VDIR_BERVALUE_INIT;
-    char                buf64[ 64+1 ] = {0};
-
-    // Walk down from the next batch and look for the first used
-    // With potential issue from 5.5. upgrade, extend the scan to 5 batches
-    for ( dwCnt = pDomainSidState->dwDomainRidSeqence + (MAX_COUNT_PRIOR_WRITE * 5);
-          dwCnt > pDomainSidState->dwDomainRidSeqence;
-          dwCnt--
-        )
-    {
-        dwError = VmDirAllocateStringPrintf(
-                        &pszObjectSid,
-                        "%s-%u-%u",
-                        pDomainSidState->pszDomainSid,
-                        gVmdirServerGlobals.serverId,
-                        dwCnt);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirSimpleEqualFilterInternalSearch(
-                        "",
-                        LDAP_SCOPE_SUBTREE,
-                        ATTR_OBJECT_SID,    // objectsid is unique indexed.
-                        pszObjectSid,
-                        &entryArray);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        if (entryArray.iSize != 0)
-        {   // done, last used objectsid.
-            VmDirFreeEntryArrayContent(&entryArray);
-            break;
-        }
-
-        VMDIR_SAFE_FREE_MEMORY(pszObjectSid);
-    }
-
-    if (dwCnt != pDomainSidState->dwDomainRidSeqence || gFirstReplCycleMode == FIRST_REPL_CYCLE_MODE_COPY_DB)
-    {
-        // dwCnt may also not equal to pDomainSidState->dwDomainRidSeqence if no entries have been added
-        //  with new SID format: ...-serverId-RidSequence,
-
-        if  (gFirstReplCycleMode == FIRST_REPL_CYCLE_MODE_COPY_DB)
-        {
-               //The database is just copied from its partner, reset RID
-               dwCnt = VMDIR_ACL_RID_BASE;
-        }
-        dwError = VmDirStringPrintFA( buf64, sizeof(buf64), "%u", dwCnt );
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        bvRID.lberbv_val = buf64;
-        bvRID.lberbv_len = VmDirStringLenA(buf64);
-        dwError = VmDirInternalEntryAttributeReplace( NULL,
-                                                      pDomainSidState->pszDomainDn,
-                                                      VDIR_ATTRIBUTE_SEQUENCE_RID,
-                                                      &bvRID);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    // dwCnt + 1 is the next available RID
-    pDomainSidState->dwDomainRidSeqence = dwCnt;
-
-cleanup:
-
-    VmDirFreeEntryArrayContent(&entryArray);
-    VMDIR_SAFE_FREE_MEMORY(pszObjectSid);
-
-    return dwError;
-
-error:
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirSynchronizeRidSequence failed (%d)", dwError);
-
-    goto cleanup;
 }
