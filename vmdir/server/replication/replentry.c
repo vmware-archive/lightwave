@@ -124,23 +124,12 @@ _VmDirLoadRaftState(
     VDIR_ENTRY_ARRAY entryArray = {0};
     PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
     VDIR_BERVALUE dcContainerDNrdn = VDIR_BERVALUE_INIT;
-    PSTR pszDCAccountDn = NULL;
     PSTR pszName = NULL;
     PSTR pszVal = NULL;
     PSTR pszDomain = NULL;
     VDIR_RAFT_LOG logEntry = {0};
 
     dwError = VmDirSchemaCtxAcquire( &pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirRegReadDCAccountDn(&pszDCAccountDn);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VmDirFreeBervalContent(&gVmdirServerGlobals.dcAccountDN);
-    dwError = VmDirAllocateBerValueAVsnprintf(&gVmdirServerGlobals.dcAccountDN, "%s", pszDCAccountDn);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirNormalizeDN( &gVmdirServerGlobals.dcAccountDN, pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     //the follow gRaftState values are loaded from the backend.
@@ -230,7 +219,6 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
     VMDIR_SAFE_FREE_MEMORY(pszDomain);
     VmDirFreeBervalContent(&dcContainerDNrdn);
-    VMDIR_SAFE_FREE_MEMORY(pszDCAccountDn);
     VMDIR_SAFE_FREE_STRINGA(pszVal);
     VMDIR_SAFE_FREE_STRINGA(pszName);
     if (pSchemaCtx)

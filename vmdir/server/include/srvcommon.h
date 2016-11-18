@@ -913,15 +913,6 @@ VmDirSrvCreateDN(
     );
 
 DWORD
-VmDirSrvCreateServerObj(
-    PVDIR_SCHEMA_CTX pSchemaCtx
-    );
-
-DWORD
-VmDirSrvCreateReplAgrsContainer(
-    PVDIR_SCHEMA_CTX pSchemaCtx);
-
-DWORD
 VmDirKrbInit(
     VOID
     );

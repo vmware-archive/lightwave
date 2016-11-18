@@ -62,11 +62,7 @@ VmDirSrvModifyPersistedDSERoot(
     PSTR             pszConfigNamingContextDN,
     PSTR             pszSchemaNamingContextDN,
     PSTR             pszSubSchemaSubEntryDN,
-    PSTR             pszServerDN,
     PSTR             pszDefaultAdminDN,
-    PSTR             pszDCAccountDN,
-    PSTR             pszDCAccountUPN,
-    PSTR             pszDelObjsContainerDN,
     PSTR             pszSiteName
     );
 
@@ -166,8 +162,6 @@ VmDirSrvSetupHostInstance(
     PCSTR   pszCAContainerName =          VMDIR_CA_CONTAINER_NAME;
     PCSTR   pszSitesContainerName =       VMDIR_SITES_RDN_VAL;
     PCSTR   pszSiteContainerName =        "Default-First-Site";
-    PCSTR   pszServersContainerName =     VMDIR_SERVERS_CONTAINER_NAME;
-    PCSTR   pszReplAgrsContainerName =    VMDIR_REPL_AGRS_CONTAINER_NAME;
     PCSTR   pszDCsContainerName =         VMDIR_DOMAIN_CONTROLLERS_RDN_VAL;
     PCSTR   pszComputersContainerName =   VMDIR_COMPUTERS_RDN_VAL;
     PCSTR   pszMSAsContainerName =        VMDIR_MSAS_RDN_VAL;
@@ -178,9 +172,6 @@ VmDirSrvSetupHostInstance(
     PSTR    pszCAContainerDN = NULL;          // CN=Certificate-Authorities,CN=Configuration,<domain DN>
     PSTR    pszSitesContainerDN = NULL;       // CN=Sites,<configuration DN>
     PSTR    pszSiteContainerDN = NULL;        // CN=<Site-Name>,<Sites container DN>
-    PSTR    pszServersContainerDN = NULL;     // CN=Servers,<Site container DN>
-    PSTR    pszServerDN = NULL;               // CN=<fully qualified host name>,<Servers container DN>
-    PSTR    pszReplAgrsContainerDN = NULL;    // CN=Replication Agreements,<Server DN>
     PSTR    pszReplAgrDN = NULL;              // labeledURI=<ldap://192.165.226.127>,<ReplAgrsContainerDN>
     PSTR    pszDCsContainerDN = NULL;         // OU=Domain Controllers,<domain DN>
     PSTR    pszComputersContainerDN = NULL;   // OU=Computers,<domain DN>
@@ -248,12 +239,6 @@ VmDirSrvSetupHostInstance(
     dwError = VmDirSrvCreateDN( pszSiteContainerName, pszSitesContainerDN, &pszSiteContainerDN );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // Servers within the site container DN
-    dwError = VmDirSrvCreateDN( pszServersContainerName, pszSiteContainerDN, &pszServersContainerDN );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // This server DN
-
     // vdcpromo sets this key.
     dwError = VmDirGetRegKeyValue( VMDIR_CONFIG_PARAMETER_KEY_PATH,
                                    VMDIR_REG_KEY_DC_ACCOUNT,
@@ -262,9 +247,6 @@ VmDirSrvSetupHostInstance(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocASCIIUpperToLower( pszHostName, &pszLowerCaseHostName );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSrvCreateDN( pszLowerCaseHostName, pszServersContainerDN, &pszServerDN );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Domain controller account DN
@@ -282,10 +264,6 @@ VmDirSrvSetupHostInstance(
     dwError = VmDirSrvCreateDN( pszLowerCaseHostName, pszComputersContainerDN, &pszComputerAccountDN );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // Replication agreements container DN
-    dwError = VmDirSrvCreateDN( pszReplAgrsContainerName, pszServerDN, &pszReplAgrsContainerDN );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     // Managed Service Accounts container DN
     dwError = VmDirSrvCreateDN( pszMSAsContainerName, pszDomainDN, &pszMSAsDN );
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -299,8 +277,7 @@ VmDirSrvSetupHostInstance(
     {
         // Modify persisted DSE Root entry
         dwError = VmDirSrvModifyPersistedDSERoot( pSchemaCtx, pszDomainDN, pszConfigContainerDN, SCHEMA_NAMING_CONTEXT_DN,
-                                                  SUB_SCHEMA_SUB_ENTRY_DN, pszServerDN, pszDefaultAdminDN,
-                                                  pszDCAccountDN, pszDCAccountUPN, pszDelObjsContainerDN,
+                                                  SUB_SCHEMA_SUB_ENTRY_DN, pszDefaultAdminDN,
                                                   (PSTR) pszSiteContainerName );
     }
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -323,16 +300,6 @@ VmDirSrvSetupHostInstance(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirNormalizeDN( &gVmdirServerGlobals.systemDomainDN, pSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // set serverObjDN
-    dwError = VmDirAllocateBerValueAVsnprintf(
-                &gVmdirServerGlobals.serverObjDN,
-                "%s",
-                pszServerDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirNormalizeDN( &gVmdirServerGlobals.serverObjDN, pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // set dcAccountDN
@@ -456,16 +423,6 @@ VmDirSrvSetupHostInstance(
         dwError = VmDirSrvCreateContainer( pSchemaCtx, pszSitesContainerDN, pszSitesContainerName );
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        // Create Site-Name container, Servers container, and THE Server object
-        dwError = VmDirSrvCreateServerObj( pSchemaCtx );
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-/**
-        // Create Replication Agreements container
-        dwError = VmDirSrvCreateReplAgrsContainer( pSchemaCtx );
-        BAIL_ON_VMDIR_ERROR(dwError);
-        // 1st replica => no replication agreements => 1st replication cycle done
-**/
         //wake up repliation thread so that it can dynamically adding peers
         VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
         VmDirConditionSignal(gVmdirGlobals.replAgrsCondition);
@@ -500,9 +457,6 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszCAContainerDN);
     VMDIR_SAFE_FREE_MEMORY(pszSitesContainerDN);
     VMDIR_SAFE_FREE_MEMORY(pszSiteContainerDN);
-    VMDIR_SAFE_FREE_MEMORY(pszServersContainerDN);
-    VMDIR_SAFE_FREE_MEMORY(pszServerDN);
-    VMDIR_SAFE_FREE_MEMORY(pszReplAgrsContainerDN);
     VMDIR_SAFE_FREE_MEMORY(pszReplAgrDN);
     VMDIR_SAFE_FREE_MEMORY(pszDCsContainerDN);
     VMDIR_SAFE_FREE_MEMORY(pszDCAccountDN);
@@ -998,11 +952,7 @@ VmDirSrvModifyPersistedDSERoot(
     PSTR             pszConfigNamingContextDN,
     PSTR             pszSchemaNamingContextDN,
     PSTR             pszSubSchemaSubEntryDN,
-    PSTR             pszServerDN,
     PSTR             pszDefaultAdminDN,
-    PSTR             pszDCAccountDN,
-    PSTR             pszDCAccountUPN,
-    PSTR             pszDelObjsContainerDN,
     PSTR             pszSiteName
     )
 {
@@ -1017,11 +967,7 @@ VmDirSrvModifyPersistedDSERoot(
             ATTR_NAMING_CONTEXTS,               pszRootNamingContextDN,
             ATTR_NAMING_CONTEXTS,               pszConfigNamingContextDN,
             ATTR_NAMING_CONTEXTS,               pszSchemaNamingContextDN,
-            ATTR_SERVER_NAME,                   pszServerDN,
             ATTR_DEFAULT_ADMIN_DN,              pszDefaultAdminDN,
-            ATTR_DC_ACCOUNT_DN,                 pszDCAccountDN,
-            ATTR_DC_ACCOUNT_UPN,                pszDCAccountUPN,
-            ATTR_DEL_OBJS_CONTAINER,            pszDelObjsContainerDN,
             ATTR_SITE_NAME,                     pszSiteName,
             NULL
     };
