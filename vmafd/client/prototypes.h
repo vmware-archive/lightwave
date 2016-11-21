@@ -324,8 +324,6 @@ VmAfdLocalQueryAD(
 DWORD
 VmAfdLocalGetDCList(
     PCSTR pszDomain,
-    PCSTR pszUserName,
-    PCSTR pszPassword,
     PDWORD pdwServerCount,
     PVMAFD_DC_INFO_W *ppVmAfdDCInfo
 );

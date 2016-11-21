@@ -3247,16 +3247,14 @@ DWORD
 VmAfdGetDCList (
     PCSTR  pszServerName,
     PCSTR  pszDomain,
-    PCSTR  pszUserName,
-    PCSTR  pszPassword,
     PDWORD pdwServerCount,
     PVMAFD_DC_INFO_W *ppVmAfdDCInfoList
     )
 {
    DWORD dwError = 0;
 
-   if (!pdwServerCount || !ppVmAfdDCInfoList || !pszUserName
-          || !pszDomain || !pszPassword )
+   if (!pdwServerCount || !ppVmAfdDCInfoList
+          || !pszDomain )
    {
        dwError = ERROR_INVALID_PARAMETER;
        BAIL_ON_VMAFD_ERROR(dwError);
@@ -3266,8 +3264,6 @@ VmAfdGetDCList (
    {
        dwError = VmAfdLocalGetDCList(
                            pszDomain,
-                           pszUserName,
-                           pszPassword,
                            pdwServerCount,
                            ppVmAfdDCInfoList
                            );

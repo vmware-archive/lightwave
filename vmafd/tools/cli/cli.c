@@ -1360,8 +1360,6 @@ VmAfdCliGetDCList(
     dwError = VmAfdGetDCList(
                  pContext->pszServerName,
                  pContext->pszDomainName,
-                 pContext->pszUserName,
-                 pContext->pszPassword,
                  &dwServerCount,
                  &pVmAfdDCInfoList
               );
