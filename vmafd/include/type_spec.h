@@ -1243,16 +1243,6 @@ typedef struct _VMW_TYPE_SPEC_
         VMW_IPC_TYPE_STRING, \
         {NULL}\
     },\
-    { \
-       "User Name", \
-       VMW_IPC_TYPE_STRING, \
-        {NULL}\
-    },\
-    { \
-       "Password", \
-       VMW_IPC_TYPE_STRING, \
-        {NULL}\
-    },\
 }
 
 #define GET_DOMAIN_LIST_OUTPUT_PARAMS \

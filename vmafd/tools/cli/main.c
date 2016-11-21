@@ -3550,8 +3550,6 @@ ParseArgsGetDCList(
     {
         PARSE_MODE_GET_DC_LIST_OPEN = 0,
         PARSE_MODE_GET_DC_LIST_DOMAIN_NAME,
-        PARSE_MODE_GET_DC_LIST_USER_NAME,
-        PARSE_MODE_GET_DC_LIST_PASSWORD,
         PARSE_MODE_GET_DC_LIST_SERVER_NAME,
     } PARSE_MODE_GET_DC_NAME;
     PARSE_MODE_GET_DC_NAME parseMode = PARSE_MODE_GET_DC_LIST_OPEN;
@@ -3578,14 +3576,6 @@ ParseArgsGetDCList(
                 {
                     parseMode = PARSE_MODE_GET_DC_LIST_DOMAIN_NAME;
                 }
-                else if (!strcmp(pszArg,"--user-name"))
-                {
-                    parseMode = PARSE_MODE_GET_DC_LIST_USER_NAME;
-                }
-                else if (!strcmp(pszArg,"--password"))
-                {
-                    parseMode = PARSE_MODE_GET_DC_LIST_PASSWORD;
-                }
                 else
                 {
                     dwError = ERROR_LOCAL_OPTION_UNKNOWN;
@@ -3604,20 +3594,6 @@ ParseArgsGetDCList(
             case PARSE_MODE_GET_DC_LIST_DOMAIN_NAME:
 
                 dwError = VmAfdAllocateStringA(pszArg, &pContext->pszDomainName);
-                BAIL_ON_VMAFD_ERROR(dwError);
-
-                parseMode = PARSE_MODE_GET_DC_LIST_OPEN;
-                break;
-            case PARSE_MODE_GET_DC_LIST_USER_NAME:
-
-                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszUserName);
-                BAIL_ON_VMAFD_ERROR(dwError);
-
-                parseMode = PARSE_MODE_GET_DC_LIST_OPEN;
-                break;
-            case PARSE_MODE_GET_DC_LIST_PASSWORD:
-
-                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszPassword);
                 BAIL_ON_VMAFD_ERROR(dwError);
 
                 parseMode = PARSE_MODE_GET_DC_LIST_OPEN;
@@ -3677,6 +3653,6 @@ ShowUsage(
         "\tjoin-ad --server-name <server name> --user-name <user-name> --password <password> --machine-name <machine name> --domain-name <domain name>\n"
         "\tleave-ad --server-name <server name> --user-name <user-name> --password <password> --domain-name <domain name>\n"
         "\tquery-ad --server-name <server name>\n"
-        "\tget-dc-list --domain-name <domain name> --user-name <user-name> --password <password> --server-name <server name>\n"
+        "\tget-dc-list --domain-name <domain name> --server-name <server name>\n"
         "\thelp\n");
 }

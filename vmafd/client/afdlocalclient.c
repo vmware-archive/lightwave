@@ -1646,8 +1646,6 @@ error:
 DWORD
 VmAfdLocalGetDCList(
     PCSTR pszDomain,
-    PCSTR pszUserName,
-    PCSTR pszPassword,
     PDWORD pdwServerCount,
     PVMAFD_DC_INFO_W *ppVmAfdDCInfo
 )
@@ -1666,8 +1664,6 @@ VmAfdLocalGetDCList(
     noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
 
     input_spec[0].data.pString = (PSTR) pszDomain;
-    input_spec[1].data.pString = (PSTR) pszUserName;
-    input_spec[2].data.pString = (PSTR) pszPassword;
 
     dwError = VecsLocalIPCRequest(
                     apiType,
@@ -1683,7 +1679,7 @@ VmAfdLocalGetDCList(
     dwServerCount = *(output_spec[1].data.pUint32);
     dwError = VmAfdUnMarshalGetDCList(
                               dwServerCount,
-                              output_spec[3].data.pUint32,
+                              *(output_spec[3].data.pUint32),
                               output_spec[2].data.pByte,
                               &pVmAfdDCInfoList
                               );

@@ -6119,8 +6119,6 @@ VmAfdIpcGetDCList(
     PBYTE pResponse = NULL;
     DWORD dwResponseSize = 0;
     PSTR pszDomain = NULL;
-    PSTR pszUserName = NULL;
-    PSTR pszPassword = NULL;
     DWORD dwSizeRequired = 0;
     VMW_TYPE_SPEC input_spec[] = GET_DOMAIN_NAME_LIST_PARAMS;
     VMW_TYPE_SPEC output_spec[] = GET_DOMAIN_LIST_OUTPUT_PARAMS;
@@ -6149,12 +6147,8 @@ VmAfdIpcGetDCList(
     BAIL_ON_VMAFD_ERROR (dwError);
 
     pszDomain   = input_spec[0].data.pString;
-    pszUserName = input_spec[1].data.pString;
-    pszPassword = input_spec[2].data.pString;
     uResult = VmAfdGetDomainControllerList(
                         pszDomain,
-                        pszUserName,
-                        pszPassword,
                         &pVmAfdDCInfoList,
                         &dwCount
 			);
