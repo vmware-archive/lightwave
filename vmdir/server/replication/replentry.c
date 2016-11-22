@@ -123,10 +123,6 @@ _VmDirLoadRaftState(
     PVDIR_ATTRIBUTE pAttr = NULL;
     VDIR_ENTRY_ARRAY entryArray = {0};
     PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
-    VDIR_BERVALUE dcContainerDNrdn = VDIR_BERVALUE_INIT;
-    PSTR pszName = NULL;
-    PSTR pszVal = NULL;
-    PSTR pszDomain = NULL;
     VDIR_RAFT_LOG logEntry = {0};
 
     dwError = VmDirSchemaCtxAcquire( &pSchemaCtx );
@@ -190,25 +186,6 @@ _VmDirLoadRaftState(
     gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
     gRaftState.lastPingRecvTime = VmDirGetTimeInMilliSec(); //Set for request vote timeout.
 
-    dwError = VmDirGetRdn(&gVmdirServerGlobals.dcAccountDN, &dcContainerDNrdn);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirRdnToNameValue(&dcContainerDNrdn, &pszName, &pszVal);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateBerValueAVsnprintf(&gRaftState.hostname, "%s", pszVal);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAVsnprintf(&pszDomain, "%s",
-                  strchr(gVmdirServerGlobals.dcAccountUPN.lberbv_val, '@') + 1);
-
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VmDirFreeBervalContent(&gVmdirServerGlobals.dcAccountUPN);
-    dwError = VmDirAllocateBerValueAVsnprintf(&gVmdirServerGlobals.dcAccountUPN, "%s@%s",
-                   gRaftState.hostname.lberbv_val, pszDomain);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = _VmDirGetLastIndex(&gRaftState.lastLogIndex, &gRaftState.lastLogTerm);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -217,10 +194,6 @@ _VmDirLoadRaftState(
 cleanup:
     VmDirFreeEntryArrayContent(&entryArray);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-    VMDIR_SAFE_FREE_MEMORY(pszDomain);
-    VmDirFreeBervalContent(&dcContainerDNrdn);
-    VMDIR_SAFE_FREE_STRINGA(pszVal);
-    VMDIR_SAFE_FREE_STRINGA(pszName);
     if (pSchemaCtx)
     {
         VmDirSchemaCtxRelease(pSchemaCtx);
@@ -340,7 +313,7 @@ VmDirAddRaftEntry(PVDIR_SCHEMA_CTX pSchemaCtx, PVDIR_RAFT_LOG pLogEntry, PVDIR_O
     VDIR_BERVALUE bvIndexApplied = VDIR_BERVALUE_INIT;
     uuid_t guid;
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirAddRaftEntry: log index %llu", pLogEntry->index);
+    //VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirAddRaftEntry: log index %llu", pLogEntry->index);
 
     dwError = VmDirStringPrintFA(logEntryDn, sizeof(logEntryDn), "%s=%llu,%s",
                 ATTR_CN, pLogEntry->index, RAFT_LOGS_CONTAINER_DN);
@@ -973,5 +946,64 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirGetLogTerm error %d", dwError);
+    goto cleanup;
+}
+
+DWORD
+_VmDirRaftLoadGlobals(PSTR *ppszLocalErrorMsg)
+{
+    DWORD dwError = 0;
+    PSTR pszDCAccountDn = NULL;
+    VDIR_ENTRY_ARRAY entryArray = {0};
+    PSTR pszDomainName = NULL;
+    PSTR pzaName = NULL;
+    PSTR pszHostname = NULL;
+    VDIR_BERVALUE dcContainerDNrdn = VDIR_BERVALUE_INIT;
+    PSTR pszLocalErrorMsg = NULL;
+
+    dwError = VmDirRegReadDCAccountDn(&pszDCAccountDn);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "VmDirRegReadDCAccountDn failed");
+
+    dwError = VmDirSimpleEqualFilterInternalSearch(pszDCAccountDn, LDAP_SCOPE_BASE,
+                    ATTR_OBJECT_CLASS, OC_COMPUTER, &entryArray);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), 
+           "VmDirSimpleEqualFilterInternalSearch failed on DN %s", pszDCAccountDn);
+
+    if (entryArray.iSize != 1)
+    {
+        dwError = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg),
+           "VmDirSimpleEqualFilterInternalSearch failed to get exactly one entry on %s", pszDCAccountDn);
+    }
+
+    dwError = VmDirAllocateBerValueAVsnprintf(&gVmdirServerGlobals.dcAccountDN, "%s", pszDCAccountDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VmDirNormalizeDNWrapper(&gVmdirServerGlobals.dcAccountDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirDomainDNToName(gVmdirServerGlobals.systemDomainDN.bvnorm_val, &pszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetRdn(&gVmdirServerGlobals.dcAccountDN, &dcContainerDNrdn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRdnToNameValue(&dcContainerDNrdn, &pzaName, &pszHostname);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateBerValueAVsnprintf(&gVmdirServerGlobals.dcAccountUPN, "%s@%s", pszHostname, pszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateBerValueAVsnprintf(&gRaftState.hostname, "%s", pszHostname);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirRaftLoadGlobals: successfully loaded instance specific globals.");
+cleanup:
+    VmDirFreeEntryArrayContent(&entryArray);
+    VMDIR_SAFE_FREE_STRINGA(pszDCAccountDn);
+    return dwError;
+
+error:
+    *ppszLocalErrorMsg = pszLocalErrorMsg;
     goto cleanup;
 }

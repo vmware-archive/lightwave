@@ -394,7 +394,10 @@ txnretry:
     // transaction retry loop end.
     // ************************************************************************************
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Modify Entry (%s)", VDIR_SAFE_STRING(pEntry->dn.lberbv_val));
+    if (VmDirStringCaseStrA(pEntry->dn.bvnorm_val, RAFT_CONTEXT_DN)==NULL)
+    {
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Modify Entry (%s)", VDIR_SAFE_STRING(pEntry->dn.lberbv_val));
+    }
 
 cleanup:
 

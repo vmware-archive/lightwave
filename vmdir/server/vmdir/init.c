@@ -414,24 +414,16 @@ VmDirInit(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (gVmdirServerGlobals.serverId)
-    {
-        //Wait only if there is not a vdcprome pending.
-        dwError = VmDirSyncCounterWaitEvent(gVmdirGlobals.pPortListenSyncCounter, &bWaitTimeOut);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    //Wait only if there is not a vdcprome pending.
+    dwError = VmDirSyncCounterWaitEvent(gVmdirGlobals.pPortListenSyncCounter, &bWaitTimeOut);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        if (bWaitTimeOut)
-        {
-            VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "%s: NOT all LDAP ports are ready for accepting services.", __func__);
-        } else
-        {
-            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: all LDAP ports are ready for accepting services.", __func__);
-        }
-    }
-    else
+    if (bWaitTimeOut)
     {
-        // node not yet promoted, make sure no cred cache exists.
-        (VOID) VmDirDestroyDefaultKRB5CC();
+        VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "%s: NOT all LDAP ports are ready for accepting services.", __func__);
+    } else
+    {
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: all LDAP ports are ready for accepting services.", __func__);
     }
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Config MaxLdapOpThrs (%d)", gVmdirGlobals.dwMaxFlowCtrlThr );
@@ -1088,10 +1080,6 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "UpdateToDate Vector: (%s)", gVmdirServerGlobals.utdVector.lberbv_val);
             continue;
         }
-        if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_SERVER_ID, FALSE) == 0)
-        {
-            gVmdirServerGlobals.serverId = atoi(attr->vals[0].lberbv.bv_val);
-        }
     }
     if (gVmdirServerGlobals.invocationId.lberbv.bv_len == 0)
     {
@@ -1118,11 +1106,6 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
     bHasTxn = FALSE;
     BAIL_ON_VMDIR_ERROR( dwError );
 
-/*
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Server ID (%d), InvocationID (%s)",
-                                        gVmdirServerGlobals.serverId,
-                                        gVmdirServerGlobals.invocationId.lberbv_val);
-*/
     // Set the domain functional level
     // TODO: update global when dfl is changed.
     dwError = VmDirSrvGetDomainFunctionalLevel(&dwCurrentDfl);

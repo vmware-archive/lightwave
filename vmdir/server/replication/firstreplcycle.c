@@ -41,9 +41,6 @@ VmDirCreateBindingHandleA(
     handle_t   *ppBinding
     );
 
-int
-LoadServerGlobals(BOOLEAN *pbWriteInvocationId);
-
 static
 int
 _VmDirGetRemoteDBUsingRPC(
@@ -82,8 +79,6 @@ VmDirFirstReplicationCycle(
 {
     int retVal = LDAP_SUCCESS;
     PSTR  pszLocalErrorMsg = NULL;
-    BOOLEAN  bWriteInvocationId = FALSE;
-    PSTR pszDCAccountDn = NULL;
     PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
 #ifndef _WIN32
     const char  *dbHomeDir = VMDIR_DB_DIR;
@@ -111,31 +106,11 @@ VmDirFirstReplicationCycle(
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Remote DB copied from %s, and swapped successfully", pszHostname);
 
-    retVal = LoadServerGlobals(&bWriteInvocationId);
-
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-            "VmDirFirstReplicationCycle: LoadServerGlobals call failed, error: %d.", retVal );
-
-    retVal = VmDirRegReadDCAccountDn(&pszDCAccountDn);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-            "VmDirFirstReplicationCycle: VmDirRegReadDCAccount call failed error: %d", retVal);
-
-    VmDirFreeBervalContent(&gVmdirServerGlobals.dcAccountDN);
-    retVal = VmDirAllocateBerValueAVsnprintf(&gVmdirServerGlobals.dcAccountDN, "%s", pszDCAccountDn);
-    BAIL_ON_VMDIR_ERROR(retVal);
-
-    retVal = VmDirSchemaCtxAcquire( &pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR(retVal);
-
-    retVal = VmDirNormalizeDN( &gVmdirServerGlobals.dcAccountDN, pSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(retVal);
-
 cleanup:
     if (pSchemaCtx)
     {
         VmDirSchemaCtxRelease(pSchemaCtx);
     }
-    VMDIR_SAFE_FREE_MEMORY(pszDCAccountDn);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
     return retVal;
 

@@ -578,9 +578,21 @@ _VmDirReplicationThrFun(
     BOOLEAN bInReplAgrsLock = FALSE;
     BOOLEAN bInReplCycleDoneLock = FALSE;
     PVDIR_THREAD_INFO pRaftVoteSchdThreadInfo = NULL;
+    BOOLEAN bGlobalsLoaded = FALSE;
+    PSTR pszLocalErrorMsg = NULL;
 
-    if (gVmdirServerGlobals.serverId == 0)
+    dwError = _VmDirRaftLoadGlobals(&pszLocalErrorMsg);
+    if (dwError == 0)
     {
+        bGlobalsLoaded = TRUE;
+    }
+
+    if (!bGlobalsLoaded)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+        dwError = 0;
+
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirReplicationThrFun: waiting for promoting ...");
         //server has not complete vdcpromo, wait signal triggered by vdcpromo
         VMDIR_LOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
         dwError = VmDirConditionWait( gVmdirGlobals.replAgrsCondition, gVmdirGlobals.replAgrsMutex );
@@ -603,6 +615,29 @@ _VmDirReplicationThrFun(
     VMDIR_LOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
     VmDirConditionSignal(gVmdirGlobals.replCycleDoneCondition);
     VMDIR_UNLOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
+
+    if (!bGlobalsLoaded)
+    {
+        //Wait until vdcpromo has completed adding the DC to cluster.
+        int retryCnt = 0;
+        while(TRUE)
+        {
+            dwError = _VmDirRaftLoadGlobals(&pszLocalErrorMsg);
+            if (dwError == 0 || retryCnt++ > 10)
+            {
+                break;
+            }
+            VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+            VmDirSleep(3000);
+        }
+    }
+
+    if (dwError)
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirReplicationThrFun: failed with _VmDirRaftLoadGlobals  %s",
+                         VDIR_SAFE_STRING(pszLocalErrorMsg));
+        BAIL_ON_VMDIR_ERROR( dwError);
+    }
 
     dwError = _VmDirLoadRaftState();
     BAIL_ON_VMDIR_ERROR( dwError);
@@ -643,6 +678,7 @@ _VmDirReplicationThrFun(
 cleanup:
     VMDIR_UNLOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
     VMDIR_UNLOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
 
     return 0;
 
@@ -654,218 +690,6 @@ error:
     }
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
                     "_VmDirReplicationThrFun: Replication has failed with unrecoverable error %d", dwError);
-    goto cleanup;
-}
-
-DWORD
-VmDirCacheKrb5Creds(
-    PCSTR pszDcAccountUPN,
-    PCSTR pszDcAccountPwd,
-    PSTR  *ppszErrorMsg
-    )
-{
-    krb5_error_code             dwError = 0;
-    krb5_context                pKrb5Ctx = NULL;
-    krb5_creds                  myCreds = {0};
-    krb5_creds                  credsToMatch = {0};
-    krb5_principal              pKrb5TgtPrincipal = NULL;
-    krb5_principal              pKrb5DCAccountPrincipal = NULL;
-    krb5_ccache                 pDefCredCache = NULL;
-    krb5_get_init_creds_opt *   pOptions = NULL; // Not really used right now.
-    PSTR                        pszLocalErrorMsg = NULL;
-    PCSTR                       pKrb5ErrMsg = NULL;
-    PSTR                        pszTgtUPN = NULL;
-    time_t                      currentTimeInSecs = 0;
-    krb5_keytab                 keyTabHandle = NULL;
-
-    if (pszDcAccountUPN == NULL ||
-        pszDcAccountPwd == NULL)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = krb5_init_context(&pKrb5Ctx);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                            "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_init_context()",
-                            dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-    dwError = krb5_get_init_creds_opt_alloc(pKrb5Ctx, &pOptions);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_get_init_creds_opt_alloc()",
-                dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-    dwError = krb5_parse_name(pKrb5Ctx, pszDcAccountUPN, &pKrb5DCAccountPrincipal);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                             "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_parse_name()",
-                              dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirKerberosBasedBind: DCAccountPrinicpal=(%s)",
-                                       VDIR_SAFE_STRING(pszDcAccountUPN));
-
-    dwError = krb5_cc_default(pKrb5Ctx, &pDefCredCache);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                                  "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_cc_default()",
-                                  dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirKerberosBasedBind: credCache = %s",
-                                       VDIR_SAFE_STRING(krb5_cc_get_name(pKrb5Ctx, pDefCredCache)));
-
-    // non-1st replica, before 1st replication cycle is over scenario
-    // => credCache has not yet been initialized with the creds for the DC machine account => initialize it
-    if (gVmdirKrbGlobals.pszRealm == NULL || gVmdirKrbGlobals.bTryInit)
-    {
-        gVmdirKrbGlobals.bTryInit = FALSE;
-
-        dwError = krb5_get_init_creds_password(
-                        pKrb5Ctx,                           // [in] context - Library context
-                        &myCreds,                           // [out] creds - New credentials
-                        pKrb5DCAccountPrincipal,            // [in] client - Client principal
-                        (PSTR)pszDcAccountPwd,              // [in] password - Password (or NULL)
-                        NULL,                               // [in] prompter - Prompter function
-                        0,                                  // [in] data - Prompter callback data
-                        0,                                  // [in] start_time - Time when ticket becomes valid (0 for now)
-                        NULL,                               // [in] in_tkt_service - Service name of initial credentials (or NULL)
-                        pOptions);                          // [in] k5_gic_options - Initial credential options
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                  "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_get_init_creds_password()",
-                  dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-        dwError = krb5_cc_initialize(pKrb5Ctx, pDefCredCache,
-                                     myCreds.client /* This is canonical, otherwise use pKrb5DCAccountPrincipal */);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                          "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_cc_initialize()",
-                          dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-        dwError = krb5_cc_store_cred(pKrb5Ctx, pDefCredCache, &myCreds);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                          "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_cc_store_cred()",
-                          dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "First init creds cache, UPN(%s), size (%d) passed",
-                                            VDIR_SAFE_STRING( pszDcAccountUPN ),
-                                            pszDcAccountPwd ? VmDirStringLenA(pszDcAccountPwd) : 0);
-    }
-    else
-    {
-        // Try to retrieve creds for the DC machine account
-        memset(&credsToMatch, 0, sizeof(credsToMatch));
-        credsToMatch.client = pKrb5DCAccountPrincipal;
-
-        dwError = VmDirAllocateStringAVsnprintf(&pszTgtUPN, "krbtgt/%s@%s",
-                                                gVmdirKrbGlobals.pszRealm, gVmdirKrbGlobals.pszRealm);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "creadsToMatch = (%s)", pszTgtUPN);
-
-        dwError = krb5_parse_name(pKrb5Ctx, pszTgtUPN, &pKrb5TgtPrincipal);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                              "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_parse_name()",
-                              dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-        credsToMatch.server = pKrb5TgtPrincipal;
-        currentTimeInSecs = time (NULL);
-
-        dwError = krb5_cc_retrieve_cred(pKrb5Ctx, pDefCredCache, KRB5_TC_MATCH_SRV_NAMEONLY, &credsToMatch, &myCreds);
-        if (dwError == KRB5_FCC_NOFILE
-            ||
-            dwError == KRB5_CC_NOTFOUND
-            ||
-            (dwError == 0 && ( (currentTimeInSecs - myCreds.times.starttime) > (myCreds.times.endtime - myCreds.times.starttime)/2 ) ) )
-        {
-            BOOLEAN     bLogKeytabInit = dwError;
-
-            dwError = krb5_kt_default(pKrb5Ctx, &keyTabHandle);
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                      "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_kt_default()",
-                      dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-            dwError = krb5_get_init_creds_keytab(
-                            pKrb5Ctx,                   // [in] context - Library context
-                            &myCreds,                   // [out] creds - New credentials
-                            pKrb5DCAccountPrincipal,    // [in] client - Client principal
-                            keyTabHandle,               // [in] Key table handle
-                            0,                          // [in] start_time - Time when ticket becomes valid (0 for now)
-                            NULL,                       // [in] in_tkt_service - Service name of initial credentials (or NULL)
-                            pOptions);                  // [in] k5_gic_options - Initial credential options
-            if (dwError == KRB5KDC_ERR_PREAUTH_FAILED)
-            {
-                gVmdirKrbGlobals.bTryInit = TRUE;
-            }
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                  "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_get_init_creds_keytab()",
-                  dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-            dwError = krb5_cc_initialize(pKrb5Ctx, pDefCredCache,
-                                         myCreds.client /* This is canonical, otherwise use pKrb5DCAccountPrincipal */);
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                      "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_cc_initialize()",
-                      dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-            dwError = krb5_cc_store_cred(pKrb5Ctx, pDefCredCache, &myCreds);
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                      "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_cc_store_cred()",
-                      dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-
-            if ( bLogKeytabInit )
-            {
-                VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Init creds cache via keytab, UPN(%s) passed.",
-                                VDIR_SAFE_STRING( pszDcAccountUPN ));
-            }
-        }
-        else
-        {
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-                  "VmDirCacheKrb5Creds: %s failed. krb5ErrCode = %d, krb5ErrMsg = %s", "krb5_cc_retrieve_cred()",
-                  dwError, (pKrb5ErrMsg = krb5_get_error_message(pKrb5Ctx, dwError)) );
-        }
-    }
-
-cleanup:
-    if (pKrb5Ctx)
-    {
-        if (pKrb5TgtPrincipal)
-        {
-            krb5_free_principal(pKrb5Ctx, pKrb5TgtPrincipal);
-        }
-        if (pKrb5DCAccountPrincipal)
-        {
-            krb5_free_principal(pKrb5Ctx, pKrb5DCAccountPrincipal);
-        }
-        if (pDefCredCache)
-        {
-            krb5_cc_close(pKrb5Ctx, pDefCredCache);
-        }
-        if (pOptions)
-        {
-            krb5_get_init_creds_opt_free(pKrb5Ctx, pOptions);
-        }
-        if (pKrb5ErrMsg)
-        {
-            krb5_free_error_message(pKrb5Ctx, pKrb5ErrMsg);
-        }
-        if (keyTabHandle)
-        {
-            krb5_kt_close(pKrb5Ctx, keyTabHandle); // SJ-TBD: Do I really need to do that?
-        }
-        krb5_free_cred_contents( pKrb5Ctx, &myCreds );
-        krb5_free_context(pKrb5Ctx);
-    }
-    VMDIR_SAFE_FREE_MEMORY(pszTgtUPN);
-    if (ppszErrorMsg != NULL)
-    {
-        *ppszErrorMsg = pszLocalErrorMsg;
-        pszLocalErrorMsg = NULL;
-    }
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-
-    return dwError;
-
-error:
-    if (ppszErrorMsg == NULL)
-    {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s", VDIR_SAFE_STRING(pszLocalErrorMsg));
-    }
     goto cleanup;
 }
 
@@ -1231,9 +1055,9 @@ ReplicateLog:
             {
                  VmDirConditionSignal(gRaftAppendEntryReachConsensusCond);
             }
-            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-                    "_VmDirAppendEntriesRpc: got consent from %s current logIdx %llu term %d",
-                    pPeerHostName, gEntries->index, gRaftState.currentTerm);
+            //VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+            //        "_VmDirAppendEntriesRpc: got consent from %s current logIdx %llu term %d",
+            //        pPeerHostName, gEntries->index, gRaftState.currentTerm);
             goto cleanup;
         }
     } else
@@ -1514,6 +1338,9 @@ _VmDirAppendEntriesGetReply(
     BOOLEAN bLogFound = FALSE;
     BOOLEAN bTermMatch = FALSE;
     VDIR_RAFT_LOG chgLog = {0};
+    static int logCnt = 0;
+    static time_t prevLogTime = {0};
+    time_t now = {0};
 
     *status = 1;
 
@@ -1600,11 +1427,18 @@ _VmDirAppendEntriesGetReply(
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
-    if (dwError == 0)
+
+    if (dwError == 0 && logCnt++ % 10 == 0)
     {
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-          "_VmDirAppendEntriesGetReply: entrySize %d; leader %s term %d leaderCommit %llu preLogIndex %llu preLogTerm %d; server term %d (old term %d) role %d status %d",
-          entrySize, leader, term, leaderCommit, preLogIndex, preLogTerm, *currentTerm, oldterm, gRaftState.role, *status);
+        now = time(&now);
+        if ((now - prevLogTime) > 30)
+        {
+            prevLogTime = now;
+            //Log ping or appendEntries not more than every 10 calls or 30 seconds
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+              "_VmDirAppendEntriesGetReply: entrySize %d; leader %s term %d leaderCommit %llu preLogIndex %llu preLogTerm %d; server term %d (old term %d) role %d status %d",
+              entrySize, leader, term, leaderCommit, preLogIndex, preLogTerm, *currentTerm, oldterm, gRaftState.role, *status);
+        }
     }
     _VmDirChgLogFree(&chgLog);
     return dwError;
@@ -1677,8 +1511,8 @@ int VmDirRaftCommitHook()
     _VmDirClearProxyLogReplicatedInLock();
 
     //Wait for majority peers to replicate the log.
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirRaftCommitHook: wait gRaftAppendEntryReachConsensusCond; role %d term %d",
-                   gRaftState.role, gRaftState.currentTerm);
+    //VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirRaftCommitHook: wait gRaftAppendEntryReachConsensusCond; role %d term %d",
+    //               gRaftState.role, gRaftState.currentTerm);
 
     VmDirConditionWait(gRaftAppendEntryReachConsensusCond, gRaftStateMutex);
 
@@ -1694,8 +1528,8 @@ int VmDirRaftCommitHook()
     gRaftState.commitIndex = gRaftState.lastApplied = gRaftState.lastLogIndex = gLogEntry.index;
     gRaftState.lastLogTerm = gRaftState.commitIndexTerm = gLogEntry.term;
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirRaftCommitHook: succeeded; server role %d term %d lastApplied %llu",
-        gRaftState.role, gRaftState.currentTerm, gRaftState.lastApplied);
+    //VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirRaftCommitHook: succeeded; server role %d term %d lastApplied %llu",
+    //    gRaftState.role, gRaftState.currentTerm, gRaftState.lastApplied);
 
 cleanup:
     _VmDirChgLogFree(&gLogEntry);
@@ -2331,8 +2165,8 @@ _VmDirApplyLog(unsigned long long indexToApply)
                                  VDIR_SAFE_STRING(entry.dn.lberbv.bv_val));
     }
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: %s %s succeeded from log %s",
-                   opStr, entry.dn.lberbv.bv_val, logEntryDn);
+    //VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: %s %s succeeded from log %s",
+    //               opStr, entry.dn.lberbv.bv_val, logEntryDn);
 
 cleanup:
     if (modOp.pBECtx)

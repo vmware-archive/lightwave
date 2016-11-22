@@ -890,33 +890,30 @@ vmdirConnAccept(
     fd_set               poll_fd_set;
     struct timeval       timeout = {0};
 
-    // Wait for ***1st*** replication cycle to be over.
-    if (gVmdirServerGlobals.serverId == 0) // instance has not been initialized
+    // Wait for instance to be promoted or RaftLoadGlobals to complete.
+    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "Connection accept thread: Have NOT yet started listening on LDAP port (%u),"
+              " waiting for the 1st replication cycle to be over.", dwPort);
+
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replCycleDoneMutex);
+    // wait till 1st replication cycle is over
+    if (VmDirConditionWait( gVmdirGlobals.replCycleDoneCondition, gVmdirGlobals.replCycleDoneMutex ) != 0)
     {
-        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "Connection accept thread: Have NOT yet started listening on LDAP port (%u),"
-                  " waiting for the 1st replication cycle to be over.", dwPort);
-
-        VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replCycleDoneMutex);
-        // wait till 1st replication cycle is over
-        if (VmDirConditionWait( gVmdirGlobals.replCycleDoneCondition, gVmdirGlobals.replCycleDoneMutex ) != 0)
-        {
-            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Connection accept thread: VmDirConditionWait failed." );
-            retVal = LDAP_OPERATIONS_ERROR;
-            goto cleanup;
-        }
-        // also wake up the other (normal LDAP port/SSL LDAP port listner) LDAP connection accept thread,
-        // waiting on 1st replication cycle to be over
-        // BUGBUG Does not handle spurious wake up
-        VmDirConditionSignal(gVmdirGlobals.replCycleDoneCondition);
-        VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replCycleDoneMutex);
-
-        if (VmDirdState() == VMDIRD_STATE_SHUTDOWN) // Asked to shutdown before we started accepting
-        {
-            goto cleanup;
-        }
-
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Connection accept thread: listening on LDAP port (%u).", dwPort);
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Connection accept thread: VmDirConditionWait failed." );
+        retVal = LDAP_OPERATIONS_ERROR;
+        goto cleanup;
     }
+    // also wake up the other (normal LDAP port/SSL LDAP port listner) LDAP connection accept thread,
+    // waiting on 1st replication cycle to be over
+    // BUGBUG Does not handle spurious wake up
+    VmDirConditionSignal(gVmdirGlobals.replCycleDoneCondition);
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replCycleDoneMutex);
+
+    if (VmDirdState() == VMDIRD_STATE_SHUTDOWN) // Asked to shutdown before we started accepting
+    {
+        goto cleanup;
+    }
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Connection accept thread: listening on LDAP port (%u).", dwPort);
 
     iLocalLogMask = VmDirLogGetMask();
     ber_set_option(NULL, LBER_OPT_DEBUG_LEVEL, &iLocalLogMask);

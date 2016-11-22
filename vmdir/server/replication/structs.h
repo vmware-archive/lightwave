@@ -231,3 +231,4 @@ VOID _VmDirEncodeUINT64(unsigned char ** ppbuf, UINT64 value);
 UINT64 _VmDirDecodeUINT64(unsigned char ** ppbuf);
 VOID _VmDirChgLogFree( PVDIR_RAFT_LOG chgLog);
 DWORD _VmDirGetLogTerm(UINT64 index, UINT32 *term);
+DWORD _VmDirRaftLoadGlobals(PSTR *);

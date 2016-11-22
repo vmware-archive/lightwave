@@ -182,6 +182,7 @@ VmDirSrvSetupHostInstance(
     PSTR    pszUpperCaseFQDomainName = NULL;
     PSTR    pszLowerCaseHostName = NULL;
     PSTR    pszDefaultAdminDN = NULL;
+    PSTR    pszSiteDN = NULL;
 
     PVDIR_SCHEMA_CTX     pSchemaCtx = NULL;
     char                 pszHostName[VMDIR_MAX_HOSTNAME_LEN];
@@ -387,9 +388,6 @@ VmDirSrvSetupHostInstance(
 
     if (IsNullOrEmptyString(pszReplURI)) // 1st directory instance is being setup
     {
-        // Set gVmdirServerGlobals.serverId FIRST, so that correct SID can be generated for the objects added subsequently.
-        gVmdirServerGlobals.serverId = 1;
-
         dwError = VmDirSrvSetupDomainInstance( pSchemaCtx, TRUE, TRUE, pszFQDomainName, pszDomainDN, pszUsername,
                                                pszPassword );
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -423,8 +421,15 @@ VmDirSrvSetupHostInstance(
         dwError = VmDirSrvCreateContainer( pSchemaCtx, pszSitesContainerDN, pszSitesContainerName );
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        dwError = VmDirAllocateStringAVsnprintf(&pszSiteDN, "%s=%s,%s", ATTR_CN, gVmdirServerGlobals.pszSiteName, pszSitesContainerDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSrvCreateContainer( pSchemaCtx, pszSiteDN, gVmdirServerGlobals.pszSiteName );
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         //wake up repliation thread so that it can dynamically adding peers
         VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirSrvSetupHostInstance: wakeup replication thread with gVmdirGlobals.replAgrsCondition");
         VmDirConditionSignal(gVmdirGlobals.replAgrsCondition);
         VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
     }
@@ -468,6 +473,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszUsersContainerDN);
     VMDIR_SAFE_FREE_MEMORY(pszUserDN);
     VMDIR_SAFE_FREE_MEMORY(pszDefaultAdminDN);
+    VMDIR_SAFE_FREE_MEMORY(pszSiteDN);
     VMDIR_SAFE_FREE_MEMORY(pszLowerCaseHostName);
 
     VmDirFreeBervalContent(&bv);

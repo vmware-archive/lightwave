@@ -116,7 +116,6 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         // NOTE: order of fields MUST stay in sync with struct definition...
         VMDIR_SF_INIT(.invocationId, VDIR_BERVALUE_INIT),
         VMDIR_SF_INIT(.bvDefaultAdminDN, VDIR_BERVALUE_INIT),
-        VMDIR_SF_INIT(.serverId, 0),
         VMDIR_SF_INIT(.systemDomainDN, VDIR_BERVALUE_INIT),
         VMDIR_SF_INIT(.delObjsContainerDN, VDIR_BERVALUE_INIT),
         VMDIR_SF_INIT(.bvDCGroupDN, VDIR_BERVALUE_INIT),

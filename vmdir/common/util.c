@@ -1437,7 +1437,6 @@ cleanup:
 
 error:
     VMDIR_SAFE_FREE_MEMORY(pszLocal);
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirRegReadDCAccountDn failed (%d)", dwError );
 
     goto cleanup;
 }

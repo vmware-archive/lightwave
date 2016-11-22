@@ -87,7 +87,6 @@ typedef struct _VMDIR_SERVER_GLOBALS
 
     VDIR_BERVALUE        invocationId;
     VDIR_BERVALUE        bvDefaultAdminDN;
-    int                  serverId;
     VDIR_BERVALUE        systemDomainDN;
     VDIR_BERVALUE        delObjsContainerDN;
     VDIR_BERVALUE        bvDCGroupDN;
