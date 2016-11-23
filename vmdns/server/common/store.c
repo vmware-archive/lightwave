@@ -25,16 +25,27 @@
 #include "includes.h"
 
 DWORD
+VmDnsStoreInitialize(
+    )
+{
+    DWORD dwError = 0;
+    dwError = VmDnsCreateInitZoneContainer();
+    return dwError;
+}
+
+VOID
+VmDnsStoreCleanup(
+    )
+{
+}
+
+DWORD
 VmDnsStoreCreateZone(
     PVMDNS_ZONE_INFO    pZoneInfo
     )
 {
     DWORD dwError = 0;
-    if (gpDNSDriverGlobals->bUseDirectoryStore)
-    {
-        dwError = VmDnsDirCreateZone(pZoneInfo);
-    }
-
+    dwError = VmDnsDirCreateZone(pZoneInfo);
     return dwError;
 }
 
@@ -44,11 +55,7 @@ VmDnsStoreUpdateZone(
     )
 {
     DWORD dwError = 0;
-    if (gpDNSDriverGlobals->bUseDirectoryStore)
-    {
-        dwError = VmDnsDirUpdateZone(pZoneInfo);
-    }
-
+    dwError = VmDnsDirUpdateZone(pZoneInfo);
     return dwError;
 }
 
@@ -58,12 +65,44 @@ VmDnsStoreDeleteZone(
     )
 {
     DWORD dwError = 0;
-    if (gpDNSDriverGlobals->bUseDirectoryStore)
-    {
-        dwError = VmDnsDirDeleteZone(pszZoneName);
-    }
-
+    dwError = VmDnsDirDeleteZone(pszZoneName);
     return dwError;
+}
+
+DWORD
+VmDnsStoreListZones(
+    PSTR**              pppszZones,
+    PDWORD              pdwCount
+    )
+{
+    DWORD dwError = 0;
+    dwError = VmDnsDirListZones(pppszZones, pdwCount);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+
+DWORD
+VmDnsStoreListRecords(
+    PCSTR               pszZone,
+    PVMDNS_RECORD_LIST  *ppRecordArray
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = VmDnsDirListRecords(pszZone, ppRecordArray);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
 }
 
 DWORD
@@ -73,10 +112,7 @@ VmDnsStoreAddZoneRecord(
     )
 {
     DWORD dwError = 0;
-    if (gpDNSDriverGlobals->bUseDirectoryStore)
-    {
-        dwError = VmDnsDirAddZoneRecord(pszZoneName, pRecord);
-    }
+    dwError = VmDnsDirAddZoneRecord(pszZoneName, pRecord);
 
     return dwError;
 }
@@ -88,14 +124,28 @@ VmDnsStoreDeleteZoneRecord(
     )
 {
     DWORD dwError = 0;
-    if (gpDNSDriverGlobals->bUseDirectoryStore)
-    {
-        dwError = VmDnsDirDeleteZoneRecord(pszZoneName, pRecord);
-    }
-
+    dwError = VmDnsDirDeleteZoneRecord(pszZoneName, pRecord);
     return dwError;
 }
 
+DWORD
+VmDnsStoreGetRecords(
+    PCSTR               pszZone,
+    PCSTR               pszName,
+    PVMDNS_RECORD_LIST *ppRecordArray
+    )
+{
+    DWORD dwError = 0;
+    dwError = VmDnsDirGetRecords(
+                        pszZone,
+                        pszName,
+                        ppRecordArray);
+
+    /* Translating LDAP error code to MS error code for use in serviceapi */
+    dwError = (dwError == LDAP_NO_SUCH_OBJECT) ? ERROR_NOT_FOUND : dwError;
+
+    return dwError;
+}
 DWORD
 VmDnsStoreSaveForwarders(
     DWORD               dwCount,
@@ -103,10 +153,66 @@ VmDnsStoreSaveForwarders(
     )
 {
     DWORD dwError = 0;
-    if (gpDNSDriverGlobals->bUseDirectoryStore)
-    {
-        dwError = VmDnsDirSaveForwarders(dwCount, ppszForwarders);
-    }
-
+    dwError = VmDnsDirSaveForwarders(dwCount, ppszForwarders);
     return dwError;
 }
+
+DWORD
+VmDnsStoreGetForwarders(
+    PDWORD              pdwCount,
+    PSTR**              pppszForwarders
+    )
+{
+    DWORD dwError = 0;
+    dwError = VmDnsDirLoadForwarders(pdwCount, pppszForwarders);
+    return dwError;
+}
+
+DWORD
+VmDnsStoreGetReplicationStatus(
+    PDWORD             pdwLastChangedUSN
+    )
+{
+    DWORD dwError = 0;
+    dwError = VmDnsDirGetReplicationStatus(pdwLastChangedUSN);
+    return dwError;
+}
+
+DWORD
+VmDnsStoreSyncDeleted(
+    DWORD                        dwLastChangedUSN,
+    DWORD                        dwNewUSN,
+    LPVMDNS_ADD_REMOVE_ZONE_PROC LpRemoveZoneProc,
+    PVOID                        pData
+    )
+{
+    DWORD dwError = 0;
+    dwError = VmDnsDirSyncDeleted(
+                    dwLastChangedUSN,
+                    dwNewUSN,
+                    LpRemoveZoneProc,
+                    pData
+                    );
+    return dwError;
+}
+
+DWORD
+VmDnsStoreSyncNewObjects(
+    DWORD                        dwLastChangedUSN,
+    DWORD                        dwNewUSN,
+    LPVMDNS_ADD_REMOVE_ZONE_PROC LpSyncZoneProc,
+    LPVMDNS_PURGE_RECORD_PROC    LpPurgeRecordProc,
+    PVOID                        pData
+    )
+{
+    DWORD dwError = 0;
+    dwError = VmDnsDirSyncNewObjects(
+                        dwLastChangedUSN,
+                        dwNewUSN,
+                        LpSyncZoneProc,
+                        LpPurgeRecordProc,
+                        pData
+                        );
+    return dwError;
+}
+

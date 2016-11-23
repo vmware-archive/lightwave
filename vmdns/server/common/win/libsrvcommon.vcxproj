@@ -81,6 +81,14 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>libcommon.lib;dcelib.lib;gssapi64.lib;ws2_32.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(SolutionDir)$(IntDir)$(ProjectName).dll</OutputFile>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
     <Lib>
       <OutputFile>$(OutDir)$(ProjectName).lib</OutputFile>
     </Lib>
@@ -98,9 +106,16 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <Optimization>Disabled</Optimization>
     </ClCompile>
-    <ProjectReference>
-      <LinkLibraryDependencies>false</LinkLibraryDependencies>
-    </ProjectReference>
+    <Link>
+      <AdditionalDependencies>libcommon.lib;dcelib.lib; gssapi64.lib; ws2_32.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(SolutionDir)$(IntDir)$(ProjectName).dll</OutputFile>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\includes.h" />
@@ -112,19 +127,26 @@
     <ClCompile Include="..\cache.c" />
     <ClCompile Include="..\dnsparser.c" />
     <ClCompile Include="..\dnsutils.c" />
-    <ClCompile Include="..\forwarder.c">
+    <ClCompile Include="..\forwarder.c" />
+    <ClCompile Include="..\dnsprotocol.c" />
+    <ClCompile Include="..\securityutils.c">
       <ShowIncludes Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ShowIncludes>
     </ClCompile>
     <ClCompile Include="..\hashtable.c" />
     <ClCompile Include="..\ldap.c" />
+    <ClCompile Include="..\lru.c" />
+    <ClCompile Include="..\nameentry.c" />
+    <ClCompile Include="..\recordlist.c" />
+    <ClCompile Include="..\recordobject.c" />
+    <ClCompile Include="..\serviceapi.c" />
     <ClCompile Include="..\sockinterface.c">
       <ShowIncludes Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ShowIncludes>
     </ClCompile>
     <ClCompile Include="..\store.c" />
     <ClCompile Include="..\util.c" />
-    <ClCompile Include="..\nameEntry.c" />
-    <ClCompile Include="..\zones.c" />
     <ClCompile Include="..\globals.c" />
+    <ClCompile Include="..\zone.c" />
+    <ClCompile Include="..\zonelist.c" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\common\win\libcommon.vcxproj">

@@ -17,11 +17,18 @@ libsrvcommon_la_SOURCES = \
     globals.c             \
     hashtable.c           \
     ldap.c                \
+    lru.c                 \
     nameEntry.c           \
+    recordlist.c          \
+    recordobject.c        \
+    securityutils.c       \
+    dnsprotocol.c         \
+    serviceapi.c          \
     sockinterface.c       \
     store.c               \
     util.c                \
-    zones.c               
+    zone.c                \
+    zonelist.c
 
 libsrvcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/include \

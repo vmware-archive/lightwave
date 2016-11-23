@@ -24,17 +24,6 @@
  *            Private Structures
  */
 
-typedef struct __VMDNS_MESSAGE_BUFFER
-{
-    size_t szMaxSize;
-    size_t szCurrentSize;
-    size_t szLength; //write cursor
-    size_t szCursor; //read cursor
-    BOOL  bCanWrite;
-    BOOL  bTokenizeDomainName;
-    PBYTE pMessage;
-}VMDNS_MESSAGE_BUFFER;
-
 typedef struct _VMDNS_MUTEX
 {
     BOOLEAN                 bInitialized;

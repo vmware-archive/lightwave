@@ -133,3 +133,121 @@ VmDnsRpcServerFreeStringArrayA(
     VmDnsRpcFreeMemory(ppszStrArray);
 }
 
+DWORD
+VmDnsRpcAllocateBlob(
+    UINT16 unSize,
+    PVMDNS_BLOB *ppBlob
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_BLOB pBlob = NULL;
+
+    if (!ppBlob)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsRpcAllocateMemory(
+                        sizeof(VMDNS_BLOB),
+                        (PVOID)&pBlob
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    if (unSize)
+    {
+        dwError = VmDnsRpcAllocateMemory(
+                            unSize,
+                            (PVOID)&pBlob->pData
+                            );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        pBlob->unSize = unSize;
+    }
+    else
+    {
+        pBlob->pData = NULL;
+    }
+
+    *ppBlob = pBlob;
+
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmDnsRpcFreeBlob(pBlob);
+    if (ppBlob)
+    {
+        *ppBlob = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+VmDnsRpcCopyBlob(
+    PVMDNS_BLOB pSrcBlob,
+    PVMDNS_BLOB *ppDstBlob
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_BLOB pDstBlob = NULL;
+
+    if (!pSrcBlob || !ppDstBlob)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsRpcAllocateBlob(
+                        pSrcBlob->unSize,
+                        &pDstBlob
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsCopyMemory(
+                    &pDstBlob->pData,
+                    pDstBlob->unSize,
+                    &pSrcBlob->pData,
+                    pSrcBlob->unSize
+                    );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppDstBlob = pDstBlob;
+
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmDnsRpcFreeBlob(pDstBlob);
+    if (ppDstBlob)
+    {
+        *ppDstBlob = NULL;
+    }
+
+    goto cleanup;
+}
+
+VOID
+VmDnsRpcFreeBlob(
+    PVMDNS_BLOB pBlob
+    )
+{
+    if (pBlob)
+    {
+        if (pBlob->pData)
+        {
+            VmDnsRpcFreeMemory(pBlob->pData);
+            pBlob->pData = NULL;
+        }
+
+        VmDnsRpcFreeMemory(pBlob);
+        pBlob = NULL;
+    }
+}

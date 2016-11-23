@@ -287,9 +287,11 @@ VmAfSrvPromoteVmDir(
     else
     {
         dwError = VmAfSrvGetDomainName(&pwszCurDomainName);
+        VmAfdLog( VMAFD_DEBUG_ERROR,"Cur Domain name = %d",dwError);
         BAIL_ON_VMAFD_ERROR(dwError);
 
         dwError = VmAfdAllocateStringAFromW(pwszCurDomainName, &pszDomainName);
+        VmAfdLog( VMAFD_DEBUG_ERROR,"Cur Domain name = %s",pszDomainName );
         BAIL_ON_VMAFD_ERROR(dwError);
 
         dwError = VmAfdAllocateStringA(pszDomainName, &pszDefaultRealm);
@@ -1724,9 +1726,9 @@ VmAfSrvSetDNSRecords(
     DWORD dwNumV6Address = 0;
     size_t i = 0;
     PVMDNS_RECORD_ARRAY pRecordArray = NULL;
-    PSTR pszZone = (PSTR)pszDomain;
     PSTR pszName = (PSTR)pszMachineName;
     VMDNS_RECORD record = {0};
+    CHAR szZone[255] = {0};
 
     dwError = VmDnsOpenServerA(
                     pszDCAddress,
@@ -1738,11 +1740,22 @@ VmAfSrvSetDNSRecords(
                     &pServerContext);
     if (dwError)
     {
-        VmAfdLog(VMAFD_DEBUG_ANY,
+        VmAfdLog(VMAFD_DEBUG_ERROR,
                  "%s: failed to connect to DNS server %s (%u)",
                  __FUNCTION__, pszDCAddress, dwError);
     }
     BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdStringCpyA(szZone,255,pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    DWORD dwDomainNameStrLen = strlen(szZone);
+
+    if (szZone[dwDomainNameStrLen -1 ] != '.')
+    {
+        szZone[dwDomainNameStrLen] = '.';
+        szZone[dwDomainNameStrLen +1] = 0;
+    }
 
     dwError = VmAfSrvGetIPAddressesWrap(
                     &pV4Addresses,
@@ -1764,7 +1777,7 @@ VmAfSrvSetDNSRecords(
 
     dwError = VmDnsQueryRecordsA(
                     pServerContext,
-                    pszZone,
+                    szZone,
                     pszName,
                     VMDNS_RR_TYPE_A,
                     0,
@@ -1772,8 +1785,8 @@ VmAfSrvSetDNSRecords(
     if (dwError != 0 && dwError != ERROR_NOT_FOUND)
     {
         VmAfdLog(VMAFD_DEBUG_ANY,
-                 "%s: failed to query DNS records (%u)",
-                 __FUNCTION__, dwError);
+                 "%s: failed to query DNS records (%u),%s, %s",
+                 __FUNCTION__, dwError, szZone,pszName);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -1786,7 +1799,7 @@ VmAfSrvSetDNSRecords(
         {
             dwError = VmDnsDeleteRecordA(
                             pServerContext,
-                            pszZone,
+                            szZone,
                             &pRecordArray->Records[i]);
             if (dwError)
             {
@@ -1805,7 +1818,7 @@ VmAfSrvSetDNSRecords(
 
         dwError = VmDnsAddRecordA(
                         pServerContext,
-                        pszZone,
+                        szZone,
                         &record);
         if (dwError)
         {

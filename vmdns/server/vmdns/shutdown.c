@@ -38,8 +38,7 @@ VmDnsShutdown(
 {
     VmDnsRpcServerShutdown();
     VmDnsShutdownProtocolServer();
-    VmDnsStopDirectorySync();
-    VmDnsCoreCleanup();
+    VmDnsSrvCleanup();
     VmwSockShutdown();
     VmDnsCleanupGlobals();
 }

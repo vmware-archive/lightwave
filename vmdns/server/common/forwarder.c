@@ -123,7 +123,7 @@ PVMDNS_FORWARDER_CONETXT
 VmDnsGetForwarderContext(
     )
 {
-    return gpDNSDriverGlobals->pForwarderContext;
+    return gpSrvContext->pForwarderContext;
 }
 
 DWORD
@@ -228,7 +228,7 @@ error:
 DWORD
 VmDnsAddForwarder(
     PVMDNS_FORWARDER_CONETXT    pForwarder,
-    PSTR                        pszForwarder
+    PCSTR                       pszForwarder
     )
 {
     DWORD dwError = 0;
@@ -243,7 +243,7 @@ VmDnsAddForwarder(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    VMDNS_LOCKREAD(pForwarder->pLock);
+    VMDNS_LOCKWRITE(pForwarder->pLock);
     bLocked = TRUE;
 
     int index = VmDnsForwarderLookup(
@@ -271,7 +271,7 @@ cleanup:
 
     if (bLocked)
     {
-        VMDNS_UNLOCKREAD(pForwarder->pLock);
+        VMDNS_UNLOCKWRITE(pForwarder->pLock);
     }
     return dwError;
 
@@ -283,7 +283,7 @@ error:
 DWORD
 VmDnsDeleteForwarder(
     PVMDNS_FORWARDER_CONETXT    pForwarder,
-    PSTR                        pszForwarder
+    PCSTR                       pszForwarder
     )
 {
     DWORD dwError = 0;
@@ -434,7 +434,8 @@ VmDnsForwarderResolveRequest(
     DWORD                       dwQuerySize,
     PBYTE                       pQueryBuffer,
     PDWORD                      pdwResponseSize,
-    PBYTE*                      ppResopnse
+    PBYTE*                      ppResopnse,
+    PUCHAR                      prCode
     )
 {
     DWORD dwError = 0;
@@ -492,6 +493,7 @@ VmDnsForwarderResolveRequest(
 
     *ppResopnse = pResponse;
     *pdwResponseSize = dwResponseSize;
+    *prCode = (UCHAR)dwResponseCode;
 
 cleanup:
 
@@ -686,7 +688,8 @@ VmDnsPeekResponseCode(
     )
 {
     DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_MESSAGE pDnsMessage = NULL;
+    //PVMDNS_MESSAGE pDnsMessage = NULL;
+    //PVMDNS_UPDATE_MESSAGE pUpdateDnsMessage = NULL;
 
     if (!pdwResponseCode)
     {
@@ -697,18 +700,17 @@ VmDnsPeekResponseCode(
     //dwError = VmDnsGetDnsMessage(
     //                      pResponseBytes,
     //                      dwResponseSize,
-    //                      &pDnsMessage
+    //                      &pDnsMessage,
+    //                      &pUpdateDnsMessage
     //                      );
     //BAIL_ON_VMDNS_ERROR(dwError);
 
-    *pdwResponseCode = 0; // pDnsMessage->pHeader->codes.RCODE;
+    //*pdwResponseCode = pDnsMessage->pHeader->codes.RCODE;
 
 cleanup:
 
-    if (pDnsMessage)
-    {
-        VmDnsFreeDnsMessage(pDnsMessage);
-    }
+    //VmDnsFreeDnsMessage(pDnsMessage);
+    //VmDnsFreeDnsUpdateMessage(pUpdateDnsMessage);
 
     return dwError;
 

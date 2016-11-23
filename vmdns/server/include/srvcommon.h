@@ -31,7 +31,7 @@ extern "C" {
 
 #define VMDNS_GUID_STR_LEN             (32 + 4 /* -s */ + 1 /* \0 */) // "%08x-%04x-%04x-%04x-%04x%08x"
 #define VMDNS_HASH_TABLE_ITER_INIT     {NULL, 0}
-#define VMDNS_UDP_PACKET_SIZE           (512)
+#define VMDNS_UDP_PACKET_SIZE           (64*1024)
 
 #define VMDNS_LDAP_SRV_NAME "_ldap._tcp"
 #define VMDNS_KERBEROS_SRV_NAME "_kerberos._tcp"
@@ -64,7 +64,6 @@ typedef struct _VMDNS_HASH_TABLE_ITER
     PVMDNS_HASH_TABLE_NODE pNext;
     ULONG ulIndex;
 } VMDNS_HASH_TABLE_ITER, *PVMDNS_HASH_TABLE_ITER;
-
 
 typedef PVOID
 (*VMDNS_HASH_GET_KEY_FUNCTION)(
@@ -116,7 +115,6 @@ VmDnsHashTableGet(
     PVOID* value
 );
 
-
 DWORD
 VmDnsHashTableRemove(
     PVMDNS_HASH_TABLE pTable,
@@ -146,11 +144,10 @@ VmDnsHashTableIterate(
 
 VOID
 VmDnsHashTableResetIter(
-PVMDNS_HASH_TABLE_ITER pIter
-);
+    PVMDNS_HASH_TABLE_ITER pIter
+    );
 
-
-// LDAP
+// serviceapi.c
 typedef enum _VMDNS_USER_TYPE
 {
     VMDNS_ADMINISTRATORS,
@@ -162,182 +159,20 @@ typedef struct _SINGLE_LIST_ENTRY *PSINGLE_LIST_ENTRY;
 #endif
 
 typedef struct _VMDNS_DIR_CONTEXT       *PVMDNS_DIR_CONTEXT;
-typedef struct _VMDNS_DIR_ZONE_ENTRY    *PVMDNS_DIR_ZONE_ENTRY;
-typedef struct _VMDNS_DIR_DNS_INFO      *PVMDNS_DIR_DNS_INFO;
-typedef struct _VMDNS_RECORD_ENTRY      *PVMDNS_RECORD_ENTRY;
-typedef struct _VMDNS_ZONE              *PVMDNS_ZONE;
-typedef struct _VMDNS_ZONE_ENTRY        *PVMDNS_ZONE_ENTRY;
 typedef struct _VMDNS_ZONE_LIST         *PVMDNS_ZONE_LIST;
+typedef struct _VMDNS_ZONE_OBJECT       *PVMDNS_ZONE_OBJECT;
 typedef struct _VMDNS_NAME_ENTRY        *PVMDNS_NAME_ENTRY;
+typedef struct _VMDNS_RECORD_LIST       *PVMDNS_RECORD_LIST;
+typedef struct _VMDNS_RECORD_OBJECT     *PVMDNS_RECORD_OBJECT;
 typedef struct _VMDNS_FORWARDER_CONETXT *PVMDNS_FORWARDER_CONETXT;
-
-DWORD
-VmDnsDirConnect(
-    PCSTR               szHostName,
-    PVMDNS_DIR_CONTEXT* ppDirContext
-    );
-
-VOID
-VmDnsDirClose(
-    PVMDNS_DIR_CONTEXT pDirContext
-    );
-
-DWORD
-VmDnsGetDSERootAttribute(
-    PVMDNS_DIR_CONTEXT pContext,
-    PSTR  pszAttribute,
-    PSTR* ppszAttrValue
-    );
-
-DWORD
-VmDnsGetDefaultDomainName(
-    PVMDNS_DIR_CONTEXT pConnection,
-    PSTR* ppDomainName
-    );
-
-DWORD
-VmDnsLdapGetMemberships(
-    PVMDNS_DIR_CONTEXT pConnection,
-    PCSTR pszUPNName,
-    PSTR  **pppszMemberships,
-    PDWORD pdwMemberships
-    );
-
-DWORD
-VmDnsDirGetLotusZoneInfo(
-    PVMDNS_DIR_CONTEXT      pDirContext,
-    PVMDNS_DIR_DNS_INFO*    ppDirDnsInfo
-    );
-
-VOID
-VmDnsCleanupZoneInfo(
-    PVMDNS_DIR_DNS_INFO     pDirZoneInfo
-    );
-
-DWORD
-VmDnsDirGetForwarders(
-    PVMDNS_DIR_CONTEXT  pDirContext,
-    PSTR**           pppszForwarders,
-    PDWORD           pdwCount
-    );
-
-DWORD
-VmDnsDirSetForwarders(
-    PVMDNS_DIR_CONTEXT  pDirContext,
-    PSTR*               ppszForwarders,
-    DWORD               dwCount
-    );
-
-DWORD
-VmDnsDirSaveForwarders(
-    DWORD               dwCount,
-    PSTR*               ppszForwarders
-    );
-
-DWORD
-VmDnsCreateInitZoneContainer(
-    );
-
-DWORD
-VmDnsDirUpdateCachedZoneInfo(
-    PVMDNS_DIR_DNS_INFO     pZoneInfo
-    );
-
-DWORD
-VmDnsDirCreateZone(
-    PVMDNS_ZONE_INFO    pZoneInfo
-    );
-
-DWORD
-VmDnsDirDeleteZone(
-    PCSTR               pszZone
-    );
-
-DWORD
-VmDnsDirUpdateZone(
-    PVMDNS_ZONE_INFO    pZoneInfo
-    );
-
-DWORD
-VmDnsDirAddZoneRecord(
-    PCSTR               pZoneName,
-    PVMDNS_RECORD       pRecord
-    );
-
-DWORD
-VmDnsDirCreateZoneRecord(
-    PCSTR               pZoneName,
-    PVMDNS_RECORD       pRecord
-    );
-
-DWORD
-VmDnsDirDeleteZoneRecord(
-    PCSTR               pszZoneName,
-    PVMDNS_RECORD       pRecord
-    );
-
-DWORD
-VmDnsDirUpdateZoneRecord(
-    PCSTR               pszZoneName,
-    PVMDNS_RECORD       pRecord,
-    BOOL                bCreateIfNotExists
-    );
-
-//Store
-
-DWORD
-VmDnsStoreCreateZone(
-    PVMDNS_ZONE_INFO    pZoneInfo
-    );
-
-DWORD
-VmDnsStoreUpdateZone(
-    PVMDNS_ZONE_INFO    pZoneInfo
-    );
-
-DWORD
-VmDnsStoreDeleteZone(
-    PCSTR               pszZoneName
-    );
-
-DWORD
-VmDnsStoreAddZoneRecord(
-    PCSTR               pszZoneName,
-    PVMDNS_RECORD       pRecord
-    );
-
-DWORD
-VmDnsStoreDeleteZoneRecord(
-    PCSTR               pszZoneName,
-    PVMDNS_RECORD       pRecord
-    );
-
-DWORD
-VmDnsStoreSaveForwarders(
-    DWORD               dwCount,
-    PSTR*               ppszForwarders
-    );
-
-// Zone
+typedef struct _VMDNS_CACHE_CONETXT     *PVMDNS_CACHE_CONETXT;
+typedef struct _VMDNS_SECURITY_CONTEXT  *PVMDNS_SECURITY_CONTEXT;
 
 #define DEFAULT_ZONE_HASHTABLE_SIZE 5
 #define DEFAULT_NAME_HASHTABLE_SIZE 97
+#define DEFAULT_SECURITY_HASHTABLE_SIZE 64
 #define RECORD_KEY_STRING_FORMAT    "%s:%u"
 
-#define VMDNS_FREE_RECORD_NODE(pNode) \
-{ \
-    if (pNode) \
-    { \
-        if (pNode->pData) \
-        { \
-            VMDNS_FREE_RECORD_ARRAY(pNode->pData); \
-        } \
-        VmDnsFreeMemory(pNode); \
-        pNode = NULL; \
-    } \
-}
-
-typedef struct _VMDNS_ZONE_UPDATE_CONTEXT* PVMDNS_ZONE_UPDATE_CONTEXT;
 typedef enum _VMDNS_STATE
 {
     // Right after installation, and not promoted to DC yet;
@@ -354,179 +189,135 @@ typedef enum _VMDNS_STATE
 } VMDNS_STATE;
 
 DWORD
-VmdnsZoneBeginUpdate(
-    PVMDNS_ZONE_UPDATE_CONTEXT* ppCtx
-    );
-
-DWORD
-VmdnsZoneEndUpdate(
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx
-    );
-
-DWORD
-VmDnsCoreInit(
+VmDnsSrvInitialize(
     BOOL bUseDirectoryStore
     );
 
 VOID
-VmDnsCoreCleanup(
+VmDnsSrvCleanup(
     );
 
 VMDNS_STATE
-VmDnsGetState(
+VmDnsSrvGetState(
     );
 
 VMDNS_STATE
-VmDnsSetState(
+VmDnsSrvSetState(
     VMDNS_STATE newState
     );
 
-VMDNS_STATE VmDnsConditionalSetState(
+VMDNS_STATE
+VmDnsSrvConditionalSetState(
     VMDNS_STATE newState,
     VMDNS_STATE oldState
     );
 
-UINT32
-VmDnsInitialize(
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
-    PVMDNS_INIT_INFO            pInitInfo
-    );
-
-UINT32
-VmDnsUninitialize(
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
-    PVMDNS_INIT_INFO            pInitInfo
+DWORD
+VmDnsSrvInitDomain(
+    PVMDNS_INIT_INFO    pInitInfo
     );
 
 DWORD
-VmDnsZoneCreate(
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
-    PVMDNS_ZONE_INFO pZoneInfo,
-    BOOL             bDirSync
+VmDnsSrvCleanupDomain(
+    PVMDNS_INIT_INFO    pInitInfo
     );
 
 DWORD
-VmDnsZoneList(
-    PVMDNS_ZONE_INFO_ARRAY *ppZoneArray
+VmDnsSrvZoneCreate(
+    PVMDNS_ZONE_INFO    pZoneInfo
     );
 
 DWORD
-VmDnsZoneGetDefaultDomainName(
-    PSTR* ppszDomainName
+VmDnsSrvFindZone(
+    PCSTR               pszZoneName,
+    PVMDNS_ZONE_OBJECT  *ppZoneObject
     );
 
 DWORD
-VmDnsZoneUpdate(
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
-    PVMDNS_ZONE_INFO pZoneInfo,
-    BOOL             bDirSync
+VmDnsSrvZoneUpdate(
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    PVMDNS_ZONE_INFO    pZoneInfo
     );
 
 DWORD
-VmDnsZoneDelete(
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
-    PCSTR       pszZone
+VmDnsSrvZoneDelete(
+    PVMDNS_ZONE_OBJECT  pZoneObject
     );
 
 DWORD
-VmDnsZoneAddRecord(
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
-    PCSTR         pszZone,
-    PVMDNS_RECORD pRecord,
-    BOOL          bDirSync
+VmDnsSrvListZones(
+    PVMDNS_ZONE_INFO_ARRAY  *ppZoneArray
     );
 
 DWORD
-VmDnsZoneDeleteRecord(
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
-    PCSTR         pszZone,
-    PVMDNS_RECORD pRecord,
-    BOOL          bDirSync
+VmDnsSrvAddRecord(
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    PVMDNS_RECORD       pRecord
     );
 
 DWORD
-VmDnsZoneFindAndDeleteRecords(
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
-    PCSTR                   pszZone,
-    PCSTR                   pszName,
-    BOOL                    bDirSync
+VmDnsSrvDeleteRecord(
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    PVMDNS_RECORD       pRecord
     );
 
 DWORD
-VmDnsZoneQuery(
-    PCSTR                   pszZone,
-    PCSTR                   pszName,
-    VMDNS_RR_TYPE           type,
-    PVMDNS_RECORD_ARRAY*    ppRecords
+VmDnsSrvUpdateRecord(
+    PVMDNS_ZONE_OBJECT pZoneObject,
+    PVMDNS_RECORD pOldRecord,
+    PVMDNS_RECORD pNewRecord
     );
 
 DWORD
-VmDnsZoneListRecord(
-    PCSTR                   pszZone,
-    PVMDNS_RECORD_ARRAY*    ppRecords
+VmDnsSrvAddRecords(
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    PVMDNS_RECORD_LIST pRecords
     );
 
 DWORD
-VmDnsZoneRestoreRecordFQDN(
-    PCSTR               pszDomainName,
-    PVMDNS_RECORD_ARRAY pRecords
+VmDnsSrvDeleteRecords(
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    PVMDNS_RECORD_LIST pRecords
     );
 
 DWORD
-VmDnsZoneFindByName(
-    PCSTR                   pszZone,
-    PVMDNS_ZONE*            ppZone
+VmDnsSrvQueryRecords(
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    PCSTR               pszName,
+    VMDNS_RR_TYPE       dwType,
+    DWORD               dwOptions,
+    PVMDNS_RECORD_LIST  *ppRecordList
     );
 
 DWORD
-VmDnsZoneListInit(
-    PVMDNS_ZONE_LIST*       ppZoneList
-    );
-
-VOID
-VmDnsZoneListCleanup(
-    PVMDNS_ZONE_LIST        pZoneList
+VmDnsSrvListRecords(
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    PVMDNS_RECORD_LIST *ppRecordList
     );
 
 DWORD
-VmDnsForwarderInit(
-    PVMDNS_FORWARDER_CONETXT*   ppForwarder
-    );
-
-VOID
-VmDnsForwarderCleanup(
-    PVMDNS_FORWARDER_CONETXT    pForwarder
+VmDnsSrvAddForwarder(
+    PCSTR               pszForwarder
     );
 
 DWORD
-VmDnsSetForwarders(
-    PVMDNS_FORWARDER_CONETXT    pForwarder,
-    DWORD                       dwCount,
-    PSTR*                       ppszForwarders
+VmDnsSrvGetForwarders(
+    PSTR**              pppszForwarders,
+    PDWORD              pdwCount
     );
 
 DWORD
-VmDnsGetForwarders(
-    PVMDNS_FORWARDER_CONETXT    pForwarder,
-    PSTR**                      pppszForwarders,
-    PDWORD                      pdwCount
+VmDnsSrvDeleteForwarder(
+    PCSTR               pszForwarder
     );
 
 DWORD
-VmDnsAddForwarder(
-    PVMDNS_FORWARDER_CONETXT    pForwarder,
-    PSTR                        pszForwarders
+VmDnsSrvGetInverseRRTypeRecordList(
+    PVMDNS_RECORD_LIST pFullRecordList,
+    VMDNS_RR_TYPE dwExcludeType,
+    PVMDNS_RECORD_LIST *ppParsedList
     );
 
-DWORD
-VmDnsDeleteForwarder(
-    PVMDNS_FORWARDER_CONETXT    pForwarder,
-    PSTR                        pszForwarders
-    );
-
-PVMDNS_FORWARDER_CONETXT
-VmDnsGetForwarderContext(
-    );
 
 // Config
 
@@ -560,10 +351,112 @@ VmDnsRpcServerFreeStringArrayA(
     DWORD  dwCount
     );
 
+//record-list
+DWORD
+VmDnsRecordListCreate(
+    PVMDNS_RECORD_LIST      *ppList
+    );
+
+DWORD
+VmDnsRecordListAdd(
+    PVMDNS_RECORD_LIST      pList,
+    PVMDNS_RECORD_OBJECT    pRecord
+    );
+
+DWORD
+VmDnsRecordListRemove(
+    PVMDNS_RECORD_LIST      pList,
+    PVMDNS_RECORD_OBJECT    pRecord
+    );
+
+UINT
+VmDnsRecordListGetSize(
+    PVMDNS_RECORD_LIST      pList
+    );
+
+PVMDNS_RECORD_OBJECT
+VmDnsRecordListGetRecord(
+    PVMDNS_RECORD_LIST      pList,
+    UINT                    nIndex
+    );
+
+DWORD
+VmDnsCopyRecordArray(
+    PVMDNS_RECORD_LIST  pRecordList,
+    PVMDNS_RECORD       **pppRecordArray
+    );
+
+DWORD
+VmDnsRpcCopyRecordArray(
+    PVMDNS_RECORD_LIST      pRecordList,
+    PVMDNS_RECORD_ARRAY     *ppRecordArray
+    );
+
+ULONG
+VmDnsRecordListAddRef(
+    PVMDNS_RECORD_LIST      pRecordList
+    );
+
+VOID
+VmDnsRecordListRelease(
+    PVMDNS_RECORD_LIST      pRecordList
+    );
+
+DWORD
+VmDnsRecordObjectCreate(
+    PVMDNS_RECORD   pRecord,
+    PVMDNS_RECORD_OBJECT    *ppRecordObj
+    );
+
+DWORD
+VmDnsRecordObjectAddRef(
+    PVMDNS_RECORD_OBJECT    pRecordObj
+    );
+
+VOID
+VmDnsRecordObjectRelease(
+    PVMDNS_RECORD_OBJECT    pRecordObj
+    );
+
+ULONG
+VmDnsZoneObjectAddRef(
+    PVMDNS_ZONE_OBJECT  pZoneObject
+    );
+
+VOID
+VmDnsZoneObjectRelease(
+    PVMDNS_ZONE_OBJECT  pZoneObject
+    );
+
+// LDAP
+
+DWORD
+VmDnsDirConnect(
+    PCSTR                   szHostName,
+    PVMDNS_DIR_CONTEXT*     ppDirContext
+    );
+
+DWORD
+VmDnsLdapGetMemberships(
+    PVMDNS_DIR_CONTEXT      pConnection,
+    PCSTR                   pszUPNName,
+    PSTR                    **pppszMemberships,
+    PDWORD                  pdwMemberships
+    );
+
+DWORD
+VmDnsGetDefaultDomainName(
+    PVMDNS_DIR_CONTEXT      pConnection,
+    PSTR*                   ppDomainName
+    );
+
+VOID
+VmDnsDirClose(
+    PVMDNS_DIR_CONTEXT pDirContext
+    );
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* _SRV_COMMON_H_ */
-

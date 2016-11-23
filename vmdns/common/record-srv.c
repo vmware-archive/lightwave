@@ -435,11 +435,6 @@ VmDnsDeserializeDnsSrvRecord(
                 );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    if (dwRDataLength != uReceivedRDataLength)
-    {
-        dwError = ERROR_INVALID_USER_BUFFER;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
 
 cleanup:
 

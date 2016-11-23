@@ -52,6 +52,26 @@ extern "C" {
 #define VMDNS_LDAP_ATTR_NAME            "name"
 #define VMDNS_LDAP_ATTR_DNS_RECORD      "dnsRecord"
 #define VMDNS_LDAP_ATTR_OBJECTCLASS     "objectclass"
+#define VMDNS_LDAP_ATTR_USNCHANGED      "USNChanged"
+#define VMDNS_LDAP_ATTR_DNSANY          "dns*"
+#define VMDNS_LDAP_ATTR_DNSBASEDN       "dc=DomainDnsZones,dc=vsphere,dc=local"
+#define VMDNS_LDAP_ATTR_RUNTIMESTATUS   "vmwServerRunTimeStatus"
+#define VMDNS_LDAP_ATTR_USN             "USN: "
+
+#define VMDNS_LDAP_DELETE_CONTROL       "1.2.840.113556.1.4.417"
+#define VMDNS_LDAP_DELETE_BASEDN        "cn=Deleted Objects,dc=vsphere,dc=local"
+#define VMDNS_LDAP_DELETE_DELIMITER     "#"
+
+#define VMDNS_REPL_BASEDN               "cn=replicationstatus"
+#define VMDNS_REPL_FILTER               "objectclass=*"
+
+#define VMDNS_LRU_SIZE                  (10000)
+#define VMDNS_LRU_PURGE                 (10) //out of 100
+#define VMDNS_LRU_PURGEFAST             (20) //out of 100
+#define VMDNS_LRU_UPPERTHRES            (80) //out of 100
+#define VMDNS_LRU_LOWERTHRES            (60) //out of 100
+#define VMDNS_SEC_ALG_NAME "gss-tsig"
+#define VMDNS_SEC_DEFAULT_FUDGE_TIME 300
 
 #ifndef _WIN32
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH "Services\\vmdir"
@@ -73,10 +93,28 @@ typedef enum
 
 typedef enum
 {
+    VM_DNS_GSS_CTX_UNINITIALIZED = 0,
+    VM_DNS_GSS_CTX_NEGOTIATING,
+    VM_DNS_GSS_CTX_ESTABLISHED
+} VM_DNS_GSS_CTX_STATE;
+
+typedef enum
+{
     VM_DNS_OPCODE_QUERY = 0,
     VM_DNS_OPCODE_IQUERY = 1,
-    VM_DNS_OPCODE_STATUS = 2
+    VM_DNS_OPCODE_STATUS = 2,
+    VM_DNS_OPCODE_NOTIFY = 4,
+    VM_DNS_OPCODE_UPDATE = 5
 } VM_DNS_OPCODE;
+
+typedef enum
+{
+    VM_DNS_TKEY_MODE_SERVER_ASSIGNMENT = 1,
+    VM_DNS_TKEY_MODE_DIFFIE_HELLMAN = 2,
+    VM_DNS_TKEY_MODE_GSS_API = 3,
+    VM_DNS_TKEY_MODE_RESOLVER_ASSIGNMENT = 4,
+    VM_DNS_TKEY_MODE_KEY_DELETION = 5
+} VM_DNS_TKEY_MODE;
 
 typedef enum
 {
@@ -85,7 +123,18 @@ typedef enum
     VM_DNS_RCODE_SERVER_FAILURE = 2,
     VM_DNS_RCODE_NAME_ERROR = 3,
     VM_DNS_RCODE_NOT_IMPLEMENTED = 4,
-    VM_DNS_RCODE_REFUSED = 5
+    VM_DNS_RCODE_REFUSED = 5,
+    VM_DNS_RCODE_YXDOMAIN = 6,
+    VM_DNS_RCODE_YXRRSET = 7,
+    VM_DNS_RCODE_NXRRSET = 8,
+    VM_DNS_RCODE_NOTAUTH = 9,
+    VM_DNS_RCODE_NOTZONE = 10,
+    VM_DNS_RCODE_BADSIG = 16,
+    VM_DNS_RCODE_BADKEY = 17,
+    VM_DNS_RCODE_BADTIME = 18,
+    VM_DNS_RCODE_BADMODE = 19,
+    VM_DNS_RCODE_BADNAME = 20,
+    VM_DNS_RCODE_BADALG = 21
 } VM_DNS_RCODE;
 
 typedef enum
@@ -117,18 +166,73 @@ typedef enum
 #define CONTAINING_RECORD(address, type, field) ((type *)( \
                                                   (PCHAR)(address) - \
                                                   (ULONG_PTR)(&((type *)0)->field)))
+#endif
 
+#ifndef InitializeListHead
+
+#define InitializeListHead(ListHead) (\
+    (ListHead)->Flink = (ListHead)->Blink = (ListHead))
+
+#define IsListEmpty(ListHead) \
+    ((ListHead)->Flink == (ListHead))
+
+#define RemoveHeadList(ListHead) \
+    (ListHead)->Flink; \
+{RemoveEntryList((ListHead)->Flink)}
+
+#define RemoveTailList(ListHead) \
+    (ListHead)->Blink; \
+{RemoveEntryList((ListHead)->Blink)}
+
+#define RemoveEntryList(Entry) {\
+    PLIST_ENTRY _EX_Blink; \
+    PLIST_ENTRY _EX_Flink; \
+    _EX_Flink = (Entry)->Flink; \
+    _EX_Blink = (Entry)->Blink; \
+    _EX_Blink->Flink = _EX_Flink; \
+    _EX_Flink->Blink = _EX_Blink; \
+    }
+
+#define InsertTailList(ListHead,Entry) {\
+    PLIST_ENTRY _EX_Blink; \
+    PLIST_ENTRY _EX_ListHead; \
+    _EX_ListHead = (ListHead); \
+    _EX_Blink = _EX_ListHead->Blink; \
+    (Entry)->Flink = _EX_ListHead; \
+    (Entry)->Blink = _EX_Blink; \
+    _EX_Blink->Flink = (Entry); \
+    _EX_ListHead->Blink = (Entry); \
+    }
+
+#define InsertHeadList(ListHead,Entry) {\
+    PLIST_ENTRY _EX_Flink; \
+    PLIST_ENTRY _EX_ListHead; \
+    _EX_ListHead = (ListHead); \
+    _EX_Flink = _EX_ListHead->Flink; \
+    (Entry)->Flink = _EX_Flink; \
+    (Entry)->Blink = _EX_ListHead; \
+    _EX_Flink->Blink = (Entry); \
+    _EX_ListHead->Flink = (Entry); \
+    }
+
+#endif
+
+#ifndef VMDNS_GET_BITS
+#define VMDNS_GET_BITS(Data,Start,End) \
+    ((((1 << (End-Start+1))-1) << Start) & \
+    Data) >> Start
 #endif
 
 #ifndef VMDNS_FORM_HEADER
 #define VMDNS_FORM_HEADER(pVmDnsHeader) \
-    (pVmDnsHeader->codes.QR & 0x1) << 15 | \
-    (pVmDnsHeader->codes.opcode & 0xf) << 10 | \
-    (pVmDnsHeader->codes.AA & 0x1) << 10 | \
-    (pVmDnsHeader->codes.TC & 0x1) << 9 | \
-    (pVmDnsHeader->codes.RD & 0x1) << 8 | \
-    (pVmDnsHeader->codes.RA & 0x1) << 7 | \
-    (pVmDnsHeader->codes.RCODE & 0xf);
+    (pVmDnsHeader->codes.QR & 0x01) << 0x0f | \
+    (pVmDnsHeader->codes.opcode & 0x0f) << 0x0b | \
+    (pVmDnsHeader->codes.AA & 0x01) << 0x0a | \
+    (pVmDnsHeader->codes.TC & 0x01) << 0x09 | \
+    (pVmDnsHeader->codes.RD & 0x01) << 0x08 | \
+    (pVmDnsHeader->codes.RA & 0x01) << 0x07 | \
+    (pVmDnsHeader->codes.Z & 0x07) << 0x04 | \
+    (pVmDnsHeader->codes.RCODE & 0x0f);
 #endif
 
 #ifdef	__cplusplus
@@ -136,4 +240,3 @@ typedef enum
 #endif
 
 #endif	/* DEFINES_H */
-

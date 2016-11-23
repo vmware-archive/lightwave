@@ -237,22 +237,26 @@ VmDnsValidateSoaRecord(
     PVMDNS_RECORD       pRecord
     );
 
-DWORD VmDnsDuplicateSoaRecord(
+DWORD
+VmDnsDuplicateSoaRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   *ppDest
     );
 
-DWORD VmDnsRpcDuplicateSoaRecord(
+DWORD
+VmDnsRpcDuplicateSoaRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   *ppDest
     );
 
-DWORD VmDnsCopySoaRecord(
+DWORD
+VmDnsCopySoaRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   pDest
     );
 
-DWORD VmDnsRpcCopySoaRecord(
+DWORD
+VmDnsRpcCopySoaRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   pDest
     );
@@ -316,22 +320,26 @@ VmDnsValidateSrvRecord(
     PVMDNS_RECORD       pRecord
     );
 
-DWORD VmDnsDuplicateSrvRecord(
+DWORD
+VmDnsDuplicateSrvRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   *ppDest
     );
 
-DWORD VmDnsRpcDuplicateSrvRecord(
+DWORD
+VmDnsRpcDuplicateSrvRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   *ppDest
     );
 
-DWORD VmDnsCopySrvRecord(
+DWORD
+VmDnsCopySrvRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   pDest
     );
 
-DWORD VmDnsRpcCopySrvRecord(
+DWORD
+VmDnsRpcCopySrvRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   pDest
     );
@@ -389,22 +397,26 @@ VmDnsValidateNSRecord(
     PVMDNS_RECORD       pRecord
     );
 
-DWORD VmDnsDuplicateNSRecord(
+DWORD
+VmDnsDuplicateNSRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   *ppDest
     );
 
-DWORD VmDnsRpcDuplicateNSRecord(
+DWORD
+VmDnsRpcDuplicateNSRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   *ppDest
     );
 
-DWORD VmDnsCopyNSRecord(
+DWORD
+VmDnsCopyNSRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   pDest
     );
 
-DWORD VmDnsRpcCopyNSRecord(
+DWORD
+VmDnsRpcCopyNSRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   pDest
     );
@@ -539,22 +551,26 @@ VmDnsValidateCNameRecord(
     PVMDNS_RECORD       pRecord
     );
 
-DWORD VmDnsDuplicateCNameRecord(
+DWORD
+VmDnsDuplicateCNameRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   *ppDest
     );
 
-DWORD VmDnsRpcDuplicateCNameRecord(
+DWORD
+VmDnsRpcDuplicateCNameRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   *ppDest
     );
 
-DWORD VmDnsCopyCNameRecord(
+DWORD
+VmDnsCopyCNameRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   pDest
     );
 
-DWORD VmDnsRpcCopyCNameRecord(
+DWORD
+VmDnsRpcCopyCNameRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   pDest
     );
@@ -612,22 +628,26 @@ VmDnsValidateAddressRecord(
     PVMDNS_RECORD       pRecord
     );
 
-DWORD VmDnsDuplicateAddressRecord(
+DWORD
+VmDnsDuplicateAddressRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   *ppDest
     );
 
-DWORD VmDnsRpcDuplicateAddressRecord(
+DWORD
+VmDnsRpcDuplicateAddressRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   *ppDest
     );
 
-DWORD VmDnsCopyAddressRecord(
+DWORD
+VmDnsCopyAddressRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   pDest
     );
 
-DWORD VmDnsRpcCopyAddressRecord(
+DWORD
+VmDnsRpcCopyAddressRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   pDest
     );
@@ -685,22 +705,26 @@ VmDnsValidateIp6AddressRecord(
     PVMDNS_RECORD       pRecord
     );
 
-DWORD VmDnsDuplicateIp6AddressRecord(
+DWORD
+VmDnsDuplicateIp6AddressRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   *ppDest
     );
 
-DWORD VmDnsRpcDuplicateIp6AddressRecord(
+DWORD
+VmDnsRpcDuplicateIp6AddressRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   *ppDest
     );
 
-DWORD VmDnsCopyIp6AddressRecord(
+DWORD
+VmDnsCopyIp6AddressRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   pDest
     );
 
-DWORD VmDnsRpcCopyIp6AddressRecord(
+DWORD
+VmDnsRpcCopyIp6AddressRecord(
     PVMDNS_RECORD   pSrc,
     PVMDNS_RECORD   pDest
     );
@@ -735,4 +759,159 @@ VmDnsDeserializeDnsIp6AddressRecord(
     PVMDNS_MESSAGE_BUFFER pVmDnsBuffer,
     PVMDNS_RECORD_DATA pData
     );
+
+// TKEY
+BOOLEAN
+VmDnsCompareTkeyRecord(
+    PVMDNS_RECORD       pRecord1,
+    PVMDNS_RECORD       pRecord2
+    );
+
+VOID
+VmDnsClearTkeyRecord(
+    PVMDNS_RECORD       pRecord
+    );
+
+VOID
+VmDnsRpcClearTkeyRecord(
+    PVMDNS_RECORD       pRecord
+    );
+
+BOOLEAN
+VmDnsValidateTkeyRecord(
+    PVMDNS_RECORD       pRecord
+    );
+
+DWORD
+VmDnsDuplicateTkeyRecord(
+    PVMDNS_RECORD   pSrc,
+    PVMDNS_RECORD   *ppDest
+    );
+
+DWORD
+VmDnsRpcDuplicateTkeyRecord(
+    PVMDNS_RECORD   pSrc,
+    PVMDNS_RECORD   *ppDest
+    );
+
+DWORD
+VmDnsCopyTkeyRecord(
+    PVMDNS_RECORD   pSrc,
+    PVMDNS_RECORD   pDest
+    );
+
+DWORD
+VmDnsRpcCopyTkeyRecord(
+    PVMDNS_RECORD   pSrc,
+    PVMDNS_RECORD   pDest
+    );
+
+DWORD
+VmDnsTkeyRecordToString(
+    PVMDNS_RECORD       pRecord,
+    PSTR*               ppStr
+    );
+
+DWORD
+VmDnsTkeyRecordGetCN(
+    PVMDNS_RECORD       pRecord,
+    PSTR*               ppStr
+    );
+
+DWORD
+VmDnsTkeyRecordGetRDataLength(
+    VMDNS_RECORD_DATA   Data,
+    PUINT16             puRDataLength,
+    BOOL                bTokenizeDomainName
+    );
+
+DWORD
+VmDnsSerializeDnsTkeyRecord(
+    VMDNS_RECORD_DATA Data,
+    PVMDNS_MESSAGE_BUFFER pVmDnsBuffer
+    );
+
+DWORD
+VmDnsDeserializeDnsTkeyRecord(
+    PVMDNS_MESSAGE_BUFFER pVmDnsBuffer,
+    PVMDNS_RECORD_DATA pData
+    );
+
+// TSIG
+BOOLEAN
+VmDnsCompareTsigRecord(
+    PVMDNS_RECORD       pRecord1,
+    PVMDNS_RECORD       pRecord2
+    );
+
+VOID
+VmDnsClearTsigRecord(
+    PVMDNS_RECORD       pRecord
+    );
+
+VOID
+VmDnsRpcClearTsigRecord(
+    PVMDNS_RECORD       pRecord
+    );
+
+BOOLEAN
+VmDnsValidateTsigRecord(
+    PVMDNS_RECORD       pRecord
+    );
+
+DWORD
+VmDnsDuplicateTsigRecord(
+    PVMDNS_RECORD   pSrc,
+    PVMDNS_RECORD   *ppDest
+    );
+
+DWORD
+VmDnsRpcDuplicateTsigRecord(
+    PVMDNS_RECORD   pSrc,
+    PVMDNS_RECORD   *ppDest
+    );
+
+DWORD
+VmDnsCopyTsigRecord(
+    PVMDNS_RECORD   pSrc,
+    PVMDNS_RECORD   pDest
+    );
+
+DWORD
+VmDnsRpcCopyTsigRecord(
+    PVMDNS_RECORD   pSrc,
+    PVMDNS_RECORD   pDest
+    );
+
+DWORD
+VmDnsTsigRecordToString(
+    PVMDNS_RECORD       pRecord,
+    PSTR*               ppStr
+    );
+
+DWORD
+VmDnsTsigRecordGetCN(
+    PVMDNS_RECORD       pRecord,
+    PSTR*               ppStr
+    );
+
+DWORD
+VmDnsTsigRecordGetRDataLength(
+    VMDNS_RECORD_DATA   Data,
+    PUINT16             puRDataLength,
+    BOOL                bTokenizeDomainName
+    );
+
+DWORD
+VmDnsSerializeDnsTsigRecord(
+    VMDNS_RECORD_DATA Data,
+    PVMDNS_MESSAGE_BUFFER pVmDnsBuffer
+    );
+
+DWORD
+VmDnsDeserializeDnsTsigRecord(
+    PVMDNS_MESSAGE_BUFFER pVmDnsBuffer,
+    PVMDNS_RECORD_DATA pData
+    );
+
 

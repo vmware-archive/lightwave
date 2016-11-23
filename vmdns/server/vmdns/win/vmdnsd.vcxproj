@@ -92,7 +92,7 @@
       <ErrorReporting>Prompt</ErrorReporting>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>dcelib.lib;ws2_32.lib;pthreadVC2.lib;libldap_r.lib;liblber.lib;libvmdirclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dcelib.lib;gssapi64.lib;ws2_32.lib;pthreadVC2.lib;libldap_r.lib;liblber.lib;libvmdirclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\lib;$(GOBUILD_RD_DIRECTORY_SERVER_ROOT)\lib64\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -123,14 +123,11 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>dcelib.lib;ws2_32.lib;pthreadVC2.lib;libldap_r.lib;liblber.lib;libvmdirclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dcelib.lib;gssapi64.lib;ws2_32.lib;pthreadVC2.lib;libldap_r.lib;liblber.lib;libvmdirclient.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\auth.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\dirsync.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\globals.c">

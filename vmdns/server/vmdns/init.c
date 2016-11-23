@@ -45,13 +45,10 @@ VmDnsInit()
     dwError = VmDnsAllocateMutex(&gVmdnsGlobals.pMutex);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsCoreInit(TRUE);
+    dwError = VmDnsSrvInitialize(TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmwSockInitialize();
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsStartDirectorySync();
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsRpcServerInit();
@@ -72,7 +69,6 @@ VmDnsInit()
         dwError = VmDnsInitProtocolServer();
         BAIL_ON_VMDNS_ERROR(dwError);
     }
-
 cleanup:
     return dwError;
 

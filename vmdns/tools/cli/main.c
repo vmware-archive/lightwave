@@ -155,6 +155,12 @@ VerifyRemoteConnectionArgs(
     PSTR* ppszPassword
     );
 
+static
+DWORD
+VmDnsMakeZoneFQDN(
+    PCSTR psszZoneName,
+    PSTR* ppszZoneFqdn
+    );
 
 
 int main(int argc, char* argv[])
@@ -505,7 +511,7 @@ ParseArgsAddZone(
                     BAIL_ON_VMDNS_ERROR(dwError);
                 }
 
-                dwError = VmDnsAllocateStringA(pszArg, &pContext->pszZone);
+                dwError = VmDnsMakeZoneFQDN(pszArg, &pContext->pszZone);
                 BAIL_ON_VMDNS_ERROR(dwError);
             }
 
@@ -711,7 +717,7 @@ ParseArgsDelZone(
                     BAIL_ON_VMDNS_ERROR(dwError);
                 }
 
-                dwError = VmDnsAllocateStringA(pszArg, &pContext->pszZone);
+                dwError = VmDnsMakeZoneFQDN(pszArg, &pContext->pszZone);
                 BAIL_ON_VMDNS_ERROR(dwError);
             }
 
@@ -1126,7 +1132,7 @@ ParseArgsAddRecord(
                     BAIL_ON_VMDNS_ERROR(dwError);
                 }
 
-                dwError = VmDnsAllocateStringA(pszArg, &pContext->pszZone);
+                dwError = VmDnsMakeZoneFQDN(pszArg, &pContext->pszZone);
                 BAIL_ON_VMDNS_ERROR(dwError);
 
                 parseMode = PARSE_MODE_ADD_RECORD_OPEN;
@@ -1557,7 +1563,7 @@ ParseArgsDelRecord(
                     BAIL_ON_VMDNS_ERROR(dwError);
                 }
 
-                dwError = VmDnsAllocateStringA(pszArg, &pContext->pszZone);
+                dwError = VmDnsMakeZoneFQDN(pszArg, &pContext->pszZone);
                 BAIL_ON_VMDNS_ERROR(dwError);
 
                 parseMode = PARSE_MODE_DEL_RECORD_OPEN;
@@ -1840,7 +1846,7 @@ ParseArgsQueryRecords(
 
             case PARSE_MODE_QUERY_RECORD_ZONE:
 
-                dwError = VmDnsCopyStringArg(pszArg, &pContext->pszZone);
+                dwError = VmDnsMakeZoneFQDN(pszArg, &pContext->pszZone);
                 BAIL_ON_VMDNS_ERROR(dwError);
 
                 parseMode = PARSE_MODE_QUERY_RECORD_OPEN;
@@ -1993,7 +1999,7 @@ ParseArgsListRecords(
                     BAIL_ON_VMDNS_ERROR(dwError);
                 }
 
-                dwError = VmDnsAllocateStringA(pszArg, &pContext->pszZone);
+                dwError = VmDnsMakeZoneFQDN(pszArg, &pContext->pszZone);
                 BAIL_ON_VMDNS_ERROR(dwError);
 
                 parseMode = PARSE_MODE_LIST_RECORD_OPEN;
@@ -2569,5 +2575,51 @@ cleanup:
 
 error:
     VMDNS_SAFE_FREE_STRINGA(pszPassword);
+    goto cleanup;
+}
+
+DWORD
+VmDnsMakeZoneFQDN(
+    PCSTR pszZoneName,
+    PSTR* ppszZoneFqdn
+    )
+{
+    DWORD dwError = 0;
+    size_t len = 0;
+    PSTR q = NULL;
+    PCSTR p = pszZoneName;
+    PSTR pszZoneFqdn = NULL;
+
+    if (IsNullOrEmptyString(pszZoneName) ||
+        ppszZoneFqdn == NULL)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    len = strlen(pszZoneName);
+
+    dwError = VmDnsAllocateMemory(len + 2, (PVOID*)&pszZoneFqdn);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    q = pszZoneFqdn;
+    while (*p)
+    {
+        *q++ = *p++;
+    }
+
+    if (*(q-1) != '.')
+    {
+        *q++ = '.';
+        *q = 0;
+    }
+
+    *ppszZoneFqdn = pszZoneFqdn;
+
+cleanup:
+    return dwError;
+
+error :
+    VMDNS_SAFE_FREE_MEMORY(pszZoneFqdn);
     goto cleanup;
 }

@@ -282,7 +282,8 @@ VmDnsCreateSoaRecord(
     BAIL_ON_VMDNS_ERROR(dwError);
 
     pRecord->dwType = VMDNS_RR_TYPE_SOA;
-    dwError = VmDnsAllocateStringA(VMDNS_SOA_RECORD_NAME, &pszName);
+
+    dwError = VmDnsAllocateStringA(pZoneInfo->pszName, &pszName);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsAllocateStringA(pZoneInfo->pszPrimaryDnsSrvName,
@@ -333,28 +334,28 @@ VmDnsWriteRecordToBuffer(
     }
 
     dwError = VmDnsWriteDomainNameToBuffer(
-                                  pDnsRecord->pszName,
-                                  pVmDnsBuffer,
-                                  pVmDnsBuffer->bTokenizeDomainName
-                                  );
+                            pDnsRecord->pszName,
+                            pVmDnsBuffer,
+                            pVmDnsBuffer->bTokenizeDomainName
+                            );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsWriteUINT16ToBuffer(
-                                  pDnsRecord->dwType,
-                                  pVmDnsBuffer
-                                  );
+                        pDnsRecord->dwType,
+                        pVmDnsBuffer
+                        );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsWriteUINT16ToBuffer(
-                                  pDnsRecord->iClass,
-                                  pVmDnsBuffer
-                                  );
+                        pDnsRecord->iClass,
+                        pVmDnsBuffer
+                        );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsWriteUINT32ToBuffer(
-                                  pDnsRecord->dwTtl,
-                                  pVmDnsBuffer
-                                  );
+                        pDnsRecord->dwTtl,
+                        pVmDnsBuffer
+                        );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     for (; dwIndex < gRecordMethodMapSize; ++dwIndex)
@@ -435,47 +436,44 @@ VmDnsSerializeDnsRecord(
     PBYTE pBytes = NULL;
     DWORD dwSize =  0;
 
-    if (!pDnsRecord ||
-        !ppBytes ||
-        !pdwSize
-       )
+    if (!pDnsRecord || !ppBytes || !pdwSize)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR (dwError);
     }
 
     dwError = VmDnsAllocateBufferStream(
-                                    0,
-                                    &pVmDnsBuffer
-                                    );
+                            0,
+                            &pVmDnsBuffer
+                            );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     pVmDnsBuffer->bTokenizeDomainName = bTokenizeDomainName;
 
     dwError = VmDnsWriteRecordToBuffer(
-                                   pDnsRecord,
-                                   pVmDnsBuffer
-                                   );
+                        pDnsRecord,
+                        pVmDnsBuffer
+                        );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsCopyBufferFromBufferStream(
-                                      pVmDnsBuffer,
-                                      NULL,
-                                      &dwSize
-                                      );
+                            pVmDnsBuffer,
+                            NULL,
+                            &dwSize
+                            );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsAllocateMemory(
-                              dwSize,
-                              (PVOID *)&pBytes
-                              );
+                        dwSize,
+                        (PVOID *)&pBytes
+                        );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsCopyBufferFromBufferStream(
-                                      pVmDnsBuffer,
-                                      pBytes,
-                                      &dwSize
-                                      );
+                            pVmDnsBuffer,
+                            pBytes,
+                            &dwSize
+                            );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     *ppBytes = pBytes;
@@ -511,6 +509,7 @@ VmDnsReadRecordFromBuffer(
     DWORD dwError = 0;
     PVMDNS_RECORD pDnsRecord = NULL;
     DWORD dwIndex =  0;
+    PBYTE pRawTsigPtr = NULL;
 
     if (!pVmDnsBuffer || !ppDnsRecord)
     {
@@ -519,33 +518,44 @@ VmDnsReadRecordFromBuffer(
     }
 
     dwError = VmDnsAllocateMemory(
-                              sizeof(VMDNS_RECORD),
-                              (PVOID *)&pDnsRecord
-                              );
+                        sizeof(VMDNS_RECORD),
+                        (PVOID *)&pDnsRecord
+                        );
     BAIL_ON_VMDNS_ERROR(dwError);
+
+    pRawTsigPtr = pVmDnsBuffer->pMessage + pVmDnsBuffer->szCursor;
 
     dwError = VmDnsReadDomainNameFromBuffer(
-                              pVmDnsBuffer,
-                              &pDnsRecord->pszName
-                              );
+                            pVmDnsBuffer,
+                            &pDnsRecord->pszName
+                            );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsReadUINT16FromBuffer(
-                             pVmDnsBuffer,
-                             &pDnsRecord->dwType
-                             );
+                            pVmDnsBuffer,
+                            &pDnsRecord->dwType
+                            );
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    if (pDnsRecord->dwType == VMDNS_RR_MTYPE_TSIG)
+    {
+        pDnsRecord->Data.TSIG.pRawTsigPtr = pRawTsigPtr;
+    }
+    else
+    {
+        pRawTsigPtr = NULL;
+    }
+
     dwError = VmDnsReadUINT16FromBuffer(
-                             pVmDnsBuffer,
-                             &pDnsRecord->iClass
-                             );
+                            pVmDnsBuffer,
+                            &pDnsRecord->iClass
+                            );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsReadUINT32FromBuffer(
-                             pVmDnsBuffer,
-                             &pDnsRecord->dwTtl
-                             );
+                            pVmDnsBuffer,
+                            &pDnsRecord->dwTtl
+                            );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     for (; dwIndex < gRecordMethodMapSize; ++dwIndex)
@@ -588,28 +598,27 @@ VmDnsDeserializeDnsRecord(
     PVMDNS_RECORD pDnsRecord = NULL;
     PVMDNS_MESSAGE_BUFFER pVmDnsBuffer = NULL;
 
-    if (!pBytes ||
-        !dwSize ||
-        !ppDnsRecord)
+    if (!pBytes || !dwSize || !ppDnsRecord)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
     dwError = VmDnsAllocateBufferStreamWithBuffer(
-                                        pBytes,
-                                        dwSize,
-                                        0,
-                                        FALSE,
-                                        &pVmDnsBuffer
-                                        );
+                            pBytes,
+                            dwSize,
+                            0,
+                            FALSE,
+                            &pVmDnsBuffer
+                            );
     BAIL_ON_VMDNS_ERROR(dwError);
+
     pVmDnsBuffer->bTokenizeDomainName = bTokenizeDomainName;
 
     dwError = VmDnsReadRecordFromBuffer(
-                                    pVmDnsBuffer,
-                                    &pDnsRecord
-                                    );
+                        pVmDnsBuffer,
+                        &pDnsRecord
+                        );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     *ppDnsRecord = pDnsRecord;
@@ -730,11 +739,13 @@ VmDnsMatchRecordCommon(
     {
         result = FALSE;
     }
-    else if (pRecord1->dwType != pRecord2->dwType)
+    else if (pRecord1->dwType != VMDNS_RR_QTYPE_ANY &&
+             pRecord1->dwType != pRecord2->dwType)
     {
         result = FALSE;
     }
-    else if (pRecord1->iClass != pRecord2->iClass)
+    else if (pRecord1->iClass != VMDNS_CLASS_NONE &&
+             pRecord1->iClass != pRecord2->iClass)
     {
         result = FALSE;
     }
@@ -755,10 +766,6 @@ VmDnsCompareRecordCommon(
     BOOLEAN result = TRUE;
 
     if (!VmDnsMatchRecordCommon(pRecord1, pRecord2))
-    {
-        result = FALSE;
-    }
-    else if (pRecord1 && pRecord2 && pRecord1->dwTtl != pRecord2->dwTtl)
     {
         result = FALSE;
     }
@@ -831,7 +838,7 @@ VmDnsGetDomainNameLength(
     }
     else
     {
-        uTotalStringLength = VmDnsStringLenA(pszDomainName) + 1;
+        uTotalStringLength = VmDnsStringLenA(pszDomainName);
     }
 
     *puSize = uTotalStringLength;
@@ -861,25 +868,23 @@ VmDnsWriteDomainNameLabelsToBuffer(
     PSTR  pNextToken = NULL;
     DWORD dwTotalStringLength = 0;
 
-    if (!pszDomainName ||
-        !pVmDnsBuffer
-       )
+    if (!pszDomainName || !pVmDnsBuffer)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
     dwError = VmDnsAllocateStringA(
-                            pszDomainName,
-                            &pszTempString
-                            );
+                        pszDomainName,
+                        &pszTempString
+                        );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     pToken = VmDnsStringTokA(
-                      pszTempString,
-                      ".",
-                      &pNextToken
-                      );
+                    pszTempString,
+                    ".",
+                    &pNextToken
+                    );
 
     while(pToken)
     {
@@ -894,10 +899,10 @@ VmDnsWriteDomainNameLabelsToBuffer(
         }
 
         dwError = VmDnsWriteStringToBuffer(
-                                pToken,
-                                dwStringLength,
-                                pVmDnsBuffer
-                                );
+                            pToken,
+                            dwStringLength,
+                            pVmDnsBuffer
+                            );
         BAIL_ON_VMDNS_ERROR(dwError);
 
         dwTotalStringLength += dwStringLength+1;
@@ -909,10 +914,10 @@ VmDnsWriteDomainNameLabelsToBuffer(
         }
 
         pToken = VmDnsStringTokA(
-                             NULL,
-                             ".",
-                             &pNextToken
-                             );
+                        NULL,
+                        ".",
+                        &pNextToken
+                        );
     }
 
     if (++dwTotalStringLength > VMDNS_NAME_LENGTH_MAX)
@@ -922,9 +927,9 @@ VmDnsWriteDomainNameLabelsToBuffer(
     }
 
     dwError = VmDnsWriteCharToBuffer(
-                                  0,
-                                  pVmDnsBuffer
-                                  );
+                        0,
+                        pVmDnsBuffer
+                        );
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
@@ -945,9 +950,7 @@ VmDnsWriteDomainNameStringToBuffer(
     DWORD dwError = 0;
     DWORD dwStringLength = 0;
 
-    if (!pszDomainName ||
-        !pVmDnsBuffer
-       )
+    if (!pszDomainName || !pVmDnsBuffer)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -964,17 +967,17 @@ VmDnsWriteDomainNameStringToBuffer(
     if (dwStringLength)
     {
         dwError = VmDnsWriteStringToBuffer(
-                                pszDomainName,
-                                dwStringLength,
-                                pVmDnsBuffer
-                                );
+                            pszDomainName,
+                            dwStringLength,
+                            pVmDnsBuffer
+                            );
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
     dwError = VmDnsWriteCharToBuffer(
-                                  0,
-                                  pVmDnsBuffer
-                                  );
+                        0,
+                        pVmDnsBuffer
+                        );
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
@@ -1007,30 +1010,29 @@ VmDnsWriteDomainNameToBuffer(
 
 DWORD
 VmDnsReadDomainNameFromBuffer(
-      PVMDNS_MESSAGE_BUFFER pVmDnsBuffer,
-      PSTR *ppszDomainName
-      )
+    PVMDNS_MESSAGE_BUFFER pVmDnsBuffer,
+    PSTR *ppszDomainName
+    )
 {
     DWORD dwError = 0;
     DWORD dwTotalStringLength = 0;
     DWORD dwLabelLength = 0;
+    BOOL bEndOfString = FALSE;
     PSTR pszTempString = NULL;
     PSTR pszTempStringCursor = NULL;
     PSTR pszLabels = NULL;
     PSTR pszDomainName = NULL;
 
-    if (!pVmDnsBuffer||
-        !ppszDomainName
-       )
+    if (!pVmDnsBuffer || !ppszDomainName)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
     dwError = VmDnsAllocateMemory(
-                          256,
-                          (PVOID *)&pszTempString
-                          );
+                        VMDNS_NAME_LENGTH_MAX + 1,
+                        (PVOID *)&pszTempString
+                        );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     pszTempStringCursor = pszTempString;
@@ -1038,15 +1040,16 @@ VmDnsReadDomainNameFromBuffer(
     do
     {
         dwError = VmDnsReadStringFromBuffer(
-                                        pVmDnsBuffer,
-                                        &pszLabels,
-                                        &dwLabelLength
-                                        );
+                            pVmDnsBuffer,
+                            &pszLabels,
+                            &dwLabelLength,
+                            &bEndOfString
+                            );
         BAIL_ON_VMDNS_ERROR(dwError);
 
         if (dwLabelLength)
         {
-            if (dwLabelLength > (255 - dwTotalStringLength))
+            if (dwLabelLength > (VMDNS_NAME_LENGTH_MAX - dwTotalStringLength))
             {
                 dwError = ERROR_INVALID_PARAMETER;
                 BAIL_ON_VMDNS_ERROR(dwError);
@@ -1054,36 +1057,34 @@ VmDnsReadDomainNameFromBuffer(
 
             dwError = VmDnsCopyMemory(
                           pszTempStringCursor,
-                          255 - dwTotalStringLength,
+                          VMDNS_NAME_LENGTH_MAX - dwTotalStringLength,
                           pszLabels,
                           dwLabelLength
                           );
             BAIL_ON_VMDNS_ERROR(dwError);
 
-            pszTempStringCursor[dwLabelLength]='.';
-            dwLabelLength++;
+            if (pszTempStringCursor[dwLabelLength - 1] != '.')
+            {
+                pszTempStringCursor[dwLabelLength]='.';
+                dwLabelLength++;
+            }
         }
 
         pszTempStringCursor = &pszTempStringCursor[dwLabelLength];
         VMDNS_SAFE_FREE_STRINGA(pszLabels);
         dwTotalStringLength += dwLabelLength;
 
-        if (dwTotalStringLength > 255)
+        if (dwTotalStringLength > VMDNS_NAME_LENGTH_MAX)
         {
             dwError = ERROR_LABEL_TOO_LONG;
             BAIL_ON_VMDNS_ERROR(dwError);
         }
-    }while(dwLabelLength);
-
-    if (dwTotalStringLength > 0)
-    {
-        pszTempString[dwTotalStringLength - 1] = 0;
-    }
+    }while(!bEndOfString);
 
     dwError = VmDnsAllocateStringA(
-                              pszTempString,
-                              &pszDomainName
-                              );
+                        pszTempString,
+                        &pszDomainName
+                        );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     *ppszDomainName = pszDomainName;
@@ -1120,8 +1121,8 @@ VmDnsParseRecordType(
     for (; idx < gRecordTypeMapSize; ++idx)
     {
         if (!VmDnsStringCompareA(pszRecordType,
-                                gRecordTypeMap[idx].pszName,
-                                FALSE))
+                    gRecordTypeMap[idx].pszName,
+                    FALSE))
         {
             *pType = gRecordTypeMap[idx].type;
             dwError = ERROR_SUCCESS;
@@ -1150,8 +1151,8 @@ VmDnsParseServiceType(
     for (; idx < gServiceNameMapSize; ++idx)
     {
         if (!VmDnsStringCompareA(pszServiceType,
-                                gServiceNameMap[idx].pszUserFriendlyName,
-                                FALSE))
+                    gServiceNameMap[idx].pszUserFriendlyName,
+                    FALSE))
         {
             dwError = ERROR_SUCCESS;
             if (pType)
@@ -1210,28 +1211,86 @@ error:
 }
 
 BOOL
-VmDnsIsShortNameRecordType(
-    DWORD   dwRecordType
+VmDnsIsSupportedRecordType(
+    VMDNS_RR_TYPE   dwRecordType
     )
 {
     return
-        dwRecordType == VMDNS_RR_TYPE_A ||
-        dwRecordType == VMDNS_RR_TYPE_AAAA ||
-        dwRecordType == VMDNS_RR_TYPE_SRV ||
-        dwRecordType == VMDNS_RR_TYPE_PTR;
+        dwRecordType == VMDNS_RR_TYPE_A     ||
+        dwRecordType == VMDNS_RR_TYPE_AAAA  ||
+        dwRecordType == VMDNS_RR_TYPE_CNAME ||
+        dwRecordType == VMDNS_RR_TYPE_NS    ||
+        dwRecordType == VMDNS_RR_TYPE_SOA   ||
+        dwRecordType == VMDNS_RR_TYPE_SRV   ||
+        dwRecordType == VMDNS_RR_QTYPE_ANY;
 }
 
 BOOL
-VmDnsIsSupportedRecordType(
-    DWORD   dwRecordType
+VmDnsIsUpdatePermitted(
+    VMDNS_RR_TYPE   dwRecordType
     )
 {
     return
-        dwRecordType == VMDNS_RR_TYPE_A ||
-        dwRecordType == VMDNS_RR_TYPE_AAAA ||
+        dwRecordType == VMDNS_RR_TYPE_SOA   ||
+        dwRecordType == VMDNS_RR_TYPE_CNAME;
+}
+
+BOOL
+VmDnsIsRecordRType(
+    VMDNS_RR_TYPE   dwRecordType
+    )
+{
+    return
+        dwRecordType == VMDNS_RR_TYPE_NONE  ||
+        dwRecordType == VMDNS_RR_TYPE_A     ||
+        dwRecordType == VMDNS_RR_TYPE_NS    ||
+        dwRecordType == VMDNS_RR_TYPE_MD    ||
+        dwRecordType == VMDNS_RR_TYPE_MF    ||
         dwRecordType == VMDNS_RR_TYPE_CNAME ||
-        dwRecordType == VMDNS_RR_TYPE_NS ||
-        dwRecordType == VMDNS_RR_TYPE_PTR ||
-        dwRecordType == VMDNS_RR_TYPE_SOA ||
-        dwRecordType == VMDNS_RR_TYPE_SRV;
+        dwRecordType == VMDNS_RR_TYPE_SOA   ||
+        dwRecordType == VMDNS_RR_TYPE_MB    ||
+        dwRecordType == VMDNS_RR_TYPE_MG    ||
+        dwRecordType == VMDNS_RR_TYPE_MR    ||
+        dwRecordType == VMDNS_RR_TYPE_NULL  ||
+        dwRecordType == VMDNS_RR_TYPE_WKS   ||
+        dwRecordType == VMDNS_RR_TYPE_PTR   ||
+        dwRecordType == VMDNS_RR_TYPE_HINFO ||
+        dwRecordType == VMDNS_RR_TYPE_MINFO ||
+        dwRecordType == VMDNS_RR_TYPE_MX    ||
+        dwRecordType == VMDNS_RR_TYPE_TXT   ||
+        dwRecordType == VMDNS_RR_TYPE_RP    ||
+        dwRecordType == VMDNS_RR_TYPE_AFSDB ||
+        dwRecordType == VMDNS_RR_TYPE_SIG   ||
+        dwRecordType == VMDNS_RR_TYPE_AAAA  ||
+        dwRecordType == VMDNS_RR_TYPE_LOC   ||
+        dwRecordType == VMDNS_RR_TYPE_SRV   ||
+        dwRecordType == VMDNS_RR_TYPE_CERT  ||
+        dwRecordType == VMDNS_RR_TYPE_DS    ||
+        dwRecordType == VMDNS_RR_TYPE_SSHFP ||
+        dwRecordType == VMDNS_RR_TYPE_IPSEC ||
+        dwRecordType == VMDNS_RR_TYPE_RRSIG ||
+        dwRecordType == VMDNS_RR_TYPE_DNSKEY;
+}
+
+BOOL
+VmDnsIsRecordQType(
+    VMDNS_RR_TYPE   dwRecordType
+    )
+{
+    return
+        dwRecordType == VMDNS_RR_QTYPE_AXFR     ||
+        dwRecordType == VMDNS_RR_QTYPE_MAILB    ||
+        dwRecordType == VMDNS_RR_QTYPE_MAILA    ||
+        dwRecordType == VMDNS_RR_QTYPE_ANY;
+}
+
+BOOL
+VmDnsIsRecordMType(
+    VMDNS_RR_TYPE   dwRecordType
+    )
+{
+    return
+        dwRecordType == VMDNS_RR_MTYPE_OPT  ||
+        dwRecordType == VMDNS_RR_MTYPE_TKEY ||
+        dwRecordType == VMDNS_RR_MTYPE_TSIG;
 }

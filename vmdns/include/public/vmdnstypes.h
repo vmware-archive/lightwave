@@ -80,8 +80,15 @@ typedef
 #define VMDNS_RR_TYPE_IPSEC  0x002D
 #define VMDNS_RR_TYPE_RRSIG  0x002E
 #define VMDNS_RR_TYPE_DNSKEY 0x0030
-#define VMDNS_RR_TYPE_TKEY   0x00F9
-#define VMDNS_RR_TYPE_TSIG   0x00FA
+
+#define VMDNS_RR_MTYPE_OPT    0x0029
+#define VMDNS_RR_MTYPE_TKEY   0x00F9
+#define VMDNS_RR_MTYPE_TSIG   0x00FA
+
+#define VMDNS_RR_QTYPE_AXFR   0x00FC
+#define VMDNS_RR_QTYPE_MAILB  0x00FD
+#define VMDNS_RR_QTYPE_MAILA  0x00FE // obsoleted by RFC 973
+#define VMDNS_RR_QTYPE_ANY    0x00FF
 
 typedef UINT16  VMDNS_RR_TYPE;
 typedef UINT16  VMDNS_CLASS;
@@ -97,6 +104,8 @@ typedef UINT16  VMDNS_SERVICE_PROTOCOL;
 #define VMDNS_CLASS_CS       0x0002 // obsolete
 #define VMDNS_CLASS_CH       0x0003
 #define VMDNS_CLASS_HS       0x0004
+#define VMDNS_CLASS_NONE     0x00FE
+#define VMDNS_CLASS_ANY      0x00FF
 
 #define VMDNS_ZONE_TYPE_FORWARD 0
 #define VMDNS_ZONE_TYPE_REVERSE 1
@@ -114,6 +123,12 @@ typedef UINT16  VMDNS_SERVICE_PROTOCOL;
 #define SERVICE_PROTOCOL_NONE   0
 #define SERVICE_PROTOCOL_TCP    1
 #define SERVICE_PROTOCOL_UDP    2
+
+typedef struct _VMDNS_BLOB
+{
+    UINT16      unSize;  // size in octects
+    PBYTE       pData;
+} VMDNS_BLOB, *PVMDNS_BLOB;
 
 typedef struct _VMDNS_IP6_ADDRESS
 {
@@ -464,68 +479,50 @@ VMDNS_NAPTR_DATAA, *PVMDNS_NAPTR_DATAA;
 typedef struct
 {
     PWDNS_STRING            pNameAlgorithm;
-    PBYTE                   pAlgorithmPacket;
-    PBYTE                   pKey;
-    PBYTE                   pOtherData;
+    PVMDNS_BLOB             pKey;
+    PVMDNS_BLOB             pOtherData;
     DWORD                   dwCreateTime;
     DWORD                   dwExpireTime;
     WORD                    wMode;
     WORD                    wError;
-    WORD                    wKeyLength;
-    WORD                    wOtherLength;
-    UCHAR                   cAlgNameLength;
-    BOOL                    bPacketPointers;
 }
 VMDNS_TKEY_DATAW, *PVMDNS_TKEY_DATAW;
 
 typedef struct
 {
     PDNS_STRING             pNameAlgorithm;
-    PBYTE                   pAlgorithmPacket;
-    PBYTE                   pKey;
-    PBYTE                   pOtherData;
+    PVMDNS_BLOB             pKey;
+    PVMDNS_BLOB             pOtherData;
     DWORD                   dwCreateTime;
     DWORD                   dwExpireTime;
     WORD                    wMode;
     WORD                    wError;
-    WORD                    wKeyLength;
-    WORD                    wOtherLength;
-    UCHAR                   cAlgNameLength;
-    BOOL                    bPacketPointers;
 }
 VMDNS_TKEY_DATAA, *PVMDNS_TKEY_DATAA;
 
 typedef struct
 {
     PWDNS_STRING            pNameAlgorithm;
-    PBYTE                   pAlgorithmPacket;
-    PBYTE                   pSignature;
-    PBYTE                   pOtherData;
-    INT64                   i64CreateTime;
+    PVMDNS_BLOB             pSignature;
+    PVMDNS_BLOB             pOtherData;
+    UINT64                  unCreateTime;
     WORD                    wFudgeTime;
     WORD                    wOriginalXid;
     WORD                    wError;
-    WORD                    wSigLength;
-    WORD                    wOtherLength;
-    UCHAR                   cAlgNameLength;
-    BOOL                    bPacketPointers;
+    PBYTE                   pRawTsigPtr;
 }
 VMDNS_TSIG_DATAW, *PVMDNS_TSIG_DATAW;
 
 typedef struct
 {
     PDNS_STRING             pNameAlgorithm;
-    PBYTE                   pAlgorithmPacket;
-    PBYTE                   pSignature;
-    PBYTE                   pOtherData;
-    INT64                   i64CreateTime;
+    PVMDNS_BLOB             pSignature;
+    PVMDNS_BLOB             pOtherData;
+    UINT64                  unCreateTime;
     WORD                    wFudgeTime;
     WORD                    wOriginalXid;
     WORD                    wError;
-    WORD                    wSigLength;
-    WORD                    wOtherLength;
-    UCHAR                   cAlgNameLength;
-    BOOL                    bPacketPointers;
+    PBYTE                   pRawTsigPtr;
 }
 VMDNS_TSIG_DATAA, *PVMDNS_TSIG_DATAA;
 
@@ -556,13 +553,22 @@ union _VMDNS_RECORD_DATA
 #endif
     VMDNS_PTR_DATAA         CNAME;
 #ifdef _DCE_IDL_
-[case(VMDNS_RR_TYPE_SOA)]
+    [case(VMDNS_RR_TYPE_SOA)]
 #endif
-     VMDNS_SOA_DATAA        SOA;
+    VMDNS_SOA_DATAA         SOA;
 #ifdef _DCE_IDL_
-[case(VMDNS_RR_TYPE_SRV)]
+    [case(VMDNS_RR_TYPE_SRV)]
 #endif
      VMDNS_SRV_DATAA        SRV;
+#ifdef _DCE_IDL_
+    [case(VMDNS_RR_MTYPE_TKEY)]
+#endif
+    VMDNS_TKEY_DATAA        TKEY;
+#ifdef _DCE_IDL_
+    [case(VMDNS_RR_MTYPE_TSIG)]
+#endif
+    VMDNS_TSIG_DATAA        TSIG;
+
 } VMDNS_RECORD_DATA;
 
 typedef VMDNS_RECORD_DATA* PVMDNS_RECORD_DATA;

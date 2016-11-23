@@ -24,6 +24,8 @@ libcommon_la_SOURCES = \
     record-ptr.c  \
     record-soa.c  \
     record-srv.c  \
+    record-tkey.c  \
+    record-tsig.c  \
     rpcmemory.c  \
     string.c \
     threading.c \

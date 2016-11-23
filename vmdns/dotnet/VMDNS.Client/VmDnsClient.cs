@@ -1,16 +1,3 @@
-/*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the “License”); you may not
- * use this file except in compliance with the License.  You may obtain a copy
- * of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an “AS IS” BASIS, without
- * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
- * License for the specific language governing permissions and limitations
- * under the License.
- */
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -73,7 +60,7 @@ namespace VMDNS.Client
                                 Marshal.PtrToStructure(
                         pZoneInfoPtr,
                         typeof(VMDNS_ZONE_INFO));
-                    if (zoneInfo.dwZoneType == (uint)type)
+                    if (zoneInfo.dwZoneType == (UInt32)type)
                     {
                         zoneList.Add(new VmDnsZone(this.session, zoneInfo));
                     }
@@ -150,13 +137,13 @@ namespace VMDNS.Client
             try
             {
                 pForwarders = (VMDNS_FORWARDERS)Marshal.PtrToStructure(
-                                    forwarderArrayPtr,
-                                    typeof(VMDNS_FORWARDERS));
+                    forwarderArrayPtr,
+                    typeof(VMDNS_FORWARDERS));
                 for (int i = 0; i < pForwarders.dwCount; ++i)
                 {
                     var ptrSize = Marshal.SizeOf(typeof(IntPtr));
                     var pForwarder = Marshal.ReadIntPtr(
-                            (IntPtr)((long)pForwarders.pszForwarders + i * ptrSize));
+                                         (IntPtr)((long)pForwarders.pszForwarders + i * ptrSize));
                     string forwarder = Marshal.PtrToStringAnsi(pForwarder);
                     forwarderList.Add(forwarder);
                 }

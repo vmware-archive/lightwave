@@ -642,7 +642,7 @@ CreateAAAARecord(
     VmDnsAllocateMemory(sizeof(VMDNS_RECORD), (void**)&pRecord);
     VmDnsTrimDomainNameSuffix(pszHostName, pszZone);
     VmDnsAllocateStringA(pszHostName, &pRecord->pszName);
-    memcpy(pRecord->Data.AAAA.Ip6Address.IP6Byte, bytes, sizeof(pRecord->Data.AAAA.Ip6Address.IP6Byte));
+    memcpy(pRecord->Data.AAAA.Ip6Address.IP6Byte, bytes, sizeof(bytes));
     pRecord->dwType = VMDNS_RR_TYPE_AAAA;
     pRecord->iClass = VMDNS_CLASS_IN;
 

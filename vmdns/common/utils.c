@@ -56,45 +56,6 @@ VmDnsClearZoneInfoArray(
     }
 }
 
-DWORD
-VmDnsRpcCopyRecordArray(
-    PVMDNS_RECORD_ARRAY pRecordArray,
-    PVMDNS_RECORD_ARRAY *ppRecordArray
-    )
-{
-    DWORD idx = 0;
-    DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_RECORD_ARRAY pRecordArrayTemp = NULL;
-
-    dwError = VmDnsRpcAllocateMemory(sizeof(VMDNS_RECORD_ARRAY),
-                                     (PVOID*)&pRecordArrayTemp);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsRpcAllocateMemory(sizeof(VMDNS_RECORD)*pRecordArray->dwCount,
-                                     (PVOID*)&pRecordArrayTemp->Records);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    for (; idx < pRecordArray->dwCount; ++idx)
-    {
-        dwError = VmDnsRpcCopyRecord(&pRecordArray->Records[idx],
-                                    &pRecordArrayTemp->Records[idx]);
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-    pRecordArrayTemp->dwCount = pRecordArray->dwCount;
-
-    *ppRecordArray = pRecordArrayTemp;
-
-cleanup:
-    return dwError;
-error:
-    VmDnsRpcFreeRecordArray(pRecordArrayTemp);
-    if (ppRecordArray)
-    {
-        *ppRecordArray = NULL;
-    }
-    goto cleanup;
-}
-
 VOID
 VmDnsRpcFreeRecordArray(
     PVMDNS_RECORD_ARRAY pRecordArray
@@ -140,6 +101,7 @@ VmDnsRpcCopyZoneInfo(
     pZoneInfoDest->refreshInterval = pZoneInfoSrc->refreshInterval;
     pZoneInfoDest->retryInterval = pZoneInfoSrc->retryInterval;
     pZoneInfoDest->serial = pZoneInfoSrc->serial;
+    pZoneInfoDest->dwZoneType = pZoneInfoSrc->dwZoneType;
 
 cleanup:
     return dwError;
@@ -610,6 +572,7 @@ VmDnsCopyFromZoneInfo(
     pZoneInfoDest->refreshInterval = pZoneInfoSrc->refreshInterval;
     pZoneInfoDest->retryInterval = pZoneInfoSrc->retryInterval;
     pZoneInfoDest->serial = pZoneInfoSrc->serial;
+    pZoneInfoDest->dwZoneType = pZoneInfoSrc->dwZoneType;
 
 cleanup:
     return dwError;

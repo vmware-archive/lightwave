@@ -12,4 +12,4 @@
  * under the License.
  */
 
-extern PVMW_DNS_DRIVER_GLOBALS gpDNSDriverGlobals;
+extern PVMW_DNS_DRIVER_GLOBALS gpSrvContext;
