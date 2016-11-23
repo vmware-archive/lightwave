@@ -72,6 +72,7 @@ objectClasses: (
         $ invocationId
         $ msDS-SiteName
         $ vmwPlatformServicesControllerVersion
+        $ vmwRaftLeaderDCAccountUPN
         )
     )
 
@@ -1767,6 +1768,17 @@ attributeTypes: (
     NO-USER-MODIFICATION
     USAGE directoryOperation
     )
+
+attributeTypes: (
+    VMWare.DIR.attribute.1.14
+    NAME 'vmwRaftLeaderDCAccountUPN'
+    DESC 'VMware Raft leader domain controller UPN'
+    SUP distinguishedName
+    SINGLE-VALUE
+    NO-USER-MODIFICATION
+    USAGE directoryOperation
+    )
+
 
 attributeTypes: (
     1.2.840.113556.1.2.34

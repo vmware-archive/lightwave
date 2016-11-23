@@ -1341,6 +1341,7 @@ _VmDirAppendEntriesGetReply(
     static int logCnt = 0;
     static time_t prevLogTime = {0};
     time_t now = {0};
+    BOOLEAN bLeaderChanged = FALSE;
 
     *status = 1;
 
@@ -1351,7 +1352,21 @@ _VmDirAppendEntriesGetReply(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    if (gRaftState.leader.lberbv.bv_len == 0 || 
+        VmDirStringCompareA(gRaftState.leader.lberbv.bv_val, leader, FALSE) !=0 )
+    {
+        bLeaderChanged = TRUE;
+    }
+
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+
+    if (bLeaderChanged)
+    {
+        VmDirFreeBervalContent(&gRaftState.leader);
+        dwError = VmDirAllocateBerValueAVsnprintf(&gRaftState.leader, "%s", leader);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     oldterm = gRaftState.currentTerm;
 
     if (gRaftState.currentTerm > term)
@@ -2241,4 +2256,52 @@ VmDirRaftDisallowUpdates(PCSTR caller)
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirRaftDisallowUpdates: disallowed %s during leader transition.", caller);
     }
     return gRaftState.disallowUpdates;
+}
+
+DWORD
+VmDirRaftGetLeader(PSTR *ppszLeader)
+{
+    BOOLEAN bLock = FALSE;
+    PSTR pszLeader = NULL;
+    DWORD dwError = 0;
+    PSTR pszDomainName = NULL;
+
+    dwError = VmDirDomainDNToName(gVmdirServerGlobals.systemDomainDN.bvnorm_val, &pszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+    if (gRaftState.clusterSize >= 2 && gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER)
+    {
+        if (gRaftState.leader.lberbv_len > 0)
+        {
+            dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "%s@%s",
+                        gRaftState.leader.lberbv_val, pszDomainName);
+        } else
+        {
+            //Server may have not received Ping yet (e.g. when server just start).
+            dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "@%s", pszDomainName);
+        }
+    } else
+    {
+        if (gRaftState.role == VDIR_RAFT_ROLE_CANDIDATE)
+        {
+            //If server in leader voting in process, don't return host name in UPN,
+            dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "@%s", pszDomainName);
+        } else
+        {
+            //Self is a Raft leader or a standalone server, return its own UPN
+            dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "%s@%s", gRaftState.hostname.lberbv_val, pszDomainName);
+        }
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+
+    *ppszLeader = pszLeader;
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszDomainName);
+    return dwError;
+
+error:
+    goto cleanup;
 }

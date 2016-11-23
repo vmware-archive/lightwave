@@ -349,6 +349,7 @@ extern "C" {
 #define ATTR_RAFT_VOTEDFOR_TERM             "vmwRaftVotedForTerm"
 #define ATTR_RAFT_VOTEDFOR                  "vmwRaftVotedFor"
 #define ATTR_RAFT_LOG_ENTRIES               "vmwRaftLogEntries"
+#define ATTR_RAFT_LEADER_UPN                "vmwRaftLeaderDCAccountUPN"
 
 // Object classes
 #define OC_TOP                              "top"

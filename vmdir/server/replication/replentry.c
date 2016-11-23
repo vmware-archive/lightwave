@@ -998,9 +998,14 @@ _VmDirRaftLoadGlobals(PSTR *ppszLocalErrorMsg)
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirRaftLoadGlobals: successfully loaded instance specific globals.");
+
 cleanup:
     VmDirFreeEntryArrayContent(&entryArray);
+    VmDirFreeBervalContent(&dcContainerDNrdn);
     VMDIR_SAFE_FREE_STRINGA(pszDCAccountDn);
+    VMDIR_SAFE_FREE_STRINGA(pzaName);
+    VMDIR_SAFE_FREE_STRINGA(pszHostname);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainName);
     return dwError;
 
 error:
