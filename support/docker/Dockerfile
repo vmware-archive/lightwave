@@ -16,7 +16,7 @@ RUN tdnf update --refresh -y \
         pcre-8.39 \
         openssl-1.0.2j \
         expat-2.2.0 \
-        curl-7.47.1 \
+        curl-7.51 \
         bzip2-1.0.6 && \
     tdnf install -y \
         apache-tomcat-8.0.37 \
