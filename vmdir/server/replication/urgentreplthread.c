@@ -228,6 +228,13 @@ VmDirReplUrgentReplCoordinatorThreadFun(
         }
 
         VmDirSetUrgentReplicationPending(FALSE);
+        if (VmDirdState() == VMDIRD_STATE_STANDALONE)
+        {
+            VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+                               "%s: Server is in standalone state. Not sending urgent replication requests to partners", __FUNCTION__);
+            continue;
+        }
+
         VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
             "VmDirReplUrgentReplCoordinatorThreadFun: Initiating Urgent Replication Request to all Replication Partners");
 

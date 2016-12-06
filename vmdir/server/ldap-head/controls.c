@@ -146,7 +146,8 @@ ParseRequestControls(
             // request
             if (VmDirStringCompareA( (*control)->type, LDAP_CONTROL_SYNC, TRUE ) == 0)
             {
-                if (VmDirdGetRunMode() != VMDIR_RUNMODE_NORMAL)
+                if (VmDirdState() != VMDIRD_STATE_NORMAL &&
+                    VmDirdState() != VMDIRD_STATE_READ_ONLY)
                 {
                     // Why block out-bound replication when catching up during restore mode?
                     //

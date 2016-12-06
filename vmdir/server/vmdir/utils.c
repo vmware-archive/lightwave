@@ -159,10 +159,36 @@ VmDirdStateSet(
 {
     BOOLEAN             bInLock = FALSE;
     VDIR_BACKEND_CTX    beCtx = {0};
+    VDIR_SERVER_STATE   currentState = VMDIRD_STATE_UNDEFINED;
+    DWORD ulError = 0;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-    gVmdirGlobals.vmdirdState = state;
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirdStateGlobals.pMutex);
+    currentState = gVmdirdStateGlobals.vmdirdState;
+
+    // Do not transition to normal running states from FAILURE.
+    if (state == VMDIRD_STATE_UNDEFINED ||
+        (currentState == VMDIRD_STATE_FAILURE && state != VMDIRD_STATE_SHUTDOWN))
+    {
+
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+                       "%s: State (%d) cannot transition to state (%d)",
+                       __FUNCTION__,
+                       currentState,
+                       state);
+        goto error;
+    }
+
+    if (state == VMDIRD_STATE_READ_ONLY_DEMOTE)
+    {
+        /*
+         * Force RPC server to stop listening during demote operation.
+         * SRP operations can't work properly while in this state.
+         */
+        state = VMDIRD_STATE_READ_ONLY;
+        rpc_mgmt_stop_server_listening(NULL, (unsigned32*)&ulError);
+    }
+
+    gVmdirdStateGlobals.vmdirdState = state;
 
     if (state == VMDIRD_STATE_READ_ONLY) // Wait for the pending write transactions to be over before returning
     {
@@ -176,10 +202,16 @@ VmDirdStateSet(
         }
     }
 
-    VmDirBackendCtxContentFree(&beCtx);
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDir State (%u)", state);
 
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirdStateGlobals.pMutex);
+    VmDirBackendCtxContentFree(&beCtx);
+
     return;
+
+error:
+    goto cleanup;
 }
 
 VDIR_SERVER_STATE
@@ -190,53 +222,38 @@ VmDirdState(
     VDIR_SERVER_STATE rtnState;
     BOOLEAN bInLock = FALSE;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
-    rtnState = gVmdirGlobals.vmdirdState;
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.mutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirdStateGlobals.pMutex);
+    rtnState = gVmdirdStateGlobals.vmdirdState;
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirdStateGlobals.pMutex);
 
     return rtnState;
 }
 
-BOOLEAN
-VmDirdGetRestoreMode(
+VDIR_SERVER_STATE
+VmDirdGetTargetState(
     VOID
     )
 {
-    BOOLEAN bRestoreMode;
+    VDIR_SERVER_STATE targetState;
     BOOLEAN bInLock = FALSE;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirRunmodeGlobals.pMutex);
-    bRestoreMode = gVmdirRunmodeGlobals.mode == VMDIR_RUNMODE_RESTORE;
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirRunmodeGlobals.pMutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirdStateGlobals.pMutex);
+    targetState = gVmdirdStateGlobals.targetState;
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirdStateGlobals.pMutex);
 
-    return bRestoreMode;
-}
-
-VMDIR_RUNMODE
-VmDirdGetRunMode(
-    VOID
-    )
-{
-    VMDIR_RUNMODE runMode;
-    BOOLEAN bInLock = FALSE;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirRunmodeGlobals.pMutex);
-    runMode = gVmdirRunmodeGlobals.mode;
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirRunmodeGlobals.pMutex);
-
-    return runMode;
+    return targetState;
 }
 
 VOID
-VmDirdSetRunMode(
-    VMDIR_RUNMODE mode
+VmDirdSetTargetState(
+    VDIR_SERVER_STATE targetState
     )
 {
     BOOLEAN bInLock = FALSE;
 
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirRunmodeGlobals.pMutex);
-    gVmdirRunmodeGlobals.mode = mode;
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirRunmodeGlobals.pMutex);
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirdStateGlobals.pMutex);
+    gVmdirdStateGlobals.targetState = targetState;
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirdStateGlobals.pMutex);
 }
 
 VOID

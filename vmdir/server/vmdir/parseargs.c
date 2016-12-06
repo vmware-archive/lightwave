@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -84,11 +84,12 @@ VmDirParseArgs(
             case VMDIR_OPTION_RUN_MODE:
                 if ( VmDirStringCompareA(VMDIR_RUN_MODE_RESTORE, optarg, TRUE ) == 0 )
                 {
-                    VmDirdSetRunMode( VMDIR_RUNMODE_RESTORE );
+
+                    VmDirdSetTargetState( VMDIRD_STATE_RESTORE );
                 }
                 else if ( VmDirStringCompareA(VMDIR_RUN_MODE_STANDALONE, optarg, TRUE ) == 0 )
                 {
-                    VmDirdSetRunMode( VMDIR_RUNMODE_STANDALONE );
+                    VmDirdSetTargetState( VMDIRD_STATE_STANDALONE );
                 }
                 else
                 {
@@ -185,11 +186,11 @@ VmDirParseArgs(
 
                 if ( VmDirStringCompareA(VMDIR_RUN_MODE_RESTORE, pszRunMode, TRUE ) == 0 )
                 {
-                    VmDirdSetRunMode( VMDIR_RUNMODE_RESTORE );
+                    VmDirdSetTargetState( VMDIRD_STATE_RESTORE );
                 }
                 else if ( VmDirStringCompareA(VMDIR_RUN_MODE_STANDALONE, pszRunMode, TRUE ) == 0 )
                 {
-                    VmDirdSetRunMode( VMDIR_RUNMODE_STANDALONE );
+                    VmDirdSetTargetState( VMDIRD_STATE_STANDALONE );
                 }
                 else
                 {

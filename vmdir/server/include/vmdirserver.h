@@ -111,13 +111,14 @@ typedef struct _VMDIR_SERVER_GLOBALS
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;
 
-typedef struct _VMDIR_RUNMODE_GLOBALS
+typedef struct _VMDIRD_STATE_GLOBALS
 {
     PVMDIR_MUTEX  pMutex;
-    VMDIR_RUNMODE mode;
-} VMDIR_RUNMODE_GLOBALS;
+    VDIR_SERVER_STATE vmdirdState;
+    VDIR_SERVER_STATE targetState;
+} VMDIRD_STATE_GLOBALS;
 
-extern VMDIR_RUNMODE_GLOBALS gVmdirRunmodeGlobals;
+extern VMDIRD_STATE_GLOBALS gVmdirdStateGlobals;
 
 typedef struct _VMDIR_GLOBALS
 {
@@ -144,7 +145,6 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwLdapRecvTimeoutSec;
     // following fields are protected by mutex
     PVMDIR_MUTEX                    mutex;
-    VDIR_SERVER_STATE               vmdirdState;
     PVDIR_THREAD_INFO               pSrvThrInfo;
     BOOLEAN                         bReplNow;
 
@@ -284,19 +284,14 @@ VmDirdStateSet(
     VDIR_SERVER_STATE   state
     );
 
-BOOLEAN
-VmDirdGetRestoreMode(
-    VOID
-    );
-
-VMDIR_RUNMODE
-VmDirdGetRunMode(
+VDIR_SERVER_STATE
+VmDirdGetTargetState(
     VOID
     );
 
 VOID
-VmDirdSetRunMode(
-    VMDIR_RUNMODE mode
+VmDirdSetTargetState(
+    VDIR_SERVER_STATE   state
     );
 
 USN
@@ -733,5 +728,3 @@ VmDirAddTrackLastLoginItem(
 #endif
 
 #endif /* __VMDIRMAIN_H__ */
-
-

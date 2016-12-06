@@ -270,133 +270,6 @@ error:
 
 static
 DWORD
-_VmDirSetMode(
-    PCSTR   pszHost,
-    PCSTR   pszUsername,
-    PCSTR   pszPassword,
-    PCSTR   pszMode
-    )
-{
-    DWORD   dwError = 0;
-    PVMDIR_SERVER_CONTEXT pServerContext = NULL;
-    VMDIR_RUNMODE   dwMode = VMDIR_RUNMODE_NORMAL;
-    PSTR    pszName = NULL;
-    PSTR    pszDomainName = NULL;
-    PSTR    pszDomainDN = NULL;
-
-    if ( VmDirStringCompareA( pszMode, "NORMAL", FALSE) == 0 )
-    {
-        dwMode = VMDIR_RUNMODE_NORMAL;
-    }
-    else if ( VmDirStringCompareA( pszMode, "STANDALONE", FALSE) == 0 )
-    {
-        dwMode = VMDIR_RUNMODE_STANDALONE;
-    }
-    else
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError =  VmDirUPNToNameAndDomain(pszUsername, &pszName, &pszDomainName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-
-    dwError = VmDirOpenServerA(
-                  pszHost,
-                  pszName,
-                  pszDomainName,
-                  pszPassword,
-                  0,
-                  NULL,
-                  &pServerContext);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSetMode(pServerContext, dwMode);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-
-    if (pServerContext)
-    {
-        VmDirCloseServer(pServerContext);
-    }
-
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-static
-DWORD
-_VmDirGetMode(
-    PCSTR   pszHost,
-    PCSTR   pszUsername,
-    PCSTR   pszPassword
-    )
-{
-    DWORD   dwError = 0;
-    PVMDIR_SERVER_CONTEXT pServerContext = NULL;
-    VMDIR_RUNMODE   dwMode = VMDIR_RUNMODE_NORMAL;
-    PSTR    pszName = NULL;
-    PSTR    pszDomainName = NULL;
-    PSTR    pszDomainDN = NULL;
-
-    dwError =  VmDirUPNToNameAndDomain(pszUsername, &pszName, &pszDomainName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirOpenServerA(
-                  pszHost,
-                  pszName,
-                  pszDomainName,
-                  pszPassword,
-                  0,
-                  NULL,
-                  &pServerContext);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirGetMode(pServerContext, &dwMode);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    switch (dwMode)
-    {
-    case VMDIR_RUNMODE_NORMAL:
-        printf("Replication mode: Normal (replicating)\n");
-        break;
-    case VMDIR_RUNMODE_STANDALONE:
-        printf("Replication mode: Standalone (not replicating)\n");
-        break;
-    case VMDIR_RUNMODE_RESTORE:
-        printf("Replication mode: Restore (not replicating)\n");
-        break;
-    default:
-        printf("Replication mode: unknown\n");
-        break;
-    }
-
-cleanup:
-
-    if (pServerContext)
-    {
-        VmDirCloseServer(pServerContext);
-    }
-
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-
-static
-DWORD
 _VmDirGetReplicateStatusCycle(
     PCSTR   pszHostName,
     PCSTR   pszUserName,
@@ -819,7 +692,6 @@ VmDirMain(int argc, char* argv[])
     PSTR        pszTgtPort     = NULL;
     PSTR        pszEntryDn     = NULL;
     PSTR        pszAttribute   = NULL;
-    PSTR        pszMode        = NULL;
     BOOLEAN     bVerbose       = FALSE;
     BOOLEAN     bTwoWayRepl    = FALSE;
     PSTR        pszErrMsg      = NULL;
@@ -862,7 +734,6 @@ VmDirMain(int argc, char* argv[])
                     &pszTgtPort,
                     &pszEntryDn,
                     &pszAttribute,
-                    &pszMode,
                     &bVerbose
                     );
 
@@ -1024,31 +895,6 @@ VmDirMain(int argc, char* argv[])
                                 pszSrcPassword,
                                 pszEntryDn,
                                 pszAttribute
-                                );
-           BAIL_ON_VMDIR_ERROR(dwError);
-
-       }
-    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_SET_MODE,
-                                  pszFeatureSet,
-                                  TRUE) == 0 )
-       {
-           dwError = _VmDirSetMode(
-                                pszSrcHostName,
-                                pszSrcUserName,
-                                pszSrcPassword,
-                                pszMode
-                                );
-           BAIL_ON_VMDIR_ERROR(dwError);
-
-       }
-    else if ( VmDirStringCompareA(VDCREPADMIN_FEATURE_GET_MODE,
-                                  pszFeatureSet,
-                                  TRUE) == 0 )
-       {
-           dwError = _VmDirGetMode(
-                                pszSrcHostName,
-                                pszSrcUserName,
-                                pszSrcPassword
                                 );
            BAIL_ON_VMDIR_ERROR(dwError);
 
