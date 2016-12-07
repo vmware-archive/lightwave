@@ -83,10 +83,6 @@
         <include name="velocity-1.5.jar" />
    </fileset>
 
-   <fileset id="jar-set.commons-collections" dir="${MAINSRCROOR}/build/depends">
-        <include name="commons-collections-3.2.1.jar" />
-   </fileset>
-
    <fileset id="jar-set.esapi" dir="${MAINSRCROOT}/build/depends">
        <include name="esapi-2.0.1.jar" />
    </fileset>
@@ -133,7 +129,7 @@
    </fileset>
 
    <fileset id="jar-set.commons-collections" dir="${MAINSRCROOT}/build/depends" >
-        <include name="commons-collections-3.2.1.jar" />
+        <include name="commons-collections-3.2.2.jar" />
    </fileset>
 
    <fileset id="jar-set.junit" dir="${MAINSRCROOT}/build/depends">
@@ -206,8 +202,8 @@
    </fileset>
 
    <fileset id="jar-set.opensaml.endorsed" dir="${MAINSRCROOT}/build/depends">
-      <include name="serializer-2.7.1.jar"/>
-      <include name="xalan-2.7.1.jar"/>
+      <include name="serializer-2.7.2.jar"/>
+      <include name="xalan-2.7.2.jar"/>
       <include name="xercesImpl-2.10.0.jar"/>
       <include name="xml-apis-1.4.01.jar"/>
       <include name="xml-resolver-1.2.jar"/>
