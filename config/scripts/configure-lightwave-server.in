@@ -23,7 +23,7 @@ _get_installed_version(){
 _set_installed_version(){
 
     # Does key exist?
-    $LW_BIN_DIR/lwregshell list_keys "[HKEY_THIS_MACHINE\\Services]" | grep 'lw-server'
+    $LW_BIN_DIR/lwregshell list_keys "[HKEY_THIS_MACHINE\\Services]" | grep 'lw-server' &>/dev/null
 
     # Key doesn't exist, create it
     if [ $? -ne 0 ]; then
@@ -31,7 +31,7 @@ _set_installed_version(){
     fi
 
     # Does value exist?
-    $LW_BIN_DIR/lwregshell list_values "$LW_KEY" | grep 'Version'
+    $LW_BIN_DIR/lwregshell list_values "$LW_KEY" | grep 'Version' &>/dev/null
 
     # If value doesn't exist, create it. Otherwise, set it.
     if [ $? -ne 0 ]; then
@@ -49,13 +49,6 @@ _exit(){
 
         while [ `pidof lwsmd` ];  do
             sleep 1
-        done
-    fi
-
-    # if failed container upgrade, keep vmdir in standalone mode
-    if [ $1 -eq 2 ]; then
-        while true; do
-            sleep 5
         done
     fi
 
@@ -270,6 +263,7 @@ BIN_DIR=$VMWARE_DIR/bin
 SBIN_DIR=$VMWARE_DIR/sbin
 LOTUS_DNS_FORWARDERS_ARG=
 VMAFD_PARAM_KEY="[HKEY_THIS_MACHINE\\Services\\vmafd\\Parameters]"
+VMDIR_KEY="[HKEY_THIS_MACHINE\\Services\\vmdir]"
 
 # Start Likewise services
 if [ -z "`pidof lwsmd`" ]; then
@@ -316,24 +310,35 @@ if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ -f /.dockerenv ]]; then
     # Check if versions are different
     if [ "$INSTALLED_VERSION" != "$LW_VERSION" ]; then
 
+        # Set vmdir command line arguments to maintenance mode
+        VMDIR_ARG=`$LW_BIN_DIR/lwregshell list_values $VMDIR_KEY | \
+                grep 'Arguments' | sed 's/+//' | cut -d '"' -f4`
+
+        $LW_BIN_DIR/lwregshell set_value $VMDIR_KEY Arguments "$VMDIR_ARG -m standalone"
+        $LW_BIN_DIR/lwsm refresh
+
         # perform vmdir upgrade
         $BIN_DIR/vmdir_upgrade.sh --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
-                                  --domainname $LOTUS_DOMAIN_DEFAULT --recover
+                                  --domainname $LOTUS_DOMAIN_DEFAULT
 
         if [ $? -ne 0 ]; then
             echo  "Upgrade failed."
             _exit 2
         fi
 
-        # Upgrade successful, restart lwsm to insure all changes are applied and node is replicating
-        if [ -z $RUN_LWSM ]; then
-            systemctl restart lwsmd
-        fi
+        # Upgrade successful, reset vmdir cli args
+        $LW_BIN_DIR/lwregshell set_value $VMDIR_KEY Arguments "$VMDIR_ARG"
+        $LW_BIN_DIR/lwsm refresh
+        # take vmdir out of maintenance mode using no-restart method
+        $LW_BIN_DIR/lwsm start vmafd
+        $BIN_DIR/dir-cli state set --state NORMAL --login $LOTUS_ADMIN_DEFAULT --password "$LOTUS_ADMIN_PASSWORD_DEFAULT"
 
         # Update installed version on upgrade success
         _set_installed_version
 
         echo "Upgrade complete."
+    else
+        echo "Startup complete."
     fi
 
     _exit 0

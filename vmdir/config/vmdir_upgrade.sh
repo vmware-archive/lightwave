@@ -16,7 +16,7 @@ VMDIR_KEY="[HKEY_THIS_MACHINE\\Services\\vmdir]"
 VMDIR_UPGRADE_KEY="[HKEY_THIS_MACHINE\\Services\\vmdir-upgrade]"
 ADMIN="Administrator"
 LIST_VALUES="list_values"
-USAGE="vmdir_upgrade.sh [--password <password>] [--domainname <domain-name>][--recover]"
+USAGE="vmdir_upgrade.sh [--password <password>] [--domainname <domain-name>]"
 
 exit_upgrade(){
     if [ $RUN_LWSM ]; then
@@ -48,10 +48,6 @@ if [ $# -gt 0 ]; then
                         ;;
                     "--domainname")
                         STATE="domainname"
-                        ;;
-                    "--recover")
-                        RECOVER=1
-                        STATE="options"
                         ;;
                     *)
                         echo "Invalid parameter: $arg"
@@ -121,13 +117,9 @@ if [ -z "$PASSWORD" ]; then
     fi
 fi
 
-# Restart vmdir and put it into standalone mode
-echo "Starting vmdir in standalone mode"
+# Restart vmdir
+echo "Starting vmdir"
 $LW_BIN_DIR/lwsm start vmdir
-
-if [ $RECOVER ]; then
-    echo "$PASSWORD" | $VM_BIN_DIR/vdcrepadmin -f setreplicationmode -h localhost -m "STANDALONE" -u "$ADMIN_NAME"
-fi
 echo "Running vdcupgrade"
 echo "$PASSWORD" | $VM_BIN_DIR/vdcupgrade -H localhost -D "$ADMIN_NAME" -d "$DCACCOUNTDN" \
                                           >$VM_LOG_DIR/vdcupgrade.log 2>&1

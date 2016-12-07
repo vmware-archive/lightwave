@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.ArrayList;
@@ -34,7 +35,11 @@ public class LinuxInstallerHelper implements InstallerHelper {
 
     @Override
     public String[] getIDMServiceStartCommand() {
-        return new String[] { "systemctl", "restart", "vmware-idmd" };
+        if (Files.exists(Paths.get("/.dockerenv"))) {
+            return new String[] { "/opt/vmware/sbin/vmware-idmd.sh", "start" };
+        } else {
+            return new String[] { "systemctl", "restart", "vmware-idmd" };
+        }
 
     }
 
@@ -56,7 +61,11 @@ public class LinuxInstallerHelper implements InstallerHelper {
 
     @Override
     public String[] getSTSServiceStartCommand() {
-        return new String[] { "systemctl", "restart", "vmware-stsd" };
+        if (Files.exists(Paths.get("/.dockerenv"))) {
+            return new String[] { "/opt/vmware/sbin/vmware-stsd.sh", "start" };
+        } else {
+            return new String[] { "systemctl", "restart", "vmware-stsd" };
+        }
     }
 
     @Override
