@@ -580,6 +580,7 @@ _VmDirReplicationThrFun(
     PVDIR_THREAD_INFO pRaftVoteSchdThreadInfo = NULL;
     BOOLEAN bGlobalsLoaded = FALSE;
     PSTR pszLocalErrorMsg = NULL;
+    BOOLEAN bSignaledConnThreads = FALSE;
 
     dwError = _VmDirRaftLoadGlobals(&pszLocalErrorMsg);
     if (dwError == 0)
@@ -632,12 +633,7 @@ _VmDirReplicationThrFun(
         }
     }
 
-    if (dwError)
-    {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirReplicationThrFun: failed with _VmDirRaftLoadGlobals  %s",
-                         VDIR_SAFE_STRING(pszLocalErrorMsg));
-        BAIL_ON_VMDIR_ERROR( dwError);
-    }
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "_VmDirReplicationThrFun: _VmDirRaftLoadGlobals");
 
     dwError = _VmDirLoadRaftState();
     BAIL_ON_VMDIR_ERROR( dwError);
@@ -658,6 +654,15 @@ _VmDirReplicationThrFun(
 
     while (1)
     {
+        if (!bSignaledConnThreads && VmDirdState() == VMDIRD_STATE_NORMAL)
+        {
+            //Wake up LDAP connection threads - signal again, connection threads may
+            // have missed the signal.
+            VMDIR_LOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
+            VmDirConditionSignal(gVmdirGlobals.replCycleDoneCondition);
+            VMDIR_UNLOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
+            bSignaledConnThreads = TRUE;
+        }
         if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
         {
             BOOLEAN bLock = FALSE;
@@ -2258,50 +2263,59 @@ VmDirRaftDisallowUpdates(PCSTR caller)
     return gRaftState.disallowUpdates;
 }
 
+/*
+ * Set ppszLeader to raft leader's server name or NULL if the server
+ * itself is a leader, the server is a candidate, or the server
+ * have not received Ping yet after switching to follower
+ */
 DWORD
 VmDirRaftGetLeader(PSTR *ppszLeader)
 {
     BOOLEAN bLock = FALSE;
     PSTR pszLeader = NULL;
     DWORD dwError = 0;
-    PSTR pszDomainName = NULL;
-
-    dwError = VmDirDomainDNToName(gVmdirServerGlobals.systemDomainDN.bvnorm_val, &pszDomainName);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
-    if (gRaftState.clusterSize >= 2 && gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER)
+    if (gRaftState.clusterSize >= 2 &&
+        gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER &&
+        gRaftState.leader.lberbv_len > 0)
     {
-        if (gRaftState.leader.lberbv_len > 0)
-        {
-            dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "%s@%s",
-                        gRaftState.leader.lberbv_val, pszDomainName);
-        } else
-        {
-            //Server may have not received Ping yet (e.g. when server just start).
-            dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "@%s", pszDomainName);
-        }
-    } else
-    {
-        if (gRaftState.role == VDIR_RAFT_ROLE_CANDIDATE)
-        {
-            //If server in leader voting in process, don't return host name in UPN,
-            dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "@%s", pszDomainName);
-        } else
-        {
-            //Self is a Raft leader or a standalone server, return its own UPN
-            dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "%s@%s", gRaftState.hostname.lberbv_val, pszDomainName);
-        }
+       dwError = VmDirAllocateStringAVsnprintf(&pszLeader, "%s", gRaftState.leader.lberbv_val);
+       BAIL_ON_VMDIR_ERROR(dwError);
     }
-    BAIL_ON_VMDIR_ERROR(dwError);
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
     *ppszLeader = pszLeader;
 
 cleanup:
-    VMDIR_SAFE_FREE_STRINGA(pszDomainName);
     return dwError;
 
 error:
     goto cleanup;
 }
+
+BOOLEAN
+VmDirRaftNeedReferral(PCSTR pszReqDn)
+{
+    char *p = NULL;
+    BOOLEAN bNeedReferral = FALSE;
+
+    if ((p=VmDirStringCaseStrA(pszReqDn, RAFT_CONTEXT_DN)) &&
+         VmDirStringCompareA(p, RAFT_CONTEXT_DN, FALSE)==0)
+    {
+        //Don't offer referral for Raft states or logs.
+        goto done;
+    }
+
+    if (pszReqDn == NULL || pszReqDn[0] == '\0')
+    {
+        //Search for DseRoot, don't no need for referral
+        goto done;
+    }
+
+    bNeedReferral = (gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER);
+
+done:
+    return bNeedReferral;
+}
+

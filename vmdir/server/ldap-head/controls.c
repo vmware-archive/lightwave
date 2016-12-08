@@ -184,6 +184,11 @@ ParseRequestControls(
                 op->strongConsistencyWriteCtrl = *control;
             }
 
+            if (VmDirStringCompareA((*control)->type, VDIR_LDAP_CONTROL_MANAGEDDSAIT, TRUE ) == 0)
+            {
+                op->manageDsaITCtrl = *control;
+            }
+
             if (VmDirStringCompareA( (*control)->type, LDAP_CONTROL_PAGEDRESULTS, TRUE ) == 0)
             {
                 retVal = _ParsePagedResultControlVal( op,

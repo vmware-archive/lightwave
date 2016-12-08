@@ -1148,3 +1148,90 @@ SetSpecialReturnChar(
         }
     }
 }
+
+void
+VmDirSendLdapReferralResult(
+   VDIR_OPERATION * op,
+   PCSTR pszRefSuffix,
+   PBOOLEAN pbRefSent
+   )
+{
+   DWORD dwError = 0;
+   BerElementBuffer berbuf;
+   BerElement *     ber = (BerElement *) &berbuf;
+   ber_int_t        msgId = 0;
+   PCSTR            pszSocketInfo = NULL;
+   PSTR             pszLeader = NULL;
+   PSTR             pszRef = NULL;
+   PVDIR_BERVALUE   pBerv = NULL;
+   DWORD            dwLdapsPorts = 0;
+   PDWORD           pdwLdapsPorts = NULL;
+   BOOLEAN          bIsLdaps = FALSE;
+   int              i = 0;
+
+   *pbRefSent = FALSE;
+   (void) memset( (char *)&berbuf, '\0', sizeof( BerElementBuffer ));
+
+   msgId = op->msgId;
+
+   ber_init2( ber, NULL, LBER_USE_DER );
+
+   if (op->conn)
+   {
+      pszSocketInfo = op->conn->szClientIP;
+   }
+
+   dwError = VmDirRaftGetLeader(&pszLeader);
+   BAIL_ON_VMDIR_ERROR(dwError);
+   
+   if (pszLeader == NULL)
+   {
+       //server self is a raft leader or leader cannot determined (e.g. in voting stage).
+       goto done;
+   }
+
+   VmDirGetLdapsListenPorts(&pdwLdapsPorts, &dwLdapsPorts);
+   for (i = 0; i < dwLdapsPorts; i++)
+   {
+       if (pdwLdapsPorts[i] == op->conn->dwServerPort)
+       {
+           bIsLdaps = TRUE;
+           break;
+       }
+   }
+
+   dwError = VmDirAllocateStringAVsnprintf(&pszRef, "%s://%s/%s", bIsLdaps?"ldaps":"ldap", pszLeader, pszRefSuffix);
+   BAIL_ON_VMDIR_ERROR(dwError);
+
+   op->ldapResult.errCode = LDAP_REFERRAL;
+
+   dwError = VmDirAllocateMemory( sizeof(VDIR_BERVALUE) * 2, (PVOID*)&pBerv);
+   BAIL_ON_VMDIR_ERROR(dwError);
+
+   pBerv[0].lberbv_len = VmDirStringLenA(pszRef);
+   pBerv[0].lberbv_val = pszRef;
+   pBerv[0].bOwnBvVal = TRUE;
+   pBerv[1].lberbv_val = NULL;
+   pBerv[1].lberbv_len = 0;
+
+   dwError = ber_printf(ber, "{it{W}N}{it{ess}N}", msgId, LDAP_RES_SEARCH_REFERENCE, pBerv,
+                        msgId, GetResultTag(op->reqCode), LDAP_REFERRAL, "", "");
+   BAIL_ON_LBER_ERROR(dwError);
+
+   dwError = WriteBerOnSocket( op->conn, ber );
+   BAIL_ON_VMDIR_ERROR(dwError);
+
+   *pbRefSent = TRUE;
+
+   VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirSendLdapReferralResult: sent with referral %s", pszRef);
+
+done:
+   ber_free_buf( ber );
+   VmDirFreeBervalArrayContent(pBerv, 1);
+   VMDIR_SAFE_FREE_MEMORY(pBerv);
+   VMDIR_SAFE_FREE_MEMORY(pszLeader);
+   return;
+
+error:
+   goto done;
+}

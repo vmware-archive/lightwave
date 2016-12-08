@@ -46,8 +46,8 @@
     VMDIR_SF_INIT(.pfnComputedAttr, _VmDirBuildEIDAttribute)                                    \
     },                                                                                          \
     {                                                                                           \
-    VMDIR_SF_INIT(.pszComputedAttributeName, ATTR_RAFT_LEADER_UPN),                             \
-    VMDIR_SF_INIT(.pfnComputedAttr, _VmDirBuildRaftLeaderUpnAttribute)                          \
+    VMDIR_SF_INIT(.pszComputedAttributeName, ATTR_REF),                                         \
+    VMDIR_SF_INIT(.pfnComputedAttr, _VmDirBuildRefAttribute)                          \
     },                                                                                          \
 }
 
@@ -85,7 +85,7 @@ _VmDirBuildEIDAttribute(
 
 static
 DWORD
-_VmDirBuildRaftLeaderUpnAttribute(
+_VmDirBuildRefAttribute(
     PVDIR_OPERATION     pOperation,
     PVDIR_ENTRY         pEntry,
     PVDIR_ATTRIBUTE*    ppComputedAttr
@@ -323,36 +323,46 @@ error:
 
 static
 DWORD
-_VmDirBuildRaftLeaderUpnAttribute(
+_VmDirBuildRefAttribute(
     PVDIR_OPERATION     pOperation,
     PVDIR_ENTRY         pEntry,
     PVDIR_ATTRIBUTE*    ppComputedAttr
     )
 {
     DWORD               dwError = 0;
-    PVDIR_ATTRIBUTE     pRaftLeaderUpnAttr = NULL;
-    PSTR                pszLocalAttrStr = NULL;
+    PVDIR_ATTRIBUTE     pRefAttr = NULL;
+    PSTR                pszLeader = NULL;
     extern DWORD        VmDirRaftGetLeader(PSTR *);
+    PSTR                pszRef = NULL;
 
-    dwError = VmDirAttributeAllocate( ATTR_RAFT_LEADER_UPN, 1, pOperation->pSchemaCtx, &pRaftLeaderUpnAttr);
+    dwError = VmDirRaftGetLeader(&pszLeader);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirRaftGetLeader(&pszLocalAttrStr);
+    if (pszLeader == NULL)
+    {
+        //No referral exists.
+        goto cleanup;
+    }
+
+    dwError = VmDirAllocateStringAVsnprintf(&pszRef, "%s://%s/", "ldap", pszLeader);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pRaftLeaderUpnAttr->vals[0].lberbv_val = pszLocalAttrStr;
-    pRaftLeaderUpnAttr->vals[0].lberbv_len = VmDirStringLenA(pszLocalAttrStr);
-    pRaftLeaderUpnAttr->vals[0].bOwnBvVal = TRUE;
-    pszLocalAttrStr = NULL;
+    dwError = VmDirAttributeAllocate( ATTR_REF, 1, pOperation->pSchemaCtx, &pRefAttr);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    *ppComputedAttr = pRaftLeaderUpnAttr;
+    pRefAttr->vals[0].lberbv_val = pszRef;
+    pRefAttr->vals[0].lberbv_len = VmDirStringLenA(pszRef);
+    pRefAttr->vals[0].bOwnBvVal = TRUE;
+    pszRef = NULL;
+
+    *ppComputedAttr = pRefAttr;
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszLocalAttrStr);
+    VMDIR_SAFE_FREE_MEMORY(pszLeader);
+    VMDIR_SAFE_FREE_MEMORY(pszRef);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirBuildRaftLeaderUpnAttribute (%u)", dwError);
-    VmDirFreeAttribute( pRaftLeaderUpnAttr );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirBuildRefAttribute (%u)", dwError);
     goto cleanup;
 }

@@ -349,7 +349,7 @@ extern "C" {
 #define ATTR_RAFT_VOTEDFOR_TERM             "vmwRaftVotedForTerm"
 #define ATTR_RAFT_VOTEDFOR                  "vmwRaftVotedFor"
 #define ATTR_RAFT_LOG_ENTRIES               "vmwRaftLogEntries"
-#define ATTR_RAFT_LEADER_UPN                "vmwRaftLeaderDCAccountUPN"
+#define ATTR_REF                            "ref"
 
 // Object classes
 #define OC_TOP                              "top"
@@ -457,6 +457,9 @@ extern "C" {
 
 // Supported LDAP Request controls
 #define VDIR_LDAP_CONTROL_SHOW_DELETED_OBJECTS    "1.2.840.113556.1.4.417" // value same as defined by AD
+
+#define VDIR_LDAP_CONTROL_MANAGEDDSAIT            "2.16.840.1.113730.3.4.2" //RFC 3269 - ManageDsaIT control
+
 #define VDIR_LDAP_CONTROL_SHOW_MASTER_KEY         "9999.9990.9900.9000.1" //shouldn't be published
 // #define LDAP_CONTROL_SYNC       LDAP_SYNC_OID ".1" defined in ldap.h
 

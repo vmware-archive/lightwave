@@ -31,3 +31,9 @@ extern Sockbuf_IO* gpVdirBerSockbufIOOpenssl;
 extern VMDIR_OP_STATISTIC_GLOBALS gVmdirOPStatisticGlobals;
 
 extern VMDIR_OPENSSL_GLOBALS gVmdirOpensslGlobals;
+
+extern BOOLEAN VmDirRaftNeedReferral(PCSTR pszReqDn);
+
+extern VOID VmDirSendLdapReferralResult( VDIR_OPERATION * op, PCSTR pszRefSuffix, PBOOLEAN pbRefSent);
+
+extern DWORD VmDirRaftGetLeader(PSTR *);

@@ -550,6 +550,7 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       showMasterKeyCtrl;
     VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
     VDIR_LDAP_CONTROL *       strongConsistencyWriteCtrl;
+    VDIR_LDAP_CONTROL *       manageDsaITCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
     BOOLEAN             bSchemaWriteOp;  // this operation is schema modification

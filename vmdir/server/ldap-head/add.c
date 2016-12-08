@@ -315,16 +315,31 @@ VmDirPerformAdd(
 {
     int              retVal = LDAP_SUCCESS;
     BOOLEAN          bResultAlreadySent = FALSE;
+    PSTR             pszRefStr = NULL;
 
     retVal = VmDirParseEntry( pOperation );
     BAIL_ON_VMDIR_ERROR(retVal);
+
+    if (pOperation->manageDsaITCtrl == NULL && VmDirRaftNeedReferral(pOperation->reqDn.lberbv.bv_val))
+    {
+       retVal = VmDirAllocateStringAVsnprintf(&pszRefStr, "%s",
+                   pOperation->reqDn.lberbv.bv_len > 0 ? pOperation->reqDn.lberbv.bv_val:"");
+       BAIL_ON_VMDIR_ERROR(retVal);
+
+       VmDirSendLdapReferralResult(pOperation, pszRefStr, &bResultAlreadySent);
+       if (bResultAlreadySent)
+       {
+           goto cleanup;
+       }
+       // Referral is not sent because the raft state might have changed. Go throughput normal procedure.
+    }
 
     retVal = VmDirMLAdd( pOperation );
     bResultAlreadySent = TRUE;
     BAIL_ON_VMDIR_ERROR( retVal );
 
 cleanup:
-
+    VMDIR_SAFE_FREE_MEMORY(pszRefStr);
     return retVal;
 
 error:

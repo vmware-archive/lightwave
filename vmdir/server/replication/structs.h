@@ -188,19 +188,19 @@ typedef struct _VDIR_RAFT_STAT
 } VDIR_RAFT_STATE, *PVDIR_RAFT_STATE;
 
 //Timeout while waiting for (majority) of peers to be ready (in idle state).
-#define WAIT_PEERS_READY_SEC 5
+#define WAIT_PEERS_READY_SEC 3
 
 //Raft ping peers interval in milliseconds
-#define VMDIR_RAFT_PING_INTERVAL_MS 3000
+#define VMDIR_RAFT_PING_INTERVAL_MS 1000
 
 //Wait time in sec for majority of requestVote, appendEntries or ping to be received from peers.
 #define WAIT_CONSENSUS_TIMEOUT_SEC 2
 
 //reelection wait average time in miliseconds
-#define WAIT_REELECTION_AVG_MS 2000
+#define WAIT_REELECTION_AVG_MS 500
 
 //Haven't receive RaftPing as a follwer during this timeout, and will triger requestVote
-#define VMDIR_RAFT_PING_TIMEOUT_MS 10000
+#define VMDIR_RAFT_PING_TIMEOUT_MS 2100
 
 //Context flag passed into event callback ctx.
 #define VMDIR_RAFT_KEEP_TERM 0x0001

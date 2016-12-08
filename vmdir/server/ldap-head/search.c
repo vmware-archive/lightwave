@@ -183,6 +183,7 @@ VmDirPerformSearch(
    PSTR                pszLocalErrorMsg = NULL;
    BOOLEAN             bResultAlreadySent = FALSE;
    PVDIR_LDAP_RESULT   pResult = &(pOperation->ldapResult);
+   PSTR                pszRefStr = NULL;
 
    // Parse base object, scope, deref alias, sizeLimit, timeLimit and typesOnly search parameters.
    if ( ber_scanf( pOperation->ber, "{miiiib", &(pOperation->reqDn.lberbv), &sr->scope, &sr->derefAlias, &sr->sizeLimit,
@@ -265,6 +266,22 @@ VmDirPerformSearch(
    retVal = ParseRequestControls(pOperation, pResult);  // ldapResult.errCode set inside
    BAIL_ON_VMDIR_ERROR( retVal );
 
+   if (pOperation->manageDsaITCtrl == NULL && VmDirRaftNeedReferral(pOperation->reqDn.lberbv.bv_val))
+   {
+       //Utilize ManageDsaIT Control (RFC 3297) to send local entry instead of a referral
+       retVal = VmDirAllocateStringAVsnprintf(&pszRefStr, "%s??%s",
+                   pOperation->reqDn.lberbv.bv_len > 0 ? pOperation->reqDn.lberbv.bv_val:"",
+                   sr->scope==0?"base":sr->scope==1?"one":"sub");
+       BAIL_ON_VMDIR_ERROR(retVal);
+
+       VmDirSendLdapReferralResult(pOperation, pszRefStr, &bResultAlreadySent);
+       if (bResultAlreadySent)
+       {
+           goto cleanup;
+       }
+       // Referral is not sent because the raft state might have changed. Go throughput normal procedure.
+   }
+
    retVal = pResult->errCode = VmDirMLSearch(pOperation);
    bResultAlreadySent = TRUE;
    BAIL_ON_VMDIR_ERROR(retVal);
@@ -276,6 +293,7 @@ cleanup:
 
     VMDIR_SAFE_FREE_MEMORY(pLberBerv);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    VMDIR_SAFE_FREE_MEMORY(pszRefStr);
 
     return retVal;
 
