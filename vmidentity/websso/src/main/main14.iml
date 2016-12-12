@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/java" isTestSource="false" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="oidc-lib" level="project" />
+    <orderEntry type="module" module-name="main25" />
+    <orderEntry type="module" module-name="main36" />
+    <orderEntry type="module" module-name="main37" />
+    <orderEntry type="module" module-name="test13" />
+    <orderEntry type="module" module-name="test17" />
+    <orderEntry type="module" module-name="main5" />
+    <orderEntry type="module" module-name="test25" />
+    <orderEntry type="module" module-name="test12" />
+    <orderEntry type="module" module-name="main4" />
+    <orderEntry type="module" module-name="main20" />
+  </component>
+</module>

@@ -109,6 +109,8 @@ public final class UserMapper {
                .firstName(personDTO.getDetails().getFirstName())
                .lastName(personDTO.getDetails().getLastName())
                .userPrincipalName(personDTO.getDetails().getUPN())
+               .githubID(personDTO.getDetails().getGithubID())
+               .company(personDTO.getDetails().getGithubID())
                .build();
            } else {
                personDetail = new PersonDetail.Builder().build();

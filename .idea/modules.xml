@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/idm/client/src/integration-test/integration-test.iml" filepath="$PROJECT_DIR$/vmidentity/rest/idm/client/src/integration-test/integration-test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/afd/client/src/integration-test/integration-test1.iml" filepath="$PROJECT_DIR$/vmidentity/rest/afd/client/src/integration-test/integration-test1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/core/client/src/integration-test/integration-test2.iml" filepath="$PROJECT_DIR$/vmidentity/rest/core/client/src/integration-test/integration-test2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/vmdir/server/src/integration-test/integration-test3.iml" filepath="$PROJECT_DIR$/vmidentity/rest/vmdir/server/src/integration-test/integration-test3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/vmdir/client/src/integration-test/integration-test4.iml" filepath="$PROJECT_DIR$/vmidentity/rest/vmdir/client/src/integration-test/integration-test4.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/idm/server/src/integration-test/integration-test5.iml" filepath="$PROJECT_DIR$/vmidentity/rest/idm/server/src/integration-test/integration-test5.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/afd/server/src/integration-test/integration-test6.iml" filepath="$PROJECT_DIR$/vmidentity/rest/afd/server/src/integration-test/integration-test6.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/openidconnect/common/src/main/main.iml" filepath="$PROJECT_DIR$/vmidentity/openidconnect/common/src/main/main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/openidconnect/client/src/main/main1.iml" filepath="$PROJECT_DIR$/vmidentity/openidconnect/client/src/main/main1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/idm/server/src/main/main10.iml" filepath="$PROJECT_DIR$/vmidentity/rest/idm/server/src/main/main10.iml" />
+      <module fileurl="file://$PROJECT_DIR$/config/pscsetup/src/main/main11.iml" filepath="$PROJECT_DIR$/config/pscsetup/src/main/main11.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/openidconnect/server/src/main/main12.iml" filepath="$PROJECT_DIR$/vmidentity/openidconnect/server/src/main/main12.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/sso-config/src/main/main13.iml" filepath="$PROJECT_DIR$/vmidentity/sso-config/src/main/main13.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/websso/src/main/main14.iml" filepath="$PROJECT_DIR$/vmidentity/websso/src/main/main14.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/vmdir/server/src/main/main15.iml" filepath="$PROJECT_DIR$/vmidentity/rest/vmdir/server/src/main/main15.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/core/common/src/main/main16.iml" filepath="$PROJECT_DIR$/vmidentity/rest/core/common/src/main/main16.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/wsTrustClient/src/main/main17.iml" filepath="$PROJECT_DIR$/vmidentity/wsTrustClient/src/main/main17.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/openidconnect/protocol/src/main/main18.iml" filepath="$PROJECT_DIR$/vmidentity/openidconnect/protocol/src/main/main18.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/vmdir/client/src/main/main19.iml" filepath="$PROJECT_DIR$/vmidentity/rest/vmdir/client/src/main/main19.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/platform/src/main/main2.iml" filepath="$PROJECT_DIR$/vmidentity/platform/src/main/main2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/ssolib/src/main/main20.iml" filepath="$PROJECT_DIR$/vmidentity/ssolib/src/main/main20.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmafd/interop/java/vmaf/src/main/main21.iml" filepath="$PROJECT_DIR$/vmafd/interop/java/vmaf/src/main/main21.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/openidconnect/sample/src/main/main22.iml" filepath="$PROJECT_DIR$/vmidentity/openidconnect/sample/src/main/main22.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmafd/interop/java/cdc/src/main/main23.iml" filepath="$PROJECT_DIR$/vmafd/interop/java/cdc/src/main/main23.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/commons/samltoken/src/main/main24.iml" filepath="$PROJECT_DIR$/vmidentity/commons/samltoken/src/main/main24.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/samlauthority/src/main/main25.iml" filepath="$PROJECT_DIR$/vmidentity/samlauthority/src/main/main25.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/afd/common/src/main/main26.iml" filepath="$PROJECT_DIR$/vmidentity/rest/afd/common/src/main/main26.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/core/server/src/main/main27.iml" filepath="$PROJECT_DIR$/vmidentity/rest/core/server/src/main/main27.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/afd/client/src/main/main28.iml" filepath="$PROJECT_DIR$/vmidentity/rest/afd/client/src/main/main28.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/idm/client/src/main/main29.iml" filepath="$PROJECT_DIR$/vmidentity/rest/idm/client/src/main/main29.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmafd/interop/java/vks/src/main/main3.iml" filepath="$PROJECT_DIR$/vmafd/interop/java/vks/src/main/main3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/sts/src/main/main30.iml" filepath="$PROJECT_DIR$/vmidentity/sts/src/main/main30.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmafd/vmevent/interop/java/vmevent/src/main/main31.iml" filepath="$PROJECT_DIR$/vmafd/vmevent/interop/java/vmevent/src/main/main31.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/idm/common/src/main/main32.iml" filepath="$PROJECT_DIR$/vmidentity/rest/idm/common/src/main/main32.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmca/java/src/main/main33.iml" filepath="$PROJECT_DIR$/vmca/java/src/main/main33.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/afd/server/src/main/main34.iml" filepath="$PROJECT_DIR$/vmidentity/rest/afd/server/src/main/main34.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/core/client/src/main/main35.iml" filepath="$PROJECT_DIR$/vmidentity/rest/core/client/src/main/main35.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/idm/client/src/main/main36.iml" filepath="$PROJECT_DIR$/vmidentity/idm/client/src/main/main36.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/diagnostics/src/main/main37.iml" filepath="$PROJECT_DIR$/vmidentity/diagnostics/src/main/main37.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/idm/server/src/main/main38.iml" filepath="$PROJECT_DIR$/vmidentity/idm/server/src/main/main38.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/vmdir/common/src/main/main39.iml" filepath="$PROJECT_DIR$/vmidentity/rest/vmdir/common/src/main/main39.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/idm/interface/src/main/main4.iml" filepath="$PROJECT_DIR$/vmidentity/idm/interface/src/main/main4.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmafd/interop/java/heartbeat/src/main/main5.iml" filepath="$PROJECT_DIR$/vmafd/interop/java/heartbeat/src/main/main5.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/tomcat-extensions/src/main/main6.iml" filepath="$PROJECT_DIR$/vmidentity/tomcat-extensions/src/main/main6.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/install/src/main/main7.iml" filepath="$PROJECT_DIR$/vmidentity/install/src/main/main7.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/idm/samples/src/main/main8.iml" filepath="$PROJECT_DIR$/vmidentity/rest/idm/samples/src/main/main8.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/lightwaveui/src/main/main9.iml" filepath="$PROJECT_DIR$/vmidentity/lightwaveui/src/main/main9.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmdir/testing/stresstest/stresstest.iml" filepath="$PROJECT_DIR$/vmdir/testing/stresstest/stresstest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/afd/common/src/test/test.iml" filepath="$PROJECT_DIR$/vmidentity/rest/afd/common/src/test/test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmca/java/src/test/test1.iml" filepath="$PROJECT_DIR$/vmca/java/src/test/test1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/sts/src/test/test10.iml" filepath="$PROJECT_DIR$/vmidentity/sts/src/test/test10.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/idm/common/src/test/test11.iml" filepath="$PROJECT_DIR$/vmidentity/rest/idm/common/src/test/test11.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/samlauthority/src/test/test12.iml" filepath="$PROJECT_DIR$/vmidentity/samlauthority/src/test/test12.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/websso/src/test/test13.iml" filepath="$PROJECT_DIR$/vmidentity/websso/src/test/test13.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmafd/interop/java/vmaf/src/test/test14.iml" filepath="$PROJECT_DIR$/vmafd/interop/java/vmaf/src/test/test14.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/openidconnect/client/src/test/test15.iml" filepath="$PROJECT_DIR$/vmidentity/openidconnect/client/src/test/test15.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/sso-config/src/test/test16.iml" filepath="$PROJECT_DIR$/vmidentity/sso-config/src/test/test16.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/idm/client/src/test/test17.iml" filepath="$PROJECT_DIR$/vmidentity/idm/client/src/test/test17.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/idm/server/src/test/test18.iml" filepath="$PROJECT_DIR$/vmidentity/rest/idm/server/src/test/test18.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/wsTrustClient/src/test/test19.iml" filepath="$PROJECT_DIR$/vmidentity/wsTrustClient/src/test/test19.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/ssolib/src/test/test2.iml" filepath="$PROJECT_DIR$/vmidentity/ssolib/src/test/test2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/vmdir/server/src/test/test20.iml" filepath="$PROJECT_DIR$/vmidentity/rest/vmdir/server/src/test/test20.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmafd/interop/java/vks/src/test/test21.iml" filepath="$PROJECT_DIR$/vmafd/interop/java/vks/src/test/test21.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/idm/server/src/test/test22.iml" filepath="$PROJECT_DIR$/vmidentity/idm/server/src/test/test22.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/openidconnect/protocol/src/test/test23.iml" filepath="$PROJECT_DIR$/vmidentity/openidconnect/protocol/src/test/test23.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmafd/interop/java/cdc/src/test/test24.iml" filepath="$PROJECT_DIR$/vmafd/interop/java/cdc/src/test/test24.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmafd/interop/java/heartbeat/src/test/test25.iml" filepath="$PROJECT_DIR$/vmafd/interop/java/heartbeat/src/test/test25.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/core/common/src/test/test26.iml" filepath="$PROJECT_DIR$/vmidentity/rest/core/common/src/test/test26.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmafd/vmevent/interop/java/vmevent/src/test/test27.iml" filepath="$PROJECT_DIR$/vmafd/vmevent/interop/java/vmevent/src/test/test27.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/afd/server/src/test/test28.iml" filepath="$PROJECT_DIR$/vmidentity/rest/afd/server/src/test/test28.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/lightwaveui/src/test/test3.iml" filepath="$PROJECT_DIR$/vmidentity/lightwaveui/src/test/test3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/config/pscsetup/src/test/test4.iml" filepath="$PROJECT_DIR$/config/pscsetup/src/test/test4.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/core/client/src/test/test5.iml" filepath="$PROJECT_DIR$/vmidentity/rest/core/client/src/test/test5.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/openidconnect/server/src/test/test6.iml" filepath="$PROJECT_DIR$/vmidentity/openidconnect/server/src/test/test6.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/commons/samltoken/src/test/test7.iml" filepath="$PROJECT_DIR$/vmidentity/commons/samltoken/src/test/test7.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/rest/core/server/src/test/test8.iml" filepath="$PROJECT_DIR$/vmidentity/rest/core/server/src/test/test8.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vmidentity/platform/src/test/test9.iml" filepath="$PROJECT_DIR$/vmidentity/platform/src/test/test9.iml" />
+    </modules>
+  </component>
+</project>

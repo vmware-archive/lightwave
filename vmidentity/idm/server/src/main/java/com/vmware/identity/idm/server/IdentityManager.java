@@ -5516,6 +5516,8 @@ implements IIdentityManager
             checkInvalidCharForUserData(detail.getFirstName(), INVALID_CHARS_FOR_USER_DETAIL);
             checkInvalidCharForUserData(detail.getLastName(), INVALID_CHARS_FOR_USER_DETAIL);
             checkInvalidCharForUserData(detail.getDescription(), INVALID_CHARS_FOR_USER_DETAIL);
+            checkInvalidCharForUserData(detail.getGithubID(), INVALID_CHARS_FOR_USER_DETAIL);
+            checkInvalidCharForUserData(detail.getCompany(), INVALID_CHARS_FOR_USER_DETAIL);
 
             ValidateUtil.validateNotNull(detail, "user detail");
 

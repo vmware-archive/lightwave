@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="csrp-master">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/vmdir/thirdparty/csrp/original-source/csrp-master.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

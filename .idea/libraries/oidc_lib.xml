@@ -1,0 +1,21 @@
+<component name="libraryTable">
+  <library name="oidc-lib">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/vmidentity/openidconnect/client/oidc-lib/commons-logging-1.1.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/vmidentity/openidconnect/client/oidc-lib/httpcore-4.4.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/vmidentity/openidconnect/client/oidc-lib/javax.servlet-api-3.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/vmidentity/openidconnect/client/oidc-lib/jcip-annotations-1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/vmidentity/openidconnect/client/oidc-lib/nimbus-jose-jwt-4.12.jar!/" />
+      <root url="jar://$PROJECT_DIR$/vmidentity/openidconnect/client/oidc-lib/commons-validator-1.4.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/vmidentity/openidconnect/client/oidc-lib/commons-codec-1.9.jar!/" />
+      <root url="jar://$PROJECT_DIR$/vmidentity/openidconnect/client/oidc-lib/commons-beanutils-1.8.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/vmidentity/openidconnect/client/oidc-lib/httpclient-4.5.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/vmidentity/openidconnect/client/oidc-lib/commons-io-2.4.jar!/" />
+      <root url="jar://$PROJECT_DIR$/vmidentity/openidconnect/client/oidc-lib/commons-digester-1.8.jar!/" />
+      <root url="jar://$PROJECT_DIR$/vmidentity/openidconnect/client/oidc-lib/commons-lang3-3.3.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/vmidentity/openidconnect/client/oidc-lib/json-smart-1.3.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
