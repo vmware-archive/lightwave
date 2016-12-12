@@ -36,6 +36,8 @@ public class UserDetailsDTO extends DTO {
     private final String firstName;
     private final String lastName;
     private final String description;
+    private final String githubID;
+    private final String company;
 
     /**
      * Construct a {@code UserDetailsDTO} with its various fields.
@@ -46,12 +48,14 @@ public class UserDetailsDTO extends DTO {
      * @param lastName the last name of the user.
      * @param description the description of the user.
      */
-    public UserDetailsDTO(String email, String upn, String firstName, String lastName, String description) {
+    public UserDetailsDTO(String email, String upn, String firstName, String lastName, String description, String githubID, String company) {
         this.email = email;
         this.upn = upn;
         this.firstName = firstName;
         this.lastName = lastName;
         this.description = description;
+        this.githubID = githubID;
+        this.company = company;
     }
 
     /**
@@ -100,6 +104,24 @@ public class UserDetailsDTO extends DTO {
     }
 
     /**
+     * Get the githubID of the user.
+     *
+     * @return the githubID of the user.
+     */
+    public String getGithubID() {
+        return githubID;
+    }
+
+    /**
+     * Get the company of the user.
+     *
+     * @return the company of the user.
+     */
+    public String getCompany() {
+        return company;
+    }
+
+    /**
      * Creates an instance of the {@link UserDetailsDTO.Builder} class.
      *
      * @return a new {@code UserDetailsDTO.Builder}.
@@ -122,6 +144,8 @@ public class UserDetailsDTO extends DTO {
         private String firstName;
         private String lastName;
         private String description;
+        private String githubID;
+        private String company;
 
         public Builder withEmail(String emailAddress) {
             this.email = emailAddress;
@@ -148,9 +172,19 @@ public class UserDetailsDTO extends DTO {
             return this;
         }
 
+        public Builder withGithubID(String githubID) {
+            this.githubID = githubID;
+            return this;
+        }
+
+        public Builder withCompany(String company) {
+            this.company = company;
+            return this;
+        }
+
         public UserDetailsDTO build() {
             return new UserDetailsDTO(email, upn,
-                    firstName, lastName, description);
+                    firstName, lastName, description, githubID, company);
         }
     }
 

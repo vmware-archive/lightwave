@@ -255,6 +255,8 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     private static final String ATTR_LAST_NAME = "sn";
     private static final String ATTR_FIRST_NAME = "givenName";
     private static final String ATTR_EMAIL_ADDRESS = "mail";
+    private static final String ATTR_GITHUB_ID = "githubID";
+    private static final String ATTR_COMPANY = "company";
     private static final String ATTR_USER_PASSWORD = "userPassword";
     private static final String ATTR_PWD_LAST_SET = "pwdLastSet";
     private static final String ATTR_DESCRIPTION = "description";
@@ -3057,6 +3059,8 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             LdapMod attrPassword = null;
             LdapMod attrPasswordSchema = null;
             LdapMod attrUpn = null;
+            LdapMod attrGithubID = null;
+            LdapMod attrCompany = null;
 
             objectClass =
                     new LdapMod(LdapModOperation.ADD, ATTR_NAME_OBJECTCLASS,
@@ -3119,6 +3123,24 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                         new LdapMod(LdapModOperation.ADD, ATTR_DESCRIPTION,
                                 new LdapValue[] { LdapValue.fromString(desc) });
                 attributeList.add(attrDescription);
+            }
+
+            String githubID = detail.getGithubID();
+            if (!ServerUtils.isNullOrEmpty(githubID))
+            {
+                attrGithubID =
+                        new LdapMod(LdapModOperation.ADD, ATTR_GITHUB_ID,
+                                new LdapValue[] { LdapValue.fromString(githubID) });
+                attributeList.add(attrGithubID);
+            }
+
+            String company = detail.getCompany();
+            if (!ServerUtils.isNullOrEmpty(company))
+            {
+                attrCompany =
+                        new LdapMod(LdapModOperation.ADD, ATTR_COMPANY,
+                                new LdapValue[] { LdapValue.fromString(company) });
+                attributeList.add(attrCompany);
             }
 
             // default enabled and not locked when adding a user
