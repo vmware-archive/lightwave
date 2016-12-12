@@ -291,6 +291,7 @@ if ( VMAFD_ASCII_UPPER(c) )             \
 #define VMAFD_IPC_REFRESH_SITE_NAME          51
 #define VMAFD_IPC_CONFIGURE_DNS              52
 #define VMAFD_IPC_JOIN_VALIDATE_CREDENTIALS  53
+#define VMAFD_IPC_GET_DC_LIST                54
 
 #define CDC_IPC_ENABLE_DEFAULT_HA            60
 #define CDC_IPC_ENABLE_LEGACY_HA             61
@@ -375,6 +376,11 @@ typedef struct _VMAFD_CRED_CONTEXT_W
     PWSTR pwszPassword;
 } VMAFD_CRED_CONTEXT_W, *PVMAFD_CRED_CONTEXT_W;
 
+typedef struct _VMAFD_DC_INFO_W
+{
+    PWSTR pwszHostName;
+    PWSTR pwszAddress;
+}VMAFD_DC_INFO_W, *PVMAFD_DC_INFO_W;
 
 //Heartbeat
 #define VMAFD_HEARTBEAT_INTERVAL 10
@@ -416,5 +422,8 @@ typedef struct _VMAFD_CRED_CONTEXT_W
 #define VMAFD_REG_VALUE_SITE          "Site"
 #define VMAFD_REG_VALUE_LAST_PING     "LastPing"
 #define VMAFD_REG_VALUE_PING_TIME     "PingTime"
+
+//domainJoinFlag
+#define VMAFD_DOMAIN_LEAVE_FLAGS_FORCE 0x00000001
 
 #endif /* __VMAFDDEFINES_H__ */

@@ -53,7 +53,7 @@ VmDirPerformUrgentReplication(
     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
         "VmDirPerformUrgentReplication for USN: %lld", currentTxnUSN);
     while (bSuccess == FALSE &&
-           VmDirdState() != VMDIRD_STATE_SHUTDOWN)
+           VmDirdState() == VMDIRD_STATE_NORMAL)
     {
         // cache the local consensus before waiting on condition
         prevConsensusUSN = VmDirGetUrgentReplConsensus();

@@ -50,7 +50,8 @@ typedef enum
     VM_AFD_ACTION_GET_MACHINE_ID,
     VM_AFD_ACTION_SET_MACHINE_ID,
     VM_AFD_ACTION_GET_HEARTBEAT_STATUS,
-    VM_AFD_ACTION_REFRESH_SITE_NAME
+    VM_AFD_ACTION_REFRESH_SITE_NAME,
+    VM_AFD_ACTION_GET_DC_LIST
 } VM_AFD_ACTION, *PVM_AFD_ACTION;
 
 typedef struct _VM_AFD_CLI_CONTEXT
@@ -75,5 +76,5 @@ typedef struct _VM_AFD_CLI_CONTEXT
     DWORD              dwPort;
     VMAFD_DOMAIN_STATE domainState;
     VMAFD_STATUS       status;
-    DWORD              dwForceVmDirLeave;
+    DWORD              dwLeaveFlags;
 } VM_AFD_CLI_CONTEXT, *PVM_AFD_CLI_CONTEXT;

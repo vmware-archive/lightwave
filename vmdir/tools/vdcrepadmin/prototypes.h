@@ -30,7 +30,6 @@ VmDirParseArgs(
     PSTR*    ppszTgtPort,
     PSTR*    ppszEntryDn,
     PSTR*    ppszAttribute,
-    PSTR*    ppszMode,
     PBOOLEAN pbVerbose
     );
 

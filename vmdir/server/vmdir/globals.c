@@ -27,11 +27,12 @@
 
 #include "includes.h"
 
-VMDIR_RUNMODE_GLOBALS gVmdirRunmodeGlobals =
-    {
-        VMDIR_SF_INIT(.pMutex, NULL),
-        VMDIR_SF_INIT(.mode, VMDIR_RUNMODE_NORMAL),
-    };
+VMDIRD_STATE_GLOBALS gVmdirdStateGlobals =
+{
+    VMDIR_SF_INIT(.pMutex, NULL),
+    VMDIR_SF_INIT(.vmdirdState, VMDIRD_STATE_UNDEFINED),
+    VMDIR_SF_INIT(.targetState, VMDIRD_STATE_NORMAL),
+};
 
 VMDIR_GLOBALS gVmdirGlobals =
     {
@@ -52,7 +53,6 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwLdapsConnectPorts, 0),
         VMDIR_SF_INIT(.dwLdapRecvTimeoutSec, 0),
         VMDIR_SF_INIT(.mutex, NULL),
-        VMDIR_SF_INIT(.vmdirdState, VMDIRD_STATE_UNDEFINED),
         VMDIR_SF_INIT(.pSrvThrInfo, NULL),
         VMDIR_SF_INIT(.bReplNow, FALSE),
 #if !defined(_WIN32) || defined(HAVE_DCERPC_WIN32)

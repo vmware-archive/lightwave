@@ -150,17 +150,12 @@ typedef enum
     VMDIRD_STATE_READ_ONLY,   // Process only read/search requests. Originating and replication updates fail with UNWILLING_TO_PERFORM error
     VMDIRD_STATE_NORMAL,      // Process read-write requests. The normal mode
     VMDIRD_STATE_SHUTDOWN,
-    VMDIRD_STATE_FAILURE      // Server has failed in unrecoverable manner
-
+    VMDIRD_STATE_FAILURE,      // Server has failed in unrecoverable manner
+    VMDIRD_STATE_READ_ONLY_DEMOTE,   // Same as STATE_READ_ONLY and stops RPC server
+    VMDIRD_STATE_RESTORE,
+    VMDIRD_STATE_STANDALONE
 } VDIR_SERVER_STATE;
-    
-typedef enum _VMDIR_RUNMODE
-{
-    VMDIR_RUNMODE_NORMAL,
-    VMDIR_RUNMODE_STANDALONE,
-    VMDIR_RUNMODE_RESTORE
-} VMDIR_RUNMODE;
-    
+
 #ifndef ENUM_VMDIR_LOG_LEVEL
 #define ENUM_VMDIR_LOG_LEVEL
 typedef enum

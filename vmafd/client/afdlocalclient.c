@@ -1171,7 +1171,7 @@ VmAfdLocalLeaveVmDir(
     PCWSTR pwszServerName,
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,
-    DWORD  dwForceLeave
+    DWORD  dwLeaveFlags
 )
 {
     DWORD dwError = 0;
@@ -1187,7 +1187,7 @@ VmAfdLocalLeaveVmDir(
     input_spec[0].data.pWString = (PWSTR) pwszServerName;
     input_spec[1].data.pWString = (PWSTR) pwszUserName;
     input_spec[2].data.pWString = (PWSTR) pwszPassword;
-    input_spec[3].data.pUint32  = (PDWORD) &dwForceLeave;
+    input_spec[3].data.pUint32  = (PDWORD) &dwLeaveFlags;
 
     dwError = VecsLocalIPCRequest(
                     apiType,
@@ -1639,6 +1639,63 @@ cleanup:
 error:
 
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalSetCAPath failed. Error(%u)", dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdLocalGetDCList(
+    PCSTR pszDomain,
+    PDWORD pdwServerCount,
+    PVMAFD_DC_INFO_W *ppVmAfdDCInfo
+)
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMAFD_IPC_GET_DC_LIST;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    DWORD dwServerCount = 0;
+    PVMAFD_DC_INFO_W pVmAfdDCInfoList = NULL;
+
+    VMW_TYPE_SPEC output_spec[] = GET_DOMAIN_LIST_OUTPUT_PARAMS;
+    VMW_TYPE_SPEC input_spec[]  = GET_DOMAIN_NAME_LIST_PARAMS;
+
+    noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    input_spec[0].data.pString = (PSTR) pszDomain;
+
+    dwError = VecsLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    input_spec,
+                    output_spec);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwServerCount = *(output_spec[1].data.pUint32);
+    dwError = VmAfdUnMarshalGetDCList(
+                              dwServerCount,
+                              *(output_spec[3].data.pUint32),
+                              output_spec[2].data.pByte,
+                              &pVmAfdDCInfoList
+                              );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    *pdwServerCount = dwServerCount;
+    *ppVmAfdDCInfo = pVmAfdDCInfoList;
+
+cleanup:
+    VmAfdFreeTypeSpecContent(output_spec, noOfArgsOut);
+    VmAfdFreeTypeSpecContent(input_spec, noOfArgsIn);
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalGetDCList failed. Error(%u)", dwError);
 
     goto cleanup;
 }

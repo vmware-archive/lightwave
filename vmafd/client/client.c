@@ -2881,7 +2881,7 @@ VmAfdLeaveVmDirA(
     PCSTR pszServerName,    /* IN              */
     PCSTR pszUserName,      /* IN              */
     PCSTR pszPassword,      /* IN              */
-    DWORD dwForceLeave      /* IN              */
+    DWORD dwLeaveFlags      /* IN              */
 )
 {
     DWORD dwError = 0;
@@ -2912,7 +2912,7 @@ VmAfdLeaveVmDirA(
                   pwszServerName,
                   pwszUserName,
                   pwszPassword,
-                  dwForceLeave);
+                  dwLeaveFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
@@ -2933,7 +2933,7 @@ VmAfdLeaveVmDirW(
     PCWSTR pwszServerName,  /* IN              */
     PCWSTR pwszUserName,    /* IN              */
     PCWSTR pwszPassword,    /* IN              */
-    DWORD dwForceLeave      /* IN              */
+    DWORD dwLeaveFlags      /* IN              */
 )
 {
     DWORD dwError = 0;
@@ -2942,7 +2942,7 @@ VmAfdLeaveVmDirW(
                       pwszServerName,
                       pwszUserName,
                       pwszPassword,
-                      dwForceLeave);
+                      dwLeaveFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
@@ -3242,6 +3242,44 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+VmAfdGetDCList (
+    PCSTR  pszServerName,
+    PCSTR  pszDomain,
+    PDWORD pdwServerCount,
+    PVMAFD_DC_INFO_W *ppVmAfdDCInfoList
+    )
+{
+   DWORD dwError = 0;
+
+   if (!pdwServerCount || !ppVmAfdDCInfoList
+          || !pszDomain )
+   {
+       dwError = ERROR_INVALID_PARAMETER;
+       BAIL_ON_VMAFD_ERROR(dwError);
+   }
+   if (pszServerName == NULL || (strlen(pszServerName) == 0)
+            || VmAfdIsLocalHost(pszServerName))
+   {
+       dwError = VmAfdLocalGetDCList(
+                           pszDomain,
+                           pdwServerCount,
+                           ppVmAfdDCInfoList
+                           );
+       BAIL_ON_VMAFD_ERROR(dwError);
+   }
+   else
+   {
+       dwError = ERROR_INVALID_PARAMETER;
+       BAIL_ON_VMAFD_ERROR(dwError);
+   }
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
 
 DWORD
 VmAfdQueryADW(

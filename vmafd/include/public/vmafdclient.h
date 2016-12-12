@@ -414,7 +414,7 @@ VmAfdLeaveVmDirA(
     PCSTR pszServerName,    /* IN     OPTIONAL */
     PCSTR pszUserName,      /* IN              */
     PCSTR pszPassword,      /* IN              */
-    DWORD dwForceLeave      /* IN              */
+    DWORD dwLeaveFlags      /* IN              */
     );
 
 DWORD
@@ -422,7 +422,7 @@ VmAfdLeaveVmDirW(
     PCWSTR pwszServerName,  /* IN     OPTIONAL */
     PCWSTR pwszUserName,    /* IN              */
     PCWSTR pszPassword,      /* IN              */
-    DWORD dwForceLeave      /* IN              */
+    DWORD dwLeaveFlags      /* IN              */
     );
 
 DWORD

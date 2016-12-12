@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -1840,7 +1840,278 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmAfdMarshalGetDCListArrLength(
+    PVMAFD_DC_INFO_W pVmAfdDCInfoList,
+    DWORD dwCount,
+    PDWORD pdwSizeRequired
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwIndex = 0;
+    DWORD dwSizeRequired = 0;
+    if (!pdwSizeRequired || !pVmAfdDCInfoList)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    // Size and number of elements
+    dwSizeRequired = sizeof(UINT32) + sizeof(UINT32);
 
+    for ( ; dwIndex < dwCount ; dwIndex++)
+    {
+        size_t stringLength = 0;
+        PVMAFD_DC_INFO_W pDCInfo = &pVmAfdDCInfoList[dwIndex];
+        if (!pDCInfo)
+        {
+           dwError = ERROR_INVALID_PARAMETER;
+           BAIL_ON_VMAFD_ERROR(dwError);
+        }
+        dwSizeRequired += sizeof (UINT32) + sizeof (VMAFD_IPC_SIZE_T);
+
+        dwError = VmAfdGetStringLengthW ( pDCInfo->pwszHostName,
+                                          &stringLength
+                                        );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwSizeRequired += stringLength * sizeof(WCHAR);
+        stringLength = 0;
+
+        dwSizeRequired += sizeof (UINT32) + sizeof (VMAFD_IPC_SIZE_T);
+
+        dwError = VmAfdGetStringLengthW ( pDCInfo->pwszAddress,
+                                          &stringLength
+                                        );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwSizeRequired += stringLength * sizeof(WCHAR);
+        stringLength = 0;
+    }
+    *pdwSizeRequired = dwSizeRequired;
+cleanup:
+    return dwError;
+error:
+    if (pdwSizeRequired)
+    {
+        *pdwSizeRequired = 0;
+    }
+    goto cleanup;
+}
+
+DWORD
+VmAfdMarshalGetDCList(
+    DWORD dwCount,
+    PVMAFD_DC_INFO_W pVmAfdDCInfoList,
+    DWORD dwBlobSize,
+    PBYTE pMarshaledBlob
+    )
+{
+
+    DWORD dwError = 0;
+    DWORD dwSizeRemaining = dwBlobSize;
+    PBYTE pCursor = NULL;
+    PBYTE pCursorStart = NULL;
+    DWORD dwIndex = 0;
+
+    if (!pMarshaledBlob)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    if ( dwBlobSize < (sizeof(UINT32) + sizeof(UINT32)))
+    {
+        dwError = ERROR_NOT_ENOUGH_MEMORY;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    dwError = VmAfdAllocateMemory (
+                                dwBlobSize,
+                                (PVOID *) &pCursor
+                                );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    pCursorStart = pCursor;
+
+    dwError = VmAfdCheckMemory (
+                               sizeof(UINT32),
+                               &dwSizeRemaining
+                               );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdCopyMemory (
+                              pCursor,
+                              sizeof(UINT32),
+                              &dwBlobSize,
+                              sizeof(dwBlobSize)
+                              );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    pCursor += sizeof(UINT32);
+
+    if (pVmAfdDCInfoList)
+    {
+        dwError = VmAfdCheckMemory (
+                                   sizeof(UINT32),
+                                   &dwSizeRemaining
+                                  );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdCopyMemory (
+                                  pCursor,
+                                  sizeof(UINT32),
+                                  &dwCount,
+                                  sizeof(dwCount)
+                                  );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pCursor += sizeof(UINT32);
+
+        for (; dwIndex < dwCount ; dwIndex++)
+        {
+           PVMAFD_DC_INFO_W pDCInfo = &pVmAfdDCInfoList[dwIndex];
+
+           if (!pDCInfo)
+           {
+               dwError = ERROR_INVALID_PARAMETER;
+               BAIL_ON_VMAFD_ERROR (dwError);
+           }
+           DWORD dwBytesToMove = 0;
+
+           dwError = VmAfdMarshalStringW (
+                                          pDCInfo->pwszHostName,
+                                          pCursor,
+                                          dwSizeRemaining,
+                                          &dwBytesToMove
+                                          );
+           BAIL_ON_VMAFD_ERROR(dwError);
+
+           pCursor += dwBytesToMove;
+           dwSizeRemaining -= dwBytesToMove;
+           dwBytesToMove = 0;
+
+           dwError = VmAfdMarshalStringW (
+                                          pDCInfo->pwszAddress,
+                                          pCursor,
+                                          dwSizeRemaining,
+                                          &dwBytesToMove
+                                          );
+           BAIL_ON_VMAFD_ERROR(dwError);
+
+           pCursor += dwBytesToMove;
+           dwSizeRemaining -= dwBytesToMove;
+           dwBytesToMove = 0;
+        }
+
+    }
+
+    memcpy (
+            pMarshaledBlob,
+            pCursorStart,
+            dwBlobSize
+           );
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pCursorStart);
+
+    return dwError;
+error:
+    goto cleanup;
+}
+
+DWORD
+VmAfdUnMarshalGetDCList(
+    DWORD dwServerCount,
+    DWORD dwBlobSize,
+    PBYTE pMarshaledBlob,
+    PVMAFD_DC_INFO_W *ppVmAfdDCInfoList
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwSizeRemaining = dwBlobSize;
+    DWORD dwIndex = 0;
+    DWORD dwBlobSizeRead = 0;
+    DWORD dwCount = 0;
+    PVMAFD_DC_INFO_W pVmAfdDCInfo = NULL;
+    PBYTE pCursor = pMarshaledBlob;
+
+    if (!pMarshaledBlob || !ppVmAfdDCInfoList)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    if (dwBlobSize < sizeof(UINT32) + sizeof(UINT32))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    dwError = VmAfdCheckMemory (
+                              sizeof(UINT32),
+                              &dwSizeRemaining
+                              );
+
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    dwBlobSizeRead = *((PUINT32)pCursor);
+    pCursor += sizeof (UINT32);
+
+    dwError = VmAfdCheckMemory(
+                        sizeof(UINT32),
+                        &dwSizeRemaining
+                        );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwCount = *((PUINT32)pCursor);
+    pCursor += sizeof(UINT32);
+    if (dwCount > 0 )
+    {
+        dwError = VmAfdAllocateMemory (
+                         dwCount * sizeof(VMAFD_DC_INFO_W),
+                         (PVOID *)&pVmAfdDCInfo
+                         );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        for (; dwIndex < dwCount; dwIndex++)
+        {
+            DWORD dwBytesToMove = 0;
+
+            dwError = VmAfdUnMarshalString(
+                                  pCursor,
+                                  dwSizeRemaining,
+                                  &pVmAfdDCInfo[dwIndex].pwszHostName,
+                                  &dwBytesToMove
+                                  );
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            pCursor += dwBytesToMove;
+            dwSizeRemaining -= dwBytesToMove;
+            dwBytesToMove = 0;
+
+            dwError = VmAfdUnMarshalString(
+                                  pCursor,
+                                  dwSizeRemaining,
+                                  &pVmAfdDCInfo[dwIndex].pwszAddress,
+                                  &dwBytesToMove
+                                  );
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            pCursor += dwBytesToMove;
+            dwSizeRemaining -= dwBytesToMove;
+            dwBytesToMove = 0;
+        }
+    }
+    *ppVmAfdDCInfoList = pVmAfdDCInfo;
+cleanup:
+
+    return dwError;
+
+error:
+   VMAFD_SAFE_FREE_MEMORY(pVmAfdDCInfo);
+   goto cleanup;
+
+}
 
 static
 DWORD

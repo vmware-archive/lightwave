@@ -937,37 +937,58 @@ Srv_RpcVmDirSetState(
     UINT32   dwState)
 {
     DWORD dwError = 0;
-    DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
-                       | VMDIR_RPC_FLAG_ALLOW_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
-                       | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
-    PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+        DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
+                                   | VMDIR_RPC_FLAG_ALLOW_TCPIP
+                                   | VMDIR_RPC_FLAG_REQUIRE_AUTH_NCALRPC
+                                   | VMDIR_RPC_FLAG_REQUIRE_AUTH_TCPIP
+            | VMDIR_RPC_FLAG_REQUIRE_AUTHZ;
+        PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
+        VDIR_SERVER_STATE currentState = VMDIRD_STATE_UNDEFINED;
 
-    dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if ( (dwState != VMDIRD_STATE_READ_ONLY
-          && dwState != VMDIRD_STATE_NORMAL) )
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
         BAIL_ON_VMDIR_ERROR(dwError);
-    }
 
-    VmDirdStateSet(dwState);
+        // Only valid target states
+        if (dwState != VMDIRD_STATE_READ_ONLY &&
+                    dwState != VMDIRD_STATE_READ_ONLY_DEMOTE &&
+                    dwState != VMDIRD_STATE_NORMAL &&
+            dwState != VMDIRD_STATE_STANDALONE)
+        {
+            dwError = VMDIR_ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetState: Set vmdird state to: %u", dwState );
+        currentState = VmDirdState();
+
+        if (currentState == VMDIRD_STATE_SHUTDOWN ||
+                    currentState == VMDIRD_STATE_FAILURE ||
+                    currentState == VMDIRD_STATE_RESTORE ||
+            currentState == VMDIRD_STATE_STARTUP)
+        {
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                            "%s: State (%u) cannot be changed from state (%u)",
+                            __FUNCTION__,
+                            dwState,
+                            currentState);
+            dwError = VMDIR_ERROR_OPERATION_NOT_PERMITTED;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        // no return value
+        VmDirdStateSet(dwState);
+
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetState: VmDir State (%u)", dwState );
 
 cleanup:
-    if (pAccessToken)
-    {
-        VmDirSrvReleaseAccessToken(pAccessToken);
-    }
-    return dwError;
+        if (pAccessToken)
+        {
+            VmDirSrvReleaseAccessToken(pAccessToken);
+        }
+        return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetState failed (%u)(%u)", dwError, dwState );
-    goto cleanup;
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetState failed (%u)(%u)", dwError, dwState );
+        goto cleanup;
 }
 
 UINT32
@@ -1866,9 +1887,6 @@ void vmdir_dbcp_handle_t_rundown(void *ctx)
     // Clear backend READ-ONLY mode when dbcp connection interrupted.
     VmDirSetMdbBackendState(0, &dwXlogNum, &dwDbSizeMb, &dwDbMapSizeMb, tmp_buf, sizeof(tmp_buf));
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "vmdir_dbcp_handle_t_rundown: turn off keeping xlog flag on backend, xlognum: %d", dwXlogNum);
-
-    // Set vmdir state to NORMAL
-    VmDirdStateSet(VMDIRD_STATE_NORMAL);
 }
 
 UINT32
@@ -1984,6 +2002,7 @@ error:
     goto cleanup;
 }
 
+// SetMode is a noop but kept to keep idl in sync.
 UINT32
 Srv_RpcVmDirSetMode(
     handle_t hBinding,
@@ -2000,18 +2019,6 @@ Srv_RpcVmDirSetMode(
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // Supporting Normal and Standalone modes
-    if ( (dwMode != VMDIR_RUNMODE_NORMAL
-          && dwMode != VMDIR_RUNMODE_STANDALONE) )
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    VmDirdSetRunMode(dwMode);
-
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: Set vmdird runmode to: %u", __FUNCTION__, dwMode );
-
 cleanup:
     if (pAccessToken)
     {
@@ -2024,6 +2031,7 @@ error:
     goto cleanup;
 }
 
+// GetMode is a noop but kept to keep idl in sync.
 UINT32
 Srv_RpcVmDirGetMode(
     handle_t    hBinding,
@@ -2046,8 +2054,6 @@ Srv_RpcVmDirGetMode(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-
-    *pdwMode = VmDirdGetRunMode();
 
 cleanup:
     if (pAccessToken)

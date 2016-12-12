@@ -598,6 +598,24 @@ DirCliSetFuncLvl(
     );
 
 DWORD
+DirCliGetState(
+    PCSTR      pszHostName,
+    PCSTR      pszUPN,
+    PCSTR      pszPassword,
+    PCSTR      pszDomainName,
+    PDWORD     pdwState
+    );
+
+DWORD
+DirCliSetState(
+    PCSTR      pszHostName,
+    PCSTR      pszUPN,
+    PCSTR      pszPassword,
+    PCSTR      pszDomainName,
+    DWORD      dwState
+    );
+
+DWORD
 DirCliGetDCNodesVersion(
     PCSTR      pszHostName,
     PCSTR      pszUserName,

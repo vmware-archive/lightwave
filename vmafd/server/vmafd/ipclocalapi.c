@@ -49,18 +49,18 @@ VecsIpcCreateCertStore(
     )
 {
 
-        DWORD dwError = 0;
-        UINT32 uResult = 0;
+    DWORD dwError = 0;
+    UINT32 uResult = 0;
     UINT32 apiType = VECS_IPC_CREATE_CERTSTORE;
     DWORD noOfArgsIn=0;
     DWORD noOfArgsOut=0;
-        PVECS_SRV_STORE_HANDLE pStore = NULL;
-        //PVECS_SERV_STORE pStore = NULL;
-        PBYTE pResponse = NULL;
-        DWORD dwResponseSize = 0;
-        PBYTE pStoreBlob = NULL;
-        PWSTR pwszStoreName = NULL;
-        PWSTR pwszPassword = NULL;
+    PVECS_SRV_STORE_HANDLE pStore = NULL;
+    //PVECS_SERV_STORE pStore = NULL;
+    PBYTE pResponse = NULL;
+    DWORD dwResponseSize = 0;
+    PBYTE pStoreBlob = NULL;
+    PWSTR pwszStoreName = NULL;
+    PWSTR pwszPassword = NULL;
 
     VMW_TYPE_SPEC input_spec[] = CREATE_STORE_REQUEST_PARAMS;
     VMW_TYPE_SPEC output_spec[] = OPEN_STORE_OUTPUT_PARAMS;
@@ -4167,7 +4167,7 @@ VmAfdIpcLeaveVmDir(
     PWSTR pwszServerName = NULL;
     PWSTR pwszUserName = NULL;
     PWSTR pwszPassword = NULL;
-    PUINT32 dwForceLeave = NULL;
+    PUINT32 pdwLeaveFlags = NULL;
     VMW_TYPE_SPEC input_spec[] = LEAVE_VMDIR_INPUT_PARAMS;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
 
@@ -4198,7 +4198,7 @@ VmAfdIpcLeaveVmDir(
     pwszServerName  = input_spec[0].data.pWString;
     pwszUserName    = input_spec[1].data.pWString;
     pwszPassword    = input_spec[2].data.pWString;
-    dwForceLeave      = input_spec[3].data.pUint32;
+    pdwLeaveFlags   = input_spec[3].data.pUint32;
 
     if (!VmAfdIsRootSecurityContext(pConnectionContext))
     {
@@ -4210,7 +4210,7 @@ VmAfdIpcLeaveVmDir(
     uResult = VmAfSrvLeaveVmDir(
                       pwszUserName,
                       pwszPassword,
-                      dwForceLeave
+                      *pdwLeaveFlags
                       );
 
     // Allocate a buffer, marshall the response
@@ -6097,6 +6097,116 @@ error:
                 &dwResponseSize
                 );
         dwError = 0;
+    goto cleanup;
+}
+
+
+
+DWORD
+VmAfdIpcGetDCList(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE *ppResponse,
+    PDWORD pdwResponseSize
+    )
+{
+    DWORD dwError = 0;
+    UINT32 uResult = 0;
+    UINT32 apiType = VMAFD_IPC_GET_DC_LIST;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    PBYTE pResponse = NULL;
+    DWORD dwResponseSize = 0;
+    PSTR pszDomain = NULL;
+    DWORD dwSizeRequired = 0;
+    VMW_TYPE_SPEC input_spec[] = GET_DOMAIN_NAME_LIST_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = GET_DOMAIN_LIST_OUTPUT_PARAMS;
+    PVMAFD_DC_INFO_W pVmAfdDCInfoList = NULL;
+    PBYTE pDCListResponseBlob = NULL;
+    DWORD dwCount = 0;
+
+    VmAfdLog (VMAFD_DEBUG_DEBUG, "Entering %s", __FUNCTION__);
+    if (!pConnectionContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    dwError = VmAfdUnMarshal (
+                         apiType,
+                         VER1_INPUT,
+                         noOfArgsIn,
+                         pRequest,
+                         dwRequestSize,
+                         input_spec
+                         );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    pszDomain   = input_spec[0].data.pString;
+    uResult = VmAfdGetDomainControllerList(
+                        pszDomain,
+                        &pVmAfdDCInfoList,
+                        &dwCount
+			);
+    LOG_URESULT_ERROR(uResult);
+
+
+    output_spec[0].data.pUint32 = &uResult;
+    output_spec[1].data.pUint32 = &dwCount;
+
+    dwError = VmAfdMarshalGetDCListArrLength(
+                        pVmAfdDCInfoList,
+                        dwCount,
+                        &dwSizeRequired
+                        );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    dwError = VmAfdAllocateMemory (
+                        dwSizeRequired,
+                        (PVOID *) &pDCListResponseBlob
+                        );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdMarshalGetDCList(
+                         dwCount,
+                         pVmAfdDCInfoList,
+                         dwSizeRequired,
+                         pDCListResponseBlob
+                       );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    output_spec[2].data.pByte   = pDCListResponseBlob;
+    output_spec[3].data.pUint32 = &dwSizeRequired;
+
+    dwError = VecsMarshalResponse(
+                       apiType,
+                       output_spec,
+                       noOfArgsOut,
+                       &pResponse,
+                       &dwResponseSize
+                       );
+
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+cleanup:
+    *ppResponse = pResponse;
+    *pdwResponseSize = dwResponseSize;
+
+    VmAfdLog (VMAFD_DEBUG_DEBUG, "End of %s", __FUNCTION__);
+    return dwError;
+error:
+        VmAfdHandleError(
+                apiType,
+                dwError,
+                output_spec,
+                noOfArgsOut,
+                &pResponse,
+                &dwResponseSize
+                );
     goto cleanup;
 }
 

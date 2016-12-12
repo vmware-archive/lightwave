@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -181,6 +181,12 @@ VmAfdCliSetMachineID(
 static
 DWORD
 VmAfdCliGetHeartbeatStatus(
+    PVM_AFD_CLI_CONTEXT pContext
+    );
+
+static
+DWORD
+VmAfdCliGetDCList(
     PVM_AFD_CLI_CONTEXT pContext
     );
 
@@ -370,6 +376,10 @@ VmAfdCliExecute(
         case VM_AFD_ACTION_REFRESH_SITE_NAME:
 
             dwError = VmAfdCliRefreshSiteName();
+            break;
+        case VM_AFD_ACTION_GET_DC_LIST:
+
+            dwError = VmAfdCliGetDCList(pContext);
             break;
 
         case VM_AFD_ACTION_ADD_PASSWORD_ENTRY:
@@ -1319,13 +1329,69 @@ VmAfdCliQueryAD(
     printf("NetbiosName = %s\n", pszNetbiosName);
 
 cleanup:
-
+    VMAFD_SAFE_FREE_MEMORY(pszDistinguishedName);
+    VMAFD_SAFE_FREE_MEMORY(pszNetbiosName);
     return dwError;
 
 error:
 
     goto cleanup;
 }
+
+
+static
+DWORD
+VmAfdCliGetDCList(
+    PVM_AFD_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwServerCount = 0;
+    DWORD dwIndex = 0;
+    PSTR  pszHostname = NULL;
+    PSTR  pszAddress = NULL;
+    PVMAFD_DC_INFO_W pVmAfdDCInfoList = NULL;
+    if (!pContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdGetDCList(
+                 pContext->pszServerName,
+                 pContext->pszDomainName,
+                 &dwServerCount,
+                 &pVmAfdDCInfoList
+              );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    printf("Number of Server in the Domain = %d\n",dwServerCount);
+    for (; dwIndex < dwServerCount ; dwIndex++)
+    {
+        PVMAFD_DC_INFO_W pDCInfo = &pVmAfdDCInfoList[dwIndex];
+
+        dwError = VmAfdAllocateStringAFromW(pDCInfo->pwszHostName,&pszHostname);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdAllocateStringAFromW(pDCInfo->pwszAddress,&pszAddress);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        printf("Hostname = %s, Address = %s\n",pszHostname,pszAddress);
+
+	VMAFD_SAFE_FREE_MEMORY(pszHostname);
+        VMAFD_SAFE_FREE_MEMORY(pszAddress);
+    }
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pVmAfdDCInfoList);
+    return dwError;
+
+error:
+     goto cleanup;
+
+}
+
+
 
 static
 DWORD

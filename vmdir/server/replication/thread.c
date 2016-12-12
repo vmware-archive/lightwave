@@ -326,6 +326,12 @@ vdirReplicationThrFun(
         {
             goto cleanup;
         }
+
+        if (VmDirdState() == VMDIRD_STATE_STANDALONE)
+        {
+            VmDirSleep(1000);
+            continue;
+        }
         VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "vdirReplicationThrFun: Executing replication cycle %u.", gVmdirGlobals.dwReplCycleCounter + 1 );
 
         // purge RAs that have been marked as isDeleted = TRUE
@@ -409,7 +415,7 @@ vdirReplicationThrFun(
         }
         VMDIR_UNLOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
 
-        if (VmDirdGetRestoreMode())
+        if (VmDirdState() == VMDIRD_STATE_RESTORE)
         {
             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
                 "vdirReplicationThrFun: Done restoring the server by catching up with it's replication partner(s)." );
@@ -1290,7 +1296,7 @@ _VmDirWaitForReplicationAgreement(
             goto cleanup;
         }
 
-        if (VmDirdGetRestoreMode())
+        if (VmDirdState() == VMDIRD_STATE_RESTORE)
         {
             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirWaitForReplicationAgreement: Done restoring the server, no partner to catch up with.");
             VmDirForceExit();

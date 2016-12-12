@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -278,6 +278,14 @@ ParseArgsQueryAD(
 static
 DWORD
 ParseArgsGetHbStatus(
+    int                 argc,
+    char*               argv[],
+    PVM_AFD_CLI_CONTEXT pContext
+    );
+
+static
+DWORD
+ParseArgsGetDCList(
     int                 argc,
     char*               argv[],
     PVM_AFD_CLI_CONTEXT pContext
@@ -786,6 +794,15 @@ ParseArgs(
         pContext->action = VM_AFD_ACTION_GET_HEARTBEAT_STATUS;
 
         dwError = ParseArgsGetHbStatus(
+                                  dwArgsLeft,
+                                  dwArgsLeft > 0 ? &argv[iArg] : NULL,
+                                  pContext);
+    }
+    else if (!strcmp(pszArg, "get-dc-list"))
+    {
+        pContext->action = VM_AFD_ACTION_GET_DC_LIST;
+
+        dwError = ParseArgsGetDCList(
                                   dwArgsLeft,
                                   dwArgsLeft > 0 ? &argv[iArg] : NULL,
                                   pContext);
@@ -2740,7 +2757,7 @@ ParseArgsLeaveVmDir(
                 }
                 else if (!strcmp(pszArg, "--force"))
                 {
-                    pContext->dwForceVmDirLeave = 1;
+                    pContext->dwLeaveFlags = 1;
                     parseMode = PARSE_MODE_LEAVE_VM_DIR_OPEN;
                 }
                 else
@@ -3195,6 +3212,7 @@ ParseArgsGetDCName(
     PVM_AFD_CLI_CONTEXT pContext
     )
 {
+
     DWORD dwError = 0;
     typedef enum
     {
@@ -3520,6 +3538,79 @@ error:
 }
 
 static
+DWORD
+ParseArgsGetDCList(
+    int                 argc,
+    char*               argv[],
+    PVM_AFD_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+    typedef enum
+    {
+        PARSE_MODE_GET_DC_LIST_OPEN = 0,
+        PARSE_MODE_GET_DC_LIST_DOMAIN_NAME,
+        PARSE_MODE_GET_DC_LIST_SERVER_NAME,
+    } PARSE_MODE_GET_DC_NAME;
+    PARSE_MODE_GET_DC_NAME parseMode = PARSE_MODE_GET_DC_LIST_OPEN;
+    DWORD iArg = 0;
+
+    if (!argc)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    for (iArg = 0; iArg < argc; iArg++)
+    {
+        PSTR pszArg = argv[iArg];
+
+        switch (parseMode)
+        {
+            case PARSE_MODE_GET_DC_LIST_OPEN:
+                if (!strcmp(pszArg, "--server-name"))
+                {
+                    parseMode = PARSE_MODE_GET_DC_LIST_SERVER_NAME;
+                }
+                else if (!strcmp(pszArg,"--domain-name"))
+                {
+                    parseMode = PARSE_MODE_GET_DC_LIST_DOMAIN_NAME;
+                }
+                else
+                {
+                    dwError = ERROR_LOCAL_OPTION_UNKNOWN;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+                break;
+
+            case PARSE_MODE_GET_DC_LIST_SERVER_NAME:
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszServerName);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_GET_DC_LIST_OPEN;
+
+                break;
+            case PARSE_MODE_GET_DC_LIST_DOMAIN_NAME:
+
+                dwError = VmAfdAllocateStringA(pszArg, &pContext->pszDomainName);
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                parseMode = PARSE_MODE_GET_DC_LIST_OPEN;
+                break;
+            default:
+                dwError = ERROR_INTERNAL_ERROR;
+                BAIL_ON_VMAFD_ERROR(dwError);
+
+                break;
+        }
+    }
+
+error:
+    return dwError;
+}
+
+static
 void
 ShowUsage(
     VOID
@@ -3562,6 +3653,6 @@ ShowUsage(
         "\tjoin-ad --server-name <server name> --user-name <user-name> --password <password> --machine-name <machine name> --domain-name <domain name>\n"
         "\tleave-ad --server-name <server name> --user-name <user-name> --password <password> --domain-name <domain name>\n"
         "\tquery-ad --server-name <server name>\n"
-
+        "\tget-dc-list --domain-name <domain name> --server-name <server name>\n"
         "\thelp\n");
 }

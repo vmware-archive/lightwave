@@ -593,6 +593,16 @@ VmAfdLocalAPIHandler(
                             );
 
             break;
+        case VMAFD_IPC_GET_DC_LIST:
+
+            dwError = VmAfdIpcGetDCList(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+            break;
 
         case CDC_IPC_GET_DC_NAME:
             dwError = CdcIpcGetDCName(

@@ -147,6 +147,101 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmAfdGetDomainControllerList(
+    PCSTR pszDomain,
+    PVMAFD_DC_INFO_W *ppVmAfdDCInfoList,
+    PDWORD pdCount
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwIndex = 0;
+    PDNS_SERVER_INFO pServerArray = NULL;
+    DWORD dwServerCount = 0;
+    PSTR  pszQuestion = NULL;
+    DWORD dwDsFlags = 0;
+    PSTR  pszDomainDN = NULL;
+    PVMAFD_DC_INFO_W pVmAfdDCEntries = NULL;
+
+    if (IsNullOrEmptyString(pszDomain) || !ppVmAfdDCInfoList)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringPrintf(
+                    &pszQuestion,
+                    "_ldap._tcp.%s",
+                    pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = LWNetDnsSrvQueryByQuestion(
+                    pszQuestion,
+                    NULL,
+                    dwDsFlags,
+                    &pServerArray,
+                    &dwServerCount);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (dwServerCount > 0 )
+    {
+        dwError = VmAfdAllocateMemory(
+                            sizeof(VMAFD_DC_INFO_W)*dwServerCount,
+                            (PVOID *)&pVmAfdDCEntries
+                            );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvGetDomainDN(pszDomain, &pszDomainDN);
+
+       for (; dwIndex < dwServerCount; dwIndex++)
+       {
+           PDNS_SERVER_INFO pServerInfo = &pServerArray[dwIndex];
+ 
+           PVMAFD_DC_INFO_W pDcInfo = &pVmAfdDCEntries[dwIndex];
+
+           dwError = VmAfdAllocateStringWFromA(
+                                       pServerInfo->pszName,
+                                       &pDcInfo->pwszHostName
+                                       );
+           BAIL_ON_VMAFD_ERROR(dwError);
+
+           dwError = VmAfdAllocateStringWFromA(
+                                        pServerInfo->pszAddress,
+                                        &pDcInfo->pwszAddress
+                                        );
+           BAIL_ON_VMAFD_ERROR(dwError);
+       }
+    }
+    *pdCount = dwServerCount;
+    *ppVmAfdDCInfoList = pVmAfdDCEntries;
+cleanup:
+
+    if (pServerArray)
+    {
+        LWNetFreeMemory(pServerArray);
+    }
+    VMAFD_SAFE_FREE_MEMORY(pszQuestion);
+    VMAFD_SAFE_FREE_MEMORY(pszDomainDN);
+
+    return dwError;
+
+error:
+   if (dwServerCount > 0 && pVmAfdDCEntries )
+   {
+      for (dwIndex = 0; dwIndex < dwServerCount ; dwIndex++)
+      {
+          PVMAFD_DC_INFO_W pDcInfo = &pVmAfdDCEntries[dwIndex];
+          if (pDcInfo)
+          {
+              VMAFD_SAFE_FREE_MEMORY(pDcInfo->pwszHostName);
+              VMAFD_SAFE_FREE_MEMORY(pDcInfo->pwszAddress);
+          }
+      }
+   }
+   VMAFD_SAFE_FREE_MEMORY(pVmAfdDCEntries);
+   goto cleanup;
+
+}
 static
 DWORD
 VmAfSrvCheckDC(

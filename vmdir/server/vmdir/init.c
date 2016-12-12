@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -279,7 +279,7 @@ VmDirInit(
     BOOLEAN bLegacyDataLoaded = FALSE;
     BOOLEAN bWriteInvocationId = FALSE;
     BOOLEAN bWaitTimeOut = FALSE;
-    VMDIR_RUNMODE runMode = VmDirdGetRunMode();
+    VDIR_SERVER_STATE targetState = VmDirdGetTargetState();
     BOOLEAN bDirtyShutdown = FALSE;
 
     dwError = VmDirCheckForDirtyShutdown(&bDirtyShutdown);
@@ -365,7 +365,9 @@ VmDirInit(
     }
     else
     {
-        if ( runMode == VMDIR_RUNMODE_NORMAL )
+        // Startup actions depend on what state is next.
+        if ( targetState == VMDIRD_STATE_NORMAL ||
+             targetState == VMDIRD_STATE_STANDALONE )
         {
             dwError = VmDirRpcServerInit();
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -382,7 +384,7 @@ VmDirInit(
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
         }
-        else if (runMode == VMDIR_RUNMODE_RESTORE)
+        else if (targetState == VMDIRD_STATE_RESTORE)
         {
             // TBD: What happens if server is started in restore mode even when it has not been promoted?
             dwError = _VmDirRestoreInstance(); // fix invocationId and up-to-date-vector before starting replicating in.
@@ -404,7 +406,7 @@ VmDirInit(
                                         5000);  // wait time 5 seconds
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (!(VmDirdGetRestoreMode() || gVmdirGlobals.bPatchSchema))
+    if (!(targetState == VMDIRD_STATE_RESTORE || gVmdirGlobals.bPatchSchema))
     {
         dwError = VmDirInitConnAcceptThread();
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -1293,10 +1295,10 @@ InitializeGlobalVars(
 {
     DWORD   dwError = 0;
 
-    dwError = VmDirAllocateMutex(&gVmdirRunmodeGlobals.pMutex);
+    dwError = VmDirAllocateMutex(&gVmdirGlobals.mutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateMutex(&gVmdirGlobals.mutex);
+    dwError = VmDirAllocateMutex(&gVmdirdStateGlobals.pMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateMutex(&gVmdirGlobals.replAgrsMutex);
