@@ -537,12 +537,6 @@ VmwDeploySetupClientWithDC(
 
     VMW_DEPLOY_LOG_INFO("Setting various configuration values");
 
-    dwError = VmAfdSetDomainNameA(pszHostname, pParams->pszDomainName);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
-    dwError = VmAfdSetDCNameA(pszHostname, pParams->pszServer);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
     dwError = VmAfdSetPNID(pszHostname, pParams->pszHostname);
     BAIL_ON_DEPLOY_ERROR(dwError);
 

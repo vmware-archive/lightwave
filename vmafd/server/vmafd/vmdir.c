@@ -610,7 +610,17 @@ VmAfSrvJoinVmDir(
 
     dwError = VmAfSrvGetDomainState(&domainState);
     BAIL_ON_VMAFD_ERROR(dwError);
-    if (domainState != VMAFD_DOMAIN_STATE_NONE)
+
+    // If already joined as a client, then force-leave first
+    if (domainState == VMAFD_DOMAIN_STATE_CLIENT)
+    {
+        dwError = VmAfSrvLeaveVmDir(NULL, NULL, VMAFD_DOMAIN_LEAVE_FLAGS_FORCE);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else if (domainState != VMAFD_DOMAIN_STATE_NONE)
     {
         dwError = ERROR_CANNOT_JOIN_VMDIR;
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -662,13 +672,24 @@ VmAfSrvJoinVmDir(
     dwError = VmAfSrvSetDomainName(pwszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_CLIENT);
+    dwError = VmAfSrvSetDCName(pwszServerName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvGetSiteNameForDC(pwszServerName, &pwszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvSetSiteName(pwszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvSetDNSRecords(
+                      pszServerName,
+                      pszDomainName,
+                      pszUserName,
+                      pszPassword,
+                      pszMachineName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_CLIENT);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     VmAfdLog(VMAFD_DEBUG_ANY,
@@ -769,7 +790,16 @@ VmAfSrvJoinVmDir2(
     dwError = VmAfSrvGetDomainState(&domainState);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (domainState != VMAFD_DOMAIN_STATE_NONE)
+    // If already joined as a client, then force-leave first
+    if (domainState == VMAFD_DOMAIN_STATE_CLIENT)
+    {
+        dwError = VmAfSrvLeaveVmDir(NULL, NULL, VMAFD_DOMAIN_LEAVE_FLAGS_FORCE);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else if (domainState != VMAFD_DOMAIN_STATE_NONE)
     {
         dwError = ERROR_CANNOT_JOIN_VMDIR;
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -956,7 +986,9 @@ error:
 }
 
 DWORD
-VmAfSrvForceLeave()
+VmAfSrvForceLeave(
+    VOID
+    )
 {
     DWORD   dwError = 0;
 
@@ -993,8 +1025,8 @@ VmAfSrvForceLeave()
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
-
     return dwError;
+
 error:
     goto cleanup;
 }
@@ -1007,7 +1039,6 @@ VmAfSrvLeaveVmDir(
     )
 {
     DWORD dwError = 0;
-    DWORD dwLeaveSucceeded = 0;
     PSTR pszServerName = NULL;
     PSTR pszUserName = NULL;
     PSTR pszPassword = NULL;
@@ -1052,22 +1083,26 @@ VmAfSrvLeaveVmDir(
                     );
     }
 
-    dwLeaveSucceeded = VmDirClientLeave(
+    dwError = VmDirClientLeave(
                     pszServerName,
                     pszUserName,
                     pszPassword
                     );
-    if (    (dwLeaveSucceeded != 0) &&
-            (dwLeaveFlags & VMAFD_DOMAIN_LEAVE_FLAGS_FORCE) ) //TODO: Add check for administrator access
+
+    if (dwError)
     {
-        VmAfdLog(VMAFD_DEBUG_TRACE, "VmDirClientLeave failed. Error [%d].", dwLeaveSucceeded);
-        dwError = VmAfSrvForceLeave();
-        BAIL_ON_VMAFD_ERROR(dwError);
-    } else
-    {
-        dwError = dwLeaveSucceeded;
-        BAIL_ON_VMAFD_ERROR(dwError);
+        VmAfdLog(VMAFD_DEBUG_TRACE, "VmDirClientLeave failed. Error [%d].", dwError);
+
+        if (dwLeaveFlags & VMAFD_DOMAIN_LEAVE_FLAGS_FORCE)
+        {
+            //TODO: Add check for administrator access
+            dwError = VmAfSrvForceLeave();
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
     }
+
+    dwError = VecsDbReset();
+    BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
     BAIL_ON_VMAFD_ERROR(dwError);
