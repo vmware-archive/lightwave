@@ -241,6 +241,13 @@ VmDirSrvUpdateConfig(
         {
             gVmdirGlobals.bPagedSearchReadAhead = !!pEntry->dwValue;
         }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_ENABLE_RAFT_REFERRAL,
+                    TRUE))
+       {
+           gVmdirGlobals.dwEnableRaftReferral = pEntry->dwValue;
+       }
     }
 
 cleanup:

@@ -411,14 +411,15 @@ appendEntriesRepeat:
         cmd = gRaftState.cmd;
         if (gRaftState.role == VDIR_RAFT_ROLE_LEADER)
         {
+            now = VmDirGetTimeInMilliSec();
             if (cmd == ExecNone)
             {
                 //VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirRaftPeerThread: current gRaftState.cmd %d (peer %s); role %d term %d",
                 //    gRaftState.cmd, pPeerHostName, gRaftState.role, gRaftState.currentTerm);
-                now = VmDirGetTimeInMilliSec();
                 if ((now - prevPingTime) >= VMDIR_RAFT_PING_INTERVAL_MS)
                 {
                     prevPingTime = now;
+                    pingTimeout = VMDIR_RAFT_PING_INTERVAL_MS;
                     cmd = ExecPing;
                     //VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirRaftPeerThread: will ExecPing to peer %s; role %d term %d",
                     //    pPeerHostName, gRaftState.role, gRaftState.currentTerm);
@@ -428,6 +429,11 @@ appendEntriesRepeat:
                     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
                     continue;
                 }
+            } else
+            {
+                // AppendEntriesRpc - reset ping time timeout
+                pingTimeout = VMDIR_RAFT_PING_INTERVAL_MS;
+                prevPingTime = now;
             }
         } else
         {
@@ -1246,6 +1252,7 @@ _VmDirRequestVoteGetReply(UINT32 term, char *candidateId, unsigned long long las
     if (!gRaftState.initialized)
     {
         //Don't participate in vote if this server has not been initialized.
+        VmDirSleep(WAIT_REELECTION_AVG_MS << 1); //Pause a little so that peers won't waste term sequence numbers.
         dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
@@ -1905,7 +1912,7 @@ _VmDirRpcConnect(PVMDIR_SERVER_CONTEXT *ppServer, PVMDIR_PEER_PROXY pProxySelf)
                                 "_VmDirRpcConnect: not connected or authorization error %d host %s, will retry to connect.",
                                 dwError, pPeerHostName);
           }
-          VmDirSleep(3000);
+          VmDirSleep(VMDIR_RAFT_PING_INTERVAL_MS>>1);
           continue;
        } else if (dwError != 0)
        {
@@ -2185,8 +2192,7 @@ _VmDirApplyLog(unsigned long long indexToApply)
                                  VDIR_SAFE_STRING(entry.dn.lberbv.bv_val));
     }
 
-    //VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: %s %s succeeded from log %s",
-    //               opStr, entry.dn.lberbv.bv_val, logEntryDn);
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: applied log: %s %s %s", logEntryDn, opStr, entry.dn.lberbv.bv_val);
 
 cleanup:
     if (modOp.pBECtx)

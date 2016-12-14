@@ -1203,7 +1203,14 @@ VmDirSendLdapReferralResult(
    dwError = VmDirAllocateStringAVsnprintf(&pszRef, "%s://%s/%s", bIsLdaps?"ldaps":"ldap", pszLeader, pszRefSuffix);
    BAIL_ON_VMDIR_ERROR(dwError);
 
-   op->ldapResult.errCode = LDAP_REFERRAL;
+   op->ldapResult.errCode = 0;
+   if ((op->reqCode == LDAP_REQ_SEARCH && gVmdirGlobals.dwEnableRaftReferral & VMDIR_RAFT_SEARCH_REFERRAL_ERROR_CODE) ||
+       ((op->reqCode == LDAP_REQ_ADD || op->reqCode == LDAP_REQ_DELETE ||
+         op->reqCode == LDAP_REQ_MODIFY || op->reqCode == LDAP_REQ_MODDN) &&
+         gVmdirGlobals.dwEnableRaftReferral & VMDIR_RAFT_ENABLE_UPDATE_ERROR_CODE))
+   {
+       op->ldapResult.errCode = LDAP_REFERRAL;
+   }
 
    dwError = VmDirAllocateMemory( sizeof(VDIR_BERVALUE) * 2, (PVOID*)&pBerv);
    BAIL_ON_VMDIR_ERROR(dwError);
@@ -1215,7 +1222,7 @@ VmDirSendLdapReferralResult(
    pBerv[1].lberbv_len = 0;
 
    dwError = ber_printf(ber, "{it{W}N}{it{ess}N}", msgId, LDAP_RES_SEARCH_REFERENCE, pBerv,
-                        msgId, GetResultTag(op->reqCode), LDAP_REFERRAL, "", "");
+                        msgId, GetResultTag(op->reqCode), op->ldapResult.errCode, "", "");
    BAIL_ON_LBER_ERROR(dwError);
 
    dwError = WriteBerOnSocket( op->conn, ber );

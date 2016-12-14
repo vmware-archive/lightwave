@@ -197,6 +197,7 @@ typedef struct _VMDIR_GLOBALS
     BOOLEAN                         bAllowImportOpAttrs;
     BOOLEAN                         bTrackLastLoginTime;
     BOOLEAN                         bPagedSearchReadAhead;
+    DWORD                           dwEnableRaftReferral;
 } VMDIR_GLOBALS, *PVMDIR_GLOBALSS;
 
 extern VMDIR_GLOBALS gVmdirGlobals;

@@ -202,9 +202,6 @@ typedef struct _VDIR_RAFT_STAT
 //Haven't receive RaftPing as a follwer during this timeout, and will triger requestVote
 #define VMDIR_RAFT_PING_TIMEOUT_MS 2100
 
-//Context flag passed into event callback ctx.
-#define VMDIR_RAFT_KEEP_TERM 0x0001
-
 extern VDIR_RAFT_STATE gRaftState;
 
 BOOLEAN _VmDirRaftPeerIsReady(PCSTR pPeerHostName);

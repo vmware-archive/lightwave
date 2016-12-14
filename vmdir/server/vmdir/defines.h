@@ -151,6 +151,7 @@
 #define VMDIR_REG_KEY_TRACK_LAST_LOGIN_TIME   "TrackLastLoginTime"
 #define VMDIR_REG_KEY_URGENT_REPL_TIMEOUT_MSEC "UrgentReplTimeoutMilliSec"
 #define VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD "PagedSearchReadAhead"
+#define VMDIR_REG_KEY_ENABLE_RAFT_REFERRAL    "EnableRaftReferral"
 
 #define VMDIR_CONFIG_INIT_TABLE_INITIALIZER                      \
 {                                                                \
@@ -335,6 +336,17 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 0,                                \
         /*.dwMax          = */ 1,                                \
+        /*.dwDefault      = */ 0,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_ENABLE_RAFT_REFERRAL,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 15,                               \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \

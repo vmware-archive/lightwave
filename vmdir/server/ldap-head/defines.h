@@ -43,6 +43,16 @@
 #define LDAP_SEARCH_REQUEST_CHAR_OP     0x00000002
 #define LDAP_SEARCH_REQUEST_CHAR_PASSWD   0x00000004
 
+/*
+ * A bit map that enables referral to Raft leader for LDAP search or Updates
+ * ERROR_CODE is set to LDAP_REFERRAL is that bit is set otherwise is set to 0
+ *  -- Some LDAP client libraries may expect error code 0 with referral URL.
+ */
+#define VMDIR_RAFT_ENABLE_SEARCH_REFERRAL 0x1
+#define VMDIR_RAFT_SEARCH_REFERRAL_ERROR_CODE 0x02
+#define VMDIR_RAFT_ENABLE_UPDATE_REFERRAL 0x4
+#define VMDIR_RAFT_ENABLE_UPDATE_ERROR_CODE 0x8
+
 typedef int (*NEW_CONNECTION_FUNC)(
                 ber_socket_t      sfd,
                 VDIR_CONNECTION   **conn,

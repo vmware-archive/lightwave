@@ -266,7 +266,9 @@ VmDirPerformSearch(
    retVal = ParseRequestControls(pOperation, pResult);  // ldapResult.errCode set inside
    BAIL_ON_VMDIR_ERROR( retVal );
 
-   if (pOperation->manageDsaITCtrl == NULL && VmDirRaftNeedReferral(pOperation->reqDn.lberbv.bv_val))
+   if (pOperation->manageDsaITCtrl == NULL &&
+       (gVmdirGlobals.dwEnableRaftReferral & VMDIR_RAFT_ENABLE_SEARCH_REFERRAL) && 
+       VmDirRaftNeedReferral(pOperation->reqDn.lberbv.bv_val))
    {
        //Utilize ManageDsaIT Control (RFC 3297) to send local entry instead of a referral
        retVal = VmDirAllocateStringAVsnprintf(&pszRefStr, "%s??%s",

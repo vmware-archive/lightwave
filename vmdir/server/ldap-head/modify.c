@@ -165,7 +165,9 @@ VmDirPerformModify(
       BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg), "Decoding error while parsing the end of message.");
    }
 
-   if (pOperation->manageDsaITCtrl == NULL && VmDirRaftNeedReferral(pOperation->reqDn.lberbv.bv_val))
+   if (pOperation->manageDsaITCtrl == NULL &&
+       (gVmdirGlobals.dwEnableRaftReferral & VMDIR_RAFT_ENABLE_UPDATE_REFERRAL) &&
+       VmDirRaftNeedReferral(pOperation->reqDn.lberbv.bv_val))
    {
        retVal = VmDirAllocateStringAVsnprintf(&pszRefStr, "%s",
                    pOperation->reqDn.lberbv.bv_len > 0 ? pOperation->reqDn.lberbv.bv_val:"");

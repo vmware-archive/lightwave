@@ -87,6 +87,7 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.bAllowImportOpAttrs, FALSE),
         VMDIR_SF_INIT(.bTrackLastLoginTime, FALSE),
         VMDIR_SF_INIT(.bPagedSearchReadAhead, FALSE),
+        VMDIR_SF_INIT(.dwEnableRaftReferral, 0),
     };
 
 VMDIR_KRB_GLOBALS gVmdirKrbGlobals =
