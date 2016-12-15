@@ -15,11 +15,13 @@ dnl Check supported operating systems
 dnl
 
 case "${host_os}:${host_cpu}" in
-
     linux*:x86_64)
         PLATFORM_LIB_PREFIX=lib64
-	    ;;
+        ;;
     darwin*:x86_64)
+        PLATFORM_LIB_PREFIX=lib
+        ;;
+    linux*:aarch64)
         PLATFORM_LIB_PREFIX=lib
         ;;
     *)
@@ -114,8 +116,6 @@ AC_ARG_WITH([datastore],
         VMDIRD_DATASTORE="$withval"
     ])
 
-
-
 # client only build
 
 ENABLE_SERVER=false
@@ -146,8 +146,11 @@ CPPFLAGS="$saved_CPPFLAGS"
 case "${host_os}:${host_cpu}" in
     linux*:x86_64)
     OPEN_SSL_DEFAULT_PATH=/opt/vmware/lib64
-	;;
+    ;;
     darwin*:x86_64)
+    OPEN_SSL_DEFAULT_PATH=/opt/vmware/lib
+    ;;
+    linux*:aarch64)
     OPEN_SSL_DEFAULT_PATH=/opt/vmware/lib
     ;;
     *)
@@ -275,11 +278,13 @@ AC_DEFINE_UNQUOTED(VMDIR_CONFIG_SASL2_LIB_PATH, "$SASL_LIBPATH/sasl2", [SASL2 Li
 # Likewise components
 
 case "${host_os}:${host_cpu}" in
-
     linux*:x86_64)
     LIKEWISE_DEFAULT_PATH=/opt/likewise/lib64
-	;;
+    ;;
     darwin*:x86_64)
+    LIKEWISE_DEFAULT_PATH=/opt/likewise/lib
+    ;;
+    linux*:aarch64)
     LIKEWISE_DEFAULT_PATH=/opt/likewise/lib
     ;;
     *)
@@ -287,12 +292,19 @@ case "${host_os}:${host_cpu}" in
     ;;
 esac
 
+LW_RPATH=$LIKEWISE_DEFAULT_PATH
+AC_ARG_WITH([likewise-rpath],
+    [AC_HELP_STRING([--with-likewise-rpath=<dir>], [use likewise libraries located at <dir> at runtime])],
+    [
+        LW_RPATH="$withval"
+    ])
+
 AC_ARG_WITH([likewise],
     [AC_HELP_STRING([--with-likewise=<dir>], [use likewise binaries rooted at prefix <dir> ])],
     [
         LW_BASE_PATH="$withval"
         LW_INCLUDES="-I$withval/include"
-        LW_LDFLAGS="-L$withval/$PLATFORM_LIB_PREFIX -Wl,-rpath,$LIKEWISE_DEFAULT_PATH"
+        LW_LDFLAGS="-L$withval/$PLATFORM_LIB_PREFIX -Wl,-rpath,$LW_RPATH -Wl,-rpath-link,$withval/$PLATFORM_LIB_PREFIX"
     ])
 
 AC_ARG_WITH([likewise-includes],
@@ -304,13 +316,7 @@ AC_ARG_WITH([likewise-includes],
 AC_ARG_WITH([likewise-libs],
     [AC_HELP_STRING([--with-likewise-libs=<dir>], [use likewise libraries located in prefix <dir> ])],
     [
-        LW_LDFLAGS="-L$withval"
-    ])
-
-AC_ARG_WITH([likewise-rpath],
-    [AC_HELP_STRING([--with-likewise-rpath=<dir>], [use likewise libraries located at <dir> at runtime])],
-    [
-        LW_LDFLAGS="-L$LW_BASE_PATH/$PLATFORM_LIB_PREFIX -Wl,-rpath,$withval"
+        LW_LDFLAGS="-L$withval -Wl,-rpath,$LW_RPATH -Wl,-rpath-link,$withval"
     ])
 
 AC_SUBST(LW_BASE_PATH)
