@@ -27,7 +27,7 @@ RUN tdnf update --refresh -y \
         procps-ng-3.3.11 \
         sed-4.2.2 \
         systemd-228 \
-        vmware-lightwave-server-6.6.2 && \
+        vmware-lightwave-server-6.6.3 && \
     rm -f /etc/systemd/system/*.wants/* && \
     rm -f /lib/systemd/system/sysinit.target.wants/systemd-tmpfiles-setup.service && \
     rm -f /lib/systemd/system/multi-user.target.wants/* && \
