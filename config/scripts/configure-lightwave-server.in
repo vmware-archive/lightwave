@@ -234,12 +234,6 @@ if [ -x /etc/init.d/vmware-license ]; then
      /etc/init.d/vmware-license stop
 fi
 
-if [ -f /.dockerenv ]; then
-    systemctl disable vmware-idmd
-    systemctl disable vmware-stsd
-    systemctl daemon-reload
-fi
-
 # Configure syslog-ng
 LINE='@include "lightwave.conf.d"'
 FILE=/etc/syslog-ng/syslog-ng.conf

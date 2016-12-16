@@ -51,7 +51,10 @@ function clean_up {
     # stop lwsm
     if [ `pidof lwsmd` ];  then
         /opt/likewise/bin/lwsm shutdown
-        sleep 5
+        while [ `pidof lwsmd` ];  do
+            sleep 1
+        done
+
     fi
     exit $1
 }
@@ -70,6 +73,7 @@ fi
 
 /opt/likewise/sbin/lwsmd &
 sleep 5
+
 echo "perform autostart"
 /opt/likewise/bin/lwsm autostart
 
@@ -78,7 +82,7 @@ if [ $? -ne 0 ]; then
     clean_up 1
 fi
 
-sleep 30
+sleep 1
 
 /opt/vmware/bin/configure-identity-server
 
