@@ -26,7 +26,7 @@ RUN tdnf update --refresh -y \
         openjre-1.8.0.102 \
         procps-ng-3.3.11 \
         sed-4.2.2 \
-        vmware-lightwave-server-6.6.2 && \
+        vmware-lightwave-server-6.6.3 && \
     rpm -e --nodeps systemd && \
     mkdir -p /var/run/sshd && \
     chmod -rx /var/run/sshd && \
