@@ -15,9 +15,12 @@ dnl Check supported operating systems
 dnl
 
 case "${host_os}:${host_cpu}" in
-
     linux*:x86_64)
-	;;
+        PLATFORM_LIB_PREFIX=lib64
+        ;;
+    darwin*:x86_64)
+        PLATFORM_LIB_PREFIX=lib
+        ;;
     *)
         AC_ERROR("Unsupported operating system - ${host_os}:${host_cpu}")
         ;;
@@ -164,12 +167,24 @@ AC_SUBST(VMAFD_CLASSPATH)
 
 # Likewise components
 
+case "${host_os}:${host_cpu}" in
+    linux*:x86_64)
+    LIKEWISE_DEFAULT_PATH=/opt/likewise/lib64
+    ;;
+    darwin*:x86_64)
+    LIKEWISE_DEFAULT_PATH=/opt/likewise/lib
+    ;;
+    *)
+    AC_ERROR("Unsupported operating system - ${host_os}:${host_cpu}")
+    ;;
+esac
+
 AC_ARG_WITH([likewise],
     [AC_HELP_STRING([--with-likewise=<dir>], [use likewise binaries rooted at prefix <dir> ])],
     [
         LW_BASE_PATH="$withval"
         LW_INCLUDES="-I$withval/include"
-        LW_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/likewise/lib64 -Wl,-rpath-link,/opt/likewise/lib64"
+        LW_LDFLAGS="-L$withval/$PLATFORM_LIB_PREFIX -Wl,-rpath,$LIKEWISE_DEFAULT_PATH -Wl,-rpath-link,$withval/$PLATFORM_LIB_PREFIX"
     ])
 
 AC_ARG_WITH([likewise-includes],
