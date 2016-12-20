@@ -568,7 +568,7 @@ AC_CHECK_LIB(
         [$BOOST_LDFLAGS])
 AC_LANG_POP([C++])
 
-AC_CHECK_LIB([sqlite3], [sqlite3_open], [SQLITE_LIBS="-lsqlite3"], [], [$SQLITE_LDFLAGS])
+AC_CHECK_LIB([sqlite3], [sqlite3_open], [SQLITE_LIBS="-lsqlite3"], [], [$SQLITE_LDFLAGS $DL_LIBS $PTHREAD_LIBS])
 AC_CHECK_LIB([python2.7 ],  [PyArg_Parse], [PYTHON_LIBS="-lpython2.7"], [], [$PYTHON_LDFLAGS])
 
 AC_SUBST(DL_LIBS)
