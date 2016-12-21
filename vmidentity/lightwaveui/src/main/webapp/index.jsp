@@ -19,7 +19,7 @@
 <html>
 <head>
 	<link rel="icon" href="app/assets/tenant.png">
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<link rel="stylesheet" href="app/css/bootstrap.min.css">
 	<link rel="stylesheet" href="app/css/lightwave-ui.1.0.2.0.min.css">
 	<link rel="stylesheet" href="app/css/lightwave-ui-vendor.1.0.2.0.min.css">
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
