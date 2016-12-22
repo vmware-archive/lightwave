@@ -1450,6 +1450,13 @@ DWORD
 VmDirOpenVmAfdClientLib(
     VMDIR_LIB_HANDLE*   pplibHandle
     );
+
+DWORD
+VmDirBuildTokenGroups(
+    PVDIR_ENTRY     pEntry,
+    PTOKEN_GROUPS * ppTokenGroups
+    );
+
 #ifdef __cplusplus
 }
 #endif

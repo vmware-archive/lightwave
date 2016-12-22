@@ -41,6 +41,13 @@
 #include <vmkdcerrorcode.h>
 
 #include <dce/rpc.h>
+#ifdef FALSE
+#undef FALSE
+#endif
+#ifdef TRUE
+#undef TRUE
+#endif
+#include <dce/idlddefs.h>
 #include <pthread.h>
 #include <vmkdccommon.h>
 #include <kdcsrvcommon.h>

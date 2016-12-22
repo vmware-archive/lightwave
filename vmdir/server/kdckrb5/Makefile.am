@@ -2,6 +2,7 @@ noinst_LTLIBRARIES = libvmkrb5.la
 
 libvmkrb5_la_SOURCES = \
     authenticator.c    \
+    authzdata.c        \
     asreq.c            \
     apreq.c            \
     checksum.c         \

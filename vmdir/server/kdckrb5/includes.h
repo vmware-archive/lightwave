@@ -29,6 +29,8 @@
 
 #include <config.h>
 #include <vmkdcsys.h>
+#include <krb5-crypto/includes.h>
+#include <kerberos_db.h>
 
 #else
 /* ========================= WIN32 ONLY ======================== */

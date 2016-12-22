@@ -10,12 +10,14 @@
 noinst_LTLIBRARIES = libkdcsrvcommon.la
 
 libkdcsrvcommon_la_SOURCES = \
+    pacops.c \
     util.c
 
 libkdcsrvcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
     -I$(top_srcdir)/server/include \
+    -I. \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@

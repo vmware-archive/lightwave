@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -31,74 +31,51 @@
  * SUCH DAMAGE.
  */
 
-#include <krb5_locl.h>
+#include "krb5_locl.h"
 
-/* These are stub functions for the standalone RFC3961 crypto library */
-
-KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
-krb5_heim_init_context(krb5_context *context)
-{
-    krb5_context p;
-
-    *context = NULL;
-
-    /* should have a run_once */
-    bindtextdomain(HEIMDAL_TEXTDOMAIN, HEIMDAL_LOCALEDIR);
-
-    p = calloc(1, sizeof(*p));
-    if(!p)
-        return ENOMEM;
-
-    p->mutex = malloc(sizeof(HEIMDAL_MUTEX));
-    if (p->mutex == NULL) {
-        free(p);
-        return ENOMEM;
-    }
-    HEIMDAL_MUTEX_init(p->mutex);
-
-    *context = p;
-    return 0;
-}
-
-KRB5_LIB_FUNCTION void KRB5_LIB_CALL
-krb5_heim_free_context(krb5_context context)
-{
-    krb5_heim_clear_error_message(context);
-
-    HEIMDAL_MUTEX_destroy(context->mutex);
-    free(context->mutex);
-    if (context->flags & KRB5_CTX_F_SOCKETS_INITIALIZED) {
-        rk_SOCK_EXIT();
-    }
-
-    memset(context, 0, sizeof(*context));
-    free(context);
-}
-
-krb5_boolean
-_krb5_homedir_access(krb5_context context) {
-    return 0;
-}
+/**
+ * Copy the list of realms from `from' to `to'.
+ *
+ * @param context Kerberos 5 context.
+ * @param from list of realms to copy from.
+ * @param to list of realms to copy to, free list of krb5_free_host_realm().
+ *
+ * @return Returns 0 to indicate success. Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
+ */
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
-krb5_log(krb5_context context,
-         krb5_log_facility *fac,
-         int level,
-         const char *fmt,
-         ...)
+krb5_copy_host_realm(krb5_context context,
+		     const krb5_realm *from,
+		     krb5_realm **to)
 {
-    return 0;
-}
+    unsigned int n, i;
+    const krb5_realm *p;
 
-#if 0 /* Defined in config-file.c */
-/* This function is currently just used to get the location of the EGD
- * socket. If we're not using an EGD, then we can just return NULL */
+    for (n = 1, p = from; *p != NULL; ++p)
+	++n;
 
-KRB5_LIB_FUNCTION const char* KRB5_LIB_CALL
-krb5_config_get_string (krb5_context context,
-                        const krb5_config_section *c,
-                        ...)
-{
-    return NULL;
-}
+    *to = calloc (n, sizeof(**to));
+    if (*to == NULL) {
+#if 0
+	krb5_set_error_message (context, ENOMEM,
+				N_("malloc: out of memory", ""));
 #endif
+	return ENOMEM;
+    }
+
+    for (i = 0, p = from; *p != NULL; ++p, ++i) {
+	(*to)[i] = strdup(*p);
+	if ((*to)[i] == NULL) {
+	    krb5_free_host_realm (context, *to);
+#if 0
+	    krb5_set_error_message (context, ENOMEM,
+				    N_("malloc: out of memory", ""));
+#endif
+	    return ENOMEM;
+	}
+    }
+    return 0;
+}

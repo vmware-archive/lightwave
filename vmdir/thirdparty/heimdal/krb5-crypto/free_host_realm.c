@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -31,74 +31,29 @@
  * SUCH DAMAGE.
  */
 
-#include <krb5_locl.h>
+#include "krb5_locl.h"
 
-/* These are stub functions for the standalone RFC3961 crypto library */
-
-KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
-krb5_heim_init_context(krb5_context *context)
-{
-    krb5_context p;
-
-    *context = NULL;
-
-    /* should have a run_once */
-    bindtextdomain(HEIMDAL_TEXTDOMAIN, HEIMDAL_LOCALEDIR);
-
-    p = calloc(1, sizeof(*p));
-    if(!p)
-        return ENOMEM;
-
-    p->mutex = malloc(sizeof(HEIMDAL_MUTEX));
-    if (p->mutex == NULL) {
-        free(p);
-        return ENOMEM;
-    }
-    HEIMDAL_MUTEX_init(p->mutex);
-
-    *context = p;
-    return 0;
-}
-
-KRB5_LIB_FUNCTION void KRB5_LIB_CALL
-krb5_heim_free_context(krb5_context context)
-{
-    krb5_heim_clear_error_message(context);
-
-    HEIMDAL_MUTEX_destroy(context->mutex);
-    free(context->mutex);
-    if (context->flags & KRB5_CTX_F_SOCKETS_INITIALIZED) {
-        rk_SOCK_EXIT();
-    }
-
-    memset(context, 0, sizeof(*context));
-    free(context);
-}
-
-krb5_boolean
-_krb5_homedir_access(krb5_context context) {
-    return 0;
-}
+/**
+ * Free all memory allocated by `realmlist'
+ *
+ * @param context A Kerberos 5 context.
+ * @param realmlist realmlist to free, NULL is ok
+ *
+ * @return a Kerberos error code, always 0.
+ *
+ * @ingroup krb5_support
+ */
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
-krb5_log(krb5_context context,
-         krb5_log_facility *fac,
-         int level,
-         const char *fmt,
-         ...)
+krb5_free_host_realm(krb5_context context,
+		     krb5_realm *realmlist)
 {
+    krb5_realm *p;
+
+    if(realmlist == NULL)
+	return 0;
+    for (p = realmlist; *p; ++p)
+	free (*p);
+    free (realmlist);
     return 0;
 }
-
-#if 0 /* Defined in config-file.c */
-/* This function is currently just used to get the location of the EGD
- * socket. If we're not using an EGD, then we can just return NULL */
-
-KRB5_LIB_FUNCTION const char* KRB5_LIB_CALL
-krb5_config_get_string (krb5_context context,
-                        const krb5_config_section *c,
-                        ...)
-{
-    return NULL;
-}
-#endif

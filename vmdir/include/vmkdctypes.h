@@ -32,6 +32,17 @@
 extern "C" {
 #endif
 
+typedef struct _MES_header
+{
+    UINT8 Version;
+    UINT8 Endianness;
+    UINT16 CommonHeaderLength;
+    UINT32 Filler1;
+    UINT32 ObjectBufferLength;
+    UINT32 Filler2;
+    UINT32 Referent;
+} MES_header, *PMES_header;
+
 #ifdef __cplusplus
 }
 #endif

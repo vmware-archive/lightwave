@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright 2012-2016 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -11,8 +11,6 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
-
 
 #include "includes.h"
 
@@ -67,6 +65,7 @@ VmKdcFreeEncTicketPart(
         VMKDC_SAFE_FREE_MEMORY(pEncTicketPart->starttime);
         VMKDC_SAFE_FREE_MEMORY(pEncTicketPart->renew_till);
         VMKDC_SAFE_FREE_PRINCIPAL(pEncTicketPart->cname);
+        VMKDC_SAFE_FREE_AUTHZDATA(pEncTicketPart->authorization_data);
         VMKDC_SAFE_FREE_MEMORY(pEncTicketPart);
     }
 }
@@ -114,6 +113,7 @@ VmKdcMakeEncTicketPart(
     {
         dwError = VmKdcAllocateMemory(sizeof(*pEncTicketPart->starttime),
                                       (PVOID*)&pEncTicketPart->starttime);
+        BAIL_ON_VMKDC_ERROR(dwError);
         *pEncTicketPart->starttime = *starttime;
     }
 
@@ -125,14 +125,28 @@ VmKdcMakeEncTicketPart(
     {
         dwError = VmKdcAllocateMemory(sizeof(*pEncTicketPart->renew_till),
                                       (PVOID*)&pEncTicketPart->renew_till);
+        BAIL_ON_VMKDC_ERROR(dwError);
         *pEncTicketPart->renew_till = *renew_till;
     }
 
-    /* caddr */
-    pEncTicketPart->caddr = caddr; /* TBD */
+    /* caddr (optional) */
+    if (caddr)
+    {
+#if 1
+        pEncTicketPart->caddr = caddr;
+#else
+        dwError = VmKdcCopyAddresses(caddr, &pEncTicketPart->caddr);
+        BAIL_ON_VMKDC_ERROR(dwError);
+#endif
+    }
 
-    /* authorization_data */
-    pEncTicketPart->authorization_data = authorization_data; /* TBD */
+    /* authorization_data (optional) */
+    if (authorization_data)
+    {
+        dwError = VmKdcCopyAuthzData(authorization_data,
+                                     &pEncTicketPart->authorization_data);
+        BAIL_ON_VMKDC_ERROR(dwError);
+    }
 
     *ppRetEncTicketPart = pEncTicketPart;
 
@@ -290,11 +304,29 @@ VmKdcEncodeEncTicketPart(
     /* renew_till */
     heimPart.renew_till = pEncTicketPart->renew_till;
 
-    /* caddr */
+    /* caddr (optional) */
     heimPart.caddr = NULL; /* TBD */
 
-    /* authorization_data */
-    heimPart.authorization_data = NULL; /* TBD */
+    /* authorization_data (optional) */
+    if (pEncTicketPart->authorization_data)
+    {
+        dwError = VmKdcAllocateMemory(sizeof(*heimPart.authorization_data),
+                                      (PVOID*)&heimPart.authorization_data);
+        BAIL_ON_VMKDC_ERROR(dwError);
+
+        heimPart.authorization_data->len = pEncTicketPart->authorization_data->count;
+
+        dwError = VmKdcAllocateMemory(sizeof(*heimPart.authorization_data->val) * heimPart.authorization_data->len,
+                                      (PVOID*)&heimPart.authorization_data->val);
+        BAIL_ON_VMKDC_ERROR(dwError);
+
+        for (i=0; i<pEncTicketPart->authorization_data->count; i++)
+        {
+            heimPart.authorization_data->val[i].ad_type = pEncTicketPart->authorization_data->elem[i]->ad_type;
+            heimPart.authorization_data->val[i].ad_data.length = VMKDC_GET_LEN_DATA(pEncTicketPart->authorization_data->elem[i]->ad_data);
+            heimPart.authorization_data->val[i].ad_data.data = VMKDC_GET_PTR_DATA(pEncTicketPart->authorization_data->elem[i]->ad_data);
+        }
+    }
 
     /*
      * Encode the EncTicketPart into Heimdal structure
@@ -329,6 +361,12 @@ error:
         free(partBufPtr);
         partBufPtr = NULL;
     }
+    if (heimPart.authorization_data)
+    {
+        VMKDC_SAFE_FREE_MEMORY(heimPart.authorization_data->val);
+        VMKDC_SAFE_FREE_MEMORY(heimPart.authorization_data);
+    }
+
     return dwError;
 }
 
@@ -345,6 +383,9 @@ VmKdcDecodeEncTicketPart(
     size_t partBufLen = 0;
     PVMKDC_KEY pKey = NULL;
     PVMKDC_PRINCIPAL pClient = NULL;
+    PVMKDC_AUTHZDATA pAuthzData = NULL;
+    size_t i = 0;
+    PVMKDC_DATA pTmpData = NULL;
 
     memset(&heimPart, 0, sizeof(heimPart));
     partBufPtr = VMKDC_GET_PTR_DATA(pData);
@@ -383,22 +424,47 @@ VmKdcDecodeEncTicketPart(
     /* endtime */
     /* renew_till */
     /* caddr */
+
     /* authorization_data */
+    if (heimPart.authorization_data)
+    {
+        dwError = VmKdcAllocateAuthzData(&pAuthzData);
+        BAIL_ON_VMKDC_ERROR(dwError);
+
+        for (i=0; i<heimPart.authorization_data->len; i++)
+        {
+            dwError = VmKdcAllocateData(
+                              heimPart.authorization_data->val->ad_data.data,
+                              heimPart.authorization_data->val->ad_data.length,
+                              &pTmpData);
+            BAIL_ON_VMKDC_ERROR(dwError);
+
+            dwError = VmKdcAddAuthzData(
+                              pAuthzData,
+                              pTmpData,
+                              heimPart.authorization_data->val->ad_type);
+            BAIL_ON_VMKDC_ERROR(dwError);
+
+            VMKDC_SAFE_FREE_DATA(pTmpData);
+            pTmpData = NULL;
+        }
+    }
 
     /*
      * Translate the decoded EncTicketPart to a VMKDC_ENCTICKETPART structure.
      */
-    dwError = VmKdcMakeEncTicketPart(0, /* flags */
-                                     pKey, /* key */
-                                     pClient, /* crealm, cname */
-                                     NULL, /* transited */
-                                     heimPart.authtime, /* authtime */
-                                     heimPart.starttime, /* starttime */
-                                     heimPart.endtime, /* endtime */
-                                     heimPart.renew_till, /* renew_till */
-                                     NULL, /* caddr */
-                                     NULL, /* authorization_data */
-                                     &pEncTicketPart);
+    dwError = VmKdcMakeEncTicketPart(
+                      0, /* flags */
+                      pKey, /* key */
+                      pClient, /* crealm, cname */
+                      NULL, /* transited */
+                      heimPart.authtime, /* authtime */
+                      heimPart.starttime, /* starttime */
+                      heimPart.endtime, /* endtime */
+                      heimPart.renew_till, /* renew_till */
+                      NULL, /* caddr */
+                      pAuthzData, /* authorization_data */
+                      &pEncTicketPart);
     BAIL_ON_VMKDC_ERROR(dwError);
 
     *ppRetEncTicketPart = pEncTicketPart;
@@ -409,8 +475,10 @@ error:
         VMKDC_SAFE_FREE_ENCTICKETPART(pEncTicketPart);
     }
     free_EncTicketPart(&heimPart);
+    VMKDC_SAFE_FREE_AUTHZDATA(pAuthzData);
     VMKDC_SAFE_FREE_PRINCIPAL(pClient);
     VMKDC_SAFE_FREE_KEY(pKey);
+    VMKDC_SAFE_FREE_DATA(pTmpData);
 
     return dwError;
 }
@@ -474,17 +542,18 @@ VmKdcBuildTicket(
     /*
      * Initialize a ENC-TICKET-PART structure
      */
-    dwError = VmKdcMakeEncTicketPart(flags, /* flags */
-                                     pSessionKey, /* key */
-                                     pClient, /* crealm, cname */
-                                     transited, /* transited */
-                                     authtime, /* authtime */
-                                     starttime, /* starttime */
-                                     endtime, /* endtime */
-                                     renew_till, /* renew_till */
-                                     caddr, /* caddr */
-                                     authorization_data, /* authorization_data */
-                                     &pEncTicketPart);
+    dwError = VmKdcMakeEncTicketPart(
+                      flags, /* flags */
+                      pSessionKey, /* key */
+                      pClient, /* crealm, cname */
+                      transited, /* transited */
+                      authtime, /* authtime */
+                      starttime, /* starttime */
+                      endtime, /* endtime */
+                      renew_till, /* renew_till */
+                      caddr, /* caddr */
+                      authorization_data, /* authorization_data */
+                      &pEncTicketPart);
     BAIL_ON_VMKDC_ERROR(dwError);
 
     /*
@@ -496,19 +565,21 @@ VmKdcBuildTicket(
     /*
      * Encrypt the ASN.1 encoded ENC-TICKET-PART
      */
-    dwError = VmKdcEncryptEncData(pContext,
-                                  pKey,
-                                  VMKDC_KU_TICKET,
-                                  pAsnData,
-                                  &pEncData);
+    dwError = VmKdcEncryptEncData(
+                      pContext,
+                      pKey,
+                      VMKDC_KU_TICKET,
+                      pAsnData,
+                      &pEncData);
     BAIL_ON_VMKDC_ERROR(dwError);
 
     /*
      * Initialize a ticket structure
      */
-    dwError = VmKdcMakeTicket(pServer,
-                              pEncData,
-                              &pTicket);
+    dwError = VmKdcMakeTicket(
+                      pServer,
+                      pEncData,
+                      &pTicket);
     BAIL_ON_VMKDC_ERROR(dwError);
 
     *ppRetTicket = pTicket;

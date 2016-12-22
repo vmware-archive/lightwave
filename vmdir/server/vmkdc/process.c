@@ -54,6 +54,142 @@ error:
 
 static
 DWORD
+VmKdcCreateAuthzData(
+    PVMKDC_CONTEXT pContext,
+    PVMKDC_PRINCIPAL pPrincipal,
+    DWORD tTime,
+    PVMKDC_KEY pServerKey,
+    PVMKDC_KEY pPrivateKey,
+    PVMKDC_AUTHZDATA *ppAuthzData)
+{
+    DWORD dwError = 0;
+    PVMKDC_AUTHZDATA pAuthzDataPac = NULL;
+    PVMKDC_AUTHZDATA pAuthzDataIfRelevant = NULL;
+    PVMKDC_AUTHZ_PAC pPAC = NULL;
+    PVMKDC_DATA pPACInfoData = NULL;
+    PVMKDC_DATA pPACData = NULL;
+    PVMKDC_DATA pDataVmdirPac = NULL;
+    PVMKDC_AUTHZ_PAC_INFO pPACInfo = NULL;
+    long access_info_size = 0;
+    unsigned char *access_info_data = NULL;
+    PSTR pszName = NULL;
+    PVMDIR_AUTHZ_INFO pInfo = NULL;
+
+    dwError = VmKdcAllocatePAC(
+                      pContext,
+                      &pPAC);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    dwError = VmKdcUnparsePrincipalName(
+                      pPrincipal,
+                      &pszName);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    dwError = VmDirKrbGetAuthzInfo(
+                      pszName,
+                      &pInfo);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    /* NDR encode the access info data */
+
+    dwError = VmKdcEncodeAuthzInfo(
+                      pInfo,
+                      &access_info_size,
+                      (PVOID)&access_info_data);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    /* Add the encoded access info data to a PAC record */
+
+    dwError = VmKdcAllocateData(
+                      access_info_data,
+                      access_info_size,
+                      &pPACInfoData);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    dwError = VmKdcAllocatePACInfo(
+                      VMKDC_PAC_ACCESS_INFO,
+                      pPACInfoData,
+                      &pPACInfo);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    dwError = VmKdcAddPACInfoPAC(
+                      pPAC,
+                      pPACInfo);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    dwError = VmKdcSignPAC(
+                      pPAC,
+                      tTime,
+                      pPrincipal,
+                      pServerKey,
+                      pPrivateKey,
+                      &pPACData);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    dwError = VmKdcAllocateAuthzData(&pAuthzDataPac);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    dwError = VmKdcAddAuthzData(
+                      pAuthzDataPac,
+                      pPACData,
+                      VMKDC_AUTHZDATA_VMDIR_PAC
+                      );
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    dwError = VmKdcEncodeAuthzData(
+                      pAuthzDataPac,
+                      &pDataVmdirPac
+                      );
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    /* ASN.1 encode the PAC in another layer of authorization data
+     * with type AD-IF-RELEVANT
+     */
+
+    dwError = VmKdcAllocateAuthzData(&pAuthzDataIfRelevant);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    dwError = VmKdcAddAuthzData(
+                      pAuthzDataIfRelevant,
+                      pDataVmdirPac,
+                      VMKDC_AUTHZDATA_AD_IF_RELEVANT);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    *ppAuthzData = pAuthzDataIfRelevant;
+
+cleanup:
+
+    if (pPAC)
+    {
+        VmKdcDestroyPAC(pPAC);
+    }
+    if (access_info_data)
+    {
+        free(access_info_data);
+    }
+    if (pPACInfo)
+    {
+        VmKdcDestroyPACInfo(pPACInfo);
+    }
+    VMKDC_SAFE_FREE_STRINGA(pszName);
+    VMKDC_SAFE_FREE_DATA(pPACData);
+    VMKDC_SAFE_FREE_DATA(pPACInfoData);
+    VMKDC_SAFE_FREE_DATA(pDataVmdirPac);
+    VMKDC_SAFE_FREE_AUTHZDATA(pAuthzDataPac);
+    if (pInfo)
+    {
+        VmDirKrbFreeAuthzInfo(pInfo);
+    }
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+static
+DWORD
 VmKdcProcessAsReq(
     PVMKDC_CONTEXT pContext,
     PVMKDC_DATA *ppKrbMsg)
@@ -84,6 +220,7 @@ VmKdcProcessAsReq(
     time_t kdc_time = 0;
     time_t maxrt = 0;
     BOOLEAN renewable_ok = 0;
+    PVMKDC_AUTHZDATA pAuthzData = NULL;
 
     dwError = VmKdcAllocateData(
                   pContext->pRequest->requestBuf,
@@ -262,44 +399,60 @@ VmKdcProcessAsReq(
         VMKDC_FLAG_SET(flags, VMKDC_TF_PROXIABLE);
     }
 
+#if 0
+    /*
+     * Create authorization data.
+     */
+    dwError = VmKdcCreateAuthzData(
+                      pContext,
+                      pCname,
+                      kdc_time,
+                      pSKey,
+                      pSKey,
+                      &pAuthzData);
+    BAIL_ON_VMKDC_ERROR(dwError);
+#endif
+
     /*
      * Build a TICKET
      */
-    dwError = VmKdcBuildTicket(pContext,
-                               pCname,
-                               pSname,
-                               pSKey,      /* key */
-                               pSessionKey,
-                               flags,      /* flags */
-                               NULL,       /* transited */
-                               t_start,    /* authtime */
-                               &t_start,   /* starttime */
-                               t_end,      /* endtime */
-                               renew_till, /* renew_till */
-                               NULL,       /* caddr */
-                               NULL,       /* authorization_data */
-                               &pTicket);
+    dwError = VmKdcBuildTicket(
+                      pContext,
+                      pCname,
+                      pSname,
+                      pSKey,      /* key */
+                      pSessionKey,
+                      flags,      /* flags */
+                      NULL,       /* transited */
+                      t_start,    /* authtime */
+                      &t_start,   /* starttime */
+                      t_end,      /* endtime */
+                      renew_till, /* renew_till */
+                      NULL,       /* caddr */
+                      pAuthzData, /* authorization_data */
+                      &pTicket);
     BAIL_ON_VMKDC_ERROR(dwError);
 
     /*
      * Build an AS-REP
      */
-    dwError = VmKdcBuildAsRep(pContext,
-                              pCname,
-                              pSname,
-                              pCKey,      /* key */
-                              pSessionKey,
-                              pTicket,
-                              NULL,       /* last-req */
-                              nonce,      /* nonce */
-                              NULL,       /* key-expiration (optional) */
-                              flags,      /* flags */
-                              t_start,    /* authtime */
-                              &t_start,   /* starttime (optional) */
-                              t_end,      /* endtime */
-                              renew_till, /* renew-till (optional) */
-                              NULL,       /* caddr */
-                              &pAsRep);
+    dwError = VmKdcBuildAsRep(
+                      pContext,
+                      pCname,
+                      pSname,
+                      pCKey,      /* key */
+                      pSessionKey,
+                      pTicket,
+                      NULL,       /* last-req */
+                      nonce,      /* nonce */
+                      NULL,       /* key-expiration (optional) */
+                      flags,      /* flags */
+                      t_start,    /* authtime */
+                      &t_start,   /* starttime (optional) */
+                      t_end,      /* endtime */
+                      renew_till, /* renew-till (optional) */
+                      NULL,       /* caddr */
+                      &pAsRep);
     BAIL_ON_VMKDC_ERROR(dwError);
 
     /*
@@ -389,6 +542,7 @@ error:
     VMKDC_SAFE_FREE_TICKET(pTicket);
     VMKDC_SAFE_FREE_DATA(pAsnData);
     VMKDC_SAFE_FREE_STRINGA(pszClientName);
+    VMKDC_SAFE_FREE_AUTHZDATA(pAuthzData);
 
     return dwError;
 }
@@ -406,6 +560,7 @@ VmKdcProcessTgsReq(
     PVMKDC_KEY pSKey = NULL;
     PVMKDC_KEY pPresentedSKey = NULL;
     PVMKDC_KEY pSessionKey = NULL;
+    PVMKDC_KEY pKrbtgtKey = NULL;
     PVMKDC_PRINCIPAL pSname = NULL;
     DWORD nonce = 0;
     PVMKDC_DATA pAsnData = NULL;
@@ -424,9 +579,11 @@ VmKdcProcessTgsReq(
     PVMKDC_AUTHENTICATOR pAuthenticator = NULL;
     PVMKDC_DIRECTORY_ENTRY pServerEntry = NULL;
     PVMKDC_DIRECTORY_ENTRY pDirectoryEntry = NULL;
+    PVMKDC_DIRECTORY_ENTRY pKrbtgtEntry = NULL;
     PSTR pszServerName = NULL;
     VMKDC_TICKET_FLAGS flags = 0;
     BOOLEAN renew = FALSE;
+    PVMKDC_AUTHZDATA pAuthzData = NULL;
 
     dwError = VmKdcAllocateData(
                   pContext->pRequest->requestBuf,
@@ -615,22 +772,50 @@ VmKdcProcessTgsReq(
     }
 
     /*
+     * Get the krbtgt key
+     */
+    dwError = VmKdcSearchDirectory(
+                      pContext,
+                      apReq->ticket->sname,
+                      &pKrbtgtEntry);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    dwError = VmKdcFindKeyByEType(
+                      pKrbtgtEntry,
+                      tgsRequest->req_body.etype.type[0],
+                      &pKrbtgtKey);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    /*
+     * Create authorization data
+     */
+    dwError = VmKdcCreateAuthzData(
+                      pContext,
+                      pEncTicketPart->cname,
+                      kdc_time,
+                      pSKey,
+                      pKrbtgtKey,
+                      &pAuthzData);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    /*
      * Build a TICKET
      */
-    dwError = VmKdcBuildTicket(pContext,
-                               pEncTicketPart->cname,
-                               pSname,
-                               pSKey,
-                               pSessionKey,
-                               flags,      /* flags */
-                               NULL,       /* transited */
-                               t_start,    /* authtime */
-                               &t_start,   /* starttime */
-                               t_end,      /* endtime */
-                               renew_till, /* renew_till */
-                               NULL,       /* caddr */
-                               NULL,       /* authorization_data */
-                               &pTicket);
+    dwError = VmKdcBuildTicket(
+                      pContext,
+                      pEncTicketPart->cname,
+                      pSname,
+                      pSKey,
+                      pSessionKey,
+                      flags,      /* flags */
+                      NULL,       /* transited */
+                      t_start,    /* authtime */
+                      &t_start,   /* starttime */
+                      t_end,      /* endtime */
+                      renew_till, /* renew_till */
+                      NULL,       /* caddr */
+                      pAuthzData,
+                      &pTicket);
     BAIL_ON_VMKDC_ERROR(dwError);
 
 /*  RFC 4120, section 3.3.3, page 40
@@ -646,23 +831,24 @@ VmKdcProcessTgsReq(
     /*
      * Build a TGS-REP
      */
-    dwError = VmKdcBuildTgsRep(pContext,
-                               pEncTicketPart->cname,
-                               pSname,
-                               pEncTicketPart->key,
-                               pAuthenticator->subkey,
-                               pSessionKey,
-                               pTicket,
-                               NULL,       /* last-req */
-                               nonce,      /* nonce */
-                               NULL,       /* key-expiration (optional) */
-                               flags,      /* flags */
-                               t_start,    /* authtime */
-                               &t_start,   /* starttime */
-                               t_end,      /* endtime */
-                               renew_till, /* renew-till (optional) */
-                               NULL,       /* caddr */
-                               &pTgsRep);
+    dwError = VmKdcBuildTgsRep(
+                      pContext,
+                      pEncTicketPart->cname,
+                      pSname,
+                      pEncTicketPart->key,
+                      pAuthenticator->subkey,
+                      pSessionKey,
+                      pTicket,
+                      NULL,       /* last-req */
+                      nonce,      /* nonce */
+                      NULL,       /* key-expiration (optional) */
+                      flags,      /* flags */
+                      t_start,    /* authtime */
+                      &t_start,   /* starttime */
+                      t_end,      /* endtime */
+                      renew_till, /* renew-till (optional) */
+                      NULL,       /* caddr */
+                      &pTgsRep);
     BAIL_ON_VMKDC_ERROR(dwError);
 
     /*
@@ -746,6 +932,8 @@ error:
     VMKDC_SAFE_FREE_TICKET(pTicket);
     VMKDC_SAFE_FREE_DATA(pAsnData);
     VMKDC_SAFE_FREE_STRINGA(pszServerName);
+    VMKDC_SAFE_FREE_AUTHZDATA(pAuthzData);
+    VMKDC_SAFE_FREE_DIRECTORY_ENTRY(pKrbtgtEntry);
 
     return dwError;
 }

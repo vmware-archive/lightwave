@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  *
@@ -31,74 +31,64 @@
  * SUCH DAMAGE.
  */
 
-#include <krb5_locl.h>
+#include "krb5_locl.h"
 
-/* These are stub functions for the standalone RFC3961 crypto library */
+/*
+ * Convert the simple string `s' into a NULL-terminated and freshly allocated
+ * list in `list'.  Return an error code.
+ */
 
-KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
-krb5_heim_init_context(krb5_context *context)
+static krb5_error_code
+string_to_list (krb5_context context, const char *s, krb5_realm **list)
 {
-    krb5_context p;
 
-    *context = NULL;
-
-    /* should have a run_once */
-    bindtextdomain(HEIMDAL_TEXTDOMAIN, HEIMDAL_LOCALEDIR);
-
-    p = calloc(1, sizeof(*p));
-    if(!p)
-        return ENOMEM;
-
-    p->mutex = malloc(sizeof(HEIMDAL_MUTEX));
-    if (p->mutex == NULL) {
-        free(p);
-        return ENOMEM;
-    }
-    HEIMDAL_MUTEX_init(p->mutex);
-
-    *context = p;
-    return 0;
-}
-
-KRB5_LIB_FUNCTION void KRB5_LIB_CALL
-krb5_heim_free_context(krb5_context context)
-{
-    krb5_heim_clear_error_message(context);
-
-    HEIMDAL_MUTEX_destroy(context->mutex);
-    free(context->mutex);
-    if (context->flags & KRB5_CTX_F_SOCKETS_INITIALIZED) {
-        rk_SOCK_EXIT();
-    }
-
-    memset(context, 0, sizeof(*context));
-    free(context);
-}
-
-krb5_boolean
-_krb5_homedir_access(krb5_context context) {
-    return 0;
-}
-
-KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
-krb5_log(krb5_context context,
-         krb5_log_facility *fac,
-         int level,
-         const char *fmt,
-         ...)
-{
-    return 0;
-}
-
-#if 0 /* Defined in config-file.c */
-/* This function is currently just used to get the location of the EGD
- * socket. If we're not using an EGD, then we can just return NULL */
-
-KRB5_LIB_FUNCTION const char* KRB5_LIB_CALL
-krb5_config_get_string (krb5_context context,
-                        const krb5_config_section *c,
-                        ...)
-{
-    return NULL;
-}
+    *list = malloc (2 * sizeof(**list));
+    if (*list == NULL) {
+#if 0
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
 #endif
+	return ENOMEM;
+    }
+    (*list)[0] = strdup (s);
+    if ((*list)[0] == NULL) {
+	free (*list);
+#if 0
+	krb5_set_error_message(context, ENOMEM,
+			       N_("malloc: out of memory", ""));
+#endif
+	return ENOMEM;
+    }
+    (*list)[1] = NULL;
+    return 0;
+}
+
+/*
+ * Set the knowledge of the default realm(s) in `context'.
+ * If realm != NULL, that's the new default realm.
+ * Otherwise, the realm(s) are figured out from configuration or DNS.
+ */
+
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+krb5_set_default_realm(krb5_context context,
+		       const char *realm)
+{
+    krb5_error_code ret = 0;
+    krb5_realm *realms = NULL;
+
+    if (realm == NULL) {
+	realms = krb5_config_get_strings (context, NULL,
+					  "libdefaults",
+					  "default_realm",
+					  NULL);
+	if (realms == NULL)
+	    ret = krb5_get_host_realm(context, NULL, &realms);
+    } else {
+	ret = string_to_list (context, realm, &realms);
+    }
+    if (ret)
+	return ret;
+    krb5_free_host_realm (context, context->default_realms);
+    context->default_realms = realms;
+    return 0;
+}

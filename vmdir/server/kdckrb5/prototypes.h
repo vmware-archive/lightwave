@@ -34,6 +34,7 @@
 #include "key_p.h"
 #include "encdata_p.h"
 #include "keyset_p.h"
+#include "authzdata_p.h"
 #include "ticket_p.h"
 #include "krberror_p.h"
 #include "kdcreq_p.h"

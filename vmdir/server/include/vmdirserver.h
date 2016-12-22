@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright 2012-2016 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -287,6 +287,19 @@ DWORD
 VmDirKrbRealmNameNormalize(
     PCSTR       pszName,
     PSTR*       ppszNormalizeName
+    );
+
+typedef struct _VMDIR_AUTHZ_INFO VMDIR_AUTHZ_INFO;
+
+DWORD
+VmDirKrbGetAuthzInfo(
+    PCSTR pszUpnName,
+    VMDIR_AUTHZ_INFO** ppInfo
+    );
+
+VOID
+VmDirKrbFreeAuthzInfo(
+    VMDIR_AUTHZ_INFO* pInfo
     );
 
 // utils.c
