@@ -77,6 +77,8 @@ public class PlatformServicesControllerDeploy {
                     mode = ParseMode.PARSE_MODE_SITE;
                 } else if (arg.equals("--dns-forwarders")) {
                     mode = ParseMode.PARSE_MODE_DNS_FORWARDERS;
+                } else if (arg.equals("--ssl-subject-alt-name")) {
+                    mode = ParseMode.PARSE_MODE_SSL_SUBJECT_ALT_NAME;
                 }
                 break;
             case PARSE_MODE_HOSTNAME:
@@ -104,6 +106,10 @@ public class PlatformServicesControllerDeploy {
                 params.setDNSForwarders(arg);
                 mode = ParseMode.PARSE_MODE_OPEN;
                 break;
+            case PARSE_MODE_SSL_SUBJECT_ALT_NAME:
+                params.setSubjectAltName(arg);
+                mode = ParseMode.PARSE_MODE_OPEN;
+                break;
             default:
                 break;
             }
@@ -112,6 +118,6 @@ public class PlatformServicesControllerDeploy {
     }
 
     enum ParseMode {
-	    PARSE_MODE_OPEN, PARSE_MODE_MODE, PARSE_MODE_HOSTNAME, PARSE_MODE_DOMAIN, PARSE_MODE_PASSWORD, PARSE_MODE_SITE, PARSE_MODE_SERVER, PARSE_MODE_DNS_FORWARDERS
+	    PARSE_MODE_OPEN, PARSE_MODE_MODE, PARSE_MODE_HOSTNAME, PARSE_MODE_DOMAIN, PARSE_MODE_PASSWORD, PARSE_MODE_SITE, PARSE_MODE_SERVER, PARSE_MODE_DNS_FORWARDERS, PARSE_MODE_SSL_SUBJECT_ALT_NAME
     }
 }
