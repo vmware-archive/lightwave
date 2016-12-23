@@ -87,8 +87,9 @@ LOTUS_PARTNER_HOSTNAME=
 LOTUS_SITE_NAME=Default-first-site
 LOTUS_HOSTNAME=
 LOTUS_DNS_FORWARDERS=
+LOTUS_SSL_SUBJECT_ALT_NAME=
 DISABLE_DNS=0
-USAGE="configure-lightwave-server --password <password> [--domain <domain-name>] [--server <partner-host-name>] [--site <site-name>] [--hostname <hostname | IP Address>] [--dns-forwarders <comma-separated list of IP Addresses>] [--disable-dns] [--config-file <configuration file>]"
+USAGE="configure-lightwave-server --password <password> [--domain <domain-name>] [--server <partner-host-name>] [--site <site-name>] [--hostname <hostname | IP Address>] [--dns-forwarders <comma-separated list of IP Addresses>] [--ssl-subject-alt-name <SSL Subject Alternative Name>] [--disable-dns] [--config-file <configuration file>]"
 export SUPPORT_RHTTP_PROXY=0
 
 # Read passed parameters.
@@ -122,6 +123,9 @@ if [ $# -gt 0 ]; then
                       ;;
                     "--dns-forwarders")
                       MODE="dns-forwarders"
+                      ;;
+                    "--ssl-subject-alt-name")
+                      MODE="ssl-subject-alt-name"
                       ;;
                     "--disable-dns")
                       DISABLE_DNS=1
@@ -157,6 +161,10 @@ if [ $# -gt 0 ]; then
                 LOTUS_DNS_FORWARDERS=$arg
                 MODE=open
                 ;;
+             "ssl-subject-alt-name")
+                LOTUS_SSL_SUBJECT_ALT_NAME=$arg
+                MODE=open
+                ;;
              "config-file")
                 LOTUS_CONFIG_FILE=$arg
                 MODE=open
@@ -182,6 +190,7 @@ if [ -f "$LOTUS_CONFIG_FILE" ]; then
     LOTUS_HOSTNAME=$(grep "^hostname=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     LOTUS_FIRST_INSTANCE=$(grep "^first-instance=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     LOTUS_DNS_FORWARDERS=$(grep "^dns-forwarders=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    LOTUS_SSL_SUBJECT_ALT_NAME=$(grep "^ssl-subject-alt-name=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     DISABLE_DNS=$(grep "^disable-dns=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
 fi
 
@@ -269,6 +278,7 @@ CLASSPATH=$CLASSPATH:$VMWARE_DIR/jars/*
 BIN_DIR=$VMWARE_DIR/bin
 SBIN_DIR=$VMWARE_DIR/sbin
 LOTUS_DNS_FORWARDERS_ARG=
+LOTUS_SSL_SUBJECT_ALT_NAME_ARG=
 VMAFD_PARAM_KEY="[HKEY_THIS_MACHINE\\Services\\vmafd\\Parameters]"
 
 # Start Likewise services
@@ -279,6 +289,10 @@ fi
 
 if [ ! -z "$LOTUS_DNS_FORWARDERS" ]; then
     LOTUS_DNS_FORWARDERS_ARG="--dns-forwarders $LOTUS_DNS_FORWARDERS"
+fi
+
+if [ ! -z "$LOTUS_SSL_SUBJECT_ALT_NAME" ]; then
+    LOTUS_SSL_SUBJECT_ALT_NAME_ARG="--ssl-subject-alt-name $LOTUS_SSL_SUBJECT_ALT_NAME"
 fi
 
 case $DISABLE_DNS in
@@ -350,7 +364,8 @@ else
                                 --mode "standalone" --domain $LOTUS_DOMAIN_DEFAULT --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
                                 --site $LOTUS_SITE_NAME \
                                 --hostname $LOTUS_HOSTNAME \
-                                $LOTUS_DNS_FORWARDERS_ARG
+                                $LOTUS_DNS_FORWARDERS_ARG \
+                                $LOTUS_SSL_SUBJECT_ALT_NAME_ARG
             ;;
         "partner")
             $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -cp $CLASSPATH \
@@ -359,7 +374,8 @@ else
                                 --site $LOTUS_SITE_NAME \
                                 --server $LOTUS_PARTNER_HOSTNAME \
                                 --hostname $LOTUS_HOSTNAME \
-                                $LOTUS_DNS_FORWARDERS_ARG
+                                $LOTUS_DNS_FORWARDERS_ARG \
+                                $LOTUS_SSL_SUBJECT_ALT_NAME_ARG
             ;;
     esac
 
