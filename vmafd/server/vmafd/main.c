@@ -21,6 +21,7 @@
 //TODO, move to gVmafdGlobals?
 int  vmafd_syslog_level = 0;
 int  vmafd_syslog = 0;
+int  vmafd_console_log = 0;
 
 static
 DWORD
@@ -71,6 +72,10 @@ main(
     if( bEnableSysLog != FALSE )
     {
         vmafd_syslog = 1;
+    }
+    if (bEnableConsole)
+    {
+        vmafd_console_log = 1;
     }
 
     dwError = VmAfdInit();

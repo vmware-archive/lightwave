@@ -35,9 +35,9 @@ RUN tdnf update --refresh -y \
     rm -rf /usr/include/* && \
     /opt/likewise/sbin/lwsmd --start-as-daemon && \
     /opt/likewise/bin/lwregshell set_value "[HKEY_THIS_MACHINE\\Services\\vmafd]" \
-        Arguments "/opt/vmware/sbin/vmafdd" && \
+        Arguments "/opt/vmware/sbin/vmafdd -c" && \
     /opt/likewise/bin/lwregshell set_value "[HKEY_THIS_MACHINE\\Services\\vmca]"  \
-        Arguments "/opt/vmware/sbin/vmcad" && \
+        Arguments "/opt/vmware/sbin/vmcad -c" && \
     /opt/likewise/bin/lwregshell set_value "[HKEY_THIS_MACHINE\\Services\\vmdir]" \
         Arguments "/opt/vmware/sbin/vmdird -l 0 -f /opt/vmware/share/config/vmdirschema.ldif" && \
     /opt/likewise/bin/lwregshell set_value "[HKEY_THIS_MACHINE\\Services\\vmdns]" \

@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -377,7 +377,6 @@ VMCALog(
     va_start( va, fmt );
     msgsize = vsnprintf(logMessage, VMCA_MAX_MSG_SIZE, fmt, va );
     if ((msgsize > 0) && (msgsize < VMCA_MAX_MSG_SIZE-2)) {
-        logMessage[msgsize++] = '\n';
         logMessage[msgsize] = '\0';
     } else {
         logMessage[VMCA_MAX_MSG_SIZE-1] = '\0';
@@ -421,6 +420,15 @@ VMCALog(
             BAIL_ON_VMCA_ERROR(dwError);
         }
     }
+    if (gVMCALogType == VMCA_LOG_TYPE_CONSOLE)
+    {
+        fprintf(stderr, "VMCA:t@%lu:%-3.7s: %s\n",
+                (unsigned long) pthread_self(),
+                VMCALevelToText(level),
+                logMessage);
+        fflush( stderr );
+    }
+
 cleanup:
     if (bLocked)
     {

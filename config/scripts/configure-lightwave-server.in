@@ -215,44 +215,47 @@ case "$LOTUS_DEPLOYMENT" in
         ;;
 esac
 
-# Stop all services as a precaution.
-if [ -x /etc/init.d/vmcad ]; then
-     /etc/init.d/vmcad stop
-fi
+if [[ ! -f /.dockerenv ]]; then
 
-if [ -x /etc/init.d/vmdnsd ]; then
-     /etc/init.d/vmdnsd stop
-fi
+    # Stop all services as a precaution.
+    if [ -x /etc/init.d/vmcad ]; then
+        /etc/init.d/vmcad stop
+    fi
 
-if [ -x /etc/init.d/vmdird ]; then
-     /etc/init.d/vmdird stop
-fi
+    if [ -x /etc/init.d/vmdnsd ]; then
+        /etc/init.d/vmdnsd stop
+    fi
 
-if [ -x /etc/init.d/vmware-stsd ]; then
-     /etc/init.d/vmware-stsd stop
-fi
+    if [ -x /etc/init.d/vmdird ]; then
+        /etc/init.d/vmdird stop
+    fi
 
-if [ -x /etc/init.d/vmware-sts-idmd ]; then
-     /etc/init.d/vmware-sts-idmd stop
-fi
-if [ -x /etc/init.d/vmafd ]; then
-     /etc/init.d/vmafd stop
-fi
+    if [ -x /etc/init.d/vmware-stsd ]; then
+        /etc/init.d/vmware-stsd stop
+    fi
 
-if [ -x /etc/init.d/vmware-license ]; then
-     /etc/init.d/vmware-license stop
-fi
+    if [ -x /etc/init.d/vmware-sts-idmd ]; then
+        /etc/init.d/vmware-sts-idmd stop
+    fi
+    if [ -x /etc/init.d/vmafd ]; then
+        /etc/init.d/vmafd stop
+    fi
 
-# Configure syslog-ng
-LINE='@include "lightwave.conf.d"'
-FILE=/etc/syslog-ng/syslog-ng.conf
-if [ -f "$FILE" ]; then
-    grep -qs "$LINE" "$FILE"
-    if [ "$?" -ne 0 ]; then
-        echo "$LINE" >> "$FILE"
-        pid=$( pidof syslog-ng )
-        if [ -n "$pid" ]; then
-            kill -HUP $pid
+    if [ -x /etc/init.d/vmware-license ]; then
+        /etc/init.d/vmware-license stop
+    fi
+
+    # Configure syslog-ng
+    LINE='@include "lightwave.conf.d"'
+    FILE=/etc/syslog-ng/syslog-ng.conf
+    if [ -f "$FILE" ]; then
+        grep -qs "$LINE" "$FILE"
+        if [ "$?" -ne 0 ]; then
+            echo "$LINE" >> "$FILE"
+            pid=$( pidof syslog-ng )
+            if [ -n "$pid" ]; then
+                kill -HUP $pid
+            fi
         fi
     fi
 fi

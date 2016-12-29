@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -36,23 +36,28 @@ VmAfdParseArgs(
     {
         switch ( opt )
         {
-            case VMAFD_OPTION_LOGGING_LEVEL:
-                if( pLoggingLevel != NULL )
-                {
-                    *pLoggingLevel = atoi( optarg );
-                }
-                break;
+        case VMAFD_OPTION_LOGGING_LEVEL:
+            if( pLoggingLevel != NULL )
+            {
+                *pLoggingLevel = atoi( optarg );
+            }
+            break;
 
-            case VMAFD_OPTION_ENABLE_SYSLOG:
-                if ( pbEnableSysLog != NULL )
-                {
-                    *pbEnableSysLog = TRUE;
-                }
-                break;
-
-            default:
-                dwError = ERROR_INVALID_PARAMETER;
-                BAIL_ON_VMAFD_ERROR(dwError);
+        case VMAFD_OPTION_ENABLE_SYSLOG:
+            if ( pbEnableSysLog != NULL )
+            {
+                *pbEnableSysLog = TRUE;
+            }
+            break;
+        case VMAFD_OPTION_ENABLE_CONSOLE:
+            if (pbEnableConsole != NULL )
+            {
+                *pbEnableConsole = TRUE;
+            }
+            break;
+        default:
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMAFD_ERROR(dwError);
         }
     }
 error:
