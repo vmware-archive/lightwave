@@ -239,10 +239,37 @@ config-clean:
 	    cd $(LIGHTWAVE_STAGE_DIR)/x86_64 && $(RM) -f $(CFG_RPM); \
 	fi
 
+properties-clean:
+	@cd $(VMSTS_PROPERTY_FILES) &&\
+	$(RM) -f messages.properties &&\
+	$(RM) -f messages_de.properties &&\
+	$(RM) -f messages_es.properties &&\
+	$(RM) -f messages_fr.properties &&\
+	$(RM) -f messages_it.properties &&\
+	$(RM) -f messages_ja.properties &&\
+	$(RM) -f messages_ko.properties &&\
+	$(RM) -f messages_nl.properties &&\
+	$(RM) -f messages_pt.properties &&\
+	$(RM) -f messages_ru.properties &&\
+	$(RM) -f messages_zh_CN.properties &&\
+	$(RM) -f messages_zh_TW.properties
+
+diagnostics-folder-clean:
+	@if [ -d $(VMSTS_DIAGNOSTICS_LIB) ]; then \
+	    $(RMDIR) $(VMSTS_DIAGNOSTICS_LIB); \
+	fi
+
+resources-folder-clean:
+	@if [ -d $(VMSTS_LWUI_SRC_MAIN_RESOURCES) ]; then \
+	    $(RMDIR) $(VMSTS_LWUI_SRC_MAIN_RESOURCES); \
+	fi
+
 docker-clean:
 	@$(RM) -rf $(LIGHTWAVE_STAGE_DIR)/docker-published
 
-clean: config-clean vmca-clean vmafd-clean vmdns-clean vmdir-clean vmevent-clean lw-server-clean lw-clients-clean vmsts-clean docker-clean lw-build-clean
+clean: config-clean vmca-clean vmafd-clean vmdns-clean vmdir-clean vmevent-clean \
+		lw-server-clean lw-clients-clean vmsts-clean docker-clean lw-build-clean \
+		properties-clean diagnostics-folder-clean resources-folder-clean
 	@if [ -d $(LIGHTWAVE_STAGE_DIR) ]; then \
 	    $(RMDIR) $(LIGHTWAVE_STAGE_DIR); \
 	fi
