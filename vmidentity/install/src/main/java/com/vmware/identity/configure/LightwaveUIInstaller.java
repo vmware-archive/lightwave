@@ -342,7 +342,6 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
 	}
     @Override
     public void upgrade() throws Exception{
-        configureLandingPage();
     }
 
     @Override
