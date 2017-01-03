@@ -153,18 +153,15 @@ VmDnsZoneListFindZone(
     int i = 0;
     PSTR szName = NULL;
     PVMDNS_ZONE_OBJECT pZoneObject = NULL;
-    VmDnsLog(VMDNS_LOG_LEVEL_ERROR, " zone name %s ",szZoneName);
     for (; i < VMDNS_MAX_ZONES; ++i)
     {
         if (pDnsZoneList->Zones[i])
         {
             dwError = VmDnsZoneGetName(pDnsZoneList->Zones[i], &szName);
-            VmDnsLog(VMDNS_LOG_LEVEL_ERROR, " GetZoneName  %s %d",szName,dwError);
             BAIL_ON_VMDNS_ERROR(dwError);
 
             if (0 == VmDnsStringCompareA(szZoneName, szName, FALSE))
             {
-                VmDnsLog(VMDNS_LOG_LEVEL_ERROR, " compete success  %s %d",szName,dwError);
                 pZoneObject = pDnsZoneList->Zones[i];
                 VmDnsZoneObjectAddRef(pZoneObject);
                 break;
@@ -174,7 +171,6 @@ VmDnsZoneListFindZone(
 
     if (!pZoneObject)
     {
-        VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "Failed");
         dwError = ERROR_NOT_FOUND;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
