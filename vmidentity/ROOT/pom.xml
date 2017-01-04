@@ -6,7 +6,7 @@
 
   <groupId>com.vmware.identity</groupId>
   <artifactId>ROOT</artifactId>
-  <version>6.6.1</version>
+  <version>6.6.3</version>
   <packaging>war</packaging>
   <name>ROOT Webapp</name>
 

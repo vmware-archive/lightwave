@@ -3,11 +3,11 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.vmware.identity</groupId>
     <artifactId>openidconnect-client-lib</artifactId>
-    <version>6.6.1</version>
+    <version>6.6.3</version>
 
     <properties>
         <java.version>1.7</java.version>
-        <vmware.version>6.6.1</vmware.version>
+        <vmware.version>6.6.3</vmware.version>
         <junit.version>4.12</junit.version>
         <easymock.version>3.2</easymock.version>
         <bouncycastle.version>1.52</bouncycastle.version>
@@ -132,7 +132,7 @@
         <repository>
             <id>lightwave</id>
             <name>lightwave</name>
-            <url>http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave</url>
+            <url>https://api.bintray.com/maven/vmware/lightwave-maven/lightwave</url>
         </repository>
     </distributionManagement>
 

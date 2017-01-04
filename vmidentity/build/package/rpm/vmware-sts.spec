@@ -25,13 +25,13 @@ VMware Secure Token Server
 
 %package client
 Summary: VMware Secure Token Service Client
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, openjre >= 1.8.0.45, vmware-directory-client >= 6.6.1, likewise-open >= 6.2.9 
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, openjre >= 1.8.0.45, vmware-directory-client >= 6.6.3, likewise-open >= 6.2.9 
 %description client
 Client libraries to communicate with VMware Secure Token Service
 
 %package samples
 Summary: VMware Secure Token Service Samples
-Requires:  vmware-sts-client >= 6.6.1
+Requires:  vmware-sts-client >= 6.6.3
 %description samples
 Samples for VMware Secure Token Service
 

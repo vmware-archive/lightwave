@@ -7,7 +7,7 @@
 
     <groupId>com.vmware.identity</groupId>
     <artifactId>vmware-identity-oidc</artifactId>
-    <version>6.6.1</version>
+    <version>6.6.3</version>
     <packaging>pom</packaging>
 
     <name>vmware-identity-oidc</name>
