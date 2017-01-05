@@ -30,6 +30,7 @@ vmdnsd_CPPFLAGS = \
 vmdnsd_LDADD = \
     $(top_builddir)/server/common/libsrvcommon.la \
     $(top_builddir)/common/libcommon.la \
+    $(top_builddir)/vmsock/api/libvmsock.la \
     @VMDIR_LIBS@ \
     @DCERPC_LIBS@ \
     @LDAP_LIBS@ \

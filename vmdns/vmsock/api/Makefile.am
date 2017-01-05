@@ -17,6 +17,7 @@ libvmsock_la_CPPFLAGS = \
     @LW_INCLUDES@
 
 libvmsock_la_LDFLAGS = \
+    -static \
     @LW_LDFLAGS@
 
 libvmsock_la_LIBADD = \
