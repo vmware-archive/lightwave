@@ -1,0 +1,4 @@
+[submodule "vmidentity/uaa"]
+	path = vmidentity/uaa
+	url = https://github.com/tvs/uaa
+	branch = vmidentity

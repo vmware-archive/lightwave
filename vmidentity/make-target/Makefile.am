@@ -36,7 +36,11 @@ vmstswebapps_DATA= \
     @top_builddir@/vmware-sts/packages/ROOT.war \
     @top_builddir@/vmware-sts/packages/sts.war \
     @top_builddir@/vmware-sts/packages/websso.war \
-    @top_builddir@/vmware-sts/packages/lightwaveui.war
+    @top_builddir@/vmware-sts/packages/lightwaveui.war \
+    @top_builddir@/vmware-sts/packages/uaa.war \
+    @top_builddir@/vmware-sts/packages/uaa-api.war \
+    @top_builddir@/vmware-sts/packages/uaa-app.war \
+    @top_builddir@/vmware-sts/packages/uaa-manager.war
 
 sbin_SCRIPTS = \
     @top_builddir@/vmware-sts/websso/classes/sso-config.sh \

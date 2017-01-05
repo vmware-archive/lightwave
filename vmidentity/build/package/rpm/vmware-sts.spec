@@ -170,6 +170,7 @@ fi
 %{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war
 %{_webappsdir}/vmdir.war
+%{_webappsdir}/uaa.war
 %{_datadir}/config/idm/*
 %config %attr(600, root, root) %{_prefix}/vmware-sts/bin/setenv.sh
 %config %attr(600, root, root) %{_prefix}/vmware-sts/bin/vmware-identity-tomcat-extensions.jar
@@ -207,6 +208,9 @@ fi
 
 %files samples
 %{_webappsdir}/openidconnect-sample-rp.war
+%{_webappsdir}/uaa-api.war
+%{_webappsdir}/uaa-app.war
+%{_webappsdir}/uaa-manager.war
 %{_jarsdir}/vmware-identity-rest-idm-samples.jar
 
 

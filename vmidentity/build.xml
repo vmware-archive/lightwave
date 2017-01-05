@@ -35,6 +35,9 @@
   <property name="JRE_HOME"  value="${jre.home}" />
   <property name="maven" value="${MavenHome}/bin/mvn" />
   <property name="AFD_PACKAGE_BASE" value="${MAINSRCROOT}/../vmafd/build/authentication-framework/packages" />
+  <condition property="gradle.executable" value="./gradlew.bat" else="./gradlew">
+    <os family="windows"/>
+  </condition>
 
   <target name="install.vmware-dependencies">
     <exec executable="${maven}" failonerror="true">
@@ -70,6 +73,17 @@
       <env key="JAVA_HOME" value="${JRE_HOME}"/>
       <arg line=" -s settings.xml -Dskip.unit.tests=true clean compile package" />
     </exec>
+    <antcall target="build.uaa"/>
+  </target>
+
+  <target name="build.uaa">
+    <exec executable="${gradle.executable}" dir="uaa" resultproperty="uaa.state" failonerror="true">
+      <arg line="assemble"/>
+    </exec>
+    <copy file="uaa/samples/src/main/tomcatwebapps/manager.war" tofile="${PACKAGE_BASE}/uaa-manager.war"/>
+    <copy file="uaa/uaa/build/libs/cloudfoundry-identity-uaa-3.9.3.war" tofile="${PACKAGE_BASE}/uaa.war"/>
+    <copy file="uaa/samples/app/build/libs/cloudfoundry-identity-app-3.9.3.war" tofile="${PACKAGE_BASE}/uaa-app.war"/>
+    <copy file="uaa/samples/api/build/libs/cloudfoundry-identity-api-3.9.3.war" tofile="${PACKAGE_BASE}/uaa-api.war"/>
   </target>
 
 </project>
