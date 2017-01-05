@@ -248,6 +248,20 @@ VmDirSrvUpdateConfig(
        {
            gVmdirGlobals.dwEnableRaftReferral = pEntry->dwValue;
        }
+       else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_RAFT_PING_INTERVAL,
+                    TRUE))
+       {
+           gVmdirGlobals.dwRaftPingIntervalMS = pEntry->dwValue;
+       }
+       else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_RAFT_ELECTION_TIMEOUT,
+                    TRUE))
+       {
+           gVmdirGlobals.dwRaftElectionTimeoutMS = pEntry->dwValue;
+       }
     }
 
 cleanup:

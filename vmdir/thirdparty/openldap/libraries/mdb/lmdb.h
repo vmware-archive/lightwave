@@ -418,7 +418,11 @@ typedef enum MDB_cursor_op {
 #define MDB_BAD_TXN			(-30782)
 	/** Too big key/data, key is empty, or wrong DUPFIXED size */
 #define MDB_BAD_VALSIZE		(-30781)
-#define MDB_LAST_ERRCODE	MDB_BAD_VALSIZE
+        /** Corrupted meta page during WAL recover */
+#define MDB_WAL_INVALID_META    (-30780)
+        /** WAL recover failure pages in transaction mismatch */
+#define MDB_WAL_WRONG_TXN_PAGES (-30779)
+#define MDB_LAST_ERRCODE MDB_WAL_WRONG_TXN_PAGES
 /** @} */
 
 /** @brief Statistics for a database in the environment */
@@ -1125,6 +1129,11 @@ int  mdb_set_dupsort(MDB_txn *txn, MDB_dbi dbi, MDB_cmp_func *cmp);
 	 */
 int  mdb_set_relfunc(MDB_txn *txn, MDB_dbi dbi, MDB_rel_func *rel);
 
+        /** @brief Set commit hook func for Raft
+         *
+         */
+void mdb_set_commit_hook_func(MDB_env *env, MDB_commit_hook_func *commit_hook_func);
+
 	/** @brief Set a context pointer for a #MDB_FIXEDMAP database's relocation function.
 	 *
 	 * See #mdb_set_relfunc and #MDB_rel_func for more details.
@@ -1139,9 +1148,6 @@ int  mdb_set_relfunc(MDB_txn *txn, MDB_dbi dbi, MDB_rel_func *rel);
 	 *	<li>EINVAL - an invalid parameter was specified.
 	 * </ul>
 	 */
-
-void mdb_set_commit_hook_func(MDB_env *env, MDB_commit_hook_func *commit_hook_func);
-
 int  mdb_set_relctx(MDB_txn *txn, MDB_dbi dbi, void *ctx);
 
 	/** @brief Get items from a database.

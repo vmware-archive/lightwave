@@ -152,6 +152,8 @@
 #define VMDIR_REG_KEY_URGENT_REPL_TIMEOUT_MSEC "UrgentReplTimeoutMilliSec"
 #define VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD "PagedSearchReadAhead"
 #define VMDIR_REG_KEY_ENABLE_RAFT_REFERRAL    "EnableRaftReferral"
+#define VMDIR_REG_KEY_RAFT_ELECTION_TIMEOUT   "RaftElectionTimeoutMS"
+#define VMDIR_REG_KEY_RAFT_PING_INTERVAL      "RaftPingIntervalMS"
 
 #define VMDIR_CONFIG_INIT_TABLE_INITIALIZER                      \
 {                                                                \
@@ -348,6 +350,28 @@
         /*.dwMin          = */ 0,                                \
         /*.dwMax          = */ 15,                               \
         /*.dwDefault      = */ 0,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_RAFT_ELECTION_TIMEOUT,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 200,                              \
+        /*.dwMax          = */ 90000,                            \
+        /*.dwDefault      = */ 2100,                             \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_RAFT_PING_INTERVAL,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 100,                              \
+        /*.dwMax          = */ 30000,                            \
+        /*.dwDefault      = */ 1000,                                \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \

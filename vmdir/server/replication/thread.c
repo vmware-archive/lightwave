@@ -20,7 +20,11 @@
  * Filename: thread.c
  *
  * Abstract:
- *
+ *  The directory server replication algorithm is an implementation of the Raft paper
+ *  (referred as "the paper" in the source file comments) for replicating LDAP entry changes (Add/Modify/Delete/Moddn):
+ *  Diego Ongaro and John Ousterhout, “In Search of an Understandable Consensus Algorithm (Extended Version)”, May 20, 2014
+ *  The Raft protocol replaces (or as an alternative to) vmdird multi-master replication algorithm.
+ *  See the functional specification for detail: https://wiki.eng.vmware.com/Lightwave/Raft#Project_Milestone
  */
 
 #include "includes.h"
@@ -94,6 +98,21 @@ InitializeReplicationThread(
     dwError = VmDirAllocateMemory( sizeof(*pThrInfo), (PVOID*)&pThrInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (gVmdirGlobals.dwRaftElectionTimeoutMS < 10 ||
+        gVmdirGlobals.dwRaftPingIntervalMS < 20 ||
+        gVmdirGlobals.dwRaftElectionTimeoutMS <= (gVmdirGlobals.dwRaftPingIntervalMS << 1))
+    {
+        dwError = LDAP_OPERATIONS_ERROR;
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+          "InitializeReplicationThread: Raft parameter Error %d: %s must be greater than twice of %s",
+          dwError, "RaftElectionTimeoutMS", "RaftPingIntervalMS");
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "InitializeReplicationThread Raft parameters: %s=%d, %s=%d",
+      "RaftElectionTimeoutMS", gVmdirGlobals.dwRaftElectionTimeoutMS,
+      "RaftPingIntervalMS", gVmdirGlobals.dwRaftPingIntervalMS);
+
     VmDirSrvThrInit(
                 &pThrInfo,
                 gVmdirGlobals.replAgrsMutex,       // alternative mutex
@@ -131,7 +150,7 @@ _VmDirRaftVoteSchdThread()
     int dwError = 0;
 
     gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
-    UINT64 waitTime = VMDIR_RAFT_PING_TIMEOUT_MS;
+    UINT64 waitTime = gVmdirGlobals.dwRaftElectionTimeoutMS;
     BOOLEAN bLock = FALSE;
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRaftVoteSchdThread: started.");
@@ -140,7 +159,7 @@ _VmDirRaftVoteSchdThread()
     {
         UINT64 now = {0};
         int term = 0;
-        int waitConsensus = WAIT_CONSENSUS_TIMEOUT_SEC * 1000;
+        int waitConsensus = WAIT_CONSENSUS_TIMEOUT_MS;
         BOOLEAN bWaitTimeout = FALSE;
 
         if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
@@ -174,9 +193,9 @@ _VmDirRaftVoteSchdThread()
 
             now = VmDirGetTimeInMilliSec();
             waitTimeRemain = now - gRaftState.lastPingRecvTime;
-            if (waitTimeRemain >= VMDIR_RAFT_PING_TIMEOUT_MS)
+            if (waitTimeRemain >= gVmdirGlobals.dwRaftElectionTimeoutMS)
             {
-                //Hasn't recieved ping for an duration of VMDIR_RAFT_PING_TIMEOUT_MS - switch to candidate
+                //Hasn't recieved ping for an duration of gVmdirGlobals.dwRaftElectionTimeoutMS - switch to candidate
                 gRaftState.role = VDIR_RAFT_ROLE_CANDIDATE;
                 gRaftState.rpcSent = TRUE;
                 goto startVote;
@@ -188,7 +207,7 @@ _VmDirRaftVoteSchdThread()
         } else 
         {
             //Server is a leader
-            waitTime = VMDIR_RAFT_PING_TIMEOUT_MS;
+            waitTime = gVmdirGlobals.dwRaftElectionTimeoutMS;
             VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
             continue;
         }
@@ -197,10 +216,11 @@ startVote:
         // Stay in gRaftStateMutex
         do
         {
+            dwError = 0;
             if (_VmDirPeersIdleInLock() < (gRaftState.clusterSize/2))
             {
                  //Wait gPeersReadyCond only if not enough peers are Ready
-                 dwError = VmDirConditionTimedWait(gPeersReadyCond, gRaftStateMutex, 1000*WAIT_PEERS_READY_SEC);
+                 dwError = VmDirConditionTimedWait(gPeersReadyCond, gRaftStateMutex, WAIT_PEERS_READY_MS);
             }
         } while (dwError == ETIMEDOUT);
 
@@ -220,8 +240,11 @@ startVote:
             //Increment term only when at least one request vote rpc was sent out with
             //   the previous requtest vote to avoid waisting term numbers.
             gRaftState.currentTerm++;
+            VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
             _VmDirUpdateRaftPsState(gRaftState.currentTerm, TRUE, 0, NULL, 0);
-        }   
+            VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+        }
+
         if (gRaftState.votedFor.lberbv_len > 0)
         {   
             VmDirFreeBervalContent(&gRaftState.votedFor);
@@ -252,7 +275,7 @@ startVote:
         if (bWaitTimeout)
         {
             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRaftVoteSchdThread: wait vote result waitTime in %d sec; role %d term %d",
-                           WAIT_CONSENSUS_TIMEOUT_SEC, gRaftState.role, gRaftState.currentTerm);
+                           WAIT_CONSENSUS_TIMEOUT_MS, gRaftState.role, gRaftState.currentTerm);
         }
 
         //Now evalute vote outcome
@@ -270,19 +293,19 @@ startVote:
                _VmDirWaitLogCommitDone();
                gRaftState.disallowUpdates = FALSE;
 
-               waitTime = VMDIR_RAFT_PING_TIMEOUT_MS;
+               waitTime = gVmdirGlobals.dwRaftElectionTimeoutMS;
                continue;
            } else
            {
-                //Stay in candidate - split vote
-                waitTime = (UINT64)(WAIT_REELECTION_AVG_MS >> 1) + (UINT64)(rand()%WAIT_REELECTION_AVG_MS);
+                //Stay in candidate - split vote; wait at least 150ms.
+                waitTime = (UINT64)(rand()%WAIT_REELECTION_RAND_MS + 150);
            }
         } else
         {
             // Become follower
             UINT64 waitTimeRemain = VmDirGetTimeInMilliSec() - gRaftState.lastPingRecvTime;
 
-            waitTime = waitTimeRemain < VMDIR_RAFT_PING_TIMEOUT_MS? waitTimeRemain:VMDIR_RAFT_PING_TIMEOUT_MS;
+            waitTime = waitTimeRemain < gVmdirGlobals.dwRaftElectionTimeoutMS? waitTimeRemain:gVmdirGlobals.dwRaftElectionTimeoutMS;
         }
         VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
     }
@@ -367,7 +390,7 @@ DWORD
 VmDirRaftPeerThread(void *ctx)
 {
     BOOLEAN bLock = FALSE;
-    UINT64 pingTimeout = VMDIR_RAFT_PING_INTERVAL_MS;
+    UINT64 pingTimeout = gVmdirGlobals.dwRaftPingIntervalMS;
     UINT64 prevPingTime = {0};
     UINT64 now = {0};
     int cmd = ExecNone;
@@ -416,10 +439,10 @@ appendEntriesRepeat:
             {
                 //VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirRaftPeerThread: current gRaftState.cmd %d (peer %s); role %d term %d",
                 //    gRaftState.cmd, pPeerHostName, gRaftState.role, gRaftState.currentTerm);
-                if ((now - prevPingTime) >= VMDIR_RAFT_PING_INTERVAL_MS)
+                if ((now - prevPingTime) >= gVmdirGlobals.dwRaftPingIntervalMS)
                 {
                     prevPingTime = now;
-                    pingTimeout = VMDIR_RAFT_PING_INTERVAL_MS;
+                    pingTimeout = gVmdirGlobals.dwRaftPingIntervalMS;
                     cmd = ExecPing;
                     //VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirRaftPeerThread: will ExecPing to peer %s; role %d term %d",
                     //    pPeerHostName, gRaftState.role, gRaftState.currentTerm);
@@ -432,7 +455,7 @@ appendEntriesRepeat:
             } else
             {
                 // AppendEntriesRpc - reset ping time timeout
-                pingTimeout = VMDIR_RAFT_PING_INTERVAL_MS;
+                pingTimeout = gVmdirGlobals.dwRaftPingIntervalMS;
                 prevPingTime = now;
             }
         } else
@@ -938,21 +961,22 @@ ReplicateLog:
                                    &args.currentTerm, &args.status);
     if (dwError)
     {
-        pProxySelf->proxy_state = RPC_DISCONN;
         if (dwError == rpc_s_connect_rejected || dwError == rpc_s_connect_timed_out ||
             dwError == rpc_s_cannot_connect || dwError == rpc_s_connection_closed)
         {
+            pProxySelf->proxy_state = RPC_DISCONN;
             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirAppendEntriesRpc: not connected or disconnected peer %s", pPeerHostName);
             _VmDirRpcConnect(ppServer, pProxySelf);
         } else if (dwError == rpc_s_auth_method)
         {
-             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirAppendEntriesRpc: rpc_s_auth_method peer %s", pPeerHostName);
-             _VmDirRpcConnect(ppServer, pProxySelf);
+            pProxySelf->proxy_state = RPC_DISCONN;
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirAppendEntriesRpc: rpc_s_auth_method peer %s", pPeerHostName);
+            _VmDirRpcConnect(ppServer, pProxySelf);
         } else if (dwError == VMDIR_ERROR_UNWILLING_TO_PERFORM)
         {
              //Peer may be in process of starting up
-             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirAppendEntriesRpc: peer %s not ready to serve", pPeerHostName);
-             VmDirSleep(2000);
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirAppendEntriesRpc: peer %s not ready to serve", pPeerHostName);
+            VmDirSleep(2000);
         } else
         {
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirAppendEntriesRpc: RPC call failed to peer %s error %d",
@@ -1252,7 +1276,7 @@ _VmDirRequestVoteGetReply(UINT32 term, char *candidateId, unsigned long long las
     if (!gRaftState.initialized)
     {
         //Don't participate in vote if this server has not been initialized.
-        VmDirSleep(WAIT_REELECTION_AVG_MS << 1); //Pause a little so that peers won't waste term sequence numbers.
+        VmDirSleep(WAIT_REELECTION_RAND_MS << 1); //Pause a little so that peers won't waste term sequence numbers.
         dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
@@ -1472,8 +1496,8 @@ cleanup:
 
 error:
      VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-            "_VmDirAppendEntriesGetReply: entrySize %d; error %d leader %s term %d leaderCommit %llu preLogIndex %llu preLogTerm %d; server term %d (old term %d) role %d status %d",
-            entrySize, dwError, leader, term, leaderCommit, preLogIndex, preLogTerm, *currentTerm, oldterm, gRaftState.role, *status);
+            "_VmDirAppendEntriesGetReply: entrySize %d; error %d leader %s term %d leaderCommit %llu preLogIndex %llu preLogTerm %d; server term %d (old term %d) role %d status %d gRaftStateInitialized %s",
+            entrySize, dwError, leader, term, leaderCommit, preLogIndex, preLogTerm, *currentTerm, oldterm, gRaftState.role, *status, gRaftState.initialized?"Yes":"No");
     goto cleanup;
 }
 
@@ -1518,7 +1542,7 @@ int VmDirRaftCommitHook()
         if (_VmDirPeersIdleInLock() < (gRaftState.clusterSize/2))
         {
              //Wait only if not enough in Ready.
-             dwError = VmDirConditionTimedWait(gPeersReadyCond, gRaftStateMutex, 1000*WAIT_PEERS_READY_SEC);
+             dwError = VmDirConditionTimedWait(gPeersReadyCond, gRaftStateMutex, WAIT_PEERS_READY_MS);
         }
         if (dwError == ETIMEDOUT && retryCnt++ > 5)
         {
@@ -1541,7 +1565,7 @@ int VmDirRaftCommitHook()
     //VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirRaftCommitHook: wait gRaftAppendEntryReachConsensusCond; role %d term %d",
     //               gRaftState.role, gRaftState.currentTerm);
 
-    VmDirConditionWait(gRaftAppendEntryReachConsensusCond, gRaftStateMutex);
+    VmDirConditionTimedWait(gRaftAppendEntryReachConsensusCond, gRaftStateMutex, WAIT_CONSENSUS_TIMEOUT_MS);
 
     if (_VmDirGetAppendEntriesConsensusCountInLock() < (gRaftState.clusterSize/2 + 1))
     {
@@ -1912,7 +1936,7 @@ _VmDirRpcConnect(PVMDIR_SERVER_CONTEXT *ppServer, PVMDIR_PEER_PROXY pProxySelf)
                                 "_VmDirRpcConnect: not connected or authorization error %d host %s, will retry to connect.",
                                 dwError, pPeerHostName);
           }
-          VmDirSleep(VMDIR_RAFT_PING_INTERVAL_MS>>1);
+          VmDirSleep(gVmdirGlobals.dwRaftPingIntervalMS>>1);
           continue;
        } else if (dwError != 0)
        {
@@ -1996,6 +2020,7 @@ _VmDirApplyLog(unsigned long long indexToApply)
     char opStr[RAFT_CONTEXT_DN_MAX_LEN] = {0};
     BOOLEAN bLock = FALSE;
     BOOLEAN bHasTxn = FALSE; 
+    int iPostCommitPluginRtn = 0;
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
     if (indexToApply <= gRaftState.lastApplied)
@@ -2030,8 +2055,10 @@ _VmDirApplyLog(unsigned long long indexToApply)
         dwError = VmDirGetParentDN(&entry.dn, &entry.pdn );
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg), "VmDirGetParentDN with logIndx %llu", indexToApply);
     
-        dwError = VmDirInitStackOperation( &ldapOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_ADD, pSchemaCtx );
+        dwError = VmDirInitStackOperation( &ldapOp, VDIR_OPERATION_TYPE_REPL, LDAP_REQ_ADD, pSchemaCtx );
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        ldapOp.request.addReq.pEntry = &entry;
     
         ldapOp.pBEIF = VmDirBackendSelect(NULL);
         assert(ldapOp.pBEIF);
@@ -2052,7 +2079,7 @@ _VmDirApplyLog(unsigned long long indexToApply)
         ModifyReq*   modReq = NULL;
         BOOLEAN bDnModified = FALSE;
 
-        dwError = VmDirInitStackOperation( &ldapOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, pSchemaCtx );
+        dwError = VmDirInitStackOperation( &ldapOp, VDIR_OPERATION_TYPE_REPL, LDAP_REQ_MODIFY, pSchemaCtx );
         BAIL_ON_VMDIR_ERROR(dwError);
 
         ldapOp.pBEIF = VmDirBackendSelect(NULL);
@@ -2071,6 +2098,9 @@ _VmDirApplyLog(unsigned long long indexToApply)
                                                logEntry.entryId, &entry, VDIR_BACKEND_ENTRY_LOCK_WRITE);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg), "pfnBEIdToEntry from logIndx %llu", indexToApply);
 
+        dwError = VmDirBervalContentDup(&entry.dn, &modReq->dn);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         // Apply modify operations to the current entry (in pack format)
         dwError = VmDirApplyModsToEntryStruct(pSchemaCtx, modReq, &entry, &bDnModified, &pszLocalErrorMsg );
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrorMsg, "ApplyModsToEntryStruct (%s)", pszLocalErrorMsg);
@@ -2084,7 +2114,7 @@ _VmDirApplyLog(unsigned long long indexToApply)
         DeleteReq *delReq = NULL;
         ModifyReq *modReq = NULL;
 
-        dwError = VmDirInitStackOperation( &ldapOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_DELETE, pSchemaCtx );
+        dwError = VmDirInitStackOperation( &ldapOp, VDIR_OPERATION_TYPE_REPL, LDAP_REQ_DELETE, pSchemaCtx );
         BAIL_ON_VMDIR_ERROR(dwError);
 
         ldapOp.pBEIF = VmDirBackendSelect(NULL);
@@ -2110,10 +2140,6 @@ _VmDirApplyLog(unsigned long long indexToApply)
 
         dwError = VmDirNormalizeDN( &(delReq->dn), pSchemaCtx );
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg, "Delete entry, normalizationDN");
-
-        // Execute pre modify apply Delete plugin logic
-        dwError = VmDirExecutePreModApplyDeletePlugins(&ldapOp, NULL, 0);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg, "PreModApplyDelete plugin");
 
         dwError = VmDirNormalizeMods(pSchemaCtx, modReq->mods, &pszLocalErrorMsg );
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -2171,6 +2197,36 @@ _VmDirApplyLog(unsigned long long indexToApply)
     dwError = ldapOp.pBEIF->pfnBETxnCommit(ldapOp.pBECtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (logEntry.requestCode == LDAP_REQ_ADD)
+    {
+        dwError = VmDirEntryUnpack(&entry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg, "VmDirEntryUnpack)");
+
+        dwError = VmDirSchemaEntryPreAdd(&ldapOp, &entry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg, "SchemaEntryPreAdd");
+
+        iPostCommitPluginRtn = VmDirExecutePostAddCommitPlugins(&ldapOp, &entry, dwError);
+
+
+        if (iPostCommitPluginRtn != LDAP_SUCCESS && iPostCommitPluginRtn != ldapOp.ldapResult.errCode)
+        {
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: ADD, VdirExecutePostAddCommitPlugins %s - code(%d)",
+                    entry.dn.lberbv_val, iPostCommitPluginRtn);
+        }
+    } else if (logEntry.requestCode == LDAP_REQ_MODIFY)
+    {
+        dwError = VmDirSchemaModMutexAcquire(&ldapOp);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg, "Lock schema mod mutex");
+
+        iPostCommitPluginRtn = VmDirExecutePostModifyCommitPlugins(&ldapOp, &entry, dwError);
+
+        if ( iPostCommitPluginRtn != LDAP_SUCCESS && iPostCommitPluginRtn != ldapOp.ldapResult.errCode)
+        {
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: MODIFY: VdirExecutePostModifyCommitPlugins %s - code(%d)",
+                      entry.dn.lberbv_val, iPostCommitPluginRtn);
+        }
+    }
+
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
     gRaftState.lastApplied = indexToApply;
     if ( gRaftState.commitIndex < logEntry.index)
@@ -2185,6 +2241,7 @@ _VmDirApplyLog(unsigned long long indexToApply)
         dwError = VmDirAddRaftProxy(&entry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg), "VmDirAddRaftProxy %s",
                                  VDIR_SAFE_STRING(entry.dn.lberbv.bv_val)); 
+        
     } else if (logEntry.requestCode == LDAP_REQ_DELETE)
     {
         dwError = _VmDirDeleteRaftProxy(BERVAL_NORM_VAL(entry.dn));
@@ -2200,6 +2257,8 @@ cleanup:
         modOp.pBECtx->pBEPrivate = NULL; //Make sure that calls commit/abort only once.
     }
     VmDirFreeOperationContent(&modOp);
+    (VOID)VmDirSchemaModMutexRelease(&ldapOp);
+    ldapOp.request.addReq.pEntry = NULL;
     VmDirFreeOperationContent(&ldapOp);
     VmDirFreeEntryContent(&entry);
     if (pSchemaCtx)

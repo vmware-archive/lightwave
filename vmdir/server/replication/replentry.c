@@ -997,7 +997,7 @@ _VmDirRaftLoadGlobals(PSTR *ppszLocalErrorMsg)
     dwError = VmDirAllocateBerValueAVsnprintf(&gRaftState.hostname, "%s", pszHostname);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirRaftLoadGlobals: successfully loaded instance specific globals.");
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirRaftLoadGlobals: successfully loaded instance specific globals");
 
 cleanup:
     VmDirFreeEntryArrayContent(&entryArray);

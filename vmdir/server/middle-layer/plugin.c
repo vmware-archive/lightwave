@@ -207,13 +207,13 @@
 }
 
 // NOTE 1: order of fields MUST stay in sync with struct definition...
-// NOTE 2: _VmDirPluginReplAgrPostAddCommit() plugin is called only when Add commit has succeeded.
+// NOTE 2: _VmDirPluginRaftProxyPostAddCommit() plugin is called only when Add commit has succeeded.
 #define VDIR_POST_ADD_COMMIT_PLUGIN_INITIALIZER                     \
 {                                                                   \
     {                                                               \
     VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
     VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginReplAgrPostAddCommit),  \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginRaftProxyPostAddCommit),  \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
     {                                                               \
@@ -363,7 +363,7 @@ _VmDirPluginSchemaLibUpdatePostAddCommit(
 
 static
 DWORD
-_VmDirPluginReplAgrPostAddCommit(
+_VmDirPluginRaftProxyPostAddCommit(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,
     DWORD            dwPriorResult);
@@ -1204,6 +1204,26 @@ error:
     return dwPriorResult ? dwPriorResult : dwRtn;
 }
 
+DWORD
+VmDirSchemaEntryPreAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry)
+{
+    DWORD dwError = 0;
+
+    dwError = VmDirSchemaModMutexAcquire(pOperation);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError =  _VmDirPluginSchemaLibUpdatePreAdd(pOperation, pEntry, 0);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 static
 DWORD
 _VmDirPluginSchemaLibUpdatePreAdd(
@@ -1241,7 +1261,7 @@ _VmDirPluginSchemaLibUpdatePostAddCommit(
 
 static
 DWORD
-_VmDirPluginReplAgrPostAddCommit(
+_VmDirPluginRaftProxyPostAddCommit(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,
     DWORD            dwPriorResult)
@@ -1269,36 +1289,8 @@ _VmDirPluginReplAgrPostDeleteCommit(
     PVDIR_ENTRY      pEntry,
     DWORD            dwPriorResult)
 {
-    DWORD                           dwError = 0;
-    PVMDIR_REPLICATION_AGREEMENT    pReplAgr = NULL;
-    BOOLEAN                         bInLock = FALSE;
-    PCSTR                           pszErrorContext = NULL;
-
-    if (pEntry->dn.bvnorm_val == NULL)
-    {
-        pszErrorContext = "Normalize DN";
-        dwError = VmDirNormalizeDN( &(pEntry->dn), pEntry->pSchemaCtx);
-        BAIL_ON_VMDIR_ERROR( dwError );
-    }
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-    for (pReplAgr = gVmdirReplAgrs; pReplAgr != NULL; pReplAgr = pReplAgr->next )
-    {
-        if (VmDirStringCompareA(pReplAgr->dn.bvnorm_val, pEntry->dn.bvnorm_val, TRUE)  == 0)
-        {
-            pReplAgr->isDeleted = TRUE;
-            break;
-        }
-    }
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-
-cleanup:
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-    return dwError;
-
-error:
-    VMDIR_APPEND_ERROR_MSG(pOperation->ldapResult.pszErrMsg, pszErrorContext);
-    goto cleanup;
+    //No repl agr for raft.
+    return 0;
 }
 
 static
