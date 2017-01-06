@@ -63,7 +63,11 @@ autoreconf -mif .. &&
             --with-vmdir=%{_vmdir_prefix} \
             --with-afd=%{_vmafd_prefix} \
             --with-ssl=/usr \
-            --with-boost=/usr
+            --with-boost=/usr \
+            --with-oidc=/opt/vmware \
+            --with-ssocommon=/opt/vmware \
+            --with-trident=/usr \
+            --with-jansson=/usr
 
 %install
 

@@ -110,6 +110,70 @@ typedef struct _VMCA_SERVER_GLOBALS
 
 } VMCA_SERVER_GLOBALS, *PVMCA_SERVER_GLOBALS;
 
+typedef enum
+{
+    VMCA_AUTHORIZATION_TYPE_UNDEFINED = 0,
+    VMCA_AUTHORIZATION_TYPE_BEARER_TOKEN,
+    VMCA_AUTHORIZATION_TOKEN_TYPE_KRB,
+    VMCA_AUTHORIZATION_TOKEN_TYPE_MAX
+} VMCA_AUTHORIZATION_TYPE;
+#if 0
+typedef struct _VMCA_AUTHORIZATION_PARAM
+{
+    PSTR pszAuthorizationToken;
+    VMCA_AUTHORIZATION_TYPE tokenType;
+} VMCA_AUTHORIZATION_PARAM, *PVMCA_AUTHORIZATION_PARAM;
+
+typedef struct _VMCA_ACCESS_TOKEN
+{
+    VMCA_AUTHORIZATION_TYPE  tokenType;
+    PCSTR pszSubjectName;
+    int* bKrbTicketValid;
+    const PSTR* pszGroups;
+    DWORD dwGroupSize;
+//    union
+//    {
+        POIDC_ACCESS_TOKEN pOidcToken;
+//    }
+} VMCA_ACCESS_TOKEN, *PVMCA_ACCESS_TOKEN;
+
+typedef DWORD (*VMCA_ACCESS_TOKEN_VERIFY) (
+    PVMCA_AUTHORIZATION_PARAM pAuthorization,
+    PVMCA_ACCESS_TOKEN* ppAccessToken
+    );
+
+typedef VOID (*VMCA_ACCESS_TOKEN_FREE) (
+    PVMCA_ACCESS_TOKEN pAccessToken
+    );
+
+typedef struct _VMCA_ACCESS_TOKEN_METHODS
+{
+    VMCA_AUTHORIZATION_TYPE       type;
+    VMCA_ACCESS_TOKEN_VERIFY      pfnVerify;
+    VMCA_ACCESS_TOKEN_FREE        pfnFree;
+} VMCA_ACCESS_TOKEN_METHODS;
+
+typedef struct
+_VMCA_HTTP_REQ_OBJ {
+    PSTR                            pszMethod;
+    PSTR                            pszUri;
+    PSTR                            pszVer;
+    PSTR                            pszConnection;
+    PSTR                            pszTransferEncoding;
+    PSTR                            pszContentLength;
+    PSTR*                           pszPayload;
+    FILE*                           debugFile;
+    JSON_KEY_VALUE*                 params;
+    PVMCA_ACCESS_TOKEN              pAccessToken;
+} VMCA_HTTP_REQ_OBJ, *PVMCA_HTTP_REQ_OBJ;
+
+typedef struct OIDC_SERVER_METADATA
+{
+    PSTRING pszTokenEndpointUrl;
+    PSTRING pszSigningCertificatePEM;
+} OIDC_SERVER_METADATA;
+#endif
+
 #ifdef _WIN32
 typedef struct _VMCA_NTSERVICE_DATA
 {

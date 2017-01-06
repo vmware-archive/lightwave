@@ -31,6 +31,20 @@ extern "C" {
 
 extern VMCA_SERVER_GLOBALS gVMCAServerGlobals;
 
+#if 0
+
+extern VMCA_ACCESS_TOKEN_METHODS gVMCAAccessTokenMethods[];
+
+#ifndef _WIN32
+
+extern uint32_t
+VMCAHandleHttpRequest(
+        PREST_REQUEST pRequest,
+        PREST_RESPONSE* ppResponse,
+        uint32_t paramsCount);
+#endif
+#endif
+
 #ifdef __cplusplus
 }
 #endif

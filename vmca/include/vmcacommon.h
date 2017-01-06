@@ -400,6 +400,13 @@ VMCAAllocateMemory(
     PVOID * ppMemory
     );
 
+DWORD
+VMCAReallocateMemory(
+    PVOID        pMemory,
+    PVOID*       ppNewMemory,
+    DWORD        dwSize
+    );
+
 VOID
 VMCAFreeMemory(
     PVOID pMemory
@@ -514,6 +521,13 @@ VMCAStringTokA(
     PCSTR strDelimit,
     PSTR* context
     );
+
+DWORD
+VMCAStringCountSubstring(
+    PSTR pszHaystack,
+    PCSTR pszNeedle,
+    int** ppnCount
+);
 
 DWORD
 VMCAStringCatA(

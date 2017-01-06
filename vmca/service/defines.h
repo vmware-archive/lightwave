@@ -186,11 +186,77 @@ typedef DWORD VMCA_FUNC_LEVEL;
         }                         \
     } while(0)
 
-#define BAIL_ON_VMCA_INVALID_POINTER(p, errCode)     \
+#define BAIL_ON_VMCA_INVALID_POINTER(p, errCode)  \
         if (p == NULL) {                          \
             errCode = ERROR_INVALID_PARAMETER;    \
             BAIL_ON_VMCA_ERROR(errCode);          \
         }
+
+#define BAIL_ON_VMREST_ERROR(dwError)           \
+    if (dwError)                                \
+    {                                           \
+        goto error;                             \
+    }
+
+#define BAIL_ON_JSON_PARSE_ERROR(dwError)       \
+    if (dwError)                                \
+    {                                           \
+        goto error;                             \
+    }
+
+#define PARSER_CHECK_NULL(input, dwError)       \
+    if (input == NULL)                          \
+    {                                           \
+        dwError = 415;                          \
+    }
+
+#define CHECK_BAD_MALLOC(input, dwError)        \
+    if (input == NULL)                          \
+    {                                           \
+        dwError = ERROR_OUTOFMEMORY;            \
+    }
+
+#define HANDLE_NULL_PARAM(input, dwerror)       \
+    if (input == NULL)                          \
+    {                                           \
+        dwerror = ERROR_INVALID_PARAMETER;      \
+    }
+
+// REST ENGINE CONFIG VALUES
+// TRIDENT
+#define VMCARESTSSLCERT "/root/mycert.pem"
+#define VMCARESTSSLKEY "/root/mycert.pem"
+#define VMCARESTPORT "81"
+#define VMCARESTDEBUGLOGFILE "/tmp/restServer.log"
+#define VMCARESTCLIENTCNT "5"
+#define VMCARESTWORKERTHCNT "5"
+
+//VMCA HTTP ENDPOINT URI VALUES
+#define VMCA_CRL_URI "vmca/crl"
+#define VMCA_ROOT_URI "vmca/root"
+#define VMCA_CERTS_URI "vmca/certificates"
+#define VMCA_URI "vmca"
+
+// VMCA REST PARAMETER KEYS
+#define VMCA_ADD_ROOT_PARAM_KEY_CERT "cert"
+#define VMCA_ADD_ROOT_PARAM_KEY_PRIVKEY "privateKey"
+#define VMCA_ADD_ROOT_PARAM_KEY_OVERWRITE "overwrite"
+#define VMCA_ENUM_CERTS_PARAM_KEY_FLAG "flag"
+#define VMCA_ENUM_CERTS_PARAM_KEY_NUMBER "number"
+#define VMCA_GET_SIGNED_CERT_PARAM_KEY_CSR "csr"
+#define VMCA_GET_SIGNED_CERT_PARAM_KEY_NOT_BF "notBefore"
+#define VMCA_GET_SIGNED_CERT_PARAM_KEY_DURATION "duration"
+#define VMCA_REVOKE_CERT_PARAM_KEY_CERT "cert"
+
+// VMCA REST RETURN KEYS
+#define VMCA_ENUM_CERTS_RETURN_KEY "cert"
+
+//REST AUTH
+#define VMCA_DEFAULT_CLOCK_TOLERANCE 60.0
+#define VMCA_DEFAULT_SCOPE_STRING "rs_vmca"
+#define VMCA_GROUP_PERMISSION_STRING "CAAdmins"
+#define VMCA_BASIC_AUTH_STRING "Basic "
+#define VMCA_SUCCESS_MESSAGE "{Success: \"success\"}"
 
 #ifdef _WIN32
 #define VMCASleep(X) Sleep((X) * 1000)

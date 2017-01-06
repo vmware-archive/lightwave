@@ -290,7 +290,7 @@ VMCAGetSignedCertificate(
 unsigned int
 VMCAGetRootCACertificate(
     unsigned int *dwCertLength,
-    VMCA_CERTIFICATE_CONTAINER **ppCertContainer
+    PVMCA_CERTIFICATE *ppCertificate
     );
 
 DWORD
@@ -300,8 +300,7 @@ VMCARevokeCertificate(
 
 DWORD
 VMCAGetServerVersion(
-    unsigned int * dwCertLength,
-    VMCA_CERTIFICATE_CONTAINER **pServerVersion
+    PSTR* serverVersion
     );
 
 DWORD
@@ -319,6 +318,11 @@ VMCAVerifyCertificate(
 
 VOID
 VMCARpcFreeCertificateContainer(
+    PVMCA_CERTIFICATE_CONTAINER pCertContainer
+    );
+
+VOID
+VMCAFreeCertificateContainer(
     PVMCA_CERTIFICATE_CONTAINER pCertContainer
     );
 
@@ -456,7 +460,6 @@ VMCAUpdateCRL(
 
 unsigned int
 VMCAGetCRL(
-    unsigned char *pszClientCachedCRLID,
     unsigned int dwFileOffset,
     unsigned int dwSize,
     VMCA_FILE_BUFFER **ppCRLData
@@ -504,6 +507,11 @@ VMCARpcAllocateCertificateContainer(
     PVMCA_CERTIFICATE_CONTAINER *ppCertContainer
     );
 
+DWORD
+VMCAAllocateCertificateContainer(
+    PSTR pszCert,
+    PVMCA_CERTIFICATE_CONTAINER *ppCertContainer
+    );
 
 DWORD
 VMCARpcAllocateString(
@@ -515,6 +523,11 @@ DWORD
 VMCASetKeyPerm(
     PSTR pszPrivateKeyFileName
     );
+
+VOID
+VMCAFreeCertificateArray(
+    PVMCA_CERTIFICATE_ARRAY pCertArray
+);
 
 VOID
 VMCARpcFreeCertificateArray(
@@ -582,6 +595,143 @@ VMCAStopHeartbeat(
     PVMAFD_HB_HANDLE pHandle
     );
 
+//vmcaHTTPCallback.c
+#if 0
+#ifndef _WIN32
+DWORD
+VMCARESTGetCRL(
+    VMCA_HTTP_REQ_OBJ request,
+    PSTR* ppStatusCode,
+    PSTR* ppResponsePayload
+    );
+
+DWORD
+VMCARESTGetRootCACertificate(
+    VMCA_HTTP_REQ_OBJ request,
+    PSTR* ppStatusCode,
+    PSTR* ppResponsePayload
+    );
+
+DWORD
+VMCARESTSrvPublishRootCerts(
+    VMCA_HTTP_REQ_OBJ request,
+    PSTR* ppStatusCode,
+    PSTR* ppResponsePayload
+    );
+
+DWORD
+VMCARESTAddRootCertificate(
+    VMCA_HTTP_REQ_OBJ request,
+    PSTR* ppStatusCode,
+    PSTR* ppResponsePayload
+    );
+
+DWORD
+VMCARESTEnumCertificates(
+    VMCA_HTTP_REQ_OBJ request,
+    PCSTR pszFlag,
+    PCSTR pszNumber,
+    PSTR* ppStatusCode,
+    PSTR* ppResponsePayload
+    );
+
+DWORD
+VMCARESTGetSignedCertificate(
+    VMCA_HTTP_REQ_OBJ request,
+    PSTR* ppStatusCode,
+    PSTR* ppResponsePayload
+    );
+
+DWORD
+VMCARESTRevokeCertificate(
+    VMCA_HTTP_REQ_OBJ request,
+    PSTR* ppStatusCode,
+    PSTR* ppResponsePayload
+    );
+
+DWORD
+VMCARESTGetServerVersion(
+    VMCA_HTTP_REQ_OBJ request,
+    PSTR* ppStatusCode,
+    PSTR* ppResponsePayload
+    );
+
+DWORD
+VMCAHandleEnumCertsParam(
+    PSTR pszKey1,
+    PSTR pszVal1,
+    PSTR pszKey2,
+    PSTR pszVal2,
+    PSTR* ppszFlag,
+    PSTR* ppszNum
+    );
+
+//restauth.c
+DWORD
+VMCARESTGetAccessToken(
+      PREST_REQUEST pRESTRequest,
+      PVMCA_ACCESS_TOKEN* ppAccessToken
+      );
+
+VOID
+VMCAFreeAuthorizationParam(
+      PVMCA_AUTHORIZATION_PARAM pAuthorization
+      );
+
+VOID
+VMCAFreeAccessToken(
+      PVMCA_ACCESS_TOKEN pAccessToken
+      );
+
+//oidcutil.c
+DWORD
+VMCAVerifyOIDC(
+    PVMCA_AUTHORIZATION_PARAM pAuthorization,
+    PVMCA_ACCESS_TOKEN* ppAccessToken
+    );
+
+VOID
+VMCAFreeOIDC(
+    PVMCA_ACCESS_TOKEN pAccessToken
+    );
+
+
+#endif
+
+//restbasicauth.c
+DWORD
+VMCARESTVerifyBasicAuth(
+    PREST_REQUEST pRequest,
+    PREST_RESPONSE* ppResponse
+    );
+
+DWORD
+base64_decode(
+    PCSTR pszInput,
+    PSTR* ppszOutput,
+    int* pnLength
+    );
+
+uint32_t
+base64_encode(
+    const unsigned char* pszInput,
+    const size_t nInputLength,
+    PSTR* ppszOutput
+    );
+
+//restnegauth.c
+DWORD
+VMCARESTVerifyKrbAuth(
+    PVMCA_AUTHORIZATION_PARAM pAuthorization,
+    PVMCA_ACCESS_TOKEN* ppAccessToken
+    );
+
+VOID
+VMCARESTFreeKrb(
+    PVMCA_ACCESS_TOKEN pAccessToken
+    );
+
 #ifdef __cplusplus
 }
+#endif
 #endif

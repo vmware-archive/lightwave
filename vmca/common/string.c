@@ -239,6 +239,42 @@ VMCAStringTokA(
 }
 
 DWORD
+VMCAStringCountSubstring(
+    PSTR pszHaystack,
+    PCSTR pszNeedle,
+    int** ppnCount
+)
+{
+    DWORD dwError = 0;
+    PSTR tmp = NULL;
+    int *pnCount = NULL;
+
+    if (!pszHaystack || !pszNeedle || !ppnCount)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = VMCAAllocateMemory(sizeof(int), (PVOID*) &pnCount);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    tmp = pszHaystack;
+    (*pnCount) = 0;
+    while ( (tmp = strstr(tmp, pszNeedle)) )
+    {
+        (*pnCount)++;
+        tmp++;
+    }
+
+    *ppnCount = pnCount;
+cleanup:
+    return dwError;
+error:
+    VMCA_SAFE_FREE_MEMORY(pnCount);
+    goto cleanup;
+}
+
+DWORD
 VMCAStringCatA(
    PSTR strDestination,
    size_t numberOfElements,
