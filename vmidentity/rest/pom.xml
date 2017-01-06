@@ -1,6 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <groupId>com.vmware.identity.rest</groupId>
   <artifactId>vmware-identity-rest</artifactId>
   <version>6.6.1</version>
@@ -39,10 +40,9 @@
     <commons.io.version>2.4</commons.io.version>
     <commons.lang.version>2.6</commons.lang.version>
     <commons.logging.version>1.1.1</commons.logging.version>
-    <commons.validator.version>1.4.0</commons.validator.version>
-    <nimbusds.version>3.3</nimbusds.version>
-    <httpclient.version>4.5</httpclient.version>
-
+    <nimbusds.version>4.12</nimbusds.version>
+    <httpclient.version>4.5.1</httpclient.version>
+    <jna.platform>3.5.1</jna.platform>
     <junit.version>4.12</junit.version>
     <easymock.version>3.2</easymock.version>
     <reflections.version>0.9.10</reflections.version>

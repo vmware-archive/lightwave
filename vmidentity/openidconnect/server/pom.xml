@@ -1,16 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
-    <parent>
-        <groupId>com.vmware.identity</groupId>
-        <artifactId>vmware-identity-oidc</artifactId>
-        <version>6.6.1</version>
-    </parent>
-
     <groupId>com.vmware.identity</groupId>
     <artifactId>openidconnect</artifactId>
-    <packaging>war</packaging>
+    <version>6.6.1</version>
 
     <properties>
         <java.version>1.7</java.version>
@@ -24,7 +17,7 @@
         <log4j.version>2.2</log4j.version>
 
         <webapp.dir>src/main</webapp.dir>
-        <outputDirectory>${basedir}/../../build/vmware-sts/packages/</outputDirectory>
+        <outputDirectory>${basedir}/../../build/vmware-sts/packages</outputDirectory>
     </properties>
 
     <build>
@@ -41,6 +34,10 @@
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-jar-plugin</artifactId>
               <version>3.0.1</version>
+                        <configuration>
+                            <outputDirectory>${outputDirectory}</outputDirectory>
+                            <finalName>${artifactId}</finalName>
+                        </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -48,17 +45,21 @@
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.maven.surefire</groupId>
-                        <artifactId>surefire-junit47</artifactId>
+                        <artifactId>surefire-junit4</artifactId>
                         <version>2.12.4</version>
                     </dependency>
-                </dependencies>
+                </dependencies> 
+          <configuration>
+            <trimStackTrace>false</trimStackTrace>
+            <skipTests>true</skipTests>
+          </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>2.7</version>
                 <executions>
                     <execution>
-                        <id>copy-sso-common-resources</id>
+                        <id>copy-string-resources</id>
                         <phase>generate-resources</phase>
                         <goals>
                             <goal>copy-resources</goal>
@@ -68,70 +69,12 @@
                             <overwrite>true</overwrite>
                             <resources>
                                 <resource>
-                                    <directory>../../sso-common/src/main/resources</directory>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-sso-common-webapp-resources</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${webapp.dir}/resources</outputDirectory>
-                            <overwrite>true</overwrite>
-                            <resources>
-                                <resource>
-                                    <directory>../../sso-common/src/main/webapp/resources</directory>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>copy-sso-common-webapp-views-resources</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${webapp.dir}/webapp/views</outputDirectory>
-                            <overwrite>true</overwrite>
-                            <resources>
-                                <resource>
-                                    <directory>../../sso-common/src/main/webapp/WEB-INF/views</directory>
+                                    <directory>../../service/resources</directory>
                                 </resource>
                             </resources>
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-war-plugin</artifactId>
-                <version>2.6</version>
-                <executions>
-                    <execution>
-                        <id>copy-war-to-output</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>war</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${outputDirectory}</outputDirectory>
-                            <warName>${artifactId}</warName>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-deploy-plugin</artifactId>
-                <version>2.4</version>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -154,6 +97,12 @@
             <groupId>com.vmware.identity.idm</groupId>
             <artifactId>vmware-identity-idm-client</artifactId>
             <version>${vmware.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>org.opensaml</groupId>
+                <artifactId>xmltooling</artifactId>
+              </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -245,6 +194,5 @@
             <artifactId>log4j-api</artifactId>
             <version>${log4j.version}</version>
         </dependency>
-	
     </dependencies>
 </project>

@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2011-2012 VMware, Inc. All rights reserved. VMware confidential.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+      http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+   <!-- VMOMI Server Beans                                                   -->
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+
+   <bean id="ssoVersion1"
+         factory-bean="versionFinder"
+         factory-method="findVersion">
+      <constructor-arg value="com.vmware.vim.binding.sso.version.version1" />
+   </bean>
+   <bean id="ssoVersion1_5"
+         factory-bean="versionFinder"
+         factory-method="findVersion">
+      <constructor-arg value="com.vmware.vim.binding.sso.version.version1_5" />
+   </bean>
+   <bean id="ssoVersion2"
+      factory-bean="versionFinder"
+      factory-method="findVersion">
+
+      <constructor-arg value="com.vmware.vim.binding.sso.version.version2" />
+   </bean>
+   <bean id="ssoVersion2_5"
+      factory-bean="versionFinder"
+      factory-method="findVersion">
+
+      <constructor-arg value="com.vmware.vim.binding.sso.version.version2_5" />
+   </bean>
+   <bean id="ssoVersion3"
+      factory-bean="versionFinder"
+      factory-method="findVersion">
+
+      <constructor-arg value="com.vmware.vim.binding.sso.version.version3" />
+   </bean>
+   <bean id="ssoVersion3_1"
+      factory-bean="versionFinder"
+      factory-method="findVersion">
+
+      <constructor-arg value="com.vmware.vim.binding.sso.version.version3_1" />
+   </bean>
+   <bean id="ssoVersion3_2"
+      factory-bean="versionFinder"
+      factory-method="findVersion">
+
+      <constructor-arg value="com.vmware.vim.binding.sso.version.version3_2" />
+   </bean>
+    <bean id="ssoVersion3_5"
+      factory-bean="versionFinder"
+      factory-method="findVersion">
+
+      <constructor-arg value="com.vmware.vim.binding.sso.version.version3_5" />
+   </bean>
+
+   <bean id="ssoAdapterServer"
+      class="com.vmware.vim.vmomi.server.impl.AdapterServerImpl">
+
+      <property name="activationValidators">
+         <list>
+            <ref bean="ssoPrivilegeChecker" />
+         </list>
+      </property>
+      <property name="serverGuid" value="${sso.serverGuid}" />
+   </bean>
+
+   <bean id="ssoSessionManager"
+         class="com.vmware.vim.vmomi.server.session.impl.SessionManagerImpl"
+         destroy-method="shutdown" />
+
+   <bean id="ssoDispatcher"
+         class="com.vmware.vim.vmomi.server.impl.DispatcherImpl"
+         depends-on="vmodlContext">
+      <constructor-arg ref="ssoSessionManager" />
+      <property name="versionUriHandlers">
+         <list>
+            <ref bean="ssoBodyHandler_v1" />
+            <ref bean="ssoBodyHandler_v1_5" />
+            <ref bean="ssoBodyHandler_v2" />
+            <ref bean="ssoBodyHandler_v2_5" />
+            <ref bean="ssoBodyHandler_v3" />
+            <ref bean="ssoBodyHandler_v3_1" />
+            <ref bean="ssoBodyHandler_v3_2" />
+            <ref bean="ssoBodyHandler_v3_5" />
+         </list>
+      </property>
+   </bean>
+
+   <bean id="ssoBodyHandler_v1"
+         class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+      <constructor-arg ref="ssoVersion1" />
+      <constructor-arg ref="ssoAdapterServer" />
+      <constructor-arg ref="vmodlContext" />
+      <constructor-arg ref="requestSignatureValidator" />
+   </bean>
+   <bean id="ssoBodyHandler_v1_5"
+         class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+      <constructor-arg ref="ssoVersion1_5" />
+      <constructor-arg ref="ssoAdapterServer" />
+      <constructor-arg ref="vmodlContext" />
+      <constructor-arg ref="requestSignatureValidator" />
+   </bean>
+   <bean id="ssoBodyHandler_v2"
+         class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+      <constructor-arg ref="ssoVersion2" />
+      <constructor-arg ref="ssoAdapterServer" />
+      <constructor-arg ref="vmodlContext" />
+      <constructor-arg ref="requestSignatureValidator" />
+   </bean>
+   <bean id="ssoBodyHandler_v2_5"
+         class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+      <constructor-arg ref="ssoVersion2_5" />
+      <constructor-arg ref="ssoAdapterServer" />
+      <constructor-arg ref="vmodlContext" />
+      <constructor-arg ref="requestSignatureValidator" />
+   </bean>
+   <bean id="ssoBodyHandler_v3"
+         class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+      <constructor-arg ref="ssoVersion3" />
+      <constructor-arg ref="ssoAdapterServer" />
+      <constructor-arg ref="vmodlContext" />
+      <constructor-arg ref="requestSignatureValidator" />
+   </bean>
+   <bean id="ssoBodyHandler_v3_1"
+         class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+      <constructor-arg ref="ssoVersion3_1" />
+      <constructor-arg ref="ssoAdapterServer" />
+      <constructor-arg ref="vmodlContext" />
+      <constructor-arg ref="requestSignatureValidator" />
+   </bean>
+   <bean id="ssoBodyHandler_v3_2"
+         class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+      <constructor-arg ref="ssoVersion3_2" />
+      <constructor-arg ref="ssoAdapterServer" />
+      <constructor-arg ref="vmodlContext" />
+      <constructor-arg ref="requestSignatureValidator" />
+   </bean>
+    <bean id="ssoBodyHandler_v3_5"
+         class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+      <constructor-arg ref="ssoVersion3_5" />
+      <constructor-arg ref="ssoAdapterServer" />
+      <constructor-arg ref="vmodlContext" />
+      <constructor-arg ref="requestSignatureValidator" />
+   </bean>
+
+   <bean id="ssoPrivilegeChecker"
+         class="com.vmware.vim.vmomi.server.PrivilegeChecker">
+      <constructor-arg ref="ssoAuthorizer" />
+   </bean>
+
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+   <!-- VLSI Pipeline Configuration                                          -->
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+
+   <bean id="ssoHttpResponseCorrelator"
+         class="com.vmware.vim.vmomi.server.impl.Correlator" />
+
+   <bean id="ssoFirstStep"
+         class="com.vmware.vim.vmomi.server.http.impl.CorrelationDispatcherStep">
+      <property name="nextStep" ref="ssoValidationStartStep" />
+      <property name="completionStep" ref="ssoFilterStartStep" />
+      <property name="executor" ref="executor" />
+      <property name="correlator" ref="ssoHttpResponseCorrelator" />
+      <property name="dispatcher" ref="ssoDispatcher" />
+   </bean>
+
+   <bean id="ssoValidationStartStep"
+         class="com.vmware.identity.vlsi.STSDiagnosticLogValidationStartStep">
+      <property name="nextStep" ref="ssoInvocationStep" />
+      <property name="executor" ref="executor" />
+      <property name="adapterServer" ref="ssoAdapterServer" />
+      <property name="threadConfigurator">
+         <bean class="com.vmware.vim.vmomi.server.util.Log4jMDCThreadConfigurator"/>
+      </property>
+   </bean>
+
+   <bean id="ssoFilterStartStep"
+         class="com.vmware.vim.vmomi.server.impl.FilterStartStep">
+      <property name="nextStep" ref="ssoCompletionContinuerStep" />
+      <property name="executor" ref="executor" />
+      <property name="adapterServer" ref="ssoAdapterServer" />
+   </bean>
+
+   <bean id="ssoInvocationStep"
+         class="com.vmware.identity.vlsi.STSDiagnosticLogInvocationStep">
+      <property name="executor" ref="executor" />
+      <property name="threadConfigurator">
+         <bean class="com.vmware.vim.vmomi.server.util.Log4jMDCThreadConfigurator"/>
+      </property>
+   </bean>
+
+   <bean id="ssoCompletionContinuerStep"
+      class="com.vmware.vim.vmomi.server.http.impl.CompletionContinuerStep">
+      <!-- This is the last step - no nextStep -->
+      <property name="executor"><ref bean="executor"/></property>
+      <property name="correlator"><ref bean="ssoHttpResponseCorrelator"/></property>
+      <property name="vmodlContext"><ref bean="vmodlContext"/></property>
+      <property name="responder"><ref bean="vmomiResponder"/></property>
+       <property name="threadConfigurator">
+         <bean class="com.vmware.vim.vmomi.server.util.Log4jMDCThreadConfigurator"/>
+      </property>
+   </bean>
+
+   <bean id="vmomiResponder"
+      class="com.vmware.vim.vmomi.server.http.impl.AsyncCompleteResponder" />
+
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+   <!-- SSO Server Beans                                                     -->
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+
+   <bean id="ssoServerAboutInfoFactory"
+      class="com.vmware.identity.admin.server.impl.AboutInfoFactory">
+      <property name="version" value="3.5" />
+      <constructor-arg ref="casIdmClient"/>
+   </bean>
+
+   <bean id="ssoServerAboutInfo"
+         class="com.vmware.vim.sso.admin.impl.util.VmodlTypeConversions"
+         factory-method="toVmodl">
+      <constructor-arg>
+         <bean factory-bean="ssoServerAboutInfoFactory"
+               factory-method="createAboutInfo" />
+      </constructor-arg>
+   </bean>
+
+   <!-- Wrapper over the IDM implementation of the administration API -->
+   <bean id="adminServerIms"
+         class="com.vmware.identity.admin.server.ims.AdminServerImsFactory"
+         factory-method="createAdminServerIms">
+      <constructor-arg ref="casIdmClient"/>
+   </bean>
+
+   <!-- Access control -->
+
+   <bean id="ssoAuthorizer"
+         class="com.vmware.identity.admin.vlsi.SsoAuthorizer">
+      <constructor-arg ref="adminServerIms"/>
+   </bean>
+
+   <!-- Managed Object Beans -->
+
+   <bean id="ssoSessionManagerMO"
+         class="com.vmware.identity.vlsi.SessionManagerImpl">
+      <constructor-arg value="ssoSessionManager" /> <!--  MoId -->
+      <constructor-arg ref="ssoAdapterServer" />
+   </bean>
+
+</beans>

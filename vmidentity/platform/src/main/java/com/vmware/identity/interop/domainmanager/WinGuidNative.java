@@ -16,8 +16,11 @@ package com.vmware.identity.interop.domainmanager;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang.SystemUtils;
+
 import com.sun.jna.Structure;
 import com.sun.jna.win32.W32APITypeMapper;
+
 
 public class WinGuidNative extends Structure
 {
@@ -28,7 +31,10 @@ public class WinGuidNative extends Structure
 
     public WinGuidNative()
     {
-        super(W32APITypeMapper.UNICODE);
+        if (SystemUtils.IS_OS_WINDOWS)
+        {
+            this.setTypeMapper(W32APITypeMapper.UNICODE);
+        }
         data4 = new byte[WinDomainAdapter.WIN_GUID_DATA4_SIZE];
     }
 

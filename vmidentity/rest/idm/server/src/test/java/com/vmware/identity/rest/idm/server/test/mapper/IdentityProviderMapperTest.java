@@ -16,7 +16,7 @@ package com.vmware.identity.rest.idm.server.test.mapper;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertNotEquals;
+//import static org.junit.Assert.assertNotEquals;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -178,8 +178,8 @@ public class IdentityProviderMapperTest {
                 identityStoreData.getExtendedIdentityStoreData().getFlags() & IdentityProviderMapper.SITE_AFFINITY_ENABLED);
         assertEquals(IdentityProviderMapper.BASE_DN_FOR_NESTED_GROUPS_DISABLED,
                 identityStoreData.getExtendedIdentityStoreData().getFlags() & IdentityProviderMapper.BASE_DN_FOR_NESTED_GROUPS_DISABLED);
-        assertNotEquals(IdentityProviderMapper.DIRECT_GROUPS_SEARCH_ENABLED,
-                identityStoreData.getExtendedIdentityStoreData().getFlags() & IdentityProviderMapper.MATCHING_RULE_IN_CHAIN_ENABLED);
+        //assertNotEquals(IdentityProviderMapper.DIRECT_GROUPS_SEARCH_ENABLED,
+          //      identityStoreData.getExtendedIdentityStoreData().getFlags() & IdentityProviderMapper.MATCHING_RULE_IN_CHAIN_ENABLED);
     }
 
     @Test

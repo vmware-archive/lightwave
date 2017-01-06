@@ -30,46 +30,46 @@ import com.vmware.identity.rest.idm.data.SolutionUserDTO;
 /**
  * Samples for using {@code SolutionUserResource}. The SolutionUser resource is a container that gathers all of the commands related to a tenant's
  * solution users
- *
+ * 
  * @author abapat
  *
  */
 public class SolutionUserSample extends SampleBase {
-    private SolutionUserResource resource;
+	private SolutionUserResource resource;
 
-    /**
-     * Initializes IDM client and SolutionUserResource.
-     *
-     * @throws KeyManagementException if an error occurs when making SSL request.
-     * @throws NoSuchAlgorithmException if an error occurs when making SSL request.
-     * @throws KeyStoreException if an error occurs building making SSL request.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws ClientException if a client side error occurs.
-     * @throws IOException if an error occurs when reading response.
-     */
-    public SolutionUserSample()
-            throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException {
-        super();
-        resource = new SolutionUserResource(client);
-    }
+	/**
+	 * Initializes IDM client and SolutionUserResource.
+	 * 
+	 * @throws KeyManagementException if an error occurs when making SSL request.
+	 * @throws NoSuchAlgorithmException if an error occurs when making SSL request.
+	 * @throws KeyStoreException if an error occurs building making SSL request.
+	 * @throws ClientProtocolException in case of an http protocol error.
+	 * @throws ClientException if a client side error occurs.
+	 * @throws IOException if an error occurs when reading response.
+	 */
+	public SolutionUserSample()
+			throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException {
+		super();
+		resource = new SolutionUserResource(client);
+	}
 
-    /**
-     * Request a specific solution user.
-     *
-     * <p>
-     * <b>Required Role:</b> {@code user}.
-     *
-     * @param name the name of the solution user.
-     * @param tenant the name of the tenant to request the solution user from.
-     * @return the requested solution user.
-     * @throws ClientException if a client side error occurs.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws WebApplicationException in the event of an application error.
-     * @throws HttpException if there was a generic error with the remote call.
-     * @throws IOException if there was an error with the IO stream.
-     */
-    public SolutionUserDTO getSoutionUser(String name, String tenant)
-            throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
-        return resource.get(tenant, name);
-    }
+	/**
+	 * Request a specific solution user.
+	 *
+	 * <p>
+	 * <b>Required Role:</b> {@code user}.
+	 *
+	 * @param name the name of the solution user.
+	 * @param tenant the name of the tenant to request the solution user from.
+	 * @return the requested solution user.
+	 * @throws ClientException if a client side error occurs.
+	 * @throws ClientProtocolException in case of an http protocol error.
+	 * @throws WebApplicationException in the event of an application error.
+	 * @throws HttpException if there was a generic error with the remote call.
+	 * @throws IOException if there was an error with the IO stream.
+	 */
+	public SolutionUserDTO getSoutionUser(String name, String tenant)
+			throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
+		return resource.get(tenant, name);
+	}
 }

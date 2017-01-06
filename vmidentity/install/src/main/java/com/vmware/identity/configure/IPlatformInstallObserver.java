@@ -24,4 +24,12 @@ public interface IPlatformInstallObserver {
     void endComponentUpgrade(String component, boolean status);
 
     void endUpgrade(boolean status);
+
+    void beginMigration(List<PlatformInstallComponent> components);
+
+    void beginComponentMigration(String component);
+
+    void endComponentMigration(String component, boolean status);
+
+    void endMigration(boolean status);
 }

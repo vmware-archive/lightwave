@@ -32,6 +32,7 @@ import com.vmware.identity.sts.auth.Result;
 import com.vmware.identity.sts.auth.Result.AuthnMethod;
 import com.vmware.identity.sts.idm.PrincipalDiscovery;
 import com.vmware.identity.sts.idm.SystemException;
+import com.vmware.identity.sts.util.JAXBExtractor;
 import com.vmware.identity.util.TimePeriod;
 
 /**
@@ -60,8 +61,7 @@ final class BSTAuthenticator implements Authenticator {
       assert req != null && req.getHeader() != null;
       log.trace("Authenticating by BST...");
 
-      final BinarySecurityTokenType bsToken = req.getHeader()
-         .getBinarySecurityToken();
+      final BinarySecurityTokenType bsToken = JAXBExtractor.extractFromSecurityHeader(req.getHeader(), BinarySecurityTokenType.class);
       if (bsToken == null || bsToken.getValue() == null) {
          log.debug("No BST found!");
          return null;

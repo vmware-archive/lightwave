@@ -25,7 +25,7 @@ public class BaseOsSamNativeStructure extends Structure
 {
     protected BaseOsSamNativeStructure()
     {
-        super(SystemUtils.IS_OS_WINDOWS ? W32APITypeMapper.UNICODE : LwApiTypeMapper.UNICODE);
+        this.setTypeMapper( SystemUtils.IS_OS_WINDOWS ? W32APITypeMapper.UNICODE : LwApiTypeMapper.UNICODE );
     }
 
     protected BaseOsSamNativeStructure(Pointer p)

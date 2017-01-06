@@ -1,7 +1,7 @@
 #!/bin/bash
 
 _STATUS_FILE=/tmp/vmware-sts-config-status
-TC_INSTANCE_ROOT=/opt/vmware/
+TC_INSTANCE_ROOT=/opt/vmware
 TC_INSTANCE_NAME=vmware-sts
 TC_INSTANCE_BASE=$TC_INSTANCE_ROOT/$TC_INSTANCE_NAME
 SSO_LOG_PATH=/var/log/vmware/sso

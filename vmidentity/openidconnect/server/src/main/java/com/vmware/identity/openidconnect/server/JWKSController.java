@@ -15,6 +15,8 @@
 package com.vmware.identity.openidconnect.server;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -29,12 +31,13 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.util.Base64;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.protocol.HttpResponse;
 import com.vmware.identity.openidconnect.common.StatusCode;
+import com.vmware.identity.openidconnect.protocol.HttpResponse;
 
 /**
  * @author Jun Sun
@@ -56,14 +59,14 @@ public class JWKSController {
         this.idmClient = idmClient;
     }
 
-    @RequestMapping(value = "/jwks", method = RequestMethod.GET)
+    @RequestMapping(value = Endpoints.BASE + Endpoints.JWKS, method = RequestMethod.GET)
     public void jwks(
             HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse) throws IOException {
         jwks(httpServletRequest, httpServletResponse, null);
     }
 
-    @RequestMapping(value = "/jwks/{tenant:.*}", method = RequestMethod.GET)
+    @RequestMapping(value = Endpoints.BASE + Endpoints.JWKS + "/{tenant:.*}", method = RequestMethod.GET)
     public void jwks(
             HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse,
@@ -77,6 +80,8 @@ public class JWKSController {
             }
             TenantInfo tenantInfo = tenantInfoRetriever.retrieveTenantInfo(tenant);
 
+            List<Base64> x5c = new ArrayList<Base64>(1);
+            x5c.add(Base64.encode(tenantInfo.getCertificate().getEncoded()));
             RSAKey rsaKey = new RSAKey(
                     tenantInfo.getPublicKey(),
                     KeyUse.SIGNATURE,
@@ -85,7 +90,7 @@ public class JWKSController {
                     null,
                     null,
                     null,
-                    null);
+                    x5c);
             JWKSet jwks = new JWKSet(rsaKey);
 
             httpResponse = HttpResponse.createJsonResponse(StatusCode.OK, jwks.toJSONObject());

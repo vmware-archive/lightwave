@@ -34,15 +34,6 @@
           <outputDirectory>${outputDirectory}</outputDirectory>
         </configuration>
       </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <version>2.4</version>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
 
@@ -121,6 +112,12 @@
       <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-client</artifactId>
       <version>${vmware.version}</version>
+         <exclusions>
+          <exclusion>
+            <groupId>org.opensaml</groupId>
+           <artifactId>xmltooling</artifactId>
+         </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -161,6 +158,6 @@
   </dependencies>
 
   <properties>
-    <outputDirectory>${basedir}/../../../build/vmware-sts/packages/</outputDirectory>
+    <outputDirectory>${basedir}/../../../build/vmware-sts/packages</outputDirectory>
   </properties>
 </project>

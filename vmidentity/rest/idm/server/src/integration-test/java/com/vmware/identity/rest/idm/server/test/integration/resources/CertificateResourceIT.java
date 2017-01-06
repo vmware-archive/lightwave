@@ -24,6 +24,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 
 import org.easymock.EasyMock;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -47,7 +48,11 @@ import com.vmware.identity.rest.idm.server.test.integration.util.data.Certificat
  * @author Travis Hall
  */
 @Category(IntegrationTest.class)
+@Ignore // ignored due to IDM process to library change, see PR 1780279.
 public class CertificateResourceIT extends TestBase {
+
+    private static final String CERTIFICATE_GRANULARITY_CHAIN = "chain";
+    private static final String CERTIFICATE_GRANULARITY_LEAF = "leaf";
 
     private CertificateResource certificateResource;
     private ContainerRequestContext request;
@@ -64,10 +69,17 @@ public class CertificateResourceIT extends TestBase {
     }
 
     @Test
-    public void testGetCertificates() {
-        Collection<CertificateChainDTO> certChains = certificateResource.getCertificates(CertificateScope.TENANT.toString());
+    public void testGetCertificates_Chain() {
+        Collection<CertificateChainDTO> certChains = certificateResource.getCertificates(CertificateScope.TENANT.toString(), CERTIFICATE_GRANULARITY_CHAIN);
         assertEquals(1, certChains.size());
         assertEquals(2, certChains.iterator().next().getCertificates().size());
+    }
+
+    @Test
+    public void testGetCertificates_Leaf() {
+        Collection<CertificateChainDTO> certChains = certificateResource.getCertificates(CertificateScope.TENANT.toString(), CERTIFICATE_GRANULARITY_LEAF);
+        assertEquals(1, certChains.size());
+        assertEquals(1, certChains.iterator().next().getCertificates().size());
     }
 
     @Test(expected = NotFoundException.class)
@@ -79,7 +91,7 @@ public class CertificateResourceIT extends TestBase {
          */
         certificateResource = new CertificateResource("unknown.local", request, null);
         certificateResource.setIDMClient(idmClient);
-        certificateResource.getCertificates(CertificateScope.TENANT.toString());
+        certificateResource.getCertificates(CertificateScope.TENANT.toString(), CERTIFICATE_GRANULARITY_CHAIN);
     }
 
     @Test

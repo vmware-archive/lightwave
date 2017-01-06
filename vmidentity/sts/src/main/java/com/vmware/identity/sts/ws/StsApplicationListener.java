@@ -21,8 +21,8 @@ import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.heartbeat.VmAfdHeartbeat;
 
 public class StsApplicationListener implements ServletContextListener {
-    private static final int port = 7444;
-    private static final String serviceName = "sts";
+    private static final int port = 443;
+    private static final String serviceName = "Security Token Service";
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(StsApplicationListener.class);
 
     private VmAfdHeartbeat heartbeat = new VmAfdHeartbeat(serviceName, port);

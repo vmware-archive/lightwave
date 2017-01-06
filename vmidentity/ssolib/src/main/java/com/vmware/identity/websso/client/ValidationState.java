@@ -1,6 +1,16 @@
-/* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved.
- **********************************************************************************/
+/*
+ *  Copyright (c) 2012-2016 VMware, Inc.  All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License.  You may obtain a copy
+ *  of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, without
+ *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ *  License for the specific language governing permissions and limitations
+ *  under the License.
+ */
 package com.vmware.identity.websso.client;
 
 import javax.servlet.http.HttpServletRequest;
@@ -81,23 +91,21 @@ public abstract class ValidationState {
      *         there is no match
      * @throws WebssoClientException
      *             for missing or invalid issuer
-     * @throws IllegalArgumentException
      */
-    protected void validateSloIssuer(final Message message, final String issuerVal) throws IllegalArgumentException,
-            WebssoClientException {
+    protected void validateSloIssuer(final Message message, final String issuerVal) throws WebssoClientException {
         try {
             logger.info("Validating SLO message issuer: " + issuerVal);
             if (issuerVal == null) {
-                throw new WebssoClientException("Issuer is missing!");
+                throw new WebssoClientException("Issuer is missing in slo request/response messsage!");
             }
 
             MetadataSettings metaSettings = this.getMetadataSettings();
-            if (message == null) {
-                // Since InResponseTo is optional, in case message is not avail,
-                // search for IDPConfiguration in metadatasettings
-                IDPConfiguration idpConfig = metaSettings.getIDPConfigurationByEntityID(issuerVal);
-                Validate.notNull(idpConfig, "IPConfiguration");
-            } else {
+            IDPConfiguration idpConfig = metaSettings.getIDPConfigurationByEntityID(issuerVal);
+            if (idpConfig == null) {
+                throw new WebssoClientException("Uknown IDP configuration. IDP entity ID = : "+issuerVal);
+            }
+
+            if (message != null) {
                 /*
                  * Validating SLO response given a matching slo request message
                  * found. To verify the issuer, match the target of the slo
@@ -106,7 +114,6 @@ public abstract class ValidationState {
                 String originalRequstTarget = message.getTarget();
                 Validate.notNull(originalRequstTarget, "Matching SLO request destination");
 
-                IDPConfiguration idpConfig = metaSettings.getIDPConfigurationByEntityID(issuerVal);
                 String issuerSloLocation = SamlUtils.getIdpSloLocation(idpConfig, SamlNames.HTTP_REDIRECT);
 
                 // Since a SLO response from IDP has been received and a matching SLO request is also found,
@@ -118,6 +125,12 @@ public abstract class ValidationState {
                     throw new WebssoClientException("Issuer:" + issuerVal);
                 }
             }
+            //else no matching request was found. This is fine since InResponseTo is optional. This could be IDP-initiated profile.
+
+        } catch (WebssoClientException e) {
+            this.setValidationResult(new ValidationResult(HttpServletResponse.SC_BAD_REQUEST, Error.BAD_REQUEST,
+                    Error.ISSUER));
+            throw e;
         } catch (Exception e) {
             this.setValidationResult(new ValidationResult(HttpServletResponse.SC_BAD_REQUEST, Error.BAD_REQUEST,
                     Error.ISSUER));

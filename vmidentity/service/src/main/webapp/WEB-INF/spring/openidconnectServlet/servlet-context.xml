@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/mvc"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+
+	<!-- Enables the Spring MVC @Controller programming model -->
+	<annotation-driven />
+	<context:annotation-config />
+
+    <!-- Scan directive to instantiate all Spring @Controllers -->
+    <context:component-scan base-package="com.vmware.identity.openidconnect.server" />
+
+    <beans:bean id="serviceContextProvider" class="com.vmware.identity.openidconnect.server.IdmServiceContextProvider"/>
+
+    <beans:bean id="idmClient" class="com.vmware.identity.idm.client.CasIdmClient">
+        <beans:constructor-arg value="localhost" />
+        <beans:constructor-arg ref="serviceContextProvider" />
+    </beans:bean>
+
+    <beans:bean id="authzCodeManager" class="com.vmware.identity.openidconnect.server.AuthorizationCodeManager"/>
+
+    <beans:bean id="oidcSessionManager" class="com.vmware.identity.openidconnect.server.SessionManager"/>
+
+</beans:beans>

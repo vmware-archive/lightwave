@@ -29,7 +29,6 @@
 package com.vmware.identity.idm.server.provider.ldap;
 
 import java.security.InvalidParameterException;
-import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -83,7 +82,9 @@ import com.vmware.identity.idm.server.provider.BaseLdapProvider;
 import com.vmware.identity.idm.server.provider.ILdapSchemaMapping;
 import com.vmware.identity.idm.server.provider.NoSuchGroupException;
 import com.vmware.identity.idm.server.provider.NoSuchUserException;
+import com.vmware.identity.idm.server.provider.PooledLdapConnection;
 import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
+import com.vmware.identity.idm.server.provider.UserSet;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
 import com.vmware.identity.interop.ldap.ILdapEntry;
 import com.vmware.identity.interop.ldap.ILdapMessage;
@@ -151,14 +152,14 @@ public class LdapProvider extends BaseLdapProvider
    private final String USER_GROUP_MEMBERS_LIST_LINK_ATTRIBUTE;
    private final String GROUP_GROUP_MEMBERS_LIST_LINK_ATTRIBUTE;
 
-   public LdapProvider(IIdentityStoreData store)
+   public LdapProvider(String tenantName, IIdentityStoreData store)
    {
-       this(store, null);
+       this(tenantName, store, null);
    }
 
-   public LdapProvider(IIdentityStoreData store, Collection<X509Certificate> tenantTrustedCertificates)
+   public LdapProvider(String tenantName, IIdentityStoreData store, Collection<X509Certificate> tenantTrustedCertificates)
    {
-      super(store, tenantTrustedCertificates);
+      super(tenantName, store, tenantTrustedCertificates);
       Validate.isTrue(
             this.getStoreDataEx().getProviderType() == IdentityStoreType.IDENTITY_STORE_TYPE_LDAP,
             "IIdentityStoreData must represent a store of 'IDENTITY_STORE_TYPE_LDAP' type.");
@@ -284,12 +285,10 @@ public class LdapProvider extends BaseLdapProvider
             attrNames.add(USER_GROUP_MEMBERS_LIST_LINK_ATTRIBUTE);
         }
 
-        ILdapConnectionEx connection = null;
-
         ILdapMessage message = null;
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
-            connection = getConnection();
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             try
             {
                 String baseDN = this.getStoreDataEx().getUserBaseDn();
@@ -434,12 +433,6 @@ public class LdapProvider extends BaseLdapProvider
                     message.close();
                 }
             }
-        } finally
-        {
-            if (connection != null)
-            {
-                connection.close();
-            }
         }
 
         idmAuthStatRecorder.end();
@@ -464,10 +457,9 @@ public class LdapProvider extends BaseLdapProvider
 
       PersonUser user = null;
 
-      ILdapConnectionEx connection = getConnection();
-
-      try
+      try (PooledLdapConnection pooledConnection = borrowConnection())
       {
+	  ILdapConnectionEx connection = pooledConnection.getConnection();
           final String ATTR_NAME_CN = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAccountName);
           final String ATTR_FIRST_NAME = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeFirstName);
           final String ATTR_LAST_NAME = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeLastName);
@@ -529,10 +521,6 @@ public class LdapProvider extends BaseLdapProvider
                message.close();
             }
          }
-      }
-      finally
-      {
-         connection.close();
       }
 
       return user;
@@ -612,11 +600,10 @@ public class LdapProvider extends BaseLdapProvider
    private int loadPwdPolicyPwdLockoutDuration()
    {
       int  value;
-      ILdapConnectionEx connection = null;
 
-      try
+      try (PooledLdapConnection pooledConnection = borrowConnection())
       {
-         connection = getConnection();
+	  ILdapConnectionEx connection = pooledConnection.getConnection();
 
          final String ATTR_NAME_CN = _ldapSchemaMapping.getUserAttribute(
                 IdentityStoreAttributeMapping.AttributeIds.UserAttributeAccountName);
@@ -664,10 +651,6 @@ public class LdapProvider extends BaseLdapProvider
       {// return invalid value when exception during loading
          value = INVALID_VALUE_PWD_LOCKOUT_DURATION;
       }
-      finally
-      {
-         connection.close();
-      }
 
       return value;
    }
@@ -677,10 +660,10 @@ public class LdapProvider extends BaseLdapProvider
    {
          PersonUser user = null;
 
-         ILdapConnectionEx connection = getConnection();
-
-         try
+         try (PooledLdapConnection pooledConnection = borrowConnection())
          {
+             ILdapConnectionEx connection = pooledConnection.getConnection();
+
              final String ATTR_NAME_CN = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAccountName);
              final String ATTR_FIRST_NAME = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeFirstName);
              final String ATTR_LAST_NAME = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeLastName);
@@ -747,10 +730,6 @@ public class LdapProvider extends BaseLdapProvider
                }
             }
          }
-         finally
-         {
-            connection.close();
-         }
 
          return user;
    }
@@ -790,10 +769,10 @@ public class LdapProvider extends BaseLdapProvider
             return users;
         }
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+
             final String ATTR_NAME_CN = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAccountName);
             final String ATTR_DESCRIPTION = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeDescription);
             final String ATTR_FIRST_NAME = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeFirstName);
@@ -863,13 +842,6 @@ public class LdapProvider extends BaseLdapProvider
                 throw new InvalidPrincipalException(msg, filter);
             }
         }
-        finally
-        {
-            if (connection != null)
-            {
-                connection.close();
-            }
-        }
 
         return users;
     }
@@ -908,12 +880,9 @@ public class LdapProvider extends BaseLdapProvider
             return users;
         }
 
-        ILdapConnectionEx connection = null;
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
-            connection = getConnection();
-
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             final String ATTR_MEMBER = _ldapSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeMembersList);
 
             String[] attrNames = {    ATTR_MEMBER };
@@ -983,13 +952,6 @@ public class LdapProvider extends BaseLdapProvider
                 }
             }
         }
-        finally
-        {
-            if (connection != null)
-            {
-                connection.close();
-            }
-        }
 
         return users;
     }
@@ -1018,10 +980,11 @@ public class LdapProvider extends BaseLdapProvider
    {
       Set<Group> groups = new HashSet<Group>();
       PrincipalInfo principalInfo = null;
-      ILdapConnectionEx connection = getConnection();
 
-      try
+      try (PooledLdapConnection pooledConnection = borrowConnection())
       {
+	  ILdapConnectionEx connection = pooledConnection.getConnection();
+
           final String ATTR_NAME_CN = _ldapSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeAccountName);
           final String ATTR_DESCRIPTION = _ldapSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeDescription);
           final String ATTR_ENTRY_UUID = _ldapSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeObjectId);
@@ -1076,13 +1039,6 @@ public class LdapProvider extends BaseLdapProvider
              }
          }
       }
-      finally
-      {
-          if (connection != null)
-          {
-              connection.close();
-          }
-      }
 
       return new PrincipalGroupLookupInfo(
           groups,
@@ -1099,11 +1055,11 @@ public class LdapProvider extends BaseLdapProvider
    {
       Set<Group> groups = new HashSet<Group>();
 
-      ILdapConnectionEx connection = getConnection();
       PrincipalInfo principalInfo = null;
 
-      try
+      try (PooledLdapConnection pooledConnection = borrowConnection())
       {
+	  ILdapConnectionEx connection = pooledConnection.getConnection();
           principalInfo = getPrincipalGroupMembershipId(connection, userId);
 
           if ((principalInfo != null) && ( ServerUtils.isNullOrEmpty(principalInfo.getGroupMembershipId()) == false) )
@@ -1111,10 +1067,6 @@ public class LdapProvider extends BaseLdapProvider
              // NestedParentGroups includes the direct parents, as well as the grandparents.
              groups = getNestedGroups(connection, principalInfo.getGroupMembershipId(), false);
           }
-      }
-      finally
-      {
-         connection.close();
       }
 
       return new PrincipalGroupLookupInfo(
@@ -1139,11 +1091,9 @@ public class LdapProvider extends BaseLdapProvider
            _ldapSchemaMapping.getGroupQueryByAccountName(),
            LdapFilterString.encode(groupId.getName()));
 
-      ILdapConnectionEx connection = null;
-
-      try
+      try (PooledLdapConnection pooledConnection = borrowConnection())
       {
-         connection = getConnection();
+	 ILdapConnectionEx connection = pooledConnection.getConnection();
          ILdapMessage message = null;
 
          try
@@ -1181,12 +1131,6 @@ public class LdapProvider extends BaseLdapProvider
             }
          }
       }
-      finally
-      {
-         if (connection != null) {
-            connection.close();
-         }
-      }
    }
 
    @Override
@@ -1203,11 +1147,9 @@ public class LdapProvider extends BaseLdapProvider
                _ldapSchemaMapping.getGroupQueryByObjectUniqueId(),
                LdapFilterString.encode(groupEntryUuid));
 
-       ILdapConnectionEx connection = null;
-
-       try
+       try (PooledLdapConnection pooledConnection = borrowConnection())
        {
-          connection = getConnection();
+	  ILdapConnectionEx connection = pooledConnection.getConnection();
           ILdapMessage message = null;
 
           try
@@ -1242,12 +1184,6 @@ public class LdapProvider extends BaseLdapProvider
              if (message != null) {
                 message.close();
              }
-          }
-       }
-       finally
-       {
-          if (connection != null) {
-             connection.close();
           }
        }
    }
@@ -1303,10 +1239,9 @@ public class LdapProvider extends BaseLdapProvider
 
         String[] attrNames = { ATTR_NAME_CN, ATTR_DESCRIPTION, ATTR_ENTRY_UUID };
 
-        ILdapConnectionEx connection = null;
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
-            connection = getConnection();
+            ILdapConnectionEx connection = pooledConnection.getConnection();
 
             try
             {
@@ -1349,12 +1284,6 @@ public class LdapProvider extends BaseLdapProvider
                 throw new InvalidPrincipalException(msg, filter);
             }
         }
-        finally
-        {
-            if (connection !=  null) {
-                connection.close();
-            }
-        }
 
         return groups;
     }
@@ -1372,13 +1301,11 @@ public class LdapProvider extends BaseLdapProvider
             return groups;
         }
 
-        ILdapConnectionEx connection = null;
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
             final String ATTR_MEMBER = _ldapSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeMembersList);
 
-            connection = getConnection();
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames = { ATTR_MEMBER };
 
             String groupFilter = String.format(
@@ -1441,13 +1368,7 @@ public class LdapProvider extends BaseLdapProvider
                 }
             }
         }
-        finally
-        {
-            if (connection != null)
-            {
-                connection.close();
-            }
-        }
+
         return groups;
     }
 
@@ -1499,11 +1420,11 @@ public class LdapProvider extends BaseLdapProvider
    private int retrieveUserAccountFlags(PrincipalId id) throws IDMException
    {
       int accountFlags = 0;
-      ILdapConnectionEx connection = null;
+      PooledLdapConnection pooledConnection = null;
 
       try
       {
-         connection = getConnection();
+         pooledConnection = borrowConnection();
       }
       catch (Exception e)
       {
@@ -1512,7 +1433,7 @@ public class LdapProvider extends BaseLdapProvider
 
       try
       {
-          final String filter = this.buildUserQueryByPrincipalId(id);
+         final String filter = this.buildUserQueryByPrincipalId(id);
 
          final String ATTR_ACCOUNT_FLAGS = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAcountControl);
          final String ATTR_PWD_ACCOUNT_LOCKED_TIME = getMappedAttrPwdAccountLockedTime();
@@ -1523,7 +1444,7 @@ public class LdapProvider extends BaseLdapProvider
          ILdapMessage message = null;
          try
          {
-            message = connection.search(
+            message = pooledConnection.getConnection().search(
                   this.getStoreDataEx().getUserBaseDn(),
                   LdapScope.SCOPE_SUBTREE,
                   filter,
@@ -1564,17 +1485,17 @@ public class LdapProvider extends BaseLdapProvider
       }
       finally
       {
-         connection.close();
+	  if (pooledConnection != null)
+	      pooledConnection.close();
       }
       return accountFlags;
    }
 
    String getUserDN(PrincipalId id) throws Exception
    {
-      ILdapConnectionEx connection = null;
-      try
+      try (PooledLdapConnection pooledConnection = borrowConnection())
       {
-         connection = getConnection();
+	  ILdapConnectionEx connection = pooledConnection.getConnection();
 
          String[] attrNames = {  null };
 
@@ -1621,12 +1542,6 @@ public class LdapProvider extends BaseLdapProvider
             if (message != null) {
                message.close();
             }
-         }
-      }
-      finally
-      {
-         if (connection != null) {
-            connection.close();
          }
       }
    }
@@ -1968,8 +1883,8 @@ public class LdapProvider extends BaseLdapProvider
 
     private class PrincipalInfo
     {
-        private String _groupMembershipId;
-        private String _objectId;
+        private final String _groupMembershipId;
+        private final String _objectId;
         public PrincipalInfo(String groupMembershipId, String objectId)
         {
             this._groupMembershipId = groupMembershipId;
@@ -2103,10 +2018,10 @@ public class LdapProvider extends BaseLdapProvider
    {
       Set<PersonUser> users = new HashSet<PersonUser>();
 
-      ILdapConnectionEx connection = null;
-
-      try
+      try (PooledLdapConnection pooledConnection = borrowConnection())
       {
+	  ILdapConnectionEx connection = pooledConnection.getConnection();
+
           final String ATTR_NAME_CN = _ldapSchemaMapping.getUserAttribute( IdentityStoreAttributeMapping.AttributeIds.UserAttributeAccountName );
           final String ATTR_DESCRIPTION = _ldapSchemaMapping.getUserAttribute( IdentityStoreAttributeMapping.AttributeIds.UserAttributeDescription );
           final String ATTR_FIRST_NAME = _ldapSchemaMapping.getUserAttribute( IdentityStoreAttributeMapping.AttributeIds.UserAttributeFirstName );
@@ -2116,7 +2031,6 @@ public class LdapProvider extends BaseLdapProvider
           final String ATTR_ENTRY_UUID = _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeObjectId);
           final String ATTR_PWD_ACCOUNT_LOCKED_TIME = getMappedAttrPwdAccountLockedTime();
 
-          connection = getConnection();
          String[] attrNames = {
                ATTR_NAME_CN,
                ATTR_DESCRIPTION,
@@ -2185,13 +2099,6 @@ public class LdapProvider extends BaseLdapProvider
              String msg = String.format("errorCode; %d; %s", e.getErrorCode(), e.getMessage());
              log.error(msg, e);
              throw new InvalidPrincipalException(msg, searchBaseDn);
-         }
-      }
-      finally
-      {
-         if (connection != null)
-         {
-            connection.close();
          }
       }
 
@@ -2375,16 +2282,103 @@ public class LdapProvider extends BaseLdapProvider
     }
 
     @Override
+    public UserSet findActiveUsersInDomain(String ldapAttrName, String attributeValue, String userDomain, String additionalAttribute)
+            throws Exception {
+        Validate.notEmpty(ldapAttrName, "ldapAttrName");
+        Validate.notEmpty(attributeValue, "attributeValue");
+        Validate.notEmpty(userDomain, "userDomain");
+
+        PooledLdapConnection pooledConnection;
+        AccountLdapEntriesInfo entries = null;
+        UserSet result = new UserSet();
+
+        try {
+            pooledConnection = this.borrowConnection();
+        } catch (Exception ex) {
+            throw new IDMException("Failed to establish server connection", ex);
+        }
+
+        try {
+            final String ATTR_NAME_SAM_ACCOUNT = _ldapSchemaMapping
+                    .getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAccountName);
+            final String ATTR_NAME_USER_ACCT_CTRL = _ldapSchemaMapping
+                    .getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAcountControl);
+
+            ArrayList<String> attrNames = new ArrayList<String>();
+            attrNames.add(ATTR_NAME_SAM_ACCOUNT);
+            attrNames.add(ATTR_NAME_USER_ACCT_CTRL);
+
+            if (attributeValue != null) {
+                attrNames.add(additionalAttribute);
+            }
+
+            String searchBaseDn = this.getStoreDataEx().getUserBaseDn();
+            String idsAttrNameForSearch;
+            String attrValueForSearch;
+
+            if (ldapAttrName.equalsIgnoreCase(_ldapSchemaMapping
+                    .getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributePrincipalName))) {
+                // if upn, use sam account to search
+                idsAttrNameForSearch = ATTR_NAME_SAM_ACCOUNT;
+                attrValueForSearch = attributeValue.split("@")[0];
+            } else {
+                idsAttrNameForSearch = ldapAttrName;
+                attrValueForSearch = attributeValue;
+            }
+            ValidateUtil.validateNotNull(idsAttrNameForSearch, "idsAttrNameForSearch");
+
+            final String filter_by_attr = this.buildUserQueryByAttribute(idsAttrNameForSearch, attrValueForSearch);
+
+            entries = findAccountLdapEntries(pooledConnection.getConnection(), filter_by_attr
+                    , searchBaseDn, attrNames.toArray(new String[attrNames.size()]), false,
+                    attributeValue, true, null);
+
+            String accountName = null;
+
+            for (ILdapEntry entry : entries.accountLdapEntries) {
+
+                accountName = getStringValue(entry.getAttributeValues(ATTR_NAME_SAM_ACCOUNT));
+                int currentFlag = getOptionalIntegerValue(entry.getAttributeValues(ATTR_NAME_USER_ACCT_CTRL), 0);
+
+                Collection<String> additionalAttrValues = null;
+
+                if (additionalAttribute != null) {
+                    additionalAttrValues = getOptionalStringValues(entry.getAttributeValues(additionalAttribute));
+                }
+
+                if (!AccountControlFlag.FLAG_DISABLED_ACCOUNT.isSet(currentFlag) && !AccountControlFlag.FLAG_LOCKED_ACCOUNT.isSet(currentFlag)) {
+                    result.put(new PrincipalId(accountName, userDomain), additionalAttrValues);
+                }
+            }
+            if (result.isEmpty()) {
+                throw new InvalidPrincipalException(String.format("User account '%s@%s' is not active. ", accountName, userDomain), String.format(
+                        "%s@%s", accountName, userDomain));
+
+            }
+
+        } finally {
+            if (entries != null) {
+                entries.close();
+            }
+            if (pooledConnection != null) {
+                pooledConnection.close();
+            }
+        }
+
+        return result;
+    }
+
+    @Override
     public PrincipalId findActiveUser(String ldapAttrName, String attributeValue) throws Exception {
         Validate.notEmpty(ldapAttrName, "ldapAttrName");
         Validate.notEmpty(attributeValue, "attributeValue");
 
-        ILdapConnectionEx connection;
-        AccountLdapEntryInfo ldapEntryInfo = null;
+        PooledLdapConnection pooledConnection;
+        AccountLdapEntriesInfo entriesInfo = null;
 
         try
         {
-            connection = this.getConnection();
+            pooledConnection = this.borrowConnection();
         }
         catch (Exception ex)
         {
@@ -2415,19 +2409,19 @@ public class LdapProvider extends BaseLdapProvider
 
              final String filter_by_attr = this.buildUserQueryByAttribute(idsAttrNameForSearch, attrValueForSearch);
 
-             ldapEntryInfo = findAccountLdapEntry(connection,
+            entriesInfo = findAccountLdapEntry(pooledConnection.getConnection(),
                      filter_by_attr,
                      searchBaseDn,
                      attrNames,
                      false,attributeValue,null);
 
-
+            ILdapEntry ldapEntry = entriesInfo.accountLdapEntries.iterator().next();
              String accountName =
-                     getStringValue(ldapEntryInfo.accountLdapEntry.getAttributeValues(ATTR_NAME_SAM_ACCOUNT));
+                    getStringValue(ldapEntry.getAttributeValues(ATTR_NAME_SAM_ACCOUNT));
 
              int currentFlag =
                  getOptionalIntegerValue(
-                         ldapEntryInfo.accountLdapEntry.getAttributeValues(ATTR_NAME_USER_ACCT_CTRL),0);
+                            ldapEntry.getAttributeValues(ATTR_NAME_USER_ACCT_CTRL), 0);
 
              if ( !AccountControlFlag.FLAG_DISABLED_ACCOUNT.isSet(currentFlag))
              {
@@ -2444,16 +2438,14 @@ public class LdapProvider extends BaseLdapProvider
         }
         finally
         {
-             if (ldapEntryInfo != null)
-             {
-                 ldapEntryInfo.close_messages();
-             }
-             if (connection != null)
-             {
-                 connection.close();
-             }
+            if (entriesInfo != null) {
+                entriesInfo.close();
+            }
+            if (pooledConnection != null)
+            {
+                 pooledConnection.close();
+            }
         }
-
     }
 
     private String buildUserQueryByAttribute(String vmdirAttrName, String attributeValue) {
@@ -2467,8 +2459,13 @@ public class LdapProvider extends BaseLdapProvider
             escapedsAttrName, escapedsAttrValue );
     }
 
+    private PooledLdapConnection borrowConnection() throws Exception {
+	return borrowConnection(getStoreDataEx().getConnectionStrings(), false);
+    }
+
     @Override
     public String getStoreUPNAttributeName() {
         return _ldapSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributePrincipalName);
     }
+
 }

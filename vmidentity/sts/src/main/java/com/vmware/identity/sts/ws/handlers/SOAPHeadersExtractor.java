@@ -83,6 +83,8 @@ public final class SOAPHeadersExtractor implements
       WsConstants.WSSE_NS, WsConstants.WSSE_USERNAME_TOKEN_ELEMENT_NAME);
    private static final QName wssePassword = new QName(WsConstants.WSSE_NS,
       WsConstants.WSSE_PASSWORD_ELEMENT_NAME);
+   private static final QName wssePasscode = new QName(WsConstants.WSSE_NS,
+           WsConstants.WSSE_PASSCODE_ELEMENT_NAME);
    private static final QName wsseBinarySecurityToken = new QName(
       WsConstants.WSSE_NS, WsConstants.WSSE_BINARY_SECURITY_TOKEN_ELEMENT_NAME);
    private static final QName saml2Assertion = new QName(
@@ -376,7 +378,9 @@ public final class SOAPHeadersExtractor implements
          wsseUsernameToken, 0, 1, FaultKey.WSSE_INVALID_SECURITY);
       if (!unts.isEmpty()) {
          assert unts.size() == 1;
-         checkElementPresent(unts.get(0).getChildNodes(), wssePassword, 1, 1,
+         checkElementPresent(unts.get(0).getChildNodes(), wssePassword, 0, 1,
+            FaultKey.WSSE_UNSUPPORTED_SECURITY_TOKEN);
+         checkElementPresent(unts.get(0).getChildNodes(), wssePasscode, 0, 1,
             FaultKey.WSSE_UNSUPPORTED_SECURITY_TOKEN);
       }
       checkElementPresent(childNodes, wsseBinarySecurityToken, 0, 1,

@@ -57,14 +57,14 @@ public class MetadataController {
         this.idmClient = idmClient;
     }
 
-    @RequestMapping(value = "/.well-known/openid-configuration", method = RequestMethod.GET)
+    @RequestMapping(value = Endpoints.BASE + Endpoints.METADATA, method = RequestMethod.GET)
     public void metadata(
             HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse) throws IOException {
         metadata(httpServletRequest, httpServletResponse, null);
     }
 
-    @RequestMapping(value = "/{tenant:.*}/.well-known/openid-configuration", method = RequestMethod.GET)
+    @RequestMapping(value = Endpoints.BASE + "/{tenant:.*}" + Endpoints.METADATA, method = RequestMethod.GET)
     public void  metadata(
             HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse,
@@ -78,18 +78,12 @@ public class MetadataController {
             }
             TenantInfo tenantInfo = tenantInfoRetriever.retrieveTenantInfo(tenant);
             Issuer issuer = tenantInfo.getIssuer();
-
-            URI jwkSetURI = URIUtils.parseURI(replaceLast(issuer.getValue(), tenant, "jwks/" + tenant));
-            URI authzEndpoint = URIUtils.parseURI(replaceLast(issuer.getValue(), tenant, "oidc/authorize/" + tenant));
-            URI tokenEndpoint = URIUtils.parseURI(replaceLast(issuer.getValue(), tenant, "token/" + tenant));
-            URI endSessionEndpoint = URIUtils.parseURI(replaceLast(issuer.getValue(), tenant, "logout/" + tenant));
-
             ProviderMetadata providerMetadata = new ProviderMetadata(
                     issuer,
-                    authzEndpoint,
-                    tokenEndpoint,
-                    endSessionEndpoint,
-                    jwkSetURI);
+                    endpointURI(issuer, tenant, Endpoints.AUTHENTICATION),
+                    endpointURI(issuer, tenant, Endpoints.TOKEN),
+                    endpointURI(issuer, tenant, Endpoints.LOGOUT),
+                    endpointURI(issuer, tenant, Endpoints.JWKS));
 
             httpResponse = HttpResponse.createJsonResponse(StatusCode.OK, ProviderMetadataMapper.toJSONObject(providerMetadata));
         } catch (ParseException e) {
@@ -107,6 +101,10 @@ public class MetadataController {
         }
 
         httpResponse.applyTo(httpServletResponse);
+    }
+
+    private static URI endpointURI(Issuer issuer, String tenant, String endpoint) throws ParseException {
+        return URIUtils.parseURI(replaceLast(issuer.getValue(), "/" + tenant, endpoint + "/" + tenant));
     }
 
     private static String replaceLast(String string, String from, String to) {

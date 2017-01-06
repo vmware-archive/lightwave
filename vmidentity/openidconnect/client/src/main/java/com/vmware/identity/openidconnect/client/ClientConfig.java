@@ -92,7 +92,7 @@ public final class ClientConfig {
             HighAvailabilityConfig highAvailabilityConfig,
             long clockToleranceInSeconds) {
         Validate.notNull(connectionConfig, "connectionConfig");
-        Validate.isTrue(clockToleranceInSeconds >= 0L, "clock toleance must be no less than zero");
+        Validate.isTrue(0 <= clockToleranceInSeconds && clockToleranceInSeconds <= 10 * 60L, "0 <= clockToleranceInSeconds && clockToleranceInSeconds <= 10 * 60L");
 
         this.connectionConfig = connectionConfig;
         this.clientId = clientId;

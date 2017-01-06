@@ -105,7 +105,7 @@ public class PersonUserAuthenticator {
 
         PrincipalId principalId;
         try {
-            principalId = this.idmClient.authenticate(tenant, personUserCertificateChain.toArray(new X509Certificate[0]));
+            principalId = this.idmClient.authenticate(tenant, personUserCertificateChain.toArray(new X509Certificate[0]), null);
         } catch (IDMLoginException e) {
             throw new InvalidCredentialsException(e);
         } catch (Exception e) {

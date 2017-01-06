@@ -54,6 +54,7 @@ import com.vmware.identity.rest.idm.data.ResourceServerDTO;
 public class OIDCClientITBase {
 
     static final String RESOURCE_SERVER_NAME = "rs_oidc_client_integration_tests";
+    static final long CLOCK_TOLERANCE_IN_SECONDS = 5 * 60L; // 5 mins
 
     static ClientID clientId;
     static AccessToken accessToken;
@@ -104,7 +105,7 @@ public class OIDCClientITBase {
 
         // create a non-registered OIDC client and get bearer tokens by admin user name/password
         connectionConfig = new ConnectionConfig(providerMetadata, providerPublicKey, ks);
-        clientConfig = new ClientConfig(connectionConfig, null, null);
+        clientConfig = new ClientConfig(connectionConfig, null, null, CLOCK_TOLERANCE_IN_SECONDS);
         nonRegNoHOKConfigClient = new OIDCClient(clientConfig);
         passwordGrant = new PasswordGrant(
                 username,
@@ -119,7 +120,7 @@ public class OIDCClientITBase {
                 domainControllerFQDN,
                 domainControllerPort,
                 ks);
-        
+
         // Create REST Vmdir client
         vmdirClient = TestUtils.createVMdirClient(
                 accessToken,
@@ -174,11 +175,11 @@ public class OIDCClientITBase {
         HolderOfKeyConfig holderOfKeyConfig = new HolderOfKeyConfig(clientPrivateKey, clientCertificate);
 
         // create clients
-        clientConfig = new ClientConfig(connectionConfig, null, null);
+        clientConfig = new ClientConfig(connectionConfig, null, null, CLOCK_TOLERANCE_IN_SECONDS);
         nonRegNoHOKConfigClient = new OIDCClient(clientConfig);
-        clientConfig = new ClientConfig(connectionConfig, null, holderOfKeyConfig);
+        clientConfig = new ClientConfig(connectionConfig, null, holderOfKeyConfig, CLOCK_TOLERANCE_IN_SECONDS);
         nonRegHOKConfigClient = new OIDCClient(clientConfig);
-        clientConfig = new ClientConfig(connectionConfig, clientId, holderOfKeyConfig);
+        clientConfig = new ClientConfig(connectionConfig, clientId, holderOfKeyConfig, CLOCK_TOLERANCE_IN_SECONDS);
         regClient = new OIDCClient(clientConfig);
 
         // create registered HA client
@@ -187,7 +188,7 @@ public class OIDCClientITBase {
         String availableDomainController = issuerUri.getHost();
         ClientDCCacheFactory factory = new MockClientDCCacheFactory(domainName, availableDomainController);
         HighAvailabilityConfig haConfig = new HighAvailabilityConfig(domainName, factory);
-        clientConfig = new ClientConfig(connectionConfig, clientId, holderOfKeyConfig, haConfig);
+        clientConfig = new ClientConfig(connectionConfig, clientId, holderOfKeyConfig, haConfig, CLOCK_TOLERANCE_IN_SECONDS);
         regClientWithHA = new OIDCClient(clientConfig);
 
         withRefreshSpec = new TokenSpec.Builder(TokenType.BEARER).
@@ -212,7 +213,7 @@ public class OIDCClientITBase {
 
     @AfterClass
     public static void tearDown() throws Exception {
-        idmClient.user().delete(tenant, solutionUserName, tenant);
+        vmdirClient.user().delete(tenant, solutionUserName, tenant);
         idmClient.oidcClient().delete(tenant, clientId.getValue());
         idmClient.resourceServer().delete(tenant, RESOURCE_SERVER_NAME);
     }

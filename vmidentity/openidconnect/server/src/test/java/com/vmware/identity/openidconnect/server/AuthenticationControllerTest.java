@@ -620,7 +620,7 @@ public class AuthenticationControllerTest {
             request.setCookies(new Cookie(SESSION_COOKIE_NAME, SESSION_ID));
         }
         MockHttpServletResponse response = new MockHttpServletResponse();
-        controller.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response);
+        controller.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response, TENANT_NAME);
         return response;
     }
 }

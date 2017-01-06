@@ -52,9 +52,9 @@ public class SystemDomainAliasedProvider extends VMwareDirectoryProvider
     private final Map<String, String> _userAliases;
     private final Map<String, String> _userAliasesBackMap;
 
-    public SystemDomainAliasedProvider( IIdentityStoreData store, Map<String, String> systemDomainUserAliases ) throws InvalidArgumentException
+    public SystemDomainAliasedProvider(String tenantName, IIdentityStoreData store, Map<String, String> systemDomainUserAliases ) throws InvalidArgumentException
     {
-        super(store, true);
+        super(tenantName, store, true);
 
         ValidateUtil.validateNotEmpty(this.getStoreDataEx().getAlias(), "Alias must not be null.");
 

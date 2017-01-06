@@ -85,9 +85,9 @@ public abstract class ClientIssuedAssertion extends JWTToken {
 
         Date now = new Date();
         Date issueTime = this.getIssueTime();
-        Date lowerBound = new Date(now.getTime() - clockToleranceMS - assertionLifetimeMs);
-        Date upperBound = new Date(now.getTime() + clockToleranceMS);
-        if (issueTime.before(lowerBound) || issueTime.after(upperBound)) {
+        Date notBefore = new Date(now.getTime() - clockToleranceMS - assertionLifetimeMs);
+        Date notAfter = new Date(now.getTime() + clockToleranceMS);
+        if (issueTime.before(notBefore) || issueTime.after(notAfter)) {
             return String.format("stale_%s", this.getTokenClass().getValue());
         }
 

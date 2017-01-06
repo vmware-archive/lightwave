@@ -48,6 +48,7 @@ import com.vmware.identity.saml.TokenValidator;
 import com.vmware.identity.saml.config.Config;
 import com.vmware.identity.saml.config.Config.SamlAuthorityConfiguration;
 import com.vmware.identity.saml.config.ConfigExtractor;
+import com.vmware.identity.saml.config.SystemConfigurationException;
 import com.vmware.identity.token.impl.ValidateUtil;
 
 /**
@@ -82,39 +83,45 @@ public class AuthnOnlyTokenValidator implements TokenValidator {
    public ServerValidatableSamlToken validate(ServerValidatableSamlToken token)
       throws InvalidSignatureException, InvalidTokenException, SystemException {
 
-      final Config config = this.configExtractor.getConfig();
-      final X509Certificate[] trustedRootCertificates = getTrustedSigningCerts(config);
-      final long clockTolerance = config.getClockTolerance();
-      final SubjectValidatorExtractor subjectValidatorExtractor = new SubjectValidatorExtractorImpl(config, this.principalAttributesExtractor);
-
-      logger.debug("Validating token.");
       try {
+		final Config config = this.configExtractor.getConfig();
+		  final X509Certificate[] trustedRootCertificates = getTrustedSigningCerts(config);
+		  final long clockTolerance = config.getClockTolerance();
+		  final SubjectValidatorExtractor subjectValidatorExtractor = new SubjectValidatorExtractorImpl(config, this.principalAttributesExtractor);
 
-         // if this token is issued by STS, this means that token validity is
-         // smaller than signing certificate validity, which is smaller than
-         // trusted anchor validity(because of chains). This implies that there
-         // is a need to make a certificate chain integrity check only for
-         // tokens not issued by STS, for those issued by STS successful
-         // signature validation is enough for this integrity.
+		  logger.debug("Validating token.");
+		  try {
 
-         // TODO see if samlToken.jar makes certificate chain integrity check
-         token.validate(trustedRootCertificates,
-            TimeUnit.MILLISECONDS.toSeconds(clockTolerance), subjectValidatorExtractor);
-      } catch (InvalidTokenException e) {
-          logger.debug("Token validation failed with InvalidTokenException", e);
-         throw e;
-      }
-      logger.debug("Token validated");
+		     // if this token is issued by STS, this means that token validity is
+		     // smaller than signing certificate validity, which is smaller than
+		     // trusted anchor validity(because of chains). This implies that there
+		     // is a need to make a certificate chain integrity check only for
+		     // tokens not issued by STS, for those issued by STS successful
+		     // signature validation is enough for this integrity.
 
-      logger.debug( String.format("Token is from external idp: [%s]", (token.isExternal())) );
+		     // TODO see if samlToken.jar makes certificate chain integrity check
+		     token.validate(trustedRootCertificates,
+		        TimeUnit.MILLISECONDS.toSeconds(clockTolerance), subjectValidatorExtractor);
+		  } catch (InvalidTokenException e) {
+		      logger.debug("Token validation failed with InvalidTokenException", e);
+		     throw e;
+		  }
+		  logger.debug("Token validated");
+		  System.out.println("Token validated hurray");
 
-      validateSubject( token.getSubject(), token.isExternal());
-      validateDelegationChain( token );
+		  logger.debug( String.format("Token is from external idp: [%s]", (token.isExternal())) );
 
-      logger.info("Token {} for principal {} successfully validated.",
-              token.getId(), ((token.getSubject().subjectUpn() != null) ? token.getSubject().subjectUpn() : token.getSubject().subjectNameId()));
-      logger.info("Token {} validated with SubjectValidation {}.",
-              token.getId(), token.getSubject().subjectValidation());
+		  validateSubject( token.getSubject(), token.isExternal());
+		  validateDelegationChain( token );
+
+		  logger.info("Token {} for principal {} successfully validated.",
+		          token.getId(), ((token.getSubject().subjectUpn() != null) ? token.getSubject().subjectUpn() : token.getSubject().subjectNameId()));
+		  logger.info("Token {} validated with SubjectValidation {}.",
+		          token.getId(), token.getSubject().subjectValidation());
+	} catch (SystemConfigurationException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
 
       return token;
    }

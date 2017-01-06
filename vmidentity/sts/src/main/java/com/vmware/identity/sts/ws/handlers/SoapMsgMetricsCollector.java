@@ -17,6 +17,7 @@ package com.vmware.identity.sts.ws.handlers;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import javax.xml.namespace.QName;
 import javax.xml.ws.handler.MessageContext;
@@ -75,7 +76,7 @@ implements SOAPHandler<SOAPMessageContext>
 
    private void reportTime(MessageContext context, PerfMeasurementInterface itf)
    {
-      long delta = System.currentTimeMillis() - msgStartTs.get().longValue();
+      long delta = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - msgStartTs.get().longValue());
 
       List<String> actions =
             ((Headers)context.get(MessageContext.HTTP_REQUEST_HEADERS)).get("soapaction");
@@ -110,12 +111,11 @@ implements SOAPHandler<SOAPMessageContext>
    }
 
    private void setMsgStartTs() {
-      long ms = System.currentTimeMillis();
+      long ms = System.nanoTime();
       msgStartTs.set(ms);
    }
 
    private void reportProcessingTime(long millis, String soapAction, String upn, PerfMeasurementInterface itf) {
-      assert millis >= 0;
       assert soapAction != null;
 
       perfDataSink.addMeasurement(

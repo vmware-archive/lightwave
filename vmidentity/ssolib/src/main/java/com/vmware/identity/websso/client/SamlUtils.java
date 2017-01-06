@@ -1,6 +1,16 @@
-/* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved.
- **********************************************************************************/
+/*
+ *  Copyright (c) 2012-2016 VMware, Inc.  All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License.  You may obtain a copy
+ *  of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, without
+ *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ *  License for the specific language governing permissions and limitations
+ *  under the License.
+ */
 package com.vmware.identity.websso.client;
 
 import java.io.ByteArrayOutputStream;
@@ -75,7 +85,7 @@ import org.w3c.dom.Element;
 
 /**
  * SamlUtils class
- * 
+ *
  */
 public class SamlUtils {
 
@@ -189,7 +199,7 @@ public class SamlUtils {
 
     /**
      * Signs message with known private key and algorithm. Throws on error.
-     * 
+     *
      * @param message
      * @return signature
      */
@@ -221,7 +231,7 @@ public class SamlUtils {
     /**
      * Verifies signature of the message with a known public key and signature
      * algorithm. Throws on error.
-     * 
+     *
      * @param message
      *            Raw message extracted from query.
      * @param signature
@@ -272,7 +282,7 @@ public class SamlUtils {
 
     /**
      * Create SAML Logout request
-     * 
+     *
      * @param id
      *            optional
      * @param where
@@ -320,7 +330,7 @@ public class SamlUtils {
 
     /**
      * Create SAML Logout response
-     * 
+     *
      * @param issuerVal
      *            optional
      * @param inResponseTo
@@ -371,7 +381,7 @@ public class SamlUtils {
     /**
      * create saml sso response in the form of opensaml Response with given
      * parameters.
-     * 
+     *
      */
     public Response createSamlLoginResponse(String inResponseTo, String where, String status, String substatus,
             String message, Document token) throws UnmarshallingException {
@@ -419,7 +429,7 @@ public class SamlUtils {
 
     /**
      * Create openSAML Status object
-     * 
+     *
      * @param status
      * @param substatus
      * @param message
@@ -468,13 +478,13 @@ public class SamlUtils {
 
     /**
      * Encode opensaml object (request/response) as a query string parameter.
-     * 
+     *
      * @param signableSAMLObject
      *            The object to be encoded.
      * @param doCompress
      *            whether include compression step. For REDIRECT binding, this
      *            should be true.
-     * 
+     *
      * @return encoded object
      * @throws MarshallingException
      * @throws IOException
@@ -511,7 +521,7 @@ public class SamlUtils {
      * Return a decompressed and base64bit decoded slo response. This is used by
      * extracting SAMLObject received via redirect binding where compression is
      * applied.
-     * 
+     *
      * @throws TransformerFactoryConfigurationError
      * @throws Exception
      */
@@ -529,7 +539,7 @@ public class SamlUtils {
 
     /**
      * generate QueryString Parameters.
-     * 
+     *
      * @param samlRequest
      * @param relayState
      *            need for relay
@@ -552,7 +562,7 @@ public class SamlUtils {
     /**
      * Validate signature in the http request. Exception throw if fails to
      * verify the signature when the request must be signed.
-     * 
+     *
      * @param request
      *            the request from httpget
      * @param mustSigned
@@ -560,7 +570,7 @@ public class SamlUtils {
      * @return indicate whether the request is signed true: it is signed. false:
      *         not signed.
      * @throws Exception
-     * 
+     *
      */
     public boolean validateRequestSignature(HttpServletRequest request, Boolean mustSigned) throws Exception {
         Validate.notNull(request, "HttpServletRequest");
@@ -599,7 +609,7 @@ public class SamlUtils {
 
     /**
      * unmarshall dom object to opensaml XMLObject.
-     * 
+     *
      * @param samlRequest
      * @param relayState
      *            need for relay
@@ -624,7 +634,7 @@ public class SamlUtils {
 
     /**
      * Create Document object from openSaml SignableSAMLObject.
-     * 
+     *
      * @param signableSAMLObject
      *            assertion or other signable object
      * @return Document
@@ -648,7 +658,7 @@ public class SamlUtils {
 
     /**
      * append optional parameter.
-     * 
+     *
      * @param sb
      * @param paramName
      * @param paramValue
@@ -674,7 +684,7 @@ public class SamlUtils {
 
     /**
      * Validate Conditions. Return expiration date. Throw if expired
-     * 
+     *
      * @param Conditions
      * @param clockTolerance
      *            in seconds
@@ -708,7 +718,7 @@ public class SamlUtils {
 
     /**
      * Validate Sesssion's ExpiryNotOnOrAfter date. Throw if expired
-     * 
+     *
      * @param sessionNotOnOrAfter
      * @param clockTolerance
      *            in seconds
@@ -739,7 +749,7 @@ public class SamlUtils {
      * Validate an openSaml signature object with given trusted certificate of
      * the supposed signer. Currently only used by in validating assetion
      * signature.
-     * 
+     *
      * @param signature
      *            opensaml Signature
      * @param cert
@@ -785,7 +795,7 @@ public class SamlUtils {
 
     /**
      * return signed message in a http SAML request or response
-     * 
+     *
      * @param request
      * @return signed message string in SAML request and response:
      * @throws IllegalArgumentException
@@ -833,7 +843,7 @@ public class SamlUtils {
     /**
      * Return IDP SSO service location with given binding. Caller should
      * validate returned string.
-     * 
+     *
      * @param idpConfig
      * @param binding
      *            SSO binding
@@ -857,7 +867,7 @@ public class SamlUtils {
     /**
      * Return IDP SLO service location with given binding. Caller should
      * validate returned string.
-     * 
+     *
      * @param idpConfig
      * @param binding
      *            SLO binding
@@ -881,7 +891,7 @@ public class SamlUtils {
     /**
      * Return Service Provider SLO service location with given binding. Caller
      * should validate returned string.
-     * 
+     *
      * @param spConfig
      *            SPCongiguration
      * @param binding
@@ -903,7 +913,7 @@ public class SamlUtils {
 
     /**
      * Find IDP certificate given an issuer of a SAML message from IDP.
-     * 
+     *
      * @param metadataSettings
      *            Required. if not provided the function will return null.
      * @param issuer
@@ -914,17 +924,15 @@ public class SamlUtils {
      * @throws IllegalArgumentException
      */
     public static X509Certificate getIDPCertByIssuer(MetadataSettings metadataSettings, String issuerVal)
-            throws WebssoClientException, IllegalArgumentException {
-        Validate.notNull(issuerVal, "issuerVal");
+            throws WebssoClientException {
+        Validate.notEmpty(issuerVal, "issuerVal");
         Validate.notNull(metadataSettings, "metadataSettings");
-        String idpEnitityID = issuerVal;
-        if (idpEnitityID == null) {
-            throw new WebssoClientException(Error.ISSUER);
+        log.debug("Getting IDP config for:" + issuerVal);
+
+        IDPConfiguration idpConfig = metadataSettings.getIDPConfigurationByEntityID(issuerVal);
+        if (idpConfig == null) {
+            throw new WebssoClientException("Uknown IDP configuration. IDP entity ID = : "+issuerVal);
         }
-        log.info("Getting IDP config for:" + idpEnitityID);
-
-        IDPConfiguration idpConfig = metadataSettings.getIDPConfigurationByEntityID(idpEnitityID);
-
         return idpConfig.getSigningCertificate();
     }
 

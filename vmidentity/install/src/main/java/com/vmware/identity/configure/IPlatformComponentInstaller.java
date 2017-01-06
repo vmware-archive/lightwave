@@ -12,4 +12,6 @@ public interface IPlatformComponentInstaller {
     void upgrade() throws Exception;
 
     void uninstall();
+
+    void migrate();
 }

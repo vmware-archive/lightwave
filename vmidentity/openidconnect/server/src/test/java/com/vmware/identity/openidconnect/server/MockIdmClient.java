@@ -96,8 +96,6 @@ public class MockIdmClient extends CasIdmClient {
     private final Map<String, OIDCClient> clientMap;
 
     private MockIdmClient(Builder builder) {
-        super("hostname");
-
         this.tenantName              = builder.tenantName;
         this.tenantPrivateKey        = builder.tenantPrivateKey;
         this.tenantCertificate       = builder.tenantCertificate;
@@ -171,7 +169,8 @@ public class MockIdmClient extends CasIdmClient {
     @Override
     public PrincipalId authenticate(
             String tenantName,
-            X509Certificate[] tlsCertChain) throws Exception {
+            X509Certificate[] tlsCertChain,
+            String hint) throws Exception {
         Validate.notEmpty(tenantName, "tenantName");
         Validate.notNull(tlsCertChain, "tlsCertChain");
 

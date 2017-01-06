@@ -1,6 +1,16 @@
-/* *************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved.
- **************************************************************************/
+/*
+ *  Copyright (c) 2012-2016 VMware, Inc.  All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License.  You may obtain a copy
+ *  of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, without
+ *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ *  License for the specific language governing permissions and limitations
+ *  under the License.
+ */
 package com.vmware.identity.websso.client.endpoint;
 
 import java.io.IOException;
@@ -32,6 +42,7 @@ import com.vmware.identity.websso.client.MetadataSettings;
 import com.vmware.identity.websso.client.SPConfiguration;
 import com.vmware.identity.websso.client.SamlNames;
 import com.vmware.identity.websso.client.SamlUtils;
+import com.vmware.identity.websso.client.SharedUtils;
 import com.vmware.identity.websso.client.SloRequestValidationState;
 import com.vmware.identity.websso.client.SloResponseValidationState;
 import com.vmware.identity.websso.client.SubjectData;
@@ -196,6 +207,7 @@ public class SloListener {
             logger.info("SP SAML Response URL is " + redirectUrl);
             if (validator.getValidationResult().isValid()) {
                 if (redirectUrl != null) {
+                    SharedUtils.SetNoCacheHeader(httpResponse);
                     httpResponse.sendRedirect(redirectUrl);
                 } else {
                     // redirectUrl can be null if IDP's SLO end point does not exist.
@@ -329,13 +341,16 @@ public class SloListener {
         logger.info("generate SLO response for IDP: " + idpUrl);
 
         if (this.validationState.getValidationResult().getResponseCode() == HttpServletResponse.SC_OK) {
+            Validate.notNull(idpUrl, "idpUrl");
+
+            IDPConfiguration idpConfig = this.getMetadataSettings()
+                    .getIDPConfigurationByEntityID(idpUrl);
+
+            if (idpConfig == null) {
+                throw new WebssoClientException("Uknown IDP configuration. IDP entity ID = : "+idpUrl);
+            }
             try {
                 // we should reply with Saml response
-                Validate.notNull(idpUrl);
-
-                IDPConfiguration idpConfig = this.getMetadataSettings()
-                        .getIDPConfigurationByEntityID(idpUrl);
-
                 String destination = SamlUtils.getIdpSloLocation(idpConfig,
                         SamlNames.HTTP_REDIRECT);
 

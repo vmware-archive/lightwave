@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<endpoints xmlns='http://java.sun.com/xml/ns/jax-ws/ri/runtime'
+	version='2.0'>
+	<endpoint name='stsProvider'
+		interface="org.oasis_open.docs.ws_sx.ws_trust._200512.wsdl.STSService"
+		implementation='com.vmware.identity.sts.ws.StsServiceImpl' wsdl='WEB-INF/wsdl/STSService.wsdl'
+		service='{http://docs.oasis-open.org/ws-sx/ws-trust/200512/wsdl}STSService'
+		port='{http://docs.oasis-open.org/ws-sx/ws-trust/200512/wsdl}STSService_Port'
+		url-pattern='/sts/STSService/*' />
+</endpoints>

@@ -107,7 +107,7 @@ class RelyingPartyInstaller {
 
         // create a non-registered OIDC client and get bearer tokens by admin user name/password
         ConnectionConfig connectionConfig = new ConnectionConfig(providerMetadata, providerPublicKey, this.keyStore);
-        ClientConfig clientConfig = new ClientConfig(connectionConfig, null, null);
+        ClientConfig clientConfig = new ClientConfig(connectionConfig, null, null, 10 * 60L /* clockToleranceInSeconds */);
         OIDCClient nonRegisteredClient = new OIDCClient(clientConfig);
         TokenSpec tokenSpec = new TokenSpec.Builder(TokenType.BEARER).resourceServers(Arrays.asList("rs_admin_server")).build();
         OIDCTokens oidcTokens = nonRegisteredClient.acquireTokensByPassword(

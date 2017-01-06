@@ -64,6 +64,24 @@
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+         <groupId>org.apache.maven.plugins</groupId>
+         <artifactId>maven-install-plugin</artifactId>
+         <version>2.5.1</version>
+         <configuration>
+            <file>${outputDirectory}/vmware-identity-idm-interface.jar</file>
+         </configuration>
+         <executions>
+           <execution>
+            <goals>
+              <goal>install</goal>
+            </goals>
+            <phase>package</phase>
+           </execution>
+         </executions>
+      </plugin>
+
    </plugins>
   </build>
 

@@ -110,6 +110,7 @@ public class IDTokenTest {
         String idTokenString = TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getValue(), providerPrivateKey, tokenLifeTime);
         try {
             IDToken.build(idTokenString, anotherProviderPublicKey, issuer, clientID, 0L);
+            Assert.fail("expecting TokenValidationException");
         } catch (TokenValidationException e) {
             Assert.assertEquals(TokenValidationError.INVALID_SIGNATURE, e.getTokenValidationError());
         }
@@ -123,19 +124,39 @@ public class IDTokenTest {
         String idTokenString = TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getValue(), providerPrivateKey, tokenLifeTime);
         try {
             IDToken.build(idTokenString, providerPublicKey, issuer, anotherClientID, 0L);
+            Assert.fail("expecting TokenValidationException");
         } catch (TokenValidationException e) {
             Assert.assertEquals(TokenValidationError.INVALID_AUDIENCE, e.getTokenValidationError());
         }
     }
 
     @Test
-    public void testBuildIdTokenExpiredToken() throws Exception {
+    public void testBuildIdTokenExpiredTokenNotBefore() throws Exception {
 
-        String idTokenString = TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getValue(), providerPrivateKey, -tokenLifeTime);
+        Date now = new Date();
+        Date issueTime = new Date(now.getTime() - 2000L);
+        Date expirationTime = new Date(now.getTime() - 1000L); // expires 1 seconds ago
+        String idTokenString = TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getValue(), providerPrivateKey, issueTime, expirationTime);
         try {
             IDToken.build(idTokenString, providerPublicKey, issuer, clientID, 0L);
+            Assert.fail("expecting TokenValidationException");
         } catch (TokenValidationException e) {
-            Assert.assertEquals(TokenValidationError.PARSE_ERROR, e.getTokenValidationError());
+            Assert.assertEquals(TokenValidationError.EXPIRED_TOKEN, e.getTokenValidationError());
+        }
+    }
+
+    @Test
+    public void testBuildIdTokenExpiredTokenNotAfter() throws Exception {
+
+        Date now = new Date();
+        Date issueTime = new Date(now.getTime() + 1000L); // issued 1 second in the future
+        Date expirationTime = new Date(now.getTime() + 2000L);
+        String idTokenString = TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getValue(), providerPrivateKey, issueTime, expirationTime);
+        try {
+            IDToken.build(idTokenString, providerPublicKey, issuer, clientID, 0L);
+            Assert.fail("expecting TokenValidationException");
+        } catch (TokenValidationException e) {
+            Assert.assertEquals(TokenValidationError.EXPIRED_TOKEN, e.getTokenValidationError());
         }
     }
 
@@ -145,6 +166,7 @@ public class IDTokenTest {
         String idTokenString = TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ACCESS_TOKEN.getValue(), providerPrivateKey, tokenLifeTime);
         try {
             IDToken.build(idTokenString, providerPublicKey, issuer, clientID, 0L);
+            Assert.fail("expecting TokenValidationException");
         } catch (TokenValidationException e) {
             Assert.assertEquals(TokenValidationError.PARSE_ERROR, e.getTokenValidationError());
         }

@@ -14,12 +14,14 @@
 package com.vmware.identity.rest.idm.server.test.integration.resources;
 
 import static org.junit.Assert.assertEquals;
+
 import java.util.Locale;
 
 import javax.ws.rs.container.ContainerRequestContext;
 
 import org.easymock.EasyMock;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -37,6 +39,7 @@ import com.vmware.identity.rest.idm.server.test.annotation.IntegrationTest;
  * @author Travis Hall
  */
 @Category(IntegrationTest.class)
+@Ignore // ignored due to IDM process to library change, see PR 1780279.
 public class SolutionUserResourceIT extends TestBase {
 
     private static final String SOLUTION_USERNAME = "testSolutionUser";

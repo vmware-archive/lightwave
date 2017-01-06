@@ -52,4 +52,18 @@ public final class ResultTest {
       Assert.assertNull(result.getAuthnInstant());
       Assert.assertNull(result.getAuthnMethod());
    }
+
+   @Test
+   public void testSecurIDResult() {
+      String sessionID = "context";
+      final Date authInstant = new Date();
+      final AuthnMethod authMethod = Result.AuthnMethod.TIMESYNCTOKEN;
+      final Result result = new Result(sessionID, authInstant);
+      Assert.assertFalse(result.completed());
+      Assert.assertNull(result.getPrincipalId());
+      Assert.assertNull(result.getServerLeg());
+      Assert.assertEquals(authInstant, result.getAuthnInstant());
+      Assert.assertEquals(authMethod, result.getAuthnMethod());
+      Assert.assertEquals(sessionID, result.getSessionID());
+   }
 }

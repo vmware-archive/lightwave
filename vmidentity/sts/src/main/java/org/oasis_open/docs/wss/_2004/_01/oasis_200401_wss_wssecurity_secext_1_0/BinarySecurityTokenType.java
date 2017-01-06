@@ -10,11 +10,11 @@ import javax.xml.bind.annotation.XmlType;
 
 /**
  * A security token that is encoded in binary
- *
+ * 
  * <p>Java class for BinarySecurityTokenType complex type.
- *
+ * 
  * <p>The following schema fragment specifies the expected content contained within this class.
- *
+ * 
  * <pre>
  * &lt;complexType name="BinarySecurityTokenType">
  *   &lt;simpleContent>
@@ -25,8 +25,8 @@ import javax.xml.bind.annotation.XmlType;
  *   &lt;/simpleContent>
  * &lt;/complexType>
  * </pre>
- *
- *
+ * 
+ * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "BinarySecurityTokenType")
@@ -40,11 +40,11 @@ public class BinarySecurityTokenType
 
     /**
      * Gets the value of the valueType property.
-     *
+     * 
      * @return
      *     possible object is
      *     {@link String }
-     *
+     *     
      */
     public String getValueType() {
         return valueType;
@@ -52,11 +52,11 @@ public class BinarySecurityTokenType
 
     /**
      * Sets the value of the valueType property.
-     *
+     * 
      * @param value
      *     allowed object is
      *     {@link String }
-     *
+     *     
      */
     public void setValueType(String value) {
         this.valueType = value;

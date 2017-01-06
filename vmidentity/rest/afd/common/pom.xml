@@ -35,6 +35,22 @@
           <outputDirectory>${outputDirectory}</outputDirectory>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+             <executions>
+                 <execution>
+                      <phase>package</phase>
+                      <goals>
+                          <goal>copy-dependencies</goal>
+                      </goals>
+                      <configuration>
+                          <outputDirectory>${outputDirectory}</outputDirectory>
+                          <includeScope>runtime</includeScope>
+                          <excludeGroupIds>com.vmware.identity</excludeGroupIds>
+                      </configuration>
+                  </execution>
+              </executions>
+       </plugin>
     </plugins>
   </build>
 
@@ -74,6 +90,6 @@
   </dependencies>
 
   <properties>
-    <outputDirectory>${basedir}/../../../build/vmware-sts/packages/</outputDirectory>
+    <outputDirectory>${basedir}/../../../build/vmware-sts/packages</outputDirectory>
   </properties>
 </project>

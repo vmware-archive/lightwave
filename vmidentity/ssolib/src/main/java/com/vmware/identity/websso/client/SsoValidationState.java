@@ -1,6 +1,16 @@
-/* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved.
- **********************************************************************************/
+/*
+ *  Copyright (c) 2012-2016 VMware, Inc.  All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License.  You may obtain a copy
+ *  of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, without
+ *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ *  License for the specific language governing permissions and limitations
+ *  under the License.
+ */
 package com.vmware.identity.websso.client;
 
 import java.io.ByteArrayOutputStream;
@@ -191,7 +201,7 @@ public class SsoValidationState extends ValidationState {
         } catch (Exception e) {
             logger.error("Can't find IDP certificate with IDP: " + this.getIssuerVal());
             this.setValidationResult(new ValidationResult(HttpServletResponse.SC_FORBIDDEN, Error.BAD_RESPONSE,
-                    null)); //No details should be included in error sent to SP.
+                    Error.ISSUER));
             throw e;
         }
 
@@ -263,9 +273,12 @@ public class SsoValidationState extends ValidationState {
         // The signature is validated with the IDP's signing cert.
         String issuer = assertion.getIssuer().getValue();
         IDPConfiguration idpConfig = this.controller.getMetadataSettings().getIDPConfigurationByEntityID(issuer);
+        if (idpConfig == null) {
+            throw new WebssoClientException("Uknown IDP configuration. IDP entity ID = : "+issuer);
+        }
 
         if (signature != null) {
-            X509Certificate cert = (idpConfig == null) ? null : idpConfig.getSigningCertificate();
+            X509Certificate cert = idpConfig.getSigningCertificate();
             try {
                 SamlUtils.ValidateSignature(signature, cert);
             } catch (Exception e) {

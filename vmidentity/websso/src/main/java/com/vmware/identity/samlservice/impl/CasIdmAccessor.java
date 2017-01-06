@@ -473,9 +473,9 @@ public class CasIdmAccessor implements IdmAccessor {
     }
 
 	@Override
-	public PrincipalId authenticate(X509Certificate[] tLSCertChain) {
+	public PrincipalId authenticate(X509Certificate[] tLSCertChain, String hint) {
         try {
-            return client.authenticate(tenant, tLSCertChain);
+            return client.authenticate(tenant, tLSCertChain, hint);
         } catch (Exception e) {
             logger.error("Caught exception. ", e);
             throw new IllegalStateException(e);

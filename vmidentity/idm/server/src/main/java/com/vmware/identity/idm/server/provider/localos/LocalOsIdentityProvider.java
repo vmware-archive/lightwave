@@ -51,6 +51,7 @@ import com.vmware.identity.idm.server.provider.IIdentityProvider;
 import com.vmware.identity.idm.server.provider.NoSuchGroupException;
 import com.vmware.identity.idm.server.provider.NoSuchUserException;
 import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
+import com.vmware.identity.idm.server.provider.UserSet;
 import com.vmware.identity.interop.ossam.GroupInfo;
 import com.vmware.identity.interop.ossam.IOsSamAdapter;
 import com.vmware.identity.interop.ossam.OsSamAdapterFactory;
@@ -1002,7 +1003,23 @@ public class LocalOsIdentityProvider implements IIdentityProvider
     }
 
     @Override
+    public UserSet findActiveUsersInDomain(String attributeName, String attributeValue
+            , String userDomain, String additionalAttribute)
+            throws Exception {
+        throw new IDMException("findActiveUsersInDomain() not supported in localos provider");
+    }
+
+    @Override
     public String getStoreUPNAttributeName() {
         return USER_PRINCIPAL_NAME_ATTRIBUTE;
+    }
+
+    @Override
+    public String getStoreUserHintAttributeName() throws IDMException {
+        throw new IDMException("getStoreUserHintAttributeName() not supported in localos provider");
+    }
+    @Override
+    public boolean getCertificateMappingUseUPN() {
+        return true;
     }
 }

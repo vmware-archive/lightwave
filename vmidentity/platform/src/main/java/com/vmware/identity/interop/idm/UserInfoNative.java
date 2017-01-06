@@ -36,7 +36,7 @@ public class UserInfoNative extends Structure {
 
     protected UserInfoNative()
     {
-        super(SystemUtils.IS_OS_WINDOWS ? W32APITypeMapper.UNICODE : LwApiTypeMapper.UNICODE);
+        this.setTypeMapper( SystemUtils.IS_OS_WINDOWS ? W32APITypeMapper.UNICODE : LwApiTypeMapper.UNICODE );
     }
 
     public UserInfoNative(Pointer p)
@@ -79,7 +79,7 @@ public class UserInfoNative extends Structure {
                 if (pValue != Pointer.NULL)
                 {
                     String groupName =  Platform.isWindows() ?
-                                            pValue.getWideString(0) :
+                                            pValue.getString(0, true) :
                                             LwApiTypeMapper.getString(pValue);
                     if (groupName != null && !groupName.trim().isEmpty())
                     {
@@ -96,7 +96,7 @@ public class UserInfoNative extends Structure {
                 if (pValue != Pointer.NULL)
                 {
                     String groupSid =  Platform.isWindows() ?
-                                            pValue.getWideString(0) :
+                                            pValue.getString(0, true) :
                                             LwApiTypeMapper.getString(pValue);
                     if (groupSid != null && !groupSid.trim().isEmpty())
                     {

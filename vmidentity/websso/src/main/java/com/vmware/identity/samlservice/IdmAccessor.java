@@ -208,10 +208,11 @@ public interface IdmAccessor {
 
 	/**
 	 * Issue Authentication call for the current tenant with the TLS Client certificate chain
-	 * @param X509Certificate[]
+	 * @param tLSCertChain
+	 * @param hint   optional user hint (userNameHint@userdomain)
 	 * @return
 	 */
-	PrincipalId authenticate(X509Certificate[] tLSCertChain);
+	PrincipalId authenticate(X509Certificate[] tLSCertChain, String hint);
 
 	    /**
      * Issue Authentication call for the current tenant with the specified

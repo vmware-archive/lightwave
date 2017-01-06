@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" xmlns:soap-env="http://schemas.xmlsoap.org/soap/envelope" xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" targetNamespace="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!-- The next 3 imports are necessary for SecurityHeaderType content validation -->
+	<!--  to find out schema definitions of wsu:Timestamp, saml2:Assertion and -->
+	<!--  ds:Signature.-->
+	<xs:import namespace="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" schemaLocation="oasis-200401-wss-wssecurity-utility-1.0.xsd"/>
+	<xs:import namespace="http://www.w3.org/2000/09/xmldsig#" schemaLocation="xmldsig-core-schema.xsd"/>
+	<xs:import namespace="urn:oasis:names:tc:SAML:2.0:assertion" schemaLocation="profiled-saml-schema-assertion-2.0.xsd"/>
+	<xs:element name="KeyIdentifier" type="wsse:KeyIdentifierType" />
+	<xs:element name="Reference" type="wsse:ReferenceType" />
+	<xs:element name="SecurityTokenReference" type="wsse:SecurityTokenReferenceType" />
+	<xs:element name="Security" type="wsse:SecurityHeaderType"/>
+	<xs:element name="UsernameToken" type="wsse:UsernameTokenType"/>
+	<xs:element name="BinarySecurityToken" type="wsse:BinarySecurityTokenType"/>
+	<xs:element name="UserCertificateToken" type="wsse:UserCertificateTokenType" />
+	<xs:element name="Password" type="wsse:PasswordString" />
+	<xs:element name="Passcode" type="wsse:PasscodeString" />
+	<xs:complexType name="SecurityHeaderType">
+		<xs:annotation>
+			<xs:documentation>This complexType defines header block to use for security-relevant data directed at a specific SOAP actor.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:any processContents="lax" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+						The use of "any" is to allow extensibility and different forms of security data.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:any>
+		</xs:sequence>
+		<xs:anyAttribute namespace="##other" processContents="lax"/>
+	</xs:complexType>
+	<xs:complexType name="UsernameTokenType">
+		<xs:annotation>
+			<xs:documentation>This type represents a username token per Section 4.1</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="Username" type="wsse:AttributedString"/>
+			<xs:any processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+		<xs:attribute ref="wsu:Id"/>
+	</xs:complexType>
+	<xs:complexType name="AttributedString">
+		<xs:annotation>
+			<xs:documentation>This type represents an element with arbitrary attributes.</xs:documentation>
+		</xs:annotation>
+		<xs:simpleContent>
+			<xs:extension base="xs:string">
+				<xs:attribute ref="wsu:Id"/>
+				<xs:anyAttribute namespace="##other" processContents="lax"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="PasswordString">
+		<xs:annotation>
+			<xs:documentation>This type is used for password elements per Section 4.1.</xs:documentation>
+		</xs:annotation>
+		<xs:simpleContent>
+			<xs:extension base="wsse:AttributedString">
+				<xs:attribute name="Type" type="xs:anyURI"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="PasscodeString">
+		<xs:annotation>
+			<xs:documentation>This type is used for password elements per Section 4.1.</xs:documentation>
+		</xs:annotation>
+		<xs:simpleContent>
+			<xs:extension base="wsse:AttributedString">
+				<xs:attribute name="Type" type="xs:anyURI"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="BinarySecurityTokenType">
+		<xs:annotation>
+			<xs:documentation>A security token that is encoded in binary</xs:documentation>
+		</xs:annotation>
+		<xs:simpleContent>
+			<xs:extension base="wsse:EncodedString">
+				<xs:attribute name="ValueType" type="xs:anyURI"/>
+				<xs:anyAttribute namespace="##any" processContents="skip"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="EncodedString">
+		<xs:annotation>
+			<xs:documentation>This type is used for elements containing stringified binary data.</xs:documentation>
+		</xs:annotation>
+		<xs:simpleContent>
+			<xs:extension base="wsse:AttributedString">
+				<xs:attribute name="EncodingType" type="xs:anyURI"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="KeyIdentifierType">
+		<xs:annotation>
+			<xs:documentation>A security token key identifier</xs:documentation>
+		</xs:annotation>
+		<xs:simpleContent>
+			<xs:extension base="wsse:EncodedString">
+				<xs:attribute name="ValueType" type="xs:anyURI"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="ReferenceType">
+		<xs:annotation>
+			<xs:documentation>This type represents a reference to an external security token.</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="URI" type="xs:anyURI"/>
+		<xs:attribute name="ValueType" type="xs:anyURI"/>
+		<xs:anyAttribute namespace="##other" processContents="lax"/>
+	</xs:complexType>
+	<xs:complexType name="SecurityTokenReferenceType">
+		<xs:annotation>
+			<xs:documentation>This type is used reference a security token.</xs:documentation>
+		</xs:annotation>
+		<xs:choice minOccurs="0" maxOccurs="unbounded">
+			<xs:any processContents="lax"/>
+		</xs:choice>
+		<xs:attribute ref="wsu:Id"/>
+		<xs:anyAttribute namespace="##other" processContents="lax"/>
+	</xs:complexType>
+	<xs:complexType name="UserCertificateTokenType">
+		<xs:annotation>
+			<xs:documentation>User certificate token type. It includes a certificate, a piece of information to be signed, signature algorithm and signature value.</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="UserCertificate" type="wsse:BinarySecurityTokenType" />
+			<xs:element name="SignatureInfo" type="xs:string"/>
+			<xs:element name="SignatureAlgorithm" type="wsse:SignatureAlgorithmType"/>
+			<xs:element name="SignatureValue" type="ds:SignatureValueType" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:simpleType name="SignatureAlgorithmType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="SHA256withRSA"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

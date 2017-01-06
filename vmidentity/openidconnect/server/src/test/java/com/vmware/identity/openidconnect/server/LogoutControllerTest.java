@@ -552,7 +552,7 @@ public class LogoutControllerTest {
             request.setCookies(new Cookie(SESSION_COOKIE_NAME, sessionId.getValue()));
         }
         MockHttpServletResponse response = new MockHttpServletResponse();
-        controller.logout(request, response);
+        controller.logout(request, response, TENANT_NAME);
         return response;
     }
 }

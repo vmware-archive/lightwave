@@ -15,6 +15,8 @@ package com.vmware.identity.rest.idm.server.resources;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -31,6 +33,8 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
+
+import org.apache.logging.log4j.ThreadContext;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -144,6 +148,11 @@ public class UserResource extends BaseSubResource {
     @RequiresRole(role=Role.REGULAR_USER)
     public UserDTO get(@PathParam("userName") String name) {
         PrincipalId id = PrincipalUtil.fromName(name);
+        Map<String,String> params = ThreadContext.getContext();
+        for(Entry<String,String> e : params.entrySet()) {
+        	log.info("MDC key : " + e.getKey() + " MDC Value : " + e.getValue());
+        }
+        log.info("================================");
 
         try {
             PersonUser idmPersonUser = getIDMClient().findPersonUser(tenant, id);

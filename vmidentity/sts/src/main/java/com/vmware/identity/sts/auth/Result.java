@@ -23,13 +23,14 @@ import com.vmware.identity.idm.PrincipalId;
 public final class Result {
 
    static public enum AuthnMethod {
-      PASSWORD, DIG_SIG, KERBEROS, NTLM, ASSERTION, EXTERNAL_ASSERTION
+      PASSWORD, DIG_SIG, KERBEROS, NTLM, ASSERTION, EXTERNAL_ASSERTION, SMARTCARD, TIMESYNCTOKEN
    }
 
    private final PrincipalId principalId;
    private final Date authInstant;
    private final AuthnMethod authnMethod;
    private final byte[] serverLeg;
+   private final String sessionID;
 
    /**
     * Creates an incomplete authentication result
@@ -41,10 +42,11 @@ public final class Result {
    public Result(byte[] serverLeg) {
       assert serverLeg != null && serverLeg.length > 0;
 
-      principalId = null;
-      authInstant = null;
-      authnMethod = null;
+      this.principalId = null;
+      this.authInstant = null;
+      this.authnMethod = null;
       this.serverLeg = serverLeg;
+      this.sessionID = null;
    }
 
    /**
@@ -86,7 +88,18 @@ public final class Result {
       this.authInstant = authnInstant;
       this.authnMethod = authnMethod;
       this.serverLeg = serverLeg;
+      this.sessionID = null;
+   }
 
+   public Result(String sessionID, Date authnInstant) {
+      assert sessionID != null;
+      assert authnInstant != null;
+
+      this.principalId = null;
+      this.authInstant = authnInstant;
+      this.authnMethod = AuthnMethod.TIMESYNCTOKEN;
+      this.serverLeg = null;
+      this.sessionID = sessionID;
    }
 
    public boolean completed() {
@@ -122,5 +135,9 @@ public final class Result {
     */
    public byte[] getServerLeg() {
       return serverLeg;
+   }
+
+   public String getSessionID() {
+      return sessionID;
    }
 }

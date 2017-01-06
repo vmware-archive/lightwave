@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2012 VMware, Inc. All rights reserved. VMware confidential.
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+      http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
+
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+   <!-- VMOMI Server Beans                                                   -->
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+
+   <bean id="idpVersion"
+         factory-bean="versionFinder"
+         factory-method="findVersion">
+      <constructor-arg value="com.vmware.vim.binding.idp.version.version1" />
+   </bean>
+
+   <bean id="idpAdapterServer"
+         class="com.vmware.vim.vmomi.server.impl.AdapterServerImpl">
+
+      <property name="activationValidators">
+         <list>
+            <ref bean="idpPrivilegeChecker" />
+         </list>
+      </property>
+      <property name="serverGuid" value="${idp.serverGuid}" />
+   </bean>
+
+   <bean id="idpSessionManager"
+         class="com.vmware.vim.vmomi.server.session.impl.SessionManagerImpl"
+         destroy-method="shutdown" />
+
+   <bean id="idpDispatcher"
+         class="com.vmware.vim.vmomi.server.impl.DispatcherImpl"
+         depends-on="vmodlContext">
+      <constructor-arg ref="idpSessionManager" />
+      <property name="versionUriHandlers">
+         <list>
+            <ref bean="idpBodyHandler" />
+         </list>
+      </property>
+   </bean>
+
+   <bean id="idpBodyHandler"
+         class="com.vmware.vim.vmomi.server.impl.BodyHandlerImpl">
+
+      <constructor-arg ref="idpVersion" />
+      <constructor-arg ref="idpAdapterServer" />
+      <constructor-arg ref="vmodlContext" />
+      <constructor-arg ref="requestSignatureValidator" />
+   </bean>
+
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+   <!-- VLSI Pipeline Configuration                                          -->
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+
+   <bean id="idpHttpResponseCorrelator"
+         class="com.vmware.vim.vmomi.server.impl.Correlator" />
+
+   <bean id="idpFirstStep"
+         class="com.vmware.vim.vmomi.server.http.impl.CorrelationStep">
+      <property name="nextStep" ref="idpDispatcherStep" />
+      <property name="executor" ref="executor" />
+      <property name="correlator" ref="idpHttpResponseCorrelator" />
+   </bean>
+
+   <bean id="idpDispatcherStep"
+         class="com.vmware.vim.vmomi.server.impl.DispatcherStep">
+      <property name="nextStep" ref="idpValidationStartStep" />
+      <property name="completionStep" ref="idpFilterStartStep" />
+      <property name="executor" ref="executor" />
+      <property name="dispatcher" ref="idpDispatcher" />
+   </bean>
+
+   <bean id="idpValidationStartStep"
+         class="com.vmware.identity.vlsi.STSDiagnosticLogValidationStartStep">
+      <property name="nextStep" ref="idpInvocationStep" />
+      <property name="executor" ref="executor" />
+      <property name="adapterServer" ref="idpAdapterServer" />
+      <property name="threadConfigurator">
+         <bean class="com.vmware.vim.vmomi.server.util.Log4jMDCThreadConfigurator"/>
+      </property>
+   </bean>
+
+   <bean id="idpFilterStartStep"
+         class="com.vmware.vim.vmomi.server.impl.FilterStartStep">
+      <property name="nextStep" ref="idpCompletionStep" />
+      <property name="executor" ref="executor" />
+      <property name="adapterServer" ref="idpAdapterServer" />
+   </bean>
+
+   <bean id="idpCompletionStep"
+         class="com.vmware.vim.vmomi.server.impl.CompletionStep">
+      <property name="nextStep" ref="idpContinuerStep" />
+      <property name="executor" ref="executor" />
+      <property name="adapterServer" ref="idpAdapterServer" />
+      <property name="vmodlContext" ref="vmodlContext" />
+   </bean>
+
+   <bean id="idpInvocationStep"
+         class="com.vmware.identity.vlsi.STSDiagnosticLogInvocationStep">
+      <property name="executor" ref="executor" />
+      <property name="threadConfigurator">
+         <bean class="com.vmware.vim.vmomi.server.util.Log4jMDCThreadConfigurator"/>
+      </property>
+   </bean>
+
+   <bean id="idpContinuerStep"
+         class="com.vmware.vim.vmomi.server.http.impl.UnblockResponseStep">
+      <!-- This is the last step - no nextStep -->
+      <constructor-arg ref="executor" />
+      <constructor-arg ref="idpHttpResponseCorrelator" />
+   </bean>
+
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+   <!-- IDP Provisioning Beans                                               -->
+   <!-- ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ ~~ -->
+
+   <!-- Access control -->
+
+   <bean id="idpPrivilegeChecker"
+         class="com.vmware.vim.vmomi.server.PrivilegeChecker">
+
+      <constructor-arg ref="idpAuthorizer" />
+   </bean>
+
+   <bean id="idpAuthorizer"
+         class="com.vmware.identity.idp.vlsi.IdpAuthorizer">
+      <constructor-arg ref="adminServerIms" />
+      <constructor-arg ref="casIdmClient" />
+   </bean>
+
+   <!-- IDP managed object beans -->
+
+   <bean id="idpManagementImpl"
+         class="com.vmware.identity.idp.IdpManagementImpl">
+
+      <constructor-arg ref="casIdmClient" />
+   </bean>
+
+   <bean id="provisioningServiceMO"
+         class="com.vmware.identity.idp.vlsi.ProvisioningServiceImpl">
+
+      <constructor-arg value="provisioningService" /> <!--  MoId -->
+      <constructor-arg ref="idpAdapterServer" />
+      <constructor-arg ref="idpManagementImpl" />
+   </bean>
+
+   <bean id="idpSessionManagerMO"
+         class="com.vmware.identity.idp.vlsi.SessionManagerImpl">
+
+      <constructor-arg value="idpSessionManager" /> <!--  MoId -->
+      <constructor-arg ref="idpAdapterServer" />
+   </bean>
+
+   <bean id="idpServiceContent"
+         class="com.vmware.vim.binding.idp.ServiceContent">
+
+      <property name="sessionManager">
+         <bean factory-bean="idpSessionManagerMO" factory-method="_getRef" />
+      </property>
+
+      <property name="provisioningService">
+         <bean factory-bean="provisioningServiceMO" factory-method="_getRef" />
+      </property>
+   </bean>
+
+   <bean id="idpServiceInstanceMO"
+         class="com.vmware.identity.idp.vlsi.ServiceInstanceImpl">
+
+      <constructor-arg value="idpServiceInstance" /> <!-- MoId -->
+      <constructor-arg ref="idpAdapterServer" />
+      <constructor-arg ref="idpServiceContent" />
+   </bean>
+
+</beans>

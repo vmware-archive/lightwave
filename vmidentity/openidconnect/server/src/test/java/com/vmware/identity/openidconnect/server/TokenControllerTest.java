@@ -716,7 +716,19 @@ public class TokenControllerTest {
     }
 
     @Test
-    public void testRefreshTokenFlowJwtExpired() throws Exception {
+    public void testRefreshTokenFlowJwtExpiredNotBefore() throws Exception {
+        Flow flow = Flow.REFRESH_TOKEN;
+        Map<String, String> params = tokenRequestParameters(flow);
+        JWTClaimsSet.Builder claimsBuilder = refreshTokenClaims();
+        Date now = new Date();
+        claimsBuilder = claimsBuilder.issueTime(new Date(now.getTime() + 8*1000L)); // issued 8 seconds in the future
+        claimsBuilder = claimsBuilder.expirationTime(new Date(now.getTime() + 9*1000L)); // expires 9 seconds in the future
+        params.put("refresh_token", TestUtil.sign(claimsBuilder.build(), TENANT_PRIVATE_KEY).serialize());
+        assertErrorResponse(flow, params, "invalid_grant", "refresh_token has expired");
+    }
+
+    @Test
+    public void testRefreshTokenFlowJwtExpiredNotAfter() throws Exception {
         Flow flow = Flow.REFRESH_TOKEN;
         Map<String, String> params = tokenRequestParameters(flow);
         JWTClaimsSet.Builder claimsBuilder = refreshTokenClaims();
@@ -1023,6 +1035,19 @@ public class TokenControllerTest {
     }
 
     @Test
+    public void testQueryParametersDisallowed() throws Exception {
+        Flow flow = Flow.AUTHZ_CODE;
+        Map<String, String> params = tokenRequestParametersClient(flow);
+        MockHttpServletRequest request = TestUtil.createPostRequest(params);
+        request.setQueryString("p1=v1");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        TokenController controller = tokenController();
+        controller.acquireTokens(request, response, TENANT_NAME);
+        String expectedErrorMessage = "query parameters are not allowed at token endpoint";
+        validateTokenErrorResponse(response, flow, "invalid_request", expectedErrorMessage);
+    }
+
+    @Test
     public void testUnsupportedGrantType() throws Exception {
         Flow flow = Flow.AUTHZ_CODE;
         Map<String, String> params = new HashMap<String, String>();
@@ -1177,11 +1202,23 @@ public class TokenControllerTest {
     }
 
     @Test
-    public void testAssertionIssuedAt() throws Exception {
+    public void testAssertionIssuedAtTooFarInThePast() throws Exception {
         Flow flow = Flow.AUTHZ_CODE;
         JWTClaimsSet.Builder claimsBuilder = clientAssertionClaims();
         Date now = new Date();
         Date issuedAt = new Date(now.getTime() - 5 * 60 * 1000L); // issued 5 mins ago
+        claimsBuilder = claimsBuilder.issueTime(issuedAt);
+        Map<String, String> params = tokenRequestParametersClient(flow, claimsBuilder.build());
+        String expectedErrorMessage = "stale_client_assertion";
+        assertErrorResponse(flow, params, "invalid_client", expectedErrorMessage);
+    }
+
+    @Test
+    public void testAssertionIssuedAtTooFarInTheFuture() throws Exception {
+        Flow flow = Flow.AUTHZ_CODE;
+        JWTClaimsSet.Builder claimsBuilder = clientAssertionClaims();
+        Date now = new Date();
+        Date issuedAt = new Date(now.getTime() + 5 * 60 * 1000L); // issued 5 mins in the future
         claimsBuilder = claimsBuilder.issueTime(issuedAt);
         Map<String, String> params = tokenRequestParametersClient(flow, claimsBuilder.build());
         String expectedErrorMessage = "stale_client_assertion";

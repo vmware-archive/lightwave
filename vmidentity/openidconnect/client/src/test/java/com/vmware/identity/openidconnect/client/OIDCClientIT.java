@@ -264,7 +264,7 @@ public class OIDCClientIT extends OIDCClientITBase {
                 connectionConfig.getProviderPublicKey(),
                 connectionConfig.getIssuer(),
                 RESOURCE_SERVER_NAME,
-                0L /* clockTolerance */);
+                5 * 60L /* clockToleranceInSeconds */);
         Collection<String> actualGroups = accessToken.getGroups();
         List<String> expectedGroups = Arrays.asList(tenant + "\\administrators");
         Assert.assertEquals("groups", expectedGroups, actualGroups);

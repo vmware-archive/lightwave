@@ -84,7 +84,9 @@ import com.vmware.identity.idm.server.provider.BaseLdapProvider;
 import com.vmware.identity.idm.server.provider.ISystemDomainIdentityProvider;
 import com.vmware.identity.idm.server.provider.NoSuchGroupException;
 import com.vmware.identity.idm.server.provider.NoSuchUserException;
+import com.vmware.identity.idm.server.provider.PooledLdapConnection;
 import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
+import com.vmware.identity.idm.server.provider.UserSet;
 import com.vmware.identity.interop.ldap.AlreadyExistsLdapException;
 import com.vmware.identity.interop.ldap.AttributeOrValueExistsLdapException;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
@@ -325,11 +327,13 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
     private String _domainId = null;
 
-    private boolean _isSystemDomainProvider;
+    private final boolean _isSystemDomainProvider;
 
-    public VMwareDirectoryProvider(IIdentityStoreData store, boolean isSystemDomainProvider)
+    private final String tenantName;
+
+    public VMwareDirectoryProvider(String tenantName, IIdentityStoreData store, boolean isSystemDomainProvider)
     {
-        super(store);
+        super(tenantName, store);
 
         _isSystemDomainProvider = isSystemDomainProvider;
 
@@ -341,6 +345,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         _specialAttributes = new HashSet<String>();
 
         _specialAttributes.add(ATTR_SUBJECT_TYPE);
+        this.tenantName = tenantName;
 
         this._everyoneGroup = new Group(
             new PrincipalId(
@@ -420,9 +425,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
         byte[] userPassword = null;
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
             String[] attrNames = { SPECIAL_NAME_TO_REQUEST_USERPASSWORD };
 
@@ -434,7 +437,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             String searchBaseDn = getUsersDN(domainName);
 
             ILdapMessage message =
-                    connection.search(searchBaseDn, LdapScope.SCOPE_SUBTREE,
+                    pooledConnection.getConnection().search(searchBaseDn, LdapScope.SCOPE_SUBTREE,
                             filter, attrNames, false);
             try
             {
@@ -456,9 +459,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-        } finally
-        {
-            connection.close();
         }
 
         return userPassword;
@@ -478,10 +478,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             return null;
         }
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             long pwdLifeTime = getPwdLifeTime();
 
             String[] attrNames =
@@ -490,7 +489,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                             ATTR_NAME_OBJECTSID, ATTR_PWD_LAST_SET };
 
             String filter = buildQueryByUserFilter(id);
-
 
             // Search from Users by default
             String searchBaseDn = getUsersDN(domainName);
@@ -587,9 +585,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-        } finally
-        {
-            connection.close();
         }
 
         return user;
@@ -603,10 +598,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         PersonUser user = null;
         ILdapMessage message = null;
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             long pwdLifeTime = getPwdLifeTime();
 
             String[] attrNames =
@@ -707,8 +701,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-
-            connection.close();
         }
 
         return user;
@@ -732,10 +724,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         Set<PersonUser> users = new HashSet<PersonUser>();
         PersonUser user = null;
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_DESCRIPTION, ATTR_FIRST_NAME,
                             ATTR_LAST_NAME, ATTR_EMAIL_ADDRESS,
@@ -834,9 +825,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-        } finally
-        {
-            connection.close();
         }
 
         return users;
@@ -864,10 +852,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             return users;
         }
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames =
                     { ATTR_NAME_CN, ATTR_DESCRIPTION, ATTR_NAME_MEMBER };
 
@@ -948,9 +935,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-        } finally
-        {
-            connection.close();
         }
 
         return users;
@@ -1009,10 +993,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         Set<PersonUser> users = new HashSet<PersonUser>();
         PersonUser user = null;
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_DESCRIPTION, ATTR_FIRST_NAME,
                             ATTR_LAST_NAME, ATTR_EMAIL_ADDRESS,
@@ -1111,9 +1094,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-        } finally
-        {
-            connection.close();
         }
 
         return users;
@@ -1128,10 +1108,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         PersonUser user = null;
         Set<PersonUser> users = new HashSet<PersonUser>();
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_DESCRIPTION, ATTR_FIRST_NAME,
                             ATTR_LAST_NAME, ATTR_EMAIL_ADDRESS,
@@ -1229,7 +1208,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
 
         return users;
@@ -1258,10 +1236,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         SolutionUser solution = null;
         ILdapMessage message = null;
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             ValidateUtil.validateNotEmpty(containerDn, "container Dn");
 
             String[] attrNames =
@@ -1345,7 +1322,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
 
         return solutions;
@@ -1405,12 +1381,14 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             String containerDn) throws IDMException
     {
         int accountFlags = 0;
+        PooledLdapConnection pooledConnection = null;
         ILdapConnectionEx connection = null;
         ILdapMessage message = null;
 
         try
         {
-            connection = getConnection();
+            pooledConnection = borrowConnection();
+            connection = pooledConnection.getConnection();
         } catch (Exception ex)
         {
             throw new IDMException("Failed to establish server connection", ex);
@@ -1454,7 +1432,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
+            if (pooledConnection != null) {
+                pooledConnection.close();
+            }
         }
 
         return accountFlags;
@@ -1482,10 +1462,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
            return this._everyoneGroup;
         }
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames =
                     { ATTR_NAME_CN, ATTR_DESCRIPTION,
                             ATTR_NAME_OBJECTSID };
@@ -1532,9 +1511,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-        } finally
-        {
-            connection.close();
         }
 
         return group;
@@ -1545,10 +1521,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     {
         Group group = null;
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames =
                     { ATTR_NAME_CN, ATTR_DESCRIPTION,
                             ATTR_NAME_OBJECTSID };
@@ -1602,9 +1577,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-        } finally
-        {
-            connection.close();
         }
 
         return group;
@@ -1629,10 +1601,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         Group group = null;
         ILdapMessage message = null;
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames = { ATTR_NAME_CN, ATTR_DESCRIPTION };
 
             // Lotus isn't supporting *substring* matching. It only
@@ -1701,7 +1672,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
 
         return groups;
@@ -1718,10 +1688,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         ILdapMessage userMessage = null;
         ILdapMessage message = null;
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String domainName = getDomain();
             String principalDomainName = id.getDomain();
             String domainBaseDn = getDomainDN(domainName);
@@ -1825,7 +1794,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
         return new PrincipalGroupLookupInfo(groups, null);// this provider does not expose objectIds at the moment
     }
@@ -1840,10 +1808,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         ILdapMessage userMessage = null;
         ILdapMessage message = null;
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
 
             String domainName = getDomain();
             String principalDomainName = id.getDomain();
@@ -1955,7 +1922,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
         return new PrincipalGroupLookupInfo(groups, null); // this provider does not expose object Ids at the moment
     }
@@ -1985,10 +1951,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             return groups;
         }
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames = { ATTR_NAME_CN, ATTR_NAME_MEMBER };
 
             String groupFilter = buildQueryByGroupFilter(id.getName());
@@ -2067,12 +2032,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                     message.close();
                 }
             }
-        } finally
-        {
-            if (connection != null)
-            {
-                connection.close();
-            }
         }
 
         return groups;
@@ -2132,10 +2091,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         attrNames.add(ATTR_NAME_ACCOUNT);
         attrNames.add(ATTR_NAME_OBJECTSID);
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String baseDN = this.getStoreDataEx().getUserBaseDn();
 
             String filter = buildQueryByUserORSrvFilter(principalId);
@@ -2241,9 +2199,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-        } finally
-        {
-            connection.close();
         }
 
         Iterator<String> iter = specialAttrs.keySet().iterator();
@@ -2351,14 +2306,14 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     private PrincipalId addServicePrincipalInternal(String accountName,
             SolutionDetail detail) throws Exception
     {
-        ILdapConnectionEx connection = getConnection();
         ILdapMessage message = null;
         ArrayList<LdapMod> attributeList = new ArrayList<LdapMod>();
 
         final String domainName = getDomain();
         final PrincipalId newSolutionUserId = new PrincipalId(accountName, domainName);
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             if (existsPrincipal(accountName, newSolutionUserId, connection))
             {
                 // There exists a user or group already with the same name
@@ -2479,7 +2434,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
     }
 
@@ -2505,10 +2459,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
         SolutionUser result = null;
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             final PrincipalId principal = new PrincipalId(accountName, this.getDomain());
 
             String[] attrNames =
@@ -2592,9 +2545,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-        } finally
-        {
-            connection.close();
         }
 
         return result;
@@ -2623,10 +2573,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         SolutionUser solution = null;
         ILdapMessage message = null;
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             ValidateUtil.validateNotEmpty(containerDn, "container Dn");
 
             String[] attrNames =
@@ -2714,7 +2663,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
 
         return solutions;
@@ -2728,10 +2676,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         ILdapMessage message = null;
         ILdapMessage solutionMessage = null;
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames =
                     { ATTR_NAME_CN, ATTR_DESCRIPTION, ATTR_NAME_MEMBER,
                       ATTR_NAME_ACCOUNT_FLAGS };
@@ -2866,7 +2813,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 solutionMessage.close();
             }
-            connection.close();
         }
 
         return solutions;
@@ -2897,10 +2843,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     {
         SolutionUser result = null;
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             ValidateUtil.validateNotEmpty(containerDn, "container Dn");
 
             String[] attrNames =
@@ -2983,9 +2928,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-        } finally
-        {
-            connection.close();
         }
 
         return result;
@@ -3025,11 +2967,11 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             );
         }
 
-        ILdapConnectionEx connection = getConnection();
         ArrayList<LdapMod> attributeList = new ArrayList<LdapMod>();
 
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             if ( existsPrincipal(accountName, newUserUpn, connection) )
             {
                 // There exists a user or group already with the same name
@@ -3192,9 +3134,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 ServerUtils.getUpn(newUserUpn),
                 e
             );
-        } finally
-        {
-            connection.close();
         }
     }
 
@@ -3309,13 +3248,13 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             String containerDn) throws Exception
     {
 
-        ILdapConnectionEx connection = getConnection();
         ILdapMessage message = null;
         boolean changed = false;
         String userDn = null;
 
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames = { ATTR_NAME_ACCOUNT_FLAGS };
 
             String filter = buildQueryByUserORSrvFilter(id);
@@ -3378,7 +3317,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
 
         return changed;
@@ -3408,14 +3346,13 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     private boolean disableUserAccountInContainer(PrincipalId id,
             String containerDn) throws Exception
     {
-
-        ILdapConnectionEx connection = getConnection();
         ILdapMessage message = null;
         boolean changed = false;
         String userDn = null;
 
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames = { ATTR_NAME_ACCOUNT_FLAGS };
 
             String filter = buildQueryByUserORSrvFilter(id);
@@ -3478,7 +3415,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
 
         return changed;
@@ -3489,13 +3425,13 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     {
         ValidateUtil.validateNotNull(id, "id");
 
-        ILdapConnectionEx connection = getConnection();
         ILdapMessage message = null;
         boolean changed = false;
         String userDn = null;
 
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames = { ATTR_NAME_ACCOUNT_FLAGS };
 
             String filter = buildQueryByUserFilter(id);
@@ -3553,7 +3489,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
 
         return changed;
@@ -3563,13 +3498,13 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     public boolean addUserToGroup(PrincipalId userId, String groupName)
             throws Exception
     {
-        ILdapConnectionEx connection = getConnection();
         boolean added = false;
 
         String userDn = null;
 
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             final String userDomainName = userId.getDomain();
 
             if (this.belongsToThisIdentityProvider(userDomainName))
@@ -3690,9 +3625,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 groupMessage.close();
             }
-        } finally
-        {
-            connection.close();
         }
 
         return added;
@@ -3705,11 +3637,11 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         ValidateUtil.validateNotEmpty(groupName, "groupName");
 
         ArrayList<LdapMod> attributeList = new ArrayList<LdapMod>();
-        ILdapConnectionEx connection = getConnection();
 
         final PrincipalId newGroupId = new PrincipalId(groupName, this.getDomain());
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             if (existsPrincipal(groupName, newGroupId, connection))
             {
                 // There exists a user or group already with the same name
@@ -3773,9 +3705,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             // The group already exists.
             throw new InvalidPrincipalException(String.format(
                     "group %s already exists", groupName), newGroupId.getUPN(), e);
-        } finally
-        {
-            connection.close();
         }
     }
 
@@ -3791,10 +3720,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         String filter = null;
         String searchDn = null;
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             if (this.isSameDomainUpn(groupId))
             {
                 // Find the group to add
@@ -3931,9 +3859,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 groupMessage.close();
             }
-        } finally
-        {
-            connection.close();
         }
 
         return added;
@@ -3953,10 +3878,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         String searchDn = null;
         String filter = null;
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             final String userDomainName = principalId.getDomain();
 
             if (this.belongsToThisIdentityProvider(userDomainName))
@@ -4073,7 +3997,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 groupMessage.close();
             }
-            connection.close();
         }
 
         return removed;
@@ -4085,12 +4008,12 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     {
         ValidateUtil.validateNotNull(detail, "detail");
 
-        ILdapConnectionEx connection = getConnection();
         ArrayList<LdapMod> attributeList = new ArrayList<LdapMod>();
         ILdapMessage message = null;
 
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String domainName = getDomain();
 
             final PrincipalId userId = new PrincipalId(accountName, domainName);
@@ -4165,7 +4088,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
     }
 
@@ -4189,13 +4111,13 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             String userName, SolutionDetail detail, String containerDn)
             throws Exception
     {
-        ILdapConnectionEx connection = getConnection();
         ArrayList<LdapMod> attributeList = new ArrayList<LdapMod>();
         ILdapMessage message = null;
         String userDn = null;
 
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             ValidateUtil.validateNotEmpty(containerDn, "container Dn");
             String domainName = getDomain();
 
@@ -4279,7 +4201,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
     }
 
@@ -4287,13 +4208,13 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     public PrincipalId updateGroupDetail(String groupName, GroupDetail detail)
             throws Exception
     {
-        ILdapConnectionEx connection = getConnection();
         ArrayList<LdapMod> attributeList = new ArrayList<LdapMod>();
         ILdapMessage message = null;
         String groupDn = null;
 
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String domainName = getDomain();
 
             String[] attrNames = { ATTR_NAME_ACCOUNT };
@@ -4348,7 +4269,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
     }
 
@@ -4356,13 +4276,13 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     public void resetUserPassword(String accountName, char[] newPassword)
             throws Exception
     {
-        ILdapConnectionEx connection = getConnection();
         ArrayList<LdapMod> attributeList = new ArrayList<LdapMod>();
         ILdapMessage message = null;
         String userDn = null;
 
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             final PrincipalId userId = new PrincipalId(accountName, this.getDomain());
             String[] attrNames = { ATTR_NAME_ACCOUNT };
 
@@ -4410,7 +4330,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
     }
 
@@ -4418,12 +4337,12 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     public void resetUserPassword(String accountName, char[] currentPassword,
             char[] newPassword) throws Exception
     {
-        ILdapConnectionEx connection = getConnection();
         ILdapMessage message = null;
         String userDn = null;
 
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             final String domainName = getDomain();
             final PrincipalId userId = new PrincipalId(accountName, domainName);
 
@@ -4458,10 +4377,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 message.close();
                 message = null;
             }
-            connection.close();
-            connection = null;
         }
 
+        ILdapConnectionEx connection = null;
         try
         {
             connection = this.getConnection(userDn, new String(currentPassword), AuthenticationType.PASSWORD, false);
@@ -4515,11 +4433,11 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         // Delete a principal in system domain(lotus). We have made sure that through
         // the add interfaces, not to allow creating user, solution user and group with
         // same name in the Castle 2.0 system.
-        ILdapConnectionEx connection = getConnection();
         ILdapMessage message = null;
 
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             final PrincipalId principal = new PrincipalId(accountName, this.getDomain());
             String[] attrNames = { ATTR_NAME_ACCOUNT };
 
@@ -4554,17 +4472,17 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
     }
 
     @Override
     public void deleteJitUsers(String extIdpEntityId) throws Exception
     {
-        ILdapConnectionEx connection = getConnection();
         ILdapMessage message = null;
 
-        try {
+        try (PooledLdapConnection pooledConnection = borrowConnection())
+        {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames = { ATTR_NAME_ACCOUNT };
             String filter =  String.format(JIT_USER_QUERY,
                     LdapFilterString.encode(extIdpEntityId));
@@ -4589,14 +4507,15 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-            connection.close();
         }
     }
 
     @Override
     public PasswordPolicy getPasswordPolicy() throws Exception
     {
-        return readPasswordPolicy(getConnection()).policy;
+	try (PooledLdapConnection pooledConnection = borrowConnection()) {
+	    return readPasswordPolicy(pooledConnection.getConnection()).policy;
+	}
     }
 
     @Override
@@ -4685,12 +4604,12 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         IGroupCallback<T> groupCallBack) throws Exception
     {
         List<T> groups = new ArrayList<T>();
-        ILdapConnectionEx connection = getConnection();
         ILdapMessage fspsMessage = null;
         ILdapMessage fspGroupsMessage = null;
 
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames = { ATTR_NAME_ACCOUNT };
 
             // (1) retrieves a list of FSPs DNs if found any
@@ -4749,8 +4668,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 fspsMessage.close();
             }
-
-            connection.close();
         }
 
         return groups;
@@ -4821,9 +4738,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
     private void writePasswordPolicy(PasswordPolicy policy) throws Exception
     {
-        ILdapConnectionEx connection = getConnection();
-
-        try {
+	try (PooledLdapConnection pooledConnection = borrowConnection())
+        {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             PasswordPolicyInfo curPolicy = readPasswordPolicy(connection);
 
             assert(curPolicy != null);
@@ -4837,15 +4754,15 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 connection.modifyObject(curPolicy.dn,
                         modList.toArray(new LdapMod[modList.size()]));
             }
-        }finally {
-            connection.close();
         }
     }
 
     @Override
     public LockoutPolicy getLockoutPolicy() throws Exception
     {
-        return readLockoutPolicy(getConnection()).policy;
+	try (PooledLdapConnection pooledConnection = borrowConnection()) {
+	    return readLockoutPolicy(pooledConnection.getConnection()).policy;
+	}
     }
 
     @Override
@@ -4856,10 +4773,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
     private void writeLockoutPolicy(LockoutPolicy policy) throws Exception
     {
-        ILdapConnectionEx connection = getConnection();
-
-        try
+	try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             LockoutPolicyInfo curPolicy = readLockoutPolicy(connection);
 
             assert( curPolicy != null);
@@ -4899,9 +4815,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 connection.modifyObject(curPolicy.dn,
                         modList.toArray(new LdapMod[modList.size()]));
             }
-        } finally
-        {
-            connection.close();
         }
     }
 
@@ -5579,10 +5492,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     public boolean registerExternalIDPUser(String fspUserUPN) throws Exception
     {
         // add the FSP userId to default group
-        ILdapConnectionEx connection = getConnection();
-
-        try
+	try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String groupDN =
                     String.format(
                             "cn=%s, %s",
@@ -5651,9 +5563,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-        } finally
-        {
-            connection.close();
         }
     }
 
@@ -5661,9 +5570,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     public boolean removeExternalIDPUser(String fspId) throws Exception
     {
         // remove the FSP userId from default group
-        ILdapConnectionEx connection = getConnection();
-
-        try {
+	try (PooledLdapConnection pooledConnection = borrowConnection())
+        {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String groupDN =
                     String.format("cn=%s, %s",
                             IdentityManager.WELLKNOWN_EXTERNALIDP_USERS_GROUP_NAME,
@@ -5725,9 +5634,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 message.close();
             }
         }
-        finally {
-            connection.close();
-        }
+
         return true;
     }
 
@@ -5738,9 +5645,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         final String targetMemberStr =
                 String.format("%s%s@%s", ATTR_OBJECT_ID_PREFIX,
                         pId.getName(), pId.getDomain());
-        ILdapConnectionEx connection = getConnection();
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames = { ATTR_NAME_CN, ATTR_NAME_MEMBER };
             String searchBaseDn =
                     String.format("cn=%s, %s",
@@ -5773,9 +5680,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-        } finally
-        {
-            connection.close();
         }
 
         return null; //not found
@@ -5789,11 +5693,11 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         Validate.notEmpty(attributeValue, "attributeValue");
 
         PrincipalId userId = null;
-        ILdapConnectionEx connection = getConnection();
 
         String filter = null;
-        try
+        try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames =
                     { ATTR_NAME_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_NAME_ACCOUNT_FLAGS };
 
@@ -5862,12 +5766,15 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             throw new InvalidPrincipalException(String.format(
                 "Failed to find active user with error [%s]", e.getMessage()), filter);
         }
-        finally
-        {
-            connection.close();
-        }
 
         return userId;
+    }
+
+    @Override
+    public UserSet findActiveUsersInDomain(String attributeName, String attributeValue
+            , String userDomain, String additionalAttribute)
+            throws Exception {
+        throw new IDMException("findActiveUsersInDomain() not supported in localos provider");
     }
 
     @Override
@@ -5913,10 +5820,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
         if (_domainId == null)
         {
-            ILdapConnectionEx connection = getConnection();
-
-            try
+            try (PooledLdapConnection pooledConnection = borrowConnection())
             {
+                ILdapConnectionEx connection = pooledConnection.getConnection();
                 String[] attrNames = { ATTR_OBJECT_GUID };
                 String searchBaseDn = ServerUtils.getDomainDN(getDomain());
                 String query = "(objectclass=dcObject)";
@@ -5952,10 +5858,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                     message.close();
                 }
             }
-            finally
-            {
-                connection.close();
-            }
         }
 
         return _domainId;
@@ -5964,10 +5866,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     @Override
     public String getSiteId() throws Exception {
 
-        ILdapConnectionEx connection = getConnection();
-
-        try
+	try (PooledLdapConnection pooledConnection = borrowConnection())
         {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String   siteName = getSiteName(connection);
 
             String[] attrNames = { ATTR_OBJECT_GUID };
@@ -6013,10 +5914,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             {
                 message.close();
             }
-        }
-        finally
-        {
-            connection.close();
         }
     }
 
@@ -6176,9 +6073,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     @Override
     public List<VmHostData> getComputers(boolean getDCOnly) throws Exception {
        List<VmHostData> systems;
-       ILdapConnectionEx connection = getConnection();
-
-       try {
+       try (PooledLdapConnection pooledConnection = borrowConnection())
+       {
+          ILdapConnectionEx connection = pooledConnection.getConnection();
           String domainDN = getDomainDN(getDomain());
 
           // Get the DCs
@@ -6192,8 +6089,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
              systems.addAll(getVmHosts(connection, ATTR_NAME_ACCOUNT, computerSearchDomain, computerQuery, false));
           }
 
-       } finally {
-          connection.close();
        }
 
        if (systems == null) {
@@ -6330,11 +6225,12 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     }
 
     private String getUserDn(PrincipalId principal, boolean srpNotEnabledUserOnly) throws Exception{
-        ILdapConnectionEx connection = getConnection();
         String userDn = null;
         ILdapMessage message = null;
         final String vmwSRPSecretAttrName = "vmwSRPSecret";
-        try {
+        try (PooledLdapConnection pooledConnection = borrowConnection())
+        {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String domainName = getDomain();
             String searchBaseDn = getDomainDN(domainName);
             String filter = buildQueryByUserFilter(principal);
@@ -6358,7 +6254,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         } finally {
             if(message != null)
                 message.close();
-            connection.close();
         }
     }
 
@@ -6366,4 +6261,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     public String getStoreUPNAttributeName() {
         return ATTR_USER_PRINCIPAL_NAME;
     }
+
+    private PooledLdapConnection borrowConnection() throws Exception {
+	return borrowConnection(getStoreDataEx().getConnectionStrings(), getUsername(), getPassword(), getAuthType(), false);
+    }
+
 }

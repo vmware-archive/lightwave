@@ -84,12 +84,18 @@ import com.vmware.identity.interop.ldap.LdapSetting;
 import com.vmware.identity.interop.ldap.LdapValue;
 import com.vmware.identity.interop.ldap.ReferralLdapException;
 import com.vmware.identity.performanceSupport.PerfBucketKey;
+import com.vmware.identity.performanceSupport.PerfDataSinkFactory;
 import com.vmware.identity.performanceSupport.PerfMeasurementPoint;
 
 public class ServerUtils
 {
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(ServerUtils.class);
     private static final long DEFAULT_LDAP_NETWORK_TIMEOUT = 30;
+
+    // we support either 'user@domain', 'domain\\user', or default domain formats
+    final static char UPN_SEPARATOR = '@';
+    final static char NETBIOS_SEPARATOR = '\\';
+    final static char[] VALID_ACCOUNT_NAME_SEPARATORS = { UPN_SEPARATOR, NETBIOS_SEPARATOR };
 
     public static IDMException getRemoteException(Exception ex)
     {
@@ -287,21 +293,21 @@ public class ServerUtils
         settings.add(new LdapSetting(LdapOption.LDAP_OPT_REFERRALS,
                 Boolean.FALSE));
         settings.add(new LdapSetting(LdapOption.LDAP_OPT_NETWORK_TIMEOUT,
-		DEFAULT_LDAP_NETWORK_TIMEOUT));
+        DEFAULT_LDAP_NETWORK_TIMEOUT));
 
-	if (isLdaps) {
-	   //if is ldaps connection and certificate validation is enabled set the options for validation
-	   boolean isLdapsCertValidationEnabled = certValidationsettings != null &&
-	               (certValidationsettings.isForceValidation() || IdmServerConfig.getInstance().isLdapsCertValidationEnabled() || !certValidationsettings.isLegacy());
+    if (isLdaps) {
+       //if is ldaps connection and certificate validation is enabled set the options for validation
+       boolean isLdapsCertValidationEnabled = certValidationsettings != null &&
+                   (certValidationsettings.isForceValidation() || IdmServerConfig.getInstance().isLdapsCertValidationEnabled() || !certValidationsettings.isLegacy());
        if (isLdapsCertValidationEnabled)
        {
            ISslX509VerificationCallback certVerifierCallback = certValidationsettings.getCertVerificationCallback(uri);
-	       settings.add(new LdapSetting(
-	               LdapOption.LDAP_OPT_X_TLS_REQUIRE_CERT,
-	               LdapConstants.LDAP_OPT_X_TLS_DEMAND));
-	       settings.add(new LdapSetting(
-	               LdapOption.LDAP_OPT_X_CLIENT_TRUSTED_FP_CALLBACK,
-	               certVerifierCallback));
+           settings.add(new LdapSetting(
+                   LdapOption.LDAP_OPT_X_TLS_REQUIRE_CERT,
+                   LdapConstants.LDAP_OPT_X_TLS_DEMAND));
+           settings.add(new LdapSetting(
+                   LdapOption.LDAP_OPT_X_CLIENT_TRUSTED_FP_CALLBACK,
+                   certVerifierCallback));
 
            int sslMinProtocol = certValidationsettings.isLegacy() ? LdapSSLProtocols.getDefaultLegacyMinProtocol().getCode() : LdapSSLProtocols.getDefaultMinProtocol().getCode();
            settings.add(new LdapSetting(
@@ -312,15 +318,15 @@ public class ServerUtils
         {
             settings.add(new LdapSetting(LdapOption.LDAP_OPT_X_TLS_REQUIRE_CERT, LdapConstants.LDAP_OPT_X_TLS_NEVER));
         }
-	}
-	    // When doing GSSAPI authentication, LDAP SASL binding by default does reverse DNS lookup to validate the
-	    // target name, this causes authentication failures because Most DNS servers in AD do not have PTR records
-	    // registered for all DCs, any of which could be the binding target.
-	    if (!SystemUtils.IS_OS_WINDOWS && authType == AuthenticationType.USE_KERBEROS || authType == AuthenticationType.SRP) {
-	       settings.add(new LdapSetting(LdapOption.LDAP_OPT_X_SASL_NOCANON, LdapConstants.LDAP_OPT_ON));
-	    }
+    }
+        // When doing GSSAPI authentication, LDAP SASL binding by default does reverse DNS lookup to validate the
+        // target name, this causes authentication failures because Most DNS servers in AD do not have PTR records
+        // registered for all DCs, any of which could be the binding target.
+        if (!SystemUtils.IS_OS_WINDOWS && authType == AuthenticationType.USE_KERBEROS || authType == AuthenticationType.SRP) {
+           settings.add(new LdapSetting(LdapOption.LDAP_OPT_X_SASL_NOCANON, LdapConstants.LDAP_OPT_ON));
+        }
 
-	    connOptions = Collections.unmodifiableList(settings);
+        connOptions = Collections.unmodifiableList(settings);
 
         ILdapConnectionEx connection = null;
 
@@ -391,9 +397,9 @@ public class ServerUtils
             {
                logger.trace(String.format("\tbinding connection took [%d] ms", delta));
             }
-            if (IdmServer.getPerfDataSinkInstance() != null)
+            if (PerfDataSinkFactory.getPerfDataSinkInstance() != null)
             {
-                IdmServer.getPerfDataSinkInstance().addMeasurement(
+                PerfDataSinkFactory.getPerfDataSinkInstance().addMeasurement(
                         new PerfBucketKey(
                                 PerfMeasurementPoint.LdapBindConnection,
                                 uri.toString()),
@@ -1126,10 +1132,92 @@ public class ServerUtils
 
     public static PrincipalId getPrincipalId(String upn){
         ValidateUtil.validateNotEmpty(upn, "upn");
-        String[] parts = upn.split("@");
+        String[] parts = upn.split(String.valueOf(ValidateUtil.UPN_SEPARATOR));
         if(parts.length == 2)
             return new PrincipalId(parts[0], parts[1]);
         else
             throw new IllegalArgumentException("the upn format is invalid");
+    }
+
+    /**
+     * Split name and domain at '@'. "name" is user identity attribute defined
+     * in RSA AM or user hint attribute designated in case of PIV.
+     * 
+     * @param userName
+     *            in the form of name@domain or domain\name format.
+     * @return an array of two strings: [name,domain]. null if there is no
+     *         domain part
+     * @throws IDMLoginException
+     */
+    public static String[] separateUserIDAndDomain(String userName) throws IDMLoginException {
+        Validate.notEmpty(userName, "userName");
+
+        String name = null;
+        String domainName;
+
+        int i = userName.lastIndexOf(ValidateUtil.UPN_SEPARATOR);
+
+        if (i == -1) {
+            int j = userName.lastIndexOf(ValidateUtil.NETBIOS_SEPARATOR);
+
+            if (j == -1) {
+                throw new IDMLoginException(String.format(
+                        "User name %s does not contain domain - expected in format of name@domain or domain\\username", userName));
+            }
+            domainName = userName.substring(0, j);
+            Validate.notEmpty(domainName, "expect domain name after the last \'@\' in user name.");
+
+            name = userName.substring(j + 1);
+            Validate.notEmpty(name, "Empty name string before the last \'@\' in user name string.");
+        } else {
+            name = userName.substring(0, i);
+            Validate.notEmpty(name, "Empty name string before the last \'@\' in user name string.");
+
+            domainName = userName.substring(i + 1);
+            Validate.notEmpty(domainName, "expect domain name after the last \'@\' in user name.");
+        }
+        String[] userInfo = { name, domainName };
+
+        return userInfo;
+    }
+
+    public static PrincipalId getUserPrincipal(TenantInformation tenantInfo, String userPrincipal) throws Exception {
+        PrincipalId principal = null;
+
+        String userName = userPrincipal;
+        String domain = null;
+
+        // if multiple '@','\' or leading '@','\' exception is thrown
+        int idxSep = -1;
+        try {
+            idxSep = ValidateUtil.getValidIdxAccountNameSeparator(userPrincipal, VALID_ACCOUNT_NAME_SEPARATORS);
+        } catch (Exception e) {
+            throw new InvalidPrincipalException(String.format(
+                    "Invalid user name format [%s]: multiple/leading UPN or NetBIOS separators are not allowed.", userName), userPrincipal);
+        }
+
+        // Found separator
+        if (idxSep != -1) {
+            if (userPrincipal.charAt(idxSep) == ServerUtils.UPN_SEPARATOR) {
+                userName = userPrincipal.substring(0, idxSep);
+                domain = userPrincipal.substring(idxSep + 1);
+            } else if (userPrincipal.charAt(idxSep) == ServerUtils.NETBIOS_SEPARATOR) {
+                domain = userPrincipal.substring(0, idxSep);
+                userName = userPrincipal.substring(idxSep + 1);
+            }
+        }
+
+        if ((ServerUtils.isNullOrEmpty(userName) == false) && (ServerUtils.isNullOrEmpty(domain) == true)) {
+            Collection<String> defaultProviders = tenantInfo.getDefaultProviders();
+            if ((defaultProviders != null) && (defaultProviders.size() > 0)) {
+                domain = defaultProviders.iterator().next();
+            }
+        }
+
+        if ((ServerUtils.isNullOrEmpty(userName) == false) && (ServerUtils.isNullOrEmpty(domain) == false)) {
+            principal = new PrincipalId(userName, domain);
+        }
+
+        return principal;
     }
 }

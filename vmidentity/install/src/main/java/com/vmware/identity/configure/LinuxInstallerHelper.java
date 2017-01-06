@@ -8,14 +8,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
-
+import java.nio.file.Paths;
 import com.vmware.identity.interop.registry.IRegistryAdapter;
 import com.vmware.identity.interop.registry.IRegistryKey;
 import com.vmware.identity.interop.registry.RegKeyAccess;
@@ -34,22 +33,12 @@ public class LinuxInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String[] getIDMServiceStartCommand() {
-        if (Files.exists(Paths.get("/.dockerenv"))) {
-            return new String[] { "/opt/vmware/sbin/vmware-idmd.sh", "start" };
-        } else {
-            return new String[] { "systemctl", "restart", "vmware-idmd" };
-        }
-
-    }
-
-    @Override
     public String getLogPaths() {
         return "/var/log/vmware/sso/";
     }
 
     @Override
-    public String getIDMServiceLogFile() {
+    public String getSecureTokenServiceLogFile() {
         return "/tmp/vmware-sts-idmd.log";
     }
 
@@ -61,7 +50,7 @@ public class LinuxInstallerHelper implements InstallerHelper {
 
     @Override
     public String[] getSTSServiceStartCommand() {
-        if (Files.exists(Paths.get("/.dockerenv"))) {
+       if (Files.exists(Paths.get("/.dockerenv"))) {
             return new String[] { "/opt/vmware/sbin/vmware-stsd.sh", "start" };
         } else {
             return new String[] { "systemctl", "restart", "vmware-stsd" };
@@ -195,8 +184,7 @@ public class LinuxInstallerHelper implements InstallerHelper {
     public String getIdmLoginPath(){
         return "/etc/vmware-sso/keys/";
     }
-    
-    @Override
+
     public String getConfigDirectoryRootKey() {
         return "Services\\vmdir";
     }

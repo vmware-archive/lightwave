@@ -21,11 +21,12 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+import com.vmware.identity.TestConstants;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
-import com.vmware.identity.TestConstants;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.saml.SamlTokenSpec.AuthenticationData.AuthnMethod;
 import com.vmware.identity.session.impl.SessionManagerImpl;
@@ -34,6 +35,7 @@ import com.vmware.identity.session.impl.SessionManagerImpl;
  * Test SessionCleanupWrapper functionality (verify that expired sessions are removed)
  *
  */
+@Ignore // ignored due to IDM process to library change, see PR 1780279.
 public class SessionCleanupWrapperTest {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(SessionCleanupWrapperTest.class);
 

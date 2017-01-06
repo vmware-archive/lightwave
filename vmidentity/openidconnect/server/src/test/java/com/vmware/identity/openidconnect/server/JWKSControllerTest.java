@@ -16,6 +16,8 @@ package com.vmware.identity.openidconnect.server;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.security.cert.CertificateEncodingException;
+import java.util.Arrays;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -33,6 +35,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.KeyUse;
 import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.util.Base64;
 import com.vmware.identity.openidconnect.protocol.JSONUtils;
 
 /**
@@ -53,7 +56,7 @@ public class JWKSControllerTest {
     }
 
     @Test
-    public void testJwksSuccess() throws IOException, ParseException {
+    public void testJwksSuccess() throws IOException, ParseException, CertificateEncodingException {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setMethod("GET");
         request.setServerName("abc.com");
@@ -65,7 +68,7 @@ public class JWKSControllerTest {
     }
 
     @Test
-    public void testJwksSuccessDefaultTenant() throws IOException, ParseException {
+    public void testJwksSuccessDefaultTenant() throws IOException, ParseException, CertificateEncodingException {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setMethod("GET");
         request.setServerName("abc.com");
@@ -90,7 +93,7 @@ public class JWKSControllerTest {
         Assert.assertEquals("non-existent tenant", JSONUtils.parseJSONObject(response.getContentAsString()).get("error_description"));
     }
 
-    private static void validateSuccessResponse(MockHttpServletResponse response) throws UnsupportedEncodingException, ParseException {
+    private static void validateSuccessResponse(MockHttpServletResponse response) throws CertificateEncodingException, UnsupportedEncodingException, ParseException {
         JSONParser jsonParser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
         JSONObject jsonObject = (JSONObject) jsonParser.parse(response.getContentAsString());
 
@@ -101,6 +104,7 @@ public class JWKSControllerTest {
         String use = (String) jwk.get("use");
         String e = (String) jwk.get("e");
         String n = (String) jwk.get("n");
+        String x5c = (String) ((JSONArray) jwk.get("x5c")).get(0);
 
         RSAKey rsaKey = new RSAKey(
                 TestContext.TENANT_PUBLIC_KEY,
@@ -110,11 +114,12 @@ public class JWKSControllerTest {
                 null,
                 null,
                 null,
-                null);
+                Arrays.asList(Base64.encode(TestContext.TENANT_CERT.getEncoded())));
 
         Assert.assertEquals("RS256", alg);
         Assert.assertEquals("sig", use);
         Assert.assertEquals(rsaKey.getPublicExponent().toString(), e);
         Assert.assertEquals(rsaKey.getModulus().toString(), n);
+        Assert.assertEquals(rsaKey.getX509CertChain().get(0).toString(), x5c);
     }
 }

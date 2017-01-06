@@ -32,89 +32,89 @@ import com.vmware.identity.rest.idm.data.attributes.MemberType;
 
 /**
  * Samples for using {@code GroupResource}. The GroupResource is a container that gathers all of the commands related to a tenant's groups
- *
+ * 
  * @author abapat
  *
  */
 public class GroupSample extends SampleBase {
-    private GroupResource resource;
+	private GroupResource resource;
 
-    /**
-     * Initializes IDM client and GroupResource.
-     *
-     * @throws KeyManagementException if an error occurs when making SSL request.
-     * @throws NoSuchAlgorithmException if an error occurs when making SSL request.
-     * @throws KeyStoreException if an error occurs building making SSL request.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws ClientException if a client side error occurs.
-     * @throws IOException if an error occurs when reading response.
-     */
-    public GroupSample()
-            throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException {
-        super();
-        resource = new GroupResource(client);
-    }
+	/**
+	 * Initializes IDM client and GroupResource.
+	 * 
+	 * @throws KeyManagementException if an error occurs when making SSL request.
+	 * @throws NoSuchAlgorithmException if an error occurs when making SSL request.
+	 * @throws KeyStoreException if an error occurs building making SSL request.
+	 * @throws ClientProtocolException in case of an http protocol error.
+	 * @throws ClientException if a client side error occurs.
+	 * @throws IOException if an error occurs when reading response.
+	 */
+	public GroupSample()
+			throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException {
+		super();
+		resource = new GroupResource(client);
+	}
 
-    /**
-     * Request a specific group.
-     *
-     * <p>
-     * <b>Required Role:</b> {@code user}.
-     *
-     * @param name the name of the group to request.
-     * @param tenant the name of the tenant to request the group from.
-     * @return the group retrieved from the tenant.
-     * @throws ClientException if a client side error occurs.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws WebApplicationException in the event of an application error.
-     * @throws HttpException if there was a generic error with the remote call.
-     * @throws IOException if there was an error with the IO stream.
-     */
-    public GroupDTO getGroup(String name, String tenant)
-            throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
-        return resource.get(tenant, name, DOMAIN);
-    }
+	/**
+	 * Request a specific group.
+	 *
+	 * <p>
+	 * <b>Required Role:</b> {@code user}.
+	 *
+	 * @param name the name of the group to request.
+	 * @param tenant the name of the tenant to request the group from.
+	 * @return the group retrieved from the tenant.
+	 * @throws ClientException if a client side error occurs.
+	 * @throws ClientProtocolException in case of an http protocol error.
+	 * @throws WebApplicationException in the event of an application error.
+	 * @throws HttpException if there was a generic error with the remote call.
+	 * @throws IOException if there was an error with the IO stream.
+	 */
+	public GroupDTO getGroup(String name, String tenant)
+			throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
+		return resource.get(tenant, name, DOMAIN);
+	}
 
-    /**
-     * Request the parents of a group.
-     *
-     * <p>
-     * <b>Required Role:</b> {@code user}.
-     *
-     * @param name the name of the group to retrieve the parents of.
-     * @param tenant the name of the tenant containing the group.
-     * @return a list of the group's parent groups.
-     * @throws ClientException if a client side error occurs.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws WebApplicationException in the event of an application error.
-     * @throws HttpException if there was a generic error with the remote call.
-     * @throws IOException if there was an error with the IO stream.
-     */
-    public List<GroupDTO> getParents(String name, String tenant)
-            throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
-        return resource.getParents(tenant, name, DOMAIN);
-    }
+	/**
+	 * Request the parents of a group.
+	 *
+	 * <p>
+	 * <b>Required Role:</b> {@code user}.
+	 *
+	 * @param name the name of the group to retrieve the parents of.
+	 * @param tenant the name of the tenant containing the group.
+	 * @return a list of the group's parent groups.
+	 * @throws ClientException if a client side error occurs.
+	 * @throws ClientProtocolException in case of an http protocol error.
+	 * @throws WebApplicationException in the event of an application error.
+	 * @throws HttpException if there was a generic error with the remote call.
+	 * @throws IOException if there was an error with the IO stream.
+	 */
+	public List<GroupDTO> getParents(String name, String tenant)
+			throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
+		return resource.getParents(tenant, name, DOMAIN);
+	}
 
-    /**
-     * Request the members of a group.
-     *
-     * <p>
-     * <b>Required Role:</b> {@code user}.
-     *
-     * @param name the name of the group to get the members of.
-     * @param tenant the name of the tenant containing the group.
-     * @param type the type of members to get.
-     * @param limit the maximum number of members to retrieve.
-     * @return the result of the search query.
-     * @throws ClientException if a client side error occurs.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws WebApplicationException in the event of an application error.
-     * @throws HttpException if there was a generic error with the remote call.
-     * @throws IOException if there was an error with the IO stream.
-     */
-    public SearchResultDTO getMembers(String name, String tenant, MemberType type, Integer limit)
-            throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
-        return resource.getMembers(tenant, name, DOMAIN, type, limit);
-    }
+	/**
+	 * Request the members of a group.
+	 *
+	 * <p>
+	 * <b>Required Role:</b> {@code user}.
+	 *
+	 * @param name the name of the group to get the members of.
+	 * @param tenant the name of the tenant containing the group.
+	 * @param type the type of members to get.
+	 * @param limit the maximum number of members to retrieve.
+	 * @return the result of the search query.
+	 * @throws ClientException if a client side error occurs.
+	 * @throws ClientProtocolException in case of an http protocol error.
+	 * @throws WebApplicationException in the event of an application error.
+	 * @throws HttpException if there was a generic error with the remote call.
+	 * @throws IOException if there was an error with the IO stream.
+	 */
+	public SearchResultDTO getMembers(String name, String tenant, MemberType type, Integer limit)
+			throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
+		return resource.getMembers(tenant, name, DOMAIN, type, limit);
+	}
 
 }

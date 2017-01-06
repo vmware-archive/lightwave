@@ -17,7 +17,7 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
 
-import com.nimbusds.jwt.ReadOnlyJWTClaimsSet;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.vmware.identity.rest.core.server.authorization.token.AccessToken;
 
@@ -29,7 +29,7 @@ import com.vmware.identity.rest.core.server.authorization.token.AccessToken;
 public class JWTBearerToken implements AccessToken {
 
     private SignedJWT jwt;
-    private ReadOnlyJWTClaimsSet claims;
+    private JWTClaimsSet claims;
     private String tokenType;
     private String role;
     private List<String> groups;
@@ -47,9 +47,9 @@ public class JWTBearerToken implements AccessToken {
     public JWTBearerToken(SignedJWT jwt, String tokenTypeField, String roleField, String groupsField) throws ParseException {
         this.jwt = jwt;
         this.claims = jwt.getJWTClaimsSet();
-        this.tokenType = (String) claims.getCustomClaim(tokenTypeField);
-        this.role = (String) claims.getCustomClaim(roleField);
-        this.groups = (List<String>) claims.getCustomClaim(groupsField);
+        this.tokenType = (String) claims.getClaim(tokenTypeField);
+        this.role = (String) claims.getClaim(roleField);
+        this.groups = (List<String>) claims.getClaim(groupsField);
     }
 
     @Override
@@ -106,7 +106,7 @@ public class JWTBearerToken implements AccessToken {
      *
      * @return the claim set from the access token
      */
-    public ReadOnlyJWTClaimsSet getClaims() {
+    public JWTClaimsSet getClaims() {
         return claims;
     }
 

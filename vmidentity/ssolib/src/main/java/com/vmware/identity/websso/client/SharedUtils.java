@@ -1,6 +1,16 @@
-/* ********************************************************************************
- * Copyright 2012 VMware, Inc. All rights reserved.
- **********************************************************************************/
+/*
+ *  Copyright (c) 2012-2016 VMware, Inc.  All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ *  use this file except in compliance with the License.  You may obtain a copy
+ *  of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS, without
+ *  warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ *  License for the specific language governing permissions and limitations
+ *  under the License.
+ */
 package com.vmware.identity.websso.client;
 
 import java.io.IOException;
@@ -11,6 +21,7 @@ import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -39,7 +50,7 @@ import org.xml.sax.SAXException;
 
 /**
  * @author root
- * 
+ *
  */
 public class SharedUtils {
     private static Logger logger = LoggerFactory.getLogger(SharedUtils.class);
@@ -49,6 +60,8 @@ public class SharedUtils {
     private static final String EXTERNAL_PARAMETER_ENTITIES = "http://xml.org/sax/features/external-parameter-entities";
     private static final String LOAD_EXTERNAL_DTD = "http://apache.org/xml/features/nonvalidating/load-external-dtd";
 
+    public static final String CACHE_CONTROL_HEADER = "Cache-Control";
+    public static final String PRAGMA = "Pragma";
     /**
      * Create Dom from string.
      */
@@ -118,7 +131,7 @@ public class SharedUtils {
 
     /**
      * Base64 encode byte array
-     * 
+     *
      * @param bytesToEncode
      * @return
      */
@@ -129,7 +142,7 @@ public class SharedUtils {
 
     /**
      * Encode a string
-     * 
+     *
      * @param stringToEncode
      * @return
      */
@@ -148,7 +161,7 @@ public class SharedUtils {
 
     /**
      * Log the url
-     * 
+     *
      * @param sbRequestUrl
      * @param authnRequest
      * @param relayStateParameter
@@ -180,6 +193,11 @@ public class SharedUtils {
                 + (signatureAlgorithm != null ? ("&SigAlg=" + URLEncoder.encode(signatureAlgorithm)) : "")
                 + (signature != null ? ("&Signature=" + URLEncoder.encode(signature)) : "")
                 + (extra != null ? "&" + extra : ""));
+    }
+
+    public static void SetNoCacheHeader(HttpServletResponse httpResponse) {
+        httpResponse.addHeader(CACHE_CONTROL_HEADER, "no-store");
+        httpResponse.addHeader(PRAGMA, "no-cache");
     }
 
 }

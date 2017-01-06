@@ -15,7 +15,6 @@ import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -42,13 +41,12 @@ public class WinInstallerHelper implements InstallerHelper {
 
     @Override
     public String getInstallFolder() {
-        return String.format("%s\\VMware\\CIS",
-                System.getenv("ProgramFiles"));
-    }
-
-    @Override
-    public String[] getIDMServiceStartCommand() {
-        return new String[] { "sc", "start", "VMwareIdentityMgmtService" };
+        String installFolder  = System.getenv("VMWARE_CIS_HOME");
+        if (installFolder == null) {
+            installFolder = String.format("%s\\VMware\\CIS",
+                    System.getenv("ProgramFiles"));
+        }
+        return installFolder;
     }
 
     @Override
@@ -57,8 +55,8 @@ public class WinInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String getIDMServiceLogFile() {
-        return joinPath(getLogPaths(), "VMwareIdentityMgmtService.log");
+    public String getSecureTokenServiceLogFile() {
+        return joinPath(getLogPaths(), "VMwareSecureTokenService.log");
     }
 
     @Override
@@ -69,15 +67,28 @@ public class WinInstallerHelper implements InstallerHelper {
 
     @Override
     public String getTCBase() {
-        String tcRoot = joinPath(System.getenv("ProgramData"),
-                "VMware\\CIS\\runtime\\");
-        return joinPath(tcRoot, "VMwareSTSService");
+        String runTimeFolder = System.getenv("VMWARE_RUNTIME_DATA_DIR");
+        if (runTimeFolder == null) {
+            String tcRoot = joinPath(System.getenv("ProgramData"),
+                    "VMware\\CIS\\runtime\\");
+            return joinPath(tcRoot, "VMwareSTSService");
+        }else {
+            return joinPath(runTimeFolder,"VMwareSTSService");
+        }
     }
 
     @Override
     public String getReverseProxyPath() {
-        return joinPath(System.getenv("ProgramData"),
-                "VMware\\CIS\\cfg\\vmware-rhttpproxy\\ssl");
+        String reverseProxyPath;
+        String cfgFolderPath= System.getenv("VMWARE_CFG_DIR");
+        if(cfgFolderPath == null) {
+            reverseProxyPath = joinPath(System.getenv("ProgramData"),
+                    "VMware\\CIS\\cfg\\vmware-rhttpproxy\\ssl");
+        } else {
+            reverseProxyPath = joinPath(cfgFolderPath,
+                    "vmware-rhttpproxy\\ssl");
+        }
+        return reverseProxyPath;
     }
 
     @Override
@@ -87,79 +98,7 @@ public class WinInstallerHelper implements InstallerHelper {
 
     @Override
     public void configRegistry() {
-        IRegistryAdapter registryAdapter = RegistryAdapterFactory.getInstance()
-                .getRegistryAdapter();
-        IRegistryKey rootKey = registryAdapter
-                .openRootKey((int) RegKeyAccess.KEY_ALL_ACCESS);
-
-        IRegistryKey idmKey;
-        String subkey = String
-                .format("SOFTWARE\\Wow6432Node\\Apache Software Foundation\\Procrun 2.0\\%s\\Parameters",
-                        getIDMServiceName());
-
-        boolean exists = registryAdapter.doesKeyExist(rootKey, subkey);
-
-        if (exists) {
-            idmKey = registryAdapter.openKey(rootKey, subkey, 0,
-                    (int) RegKeyAccess.KEY_ALL_ACCESS);
-        } else {
-            idmKey = registryAdapter.createKey(rootKey, subkey, null,
-                    (int) RegKeyAccess.KEY_ALL_ACCESS);
-        }
-
-        String identityInstallPath = getVMIdentityInstallPath();
-        String identityInstallPathCommonLib = InstallerUtils.joinPath(
-                getSSOHomePath(), "commonlib");
-        // Add Java key
-        String javaHomePath = getJavaHomePath();
-        IRegistryKey keyJava = registryAdapter.createKey(idmKey, "Java", null,
-                (int) RegKeyAccess.KEY_ALL_ACCESS);
-        registryAdapter.setStringValue(keyJava, "ClassPath", String
-                .format("%s\\lib\\*;%s\\lib\\ext\\*;%s\\*;%s\\*", javaHomePath,
-                        javaHomePath, identityInstallPath,
-                        identityInstallPathCommonLib));
-        registryAdapter.setStringValue(keyJava, "JavaHome",
-                String.format("%s\\", javaHomePath));
-        registryAdapter.setStringValue(keyJava, "Jvm",
-                String.format("%s\\bin\\server\\jvm.dll", javaHomePath));
-
-        // Define options for 'Java' key
-        Collection<String> options = new ArrayList<String>();
-        options.add(String.format(
-                "-Dvmware.log.dir=%s",
-                getLogPaths()));
-        options.add(String.format(
-                "-Djava.security.policy=%s\\server_policy.txt",
-                identityInstallPath));
-        options.add(String.format(
-                "-Dlog4j.configurationFile=file:%s\\log4j2.xml",
-                identityInstallPath));
-        options.add("-Xmx160m");
-        options.add("-XX:MaxPermSize=160m");
-
-        options.add(String.format("-XX:ErrorFile=%s", getLogPaths()));
-        registryAdapter.setMultiStringValue(keyJava, "Options", options);
-
-        // Add 'Log' key
-        IRegistryKey keyLog = registryAdapter.createKey(idmKey, "Log", null,
-                (int) RegKeyAccess.KEY_ALL_ACCESS);
-        registryAdapter.setStringValue(keyLog, "Path", getLogPaths());
-
-        // Add 'Start' key
-        IRegistryKey keyStart = registryAdapter.createKey(idmKey, "Start",
-                null, (int) RegKeyAccess.KEY_ALL_ACCESS);
-        registryAdapter.setStringValue(keyStart, "Mode", "jvm");
-        registryAdapter.setStringValue(keyStart, "Class",
-                "com.vmware.identity.idm.server.IdmServer");
-        registryAdapter.setStringValue(keyStart, "Method", "startserver");
-
-        // Add 'Stop' key
-        IRegistryKey keyStop = registryAdapter.createKey(idmKey, "Stop", null,
-                (int) RegKeyAccess.KEY_ALL_ACCESS);
-        registryAdapter.setStringValue(keyStop, "Mode", "jvm");
-        registryAdapter.setStringValue(keyStop, "Class",
-                "com.vmware.identity.idm.server.IdmServer");
-        registryAdapter.setStringValue(keyStop, "Method", "stopserver");
+        // no OP on the Windows side.
     }
 
     @Override
@@ -251,23 +190,23 @@ public class WinInstallerHelper implements InstallerHelper {
         aclView.setAcl(securityDesc);
     }
 
-    private String getIDMServiceName() {
-        return "VMwareIdentityMgmtService";
-    }
-
     @Override
     public String getSSOHomePath() {
         return joinPath(getInstallFolder(), "vmware-sso");
     }
 
     private String getJavaHomePath() {
-        return joinPath(getInstallFolder(), "jre");
+        String java_home = System.getenv("VMWARE_JAVE)HOME");
+        if(java_home == null) {
+            java_home = joinPath(getInstallFolder(), "jre");
+        }
+        return java_home;
     }
 
     @Override
     public String getIdmLoginPath(){
 
-        return readRegEdit(VMIDM_ROOT_KEY, INSTALL_PATH);
+        return joinPath(readRegEdit(VMIDM_ROOT_KEY, CONFIG_PATH),"keys");
     }
 
     @Override
@@ -323,4 +262,5 @@ public class WinInstallerHelper implements InstallerHelper {
 
         return path;
     }
+
 }

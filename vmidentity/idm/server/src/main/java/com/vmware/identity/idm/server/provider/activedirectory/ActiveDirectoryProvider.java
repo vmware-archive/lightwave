@@ -75,8 +75,12 @@ import com.vmware.identity.idm.server.performance.IdmAuthStatRecorder;
 import com.vmware.identity.idm.server.provider.BaseLdapProvider;
 import com.vmware.identity.idm.server.provider.IIdentityProvider;
 import com.vmware.identity.idm.server.provider.ILdapSchemaMapping;
+import com.vmware.identity.idm.server.provider.LdapConnectionPool;
 import com.vmware.identity.idm.server.provider.NoSuchGroupException;
+import com.vmware.identity.idm.server.provider.PooledLdapConnection;
+import com.vmware.identity.idm.server.provider.PooledLdapConnectionIdentity;
 import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
+import com.vmware.identity.idm.server.provider.UserSet;
 import com.vmware.identity.interop.accountmanager.AccountAdapterFactory;
 import com.vmware.identity.interop.accountmanager.AccountInfo;
 import com.vmware.identity.interop.accountmanager.AccountManagerException;
@@ -139,11 +143,13 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
    private final String ATTR_OBJECT_SID;
    private final String ATTR_DESCRIPTION;
 
+   private final String tenantName;
+
    private static final AccountPacInfoCache _accountCache = new AccountPacInfoCache();
 
-   public ActiveDirectoryProvider(IIdentityStoreData store)
+   public ActiveDirectoryProvider(String tenantName, IIdentityStoreData store)
    {
-      super(store);
+      super(tenantName, store);
 
       Validate.isTrue(
             getStoreDataEx().getProviderType() ==
@@ -155,6 +161,7 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
           throw new IllegalStateException("IdentityStoreData must be an instance of ServerIdentityStoreData");
       }
 
+      this.tenantName = tenantName;
       ActiveDirectoryJoinInfo machineJoinInfo = IdmDomainState.getInstance().getDomainJoinInfo();
       if (machineJoinInfo == null)
       {
@@ -322,25 +329,16 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
        //No ops -- For AD, account status is parsed thru Kerberos returned code.
    }
 
-   private int retrieveUserAccountFlagsByLdap(PrincipalId id) throws IDMException
+   private int retrieveUserAccountFlagsByLdap(PrincipalId id) throws Exception
    {
       ValidateUtil.validateNotNull(id, "principalId");
 
       int accountFlags = 0;
-      ILdapConnectionEx connection = null;
-
-      try
-      {
-         connection = this.getNonGcConnToDomain(id.getDomain());
-      }
-      catch (Exception ex)
-      {
-         throw new IDMException("Failed to establish server connection", ex);
-      }
-
       AccountLdapEntryInfo ldapEntryInfo = null;
-      try
+
+      try (PooledLdapConnection pooledConnection = this.borrowNonGcConnToDomain(id.getDomain()))
       {
+	  ILdapConnectionEx connection = pooledConnection.getConnection();
           String baseDN = ServerUtils.getDomainDN(id.getDomain());
 
           final String ATTR_NAME_USER_ACCT_CTRL = _adSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeAcountControl);
@@ -367,10 +365,6 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
           if (ldapEntryInfo != null)
           {
               ldapEntryInfo.close_messages();
-          }
-          if (connection != null)
-          {
-              connection.close();
           }
       }
 
@@ -548,11 +542,11 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
        ValidateUtil.validateNotNull(principalId, "principalId");
        principalId = normalizeAliasInPrincipalWithTrusts(principalId, true);
 
-       ILdapConnectionEx connection = this.getNonGcConnToDomain(principalId.getDomain());
        PrincipalInfo principalInfo = null;
 
-       try
+       try (PooledLdapConnection pooledConnection = this.borrowNonGcConnToDomain(principalId.getDomain()))
        {
+	  ILdapConnectionEx connection = pooledConnection.getConnection();
           final String ATTR_NAME_SAM_ACCOUNT = _adSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeAccountName);
           final String ATTR_DESCRIPTION = _adSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeDescription);
           final String ATTR_OBJECT_SID = _adSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeObjectId);
@@ -594,13 +588,7 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                }
             }
         }
-        finally
-        {
-            if (connection != null)
-            {
-                connection.close();
-            }
-        }
+
         return new PrincipalGroupLookupInfo(
            groups,
            ( principalInfo != null) ?
@@ -1096,8 +1084,8 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
 
    private class PrincipalInfo
    {
-       private String _dn;
-       private String _objectId;
+       private final String _dn;
+       private final String _objectId;
        public PrincipalInfo(String dn, String objectId)
        {
            this._dn = dn;
@@ -1348,9 +1336,18 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                String mappedAttr = attrMap.get(attr.getName());
                if (mappedAttr == null)
                {
-                   throw new IllegalArgumentException(String.format(
-                           "No attribute mapping found for [%s]",
-                           attr.getName()));
+                    /*
+                     * Apparently this function is assuming to be used only in
+                     * the context of retrieving token attribute. To make it
+                     * more general in order to query attribute that beyond
+                     * those to be included in the token. Such
+                     * altSecurityIdentities used in cert_based authentication.
+                     *
+                     * In this case, we include the attribute without mapping.
+                     */
+
+                   mappedAttr = attr.getName();
+
                }
                if (this._specialAttributes.contains(mappedAttr))
                {
@@ -1460,21 +1457,13 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
        AttrsSet attrs = getMappedAttrNames(attributes);
 
        String userName = null;
-       ILdapConnectionEx connection = null;
        AccountLdapEntryInfo ldapEntryInfo = null;
        ILdapEntry userLdapEntry = null;
 
-       try
+       try (PooledLdapConnection pooledConnection = this.borrowNonGcConnToDomain(principalId.getDomain()))
        {
-          connection = this.getNonGcConnToDomain(principalId.getDomain());
-       }
-       catch (Exception ex)
-       {
-          throw new IDMException("Failed to establish server connection", ex);
-       }
+	   ILdapConnectionEx connection = pooledConnection.getConnection();
 
-       try
-       {
            String baseDN = ServerUtils.getDomainDN(principalId.getDomain());
 
            // find user using upn first (unique in forest)
@@ -1555,10 +1544,6 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
            {
                ldapEntryInfo.close_messages();
            }
-           if (connection != null)
-           {
-               connection.close();
-           }
        }
 
        Iterator<String> iter = attrs.specialAttrs.keySet().iterator();
@@ -1606,11 +1591,10 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
       Set<Group> groups = Collections.emptySet();
       String objectId = null;
 
-      ILdapConnectionEx connection = this.getNonGcConnToDomain(userId.getDomain());
-
       AccountLdapEntryInfo ldapEntryInfo = null;
-      try
+      try (PooledLdapConnection pooledConnection = this.borrowNonGcConnToDomain(userId.getDomain()))
       {
+	 ILdapConnectionEx connection = pooledConnection.getConnection();
          String baseDN = ServerUtils.getDomainDN(userId.getDomain());
 
          final String ATTR_MEMBER_OF = _adSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeMemberOf);
@@ -1637,10 +1621,6 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
           if (ldapEntryInfo != null)
           {
               ldapEntryInfo.close_messages();
-          }
-          if (connection != null)
-          {
-              connection.close();
           }
       }
       return new PrincipalGroupLookupInfo(groups, objectId);
@@ -1724,21 +1704,12 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
 
    private PersonUser findUserByLdap(PrincipalId id) throws Exception
    {
-       PersonUser user = null;
-      ILdapConnectionEx connection = null;
+      PersonUser user = null;
       AccountLdapEntryInfo ldapEntryInfo = null;
 
-      try
+      try (PooledLdapConnection pooledConnection = this.borrowNonGcConnToDomain(id.getDomain()))
       {
-         connection = this.getNonGcConnToDomain(id.getDomain());
-      }
-      catch (Exception ex)
-      {
-         throw new IDMException("Failed to establish server connection", ex);
-      }
-
-      try
-      {
+	  ILdapConnectionEx connection = pooledConnection.getConnection();
           String searchBaseDn = ServerUtils.getDomainDN(id.getDomain());
 
           final String ATTR_FIRST_NAME = _adSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeFirstName);
@@ -1790,10 +1761,6 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
          if (ldapEntryInfo != null)
          {
              ldapEntryInfo.close_messages();
-         }
-         if (connection != null)
-         {
-             connection.close();
          }
       }
 
@@ -1856,19 +1823,10 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
        String[] attrNames = { ATTR_NAME_SAM_ACCOUNT, ATTR_DESCRIPTION, ATTR_OBJECT_SID};
        String filter = String.format(_adSchemaMapping.getGroupQueryByAccountName(), LdapFilterString.encode(groupId.getName()));
 
-       ILdapConnectionEx connection = null;
+       try (PooledLdapConnection pooledConnection = this.borrowNonGcConnToDomain(groupId.getDomain()))
+       {
+	  ILdapConnectionEx connection = pooledConnection.getConnection();
 
-       try
-       {
-          connection = this.getNonGcConnToDomain(groupId.getDomain());
-       }
-       catch (Exception ex)
-       {
-          throw new IDMException("Failed to establish server connection", ex);
-       }
-
-       try
-       {
           ILdapMessage message = connection.search(
                 ServerUtils.getDomainDN(groupId.getDomain()),
                 LdapScope.SCOPE_SUBTREE,
@@ -1884,13 +1842,6 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
           {
               message.close();
           }
-       }
-       finally
-       {
-           if (connection != null)
-           {
-               connection.close();
-           }
        }
    }
 
@@ -1921,53 +1872,62 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                this._adSchemaMapping.getUserQueryByUpn(), escapedPrincipalName );
    }
 
-   private ILdapConnectionEx getLdapConnection(String domainName, boolean bUseGC, boolean bForceRediscover) throws Exception
+   private PooledLdapConnection borrowLdapConnection(String domainName, boolean bUseGC, boolean bForceRediscover) throws Exception
    {
+       LdapConnectionPool pool = LdapConnectionPool.getInstance();
        ILdapConnectionEx conn = null;
        DomainControllerInfo dcInfo = bForceRediscover
                                      ? obtainDcInfoWithRediscover(domainName)
                                      : obtainDcInfo(domainName);
-       ArrayList<String> connStrs = new ArrayList<String>();
+       String connStr;
        if (dcInfo != null)
        {
            if (!ServerUtils.isNullOrEmpty(dcInfo.domainFQDN))
            {
-               connStrs.add(String.format("ldap://%s", dcInfo.domainFQDN));
+               connStr = String.format("ldap://%s", dcInfo.domainFQDN);
            }
            else
            {
                // use GC domain name directly
-               connStrs.add(String.format("ldap://%s", domainName));
+               connStr = String.format("ldap://%s", domainName);
            }
-           conn = this.getConnection(connStrs, bUseGC);
+
+           PooledLdapConnectionIdentity.Builder builder = new PooledLdapConnectionIdentity.Builder(connStr, this.getStoreDataEx().getAuthenticationType());
+           builder.setUsername(this.getStoreDataEx().getUserName());
+           builder.setPassword(this.getStoreDataEx().getPassword());
+           builder.setUseGCPort(bUseGC);
+           builder.setTenantName(tenantName);
+           PooledLdapConnectionIdentity identity = builder.build();
+
+           conn = pool.borrowConnection(identity);
        }
 
-       return conn;
+       return new PooledLdapConnection(conn, null, pool);
    }
 
    // Get a GC ldap connection to the registered AD provider domain
    private
-   ILdapConnectionEx
-   getGcConnForDomain(String domainName) throws Exception
+   PooledLdapConnection
+   borrowGcConnForDomain(String domainName) throws Exception
    {
-       return getAdConnection(domainName, true);
+       return borrowAdConnection(domainName, true);
    }
 
    private
-   ILdapConnectionEx
-   getNonGcConnToDomain(String domainName) throws Exception
+   PooledLdapConnection
+   borrowNonGcConnToDomain(String domainName) throws Exception
    {
-       return getAdConnection(domainName, false);
+       return borrowAdConnection(domainName, false);
    }
 
    private
-   ILdapConnectionEx
-   getAdConnection(String domainName, boolean bUseGC) throws Exception
+   PooledLdapConnection
+   borrowAdConnection(String domainName, boolean bUseGC) throws Exception
    {
-       ILdapConnectionEx conn = null;
+       PooledLdapConnection conn = null;
        try
        {
-           conn = getLdapConnection(domainName, bUseGC, false);
+           conn = borrowLdapConnection(domainName, bUseGC, false);
        }
        // Ideally only catch IdmNativeException where error code == LW_LDAP_SERVER_DOWN
        // ServerDownLdap is caught and 'translated' to 'SaslBindFailLdapException' on windows
@@ -1981,7 +1941,7 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
 
            try
            {
-               conn = getLdapConnection(domainName, bUseGC, true);
+               conn = borrowLdapConnection(domainName, bUseGC, true);
            }
            catch(Exception e_inner)
            {
@@ -1998,57 +1958,24 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
 
    private PersonUser findUserByObjectIdInDomain(String userObjectSid) throws Exception
    {
-       ILdapConnectionEx connection = null;
-
-       try
+       try (PooledLdapConnection pooledConnection = this.borrowNonGcConnToDomain(this.getDomain()))
        {
-           connection = this.getNonGcConnToDomain(this.getDomain());
-       }
-       catch (Exception ex)
-       {
-           throw new IDMException("Failed to establish server connection", ex);
-       }
-
-       try
-       {
+	   ILdapConnectionEx connection = pooledConnection.getConnection();
            return findUserByObjectIdInternal(userObjectSid,
                                              connection,
                                              this.getStoreDataEx().getUserBaseDn());
-       }
-       finally
-       {
-           if (connection != null)
-           {
-               connection.close();
-           }
        }
    }
 
    private PersonUser findUserByObjectIdInGC(String userObjectSid) throws Exception
    {
-       ILdapConnectionEx connection = null;
+       try (PooledLdapConnection pooledConnection = this.borrowGcConnForDomain(this.getDomain()))
+       {
+	   ILdapConnectionEx connection = pooledConnection.getConnection();
 
-       try
-       {
-           connection = this.getGcConnForDomain(this.getDomain());
-       }
-       catch (Exception ex)
-       {
-           throw new IDMException("Failed to establish server connection", ex);
-       }
-
-       try
-       {
            return findUserByObjectIdInternal(userObjectSid,
                                              connection,
                                              "");
-       }
-       finally
-       {
-           if (connection != null)
-           {
-               connection.close();
-           }
        }
    }
 
@@ -2139,28 +2066,20 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
            return groups;
        }
 
-       ILdapConnectionEx connection = null;
        String searchBaseDn = ServerUtils.getDomainDN(domainName);
 
+       PooledLdapConnection pooledConnection = null;
        try
        {
-           try
+           if (this.isSameDomainUpn(domainName))
            {
-               if (this.isSameDomainUpn(domainName))
-               {
-                   connection = this.getNonGcConnToDomain(this.getDomain());
-                   searchBaseDn = ServerUtils.getDomainDN(this.getDomain());
-               }
-               else
-               {
-                   connection = this.getNonGcConnToDomain(domainName);
-               }
+               pooledConnection = this.borrowNonGcConnToDomain(this.getDomain());
+               searchBaseDn = ServerUtils.getDomainDN(this.getDomain());
            }
-           catch (Exception ex)
+           else
            {
-               throw new IDMException("Failed to establish server connection", ex);
+               pooledConnection = this.borrowNonGcConnToDomain(domainName);
            }
-
 
            final String ATTR_NAME_SAM_ACCOUNT = _adSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeAccountName);
            final String ATTR_DESCRIPTION = _adSchemaMapping.getGroupAttribute(IdentityStoreAttributeMapping.AttributeIds.GroupAttributeDescription);
@@ -2168,7 +2087,7 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
 
            String[] attrNames = { ATTR_NAME_SAM_ACCOUNT, ATTR_DESCRIPTION, ATTR_OBJECT_SID };
 
-           Collection<ILdapMessage> messages = connection.paged_search(
+           Collection<ILdapMessage> messages = pooledConnection.getConnection().paged_search(
                    searchBaseDn,
                    LdapScope.SCOPE_SUBTREE,
                    filter,
@@ -2204,9 +2123,9 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
        }
        finally
        {
-           if (connection != null)
+           if (pooledConnection != null)
            {
-               connection.close();
+               pooledConnection.close();
            }
        }
 
@@ -2226,11 +2145,10 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
        }
 
        groupId = normalizeAliasInPrincipalWithTrusts(groupId, false);
-       ILdapConnectionEx connection = null;
 
-       try
+       try (PooledLdapConnection pooledConnectionNonGC = this.borrowNonGcConnToDomain(groupId.getDomain()))
        {
-           connection = this.getNonGcConnToDomain(groupId.getDomain());
+	   ILdapConnectionEx connection = pooledConnectionNonGC.getConnection();
 
            int currRange = 1;
            boolean bContinueSearch = true;
@@ -2244,10 +2162,9 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                rangeSize = limit;
            }
 
-           ILdapConnectionEx gc_connection = null;
-           try
+           try (PooledLdapConnection pooledConnectionGC = this.borrowGcConnForDomain(this.getDomain()))
            {
-               gc_connection = this.getGcConnForDomain(this.getDomain());
+               ILdapConnectionEx gc_connection = pooledConnectionGC.getConnection();
 
                do
                {
@@ -2296,20 +2213,6 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                while(membersResult.memberDns.size()==rangeSize &&
                        bContinueSearch && !membersResult.bNoMoreEntries);
            }
-           finally
-           {
-               if (gc_connection != null)
-               {
-                   gc_connection.close();
-               }
-           }
-       }
-       finally
-       {
-           if (connection != null)
-           {
-               connection.close();
-           }
        }
 
        return groups;
@@ -2329,27 +2232,17 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
            return users;
        }
 
-       ILdapConnectionEx connection = null;
+       PooledLdapConnection pooledConnection = null;
        String searchBaseDn = ServerUtils.getDomainDN(domainName);
 
        try
        {
-           try
-           {
-               if (this.isSameDomainUpn(domainName))
-               {
-                   connection = this.getNonGcConnToDomain(this.getDomain());
-                   searchBaseDn = ServerUtils.getDomainDN(this.getDomain());
-               }
-               else
-               {
-                   connection = this.getNonGcConnToDomain(domainName);
-               }
-           }
-           catch (Exception ex)
-           {
-               throw new IDMException("Failed to establish server connection", ex);
-           }
+	   if (this.isSameDomainUpn(domainName)) {
+		pooledConnection = this.borrowNonGcConnToDomain(this.getDomain());
+		searchBaseDn = ServerUtils.getDomainDN(this.getDomain());
+	   } else {
+		pooledConnection = this.borrowNonGcConnToDomain(domainName);
+	   }
 
            final String ATTR_FIRST_NAME = _adSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeFirstName);
            final String ATTR_LAST_NAME = _adSchemaMapping.getUserAttribute(IdentityStoreAttributeMapping.AttributeIds.UserAttributeLastName);
@@ -2369,7 +2262,7 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                    ATTR_NAME_USER_ACCT_CTRL
            };
 
-           Collection<ILdapMessage> messages = connection.paged_search(
+           Collection<ILdapMessage> messages = pooledConnection.getConnection().paged_search(
                    searchBaseDn,
                    LdapScope.SCOPE_SUBTREE,
                    filter,
@@ -2413,9 +2306,9 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
        }
        finally
        {
-           if (connection != null)
+           if (pooledConnection != null)
            {
-               connection.close();
+               pooledConnection.close();
            }
        }
 
@@ -2434,11 +2327,9 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
            return users;
        }
 
-       ILdapConnectionEx connection = null;
-
-       try
+       try (PooledLdapConnection pooledConnection = this.borrowNonGcConnToDomain(groupId.getDomain()))
        {
-           connection = this.getNonGcConnToDomain(groupId.getDomain());
+	   ILdapConnectionEx connection = pooledConnection.getConnection();
 
            int currRange = 1;
            boolean bContinueSearch = true;
@@ -2452,10 +2343,9 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                rangeSize = limit;
            }
 
-           ILdapConnectionEx gc_connection = null;
-           try
+           try (PooledLdapConnection gcPooledConnection = this.borrowGcConnForDomain(this.getDomain()))
            {
-               gc_connection = this.getGcConnForDomain(this.getDomain());
+               ILdapConnectionEx gc_connection = gcPooledConnection.getConnection();
 
                do
                {
@@ -2504,20 +2394,6 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                while (membersResult.memberDns.size() == rangeSize && bContinueSearch
                        && !membersResult.bNoMoreEntries);
            }
-           finally
-           {
-               if (gc_connection != null)
-               {
-                   gc_connection.close();
-               }
-           }
-       }
-       finally
-       {
-           if (connection != null)
-           {
-               connection.close();
-           }
        }
 
        return users;
@@ -2525,54 +2401,19 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
 
    private Group findGroupByObjectIdInGC(String groupObjectSid) throws Exception
    {
-       ILdapConnectionEx connection = null;
-
-       try
+       try (PooledLdapConnection pooledConnection = this.borrowGcConnForDomain(this.getDomain()))
        {
-           connection = this.getGcConnForDomain(this.getDomain());
-       }
-       catch (Exception ex)
-       {
-           throw new IDMException("Failed to establish server connection", ex);
-       }
-
-       try
-       {
-            return findGroupByObjectIdInternal(groupObjectSid, connection, "");
-       }
-
-       finally
-       {
-           if (connection != null)
-           {
-               connection.close();
-           }
+	   ILdapConnectionEx connection = pooledConnection.getConnection();
+           return findGroupByObjectIdInternal(groupObjectSid, connection, "");
        }
    }
 
    private Group findGroupByObjectIdInDomain(String groupObjectSid) throws Exception
    {
-       ILdapConnectionEx connection = null;
-
-       try
+       try (PooledLdapConnection pooledConnection = this.borrowNonGcConnToDomain(this.getDomain()))
        {
-           connection = this.getNonGcConnToDomain(this.getDomain());
-       }
-       catch (Exception ex)
-       {
-           throw new IDMException("Failed to establish server connection", ex);
-       }
-
-       try
-       {
+	   ILdapConnectionEx connection = pooledConnection.getConnection();
            return findGroupByObjectIdInternal(groupObjectSid, connection, this.getStoreDataEx().getGroupBaseDn());
-       }
-       finally
-       {
-           if (connection != null)
-           {
-               connection.close();
-           }
        }
    }
 
@@ -2607,56 +2448,22 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
 
    private Set<PersonUser> findDisabledUsersInGc(String searchString, int limit) throws Exception
    {
-       ILdapConnectionEx connection = null;
-
-       try
+       try (PooledLdapConnection pooledConnection = this.borrowGcConnForDomain(this.getDomain()))
        {
-           connection = this.getGcConnForDomain(this.getDomain());
-       }
-       catch (Exception ex)
-       {
-           throw new IDMException("Failed to establish server connection", ex);
-       }
-
-       try
-       {
+	   ILdapConnectionEx connection = pooledConnection.getConnection();
            return findDisabledUsersInternal(searchString, connection, "", limit);
-       }
-       finally
-       {
-           if (connection != null)
-           {
-               connection.close();
-           }
        }
    }
 
    private Set<PersonUser> findDisabledUsersInDomain(String searchString, int limit) throws Exception
    {
-       ILdapConnectionEx connection = null;
-
-       try
+       try (PooledLdapConnection pooledConnection = this.borrowNonGcConnToDomain(this.getDomain()))
        {
-           connection = this.getNonGcConnToDomain(this.getDomain());
-       }
-       catch (Exception ex)
-       {
-           throw new IDMException("Failed to establish server connection", ex);
-       }
-
-       try
-       {
-            return findDisabledUsersInternal(searchString,
+	   ILdapConnectionEx connection = pooledConnection.getConnection();
+           return findDisabledUsersInternal(searchString,
                                              connection,
                                              this.getStoreDataEx().getUserBaseDn(),
                                              limit);
-       }
-       finally
-       {
-           if (connection != null)
-           {
-               connection.close();
-           }
        }
    }
 
@@ -2743,59 +2550,26 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
 
    private Set<PersonUser> findLockedUsersInGC(String searchString, int limit) throws Exception
    {
-       ILdapConnectionEx connection = null;
+       try (PooledLdapConnection pooledConnection = this.borrowGcConnForDomain(this.getDomain()))
+       {
+	   ILdapConnectionEx connection = pooledConnection.getConnection();
 
-       try
-       {
-           connection = this.getGcConnForDomain(this.getDomain());
-       }
-       catch (Exception ex)
-       {
-           throw new IDMException("Failed to establish server connection", ex);
-       }
-
-       try
-       {
            return  findLockedUsersInternal(searchString,
                                            connection,
                                            "",
                                            limit);
        }
-       finally
-       {
-           if (connection != null)
-           {
-                  connection.close();
-           }
-       }
    }
 
    private Set<PersonUser> findLockedUsersInDomain(String searchString, int limit) throws Exception
    {
-       ILdapConnectionEx connection = null;
-
-       try
+       try (PooledLdapConnection pooledConnection = this.borrowNonGcConnToDomain(this.getDomain()))
        {
-            connection = this.getNonGcConnToDomain(this.getDomain());
-       }
-       catch (Exception ex)
-       {
-           throw new IDMException("Failed to establish server connection", ex);
-       }
-
-       try
-       {
-            return findLockedUsersInternal(searchString,
+	   ILdapConnectionEx connection = pooledConnection.getConnection();
+           return findLockedUsersInternal(searchString,
                                            connection,
                                            this.getStoreDataEx().getUserBaseDn(),
                                            limit);
-       }
-       finally
-       {
-           if (connection != null)
-           {
-               connection.close();
-           }
        }
    }
 
@@ -3058,20 +2832,13 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
     {
         Validate.notEmpty(attributeName, "attributeName");
         Validate.notEmpty(attributeValue, "attributeValue");
-        ILdapConnectionEx connection;
-        try
-        {
-            connection = this.getNonGcConnToDomain(this.getDomain());
-        }
-        catch (Exception ex)
-        {
-            throw new IDMException("Failed to establish server connection", ex);
-        }
 
         String filter = null;
-        ILdapMessage message = null;
-        try
+        try (PooledLdapConnection pooledConnection = this.borrowNonGcConnToDomain(this.getDomain()))
         {
+             ILdapConnectionEx connection = pooledConnection.getConnection();
+             ILdapMessage message = null;
+
              String[] attrNames =
                     { ATTR_NAME_SAM_ACCOUNT, ATTR_USER_PRINCIPAL_NAME, ATTR_NAME_ACCOUNT_FLAGS};
 
@@ -3135,10 +2902,82 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
             throw new InvalidPrincipalException(String.format(
                 "Failed to find active user with error [%s]", e.getMessage()), filter);
         }
-        finally
-        {
-            connection.close();
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see
+     * com.vmware.identity.idm.server.provider.IIdentityProvider#findActiveUser
+     * (java.lang.String, java.lang.String)
+     */
+    @Override
+    public UserSet findActiveUsersInDomain(String attributeName, String attributeValue
+            , String userDomain, String additionalAttribute)
+            throws IDMException {
+        Validate.notEmpty(attributeName, "attributeName");
+        Validate.notEmpty(attributeValue, "attributeValue");
+
+        UserSet result = new UserSet();
+        String filter = null;
+        AccountLdapEntriesInfo ldapEntriesInfo = null;
+        try (PooledLdapConnection pooledConnection = this.borrowNonGcConnToDomain(userDomain)) {
+
+            String escapedsAttrName = LdapFilterString.encode(attributeName);
+            String escapedsAttrVal = LdapFilterString.encode(attributeValue);
+            filter = String.format(_adSchemaMapping.getUserQueryByAttribute(), escapedsAttrName, escapedsAttrVal);
+
+            ArrayList<String> attrNames =  new ArrayList<String>();
+            attrNames.add(ATTR_NAME_SAM_ACCOUNT);
+            attrNames.add(ATTR_USER_PRINCIPAL_NAME);
+            attrNames.add(ATTR_NAME_ACCOUNT_FLAGS);
+
+            if (attributeValue != null) {
+                attrNames.add(additionalAttribute);
+            }
+
+            String searchBaseDn = ServerUtils.getDomainDN(userDomain);
+
+            ldapEntriesInfo = findAccountLdapEntries(pooledConnection.getConnection(), filter, searchBaseDn,
+                    attrNames.toArray(new String[attrNames.size()]),
+                    false, attributeValue, true, null);
+            String accountName = null;
+            for (ILdapEntry entry : ldapEntriesInfo.accountLdapEntries) {
+
+                accountName = getStringValue(entry.getAttributeValues(ATTR_NAME_SAM_ACCOUNT));
+
+                String userPrincipalName = getOptionalStringValue(entry.getAttributeValues(ATTR_USER_PRINCIPAL_NAME));
+
+                int currentFlag = getOptionalIntegerValue(entry.getAttributeValues(ATTR_NAME_ACCOUNT_FLAGS), 0);
+
+                Collection<String> addtionalAttrValues = null;
+
+                if (additionalAttribute != null) {
+                    addtionalAttrValues = getOptionalStringValues(entry.getAttributeValues(additionalAttribute));
+                }
+                if (0 == (USER_ACCT_LOCKED_FLAG & currentFlag) && 0 == (USER_ACCT_DISABLED_FLAG & currentFlag)) {
+                    result.put(ServerUtils.getPrincipalId(userPrincipalName, accountName, userDomain), addtionalAttrValues);
+                }
+
+            }
+
+            if (result.isEmpty()) {
+                throw new InvalidPrincipalException(String.format("User account '%s@%s' is not active. ", accountName, userDomain), String.format(
+                        "%s@%s", accountName, userDomain));
+            }
+
+        } catch (Exception e) {
+            log.debug(String.format("findActiveUsersInDomain([%s], [%s]) failed with [%s]", ((attributeName != null) ? attributeName : "(NULL)"),
+                    ((attributeValue != null) ? attributeValue : "(NULL)"), e.getMessage()), e);
+            throw new InvalidPrincipalException(String.format("Failed to find active user with error [%s]", e.getMessage()), filter);
         }
+
+        finally {
+            if (ldapEntriesInfo != null) {
+                ldapEntriesInfo.close();
+            }
+        }
+        return result;
     }
 
     private String getRootDomain(String domain)
@@ -3146,7 +2985,8 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
         String rootDomain = null;
         String ATTR_ROOT_DOMAIN_NAMING_CONTEXT = "rootDomainNamingContext";
 
-        try (ILdapConnectionEx connection = getNonGcConnToDomain(domain)) {
+        try (PooledLdapConnection pooledConnection = borrowNonGcConnToDomain(domain)) {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
             String[] attrNames = new String[] { ATTR_ROOT_DOMAIN_NAMING_CONTEXT };
 
             // Retrieve RootDSE object
@@ -3237,16 +3077,16 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
         public Set<Group> getGroups(boolean populateDescription) throws Exception
         {
             List<ILdapEntry> userEntryList = new ArrayList<>();
-            ILdapConnectionEx gcConnection = null;
+            PooledLdapConnection gcPooledConnection = null;
 
             userEntryList.add(userLdapEntry);
 
             try {
                 boolean isInForest = isInForest(principalId.getDomain());
-                gcConnection = getGCConnection(principalId.getDomain(), isInForest);
+                gcPooledConnection = getGCConnection(principalId.getDomain(), isInForest);
 
                 GroupSearchOptionStrategy groupSearchStrategy = getGroupSearchOptionStrategy(userConnection,
-                        gcConnection, principalId.getDomain(), userEntryList, true /* includePrimaryGroup */);
+                        gcPooledConnection.getConnection(), principalId.getDomain(), userEntryList, true /* includePrimaryGroup */);
                 Set<Group> groups = getGroupsByLdap(populateDescription, groupSearchStrategy);
 
                 if (includeExternalForestGroups() && !isInForest) {
@@ -3257,20 +3097,20 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                 return groups;
 
             } finally {
-                if (gcConnection != null)
-                    gcConnection.close();
+                if (gcPooledConnection != null)
+                    gcPooledConnection.close();
             }
         }
 
-        private ILdapConnectionEx getGCConnection(String domain, boolean isInForest) throws Exception {
-            ILdapConnectionEx gcConnection = null;
+        private PooledLdapConnection getGCConnection(String domain, boolean isInForest) throws Exception {
+            PooledLdapConnection gcConnection = null;
 
             if (useTokenGroups()) {
 
                 if (domain != getDomain() && isInForest) {
                     String rootDomain = getRootDomain(principalId.getDomain());
                     if (rootDomain != null)
-                        gcConnection = getGcConnForDomain(rootDomain);
+                        gcConnection = borrowGcConnForDomain(rootDomain);
                 }
             }
 
@@ -3351,9 +3191,8 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                     ILdapPagedSearchResult pagedResult = null;
 
                     //get the connection for the specific domain
-                    ILdapConnectionEx connection = getConnection(groupedBaseDn, groupSearchStrategy);
-
-                    try {
+                    try (PooledLdapConnection pooledConnection =  getConnection(groupedBaseDn, groupSearchStrategy)) {
+                        ILdapConnectionEx connection = pooledConnection.getConnection();
                         for (String filter : filterByGroupsBaseDn.get(groupedBaseDn))
                         {
                             boolean isSearchFinished = false;
@@ -3399,8 +3238,6 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                             pagedResult.close();
                             pagedResult = null;
                         }
-                        if (connection != null)
-                            connection.close();
                     }
                 }
             }
@@ -3438,7 +3275,7 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
             }
         }
 
-        private ILdapConnectionEx getConnection(String groupdBaseDn, GroupSearchOptionStrategy groupSearchStrategy) throws Exception
+        private PooledLdapConnection getConnection(String groupdBaseDn, GroupSearchOptionStrategy groupSearchStrategy) throws Exception
         {
             String domain = !groupdBaseDn.equalsIgnoreCase("") ? ServerUtils.getDomainFromDN(groupdBaseDn) :  groupSearchStrategy.getConnectionDomain();
 
@@ -3446,10 +3283,10 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
             {
                 String rootDomain = getRootDomain(domain);
                 if (rootDomain != null)
-                    return getGcConnForDomain(rootDomain);
+                    return borrowGcConnForDomain(rootDomain);
             }
 
-            return getNonGcConnToDomain(domain);
+            return borrowNonGcConnToDomain(domain);
         }
 
         private Set<Group> getGroupsFromExternalForest(String userDn, String userSid, Set<Group> foundGroups, boolean includeDescription, boolean isInForest)
@@ -3462,8 +3299,10 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
 
             initializeAuthStat();
 
-            try (ILdapConnectionEx connection = getNonGcConnToDomain(getDomain()); ILdapConnectionEx gcConnection = getGCConnection(domain, isInForest)) {
+            try (PooledLdapConnection pooledConnection = borrowNonGcConnToDomain(getDomain()); PooledLdapConnection gcPooledConnection = getGCConnection(domain, isInForest)) {
 
+                ILdapConnectionEx connection = pooledConnection.getConnection();
+                ILdapConnectionEx gcConnection = gcPooledConnection.getConnection();
                 GroupSearchOptionStrategy groupsSearchStrategy = getGroupSearchOptionStrategy(connection, gcConnection, domain, null, false /* excludePrimaryGroup */);
                 List<String> filters = getForeignSecurityPrincipalFilters(groupsSearchStrategy, userSid, foundGroups);
 

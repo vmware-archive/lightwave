@@ -92,13 +92,13 @@ public class LoginTest {
     }
 
     @Test
-    public void testPersonUserCertLoginUsingHeader() throws Exception {
+    public void testPersonUserCertLoginAgainstReverseProxy() throws Exception {
         String certString64 = Base64Utils.encodeToString(CLIENT_CERT.getEncoded());
         assertSuccessResponseUsingPersonUserCert(certString64, null);
     }
 
     @Test
-    public void testPersonUserCertLoginUsingAttribute() throws Exception {
+    public void testPersonUserCertLoginAgainstTomcat() throws Exception {
         assertSuccessResponseUsingPersonUserCert(null, new X509Certificate[] { CLIENT_CERT });
     }
 
@@ -400,7 +400,7 @@ public class LoginTest {
 
         MockHttpServletResponse response = new MockHttpServletResponse();
         AuthenticationController controller = authnController(idmClient);
-        ModelAndView modelView = controller.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response);
+        ModelAndView modelView = controller.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response, TENANT_NAME);
         return Pair.of(modelView, response);
     }
 
@@ -423,7 +423,7 @@ public class LoginTest {
         }
 
         MockHttpServletResponse response = new MockHttpServletResponse();
-        ModelAndView modelView = authnController().authenticateByPersonUserCertificate(new ExtendedModelMap(), Locale.ENGLISH, request, response);
+        ModelAndView modelView = authnController().authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response, TENANT_NAME);
         return Pair.of(modelView, response);
     }
 }

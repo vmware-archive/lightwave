@@ -29,46 +29,46 @@ import com.vmware.identity.rest.idm.samples.SolutionUserSample;
 
 /**
  * Class for handling calling samples for SolutionUser from command line.
-
+ * 
  * @author abapat
  *
  */
 public class SolutionUserSampleHandler extends SampleHandler {
-    private SolutionUserSample sample;
+	private SolutionUserSample sample;
 
-    /**
-     * Initializes SolutionUserSample and logger.
-     */
-    public SolutionUserSampleHandler() {
-        log = Logger.getLogger(getClass().getName());
-        try {
-            sample = new SolutionUserSample();
-        } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | ClientException | IOException e) {
-            log.fatal("Error occured when initializing SolutionUserSample", e);
-        }
-    }
+	/**
+	 * Initializes SolutionUserSample and logger.
+	 */
+	public SolutionUserSampleHandler() {
+		log = Logger.getLogger(getClass().getName());
+		try {
+			sample = new SolutionUserSample();
+		} catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | ClientException | IOException e) {
+			log.fatal("Error occured when initializing SolutionUserSample", e);
+		}
+	}
 
-    @Override
-    public String getType() {
-        return "solutionuser";
-    }
+	@Override
+	public String getType() {
+		return "solutionuser";
+	}
 
-    @Override
-    public void callSample(String operation, String json) {
-        String payload = parsePayload(json);
-        try {
-            JSONObject JSON = new JSONObject(payload);
-            if (operation.equalsIgnoreCase("read")) {
-                log.info("Getting Solution User: " + payload);
-                SolutionUserDTO u = sample.getSoutionUser(JSON.getString("name"), tenant);
-                log.info(u.toPrettyString());
-            } else {
-                log.fatal("Invalid command: " + operation);
-            }
-        } catch (JSONException e) {
-            log.fatal("Error when parsing payload", e);
-        } catch (Exception e) {
-            log.fatal("Error when calling sample", e);
-        }
-    }
+	@Override
+	public void callSample(String operation, String json) {
+		String payload = parsePayload(json);
+		try {
+			JSONObject JSON = new JSONObject(payload);
+			if (operation.equalsIgnoreCase("read")) {
+				log.info("Getting Solution User: " + payload);
+				SolutionUserDTO u = sample.getSoutionUser(JSON.getString("name"), tenant);
+				log.info(u.toPrettyString());
+			} else {
+				log.fatal("Invalid command: " + operation);
+			}
+		} catch (JSONException e) {
+			log.fatal("Error when parsing payload", e);
+		} catch (Exception e) {
+			log.fatal("Error when calling sample", e);
+		}
+	}
 }

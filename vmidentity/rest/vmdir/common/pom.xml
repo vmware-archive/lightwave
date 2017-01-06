@@ -45,7 +45,7 @@
                           <goal>copy-dependencies</goal>
                       </goals>
                       <configuration>
-                          <outputDirectory>${basedir}/../../../../build/rest-lib</outputDirectory>
+                          <outputDirectory>${outputDirectory}</outputDirectory>
                           <includeScope>runtime</includeScope>
                           <excludeGroupIds>com.vmware.identity</excludeGroupIds>
                       </configuration>
@@ -97,6 +97,6 @@
   </dependencies>
 
   <properties>
-      <outputDirectory>${basedir}/../../../build/vmware-sts/packages/</outputDirectory>
+    <outputDirectory>${basedir}/../../../build/vmware-sts/packages</outputDirectory>
   </properties>
 </project>

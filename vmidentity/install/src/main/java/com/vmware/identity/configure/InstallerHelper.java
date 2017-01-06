@@ -28,11 +28,9 @@ public interface InstallerHelper {
 
     public String getVMIdentityInstallPath();
 
-    public String getIDMServiceLogFile();
+    public String getSecureTokenServiceLogFile();
 
     public String getInstallFolder();
-
-    public String[] getIDMServiceStartCommand();
 
     public String getLogPaths();
 

@@ -31,108 +31,108 @@ import com.vmware.identity.rest.idm.data.CertificateChainDTO;
 import com.vmware.identity.rest.idm.data.PrivateKeyDTO;
 import com.vmware.identity.rest.idm.data.TenantCredentialsDTO;
 import com.vmware.identity.rest.idm.data.attributes.CertificateScope;
-
+import com.vmware.identity.rest.idm.data.attributes.CertificateGranularity;
 /**
  * Samples for using {@code CertificateResource}. The CertificateResource is a container that gathers all of the commands related to a tenant's
  * certificate.
-
+ * 
  * @author abapat
  *
  */
 public class CertificateSample extends SampleBase {
-    private CertificateResource resource;
+	private CertificateResource resource;
 
-    /**
-     * Initializes IDM client and CertificateResource.
-     *
-     * @throws KeyManagementException if an error occurs when making SSL request.
-     * @throws NoSuchAlgorithmException if an error occurs when making SSL request.
-     * @throws KeyStoreException if an error occurs building making SSL request.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws ClientException if a client side error occurs.
-     * @throws IOException if an error occurs when reading response.
-     */
-    public CertificateSample()
-            throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException {
-        super();
-        resource = new CertificateResource(client);
-    }
+	/**
+	 * Initializes IDM client and CertificateResource.
+	 * 
+	 * @throws KeyManagementException if an error occurs when making SSL request.
+	 * @throws NoSuchAlgorithmException if an error occurs when making SSL request.
+	 * @throws KeyStoreException if an error occurs building making SSL request.
+	 * @throws ClientProtocolException in case of an http protocol error.
+	 * @throws ClientException if a client side error occurs.
+	 * @throws IOException if an error occurs when reading response.
+	 */
+	public CertificateSample()
+			throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException {
+		super();
+		resource = new CertificateResource(client);
+	}
 
-    /**
-     * Request the list of certificates associated with a tenant.
-     *
-     * <p>
-     * <b>Required Role:</b> {@code anonymous}.
-     *
-     * @param tenant the name of the tenant to request the certificates from.
-     * @param scope the scope of certificates to request.
-     * @return a list of certificate chains.
-     * @throws ClientException if a client side error occurs.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws WebApplicationException in the event of an application error.
-     * @throws HttpException if there was a generic error with the remote call.
-     * @throws IOException if there was an error with the IO stream.
-     */
-    public List<CertificateChainDTO> getCertificateChain(String tenant, CertificateScope scope)
-            throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
-        return resource.get(tenant, scope);
-    }
+	/**
+	 * Request the list of certificates associated with a tenant.
+	 *
+	 * <p>
+	 * <b>Required Role:</b> {@code anonymous}.
+	 *
+	 * @param tenant the name of the tenant to request the certificates from.
+	 * @param scope the scope of certificates to request.
+	 * @return a list of certificate chains.
+	 * @throws ClientException if a client side error occurs.
+	 * @throws ClientProtocolException in case of an http protocol error.
+	 * @throws WebApplicationException in the event of an application error.
+	 * @throws HttpException if there was a generic error with the remote call.
+	 * @throws IOException if there was an error with the IO stream.
+	 */
+	public List<CertificateChainDTO> getCertificateChain(String tenant, CertificateScope scope)
+			throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
+		return resource.get(tenant, scope, CertificateGranularity.CHAIN);
+	}
 
-    /**
-     * Delete a tenant's certificate by way of the certificate fingerprint.
-     *
-     * <p>
-     * <b>Required Role:</b> {@code administrator}.
-     *
-     * @see CertificateDTO#getFingerprint()
-     * @param tenant the name of the tenant to delete the certificate from.
-     * @param fingerprint the fingerprint of the certificate.
-     * @throws ClientException if a client side error occurs.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws WebApplicationException in the event of an application error.
-     * @throws HttpException if there was a generic error with the remote call.
-     * @throws IOException if there was an error with the IO stream.
-     */
-    public void delete(String tenant, String fingerprint)
-            throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
-        resource.delete(tenant, fingerprint);
-    }
+	/**
+	 * Delete a tenant's certificate by way of the certificate fingerprint.
+	 *
+	 * <p>
+	 * <b>Required Role:</b> {@code administrator}.
+	 *
+	 * @see CertificateDTO#getFingerprint()
+	 * @param tenant the name of the tenant to delete the certificate from.
+	 * @param fingerprint the fingerprint of the certificate.
+	 * @throws ClientException if a client side error occurs.
+	 * @throws ClientProtocolException in case of an http protocol error.
+	 * @throws WebApplicationException in the event of an application error.
+	 * @throws HttpException if there was a generic error with the remote call.
+	 * @throws IOException if there was an error with the IO stream.
+	 */
+	public void delete(String tenant, String fingerprint)
+			throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
+		resource.delete(tenant, fingerprint);
+	}
 
-    /**
-     * Request the private key associated with a tenant.
-     *
-     * <p>
-     * <b>Required Role:</b> {@code administrator}.
-     *
-     * @param tenant name of the tenant to request the private key from.
-     * @return a private key.
-     * @throws ClientException if a client side error occurs.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws WebApplicationException in the event of an application error.
-     * @throws HttpException if there was a generic error with the remote call.
-     * @throws IOException if there was an error with the IO stream.
-     */
-    public PrivateKeyDTO getPrivateKey(String tenant)
-            throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
-        return resource.getPrivateKey(tenant);
-    }
+	/**
+	 * Request the private key associated with a tenant.
+	 *
+	 * <p>
+	 * <b>Required Role:</b> {@code administrator}.
+	 *
+	 * @param tenant name of the tenant to request the private key from.
+	 * @return a private key.
+	 * @throws ClientException if a client side error occurs.
+	 * @throws ClientProtocolException in case of an http protocol error.
+	 * @throws WebApplicationException in the event of an application error.
+	 * @throws HttpException if there was a generic error with the remote call.
+	 * @throws IOException if there was an error with the IO stream.
+	 */
+	public PrivateKeyDTO getPrivateKey(String tenant)
+			throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
+		return resource.getPrivateKey(tenant);
+	}
 
-    /**
-     * Set the tenant's private key and issuer certificate credentials.
-     *
-     * <p>
-     * <b>Required Role:</b> {@code administrator}.
-     *
-     * @param tenant name of the tenant to replace the credentials of.
-     * @param credentials the credentials to use.
-     * @throws ClientException if a client side error occurs.
-     * @throws ClientProtocolException in case of an http protocol error.
-     * @throws WebApplicationException in the event of an application error.
-     * @throws HttpException if there was a generic error with the remote call.
-     * @throws IOException if there was an error with the IO stream.
-     */
-    public void setCredentials(String tenant, TenantCredentialsDTO credentials)
-            throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
-        resource.setCredentials(tenant, credentials);
-    }
+	/**
+	 * Set the tenant's private key and issuer certificate credentials.
+	 *
+	 * <p>
+	 * <b>Required Role:</b> {@code administrator}.
+	 *
+	 * @param tenant name of the tenant to replace the credentials of.
+	 * @param credentials the credentials to use.
+	 * @throws ClientException if a client side error occurs.
+	 * @throws ClientProtocolException in case of an http protocol error.
+	 * @throws WebApplicationException in the event of an application error.
+	 * @throws HttpException if there was a generic error with the remote call.
+	 * @throws IOException if there was an error with the IO stream.
+	 */
+	public void setCredentials(String tenant, TenantCredentialsDTO credentials)
+			throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException {
+		resource.setCredentials(tenant, credentials);
+	}
 }

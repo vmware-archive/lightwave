@@ -69,7 +69,7 @@ public class MessageExtractionUtil {
    public static String extractUsernameFromSecurityHeader(SecurityHeaderType secHdr) {
 
       Validate.notNull(secHdr);
-      UsernameTokenType usernameToken = secHdr.getUsernameToken();
+      UsernameTokenType usernameToken = JAXBExtractor.extractFromSecurityHeader(secHdr, UsernameTokenType.class);
       if (usernameToken == null) {
          return null;
       }

@@ -16,7 +16,6 @@
 
 package com.vmware.identity.idm;
 
-import java.rmi.RemoteException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
@@ -35,74 +34,74 @@ import com.vmware.identity.performanceSupport.IIdmAuthStatus;
  * Time: 5:46 PM
  * To change this template use File | Settings | File Templates.
  */
-public interface IIdentityManager extends java.rmi.Remote
+public interface IIdentityManager
 {
     /*
      *  Tenant
      */
-    public void addTenant(Tenant tenant, String adminAccountName, char[] adminPwd, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void addTenant(Tenant tenant, String adminAccountName, char[] adminPwd, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void deleteTenant(String name, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void deleteTenant(String name, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Tenant getTenant(String name, IIdmServiceContext serviceContext)throws RemoteException, IDMException;
+    public Tenant getTenant(String name, IIdmServiceContext serviceContext)throws  IDMException;
 
-    public String getDefaultTenant(IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public String getDefaultTenant(IIdmServiceContext serviceContext) throws  IDMException;
 
-    public String getSystemTenant(IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public String getSystemTenant(IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Collection<String> getAllTenants(IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Collection<String> getAllTenants(IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setDefaultTenant(String name, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setDefaultTenant(String name, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setTenant(Tenant tenant, IIdmServiceContext serviceContext)throws RemoteException, IDMException;
+    public void setTenant(Tenant tenant, IIdmServiceContext serviceContext)throws  IDMException;
 
-    public String getTenantSignatureAlgorithm(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public String getTenantSignatureAlgorithm(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setTenantSignatureAlgorithm(String tenantName, String signatureAlgorithm, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setTenantSignatureAlgorithm(String tenantName, String signatureAlgorithm, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public List<Certificate> getTenantCertificate(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public List<Certificate> getTenantCertificate(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Collection<List<Certificate>> getTenantCertificates(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Collection<List<Certificate>> getTenantCertificates(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setTenantTrustedCertificateChain(String tenantName, Collection<Certificate> tenantCertificates, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setTenantTrustedCertificateChain(String tenantName, Collection<Certificate> tenantCertificates, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setTenantCredentials(String tenantName, Collection<Certificate> tenantCertificate, PrivateKey tenantPrivateKey, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setTenantCredentials(String tenantName, Collection<Certificate> tenantCertificate, PrivateKey tenantPrivateKey, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public PrivateKey getTenantPrivateKey(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public PrivateKey getTenantPrivateKey(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public long getClockTolerance(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public long getClockTolerance(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setClockTolerance(String tenantName, long milliseconds, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setClockTolerance(String tenantName, long milliseconds, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public int getDelegationCount(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public int getDelegationCount(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setDelegationCount(String tenantName,int delegationCount, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setDelegationCount(String tenantName,int delegationCount, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public int getRenewCount(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public int getRenewCount(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setRenewCount(String tenantName, int renewCount, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setRenewCount(String tenantName, int renewCount, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public long getMaximumBearerTokenLifetime(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public long getMaximumBearerTokenLifetime(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setMaximumBearerTokenLifetime(String tenantName, long maxLifetime, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setMaximumBearerTokenLifetime(String tenantName, long maxLifetime, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public long getMaximumHoKTokenLifetime(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public long getMaximumHoKTokenLifetime(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setMaximumHoKTokenLifetime(String tenantName, long maxLifetime, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setMaximumHoKTokenLifetime(String tenantName, long maxLifetime, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public long getMaximumBearerRefreshTokenLifetime(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public long getMaximumBearerRefreshTokenLifetime(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setMaximumBearerRefreshTokenLifetime(String tenantName, long maxLifetime, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setMaximumBearerRefreshTokenLifetime(String tenantName, long maxLifetime, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public long getMaximumHoKRefreshTokenLifetime(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public long getMaximumHoKRefreshTokenLifetime(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setMaximumHoKRefreshTokenLifetime(String tenantName, long maxLifetime, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setMaximumHoKRefreshTokenLifetime(String tenantName, long maxLifetime, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setEntityID(String tenantName, String entityID, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setEntityID(String tenantName, String entityID, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public String getEntityID(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public String getEntityID(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public String getOIDCEntityID(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public String getOIDCEntityID(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Retrieves the alias associated with the entityId of local identity provider.
@@ -112,7 +111,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws Exception
      */
     public String getLocalIDPAlias(String tenantName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException;
+            throws  IDMException;
 
     /**
      * Sets the alias associated with the entityId of local identity provider.
@@ -122,7 +121,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws Exception
      */
     public void setLocalIDPAlias(String tenantName, String alias, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException;
+            throws  IDMException;
 
     /**
      * Retrieves the alias associated with the entityId of external identity provider.
@@ -133,7 +132,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws Exception
      */
     public String getExternalIDPAlias(String tenantName, String entityId, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException;
+            throws  IDMException;
 
     /**
      * Sets the alias associated with the entityId of external identity provider.
@@ -144,7 +143,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws Exception
      */
     public void setExternalIDPAlias(String tenantName, String entityId, String alias, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException;
+            throws  IDMException;
 
     /**
      * Retrieves idp selection flag for tenant.
@@ -153,7 +152,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @return true if idp selection is enabled
      * @throws Exception
      */
-    public boolean isTenantIDPSelectionEnabled(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public boolean isTenantIDPSelectionEnabled(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Sets idp selection flag for tenant.
@@ -162,11 +161,11 @@ public interface IIdentityManager extends java.rmi.Remote
      * @param enableIDPSelection true if enabling idp selection.
      * @throws Exception
      */
-    public void setTenantIDPSelectionEnabled(String tenantName, boolean enableIDPSelection, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setTenantIDPSelectionEnabled(String tenantName, boolean enableIDPSelection, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public PasswordExpiration getPasswordExpirationConfiguration(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public PasswordExpiration getPasswordExpirationConfiguration(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void updatePasswordExpirationConfiguration(String tenantName, PasswordExpiration config, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void updatePasswordExpirationConfiguration(String tenantName, PasswordExpiration config, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * addCertificate
@@ -175,59 +174,59 @@ public interface IIdentityManager extends java.rmi.Remote
      * (2) STS: trusted certificate root used to validate tokens
      * @throws
      */
-    public void addCertificate(String tenantName, Certificate idmCert, CertificateType certificateType, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void addCertificate(String tenantName, Certificate idmCert, CertificateType certificateType, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * getAllCertificates
      * Returns all Certificates of type 'certificateType'
      * @throws
      */
-    public Collection<Certificate> getAllCertificates(String tenantName, CertificateType certificateType, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Collection<Certificate> getAllCertificates(String tenantName, CertificateType certificateType, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * getTrustedCertificates
      * Returns all STS root Certificates
      * @throws
      */
-    public Collection<Certificate> getTrustedCertificates(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Collection<Certificate> getTrustedCertificates(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * getStsIssuersCertificates
      * Returns all STS leaf Certificates
      * @throws
      */
-    public Collection<Certificate> getStsIssuersCertificates(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Collection<Certificate> getStsIssuersCertificates(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
     /**
      * deleteCertificate
      * Delete a particular type of certificate based on its finger print
      * @throws not allow deletion attempting to delete STS trusted root certificate that is part of current active signer identity
      */
-    public void deleteCertificate(String tenantName, String fingerprint, CertificateType certificateType, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void deleteCertificate(String tenantName, String fingerprint, CertificateType certificateType, IIdmServiceContext serviceContext) throws  IDMException;
 
     /*
      * SSO Health Statistics
      */
 
-    public SsoHealthStatsData getSsoStatistics(String tenant, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public SsoHealthStatsData getSsoStatistics(String tenant, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void incrementGeneratedTokens(String tenant, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void incrementGeneratedTokens(String tenant, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void incrementRenewedTokens(String tenant, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void incrementRenewedTokens(String tenant, IIdmServiceContext serviceContext) throws  IDMException;
 
     /*
      * RelyingParty
      */
-    public void addRelyingParty(String tenantName, RelyingParty rp, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void addRelyingParty(String tenantName, RelyingParty rp, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void deleteRelyingParty(String tenantName, String rpName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void deleteRelyingParty(String tenantName, String rpName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public RelyingParty getRelyingParty(String tenantName, String rpName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public RelyingParty getRelyingParty(String tenantName, String rpName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public RelyingParty getRelyingPartyByUrl(String tenantName, String url, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public RelyingParty getRelyingPartyByUrl(String tenantName, String url, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setRelyingParty(String tenantName, RelyingParty rp, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setRelyingParty(String tenantName, RelyingParty rp, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Collection<RelyingParty> getRelyingParties(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Collection<RelyingParty> getRelyingParties(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
     /*
      *  OIDC Client
@@ -235,26 +234,26 @@ public interface IIdentityManager extends java.rmi.Remote
     public void addOIDCClient(
             String tenantName,
             OIDCClient oidcClient,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+            IIdmServiceContext serviceContext) throws  IDMException;
 
     public void deleteOIDCClient(
             String tenantName,
             String clientID,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+            IIdmServiceContext serviceContext) throws  IDMException;
 
     public OIDCClient getOIDCClient(
             String tenantName,
             String clientID,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+            IIdmServiceContext serviceContext) throws  IDMException;
 
     public void setOIDCClient(
             String tenantName,
             OIDCClient oidcClient,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+            IIdmServiceContext serviceContext) throws  IDMException;
 
     public Collection<OIDCClient> getOIDCClients(
             String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+            IIdmServiceContext serviceContext) throws  IDMException;
 
     /*
      *  ResourceServer
@@ -262,57 +261,57 @@ public interface IIdentityManager extends java.rmi.Remote
     public void addResourceServer(
             String tenantName,
             ResourceServer resourceServer,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+            IIdmServiceContext serviceContext) throws  IDMException;
 
     public void deleteResourceServer(
             String tenantName,
             String resourceServerName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+            IIdmServiceContext serviceContext) throws  IDMException;
 
     public ResourceServer getResourceServer(
             String tenantName,
             String resourceServerName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+            IIdmServiceContext serviceContext) throws  IDMException;
 
     public void setResourceServer(
             String tenantName,
             ResourceServer resourceServer,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+            IIdmServiceContext serviceContext) throws  IDMException;
 
     public Collection<ResourceServer> getResourceServers(
             String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+            IIdmServiceContext serviceContext) throws  IDMException;
 
     /*
      *  IdentityProvider
      */
-    public void addProvider(String tenantName, IIdentityStoreData idpData, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void addProvider(String tenantName, IIdentityStoreData idpData, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void deleteProvider(String tenantName, String providerName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void deleteProvider(String tenantName, String providerName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public IIdentityStoreData getProvider(String tenantName, String ProviderName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public IIdentityStoreData getProvider(String tenantName, String ProviderName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public IIdentityStoreData getProviderWithInternalInfo(String tenantName, String providerName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public IIdentityStoreData getProviderWithInternalInfo(String tenantName, String providerName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setProvider(String tenantName, IIdentityStoreData idpData, IIdmServiceContext serviceContext ) throws RemoteException, IDMException;
+    public void setProvider(String tenantName, IIdentityStoreData idpData, IIdmServiceContext serviceContext ) throws  IDMException;
 
-    public void setNativeADProvider(String tenantName, IIdentityStoreData idpData, IIdmServiceContext serviceContext ) throws RemoteException, IDMException;
+    public void setNativeADProvider(String tenantName, IIdentityStoreData idpData, IIdmServiceContext serviceContext ) throws  IDMException;
 
-    public Collection<IIdentityStoreData> getProviders(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Collection<IIdentityStoreData> getProviders(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Collection<IIdentityStoreData> getProviders(String tenantName, EnumSet<DomainType> domainTypes, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Collection<IIdentityStoreData> getProviders(String tenantName, EnumSet<DomainType> domainTypes, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Collection<SecurityDomain> getSecurityDomains(String tenantName, String providerName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Collection<SecurityDomain> getSecurityDomains(String tenantName, String providerName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void probeProviderConnectivity(String tenantName, String providerUri,AuthenticationType authType, String userName, String pwd, Collection<X509Certificate> certificates, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void probeProviderConnectivity(String tenantName, String providerUri,AuthenticationType authType, String userName, String pwd, Collection<X509Certificate> certificates, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void probeProviderConnectivity(String tenantName, IIdentityStoreData idsData, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void probeProviderConnectivity(String tenantName, IIdentityStoreData idsData, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void probeProviderConnectivityWithCertValidation(String tenantName, String providerUri, AuthenticationType authType, String userName, String pwd, Collection<X509Certificate> certificates, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void probeProviderConnectivityWithCertValidation(String tenantName, String providerUri, AuthenticationType authType, String userName, String pwd, Collection<X509Certificate> certificates, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Collection<String> getDefaultProviders(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Collection<String> getDefaultProviders(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setDefaultProviders(String tenantName, Collection<String> defaultProviders, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setDefaultProviders(String tenantName, Collection<String> defaultProviders, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Authentication
@@ -320,14 +319,24 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws IDMLoginException when invalid credentials are given (like wrong
      *            principal, password, domain)
      */
-    public PrincipalId authenticate(String tenantName, String principal, String password, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public PrincipalId authenticate(String tenantName, String principal, String password, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * @throws IDMLoginException when invalid credentials are given
      */
-    public GSSResult authenticate(String tenantName, String contextId, byte[] gssTicket, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public GSSResult authenticate(String tenantName, String contextId, byte[] gssTicket, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public PrincipalId authenticate(String tenantName, X509Certificate[] tlsCertChain, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    /** authenticate with user certificate.
+     *
+     * @param tenantName
+     * @param tlsCertChain
+     * @param hint
+     * @param serviceContext
+     * @return PrincipalId at successful authentication
+     * @throws RemoteException
+     * @throws IDMException
+     */
+    public PrincipalId authenticate(String tenantName, X509Certificate[] tlsCertChain, String hint, IIdmServiceContext serviceContext) throws IDMException;
 
     /**
      * authenticate with secure ID
@@ -344,49 +353,49 @@ public interface IIdentityManager extends java.rmi.Remote
     public RSAAMResult authenticateRsaSecurId(String tenantName,
             String sessionID, String principal, String passcode,
             IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException;
+            throws  IDMException;
 
-    public boolean IsActive(String tenantName,PrincipalId principal, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public boolean IsActive(String tenantName,PrincipalId principal, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Collection<Attribute> getAttributeDefinitions(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Collection<Attribute> getAttributeDefinitions(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Collection<AttributeValuePair> getAttributeValues(String tenantName, PrincipalId principal, Collection<Attribute> attributes, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Collection<AttributeValuePair> getAttributeValues(String tenantName, PrincipalId principal, Collection<Attribute> attributes, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public byte[] getUserHashedPassword(String tenantName, PrincipalId principal, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public byte[] getUserHashedPassword(String tenantName, PrincipalId principal, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public PrincipalId addSolutionUser(String tenantName, String userName, SolutionDetail detail, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public PrincipalId addSolutionUser(String tenantName, String userName, SolutionDetail detail, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public SolutionUser findSolutionUser(String tenantName, String userName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public SolutionUser findSolutionUser(String tenantName, String userName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public SolutionUser findSolutionUserByCertDn(String tenantName, String subjectDN, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public SolutionUser findSolutionUserByCertDn(String tenantName, String subjectDN, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public PersonUser findPersonUser(String tenantName, PrincipalId id, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public PersonUser findPersonUser(String tenantName, PrincipalId id, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public PersonUser findPersonUserByObjectId(String tenantName, String userObjectId, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public PersonUser findPersonUserByObjectId(String tenantName, String userObjectId, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Group findGroupByObjectId(String tenantName, String groupObjectId, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Group findGroupByObjectId(String tenantName, String groupObjectId, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Set<PersonUser> findPersonUsers(String tenantName, SearchCriteria criteria, int limit, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Set<PersonUser> findPersonUsers(String tenantName, SearchCriteria criteria, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Set<PersonUser> findPersonUsersByName(String tenantName, SearchCriteria criteria, int limit, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Set<PersonUser> findPersonUsersByName(String tenantName, SearchCriteria criteria, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Set<SolutionUser> findSolutionUsers(String tenantName, String searchString, int limit, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Set<SolutionUser> findSolutionUsers(String tenantName, String searchString, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Set<Group> findGroups(String tenantName, SearchCriteria criteria, int limit, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Set<Group> findGroups(String tenantName, SearchCriteria criteria, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Set<Group> findGroupsByName(String tenantName, SearchCriteria criteria, int limit, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Set<Group> findGroupsByName(String tenantName, SearchCriteria criteria, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Set<PersonUser> findPersonUsersInGroup(String tenantName, PrincipalId groupId, String searchString, int limit, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Set<PersonUser> findPersonUsersInGroup(String tenantName, PrincipalId groupId, String searchString, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Set<PersonUser> findPersonUsersByNameInGroup(String tenantName, PrincipalId groupId, String searchString, int limit, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Set<PersonUser> findPersonUsersByNameInGroup(String tenantName, PrincipalId groupId, String searchString, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Set<SolutionUser> findSolutionUsersInGroup(String tenantName, String groupName, String searchString, int limit, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Set<SolutionUser> findSolutionUsersInGroup(String tenantName, String groupName, String searchString, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Set<Group> findGroupsInGroup(String tenantName, PrincipalId groupId, String searchString, int limit, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Set<Group> findGroupsInGroup(String tenantName, PrincipalId groupId, String searchString, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Set<Group> findGroupsByNameInGroup(String tenantName, PrincipalId groupId, String searchString, int limit, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Set<Group> findGroupsByNameInGroup(String tenantName, PrincipalId groupId, String searchString, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Set<Group> findDirectParentGroups(String tenantName, PrincipalId principalId, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Set<Group> findDirectParentGroups(String tenantName, PrincipalId principalId, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Checks whether principal is member of system group. Principals include end
@@ -408,21 +417,21 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws IDMException
      */
     public boolean isMemberOfSystemGroup(String tenantName, PrincipalId principalId, String groupName, IIdmServiceContext serviceContext)
-        throws  NoSuchTenantException, NoSuchIdpException, InvalidPrincipalException, RemoteException, IDMException;
+        throws  NoSuchTenantException, NoSuchIdpException, InvalidPrincipalException,  IDMException;
 
-    public Set<Group> findNestedParentGroups(String tenantName, PrincipalId userId, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Set<Group> findNestedParentGroups(String tenantName, PrincipalId userId, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Set<PersonUser> findLockedUsers(String tenantName, String searchString, int limit, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Set<PersonUser> findLockedUsers(String tenantName, String searchString, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Set<PersonUser> findDisabledPersonUsers(String tenantName, String searchString, int limit, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Set<PersonUser> findDisabledPersonUsers(String tenantName, String searchString, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public PrincipalId findActiveUserInSystemDomain(String tenantName, String attributeName, String attributeValue, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public PrincipalId findActiveUserInSystemDomain(String tenantName, String attributeName, String attributeValue, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public Set<SolutionUser> findDisabledSolutionUsers(String tenantName, String searchString, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Set<SolutionUser> findDisabledSolutionUsers(String tenantName, String searchString, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public SearchResult find(String tenantName, SearchCriteria criteria, int limit, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public SearchResult find(String tenantName, SearchCriteria criteria, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public SearchResult findByName(String tenantName, SearchCriteria criteria, int limit, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public SearchResult findByName(String tenantName, SearchCriteria criteria, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
     public PrincipalId addUser(String tenantName, String userName, PersonDetail detail, char[] password, IIdmServiceContext serviceContext) throws Exception;
 
@@ -440,43 +449,43 @@ public interface IIdentityManager extends java.rmi.Remote
      * @return non-null principal id of the JIT user after it has been created.
      * @throws IDMException
      */
-    public PrincipalId addJitUser(String tenantName, String userName, PersonDetail detail, String extIdpEntityId, String extUserId, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public PrincipalId addJitUser(String tenantName, String userName, PersonDetail detail, String extIdpEntityId, String extUserId, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public PrincipalId addGroup(String tenantName, String groupName, GroupDetail groupDetail, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public PrincipalId addGroup(String tenantName, String groupName, GroupDetail groupDetail, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public boolean addUserToGroup(String tenantName, PrincipalId userId, String groupName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public boolean addUserToGroup(String tenantName, PrincipalId userId, String groupName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public boolean removeFromLocalGroup(String tenantName, PrincipalId principalId, String groupName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public boolean removeFromLocalGroup(String tenantName, PrincipalId principalId, String groupName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public boolean addGroupToGroup(String tenantName, PrincipalId groupId, String groupName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public boolean addGroupToGroup(String tenantName, PrincipalId groupId, String groupName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void deletePrincipal(String tenantName, String principalName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void deletePrincipal(String tenantName, String principalName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public boolean enableUserAccount(String tenantName, PrincipalId userId, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public boolean enableUserAccount(String tenantName, PrincipalId userId, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public boolean unlockUserAccount(String tenantName, PrincipalId userId, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public boolean unlockUserAccount(String tenantName, PrincipalId userId, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public boolean disableUserAccount(String tenantName, PrincipalId userId, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public boolean disableUserAccount(String tenantName, PrincipalId userId, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public PrincipalId updatePersonUserDetail(String tenantName, String userName, PersonDetail detail, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public PrincipalId updatePersonUserDetail(String tenantName, String userName, PersonDetail detail, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public PrincipalId updateGroupDetail(String tenantName, String groupName, GroupDetail detail, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public PrincipalId updateGroupDetail(String tenantName, String groupName, GroupDetail detail, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public PrincipalId updateSolutionUserDetail(String tenantName, String userName, SolutionDetail detail, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public PrincipalId updateSolutionUserDetail(String tenantName, String userName, SolutionDetail detail, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setUserPassword(String tenantName, String userName, char[] newPassword, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setUserPassword(String tenantName, String userName, char[] newPassword, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void changeUserPassword(String tenantName, String userName, char[] currentPassword, char[] newPassword, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void changeUserPassword(String tenantName, String userName, char[] currentPassword, char[] newPassword, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void updateSystemDomainStorePassword(String tenantName, char[] newPassword, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void updateSystemDomainStorePassword(String tenantName, char[] newPassword, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public PasswordPolicy getPasswordPolicy(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public PasswordPolicy getPasswordPolicy(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
     public void setPasswordPolicy(String tenantName, PasswordPolicy policy, IIdmServiceContext serviceContext) throws Exception;
 
-    public LockoutPolicy getLockoutPolicy(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public LockoutPolicy getLockoutPolicy(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
-    public void setLockoutPolicy(String tenantName, LockoutPolicy policy, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setLockoutPolicy(String tenantName, LockoutPolicy policy, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Search for a group by principalId.
@@ -491,7 +500,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws IDMException In case of a failure.
      * @throws RemoteException
      */
-    public Group findGroup(String tenantName, PrincipalId groupId, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Group findGroup(String tenantName, PrincipalId groupId, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Search for a group by string based on account name.
@@ -509,7 +518,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      */
     public Group findGroup( String tenantName, String group, IIdmServiceContext serviceContext)
-            throws RemoteException, NoSuchTenantException, NoSuchIdpException, InvalidPrincipalException, IDMException;
+            throws  NoSuchTenantException, NoSuchIdpException, InvalidPrincipalException, IDMException;
 
     /**
      * Search for a user by string based on account name.
@@ -527,7 +536,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      */
     public Principal findUser( String tenantName, String user, IIdmServiceContext serviceContext )
-            throws RemoteException, NoSuchTenantException, NoSuchIdpException, InvalidPrincipalException, IDMException;
+            throws  NoSuchTenantException, NoSuchIdpException, InvalidPrincipalException, IDMException;
 
     /****************************************************
      * 3rd Party (external) IDP support
@@ -549,7 +558,7 @@ public interface IIdentityManager extends java.rmi.Remote
      *             tenant not found
      */
     public void setExternalIdpForTenant(String tenantName, IDPConfig idpConfig, IIdmServiceContext serviceContext)
-            throws RemoteException, NoSuchTenantException, IDMException;
+            throws  NoSuchTenantException, IDMException;
 
     /**
      * Remove the externalIDP configuration for the tenant by its entityId.
@@ -569,8 +578,7 @@ public interface IIdentityManager extends java.rmi.Remote
      *             be found
      */
     public void removeExternalIdpForTenant(String tenantName,
-            String configEntityId, IIdmServiceContext serviceContext) throws RemoteException,
-            NoSuchTenantException, NoSuchExternalIdpConfigException, IDMException;
+            String configEntityId, IIdmServiceContext serviceContext) throws NoSuchTenantException, NoSuchExternalIdpConfigException, IDMException;
 
     /**
      * Remove the externalIDP configuration for the tenant by its entityId.
@@ -592,8 +600,7 @@ public interface IIdentityManager extends java.rmi.Remote
      *             be found
      */
     public void removeExternalIdpForTenant(String tenantName,
-            String configEntityId, boolean removeJitUsers, IIdmServiceContext serviceContext) throws RemoteException,
-            NoSuchTenantException, NoSuchExternalIdpConfigException, IDMException;
+            String configEntityId, boolean removeJitUsers, IIdmServiceContext serviceContext) throws NoSuchTenantException, NoSuchExternalIdpConfigException, IDMException;
 
     /**
      * Get all external IDP configurations for the specified tenant
@@ -607,7 +614,7 @@ public interface IIdentityManager extends java.rmi.Remote
      *             tenant not found
      */
     public Collection<IDPConfig> getAllExternalIdpsForTenant(String tenantName, IIdmServiceContext serviceContext)
-            throws RemoteException, NoSuchTenantException, IDMException;
+            throws  NoSuchTenantException, IDMException;
 
     /**
      * Retrieve external IDP configuration per tenant name and entityId.
@@ -623,8 +630,7 @@ public interface IIdentityManager extends java.rmi.Remote
      *             tenant not found
      */
     public IDPConfig getExternalIdpForTenant(String tenantName,
-            String configEntityId, IIdmServiceContext serviceContext) throws RemoteException,
-            NoSuchTenantException, IDMException;
+            String configEntityId, IIdmServiceContext serviceContext) throws NoSuchTenantException, IDMException;
 
     /**
      * Retrieve collection of external IDP configurations with matching URL
@@ -642,9 +648,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws NoSuchTenantException
      *             tenant not found
      */
-    public Collection<IDPConfig> getExternalIdpForTenantByUrl(
-            String tenantName, String urlStr, IIdmServiceContext serviceContext) throws RemoteException,
-            NoSuchTenantException, IDMException;
+    public Collection<IDPConfig> getExternalIdpForTenantByUrl(String tenantName, String urlStr, IIdmServiceContext serviceContext) throws NoSuchTenantException, IDMException;
 
     /**
      * Register the third party userId in the tenant's system provider as FSP
@@ -667,7 +671,7 @@ public interface IIdentityManager extends java.rmi.Remote
      *             external IDP user already registered
      */
     boolean registerThirdPartyIDPUser(String tenantName, PrincipalId userId, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException, NoSuchTenantException;
+            throws  IDMException, NoSuchTenantException;
 
     /**
      * Remove the FSP object registered for external IDP user in the tenant's
@@ -690,7 +694,7 @@ public interface IIdentityManager extends java.rmi.Remote
      *             when the external IDP user was not registered
      */
     boolean removeThirdPartyIDPUser(String tenantName, PrincipalId userId, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException, NoSuchTenantException;
+            throws  IDMException, NoSuchTenantException;
 
     /**
      * find the external IDP user registered
@@ -703,7 +707,7 @@ public interface IIdentityManager extends java.rmi.Remote
      *             when tenant does not exist
      */
    PersonUser findRegisteredExternalIDPUser(String tenantName,
-         PrincipalId userId, IIdmServiceContext serviceContext) throws RemoteException, IDMException,
+         PrincipalId userId, IIdmServiceContext serviceContext) throws  IDMException,
          NoSuchTenantException;
 
     /**
@@ -712,7 +716,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      * @throws IDMException
      */
-    String getExternalIDPRegistrationGroupName(IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    String getExternalIDPRegistrationGroupName(IIdmServiceContext serviceContext) throws  IDMException;
 
 
     /**
@@ -737,7 +741,7 @@ public interface IIdentityManager extends java.rmi.Remote
      *            domain/alias cannot be recognized.
      */
      boolean registerUpnSuffix(String tenantName, String domainName, String upnSuffix, IIdmServiceContext serviceContext)
-          throws RemoteException, IDMException, NoSuchTenantException, NoSuchIdpException;
+          throws  IDMException, NoSuchTenantException, NoSuchIdpException;
 
     /**
      * Remove an UPN suffix previously registered for the specified tenant domain
@@ -758,7 +762,7 @@ public interface IIdentityManager extends java.rmi.Remote
      *            domain/alias cannot be recognized.
      */
      boolean unregisterUpnSuffix(String tenantName, String domainName,
-          String upnSuffix, IIdmServiceContext serviceContext) throws RemoteException, IDMException,
+          String upnSuffix, IIdmServiceContext serviceContext) throws  IDMException,
           NoSuchTenantException, NoSuchIdpException;
 
    /**
@@ -777,13 +781,13 @@ public interface IIdentityManager extends java.rmi.Remote
     *            domain/alias cannot be recognized.
     */
      Set<String> getUpnSuffixes(String tenantName, String domainName, IIdmServiceContext serviceContext)
-           throws RemoteException, IDMException,
+           throws  IDMException,
            NoSuchTenantException, NoSuchIdpException;
 
-     String getBrandName(String tenantName, IIdmServiceContext serviceContext) throws RemoteException,  IDMException;
+     String getBrandName(String tenantName, IIdmServiceContext serviceContext) throws   IDMException;
 
     void setBrandName(String tenantName, String brandName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException;
+            throws  IDMException;
 
     /**
      * Get logon banner title for the tenant.
@@ -794,7 +798,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      * @throws IDMException
      */
-    String getLogonBannerTitle(String tenantName, IIdmServiceContext serviceContext) throws RemoteException,  IDMException;
+    String getLogonBannerTitle(String tenantName, IIdmServiceContext serviceContext) throws   IDMException;
 
     /**
      * Set logon banner title for the tenant.
@@ -806,7 +810,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      * @throws IDMException
      */
-    void setLogonBannerTitle(String tenantName, String logonBannerTitle, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    void setLogonBannerTitle(String tenantName, String logonBannerTitle, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Get logon banner content for the tenant.
@@ -817,7 +821,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      * @throws IDMException
      */
-    String getLogonBannerContent(String tenantName, IIdmServiceContext serviceContext) throws RemoteException,  IDMException;
+    String getLogonBannerContent(String tenantName, IIdmServiceContext serviceContext) throws   IDMException;
 
     /**
      * Set logon banner content.
@@ -829,7 +833,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      * @throws IDMException
      */
-    void setLogonBannerContent(String tenantName, String logonBannerContent, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    void setLogonBannerContent(String tenantName, String logonBannerContent, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Check if logon banner checkbox is enabled.
@@ -850,7 +854,7 @@ public interface IIdentityManager extends java.rmi.Remote
      */
     public void setAuthnPolicyForProvider(String tenantName, String providerName, AuthnPolicy policy, IIdmServiceContext serviceContext) throws Exception;
 
-    boolean getLogonBannerCheckboxFlag(String tenantName, IIdmServiceContext serviceContext) throws RemoteException,  IDMException;
+    boolean getLogonBannerCheckboxFlag(String tenantName, IIdmServiceContext serviceContext) throws   IDMException;
 
     /**
      * Set logon banner checkbox.
@@ -863,7 +867,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      * @throws IDMException
      */
-    void setLogonBannerCheckboxFlag(String tenantName, boolean enableLogonBannerCheckbox, IIdmServiceContext serviceContext) throws RemoteException,  IDMException;
+    void setLogonBannerCheckboxFlag(String tenantName, boolean enableLogonBannerCheckbox, IIdmServiceContext serviceContext) throws   IDMException;
 
     /*
      * System information
@@ -875,33 +879,33 @@ public interface IIdentityManager extends java.rmi.Remote
      * @return Information regarding Active Directory Join Status
      */
     ActiveDirectoryJoinInfo
-    getActiveDirectoryJoinStatus(IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    getActiveDirectoryJoinStatus(IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Query the cluster identifier for this instance
      *
      * @return Cluster Identifier
      */
-    String getClusterId(IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    String getClusterId(IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Query the deployment identifier for this instance
      *
      * @return Deployment identifier
      */
-    String getDeploymentId(IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    String getDeploymentId(IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Retrieve the Domain Trust Info
      *
      * @return List of Trusted Domains
      */
-    Collection<DomainTrustsInfo> getDomainTrustInfo(IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    Collection<DomainTrustsInfo> getDomainTrustInfo(IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * @return Returns host name of the sso box. (IP as a fall-back)
      */
-    public String getSsoMachineHostName(IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public String getSsoMachineHostName(IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Retrieve a collection of all joined systems including Domain Controllers and, optionally,
@@ -918,7 +922,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      * @throws IDMException
      */
-    public Collection<VmHostData> getComputers(String tenantName, boolean getDCOnly, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public Collection<VmHostData> getComputers(String tenantName, boolean getDCOnly, IIdmServiceContext serviceContext) throws  IDMException;
 
    /**
     * Join the SSO server machine to AD domain.
@@ -935,7 +939,7 @@ public interface IIdentityManager extends java.rmi.Remote
     * @throws IDMException
     * @throws IdmADDomainException
     */
-    void joinActiveDirectory(String user, String password, String domain, String orgUnit, IIdmServiceContext serviceContext) throws RemoteException, IDMException, IdmADDomainException;
+    void joinActiveDirectory(String user, String password, String domain, String orgUnit, IIdmServiceContext serviceContext) throws  IDMException, IdmADDomainException;
 
    /**
     * Operation for the SSO server to leave the AD domain
@@ -948,7 +952,7 @@ public interface IIdentityManager extends java.rmi.Remote
     * @throws ADIDSAlreadyExistException
     * @throws IdmADDomainException
     */
-    void leaveActiveDirectory(String user, String password, IIdmServiceContext serviceContext) throws RemoteException, IDMException, ADIDSAlreadyExistException, IdmADDomainException;
+    void leaveActiveDirectory(String user, String password, IIdmServiceContext serviceContext) throws  IDMException, ADIDSAlreadyExistException, IdmADDomainException;
 
     /**
      * @param tenantName
@@ -958,7 +962,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws IDMException
      */
     public AuthnPolicy getAuthNPolicy(String tenantName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException;
+            throws  IDMException;
 
     /**
      * Operation for retrieving the IDM authentication statistics cache
@@ -968,7 +972,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      * @throws IDMException
      */
-    public List<IIdmAuthStat> getIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public List<IIdmAuthStat> getIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Operation for retrieving the status of the IDM authentication statistics cache
@@ -979,7 +983,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      * @throws IDMException
      */
-    public IIdmAuthStatus getIdmAuthStatus(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public IIdmAuthStatus getIdmAuthStatus(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Operation for clearing the IDM authentication statistics cache
@@ -989,7 +993,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      * @throws IDMException
      */
-    public void clearIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void clearIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Operation for setting the IDM authentication statistics cache size
@@ -1000,7 +1004,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      * @throws IDMException
      */
-    public void setIdmAuthStatsSize(String tenantName, int size, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void setIdmAuthStatsSize(String tenantName, int size, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Operation for enabling the IDM authentication statistics cache
@@ -1010,7 +1014,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      * @throws IDMException
      */
-    public void enableIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void enableIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Operation for disabling the IDM authentication statistics cache
@@ -1020,10 +1024,10 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      * @throws IDMException
      */
-    public void disableIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public void disableIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
     public void setAuthNPolicy(String tenantName, AuthnPolicy policy, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException;
+            throws  IDMException;
 
 
         /**
@@ -1035,7 +1039,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws RemoteException
      * @throws Exception
      */
-    String getServerSPN() throws RemoteException, Exception;
+    String getServerSPN() throws  Exception;
 
     /**
      * Add rsa secureID agent
@@ -1055,7 +1059,7 @@ public interface IIdentityManager extends java.rmi.Remote
      * @throws IDMException
      * @throws RemoteException
      */
-    public RSAAgentConfig getRSAConfig(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException;
+    public RSAAgentConfig getRSAConfig(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
     /**
      * Adding a RSA AM instance-specific configuration to tenant

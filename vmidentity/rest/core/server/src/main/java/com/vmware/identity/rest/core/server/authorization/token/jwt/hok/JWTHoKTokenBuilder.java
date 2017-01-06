@@ -19,7 +19,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.text.ParseException;
 
 import net.minidev.json.JSONObject;
-
+import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.SignedJWT;
@@ -62,7 +62,7 @@ public class JWTHoKTokenBuilder extends JWTBearerTokenBuilder {
             PublicKey key = rsaKey.toRSAPublicKey();
 
             return new JWTHoKToken(jwt, getTokenTypeField(), getRoleField(), getGroupsField(), jwkset, key);
-        } catch (ParseException | NoSuchAlgorithmException | InvalidKeySpecException e) {
+        } catch (ParseException | JOSEException e) {
             log.error("Error parsing the JWT HOK Token", e);
             throw new InvalidTokenException(sm.getString("auth.ite.parse.malformed"));
         }

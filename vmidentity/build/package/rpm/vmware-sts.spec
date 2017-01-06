@@ -160,16 +160,14 @@ fi
 %{_jarsdir}/vmware-identity-rest-afd-server.jar
 %{_jarsdir}/vmware-identity-rest-core-server.jar
 %{_jarsdir}/vmware-identity-rest-idm-server.jar
+%{_jarsdir}/vmware-directory-rest-server.jar
 %{_jarsdir}/vmware-identity-install.jar
 %{_jarsdir}/vmware-identity-sso-config.jar
-%{_webappsdir}/idm.war
-%{_webappsdir}/afd.war
-%{_webappsdir}/openidconnect.war
-%{_webappsdir}/sts.war
-%{_webappsdir}/websso.war
+%{_jarsdir}/websso.jar
+%{_jarsdir}/sts.jar
+%{_jarsdir}/openidconnect.jar
 %{_webappsdir}/lightwaveui.war
 %{_webappsdir}/ROOT.war
-%{_webappsdir}/vmdir.war
 %{_datadir}/config/idm/*
 %config %attr(600, root, root) %{_prefix}/vmware-sts/bin/setenv.sh
 %config %attr(600, root, root) %{_prefix}/vmware-sts/bin/vmware-identity-tomcat-extensions.jar
@@ -189,6 +187,8 @@ fi
 %defattr(-,root,root)
 %{_jarsdir}/samltoken.jar
 %{_jarsdir}/vmware-identity-rest-idm-common.jar
+%{_jarsdir}/vmware-directory-rest-common.jar
+%{_jarsdir}/vmware-directory-rest-client.jar
 %{_jarsdir}/vmware-identity-rest-core-common.jar
 %{_jarsdir}/vmware-identity-websso-client.jar
 %{_jarsdir}/vmware-identity-platform.jar

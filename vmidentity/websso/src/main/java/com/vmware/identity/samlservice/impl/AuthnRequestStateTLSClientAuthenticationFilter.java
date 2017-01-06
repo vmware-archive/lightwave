@@ -141,7 +141,19 @@ AuthenticationFilter<AuthnRequestState> {
 
         } else {
             try {
-                principalId = accessor.authenticate(certChain);
+                // extract auth data
+                String certAuthParam = request.getParameter(Shared.REQUEST_AUTH_PARAM);
+                Validate.notNull(certAuthParam);
+                certAuthParam = certAuthParam.replace(Shared.TLSCLIENT_AUTH_PREFIX, "").trim();
+
+                Validate.notNull(certAuthParam);
+                byte[] decodedAuthData = Base64.decode(certAuthParam);
+
+                String unp = new String(decodedAuthData, "UTF-8");
+                int idx = unp.indexOf(':');
+                String hintAndDomain = idx > 0 ? unp.substring(0, idx) : null;
+
+                principalId = accessor.authenticate(certChain,hintAndDomain);
                 Validate.notNull(principalId, "principalId");
             } catch (Exception ex) {
                 // could not authenticate with the certificate

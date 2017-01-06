@@ -84,7 +84,7 @@ public class SsoController extends BaseSsoController {
     /**
      * Handle SAML AuthnRequest
      */
-    @RequestMapping(value = "/SAML2/SSO/{tenant:.*}", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/websso/SAML2/SSO/{tenant:.*}", method = {RequestMethod.GET, RequestMethod.POST})
     public String sso(Locale locale, @PathVariable(value = "tenant") String tenant,
             Model model, HttpServletRequest request,
             HttpServletResponse response) throws IOException {
@@ -119,7 +119,7 @@ public class SsoController extends BaseSsoController {
     /**
      * Reverse proxy is expected to challenge for the client certificate with the request.
      */
-    @RequestMapping(value = "/SAML2/SSOCAC/{tenant:.*}", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/websso/SAML2/SSOCAC/{tenant:.*}", method = {RequestMethod.GET, RequestMethod.POST})
     public String cacSso(Locale locale, @PathVariable(value = "tenant") String tenant,
             Model model, HttpServletRequest request,
             HttpServletResponse response) throws IOException {
@@ -130,7 +130,7 @@ public class SsoController extends BaseSsoController {
      * Client sending request to this endpoint will be challenged to submit certificate by SSL protocal.
      * Thus a reverse proxy is not expected in between browser and this server.
      */
-    @RequestMapping(value = "/SAML2/SmartcardRealm/{tenant:.*}", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/websso/SAML2/SmartcardRealm/{tenant:.*}", method = {RequestMethod.GET, RequestMethod.POST})
     public String smartcardRealmSso(Locale locale, @PathVariable(value = "tenant") String tenant,
             Model model, HttpServletRequest request,
             HttpServletResponse response) throws IOException {
@@ -175,7 +175,7 @@ public class SsoController extends BaseSsoController {
      * Handle SSL for NGC. NGC is to host login page from iFrame which would fails silently if the server site is not trusted
      * by browser. This interactive exchange allow user to trust the ssl at the first time browsing this site.
      */
-      @RequestMapping(value = "/SAML2/SSOSSL/{tenant:.*}", method = {RequestMethod.GET, RequestMethod.POST})
+      @RequestMapping(value = "/websso/SAML2/SSOSSL/{tenant:.*}", method = {RequestMethod.GET, RequestMethod.POST})
     public void ssoSSLDummy(Locale locale, Model model,@PathVariable(value = "tenant") String tenant,
             HttpServletRequest request, HttpServletResponse response)
                     throws IOException {
@@ -213,7 +213,7 @@ public class SsoController extends BaseSsoController {
        * Handle SSL for default tenant. NGC is to host login page from iFrame which would fails silently if the server site is not trusted
        * by browser. This interactive exchange allow user to trust the ssl at the first time browsing this site.
        */
-        @RequestMapping(value = "/SAML2/SSOSSL", method = {RequestMethod.GET, RequestMethod.POST})
+        @RequestMapping(value = "/websso/SAML2/SSOSSL", method = {RequestMethod.GET, RequestMethod.POST})
       public void ssoSSLDummyDefault(Locale locale, Model model,
               HttpServletRequest request, HttpServletResponse response)
                       throws IOException {
@@ -223,7 +223,7 @@ public class SsoController extends BaseSsoController {
       /**
        * Handle SAML AuthnRequest for default tenant
        */
-    @RequestMapping(value = "/SAML2/SSO", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/websso/SAML2/SSO", method = {RequestMethod.GET, RequestMethod.POST})
     public void ssoDefaultTenant(Locale locale, Model model,
             HttpServletRequest request, HttpServletResponse response)
                     throws IOException {
@@ -237,7 +237,7 @@ public class SsoController extends BaseSsoController {
     /**
      * Reverse proxy is expected to challenge for the client certificate with the request of default tenant.
      */
-    @RequestMapping(value = "/SAML2/SSOCAC", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/websso/SAML2/SSOCAC", method = {RequestMethod.GET, RequestMethod.POST})
     public void cacSsoDefaultTenant(Locale locale, Model model,
         HttpServletRequest request, HttpServletResponse response)
         throws IOException {
@@ -248,7 +248,7 @@ public class SsoController extends BaseSsoController {
      * Client sending request of default tenant to this endpoint will be challenged to submit certificate by SSL protocal.
      * Thus a reverse proxy is not expected in between browser and this server.
      */
-    @RequestMapping(value = "/SAML2/SmartcardRealm", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(value = "/websso/SAML2/SmartcardRealm", method = {RequestMethod.GET, RequestMethod.POST})
     public void smartcardRealmSsoDefaultTenant(Locale locale, Model model,
         HttpServletRequest request, HttpServletResponse response)
         throws IOException {
@@ -258,7 +258,7 @@ public class SsoController extends BaseSsoController {
     /**
      * Handle request sent with a wrong binding
      */
-    @RequestMapping(value = "/SAML2/SSO/{tenant:.*}")
+    @RequestMapping(value = "/websso/SAML2/SSO/{tenant:.*}")
     public void ssoBindingError(Locale locale,
             @PathVariable(value = "tenant") String tenant, HttpServletResponse response)
                     throws IOException {
@@ -271,7 +271,7 @@ public class SsoController extends BaseSsoController {
     /**
      * Handle default tenant request sent with a wrong binding
      */
-    @RequestMapping(value = "/SAML2/SSO")
+    @RequestMapping(value = "/websso/SAML2/SSO")
     public void ssoDefaultTenantBindingError(Locale locale,
             HttpServletResponse response) throws IOException {
         logger.info("SSO binding error! The client locale is "
@@ -282,7 +282,7 @@ public class SsoController extends BaseSsoController {
     /**
      * Handle SAML AuthnRequest, UNP entry form
      */
-    @RequestMapping(value = "/SAML2/SSO/{tenant:.*}", method = RequestMethod.GET, params = Shared.PASSWORD_ENTRY)
+    @RequestMapping(value = "/websso/SAML2/SSO/{tenant:.*}", method = RequestMethod.GET, params = Shared.PASSWORD_ENTRY)
     public String ssoPasswordEntry(Locale locale,
             @PathVariable(value = "tenant") String tenant, Model model,
             HttpServletRequest request, HttpServletResponse response)
@@ -323,6 +323,10 @@ public class SsoController extends BaseSsoController {
     }
 
     private void setupAuthenticationModel(Model model, Locale locale, String tenant, HttpServletRequest request, AuthnRequestState requestState) {
+
+        DefaultIdmAccessorFactory idmFactory = new DefaultIdmAccessorFactory();
+        IdmAccessor idmAccessor = idmFactory.getIdmAccessor();
+
         model.addAttribute("spn", StringEscapeUtils.escapeJavaScript(getServerSPN()));
         model.addAttribute("tenant_brandname", StringEscapeUtils.escapeJavaScript(getBrandName(tenant)));
         model.addAttribute("username",
@@ -349,10 +353,12 @@ public class SsoController extends BaseSsoController {
                 messageSource.getMessage("LoginForm.UnsupportedBrowserWarning", null, locale));
         model.addAttribute("searchstring", Shared.PASSWORD_ENTRY);
         model.addAttribute("replacestring", Shared.PASSWORD_SUPPLIED);
-        model.addAttribute("iAgreeTo", messageSource.getMessage("LoginForm.IAgreeTo", null, locale));
-        model.addAttribute("logonBannerAlertMessage", messageSource.getMessage("LoginForm.LogonBannerAlertMessage", null, locale));
+        model.addAttribute("iAgreeTo",
+                messageSource.getMessage("LoginForm.IAgreeTo", null, locale));
+        model.addAttribute("logonBannerAlertMessage",
+                StringEscapeUtils.escapeJavaScript(messageSource.getMessage("LoginForm.LogonBannerAlertMessage", null, locale)));
 
-        setLogonBannerModelAttributes(tenant, model);
+        setLogonBannerModelAttributes(tenant, model, idmAccessor);
 
         AuthnTypesSupported supportedAuthnTypes;
         if (requestState != null) {
@@ -360,7 +366,15 @@ public class SsoController extends BaseSsoController {
         } else {
             supportedAuthnTypes = new AuthnTypesSupported(true,true, false, false);
         }
-
+        if (supportedAuthnTypes.supportsTlsClientCert()) {
+            boolean enableHint = idmAccessor.getAuthnPolicy(tenant).getClientCertPolicy().getEnableHint();
+            if (enableHint) {
+                model.addAttribute("username_hint",
+                        messageSource.getMessage("LoginForm.UserNameHint", null, locale));
+                model.addAttribute("username_hint_placeholder",
+                        messageSource.getMessage("LoginForm.UserNameHint.Placeholder", null, locale));
+            }
+        }
         model.addAttribute("enable_password_auth", supportedAuthnTypes.supportsPasswordProtectTransport());
         model.addAttribute("enable_windows_auth",supportedAuthnTypes.supportsWindowsSession());
         model.addAttribute("enable_tlsclient_auth",supportedAuthnTypes.supportsTlsClientCert());
@@ -384,7 +398,7 @@ public class SsoController extends BaseSsoController {
     /**
      * Handle SAML AuthnRequest for default tenant, UNP entry form
      */
-    @RequestMapping(value = "/SAML2/SSO", method = RequestMethod.GET, params = Shared.PASSWORD_ENTRY)
+    @RequestMapping(value = "/websso/SAML2/SSO", method = RequestMethod.GET, params = Shared.PASSWORD_ENTRY)
     public String ssoDefaultTenantPasswordEntry(Locale locale, Model model,
             HttpServletRequest request, HttpServletResponse response)
                     throws IOException {
@@ -399,7 +413,7 @@ public class SsoController extends BaseSsoController {
     /**
      * Handle SSL for landing page.
      */
-    @RequestMapping(value = "/", method = RequestMethod.GET)
+    @RequestMapping(value = "/websso/", method = RequestMethod.GET)
     public String webssoRootPageEntry(Locale locale, Model model,
             HttpServletRequest request, HttpServletResponse response)
                     throws IOException {
@@ -519,13 +533,11 @@ public class SsoController extends BaseSsoController {
     // @ModelAttribute("tenant_logonbanner_title")
     // @ModelAttribute("tenant_logonbanner_content")
     // @ModelAttribute("enable_logonbanner_checkbox")
-    private void setLogonBannerModelAttributes(String tenant, Model model) {
+    private void setLogonBannerModelAttributes(String tenant, Model model, IdmAccessor idmAccessor) {
         if (tenant == null || tenant.isEmpty()) {
             return;
         }
-        DefaultIdmAccessorFactory idmFactory = new DefaultIdmAccessorFactory();
-        Validate.notNull(idmFactory, "idmFactory");
-        IdmAccessor idmAccessor = idmFactory.getIdmAccessor();
+
         idmAccessor.setTenant(tenant);
         String logonBannerTitle = idmAccessor.getLogonBannerTitle();
         String logonBannerContent = idmAccessor.getLogonBannerContent();

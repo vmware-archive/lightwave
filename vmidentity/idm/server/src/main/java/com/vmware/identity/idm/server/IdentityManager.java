@@ -23,7 +23,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
+import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -63,10 +64,12 @@ import com.vmware.af.interop.VmAfNoSuchLogonSessionException;
 import com.vmware.af.interop.VmAfNotSupportedException;
 import com.vmware.af.interop.VmAfUnknownServerException;
 import com.vmware.af.interop.VmAfWrongPasswordException;
+import com.vmware.certificate.Request;
+import com.vmware.certificate.VMCAClient;
+import com.vmware.identity.auth.passcode.spi.AuthenticationResult;
 import com.vmware.identity.auth.passcode.spi.AuthenticationSecret;
 import com.vmware.identity.auth.passcode.spi.AuthenticationSession;
 import com.vmware.identity.auth.passcode.spi.AuthenticationSessionFactory;
-import com.vmware.identity.auth.passcode.spi.AuthenticationResult;
 import com.vmware.identity.auth.passcode.spi.SessionFactoryProvider;
 import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
@@ -144,6 +147,7 @@ import com.vmware.identity.idm.VmHostData;
 import com.vmware.identity.idm.server.clientcert.IdmClientCertificateValidator;
 import com.vmware.identity.idm.server.clientcert.IdmCrlCache;
 import com.vmware.identity.idm.server.clientcert.TenantCrlCache;
+import com.vmware.identity.idm.server.config.ConfigStoreFactory;
 import com.vmware.identity.idm.server.config.IConfigStore;
 import com.vmware.identity.idm.server.config.IConfigStoreFactory;
 import com.vmware.identity.idm.server.config.IdmServerConfig;
@@ -164,8 +168,10 @@ import com.vmware.identity.idm.server.provider.IGssAuthIdentityProvider;
 import com.vmware.identity.idm.server.provider.IIdentityProvider;
 import com.vmware.identity.idm.server.provider.IProviderFactory;
 import com.vmware.identity.idm.server.provider.ISystemDomainIdentityProvider;
+import com.vmware.identity.idm.server.provider.LdapConnectionPool;
 import com.vmware.identity.idm.server.provider.NoSuchUserException;
 import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
+import com.vmware.identity.idm.server.provider.ProviderFactory;
 import com.vmware.identity.idm.server.provider.activedirectory.ActiveDirectoryProvider;
 import com.vmware.identity.idm.server.provider.activedirectory.ServerKrbUtils;
 import com.vmware.identity.idm.server.provider.localos.LocalOsIdentityProvider;
@@ -193,17 +199,17 @@ import com.vmware.identity.performanceSupport.IIdmAuthStat.EventLevel;
 import com.vmware.identity.performanceSupport.IIdmAuthStatus;
 import com.vmware.identity.performanceSupport.IdmAuthStatus;
 import com.vmware.identity.performanceSupport.PerfBucketKey;
+import com.vmware.identity.performanceSupport.PerfDataSinkFactory;
 import com.vmware.identity.performanceSupport.PerfMeasurementPoint;
 /**
  * User: snambakam
  * Date: 12/23/11
  * Time: 1:56 PM
  */
-public class IdentityManager extends UnicastRemoteObject
-implements IIdentityManager
-{
+public class IdentityManager implements IIdentityManager {
     class IdmCachePeriodicChecker extends Thread
     {
+
         @Override
         public void run()
         {
@@ -217,9 +223,9 @@ implements IIdentityManager
 
                     IdentityManager.this.refreshTenantCache();
 
-                    if (IdmServer.getPerfDataSinkInstance() != null)
+                    if (PerfDataSinkFactory.getPerfDataSinkInstance() != null)
                     {
-                        IdmServer.getPerfDataSinkInstance().addMeasurement(
+                        PerfDataSinkFactory.getPerfDataSinkInstance().addMeasurement(
                                 new PerfBucketKey(
                                         PerfMeasurementPoint.IDMPeriodicRefreshTenantCertificates),
                                         TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
@@ -245,6 +251,7 @@ implements IIdentityManager
             }
         }
     }
+
     }
 
 
@@ -288,73 +295,6 @@ implements IIdentityManager
     }
 
 
-    public static final String THIRD_PARTY_IDP_USER_DEFAULT_GROUP_NAME = "Users";
-
-    // this will include both user's own sid as well as the sids of groups user is a member of
-    public static final String INTERNAL_ATTR_GROUP_OBJECTIDS = "userMemberOfGroupIds";
-
-    private IProviderFactory providerFactory;
-
-    private IConfigStoreFactory configStoreFactory;
-
-    private AuthSessionFactoryCache _rsaSessionFactoryCache = new AuthSessionFactoryCache();
-
-    private static final long serialVersionUID = -7719567998332472234L;
-    /* The following chars cannot be part of:
-     * - userName
-     * - firstName, lastName or userDetails.description
-     * when user is created (locally on tenant's system IDP)
-     */
-    final static char[] INVALID_CHARS_FOR_USER_DETAIL = "^<>&%`".toCharArray();
-
-    // we support either 'user@domain', 'domain\\user', or default domain formats
-    final static char UPN_SEPARATOR = '@';
-    final static char NETBIOS_SEPARATOR = '\\';
-    final static char[] VALID_ACCOUNT_NAME_SEPARATORS = {UPN_SEPARATOR, NETBIOS_SEPARATOR};
-
-    final static char[] INVALID_CHARS_FOR_USER_ID =
-         (String.valueOf(INVALID_CHARS_FOR_USER_DETAIL) + UPN_SEPARATOR + NETBIOS_SEPARATOR)
-               .toCharArray();
-
-    private final static String LOCAL_OS_STATIC_ALIAS = "localos";
-    private final static RsaAuthSessionCache _rsaSessionCache = new RsaAuthSessionCache();
-
-    private IConfigStore _configStore;
-    private Collection<Attribute>    _defaultAttributes;
-    private TenantCache _tenantCache;
-    private TenantCrlCache _tenantCrlCache;
-    private volatile Thread _crlCacheChecker = null;
-
-    public static final String WELLKNOWN_SOLUTIONUSERS_GROUP_NAME =
-            "SolutionUsers";
-    public static final String WELLKNOWN_SOLUTIONUSERS_GROUP_DESCRIPTION =
-            "Well-known solution users' group, which contains all solution users as members.";
-
-    public static final String WELLKNOWN_CONFIGURATIONUSERS_GROUP_NAME =
-          "SystemConfiguration.Administrators";
-    public static final String WELLKNOWN_CONFIGURATIONUSERS_GROUP_DESCRIPTION =
-          "Well-known configuration users' group which contains all configuration users as members.";
-
-    public static final String WELLKNOWN_EXTERNALIDP_USERS_GROUP_NAME =
-            "ExternalIDPUsers";
-    public static final String WELLKNOWN_EXTERNALIDP_USERS_GROUP_DESCRIPTION =
-            "Well-known external IDP users' group, which registers external IDP users as guests.";
-
-    private static final PersonDetail EXTERNAL_USER_SAMPLE_PERSON_DETAIL =
-            new PersonDetail.Builder().build();
-
-
-    private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(IdentityManager.class);
-
-    private static final String DEFAULT_HTTPS_PORT = "443";
-    private static final String HOSTNAME_MACRO = "<HOSTNAME>"; // to be susbstituted with getHostIPAddress()
-    private static final String PORT_MACRO = "<PORT>"; // to be substituted with StsTomcat ipaddress
-
-    private static final String PROVIDER_TYPE_RSA_SECURID = "RsaSecureID";
-    private static final String PASSCODE_PROVIDER_TYPE = "RSA";
-
-    private static SsoHealthStatistics ssoHealthStatistics = new SsoHealthStatistics();
-
     private class ProvidersInfo {
         Collection<IIdentityProvider> _providers;
         Collection<IIdentityStoreData> _idsStores; // internal provider data store information
@@ -373,62 +313,85 @@ implements IIdentityManager
         }
     }
 
-    public
-    IdentityManager(
-        IConfigStoreFactory configFactory,
-        IProviderFactory    pdFactory
-        ) throws RemoteException, IDMException
-    {
-        super();
+    private static final long serialVersionUID = -7719567998332472234L;
+    private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(IdentityManager.class);
+    private static final Object identityManagerLock = new Object();
 
-        try
-        {
-            ssoHealthStatistics.setUpTimeIDMService();
-            IdmDomainState.getInstance();
+    // CONSTANTS
+    private static final String DEFAULT_HTTPS_PORT = "443";
+    private static final String HOSTNAME_MACRO = "<HOSTNAME>"; // to be susbstituted with getHostIPAddress()
+    private static final String PORT_MACRO = "<PORT>"; // to be substituted with StsTomcat ipaddress
+    private static final String LOCAL_OS_STATIC_ALIAS = "localos";
+    private static final String PROVIDER_TYPE_RSA_SECURID = "RsaSecureID";
+    private static final String PASSCODE_PROVIDER_TYPE = "RSA";
 
-            this.configStoreFactory = configFactory;
-            this.providerFactory = pdFactory;
+    public static final String THIRD_PARTY_IDP_USER_DEFAULT_GROUP_NAME = "Users";
+    public static final String INTERNAL_ATTR_GROUP_OBJECTIDS = "userMemberOfGroupIds"; // This will include both user's own sid as well as the sids of groups user is a member of
+    public static final char[] INVALID_CHARS_FOR_USER_DETAIL = "^<>&%`".toCharArray();
+    public static final char[] VALID_ACCOUNT_NAME_SEPARATORS = {ServerUtils.UPN_SEPARATOR, ServerUtils.NETBIOS_SEPARATOR };     // we support either 'user@domain', 'domain\\user', or default domain formats
+    public static final char[] INVALID_CHARS_FOR_USER_ID = (String.valueOf(INVALID_CHARS_FOR_USER_DETAIL) + ServerUtils.UPN_SEPARATOR + ServerUtils.NETBIOS_SEPARATOR).toCharArray();
+    public static final String WELLKNOWN_SOLUTIONUSERS_GROUP_NAME = "SolutionUsers";
+    public static final String WELLKNOWN_SOLUTIONUSERS_GROUP_DESCRIPTION = "Well-known solution users' group, which contains all solution users as members.";
+    public static final String WELLKNOWN_CONFIGURATIONUSERS_GROUP_NAME = "SystemConfiguration.Administrators";
+    public static final String WELLKNOWN_CONFIGURATIONUSERS_GROUP_DESCRIPTION = "Well-known configuration users' group which contains all configuration users as members.";
+    public static final String WELLKNOWN_EXTERNALIDP_USERS_GROUP_NAME =  "ExternalIDPUsers";
+    public static final String WELLKNOWN_EXTERNALIDP_USERS_GROUP_DESCRIPTION = "Well-known external IDP users' group, which registers external IDP users as guests.";
 
-            _tenantCache = new TenantCache();
-            _tenantCrlCache = new TenantCrlCache();
+    /**
+     * A singleton IDM instance intend to be used across all other webapps.
+     */
+    private static IdentityManager idmInstance = null;
+
+    private IProviderFactory providerFactory;
+    private IConfigStoreFactory configStoreFactory;
+    private AuthSessionFactoryCache _rsaSessionFactoryCache;
+    private final static RsaAuthSessionCache _rsaSessionCache = new RsaAuthSessionCache();;
+    private IConfigStore _configStore;
+    private Collection<Attribute> _defaultAttributes;
+    private TenantCache _tenantCache;
+    private TenantCrlCache _tenantCrlCache;
+    private volatile Thread _crlCacheChecker = null;
+    private static final PersonDetail EXTERNAL_USER_SAMPLE_PERSON_DETAIL = new PersonDetail.Builder().build();
+    private static SsoHealthStatistics ssoHealthStatistics = new SsoHealthStatistics();
+
+    /**
+     * Performs IDM bootstrap actions and instantiates tenant cache. Along with, Starts two caching threads for refreshing tenant information CRL info
+     */
+    protected IdentityManager() throws IDMException {
+        try {
+            this.configStoreFactory = new ConfigStoreFactory();
+            this.providerFactory = new ProviderFactory();
+            this._tenantCache = new TenantCache();
+            this._tenantCrlCache = new TenantCrlCache();
+            this._configStore = this.configStoreFactory.getConfigStore();
 
             IdmServerConfig settings = IdmServerConfig.getInstance();
-            _defaultAttributes = settings.getDefaultAttributesList();
-
-            if (_defaultAttributes == null)
-            {
-                _defaultAttributes = Collections.emptyList();
+            this._defaultAttributes = settings.getDefaultAttributesList();
+            if (this._defaultAttributes == null) {
+                this._defaultAttributes = Collections.emptyList();
             }
 
-            _configStore = this.configStoreFactory.getConfigStore();
-            if (_configStore == null)
-            {
-                throw new RemoteException("Failed to initialize config store");
-            }
+            this._rsaSessionFactoryCache = new AuthSessionFactoryCache();
+            ssoHealthStatistics.setUpTimeIDMService();
 
-            String systemTenant = registerServiceProviderAsTenant();
-
-            // prepare tenant cache
-            initializeTenantCache();
-
+            // Auxiliary IDM bootstrap actions
+            IdmDomainState.getInstance();
+            String systemTenant = registerServiceProviderAsTenant(); // Set up system tenant
+            initializeTenantCache(); // prepare tenant cache
             ensureValidTenant(systemTenant);
+            ensureWellKnownConfigurationUsersGroupExist(systemTenant); // Create 'SystemConfiguration.Administrators' well-known group specific to the system tenant
 
-            // Create 'SystemConfiguration.Administrators' well-known group specific to the system tenant
-            ensureWellKnownConfigurationUsersGroupExist(systemTenant);
+            // Start the Tenant Cache thread
+            Thread idmCacheThread = new IdmCachePeriodicChecker();
+            idmCacheThread.start();
 
-            // start the cache checking thread
-            Thread t = new IdmCachePeriodicChecker();
-            t.start();
-
-            // start the crl cache checking thread
+            // Start the CRL Cache thread
             ManageCrlCacheChecker();
 
             logger.info("Identity Manager initialized successfully");
-        }
-        catch(Exception ex)
-        {
-            logger.error("Identity Manager failed to initialize", ex);
 
+        } catch(Exception ex) {
+            logger.error("IDM bootstrap failed", ex);
             throw ServerUtils.getRemoteException(ex);
         }
     }
@@ -559,6 +522,7 @@ implements IIdentityManager
 
             _tenantCache.deleteTenant(name);
             ssoHealthStatistics.removeTenantStats(name);
+            LdapConnectionPool.getInstance().cleanPool(name);
 
             PerformanceMonitor.getInstance().deleteCache(name);
 
@@ -2312,7 +2276,7 @@ implements IIdentityManager
                         throw new ADIDSAlreadyExistException(machineJoinInfo.getName());
                     }
                     String adLdapIDPName = findIdpTypeRegisteredWithName(tenantName, IdentityStoreType.IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING,
-	                                                                     machineJoinInfo.getName());
+                                                                         machineJoinInfo.getName());
                     if (adLdapIDPName != null)
                     {
                         logger.error(String.format("There is already one AD-Over-LDAP [%s] registered", adLdapIDPName));
@@ -2964,7 +2928,7 @@ implements IIdentityManager
                 throw new IDMLoginException("Access denied");
             }
 
-            userPrincipal = getUserPrincipal( tenantName, principal );
+            userPrincipal = ServerUtils.getUserPrincipal(tenantInfo, principal);
             if( userPrincipal == null )
             {
                 throw new IDMLoginException(
@@ -3127,7 +3091,7 @@ implements IIdentityManager
                 }
             }
 
-            IdmServer.getPerfDataSinkInstance().addMeasurement(
+           PerfDataSinkFactory.getPerfDataSinkInstance().addMeasurement(
                     new PerfBucketKey(
                             PerfMeasurementPoint.IDMAuthenticate,
                             principal),
@@ -3141,11 +3105,10 @@ implements IIdentityManager
      * @param requestedProvider Name of identity source
      * @param tenantInfo tenant information
      */
-    private void validateProviderAllowedAuthnTypes(int requestedAuthnType, String requestedProvider, TenantInformation tenantInfo) throws IDMLoginException {
+    public static void validateProviderAllowedAuthnTypes(int requestedAuthnType, String requestedProvider, TenantInformation tenantInfo) throws IDMLoginException {
         boolean authenticationAllowed = false;
 
         Collection<IIdentityStoreData> idsStores = tenantInfo.getIdsStores(); // All identity sources on tenant
-        AuthnPolicy tenantAuthnPolicy = tenantInfo.getAuthnPolicy(); // Authentication policy on tenant
         IIdentityStoreData identitySource = null;
 
         // Retrieve information of requested identity source
@@ -3267,7 +3230,7 @@ implements IIdentityManager
      *             any other exceptions
      */
     private PrincipalId authenticate(String tenantName,
-                X509Certificate[] tlsCertChain) throws IDMLoginException,CertificateRevocationCheckException,
+                X509Certificate[] tlsCertChain, String hint) throws IDMLoginException,CertificateRevocationCheckException,
                 InvalidArgumentException, IdmCertificateRevokedException, IDMException{
 
         TenantInformation info;
@@ -3292,8 +3255,10 @@ implements IIdentityManager
             }
         }
 
-        String subjectDn = tlsCertChain[0].getSubjectDN() != null?
-                tlsCertChain[0].getSubjectDN().toString() : "";
+        X509Certificate targetCert = tlsCertChain[0];
+
+        String subjectDn = targetCert.getSubjectDN() != null?
+                targetCert.getSubjectDN().toString() : "";
 
         IIdmAuthStatRecorder recorder = PerformanceMonitorFactory.createIdmAuthStatRecorderInstance(
                 tenantName,
@@ -3304,6 +3269,7 @@ implements IIdentityManager
                 IIdmAuthStat.EventLevel.INFO,
                 subjectDn);
         recorder.start();
+        long startTime = System.nanoTime();
 
         AuthnPolicy aPolicy = info.getAuthnPolicy();
 
@@ -3315,69 +3281,27 @@ implements IIdentityManager
         Validate.notNull(certPolicy,
                 "Client Certificate Policy can not be null.");
 
-        ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
-
-        IdmClientCertificateValidator certValidator = new IdmClientCertificateValidator(certPolicy,tenantName);
+        IdmClientCertificateValidator certValidator = new IdmClientCertificateValidator(certPolicy, info);
 
         Map<String, String> authStatsExtension = new HashMap<String, String> ();
         recorder.add(authStatsExtension);
         String clusterID;
 
+        //Step1 validate certificate
         try {
             clusterID = this.getClusterId();
         } catch (Exception e1) {
             throw new IDMException("Failed to retrieve PSC cluster ID.");
         }
-        certValidator.validateCertificatePath(tlsCertChain[0], clusterID, authStatsExtension);
+        certValidator.validateCertificatePath(targetCert, clusterID, authStatsExtension);
 
-        long startTime = System.nanoTime();
-        String upn = certValidator.extractUPN(tlsCertChain[0]);
+        //Principal account mapping and validation.
+        PrincipalId principal = certValidator.certficateAccounMapping(targetCert, hint);
 
-        //Validate allowed authentication type on provider
-        IIdentityProvider provider = null;
-        try{
-             PrincipalId userPrincipal = getUserPrincipal(tenantName, upn);
-             provider = info.findProviderADAsFallBack(userPrincipal.getDomain());
-           }catch (Exception e){
-               throw new IDMException("Failed to retrieve details of identity provider with domain :" + subjectDn);
-           }
-        if(provider != null) {
-            validateProviderAllowedAuthnTypes(DirectoryConfigStore.FLAG_AUTHN_TYPE_ALLOW_TLS_CERTIFICATE, provider.getName(), info);
-        }
-
-        String[] parts = upn.split("@");
-        PrincipalId principalID;
-        if (parts.length == 2) {
-            principalID = new PrincipalId(parts[0], parts[1]);
-
-            try {
-                if (!this.IsActive(tenantName, principalID)) {
-                    logger.error("The user is not found or inactive:"
-                                    + principalID.getUPN());
-                    throw new IDMLoginException(
-                                    "The user owning this certificate is not found or inactive. User UPN: "
-                                                    +
-                                    principalID.getUPN());
-                }
-
-                logger.info("Successfully validated subject of the client certificate : "
-                         + principalID.getUPN());
-            } catch (Exception e) {
-                logger.error("Failed to determine the status of principal with candicate UPN:"
-                                + principalID.getUPN());
-                throw new IDMLoginException("Unable to find user with UPN: "
-                                +
-                                principalID.getUPN());
-            }
-        } else {
-            logger.error(upn + " is in illegal UPN format");
-            throw new IDMLoginException("Illegal UPN format: " + upn);
-        }
-
-        authStatsExtension.put("SearchUserByCertificateUpn", String.format("%d Ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)));
+        authStatsExtension.put("Account mapping", String.format("%d Ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)));
         recorder.end();
-        // authentication is successful
-        return principalID;
+
+        return principal;
     }
 
 
@@ -3421,7 +3345,7 @@ implements IIdentityManager
             // we should not need to create api all the time; but different tenant should have different api
             AuthenticationSessionFactory api = null;
 
-            String[] userInfo = separateUserIDAndDomain(userName);
+            String[] userInfo = ServerUtils.separateUserIDAndDomain(userName);
             IIdentityProvider provider = info.findProviderADAsFallBack(userInfo[1]);
 
             if (null == provider) {
@@ -3514,7 +3438,7 @@ implements IIdentityManager
 
             }
 
-            IdmServer.getPerfDataSinkInstance().addMeasurement(
+            PerfDataSinkFactory.getPerfDataSinkInstance().addMeasurement(
                     new PerfBucketKey(
                             PerfMeasurementPoint.IDMAuthenticate,
                             userName),
@@ -3604,7 +3528,7 @@ implements IIdentityManager
 
         Validate.notNull(info, "info");
 
-        String[] userInfo = separateUserIDAndDomain(userName);
+        String[] userInfo = ServerUtils.separateUserIDAndDomain(userName);
         if (userInfo == null) {
             throw new IDMLoginException(String.format(
                     "User name %s does not contain the domain - expected in format of name@domain",
@@ -3628,30 +3552,6 @@ implements IIdentityManager
     }
 
     /**
-     * Split user name and domain at '@'.
-     * @param userName in the form of name@domain.
-     * @return name and domain in a string array.  null if there is no domain part
-     */
-    private String[] separateUserIDAndDomain(String userName) {
-        Validate.notEmpty(userName, "userName");
-        int i = userName.lastIndexOf("@");
-
-
-        if (i == -1) {
-            logger.error("User name does not have domain part.");
-            return null;
-        }
-        String name = userName.substring(0, i);
-        Validate.notEmpty(name, "Empty name string before the last \'@\' in user name string.");
-
-        String domainName = userName.substring(i+1);
-        Validate.notEmpty(domainName, "expect domain name after the last \'@\' in user name.");
-        String[] userInfo = {name, domainName};
-
-        return userInfo;
-    }
-
-    /**
      * UserName is could be UPN or userID+domain. UserID here is the ldap attribute value used to identity the user.
      * @param userName
      *            user name for securID login
@@ -3660,7 +3560,7 @@ implements IIdentityManager
      */
     private PrincipalId getPrincipalIDFromUserName(TenantInformation info, String userName, HashMap<String, String> userIDAttrMap) throws Exception {
 
-        String[] userInfo = separateUserIDAndDomain(userName);
+        String[] userInfo = ServerUtils.separateUserIDAndDomain(userName);
         if (userInfo == null) {
             throw new IDMLoginException(String.format(
                     "User name %s does not contain the domain - expected in format of name@domain",
@@ -3683,10 +3583,10 @@ implements IIdentityManager
         }
     }
 
-    private
+    public static
     boolean
     IsActive(
-            String tenantName,
+                    TenantInformation tenantInfo, String tenantName,
             PrincipalId principal
             ) throws Exception
             {
@@ -3694,8 +3594,6 @@ implements IIdentityManager
         {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
             ValidateUtil.validateNotNull(principal, "User Principal");
-
-            TenantInformation tenantInfo = findTenant(tenantName);
             ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
 
             IIdentityProvider provider = tenantInfo.findProviderADAsFallBack(
@@ -3831,7 +3729,7 @@ implements IIdentityManager
             addEveryoneGroupTo(attributeValues, samlGroupAttrName, systemProvider);
 
             //only measure time of successful results
-            IdmServer.getPerfDataSinkInstance().addMeasurement(
+            PerfDataSinkFactory.getPerfDataSinkInstance().addMeasurement(
                     new PerfBucketKey(
                             PerfMeasurementPoint.IDMGetAttributeValues,
                             principal.getDomain()),
@@ -5022,7 +4920,7 @@ implements IIdentityManager
 
             // TODO: ideally everyone group should be added within system domain provider
             groups.add(systemProvider.getEveryoneGroup());
-            IdmServer.getPerfDataSinkInstance().addMeasurement(
+            PerfDataSinkFactory.getPerfDataSinkInstance().addMeasurement(
                     new PerfBucketKey(
                             PerfMeasurementPoint.IDMFindDirectParentGroups,
                             principalId.getDomain()),
@@ -6735,7 +6633,7 @@ implements IIdentityManager
                         );
             }
 
-            normalizedPrincipal = getUserPrincipal( tenantName, group );
+            normalizedPrincipal = ServerUtils.getUserPrincipal(tenantInfo, group);
             if( normalizedPrincipal == null )
             {
                 throw new InvalidPrincipalException(
@@ -6806,7 +6704,7 @@ implements IIdentityManager
                         );
             }
 
-            normalizedPrincipal = getUserPrincipal( tenantName, user );
+            normalizedPrincipal = ServerUtils.getUserPrincipal(tenantInfo, user);
             if( normalizedPrincipal == null )
             {
                 throw new InvalidPrincipalException( String.format( "Invalid user [%s].", user ), user);
@@ -7091,6 +6989,23 @@ implements IIdentityManager
 
                     _configStore.setSystemTenant(spDomain);
 
+                    // call VMCA to create certs/private key and set tenant credentials
+                    setTenantCredentials(spDomain);
+
+                    // set default tenant settings
+                    _configStore.setClockTolerance(spDomain, IConfigStore.DEFAULT_CLOCK_TOLERANCE);
+                    _configStore.setDelegationCount(spDomain, IConfigStore.DEFAULT_DELEGATION_COUNT);
+                    _configStore.setRenewCount(spDomain, IConfigStore.DEFAULT_RENEW_COUNT);
+                    _configStore.setMaximumBearerTokenLifetime(spDomain, IConfigStore.DEFAULT_MAX_BEARER_LIFETIME);
+                    _configStore.setMaximumHoKTokenLifetime(spDomain, IConfigStore.DEFAULT_MAX_HOK_LIFETIME);
+                    _configStore.setMaximumBearerRefreshTokenLifetime(spDomain, IConfigStore.DEFAULT_MAX_BEARER_REFRESH_TOKEN_LIFETIME);
+                    _configStore.setMaximumHoKRefreshTokenLifetime(spDomain, IConfigStore.DEFAULT_MAX_HOK_REFRESH_TOKEN_LIFETIME);
+
+                    _configStore.updatePasswordExpirationConfiguration(spDomain, PasswordExpiration.createDefaultSettings());
+
+                    // set brand name to Lightwave if needed
+                    setTenantBrandName(spDomain);
+
                     _tenantCache.setSystemTenant(spDomain);
                 }
                 catch(ServerDownLdapException ex)
@@ -7124,6 +7039,109 @@ implements IIdentityManager
         }
 
         return spTenant.getName();
+    }
+
+    private void setTenantCredentials(String tenantName) throws Exception {
+        // VMCA time constants
+        final int VMCA_DEFAULT_KEY_LENGTH = 2048;
+        final long VMCA_TIME_SECS_PER_MINUTE = 60;
+        final long VMCA_TIME_SECS_PER_YEAR = 365 * 24 * 60 * 60;
+
+        final String CONFIG_IDENTITY_ROOT_KEY ="Software\\VMware\\Identity\\Configuration";
+        final String HOST_NAME_KEY = "Hostname";
+        final String HOST_NAME_TYPE_KEY = "HostnameType";
+
+        final String CERT_ALIAS = "ssoserverSign";
+
+        String hostname;
+        String hostnameType;
+        VMCAClient vmcaClient = null;
+        X509Certificate leafCert = null;
+        X509Certificate rootCert = null;
+
+        IRegistryAdapter registryAdapter = RegistryAdapterFactory.getInstance().getRegistryAdapter();
+        IRegistryKey rootRegistryKey = registryAdapter.openRootKey((int) RegKeyAccess.KEY_READ);
+
+        try {
+            hostname = registryAdapter.getStringValue(
+                    rootRegistryKey,
+                    CONFIG_IDENTITY_ROOT_KEY,
+                    HOST_NAME_KEY,
+                    true);
+            hostnameType = registryAdapter.getStringValue(
+                    rootRegistryKey,
+                    CONFIG_IDENTITY_ROOT_KEY,
+                    HOST_NAME_TYPE_KEY,
+                    true);
+        } finally {
+            rootRegistryKey.close();
+        }
+
+        Request certRequest = new Request();
+        certRequest.setName(CERT_ALIAS);
+        certRequest.setKeyusage(7); // 7 is to set key usage to: Digital Signature, Non Repudiation, Key Encipherment
+        KeyPair keyPair = certRequest.createKeyPair(VMCA_DEFAULT_KEY_LENGTH);
+
+        Date now = new Date();
+        Date startFrom = new Date(now.getTime() - 10 * VMCA_TIME_SECS_PER_MINUTE * 1000);
+        Date expire = new Date(now.getTime() + 10 * VMCA_TIME_SECS_PER_YEAR * 1000);
+
+        IdmServerConfig settings = IdmServerConfig.getInstance();
+        String upn = settings.getDirectoryConfigStoreUserName();
+        int idx = upn.indexOf('@');
+        String username = upn.substring(0, idx);
+        String domain = upn.substring(idx+1);
+        String password = settings.getDirectoryConfigStorePassword();
+
+        if ("fqdn".equals(hostnameType) && !hostname.isEmpty()) {
+            certRequest.setDnsname(hostname);
+        } else if (("ipv4".equals(hostnameType) || "ipv6".equals(hostnameType)) && !hostname.isEmpty()) {
+            certRequest.setIpaddress(hostname);
+        }
+
+        vmcaClient = new VMCAClient(username, domain, password, "localhost");
+        leafCert = vmcaClient.getCertificate(
+                certRequest,
+                keyPair,
+                startFrom,
+                expire);
+
+        rootCert = vmcaClient.getRootCertificate();
+
+        if (rootCert == null || leafCert == null) {
+            throw new IllegalStateException("Failed to generate tenant certificates.");
+        }
+
+        ArrayList<Certificate> tenantCertificates = new ArrayList<Certificate>();
+        tenantCertificates.add(leafCert);
+        tenantCertificates.add(rootCert);
+
+        _configStore.setTenantCredentials(tenantName, tenantCertificates, keyPair.getPrivate());
+    }
+
+    private void setTenantBrandName(String tenantName) throws Exception {
+        final String CONFIG_IDENTITY_ROOT_KEY ="Software\\VMware\\Identity\\Configuration";
+        final String IS_LIGHTWAVE_KEY = "isLightwave";
+
+        Integer isLigthwave = 0;
+
+        IRegistryAdapter registryAdapter = RegistryAdapterFactory.getInstance().getRegistryAdapter();
+        IRegistryKey rootRegistryKey = registryAdapter.openRootKey((int) RegKeyAccess.KEY_READ);
+
+        try {
+            isLigthwave = registryAdapter.getIntValue(
+                    rootRegistryKey,
+                    CONFIG_IDENTITY_ROOT_KEY,
+                    IS_LIGHTWAVE_KEY,
+                    true);
+        } finally {
+            rootRegistryKey.close();
+        }
+
+        // Set default brand name for LIGHTWAVE
+        if(isLigthwave != null && isLigthwave.intValue() == 1) {
+            _configStore.setBrandName(tenantName, "LIGHTWAVE<br/>Single Sign On");
+        }
     }
 
     private ServerIdentityStoreData getSystemDomainIdentityStoreData(String tenantName)
@@ -7192,10 +7210,10 @@ implements IIdentityManager
             catch(Exception ex)
             {
                 // continue to refresh other tenant (do not fail refresh)
-                logger.error(
+                logger.warn(
                         String.format(
                                 "Failed to refreshTenantCredentialCache for tenant %s",
-                                tenantName));
+                                tenantName), ex);
                 continue;
             }
         }
@@ -7440,6 +7458,7 @@ implements IIdentityManager
             _tenantCache.deleteTenant(tenantName);
 
             ssoHealthStatistics.removeTenantStats(tenantName);
+            LdapConnectionPool.getInstance().cleanPool(tenantName);
 
         }
         return tenantInfo;
@@ -7454,64 +7473,12 @@ implements IIdentityManager
             _tenantCache.addTenant(tenantInfo);
             updateRSAConfigFiles(tenantInfo);
             installOrRemoveRSAProvider();
+            LdapConnectionPool.getInstance().createPool(tenantName);
         }
 
         return tenantInfo;
     }
 
-    private PrincipalId getUserPrincipal( String tenantName, String userPrincipal ) throws Exception
-    {
-        PrincipalId principal = null;
-
-        String userName = userPrincipal;
-        String domain   = null;
-
-        // if multiple '@','\' or leading '@','\' exception is thrown
-        int idxSep = -1;
-        try
-        {
-            idxSep = ValidateUtil.getValidIdxAccountNameSeparator(userPrincipal, VALID_ACCOUNT_NAME_SEPARATORS);
-        }
-        catch(Exception e)
-        {
-            throw new InvalidPrincipalException(String.format(
-                    "Invalid user name format [%s]: multiple/leading UPN or NetBIOS separators are not allowed.",
-                    userName), userPrincipal);
-        }
-
-        // Found separator
-        if (idxSep != -1)
-        {
-            if (userPrincipal.charAt(idxSep) == UPN_SEPARATOR)
-            {
-                userName = userPrincipal.substring(0, idxSep);
-                domain   = userPrincipal.substring(idxSep+1);
-            }
-            else if (userPrincipal.charAt(idxSep) == NETBIOS_SEPARATOR)
-            {
-                domain   = userPrincipal.substring(0, idxSep);
-                userName = userPrincipal.substring(idxSep+1);
-            }
-        }
-
-        if ((ServerUtils.isNullOrEmpty( userName ) == false) &&
-                (ServerUtils.isNullOrEmpty(domain) == true) )
-        {
-            Collection<String> defaultProviders = getDefaultProviders( tenantName );
-            if (( defaultProviders != null ) && (defaultProviders.size() > 0) )
-            {
-                domain = defaultProviders.iterator().next();
-            }
-        }
-
-        if ((ServerUtils.isNullOrEmpty( userName ) == false) &&
-                (ServerUtils.isNullOrEmpty(domain) == false) )
-        {
-            principal = new PrincipalId( userName, domain );
-        }
-
-        return principal;
-    }
 
    /**
     * check the optional data against the set of invalid chars and throw
@@ -7673,7 +7640,9 @@ implements IIdentityManager
                 extData.getIdentityStoreSchemaMapping(),
                 extData.getUpnSuffixes(),
                 extData.getFlags(),
-                extData.getAuthnTypes()
+                null, extData.getAuthnTypes(),
+                extData.getCertUserHintAttributeName(),
+                extData.getCertLinkingUseUPN()
         );
     }
 
@@ -8303,7 +8272,7 @@ implements IIdentityManager
      * {@inheritDoc}
      */
     @Override
-    public void addTenant(Tenant tenant, String adminAccountName, char[] adminPwd, IIdmServiceContext serviceContext) throws RemoteException, IDMException
+    public void addTenant(Tenant tenant, String adminAccountName, char[] adminPwd, IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenant, serviceContext, "addTenant"))
         {
@@ -8323,7 +8292,7 @@ implements IIdentityManager
      */
     @Override
     public void deleteTenant(String name, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(name, serviceContext, "deleteTenant"))
         {
@@ -8343,7 +8312,7 @@ implements IIdentityManager
      */
     @Override
     public Tenant getTenant(String name, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(name, serviceContext, "getTenant"))
         {
@@ -8363,7 +8332,7 @@ implements IIdentityManager
      */
     @Override
     public String getDefaultTenant(IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", serviceContext, "getDefaultTenant"))
         {
@@ -8383,7 +8352,7 @@ implements IIdentityManager
      */
     @Override
     public String getSystemTenant(IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", serviceContext, "getSystemTenant"))
         {
@@ -8403,7 +8372,7 @@ implements IIdentityManager
      */
     @Override
     public Collection<String> getAllTenants(IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", serviceContext, "getAllTenants"))
         {
@@ -8423,7 +8392,7 @@ implements IIdentityManager
      */
     @Override
     public void setDefaultTenant(String name, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(name, serviceContext, "setDefaultTenant"))
         {
@@ -8443,7 +8412,7 @@ implements IIdentityManager
      */
     @Override
     public void setTenant(Tenant tenant, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenant, serviceContext, "setTenant"))
         {
@@ -8463,7 +8432,7 @@ implements IIdentityManager
      */
     @Override
     public String getTenantSignatureAlgorithm(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getTenantSignatureAlgorithm"))
         {
@@ -8484,7 +8453,7 @@ implements IIdentityManager
     @Override
     public void setTenantSignatureAlgorithm(String tenantName,
             String signatureAlgorithm, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setTenantSignatureAlgorithm"))
         {
@@ -8504,7 +8473,7 @@ implements IIdentityManager
      */
     @Override
     public List<Certificate> getTenantCertificate(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getTenantCertificate"))
         {
@@ -8524,7 +8493,7 @@ implements IIdentityManager
      */
     @Override
     public Collection<List<Certificate>> getTenantCertificates(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getTenantCertificates"))
         {
@@ -8545,7 +8514,7 @@ implements IIdentityManager
     @Override
     public void setTenantTrustedCertificateChain(String tenantName,
             Collection<Certificate> tenantCertificates,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setTenantTrustedCertificateChain"))
         {
@@ -8566,7 +8535,7 @@ implements IIdentityManager
     @Override
     public void setTenantCredentials(String tenantName,
             Collection<Certificate> tenantCertificate, PrivateKey tenantPrivateKey,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setTenantCredentials"))
         {
@@ -8586,7 +8555,7 @@ implements IIdentityManager
      */
     @Override
     public PrivateKey getTenantPrivateKey(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getTenantPrivateKey"))
         {
@@ -8603,7 +8572,7 @@ implements IIdentityManager
 
     @Override
     public boolean isTenantIDPSelectionEnabled(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getTenantIDPSelectionFlag"))
         {
@@ -8620,7 +8589,7 @@ implements IIdentityManager
 
     @Override
     public void setTenantIDPSelectionEnabled(String tenantName, boolean enableIDPSelection,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setTenantIDPSelectionFlag"))
         {
@@ -8640,7 +8609,7 @@ implements IIdentityManager
      */
     @Override
     public long getClockTolerance(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getClockTolerance"))
         {
@@ -8660,7 +8629,7 @@ implements IIdentityManager
      */
     @Override
     public void setClockTolerance(String tenantName, long milliseconds,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setClockTolerance"))
         {
@@ -8680,7 +8649,7 @@ implements IIdentityManager
      */
     @Override
     public int getDelegationCount(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getDelegationCount"))
         {
@@ -8700,7 +8669,7 @@ implements IIdentityManager
      */
     @Override
     public void setDelegationCount(String tenantName, int delegationCount,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setDelegationCount"))
         {
@@ -8720,7 +8689,7 @@ implements IIdentityManager
      */
     @Override
     public int getRenewCount(String tenantName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getRenewCount"))
         {
@@ -8740,7 +8709,7 @@ implements IIdentityManager
      */
     @Override
     public void setRenewCount(String tenantName, int renewCount,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setRenewCount"))
         {
@@ -8755,11 +8724,11 @@ implements IIdentityManager
         }
     }
 
-	@Override
-	public SsoHealthStatsData getSsoStatistics(String tenantName, IIdmServiceContext serviceContext)
-			throws RemoteException, IDMException {
+    @Override
+    public SsoHealthStatsData getSsoStatistics(String tenantName, IIdmServiceContext serviceContext)
+            throws  IDMException {
 
-		try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getSsoStatistics"))
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getSsoStatistics"))
         {
             try
             {
@@ -8770,17 +8739,17 @@ implements IIdentityManager
                 throw ServerUtils.getRemoteException(ex);
             }
         }
-	}
+    }
 
-	/**
-	 * It calls SSOHealthStatistcs service to increment generated tokens count
-	 * for a given tenant.
-	 */
-	@Override
-	public void incrementGeneratedTokens(String tenantName, IIdmServiceContext serviceContext) throws RemoteException,
-			IDMException {
+    /**
+     * It calls SSOHealthStatistcs service to increment generated tokens count
+     * for a given tenant.
+     */
+    @Override
+    public void incrementGeneratedTokens(String tenantName, IIdmServiceContext serviceContext) throws
+            IDMException {
 
-		try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "incrementGeneratedTokens"))
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "incrementGeneratedTokens"))
         {
             try
             {
@@ -8791,16 +8760,16 @@ implements IIdentityManager
                 throw ServerUtils.getRemoteException(ex);
             }
         }
-	}
+    }
 
-	/**
-	 * It calls SSOHealthStatistcs service to increment renewed tokens count for
-	 * a given tenant.
-	 */
-	@Override
-	public void incrementRenewedTokens(String tenantName, IIdmServiceContext serviceContext) throws RemoteException,
-			IDMException {
-		try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "incrementRenewedTokens"))
+    /**
+     * It calls SSOHealthStatistcs service to increment renewed tokens count for
+     * a given tenant.
+     */
+    @Override
+    public void incrementRenewedTokens(String tenantName, IIdmServiceContext serviceContext) throws
+            IDMException {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "incrementRenewedTokens"))
         {
             try
             {
@@ -8811,14 +8780,14 @@ implements IIdentityManager
                 throw ServerUtils.getRemoteException(ex);
             }
         }
-	}
+    }
 
     /**
      * {@inheritDoc}
      */
     @Override
     public long getMaximumBearerTokenLifetime(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getMaximumBearerTokenLifetime"))
         {
@@ -8838,7 +8807,7 @@ implements IIdentityManager
      */
     @Override
     public void setMaximumBearerTokenLifetime(String tenantName, long maxLifetime,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setMaximumBearerTokenLifetime"))
         {
@@ -8858,7 +8827,7 @@ implements IIdentityManager
      */
     @Override
     public long getMaximumHoKTokenLifetime(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getMaximumHoKTokenLifetime"))
         {
@@ -8878,7 +8847,7 @@ implements IIdentityManager
      */
     @Override
     public void setMaximumHoKTokenLifetime(String tenantName, long maxLifetime,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setMaximumHoKTokenLifetime"))
         {
@@ -8898,7 +8867,7 @@ implements IIdentityManager
      */
     @Override
     public long getMaximumBearerRefreshTokenLifetime(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getMaximumBearerRefreshTokenLifetime"))
         {
@@ -8918,7 +8887,7 @@ implements IIdentityManager
      */
     @Override
     public void setMaximumBearerRefreshTokenLifetime(String tenantName, long maxLifetime,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setMaximumBearerRefreshTokenLifetime"))
         {
@@ -8938,7 +8907,7 @@ implements IIdentityManager
      */
     @Override
     public long getMaximumHoKRefreshTokenLifetime(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getMaximumHoKRefreshTokenLifetime"))
         {
@@ -8958,7 +8927,7 @@ implements IIdentityManager
      */
     @Override
     public void setMaximumHoKRefreshTokenLifetime(String tenantName, long maxLifetime,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setMaximumHoKRefreshTokenLifetime"))
         {
@@ -8978,7 +8947,7 @@ implements IIdentityManager
      */
     @Override
     public void setEntityID(String tenantName, String entityID,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setEntityID"))
         {
@@ -8998,7 +8967,7 @@ implements IIdentityManager
      */
     @Override
     public String getEntityID(String tenantName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getEntityID"))
         {
@@ -9015,7 +8984,7 @@ implements IIdentityManager
 
     @Override
     public String getLocalIDPAlias(String tenantName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getLocalIDPAlias"))
         {
@@ -9032,7 +9001,7 @@ implements IIdentityManager
 
     @Override
     public void setLocalIDPAlias(String tenantName, String alias, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setIdentityProviderAlias"))
         {
@@ -9049,7 +9018,7 @@ implements IIdentityManager
 
     @Override
     public String getExternalIDPAlias(String tenantName, String entityId, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getLocalIDPAlias"))
         {
@@ -9066,7 +9035,7 @@ implements IIdentityManager
 
     @Override
     public void setExternalIDPAlias(String tenantName, String entityId, String alias, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setIdentityProviderAlias"))
         {
@@ -9086,7 +9055,7 @@ implements IIdentityManager
      */
     @Override
     public String getOIDCEntityID(String tenantName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getOIDCEntityID"))
         {
@@ -9106,7 +9075,7 @@ implements IIdentityManager
      */
     @Override
     public PasswordExpiration getPasswordExpirationConfiguration(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getPasswordExpirationConfiguration"))
         {
@@ -9127,7 +9096,7 @@ implements IIdentityManager
     @Override
     public void updatePasswordExpirationConfiguration(String tenantName,
             PasswordExpiration config, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "updatePasswordExpirationConfiguration"))
         {
@@ -9148,7 +9117,7 @@ implements IIdentityManager
     @Override
     public void addCertificate(String tenantName, Certificate idmCert,
             CertificateType certificateType, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "addCertificate"))
         {
@@ -9169,7 +9138,7 @@ implements IIdentityManager
     @Override
     public Collection<Certificate> getAllCertificates(String tenantName,
             CertificateType certificateType, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getAllCertificates"))
         {
@@ -9190,7 +9159,7 @@ implements IIdentityManager
     @Override
     public void deleteCertificate(String tenantName, String fingerprint,
             CertificateType certificateType, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "deleteCertificate"))
         {
@@ -9210,7 +9179,7 @@ implements IIdentityManager
      */
     @Override
     public void addRelyingParty(String tenantName, RelyingParty rp,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "addRelyingParty"))
         {
@@ -9230,7 +9199,7 @@ implements IIdentityManager
      */
     @Override
     public void deleteRelyingParty(String tenantName, String rpName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "deleteRelyingParty"))
         {
@@ -9250,7 +9219,7 @@ implements IIdentityManager
      */
     @Override
     public RelyingParty getRelyingParty(String tenantName, String rpName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getRelyingParty"))
         {
@@ -9270,7 +9239,7 @@ implements IIdentityManager
      */
     @Override
     public RelyingParty getRelyingPartyByUrl(String tenantName, String url,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getRelyingPartyByUrl"))
         {
@@ -9290,7 +9259,7 @@ implements IIdentityManager
      */
     @Override
     public void setRelyingParty(String tenantName, RelyingParty rp,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setRelyingParty"))
         {
@@ -9310,7 +9279,7 @@ implements IIdentityManager
      */
     @Override
     public Collection<RelyingParty> getRelyingParties(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getRelyingParties"))
         {
@@ -9330,7 +9299,7 @@ implements IIdentityManager
      */
     @Override
     public void addOIDCClient(String tenantName, OIDCClient oidcClient, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException {
+            throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "addOIDCClient")) {
             try {
                 this.addOIDCClient(tenantName, oidcClient);
@@ -9345,7 +9314,7 @@ implements IIdentityManager
      */
     @Override
     public void deleteOIDCClient(String tenantName, String clientID, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException {
+            throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "deleteOIDCClient")) {
             try {
                 this.deleteOIDCClient(tenantName, clientID);
@@ -9360,7 +9329,7 @@ implements IIdentityManager
      */
     @Override
     public OIDCClient getOIDCClient(String tenantName, String clientID, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException {
+            throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getOIDCClient")) {
             try {
                 return this.getOIDCClient(tenantName, clientID);
@@ -9375,7 +9344,7 @@ implements IIdentityManager
      */
     @Override
     public void setOIDCClient(String tenantName, OIDCClient oidcClient, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException {
+            throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setOIDCClient")) {
             try {
                 this.setOIDCClient(tenantName, oidcClient);
@@ -9390,7 +9359,7 @@ implements IIdentityManager
      */
     @Override
     public Collection<OIDCClient> getOIDCClients(String tenantName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException {
+            throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getOIDCClients")) {
             try {
                 return this.getOIDCClients(tenantName);
@@ -9404,7 +9373,7 @@ implements IIdentityManager
     public void addResourceServer(
             String tenantName,
             ResourceServer resourceServer,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+            IIdmServiceContext serviceContext) throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "addResourceServer")) {
             try {
                 this.addResourceServer(tenantName, resourceServer);
@@ -9418,7 +9387,7 @@ implements IIdentityManager
     public void deleteResourceServer(
             String tenantName,
             String resourceServerName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+            IIdmServiceContext serviceContext) throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "deleteResourceServer")) {
             try {
                 this.deleteResourceServer(tenantName, resourceServerName);
@@ -9432,7 +9401,7 @@ implements IIdentityManager
     public ResourceServer getResourceServer(
             String tenantName,
             String resourceServerName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+            IIdmServiceContext serviceContext) throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getResourceServer")) {
             try {
                 return this.getResourceServer(tenantName, resourceServerName);
@@ -9446,7 +9415,7 @@ implements IIdentityManager
     public void setResourceServer(
             String tenantName,
             ResourceServer resourceServer,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+            IIdmServiceContext serviceContext) throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setResourceServer")) {
             try {
                 this.setResourceServer(tenantName, resourceServer);
@@ -9459,7 +9428,7 @@ implements IIdentityManager
     @Override
     public Collection<ResourceServer> getResourceServers(
             String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+            IIdmServiceContext serviceContext) throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getResourceServers")) {
             try {
                 return this.getResourceServers(tenantName);
@@ -9474,7 +9443,7 @@ implements IIdentityManager
      */
     @Override
     public void addProvider(String tenantName, IIdentityStoreData idpData,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "addProvider"))
         {
@@ -9494,7 +9463,7 @@ implements IIdentityManager
      */
     @Override
     public void deleteProvider(String tenantName, String providerName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "deleteProvider"))
         {
@@ -9514,7 +9483,7 @@ implements IIdentityManager
      */
     @Override
     public IIdentityStoreData getProvider(String tenantName, String ProviderName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getProvider"))
         {
@@ -9534,7 +9503,7 @@ implements IIdentityManager
      */
     @Override
     public IIdentityStoreData getProviderWithInternalInfo(String tenantName, String ProviderName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getProvider"))
         {
@@ -9554,7 +9523,7 @@ implements IIdentityManager
      */
     @Override
     public void setProvider(String tenantName, IIdentityStoreData idpData,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setProvider"))
         {
@@ -9574,7 +9543,7 @@ implements IIdentityManager
      */
     @Override
     public void setNativeADProvider(String tenantName, IIdentityStoreData idpData,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setProvider"))
         {
@@ -9594,7 +9563,7 @@ implements IIdentityManager
      */
     @Override
     public Collection<IIdentityStoreData> getProviders(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getProviders"))
         {
@@ -9619,7 +9588,7 @@ implements IIdentityManager
                        String tenantName,
                        String providerName,
                        IIdmServiceContext serviceContext
-                      ) throws RemoteException, IDMException
+                      ) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getSecurityDomains"))
         {
@@ -9641,7 +9610,7 @@ implements IIdentityManager
     @Override
     public Collection<IIdentityStoreData> getProviders(String tenantName,
             EnumSet<DomainType> domainTypes, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getProviders"))
         {
@@ -9657,7 +9626,7 @@ implements IIdentityManager
     }
 
     @Override
-    public void probeProviderConnectivity(String tenantName, IIdentityStoreData idsData, IIdmServiceContext serviceContext) throws RemoteException, IDMException
+    public void probeProviderConnectivity(String tenantName, IIdentityStoreData idsData, IIdmServiceContext serviceContext) throws IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "probeProviderConnectivity"))
         {
@@ -9675,7 +9644,7 @@ implements IIdentityManager
     @Override
     public void probeProviderConnectivity(String tenantName, String providerUri,
             AuthenticationType authType, String userName, String pwd, Collection<X509Certificate> certificates,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "probeProviderConnectivity"))
         {
@@ -9697,7 +9666,7 @@ implements IIdentityManager
     @Override
     public void probeProviderConnectivityWithCertValidation(String tenantName, String providerUri,
             AuthenticationType authType, String userName, String pwd, Collection<X509Certificate> certificates,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "probeProviderConnectivity"))
         {
@@ -9718,7 +9687,7 @@ implements IIdentityManager
      */
     @Override
     public Collection<String> getDefaultProviders(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getDefaultProviders"))
         {
@@ -9739,7 +9708,7 @@ implements IIdentityManager
     @Override
     public void setDefaultProviders(String tenantName,
             Collection<String> defaultProviders, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setDefaultProviders"))
         {
@@ -9760,7 +9729,7 @@ implements IIdentityManager
     @Override
     public PrincipalId authenticate(String tenantName, String principal,
             String password, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "authenticate"))
         {
@@ -9780,7 +9749,7 @@ implements IIdentityManager
      */
     @Override
     public GSSResult authenticate(String tenantName, String contextId, byte[] gssTicket,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "authenticate"))
         {
@@ -9800,14 +9769,14 @@ implements IIdentityManager
      * {@inheritDoc}
      */
     @Override
-    public PrincipalId authenticate(String tenantName, X509Certificate[] tlsCertChain,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+    public PrincipalId authenticate(String tenantName, X509Certificate[] tlsCertChain, String hint,
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "authenticate"))
         {
             try
             {
-                return this.authenticate(tenantName, tlsCertChain);
+                return this.authenticate(tenantName, tlsCertChain, hint);
             } catch (Exception ex)
             {
                 throw ServerUtils.getRemoteException(ex);
@@ -9829,7 +9798,7 @@ implements IIdentityManager
     @Override
     public RSAAMResult authenticateRsaSecurId(String tenantName,
             String sessionId, String principal,
-            String passcode, IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            String passcode, IIdmServiceContext serviceContext) throws  IDMException
     {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "authenticate"))
         {
@@ -9878,13 +9847,13 @@ implements IIdentityManager
      */
     @Override
     public boolean IsActive(String tenantName, PrincipalId principal,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "IsActive"))
         {
             try
             {
-                return this.IsActive(tenantName, principal);
+                return IdentityManager.IsActive(findTenant(tenantName), tenantName, principal);
             }
             catch(Exception ex)
             {
@@ -9898,7 +9867,7 @@ implements IIdentityManager
      */
     @Override
     public Collection<Attribute> getAttributeDefinitions(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getAttributeDefinitions"))
         {
@@ -9919,7 +9888,7 @@ implements IIdentityManager
     @Override
     public Collection<AttributeValuePair> getAttributeValues(String tenantName,
             PrincipalId principal, Collection<Attribute> attributes,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getAttributeValues"))
         {
@@ -9939,7 +9908,7 @@ implements IIdentityManager
      */
     @Override
     public byte[] getUserHashedPassword(String tenantName, PrincipalId principal,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getUserHashedPassword"))
         {
@@ -9960,7 +9929,7 @@ implements IIdentityManager
     @Override
     public PrincipalId addSolutionUser(String tenantName, String userName,
             SolutionDetail detail, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "addSolutionUser"))
         {
@@ -9980,7 +9949,7 @@ implements IIdentityManager
      */
     @Override
     public SolutionUser findSolutionUser(String tenantName, String userName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findSolutionUser"))
         {
@@ -10001,7 +9970,7 @@ implements IIdentityManager
     @Override
     public SolutionUser findSolutionUserByCertDn(String tenantName,
             String subjectDN, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findSolutionUserByCertDn"))
         {
@@ -10021,7 +9990,7 @@ implements IIdentityManager
      */
     @Override
     public PersonUser findPersonUser(String tenantName, PrincipalId id,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findPersonUser"))
         {
@@ -10042,7 +10011,7 @@ implements IIdentityManager
     @Override
     public PersonUser findPersonUserByObjectId(String tenantName,
             String userObjectId, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findPersonUserByObjectId"))
         {
@@ -10062,7 +10031,7 @@ implements IIdentityManager
      */
     @Override
     public Group findGroupByObjectId(String tenantName, String groupObjectId,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findGroupByObjectId"))
         {
@@ -10086,7 +10055,7 @@ implements IIdentityManager
         SearchCriteria criteria,
         int limit,
         IIdmServiceContext serviceContext)
-        throws RemoteException, IDMException
+        throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findPersonUsers"))
         {
@@ -10110,7 +10079,7 @@ implements IIdentityManager
         SearchCriteria criteria,
         int limit,
         IIdmServiceContext serviceContext)
-        throws RemoteException, IDMException
+        throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findPersonUsersByName"))
         {
@@ -10133,7 +10102,7 @@ implements IIdentityManager
             String searchString,
             int limit,
             IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findSolutionUsers"))
         {
@@ -10153,7 +10122,7 @@ implements IIdentityManager
      */
     @Override
     public Set<Group> findGroups(String tenantName, SearchCriteria criteria, int limit,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findGroups"))
         {
@@ -10173,7 +10142,7 @@ implements IIdentityManager
      */
     @Override
     public Set<Group> findGroupsByName(String tenantName, SearchCriteria criteria, int limit,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findGroupsByName"))
         {
@@ -10194,7 +10163,7 @@ implements IIdentityManager
     @Override
     public Set<PersonUser> findPersonUsersInGroup(String tenantName,
             PrincipalId groupId, String searchString, int limit,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findPersonUsersInGroup"))
         {
@@ -10215,7 +10184,7 @@ implements IIdentityManager
     @Override
     public Set<PersonUser> findPersonUsersByNameInGroup(String tenantName,
             PrincipalId groupId, String searchString, int limit,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findPersonUsersByNameInGroup"))
         {
@@ -10236,7 +10205,7 @@ implements IIdentityManager
     @Override
     public Set<SolutionUser> findSolutionUsersInGroup(String tenantName,
             String groupName, String searchString, int limit, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findSolutionUsersInGroup"))
         {
@@ -10257,7 +10226,7 @@ implements IIdentityManager
     @Override
     public Set<Group> findGroupsInGroup(String tenantName, PrincipalId groupId,
             String searchString, int limit, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findGroupsInGroup"))
         {
@@ -10278,7 +10247,7 @@ implements IIdentityManager
     @Override
     public Set<Group> findGroupsByNameInGroup(String tenantName, PrincipalId groupId,
             String searchString, int limit, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findGroupsByNameInGroup"))
         {
@@ -10298,7 +10267,7 @@ implements IIdentityManager
      */
     @Override
     public boolean isMemberOfSystemGroup(String tenantName, PrincipalId principalId, String groupName, IIdmServiceContext serviceContext)
-            throws  NoSuchTenantException, NoSuchIdpException, InvalidPrincipalException, RemoteException, IDMException
+            throws  NoSuchTenantException, NoSuchIdpException, InvalidPrincipalException,  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "isMemberOfSystemGroup"))
         {
@@ -10319,7 +10288,7 @@ implements IIdentityManager
     @Override
     public Set<Group> findDirectParentGroups(String tenantName,
             PrincipalId principalId, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findDirectParentGroups"))
         {
@@ -10339,7 +10308,7 @@ implements IIdentityManager
      */
     @Override
     public Set<Group> findNestedParentGroups(String tenantName, PrincipalId userId,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findNestedParentGroups"))
         {
@@ -10359,7 +10328,7 @@ implements IIdentityManager
      */
     @Override
     public Set<PersonUser> findLockedUsers(String tenantName, String searchString, int limit,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findLockedUsers"))
         {
@@ -10380,7 +10349,7 @@ implements IIdentityManager
     @Override
     public Set<PersonUser> findDisabledPersonUsers(String tenantName,
             String searchString, int limit, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findDisabledPersonUsers"))
         {
@@ -10401,7 +10370,7 @@ implements IIdentityManager
     @Override
     public PrincipalId findActiveUserInSystemDomain(String tenantName,
             String attributeName, String attributeValue,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findActiveUserInSystemDomain"))
         {
@@ -10422,7 +10391,7 @@ implements IIdentityManager
     @Override
     public Set<SolutionUser> findDisabledSolutionUsers(String tenantName,
             String searchString, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findDisabledSolutionUsers"))
         {
@@ -10442,7 +10411,7 @@ implements IIdentityManager
      */
     @Override
     public SearchResult find(String tenantName, SearchCriteria criteria, int limit,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "find"))
         {
@@ -10462,7 +10431,7 @@ implements IIdentityManager
      */
     @Override
     public SearchResult findByName(String tenantName, SearchCriteria criteria, int limit,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findByName"))
         {
@@ -10525,7 +10494,7 @@ implements IIdentityManager
     @Override
     public PrincipalId addJitUser(String tenantName, String userName,
             PersonDetail detail, String extIdpEntityId, String extUserId,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "addUser"))
         {
@@ -10546,7 +10515,7 @@ implements IIdentityManager
     @Override
     public PrincipalId addGroup(String tenantName, String groupName,
             GroupDetail groupDetail, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "addGroup"))
         {
@@ -10567,7 +10536,7 @@ implements IIdentityManager
     @Override
     public boolean addUserToGroup(String tenantName, PrincipalId userId,
             String groupName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "addUserToGroup"))
         {
@@ -10588,7 +10557,7 @@ implements IIdentityManager
     @Override
     public boolean removeFromLocalGroup(String tenantName, PrincipalId principalId,
             String groupName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "removeFromLocalGroup"))
         {
@@ -10609,7 +10578,7 @@ implements IIdentityManager
     @Override
     public boolean addGroupToGroup(String tenantName, PrincipalId groupId,
             String groupName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "addGroupToGroup"))
         {
@@ -10629,7 +10598,7 @@ implements IIdentityManager
      */
     @Override
     public void deletePrincipal(String tenantName, String principalName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "deletePrincipal"))
         {
@@ -10649,7 +10618,7 @@ implements IIdentityManager
      */
     @Override
     public boolean enableUserAccount(String tenantName, PrincipalId userId,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "enableUserAccount"))
         {
@@ -10669,7 +10638,7 @@ implements IIdentityManager
      */
     @Override
     public boolean unlockUserAccount(String tenantName, PrincipalId userId,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "unlockUserAccount"))
         {
@@ -10689,7 +10658,7 @@ implements IIdentityManager
      */
     @Override
     public boolean disableUserAccount(String tenantName, PrincipalId userId,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "disableUserAccount"))
         {
@@ -10710,7 +10679,7 @@ implements IIdentityManager
     @Override
     public PrincipalId updatePersonUserDetail(String tenantName, String userName,
             PersonDetail detail, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "updatePersonUserDetail"))
         {
@@ -10731,7 +10700,7 @@ implements IIdentityManager
     @Override
     public PrincipalId updateGroupDetail(String tenantName, String groupName,
             GroupDetail detail, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "updateGroupDetail"))
         {
@@ -10752,7 +10721,7 @@ implements IIdentityManager
     @Override
     public PrincipalId updateSolutionUserDetail(String tenantName, String userName,
             SolutionDetail detail, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "updateSolutionUserDetail"))
         {
@@ -10773,7 +10742,7 @@ implements IIdentityManager
     @Override
     public void setUserPassword(String tenantName, String userName,
             char[] newPassword, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setUserPassword"))
         {
@@ -10794,7 +10763,7 @@ implements IIdentityManager
     @Override
     public void changeUserPassword(String tenantName, String userName,
             char[] currentPassword, char[] newPassword,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "changeUserPassword"))
         {
@@ -10814,7 +10783,7 @@ implements IIdentityManager
      */
     @Override
     public void updateSystemDomainStorePassword(String tenantName, char[] newPassword,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
         ValidateUtil.validateNotNull(newPassword, "New password");
@@ -10855,7 +10824,7 @@ implements IIdentityManager
      */
     @Override
     public PasswordPolicy getPasswordPolicy(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getPasswordPolicy"))
         {
@@ -10895,7 +10864,7 @@ implements IIdentityManager
      */
     @Override
     public LockoutPolicy getLockoutPolicy(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getLockoutPolicy"))
         {
@@ -10915,7 +10884,7 @@ implements IIdentityManager
      */
     @Override
     public void setLockoutPolicy(String tenantName, LockoutPolicy policy,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setLockoutPolicy"))
         {
@@ -10935,7 +10904,7 @@ implements IIdentityManager
      */
     @Override
     public Group findGroup(String tenantName, PrincipalId groupId,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findGroup"))
         {
@@ -10955,7 +10924,7 @@ implements IIdentityManager
      */
     @Override
     public Group findGroup(String tenantName, String group,
-            IIdmServiceContext serviceContext) throws RemoteException,
+            IIdmServiceContext serviceContext) throws
             NoSuchTenantException, NoSuchIdpException, InvalidPrincipalException,
             IDMException
     {
@@ -10977,7 +10946,7 @@ implements IIdentityManager
      */
     @Override
     public Principal findUser(String tenantName, String user,
-            IIdmServiceContext serviceContext) throws RemoteException,
+            IIdmServiceContext serviceContext) throws
             NoSuchTenantException, NoSuchIdpException, InvalidPrincipalException,
             IDMException
     {
@@ -10999,7 +10968,7 @@ implements IIdentityManager
      */
     @Override
     public void setExternalIdpForTenant(String tenantName, IDPConfig idpConfig,
-            IIdmServiceContext serviceContext) throws RemoteException,
+            IIdmServiceContext serviceContext) throws
             NoSuchTenantException, IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setExternalIdpForTenant"))
@@ -11021,7 +10990,7 @@ implements IIdentityManager
     @Override
     public void removeExternalIdpForTenant(String tenantName,
             String configEntityId, IIdmServiceContext serviceContext)
-            throws RemoteException, NoSuchTenantException,
+            throws  NoSuchTenantException,
             NoSuchExternalIdpConfigException, IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "removeExternalIdpForTenant"))
@@ -11043,7 +11012,7 @@ implements IIdentityManager
     @Override
     public void removeExternalIdpForTenant(String tenantName,
             String configEntityId, boolean removeJitUsers, IIdmServiceContext serviceContext)
-            throws RemoteException, NoSuchTenantException,
+            throws  NoSuchTenantException,
             NoSuchExternalIdpConfigException, IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "removeExternalIdpForTenant"))
@@ -11064,7 +11033,7 @@ implements IIdentityManager
      */
     @Override
     public Collection<IDPConfig> getAllExternalIdpsForTenant(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException,
+            IIdmServiceContext serviceContext) throws
             NoSuchTenantException, IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getAllExternalIdpsForTenant"))
@@ -11086,7 +11055,7 @@ implements IIdentityManager
     @Override
     public IDPConfig getExternalIdpForTenant(String tenantName,
             String configEntityId, IIdmServiceContext serviceContext)
-            throws RemoteException, NoSuchTenantException, IDMException
+            throws  NoSuchTenantException, IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getExternalIdpForTenant"))
         {
@@ -11107,7 +11076,7 @@ implements IIdentityManager
     @Override
     public Collection<IDPConfig> getExternalIdpForTenantByUrl(String tenantName,
             String urlStr, IIdmServiceContext serviceContext)
-            throws RemoteException, NoSuchTenantException, IDMException
+            throws  NoSuchTenantException, IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getExternalIdpForTenantByUrl"))
         {
@@ -11127,7 +11096,7 @@ implements IIdentityManager
      */
     @Override
     public boolean registerThirdPartyIDPUser(String tenantName, PrincipalId userId,
-            IIdmServiceContext serviceContext) throws RemoteException,
+            IIdmServiceContext serviceContext) throws
             IDMException, NoSuchTenantException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "registerThirdPartyIDPUser"))
@@ -11148,7 +11117,7 @@ implements IIdentityManager
      */
     @Override
     public boolean removeThirdPartyIDPUser(String tenantName, PrincipalId userId,
-            IIdmServiceContext serviceContext) throws RemoteException,
+            IIdmServiceContext serviceContext) throws
             IDMException, NoSuchTenantException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "removeThirdPartyIDPUser"))
@@ -11170,7 +11139,7 @@ implements IIdentityManager
     @Override
     public PersonUser findRegisteredExternalIDPUser(String tenantName,
             PrincipalId userId, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException, NoSuchTenantException
+            throws  IDMException, NoSuchTenantException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findRegisteredExternalIDPUser"))
         {
@@ -11190,7 +11159,7 @@ implements IIdentityManager
      */
     @Override
     public String getExternalIDPRegistrationGroupName(
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", serviceContext, "getExternalIDPRegistrationGroupName"))
         {
@@ -11211,7 +11180,7 @@ implements IIdentityManager
     @Override
     public boolean registerUpnSuffix(String tenantName, String domainName,
             String upnSuffix, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException, NoSuchTenantException,
+            throws  IDMException, NoSuchTenantException,
             NoSuchIdpException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "registerUpnSuffix"))
@@ -11233,7 +11202,7 @@ implements IIdentityManager
     @Override
     public boolean unregisterUpnSuffix(String tenantName, String domainName,
             String upnSuffix, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException, NoSuchTenantException,
+            throws  IDMException, NoSuchTenantException,
             NoSuchIdpException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "unregisterUpnSuffix"))
@@ -11254,7 +11223,7 @@ implements IIdentityManager
      */
     @Override
     public Set<String> getUpnSuffixes(String tenantName, String domainName,
-            IIdmServiceContext serviceContext) throws RemoteException,
+            IIdmServiceContext serviceContext) throws
             IDMException, NoSuchTenantException, NoSuchIdpException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getUpnSuffixes"))
@@ -11275,7 +11244,7 @@ implements IIdentityManager
      */
     @Override
     public String getBrandName(String tenantName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getBrandName"))
         {
@@ -11295,7 +11264,7 @@ implements IIdentityManager
      */
     @Override
     public void setBrandName(String tenantName, String brandName,
-            IIdmServiceContext serviceContext) throws RemoteException, IDMException
+            IIdmServiceContext serviceContext) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setBrandName"))
         {
@@ -11315,7 +11284,7 @@ implements IIdentityManager
      */
     @Override
     public String getLogonBannerContent(String tenantName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getLogonBannerContent"))
         {
@@ -11335,7 +11304,7 @@ implements IIdentityManager
      */
     @Override
     public void setLogonBannerContent(String tenantName, String logonBannerContent, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setLogonBannerContent"))
         {
@@ -11355,7 +11324,7 @@ implements IIdentityManager
      */
     @Override
     public String getLogonBannerTitle(String tenantName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getLogonBannerTitle"))
         {
@@ -11372,7 +11341,7 @@ implements IIdentityManager
 
     @Override
     public boolean getLogonBannerCheckboxFlag(String tenantName, IIdmServiceContext serviceContext)
-            throws RemoteException,  IDMException
+            throws   IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getLogonBannerCheckboxFlag"))
         {
@@ -11392,7 +11361,7 @@ implements IIdentityManager
      */
     @Override
     public void setLogonBannerTitle(String tenantName, String logonBannerTitle, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setLogonBannerTitle"))
         {
@@ -11409,7 +11378,7 @@ implements IIdentityManager
 
     @Override
     public void setLogonBannerCheckboxFlag(String tenantName, boolean enableLogonBannerCheckbox, IIdmServiceContext serviceContext)
-            throws RemoteException,  IDMException
+            throws   IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setLogonBannerCheckbox"))
         {
@@ -11432,7 +11401,7 @@ implements IIdentityManager
     Collection<Certificate>
     getTrustedCertificates(
         String tenantName, IIdmServiceContext serviceContext
-    ) throws RemoteException, IDMException
+    ) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getTrustedCertificates"))
         {
@@ -11455,7 +11424,7 @@ implements IIdentityManager
     Collection<Certificate>
     getStsIssuersCertificates(
         String tenantName, IIdmServiceContext serviceContext
-    ) throws RemoteException, IDMException
+    ) throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getStsIssuersCertificates"))
         {
@@ -11477,7 +11446,7 @@ implements IIdentityManager
     public
     ActiveDirectoryJoinInfo
     getActiveDirectoryJoinStatus(IIdmServiceContext serviceContext)
-        throws RemoteException, IDMException
+        throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", serviceContext, "getActiveDirectoryJoinStatus"))
         {
@@ -11499,7 +11468,7 @@ implements IIdentityManager
     public
     Collection<DomainTrustsInfo>
     getDomainTrustInfo(IIdmServiceContext serviceContext)
-        throws RemoteException,IDMException
+        throws IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", serviceContext, "getDomainTrustInfo"))
         {
@@ -11519,7 +11488,7 @@ implements IIdentityManager
      */
     @Override
     public String getClusterId(IIdmServiceContext serviceContext)
-        throws RemoteException, IDMException
+        throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", serviceContext, "getClusterId"))
         {
@@ -11539,7 +11508,7 @@ implements IIdentityManager
      */
     @Override
     public String getDeploymentId(IIdmServiceContext serviceContext)
-        throws RemoteException, IDMException
+        throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", serviceContext, "getDeploymentId"))
         {
@@ -11559,7 +11528,7 @@ implements IIdentityManager
      */
     @Override
     public String getSsoMachineHostName(IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
     {
         try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", serviceContext, "getSsoMachineHostName"))
         {
@@ -11576,7 +11545,7 @@ implements IIdentityManager
 
    @Override
    public Collection<VmHostData> getComputers(String tenantName, boolean getDCOnly, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException
+            throws  IDMException
    {
 
       try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getComputers"))
@@ -11601,61 +11570,61 @@ implements IIdentityManager
 
    @Override
    public void joinActiveDirectory(String user, String password, String domain, String orgUnit, IIdmServiceContext serviceContext)
-      throws RemoteException, IDMException, IdmADDomainException
+      throws  IDMException, IdmADDomainException
    {
       try (IDiagnosticsContextScope ctxt = getDiagnosticsContext("", serviceContext, "joinActiveDirectory"))
       {
          VmafClientUtil.joinActiveDirectory(user, password, domain, orgUnit);
       } catch (VmAfAccessDeniedException e) {
-	    logger.error("VmafAccessDeniedException occurred", e);
-	    throw new IdmADDomainException(String.format("user [%s] cannot access domain [%s]", user, domain), e.getErrorCode());
-	} catch (VmAfUnknownServerException | VmAfNoSuchDomainException e) {
-	    logger.error(e.getClass().getSimpleName() + " occurred", e);
-	    throw new IdmADDomainException(String.format("cannot contact domain [%s]", domain), e.getErrorCode());
-	} catch (VmAfAlreadyJoinedException e) {
-	    logger.error("VmafAlreadyJoinedException occurred", e);
-	    throw new IdmADDomainException("SSO server is already joined to AD domain", e.getErrorCode());
-	} catch (VmAfInvalidComputerNameException e) {
-	    logger.error("VmAfInvalidComputerNameException occurred", e);
-	    throw new IdmADDomainException(
-		    String.format("The format of the specified computer name is invalid [%s]", domain), e.getErrorCode());
-	} catch (VmAfBadPacketException e) {
-	    logger.error("VmAfBadPacketException occurred", e);
-	    throw new IdmADDomainException(
-		    String.format(
-		            "A bad packet was received from a DNS server. Potentially the requested address [%s] does not exist.",
-		            domain), e.getErrorCode());
-	} catch (VmAfInvalidParameterException e) {
-	    logger.error("VmAfInvalidParameterException occurred", e);
-	    throw new IdmADDomainException("Invalid parameter passed",
-		    e.getErrorCode());
-	} catch (VmAfNoSuchLogonSessionException e) {
-	    logger.error("VmAfNoSuchLogonSessionException occurred", e);
-	    throw new IdmADDomainException(
-		    String.format(
-		            "The specified logon session does not exist: domain [%s], username [%s]",
-		            domain, user), e.getErrorCode());
-	} catch (VmAfWrongPasswordException e) {
-	    logger.error("VmAfWrongPasswordException occurred", e);
-	    throw new IdmADDomainException(
-		    "The value provided as the current password is incorrect",
-		    e.getErrorCode());
-	} catch (VmAfNotSupportedException e) {
-	    logger.error("VmAfNotSupportedException occurred", e);
-	    throw new IdmADDomainException("The request is not supported",
-		    e.getErrorCode());
-	} catch (VmAfLdapNoSuchObjectException e) {
-	    logger.error("VmAfLdapNoSuchObjectException occurred", e);
-	    throw new IdmADDomainException(
-		    String.format(
-		            "The specified entry does not exist in the directory, domain [%s], orgUnit [%s]",
-		            domain, orgUnit), e.getErrorCode());
-	} catch (VmAfClientNativeException e) {
-	    logger.error("VmAfClientNativeException occurred", e);
-	    throw new IDMException(
-		    String.format(
-		            "Error trying to join AD, error code [%s], user [%s], domain [%s], orgUnit [%s]",
-		            e.getErrorCode(), user, domain, orgUnit));
+        logger.error("VmafAccessDeniedException occurred", e);
+        throw new IdmADDomainException(String.format("user [%s] cannot access domain [%s]", user, domain), e.getErrorCode());
+    } catch (VmAfUnknownServerException | VmAfNoSuchDomainException e) {
+        logger.error(e.getClass().getSimpleName() + " occurred", e);
+        throw new IdmADDomainException(String.format("cannot contact domain [%s]", domain), e.getErrorCode());
+    } catch (VmAfAlreadyJoinedException e) {
+        logger.error("VmafAlreadyJoinedException occurred", e);
+        throw new IdmADDomainException("SSO server is already joined to AD domain", e.getErrorCode());
+    } catch (VmAfInvalidComputerNameException e) {
+        logger.error("VmAfInvalidComputerNameException occurred", e);
+        throw new IdmADDomainException(
+            String.format("The format of the specified computer name is invalid [%s]", domain), e.getErrorCode());
+    } catch (VmAfBadPacketException e) {
+        logger.error("VmAfBadPacketException occurred", e);
+        throw new IdmADDomainException(
+            String.format(
+                    "A bad packet was received from a DNS server. Potentially the requested address [%s] does not exist.",
+                    domain), e.getErrorCode());
+    } catch (VmAfInvalidParameterException e) {
+        logger.error("VmAfInvalidParameterException occurred", e);
+        throw new IdmADDomainException("Invalid parameter passed",
+            e.getErrorCode());
+    } catch (VmAfNoSuchLogonSessionException e) {
+        logger.error("VmAfNoSuchLogonSessionException occurred", e);
+        throw new IdmADDomainException(
+            String.format(
+                    "The specified logon session does not exist: domain [%s], username [%s]",
+                    domain, user), e.getErrorCode());
+    } catch (VmAfWrongPasswordException e) {
+        logger.error("VmAfWrongPasswordException occurred", e);
+        throw new IdmADDomainException(
+            "The value provided as the current password is incorrect",
+            e.getErrorCode());
+    } catch (VmAfNotSupportedException e) {
+        logger.error("VmAfNotSupportedException occurred", e);
+        throw new IdmADDomainException("The request is not supported",
+            e.getErrorCode());
+    } catch (VmAfLdapNoSuchObjectException e) {
+        logger.error("VmAfLdapNoSuchObjectException occurred", e);
+        throw new IdmADDomainException(
+            String.format(
+                    "The specified entry does not exist in the directory, domain [%s], orgUnit [%s]",
+                    domain, orgUnit), e.getErrorCode());
+    } catch (VmAfClientNativeException e) {
+        logger.error("VmAfClientNativeException occurred", e);
+        throw new IDMException(
+            String.format(
+                    "Error trying to join AD, error code [%s], user [%s], domain [%s], orgUnit [%s]",
+                    e.getErrorCode(), user, domain, orgUnit));
       }catch (Exception ex){
          throw ServerUtils.getRemoteException(ex);
       }
@@ -11663,7 +11632,7 @@ implements IIdentityManager
 
    @Override
    public void leaveActiveDirectory(String user, String password, IIdmServiceContext serviceContext)
-         throws RemoteException, IDMException, ADIDSAlreadyExistException, IdmADDomainException
+         throws  IDMException, ADIDSAlreadyExistException, IdmADDomainException
    {
       try (IDiagnosticsContextScope ctxt = getDiagnosticsContext("", serviceContext, "leaveActiveDirectory"))
       {
@@ -11674,60 +11643,60 @@ implements IIdentityManager
          }
          VmafClientUtil.leaveActiveDirectory(user, password);
       } catch (VmAfAccessDeniedException e) {
-	    logger.error("VmafAccessDeniedException occurred", e);
-	    throw new IdmADDomainException(String.format("user [%s] cannot access domain [%s]", user, null), e.getErrorCode());
-	} catch (VmAfUnknownServerException | VmAfNoSuchDomainException e) {
-	    logger.error(e.getClass().getSimpleName() + " occurred", e);
-	    throw new IdmADDomainException(String.format("cannot contact domain [%s]", null), e.getErrorCode());
-	} catch (VmAfAlreadyJoinedException e) {
-	    logger.error("VmafAlreadyJoinedException occurred", e);
-	    throw new IdmADDomainException("SSO server is already joined to AD domain", e.getErrorCode());
-	} catch (VmAfInvalidComputerNameException e) {
-	    logger.error("VmAfInvalidComputerNameException occurred", e);
-	    throw new IdmADDomainException(
-		    String.format("The format of the specified computer name is invalid [%s]", null), e.getErrorCode());
-	} catch (VmAfBadPacketException e) {
-	    logger.error("VmAfBadPacketException occurred", e);
-	    throw new IdmADDomainException(
-		    String.format(
-		            "A bad packet was received from a DNS server. Potentially the requested address [%s] does not exist.",
-		            null), e.getErrorCode());
-	} catch (VmAfInvalidParameterException e) {
-	    logger.error("VmAfInvalidParameterException occurred", e);
-	    throw new IdmADDomainException("Invalid parameter passed",
-		    e.getErrorCode());
-	} catch (VmAfNoSuchLogonSessionException e) {
-	    logger.error("VmAfNoSuchLogonSessionException occurred", e);
-	    throw new IdmADDomainException(
-		    String.format(
-		            "The specified logon session does not exist: domain [%s], username [%s]",
-		            null, user), e.getErrorCode());
-	} catch (VmAfWrongPasswordException e) {
-	    logger.error("VmAfWrongPasswordException occurred", e);
-	    throw new IdmADDomainException(
-		    "The value provided as the current password is incorrect",
-		    e.getErrorCode());
-	} catch (VmAfNotSupportedException e) {
-	    logger.error("VmAfNotSupportedException occurred", e);
-	    throw new IdmADDomainException("The request is not supported",
-		    e.getErrorCode());
-	} catch (VmAfLdapNoSuchObjectException e) {
-	    logger.error("VmAfLdapNoSuchObjectException occurred", e);
-	    throw new IdmADDomainException("The specified entry does not exist in the directory",
-		            e.getErrorCode());
-	} catch (VmAfClientNativeException e) {
-	    logger.error("VmAfClientNativeException occurred", e);
-	    throw new IDMException(
-		    String.format(
-		            "Error trying to leave AD, error code [%s], user [%s]",
-		            e.getErrorCode(), user));
+        logger.error("VmafAccessDeniedException occurred", e);
+        throw new IdmADDomainException(String.format("user [%s] cannot access domain [%s]", user, null), e.getErrorCode());
+    } catch (VmAfUnknownServerException | VmAfNoSuchDomainException e) {
+        logger.error(e.getClass().getSimpleName() + " occurred", e);
+        throw new IdmADDomainException(String.format("cannot contact domain [%s]", null), e.getErrorCode());
+    } catch (VmAfAlreadyJoinedException e) {
+        logger.error("VmafAlreadyJoinedException occurred", e);
+        throw new IdmADDomainException("SSO server is already joined to AD domain", e.getErrorCode());
+    } catch (VmAfInvalidComputerNameException e) {
+        logger.error("VmAfInvalidComputerNameException occurred", e);
+        throw new IdmADDomainException(
+            String.format("The format of the specified computer name is invalid [%s]", null), e.getErrorCode());
+    } catch (VmAfBadPacketException e) {
+        logger.error("VmAfBadPacketException occurred", e);
+        throw new IdmADDomainException(
+            String.format(
+                    "A bad packet was received from a DNS server. Potentially the requested address [%s] does not exist.",
+                    null), e.getErrorCode());
+    } catch (VmAfInvalidParameterException e) {
+        logger.error("VmAfInvalidParameterException occurred", e);
+        throw new IdmADDomainException("Invalid parameter passed",
+            e.getErrorCode());
+    } catch (VmAfNoSuchLogonSessionException e) {
+        logger.error("VmAfNoSuchLogonSessionException occurred", e);
+        throw new IdmADDomainException(
+            String.format(
+                    "The specified logon session does not exist: domain [%s], username [%s]",
+                    null, user), e.getErrorCode());
+    } catch (VmAfWrongPasswordException e) {
+        logger.error("VmAfWrongPasswordException occurred", e);
+        throw new IdmADDomainException(
+            "The value provided as the current password is incorrect",
+            e.getErrorCode());
+    } catch (VmAfNotSupportedException e) {
+        logger.error("VmAfNotSupportedException occurred", e);
+        throw new IdmADDomainException("The request is not supported",
+            e.getErrorCode());
+    } catch (VmAfLdapNoSuchObjectException e) {
+        logger.error("VmAfLdapNoSuchObjectException occurred", e);
+        throw new IdmADDomainException("The specified entry does not exist in the directory",
+                    e.getErrorCode());
+    } catch (VmAfClientNativeException e) {
+        logger.error("VmAfClientNativeException occurred", e);
+        throw new IDMException(
+            String.format(
+                    "Error trying to leave AD, error code [%s], user [%s]",
+                    e.getErrorCode(), user));
       }catch (Exception ex){
          throw ServerUtils.getRemoteException(ex);
       }
    }
 
     @Override
-    public List<IIdmAuthStat> getIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+    public List<IIdmAuthStat> getIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getIdmAuthStats"))
         {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
@@ -11740,7 +11709,7 @@ implements IIdentityManager
     }
 
     @Override
-    public IIdmAuthStatus getIdmAuthStatus(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+    public IIdmAuthStatus getIdmAuthStatus(String tenantName, IIdmServiceContext serviceContext) throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getIdmAuthStatus")) {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
             TenantInformation tenantInfo = findTenant(tenantName);
@@ -11753,7 +11722,7 @@ implements IIdentityManager
     }
 
     @Override
-    public void clearIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+    public void clearIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "clearIdmAuthStats")) {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
             TenantInformation tenantInfo = findTenant(tenantName);
@@ -11765,7 +11734,7 @@ implements IIdentityManager
     }
 
     @Override
-    public void setIdmAuthStatsSize(String tenantName, int size, IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+    public void setIdmAuthStatsSize(String tenantName, int size, IIdmServiceContext serviceContext) throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setIdmAuthStatsSize")) {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
             ValidateUtil.validateNonNegativeNumber(size, "size");
@@ -11778,7 +11747,7 @@ implements IIdentityManager
     }
 
     @Override
-    public void enableIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+    public void enableIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "enableIdmAuthStats")) {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
             TenantInformation tenantInfo = findTenant(tenantName);
@@ -11790,7 +11759,7 @@ implements IIdentityManager
     }
 
     @Override
-    public void disableIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws RemoteException, IDMException {
+    public void disableIdmAuthStats(String tenantName, IIdmServiceContext serviceContext) throws  IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "disableIdmAuthStats")) {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
             TenantInformation tenantInfo = findTenant(tenantName);
@@ -11878,7 +11847,7 @@ implements IIdentityManager
     }
     @Override
     public AuthnPolicy getAuthNPolicy(String tenantName,
-            IIdmServiceContext serviceContext) throws RemoteException,
+            IIdmServiceContext serviceContext) throws
             IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName,
                 serviceContext, "getAuthPolicy")) {
@@ -11893,7 +11862,7 @@ implements IIdentityManager
 
     @Override
     public void setAuthNPolicy(String tenantName, AuthnPolicy policy,
-            IIdmServiceContext serviceContext) throws RemoteException,
+            IIdmServiceContext serviceContext) throws
             IDMException {
         try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName,
                 serviceContext, "getAuthPolicy")) {
@@ -11984,7 +11953,7 @@ implements IIdentityManager
 
     @Override
     public RSAAgentConfig getRSAConfig(String tenantName, IIdmServiceContext serviceContext)
-            throws RemoteException, IDMException {
+            throws  IDMException {
 
         try {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
@@ -11992,8 +11961,6 @@ implements IIdentityManager
             AuthnPolicy authnPolicy = getAuthNPolicy(tenantName, serviceContext);
 
             RSAAgentConfig rsaConfig = authnPolicy.get_rsaAgentConfig();
-
-            // TODO for testing only . remove this and enable above two lines as well as in getAutynPolicy
 
             return rsaConfig;
         } catch (Exception ex) {
@@ -12051,5 +12018,19 @@ implements IIdentityManager
             throw ServerUtils.getRemoteException(ex);
         }
 
+    }
+
+    /**
+     * Vends the IDM singleton instance
+     */
+    public static IdentityManager getIdmInstance() throws IDMException {
+        if (idmInstance == null) {
+            synchronized (identityManagerLock) {
+                if (idmInstance == null) {
+                    idmInstance = new IdentityManager();
+                }
+            }
+        }
+        return idmInstance;
     }
 }

@@ -117,6 +117,11 @@
       <artifactId>afd-heartbeat-service</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>com.vmware.identity</groupId>
+      <artifactId>vmware-vmca-client</artifactId>
+    </dependency>
+
     <!-- Common  Dependencies -->
     <dependency>
       <groupId>commons-logging</groupId>

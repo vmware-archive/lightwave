@@ -4,54 +4,29 @@
 
 package com.vmware.identity.configure;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.lang.ProcessBuilder.Redirect;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.lang.SystemUtils;
-import org.w3c.dom.Attr;
-import org.w3c.dom.Document;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Element;
-import org.xml.sax.SAXException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.vmware.identity.configure.STSHealthChecker;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
 
@@ -76,15 +51,10 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
     private String sslImplementationName="";
     private String keyAlias ="";
     private String keyStoreType ="";
-    private STSHealthChecker stsHealthChecker;
 
-    public SecureTokenServerInstaller() {
-        params = null;
-	stsHealthChecker = new STSHealthChecker();
-    }
+
     public SecureTokenServerInstaller(VmIdentityParams installParams) {
         params = installParams;
-	stsHealthChecker = new STSHealthChecker();
     }
 
     @Override
@@ -94,20 +64,16 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
         log.info("Configuring STS");
         configureSTS();
 
-        String tcSTSBase = InstallerUtils.getInstallerHelper().getTCBase(); 
-        Path tomcatTempDir = Paths.get(tcSTSBase, "temp");
-        if (!Files.exists(tomcatTempDir)) {
-            Files.createDirectories(tomcatTempDir);
-        }
         // Only on Windows the STS service has to be installed as a service
         installInstAsWinService();
 
         startSTSService();
-        //TODO: Properly install ROOT hosting index.html SSO landing page
-        //configureInfraNodeHomePage();
+        String portNumber = HostnameReader.readPortNumber();
+        if (portNumber == null) {
+            throw new SecureTokenServerInstallerException("Invalid port number" , null);
+        }
 
-	// Validate to make sure all STS service endpoints are up and listening
-        stsHealthChecker.checkHealth(hostnameURL);
+        new STSHealthChecker(hostnameURL, HostnameReader.readPortNumber()).checkHealth();
     }
 
     private void initialize() {
@@ -117,40 +83,6 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
         }
     }
 
-   private void configureInfraNodeHomePage()
-            throws SecureTokenServerInstallerException {
-        // TODO: Do configuration specific for install type. This does the
-        // configuration for infrastructure node
-
-        String webappDir = InstallerUtils.joinPath(InstallerUtils
-                .getInstallerHelper().getTCBase(), "webapps");
-        log.info("Configure ROOT index.html on infrastructure node");
-
-        String rootPagePath = InstallerUtils.joinPath(webappDir, "ROOT",
-                "index.html");
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(
-                rootPagePath))) {
-
-            writer.append("<html>");
-            writer.append(System.lineSeparator());
-            writer.append("<head>");
-            writer.append(System.lineSeparator());
-            writer.append(String
-                    .format("<meta http-equiv=\"refresh\" content=\"0;URL=http://%s/websso/\">%s",
-                            hostnameURL, System.lineSeparator()));
-            writer.append("</head>");
-            writer.append(System.lineSeparator());
-            writer.append("<body> </body>");
-            writer.append(System.lineSeparator());
-            writer.append("</html>");
-            writer.append(System.lineSeparator());
-
-        } catch (IOException e) {
-            log.error("Failed to configure InfraNodeHomePage", e);
-            throw new SecureTokenServerInstallerException(
-                    "Failed to configure InfraNodeHomePage", e);
-        }
-    }
     private void startSTSService() throws SecureTokenServerInstallerException {
 
         ProcessBuilder pb = new ProcessBuilder(InstallerUtils
@@ -158,7 +90,7 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
         pb.redirectErrorStream(true);
 
         String logFile = InstallerUtils.getInstallerHelper()
-                .getIDMServiceLogFile();
+                .getSecureTokenServiceLogFile();
         File log = new File(logFile);
         pb.redirectOutput(Redirect.appendTo(log));
 
@@ -183,15 +115,16 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
             throws SecureTokenServerInstallerException {
         if (SystemUtils.IS_OS_WINDOWS) {
 
+            createJavaSecurityFile();
             String wrapper_bin = new WinInstallerHelper().getWrapperBinPath();
             String wrapper_exe = InstallerUtils.joinPath(wrapper_bin, "wrapper.exe");
             String wrapper_conf = InstallerUtils.joinPath(InstallerUtils
                         .getInstallerHelper().getTCBase(), "conf", "wrapper.conf");
 
             // Install STS instance as windows service using Service controller
-            String sc_binPath = wrapper_exe + " -s " +  wrapper_conf ;
-            String command = "sc.exe create VMwareSTS type= own start= auto error= normal binPath= "+sc_binPath+ " depend= VMwareIdentityMgmtService displayname= \"VMware Secure Token Service\" ";
-
+            String sc_binPath = "\"" + wrapper_exe + " -s " +  wrapper_conf +"\"";
+            String command = "sc.exe create VMwareSTS  type= own start= auto error= normal binPath= "+sc_binPath+ " depend= VMWareAfdService/VMWareCertificateService/VMWareDirectoryService/TCPIP displayname= \"VMware Secure Token Service\" ";
+            System.out.println(command);
             int exitCode = -1;
             try {
                 Process p = Runtime.getRuntime().exec(command);
@@ -266,19 +199,20 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
     }
 
     @Override
-    public void upgrade() throws Exception{
-        if ( params.getBackupDir() != null) {
-            log.debug("SecureTokenServerInstaller : Upgrade");
-            mergeServerXMl();
-        }
-        if (params.getServiceStart()){
-            startSTSService();
-        }
+    public void upgrade() {
+        log.debug("SecureTokenServerInstaller : Upgrade");
+        mergeServerXMl();
+
     }
 
     @Override
     public void uninstall() {
         // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void migrate() {
 
     }
 
@@ -410,6 +344,17 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
             log.debug("SecureTokenServerInstaller : setServerAttributes - Completed");
         } catch (Exception ex) {
            log.error("SecureTokenServerInstaller : setServerAttributes - failed");
+        }
+
+    }
+    private void createJavaSecurityFile() {
+        try {
+        File  securityFile = new  File(InstallerUtils.joinPath(System.getenv("VMWARE_CFG_DIR"), "java","vmware-override-java.security"));
+        File vmIdentitySecurityFile = new File (InstallerUtils.joinPath(InstallerUtils
+                        .getInstallerHelper().getTCBase(), "conf","vmware-identity-override-java.security"));
+        Files.copy(securityFile.toPath(), vmIdentitySecurityFile.toPath());
+        } catch (Exception ex ) {
+            System.out.println("Failedin to create VMIdentity java security File");
         }
 
     }

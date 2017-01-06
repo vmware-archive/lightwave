@@ -17,8 +17,8 @@ import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.util.Collection;
@@ -27,7 +27,6 @@ import java.util.Scanner;
 
 import javax.ws.rs.container.ContainerRequestContext;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -48,6 +47,7 @@ import com.vmware.identity.rest.idm.server.test.util.IDPConfigUtil;
  * @author Travis Hall
  */
 @Category(IntegrationTest.class)
+@Ignore // ignored due to IDM process to library change, see PR 1780279.
 public class ExternalIDPResourceIT extends TestBase {
 
     private static final String TEST_DATA_EXTERNAL_IDP_PATH = "src/integration-test/resources/external_idp_config.xml";

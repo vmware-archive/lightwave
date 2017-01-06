@@ -162,7 +162,7 @@ public class RequestSigner {
             throw new IllegalArgumentException("An error occurred while getting the message digest", e);
         }
 
-        return new String(md5.digest(entity.getBytes()), StandardCharsets.UTF_8);
+        return Hex.encodeHexString(md5.digest(entity.getBytes(StandardCharsets.UTF_8)));
     }
 
 }

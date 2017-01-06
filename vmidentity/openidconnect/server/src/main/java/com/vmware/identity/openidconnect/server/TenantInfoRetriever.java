@@ -15,6 +15,7 @@
 package com.vmware.identity.openidconnect.server;
 
 import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.List;
@@ -63,7 +64,8 @@ public class TenantInfoRetriever {
             throw new ServerException(ErrorObject.serverError("idm error while retrieving tenant cert"), e);
         }
 
-        RSAPublicKey publicKey = (RSAPublicKey) certChain.get(0).getPublicKey();
+        X509Certificate certificate = (X509Certificate) certChain.get(0);
+        RSAPublicKey publicKey = (RSAPublicKey) certificate.getPublicKey();
 
         AuthnPolicy authnPolicy;
         String issuer;
@@ -107,6 +109,7 @@ public class TenantInfoRetriever {
         return new TenantInfo.Builder(tenant).
                 privateKey(privateKey).
                 publicKey(publicKey).
+                certificate(certificate).
                 authnPolicy(tenantAuthnPolicy).
                 issuer(new Issuer(issuer)).
                 brandName(brandName).

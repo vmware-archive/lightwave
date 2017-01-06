@@ -16,6 +16,11 @@
     doc     = "Type of store where the identity service configuration is stored"
 }
 
+"Hostname" = {
+    default = ""
+    doc     = "Store the host name of the system"
+}
+
 "Multitenant" = {
     default = dword:00000000
     doc     = "Set to 1 if multi-tenant, 0 otherwise"

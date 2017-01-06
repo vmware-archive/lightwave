@@ -113,7 +113,12 @@ public class TokenRequestProcessor {
             this.tenantInfo = this.tenantInfoRetriever.retrieveTenantInfo(this.tenant);
 
             TokenSuccessResponse tokenSuccessResponse = processInternal();
-            return tokenSuccessResponse.toHttpResponse();
+            HttpResponse httpResponse = tokenSuccessResponse.toHttpResponse();
+            logger.info(
+                    "subject [{}] grant_type [{}]",
+                    tokenSuccessResponse.getIDToken().getSubject().getValue(),
+                    this.tokenRequest.getAuthorizationGrant().getGrantType().getValue());
+            return httpResponse;
         } catch (ServerException e) {
             LoggerUtils.logFailedRequest(logger, e);
             TokenErrorResponse tokenErrorResponse = new TokenErrorResponse(e.getErrorObject());
@@ -432,8 +437,9 @@ public class TokenRequestProcessor {
         }
 
         Date now = new Date();
-        Date adjustedExpirationTime = new Date(refreshToken.getExpirationTime().getTime() + this.tenantInfo.getClockToleranceMs());
-        if (now.after(adjustedExpirationTime)) {
+        Date notBefore = new Date(refreshToken.getIssueTime().getTime() - this.tenantInfo.getClockToleranceMs());
+        Date notAfter = new Date(refreshToken.getExpirationTime().getTime() + this.tenantInfo.getClockToleranceMs());
+        if (now.before(notBefore) || now.after(notAfter)) {
             throw new ServerException(ErrorObject.invalidGrant("refresh_token has expired"));
         }
     }

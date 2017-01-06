@@ -68,25 +68,6 @@
         </configuration>
       </plugin>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-war-plugin</artifactId>
-        <version>2.6</version>
-        <configuration>
-          <webXml>${basedir}/src/main/webapp/WEB-INF/web.xml</webXml>
-          <outputDirectory>${outputDirectory}</outputDirectory>
-        </configuration>
-        <executions>
-          <execution>
-            <id>default-war</id>
-            <phase>package</phase>
-            <goals>
-              <goal>war</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
       <!-- Test Plugins -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -251,12 +232,6 @@
       <version>${nimbusds.version}</version>
     </dependency>
 
-    <dependency>
-      <groupId>commons-validator</groupId>
-      <artifactId>commons-validator</artifactId>
-      <version>${commons.validator.version}</version>
-    </dependency>
-
     <!-- Logger Dependencies -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
@@ -300,6 +275,12 @@
       <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-client</artifactId>
       <version>${vmware.version}</version>
+      <exclusions>
+         <exclusion>
+            <groupId>org.opensaml</groupId>
+            <artifactId>xmltooling</artifactId>
+         </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -357,11 +338,9 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
   <properties>
     <war.warName>vmdir</war.warName>
     <outputDirectory>${basedir}/../../../build/vmware-sts/packages/</outputDirectory>
-    <warOutputDirectory>${basedir}/../../../build/vmware-sts/webapps/</warOutputDirectory>
   </properties>
 
 </project>

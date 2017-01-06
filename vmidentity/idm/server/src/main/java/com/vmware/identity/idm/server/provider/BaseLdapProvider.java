@@ -28,17 +28,23 @@
 
 package com.vmware.identity.idm.server.provider;
 
+import java.io.Closeable;
+import java.net.URI;
 import java.security.InvalidParameterException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
+import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
+import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.AuthenticationType;
+import com.vmware.identity.idm.IDMException;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.IIdentityStoreDataEx;
 import com.vmware.identity.idm.IdentityStoreAttributeMapping;
@@ -65,9 +71,13 @@ import com.vmware.identity.performanceSupport.LdapQueryStat;
 
 public abstract class BaseLdapProvider implements IIdentityProvider
 {
+    private static final String LDAPS_SCHEMA = "ldaps";
+    private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory
+            .getLogger(BaseLdapProvider.class);
     final private IIdentityStoreData _storeData;
     final private IIdentityStoreDataEx _storeDataEx;
     final private Collection<X509Certificate> _tenantTrustedCertificates;
+    final private String tenantName;
 
     @Override
     public Set<String> getRegisteredUpnSuffixes()
@@ -79,6 +89,16 @@ public abstract class BaseLdapProvider implements IIdentityProvider
     public String getDomain()
     {
         return this._storeData.getName();
+    }
+
+    @Override
+    public String getStoreUserHintAttributeName() throws IDMException {
+        return this.getStoreDataEx().getCertUserHintAttributeName();
+    }
+
+    @Override
+    public boolean getCertificateMappingUseUPN() {
+        return this.getStoreDataEx().getCertLinkingUseUPN();
     }
 
     public void probeConnectionSettings() throws Exception
@@ -109,12 +129,12 @@ public abstract class BaseLdapProvider implements IIdentityProvider
       }
     }
 
-    protected BaseLdapProvider(IIdentityStoreData storeData)
+    protected BaseLdapProvider(String tenantName, IIdentityStoreData storeData)
     {
-       this(storeData, null);
+       this(tenantName, storeData, null);
     }
 
-    protected BaseLdapProvider(IIdentityStoreData storeData, Collection<X509Certificate> tenantTrustedCertificates)
+    protected BaseLdapProvider(String tenantName, IIdentityStoreData storeData, Collection<X509Certificate> tenantTrustedCertificates)
     {
         ValidateUtil.validateNotNull( storeData, "storeData" );
         ValidateUtil.validateNotEmpty( storeData.getName(), "storeData.getName()" );
@@ -124,6 +144,7 @@ public abstract class BaseLdapProvider implements IIdentityProvider
         this._storeData = storeData;
         this._storeDataEx = storeData.getExtendedIdentityStoreData();
         this._tenantTrustedCertificates = tenantTrustedCertificates;
+        this.tenantName = tenantName;
     }
 
     protected IIdentityStoreData getStoreData() { return this._storeData; };
@@ -164,6 +185,43 @@ public abstract class BaseLdapProvider implements IIdentityProvider
             this.getStoreDataEx().getAuthenticationType(),
             false
             );
+    }
+
+    protected PooledLdapConnection borrowConnection(Collection<String> connStrings, boolean useGc) throws Exception {
+	IIdentityStoreDataEx storeData = this.getStoreDataEx();
+	return borrowConnection(connStrings, storeData.getUserName(), storeData.getPassword(),
+		storeData.getAuthenticationType(), useGc);
+    }
+
+    protected PooledLdapConnection borrowConnection(Collection<String> connStrings, String userName, String password, AuthenticationType authType,
+	    boolean useGc) throws Exception {
+
+	Exception latestEx = null;
+	final LdapConnectionPool ldapConnectionPool = LdapConnectionPool.getInstance();
+
+	Collection<URI> connectionUris = ServerUtils.toURIObjects(connStrings);
+	for (URI connectionString : connectionUris) {
+	    PooledLdapConnectionIdentity.Builder builder = new PooledLdapConnectionIdentity.Builder(
+		    connectionString.toString(), authType);
+	    builder.setTenantName(tenantName).setUsername(userName).setPassword(password).setUseGCPort(useGc);
+
+	    boolean isLdaps = connectionString.getScheme().equalsIgnoreCase(LDAPS_SCHEMA);
+	    if (isLdaps) {
+		builder.setIdsTrustedCertificates(this.getStoreDataEx().getCertificates());
+		builder.setTenantTrustedCertificates(this._tenantTrustedCertificates).build();
+	    }
+	    PooledLdapConnectionIdentity pooledLdapConnectionIdentity = builder.build();
+
+	    try {
+		ILdapConnectionEx conn = ldapConnectionPool.borrowConnection(pooledLdapConnectionIdentity);
+		return new PooledLdapConnection(conn, pooledLdapConnectionIdentity, ldapConnectionPool);
+	    } catch (Exception e) {
+		logger.error(e);
+		latestEx = e;
+	    }
+	}
+
+	throw latestEx;
     }
 
     protected static String getOptionalStringValue(LdapValue[] values)
@@ -508,6 +566,7 @@ public abstract class BaseLdapProvider implements IIdentityProvider
         return accountLdapEntry;
     }
 
+
     protected class AccountLdapEntryInfo
     {
         public ILdapEntry accountLdapEntry;
@@ -533,6 +592,28 @@ public abstract class BaseLdapProvider implements IIdentityProvider
                this.message_upn.close();
            }
            accountLdapEntry = null;
+        }
+    }
+
+    protected class AccountLdapEntriesInfo implements Closeable
+    {
+        public Set<ILdapEntry> accountLdapEntries;
+        private final ILdapMessage message;
+
+        public AccountLdapEntriesInfo(Set<ILdapEntry> accountLdapEntries, ILdapMessage message)
+        {
+            ValidateUtil.validateNotNull(accountLdapEntries, "Account ldap entry");
+            this.accountLdapEntries = accountLdapEntries;
+            this.message = message;
+        }
+
+        @Override
+        public void close() {
+            if (this.message != null)
+            {
+                this.message.close();
+            }
+            accountLdapEntries = null;
         }
     }
 
@@ -633,71 +714,94 @@ public abstract class BaseLdapProvider implements IIdentityProvider
         return new AccountLdapEntryInfo(userLdapEntry, message_upn, message_acct);
     }
 
- /**
- *
- * @param connection
- * @param filter_by_attr    filter with attribute that suppose to identity the user.
- * @param baseDn
- * @param attributes
- * @param attributesOnly
- * @param attrValue the attribute value associate to the filter
- * @param authStatRecorder  can be null
- * @return  AccountLdapEntryInfo if found
- * @throws InvalidPrincipalException  if not found or multiple entry were found.
- */
-protected AccountLdapEntryInfo findAccountLdapEntry(ILdapConnectionEx connection, String filter_by_attr,
-        String baseDn, String[] attributes, boolean attributesOnly, String attrValue,
-        IIdmAuthStatRecorder authStatRecorder) throws InvalidPrincipalException {
-    ILdapMessage message_acct = null;
-    ILdapMessage message_upn = null;
-    ILdapEntry userLdapEntry = null;
+    /**
+     * Extending findAccountLdapEntry, allowing multiple entries, if chosen, to
+     * be returned instead of throwing if seeing more than one.
+     *
+     * @param connection
+     * @param filter_by_attr
+     *            filter with attribute that suppose to identity the user.
+     * @param baseDn
+     * @param attributes
+     * @param attributesOnly
+     * @param attrValue
+     *            the attribute value associate to the filter
+     *            allowMultipleEntries allow multiple entries to be found or
+     *            not.
+     * @param authStatRecorder
+     *            can be null
+     * @return AccountLdapEntryInfo if found
+     * @throws InvalidPrincipalException
+     *             if not found or more than allowed number of entries found.
+     */
+    protected AccountLdapEntriesInfo findAccountLdapEntries(ILdapConnectionEx connection, String filter_by_attr, String baseDn,
+            String[] attributes, boolean attributesOnly, String attrValue, boolean allowMultipleEntries, IIdmAuthStatRecorder authStatRecorder)
+            throws InvalidPrincipalException {
+        ILdapMessage message = null;
+        Set<ILdapEntry> entrySet = new HashSet<ILdapEntry>();
+        ILdapEntry[] entries;
 
-    try
-    {
-        long startTime = System.nanoTime();
+        try {
+            long startTime = System.nanoTime();
 
-        message_upn = connection.search(
-                baseDn,
-                LdapScope.SCOPE_SUBTREE,
-                filter_by_attr,
-                attributes,
-                attributesOnly);
-
-        if (authStatRecorder != null) {
-            authStatRecorder.add(new LdapQueryStat(filter_by_attr, baseDn,
-                    getConnectionString(connection), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime), 1));
-        }
-
-        try
-        {
-            ILdapEntry[] entries = message_upn.getEntries();
-            if (entries == null || entries.length == 0 )
-            {
-                throw new InvalidPrincipalException(
-                        String.format("Principal with attribute value %s found"), attrValue);
-            } else if (entries.length > 1) {
-                throw new InvalidPrincipalException(
-                        String.format("Principal with attribute value %s match multiple entries."), attrValue);
-            } else {
-                userLdapEntry = entries[0];
-            }
-        }
-        catch(InvalidPrincipalException ex)
-        {
+            message = connection.search(baseDn, LdapScope.SCOPE_SUBTREE, filter_by_attr, attributes, attributesOnly);
 
             if (authStatRecorder != null) {
-                authStatRecorder.add(new LdapQueryStat(filter_by_attr, baseDn,
-                        getConnectionString(connection), TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime), 1));
+                authStatRecorder.add(new LdapQueryStat(filter_by_attr, baseDn, getConnectionString(connection), TimeUnit.NANOSECONDS.toMillis(System
+                        .nanoTime() - startTime), 1));
             }
+
+            try {
+                entries = message.getEntries();
+                if (entries == null || entries.length == 0) {
+                    throw new InvalidPrincipalException(String.format("Principal with attribute value %s not found"), attrValue);
+                } else if (!allowMultipleEntries && entries.length > 1) {
+                    throw new InvalidPrincipalException(String.format("Principal can not be uniquely identified with attribute value %s"), attrValue);
+                } else {
+                    for (ILdapEntry entry : entries) {
+                        entrySet.add(entry);
+                    }
+                }
+            } catch (InvalidPrincipalException ex) {
+
+                if (authStatRecorder != null) {
+                    authStatRecorder.add(new LdapQueryStat(filter_by_attr, baseDn, getConnectionString(connection), TimeUnit.NANOSECONDS
+                            .toMillis(System.nanoTime() - startTime), 1));
+                }
+                throw ex;
+            }
+        } catch (Exception e) {
+            throw new InvalidPrincipalException(String.format("Failed to find Principal attribute value: %s", attrValue), attrValue);
         }
-    }
-    catch(Exception e)
-    {
-        throw new InvalidPrincipalException(
-                String.format("Failed to find Principal id : %s",attrValue), attrValue);
+
+        return new AccountLdapEntriesInfo(entrySet, message);
     }
 
-    return new AccountLdapEntryInfo(userLdapEntry, message_upn, message_acct);
+    /**
+     *
+     * @param connection
+     * @param filter_by_attr
+     *            filter with attribute that suppose to identity the user.
+     * @param baseDn
+     * @param attributes
+     * @param attributesOnly
+     * @param attrValue
+     *            the attribute value associate to the filter
+     * @param authStatRecorder
+     *            can be null
+     * @return AccountLdapEntriesInfo if found
+     * @throws InvalidPrincipalException
+     *             if not found or multiple entry were found.
+     */
+    protected AccountLdapEntriesInfo findAccountLdapEntry(ILdapConnectionEx connection, String filter_by_attr,
+        String baseDn, String[] attributes, boolean attributesOnly, String attrValue,
+        IIdmAuthStatRecorder authStatRecorder) throws InvalidPrincipalException {
+
+        AccountLdapEntriesInfo entrySetInfo = findAccountLdapEntries(connection, filter_by_attr, baseDn, attributes, attributesOnly, attrValue,
+                false,
+                authStatRecorder);
+
+        return entrySetInfo;
 }
 
     protected class MemberDnsResult

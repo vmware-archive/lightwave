@@ -73,6 +73,7 @@ public final class TokenValidatorImpl implements TokenValidator {
 
       logger.debug("Validating token.");
       final ServerValidatableSamlToken result = this.authnTokenValidator.validate(token);
+      System.out.println("validating token.");
       logger.debug("Token validated");
       logger.debug( String.format("Token is from external idp: [%s]", result.isExternal()) );
 
@@ -102,6 +103,7 @@ public final class TokenValidatorImpl implements TokenValidator {
 
       logger.info("Token {} for principal {} successfully validated.",
          token.getId(), token.getSubject().subjectUpn());
+      System.out.println("validated token.");
 
        return result;
    }

@@ -73,6 +73,10 @@
       <artifactId>vmware-identity-idm-interface</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.vmware.identity.idm</groupId>
+      <artifactId>vmware-identity-idm-server</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>vmware-identity-diagnostics</artifactId>
     </dependency>
@@ -92,14 +96,13 @@
     <dependency>
       <groupId>org.opensaml</groupId>
       <artifactId>xmltooling</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.bouncycastle</groupId>
-          <artifactId>bcprov-jdk15</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
+    <exclusions>
+      <exclusion>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-jdk15</artifactId>
+      </exclusion>
+    </exclusions> 
+   </dependency>
     <dependency>
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>

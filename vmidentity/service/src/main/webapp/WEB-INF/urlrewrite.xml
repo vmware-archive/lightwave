@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE urlrewrite PUBLIC "-//tuckey.org//DTD UrlRewrite 4.0//EN"
+        "http://www.tuckey.org/res/dtds/urlrewrite4.0.dtd">
+
+<!--
+
+    Configuration file for UrlRewriteFilter
+    http://www.tuckey.org/urlrewrite/
+
+-->
+<urlrewrite use-query-string="true">
+   <rule>
+      <note>Cross-context forward request to actual STS. STS needs to have crossContext=true in its context.xml</note>
+      <from>/(.*)</from>
+      <to type="forward" context="sts">/$1</to>
+   </rule>
+
+</urlrewrite>
+

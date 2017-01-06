@@ -49,6 +49,7 @@ import com.vmware.identity.idm.server.performance.IPerformanceMonitor;
 import com.vmware.identity.idm.server.performance.IdmAuthStatCache;
 import com.vmware.identity.idm.server.performance.PerformanceMonitorFactory;
 import com.vmware.identity.idm.server.provider.IIdentityProvider;
+import com.vmware.identity.idm.server.provider.LdapConnectionPool;
 import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.activedirectory.ActiveDirectoryProvider;
 import com.vmware.identity.idm.server.provider.ldap.LdapWithAdMappingsProvider;
@@ -83,6 +84,8 @@ public class ADProviderTest
       storeData.setUserBaseDn( "DC=SSOLABS,DC=ENG,DC=VMWARE,DC=COM");
       storeData.setGroupBaseDn("DC=SSOLABS,DC=ENG,DC=VMWARE,DC=COM");
       storeData.setAlias(AD_DOMAIN_ALIAS);
+      storeData.setAccountLinkingUseUPN(false);
+      storeData.setHintAttributeName(attrNameUserPrincipalName);
 
       Map<String, String> attrMap = new HashMap<String, String>();
       attrMap.put(attrNameGivenName, attrNameGivenName);
@@ -105,6 +108,7 @@ public class ADProviderTest
       storeDataSchemaMapped.setSchemaMapping(getADSchemaMapping());
 
       PerformanceMonitorFactory.setPerformanceMonitor(new TestPerfMonitor());
+      LdapConnectionPool.getInstance().createPool("vsphere.local");
    }
    private static final IIdentityProvider unMappedprovider = new LdapWithAdMappingsProvider("vsphere.local", storeData);
    private static final IIdentityProvider schemaMappedprovider = new LdapWithAdMappingsProvider("vsphere.local", storeDataSchemaMapped);
@@ -477,7 +481,7 @@ class TestPerfMonitor implements IPerformanceMonitor {
 
     @Override
     public IdmAuthStatCache getCache(String tenantName) {
-        return null;
+	return new IdmAuthStatCache(getDefaultCacheSize(), false);
     }
 
     @Override

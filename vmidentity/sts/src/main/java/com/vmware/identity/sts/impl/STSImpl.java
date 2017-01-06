@@ -22,7 +22,9 @@ import org.oasis_open.docs.ws_sx.ws_trust._200512.RequestSecurityTokenResponseCo
 import org.oasis_open.docs.ws_sx.ws_trust._200512.RequestSecurityTokenResponseType;
 import org.oasis_open.docs.ws_sx.ws_trust._200512.RequestSecurityTokenType;
 import org.oasis_open.docs.ws_sx.ws_trust._200512.ValidateTargetType;
+import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.BinarySecurityTokenType;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.SecurityHeaderType;
+import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.UsernameTokenType;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_utility_1_0.TimestampType;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
@@ -52,11 +54,13 @@ import com.vmware.identity.sts.UnableToRenewException;
 import com.vmware.identity.sts.UnsupportedSecurityTokenException;
 import com.vmware.identity.sts.auth.Authenticator;
 import com.vmware.identity.sts.auth.Result;
+import com.vmware.identity.sts.auth.Result.AuthnMethod;
 import com.vmware.identity.sts.idm.InvalidPrincipalException;
 import com.vmware.identity.sts.idm.PrincipalDiscovery;
 import com.vmware.identity.sts.idm.STSConfigExtractor;
-import com.vmware.identity.sts.idm.SsoStatisticsService;
 import com.vmware.identity.sts.idm.STSConfiguration;
+import com.vmware.identity.sts.idm.SsoStatisticsService;
+import com.vmware.identity.sts.util.JAXBExtractor;
 import com.vmware.identity.util.TimePeriod;
 
 public final class STSImpl implements STS {
@@ -64,9 +68,10 @@ public final class STSImpl implements STS {
    private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(STSImpl.class);
 
    private static final String actAsGroupName = "ActAsUsers";
- 
+
    // TODO [848560] make the number of max simultaneous session configurable
    private final LRURequests spnegoSessions = new LRURequests(1024);
+   private final LRURequests securIDSessions = new LRURequests(1024);
    private final TokenAuthority tokenAuthority;
    private final TokenValidator tokenValidator;
    private final Authenticator authenticator;
@@ -110,13 +115,23 @@ public final class STSImpl implements STS {
       validateChallengeReq(req);
 
       assert rstr.getContext() != null && rstr.getContext().length() > 0;
-      final Request firstReq = spnegoSessions.retrieve(rstr.getContext());
+
+      Request firstReq = null;
+      if (JAXBExtractor.extractFromSecurityHeader(header, BinarySecurityTokenType.class) != null) {
+          // GSS scenario
+          firstReq = spnegoSessions.retrieve(rstr.getContext());
+      } else if (JAXBExtractor.extractFromSecurityHeader(header, UsernameTokenType.class) != null) {
+          // SecurID scenario
+          firstReq = securIDSessions.retrieve(rstr.getContext());
+      } else {
+          throw new UnsupportedSecurityTokenException("Unsupported security token in challenge operation.");
+      }
       if (firstReq == null) {
-         throw new InvalidCredentialsException("Unknown SPNEGO session!");
+         throw new InvalidCredentialsException("Unknown session for challenge request!");
       }
 
       final Result authResult = authenticator.authenticate(req);
-      assert authResult != null : "Program error! No BETAuthenticator or bug in it!";
+      assert authResult != null : "Program error! No Authentication result or bug in it!";
       if (authResult.getAuthnMethod() == Result.AuthnMethod.EXTERNAL_ASSERTION) {
           throw new UnsupportedSecurityTokenException("External assertion is not supported in challenge operation.");
       }
@@ -206,11 +221,13 @@ public final class STSImpl implements STS {
       if (context == null || context.length() == 0) {
          throw new RequestFailedException("Bad request! Missing context value!");
       }
-      final BinaryExchangeType binaryExchange = req.getRst()
-         .getBinaryExchange();
-      if (binaryExchange == null || binaryExchange.getValue() == null) {
-         throw new InvalidSecurityHeaderException(
-            "Bad request! Missing binary exchange!");
+      if (JAXBExtractor.extractFromSecurityHeader(req.getHeader(), BinarySecurityTokenType.class) != null) {
+          // BET check only for GSS scenario
+          final BinaryExchangeType binaryExchange = req.getRst()
+             .getBinaryExchange();
+          if (binaryExchange == null || binaryExchange.getValue() == null) {
+             throw new InvalidSecurityHeaderException("Bad request! Missing binary exchange!");
+          }
       }
       validateRequest(req);
    }
@@ -271,7 +288,7 @@ public final class STSImpl implements STS {
       log.debug("Validation of request");
       final Date now = new Date();
 
-      TimestampType reqValidity = req.getHeader().getTimestamp();
+      TimestampType reqValidity = JAXBExtractor.extractFromSecurityHeader(req.getHeader(), TimestampType.class);
       {
          String schemaErr = "Request is not validated against the schema";
          assert reqValidity != null && reqValidity.getCreated() != null
@@ -323,14 +340,19 @@ public final class STSImpl implements STS {
       assert context == null
          || context.equals(currentReq.getRst().getContext());
 
-      final RequestSecurityTokenResponseType response;
+      RequestSecurityTokenResponseType response = null;
       if (authResult.completed()) {
          log.debug("Authenticated principal: {} at time: {}",
             authResult.getPrincipalId(), authResult.getAuthnInstant());
          checkPermissions(initialReq, authResult);
 
          if (context != null) {
-            spnegoSessions.remove(context);
+             if (authResult.getAuthnMethod() == AuthnMethod.TIMESYNCTOKEN) {
+                 securIDSessions.remove(context);
+             } else if (authResult.getAuthnMethod() == AuthnMethod.KERBEROS ||
+                     authResult.getAuthnMethod() == AuthnMethod.NTLM) {
+                 spnegoSessions.remove(context);
+             }
          }
          SamlTokenSpec spec = specBuilder.buildIssueTokenSpec(initialReq,
             authResult);
@@ -340,13 +362,24 @@ public final class STSImpl implements STS {
          // increment generated tokens.
          ssoStatistics.incrementGeneratedTokens();
       } else {
-         if (context == null) {
-            throw new RequestFailedException("Missing context!");
+         if (authResult.getAuthnMethod() == AuthnMethod.TIMESYNCTOKEN) {
+             // SecurID response, only store session for the first request.
+             if (currentReq.equals(initialReq)) {
+                 securIDSessions.save(authResult.getSessionID(), initialReq);
+             }
+             response = RSTRBuilder.createSecurIDNegotiationResponse(authResult);
+         } else if (authResult.getAuthnMethod() == AuthnMethod.KERBEROS ||
+                 authResult.getAuthnMethod() == AuthnMethod.NTLM) {
+             // Binary exchange token response, only store session for the first request.
+             if (context == null) {
+                 throw new RequestFailedException("Missing context!");
+             }
+
+             if (currentReq.equals(initialReq)) {
+                 spnegoSessions.save(currentReq.getRst().getContext(), initialReq);
+             }
+             response = RSTRBuilder.createSPNEGOResponse(currentReq, authResult);
          }
-         // TODO consider whether this could be done only on first negotiation
-         // request
-         spnegoSessions.save(currentReq.getRst().getContext(), initialReq);
-         response = RSTRBuilder.createSPNEGOResponse(currentReq, authResult);
       }
       return response;
    }
@@ -373,7 +406,6 @@ public final class STSImpl implements STS {
       assert authResult != null && authResult.completed();
 
       if (req.getActAsToken() != null) {
-
          try {
             if (!principalDiscovery.isMemberOfSystemGroup(authResult.getPrincipalId(), actAsGroupName)) {
                throw new InvalidRequestException("Access not authorized!");

@@ -16,6 +16,8 @@ package com.vmware.identity.interop.accountmanager;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang.SystemUtils;
+
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.win32.W32APITypeMapper;
@@ -54,7 +56,10 @@ public class WinUserInfo4Native extends Structure
 
     public WinUserInfo4Native()
     {
-        super(W32APITypeMapper.UNICODE);
+        if (SystemUtils.IS_OS_WINDOWS)
+        {
+            this.setTypeMapper(W32APITypeMapper.UNICODE);
+        }
     }
 
     public WinUserInfo4Native(Pointer p)

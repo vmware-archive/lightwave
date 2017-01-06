@@ -10,6 +10,7 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.io.StringWriter;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -48,7 +49,7 @@ public class SloListenerTest {
 
     // some constants
     private static String ssoRequestID = "45";
-    private String sessionIndex = "1234567";
+    private final String sessionIndex = "1234567";
 
     /**
      * @throws java.lang.Exception
@@ -156,7 +157,8 @@ public class SloListenerTest {
                     null, sbResponseUrl);
 
             // 5. build mock HttpServletResponse.
-            HttpServletResponse response = buildMockResponseForError(400, "Invalid signature.");
+            HttpServletResponse response = buildMockResponseForError(HttpServletResponse.SC_BAD_REQUEST,
+                    Error.SIGNATURE);
 
             // 6. send the mock request to the API.
             controller.slo(TestConfig.tenantName, request, response);
@@ -164,6 +166,7 @@ public class SloListenerTest {
         } catch (Exception f) {
             fail();
         }
+
     }
 
     /**
@@ -357,7 +360,10 @@ public class SloListenerTest {
 
     private HttpServletResponse buildMockResponseForSuccess(Capture<String> capturedStr) throws IOException {
         HttpServletResponse httpResponse = createMock(HttpServletResponse.class);
+        httpResponse.addHeader(SharedUtils.CACHE_CONTROL_HEADER, "no-store");
+        httpResponse.addHeader(SharedUtils.PRAGMA, "no-cache");
         httpResponse.sendRedirect(capture(capturedStr));
+
         replay(httpResponse);
         return httpResponse;
     }

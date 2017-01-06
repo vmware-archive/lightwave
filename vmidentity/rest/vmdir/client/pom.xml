@@ -172,6 +172,6 @@
   </dependencies>
 
   <properties>
-    <outputDirectory>${basedir}/../../../build/vmware-sts/packages/</outputDirectory>
+    <outputDirectory>${basedir}/../../../build/vmware-sts/packages</outputDirectory>
   </properties>
 </project>

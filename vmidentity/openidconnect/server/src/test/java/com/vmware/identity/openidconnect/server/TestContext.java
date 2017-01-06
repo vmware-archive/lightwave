@@ -72,6 +72,7 @@ import com.vmware.identity.openidconnect.protocol.JWTUtils;
  * @author Yehia Zayour
  */
 public class TestContext {
+    public static final String SERVER_NAME = "psc.vmware.com";
     public static final String TENANT_NAME = "tenant_name";
     public static final String ISSUER = "https://psc.vmware.com/openidconnect/" + TENANT_NAME;
     public static final String SCOPE_VALUE_RSX = "rs_x";
@@ -346,7 +347,7 @@ public class TestContext {
         claimsBuilder = claimsBuilder.jwtID((new JWTID()).getValue());
         claimsBuilder = claimsBuilder.issuer(CLIENT_CERT_SUBJECT_DN);
         claimsBuilder = claimsBuilder.subject(CLIENT_CERT_SUBJECT_DN);
-        claimsBuilder = claimsBuilder.audience("https://localhost");
+        claimsBuilder = claimsBuilder.audience("https://" + SERVER_NAME);
         claimsBuilder = claimsBuilder.issueTime(now);
         return claimsBuilder;
     }
@@ -360,7 +361,7 @@ public class TestContext {
         claimsBuilder = claimsBuilder.jwtID((new JWTID()).getValue());
         claimsBuilder = claimsBuilder.issuer(CLIENT_CERT_SUBJECT_DN);
         claimsBuilder = claimsBuilder.subject(CLIENT_CERT_SUBJECT_DN);
-        claimsBuilder = claimsBuilder.audience("https://localhost");
+        claimsBuilder = claimsBuilder.audience("https://" + SERVER_NAME);
         claimsBuilder = claimsBuilder.issueTime(now);
         return claimsBuilder;
     }
@@ -374,7 +375,7 @@ public class TestContext {
         claimsBuilder = claimsBuilder.jwtID((new JWTID()).getValue());
         claimsBuilder = claimsBuilder.issuer(CLIENT_ID);
         claimsBuilder = claimsBuilder.subject(CLIENT_ID);
-        claimsBuilder = claimsBuilder.audience("https://localhost");
+        claimsBuilder = claimsBuilder.audience("https://" + SERVER_NAME);
         claimsBuilder = claimsBuilder.issueTime(now);
         return claimsBuilder;
     }

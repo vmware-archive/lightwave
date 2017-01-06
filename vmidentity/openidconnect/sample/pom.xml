@@ -17,8 +17,16 @@
         <jackson.databind.version>2.3.2</jackson.databind.version>
         <jackson.core.version>2.3.2</jackson.core.version>
         <jax.ws.rs.version>2.0.1</jax.ws.rs.version>
-        <outputDirectory>${basedir}/../../build/vmware-sts/packages/</outputDirectory>
+        <outputDirectory>${basedir}/../../build/vmware-sts/packages</outputDirectory>
     </properties>
+
+    <distributionManagement>
+        <repository>
+            <id>lightwave</id>
+            <name>lightwave</name>
+            <url>http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave</url>
+        </repository>
+    </distributionManagement>
 
     <build>
         <plugins>
@@ -50,16 +58,8 @@
         </plugins>
     </build>
 
-    <distributionManagement>
-        <repository>
-            <id>lightwave</id>
-            <name>lightwave</name>
-            <url>http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave</url>
-        </repository>
-    </distributionManagement>
-
     <dependencies>
-        <!-- VMware Dependencies -->
+ <!-- VMware Dependencies -->
         <dependency>
             <groupId>com.vmware.identity</groupId>
             <artifactId>openidconnect-client-lib</artifactId>

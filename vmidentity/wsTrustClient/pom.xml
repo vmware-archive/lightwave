@@ -88,12 +88,12 @@
               </goals>
               <configuration>
                 <manifestTemplate>
-                   Bundle-ManifestVersion: ${bundle.manifest.version}
-                   Bundle-Name: ${bundle.name}
-                   Bundle-Vendor: ${bundle.vendor}
+Bundle-ManifestVersion: ${bundle.manifest.version}
+Bundle-Name: ${bundle.name}
+Bundle-Vendor: ${bundle.vendor}
                 </manifestTemplate>
                 <bundleSymbolicName>${bundle.symbolic.name}</bundleSymbolicName>
-                <bundleVersion>${bundle.version}</bundleVersion>
+                <bundleVersion>${bundle.version}</bundleVersion>               
                 <inputPath>${outputDirectory}/${project.artifactId}.jar</inputPath>
                 <outputPath>${build.dist}/${project.artifactId}.jar</outputPath>
                 <manifestTemplatePath>${bundle.manifestTemplatePath}</manifestTemplatePath>
@@ -125,7 +125,6 @@
       <artifactId>samltoken</artifactId>
       <version>${vmware.version}</version>
       <type>test-jar</type>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
