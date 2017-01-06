@@ -28,6 +28,30 @@ PACKAGES=\
 
 all: $(LIGHTWAVE_STAGE_DIR) $(PACKAGES)
 
+appliance: $(PHOTON_OVA) $(LIGHTWAVE_OVA)
+
+$(PHOTON_OVA): $(LIGHTWAVE_STAGE_DIR)
+	$(MKDIR) -p $(LIGHTWAVE_STAGE_DIR)/lw-appliance
+	cd $(SRCROOT)/appliance/photon-ova && ./build.sh $(LIGHTWAVE_STAGE_DIR)/lw-appliance
+
+$(LIGHTWAVE_OVA): $(LIGHTWAVE_STAGE_DIR)
+	$(MKDIR) -p $(LIGHTWAVE_STAGE_DIR)/lw-appliance
+	cd $(SRCROOT)/appliance && $(APPLIANCE_BUILDER) $(LIGHTWAVE_STAGE_DIR)/lw-appliance
+
+appliance-clean: lightwave-ova-clean photon_ova_clean
+	-$(RM) $(LIGHTWAVE_STAGE_DIR)/lw-appliance/*.ova
+	-$(RM) $(LIGHTWAVE_STAGE_DIR)/lw-appliance/*.iso
+	-$(RM) -rf $(LIGHTWAVE_STAGE_DIR)/lw-appliance/packer_cache
+	-$(RM) -rf $(LIGHTWAVE_STAGE_DIR)/lw-appliance
+
+lightwave-ova-clean:
+	-$(RM) -rf $(LIGHTWAVE_STAGE_DIR)/lw-appliance/lw-ova-build
+	-$(RM) -rf $(SRCROOT)/appliance/packer_cache
+
+photon_ova_clean:
+	-$(RM) -rf $(LIGHTWAVE_STAGE_DIR)/lw-appliance/photon-ova-build
+	-$(RM) -rf $(SRCROOT)/appliance/photon-ova/packer_cache
+
 container: $(DOCKER_IMAGE)
 
 $(DOCKER_IMAGE) : $(PACKAGES)
@@ -269,7 +293,8 @@ docker-clean:
 
 clean: config-clean vmca-clean vmafd-clean vmdns-clean vmdir-clean vmevent-clean \
 		lw-server-clean lw-clients-clean vmsts-clean docker-clean lw-build-clean \
-		properties-clean diagnostics-folder-clean resources-folder-clean
+		properties-clean diagnostics-folder-clean resources-folder-clean \
+		appliance-clean
 	@if [ -d $(LIGHTWAVE_STAGE_DIR) ]; then \
 	    $(RMDIR) $(LIGHTWAVE_STAGE_DIR); \
 	fi

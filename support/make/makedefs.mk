@@ -148,6 +148,10 @@ CFG_VERSION=$(CFG_MAJOR_VER).$(CFG_MINOR_VER).$(CFG_RELEASE_VER)-$(CFG_PATCH_VER
 CFG_PKG_NAME=vmware-ic-config
 CFG_RPM=$(CFG_PKG_NAME)-$(CFG_VERSION).$(ARCH).rpm
 
+LIGHTWAVE_OVA=$(LIGHTWAVE_STAGE_DIR)/lw-appliance/lightwave.ova
+PHOTON_OVA=$(LIGHTWAVE_STAGE_DIR)/lw-appliance/photon-ova-build/photon-ova-virtualbox.ova
+APPLIANCE_BUILDER=$(SRCROOT)/appliance/build-lightwave-ova.sh
+
 DOCKER_SRCROOT=$(SRCROOT)/support/docker
 DOCKER_BUILDER=$(DOCKER_SRCROOT)/build-lightwave-container.sh
 DOCKER_IMAGE_VERSION=1.0.3
