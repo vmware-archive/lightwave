@@ -99,5 +99,7 @@ VmDirFreeMetadata
 VmDirFreeMetadataList
 VmDirUrgentReplicationRequest
 VmDirUrgentReplicationResponse
-VmDirGetMode
-VmDirSetMode
+VmDirChangePNID
+VmDirCreateTenant
+VmDirDeleteTenant
+VmDirEnumerateTenants
