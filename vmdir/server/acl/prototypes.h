@@ -64,6 +64,39 @@ VmDirSrvCreateAccessTokenWithDn(
     PACCESS_TOKEN* ppToken
     );
 
+DWORD
+VmDirCreateAccessToken(
+    PACCESS_TOKEN*          AccessToken,
+    PTOKEN_USER             User,
+    PTOKEN_GROUPS           Groups,
+    PTOKEN_PRIVILEGES       Privileges,
+    PTOKEN_OWNER            Owner,
+    PTOKEN_PRIMARY_GROUP    PrimaryGroup,
+    PTOKEN_DEFAULT_DACL     DefaultDacl
+    );
+
+DWORD
+VmDirIsBindDnMemberOfSystemDomainAdmins(
+    PVDIR_BACKEND_CTX   pBECtx,
+    PVDIR_ACCESS_INFO   pAccessInfo,
+    PBOOLEAN            pbIsMemberOfAdmins
+    );
+
+// legacy_checks.c
+DWORD
+VmDirLegacyAccessCheck(
+    PVDIR_OPERATION pOperation,
+    PVDIR_ACCESS_INFO pAccessInfo,
+    PVDIR_ENTRY pEntry,
+    ACCESS_MASK accessDesired
+    );
+
+BOOLEAN
+VmDirIsLegacySecurityDescriptor(
+    PSECURITY_DESCRIPTOR_RELATIVE pSecurityDescriptor,
+    ULONG ulSecDescLength
+    );
+
 // security.c
 
 DWORD

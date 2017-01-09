@@ -773,6 +773,23 @@ error:
 }
 
 /*
+ * Free attr-value-meta-data in an DEQUE
+ * which is a linked list of PVDIR_BERVALUE
+ */
+VOID
+VmDirFreeAttrValueMetaDataContent(
+    PDEQUE  pValueMetaData
+    )
+{
+    PVDIR_BERVALUE pAVmeta = NULL;
+    while(!dequeIsEmpty(pValueMetaData))
+    {
+        dequePopLeft(pValueMetaData, (PVOID*)&pAVmeta);
+        VmDirFreeBerval(pAVmeta);
+    }
+}
+
+/*
  * Free a heap Attribute
  * (ATTENTION: if the pAttr is within a pEntry, only when pEntry is constructed as
  * ENTRY_STORAGE_FORMAT_NORMAL allocation type, its attribute can be freed using this function;
@@ -789,6 +806,14 @@ VmDirFreeAttribute(
     }
 
     // pAttr->type is always store in place and has NO bvnorm_val.  no need to free here.
+    if (!dequeIsEmpty(&pAttr->valueMetaDataToAdd))
+    {
+        VmDirFreeAttrValueMetaDataContent(&pAttr->valueMetaDataToAdd);
+    }
+    if (!dequeIsEmpty(&pAttr->valueMetaDataToDelete))
+    {
+        VmDirFreeAttrValueMetaDataContent(&pAttr->valueMetaDataToDelete);
+    }
     VmDirFreeBervalArrayContent(pAttr->vals, pAttr->numVals);
     VMDIR_SAFE_FREE_MEMORY(pAttr->vals);
     VMDIR_SAFE_FREE_MEMORY(pAttr);
@@ -1152,7 +1177,7 @@ VmDirIsInternalEntry(
 }
 
 BOOLEAN
-VmDirIsEntryWithObjectclass(
+VmDirEntryIsObjectclass(
     PVDIR_ENTRY     pEntry,
     PCSTR           pszOCName
     )
@@ -1175,6 +1200,88 @@ VmDirIsEntryWithObjectclass(
     }
 
     return bResult;
+}
+
+DWORD
+VmDirEntryIsAttrAllowed(
+    PVDIR_ENTRY pEntry,
+    PSTR        pszAttrName,
+    PBOOLEAN    pbMust,
+    PBOOLEAN    pbMay
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0;
+    PVDIR_ATTRIBUTE         pAttrOC = NULL;
+    PVDIR_SCHEMA_OC_DESC    pOCDesc = NULL;
+    PLW_HASHMAP pAllMustAttrMap = NULL;
+    PLW_HASHMAP pAllMayAttrMap = NULL;
+
+    if (!pEntry || IsNullOrEmptyString(pszAttrName))
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = LwRtlCreateHashMap(&pAllMustAttrMap,
+            LwRtlHashDigestPstrCaseless,
+            LwRtlHashEqualPstrCaseless,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = LwRtlCreateHashMap(&pAllMayAttrMap,
+            LwRtlHashDigestPstrCaseless,
+            LwRtlHashEqualPstrCaseless,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pAttrOC = VmDirFindAttrByName(pEntry, ATTR_OBJECT_CLASS);
+
+    for (i = 0; pAttrOC && i < pAttrOC->numVals; i++)
+    {
+        dwError = VmDirSchemaOCNameToDescriptor(
+                pEntry->pSchemaCtx, pAttrOC->vals[i].lberbv.bv_val, &pOCDesc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSchemaClassGetAllMustAttrs(
+                pEntry->pSchemaCtx, pOCDesc, pAllMustAttrMap);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSchemaClassGetAllMayAttrs(
+                pEntry->pSchemaCtx, pOCDesc, pAllMayAttrMap);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pbMust)
+    {
+        *pbMust = FALSE;
+        if (LwRtlHashMapFindKey(pAllMustAttrMap, NULL, pszAttrName) == 0)
+        {
+            *pbMust = TRUE;
+        }
+    }
+
+    if (pbMay)
+    {
+        *pbMay = FALSE;
+        if (LwRtlHashMapFindKey(pAllMayAttrMap, NULL, pszAttrName) == 0)
+        {
+            *pbMay = TRUE;
+        }
+    }
+
+cleanup:
+    LwRtlHashMapClear(pAllMustAttrMap, VmDirNoopHashMapPairFree, NULL);
+    LwRtlFreeHashMap(&pAllMustAttrMap);
+    LwRtlHashMapClear(pAllMayAttrMap, VmDirNoopHashMapPairFree, NULL);
+    LwRtlFreeHashMap(&pAllMayAttrMap);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    goto cleanup;
 }
 
 /* *************************************************************
@@ -1314,5 +1421,35 @@ error:
     VmDirFreeEntryContent(pEntry);
     memset(pEntry, 0, sizeof(*pEntry));
 
+    goto cleanup;
+}
+
+DWORD
+VmDirDeleteEntry(
+    PVDIR_ENTRY pEntry
+    )
+{
+    DWORD dwError = 0;
+    VDIR_OPERATION op = {0};
+    DeleteReq *dr = NULL;
+
+    dwError = VmDirInitStackOperation(&op, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_DELETE, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    op.pBEIF = VmDirBackendSelect(NULL);
+    op.reqDn.lberbv_val = pEntry->dn.lberbv.bv_val;
+    op.reqDn.lberbv_len = pEntry->dn.lberbv.bv_len;
+
+    dr = &op.request.deleteReq;
+    dr->dn.lberbv.bv_val = op.reqDn.lberbv.bv_val;
+    dr->dn.lberbv.bv_len = op.reqDn.lberbv.bv_len;
+
+    dwError = VmDirInternalDeleteEntry(&op);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirFreeOperationContent(&op);
+    return dwError;
+error:
     goto cleanup;
 }

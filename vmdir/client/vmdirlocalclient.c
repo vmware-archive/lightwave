@@ -125,7 +125,7 @@ VmDirLocalInitializeTenant(
     PWSTR   pwszNamingContext,
     PWSTR   pwszUserName,
     PWSTR   pwszPassword
-)
+    )
 {
     DWORD dwError = 0;
     UINT32 apiType = VMDIR_IPC_INITIALIZE_TENANT;
@@ -134,8 +134,8 @@ VmDirLocalInitializeTenant(
     VMW_TYPE_SPEC input_spec[] = INITIALIZE_TENANT_INPUT_PARAMS;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
 
-    noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
-    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+    noOfArgsIn = VMDIR_ARRAY_SIZE(input_spec);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
 
     if (IsNullOrEmptyString(pwszNamingContext) ||
         IsNullOrEmptyString(pwszUserName) ||
@@ -170,6 +170,170 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirLocalInitializeTenant failed (%u)",
                      dwError );
 
+    goto cleanup;
+}
+
+DWORD
+VmDirLocalCreateTenant(
+    PCSTR pszUserUPN,
+    PCSTR pszPassword,
+    PCSTR pszDomainName,
+    PCSTR pszNewUserName,
+    PCSTR pszNewUserPassword
+    )
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMDIR_IPC_CREATE_TENANT;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    VMW_TYPE_SPEC input_spec[] = CREATE_TENANT_INPUT_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+
+    noOfArgsIn = VMDIR_ARRAY_SIZE(input_spec);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
+
+    input_spec[0].data.pString = (PSTR)pszUserUPN;
+    input_spec[1].data.pString = (PSTR)pszPassword;
+    input_spec[2].data.pString = (PSTR)pszDomainName;
+    input_spec[3].data.pString = (PSTR)pszNewUserName;
+    input_spec[4].data.pString = (PSTR)pszNewUserPassword;
+
+    dwError = VmDirLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    input_spec,
+                    output_spec);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+
+    VmDirFreeTypeSpecContent(output_spec, noOfArgsOut);
+    return dwError;
+
+error:
+
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirLocalCreateTenant failed (%u)",
+                     dwError );
+
+    goto cleanup;
+}
+
+DWORD
+VmDirLocalDeleteTenant(
+    PCSTR pszUserUPN,
+    PCSTR pszPassword,
+    PCSTR pszDomainName
+    )
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMDIR_IPC_DELETE_TENANT;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    VMW_TYPE_SPEC input_spec[] = DELETE_TENANT_INPUT_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+
+    assert(pszUserUPN != NULL);
+    assert(pszPassword!= NULL);
+    assert(pszDomainName != NULL);
+
+    noOfArgsIn = VMDIR_ARRAY_SIZE(input_spec);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
+
+    input_spec[0].data.pString = (PSTR)pszUserUPN;
+    input_spec[1].data.pString = (PSTR)pszPassword;
+    input_spec[2].data.pString = (PSTR)pszDomainName;
+
+    dwError = VmDirLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    input_spec,
+                    output_spec);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+
+    VmDirFreeTypeSpecContent(output_spec, noOfArgsOut);
+    return dwError;
+
+error:
+
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirLocalDeleteTenant failed (%u)",
+                     dwError );
+
+    goto cleanup;
+}
+
+DWORD
+VmDirLocalEnumerateTenants(
+    PCSTR pszUserUPN,
+    PCSTR pszPassword,
+    PSTR **pppszTenants,
+    PDWORD pdwNumTenants
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwBlobSize = 0;
+    DWORD dwStringCount = 0;
+    UINT32 apiType = VMDIR_IPC_ENUMERATE_TENANTS;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    VMW_TYPE_SPEC input_spec[] = ENUMERATE_TENANTS_INPUT_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = ENUMERATE_TENANTS_OUTPUT_PARAMS;
+    VMDIR_IPC_DATA_CONTAINER *pContainer = NULL;
+    PVMDIR_STRING_LIST pStringList = NULL;
+
+    input_spec[0].data.pString = (PSTR)pszUserUPN;
+    input_spec[1].data.pString = (PSTR)pszPassword;
+
+    noOfArgsIn = VMDIR_ARRAY_SIZE(input_spec);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
+    dwError = VmDirLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    input_spec,
+                    output_spec);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwBlobSize = *(output_spec[1].data.pUint32);
+    dwStringCount = *(output_spec[2].data.pUint32);
+
+    dwError = VmDirUnMarshalContainer(
+                             dwBlobSize,
+                             output_spec[3].data.pByte,
+                             &pContainer);
+    BAIL_ON_VMDIR_ERROR (dwError);
+
+    dwError = VmDirStringListFromMultiString(
+                (PSTR)pContainer->data,
+                dwStringCount,
+                &pStringList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *pdwNumTenants = dwStringCount;
+    *pppszTenants = (PSTR*)pStringList->pStringList;
+    pStringList->pStringList = NULL;
+    pStringList->dwCount = 0;
+    VmDirStringListFree(pStringList);
+
+cleanup:
+    VmDirFreeIpcContainer(pContainer);
+    VmDirFreeTypeSpecContent(output_spec, noOfArgsOut);
+    return dwError;
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirLocalEnumerateTenants failed (%u)",
+                     dwError );
     goto cleanup;
 }
 
@@ -220,12 +384,11 @@ VmDirLocalForceResetPassword(
 
     pPasswdContainer->dwCount = pContainer->dwCount;
     pPasswdContainer->data = pContainer->data;
+    pContainer->data = NULL;
 
 cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pContainer);
-
-    VmDirFreeTypeSpecContent (output_spec, noOfArgsOut);
+    VmDirFreeIpcContainer(pContainer);
+    VmDirFreeTypeSpecContent(output_spec, noOfArgsOut);
 
     return dwError;
 
@@ -279,11 +442,10 @@ VmDirLocalGeneratePassword(
 
     pPasswdContainer->dwCount = pContainer->dwCount;
     pPasswdContainer->data = pContainer->data;
+    pContainer->data = NULL;
 
 cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pContainer);
-
+    VmDirFreeIpcContainer(pContainer);
     VmDirFreeTypeSpecContent (output_spec, noOfArgsOut);
 
     return dwError;

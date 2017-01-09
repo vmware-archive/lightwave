@@ -466,7 +466,7 @@ VdirGetPasswdAndLockoutPolicy(
     if (pszDomainDN)
     {
         // default policy entry lives under domain entry with fix cn
-        dwError = VmDirAllocateStringAVsnprintf(
+        dwError = VmDirAllocateStringPrintf(
                         &pszPolicyDN,
                         "cn=%s,%s",
                         PASSWD_LOCKOUT_POLICY_DEFAULT_CN,

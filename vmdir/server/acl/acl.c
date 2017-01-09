@@ -12,31 +12,27 @@
  * under the License.
  */
 
-
-
 #include "includes.h"
 
 static
 DWORD
 VmDirBuildDefaultDaclForEntry(
+    ACCESS_MASK amAccess,
     PSID    pOwnerSid,
-    PSTR    pszAdminsGroupSid,
+    PCSTR   pszAdminsGroupSid,
+    PCSTR   pszDomainAdminsGroupSid,
+    PCSTR   pszDomainClientsGroupSid,
+    BOOLEAN bAnonymousRead,
+    BOOLEAN bServicesDacl,
     PACL *  ppDacl
     );
 
 static
 DWORD
-VmDirSrvCreateAccessTokenForWellKnowObject(
-    PACCESS_TOKEN*  ppToken,
-    PSTR            pszWellknownObjectSid
-    );
-
-static
-DWORD
 VmDirSrvAccessCheckSelf(
-    PSTR        pszNormBindedDn,
+    PCSTR        pszNormBindedDn,
     PVDIR_ENTRY pEntry,
-    PSTR        pszWellKnownObjectSid,
+    PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs,
     ACCESS_MASK accessDesired,
     ACCESS_MASK *psamGranted
     );
@@ -45,105 +41,95 @@ static
 DWORD
 VmDirSrvAccessCheckEntry(
     PACCESS_TOKEN   pToken,
-    PVDIR_ENTRY     pEntry,
+    PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs,
     ACCESS_MASK     accessDesired,
     ACCESS_MASK *   psamGranted
     );
 
 static
 DWORD
-VmDirIsBindDnMemberOfSystemDomainAdmins(
-    PVDIR_BACKEND_CTX   pBECtx,
-    PVDIR_ACCESS_INFO   pAccessInfo,
-    PBOOLEAN            pbIsMemberOfAdmins
-    );
-
-static
-DWORD
-VmDirCreateAccessToken(
-    PACCESS_TOKEN*          AccessToken,
-    PTOKEN_USER             User,
-    PTOKEN_GROUPS           Groups,
-    PTOKEN_PRIVILEGES       Privileges,
-    PTOKEN_OWNER            Owner,
-    PTOKEN_PRIMARY_GROUP    PrimaryGroup,
-    PTOKEN_DEFAULT_DACL     DefaultDacl
-    );
-
-static
-DWORD
-_VmDirBuildTokenGroups(
-    PVDIR_ENTRY     pEntry,
-    PTOKEN_GROUPS * ppTokenGroups);
-
-static
-BOOLEAN
-VmDirIsSpecialAllowedSearchEntry(
-    PVDIR_ENTRY pSrEntry
+_VmDirLoadSecurityDescriptorForEntry(
+    PVDIR_ENTRY pEntry,
+    PSECURITY_DESCRIPTOR_ABSOLUTE *ppSecDescAbs
     )
 {
-    // DSE_ROOT_DN and PERSISTED_DSE_ROOT_DN, SCHEMA_NAMING_CONTEXT_DN
-    // SUB_SCHEMA_SUB_ENTRY_DN should allow anonymous bind READ
-    return (!VmDirStringCompareA(pSrEntry->dn.lberbv.bv_val, DSE_ROOT_DN, FALSE)
-            || !VmDirStringCompareA(pSrEntry->dn.lberbv.bv_val, PERSISTED_DSE_ROOT_DN, FALSE)
-            || !VmDirStringCompareA(pSrEntry->dn.lberbv.bv_val, SCHEMA_NAMING_CONTEXT_DN, FALSE)
-            || !VmDirStringCompareA(pSrEntry->dn.lberbv.bv_val, SUB_SCHEMA_SUB_ENTRY_DN, FALSE));
-}
-
-
-/*
- * management node computer account
- * 1. allow read to domain tree
- * 2. allow write under service containers cn=services,SYSTEM_DOMAIN
- */
-static
-BOOLEAN
-_VmDirDCClientGroupAccessCheck(
-    PVDIR_OPERATION     pOperation,
-    ACCESS_MASK         accessDesired
-    )
-{
-    DWORD           dwError = 0;
-    BOOLEAN         bIsAllowAccess = FALSE;
-    PVDIR_BERVALUE  pBervDN = NULL;
-
-    if ( (accessDesired & -1) == VMDIR_RIGHT_DS_READ_PROP )
-    {  // grant read only request
-        bIsAllowAccess = TRUE;
-        goto cleanup;
-    }
-
-    if ( pOperation->reqCode == LDAP_REQ_ADD )
+    DWORD dwError = 0;
+    PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs = NULL;
+    SECURITY_INFORMATION SecInfoAll = (OWNER_SECURITY_INFORMATION |
+                                       GROUP_SECURITY_INFORMATION |
+                                       DACL_SECURITY_INFORMATION |
+                                       SACL_SECURITY_INFORMATION);
+    if (pEntry->pAclCtx == NULL)
     {
-        pBervDN = &(pOperation->request.addReq.pEntry->dn);
-    }
-    else if ( pOperation->reqCode == LDAP_REQ_DELETE )
-    {
-        pBervDN = &(pOperation->request.deleteReq.dn);
-    }
-    else if ( pOperation->reqCode == LDAP_REQ_MODIFY )
-    {
-        pBervDN = &(pOperation->request.modifyReq.dn);
-    }
-    else
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        dwError = VmDirAllocateMemory(sizeof(*pEntry->pAclCtx), (PVOID*)&pEntry->pAclCtx);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    // for all other access request, target DN must be under service container
-    dwError = VmDirIsAncestorDN( &(gVmdirServerGlobals.bvServicesRootDN), pBervDN, &bIsAllowAccess);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (pEntry->pAclCtx->pSecurityDescriptor == NULL || pEntry->pAclCtx->ulSecDescLength == 0)
+    {
+        dwError = VmDirGetSecurityDescriptorForEntry(pEntry,
+                                                     SecInfoAll,
+                                                     &pEntry->pAclCtx->pSecurityDescriptor,
+                                                     &pEntry->pAclCtx->ulSecDescLength);
+        //
+        // Legacy entries might not have a security descriptor. Access will
+        // be "manually" checked later on.
+        //
+        if (dwError == ERROR_NO_SECURITY_DESCRIPTOR)
+        {
+            VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "No SD found for %s", pEntry->dn.lberbv.bv_val);
+            dwError = 0;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pEntry->pAclCtx->pSecurityDescriptor != NULL)
+    {
+        dwError = VmDirSecurityAclSelfRelativeToAbsoluteSD(
+                    &pSecDescAbs,
+                    pEntry->pAclCtx->pSecurityDescriptor);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppSecDescAbs = pSecDescAbs;
 
 cleanup:
-
-    return bIsAllowAccess;
-
+    return dwError;
 error:
+    goto cleanup;
+}
 
-    VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "%s failed Access (%u), error (%d)",
-                       __FUNCTION__, accessDesired, dwError);
+static
+DWORD
+_VmDirLogFailedAccessCheck(
+    PVDIR_ACCESS_INFO pAccessInfo,
+    PVDIR_ENTRY pEntry,
+    ACCESS_MASK accessDesired
+    )
+{
+    PSTR pszAclString = NULL;
+    DWORD dwError = 0;
 
+   dwError = LwNtStatusToWin32Error(RtlAllocateSddlCStringFromSecurityDescriptor(
+                                        &pszAclString,
+                                        pEntry->pAclCtx->pSecurityDescriptor,
+                                        SDDL_REVISION_1,
+                                        OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_ERROR(
+        VMDIR_LOG_MASK_ALL,
+        "Caller (%s/%s) failed to get 0x%x permission to %s. Object's SD: %s",
+        pAccessInfo->pszNormBindedDn,
+        pAccessInfo->pszBindedObjectSid,
+        accessDesired,
+        BERVAL_NORM_VAL(pEntry->dn),
+        pszAclString);
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszAclString);
+    return dwError;
+error:
     goto cleanup;
 }
 
@@ -157,92 +143,67 @@ VmDirSrvAccessCheck(
 {
     DWORD       dwError = 0;
     ACCESS_MASK samGranted = 0;
-    BOOLEAN     bIsAdminRole = FALSE;
-    PSTR        pszAdminsGroupSid = NULL;
-    BOOLEAN     bIsDCClient = FALSE;
+    PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs = NULL;
+    PVDIR_ENTRY pTargetEntry = pEntry;
 
-    assert( pOperation );
+    assert(pOperation);
+    assert(accessDesired != 0);
 
     if (pOperation->conn == NULL || pOperation->opType != VDIR_OPERATION_TYPE_EXTERNAL)
     {
         goto cleanup; // Access Allowed
     }
-    if (accessDesired == VMDIR_RIGHT_DS_READ_PROP && VmDirIsSpecialAllowedSearchEntry( pEntry ))
+
+    //
+    // If the caller is checking for VMDIR_RIGHT_DS_DELETE_CHILD then pEntry
+    // is the child object (the one we actually want to delete). However, we
+    // need to check the ACL on the parent, so we re-assign pEntry here.
+    // This is only necessary due to the 6.5-compat shim which needs the actual
+    // pEntry that's being deleted so we can block certain objects from being
+    // deleted.
+    //
+    if (accessDesired == VMDIR_RIGHT_DS_DELETE_CHILD)
     {
-        goto cleanup; // Access Allowed
+        pEntry = pEntry->pParentEntry;
     }
 
-    // invalid accessDesired or
-    // Anonymous user has only VMDIR_RIGHT_DS_READ_PROP access to "Special Allowed Search Entries" and NOTHING else.
-    if ( !accessDesired
-         ||
-         pOperation->conn->bIsAnonymousBind)
-    {
-        dwError = VMDIR_ERROR_INSUFFICIENT_ACCESS;
-        BAIL_ON_VMDIR_ERROR( dwError );
-    }
-
-    BAIL_ON_INVALID_ACCESSINFO(pAccessInfo, dwError);
-
-    // Checks for System Admins group membership
-    dwError = VmDirIsBindDnMemberOfSystemDomainAdmins(pOperation->pBECtx, pAccessInfo, &bIsAdminRole);
+    dwError = _VmDirLoadSecurityDescriptorForEntry(pEntry, &pSecDescAbs);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (bIsAdminRole)
+    if (VmDirIsLegacySecurityDescriptor(pEntry->pAclCtx->pSecurityDescriptor, pEntry->pAclCtx->ulSecDescLength))
     {
+        dwError = VmDirLegacyAccessCheck(pOperation, pAccessInfo, pTargetEntry, accessDesired);
+        BAIL_ON_VMDIR_ERROR(dwError);
         goto cleanup; // Access Allowed
     }
-
-    // per PROD2013 requirements, member of domaincontrollergroup gets system admin rights.
-    if ( gVmdirServerGlobals.bvDCGroupDN.lberbv_val )
+    else
     {
-        dwError = VmDirIsDirectMemberOf( pAccessInfo->pszBindedDn,
-                                         VDIR_ACCESS_DCGROUP_MEMBER_INFO,
-                                         &pAccessInfo->accessRoleBitmap,
-                                         &bIsAdminRole);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        if (bIsAdminRole)
+        // Check Access Token in connection
+        dwError = VmDirSrvAccessCheckEntry(pAccessInfo->pAccessToken, pSecDescAbs, accessDesired, &samGranted);
+        if (!dwError)
         {
+            if (samGranted != accessDesired)
+            {
+                dwError = VMDIR_ERROR_INSUFFICIENT_ACCESS;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
             goto cleanup; // Access Allowed
         }
-    }
-
-    if ( gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val )
-    {
-        dwError = VmDirIsDirectMemberOf( pAccessInfo->pszBindedDn,
-                                         VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_INFO,
-                                         &pAccessInfo->accessRoleBitmap,
-                                         &bIsDCClient);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        if(bIsDCClient && _VmDirDCClientGroupAccessCheck( pOperation, accessDesired ))
+        else if (VMDIR_ERROR_INSUFFICIENT_ACCESS == dwError)
         {
-            goto cleanup; // Access Allowed
+            // Continue with more ACL check
+            dwError = 0;
+            samGranted = 0;
         }
     }
-
-    // Check Access Token in connection
-    dwError = VmDirSrvAccessCheckEntry(pAccessInfo->pAccessToken, pEntry, accessDesired, &samGranted);
-    if (!dwError)
-    {
-        if (samGranted != accessDesired)
-        {
-            dwError = VMDIR_ERROR_INSUFFICIENT_ACCESS;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        goto cleanup; // Access Allowed
-    }
-    else if (VMDIR_ERROR_INSUFFICIENT_ACCESS == dwError)
-    {
-        // Continue with more ACL check
-        dwError = 0;
-        samGranted = 0;
-    }
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     // Otherwise, continue (1) Check whether granted with SELF access right
-    dwError = VmDirSrvAccessCheckSelf(pAccessInfo->pszNormBindedDn, pEntry, VMDIR_SELF_SID, accessDesired, &samGranted);
+    dwError = VmDirSrvAccessCheckSelf(
+                pAccessInfo->pszNormBindedDn,
+                pEntry,
+                pSecDescAbs,
+                accessDesired,
+                &samGranted);
     if (!dwError)
     {
         if (samGranted != accessDesired)
@@ -255,26 +216,32 @@ VmDirSrvAccessCheck(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszAdminsGroupSid);
+    VmDirFreeAbsoluteSecurityDescriptor(&pSecDescAbs);
 
     return dwError;
 
 error:
+    _VmDirLogFailedAccessCheck(pAccessInfo, pEntry, accessDesired);
     goto cleanup;
 }
 
 static
 DWORD
 VmDirSrvAccessCheckSelf(
-    PSTR            pszNormBindedDn,
+    PCSTR           pszNormBindedDn,
     PVDIR_ENTRY     pEntry,
-    PSTR            pszWellKnowObjectSid,
+    PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs,
     ACCESS_MASK     accessDesired,
     ACCESS_MASK *   psamGranted
     )
 {
     DWORD           dwError = ERROR_SUCCESS;
     PACCESS_TOKEN   pWellKnownToken = NULL;
+
+    if (pszNormBindedDn == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
 
     if (IsNullOrEmptyString(pEntry->dn.bvnorm_val))
     {
@@ -283,18 +250,17 @@ VmDirSrvAccessCheckSelf(
     }
 
     // If not self, do not need recreate self token
-    if (VmDirStringCompareA(pszWellKnowObjectSid, VMDIR_SELF_SID, TRUE) == 0 &&
-        VmDirStringCompareA(pszNormBindedDn, BERVAL_NORM_VAL(pEntry->dn), TRUE) != 0)
+    if (VmDirStringCompareA(pszNormBindedDn, BERVAL_NORM_VAL(pEntry->dn), TRUE) != 0)
     {
         dwError = VMDIR_ERROR_INSUFFICIENT_ACCESS;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSrvCreateAccessTokenForWellKnowObject(&pWellKnownToken, pszWellKnowObjectSid);
+    dwError = VmDirSrvCreateAccessTokenForWellKnowObject(&pWellKnownToken, VMDIR_SELF_SID);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSrvAccessCheckEntry(pWellKnownToken,
-                                       pEntry,
+                                       pSecDescAbs,
                                        accessDesired,
                                        psamGranted);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -315,59 +281,13 @@ static
 DWORD
 VmDirSrvAccessCheckEntry(
     PACCESS_TOKEN   pToken,
-    PVDIR_ENTRY     pEntry,
+    PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs,
     ACCESS_MASK     accessDesired,
     ACCESS_MASK *   psamGranted
     )
 {
-    DWORD                           dwError = ERROR_SUCCESS;
-    ACCESS_MASK                     AccessMask = 0;
-    PSECURITY_DESCRIPTOR_ABSOLUTE   pSecDescAbs = NULL;
-    SECURITY_INFORMATION            SecInfoAll = (OWNER_SECURITY_INFORMATION |
-                                                  GROUP_SECURITY_INFORMATION |
-                                                  DACL_SECURITY_INFORMATION |
-                                                  SACL_SECURITY_INFORMATION);
-
-    BAIL_ON_VMDIR_INVALID_POINTER(pEntry, dwError);
-    BAIL_ON_VMDIR_INVALID_POINTER(psamGranted, dwError);
-
-    if (!pToken)
-    {
-        dwError = ERROR_NO_TOKEN;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    if (!pEntry->pAclCtx)
-    {
-        dwError = VmDirAllocateMemory(sizeof(*pEntry->pAclCtx), (PVOID*)&pEntry->pAclCtx);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    if (pEntry->pAclCtx->pSecurityDescriptor == NULL || pEntry->pAclCtx->ulSecDescLength == 0)
-    {
-        dwError = VmDirGetSecurityDescriptorForEntry(pEntry,
-                                                     SecInfoAll,
-                                                     &pEntry->pAclCtx->pSecurityDescriptor,
-                                                     &pEntry->pAclCtx->ulSecDescLength);
-        // In case of an internally constructed (non-persist) entry, bypass ACL check
-        if (dwError == ERROR_NO_SECURITY_DESCRIPTOR)
-        {
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirSrvAccessCheckEntr() No SD found for (%s)", pEntry->dn.lberbv.bv_val );
-
-            // if (VmDirIsInternalEntry(pEntry))
-            // {
-                AccessMask = accessDesired;
-                dwError = 0;
-
-                goto cleanup;
-            // }
-        }
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirSecurityAclSelfRelativeToAbsoluteSD(&pSecDescAbs,
-                                                       pEntry->pAclCtx->pSecurityDescriptor);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    DWORD dwError = ERROR_SUCCESS;
+    ACCESS_MASK AccessMask = 0;
 
     // Access check
     if (!VmDirAccessCheck(pSecDescAbs,
@@ -379,7 +299,7 @@ VmDirSrvAccessCheckEntry(
                           &dwError))
     {
         // VmDirAccessCheck return MS error space.  TODO, need a generic way to handle this.
-        if ( dwError == ERROR_ACCESS_DENIED )
+        if (dwError == ERROR_ACCESS_DENIED)
         {
             dwError = VMDIR_ERROR_INSUFFICIENT_ACCESS;
         }
@@ -388,8 +308,6 @@ VmDirSrvAccessCheckEntry(
 
 cleanup:
     *psamGranted = AccessMask;
-
-    VmDirFreeAbsoluteSecurityDescriptor(&pSecDescAbs);
 
     return dwError;
 
@@ -432,148 +350,17 @@ VmDirFreeAbsoluteSecurityDescriptor(
     *ppSecDesc = NULL;
 }
 
-
-// Create access token for the bind
 DWORD
-VmDirSrvCreateAccessTokenWithDn(
-    PCSTR           pszObjectDn,
-    PACCESS_TOKEN*  ppToken
-    )
-{
-    DWORD           dwError = ERROR_SUCCESS;
-    PVDIR_ENTRY     pEntry = NULL;
-    PACCESS_TOKEN   pToken = NULL;
-
-    dwError = VmDirSimpleDNToEntry(pszObjectDn, &pEntry);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSrvCreateAccessTokenWithEntry(pEntry, &pToken, NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppToken = pToken;
-
-cleanup:
-
-    if (pEntry)
-    {
-        VmDirFreeEntry(pEntry);
-    }
-
-    return dwError;
-
-error:
-    if (pToken)
-    {
-        VmDirReleaseAccessToken(&pToken);
-    }
-
-    goto cleanup;
-}
-
-DWORD
-VmDirSrvCreateAccessTokenWithEntry(
-    PVDIR_ENTRY     pEntry,
-    PACCESS_TOKEN*  ppToken,
-    PSTR *          ppszObjectSid /* Optional */
-    )
-{
-    DWORD               dwError = ERROR_SUCCESS;
-    PACCESS_TOKEN       pToken = *ppToken;
-    TOKEN_USER          user = {{0}};
-    TOKEN_OWNER         owner = {0};
-    PTOKEN_GROUPS       pGroups = {0};
-    TOKEN_PRIVILEGES    privileges = {0};
-    TOKEN_PRIMARY_GROUP primaryGroup = {0};
-    TOKEN_DEFAULT_DACL  dacl = {0};
-    PSTR                pszObjectSid = NULL;
-    PSTR                pszBuildinUsersGroupSid = NULL;
-    PCSTR               pszDomainDn = NULL;
-    unsigned int        i = 0;
-
-    if (pToken)
-    {
-        dwError = ERROR_TOKEN_IN_USE;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirGetObjectSidFromEntry(pEntry, &pszObjectSid, &user.User.Sid);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pszDomainDn = VmDirSearchDomainDN(BERVAL_NORM_VAL(pEntry->dn));
-    if (!pszDomainDn)
-    {
-        dwError = VMDIR_ERROR_DOMAIN_NOT_FOUND;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirGenerateWellknownSid(pszDomainDn, VMDIR_DOMAIN_ALIAS_RID_USERS, &pszBuildinUsersGroupSid);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // Primary groups should be built-in\Users not admins
-    dwError = VmDirAllocateSidFromCString(pszBuildinUsersGroupSid, &primaryGroup.PrimaryGroup);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = _VmDirBuildTokenGroups(pEntry, &pGroups);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirCreateAccessToken(&pToken,
-                                     &user,
-                                     pGroups,
-                                     &privileges,
-                                     &owner,
-                                     &primaryGroup,
-                                     &dacl);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (ppszObjectSid)
-    {
-        *ppszObjectSid = pszObjectSid;
-    }
-    *ppToken = pToken;
-
-cleanup:
-    if (!ppszObjectSid)
-    {
-        VMDIR_SAFE_FREE_MEMORY(pszObjectSid);
-    }
-    VMDIR_SAFE_FREE_MEMORY(user.User.Sid);
-    VMDIR_SAFE_FREE_MEMORY(primaryGroup.PrimaryGroup);
-    VMDIR_SAFE_FREE_MEMORY(pszBuildinUsersGroupSid);
-    if (pGroups)
-    {
-        for (i = 0; i < pGroups->GroupCount; i++)
-        {
-            VMDIR_SAFE_FREE_MEMORY(pGroups->Groups[i].Sid);
-        }
-        VmDirFreeMemory(pGroups);
-    }
-
-    return dwError;
-
-error:
-    if (ppszObjectSid)
-    {
-        *ppszObjectSid = NULL;
-    }
-
-    *ppToken = NULL;
-
-    if (pToken)
-    {
-        VmDirReleaseAccessToken(&pToken);
-    }
-    VMDIR_SAFE_FREE_MEMORY(pszObjectSid);
-
-    goto cleanup;
-}
-
-DWORD
-VmDirSrvCreateDefaultSecDescRel(
-    PSTR                            pszSystemAdministratorDn,
-    PSTR                            pszAdminsGroupSid,
-    PSECURITY_DESCRIPTOR_RELATIVE*  ppSecDescRel,
-    PULONG                          pulSecDescLength,
-    PSECURITY_INFORMATION           pSecInfo
+VmDirSrvCreateSecurityDescriptor(
+    ACCESS_MASK amAccess,
+    PCSTR pszSystemAdministratorDn,
+    PCSTR pszAdminsGroupSid,
+    PCSTR pszDomainAdminsGroupSid,
+    PCSTR pszDomainClientsGroupSid,
+    BOOLEAN bProtectedDacl,
+    BOOLEAN bAnonymousRead,
+    BOOLEAN bServicesDacl,
+    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
     )
 {
     DWORD                           dwError = ERROR_SUCCESS;
@@ -598,6 +385,16 @@ VmDirSrvCreateDefaultSecDescRel(
                                                 SECURITY_DESCRIPTOR_REVISION);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (bProtectedDacl)
+    {
+        dwError = LwNtStatusToWin32Error(
+                    RtlSetSecurityDescriptorControl(
+                        pSecDescAbs,
+                        SE_DACL_PROTECTED,
+                        SE_DACL_PROTECTED));
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     dwError = VmDirSetOwnerSecurityDescriptor(
                  pSecDescAbs,
                  pOwnerSid,
@@ -619,11 +416,14 @@ VmDirSrvCreateDefaultSecDescRel(
 
     SecInfo |= GROUP_SECURITY_INFORMATION;
 
-    // Do not set Sacl currently
-
     // DACL
-    dwError = VmDirBuildDefaultDaclForEntry(pOwnerSid,
+    dwError = VmDirBuildDefaultDaclForEntry(amAccess,
+                                            pOwnerSid,
                                             pszAdminsGroupSid,
+                                            pszDomainAdminsGroupSid,
+                                            pszDomainClientsGroupSid,
+                                            bAnonymousRead,
+                                            bServicesDacl,
                                             &pDacl);
     BAIL_ON_VMDIR_ERROR(dwError);
     pOwnerSid = NULL;
@@ -675,9 +475,9 @@ VmDirSrvCreateDefaultSecDescRel(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    *ppSecDescRel = pSecDescRel;
-    *pulSecDescLength = ulSecDescLen;
-    *pSecInfo = SecInfo;
+    pSecDesc->pSecDesc = pSecDescRel;
+    pSecDesc->ulSecDesc = ulSecDescLen;
+    pSecDesc->SecInfo = SecInfo;
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pDacl);
@@ -690,8 +490,6 @@ cleanup:
 
 error:
     VMDIR_SAFE_FREE_MEMORY(pSecDescRel);
-    ulSecDescLen = 0;
-    SecInfo = 0;
 
     goto cleanup;
 }
@@ -766,108 +564,24 @@ VmDirAclCtxContentFree(
 
 static
 DWORD
-_VmDirBuildTokenGroups(
-    PVDIR_ENTRY     pEntry,
-    PTOKEN_GROUPS * ppTokenGroups)
-{
-    DWORD               dwError = ERROR_SUCCESS;
-    PVDIR_ATTRIBUTE     pMemberOfAttr = NULL;
-    unsigned int        i = 0;
-    PVDIR_ENTRY         pGroupEntry = NULL;
-    VDIR_OPERATION      searchOp = {0};
-    BOOLEAN             bHasTxn = FALSE;
-    PTOKEN_GROUPS       pLocalTokenGroups = NULL;
-
-    if ( pEntry == NULL || ppTokenGroups == NULL )
-    {
-        dwError =  VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirInitStackOperation( &searchOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_SEARCH, NULL );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    searchOp.pBEIF = VmDirBackendSelect(NULL);
-
-    // start txn
-    dwError = searchOp.pBEIF->pfnBETxnBegin( searchOp.pBECtx, VDIR_BACKEND_TXN_READ );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    bHasTxn = TRUE;
-
-    dwError = VmDirBuildMemberOfAttribute( &searchOp, pEntry, &pMemberOfAttr );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // SJ-TBD: Do we need to align the address??
-    dwError = VmDirAllocateMemory( sizeof(TOKEN_GROUPS) +
-                                   (sizeof(SID_AND_ATTRIBUTES) * (pMemberOfAttr ? pMemberOfAttr->numVals : 0)),
-                                   (PVOID*)&pLocalTokenGroups );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (pMemberOfAttr)
-    {
-        pLocalTokenGroups->GroupCount = pMemberOfAttr->numVals;
-
-        for (i = 0; i < pMemberOfAttr->numVals; i++)
-        {
-            if ((dwError = VmDirSimpleDNToEntry(pMemberOfAttr->vals[i].lberbv.bv_val, &pGroupEntry)) != 0)
-            {
-                // may be deleted in the meanwhile
-
-                VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
-                                   "_VmDirBuildTokenGroups() memmberOf entry (%s) not found, error code (%d)",
-                                   pMemberOfAttr->vals[i].lberbv.bv_val, dwError );
-                continue;
-            }
-
-            dwError = VmDirGetObjectSidFromEntry(pGroupEntry, NULL, &pLocalTokenGroups->Groups[i].Sid);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            // SJ-TBD: should be set on the basis of status of the group??
-            pLocalTokenGroups->Groups[i].Attributes = SE_GROUP_ENABLED;
-
-            VmDirFreeEntry(pGroupEntry);
-            pGroupEntry = NULL;
-        }
-    }
-
-    *ppTokenGroups = pLocalTokenGroups;
-
-cleanup:
-    VmDirFreeAttribute(pMemberOfAttr);
-    if (pGroupEntry)
-    {
-        VmDirFreeEntry(pGroupEntry);
-    }
-    if (bHasTxn)
-    {
-        searchOp.pBEIF->pfnBETxnCommit( searchOp.pBECtx);
-    }
-    VmDirFreeOperationContent(&searchOp);
-
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirBuildTokenGroups() failed, entry DN (%s), error code (%d)",
-                     pEntry ? pEntry->dn.lberbv.bv_val : "NULL", dwError );
-
-    VMDIR_SAFE_FREE_MEMORY(pLocalTokenGroups);
-
-    goto cleanup;
-}
-
-static
-DWORD
 VmDirBuildDefaultDaclForEntry(
+    ACCESS_MASK amAccess,
     PSID    pOwnerSid, // system Administrator SID, at least in our context
-    PSTR    pszAdminsGroupSid,
+    PCSTR   pszAdminsGroupSid,
+    PCSTR   pszDomainAdminsGroupSid,
+    PCSTR   pszDomainClientsGroupSid,
+    BOOLEAN bAnonymousRead,
+    BOOLEAN bServicesDacl,
     PACL *  ppDacl
     )
 {
     DWORD   dwError = ERROR_SUCCESS;
     DWORD   dwSizeDacl = 0;
     PSID    pBuiltInAdmins = NULL;
+    PSID    pDomainAdmins = NULL;
+    PSID    pDomainClients = NULL;
     PSID    pSelfSid = NULL;
+    PSID    pAnonymousSid = NULL;
     DWORD   dwSidCount = 0;
     PACL    pDacl = NULL;
 
@@ -878,7 +592,22 @@ VmDirBuildDefaultDaclForEntry(
     BAIL_ON_VMDIR_ERROR(dwError);
     dwSidCount++;
 
+    if (bAnonymousRead)
+    {
+        dwError = VmDirAllocateSidFromCString(VMDIR_ANONYMOUS_LOGON_SID, &pAnonymousSid);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        dwSidCount++;
+    }
+
     dwError = VmDirAllocateSidFromCString(pszAdminsGroupSid, &pBuiltInAdmins);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    dwSidCount++;
+
+    dwError = VmDirAllocateSidFromCString(pszDomainAdminsGroupSid, &pDomainAdmins);
+    BAIL_ON_VMDIR_ERROR(dwError);
+    dwSidCount++;
+
+    dwError = VmDirAllocateSidFromCString(pszDomainClientsGroupSid, &pDomainClients);
     BAIL_ON_VMDIR_ERROR(dwError);
     dwSidCount++;
 
@@ -886,7 +615,10 @@ VmDirBuildDefaultDaclForEntry(
         dwSidCount * sizeof(ACCESS_ALLOWED_ACE) +
         VmDirLengthSid(pOwnerSid) +
         VmDirLengthSid(pSelfSid) +
-        VmDirLengthSid(pBuiltInAdmins) -
+        (bAnonymousRead ? VmDirLengthSid(pAnonymousSid) : 0) +
+        VmDirLengthSid(pBuiltInAdmins) +
+        VmDirLengthSid(pDomainAdmins) +
+        VmDirLengthSid(pDomainClients) -
         dwSidCount * sizeof(ULONG);
 
     dwError = VmDirAllocateMemory(dwSizeDacl, (PVOID*)&pDacl);
@@ -895,86 +627,66 @@ VmDirBuildDefaultDaclForEntry(
     dwError = VmDirCreateAcl(pDacl, dwSizeDacl, ACL_REVISION);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // Note: This is a useful ACL which is REALLY used in RtlAccessCheck()
     dwError = VmDirAddAccessAllowedAceEx(pDacl,
                                          ACL_REVISION,
-                                         0,
-                                         VMDIR_ENTRY_ALL_ACCESS,
+                                         OBJECT_INHERIT_ACE | CONTAINER_INHERIT_ACE,
+                                         amAccess,
                                          pOwnerSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // Note: This is really NOT a useful ACL because today group memberships are NOT set in the access token
     dwError = VmDirAddAccessAllowedAceEx(pDacl,
                                          ACL_REVISION,
-                                         0,
-                                         VMDIR_ENTRY_ALL_ACCESS,
+                                         OBJECT_INHERIT_ACE | CONTAINER_INHERIT_ACE,
+                                         amAccess,
                                          pBuiltInAdmins);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAddAccessAllowedAceEx(pDacl,
                                          ACL_REVISION,
-                                         0,
+                                         OBJECT_INHERIT_ACE | CONTAINER_INHERIT_ACE,
+                                         amAccess,
+                                         pDomainAdmins);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAddAccessAllowedAceEx(pDacl,
+                                         ACL_REVISION,
+                                         OBJECT_INHERIT_ACE | CONTAINER_INHERIT_ACE,
+                                         VMDIR_RIGHT_DS_READ_PROP |
+                                            (bServicesDacl ? VMDIR_DCCLIENTS_FULL_ACCESS : 0),
+                                         pDomainClients);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAddAccessAllowedAceEx(pDacl,
+                                         ACL_REVISION,
+                                         OBJECT_INHERIT_ACE | CONTAINER_INHERIT_ACE,
                                          VMDIR_RIGHT_DS_READ_PROP |
                                          VMDIR_RIGHT_DS_WRITE_PROP,
                                          pSelfSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (bAnonymousRead)
+    {
+        dwError = VmDirAddAccessAllowedAceEx(pDacl,
+                                             ACL_REVISION,
+                                             OBJECT_INHERIT_ACE | CONTAINER_INHERIT_ACE,
+                                             VMDIR_RIGHT_DS_READ_PROP,
+                                             pAnonymousSid);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     *ppDacl = pDacl;
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pSelfSid);
+    VMDIR_SAFE_FREE_MEMORY(pAnonymousSid);
+    VMDIR_SAFE_FREE_MEMORY(pDomainAdmins);
+    VMDIR_SAFE_FREE_MEMORY(pDomainClients);
     VMDIR_SAFE_FREE_MEMORY(pBuiltInAdmins);
 
     return dwError;
 
 error:
     VMDIR_SAFE_FREE_MEMORY(pDacl);
-
-    goto cleanup;
-}
-
-static
-DWORD
-VmDirSrvCreateAccessTokenForWellKnowObject(
-    PACCESS_TOKEN * ppToken,
-    PSTR            pszWellknownObjectSid
-    )
-{
-    DWORD               dwError = ERROR_SUCCESS;
-    PACCESS_TOKEN       pToken = NULL;
-    TOKEN_USER          user = {{0}};
-    TOKEN_OWNER         owner = {0};
-    TOKEN_GROUPS        groups = {0};
-    TOKEN_PRIVILEGES    privileges = {0};
-    TOKEN_PRIMARY_GROUP primaryGroup = {0};
-    TOKEN_DEFAULT_DACL  dacl = {0};
-
-    dwError = VmDirAllocateSidFromCString(pszWellknownObjectSid, &user.User.Sid);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirCreateAccessToken(&pToken,
-                                     &user,
-                                     &groups,
-                                     &privileges,
-                                     &owner,
-                                     &primaryGroup,
-                                     &dacl);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppToken = pToken;
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(user.User.Sid);
-
-    return dwError;
-
-error:
-    *ppToken = NULL;
-
-    if (pToken)
-    {
-        VmDirReleaseAccessToken(&pToken);
-    }
 
     goto cleanup;
 }
@@ -994,17 +706,23 @@ VmDirSrvAccessCheckIsAdminRole(
 {
     DWORD   dwError = ERROR_SUCCESS;
     BOOLEAN bIsAdminRole = FALSE;
+    PVDIR_BACKEND_CTX pBECtx = NULL;
 
-    if (pOperation->opType != VDIR_OPERATION_TYPE_EXTERNAL)
+    if (pOperation != NULL)
     {
-        *pbIsAdminRole = TRUE;
-        goto cleanup;
-    }
+        if (pOperation->opType != VDIR_OPERATION_TYPE_EXTERNAL)
+        {
+            *pbIsAdminRole = TRUE;
+            goto cleanup;
+        }
 
-    if ( pOperation->conn->bIsAnonymousBind ) // anonymous bind
-    {
-       *pbIsAdminRole = FALSE;
-       goto cleanup;
+        if ( pOperation->conn->bIsAnonymousBind ) // anonymous bind
+        {
+            *pbIsAdminRole = FALSE;
+            goto cleanup;
+        }
+
+        pBECtx = pOperation->pBECtx;
     }
 
     if (IsNullOrEmptyString(pszNormTargetDN))
@@ -1016,9 +734,9 @@ VmDirSrvAccessCheckIsAdminRole(
     BAIL_ON_INVALID_ACCESSINFO(pAccessInfo, dwError);
 
     //Check whether bindedDN is member of build-in administrators group
-    dwError = VmDirIsBindDnMemberOfSystemDomainAdmins(pOperation->pBECtx,
-                                                pAccessInfo,
-                                                &bIsAdminRole);
+    dwError = VmDirIsBindDnMemberOfSystemDomainAdmins(pBECtx,
+                                                      pAccessInfo,
+                                                      &bIsAdminRole);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (bIsAdminRole)
@@ -1092,7 +810,6 @@ VmDirIsFailedAccessInfo(
  * '&(pszAttrFilterName1=pszAttrFilterVal1)(pszAttrFilterName2=pszAttrFilterVal2)'
  * return the found pEntry
  */
-static
 DWORD
 VmDirIsBindDnMemberOfSystemDomainAdmins(
     PVDIR_BACKEND_CTX   pBECtx,
@@ -1190,27 +907,3 @@ error:
 
     goto cleanup;
 }
-
-static
-DWORD
-VmDirCreateAccessToken(
-    PACCESS_TOKEN *         AccessToken,
-    PTOKEN_USER             User,
-    PTOKEN_GROUPS           Groups,
-    PTOKEN_PRIVILEGES       Privileges,
-    PTOKEN_OWNER            Owner,
-    PTOKEN_PRIMARY_GROUP    PrimaryGroup,
-    PTOKEN_DEFAULT_DACL     DefaultDacl
-    )
-{
-    return LwNtStatusToWin32Error(RtlCreateAccessToken(
-                                   AccessToken,
-                                   User,
-                                   Groups,
-                                   Privileges,
-                                   Owner,
-                                   PrimaryGroup,
-                                   DefaultDacl,
-                                   NULL));
-}
-

@@ -21,11 +21,6 @@ DeleteMods(
     ModifyReq * modReq);
 
 static int
-DeleteRefAttributesValue(
-    VDIR_OPERATION *    pOperation,
-    VDIR_BERVALUE *     dn);
-
-static int
 GenerateDeleteAttrsMods(
     PVDIR_OPERATION pOperation,
     VDIR_ENTRY *    pEntry
@@ -33,8 +28,8 @@ GenerateDeleteAttrsMods(
 
 static
 BOOLEAN
-VmDirIsProtectedEntry(
-    PVDIR_ENTRY pEntry
+_VmDirIsDeletedContainer(
+    PCSTR   pszDN
     );
 
 int
@@ -100,6 +95,7 @@ VmDirInternalDeleteEntry(
     ModifyReq *     modReq = &(pOperation->request.modifyReq);
     BOOLEAN         bIsDomainObject = FALSE;
     BOOLEAN         bHasTxn = FALSE;
+    BOOLEAN         bIsDeletedObj = FALSE;
     PSTR            pszLocalErrMsg = NULL;
 
     assert(pOperation && pOperation->pBECtx->pBE);
@@ -227,80 +223,104 @@ txnretry:
             pParentEntry = NULL;
         }
 
-        // SJ-TBD: Once ACLs are enabled, following check should go in ACLs logic.
-        if (VmDirIsInternalEntry( pEntry ) || VmDirIsProtectedEntry(pEntry))
+        //
+        // The delete will succeed if the caller either has the explicit right
+        // to delete this object or if they have the right to delete children
+        // of this object's parent.
+        //
+        retVal = VmDirSrvAccessCheck(
+                    pOperation,
+                    &pOperation->conn->AccessInfo,
+                    pEntry,
+                    VMDIR_RIGHT_DS_DELETE_OBJECT);
+        if (retVal != ERROR_SUCCESS && pEntry->pParentEntry)
         {
-            retVal = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "An internal entry (%s) can NOT be deleted.",
-                                          pEntry->dn.lberbv_val );
+            retVal = VmDirSrvAccessCheck(
+                        pOperation,
+                        &pOperation->conn->AccessInfo,
+                        pEntry,
+                        VMDIR_RIGHT_DS_DELETE_CHILD);
+        }
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrMsg,
+            "VmDirSrvAccessCheck failed - (%u)(%s)",
+            retVal,
+            VMDIR_ACCESS_DENIED_ERROR_MSG);
+
+        // age off tombstone entry?
+        if  (pEntry->pParentEntry &&
+             _VmDirIsDeletedContainer(pEntry->pParentEntry->dn.lberbv_val))
+        {
+            bIsDeletedObj = TRUE;
+            // Normalize index attribute, so mdb can cleanup index tables properly.
+            retVal = VmDirEntryAttrValueNormalize(pEntry, TRUE);
+            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Attr value normalization failed - (%u)", retVal );
         }
 
-        // only when there is parent Entry, ACL check is done
-        if (pEntry->pParentEntry)
+        if (!bIsDeletedObj)
         {
-            retVal = VmDirSrvAccessCheck( pOperation, &pOperation->conn->AccessInfo, pEntry->pParentEntry,
-                                          VMDIR_RIGHT_DS_DELETE_CHILD);
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "VmDirSrvAccessCheck failed - (%u)(%s)",
-                                          retVal, VMDIR_ACCESS_DENIED_ERROR_MSG);
-        }
+            // Make sure it is a leaf node
+            retVal = pOperation->pBEIF->pfnBEChkIsLeafEntry(
+                                    pOperation->pBECtx,
+                                    pEntry->eId,
+                                    &leafNode);
+            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEChkIsLeafEntry failed, (%u)(%s)",
+                                        retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg) );
 
-        // Make sure it is a leaf node
-        retVal = pOperation->pBEIF->pfnBEChkIsLeafEntry(
-                                pOperation->pBECtx,
-                                pEntry->eId,
-                                &leafNode);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEChkIsLeafEntry failed, (%u)(%s)",
-                                      retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg) );
-
-        if (leafNode == FALSE)
-        {
-            retVal = VMDIR_ERROR_NOT_ALLOWED_ON_NONLEAF;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Delete of a non-leaf node is not allowed." );
-        }
-
-        // Retrieve to determine whether it is domain object earlier
-        // before attribute modifications
-        // ('bIsDomainObject' is needed for a domain object deletion)
-        retVal = VmDirIsDomainObjectWithEntry(pEntry, &bIsDomainObject);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                                      "VmDirIsDomainObjectWithEntry failed - (%u)", retVal );
-
-        if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
-        {
-            // Generate mods to delete attributes that need not be present in a DELETED entry
-            // Note: in case of executing the deadlock while loop multiple times, same attribute Delete mod be added
-            // multiple times in the modReq, which is expected to work correctly.
-            retVal = GenerateDeleteAttrsMods( pOperation, pEntry );
-            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "GenerateDeleteAttrsMods failed - (%u)", retVal);
-
-            // Generate new meta-data for the attributes being updated
-            if ((retVal = VmDirGenerateModsNewMetaData( pOperation, modReq->mods, pEntry->eId )) != 0)
+            if (leafNode == FALSE)
             {
+                retVal = VMDIR_ERROR_NOT_ALLOWED_ON_NONLEAF;
+                BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Delete of a non-leaf node is not allowed." );
+            }
 
-                switch (retVal)
+            // Retrieve to determine whether it is domain object earlier
+            // before attribute modifications
+            // ('bIsDomainObject' is needed for a domain object deletion)
+            retVal = VmDirIsDomainObjectWithEntry(pEntry, &bIsDomainObject);
+            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
+                                        "VmDirIsDomainObjectWithEntry failed - (%u)", retVal );
+
+            if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
+            {
+                // Generate mods to delete attributes that need not be present in a DELETED entry
+                // Note: in case of executing the deadlock while loop multiple times, same attribute Delete mod be added
+                // multiple times in the modReq, which is expected to work correctly.
+                retVal = GenerateDeleteAttrsMods( pOperation, pEntry );
+                BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "GenerateDeleteAttrsMods failed - (%u)", retVal);
+
+                // Generate new meta-data for the attributes being updated
+                if ((retVal = VmDirGenerateModsNewMetaData( pOperation, modReq->mods, pEntry->eId )) != 0)
                 {
-                    case VMDIR_ERROR_LOCK_DEADLOCK:
-                        goto txnretry; // Possible retry.  BUGBUG, is modReq->mods in above call good for retry?
 
-                    default:
-                        BAIL_ON_VMDIR_ERROR( retVal );
+                    switch (retVal)
+                    {
+                        case VMDIR_ERROR_LOCK_DEADLOCK:
+                            goto txnretry; // Possible retry.  BUGBUG, is modReq->mods in above call good for retry?
+
+                        default:
+                            BAIL_ON_VMDIR_ERROR( retVal );
+                    }
                 }
             }
+
+            // Normalize attribute values in mods
+            retVal = VmDirNormalizeMods( pOperation->pSchemaCtx, modReq->mods, &pszLocalErrMsg );
+            BAIL_ON_VMDIR_ERROR( retVal );
+
+            // Apply modify operations to the current entry in the DB.
+            retVal = VmDirApplyModsToEntryStruct( pOperation->pSchemaCtx, modReq, pEntry, NULL, &pszLocalErrMsg,
+                                                  pOperation->opType == VDIR_OPERATION_TYPE_REPL);
+            BAIL_ON_VMDIR_ERROR( retVal );
         }
-
-        // Normalize attribute values in mods
-        retVal = VmDirNormalizeMods( pOperation->pSchemaCtx, modReq->mods, &pszLocalErrMsg );
-        BAIL_ON_VMDIR_ERROR( retVal );
-
-        // Apply modify operations to the current entry in the DB.
-        retVal = VmDirApplyModsToEntryStruct( pOperation->pSchemaCtx, modReq,
-pEntry, NULL, &pszLocalErrMsg );
-        BAIL_ON_VMDIR_ERROR( retVal );
 
         // Update DBs
 
         // Update Entry
-        retVal = pOperation->pBEIF->pfnBEEntryDelete( pOperation->pBECtx, modReq->mods, pEntry );
+        retVal = pOperation->pBEIF->pfnBEEntryDelete(
+                    pOperation->pBECtx,
+                    bIsDeletedObj ? NULL : modReq->mods,
+                    pEntry);
         if (retVal != 0)
         {
             switch (retVal)
@@ -314,27 +334,25 @@ pEntry, NULL, &pszLocalErrMsg );
             }
         }
 
-        retVal = DeleteRefAttributesValue(pOperation, &(pEntry->dn));
-        if (retVal != 0)
-        {
-            switch (retVal)
-            {
-                case VMDIR_ERROR_LOCK_DEADLOCK:
-                    goto txnretry; // Possible retry.
-
-                default:
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEEntryDelete (%u)(%s)",
-                                                  retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-            }
-
-        }
-
         // Use normalized DN value
         if (bIsDomainObject)
         {
             retVal = VmDirInternalRemoveOrgConfig(pOperation,
                                                   BERVAL_NORM_VAL(pEntry->dn));
             BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Update domain list entry failed." );
+        }
+
+        retVal = pOperation->pBEIF->pfnBEDeleteAllAttrValueMetaData(pOperation->pBECtx, pOperation->pSchemaCtx, pEntry->eId);
+        if (retVal != 0)
+        {
+            switch (retVal)
+            {
+                case VMDIR_ERROR_BACKEND_DEADLOCK:
+                    goto txnretry; // Possible retry.
+                default:
+                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEEntryDeleteL pfnBEDeleteAllAttrValueMetaData error: (%u)(%s)",
+                                                  retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+            }
         }
 
         retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx);
@@ -346,6 +364,7 @@ pEntry, NULL, &pszLocalErrMsg );
     // transaction retry loop end.
     // ************************************************************************************
 
+    gVmdirGlobals.dwLdapWrites++;
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Delete Entry (%s)", VDIR_SAFE_STRING(pEntry->dn.lberbv_val));
 
     // Post delete entry
@@ -492,121 +511,6 @@ error:
     goto cleanup;
 }
 
-/* DeleteRefAttributesValue: For the given DN (dn), find out in which groups it appears as member attribute value.
- * Delete this member attribute value from these groups.
- *
- * Returns LDAP error codes including LDAP_LOCK_DEADLOCK
- */
-
-static
-int
-DeleteRefAttributesValue(
-    VDIR_OPERATION * pOperation,
-    VDIR_BERVALUE * dn
-    )
-{
-    int               retVal = LDAP_SUCCESS;
-    VDIR_FILTER *     f = NULL;
-    VDIR_CANDIDATES * cl = NULL;
-    VDIR_ENTRY        groupEntry = {0};
-    VDIR_ENTRY *      pGroupEntry = NULL;
-    int          i = 0;
-    VDIR_MODIFICATION mod = {0};
-    ModifyReq    mr;
-    VDIR_BERVALUE     delVals[2];
-    PSTR              pszLocalErrorMsg = NULL;
-
-    assert( pOperation != NULL && pOperation->pBEIF != NULL && dn != NULL);
-
-    retVal = VmDirNormalizeDN( dn, pOperation->pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR( retVal );
-
-    // Set filter
-    retVal = VmDirAllocateMemory( sizeof( VDIR_FILTER ), (PVOID *)&f);
-    BAIL_ON_VMDIR_ERROR( retVal );
-
-    f->choice = LDAP_FILTER_EQUALITY;
-    f->filtComp.ava.type.lberbv.bv_val = ATTR_MEMBER;
-    f->filtComp.ava.type.lberbv.bv_len = ATTR_MEMBER_LEN;
-    f->filtComp.ava.value = *dn;
-    if ((f->filtComp.ava.pATDesc = VmDirSchemaAttrNameToDesc( pOperation->pSchemaCtx, ATTR_MEMBER)) == NULL)
-    {
-        retVal = VMDIR_ERROR_NO_SUCH_ATTRIBUTE;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                        "undefined attribute (%s)",
-                                        VDIR_SAFE_STRING(ATTR_MEMBER));
-    }
-    // Set ModifyReq structure
-    memset(&mr, 0, sizeof(ModifyReq));
-    mod.operation = MOD_OP_DELETE;
-    mod.attr.type.lberbv.bv_val = ATTR_MEMBER;
-    mod.attr.type.lberbv.bv_len = ATTR_MEMBER_LEN;
-    mod.attr.pATDesc = f->filtComp.ava.pATDesc;
-
-    mod.attr.next = NULL;
-    delVals[0] = *dn;
-    memset(&(delVals[1]), 0, sizeof(VDIR_BERVALUE));
-    mod.attr.vals = delVals;
-    mod.attr.numVals = 1;
-    mod.next = NULL;
-    mr.mods = &mod;
-    mr.numMods = 1;
-
-    retVal = pOperation->pBEIF->pfnBEGetCandidates(pOperation->pBECtx, f, 0);
-    if ( retVal != 0 )
-    {
-        if (retVal == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
-        {
-            retVal = LDAP_SUCCESS;  // no member refer to this DN. return ok/0
-        }
-        else
-        {
-            retVal = VMDIR_ERROR_GENERIC;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                        "DeleteRefAttributesValue: Building group list (BdbGetCandidates()) failed.");
-        }
-    }
-    else
-    {
-        cl = f->candidates;
-
-        for (i = 0; i < cl->size; i++)
-        {
-            pGroupEntry = &groupEntry;
-            if ((retVal = VmDirModifyEntryCoreLogic( pOperation, &mr, cl->eIds[i], pGroupEntry)) != 0)
-            {
-                switch (retVal)
-                {
-                    case VMDIR_ERROR_BACKEND_PARENT_NOTFOUND:
-                    case VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND:
-                    case VMDIR_ERROR_ENTRY_NOT_FOUND:
-                        continue;
-
-                    default: // Including LDAP_LOCK_DEADLOCK, which is handled by the caller
-                        BAIL_ON_VMDIR_ERROR( retVal );
-                }
-            }
-
-            VmDirFreeBervalContent( &(mr.dn) ); // VmDirModifyEntryCoreLogic fill in DN if not exists
-            VmDirFreeEntryContent( pGroupEntry );
-            pGroupEntry = NULL; // Reset to NULL so that DeleteEntry is no-op.
-        }
-    }
-
-cleanup:
-    memset(&(f->filtComp.ava.value), 0, sizeof(VDIR_BERVALUE)); // Since ava.value is NOT owned by filter.
-    DeleteFilter( f );
-    VmDirFreeEntryContent( pGroupEntry );
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-
-    return retVal;
-
-error:
-
-    VMDIR_APPEND_ERROR_MSG(pOperation->ldapResult.pszErrMsg, pszLocalErrorMsg);
-    goto cleanup;
-}
-
 static int
 GenerateDeleteAttrsMods(
     PVDIR_OPERATION pOperation,
@@ -663,72 +567,19 @@ cleanup:
 error:
     goto cleanup;
 }
-
+static
 BOOLEAN
-VmDirIsProtectedEntry(
-    PVDIR_ENTRY pEntry
+_VmDirIsDeletedContainer(
+    PCSTR   pszDN
     )
 {
-    BOOLEAN bResult = FALSE;
-    PCSTR pszDomainDn = NULL;
-    PCSTR pszEntryDn = NULL;
-    size_t domainDnLen = 0;
-    size_t entryDnLen = 0;
+    BOOLEAN bRtn = FALSE;
 
-    const CHAR szAdministrators[] = "cn=Administrators,cn=Builtin";
-    const CHAR szCertGroup[] =      "cn=CAAdmins,cn=Builtin";
-    const CHAR szDCAdminsGroup[] =  "cn=DCAdmins,cn=Builtin";
-    const CHAR szUsersGroup[] =     "cn=Users,cn=Builtin";
-    const CHAR szAdministrator[] =  "cn=Administrator,cn=Users";
-    const CHAR szDCClientsGroup[] = "cn=DCClients,cn=Builtin";
-
-    if (pEntry == NULL)
+    if (pszDN &&
+        VmDirStringCompareA(pszDN, gVmdirServerGlobals.delObjsContainerDN.lberbv_val, FALSE) == 0)
     {
-        goto error;
+        bRtn = TRUE;
     }
 
-    pszDomainDn = gVmdirServerGlobals.systemDomainDN.lberbv.bv_val;
-    if (pszDomainDn == NULL)
-    {
-        goto error;
-    }
-
-    pszEntryDn = pEntry->dn.lberbv.bv_val;
-    if (pszEntryDn == NULL)
-    {
-        goto error;
-    }
-
-    entryDnLen = strlen(pszEntryDn);
-    domainDnLen = strlen(pszDomainDn);
-
-    if (entryDnLen <= domainDnLen)
-    {
-        goto error;
-    }
-
-    if (pszEntryDn[(entryDnLen - domainDnLen) - 1] != ',')
-    {
-        goto error;
-    }
-
-    // Make sure system DN matches
-    if (VmDirStringCompareA(&pszEntryDn[entryDnLen - domainDnLen], pszDomainDn, FALSE))
-    {
-        goto error;
-    }
-
-    if (!VmDirStringNCompareA(pszEntryDn, szAdministrators, sizeof(szAdministrators) - 1, FALSE) ||
-        !VmDirStringNCompareA(pszEntryDn, szCertGroup, sizeof(szCertGroup) - 1, FALSE) ||
-        !VmDirStringNCompareA(pszEntryDn, szDCAdminsGroup, sizeof(szDCAdminsGroup) - 1, FALSE) ||
-        !VmDirStringNCompareA(pszEntryDn, szUsersGroup, sizeof(szUsersGroup) - 1, FALSE) ||
-        !VmDirStringNCompareA(pszEntryDn, szDCClientsGroup, sizeof(szDCClientsGroup) - 1, FALSE) ||
-        !VmDirStringNCompareA(pszEntryDn, szAdministrator, sizeof(szAdministrator) - 1, FALSE))
-    {
-        bResult = TRUE;
-    }
-
-error:
-    return bResult;
+    return bRtn;
 }
-

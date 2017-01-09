@@ -56,11 +56,6 @@ VmDirCreateAccountEx(
 
 // auth.c
 
-ULONG
-ConstructSDForVmDirServ(
-    PSECURITY_DESCRIPTOR_ABSOLUTE * ppSD
-    );
-
 DWORD
 VmDirSrvCreateAccessToken(
     PCSTR pszUPN,
@@ -130,6 +125,20 @@ VmDirAllocateBerValueAVsnprintf(
 // instance.c
 
 DWORD
+VmDirSrvSetupDomainInstance(
+    PVDIR_SCHEMA_CTX pSchemaCtx,
+    BOOLEAN          bSetupHost,
+    BOOLEAN          bFirstNodeBootstrap,
+    PCSTR            pszFQDomainName,
+    PCSTR            pszDomainDN,
+    PCSTR            pszUsername,
+    PCSTR            pszPassword,
+    PVMDIR_SECURITY_DESCRIPTOR pSecDescAnonymousOut, // OPTIONAL
+    PVMDIR_SECURITY_DESCRIPTOR pSecDescServicesOut, // OPTIONAL
+    PVMDIR_SECURITY_DESCRIPTOR pSecDescDeletedObjectsOut // OPTIONAL
+    );
+
+DWORD
 VmDirSrvSetupHostInstance(
     PCSTR pszDomainName,
     PCSTR pszUsername,
@@ -137,13 +146,6 @@ VmDirSrvSetupHostInstance(
     PCSTR pszSiteName,
     PCSTR pszReplURI,
     UINT32  firstReplicationCycleMode
-    );
-
-DWORD
-VmDirSrvSetupTenantInstance(
-    PCSTR pszDomainName,
-    PCSTR pszUsername,
-    PCSTR pszPassword
     );
 
 // regconfig.c
@@ -285,13 +287,6 @@ VmDirSrvInitializeHost(
     PWSTR    pwszSiteName,
     PWSTR    pwszReplURI,
     UINT32   firstReplCycleMode
-    );
-
-DWORD
-VmDirSrvInitializeTenant(
-    PWSTR    pwszDomainName,
-    PWSTR    pwszUsername,
-    PWSTR    pwszPassword
     );
 
 DWORD
@@ -484,6 +479,33 @@ VmDirIpcInitializeTenant(
     );
 
 DWORD
+VmDirIpcCreateTenant(
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+DWORD
+VmDirIpcDeleteTenant(
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+DWORD
+VmDirIpcEnumerateTenants(
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+DWORD
 VmDirIpcForceResetPassword(
     PVM_DIR_SECURITY_CONTEXT pSecurityContext,
     PBYTE pRequest,
@@ -530,6 +552,37 @@ VmDirLoadEventLogLibrary(
     PFEVENTLOG_ADD *ppfEventLogAdd
     );
 
+// tenantmgmt.c
+DWORD
+VmDirSrvInitializeTenant(
+    PWSTR    pwszDomainName,
+    PWSTR    pwszUsername,
+    PWSTR    pwszPassword
+    );
+
+DWORD
+VmDirSrvCreateTenant(
+    PCSTR pszDomainName,
+    PCSTR pszUserName,
+    PCSTR pszPassword
+    );
+
+DWORD
+VmDirSrvEnumerateTenants(
+    PVMDIR_STRING_LIST pTenantList
+    );
+
+DWORD
+VmDirSrvDeleteTenant(
+    PCSTR pszDomainName
+    );
+
+// tombstone.c
+DWORD
+VmDirInitTombstoneReapingThread(
+    VOID
+    );
+
 // tracklastlogin.c
 
 DWORD
@@ -537,6 +590,17 @@ VmDirInitTrackLastLoginThread(
     VOID
     );
 
+DWORD VmDirInitDbCopyThread(
+    VOID
+    );
+
+DWORD
+VmDirCreateHeartbeatThread(
+    );
+
+VOID
+VmDirKillHeartbeatThread(
+    );
 #ifdef __cplusplus
 }
 #endif

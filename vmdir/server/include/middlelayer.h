@@ -68,7 +68,8 @@ VmDirApplyModsToEntryStruct(
     ModifyReq *         modReq,
     PVDIR_ENTRY         pEntry,
     PBOOLEAN            pbDnModified,
-    PSTR*               ppszErrorMsg
+    PSTR*               ppszErrorMsg,
+    BOOLEAN             bIsReplOp
     );
 
 int

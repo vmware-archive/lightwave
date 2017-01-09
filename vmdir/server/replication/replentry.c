@@ -30,7 +30,9 @@ int
 DetectAndResolveAttrsConflicts(
     PVDIR_OPERATION     pOperation,
     PVDIR_BERVALUE      pDn,
-    PVDIR_ATTRIBUTE     pAttrAttrSupplierMetaData);
+    PVDIR_ATTRIBUTE     pAttrAttrSupplierMetaData,
+    ENTRYID             entryId
+    );
 
 static
 int
@@ -38,27 +40,79 @@ SetAttributesNewMetaData(
     PVDIR_OPERATION     pOperation,
     PVDIR_ENTRY         pEntry,
     char *              localUsn,
-    PVDIR_ATTRIBUTE *   ppAttrAttrMetaData);
+    PVDIR_ATTRIBUTE *   ppAttrAttrMetaData,
+    ENTRYID             entryId
+    );
 
 static
 int
 SetupReplModifyRequest(
     VDIR_OPERATION *    modOp,
-    PVDIR_ENTRY         pEntry);
+    PVDIR_ENTRY         pEntry,
+    USN *               pNextLocalUsn,
+    ENTRYID             entryId
+    );
 
 static
 int
 _VmDirPatchData(
-    PVDIR_OPERATION     pOperation);
+    PVDIR_OPERATION     pOperation
+    );
 
-static DWORD
+static
+DWORD
 _VmDirAssignEntryIdIfSpecialInternalEntry(
     PVDIR_ENTRY pEntry
     );
 
+static
 int
 ReplFixUpEntryDn(
     PVDIR_ENTRY pEntry
+    );
+
+static
+int
+_VmDirDetatchValueMetaData(
+    PVDIR_OPERATION     pOperation,
+    PVDIR_ENTRY         pEntry,
+    PVDIR_ATTRIBUTE *   ppAttrAttrValueMetaData
+    );
+
+static
+int
+_VmDirAttachValueMetaData(
+    PVDIR_ATTRIBUTE pAttrAttrValueMetaData,
+    PVDIR_ENTRY     pEntry,
+    USN             localUsn
+    );
+
+static
+int
+_VmDeleteOldValueMetaData(
+    PVDIR_OPERATION     pModOp,
+    PVDIR_MODIFICATION  pMods,
+    ENTRYID             entryId
+    );
+
+static
+int
+_VmSetupValueMetaData(
+    PVDIR_SCHEMA_CTX    pSchemaCtx,
+    PVDIR_OPERATION     pModOp,
+    PVDIR_ATTRIBUTE     pAttrAttrValueMetaData,
+    USN                 localUsn,
+    ENTRYID             entryId
+    );
+
+static
+int
+_VmDirAttrValueMetaResolve(
+    PVDIR_OPERATION pModOp,
+    PVDIR_ATTRIBUTE pAttr,
+    PVDIR_BERVALUE  suppAttrMetaValue,
+    ENTRYID         entryId,
+    PBOOLEAN        pInScope
     );
 
 /*
@@ -130,6 +184,7 @@ ReplAddEntry(
     size_t              localUsnStrlen = 0;
     int                 dbRetVal = 0;
     PVDIR_ATTRIBUTE     pAttrAttrMetaData = NULL;
+    PVDIR_ATTRIBUTE     pAttrAttrValueMetaData = NULL;
     int                 i = 0;
     PVDIR_SCHEMA_CTX    pUpdateSchemaCtx = NULL;
 
@@ -168,8 +223,6 @@ ReplAddEntry(
         BAIL_ON_VMDIR_ERROR( retVal );
     }
 
-    VmDirdSetLimitLocalUsnToBeSupplied(localUsn);
-
     if ((retVal = VmDirStringNPrintFA( localUsnStr, sizeof(localUsnStr), sizeof(localUsnStr) - 1, "%ld", localUsn)) != 0)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplAddEntry: VmDirStringNPrintFA failed with error code: %d", retVal);
@@ -181,7 +234,10 @@ ReplAddEntry(
 
     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "ReplAddEntry: next generated localUSN: %s", localUsnStr);
 
-    retVal = SetAttributesNewMetaData( &op, pEntry, localUsnStr, &pAttrAttrMetaData );
+    retVal = _VmDirDetatchValueMetaData(&op, pEntry, &pAttrAttrValueMetaData);
+    BAIL_ON_VMDIR_ERROR( retVal );
+
+    retVal = SetAttributesNewMetaData(&op, pEntry, localUsnStr, &pAttrAttrMetaData, 0);
     BAIL_ON_VMDIR_ERROR( retVal );
 
     // Creating deleted object scenario: Create attributes just with attribute meta data, and no values.
@@ -207,6 +263,9 @@ ReplAddEntry(
             pEntry->attrs = pAttr;
         }
     }
+
+    retVal = _VmDirAttachValueMetaData(pAttrAttrValueMetaData, pEntry, localUsn);
+    BAIL_ON_VMDIR_ERROR( retVal );
 
     retVal = _VmDirPatchData( &op );
     BAIL_ON_VMDIR_ERROR( retVal );
@@ -266,8 +325,8 @@ ReplAddEntry(
 
 cleanup:
     // pAttrAttrMetaData is local, needs to be freed within the call
+    VmDirFreeAttribute( pAttrAttrValueMetaData );
     VmDirFreeAttribute( pAttrAttrMetaData );
-
     VmDirFreeOperationContent(&op);
 
     return retVal;
@@ -292,6 +351,7 @@ ReplDeleteEntry(
     VDIR_OPERATION      tmpAddOp = {0};
     VDIR_OPERATION      delOp = {0};
     ModifyReq *         mr = &(delOp.request.modifyReq);
+    USN                 localUsn = {0};
 
     retVal = VmDirInitStackOperation( &delOp,
                                       VDIR_OPERATION_TYPE_REPL,
@@ -324,7 +384,7 @@ ReplDeleteEntry(
     assert(delOp.pBEIF);
 
     // SJ-TBD: What about if one or more attributes were meanwhile added to the entry? How do we purge them?
-    retVal = SetupReplModifyRequest( &delOp, tmpAddOp.request.addReq.pEntry);
+    retVal = SetupReplModifyRequest( &delOp, tmpAddOp.request.addReq.pEntry, &localUsn, 0);
     BAIL_ON_VMDIR_ERROR( retVal );
 
     // SJ-TBD: What happens when DN of the entry has changed in the meanwhile? => conflict resolution.
@@ -399,6 +459,9 @@ ReplModifyEntry(
     int                 deadLockRetries = 0;
     PVDIR_SCHEMA_CTX    pUpdateSchemaCtx = NULL;
     VDIR_ENTRY          e = {0};
+    PVDIR_ATTRIBUTE     pAttrAttrValueMetaData = NULL;
+    USN                 localUsn = {0};
+    ENTRYID             entryId = 0;
 
     retVal = VmDirInitStackOperation( &modOp,
                                       VDIR_OPERATION_TYPE_REPL,
@@ -418,6 +481,11 @@ ReplModifyEntry(
         retVal = LDAP_OPERATIONS_ERROR;
         BAIL_ON_VMDIR_ERROR( retVal );
     }
+
+    // This is strict locking order:
+    // Must acquire schema modification mutex before backend write txn begins
+    retVal = VmDirSchemaModMutexAcquire(&modOp);
+    BAIL_ON_VMDIR_ERROR( retVal );
 
     modOp.pBEIF = VmDirBackendSelect(mr->dn.lberbv.bv_val);
     assert(modOp.pBEIF);
@@ -451,7 +519,41 @@ txnretry:
     }
     bHasTxn = TRUE;
 
-    if ((retVal = SetupReplModifyRequest( &modOp, &e)) != LDAP_SUCCESS)
+    if (mr->dn.bvnorm_val == NULL)
+    {
+        if ((retVal = VmDirNormalizeDN(&mr->dn, pSchemaCtx)) != 0)
+        {
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "SetupReplModifyRequest: VmDirNormalizeDN failed on dn %s ",
+                    VDIR_SAFE_STRING(mr->dn.lberbv.bv_val));
+            retVal = LDAP_OPERATIONS_ERROR;
+            BAIL_ON_VMDIR_ERROR( retVal );
+        }
+    }
+
+    // Get EntryId
+    retVal = modOp.pBEIF->pfnBEDNToEntryId(modOp.pBECtx, &mr->dn, &entryId);
+    if (retVal != 0)
+    {
+        switch (retVal)
+        {
+            case ERROR_BACKEND_ENTRY_NOTFOUND:
+                VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplModifyEntry: entry %s doesn't exist error code %d",
+                                VDIR_SAFE_STRING(mr->dn.bvnorm_val), retVal);
+                break;
+            case LDAP_LOCK_DEADLOCK:
+                goto txnretry;
+            default:
+                VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplModifyEntry: pfnBEDNToEntryId failed dn %s error code %d",
+                                VDIR_SAFE_STRING(mr->dn.bvnorm_val), retVal);
+                break;
+        }
+    }
+    BAIL_ON_VMDIR_ERROR( retVal );
+
+    retVal = _VmDirDetatchValueMetaData(&modOp, &e, &pAttrAttrValueMetaData);
+    BAIL_ON_VMDIR_ERROR( retVal );
+
+    if ((retVal = SetupReplModifyRequest(&modOp, &e, &localUsn, entryId)) != LDAP_SUCCESS)
     {
         switch (retVal)
         {
@@ -482,6 +584,9 @@ txnretry:
     // If some mods left after conflict resolution
     if (mr->mods != NULL)
     {
+        retVal = _VmDeleteOldValueMetaData(&modOp, mr->mods, entryId);
+        BAIL_ON_VMDIR_ERROR( retVal );
+
         // SJ-TBD: What happens when DN of the entry has changed in the meanwhile? => conflict resolution.
         // Should objectGuid, instead of DN, be used to uniquely identify an object?
         if ((retVal = VmDirInternalModifyEntry( &modOp )) != LDAP_SUCCESS)
@@ -502,7 +607,31 @@ txnretry:
             }
             BAIL_ON_VMDIR_ERROR( retVal );
         }
+    }
 
+    VMDIR_LOG_INFO(LDAP_DEBUG_REPL, "ReplModifyEntry: found AttrValueMetaData %s", pAttrAttrValueMetaData?"yes":"no");
+    if (pAttrAttrValueMetaData)
+    {
+        retVal = _VmSetupValueMetaData(pSchemaCtx, &modOp, pAttrAttrValueMetaData, localUsn, entryId);
+        BAIL_ON_VMDIR_ERROR( retVal );
+        mr = &(modOp.request.modifyReq);
+        if (mr->mods != NULL)
+        {
+            if ((retVal = VmDirInternalModifyEntry( &modOp )) != LDAP_SUCCESS)
+            {
+                retVal = modOp.ldapResult.errCode;
+                switch (retVal)
+                {
+                    case LDAP_LOCK_DEADLOCK:
+                        goto txnretry;
+                    default:
+                        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplModifyEntry: InternalModifyEntry failed. Error: %d, error string %s",
+                                        retVal, VDIR_SAFE_STRING( modOp.ldapResult.pszErrMsg ));
+                        break;
+                }
+                BAIL_ON_VMDIR_ERROR( retVal );
+            }
+        }
     }
 
     if ((dbRetVal = modOp.pBEIF->pfnBETxnCommit( modOp.pBECtx)) != 0)
@@ -533,8 +662,11 @@ txnretry:
     }
 
 cleanup:
+    // Release schema modification mutex
+    (VOID)VmDirSchemaModMutexRelease(&modOp);
     VmDirFreeOperationContent(&modOp);
     VmDirFreeEntryContent(&e);
+    VmDirFreeAttribute(pAttrAttrValueMetaData);
     return retVal;
 
 error:
@@ -555,6 +687,7 @@ error:
  * determine the local DN that is being used and adjust pEntry
  * to use the same local DN.
  */
+static
 int
 ReplFixUpEntryDn(
     PVDIR_ENTRY pEntry
@@ -660,58 +793,16 @@ int
 DetectAndResolveAttrsConflicts(
     PVDIR_OPERATION     pOperation,
     PVDIR_BERVALUE      pDn,
-    PVDIR_ATTRIBUTE     pAttrAttrSupplierMetaData)
+    PVDIR_ATTRIBUTE     pAttrAttrSupplierMetaData,
+    ENTRYID             entryId
+    )
 {
     int             retVal = LDAP_SUCCESS;
     int             dbRetVal = 0;
     PVDIR_ATTRIBUTE pAttr = NULL;
     int             i = 0;
-    ENTRYID         entryId = 0;
 
     assert( pOperation && pOperation->pSchemaCtx && pAttrAttrSupplierMetaData );
-
-    // Normalize DN
-    if (pDn->bvnorm_val == NULL)
-    {
-        if ((retVal = VmDirNormalizeDN( pDn, pOperation->pSchemaCtx)) != 0)
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "DetectAndResolveAttrsConflicts: VmDirNormalizeDN failed with "
-                      "error code: %d, error string: %s", retVal,
-                      VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)));
-
-            BAIL_ON_LDAP_ERROR( retVal, LDAP_OPERATIONS_ERROR, (pOperation->ldapResult.pszErrMsg),
-                                "DN normalization failed - (%d)(%s)", retVal,
-                                VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)));
-        }
-    }
-
-    // Get EntryId
-    retVal = pOperation->pBEIF->pfnBEDNToEntryId(  pOperation->pBECtx, pDn, &entryId );
-    if (retVal != 0)
-    {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "DetectAndResolveAttrsConflicts: BdbDNToEntryId failed with error code: %d, "
-                  "error string: %s", retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg) );
-
-        switch (retVal)
-        {
-            case ERROR_BACKEND_ENTRY_NOTFOUND:
-                BAIL_ON_LDAP_ERROR( retVal, LDAP_NO_SUCH_OBJECT, (pOperation->ldapResult.pszErrMsg),
-                                    "DN doesn't exist.");
-                break;
-
-            case ERROR_BACKEND_DEADLOCK:
-                BAIL_ON_LDAP_ERROR( retVal, LDAP_LOCK_DEADLOCK, (pOperation->ldapResult.pszErrMsg),
-                                    "backend read entry failed - (%d)(%s)", retVal,
-                                    VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-                break;
-
-            default:
-                BAIL_ON_LDAP_ERROR( retVal, LDAP_OPERATIONS_ERROR, (pOperation->ldapResult.pszErrMsg),
-                                    "backend read entry failed - (%d)(%s)", retVal,
-                                    VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-                break;
-        }
-    }
 
     for (i = 0; pAttrAttrSupplierMetaData->vals[i].lberbv.bv_val != NULL; i++)
     {
@@ -939,7 +1030,9 @@ SetAttributesNewMetaData(
     PVDIR_OPERATION     pOperation,
     PVDIR_ENTRY         pEntry,
     char *              localUsnStr,
-    PVDIR_ATTRIBUTE *   ppAttrAttrMetaData)
+    PVDIR_ATTRIBUTE *   ppAttrAttrMetaData,
+    ENTRYID             entryId
+    )
 {
     int                 retVal = LDAP_SUCCESS;
     VDIR_ATTRIBUTE *    currAttr = NULL;
@@ -991,9 +1084,9 @@ SetAttributesNewMetaData(
         BAIL_ON_VMDIR_ERROR( retVal );
     }
 
-    if (pOperation->reqCode == LDAP_REQ_MODIFY )
+    if (pOperation->reqCode == LDAP_REQ_MODIFY)
     {
-        retVal = DetectAndResolveAttrsConflicts( pOperation, &pEntry->dn, pAttrAttrMetaData );
+        retVal = DetectAndResolveAttrsConflicts(pOperation, &pEntry->dn, pAttrAttrMetaData, entryId);
         BAIL_ON_VMDIR_ERROR( retVal );
     }
 
@@ -1110,7 +1203,10 @@ static
 int
 SetupReplModifyRequest(
     VDIR_OPERATION *    pOperation,
-    PVDIR_ENTRY         pEntry)
+    PVDIR_ENTRY         pEntry,
+    USN *               pNextLocalUsn,
+    ENTRYID             entryId
+    )
 {
     int                 retVal = LDAP_SUCCESS;
     VDIR_MODIFICATION * mod = NULL;
@@ -1147,8 +1243,6 @@ SetupReplModifyRequest(
         BAIL_ON_VMDIR_ERROR( retVal );
     }
 
-    VmDirdSetLimitLocalUsnToBeSupplied(localUsn);
-
     if ((retVal = VmDirStringNPrintFA( localUsnStr, sizeof(localUsnStr), sizeof(localUsnStr) - 1, "%ld",
                                        localUsn)) != 0)
     {
@@ -1161,7 +1255,7 @@ SetupReplModifyRequest(
 
     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "SetupReplModifyRequest: next generated localUSN: %s", localUsnStr );
 
-    retVal = SetAttributesNewMetaData( pOperation, pEntry, localUsnStr, &pAttrAttrMetaData);
+    retVal = SetAttributesNewMetaData(pOperation, pEntry, localUsnStr, &pAttrAttrMetaData, entryId);
     BAIL_ON_VMDIR_ERROR( retVal );
 
     for (currAttr = pEntry->attrs; currAttr; currAttr = currAttr->next)
@@ -1283,6 +1377,8 @@ SetupReplModifyRequest(
         }
     }
 
+    *pNextLocalUsn = localUsn;
+
 cleanup:
     // pAttrAttrMetaData is local, needs to be freed within the call
     VmDirFreeAttribute( pAttrAttrMetaData );
@@ -1293,4 +1389,480 @@ error:
     goto cleanup;
 }
 
+/*
+ * Determine whether the supplier's attr-value-meta-data wins by checking it against local
+ * attr-meta-data and local attr-value-meta-data.
+ * It first compares the <version><invocation-id> of that in local attr-meta-data which was
+ * applied either in the previous transaction or the previous modification in the current transactions.
+ * Then if the <version><invocation-id> matches, it looks up the local server to see if the same
+ * attr-value-meta-data existi: if supplier's attr-value-meta-data has a newer timestamp then
+ * it wins and inScope set to TRUE.
+ */
+static
+int
+_VmDirAttrValueMetaResolve(
+    PVDIR_OPERATION pModOp,
+    PVDIR_ATTRIBUTE pAttr,
+    PVDIR_BERVALUE  suppAttrMetaValue,
+    ENTRYID         entryId,
+    PBOOLEAN        pInScope
+    )
+{
+    int retVal = 0;
+    char *ps = NULL, *pps = NULL, *ps_ts = NULL;
+    char *pc = NULL, *ppc = NULL;
+    int rc = 0;
+    int psv_len = 0;
+    VDIR_BERVALUE *pAVmeta = NULL;
+    DEQUE valueMetaData = {0};
 
+    *pInScope = TRUE;
+    retVal = pModOp->pBEIF->pfnBEGetAttrMetaData(pModOp->pBECtx, pAttr, entryId);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    ps = suppAttrMetaValue->lberbv.bv_val;
+    VALUE_META_TO_NEXT_FIELD(ps, 2);
+    pps = VmDirStringChrA(VmDirStringChrA(ps, ':')+1, ':');
+    *pps = '\0';
+    //ps points to supplier attr-value-meta "<version><originating-server-id>"
+
+    pc = pAttr->metaData;
+    VALUE_META_TO_NEXT_FIELD(pc, 1);
+    ppc = VmDirStringChrA(VmDirStringChrA(pc, ':')+1, ':');
+    *ppc = '\0';
+    //pc points to consumer attr-meta "<version><originating-server-id>"
+
+    rc = strcmp(ps, pc);
+    *pps = ':';
+    *ppc = ':';
+    if (rc)
+    {
+        //consumer <version><originating-server-id> in metaValueData
+        //   not match supplier's <version<<originating-server-id> in metaData
+        //   this value-meta-data out of scope
+        *pInScope = FALSE;
+        goto cleanup;
+    }
+
+    retVal = pModOp->pBEIF->pfnBEGetAttrValueMetaData(pModOp->pBECtx, entryId, pAttr->pATDesc->usAttrID, &valueMetaData);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    ps = suppAttrMetaValue->lberbv.bv_val;
+    VALUE_META_TO_NEXT_FIELD(ps, 8);
+    pps = VmDirStringChrA(ps, ':');
+    //ps points to <value-size>:<value>
+    *pps = '\0';
+    psv_len = VmDirStringToIA(ps);
+    *pps = ':';
+    VALUE_META_TO_NEXT_FIELD(ps, 1);
+    //ps now points to <value> of supplier's attr-value-meta-data
+    ps_ts = suppAttrMetaValue->lberbv.bv_val;
+    VALUE_META_TO_NEXT_FIELD(ps_ts, 5);
+    //ps_ts points to <value-change-originating time>
+
+    while(!dequeIsEmpty(&valueMetaData))
+    {
+        int pcv_len = 0;
+        char *pc_ts = NULL;
+
+        VmDirFreeBerval(pAVmeta);
+        pAVmeta = NULL;
+
+        dequePopLeft(&valueMetaData, (PVOID*)&pAVmeta);
+        pc = pAVmeta->lberbv.bv_val;
+        VALUE_META_TO_NEXT_FIELD(pc, 8);
+        ppc = VmDirStringChrA(pc, ':');
+        *ppc = '\0';
+        pcv_len = VmDirStringToIA(pc);
+        *ppc = ':';
+        if (psv_len != pcv_len)
+        {
+            continue;
+        }
+        VALUE_META_TO_NEXT_FIELD(pc, 1);
+        if (memcmp(ps, pc, pcv_len))
+        {
+            continue;
+        }
+
+        // Now found attr-value-meta-data with the same attribute value.
+        // If this one' timestamp is later than the supplier's,
+        // then the consumer won, this may occur like: add attr-a/value-a, then delete attr-a/value-a (in two repl cycles)
+        pc_ts = pAVmeta->lberbv.bv_val;
+        VALUE_META_TO_NEXT_FIELD(pc_ts, 5);
+        rc = strncmp(pc_ts, ps_ts, VMDIR_ORIG_TIME_STR_LEN);
+        if (rc > 0)
+        {
+          // If any of newer attr-value-meta-data with that entryid/attr-id/attr-value in the consumer,
+          //   then the supplier attr-value-meta-data lose
+          *pInScope = FALSE;
+          VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "_VmDirAttrValueMetaResolve: supplier attr-value-meta lose: %s consumer: %s",
+                VDIR_SAFE_STRING(suppAttrMetaValue->lberbv.bv_val), VDIR_SAFE_STRING(pAVmeta->lberbv.bv_val));
+        }
+    }
+    if (*pInScope)
+    {
+        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "_VmDirAttrValueMetaResolve: supplier attr-value-meta won: %s",
+                VDIR_SAFE_STRING(suppAttrMetaValue->lberbv.bv_val));
+    }
+
+cleanup:
+    VmDirFreeBerval(pAVmeta);
+    VmDirFreeAttrValueMetaDataContent(&valueMetaData);
+    return retVal;
+
+error:
+    goto cleanup;
+}
+
+/*
+ * First determine if each attribute value meta data in pAttrAttrValueMetaData
+ * win those in local database (if they exist locally); then create mod for
+ * adding/deleting the attribute value for those with winning attribute value meta data
+ * from supplier.
+ */
+static
+int
+_VmSetupValueMetaData(
+    PVDIR_SCHEMA_CTX    pSchemaCtx,
+    PVDIR_OPERATION     pModOp,
+    PVDIR_ATTRIBUTE     pAttrAttrValueMetaData,
+    USN                 localUsn,
+    ENTRYID             entryId
+    )
+{
+    PVDIR_ATTRIBUTE pAttr = NULL;
+    int i = 0;
+    int retVal = 0;
+    VDIR_BERVALUE * pAVmeta = NULL;
+    char av_meta_pre[VMDIR_MAX_ATTR_META_DATA_LEN];
+    int new_av_len = 0;
+    BOOLEAN inScope = FALSE;
+    VDIR_MODIFICATION * mod = NULL, *modp = NULL, *pre_modp = NULL;
+    ModifyReq * mr = NULL;
+    VDIR_MODIFICATION * currMod = NULL;
+    VDIR_MODIFICATION * tmpMod = NULL;
+    char *p = NULL, *pp = NULL;
+
+    mr = &(pModOp->request.modifyReq);
+    //clear all mods that should have been applied.
+    for ( currMod = mr->mods; currMod != NULL; )
+    {
+        tmpMod = currMod->next;
+        VmDirModificationFree(currMod);
+        currMod = tmpMod;
+    }
+    mr->mods = NULL;
+    mr->numMods = 0;
+
+    //format of a value meta data item:
+    //       <attr-name>:<local-usn>:<version-no>:<originating-server-id>:<value-change-originating-server-id>
+    //       :<value-change-originating time>:<value-change-originating-usn>:
+    //Remaining portion of attr-value-meta-data:   <opcode>:<value-size>:<value>
+    for ( i=0; i<(int)pAttrAttrValueMetaData->numVals; i++ )
+    {
+       if (!VmDirValidValueMetaEntry(&pAttrAttrValueMetaData->vals[i]))
+       {
+          retVal = ERROR_INVALID_PARAMETER;
+          VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmSetupValueMetaData: invalid attr-value-meta: %s",
+                         VDIR_SAFE_STRING(pAttrAttrValueMetaData->vals[i].lberbv.bv_val));
+          BAIL_ON_VMDIR_ERROR(retVal);
+       }
+
+       p = pAttrAttrValueMetaData->vals[i].lberbv.bv_val;
+       pp = VmDirStringChrA(p, ':');
+       *pp = '\0';
+       // p points to attr-name
+       VmDirFreeAttribute(pAttr);
+       pAttr = NULL;
+
+       retVal = VmDirAttributeAllocate(p, 1, pSchemaCtx, &pAttr);
+       BAIL_ON_VMDIR_ERROR(retVal);
+
+       *pp = ':';
+       retVal = _VmDirAttrValueMetaResolve(pModOp, pAttr, &pAttrAttrValueMetaData->vals[i], entryId, &inScope);
+       BAIL_ON_VMDIR_ERROR(retVal);
+
+       if (!inScope)
+       {
+          continue;
+       }
+
+       VALUE_META_TO_NEXT_FIELD(p, 2);
+       // p now points to <version>...
+       // Need to replace supp's <local-usn> with new locally generated local-usn.
+       retVal = VmDirStringNPrintFA(av_meta_pre, sizeof(av_meta_pre), sizeof(av_meta_pre) - 1,
+                    "%s:%ld:", pAttr->type.lberbv.bv_val, localUsn);
+       BAIL_ON_VMDIR_ERROR(retVal);
+
+       //av_meta_pre contains "<attr-name>:<new-local-usn>:"
+       //re-calculate the length of attr-value-meta-data.
+       new_av_len =  (int)strlen(av_meta_pre) +
+                     (int)pAttrAttrValueMetaData->vals[i].lberbv.bv_len -
+                     (int)(p - pAttrAttrValueMetaData->vals[i].lberbv.bv_val);
+       retVal = VmDirAllocateMemory(sizeof(VDIR_BERVALUE), (PVOID)&pAVmeta);
+       BAIL_ON_VMDIR_ERROR(retVal);
+
+       retVal = VmDirAllocateMemory(new_av_len, (PVOID)&pAVmeta->lberbv.bv_val);
+       BAIL_ON_VMDIR_ERROR(retVal);
+
+       pAVmeta->bOwnBvVal = TRUE;
+       pAVmeta->lberbv.bv_len = new_av_len;
+       retVal = VmDirCopyMemory(pAVmeta->lberbv.bv_val, new_av_len, av_meta_pre, strlen(av_meta_pre));
+       BAIL_ON_VMDIR_ERROR(retVal);
+
+       retVal = VmDirCopyMemory(pAVmeta->lberbv.bv_val+strlen(av_meta_pre),
+                                 new_av_len - strlen(av_meta_pre), p, new_av_len - strlen(av_meta_pre));
+       BAIL_ON_VMDIR_ERROR(retVal);
+
+       //Write the attr-value-meta-data to backend index database.
+       retVal = dequePush(&pAttr->valueMetaDataToAdd, (PVOID)pAVmeta);
+       BAIL_ON_VMDIR_ERROR(retVal);
+       pAVmeta = NULL;
+
+       retVal = pModOp->pBEIF->pfnBEUpdateAttrValueMetaData( pModOp->pBECtx, entryId, pAttr->pATDesc->usAttrID,
+                                                             BE_INDEX_OP_TYPE_UPDATE, &pAttr->valueMetaDataToAdd );
+       BAIL_ON_VMDIR_ERROR(retVal);
+
+       //Now create mod for attribute value add/delete.
+       retVal = VmDirAllocateMemory( sizeof(VDIR_MODIFICATION), (PVOID *)&mod);
+       BAIL_ON_VMDIR_ERROR(retVal);
+
+       VALUE_META_TO_NEXT_FIELD(p, 5);
+       // p points to <opcode>...
+       pp = VmDirStringChrA(p, ':');
+       *pp = '\0';
+       mod->operation = VmDirStringToIA(p);
+       *pp = ':';
+       retVal = VmDirAttributeInitialize(pAttr->type.lberbv.bv_val, 1, pSchemaCtx, &mod->attr );
+       BAIL_ON_VMDIR_ERROR( retVal );
+
+       VALUE_META_TO_NEXT_FIELD(p, 1);
+       // p points to <value-size><value>
+       pp = VmDirStringChrA(p, ':');
+       *pp = '\0';
+       mod->attr.vals[0].lberbv.bv_len = VmDirStringToIA(p);
+       *pp = ':';
+       VALUE_META_TO_NEXT_FIELD(p, 1);
+       //p points to <value>
+       retVal = VmDirAllocateMemory(mod->attr.vals[0].lberbv.bv_len + 1, (PVOID *)&mod->attr.vals[0].lberbv.bv_val);
+       BAIL_ON_VMDIR_ERROR( retVal );
+
+       mod->attr.vals[0].bOwnBvVal = TRUE;
+       retVal = VmDirCopyMemory(mod->attr.vals[0].lberbv.bv_val, mod->attr.vals[0].lberbv.bv_len,
+                                 p, mod->attr.vals[0].lberbv.bv_len);
+       BAIL_ON_VMDIR_ERROR( retVal );
+
+       for( modp=mr->mods; modp; pre_modp=modp,modp=modp->next )
+       {
+           if (modp->attr.pATDesc->usAttrID == mod->attr.pATDesc->usAttrID &&
+               modp->operation == mod->operation)
+           {
+               break;
+           }
+       }
+
+       if (modp == NULL)
+       {
+           if (pre_modp == NULL)
+           {
+               mr->mods = mod;
+           }
+           else
+           {
+               pre_modp->next = mod;
+           }
+           mr->numMods++;
+           mod = NULL;
+       }
+       else
+       {
+           // add/delete attr value on the same attribute exists, merge the new mod into it.
+           retVal = VmDirReallocateMemoryWithInit( modp->attr.vals, (PVOID*)(&(modp->attr.vals)),
+                         (modp->attr.numVals + 2)*sizeof(VDIR_BERVALUE), (modp->attr.numVals + 1)*sizeof(VDIR_BERVALUE));
+           BAIL_ON_VMDIR_ERROR(retVal);
+           retVal = VmDirBervalContentDup(&mod->attr.vals[0], &modp->attr.vals[modp->attr.numVals]);
+           BAIL_ON_VMDIR_ERROR(retVal);
+           modp->attr.numVals++;
+           memset(&(modp->attr.vals[modp->attr.numVals]), 0, sizeof(VDIR_BERVALUE) );
+           VmDirModificationFree(mod);
+           mod = NULL;
+       }
+    }
+
+cleanup:
+    VmDirFreeAttribute(pAttr);
+    return retVal;
+
+error:
+    VmDirFreeBerval(pAVmeta);
+    VmDirModificationFree(mod);
+    goto cleanup;
+}
+
+/*
+ * Detach attribute value meta data from the entry's attributes,
+ * and set ppAttrAttrValueMetaData to the attribute value meta attribute
+ * so that it will be handled seperated.
+ */
+static
+int
+_VmDirDetatchValueMetaData(
+    PVDIR_OPERATION     pOperation,
+    PVDIR_ENTRY         pEntry,
+    PVDIR_ATTRIBUTE *   ppAttrAttrValueMetaData
+    )
+{
+    int                 retVal = LDAP_SUCCESS;
+    VDIR_ATTRIBUTE *    currAttr = NULL;
+    VDIR_ATTRIBUTE *    prevAttr = NULL;
+    PVDIR_ATTRIBUTE     pAttrAttrValueMetaData = NULL;
+
+    *ppAttrAttrValueMetaData = NULL;
+    for ( prevAttr = NULL, currAttr = pEntry->attrs;
+          currAttr;
+          prevAttr = currAttr, currAttr = currAttr->next )
+    {
+        if (VmDirStringCompareA( currAttr->type.lberbv.bv_val, ATTR_ATTR_VALUE_META_DATA, FALSE ) == 0)
+        { // Remove "attrValueMetaData" attribute from the list
+            if (prevAttr == NULL)
+            {
+                pEntry->attrs = currAttr->next;
+            }
+            else
+            {
+                prevAttr->next = currAttr->next;
+            }
+            *ppAttrAttrValueMetaData = pAttrAttrValueMetaData = currAttr;
+            goto cleanup;
+        }
+    }
+
+cleanup:
+    return retVal;
+}
+
+/* If any mod is a MOD_OP_REPLACE on a multi-value attribute,
+ * delete that attribute's attr-value-meta-data
+ */
+static
+int
+_VmDeleteOldValueMetaData(
+    PVDIR_OPERATION     pModOp,
+    PVDIR_MODIFICATION  pMods,
+    ENTRYID             entryId
+    )
+{
+    int retVal = LDAP_SUCCESS;
+    VDIR_MODIFICATION * modp = NULL;
+    DEQUE valueMetaDataToDelete = {0};
+
+    for( modp=pMods; modp; modp=modp->next )
+    {
+         if (modp->operation != MOD_OP_REPLACE || modp->attr.pATDesc->bSingleValue)
+         {
+             continue;
+         }
+         retVal = pModOp->pBEIF->pfnBEGetAttrValueMetaData(pModOp->pBECtx, entryId, modp->attr.pATDesc->usAttrID, &valueMetaDataToDelete);
+         BAIL_ON_VMDIR_ERROR(retVal);
+         if (dequeIsEmpty(&valueMetaDataToDelete))
+         {
+             continue;
+         }
+         retVal = pModOp->pBEIF->pfnBEUpdateAttrValueMetaData( pModOp->pBECtx, entryId, modp->attr.pATDesc->usAttrID,
+                                                             BE_INDEX_OP_TYPE_DELETE, &valueMetaDataToDelete );
+         BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+cleanup:
+    VmDirFreeAttrValueMetaDataContent(&valueMetaDataToDelete);
+    return retVal;
+
+error:
+    goto cleanup;
+}
+
+/*
+ * Attach and alter attribute value meta data to that attribute in pEntry
+ * so that they can be inserted into the backend index when the
+ * entry is added to backend.
+ */
+static
+int
+_VmDirAttachValueMetaData(
+    PVDIR_ATTRIBUTE pAttrAttrValueMetaData,
+    PVDIR_ENTRY     pEntry,
+    USN             localUsn
+    )
+{
+    int i = 0;
+    int retVal = 0;
+    char *p = NULL;
+    VDIR_BERVALUE *pAVmeta = NULL;
+
+    if (pAttrAttrValueMetaData == NULL)
+    {
+        goto cleanup;
+    }
+
+    for (i = 0; pAttrAttrValueMetaData->vals[i].lberbv.bv_val != NULL; i++)
+    {
+        if (!VmDirValidValueMetaEntry(&pAttrAttrValueMetaData->vals[i]))
+        {
+            retVal = ERROR_INVALID_PARAMETER;
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirAttachValueMetaData: invalid attr-value-meta: %s",
+                     VDIR_SAFE_STRING(pAttrAttrValueMetaData->vals[i].lberbv.bv_val));
+            BAIL_ON_VMDIR_ERROR(retVal);
+        }
+        if (pAttrAttrValueMetaData->vals[i].lberbv.bv_len != 0)
+        {
+            PVDIR_ATTRIBUTE attr = NULL;
+            p = VmDirStringChrA( pAttrAttrValueMetaData->vals[i].lberbv.bv_val, ':');
+            *p = '\0';
+            attr = VmDirEntryFindAttribute(pAttrAttrValueMetaData->vals[i].lberbv.bv_val, pEntry);
+            *p = ':';
+            if (attr)
+            {
+               int new_av_len = 0;
+               char av_meta_pre[VMDIR_MAX_ATTR_META_DATA_LEN] = {0};
+
+               VALUE_META_TO_NEXT_FIELD(p, 2);
+               // p now points to <version>...
+               retVal = VmDirStringNPrintFA(av_meta_pre, sizeof(av_meta_pre), sizeof(av_meta_pre) -1,
+                            "%s:%ld:", attr->type.lberbv.bv_val, localUsn);
+               BAIL_ON_VMDIR_ERROR(retVal);
+
+               //av_meta_pre contains "<attr-name>:<new-local-usn>:"
+               //re-calculate the length of attr-value-meta-data.
+               new_av_len =  (int)strlen(av_meta_pre) +
+                             (int)pAttrAttrValueMetaData->vals[i].lberbv.bv_len -
+                             (int)(p - pAttrAttrValueMetaData->vals[i].lberbv.bv_val);
+               retVal = VmDirAllocateMemory(sizeof(VDIR_BERVALUE), (PVOID)&pAVmeta);
+               BAIL_ON_VMDIR_ERROR(retVal);
+
+               retVal = VmDirAllocateMemory(new_av_len, (PVOID)&pAVmeta->lberbv.bv_val);
+               BAIL_ON_VMDIR_ERROR(retVal);
+
+               pAVmeta->bOwnBvVal = TRUE;
+               pAVmeta->lberbv.bv_len = new_av_len;
+               retVal = VmDirCopyMemory(pAVmeta->lberbv.bv_val, new_av_len, av_meta_pre, strlen(av_meta_pre));
+               BAIL_ON_VMDIR_ERROR(retVal);
+
+               retVal = VmDirCopyMemory(pAVmeta->lberbv.bv_val+strlen(av_meta_pre), new_av_len - strlen(av_meta_pre),
+                                         p, new_av_len - strlen(av_meta_pre));
+               BAIL_ON_VMDIR_ERROR(retVal);
+
+               retVal = dequePush(&attr->valueMetaDataToAdd, pAVmeta);
+               BAIL_ON_VMDIR_ERROR(retVal);
+               pAVmeta = NULL;
+            }
+        }
+    }
+
+cleanup:
+    return retVal;
+
+error:
+    VmDirFreeBerval(pAVmeta);
+    goto cleanup;
+}

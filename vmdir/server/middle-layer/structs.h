@@ -112,6 +112,11 @@ typedef struct _VDIR_PAGED_SEARCH_ENTRY_LIST
 typedef struct _VDIR_PAGED_SEARCH_RECORD
 {
     //
+    // Hash table boilerplate.
+    //
+    LW_HASHTABLE_NODE Node;
+
+    //
     // Who's using the object.
     //
     DWORD dwRefCount;
@@ -143,8 +148,6 @@ typedef struct _VDIR_PAGED_SEARCH_RECORD
     //
     PVDIR_FILTER pFilter;
 
-    LW_HASHTABLE_NODE Node;
-
     //
     // The queue of vetted ENTRYIDs. Each entry will be a page's worth of
     // IDs.
@@ -160,10 +163,16 @@ typedef struct _VDIR_PAGED_SEARCH_RECORD
     PVDIR_THREAD_INFO pThreadInfo;
 
     //
+    // The last time the client read data.
+    //
+    time_t tLastClientRead;
+
+    //
     // Indicates if the worker thread has completed processing all available
     // data. The client hasn't necessarily read it all yet, though.
     //
     BOOLEAN bProcessingCompleted;
+
     //
     // Indicates that the client has read all the data. This lets the worker
     // thread know that it can exit.
@@ -176,7 +185,6 @@ typedef struct _VDIR_PAGED_SEARCH_CACHE
     // NOTE: order of fields MUST stay in sync with struct initializer...
     PVMDIR_MUTEX        mutex;
     PLW_HASHTABLE       pHashTbl;
-    DWORD               dwTimeoutPeriod;
 } VDIR_PAGED_SEARCH_CACHE, *PVDIR_PAGED_SEARCH_CACHE;
 
 typedef struct _VDIR_LOCKOUT_CACHE
@@ -218,4 +226,13 @@ typedef struct _VDIR_DERIVED_ATTRIBUTE_INFO
     VDIR_COMPUTED_ATTRIBUE_FUNCTION     pfnComputedAttr;
 
 } VDIR_COMPUTED_ATTRIBUTE_INFO, *PVDIR_COMPUTED_ATTRIBUTE_INFO;
+
+typedef enum _VDIR_SPECIAL_SEARCH_ENTRY_TYPE
+{
+    SPECIAL_SEARCH_ENTRY_TYPE_DSE_ROOT,
+    SPECIAL_SEARCH_ENTRY_TYPE_SCHEMA_ENTRY,
+    SPECIAL_SEARCH_ENTRY_TYPE_SERVER_STATUS,
+    SPECIAL_SEARCH_ENTRY_TYPE_REPL_STATUS,
+    REGULAR_SEARCH_ENTRY_TYPE
+} VDIR_SPECIAL_SEARCH_ENTRY_TYPE;
 

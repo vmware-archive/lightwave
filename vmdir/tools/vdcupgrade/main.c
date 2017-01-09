@@ -347,7 +347,7 @@ AddComputersContainer(
                   &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf(
+    dwError = VmDirAllocateStringPrintf(
                   &pszComputersContainerDN, "%s=%s,%s",
                   ATTR_OU,
                   pszComputersContainerName,
@@ -423,7 +423,7 @@ AddCAContainer(
                   &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf(
+    dwError = VmDirAllocateStringPrintf(
                   &pszCAContainerDN, "%s=%s,%s=%s,%s",
                   ATTR_CN,
                   pszCAContainerName,
@@ -497,7 +497,7 @@ AddBuiltinDCClientsGroup(
                   &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf(
+    dwError = VmDirAllocateStringPrintf(
                   &pszDCClientsGroupDN, "cn=%s,cn=%s,%s",
                   VMDIR_DCCLIENT_GROUP_NAME,
                   VMDIR_BUILTIN_CONTAINER_NAME,
@@ -572,28 +572,28 @@ AddBuiltinCAAdminsGroup(
                   &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf(
+    dwError = VmDirAllocateStringPrintf(
                   &pszCAAdminsGroupDN, "cn=%s,cn=%s,%s",
                   VMDIR_CERT_GROUP_NAME,
                   VMDIR_BUILTIN_CONTAINER_NAME,
                   pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf(
+    dwError = VmDirAllocateStringPrintf(
                   &pszDCAdminsGroupDN, "cn=%s,cn=%s,%s",
                   VMDIR_DC_GROUP_NAME,
                   VMDIR_BUILTIN_CONTAINER_NAME,
                   pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf(
+    dwError = VmDirAllocateStringPrintf(
                   &pszDCClientsGroupDN, "cn=%s,cn=%s,%s",
                   VMDIR_DCCLIENT_GROUP_NAME,
                   VMDIR_BUILTIN_CONTAINER_NAME,
                   pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf(
+    dwError = VmDirAllocateStringPrintf(
                   &pszAdministratorDN, "cn=%s,cn=%s,%s",
                   "Administrator",
                   "Users",
@@ -884,7 +884,7 @@ UpdateDCAccountSRPSecret(
     dwError = VmDirRegReadDCAccount( &pszDCAccount );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszFilter,
+    dwError = VmDirAllocateStringPrintf( &pszFilter,
                                              "sAMAccountName=%s",
                                              pszDCAccount);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -902,7 +902,7 @@ UpdateDCAccountSRPSecret(
         dwError = VmDirGetDomainName( "localhost", &pszDomain );
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirAllocateStringAVsnprintf( &pszUPN,
+        dwError = VmDirAllocateStringPrintf( &pszUPN,
                                                  "%s@%s",
                                                  pszDCAccount,
                                                  pszDomain);
@@ -957,7 +957,7 @@ UpdateEntriesACL(
     int         totalCnt = 0;
     int         failedCnt = 0;
 
-    dwError = VmDirAllocateStringAVsnprintf( &pszFilter,
+    dwError = VmDirAllocateStringPrintf( &pszFilter,
                                              "%s=%s",
                                              ATTR_KRB_UPN,
                                              pszAdminUPN);
@@ -973,7 +973,7 @@ UpdateEntriesACL(
 
 
     VMDIR_SAFE_FREE_MEMORY(pszFilter);
-    dwError = VmDirAllocateStringAVsnprintf( &pszFilter,
+    dwError = VmDirAllocateStringPrintf( &pszFilter,
                                              "%s=*",
                                              ATTR_OBJECT_CLASS);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -986,7 +986,7 @@ UpdateEntriesACL(
                                         &pszDomainDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringAVsnprintf(&pAclString,
+    dwError = VmDirAllocateStringPrintf(&pAclString,
                 "O:%sG:BAD:(A;;RPWP;;;%s)(A;;GXNRNWGXCCDCRPWP;;;BA)(A;;GXNRNWGXCCDCRPWP;;;%s)",
                                             pAdminSid,
                                             VMDIR_SELF_SID,
@@ -994,7 +994,7 @@ UpdateEntriesACL(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_SAFE_FREE_MEMORY(pszFilter);
-    dwError = VmDirAllocateStringAVsnprintf( &pszFilter,
+    dwError = VmDirAllocateStringPrintf( &pszFilter,
                                              "%s=*",
                                              ATTR_OBJECT_SECURITY_DESCRIPTOR);
     BAIL_ON_VMDIR_ERROR(dwError);

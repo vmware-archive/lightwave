@@ -60,6 +60,19 @@ VmDirVmAclInit(
     dwError = VmDirInitRidSynchThr( &(gSidGenState.pRIDSyncThr) );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    //
+    // If we already have a system domain then we can create the legacy
+    // security descriptor we use for the compatibility shim. If not, the
+    // SD will be created when promotion occurs.
+    //
+    if (BERVAL_NORM_VAL(gVmdirServerGlobals.systemDomainDN) != NULL)
+    {
+        dwError = VmDirSrvCreateLegacySecurityDescriptor(
+                    BERVAL_NORM_VAL(gVmdirServerGlobals.systemDomainDN),
+                    &gVmdirServerGlobals.vsdLegacyDescriptor);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
 cleanup:
     return dwError;
 

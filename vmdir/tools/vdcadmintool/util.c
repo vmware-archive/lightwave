@@ -383,7 +383,7 @@ VdcadminUrgentReplicationRequest(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszRemoteHostName, remoteHostName);
+    dwError = VmDirAllocateStringPrintf(&pszRemoteHostName, remoteHostName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirUrgentReplicationRequest(pszRemoteHostName);

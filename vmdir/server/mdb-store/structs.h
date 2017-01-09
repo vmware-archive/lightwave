@@ -57,6 +57,16 @@ typedef struct _VDIR_MDB_INDEX_ITERATOR
 
 } VDIR_MDB_INDEX_ITERATOR, *PVDIR_MDB_INDEX_ITERATOR;
 
+typedef struct _VDIR_MDB_PARENT_ID_INDEX_ITERATOR
+{
+    PVDIR_DB_TXN    pTxn;
+    PVDIR_DB_DBC    pCursor;
+    ENTRYID         parentId;
+    ENTRYID         entryId;
+    BOOLEAN         bAbort;
+
+} VDIR_MDB_PARENT_ID_INDEX_ITERATOR, *PVDIR_MDB_PARENT_ID_INDEX_ITERATOR;
+
 typedef struct _VDIR_MDB_GLOBALS
 {
     // NOTE: order of fields MUST stay in sync with struct initializer...

@@ -36,7 +36,7 @@
  */
 DWORD
 VmDirSchemaLibInit(
-    VOID
+    PVMDIR_MUTEX*   ppModMutex
     )
 {
     DWORD   dwError = 0;
@@ -46,6 +46,12 @@ VmDirSchemaLibInit(
     //   when legacy support is no longer required
     VDIR_SCHEMA_BOOTSTRAP_TABLE ATTable[] =
             VDIR_LEGACY_SCHEMA_BOOTSTRP_ATTR_INITIALIZER;
+
+    if (!ppModMutex)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     dwError = VdirSyntaxLoad();
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -79,6 +85,8 @@ VmDirSchemaLibInit(
     // legacy support
     dwError = VmDirSchemaLibInitLegacy();
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppModMutex = gVdirSchemaGlobals.cacheModMutex;
 
 cleanup:
     return dwError;

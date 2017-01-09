@@ -19639,6 +19639,30 @@ attributetypes: (
     SINGLE-VALUE
     )
 
+attributetypes: (
+    VMWare.STS.attribute.103
+    NAME 'vmwSTSCertificateAccountLinkingUseUPN'
+    DESC 'VMWare identity Service - Account linking using certificate principal name in SAN'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.104
+    NAME 'vmwSTSUserHintAttributeName'
+    DESC 'VMWare identity Service - Name of Attribute that maps to User name hint for user account linking'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    VMWare.STS.attribute.105
+    NAME 'vmwSTSClientCertEnableUserNameHint'
+    DESC 'VMWare identity Service - SSL client certificate authentication enable user name hint'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
 objectClasses: (
     VMWare.STS.objectclass.1
     NAME 'vmwSTSTenant'
@@ -19700,6 +19724,8 @@ objectClasses: (
          $ vmwSTSAuthnTypes
          $ userCertificate
          $ vmwSTSUpnSuffixes
+         $ vmwSTSUserHintAttributeName
+         $ vmwSTSCertificateAccountLinkingUseUPN
          $ vmwSTSIdentityStoreFlags
          )
     )
@@ -19919,6 +19945,7 @@ objectClasses: (
          $ vmwSTSClientCertCRLUrl
          $ vmwSTSClientCertCRLCacheSize
          $ vmwSTSClientCertCustomCertPolicyOid
+         $ vmwSTSClientCertEnableUserNameHint
        )
    )
 

@@ -73,11 +73,22 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 
 #define VMKDC_RANDPWD_MAX_RETRY 128 /* Prevents RpcVmDirCreateUser() from looping forever */
 
+// Versions and DFLs
+#define VMDIR_DFL_UNKNOWN "UNKNOWN"
+#define VMDIR_DFL_5_5 "5.5"
+#define VMDIR_DFL_6_0 "6.0"
+#define VMDIR_DFL_6_5 "6.5"
+#define VMDIR_DFL_6_6 "6.6"
+#define VMDIR_DFL_7_0 "7.0"
+#define VMDIR_DFL_DEFAULT 1
+#define VMDIR_DFL_MODDN 3
+
 // Special SELF sid for internal use (not assigned to object as attribute)
 #define VMDIR_SELF_SID "S-1-7-32-666"
 
 /* mutexes/threads/conditions */
 typedef struct _VMDIR_MUTEX* PVMDIR_MUTEX;
+typedef struct _VMDIR_RWLOCK* PVMDIR_RWLOCK;
 typedef struct _VM_DIR_CONNECTION_ *PVM_DIR_CONNECTION;
 typedef struct _VM_DIR_SECURITY_CONTEXT_ *PVM_DIR_SECURITY_CONTEXT;
 
@@ -286,13 +297,6 @@ VmDirVsnprintf(
     va_list  args
     );
 
-DWORD
-VmDirAllocateStringAVsnprintf(
-    PSTR*    ppszOut,
-    PCSTR    pszFormat,
-    ...
-    );
-
 ULONG
 VmDirLengthRequiredSid(
     IN UCHAR SubAuthorityCount
@@ -345,7 +349,7 @@ VmDirAllocateStringA(
 DWORD
 VmDirAllocateStringOfLenA(
     PCSTR   pszSource,
-    DWORD   dwLength,
+    SIZE_T  sLength,
     PSTR*   ppszDestination
     );
 
@@ -615,6 +619,20 @@ VmDirSrvCreateDomainDN(
     PSTR* ppszDomainDN
     );
 
+DWORD
+VmDirConnectLDAPServerWithMachineAccount(
+    PCSTR  pszHostName,
+    PCSTR  pszDomain,
+    LDAP** ppLd
+    );
+
+DWORD
+VmDirGetDomainFuncLvlInternal(
+    LDAP*  pLd,
+    PCSTR  pszDomain,
+    PDWORD pdwFuncLvl
+    );
+
 #if defined(HAVE_DCERPC_WIN32)
 int uuid_parse(char *str, uuid_t ret_uuid);
 #endif
@@ -673,13 +691,6 @@ VmKdcGenerateRandomPassword(
     PSTR *ppRandPwd);
 
 // cmd line args parsing helpers
-
-typedef VOID (*USAGE_FUNCTION)(PVOID pContext);
-typedef DWORD (*POST_VALIDATION_CALLBACK)(PVOID pContext);
-typedef DWORD (*COMMAND_PARAMETER_CALLBACK_NO_PARAM)(PVOID pContext);
-typedef DWORD (*COMMAND_PARAMETER_CALLBACK_STRING_PARAM)(PVOID pContext, PCSTR Parameter);
-typedef DWORD (*COMMAND_PARAMETER_CALLBACK_INTEGER_PARAM)(PVOID pContext, DWORD Parameter);
-
 typedef enum
 {
     CL_NO_PARAMETER,
@@ -689,36 +700,39 @@ typedef enum
 
 typedef struct
 {
-    char Switch; // e.g., 's', for "-s".
-    const char *LongSwitch; // e.g., "silent", for "--silent".
-    VMDIR_COMMAND_LINE_PARAMETER_TYPE Type; // If this flag takes a parameter (and, if so, what kind).
-    PVOID Callback; // The function we call when this flag is seen.
+    char                                Switch; // e.g., 's', for "-s".
+    const char*                         LongSwitch; // e.g., "silent", for "--silent".
+    VMDIR_COMMAND_LINE_PARAMETER_TYPE   Type; // If this flag takes a parameter (and, if so, what kind).
+    PVOID                               Ptr; // Ptr to store parameter value
 } VMDIR_COMMAND_LINE_OPTION, *PVMDIR_COMMAND_LINE_OPTION;
+
+typedef VOID (*USAGE_FUNCTION)(PVOID pContext);
+typedef DWORD (*POST_VALIDATION_CALLBACK)(PVOID pContext);
 
 typedef struct
 {
     //
-    // We call this if the app should print its usage to the command line (i.e., the
-    // user gave incorrect parameters to the command).
-    //
-    USAGE_FUNCTION ShowUsage;
-
-    //
     // This is called after all parameters have been parsed and allows for the client
     // to do cross-parameter validation.
     //
-    POST_VALIDATION_CALLBACK ValidationRoutine;
+    POST_VALIDATION_CALLBACK    ValidationRoutine;
 
     //
-    // The command line options that this client supports.
+    // We call this if the app should print its usage to the command line (i.e., the
+    // user gave incorrect parameters to the command).
     //
-    VMDIR_COMMAND_LINE_OPTION Options[];
-} VMDIR_COMMAND_LINE_OPTIONS, *PVMDIR_COMMAND_LINE_OPTIONS;
+    USAGE_FUNCTION              ShowUsage;
+
+    //
+    // Argument context for callback functions
+    //
+    PVOID                       pvContext;
+} VMDIR_PARSE_ARG_CALLBACKS, *PVMDIR_PARSE_ARG_CALLBACKS;
 
 DWORD
 VmDirParseArguments(
-    PVMDIR_COMMAND_LINE_OPTIONS Options,
-    PVOID pvContext,
+    VMDIR_COMMAND_LINE_OPTION Options[],
+    PVMDIR_PARSE_ARG_CALLBACKS Callbacks,
     int argc,
     PSTR *argv
     );
@@ -894,7 +908,20 @@ typedef enum
 #define VMDIR_REG_KEY_SUPPRES_TRACK_LLT       "SuppressTrackLLTContainer"
 #define VMDIR_REG_KEY_URGENT_REPL_TIMEOUT_MSEC "UrgentReplTimeoutMilliSec"
 #define VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD "PagedSearchReadAhead"
+#define VMDIR_REG_KEY_COPY_DB_WRITES_MIN      "CopyDbWritesMin"
+#define VMDIR_REG_KEY_COPY_DB_INTERVAL_IN_SEC "CopyDbIntervalInSec"
+#define VMDIR_REG_KEY_COPY_DB_BLOCK_WRITE_IN_SEC "CopyDbBlockWriteInSec"
 #define VMDIR_REG_KEY_OVERRIDE_PASS_SCHEME    "OverridePassScheme"
+//
+// The expiration period for deleted entries. Any entries older than this will
+// be permanently expunged once the reaping thread runs. The default is 45 days.
+//
+#define VMDIR_REG_KEY_TOMBSTONE_EXPIRATION_IN_SEC "TombstoneExpirationPeriodInSec"
+//
+// How often the reaping thread wakes up to look for old entries. The default is
+// 24 hours.
+//
+#define VMDIR_REG_KEY_TOMBSTONE_REAPING_FREQ_IN_SEC  "TombstoneReapingThreadFreqInSec"
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"
@@ -927,7 +954,47 @@ VmDirIsMutexInitialized(
     PVMDIR_MUTEX pMutex
 );
 
+DWORD
+VmDirAllocateRWLock(
+    PVMDIR_RWLOCK*  ppLock
+    );
 
+DWORD
+VmDirInitializeRWLockContent(
+    PVMDIR_RWLOCK   pLock
+    );
+
+VOID
+VmDirFreeRWLock(
+    PVMDIR_RWLOCK   pLock
+    );
+
+VOID
+VmDirFreeRWLockContent(
+    PVMDIR_RWLOCK   pLock
+    );
+
+DWORD
+VmDirRWLockReadLock(
+    PVMDIR_RWLOCK   pLock,
+    DWORD           dwMilliSec
+    );
+
+DWORD
+VmDirRWLockWriteLock(
+    PVMDIR_RWLOCK   pLock,
+    DWORD           dwMilliSec
+    );
+
+DWORD
+VmDirRWLockUnlock(
+    PVMDIR_RWLOCK   pLock
+    );
+
+BOOLEAN
+VmDirIsRWLockInitialized(
+    PVMDIR_RWLOCK   pLock
+    );
 
 DWORD
 VmDirAllocateCondition(
@@ -1803,6 +1870,11 @@ VmDirUnMarshalContainer(
     PVMDIR_IPC_DATA_CONTAINER *ppContainer
     );
 
+VOID
+VmDirFreeIpcContainer(
+    PVMDIR_IPC_DATA_CONTAINER pContainer
+    );
+
 //securityutil.c
 DWORD
 VmDirInitializeSecurityContext(
@@ -2122,6 +2194,38 @@ VmDirStrToNameAndNumber(
 VOID
 VmDirFreeReplVector(
     PVMDIR_REPL_UTDVECTOR  pVector
+    );
+
+DWORD
+VmDirStringListFromMultiString(
+    PCSTR pszString,
+    DWORD dwCountHint, // 0 if caller doesn't know
+    PVMDIR_STRING_LIST *ppStrList
+    );
+
+DWORD
+VmDirMultiStringFromStringList(
+    PVMDIR_STRING_LIST pStrList,
+    PSTR *ppszString,
+    PDWORD pdwByteCount
+    );
+
+DWORD
+VmDirMapVersionToMaxDFL(
+    PCSTR	pszVersion,
+    PDWORD	pdwDFL
+    );
+
+VOID
+VmDirLdapUnbind(
+    LDAP** ppLd
+    );
+
+DWORD
+VmDirSetDomainFuncLvlInternal(
+    LDAP* pLd,
+    PCSTR pszDomainName,
+    DWORD dwFuncLvl
     );
 
 #ifdef __cplusplus

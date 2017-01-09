@@ -284,7 +284,6 @@ VmDirIndexCfgCopy(
     pNode = pIndexCfg->pNewUniqScopes->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
         pszOrg = (PSTR)pNode->pElement;
 
         dwError = VmDirAllocateStringA(pszOrg, &pszCpy);
@@ -295,13 +294,12 @@ VmDirIndexCfgCopy(
         BAIL_ON_VMDIR_ERROR(dwError);
         pszCpy = NULL;
 
-        pNode = pNextNode;
+        pNode = pNode->pNext;
     }
 
     pNode = pIndexCfg->pDelUniqScopes->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
         pszOrg = (PSTR)pNode->pElement;
 
         dwError = VmDirAllocateStringA(pszOrg, &pszCpy);
@@ -312,13 +310,12 @@ VmDirIndexCfgCopy(
         BAIL_ON_VMDIR_ERROR(dwError);
         pszCpy = NULL;
 
-        pNode = pNextNode;
+        pNode = pNode->pNext;
     }
 
     pNode = pIndexCfg->pBadUniqScopes->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
         pszOrg = (PSTR)pNode->pElement;
 
         dwError = VmDirAllocateStringA(pszOrg, &pszCpy);
@@ -329,7 +326,7 @@ VmDirIndexCfgCopy(
         BAIL_ON_VMDIR_ERROR(dwError);
         pszCpy = NULL;
 
-        pNode = pNextNode;
+        pNode = pNode->pNext;
     }
 
     pIndexCfgCpy->bDefaultIndex = pIndexCfg->bDefaultIndex;
@@ -351,6 +348,151 @@ error:
 
     VMDIR_SAFE_FREE_MEMORY(pszCpy);
     VmDirFreeIndexCfg(pIndexCfgCpy);
+    goto cleanup;
+}
+
+DWORD
+VmDirIndexCfgAddUniqueScopeMod(
+    PVDIR_INDEX_CFG pIndexCfg,
+    PCSTR           pszUniqScope
+    )
+{
+    DWORD   dwError = 0;
+    PVDIR_LINKED_LIST   pNewScopes = NULL;
+    PVDIR_LINKED_LIST   pDelScopes = NULL;
+    PVDIR_LINKED_LIST_NODE  pNode = NULL;
+    PVDIR_LINKED_LIST_NODE  pNext = NULL;
+    PSTR    pszScopeCpy = NULL;
+
+    if (!pIndexCfg || IsNullOrEmptyString(pszUniqScope))
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pNewScopes = pIndexCfg->pNewUniqScopes;
+    pDelScopes = pIndexCfg->pDelUniqScopes;
+
+    if (LwRtlHashMapFindKey(pIndexCfg->pUniqScopes, NULL, pszUniqScope))
+    {
+        pNode = pNewScopes->pTail;
+        while (pNode)
+        {
+            PSTR pszPendingScope = (PSTR)pNode->pElement;
+            pNext = pNode->pNext;
+            if (VmDirStringCompareA(pszPendingScope, pszUniqScope, FALSE) == 0)
+            {
+                BAIL_WITH_VMDIR_ERROR(dwError, ERROR_ALREADY_EXISTS);
+            }
+            pNode = pNext;
+        }
+
+        dwError = VmDirAllocateStringA(pszUniqScope, &pszScopeCpy);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLinkedListInsertHead(pNewScopes, pszScopeCpy, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        pNode = pDelScopes->pTail;
+        while (pNode)
+        {
+            PSTR pszPendingScope = (PSTR)pNode->pElement;
+            pNext = pNode->pNext;
+            if (VmDirStringCompareA(pszPendingScope, pszUniqScope, FALSE) == 0)
+            {
+                dwError = VmDirLinkedListRemove(pDelScopes, pNode);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                goto cleanup;
+            }
+            pNode = pNext;
+        }
+
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_ALREADY_EXISTS);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    VMDIR_SAFE_FREE_MEMORY(pszScopeCpy);
+    goto cleanup;
+}
+
+DWORD
+VmDirIndexCfgDeleteUniqueScopeMod(
+    PVDIR_INDEX_CFG pIndexCfg,
+    PCSTR           pszUniqScope
+    )
+{
+    DWORD   dwError = 0;
+    PVDIR_LINKED_LIST   pNewScopes = NULL;
+    PVDIR_LINKED_LIST   pDelScopes = NULL;
+    PVDIR_LINKED_LIST_NODE  pNode = NULL;
+    PVDIR_LINKED_LIST_NODE  pNext = NULL;
+    PSTR    pszScopeCpy = NULL;
+
+    if (!pIndexCfg || IsNullOrEmptyString(pszUniqScope))
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pNewScopes = pIndexCfg->pNewUniqScopes;
+    pDelScopes = pIndexCfg->pDelUniqScopes;
+
+    if (LwRtlHashMapFindKey(pIndexCfg->pUniqScopes, NULL, pszUniqScope))
+    {
+        pNode = pNewScopes->pTail;
+        while (pNode)
+        {
+            PSTR pszPendingScope = (PSTR)pNode->pElement;
+            pNext = pNode->pNext;
+            if (VmDirStringCompareA(pszPendingScope, pszUniqScope, FALSE) == 0)
+            {
+                dwError = VmDirLinkedListRemove(pNewScopes, pNode);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                goto cleanup;
+            }
+            pNode = pNext;
+        }
+
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NOT_FOUND);
+    }
+    else
+    {
+        pNode = pDelScopes->pTail;
+        while (pNode)
+        {
+            PSTR pszPendingScope = (PSTR)pNode->pElement;
+            pNext = pNode->pNext;
+            if (VmDirStringCompareA(pszPendingScope, pszUniqScope, FALSE) == 0)
+            {
+                BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NOT_FOUND);
+            }
+            pNode = pNext;
+        }
+
+        dwError = VmDirAllocateStringA(pszUniqScope, &pszScopeCpy);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLinkedListInsertHead(pDelScopes, pszScopeCpy, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
     goto cleanup;
 }
 
@@ -454,7 +596,7 @@ VmDirIndexCfgValidateUniqueScopeMods(
                     BAIL_ON_VMDIR_ERROR(dwError);
 
                     dwError = VmDirLinkedListRemove(pNewScopes, pNode);
-                    BAIL_ON_VMDIR_ERROR(dwError);        
+                    BAIL_ON_VMDIR_ERROR(dwError);
 
                     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                             "%s will revert the scope '%s' for attr '%s' "

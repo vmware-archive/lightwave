@@ -213,3 +213,71 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirStringListFromMultiString(
+    PCSTR pszMultiString,
+    DWORD dwCountHint, // 0 if caller doesn't know
+    PVMDIR_STRING_LIST *ppStrList
+    )
+{
+    PVMDIR_STRING_LIST pStringList = NULL;
+    DWORD dwError = 0;
+
+    dwError = VmDirStringListInitialize(&pStringList, dwCountHint);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    do
+    {
+        dwError = VmDirStringListAddStrClone(pszMultiString, pStringList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pszMultiString += strlen(pszMultiString) + 1;
+    } while (*pszMultiString != '\0');
+
+    *ppStrList = pStringList;
+
+cleanup:
+    return dwError;
+error:
+    VmDirStringListFree(pStringList);
+    goto cleanup;
+}
+
+DWORD
+VmDirMultiStringFromStringList(
+    PVMDIR_STRING_LIST pStrList,
+    PSTR *ppszString,
+    PDWORD pdwByteCount // includes all nulls, including final double
+    )
+{
+    PSTR pszMultiString = NULL;
+    PSTR pszMultiStringStart = NULL;
+    DWORD dwSize = 1; // 1 for terminating null
+    DWORD i = 0;
+    DWORD dwError = 0;
+
+    for (i = 0; i < pStrList->dwCount; ++i)
+    {
+        dwSize += strlen(pStrList->pStringList[i]) + 1;
+    }
+
+    dwError = VmDirAllocateMemory(dwSize, (PVOID*)&pszMultiStringStart);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pszMultiString = pszMultiStringStart;
+    for (i = 0; i < pStrList->dwCount; ++i)
+    {
+        strcpy(pszMultiString, pStrList->pStringList[i]);
+        pszMultiString += strlen(pStrList->pStringList[i]) + 1;
+    }
+    *pszMultiString = '\0';
+
+    *ppszString = pszMultiStringStart;
+    *pdwByteCount = dwSize;
+
+cleanup:
+    return dwError;
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszMultiString);
+    goto cleanup;
+}

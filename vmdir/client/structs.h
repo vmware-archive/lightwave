@@ -51,10 +51,4 @@ typedef struct _VMDIR_ERROR_CODE_DESC
     PCSTR desc;
 } VMDIR_ERROR_CODE_DESC, *PVMDIR_ERROR_CODE_DESC;
 
-typedef struct _VMDIR_DFL_VERSION_MAP
-{
-    DWORD dfl;
-    PCSTR version;
-} VMDIR_DFL_VERSION_MAP, *PVMDIR_DFL_VERSION_MAP;
-
 #endif

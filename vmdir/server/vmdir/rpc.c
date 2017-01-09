@@ -458,6 +458,17 @@ VmDirListenRpcServer(
     )
 {
     volatile ULONG ulError = 0;
+    BOOLEAN bHeartbeat = TRUE;
+
+    ulError  = VmDirCreateHeartbeatThread();
+    if (ulError)
+    {
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+                "Was not able to start vmafd heartbeat. Skipping." );
+
+        bHeartbeat = FALSE;
+        ulError = 0;
+    }
 
     DCETHREAD_TRY
     {
@@ -480,6 +491,11 @@ VmDirListenRpcServer(
     BAIL_ON_VMDIR_ERROR(ulError);
 
 cleanup:
+
+    if (bHeartbeat)
+    {
+        VmDirKillHeartbeatThread();
+    }
 
 #if !defined(HAVE_DCERPC_WIN32)
     raise(SIGTERM); // indicate that process must terminate

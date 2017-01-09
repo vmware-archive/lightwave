@@ -17,13 +17,6 @@
 #include "includes.h"
 
 DWORD
-VmDirVsnprintf(
-    PSTR*    ppszOut,
-    PCSTR    pszFormat,
-    va_list  args
-    );
-
-DWORD
 VmDirAllocateMemory(
     size_t   dwSize,
     PVOID*   ppMemory
@@ -211,49 +204,9 @@ VmDirFreeMemory(
 }
 
 DWORD
-VmDirAllocateStringAVsnprintf(
-    PSTR*   ppszOut,
-    PCSTR   pszFormat,
-    ...
-    )
-{
-    DWORD   dwError = 0;
-    BOOLEAN bVAEnd = FALSE;
-    va_list args;
-
-    if (!ppszOut || !pszFormat)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    va_start(args, pszFormat);
-    bVAEnd = TRUE;
-
-    dwError = VmDirVsnprintf(
-                ppszOut,
-                pszFormat,
-                args);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-
-    if (bVAEnd)
-    {
-        va_end(args);
-    }
-
-    return dwError;
-
-error:
-
-    goto cleanup;
-}
-
-DWORD
 VmDirAllocateStringOfLenA(
     PCSTR   pszSource,
-    DWORD   dwLength,
+    SIZE_T  sLength,
     PSTR*   ppszDestination
     )
 {
@@ -269,19 +222,19 @@ VmDirAllocateStringOfLenA(
     //
     // Check if the user is trying to copy more than is available.
     //
-    if (strlen(pszSource) < dwLength)
+    if (strlen(pszSource) < sLength)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateMemory(dwLength + 1, (PVOID*)&pszNewString);
+    dwError = VmDirAllocateMemory(sLength + 1, (PVOID*)&pszNewString);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 #ifndef _WIN32
-    memcpy(pszNewString, pszSource, dwLength);
+    memcpy(pszNewString, pszSource, sLength);
 #else
-    memcpy_s(pszNewString, dwLength + 1, pszSource, dwLength);
+    memcpy_s(pszNewString, sLength + 1, pszSource, sLength);
 #endif
     *ppszDestination = pszNewString;
 

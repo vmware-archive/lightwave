@@ -2010,9 +2010,9 @@ VmDirCertificateFileNameFromHostName(
     }
     else
     {
-        dwError = VmDirAllocateStringAVsnprintf( &pszLocalRsaServerCertFileName, "%s", RSA_SERVER_CERT);
+        dwError = VmDirAllocateStringPrintf( &pszLocalRsaServerCertFileName, "%s", RSA_SERVER_CERT);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                      "VmDirAllocateStringAVsnprintf(pszLocalRsaServerCertFileName) failed" );
+                                      "VmDirAllocateStringPrintf(pszLocalRsaServerCertFileName) failed" );
 
         pszSlash = VmDirStringRChrA(pszLocalRsaServerCertFileName, VMDIR_PATH_SEPARATOR_STR[0]);
 
@@ -2026,9 +2026,9 @@ VmDirCertificateFileNameFromHostName(
 
         *(pszSlash + 1) = '\0';
 
-        dwError = VmDirAllocateStringAVsnprintf( &pszLocalFileName, "%s%s.pem", pszLocalRsaServerCertFileName, pszPartnerHostName);
+        dwError = VmDirAllocateStringPrintf( &pszLocalFileName, "%s%s.pem", pszLocalRsaServerCertFileName, pszPartnerHostName);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                      "VmDirAllocateStringAVsnprintf(pszLocalFileName) failed" );
+                                      "VmDirAllocateStringPrintf(pszLocalFileName) failed" );
     }
 
     *ppszFileName = pszLocalFileName;
@@ -3268,10 +3268,10 @@ cleanup:
 
 error:
     VMDIR_SAFE_FREE_MEMORY(pszCN);
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, 
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                      "%s, (%s) failed with error code (%u)",
                      __FUNCTION__,
-                     VDIR_SAFE_STRING(pszDN), 
+                     VDIR_SAFE_STRING(pszDN),
                      dwError );
     goto cleanup;
 }
@@ -3302,7 +3302,7 @@ VmDirGetDCDNList(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 
-    dwError = VmDirAllocateStringAVsnprintf(&pszDCDN,
+    dwError = VmDirAllocateStringPrintf(&pszDCDN,
                                             "%s=%s,%s",
                                             ATTR_OU,
                                             VMDIR_DOMAIN_CONTROLLERS_RDN_VAL,
@@ -3488,6 +3488,16 @@ VmDirGetTimeInMilliSec(
     currentTime.LowPart  = currentFileTime.dwLowDateTime;
     currentTime.HighPart = currentFileTime.dwHighDateTime;
 
+    /*
+     * FILETIME.QuadPart represents the number of 100-nanosecond intervals
+     * since January 1, 1601 (UTC).
+     *
+     * First, convert it to the number of 100-nanosecond intervals since
+     * January 1, 1970 (UTC).
+     *
+     * Then, convert it to milliseconds since January 1, 1970 (UTC).
+     */
+    currentTime.QuadPart -= WIN_EPOCH;
     iTimeInMSec = (currentTime.QuadPart * 100) / NSECS_PER_MSEC;
 
 #elif !defined(__APPLE__)
@@ -3569,5 +3579,150 @@ VmDirCompareVersion(
     }
 
     return 0;
+}
+
+/**
+ * Get maximum domain functional level for given version.
+ * If not known for version, return the default (lowest) dfl.
+ *
+ * The mapping is succesful when the given version begins with a version
+ * in the table. Versions in the table are typically in the form of "major.minor"
+ * as DFL should avoid being changed except for major and minor releases.
+ *
+ * Example 1: pszVersion of "7.0.1-a" will match "7.0" and return a DFL of '3'
+ * Example 2: pszVersion of "7" will not match any DFL version and return '1'
+ * Example 3: pszVersion of "6.5" will match "6.5" and return a DFL of '2'
+ */
+DWORD
+VmDirMapVersionToMaxDFL(
+    PCSTR	pszVersion,
+    PDWORD	pdwDFL
+    )
+{
+    DWORD dwError = 0;
+    DWORD i = 0;
+    BOOLEAN matched = FALSE;
+    VMDIR_DFL_VERSION_MAP dflVersionTable[] = VMDIR_DFL_VERSION_INITIALIZER;
+    DWORD dwTableSize = sizeof(dflVersionTable)/sizeof(dflVersionTable[0]);
+
+    if ( !pdwDFL)
+    {
+	dwError = ERROR_INVALID_PARAMETER;
+	BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // Search table
+    for(i = 0; i < dwTableSize; i++)
+    {
+	if (VmDirStringNCompareA(
+                        pszVersion,
+                        dflVersionTable[i].version,
+                        VmDirStringLenA(dflVersionTable[i].version),
+                        FALSE) == 0)
+        {
+            *pdwDFL = dflVersionTable[i].dfl;
+            matched = TRUE;
+            break;
+        }
+    }
+
+    if (!matched)
+    {
+        VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+                          "DFL not found for version %s, default to %d",
+                          pszVersion, VMDIR_DFL_DEFAULT);
+	*pdwDFL = VMDIR_DFL_DEFAULT;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+
+}
+
+DWORD
+VmDirGetDomainFuncLvlInternal(
+    LDAP* pLd,
+    PCSTR pszDomain,
+    PDWORD pdwFuncLvl
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwFuncLvl = 0;
+    LDAPMessage *pResult = NULL;
+    PCSTR  pszAttrFuncLvl = ATTR_DOMAIN_FUNCTIONAL_LEVEL;
+    PCSTR  ppszAttrs[] = { pszAttrFuncLvl, NULL };
+    PCSTR  pszFilter = "objectclass=*";
+    PSTR pszDomainDN = NULL;
+    struct berval** ppValues = NULL;
+
+    if (!pLd || !pszDomain || !pdwFuncLvl)
+    {
+	dwError = ERROR_INVALID_PARAMETER;
+	BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // Get the domain DN from the domain name.
+    dwError = VmDirSrvCreateDomainDN(
+                  pszDomain,
+                  &pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = ldap_search_ext_s(
+		pLd,
+		pszDomainDN,
+		LDAP_SCOPE_BASE,
+		pszFilter,
+		(PSTR*)ppszAttrs,
+		FALSE, /* get values also */
+		NULL,  /* server controls */
+		NULL,  /* client controls */
+		NULL,  /* timeout         */
+		0,     /* size limit      */
+		&pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (ldap_count_entries(pLd, pResult) > 0)
+    {
+	LDAPMessage *pEntry = ldap_first_entry(pLd, pResult);
+
+	if (pEntry)
+	{
+	    ppValues = ldap_get_values_len(pLd,
+					   pEntry,
+					   pszAttrFuncLvl);
+
+	    if (ppValues && ldap_count_values_len(ppValues) > 0)
+	    {
+
+		dwFuncLvl = atoi(ppValues[0]->bv_val);
+
+	    }
+	}
+    }
+
+    *pdwFuncLvl = dwFuncLvl;
+
+cleanup:
+
+    if (ppValues)
+    {
+	ldap_value_free_len(ppValues);
+    }
+
+    if (pResult)
+    {
+	ldap_msgfree(pResult);
+    }
+
+    VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
 }
 

@@ -139,6 +139,7 @@ cleanup:
 
     VMDIR_SAFE_FREE_MEMORY(pServerInfo);
     VMDIR_SAFE_FREE_MEMORY(pszName);
+
     return dwError;
 
 error:
@@ -148,39 +149,196 @@ error:
 
 static
 VOID
-_VmDirPrintReplState(
-    PCSTR             pszHostName,
-    PVMDIR_REPL_STATE pReplState)
+_VmDirPrintReplStateList(
+    PVMDIR_REPL_STATE *pReplStateList,
+    DWORD dwListCount)
 {
     PVMDIR_REPL_UTDVECTOR       pVector = NULL;
+    DWORD dwCount = 0;
+    DWORD dwICount = 0;
+    USN partnerReplUsn = 0;
+    USN partnerOrigUsn = 0;
+    USN partnerLocalUsn = 0;
+    USN partnerLocalOrigUsn = 0;
+    PSTR pszPartnerName = NULL;
+    PSTR pszHighestReplUsn = NULL;
+    PSTR pszHighestOrigUsn = NULL;
+    PSTR pszLag = NULL;
+    BOOLEAN bPartnerFound = FALSE;
+    BOOLEAN bPartnerRaFound = FALSE;
     PVMDIR_REPL_REPL_AGREEMENT  pRA = NULL;
+    DWORD dwError = 0;
 
-    if (pReplState)
+    for (dwCount = 0; dwCount < dwListCount; dwCount++)
     {
-        printf("Domain Controller: %s\n",VDIR_SAFE_STRING(pReplState->pszHost));
-        printf("Invocation ID: %s\n",VDIR_SAFE_STRING(pReplState->pszInvocationId));
-        printf("Replication cycle count: %d\n",pReplState->dwCycleCount);
-        printf("Max consumable  USN: %lu\n",pReplState->maxConsumableUSN);
-        printf("Max originating USN: %lu\n",pReplState->maxOriginatingUSN);
 
-        pVector = pReplState->pReplUTDVec;
+        printf("\nDomain Controller: %s\n",VDIR_SAFE_STRING(pReplStateList[dwCount]->pszHost));
+        printf("  Invocation ID: ......... %s\n",VDIR_SAFE_STRING(pReplStateList[dwCount]->pszInvocationId));
+        printf("  Replication Cycles: .... %d\n",pReplStateList[dwCount]->dwCycleCount);
+        printf("  Highest Replicable  USN: %lu\n",pReplStateList[dwCount]->maxConsumableUSN);
+        printf("  Highest Originating USN: %lu\n",pReplStateList[dwCount]->maxOriginatingUSN);
+
+
+        pVector = pReplStateList[dwCount]->pReplUTDVec;
+
+        if (pVector)
+        {
+            printf("\n"
+                   "  Replication Status:                             Highest      Highest\n"
+                   "                                               Replicated  Originating   Trailing\n"
+                   "  Domain Controller Name/ID                           USN          USN     Behind\n"
+                   "  ------------------------------------------   ----------   ----------   --------\n");
+        }
+
+        // Add a line for each entry in server's UTD vector
         while (pVector)
         {
-            printf("Has seen %lu USN from %s\n",pVector->maxOriginatingUSN,
-                   VDIR_SAFE_STRING(pVector->pszPartnerInvocationId));
+
+            // reset locals
+
+            VMDIR_SAFE_FREE_MEMORY(pszHighestReplUsn);
+            VMDIR_SAFE_FREE_MEMORY(pszHighestOrigUsn);
+            VMDIR_SAFE_FREE_MEMORY(pszLag);
+
+            pszPartnerName = NULL;
+            partnerLocalUsn = 0;
+            partnerReplUsn = 0;
+            partnerLocalOrigUsn = 0;
+            bPartnerFound = FALSE;
+            bPartnerRaFound = FALSE;
+            pszHighestReplUsn = NULL;
+            pszHighestOrigUsn = NULL;
+            pszLag = NULL;
+
+            // Look through ReplStateList for partner info to compare with
+            for (dwICount = 0; dwICount < dwListCount; dwICount++)
+            {
+                if (VmDirStringCompareA(pReplStateList[dwICount]->pszInvocationId,
+                                        pVector->pszPartnerInvocationId,
+                                        FALSE) == 0)
+                {
+                    bPartnerFound = TRUE;
+                    pszPartnerName = pReplStateList[dwICount]->pszHost;
+                    partnerLocalUsn = pReplStateList[dwICount]->maxConsumableUSN;
+                    partnerLocalOrigUsn = pReplStateList[dwICount]->maxOriginatingUSN;
+                    break;
+                }
+
+            }
+
+            if (!pszPartnerName)
+            {
+                pszPartnerName = pVector->pszPartnerInvocationId;
+            }
+            else
+            {
+                pRA = pReplStateList[dwCount]->pReplRA;
+                while (pRA)
+                {
+                    if (pRA->pszPartnerName && VmDirStringCompareA(pRA->pszPartnerName,
+                                                                   pszPartnerName,
+                                                                   FALSE) == 0)
+                    {
+                        partnerReplUsn = pRA->maxProcessedUSN;
+                        bPartnerRaFound = TRUE;
+                        break;
+                    }
+                    pRA = pRA->next;
+                }
+            }
+
+            partnerOrigUsn = pVector->maxOriginatingUSN;
+
+            dwError = VmDirAllocateStringPrintf(&pszHighestOrigUsn, "%10lu", partnerOrigUsn);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            if (bPartnerFound)
+            {
+                if (!bPartnerRaFound)
+                {
+
+                    dwError = VmDirAllocateStringPrintf(
+                                                &pszHighestReplUsn,
+                                                "-"
+                                                );
+                    BAIL_ON_VMDIR_ERROR(dwError);
+
+                    if (partnerLocalOrigUsn == 0)
+                    {
+                        dwError = VmDirAllocateStringPrintf(
+                                                &pszLag,
+                                                "N/A"
+                                                );
+
+                    }
+                    else
+                    {
+
+                        dwError = VmDirAllocateStringPrintf(
+                                                &pszLag,
+                                                "%ld",
+                                                partnerLocalOrigUsn - partnerOrigUsn
+                                                );
+                    }
+                    BAIL_ON_VMDIR_ERROR(dwError);
+
+                }
+                else
+                {
+                    dwError = VmDirAllocateStringPrintf(
+                                                &pszHighestReplUsn,
+                                                "%lu",
+                                                partnerReplUsn
+                                                );
+                    BAIL_ON_VMDIR_ERROR(dwError);
+
+                    dwError = VmDirAllocateStringPrintf(
+                                                &pszLag,
+                                                "%ld",
+                                                partnerLocalUsn - partnerReplUsn
+                                                );
+                    BAIL_ON_VMDIR_ERROR(dwError);
+
+                }
+            }
+            else
+            {
+                    dwError = VmDirAllocateStringPrintf(
+                                                &pszHighestReplUsn,
+                                                "-"
+                                                );
+                    BAIL_ON_VMDIR_ERROR(dwError);
+
+                    dwError = VmDirAllocateStringPrintf(
+                                                &pszLag,
+                                                "-"
+                                                );
+                    BAIL_ON_VMDIR_ERROR(dwError);
+            }
+
+            printf("  %-42s   %10s   %10s   %8s\n",
+                   pszPartnerName,
+                   pszHighestReplUsn,
+                   pszHighestOrigUsn,
+                   pszLag);
+
             pVector = pVector->next;
         }
 
-        pRA = pReplState->pReplRA;
-        while (pRA)
-        {
-            printf("Has processed %lu USN from %s\n", pRA->maxProcessedUSN,
-                   VDIR_SAFE_STRING(pRA->pszPartnerName));
-            pRA = pRA->next;
-        }
 
         printf("\n\n");
+
     }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszHighestReplUsn);
+    VMDIR_SAFE_FREE_MEMORY(pszHighestOrigUsn);
+    VMDIR_SAFE_FREE_MEMORY(pszLag);
+
+    return;
+
+error:
+    goto cleanup;
 }
 
 static
@@ -219,6 +377,10 @@ VmDirGetFederationStatus(
     PVMDIR_STRING_LIST pDCList = NULL;
     PVMDIR_CONNECTION  pConnection = NULL;
     PVMDIR_REPL_STATE  pReplState = NULL;
+    PVMDIR_REPL_STATE  *ppReplStateList = NULL;
+    DWORD dwListCount = 0;
+    PSTR pszDomainName = NULL;
+    PSTR pszUPN = NULL;
 
     dwError = _VmDirGetDCList(
                 pszHostName,
@@ -227,10 +389,21 @@ VmDirGetFederationStatus(
                 &pDCList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (pDCList->dwCount == 0)
+    {
+        goto cleanup;
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(PVMDIR_REPL_STATE)*pDCList->dwCount,
+                                  (PVOID *)&ppReplStateList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     for (dwCnt=0; dwCnt<pDCList->dwCount; dwCnt++)
     {
+
         VmDirConnectionClose( pConnection );
         pConnection = NULL;
+
         dwError = _VmDirGetConnection(
                         pDCList->pStringList[dwCnt],
                         pszUserName,
@@ -244,24 +417,33 @@ VmDirGetFederationStatus(
         }
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        VmDirFreeReplicationState(pReplState);
         pReplState = NULL;
         dwError = VmDirGetReplicationState(pConnection, &pReplState);
         if (dwError == VMDIR_ERROR_ENTRY_NOT_FOUND)
         {
             printf("Domain Controller: %s is NOT supported\n\n", pDCList->pStringList[dwCnt]);
+            VmDirFreeReplicationState(pReplState);
             dwError = 0;
             continue;
         }
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        _VmDirPrintReplState(pDCList->pStringList[dwCnt], pReplState);
+        ppReplStateList[dwListCount++] = pReplState;
     }
 
+    _VmDirPrintReplStateList(ppReplStateList, dwListCount);
+
 cleanup:
+    for (dwCnt = 0; dwCnt < dwListCount; dwCnt++)
+    {
+        VmDirFreeReplicationState(ppReplStateList[dwCnt]);
+    }
+    VMDIR_SAFE_FREE_MEMORY(ppReplStateList);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
+    VMDIR_SAFE_FREE_MEMORY(pszUPN);
     VmDirStringListFree(pDCList);
     VmDirConnectionClose(pConnection);
-    VmDirFreeReplicationState(pReplState);
+
     return dwError;
 
 error:

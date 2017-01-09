@@ -214,7 +214,6 @@ VmDirIndexingTaskPopulateIndices(
     pNode = pTask->pIndicesToPopulate->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
         PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pNode->pElement;
 
         // open index db first if it's new
@@ -229,7 +228,7 @@ VmDirIndexingTaskPopulateIndices(
                 pIndexCfgs, pIndexCfg->pszAttrName, pIndexCfg, NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pNode = pNextNode;
+        pNode = pNode->pNext;
     }
 
     dwError = pBE->pfnBEIndexPopulate(
@@ -272,7 +271,6 @@ VmDirIndexingTaskValidateScopes(
     pNode = pTask->pIndicesToValidate->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
         PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pNode->pElement;
 
         dwError = VmDirIndexCfgValidateUniqueScopeMods(pIndexCfg);
@@ -284,7 +282,7 @@ VmDirIndexingTaskValidateScopes(
         dwError = VmDirIndexCfgRevertBadUniqueScopeMods(pIndexCfg);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pNode = pNextNode;
+        pNode = pNode->pNext;
     }
 
 cleanup:
@@ -323,7 +321,6 @@ VmDirIndexingTaskDeleteIndices(
     pNode = pTask->pIndicesToDelete->pTail;
     while (pNode)
     {
-        PVDIR_LINKED_LIST_NODE pNextNode = pNode->pNext;
         PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pNode->pElement;
 
         // in case of resume, it may be already deleted
@@ -336,7 +333,7 @@ VmDirIndexingTaskDeleteIndices(
             VmDirIndexCfgClear(pIndexCfg);
         }
 
-        pNode = pNextNode;
+        pNode = pNode->pNext;
     }
 
 cleanup:

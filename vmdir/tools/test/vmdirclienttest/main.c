@@ -313,7 +313,7 @@ TestVmDirGenerateNewUserAttributes(
     size_t newsize = 0;
     DWORD  dwError = 0;
 
-    VmDirAllocateStringAVsnprintf(&pUserCount, "%d", value);
+    VmDirAllocateStringPrintf(&pUserCount, "%d", value);
 
     dwError = VmDirStringCpyA(newDN, VmDirStringLenA(pUser)+1, pUser);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -360,7 +360,7 @@ TestVmDirGenerateModifyCN(
     DWORD  dwError = 0;
     size_t newsize = 0;
 
-    VmDirAllocateStringAVsnprintf(&pUserCount, "%d", value);
+    VmDirAllocateStringPrintf(&pUserCount, "%d", value);
 
     dwError = VmDirStringCpyA(newCN, VmDirStringLenA(pUser)+1, pUser);
     BAIL_ON_VMDIR_ERROR(dwError);

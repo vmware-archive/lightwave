@@ -211,6 +211,31 @@ VmDirSetupTenantInstance(
     );
 
 DWORD
+VmDirCreateTenant(
+    PCSTR pszUserUPN,
+    PCSTR pszPassword,
+    PCSTR pszDomainName,
+    PCSTR pszNewUserName,
+    PCSTR pszNewUserPassword
+    );
+
+
+DWORD
+VmDirDeleteTenant(
+    PCSTR pszUserUPN,
+    PCSTR pszPassword,
+    PCSTR pszDomainName
+    );
+
+DWORD
+VmDirEnumerateTenants(
+    PCSTR pszUserUPN,
+    PCSTR pszPassword,
+    PSTR **pppszTenants,
+    DWORD *pdwNumTenants
+    );
+
+DWORD
 VmDirGetDomainDN(
     PCSTR pszHostName,
     PSTR* ppszDomainDN
@@ -727,12 +752,21 @@ VmDirUrgentReplicationResponse(
 DWORD
 VmDirGetMode(
     PVMDIR_SERVER_CONTEXT hInBinding,
-    UINT32*               pdwMode);
+    UINT32*               pdwMode
+    );
 
 DWORD
 VmDirSetMode(
     PVMDIR_SERVER_CONTEXT hInBinding,
-    UINT32                dwMode);
+    UINT32                dwMode
+    );
+
+DWORD
+VmDirChangePNID(
+    PSTR    pszUsername,
+    PSTR    pszPassword,
+    PSTR    pszNewPNID
+    );
 
 #ifdef __cplusplus
 }

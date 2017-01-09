@@ -38,6 +38,32 @@ error:
 }
 
 DWORD
+VdcSchemaOpParamValidate(
+    PVDC_SCHEMA_OP_PARAM    pOpParam
+    )
+{
+    DWORD   dwError = 0;
+
+    if (!pOpParam)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pOpParam->opCode == OP_PATCH_SCHEMA_DEFS)
+    {
+        if (IsNullOrEmptyString(pOpParam->pszFileName))
+        {
+            dwError = VMDIR_ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+error:
+    return dwError;
+}
+
+DWORD
 VdcSchemaOpGetSupportedSyntaxes(
     PVDC_SCHEMA_CONN        pConn,
     PVDC_SCHEMA_OP_PARAM    pOpParam

@@ -39,7 +39,7 @@
 #include <vmdircommon.h>
 #include <vmdirclient.h>
 #include "structs.h"
-#include "externs.h"
+#include "prototypes.h"
 
 #else
 #pragma once
@@ -62,7 +62,7 @@
 #include <vmdircommon.h>
 #include <vmdirclient.h>
 #include "structs.h"
-#include "externs.h"
+#include "prototypes.h"
 
 #include "banned.h"
 #endif

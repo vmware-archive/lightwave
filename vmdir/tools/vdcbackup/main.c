@@ -103,20 +103,44 @@ error:
     goto cleanup;
 }
 
+DWORD
+Cleanup(VOID)
+{
+    DWORD   dwError = 0;
+
+    printf( "Cleanup: Setting vmdir state to VMDIRD_NORMAL \n" );
+
+    if ((dwError = VmDirSetState( NULL, VMDIRD_STATE_NORMAL )) != 0)
+    {
+        fprintf(stderr, "Cleanup: Setting vmdir state to VMDIRD_NORMAL failed, error (%d) \n", dwError);
+    }
+
+    return dwError;
+}
+
 static
 int
 VmDirMain(int argc, char* argv[])
 {
     DWORD   dwError = 0;
 
-    if (argc != 3)
+    if (argc == 2 && VmDirStringCompareA("-c", argv[1], TRUE) == 0)
     {
-        fprintf(stderr, "usage: %s srcpath dstpath\n", argv[0]);
-        exit(1);
+        dwError = Cleanup();
+    }
+    else if (argc == 3)
+    {
+        dwError = BackupDB(argv[1], argv[2]);
+    }
+    else
+    {
+        dwError = EINVAL;
+        fprintf(stderr, "usage: %s srcpath dstpath\n"
+                        "       %s -c\n",
+                        argv[0], argv[0]);
     }
 
-    dwError = BackupDB(argv[1], argv[2]);
-    exit(dwError);
+    return dwError;
 }
 
 #ifdef _WIN32

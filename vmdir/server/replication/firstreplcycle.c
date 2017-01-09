@@ -419,9 +419,9 @@ _VmDirSwapDB(
 
     VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
 
-    VmDirSchemaLibShutdown();
-
     VmDirIndexLibShutdown();
+
+    VmDirSchemaLibShutdown();
 
     pBE->pfnBEShutdown();
     VmDirBackendContentFree(pBE);
@@ -587,7 +587,7 @@ _VmDirWrapUpFirstReplicationCycle(
         }
 
         // <partnerLocalUSN>,<partner up-to-date vector>,<partner server GUID>:<partnerLocalUSN>,
-        retVal = VmDirAllocateStringAVsnprintf( &(syncDoneCtrlVal.bv_val), "%s,%s%s%s:%s,",
+        retVal = VmDirAllocateStringPrintf( &(syncDoneCtrlVal.bv_val), "%s,%s%s%s:%s,",
                                                 partnerlocalUsnStr,
                                                 pAttrUpToDateVector->vals[0].lberbv.bv_val,
                                                 pszSeparator,
@@ -598,7 +598,7 @@ _VmDirWrapUpFirstReplicationCycle(
     else
     {
         // <partnerLocalUSN>,<partner server GUID>:<partnerLocalUSN>,
-        retVal = VmDirAllocateStringAVsnprintf( &(syncDoneCtrlVal.bv_val), "%s,%s:%s,",
+        retVal = VmDirAllocateStringPrintf( &(syncDoneCtrlVal.bv_val), "%s,%s:%s,",
                                                 partnerlocalUsnStr,
                                                 pAttrInvocationId->vals[0].lberbv.bv_val,
                                                 partnerlocalUsnStr);
@@ -729,7 +729,7 @@ _VmGetHighestCommittedUSN(
         VMDIR_SAFE_FREE_MEMORY(usnStr);
         VmDirFreeEntryArrayContent(&entryArray);
 
-        dwError = VmDirAllocateStringAVsnprintf(&usnStr, "%llu", usn);
+        dwError = VmDirAllocateStringPrintf(&usnStr, "%llu", usn);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirSimpleEqualFilterInternalSearch(

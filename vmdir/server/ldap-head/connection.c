@@ -127,8 +127,11 @@ VmDirDeleteConnection(
     VDIR_CONNECTION **conn
     )
 {
-   if (conn && *conn)
-   {
+    if (conn && *conn)
+    {
+        // Release replication (read) lock if holding
+        VMDIR_RWLOCK_UNLOCK((*conn)->bInReplLock, gVmdirGlobals.replRWLock);
+
         if ((*conn)->sb)
         {
             VmDirSASLSessionClose((*conn)->pSaslInfo);
@@ -144,7 +147,7 @@ VmDirDeleteConnection(
 
         VMDIR_SAFE_FREE_MEMORY(*conn);
         *conn = NULL;
-   }
+    }
 }
 
 DWORD
@@ -695,7 +698,8 @@ ProcessAConnection(
          {
              VMDIR_LOG_INFO( LDAP_DEBUG_CONNS, "%s: ber_get_next() peer (%s) disconnected",
                  __func__, pConn->szClientIP);
-         } else
+         }
+         else
          {
              VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: ber_get_next() call failed with errno = %d peer (%s)",
                   __func__, errno, pConn->szClientIP);

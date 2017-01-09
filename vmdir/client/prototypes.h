@@ -20,7 +20,8 @@
 
 #define VMDIR_STOP_SERVICE "/opt/likewise/bin/lwsm stop vmdir"
 #define VMDIR_START_SERVICE "/opt/likewise/bin/lwsm start vmdir"
-#define VMDIR_CLEANUP_DATA "rm /storage/db/vmware-vmdir/*"
+// in embedded VCHA, snapshot database live under vmware-vmdir/
+#define VMDIR_CLEANUP_DATA "rm -rf /storage/db/vmware-vmdir/*"
 
 #define VMKDC_STOP_SERVICE "/opt/likewise/bin/lwsm stop vmkdc"
 #define VMKDC_START_SERVICE "/opt/likewise/bin/lwsm start vmkdc"
@@ -384,11 +385,6 @@ VmDirConnectLDAPServer(
     PCSTR       pszPassword
     );
 
-VOID
-VmDirLdapUnbind(
-    LDAP** ppLd
-    );
-
 DWORD
 VmDirAddVmIdentityContainer(
     LDAP* pLd,
@@ -573,7 +569,31 @@ VmDirLocalInitializeTenant(
     PWSTR   pwszNamingContext,
     PWSTR   pwszUserName,
     PWSTR   pwszPassword
-);
+    );
+
+DWORD
+VmDirLocalCreateTenant(
+    PCSTR pszUserUPN,
+    PCSTR pszPassword,
+    PCSTR pszDomainName,
+    PCSTR pszNewUserName,
+    PCSTR pszNewUserPassword
+    );
+
+DWORD
+VmDirLocalDeleteTenant(
+    PCSTR pszUserUPN,
+    PCSTR pszPassword,
+    PCSTR pwszDomain
+    );
+
+DWORD
+VmDirLocalEnumerateTenants(
+    PCSTR pszUserUPN,
+    PCSTR pszPassword,
+    PSTR **pppszTenants,
+    PDWORD pdwNumTenants
+    );
 
 DWORD
 VmDirLocalForceResetPassword(
@@ -599,11 +619,6 @@ VmDirGetLastLocalUsnProcessedForHostFromRADN(
     USN* pUsn
     );
 
-DWORD VmDirCreateLdAtHostViaMachineAccount(
-    PCSTR  pszHostName,
-    LDAP** ppLd
-);
-
 DWORD
 VmDirLdapCreateReplHostNameDN(
     PSTR* ppszReplHostNameDN,
@@ -618,20 +633,6 @@ VmDirDCEGetErrorCode(
     );
 
 #endif
-
-DWORD
-VmDirGetDomainFuncLvlInternal(
-    LDAP*  pLd,
-    PCSTR  pszDomain,
-    PDWORD pdwFuncLvl
-    );
-
-DWORD
-VmDirSetDomainFuncLvlInternal(
-    LDAP* pLd,
-    PCSTR pszDomain,
-    DWORD dwFuncLvl
-    );
 
 DWORD
 VmDirGetAllDCInternal(
@@ -713,3 +714,21 @@ VmDirLdapGetHighWatermark(
     USN*       pLastLocalUsn
     );
 
+DWORD
+VmDirSetupDefaultAccount(
+    PCSTR pszDomainName,
+    PCSTR pszPartnerServerName,
+    PCSTR pszLdapHostName,
+    PCSTR pszBindUserName,
+    PCSTR pszBindPassword
+    );
+
+DWORD
+VmDirUpdateKeytabFile(
+    PCSTR pszServerName,
+    PCSTR pszDomainName,
+    PCSTR pszHostName,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    BOOLEAN bIsServer
+    );

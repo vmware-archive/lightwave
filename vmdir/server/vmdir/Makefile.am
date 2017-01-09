@@ -6,6 +6,7 @@ vmdird_SOURCES = \
     accountmgmt.c \
     auth.c \
     globals.c \
+    heartbeat.c \
     index.c \
     init.c \
     instance.c \
@@ -34,6 +35,8 @@ vmdird_SOURCES = \
     vmdirsuperlog_sstub.c \
     vmevent.c \
     urgentrepl.c \
+    tenantmgmt.c \
+    tombstone.c \
     tracklastlogin.c \
     vmdirurgentrepl_sstub.c
 

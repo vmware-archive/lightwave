@@ -169,7 +169,7 @@ VmDirRegConfigHandleClose(
     }
 #endif
 
-    VMDIR_SAFE_FREE_MEMORY(pCfgHandle);
+    free(pCfgHandle);
 }
 
 DWORD

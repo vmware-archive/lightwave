@@ -455,13 +455,12 @@ VmDirGenerateWellknownSid(
     BAIL_ON_VMDIR_ERROR(dwError);
     assert(pSidGenState!=NULL);
 
-    dwError = VmDirAllocateStringAVsnprintf(
+    dwError = VmDirAllocateStringPrintf(
                     &pszWellKnownSid,
                     "%s-%u",
                     pSidGenState->pszDomainSid,
                     dwWellKnowRid
                     );
-
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppszWellKnownSid = pszWellKnownSid;
@@ -834,11 +833,15 @@ _VmDirSynchronizeRidSequence(
 
         bvRID.lberbv_val = buf64;
         bvRID.lberbv_len = VmDirStringLenA(buf64);
-        dwError = VmDirInternalEntryAttributeReplace( NULL,
-                                                      pDomainSidState->pszDomainDn,
-                                                      VDIR_ATTRIBUTE_SEQUENCE_RID,
-                                                      &bvRID);
-        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // TODO
+        // This causes mdb deadlock during non-first node promotion
+        // Need to move this to proper location
+//        dwError = VmDirInternalEntryAttributeReplace( NULL,
+//                                                      pDomainSidState->pszDomainDn,
+//                                                      VDIR_ATTRIBUTE_SEQUENCE_RID,
+//                                                      &bvRID);
+//        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     // dwCnt + 1 is the next available RID

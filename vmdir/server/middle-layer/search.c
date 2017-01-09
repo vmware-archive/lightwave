@@ -49,17 +49,6 @@ VmDirMLSearch(
     pOperation->pBEIF = VmDirBackendSelect(pOperation->reqDn.lberbv.bv_val);
     assert(pOperation->pBEIF);
 
-    if (pOperation->conn->bIsAnonymousBind &&
-            !(VmDirIsSearchForDseRootEntry(pOperation) ||
-              VmDirIsSearchForSchemaEntry(pOperation)))
-    {
-        retVal = LDAP_INSUFFICIENT_ACCESS;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Not bind/authenticate yet" );
-    }
-
-    // AnonymousBind is handled when retrieving search candidate result
-    // DSE_ROOT_DN and PERSISTED_DSE_ROOT_DN, SCHEMA_NAMING_CONTEXT_DN
-    // SUB_SCHEMA_SUB_ENTRY_DN should allow anonymous bind READ
     retVal = VmDirInternalSearch( pOperation);
     BAIL_ON_VMDIR_ERROR(retVal);
 
@@ -245,34 +234,18 @@ txnretry:
     retVal = AppendDNFilter( pOperation );
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Appending DN filter failed.");
 
-
     if (gVmdirGlobals.bPagedSearchReadAhead)
     {
         if (pOperation->showPagedResultsCtrl != NULL &&
             !IsNullOrEmptyString(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie))
         {
             retVal = VmDirPagedSearchCacheRead(
-                        pOperation,
-                        &eStartingId,
+                        pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie,
                         &pValidatedEntries,
                         &dwEntryCount);
-            /*
-             * If we didn't find any data for this cookie the cache must have
-             * timed-out and been cleaned up. Let's continue the search using
-             * the old search semantics.
-             */
-            if (retVal == 0)
-            {
-                bUseOldSearch = FALSE;
-            }
-            else if (retVal == VMDIR_ERROR_NOT_FOUND)
-            {
-                retVal = 0;
-            }
-            else
-            {
-                BAIL_ON_VMDIR_ERROR(retVal);
-            }
+            BAIL_ON_VMDIR_ERROR(retVal);
+
+            bUseOldSearch = FALSE;
         }
     }
 
@@ -556,7 +529,7 @@ VmDirIsDirectMemberOf(
     VDIR_ENTRY_ARRAY    entryResultArray = {0};
     PSTR                pszGroupDN = NULL;
 
-    if ( !pszBindDN || !pbIsMemberOf || !pAccessRoleBitmap )
+    if (!pbIsMemberOf || !pAccessRoleBitmap)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -570,7 +543,8 @@ VmDirIsDirectMemberOf(
              goto cleanup;
          }
          pszGroupDN = gVmdirServerGlobals.bvDCGroupDN.lberbv_val;
-    } else if (getAccessInfo == VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_INFO)
+    }
+    else if (getAccessInfo == VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_INFO)
     {
         if (*pAccessRoleBitmap & VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_VALID_INFO)
         {
@@ -578,13 +552,14 @@ VmDirIsDirectMemberOf(
             goto cleanup;
         }
         pszGroupDN = gVmdirServerGlobals.bvDCClientGroupDN.lberbv_val;
-    } else
+    }
+    else
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (pszGroupDN == NULL)
+    if (pszGroupDN == NULL || pszBindDN == NULL)
     {
         *pbIsMemberOf = FALSE;
         goto cleanup;
@@ -612,7 +587,8 @@ VmDirIsDirectMemberOf(
         {
              *pAccessRoleBitmap |= VDIR_ACCESS_IS_DCGROUP_MEMBER;
         }
-    } else
+    }
+    else
     {
         *pAccessRoleBitmap |= VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_VALID_INFO;
         if (bIsMemberOf)
@@ -985,7 +961,6 @@ SetPagedSearchCookie(
     {
         dwError = VmDirPagedSearchCacheInsert(
                     pOperation,
-                    eId,
                     dwCandidatesProcessed);
     }
 

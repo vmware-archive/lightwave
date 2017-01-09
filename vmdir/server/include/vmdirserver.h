@@ -107,6 +107,13 @@ typedef struct _VMDIR_SERVER_GLOBALS
                                              // excessive searching
     VDIR_BERVALUE        bvServerObjName;
     DWORD                dwDomainFunctionalLevel;
+    // Data that controls the thread that cleans up deleted entries.
+    DWORD                dwTombstoneExpirationPeriod;
+    DWORD                dwTombstoneThreadFrequency;
+    //
+    // This is the default security descriptor that entries used prior to 7.0.
+    //
+    VMDIR_SECURITY_DESCRIPTOR vsdLegacyDescriptor;
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;
@@ -158,8 +165,6 @@ typedef struct _VMDIR_GLOBALS
 
     BOOLEAN                         bRegisterTcpEndpoint;
 
-    PSECURITY_DESCRIPTOR_ABSOLUTE   gpVmDirSrvSD;
-
     // To synchronize creation and use of replication agreements.
     PVMDIR_MUTEX                    replAgrsMutex;
     PVMDIR_COND                     replAgrsCondition;
@@ -168,6 +173,9 @@ typedef struct _VMDIR_GLOBALS
     PVMDIR_MUTEX                    replCycleDoneMutex;
     PVMDIR_COND                     replCycleDoneCondition;
     DWORD                           dwReplCycleCounter;
+
+    // To synchronize replication reads and writes.
+    PVMDIR_RWLOCK                   replRWLock;
 
     // Upper limit (local USNs only < this number) on updates that can be replicated out "safely".
     USN                             limitLocalUsnToBeSupplied;
@@ -198,6 +206,14 @@ typedef struct _VMDIR_GLOBALS
     BOOLEAN                         bAllowImportOpAttrs;
     BOOLEAN                         bTrackLastLoginTime;
     BOOLEAN                         bPagedSearchReadAhead;
+
+    // The following three counter is for database copy feature
+    // registra key configuration.
+    DWORD                           dwCopyDbWritesMin;
+    DWORD                           dwCopyDbIntervalInSec;
+    DWORD                           dwCopyDbBlockWriteInSec;
+    // Collect stats for estimate elapsed time with database copy
+    DWORD                           dwLdapWrites;
 } VMDIR_GLOBALS, *PVMDIR_GLOBALSS;
 
 extern VMDIR_GLOBALS gVmdirGlobals;
@@ -345,16 +361,6 @@ VmDirdSetReplNow(
 
 BOOLEAN
 VmDirdGetReplNow(
-    VOID
-    );
-
-VOID
-VmDirdSetLimitLocalUsnToBeSupplied(
-    USN usn
-    );
-
-USN
-VmDirdGetLimitLocalUsnToBeSupplied(
     VOID
     );
 
@@ -728,3 +734,5 @@ VmDirAddTrackLastLoginItem(
 #endif
 
 #endif /* __VMDIRMAIN_H__ */
+
+

@@ -189,6 +189,8 @@ VmDirCleanupGlobals(
     VmDirFreeBervalContent(&gVmdirServerGlobals.utdVector);
     VmDirFreeBervalContent(&gVmdirServerGlobals.bvServerObjName);
 
+    VMDIR_SAFE_FREE_MEMORY(gVmdirServerGlobals.vsdLegacyDescriptor.pSecDesc);
+
     // Free vmdir global 'gVmdirGlobals' upon shutdown
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBDBHome);
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBootStrapSchemaFile);
@@ -196,6 +198,7 @@ VmDirCleanupGlobals(
 
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.replCycleDoneMutex );
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.replAgrsMutex );
+    VMDIR_SAFE_FREE_RWLOCK( gVmdirGlobals.replRWLock );
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.pMutexIPCConnection );
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.pFlowCtrlMutex );
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.mutex );
@@ -216,8 +219,6 @@ VmDirCleanupGlobals(
 
     // Free vmdir plugin global 'gVmdirPluginGlobals'
     VmDirPluginShutdown();
-
-    VmDirFreeAbsoluteSecurityDescriptor(&gVmdirGlobals.gpVmDirSrvSD);
 
     VMDIR_SAFE_FREE_MUTEX( gVmdirKrbGlobals.pmutex );
     VMDIR_SAFE_FREE_CONDITION(gVmdirKrbGlobals.pcond);

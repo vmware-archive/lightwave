@@ -17,6 +17,7 @@ libvmdirclient_la_SOURCES = \
     krb5login.c \
     ldaputil.c \
     libmain.c \
+    pnid.c \
     registry.c \
     repadmin.c \
     replication.c \

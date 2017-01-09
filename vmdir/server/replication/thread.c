@@ -581,7 +581,7 @@ VmDirCacheKrb5Creds(
         memset(&credsToMatch, 0, sizeof(credsToMatch));
         credsToMatch.client = pKrb5DCAccountPrincipal;
 
-        dwError = VmDirAllocateStringAVsnprintf(&pszTgtUPN, "krbtgt/%s@%s",
+        dwError = VmDirAllocateStringPrintf(&pszTgtUPN, "krbtgt/%s@%s",
                                                 gVmdirKrbGlobals.pszRealm, gVmdirKrbGlobals.pszRealm);
         BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -1365,14 +1365,19 @@ _VmDirConsumePartner(
     PVMDIR_REPLICATION_PAGE pPage = NULL;
     BOOLEAN bReplayEverything = FALSE;
     BOOLEAN bReTrialDesired = FALSE;
+    BOOLEAN bContinue = FALSE;
     struct berval bervalSyncDoneCtrl = {0};
     int iPreviousCycleEntriesOutOfSequence = -1;
+    BOOLEAN bInReplLock = FALSE;
+
+    VMDIR_RWLOCK_WRITELOCK(bInReplLock, gVmdirGlobals.replRWLock, 0);
 
     do // do-while ( bReTrialDesired )
     {
         int iEntriesOutOfSequence = 0;
 
         bReTrialDesired = FALSE;
+        bContinue = FALSE;
         initUsn = VmDirStringToLA(replAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, 10 );
 
         if (bReplayEverything)
@@ -1417,9 +1422,16 @@ _VmDirConsumePartner(
                                                       &(pPage->searchResCtrls[0]->ldctl_value));
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-        } while (pPage->iEntriesRequested > 0 &&
-                 pPage->iEntriesReceived > 0 &&
-                 pPage->iEntriesReceived == pPage->iEntriesRequested);
+            // Check if sync done control contains explicit continue indicator
+            bContinue = VmDirStringStrA(pPage->searchResCtrls[0]->ldctl_value.bv_val,
+                                        VMDIR_REPL_CONT_INDICATOR) ? TRUE : FALSE;
+
+            // Check if we received a full page and need to continue
+            bContinue |= pPage->iEntriesRequested > 0 &&
+                         pPage->iEntriesReceived > 0 &&
+                         pPage->iEntriesReceived == pPage->iEntriesRequested;
+
+        } while (bContinue);
 
         if (iEntriesOutOfSequence > 0)
         {
@@ -1485,14 +1497,9 @@ _VmDirConsumePartner(
     }
 
 cleanup:
-    if (pPage)
-    {
-        _VmDirFreeReplicationPage(pPage);
-        pPage = NULL;
-    }
+    VMDIR_RWLOCK_UNLOCK(bInReplLock, gVmdirGlobals.replRWLock);
     VMDIR_SAFE_FREE_MEMORY(bervalSyncDoneCtrl.bv_val);
-
-    VmDirdSetLimitLocalUsnToBeSupplied(0);
+    _VmDirFreeReplicationPage(pPage);
     return retVal;
 
 ldaperror:
@@ -1530,7 +1537,7 @@ _VmDirFilterEmptyPageSyncDoneCtr(
     PSTR    pszTmp = NULL;
     size_t  iPatternLen = VmDirStringLenA(pszPattern);
 
-    // In WriteSyncDoneControl syncDoneCtrl value looks like: high watermark,utdVector.
+    // In WriteSyncDoneControl syncDoneCtrl value looks like: high watermark,utdVector,[continue].
 
     // Update pLocalCtrl only if high watermark value differs between supplier syncDoneCtrl and consumer syncRequestCtrl.
     if ( (VmDirStringNCompareA(pPageSyncDoneCtrl->bv_val, pszPattern, iPatternLen, FALSE) != 0) ||
@@ -1676,8 +1683,8 @@ _VmDirFetchReplicationPage(
 
     VMDIR_LOG_INFO(
         LDAP_DEBUG_REPL,
-        "_VmDirFetchReplicationPage: "
-        "filter: '%s' requested: %d received: %d usn: %llu utd: '%s'",
+        "%s: filter: '%s' requested: %d received: %d usn: %llu utd: '%s'",
+        __FUNCTION__,
         VDIR_SAFE_STRING(pPage->pszFilter),
         pPage->iEntriesRequested,
         pPage->iEntriesReceived,
@@ -1700,8 +1707,8 @@ ldaperror:
     {
         VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
-            "_VmDirFetchReplicationPage: "
-            "error: %d filter: '%s' requested: %d received: %d usn: %llu utd: '%s'",
+            "%s: error: %d filter: '%s' requested: %d received: %d usn: %llu utd: '%s'",
+            __FUNCTION__,
             retVal,
             VDIR_SAFE_STRING(pPage->pszFilter),
             pPage->iEntriesRequested,

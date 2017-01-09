@@ -67,6 +67,11 @@ MdbCreateEIDIndex(
     BOOLEAN          bIsNewIndex);
 
 DWORD
+MDBDeleteEIdIndex(
+    PVDIR_DB_TXN    pTxn,
+    ENTRYID         entryId);
+
+DWORD
 MDBDeleteParentIdIndex(
     PVDIR_BACKEND_CTX   pBECtx,
     VDIR_BERVALUE *     pdn,

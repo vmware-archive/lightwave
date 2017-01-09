@@ -21,9 +21,11 @@ _VmDirIsCmdLineOption(
     return (!IsNullOrEmptyString(pszArg) && pszArg[0] == '-');
 }
 
-BOOLEAN _VmDirMatchOption(
+BOOLEAN
+_VmDirMatchOption(
     PVMDIR_COMMAND_LINE_OPTION Option,
-    PSTR pszArgument)
+    PSTR pszArgument
+    )
 {
     if (strlen(pszArgument) <= 1)
     {
@@ -52,13 +54,13 @@ BOOLEAN _VmDirMatchOption(
 
 PVMDIR_COMMAND_LINE_OPTION
 _VmDirFindOption(
-    PVMDIR_COMMAND_LINE_OPTIONS Options,
+    VMDIR_COMMAND_LINE_OPTION Options[],
     PSTR pszArgument
     )
 {
-    PVMDIR_COMMAND_LINE_OPTION Option = Options->Options;
+    PVMDIR_COMMAND_LINE_OPTION Option = Options;
 
-    while (Option->Switch != 0)
+    while (Option->Switch != 0 || Option->LongSwitch != NULL)
     {
         if (_VmDirMatchOption(Option, pszArgument))
         {
@@ -71,51 +73,63 @@ _VmDirFindOption(
     return NULL;
 }
 
-DWORD _VmDirCallArgumentCallback(
+DWORD
+_VmDirParseParameter(
     PVMDIR_COMMAND_LINE_OPTION Option,
-    PSTR Parameter,
-    PVOID pvContext)
+    PSTR Parameter
+    )
 {
     DWORD dwError = 0;
 
     switch (Option->Type)
     {
-        case CL_NO_PARAMETER:
+    case CL_NO_PARAMETER:
+    {
+        PBOOLEAN pBool = (PBOOLEAN)Option->Ptr;
+        if (*pBool)
         {
-            COMMAND_PARAMETER_CALLBACK_NO_PARAM Callback = (COMMAND_PARAMETER_CALLBACK_NO_PARAM)Option->Callback;
-            dwError = (*Callback)(pvContext);
-            break;
+            dwError = VMDIR_ERROR_INVALID_PARAMETER;
         }
-
-        case CL_STRING_PARAMETER:
+        else
         {
-            COMMAND_PARAMETER_CALLBACK_STRING_PARAM Callback = (COMMAND_PARAMETER_CALLBACK_STRING_PARAM)Option->Callback;
-            dwError = (*Callback)(pvContext, Parameter);
-            break;
+            *pBool = TRUE;
         }
+        break;
+    }
 
-        case CL_INTEGER_PARAMETER:
+    case CL_STRING_PARAMETER:
+    {
+        PSTR*   ppszStr = (PSTR*)Option->Ptr;
+        if (*ppszStr)
         {
-            COMMAND_PARAMETER_CALLBACK_INTEGER_PARAM Callback = (COMMAND_PARAMETER_CALLBACK_INTEGER_PARAM)Option->Callback;
+            dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        }
+        else
+        {
+            dwError = VmDirAllocateStringA(Parameter, ppszStr);
+        }
+        break;
+    }
+
+    case CL_INTEGER_PARAMETER:
+    {
+        int* pInt = (int*)Option->Ptr;
+        if (*pInt)
+        {
+            dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        }
+        else
+        {
             char *pszEndPointer;
-            int iValue = 0;
+            *pInt = strtol(Parameter, &pszEndPointer, 10);
+            dwError = *pszEndPointer == '\0' ? 0 : VMDIR_ERROR_INVALID_PARAMETER;
+        }
+        break;
+    }
 
-            iValue = strtol(Parameter, &pszEndPointer, 10);
-            if (*pszEndPointer != '\0')
-            {
-                dwError = VMDIR_ERROR_INVALID_PARAMETER;
-            }
-            else
-            {
-                dwError = (*Callback)(pvContext, iValue);
-            }
-
-            break;
-       }
-
-       default:
-       dwError = VMDIR_ERROR_INVALID_PARAMETER;
-       break;
+    default:
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        break;
     }
 
     return dwError;
@@ -123,8 +137,8 @@ DWORD _VmDirCallArgumentCallback(
 
 DWORD
 VmDirParseArguments(
-    PVMDIR_COMMAND_LINE_OPTIONS Options,
-    PVOID pvContext,
+    VMDIR_COMMAND_LINE_OPTION Options[],
+    PVMDIR_PARSE_ARG_CALLBACKS Callbacks,
     int argc,
     PSTR *argv
     )
@@ -166,7 +180,7 @@ VmDirParseArguments(
                 ++i;
             }
 
-            dwError = _VmDirCallArgumentCallback(Option, Parameter, pvContext);
+            dwError = _VmDirParseParameter(Option, Parameter);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
         else
@@ -179,9 +193,9 @@ VmDirParseArguments(
         }
     }
 
-    if (Options->ValidationRoutine != NULL)
+    if (Callbacks && Callbacks->ValidationRoutine)
     {
-        dwError = (*Options->ValidationRoutine)(pvContext);
+        dwError = (*Callbacks->ValidationRoutine)(Callbacks->pvContext);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -189,9 +203,9 @@ cleanup:
     return dwError;
 
 error:
-    if (Options->ShowUsage != NULL)
+    if (Callbacks && Callbacks->ShowUsage)
     {
-        (*Options->ShowUsage)(pvContext);
+        (*Callbacks->ShowUsage)(Callbacks->pvContext);
     }
 
     goto cleanup;

@@ -118,33 +118,6 @@ _VmDirPagedSearchEntryListFree(
 }
 
 static
-PCSTR
-VmDirPagedSearchCacheGetGuid(
-    PCSTR pszCookie
-    )
-{
-    PCSTR pszGuid = NULL;
-
-    if (*pszCookie == '\0')
-    {
-        return NULL;
-    }
-
-    pszGuid = strchr(pszCookie, ',');
-    if (pszGuid == NULL)
-    {
-        return NULL;
-    }
-    else
-    {
-        //
-        // Skip the comma and move onto the GUID.
-        //
-        return (pszGuid + 1);
-    }
-}
-
-static
 DWORD
 VmDirPagedSearchCreateThread(
     PVDIR_PAGED_SEARCH_RECORD pSearchRecord
@@ -235,7 +208,6 @@ DWORD
 VmDirPagedSearchCacheNodeAllocate(
     PVDIR_PAGED_SEARCH_RECORD *ppSearchRec,
     PVDIR_OPERATION pOperation,
-    ENTRYID eId,
     DWORD dwCandidatesProcessed
     )
 {
@@ -297,6 +269,9 @@ VmDirPagedSearchCacheNodeAllocate(
                 NULL);
 
     pSearchRecord->dwRefCount = 1;
+
+    pSearchRecord->tLastClientRead = time(NULL);
+
     *ppSearchRec = pSearchRecord;
 
 cleanup:
@@ -310,42 +285,27 @@ error:
 DWORD
 VmDirPagedSearchCacheInsert(
     PVDIR_OPERATION pOperation,
-    ENTRYID eId,  // ID of last sent entry
     DWORD dwCandidatesProcessed
     )
 {
     DWORD dwError = 0;
     PVDIR_PAGED_SEARCH_RECORD pSearchRecord = NULL;
-    PCSTR pszCookieGuid = NULL;
-    CHAR szCookie[VMDIR_PS_COOKIE_LEN];
 
-    pszCookieGuid = VmDirPagedSearchCacheGetGuid(
-                        pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie);
-    if (pszCookieGuid == NULL)
+    if (*pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie == '\0')
     {
         dwError = VmDirPagedSearchCacheNodeAllocate(
                     &pSearchRecord,
                     pOperation,
-                    eId,
                     dwCandidatesProcessed);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pszCookieGuid = pSearchRecord->pszGuid;
+        dwError = VmDirStringCpyA(
+                    pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie,
+                    VMDIR_ARRAY_SIZE(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie),
+                    pSearchRecord->pszGuid
+                    );
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
-
-    dwError = VmDirStringPrintFA(
-                szCookie,
-                VMDIR_ARRAY_SIZE(szCookie),
-                "%llu,%s",
-                eId + 1,
-                pszCookieGuid);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirStringCpyA(
-                pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie,
-                VMDIR_ARRAY_SIZE(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie),
-                szCookie);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     return dwError;
@@ -357,18 +317,15 @@ error:
 static
 PVDIR_PAGED_SEARCH_RECORD
 VmDirPagedSearchCacheFind(
-    PVDIR_OPERATION pOp
+    PCSTR pszCookie
     )
 {
     DWORD dwError = 0;
     PLW_HASHTABLE_NODE pNode = NULL;
     PVDIR_PAGED_SEARCH_RECORD pSearchRecord = NULL;
-    PCSTR pszCookieGuid = NULL;
     BOOLEAN bInLock = FALSE;
 
-    pszCookieGuid = VmDirPagedSearchCacheGetGuid(
-                        pOp->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie);
-    if (IsNullOrEmptyString(pszCookieGuid))
+    if (IsNullOrEmptyString(pszCookie))
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
@@ -377,7 +334,7 @@ VmDirPagedSearchCacheFind(
     dwError = LwRtlHashTableFindKey(
                     gPagedSearchCache.pHashTbl,
                     &pNode,
-                    (PVOID)pszCookieGuid);
+                    (PVOID)pszCookie);
     dwError = LwNtStatusToWin32Error(dwError);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -478,6 +435,8 @@ _VmDirPagedSearchCacheWaitAndRead_inlock(
 
     *ppEntryList = pEntryList;
 
+    pSearchRecord->tLastClientRead = time(NULL);
+
 cleanup:
     return dwError;
 error:
@@ -486,8 +445,7 @@ error:
 
 DWORD
 VmDirPagedSearchCacheRead(
-    PVDIR_OPERATION pOperation,
-    ENTRYID *peStartingId,
+    PCSTR pszCookie,
     ENTRYID **ppValidatedEntries,
     DWORD *pdwEntryCount
     )
@@ -497,7 +455,7 @@ VmDirPagedSearchCacheRead(
     BOOLEAN bInLock = FALSE;
     PVDIR_PAGED_SEARCH_ENTRY_LIST pEntryList = NULL;
 
-    pSearchRecord = VmDirPagedSearchCacheFind(pOperation);
+    pSearchRecord = VmDirPagedSearchCacheFind(pszCookie);
     if (pSearchRecord == NULL)
     {
         //
@@ -635,7 +593,8 @@ _VmDirPagedSearchCacheWaitForClientCompletion(
     // Sleep for our timeout period or until the client has read all the data
     // (at which point bSearchCompleted will be set and the condition will be
     // signalled). If we timeout we're going to clear the cache forcibly, which
-    // will cause the client to fallback to the old search semantics.
+    // will cause the client to fallback to the old search semantics. Note
+    // that the timeout is reset everytime the client issues a read request.
     //
     VMDIR_LOCK_MUTEX(bInLock, pSearchRecord->pThreadInfo->mutexUsed);
 
@@ -650,10 +609,13 @@ _VmDirPagedSearchCacheWaitForClientCompletion(
         dwError = VmDirConditionTimedWait(
                     pSearchRecord->pThreadInfo->conditionUsed,
                     pSearchRecord->pThreadInfo->mutexUsed,
-                    gPagedSearchCache.dwTimeoutPeriod);
+                    gVmdirGlobals.dwLdapRecvTimeoutSec);
         if (dwError == ETIMEDOUT)
         {
-            break;
+            if ((time(NULL) - pSearchRecord->tLastClientRead) > gVmdirGlobals.dwLdapRecvTimeoutSec)
+            {
+                break;
+            }
         }
     }
 

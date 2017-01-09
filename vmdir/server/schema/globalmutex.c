@@ -37,8 +37,9 @@ VmDirSchemaModMutexAcquire(
         pszDN = BERVAL_NORM_VAL(pOperation->request.modifyReq.dn);
     }
 
-    if (VmDirStringEndsWith(pszDN, SCHEMA_NAMING_CONTEXT_DN, FALSE) &&
-            VmDirStringLenA(pszDN) > (SCHEMA_NAMING_CONTEXT_DN_LEN))
+    if (pOperation->bSchemaWriteOp == FALSE &&
+        VmDirStringEndsWith(pszDN, SCHEMA_NAMING_CONTEXT_DN, FALSE) &&
+        pszDN[SCHEMA_NAMING_CONTEXT_DN_LEN])
     {
         dwError = VmDirLockMutex(gVdirSchemaGlobals.cacheModMutex);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -67,6 +68,8 @@ VmDirSchemaModMutexRelease(
     {
         dwError = VmDirUnLockMutex(gVdirSchemaGlobals.cacheModMutex);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        pOperation->bSchemaWriteOp = FALSE;
     }
 
 error:

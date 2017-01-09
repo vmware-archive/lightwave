@@ -146,22 +146,6 @@ ParseRequestControls(
             // request
             if (VmDirStringCompareA( (*control)->type, LDAP_CONTROL_SYNC, TRUE ) == 0)
             {
-                if (VmDirdState() != VMDIRD_STATE_NORMAL &&
-                    VmDirdState() != VMDIRD_STATE_READ_ONLY)
-                {
-                    // Why block out-bound replication when catching up during restore mode?
-                    //
-                    // Reason: Partners have high-water-mark (lastLocalUsn) corresponding to this replica that is being
-                    // restored. If out-bound replication is not blocked while restore/catching-up is going on, originating
-                    // or replicated updates (if this replica is the only partner) made between the current-local-usn and
-                    // high-water-marks, that partners remember, will not get replicated out (even if the invocationId
-                    // has been fixed/changed).
-
-                    retVal = lr->errCode = LDAP_UNWILLING_TO_PERFORM;
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, (pszLocalErrorMsg),
-                                 "ParseRequestControls: Server not in normal mode, not allowing outward replication.");
-                }
-
                 if ((retVal = ParseSyncRequestControlVal( op, &lberBervCtlValue, &((*control)->value.syncReqCtrlVal),
                                                           lr)) != LDAP_SUCCESS)
                 {
@@ -283,10 +267,11 @@ WriteSyncDoneControl(
             char *  writer = NULL;
             size_t  tmpLen = 0;
             size_t bufferSize = (numEntries + 1 /* for lastLocalUsn */) *
-                                (VMDIR_GUID_STR_LEN + 1 + VMDIR_MAX_USN_STR_LEN + 1);
+                                (VMDIR_GUID_STR_LEN + 1 + VMDIR_MAX_USN_STR_LEN + 1) +
+                                (VMDIR_REPL_CONT_INDICATOR_LEN + 1);
 
             // Sync Done control value looks like: <lastLocalUsnChanged>,<serverId1>:<server 1 last originating USN>,
-            // <serverId2>,<server 2 originating USN>,...
+            // <serverId2>,<server 2 originating USN>,...,[continue:1,]
 
             if (VmDirAllocateMemory( bufferSize, (PVOID *)&bvCtrlVal.lberbv.bv_val) != 0)
             {
@@ -307,6 +292,15 @@ WriteSyncDoneControl(
                 pUtdVectorEntry = LW_STRUCT_FROM_FIELD(pNode, UptoDateVectorEntry, Node);
                 VmDirStringPrintFA( writer, bufferSize, "%s:%ld,", pUtdVectorEntry->invocationId.lberbv.bv_val,
                                     pUtdVectorEntry->currMaxOrigUsnProcessed );
+                tmpLen = VmDirStringLenA( writer );
+                writer += tmpLen;
+                bufferSize -= tmpLen;
+                bvCtrlVal.lberbv.bv_len += tmpLen;
+            }
+
+            if (op->syncDoneCtrl->value.syncDoneCtrlVal.bContinue)
+            {
+                VmDirStringPrintFA( writer, bufferSize, VMDIR_REPL_CONT_INDICATOR );
                 tmpLen = VmDirStringLenA( writer );
                 writer += tmpLen;
                 bufferSize -= tmpLen;
@@ -699,6 +693,15 @@ ParseSyncRequestControlVal(
             while( nextServerIdStr != NULL && nextServerIdStr[0] != '\0')
             {
                 PLW_HASHTABLE_NODE pNode = NULL;
+
+                // Ignore continue indicator in sync request control
+                if (VmDirStringNCompareA(nextServerIdStr,
+                        VMDIR_REPL_CONT_INDICATOR,
+                        VMDIR_REPL_CONT_INDICATOR_LEN, FALSE) == 0)
+                {
+                    nextServerIdStr = VmDirStringChrA( nextServerIdStr, ',') + 1;
+                    continue;
+                }
 
                 if (VmDirAllocateMemory( sizeof(UptoDateVectorEntry), (PVOID *)&utdVectorEntry ) != 0)
                 {

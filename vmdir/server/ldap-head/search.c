@@ -144,6 +144,58 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+_VmDirSearchPreCondition(
+    PVDIR_OPERATION     pOperation,
+    PVDIR_LDAP_RESULT   pResult
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszLocalErrorMsg = NULL;
+
+    // Is sync request operable?
+    if (pOperation->syncReqCtrl)
+    {
+        if (VmDirdState() != VMDIRD_STATE_NORMAL &&
+            VmDirdState() != VMDIRD_STATE_READ_ONLY)
+        {
+            // Why block out-bound replication when catching up during restore mode?
+            //
+            // Reason: Partners have high-water-mark (lastLocalUsn) corresponding to this replica that is being
+            // restored. If out-bound replication is not blocked while restore/catching-up is going on, originating
+            // or replicated updates (if this replica is the only partner) made between the current-local-usn and
+            // high-water-marks, that partners remember, will not get replicated out (even if the invocationId
+            // has been fixed/changed).
+
+            dwError = pResult->errCode = LDAP_UNWILLING_TO_PERFORM;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg,
+                    "Server in not in normal mode, not allowing outward replication.");
+        }
+
+        // Sync request must acquire replication (read) lock
+        VMDIR_RWLOCK_READLOCK(pOperation->conn->bInReplLock, gVmdirGlobals.replRWLock, 1000);
+        if (!pOperation->conn->bInReplLock)
+        {
+            dwError = pResult->errCode = LDAP_BUSY;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    return dwError;
+
+error:
+    if (pszLocalErrorMsg)
+    {
+        VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: %s",
+                __FUNCTION__, pszLocalErrorMsg);
+    }
+    goto cleanup;
+}
+
 /* PerformSearch: Parse the search request on the wire, and call middle-layer Search functionality.
  *
  * From RFC 4511:
@@ -264,6 +316,10 @@ VmDirPerformSearch(
    // Parse LDAP controls present (if any) in the request.
    retVal = ParseRequestControls(pOperation, pResult);  // ldapResult.errCode set inside
    BAIL_ON_VMDIR_ERROR( retVal );
+
+   // Check all pre-conditions before processing operation
+   retVal = _VmDirSearchPreCondition(pOperation, pResult);
+   BAIL_ON_VMDIR_ERROR(retVal);
 
    retVal = pResult->errCode = VmDirMLSearch(pOperation);
    bResultAlreadySent = TRUE;

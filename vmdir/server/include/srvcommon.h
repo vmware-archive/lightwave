@@ -28,15 +28,26 @@ extern "C" {
 #define VMDIR_ORIG_TIME_STR_LEN         ( 4 /* year */ + 2 /* month */ + 2 /* day */ + 2 /* hour */ + 2 /* minute */ + \
                                           2 /* sec */ + 1 /* . */ + 3 /* milli sec */ + 1 /* null byte terminator */ )
 
-#define VMDIR_UUID_LEN                  16 /* typedef __darwin_uuid_t uuid_t; typedef unsigned char __darwin_uuid_t[16] */
 #define VMDIR_MAX_USN_STR_LEN           VMDIR_MAX_I64_ASCII_STR_LEN
 #define VMDIR_MAX_VERSION_NO_STR_LEN    VMDIR_MAX_I64_ASCII_STR_LEN /* Version number used in attribute meta-data */
-#define VMDIR_PS_COOKIE_LEN             (VMDIR_MAX_I64_ASCII_STR_LEN + 1 /* comma */ + VMDIR_GUID_STR_LEN + 1)
+
+//
+// If the new paged search is turned on then the cookie is a guid; otherwise,
+// it's an ENTRYID.
+//
+#define VMDIR_PS_COOKIE_LEN             (VMDIR_MAX(VMDIR_MAX_I64_ASCII_STR_LEN, VMDIR_GUID_STR_LEN))
 
 // Format is: <local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
 #define VMDIR_MAX_ATTR_META_DATA_LEN    (VMDIR_MAX_USN_STR_LEN + 1 + VMDIR_MAX_VERSION_NO_STR_LEN + 1 + \
                                          VMDIR_GUID_STR_LEN + 1 + VMDIR_ORIG_TIME_STR_LEN + 1 +    \
                                          VMDIR_MAX_USN_STR_LEN + 1)
+
+// Format is: <attr-name>:<local-usn>:<version-no>:<originating-server-id>:<value-change-originating-server-id>
+//       :<value-change-originating time>:<value-change-originating-usn>:
+//       Remaining portion of attr-value-meta-data to be stored in backend: <opcode>:<value-size>:<value>
+#define VMDIR_MAX_ATTR_VALUE_META_DATA_LEN    (VMDIR_MAX_USN_STR_LEN + 1 + VMDIR_MAX_VERSION_NO_STR_LEN + 1 + \
+                                               VMDIR_GUID_STR_LEN + 1 + VMDIR_GUID_STR_LEN + 1 + \
+                                               VMDIR_ORIG_TIME_STR_LEN + 1 + VMDIR_MAX_USN_STR_LEN + 1 + 1)
 
 #define VMDIR_IS_DELETED_TRUE_STR      "TRUE"
 #define VMDIR_IS_DELETED_TRUE_STR_LEN  4
@@ -47,6 +58,8 @@ extern "C" {
 
 #define VMDIR_DEFAULT_REPL_INTERVAL     "30"
 #define VMDIR_DEFAULT_REPL_PAGE_SIZE    "1000"
+#define VMDIR_REPL_CONT_INDICATOR       "continue:1,"
+#define VMDIR_REPL_CONT_INDICATOR_LEN   sizeof(VMDIR_REPL_CONT_INDICATOR)-1
 
 #define VMDIR_RUN_MODE_RESTORE          "restore"
 #define VMDIR_RUN_MODE_STANDALONE       "standalone"
@@ -68,7 +81,7 @@ extern "C" {
 
 #define VDIR_FOREST_FUNCTIONAL_LEVEL    "1"
 // This value is the DFL for the current version
-#define VDIR_DOMAIN_FUNCTIONAL_LEVEL	"3"
+#define VDIR_DOMAIN_FUNCTIONAL_LEVEL	"4"
 
 // Mapping of functionality to levels
 // Base DFL, support for all 6.0 and earlier functionality
@@ -77,6 +90,12 @@ extern "C" {
 #define VDIR_DFL_PSCHA   2
 // Support for 7.0 functionality, ModDn
 #define VDIR_DFL_MODDN   3
+// Support for 7.0 functionality, Concurrent Attribute Value Update
+#define VDIR_DFL_CONCURRENT_ATTR_VALUE_UPDATE   4
+
+#define VDIR_CONCURRENT_ATTR_VALUE_UPDATE_ENABLED   \
+    (gVmdirServerGlobals.dwDomainFunctionalLevel >= \
+            VDIR_DFL_CONCURRENT_ATTR_VALUE_UPDATE)
 
 // Keys for backend funtion pfnBEStrkeyGet/SetValues to access attribute IDs
 #define ATTR_ID_MAP_KEY   "1VmdirAttrIDToNameTb"
@@ -188,6 +207,7 @@ typedef struct _VDIR_CONNECTION
     VDIR_ACCESS_INFO        AccessInfo;
     BOOLEAN                 bIsAnonymousBind;
     BOOLEAN                 bIsLdaps;
+    BOOLEAN                 bInReplLock;
     PVDIR_SASL_BIND_INFO    pSaslInfo;
     char                    szServerIP[INET6_ADDRSTRLEN];
     DWORD                   dwServerPort;
@@ -203,7 +223,6 @@ typedef struct _VDIR_CONNECTION_CTX
 } VDIR_CONNECTION_CTX, *PVDIR_CONNECTION_CTX;
 
 typedef struct _VDIR_SCHEMA_AT_DESC*    PVDIR_SCHEMA_AT_DESC;
-typedef struct _VDIR_SCHEMA_OC_DESC*    PVDIR_SCHEMA_OC_DESC;
 
 typedef struct _VDIR_ATTRIBUTE
 {
@@ -220,6 +239,19 @@ typedef struct _VDIR_ATTRIBUTE
     * Format is: <local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
     */
    char                 metaData[VMDIR_MAX_ATTR_META_DATA_LEN];
+
+   /* A queue of attr-value-meta-data elements to add to the backend index database.
+    * Each element contains a VDIR_BERVALUE variable, and its bv_val is in format:
+    *     <local-usn>:<version-no>:<originating-server-id>:<value-change-originating-server-id>
+    *       :<value-change-originating time>:<value-change-originating-usn>:<opcode>:<value-size>:<value>
+    *     <value> is an octet string.
+    */
+   DEQUE  valueMetaDataToAdd;
+   /* Hold obsolete attr-value-meta-data elements to be deleted.
+    * The elements to be added to this queue when MOD_OP_REPLACE
+    * or modify MOD_OP_DELETE with empty value on multi-value attribute.
+    */
+   DEQUE  valueMetaDataToDelete;
 
    struct _VDIR_ATTRIBUTE *  next;
 } VDIR_ATTRIBUTE, *PVDIR_ATTRIBUTE;
@@ -492,7 +524,7 @@ typedef struct SyncDoneControlValue
 {
     USN                     intLastLocalUsnProcessed;
     PLW_HASHTABLE           htUtdVector;
-    BOOLEAN                 refreshDeletes;
+    BOOLEAN                 bContinue;
 } SyncDoneControlValue;
 
 typedef struct _VDIR_PAGED_RESULT_CONTROL_VALUE
@@ -638,6 +670,16 @@ typedef struct _VMDIR_STRONG_WRITE_PARTNER_CONTENT
     struct _VMDIR_STRONG_WRITE_PARTNER_CONTENT   *next;
 } VMDIR_STRONG_WRITE_PARTNER_CONTENT, *PVMDIR_STRONG_WRITE_PARTNER_CONTENT;
 
+//
+// Wrapper for a relative security descriptor and some of its related info.
+//
+typedef struct _VMDIR_SECURITY_DESCRIPTOR
+{
+    PSECURITY_DESCRIPTOR_RELATIVE pSecDesc;
+    ULONG ulSecDesc;
+    SECURITY_INFORMATION SecInfo;
+} VMDIR_SECURITY_DESCRIPTOR, *PVMDIR_SECURITY_DESCRIPTOR;
+
 DWORD
 VmDirInitBackend();
 
@@ -756,6 +798,11 @@ VmDirAttributeInitialize(
     );
 
 VOID
+VmDirFreeAttrValueMetaDataContent(
+    PDEQUE  pValueMetaData
+    );
+
+VOID
 VmDirFreeAttribute(
     PVDIR_ATTRIBUTE pAttr
     );
@@ -765,7 +812,7 @@ VmDirAttributeAllocate(
     PCSTR               pszName,
     USHORT              usBerSize,
     PVDIR_SCHEMA_CTX    pCtx,
-    PVDIR_ATTRIBUTE*         ppOutAttr
+    PVDIR_ATTRIBUTE*    ppOutAttr
     );
 
 
@@ -793,9 +840,17 @@ VmDirIsInternalEntry(
     );
 
 BOOLEAN
-VmDirIsEntryWithObjectclass(
+VmDirEntryIsObjectclass(
     PVDIR_ENTRY     pEntry,
     PCSTR           pszOCName
+    );
+
+DWORD
+VmDirEntryIsAttrAllowed(
+    PVDIR_ENTRY pEntry,
+    PSTR        pszAttrName,
+    PBOOLEAN    pbMust,
+    PBOOLEAN    pbMay
     );
 
 /*
@@ -845,6 +900,11 @@ VmDirEntryReplaceAttribute(
     PVDIR_ATTRIBUTE pNewAttr
     );
 
+DWORD
+VmDirDeleteEntry(
+    PVDIR_ENTRY pEntry
+    );
+
 // util.c
 DWORD
 VmDirToLDAPError(
@@ -873,6 +933,13 @@ void
 VmDirCurrentGeneralizedTime(
     PSTR    pszTimeBuf,
     int     iBufSize
+    );
+
+void
+VmDirCurrentGeneralizedTimeWithOffset(
+    PSTR    pszTimeBuf,
+    int     iBufSize,
+    DWORD   dwOffset
     );
 
 VOID
@@ -929,6 +996,7 @@ VmDirSrvCreateContainerWithEID(
     PVDIR_SCHEMA_CTX pSchemaCtx,
     PCSTR            pszContainerDN,
     PCSTR            pszContainerName,
+    PVMDIR_SECURITY_DESCRIPTOR pSecDesc,
     ENTRYID          eID);
 
 DWORD
@@ -995,6 +1063,11 @@ VmDirValidatePrincipalName(
 DWORD
 VmDirSrvGetDomainFunctionalLevel(
     PDWORD pdwLevel
+    );
+
+BOOLEAN
+VmDirValidValueMetaEntry(
+    PVDIR_BERVALUE  pValueMetaData
     );
 
 // candidates.c
@@ -1372,6 +1445,11 @@ VmDirPerformUrgentReplIfRequired(
     USN currentTxnUSN
     );
 
+//vmafdlib.c
+DWORD
+VmDirOpenVmAfdClientLib(
+    VMDIR_LIB_HANDLE*   pplibHandle
+    );
 #ifdef __cplusplus
 }
 #endif

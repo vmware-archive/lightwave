@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -151,6 +151,187 @@ VmDirIsMutexInitialized(
 {
     return ( pMutex != NULL ) &&
            ( pMutex->bInitialized != FALSE );
+}
+
+DWORD
+VmDirAllocateRWLock(
+    PVMDIR_RWLOCK*  ppLock
+    )
+{
+    DWORD dwError = 0;
+    PVMDIR_RWLOCK pLock = NULL;
+
+    if (!ppLock)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_RWLOCK), (PVOID*)&pLock);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirInitializeRWLockContent(pLock);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppLock = pLock;
+    pLock = NULL;
+
+error:
+    VmDirFreeRWLock(pLock);
+    return dwError;
+}
+
+DWORD
+VmDirInitializeRWLockContent(
+    PVMDIR_RWLOCK   pLock
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pLock || pLock->bInitialized)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    memset(&pLock->lock, 0, sizeof(pthread_mutex_t));
+
+    dwError = pthread_rwlock_init(&pLock->lock, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pLock->bInitialized = TRUE;
+
+error:
+    return dwError;
+}
+
+VOID
+VmDirFreeRWLock(
+    PVMDIR_RWLOCK   pLock
+    )
+{
+    VmDirFreeRWLockContent(pLock);
+    VMDIR_SAFE_FREE_MEMORY(pLock);
+}
+
+VOID
+VmDirFreeRWLockContent(
+    PVMDIR_RWLOCK   pLock
+    )
+{
+    if (pLock && pLock->bInitialized)
+    {
+        pthread_rwlock_destroy(&pLock->lock);
+        pLock->bInitialized = FALSE;
+    }
+}
+
+DWORD
+VmDirRWLockReadLock(
+    PVMDIR_RWLOCK   pLock,
+    DWORD           dwMilliSec
+    )
+{
+#ifdef __APPLE__
+    return VMDIR_ERROR_OPERATION_NOT_PERMITTED;
+#else
+    DWORD dwError = 0;
+
+    if (!pLock || !pLock->bInitialized)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (dwMilliSec)
+    {
+        struct timespec ts = {0};
+        uint64_t iTimeInMSec = 0;
+
+        iTimeInMSec =  dwMilliSec + VmDirGetTimeInMilliSec();
+        ts.tv_sec = iTimeInMSec / MSECS_PER_SEC;
+        ts.tv_nsec = (iTimeInMSec % MSECS_PER_SEC) * NSECS_PER_MSEC;
+
+        dwError = pthread_rwlock_timedrdlock(&pLock->lock, &ts);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = pthread_rwlock_rdlock(&pLock->lock);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+error:
+    return dwError;
+#endif
+}
+
+DWORD
+VmDirRWLockWriteLock(
+    PVMDIR_RWLOCK   pLock,
+    DWORD           dwMilliSec
+    )
+{
+#ifdef __APPLE__
+    return VMDIR_ERROR_OPERATION_NOT_PERMITTED;
+#else
+    DWORD dwError = 0;
+
+    if (!pLock || !pLock->bInitialized)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (dwMilliSec)
+    {
+        struct timespec ts = {0};
+        uint64_t iTimeInMSec = 0;
+
+        iTimeInMSec =  dwMilliSec + VmDirGetTimeInMilliSec();
+        ts.tv_sec = iTimeInMSec / MSECS_PER_SEC;
+        ts.tv_nsec = (iTimeInMSec % MSECS_PER_SEC) * NSECS_PER_MSEC;
+
+        dwError = pthread_rwlock_timedwrlock(&pLock->lock, &ts);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = pthread_rwlock_wrlock(&pLock->lock);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+error:
+    return dwError;
+#endif
+}
+
+DWORD
+VmDirRWLockUnlock(
+    PVMDIR_RWLOCK   pLock
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pLock || !pLock->bInitialized)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = pthread_rwlock_unlock(&pLock->lock);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
+BOOLEAN
+VmDirIsRWLockInitialized(
+    PVMDIR_RWLOCK   pLock
+    )
+{
+    return pLock && pLock->bInitialized;
 }
 
 DWORD

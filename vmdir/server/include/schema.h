@@ -76,6 +76,22 @@ typedef struct _VDIR_SCHEMA_AT_DESC
 
 } VDIR_SCHEMA_AT_DESC;
 
+typedef struct _VDIR_SCHEMA_OC_DESC
+{
+    PVDIR_LDAP_OBJECT_CLASS pLdapOc;
+
+    PSTR        pszName;
+    PSTR        pszOid;
+    PSTR        pszSup;
+    PSTR*       ppszMustATs;    // ends with NULL PSTR
+    PSTR*       ppszMayATs;     // ends with NULL PSTR
+
+    BOOLEAN     bObsolete;
+
+    VDIR_LDAP_OBJECT_CLASS_TYPE type;
+
+} VDIR_SCHEMA_OC_DESC, *PVDIR_SCHEMA_OC_DESC;
+
 typedef DWORD (*PFN_VDIR_NORMALIZE_FUNCTION)(PVDIR_BERVALUE pBerv);
 
 typedef BOOLEAN (*PFN_VDIR_COMPARE_FUNCTION)(VDIR_SCHEMA_MATCH_TYPE type, PVDIR_BERVALUE pBerv1, PVDIR_BERVALUE pBerv2);
@@ -98,7 +114,7 @@ typedef struct _VDIR_MATCHING_RULE_DESC
  */
 DWORD
 VmDirSchemaLibInit(
-    VOID
+    PVMDIR_MUTEX*   ppModMutex
     );
 
 /*
@@ -342,6 +358,20 @@ VmDirSchemaAttrList(
     PVDIR_SCHEMA_AT_DESC**  pppATDescList
     );
 
+DWORD
+VmDirSchemaClassGetAllMayAttrs(
+    PVDIR_SCHEMA_CTX        pCtx,           // IN
+    PVDIR_SCHEMA_OC_DESC    pOCDesc,        // IN
+    PLW_HASHMAP             pAllMayAttrMap  // IN
+    );
+
+DWORD
+VmDirSchemaClassGetAllMustAttrs(
+    PVDIR_SCHEMA_CTX        pCtx,           // IN
+    PVDIR_SCHEMA_OC_DESC    pOCDesc,        // IN
+    PLW_HASHMAP             pAllMustAttrMap // IN
+    );
+
 BOOLEAN
 VmDirSchemaSyntaxIsNumeric(
     PCSTR   pszSyntaxOid
@@ -455,10 +485,14 @@ VmDirIsLiveSchemaCtx(
     PVDIR_SCHEMA_CTX    pCtx
     );
 
+DWORD
+VmDirSchemaGetEntryStructureOCDesc(
+    PVDIR_ENTRY             pEntry,
+    PVDIR_SCHEMA_OC_DESC*   ppStructureOCDesc       // caller does not own *ppStructureOCDesc
+    );
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* __VIDRSCHEMA_H__ */
-
-

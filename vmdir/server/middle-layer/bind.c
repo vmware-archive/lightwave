@@ -23,9 +23,15 @@ _VmDirSASLBind(
     );
 
 static
-int
-_VmDirBindSetupACL(
-    PVDIR_OPERATION  pOperation,
+DWORD
+_VmDirBindSetupAnonymousAccessInfo(
+    PVDIR_ACCESS_INFO pAccessInfo
+    );
+
+static
+DWORD
+_VmDirBindSetupAccessInfo(
+    PVDIR_ACCESS_INFO pAccessInfo,
     PVDIR_ENTRY      pEntry
     );
 
@@ -99,6 +105,11 @@ VmDirMLBind(
                break;
     }
 
+    if (pOperation->conn->bIsAnonymousBind)
+    {
+        dwError = _VmDirBindSetupAnonymousAccessInfo(&pOperation->conn->AccessInfo);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
 
@@ -112,9 +123,8 @@ cleanup:
             {
                 // install sasl encode/decode sockbuf i/o
                 pOperation->ldapResult.errCode = VmDirSASLSockbufInstall(
-							pOperation->conn->sb,
-                                                        pOperation->conn->pSaslInfo
-							);
+                                                    pOperation->conn->sb,
+                                                    pOperation->conn->pSaslInfo);
                 // do not bail in cleanup section.  we return ldapResult.errCode directly.
             }
 
@@ -230,7 +240,7 @@ txnretry:
     // transaction retry loop end.
     // ************************************************************************************
 
-    retVal = _VmDirBindSetupACL( pOperation, pEntry );
+    retVal = _VmDirBindSetupAccessInfo( &pOperation->conn->AccessInfo, pEntry );
     BAIL_ON_VMDIR_ERROR(retVal );
 
     retVal = _VmDirBindHandleFailedPassword( pOperation, pEntry );
@@ -272,41 +282,72 @@ error:
 }
 
 static
-int
-_VmDirBindSetupACL(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry)
+DWORD
+_VmDirBindSetupAnonymousAccessInfo(
+    PVDIR_ACCESS_INFO pAccessInfo
+    )
 {
-    int     retVal = 0;
+    DWORD dwError = 0;
 
-    assert( pOperation && pEntry );
+    VmDirFreeAccessInfo(pAccessInfo);
 
-    // For instance a bind trying to overwrite a previous bind on the same connection
-    // and the previous bind's token is still in-use, the new bind request should fail
-    // return LDAP_UNWILLING_TO_PERFORM
+    dwError = VmDirSrvCreateAccessTokenForWellKnowObject(&pAccessInfo->pAccessToken,
+                                                         VMDIR_ANONYMOUS_LOGON_SID);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmDirFreeAccessInfo(&pOperation->conn->AccessInfo);
+    dwError = VmDirAllocateStringA(VMDIR_ANONYMOUS_LOGON_SID, &pAccessInfo->pszBindedObjectSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    retVal = VmDirSrvCreateAccessTokenWithEntry(pEntry,
-                                                &pOperation->conn->AccessInfo.pAccessToken,
-                                                &pOperation->conn->AccessInfo.pszBindedObjectSid);
-    BAIL_ON_VMDIR_ERROR(retVal);
+    pAccessInfo->bindEID = 0;
 
-    pOperation->conn->AccessInfo.bindEID = pEntry->eId;
-
-    retVal = VmDirAllocateStringA(BERVAL_NORM_VAL(pEntry->dn),
-                                  &pOperation->conn->AccessInfo.pszNormBindedDn);
-    BAIL_ON_VMDIR_ERROR(retVal);
-
-    retVal = VmDirAllocateStringA(pEntry->dn.lberbv.bv_val,
-                                  &pOperation->conn->AccessInfo.pszBindedDn);
-    BAIL_ON_VMDIR_ERROR(retVal);
+    //
+    // Set these flags so that the worker routines don't try to look up our
+    // info (since we don't have a real user to search against). Since we're
+    // anonymous we know we're not in any of these groups.
+    //
+    pAccessInfo->accessRoleBitmap = VDIR_ACCESS_DCGROUP_MEMBER_VALID_INFO |
+                                    VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_VALID_INFO |
+                                    VDIR_ACCESS_ADMIN_MEMBER_VALID_INFO;
 
 cleanup:
-    return retVal;
+    return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "(%s) failed: (%u)", __FUNCTION__, retVal);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "(%s) failed: (%u)", __FUNCTION__, dwError);
+    VmDirFreeAccessInfo(pAccessInfo);
+    goto cleanup;
+}
+
+DWORD
+_VmDirBindSetupAccessInfo(
+    PVDIR_ACCESS_INFO pAccessInfo,
+    PVDIR_ENTRY pEntry
+    )
+{
+    DWORD dwError = 0;
+
+    VmDirFreeAccessInfo(pAccessInfo);
+
+    dwError = VmDirSrvCreateAccessTokenWithEntry(pEntry,
+                                                 &pAccessInfo->pAccessToken,
+                                                 &pAccessInfo->pszBindedObjectSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pAccessInfo->bindEID = pEntry->eId;
+
+    dwError = VmDirAllocateStringA(BERVAL_NORM_VAL(pEntry->dn),
+                                   &pAccessInfo->pszNormBindedDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(pEntry->dn.lberbv.bv_val,
+                                   &pAccessInfo->pszBindedDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "(%s) failed: (%u)", __FUNCTION__, dwError);
     goto cleanup;
 }
 
@@ -451,7 +492,7 @@ error:
              &&
              VmDirSimpleDNToEntry( pOperation->reqDn.lberbv_val, &pLocalEntry ) == 0
              &&
-             _VmDirBindSetupACL( pOperation, pLocalEntry ) == 0
+             _VmDirBindSetupAccessInfo( &pOperation->conn->AccessInfo, pLocalEntry ) == 0
            )
         {
             pOperation->conn->pSaslInfo->vmdirCode = VMDIR_ERROR_USER_INVALID_CREDENTIAL;

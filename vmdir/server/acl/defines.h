@@ -46,3 +46,7 @@
  * RIDs below this are for well-known / pre-defined users.
  */
 #define VMDIR_ACL_RID_BASE 1000
+
+#define VMDIR_LEGACY_ACE_ACCESS (VMDIR_RIGHT_DS_READ_PROP | VMDIR_RIGHT_DS_WRITE_PROP | \
+                                 VMDIR_RIGHT_DS_CREATE_CHILD | VMDIR_RIGHT_DS_DELETE_CHILD | \
+                                 VMDIR_ENTRY_GENERIC_EXECUTE)

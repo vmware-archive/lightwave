@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -597,5 +597,58 @@ VmDirMapLdapError(
             return VMDIR_ERROR_BUSY;
         default:
             return VMDIR_ERROR_GENERIC;
+    }
+}
+
+/*
+ *  Bind to a host with the handle to be used later
+ */
+DWORD
+VmDirConnectLDAPServerWithMachineAccount(
+    PCSTR  pszHostName,
+    PCSTR  pszDomain,
+    LDAP** ppLd
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszDCAccount = NULL;
+    PSTR pszDCAccountPassword = NULL;
+    PSTR pszServerName = NULL;
+    char bufUPN[VMDIR_MAX_UPN_LEN] = {0};
+    LDAP* pLd = NULL;
+
+    dwError = VmDirRegReadDCAccount( &pszDCAccount);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirReadDCAccountPassword( &pszDCAccountPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirStringPrintFA( bufUPN, sizeof(bufUPN)-1,  "%s@%s", pszDCAccount, pszDomain);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSafeLDAPBind( &pLd, pszServerName, bufUPN, pszDCAccountPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppLd = pLd;
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszDCAccount);
+    VMDIR_SECURE_FREE_STRINGA(pszDCAccountPassword);
+    VMDIR_SAFE_FREE_STRINGA(pszServerName);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+VOID
+VmDirLdapUnbind(
+    LDAP** ppLd
+    )
+{
+    if (ppLd && *ppLd)
+    {
+        ldap_unbind_ext_s(*ppLd, NULL, NULL);
+        *ppLd = NULL;
     }
 }

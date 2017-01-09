@@ -15,7 +15,6 @@
 
 #include <config.h>
 #include <getopt.h>
-#include <assert.h>
 
 #include <vmdirsys.h>
 
@@ -27,9 +26,6 @@
 #include <vmdirclient.h>
 #define LW_STRICT_NAMESPACE
 #include <lw/hash.h>
-#include "defines.h"
-#include "structs.h"
-#include "prototypes.h"
 
 #else
 #pragma once
@@ -37,6 +33,7 @@
 #include "targetver.h"
 #define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 
+#include <assert.h>
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,6 +50,10 @@
 
 #define LW_STRICT_NAMESPACE
 #include <lw/hash.h>
+#include <lw/ntstatus.h>
 #include "banned.h"
-
 #endif
+
+#include "defines.h"
+#include "structs.h"
+#include "prototypes.h"
