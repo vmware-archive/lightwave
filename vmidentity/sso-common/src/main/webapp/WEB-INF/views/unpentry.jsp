@@ -46,7 +46,7 @@
 
     var tlsclient_auth = '${enable_tlsclient_auth}';
     var password_auth = '${enable_password_auth}';
-    var windows_auth = 'false';
+    var windows_auth = '${enable_windows_auth}';
     var rsa_am_auth = '${enable_rsaam_auth}';
     var rsaam_reminder = '${rsaam_reminder}';
     var rsaam_passcode_label = '${passcode}:';

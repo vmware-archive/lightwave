@@ -295,7 +295,7 @@
    // if CIP is installed, writes to browser localStorage to set var "vmwCIPInstalled" to "true"
    // if CIP is not installed, set var to "false"
    var setCSDInstalled = function setCSDInstalled(){
-      if (this._VersionStr != null || !isVCLogin()) {
+      if (this._VersionStr != null) {
          $('#footer').html('');
          writeCSDInstalled(true);
       } else {
@@ -440,8 +440,8 @@
             var passwordField = document.getElementById('password');
             if (cb.checked) {
                doLog("enableSspi : getting the userNamer for this logged on User");
-               usernameField.disabled = false;
-               passwordField.disabled = false;
+               usernameField.disabled = true;
+               passwordField.disabled = true;
                // Get the ad name,
 
                //uncheck smartcardCheckbox
