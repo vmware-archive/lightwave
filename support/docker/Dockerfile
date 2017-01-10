@@ -16,13 +16,13 @@ RUN tdnf update --refresh -y \
         pcre-8.39 \
         openssl-1.0.2j \
         expat-2.2.0 \
-        curl-7.51 \
+        curl-7.51.0 \
         bzip2-1.0.6 && \
     tdnf install -y \
         apache-tomcat-8.0.37 \
         boost-1.60.0 \
         commons-daemon-1.0.15-7.ph1.x86_64 \
-        likewise-open-6.2.10 \
+        likewise-open-6.2.11 \
         openjre-1.8.0.102 \
         procps-ng-3.3.11 \
         sed-4.2.2 \
