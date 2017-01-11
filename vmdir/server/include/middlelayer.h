@@ -123,6 +123,11 @@ VmDirInternalBindEntry(
     PVDIR_OPERATION  pOperation
     );
 
+DWORD
+VmDirMLSetupAnonymousAccessInfo(
+    PVDIR_ACCESS_INFO pAccessInfo
+    );
+
 // dn.c
 
 DWORD

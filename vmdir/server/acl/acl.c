@@ -240,7 +240,7 @@ VmDirSrvAccessCheckSelf(
 
     if (pszNormBindedDn == NULL)
     {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
     }
 
     if (IsNullOrEmptyString(pEntry->dn.bvnorm_val))

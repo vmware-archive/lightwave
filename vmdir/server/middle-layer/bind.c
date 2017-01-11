@@ -24,12 +24,6 @@ _VmDirSASLBind(
 
 static
 DWORD
-_VmDirBindSetupAnonymousAccessInfo(
-    PVDIR_ACCESS_INFO pAccessInfo
-    );
-
-static
-DWORD
 _VmDirBindSetupAccessInfo(
     PVDIR_ACCESS_INFO pAccessInfo,
     PVDIR_ENTRY      pEntry
@@ -107,7 +101,7 @@ VmDirMLBind(
 
     if (pOperation->conn->bIsAnonymousBind)
     {
-        dwError = _VmDirBindSetupAnonymousAccessInfo(&pOperation->conn->AccessInfo);
+        dwError = VmDirMLSetupAnonymousAccessInfo(&pOperation->conn->AccessInfo);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -281,9 +275,8 @@ error:
     goto cleanup;
 }
 
-static
 DWORD
-_VmDirBindSetupAnonymousAccessInfo(
+VmDirMLSetupAnonymousAccessInfo(
     PVDIR_ACCESS_INFO pAccessInfo
     )
 {
