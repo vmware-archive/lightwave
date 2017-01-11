@@ -254,6 +254,7 @@ AC_ARG_WITH([sasl],
         SASL_INCLUDES="-I$withval/include"
         SASL_LIBPATH="$withval/lib64"
         SASL_LDFLAGS="-L$withval/lib64"
+        SASL_PLUGINSPATH="$withval/lib64/sasl2"
     ])
 
 AC_ARG_WITH([sasl-includes],
@@ -269,11 +270,17 @@ AC_ARG_WITH([sasl-libs],
         SASL_LDFLAGS="-L$withval"
     ])
 
+AC_ARG_WITH([sasl-plugins],
+    [AC_HELP_STRING([--with-sasl-plugins=<dir>], [assume SASL plugins at runtime are located in <dir> ])],
+    [
+        SASL_PLUGINSPATH="$withval"
+    ])
+
 AC_SUBST(SASL_BASE_PATH)
 AC_SUBST(SASL_INCLUDES)
 AC_SUBST(SASL_LDFLAGS)
 
-AC_DEFINE_UNQUOTED(VMDIR_CONFIG_SASL2_LIB_PATH, "$SASL_LIBPATH/sasl2", [SASL2 Library path])
+AC_DEFINE_UNQUOTED(VMDIR_CONFIG_SASL2_LIB_PATH, "$SASL_PLUGINSPATH", [SASL2 Library path])
 
 # Likewise components
 
