@@ -12,7 +12,6 @@
  * under the License.
  */
 
-#include <ldap.h>
 #include "defines.h"
 
 #ifndef _WIN32
@@ -55,6 +54,11 @@
 #include <vmsock.h>
 
 #endif
+
+#include <ldap.h>
+#include <gssapi/gssapi.h>
+#include <gssapi/gssapi_ext.h>
+#include <time.h>
 
 #include "structs.h"
 #include "externs.h"

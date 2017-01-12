@@ -6,7 +6,6 @@ include_public_srcdir=$(top_srcdir)/include/public
 
 vmdnsd_SOURCES = \
     auth.c        \
-    dirsync.c     \
     globals.c     \
     init.c        \
     main.c        \

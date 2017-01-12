@@ -30,6 +30,14 @@ VmAfSrvGetLotusServerName(
     PSTR*   ppOutServerName
     );
 
+static
+DWORD
+VmAfdAppendDomain(
+    PCSTR   pszServerName,
+    PCSTR   pszDomainName,
+    PSTR*   pszServerFQDN
+    );
+
 DWORD
 VmAfSrvConfigureDNSW(
     PCWSTR pwszServerName,
@@ -97,6 +105,14 @@ VmAfSrvConfigureDNSA(
     PVMDNS_IP6_ADDRESS      pV6Addresses = NULL;
     DWORD                   numV6Address = 0;
     VMDNS_INIT_INFO         initInfo = {0};
+    CHAR                    szDomainFQDN[260] = {0};
+    PSTR                    pszServerFQDN = NULL;
+
+    if (IsNullOrEmptyString(pszDomainName) || strlen(pszDomainName) > 255)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     dwError = VmAfSrvGetIPAddressesWrap(
                   &pV4Addresses,
@@ -108,11 +124,36 @@ VmAfSrvConfigureDNSA(
     dwError = VmAfSrvGetLotusServerName(
                     pszServerName,
                     &pszCanonicalServerName);
+    VmAfdLog(
+            VMAFD_DEBUG_ERROR,
+            "Domain Name = %s, server name = %s , server Canonical Name = %s",
+            pszDomainName,
+            pszServerName,
+            pszCanonicalServerName
+           );
     BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAppendDomain(pszServerName, pszDomainName, &pszServerFQDN);
+    VmAfdLog(
+            VMAFD_DEBUG_ERROR,
+            "Domain Name = %s",
+            pszServerFQDN
+           );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdStringCpyA(szDomainFQDN, 260, pszDomainName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+
+    if (szDomainFQDN[strlen(szDomainFQDN) - 1] != '.')
+    {
+        szDomainFQDN[strlen(szDomainFQDN)] = '.';
+        szDomainFQDN[strlen(szDomainFQDN)+1] = 0;
+    }
 
     VmAfdLog(
         VMAFD_DEBUG_ANY,
-        "%s server name for dns init: %s",
+        "%s Server name for dns initialize: %s",
         __FUNCTION__,
         pszCanonicalServerName);
 
@@ -120,8 +161,8 @@ VmAfSrvConfigureDNSA(
     initInfo.IpV4Addrs.dwCount = numV4Address;
     initInfo.IpV6Addrs.Addrs = pV6Addresses;
     initInfo.IpV6Addrs.dwCount = numV6Address;
-    initInfo.pszDcSrvName = pszCanonicalServerName;
-    initInfo.pszDomain = (PSTR)pszDomainName;
+    initInfo.pszDcSrvName = pszServerFQDN;
+    initInfo.pszDomain = szDomainFQDN;
     initInfo.wPort = VMDNS_DEFAULT_LDAP_PORT;
 
     dwError = VmDnsOpenServerA(
@@ -519,8 +560,8 @@ VmAfSrvGetLotusServerName(
 {
     DWORD dwError = 0;
     PSTR  pszHostnameCanon = NULL;
-    PSTR  pszLocalHostName = NULL;
     PSTR  pszFQDN = NULL;
+    PWSTR pwszPNID = NULL;
 
     if ( !pszServerName || !ppOutServerName )
     {
@@ -535,11 +576,12 @@ VmAfSrvGetLotusServerName(
     }
     else
     {   // caller does NOT specify preferred Lotus Server Name, derives it ourselves.
-        dwError = VmAfdGetHostName(&pszLocalHostName);
+        dwError = VmAfSrvGetPNID(&pwszPNID);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdGetCanonicalHostName(pszLocalHostName, &pszHostnameCanon);
-        BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = VmAfdAllocateStringAFromW(
+                         pwszPNID,
+                         &pszHostnameCanon);
     }
 
     BAIL_ON_VMAFD_EMPTY_STRING(pszHostnameCanon, dwError);
@@ -562,7 +604,7 @@ VmAfSrvGetLotusServerName(
 
     *ppOutServerName = pszFQDN;
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "Lotus server name: (%s)", *ppOutServerName);
+    VmAfdLog(VMAFD_DEBUG_DEBUG, "Lotus server name: (%s)", *ppOutServerName);
 
 cleanup:
     VMAFD_SAFE_FREE_MEMORY(pszHostnameCanon);
@@ -570,8 +612,79 @@ cleanup:
 
 error:
     VMAFD_SAFE_FREE_MEMORY(pszFQDN);
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed (%s). Error(%u)",
+    VmAfdLog(VMAFD_DEBUG_DEBUG, "%s failed (%s). Error(%u)",
                     __FUNCTION__, pszServerName, dwError);
     goto cleanup;
 }
 
+
+static
+DWORD
+VmAfdAppendDomain(
+    PCSTR   pszServerName,
+    PCSTR   pszDomainName,
+    PSTR*   ppszServerFQDN
+    )
+{
+
+    DWORD dwError = 0;
+    PSTR  pszServerFQDN = NULL;
+    DWORD dwServerStrLen = 0;
+    DWORD dwDomainStrLen = 0;
+    DWORD dwCursor = 0 ;
+
+    if (!pszServerName || !pszDomainName)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    dwServerStrLen = strlen (pszServerName);
+    dwDomainStrLen = strlen (pszDomainName);
+
+
+    if (dwDomainStrLen  > dwServerStrLen)
+    {
+        VmAfdAllocateStringPrintf(
+                        &pszServerFQDN,"%s.%s.",pszServerName,pszDomainName);
+    }
+    else
+    {
+       dwCursor = dwServerStrLen - dwDomainStrLen;
+       if (VmAfdStringCompareA(
+                  &pszServerName[dwCursor],
+                  pszDomainName,
+                  FALSE) != 0)
+       {
+            if (pszServerName[dwServerStrLen - 1] != '.')
+            {
+                VmAfdAllocateStringPrintf(
+                          &pszServerFQDN,
+                          "%s.%s.",
+                          pszServerName,
+                          pszDomainName);
+            }
+            else
+            {
+                VmAfdAllocateStringPrintf(
+                          &pszServerFQDN,
+                          "%s%s.",
+                          pszServerName,
+                          pszDomainName);
+            }
+       }
+       else
+       {
+           VmAfdAllocateStringPrintf(
+                          &pszServerFQDN,
+                          "%s.",
+                          pszServerName);
+       }
+    }
+    *ppszServerFQDN = pszServerFQDN;
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+
+}

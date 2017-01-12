@@ -15,549 +15,978 @@
 
 /*
 *
-* Module Name:  forward.c
+* Module Name:  cache.c
 *
 * Abstract: VMware Domain Name Service.
 *
-* DNS forwarding routines
+* DNS Cache Main Interface
 */
 
 #include "includes.h"
 
+static
 DWORD
-VmDnsCoreInit(
-    BOOL bUseDirectoryStore
+VmDnsCacheRefreshThread(
+    PVOID   pArgs
+    );
+
+static
+DWORD
+VmDnsCacheInitRefreshThread(
+    PVMDNS_CACHE_CONTEXT    pContext
+    );
+
+static
+DWORD
+VmDnsCacheStopRefreshThread(
+    PVMDNS_CACHE_CONTEXT    pContext
+    );
+
+static
+DWORD
+VmDnsCacheCleanupRefreshThread(
+    PVMDNS_CACHE_CONTEXT    pContext
+    );
+
+static
+DWORD
+VmDnsCacheLoadInitialData(
+    PVMDNS_CACHE_CONTEXT    pContext
+    );
+
+static
+DWORD
+VmDnsCachePurgeLRU(
+    PVMDNS_CACHE_CONTEXT    pContext
+    );
+
+static
+DWORD
+VmDnsCacheEvictEntryProc(
+    PVMDNS_NAME_ENTRY  pNameEntry,
+    PVMDNS_ZONE_OBJECT pZoneObject
+    );
+
+DWORD
+VmDnsCacheInitialize(
+    PVMDNS_CACHE_CONTEXT    *ppContext
     )
 {
-    DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_ZONE_LIST pZoneList = NULL;
-    PVMDNS_FORWARDER_CONETXT pForwarderContext = NULL;
+    DWORD dwError = 0;
+    PVMDNS_CACHE_CONTEXT pContext = NULL;
 
-    if (gpDNSDriverGlobals->pZoneList != NULL ||
-        gpDNSDriverGlobals->pForwarderContext != NULL)
-    {
-        dwError = ERROR_ALREADY_INITIALIZED;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
-    dwError = VmDnsZoneListInit(&pZoneList);
+    dwError = VmDnsAllocateMemory(
+                    sizeof(VMDNS_CACHE_CONTEXT),
+                    (PVOID*)&pContext);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsForwarderInit(&pForwarderContext);
+    dwError = VmDnsZoneListInit(&pContext->pZoneList);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    gpDNSDriverGlobals->pZoneList = pZoneList;
-    gpDNSDriverGlobals->pForwarderContext = pForwarderContext;
-    gpDNSDriverGlobals->bUseDirectoryStore = bUseDirectoryStore;
-    VmDnsSetState(VMDNS_UNINITIALIZED);
+    dwError = VmDnsCacheInitRefreshThread(pContext);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsAllocateRWLock(&pContext->pLock);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsCreateThread(
+                    pContext->pRefreshThread,
+                    FALSE,
+                    VmDnsCacheRefreshThread,
+                    pContext);
+     BAIL_ON_VMDNS_ERROR(dwError);
+
+     *ppContext = pContext;
 
 cleanup:
     return dwError;
 
 error:
-
-    if (pZoneList)
-    {
-        VmDnsZoneListCleanup(pZoneList);
-    }
-
-    if (pForwarderContext)
-    {
-        VmDnsForwarderCleanup(pForwarderContext);
-    }
-
-    VmDnsCoreCleanup();
-
+    VmDnsCacheCleanup(pContext);
     goto cleanup;
 }
 
 VOID
-VmDnsCoreCleanup()
-{
-    VmDnsSetState(VMDNS_UNINITIALIZED);
-
-    if (gpDNSDriverGlobals->pZoneList)
-    {
-        VmDnsZoneListCleanup(gpDNSDriverGlobals->pZoneList);
-        gpDNSDriverGlobals->pZoneList = NULL;
-    }
-
-    if (gpDNSDriverGlobals->pForwarderContext)
-    {
-        VmDnsForwarderCleanup(gpDNSDriverGlobals->pForwarderContext);
-        gpDNSDriverGlobals->pForwarderContext = NULL;
-    }
-}
-
-VMDNS_STATE VmDnsGetState()
-{
-    return gpDNSDriverGlobals->state;
-}
-
-VMDNS_STATE VmDnsSetState(
-    VMDNS_STATE newState
+VmDnsCacheCleanup(
+    PVMDNS_CACHE_CONTEXT    pContext
     )
 {
-    VMDNS_STATE oldState = InterlockedExchange(
-                                (LONG*)&gpDNSDriverGlobals->state,
-                                newState);
-    if (oldState != newState)
+    if (pContext)
     {
-        VMDNS_LOG_INFO("State changed from %u to %u", oldState, newState);
-    }
-    return oldState;
-}
-
-VMDNS_STATE VmDnsConditionalSetState(
-    VMDNS_STATE newState,
-    VMDNS_STATE oldState
-    )
-{
-    VMDNS_STATE initState = InterlockedCompareExchange(
-                (LONG*)&gpDNSDriverGlobals->state,
-                newState,
-                oldState);
-    if (initState != newState)
-    {
-        if (initState != oldState)
+        if (pContext->pRefreshThread)
         {
-            VMDNS_LOG_DEBUG(
-                "%s State not changed. Init state %u different from "
-                "conditional initial state %u",
-                __FUNCTION__,
-                initState,
-                oldState);
+            VmDnsCacheStopRefreshThread(pContext);
+        }
+
+        VmDnsCacheCleanupRefreshThread(pContext);
+        VmDnsZoneListCleanup(pContext->pZoneList);
+    }
+}
+
+DWORD
+VmDnsCacheAddZone(
+    PVMDNS_CACHE_CONTEXT    pContext,
+    PVMDNS_ZONE_INFO        pZoneInfo
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+    BOOL bLocked = FALSE;
+
+    if (!pZoneInfo || !pContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    VmDnsLockWrite(pContext->pLock);
+    bLocked = TRUE;
+
+    dwError = VmDnsZoneListFindZone(
+                    pContext->pZoneList,
+                    pZoneInfo->pszName,
+                    &pZoneObject);
+    if (!dwError)
+    {
+        dwError = ERROR_ALREADY_EXISTS;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsZoneCreate(pZoneInfo, &pZoneObject);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    VmDnsZoneListAddZone(pContext->pZoneList, pZoneObject);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+    if (bLocked)
+    {
+        VmDnsUnlockWrite(pContext->pLock);
+    }
+
+    VmDnsZoneObjectRelease(pZoneObject);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDnsCacheUpdateZone(
+     PVMDNS_CACHE_CONTEXT   pContext,
+     PVMDNS_ZONE_INFO       pZoneInfo
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+    BOOL bLocked = FALSE;
+
+    if (!pZoneInfo)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    VmDnsLockWrite(pContext->pLock);
+    bLocked = TRUE;
+
+    dwError = VmDnsZoneListFindZone(
+                    pContext->pZoneList,
+                    pZoneInfo->pszName,
+                    &pZoneObject);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsZoneUpdate(pZoneObject, pZoneInfo);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+    if (bLocked)
+    {
+        VmDnsUnlockWrite(pContext->pLock);
+    }
+
+    VmDnsZoneObjectRelease(pZoneObject);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDnsCacheLoadZoneFromStore(
+    PVMDNS_CACHE_CONTEXT    pContext,
+    PCSTR                   pZoneName
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_RECORD_LIST pList = NULL;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+    BOOL bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pZoneName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    VmDnsLockWrite(pContext->pLock);
+    bLocked = TRUE;
+
+    dwError = VmDnsStoreGetRecords(pZoneName, pZoneName, &pList);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsZoneCreateFromRecordList(pZoneName, pList, &pZoneObject);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    VmDnsZoneListAddZone(pContext->pZoneList, pZoneObject);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+    if (bLocked)
+    {
+        VmDnsUnlockWrite(pContext->pLock);
+    }
+
+    VmDnsRecordListRelease(pList);
+    VmDnsZoneObjectRelease(pZoneObject);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDnsCacheRemoveZone(
+    PVMDNS_CACHE_CONTEXT    pContext,
+    PVMDNS_ZONE_OBJECT      pZoneObject
+    )
+{
+    DWORD dwError = 0;
+    BOOL bLocked = FALSE;
+
+    if (!pZoneObject)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    VmDnsLockWrite(pContext->pLock);
+    bLocked = TRUE;
+
+    dwError = VmDnsZoneListRemoveZone(pContext->pZoneList, pZoneObject);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+
+    if (bLocked)
+    {
+        VmDnsUnlockWrite(pContext->pLock);
+    }
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDnsCacheGetZoneName(
+    PVMDNS_ZONE_OBJECT  pZoneObject,
+    PSTR                *pszZoneName
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pZoneObject)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsZoneGetName(pZoneObject, pszZoneName);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDnsCacheListZones(
+    PVMDNS_CACHE_CONTEXT    pContext,
+    PVMDNS_ZONE_INFO_ARRAY  *ppZoneArray
+    )
+{
+    DWORD dwError = 0;
+    BOOL bLocked = FALSE;
+
+    VmDnsLockRead(pContext->pLock);
+    bLocked = TRUE;
+
+    dwError = VmDnsZoneListGetZones(pContext->pZoneList, ppZoneArray);
+    BAIL_ON_VMDNS_ERROR(dwError);
+cleanup:
+
+    if (bLocked)
+    {
+        VmDnsUnlockRead(pContext->pLock);
+    }
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDnsCacheFindZone(
+    PVMDNS_CACHE_CONTEXT    pContext,
+    PCSTR                   szZoneName,
+    PVMDNS_ZONE_OBJECT      *ppZoneObject
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+    BOOL bLocked = FALSE;
+
+    if (!pContext || IsNullOrEmptyString(szZoneName) || !ppZoneObject)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    VmDnsLockRead(pContext->pLock);
+    bLocked = TRUE;
+
+    dwError = VmDnsZoneListFindZone(
+                    pContext->pZoneList,
+                    szZoneName,
+                    &pZoneObject);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppZoneObject = pZoneObject;
+
+cleanup:
+
+    if (bLocked)
+    {
+        VmDnsUnlockRead(pContext->pLock);
+    }
+
+    return dwError;
+
+error:
+    VmDnsZoneObjectRelease(pZoneObject);
+    goto cleanup;
+}
+
+DWORD
+VmDnsCacheFindZoneByQName(
+    PVMDNS_CACHE_CONTEXT    pContext,
+    PCSTR                   szQName,
+    PVMDNS_ZONE_OBJECT      *ppZoneObject
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+    BOOL bLocked = TRUE;
+
+    if (!pContext || IsNullOrEmptyString(szQName) || !ppZoneObject)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    VmDnsLockRead(pContext->pLock);
+    bLocked = TRUE;
+
+    dwError = VmDnsZoneListFindZoneByQName(
+                    pContext->pZoneList,
+                    szQName,
+                    &pZoneObject);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppZoneObject = pZoneObject;
+
+cleanup:
+    if (bLocked)
+    {
+        VmDnsUnlockRead(pContext->pLock);
+    }
+
+    return dwError;
+
+error:
+    VmDnsZoneObjectRelease(pZoneObject);
+    goto cleanup;
+}
+
+DWORD
+VmDnsCachePurgeRecord(
+    PVMDNS_ZONE_OBJECT pZoneObject,
+    PCSTR              pszRecord
+    )
+{
+    PVMDNS_RECORD_LIST pList = NULL;
+    DWORD dwError = 0;
+
+    if (VmDnsStringCompareA(pZoneObject->pszName, pszRecord, FALSE) == 0)
+    {
+        //update SOA record
+        dwError = VmDnsStoreGetRecords(
+                        pZoneObject->pszName,
+                        pZoneObject->pszName,
+                        &pList
+                        );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwError = VmDnsZoneUpdateRecords(
+                            pZoneObject,
+                            pZoneObject->pszName,
+                            pList
+                            );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        VmDnsLog(
+            VMDNS_LOG_LEVEL_DEBUG,
+            "Refreshed (%s) in Cache",
+            pZoneObject->pszName
+            );
+    }
+    else
+    {
+        dwError = VmDnsZonePurgeRecords(pZoneObject, pszRecord);
+        BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND)
+
+        if (dwError == ERROR_NOT_FOUND)
+        {
+            VmDnsLog(
+                VMDNS_LOG_LEVEL_DEBUG,
+                "Record (%s) not found in Cache",
+                pszRecord
+                );
+
+            dwError = 0;
         }
         else
         {
-            VMDNS_LOG_INFO("State changed from %u to %u", oldState, newState);
+            VmDnsLog(
+                VMDNS_LOG_LEVEL_DEBUG,
+                "Succesfully Purged (%s) from Cache",
+                pszRecord
+                );
         }
     }
 
-    return initState;
+cleanup:
+    if (pList)
+    {
+        VmDnsRecordListRelease(pList);
+    }
+
+    return dwError;
+
+error:
+    goto cleanup;
 }
 
-UINT32
-VmDnsInitialize(
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
-    PVMDNS_INIT_INFO            pInitInfo
+DWORD
+VmDnsCachePurgeRecordProc(
+    PVOID pData,
+    PCSTR pszZone,
+    PCSTR pszNode
     )
 {
-    DWORD dwError = ERROR_SUCCESS;
-    VMDNS_ZONE_INFO zoneInfo = { 0 };
-    VMDNS_RECORD nsRecord = { 0 };
-    VMDNS_RECORD ldapSrvRecord = { 0 };
-    VMDNS_RECORD kerberosSrvRecord = { 0 };
-    VMDNS_RECORD ip4AddrRecord = { 0 };
-    VMDNS_RECORD ip6AddrRecord = { 0 };
-    DWORD idx = 0;
-    VMDNS_STATE oldState;
-    PSTR pszAddressRecordName = NULL;
+    PVMDNS_CACHE_CONTEXT pCacheContext = (PVMDNS_CACHE_CONTEXT) pData;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+    DWORD dwError = 0;
 
-    oldState = VmDnsConditionalSetState(VMDNS_INITIALIZING, VMDNS_UNINITIALIZED);
-    if (oldState != VMDNS_UNINITIALIZED)
+    dwError = VmDnsCacheFindZone(
+                    pCacheContext,
+                    pszZone,
+                    &pZoneObject
+                    );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsCachePurgeRecord(pZoneObject, pszNode);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+    VmDnsZoneObjectRelease(pZoneObject);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDnsCacheSyncZoneProc(
+    PVOID pData,
+    PCSTR pszZone
+    )
+{
+    PVMDNS_CACHE_CONTEXT pCacheContext = (PVMDNS_CACHE_CONTEXT) pData;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+    DWORD dwError = 0;
+
+    dwError = VmDnsCacheFindZone(
+                        pCacheContext,
+                        pszZone,
+                        &pZoneObject
+                        );
+    BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
+
+    if (dwError == ERROR_NOT_FOUND)
     {
-        VmDnsLog(VMDNS_LOG_LEVEL_ERROR,
-            "%s failed. Invalid current state %u, expecting %u.",
-            __FUNCTION__,
-            oldState,
-            VMDNS_UNINITIALIZED);
+        dwError = VmDnsCacheLoadZoneFromStore(pCacheContext, pszZone);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        VmDnsLog(
+            VMDNS_LOG_LEVEL_DEBUG,
+            "Added Zone %s to Cache",
+            pszZone
+            );
+    }
+
+cleanup:
+    VmDnsZoneObjectRelease(pZoneObject);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDnsCacheRemoveZoneProc(
+    PVOID pData,
+    PCSTR pszZone
+    )
+{
+    PVMDNS_CACHE_CONTEXT pCacheContext = (PVMDNS_CACHE_CONTEXT) pData;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+    DWORD dwError = 0;
+
+    dwError = VmDnsCacheFindZone(pCacheContext, pszZone, &pZoneObject);
+    BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
+
+    if (dwError == ERROR_NOT_FOUND)
+    {
+        //already deleted (probably same node)
+        VmDnsLog(
+            VMDNS_LOG_LEVEL_DEBUG,
+            "Zone (%s) already deleted from cache",
+            pszZone
+            );
+
+        dwError = 0;
+    }
+    else
+    {
+        VmDnsLog(
+            VMDNS_LOG_LEVEL_DEBUG,
+            "Removing Zone (%s) From Cache",
+            pszZone
+            );
+
+        dwError = VmDnsCacheRemoveZone(pCacheContext, pZoneObject);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+cleanup:
+    VmDnsZoneObjectRelease(pZoneObject);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+VmDnsCacheRefreshThread(
+    PVOID   pArgs
+    )
+{
+    DWORD dwError = 0;
+    DWORD newUSN = 0;
+    PVMDNS_CACHE_CONTEXT pCacheContext = (PVMDNS_CACHE_CONTEXT)pArgs;
+    pCacheContext->bRunning = TRUE;
+    pCacheContext->dwLastUSN = 0;
+    dwError = VmDnsStoreGetReplicationStatus(&(pCacheContext->dwLastUSN));
+
+    while (!pCacheContext->bShutdown)
+    {
+        if (VMDNS_READY != VmDnsSrvGetState())
+        {
+            dwError = VmDnsCacheLoadInitialData(pCacheContext);
+            if (dwError)
+            {
+                VMDNS_LOG_ERROR("Loading intial data failed with %u.", dwError);
+            }
+            else
+            {
+                VmDnsSrvSetState(VMDNS_READY);
+            }
+        }
+        newUSN = 0;
+        VmDnsStoreGetReplicationStatus(&newUSN);
+        if (pCacheContext->dwLastUSN != 0)
+        {
+            // Refresh LRU, Cache etc.
+            dwError = VmDnsCacheSyncZones(
+                            pCacheContext->dwLastUSN,
+                            newUSN,
+                            pCacheContext
+                            );
+            BAIL_ON_VMDNS_ERROR(dwError)
+        }
+        else 
+        {
+            VMDNS_LOG_ERROR("Failed to get replication status %u.", dwError);
+        }
+        if (newUSN != 0)
+        { 
+            pCacheContext->dwLastUSN = newUSN;
+
+            dwError = VmDnsCachePurgeLRU(pCacheContext);
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+        if (!pCacheContext->bShutdown)
+        {
+            dwError = VmDnsConditionTimedWait(
+                                pCacheContext->pRefreshEvent,
+                                pCacheContext->pThreadLock,
+                                5 * 1000
+                                );
+            if (dwError != ETIMEDOUT &&
+                dwError != WSAETIMEDOUT &&
+                dwError != ERROR_SUCCESS)
+            {
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
+        }
+    }
+
+cleanup:
+    pCacheContext->bRunning = FALSE;
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDnsCacheSyncZones(
+    DWORD                dwLastChangedUSN,
+    DWORD                dwNewUSN,
+    PVMDNS_CACHE_CONTEXT pCacheContext
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = VmDnsStoreSyncDeleted(
+                        dwLastChangedUSN,
+                        dwNewUSN,
+                        VmDnsCacheRemoveZoneProc,
+                        (PVOID) pCacheContext
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsStoreSyncNewObjects(
+                        dwLastChangedUSN,
+                        dwNewUSN,
+                        VmDnsCacheSyncZoneProc,
+                        VmDnsCachePurgeRecordProc,
+                        (PVOID) pCacheContext
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+VmDnsCachePurgeLRU(
+    PVMDNS_CACHE_CONTEXT    pContext
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwPurge = 0;
+    BOOL bCacheLocked = FALSE;
+    BOOL bZoneLocked = FALSE;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+    PVMDNS_LRU_LIST pLruList = NULL;
+    DWORD i;
+
+    if (!pContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    VmDnsLockRead(pContext->pLock);
+    bCacheLocked = TRUE;
+
+    for (i = 0; i < VMDNS_MAX_ZONES; i++)
+    {
+        pZoneObject = pContext->pZoneList->Zones[i];
+
+        if (!pZoneObject)
+        {
+            continue;
+        }
+
+        dwError = VmDnsZoneIsPurgingNeeded(pZoneObject, &dwPurge);
+        BAIL_ON_VMDNS_ERROR(dwError)
+
+        if (dwPurge)
+        {
+            VmDnsLockWrite(pZoneObject->pLock);
+            bZoneLocked = TRUE;
+            pLruList = pZoneObject->pLruList;
+
+            DWORD dwCount = (pLruList->dwMaxCount *
+                            VmDnsLruGetPurgeRate(pLruList)) / 100;
+
+            dwError = VmDnsLruTrimEntries(
+                            pLruList,
+                            dwCount,
+                            VmDnsCacheEvictEntryProc,
+                            pZoneObject
+                            );
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            VmDnsUnlockWrite(pZoneObject->pLock);
+            bZoneLocked = FALSE;
+        }
+    }
+
+cleanup:
+    if (bZoneLocked)
+    {
+        VmDnsUnlockWrite(pZoneObject->pLock);
+    }
+
+    if (bCacheLocked)
+    {
+        VmDnsUnlockRead(pContext->pLock);
+    }
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+VmDnsCacheEvictEntryProc(
+    PVMDNS_NAME_ENTRY  pNameEntry,
+    PVMDNS_ZONE_OBJECT pZoneObject
+    )
+{
+    //assumes locks for cache and hashmap are already held
+    DWORD dwError = 0;
+
+    //Remove if not SOA
+    if (VmDnsStringCompareA(
+                pZoneObject->pszName,
+                pNameEntry->pszName,
+                FALSE
+                ) != 0)
+    {
+        dwError = VmDnsZoneRemoveNameEntry(
+                            pZoneObject,
+                            pNameEntry->pszName,
+                            &pNameEntry
+                            );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        VmDnsLog(
+            VMDNS_LOG_LEVEL_DEBUG,
+            "Purged (%s) from Zone (%s) Cache",
+            pNameEntry->pszName,
+            pZoneObject->pszName
+            );
+    }
+    else
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+    }
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+VmDnsCacheInitRefreshThread(
+    PVMDNS_CACHE_CONTEXT    pContext
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_THREAD pRefreshThread = NULL;
+    PVMDNS_COND pRefreshEvent = NULL;
+    PVMDNS_MUTEX pThreadMutex = NULL;
+
+    dwError = VmDnsAllocateCondition(&pRefreshEvent);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsAllocateMutex(&pThreadMutex);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsAllocateMemory(sizeof(*pRefreshThread), (PVOID *)&pRefreshThread);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    pContext->pRefreshEvent = pRefreshEvent;
+    pContext->pThreadLock = pThreadMutex;
+    pContext->pRefreshThread = pRefreshThread;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmDnsFreeMutex(pThreadMutex);
+    VmDnsFreeCondition(pRefreshEvent);
+    VmDnsFreeMemory(pRefreshThread);
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmDnsCacheStopRefreshThread(
+    PVMDNS_CACHE_CONTEXT    pContext
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pContext->pRefreshEvent ||
+        !pContext->pRefreshThread)
+    {
         dwError = ERROR_INVALID_STATE;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    if (IsNullOrEmptyString(pInitInfo->pszDcSrvName))
-    {
-        VmDnsLog(VMDNS_LOG_LEVEL_ERROR,
-            "%s failed. Null or empty DC server name.",
-            __FUNCTION__);
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
-    dwError = VmDnsAllocateStringA(pInitInfo->pszDcSrvName, &pszAddressRecordName);
+    pContext->bShutdown = TRUE;
+    dwError = VmDnsConditionSignal(pContext->pRefreshEvent);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    VmDnsTrimDomainNameSuffix(pszAddressRecordName, pInitInfo->pszDomain);
-
-    zoneInfo.pszName = pInitInfo->pszDomain;
-    zoneInfo.pszPrimaryDnsSrvName = pInitInfo->pszDcSrvName;
-    zoneInfo.pszRName = "";
-    zoneInfo.serial = 0;
-    zoneInfo.refreshInterval = VMDNS_DEFAULT_REFRESH_INTERVAL;
-    zoneInfo.retryInterval = VMDNS_DEFAULT_RETRY_INTERVAL;
-    zoneInfo.expire = VMDNS_DEFAULT_EXPIRE;
-    zoneInfo.minimum = VMDNS_DEFAULT_TTL;
-
-    dwError = VmDnsZoneCreate(pCtx, &zoneInfo, TRUE);
-    if (dwError == ERROR_ALREADY_EXISTS)
-    {
-        VMDNS_LOG_INFO("%s zone %s already exists.", __FUNCTION__, zoneInfo.pszName);
-        dwError = 0;
-    }
+    dwError = VmDnsThreadJoin(pContext->pRefreshThread, &dwError);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    // Add NS record
-    nsRecord.pszName = pInitInfo->pszDomain;
-    nsRecord.Data.NS.pNameHost = pInitInfo->pszDcSrvName;
-    nsRecord.iClass = VMDNS_CLASS_IN;
-    nsRecord.dwType = VMDNS_RR_TYPE_NS;
-    nsRecord.dwTtl = VMDNS_DEFAULT_TTL;
-
-    dwError = VmDnsZoneAddRecord(pCtx,
-        pInitInfo->pszDomain,
-        &nsRecord,
-        TRUE);
-    if (dwError == ERROR_ALREADY_EXISTS)
-    {
-        dwError = ERROR_SUCCESS;
-    }
+    dwError = VmDnsCacheCleanupRefreshThread(pContext);
     BAIL_ON_VMDNS_ERROR(dwError);
-
-    // Add LDAP SRV record
-    ldapSrvRecord.pszName = VMDNS_LDAP_SRV_NAME;
-    ldapSrvRecord.dwType = VMDNS_RR_TYPE_SRV;
-    ldapSrvRecord.iClass = VMDNS_CLASS_IN;
-    ldapSrvRecord.dwTtl = VMDNS_DEFAULT_TTL;
-    ldapSrvRecord.Data.SRV.pNameTarget = pInitInfo->pszDcSrvName;
-    ldapSrvRecord.Data.SRV.wPriority = 1;
-    ldapSrvRecord.Data.SRV.wWeight = 1;
-    ldapSrvRecord.Data.SRV.wPort = VMDNS_DEFAULT_LDAP_PORT;
-
-    dwError = VmDnsZoneAddRecord(
-                    pCtx,
-                    pInitInfo->pszDomain,
-                    &ldapSrvRecord,
-                    TRUE); // LDAP should be up by now
-    if (dwError == ERROR_ALREADY_EXISTS)
-    {
-        VMDNS_LOG_INFO(
-            "%s: LDAP TCP SRV record already exists: %s",
-            __FUNCTION__,
-            ldapSrvRecord.Data.SRV.pNameTarget);
-        dwError = ERROR_SUCCESS;
-    }
-
-    BAIL_AND_LOG_MESSAGE_ON_VMDNS_ERROR(
-            dwError,
-            VMDNS_LOG_LEVEL_ERROR,
-            "Adding LDAP SRV record failed.");
-    VMDNS_LOG_INFO(
-            "%s: Added LDAP TCP SRV record for %s",
-            __FUNCTION__,
-            ldapSrvRecord.Data.SRV.pNameTarget);
-
-    // Add Kerberos SRV record
-    kerberosSrvRecord.pszName = VMDNS_KERBEROS_SRV_NAME;
-    kerberosSrvRecord.dwType = VMDNS_RR_TYPE_SRV;
-    kerberosSrvRecord.iClass = VMDNS_CLASS_IN;
-    kerberosSrvRecord.dwTtl = VMDNS_DEFAULT_TTL;
-    kerberosSrvRecord.Data.SRV.pNameTarget = pInitInfo->pszDcSrvName;
-    kerberosSrvRecord.Data.SRV.wPriority = 1;
-    kerberosSrvRecord.Data.SRV.wWeight = 1;
-    kerberosSrvRecord.Data.SRV.wPort = VMDNS_DEFAULT_KDC_PORT;
-
-    dwError = VmDnsZoneAddRecord(
-                    pCtx,
-                    pInitInfo->pszDomain,
-                    &kerberosSrvRecord,
-                    TRUE);
-    if (dwError == ERROR_ALREADY_EXISTS)
-    {
-        VMDNS_LOG_INFO(
-                "%s: KDC TCP SRV record already exists: %s",
-                __FUNCTION__,
-                kerberosSrvRecord.Data.SRV.pNameTarget);
-        dwError = ERROR_SUCCESS;
-    }
-    BAIL_ON_VMDNS_ERROR(dwError);
-    VMDNS_LOG_INFO(
-                "%s: Added KDC TCP SRV record for %s",
-                __FUNCTION__,
-        kerberosSrvRecord.Data.SRV.pNameTarget);
-
-    // Add A record(s)
-    ip4AddrRecord.pszName = pszAddressRecordName;
-    ip4AddrRecord.dwType = VMDNS_RR_TYPE_A;
-    ip4AddrRecord.iClass = VMDNS_CLASS_IN;
-    ip4AddrRecord.dwTtl = VMDNS_DEFAULT_TTL;
-
-    for (idx = 0; idx < pInitInfo->IpV4Addrs.dwCount; ++idx)
-    {
-        ip4AddrRecord.Data.A.IpAddress = pInitInfo->IpV4Addrs.Addrs[idx];
-
-        dwError = VmDnsZoneAddRecord(
-                        pCtx,
-                        pInitInfo->pszDomain,
-                        &ip4AddrRecord,
-                        TRUE);
-        if (dwError == ERROR_ALREADY_EXISTS)
-        {
-            dwError = ERROR_SUCCESS;
-            continue;
-        }
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
-    // Add AAAA record(s)
-    ip6AddrRecord.pszName = pszAddressRecordName;
-    ip6AddrRecord.dwType = VMDNS_RR_TYPE_AAAA;
-    ip6AddrRecord.iClass = VMDNS_CLASS_IN;
-    ip6AddrRecord.dwTtl = VMDNS_DEFAULT_TTL;
-
-    for (idx = 0; idx < pInitInfo->IpV6Addrs.dwCount; ++idx)
-    {
-        dwError = VmDnsCopyMemory(
-                        ip6AddrRecord.Data.AAAA.Ip6Address.IP6Byte,
-                        sizeof(ip6AddrRecord.Data.AAAA.Ip6Address.IP6Byte),
-                        pInitInfo->IpV6Addrs.Addrs[idx].IP6Byte,
-                        sizeof(pInitInfo->IpV6Addrs.Addrs[idx].IP6Byte));
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        dwError = VmDnsZoneAddRecord(
-                        pCtx,
-                        pInitInfo->pszDomain,
-                        &ip6AddrRecord,
-                        TRUE);
-        if (dwError == ERROR_ALREADY_EXISTS)
-        {
-            dwError = ERROR_SUCCESS;
-            continue;
-        }
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
-    VmDnsSetState(VMDNS_INITIALIZED);
 
 cleanup:
-    VMDNS_SAFE_FREE_STRINGA(pszAddressRecordName);
+
     return dwError;
+
 error:
-    VmDnsSetState(VMDNS_UNINITIALIZED);
-    VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
     goto cleanup;
 }
 
-UINT32
-VmDnsUninitialize(
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
-    PVMDNS_INIT_INFO            pInitInfo
+static
+DWORD
+VmDnsCacheCleanupRefreshThread(
+    PVMDNS_CACHE_CONTEXT    pContext
     )
 {
-    DWORD dwError = ERROR_SUCCESS;
-    VMDNS_RECORD srvRecord = { 0 };
-    PVMDNS_RECORD_ARRAY pNsRecordArray = NULL;
-    PVMDNS_RECORD_ARRAY pLdapSrvRecordArray = NULL;
-    PVMDNS_RECORD_ARRAY pKerberosSrvRecordArray = NULL;
-    PVMDNS_RECORD_ARRAY pIpV4RecordArray = NULL;
-    PVMDNS_RECORD_ARRAY pIpV6RecordArray = NULL;
-    DWORD idx = 0;
-    VMDNS_STATE oldState;
-    PSTR pszAddressRecordName = NULL;
+    DWORD dwError = 0;
 
-    if (IsNullOrEmptyString(pInitInfo->pszDcSrvName))
+    if (pContext->bRunning)
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        dwError = ERROR_INVALID_STATE;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    dwError = VmDnsAllocateStringA(pInitInfo->pszDcSrvName, &pszAddressRecordName);
-    BAIL_ON_VMDNS_ERROR(dwError);
+    VmDnsFreeThread(pContext->pRefreshThread);
+    pContext->pThreadLock = NULL;
 
-    VmDnsTrimDomainNameSuffix(pszAddressRecordName, pInitInfo->pszDomain);
+    VmDnsFreeCondition(pContext->pRefreshEvent);
+    pContext->pRefreshEvent = NULL;
 
-    // Query NS record(s)
-    dwError = VmDnsZoneQuery(
-                        pInitInfo->pszDomain,
-                        pInitInfo->pszDomain,
-                        VMDNS_RR_TYPE_NS,
-                        &pNsRecordArray);
-    if (dwError)
-    {
-        VMDNS_LOG_ERROR("%s, failed to get NS records.", __FUNCTION__);
-    }
-
-    // Query LDAP TCP SRV record(s)
-    dwError = VmDnsZoneQuery(
-                        pInitInfo->pszDomain,
-                        VMDNS_LDAP_SRV_NAME,
-                        VMDNS_RR_TYPE_SRV,
-                        &pLdapSrvRecordArray);
-    if (dwError)
-    {
-        VMDNS_LOG_ERROR("%s, failed to get LDAP SRV records.", __FUNCTION__);
-    }
-
-    // Query KDC TCP SRV record(s)
-    dwError = VmDnsZoneQuery(
-                        pInitInfo->pszDomain,
-                        VMDNS_KERBEROS_SRV_NAME,
-                        VMDNS_RR_TYPE_SRV,
-                        &pKerberosSrvRecordArray);
-    if (dwError)
-    {
-        VMDNS_LOG_ERROR("%s, failed to get KDC SRV records.", __FUNCTION__);
-    }
-
-    // Query A record(s)
-    dwError = VmDnsZoneQuery(
-                        pInitInfo->pszDomain,
-                        pszAddressRecordName,
-                        VMDNS_RR_TYPE_A,
-                        &pIpV4RecordArray);
-    if (dwError)
-    {
-        VMDNS_LOG_ERROR("%s, failed to get IPV4 address records.", __FUNCTION__);
-    }
-
-    // Query AAAA record(s)
-    dwError = VmDnsZoneQuery(
-                        pInitInfo->pszDomain,
-                        pszAddressRecordName,
-                        VMDNS_RR_TYPE_AAAA,
-                        &pIpV6RecordArray);
-    if (dwError)
-    {
-        VMDNS_LOG_ERROR("%s, failed to get IPV6 address records.", __FUNCTION__);
-    }
-
-    // Try initialized state first, then ready state, because state never goes
-    // back to initialized from ready, we won't have a race condition.
-    oldState = VmDnsConditionalSetState(VMDNS_UNINITIALIZING, VMDNS_INITIALIZED);
-    if (oldState != VMDNS_INITIALIZED)
-    {
-        oldState = VmDnsConditionalSetState(VMDNS_UNINITIALIZING, VMDNS_READY);
-        if (oldState != VMDNS_READY)
-        {
-            dwError = ERROR_INVALID_STATE;
-            BAIL_ON_VMDNS_ERROR(dwError);
-        }
-    }
-
-    srvRecord.pszName = VMDNS_LDAP_SRV_NAME;
-    srvRecord.dwType = VMDNS_RR_TYPE_SRV;
-    srvRecord.iClass = VMDNS_CLASS_IN;
-    srvRecord.Data.SRV.pNameTarget = pInitInfo->pszDcSrvName;
-
-    // Remove NS record
-    if (pNsRecordArray)
-    {
-        for (idx = 0; idx < pNsRecordArray->dwCount; ++idx)
-        {
-            if (!VmDnsStringCompareA(
-                            pNsRecordArray->Records[idx].Data.NS.pNameHost,
-                            pInitInfo->pszDcSrvName,
-                            FALSE))
-            {
-                dwError = VmDnsZoneDeleteRecord(pCtx,
-                                    pInitInfo->pszDomain,
-                                    &pNsRecordArray->Records[idx],
-                                    TRUE);
-                VMDNS_LOG_INFO(
-                        "Cleanup NS record %s from zone %s, status: %u.",
-                        pNsRecordArray->Records[idx].pszName,
-                        pInitInfo->pszDomain,
-                        dwError);
-            }
-        }
-    }
-
-    srvRecord.pszName = VMDNS_LDAP_SRV_NAME;
-    srvRecord.dwType = VMDNS_RR_TYPE_SRV;
-    srvRecord.iClass = VMDNS_CLASS_IN;
-    srvRecord.Data.SRV.pNameTarget = pInitInfo->pszDcSrvName;
-
-    // Remove LDAP TCP SRV record(s)
-    if (pLdapSrvRecordArray)
-    {
-        for (idx = 0; idx < pLdapSrvRecordArray->dwCount; ++idx)
-        {
-            if (VmDnsMatchRecord(
-                        &srvRecord,
-                        &pLdapSrvRecordArray->Records[idx]))
-            {
-                dwError = VmDnsZoneDeleteRecord(pCtx,
-                                    pInitInfo->pszDomain,
-                                    &pLdapSrvRecordArray->Records[idx],
-                                    TRUE);
-                VMDNS_LOG_INFO(
-                        "Cleanup LDAP:SRV record %s from zone %s, status: %u.",
-                        pLdapSrvRecordArray->Records[idx].pszName,
-                        pInitInfo->pszDomain,
-                        dwError);
-            }
-        }
-    }
-
-    srvRecord.pszName = VMDNS_KERBEROS_SRV_NAME;
-
-    // Remove KDC TCP SRV record(s)
-    if (pKerberosSrvRecordArray)
-    {
-        for (idx = 0; idx < pKerberosSrvRecordArray->dwCount; ++idx)
-        {
-            if (VmDnsMatchRecord(
-                        &srvRecord,
-                        &pKerberosSrvRecordArray->Records[idx]))
-            {
-                dwError = VmDnsZoneDeleteRecord(pCtx,
-                                        pInitInfo->pszDomain,
-                                        &pKerberosSrvRecordArray->Records[idx],
-                                        TRUE);
-                VMDNS_LOG_INFO(
-                        "Cleanup KDC:SRV record %s from zone %s, status: %u.",
-                        pKerberosSrvRecordArray->Records[idx].pszName,
-                        pInitInfo->pszDomain,
-                        dwError);
-            }
-        }
-    }
-
-    // Remove A record(s)
-    if (pIpV4RecordArray)
-    {
-        for (idx = 0; idx < pIpV4RecordArray->dwCount; ++idx)
-        {
-            dwError = VmDnsZoneDeleteRecord(pCtx,
-                                pInitInfo->pszDomain,
-                                &pIpV4RecordArray->Records[idx],
-                                TRUE);
-            VMDNS_LOG_INFO(
-                   "Cleanup A record %s from zone %s done, status: %u.",
-                    pIpV4RecordArray->Records[idx].pszName,
-                    pInitInfo->pszDomain,
-                    dwError);
-        }
-    }
-
-    // Remove AAAA record(s)
-    if (pIpV6RecordArray)
-    {
-        for (idx = 0; idx < pIpV6RecordArray->dwCount; ++idx)
-        {
-            dwError = VmDnsZoneDeleteRecord(pCtx,
-                                pInitInfo->pszDomain,
-                                &pIpV6RecordArray->Records[idx],
-                                TRUE);
-            VMDNS_LOG_INFO(
-                   "Cleanup AAAA record %s from zone %s done, status: %u.",
-                    pIpV6RecordArray->Records[idx].pszName,
-                    pInitInfo->pszDomain,
-                    dwError);
-        }
-    }
-
-    VmDnsSetState(VMDNS_UNINITIALIZED);
+    VmDnsFreeMutex(pContext->pThreadLock);
+    pContext->pThreadLock = NULL;
 
 cleanup:
-    VMDNS_FREE_RECORD_ARRAY(pKerberosSrvRecordArray);
-    VMDNS_FREE_RECORD_ARRAY(pLdapSrvRecordArray);
-    VMDNS_FREE_RECORD_ARRAY(pNsRecordArray);
-    VMDNS_FREE_RECORD_ARRAY(pIpV4RecordArray);
-    VMDNS_FREE_RECORD_ARRAY(pIpV6RecordArray);
-    VMDNS_SAFE_FREE_STRINGA(pszAddressRecordName);
+
     return dwError;
+
 error:
-    VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmDnsCacheLoadInitialData(
+    PVMDNS_CACHE_CONTEXT    pContext
+    )
+{
+    DWORD dwError = 0;
+    PSTR *ppszZones = NULL;
+    DWORD dwCount = 0, i = 0;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+    PVMDNS_RECORD_LIST pList = NULL;
+    PSTR *ppszForwarders = NULL;
+
+    VmDnsLockWrite(pContext->pLock);
+
+    dwError = VmDnsStoreInitialize();
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsStoreListZones(&ppszZones, &dwCount);
+    for (i = 0; i < dwCount; ++i)
+    {
+        VmDnsRecordListRelease(pList);
+        pList = NULL;
+
+        dwError = VmDnsStoreGetRecords(ppszZones[i], ppszZones[i], &pList);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwError = VmDnsZoneCreateFromRecordList(ppszZones[i], pList, &pZoneObject);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwError = VmDnsZoneListAddZone(pContext->pZoneList, pZoneObject);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsStoreGetForwarders(&dwCount, &ppszForwarders);
+    BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NO_DATA);
+
+    dwError = 0;
+
+    if (dwCount > 0 && *ppszForwarders)
+    {
+        dwError = VmDnsSetForwarders(gpSrvContext->pForwarderContext, dwCount, ppszForwarders);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+cleanup:
+
+    VmDnsUnlockWrite(pContext->pLock);
+    VmDnsRecordListRelease(pList);
+    VmDnsZoneObjectRelease(pZoneObject);
+    return dwError;
+
+error:
+
     goto cleanup;
 }

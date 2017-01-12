@@ -236,6 +236,23 @@ VmDnsFreeStringCountedArrayA(
     );
 
 DWORD
+VmDnsAllocateBlob(
+    UINT16 unSize,
+    PVMDNS_BLOB *ppBlob
+    );
+
+DWORD
+VmDnsCopyBlob(
+    PVMDNS_BLOB pSrcBlob,
+    PVMDNS_BLOB *ppDstBlob
+    );
+
+VOID
+VmDnsFreeBlob(
+    PVMDNS_BLOB pBlob
+    );
+
+DWORD
 VmDnsAllocateStringAVsnprintf(
     PSTR*    ppszOut,
     PCSTR    pszFormat,
@@ -424,12 +441,6 @@ VmDnsRpcFreeMemory(
     PVOID pMemory
     );
 
-DWORD
-VmDnsRpcCopyRecordArray(
-    PVMDNS_RECORD_ARRAY pRecordArray,
-    PVMDNS_RECORD_ARRAY *ppRecordArray
-    );
-
 VOID
 VmDnsRpcFreeRecordArray(
     PVMDNS_RECORD_ARRAY pRecordArray
@@ -455,6 +466,23 @@ VmDnsRpcFreeZoneInfo(
 VOID
 VmDnsRpcFreeZoneInfoArray(
     PVMDNS_ZONE_INFO_ARRAY pZoneInfoArray
+    );
+
+DWORD
+VmDnsRpcAllocateBlob(
+    UINT16 unSize,
+    PVMDNS_BLOB *ppBlob
+    );
+
+DWORD
+VmDnsRpcCopyBlob(
+    PVMDNS_BLOB pSrcBlob,
+    PVMDNS_BLOB *ppDstBlob
+    );
+
+VOID
+VmDnsRpcFreeBlob(
+    PVMDNS_BLOB pBlob
     );
 
 VOID
@@ -859,7 +887,32 @@ VmDnsIsShortNameRecordType(
 
 BOOL
 VmDnsIsSupportedRecordType(
-    DWORD   dwRecordType
+    VMDNS_RR_TYPE   dwRecordType
+    );
+
+BOOL
+VmDnsIsUpdatePermitted(
+    VMDNS_RR_TYPE   dwRecordType
+    );
+
+BOOL
+VmDnsIsSupportedRecordType(
+    VMDNS_RR_TYPE   dwRecordType
+    );
+
+BOOL
+VmDnsIsRecordRType(
+    VMDNS_RR_TYPE   dwRecordType
+    );
+
+BOOL
+VmDnsIsRecordQType(
+    VMDNS_RR_TYPE   dwRecordType
+    );
+
+BOOL
+VmDnsIsRecordMType(
+    VMDNS_RR_TYPE   dwRecordType
     );
 
 #define VMDNS_FREE_RECORD(pRecord) \
@@ -914,6 +967,21 @@ VmDnsCheckIfIPV6AddressA(
         VmDnsFreeMemory(pZoneInfoArray->ZoneInfos); \
         VmDnsFreeMemory(pZoneInfoArray); \
     }
+
+#ifndef _VMDNS_TSIG_TIME_MASKS
+#define _VMDNS_TSIG_TIME_MASKS
+#define VMDNS_TSIG_CREATE_TIME_MASK 0xFFFFFFFFFFFF00
+#define VMDNS_TSIG_FUDGE_TIME_MASK 0x0000000000FFFF
+
+#define VMDNS_TSIG_GET_CREATE_TIME(unCombinedTime) \
+    (unCombinedTime & VMDNS_TSIG_CREATE_TIME_MASK) >> 0x10;
+
+#define VMDNS_TSIG_GET_FUDGE_TIME(unCombinedTime) \
+    unCombinedTime & VMDNS_TSIG_FUDGE_TIME_MASK;
+
+#define VMDNS_TSIG_COMBINE_TIMES(unCreateTime, unFudgeTime) \
+    (unCreateTime << 0x10) | unFudgeTime;
+#endif
 
 #ifdef _WIN32
 #define POSIX_TO_WIN32_ERROR(errno) errno

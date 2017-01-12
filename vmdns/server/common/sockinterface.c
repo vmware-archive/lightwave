@@ -191,7 +191,7 @@ static PCSTR ppszEventTypeMap[] =
             "TCP_RESPONSE_SIZE_WRITE",
     [VM_SOCK_EVENT_TYPE_TCP_RESPONSE_DATA_WRITE] =
             "TCP_RESPONSE_DATA_WRITE",
-    [VM_SOCK_EVENT_TYPE_TCP_FWD_REQUEST] = 
+    [VM_SOCK_EVENT_TYPE_TCP_FWD_REQUEST] =
             "TCP_FWD_REQUEST",
     [VM_SOCK_EVENT_TYPE_TCP_FWD_REQUEST_SIZE_WRITE] =
             "TCP_FWD_REQUEST_SIZE_WRITE",
@@ -329,7 +329,7 @@ VmDnsInitProtocolServer(
             BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    gpDNSDriverGlobals->pSockContext = pSockContext;
+    gpSrvContext->pSockContext = pSockContext;
 
 cleanup:
 
@@ -350,10 +350,10 @@ VmDnsShutdownProtocolServer(
     VOID
     )
 {
-    if (gpDNSDriverGlobals->pSockContext)
+    if (gpSrvContext->pSockContext)
     {
-        VmDnsSockContextFree(gpDNSDriverGlobals->pSockContext);
-        gpDNSDriverGlobals->pSockContext = NULL;
+        VmDnsSockContextFree(gpSrvContext->pSockContext);
+        gpSrvContext->pSockContext = NULL;
     }
 }
 
@@ -855,6 +855,7 @@ VmDnsOnTcpRequestDataRead(
     PVM_SOCK_IO_BUFFER  pIoSizeBuffer = NULL;
     PBYTE pResponse = NULL;
     DWORD dwDnsResponseSize = 0;
+    UCHAR rCode = 0;
 
     if (!pIoBuffer)
     {
@@ -870,11 +871,15 @@ VmDnsOnTcpRequestDataRead(
     if (pIoBuffer->dwExpectedSize > pIoBuffer->dwTotalBytesTransferred)
     {
         dwError = VmwSockRead(
-                            pSocket,
-                            pIoBuffer);
+                        pSocket,
+                        pIoBuffer
+                        );
         if (dwError == ERROR_SUCCESS)
         {
-            dwError = VmDnsOnTcpRequestDataRead(pSocket, pIoBuffer);
+            dwError = VmDnsOnTcpRequestDataRead(
+                                pSocket,
+                                pIoBuffer
+                                );
             BAIL_ON_VMDNS_ERROR(dwError);
         }
         else if(dwError == ERROR_IO_PENDING)
@@ -886,42 +891,50 @@ VmDnsOnTcpRequestDataRead(
     else
     {
         dwError = VmDnsProcessRequest(
-                                pIoBuffer->pData,
-                                pIoBuffer->dwTotalBytesTransferred,
-                                &pResponse,
-                                &dwDnsResponseSize
-                                );
+                            pIoBuffer->pData,
+                            pIoBuffer->dwTotalBytesTransferred,
+                            &pResponse,
+                            &dwDnsResponseSize,
+                            &rCode
+                            );
         BAIL_ON_VMDNS_ERROR(dwError);
 
         dwError = VmwSockAllocateIoBuffer(
-                                VM_SOCK_EVENT_TYPE_TCP_RESPONSE_SIZE_WRITE,
-                                sizeof(INT16),
-                                &pIoSizeBuffer);
+                            VM_SOCK_EVENT_TYPE_TCP_RESPONSE_SIZE_WRITE,
+                            sizeof(INT16),
+                            &pIoSizeBuffer
+                            );
         BAIL_ON_VMDNS_ERROR(dwError);
 
         dwError = VmwSockAllocateIoBuffer(
-                                VM_SOCK_EVENT_TYPE_TCP_RESPONSE_DATA_WRITE,
-                                dwDnsResponseSize,
-                                &pIoNewBuffer);
+                            VM_SOCK_EVENT_TYPE_TCP_RESPONSE_DATA_WRITE,
+                            dwDnsResponseSize,
+                            &pIoNewBuffer
+                            );
         BAIL_ON_VMDNS_ERROR(dwError);
 
         (*(UINT16*)pIoSizeBuffer->pData) = htons(dwDnsResponseSize);
 
         dwError = VmDnsCopyMemory(
-                      pIoNewBuffer->pData,
-                      pIoNewBuffer->dwExpectedSize,
-                      pResponse,
-                      dwDnsResponseSize);
+                        pIoNewBuffer->pData,
+                        pIoNewBuffer->dwExpectedSize,
+                        pResponse,
+                        dwDnsResponseSize
+                        );
         BAIL_ON_VMDNS_ERROR(dwError);
 
         dwError = VmwSockWrite(
-                            pSocket,
-                            (struct sockaddr*)&pIoBuffer->clientAddr,
-                            pIoSizeBuffer->addrLen,
-                            pIoSizeBuffer);
+                        pSocket,
+                        (struct sockaddr*)&pIoBuffer->clientAddr,
+                        pIoSizeBuffer->addrLen,
+                        pIoSizeBuffer
+                        );
         if (dwError == ERROR_SUCCESS)
         {
-            dwError = VmDnsOnTcpResponseSizeWrite(pSocket, pIoSizeBuffer);
+            dwError = VmDnsOnTcpResponseSizeWrite(
+                                    pSocket,
+                                    pIoSizeBuffer
+                                    );
             BAIL_ON_VMDNS_ERROR(dwError);
         }
         else if (dwError == ERROR_IO_PENDING)
@@ -930,13 +943,17 @@ VmDnsOnTcpRequestDataRead(
         }
 
         dwError = VmwSockWrite(
-                            pSocket,
-                            (struct sockaddr*)&pIoBuffer->clientAddr,
-                            pIoNewBuffer->addrLen,
-                            pIoNewBuffer);
+                        pSocket,
+                        (struct sockaddr*)&pIoBuffer->clientAddr,
+                        pIoNewBuffer->addrLen,
+                        pIoNewBuffer
+                        );
         if (dwError == ERROR_SUCCESS)
         {
-            dwError = VmDnsOnTcpResponseDataWrite(pSocket, pIoSizeBuffer);
+            dwError = VmDnsOnTcpResponseDataWrite(
+                                    pSocket,
+                                    pIoSizeBuffer
+                                    );
             BAIL_ON_VMDNS_ERROR(dwError);
         }
         else if (dwError == ERROR_IO_PENDING)
@@ -974,6 +991,7 @@ VmDnsOnUdpRequestDataRead(
     PVM_SOCK_IO_BUFFER  pIoNewBuffer = NULL;
     PBYTE pResponse = NULL;
     DWORD dwDnsResponseSize = 0;
+    UCHAR rCode = 0;
 
     if (!pIoBuffer)
     {
@@ -987,34 +1005,41 @@ VmDnsOnUdpRequestDataRead(
     }
 
     dwError = VmDnsProcessRequest(
-                            pIoBuffer->pData,
-                            pIoBuffer->dwTotalBytesTransferred,
-                            &pResponse,
-                            &dwDnsResponseSize
-                            );
+                        pIoBuffer->pData,
+                        pIoBuffer->dwTotalBytesTransferred,
+                        &pResponse,
+                        &dwDnsResponseSize,
+                        &rCode
+                        );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmwSockAllocateIoBuffer(
-                            VM_SOCK_EVENT_TYPE_UDP_RESPONSE_DATA_WRITE,
-                            dwDnsResponseSize,
-                            &pIoNewBuffer);
+                        VM_SOCK_EVENT_TYPE_UDP_RESPONSE_DATA_WRITE,
+                        dwDnsResponseSize,
+                        &pIoNewBuffer
+                        );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsCopyMemory(
                     pIoNewBuffer->pData,
                     pIoNewBuffer->dwExpectedSize,
                     pResponse,
-                    dwDnsResponseSize);
+                    dwDnsResponseSize
+                    );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmwSockWrite(
-                        pSocket,
-                        (struct sockaddr*)&pIoBuffer->clientAddr,
-                        pIoBuffer->addrLen,
-                        pIoNewBuffer);
+                    pSocket,
+                    (struct sockaddr*)&pIoBuffer->clientAddr,
+                    pIoBuffer->addrLen,
+                    pIoNewBuffer
+                    );
     if (dwError == ERROR_SUCCESS)
     {
-        dwError = VmDnsOnUdpResponseDataWrite(pSocket, pIoNewBuffer);
+        dwError = VmDnsOnUdpResponseDataWrite(
+                                pSocket,
+                                pIoNewBuffer
+                                );
         BAIL_ON_VMDNS_ERROR(dwError);
     }
     else if (dwError == ERROR_IO_PENDING)

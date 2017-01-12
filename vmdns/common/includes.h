@@ -54,7 +54,7 @@
 #include <Sddl.h>
 #include <process.h>
 #include <pthread.h>
-
+#include <assert.h>
 #include "banned.h"
 
 #include <vmdns.h>
@@ -71,4 +71,5 @@
 #endif
 
 #include "extern.h"
+#include "defines.h"
 #include "dce/rpc.h"

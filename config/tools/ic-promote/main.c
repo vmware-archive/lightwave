@@ -31,6 +31,7 @@ VmwDeployBuildParams(
     PCSTR pszPassword,
     PCSTR pszPartner,
     PCSTR pszSite,
+    PCSTR pszSubjectAltName,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     );
 
@@ -193,13 +194,15 @@ ParseArgs(
     PSTR  pszPartner  = NULL;
     PSTR  pszPassword = NULL;
     PSTR  pszSite     = NULL;
+    PSTR  pszSubjectAltName = NULL;
     enum PARSE_MODE
     {
         PARSE_MODE_OPEN = 0,
         PARSE_MODE_DOMAIN,
         PARSE_MODE_PARTNER,
         PARSE_MODE_PASSWORD,
-        PARSE_MODE_SITE
+        PARSE_MODE_SITE,
+        PARSE_MODE_SSL_SUBJECT_ALT_NAME
     } parseMode = PARSE_MODE_OPEN;
     int iArg = 0;
     PVMW_IC_SETUP_PARAMS pSetupParams = NULL;
@@ -226,6 +229,10 @@ ParseArgs(
                 else if (!strcmp(pszArg, "--site"))
                 {
                     parseMode = PARSE_MODE_SITE;
+                }
+                else if (!strcmp(pszArg, "--ssl-subject-alt-name"))
+                {
+                    parseMode = PARSE_MODE_SSL_SUBJECT_ALT_NAME;
                 }
                 else if (!strcmp(pszArg, "--help"))
                 {
@@ -296,6 +303,20 @@ ParseArgs(
 
                 break;
 
+            case PARSE_MODE_SSL_SUBJECT_ALT_NAME:
+
+                if (pszSubjectAltName)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszSubjectAltName = pszArg;
+
+                parseMode = PARSE_MODE_OPEN;
+
+                break;
+
             default:
 
                 dwError = ERROR_INVALID_PARAMETER;
@@ -310,6 +331,7 @@ ParseArgs(
                     pszPassword,
                     pszPartner,
                     pszSite,
+                    pszSubjectAltName,
                     &pSetupParams);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
@@ -338,6 +360,7 @@ VmwDeployBuildParams(
     PCSTR pszPassword,
     PCSTR pszPartner,
     PCSTR pszSite,
+    PCSTR pszSubjectAltName,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     )
 {
@@ -399,6 +422,14 @@ VmwDeployBuildParams(
         BAIL_ON_DEPLOY_ERROR(dwError);
 
         pszPassword = pszPassword1;
+    }
+
+    if (!IsNullOrEmptyString(pszSubjectAltName))
+    {
+        dwError = VmwDeployAllocateStringA(
+                        pszSubjectAltName,
+                        &pSetupParams->pszSubjectAltName);
+        BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
     dwError = VmwDeployAllocateStringA(pszDomain, &pSetupParams->pszDomainName);
@@ -532,5 +563,6 @@ ShowUsage(
            "[--domain   <fully qualified domain name. Default : vsphere.local>]\n"
            "--password  <password to administrator account>\n"
            "[--partner  <partner domain controller's hostname or IP Address>]\n"
+           "[--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n"
            "[--site     <infra site name>]\n\n");
 }

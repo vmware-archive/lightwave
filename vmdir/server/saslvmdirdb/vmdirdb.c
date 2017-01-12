@@ -16,6 +16,23 @@
 
 #include "includes.h"
 
+
+// Cyrus SASL changed the type for auxprop_lookup at some point after 2.1.23,
+// but I don't know a good way to handle the type change. Using this for now.
+#define VMDIR_CYRUS_SASL_VERSION_IS_OLD 1
+#if SASL_VERSION_MAJOR > 2
+   #undef VMDIR_CYRUS_SASL_VERSION_IS_OLD
+#else
+   #if SASL_VERSION_MINOR > 1
+   #undef VMDIR_CYRUS_SASL_VERSION_IS_OLD
+   #else
+      #if SASL_VERSION_STEP > 23
+      #undef VMDIR_CYRUS_SASL_VERSION_IS_OLD
+      #endif
+   #endif
+#endif
+
+
 // this name matches with srp.c srp_server_mech_step1 SASL_AUX_PASSWORD property name
 const char* gSRPPasswdPropertyName = "*cmusaslsecretSRP";
 
@@ -59,7 +76,11 @@ _VmDirSRPGetIdentityData(
 // likewise and vmware-cyrus-sasl use different versions of SASL. Thus incompatible API
 ///////////////////////////////////////////////////////////////////////////////////////
 static
+#ifndef VMDIR_CYRUS_SASL_VERSION_IS_OLD
 int
+#else
+void
+#endif
 vmdirdb_auxprop_lookup (
     void*                   glob_context,
     sasl_server_params_t*   pSrvParams,
@@ -107,8 +128,9 @@ vmdirdb_auxprop_lookup (
     {
         free(pSecret);
     }
-
+#ifndef VMDIR_CYRUS_SASL_VERSION_IS_OLD
     return SASL_OK;
+#endif
 }
 
 static

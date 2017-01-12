@@ -113,14 +113,7 @@ cleanup:
 
 error:
 
-    if (ppServerContext)
-    {
-        *ppServerContext = NULL;
-    }
-    if (pServerContext)
-    {
-        VmDnsCloseServer(pServerContext);
-    }
+    VmDnsCloseServer(pServerContext);
     goto cleanup;
 }
 
@@ -159,14 +152,7 @@ cleanup:
 
 error:
 
-    if (ppServerContext)
-    {
-        *ppServerContext = NULL;
-    }
-    if (pServerContext)
-    {
-        VmDnsCloseServer(pServerContext);
-    }
+    VmDnsCloseServer(pServerContext);
     goto cleanup;
 }
 
@@ -175,14 +161,11 @@ VMDNS_API
 VOID
 VmDnsCloseServer(PVMDNS_SERVER_CONTEXT pServerContext)
 {
-    if (pServerContext)
+    if (pServerContext->hBinding)
     {
-        if (pServerContext->hBinding)
-        {
-            DWORD dwError = 0;
-            rpc_binding_free(&pServerContext->hBinding, &dwError);
-            pServerContext->hBinding = NULL;
-        }
+        DWORD dwError = 0;
+        rpc_binding_free(&pServerContext->hBinding, &dwError);
+        pServerContext->hBinding = NULL;
     }
 
     VMDNS_SAFE_FREE_MEMORY(pServerContext);
@@ -288,12 +271,10 @@ VmDnsAddForwarderA(
     )
 {
     DWORD dwError = 0;
-
     dwError = VmDnsValidateContext(pServerContext);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     BAIL_ON_VMDNS_INVALID_POINTER(pszForwarders, dwError);
-
     DCETHREAD_TRY
     {
         dwError = VmDnsRpcAddForwarder(

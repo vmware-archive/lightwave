@@ -55,6 +55,17 @@ AC_ARG_ENABLE([gcov],
         fi
     ])
 
+ENABLE_PYTHON=false
+AC_ARG_ENABLE([python],
+    [AC_HELP_STRING([--enable-python], [enable python module (default: disabled)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            ENABLE_PYTHON=true
+        fi
+    ])
+AM_CONDITIONAL(ENABLE_PYTHON, [$ENABLE_PYTHON])
+
 # Java component
 
 AC_ARG_WITH([java],
@@ -318,6 +329,7 @@ AC_ARG_WITH([boost],
     [
         BOOST_BASE_PATH="$withval"
         BOOST_INCLUDES="-I$withval/include"
+        BOOST_LIB_PATH="$withval/lib"
         BOOST_LDFLAGS="-L$withval/lib"
     ])
 
@@ -330,11 +342,13 @@ AC_ARG_WITH([boost-includes],
 AC_ARG_WITH([boost-libs],
     [AC_HELP_STRING([--with-boost-libs=<dir>], [use BOOST libraries located in prefix <dir> ])],
     [
+        BOOST_LIB_PATH="$withval"
         BOOST_LDFLAGS="-L$withval"
     ])
 
 AC_SUBST(BOOST_BASE_PATH)
 AC_SUBST(BOOST_INCLUDES)
+AC_SUBST(BOOST_LIB_PATH)
 AC_SUBST(BOOST_LDFLAGS)
 
 saved_CPPFLAGS="$CPPFLAGS"
@@ -396,6 +410,20 @@ echo $BOOST_BASE_PATH
 echo $BOOST_LDFLAGS
 
 AC_CHECK_LIB(
+        [boost_unit_test_framework-gcc41-mt-1_55],
+        [main],
+        [BOOST_LIBS="-lboost_system-gcc41-mt-s-1_55 -lboost_filesystem-gcc41-mt-s-1_55 -lboost_program_options-gcc41-mt-s-1_55"],
+        [],
+        [$BOOST_LDFLAGS])
+
+AC_CHECK_LIB(
+        [boost_unit_test_framework-xgcc42-mt-1_55],
+        [main],
+        [BOOST_LIBS="-lboost_system-xgcc42-mt-s-1_55 -lboost_filesystem-xgcc42-mt-s-1_55 -lboost_program_options-xgcc42-mt-s-1_55"],
+        [],
+        [$BOOST_LDFLAGS])
+
+AC_CHECK_LIB(
         [boost_unit_test_framework],
         [main],
         [BOOST_LIBS="-lboost_thread -lboost_system -lboost_filesystem -lboost_program_options"],
@@ -403,7 +431,7 @@ AC_CHECK_LIB(
         [$BOOST_LDFLAGS])
 AC_LANG_POP([C++])
 
-AC_CHECK_LIB([sqlite3], [sqlite3_open], [SQLITE_LIBS="-lsqlite3"], [], [$SQLITE_LDFLAGS])
+AC_CHECK_LIB([sqlite3], [sqlite3_open], [SQLITE_LIBS="-lsqlite3"], [], [$SQLITE_LDFLAGS $DL_LIBS $PTHREAD_LIBS])
 AC_CHECK_LIB([python2.7 ],  [PyArg_Parse], [PYTHON_LIBS="-lpython2.7"], [], [$PYTHON_LDFLAGS])
 
 AC_LANG_PUSH([C++])

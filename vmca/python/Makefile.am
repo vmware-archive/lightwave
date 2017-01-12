@@ -16,7 +16,7 @@ vmca_la_CPPFLAGS = \
     @PYTHON_INCLUDES@    
 
 vmca_la_LIBADD = \
-    ${GOBUILD_BOOST1470_LIN64_GCC412_ROOT}/lib/libboost_python-gcc41-mt-1_47.a\
+    @BOOST_LIB_PATH@/libboost_python-gcc41-mt-1_55.a\
     $(top_builddir)/common/libcommon.la \
     $(top_builddir)/client/libvmcaclient.la \
     @DL_LIBS@  \

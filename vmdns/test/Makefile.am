@@ -4,10 +4,12 @@ idl_srcdir=$(top_srcdir)/idl
 include_srcdir=$(top_srcdir)/include
 include_public_srcdir=$(top_srcdir)/include/public
 
-dnstest_SOURCES = \
-    AllTests.c     \
-    CuTest.c        \
-    TestZones.c \
+dnstest_SOURCES =       \
+    AllTests.c          \
+    CuTest.c            \
+    LruListTest.c       \
+    test-nameentry.c    \
+    test-recordlist.c   \
     TestUtils.c
 
 dnstest_CPPFLAGS = \

@@ -35,18 +35,11 @@ VmDnsRpcInitialize(
     )
 {
     DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx = NULL;
 
     dwError = VmDnsCheckAccess(hBinding, TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmdnsZoneBeginUpdate(&pCtx);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsInitialize(pCtx, pInitInfo);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmdnsZoneEndUpdate(pCtx);
+    dwError = VmDnsSrvInitDomain(pInitInfo);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
@@ -63,18 +56,11 @@ VmDnsRpcUninitialize(
     )
 {
     DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx = NULL;
 
     dwError = VmDnsCheckAccess(hBinding, TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmdnsZoneBeginUpdate(&pCtx);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsUninitialize(pCtx, pInitInfo);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmdnsZoneEndUpdate(pCtx);
+    dwError = VmDnsSrvCleanupDomain(pInitInfo);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
@@ -91,18 +77,11 @@ VmDnsRpcCreateZone(
     )
 {
     DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx = NULL;
 
     dwError = VmDnsCheckAccess(hBinding, TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmdnsZoneBeginUpdate(&pCtx);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsZoneCreate(pCtx, pZoneInfo, TRUE);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmdnsZoneEndUpdate(pCtx);
+    dwError = VmDnsSrvZoneCreate(pZoneInfo);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
@@ -119,21 +98,25 @@ VmDnsRpcUpdateZone(
     )
 {
     DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx = NULL;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+
+    if (!pZoneInfo || IsNullOrEmptyString(pZoneInfo->pszName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
 
     dwError = VmDnsCheckAccess(hBinding, TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmdnsZoneBeginUpdate(&pCtx);
+    dwError = VmDnsSrvFindZone(pZoneInfo->pszName, &pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsZoneUpdate(pCtx, pZoneInfo, TRUE);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmdnsZoneEndUpdate(pCtx);
+    dwError = VmDnsSrvZoneUpdate(pZoneObject, pZoneInfo);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
+    VmDnsZoneObjectRelease(pZoneObject);
     return dwError;
 error:
     VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
@@ -147,21 +130,25 @@ VmDnsRpcDeleteZone(
     )
 {
     DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx = NULL;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+
+    if (IsNullOrEmptyString(pszZone))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
 
     dwError = VmDnsCheckAccess(hBinding, TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmdnsZoneBeginUpdate(&pCtx);
+    dwError = VmDnsSrvFindZone(pszZone, &pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsZoneDelete(pCtx, pszZone);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmdnsZoneEndUpdate(pCtx);
+    dwError = VmDnsSrvZoneDelete(pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
+    VmDnsZoneObjectRelease(pZoneObject);
     return dwError;
 error:
     VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
@@ -176,21 +163,25 @@ VmDnsRpcAddRecord(
     )
 {
     DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx = NULL;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+
+    if (IsNullOrEmptyString(pszZone) || !pRecord)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
 
     dwError = VmDnsCheckAccess(hBinding, TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmdnsZoneBeginUpdate(&pCtx);
+    dwError = VmDnsSrvFindZone(pszZone, &pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsZoneAddRecord(pCtx, pszZone, pRecord, TRUE);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmdnsZoneEndUpdate(pCtx);
+    dwError = VmDnsSrvAddRecord(pZoneObject, pRecord);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
+    VmDnsZoneObjectRelease(pZoneObject);
     return dwError;
 error:
     VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
@@ -205,21 +196,25 @@ VmDnsRpcDeleteRecord(
     )
 {
     DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx = NULL;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+
+    if (IsNullOrEmptyString(pszZone) || !pRecord)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
 
     dwError = VmDnsCheckAccess(hBinding, TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmdnsZoneBeginUpdate(&pCtx);
+    dwError = VmDnsSrvFindZone(pszZone, &pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsZoneDeleteRecord(pCtx, pszZone, pRecord, TRUE);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmdnsZoneEndUpdate(pCtx);
+    dwError = VmDnsSrvDeleteRecord(pZoneObject, pRecord);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
+    VmDnsZoneObjectRelease(pZoneObject);
     return dwError;
 error:
     VmDnsLog(VMDNS_LOG_LEVEL_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
@@ -237,29 +232,37 @@ VmDnsRpcQueryRecords(
     )
 {
     DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_RECORD_ARRAY pRecordArrayTemp = NULL;
+    PVMDNS_RECORD_LIST pRecordList = NULL;
     PVMDNS_RECORD_ARRAY pRecordArray = NULL;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
 
     BAIL_ON_VMDNS_INVALID_POINTER(ppRecordArray, dwError);
     *ppRecordArray = NULL;
 
+    if (IsNullOrEmptyString(pszZone) || IsNullOrEmptyString(pszName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
     dwError = VmDnsCheckAccess(hBinding, FALSE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsZoneQuery(pszZone, pszName, dwType, &pRecordArrayTemp);
+    dwError = VmDnsSrvFindZone(pszZone, &pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsZoneRestoreRecordFQDN(pszZone, pRecordArrayTemp);
+    dwError = VmDnsSrvQueryRecords(pZoneObject, pszName, dwType, 0, &pRecordList);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsRpcCopyRecordArray(pRecordArrayTemp, &pRecordArray);
+    dwError = VmDnsRpcCopyRecordArray(pRecordList, &pRecordArray);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     *ppRecordArray = pRecordArray;
     pRecordArray = NULL;
 
 cleanup:
-    VMDNS_FREE_RECORD_ARRAY(pRecordArrayTemp);
+    VmDnsZoneObjectRelease(pZoneObject);
+    VmDnsRecordListRelease(pRecordList);
     return dwError;
 error:
     if (pRecordArray)
@@ -286,7 +289,7 @@ VmDnsRpcListZones(
     dwError = VmDnsCheckAccess(hBinding, FALSE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsZoneList(&pZoneArrayTemp);
+    dwError = VmDnsSrvListZones(&pZoneArrayTemp);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsRpcCopyZoneInfoArray(pZoneArrayTemp, &pZoneArray);
@@ -315,30 +318,32 @@ VmDnsRpcListRecords(
     )
 {
     DWORD dwError = ERROR_SUCCESS;
-    PVMDNS_RECORD_ARRAY pRecordArrayTemp = NULL;
+    PVMDNS_RECORD_LIST pRecordList = NULL;
     PVMDNS_RECORD_ARRAY pRecordArray = NULL;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
 
     BAIL_ON_VMDNS_EMPTY_STRING(pszZone, dwError);
     BAIL_ON_VMDNS_INVALID_POINTER(ppRecordArray, dwError);
+
     *ppRecordArray = NULL;
 
     dwError = VmDnsCheckAccess(hBinding, FALSE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsZoneListRecord(pszZone, &pRecordArrayTemp);
+    dwError = VmDnsSrvFindZone(pszZone, &pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsZoneRestoreRecordFQDN(pszZone, pRecordArrayTemp);
+    dwError = VmDnsSrvListRecords(pZoneObject, &pRecordList);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsRpcCopyRecordArray(pRecordArrayTemp, &pRecordArray);
+    dwError = VmDnsRpcCopyRecordArray(pRecordList, &pRecordArray);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     *ppRecordArray = pRecordArray;
     pRecordArray = NULL;
 
 cleanup:
-    VMDNS_FREE_RECORD_ARRAY(pRecordArrayTemp);
+    VmDnsRecordListRelease(pRecordList);
     return dwError;
 error:
     if (pRecordArray)
@@ -362,9 +367,7 @@ VmDnsRpcAddForwarder(
     dwError = VmDnsCheckAccess(hBinding, TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsAddForwarder(
-                        VmDnsGetForwarderContext(),
-                        pszForwarder);
+    dwError = VmDnsSrvAddForwarder(pszForwarder);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
@@ -474,8 +477,7 @@ VmDnsRpcGetForwarders(
     dwError = VmDnsCheckAccess(hBinding, FALSE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsGetForwarders(
-                        VmDnsGetForwarderContext(),
+    dwError = VmDnsSrvGetForwarders(
                         &ppszForwarders,
                         &dwCount);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -525,8 +527,7 @@ VmDnsRpcDeleteForwarder(
     dwError = VmDnsCheckAccess(hBinding, TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsDeleteForwarder(
-                        VmDnsGetForwarderContext(),
+    dwError = VmDnsSrvDeleteForwarder(
                         pszForwarder);
     BAIL_ON_VMDNS_ERROR(dwError);
 

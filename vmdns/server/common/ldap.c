@@ -28,12 +28,6 @@ VmDnsDirGetMachineAccountInfoA(
 
 static
 DWORD
-VmDnsDirGetPnid(
-    PSTR* ppszPnid
-    );
-
-static
-DWORD
 VmDnsDirLDAPConnect(
     PCSTR               pszHostName,
     DWORD               dwPort,
@@ -56,6 +50,14 @@ VmDnsDirBuildRecordDN(
     PCSTR           pszZoneDN,
     PVMDNS_RECORD   pRecord,
     PSTR*           ppszRecordDN
+    );
+
+static
+DWORD
+VmDnsDirGetForwarders(
+    PVMDNS_DIR_CONTEXT  pDirContext,
+    PSTR**           pppszForwarders,
+    PDWORD           pdwCount
     );
 
 static
@@ -106,6 +108,23 @@ VmDnsDirDeleteRecord(
 
 static
 DWORD
+VmDnsDirGetRecordsByName(
+    PVMDNS_DIR_CONTEXT  pDirContext,
+    PCSTR               pszZoneDN,
+    PCSTR               pszEntryName,
+    PVMDNS_RECORD_LIST *ppRecordList
+    );
+
+static
+DWORD
+VmDnsDirGetAllRecords(
+    PVMDNS_DIR_CONTEXT  pDirContext,
+    PCSTR               pszZoneDN,
+    PVMDNS_RECORD_LIST *ppRecordList
+    );
+
+static
+DWORD
 VmDnsDirBuildRecordEntry(
     PVMDNS_RECORD           pDnsRecornd,
     PBYTE*                  ppRecordBytes,
@@ -114,42 +133,10 @@ VmDnsDirBuildRecordEntry(
 
 static
 DWORD
-VmDnsDirGetZoneList(
+VmDnsDirGetAllZones(
     PVMDNS_DIR_CONTEXT      pDirContext,
-    PVMDNS_DIR_DNS_INFO     pZoneInfo
-    );
-
-static
-DWORD
-VmDnsDirPopulateZoneRecords(
-    PVMDNS_DIR_CONTEXT      pDirContext,
-    PVMDNS_DIR_ZONE_ENTRY   pZoneEntry
-    );
-
-static
-DWORD
-VmDnsDirPopulateZone(
-    PVMDNS_DIR_CONTEXT      pDirContext,
-    PVMDNS_DIR_DNS_INFO     pZoneInfo
-    );
-
-static
-VOID
-VmDnsCleanupZoneEntry(
-    PVMDNS_DIR_ZONE_ENTRY   pZoneEntry
-    );
-
-static
-VOID
-VmDnsCleanupRecordEntry(
-    PVMDNS_RECORD_ENTRY     pRecordEntry
-    );
-
-static
-DWORD
-VmDnsDirUpdateCachedZoneRecords(
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
-    PVMDNS_DIR_ZONE_ENTRY       pZoneInfo
+    PSTR**                  pppszZones,
+    PDWORD                  pdwCount
     );
 
 static
@@ -163,22 +150,10 @@ VmDnsDirProcessRecord(
 
 static
 DWORD
-VmDnsDirUpdateCachedZone(
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
-    PVMDNS_DIR_ZONE_ENTRY       pZoneEntry
-    );
-
-static
-DWORD
-VmDnsDirZoneInfoCopy(
-    PVMDNS_DIR_ZONE_ENTRY   pZoneEntry,
-    PVMDNS_ZONE_INFO        pZoneInfo
-    );
-
-static
-DWORD
-VmDnsDirUpdateState(
-    PVMDNS_DIR_ZONE_ENTRY pZoneEntry
+VmDnsDirParseDN(
+    PSTR               pszNodeDN,
+    PCSTR*             ppszZone,
+    PCSTR*             ppszRecord
     );
 
 VOID
@@ -1387,60 +1362,321 @@ error:
 }
 
 DWORD
-VmDnsDirGetLotusZoneInfo(
-    PVMDNS_DIR_CONTEXT      pDirContext,
-    PVMDNS_DIR_DNS_INFO*    ppDirDnsInfo
+VmDnsDirListZones(
+    PSTR**                  pppszZones,
+    PDWORD                  pdwCount
     )
 {
     DWORD dwError = 0;
-    PVMDNS_DIR_DNS_INFO pDirZoneInfo = NULL;
+    PVMDNS_DIR_CONTEXT pDirContext = NULL;
+    PSTR pszBaseDN = NULL;
 
-    dwError = VmDnsAllocateMemory(sizeof(VMDNS_DIR_DNS_INFO), (PVOID *)&pDirZoneInfo);
+    if (!pppszZones || !pdwCount)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsDirConnect("localhost", &pDirContext);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsDirGetZoneList(pDirContext, pDirZoneInfo);
+    dwError = VmDnsDirGetDomainZonesDN(pDirContext, &pszBaseDN);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsDirPopulateZone(pDirContext, pDirZoneInfo);
+    dwError = VmDnsDirGetAllZones(pDirContext, pppszZones, pdwCount);
     BAIL_ON_VMDNS_ERROR(dwError);
-
-    *ppDirDnsInfo = pDirZoneInfo;
-    pDirZoneInfo = NULL;
 
 cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pszBaseDN);
+    VmDnsDirClose(pDirContext);
 
     return dwError;
 
 error:
-    VmDnsCleanupZoneInfo(pDirZoneInfo);
     goto cleanup;
 }
 
 DWORD
-VmDnsDirGetZoneList(
+VmDnsDirGetRecords(
+    PCSTR               pszZone,
+    PCSTR               pszName,
+    PVMDNS_RECORD_LIST  *ppRecordList
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_DIR_CONTEXT pDirContext = NULL;
+    PSTR pszBaseDN = NULL;
+    PSTR pszZoneDN = NULL;
+    PVMDNS_RECORD_LIST pRecordListTemp = NULL;
+
+    if (!ppRecordList)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsDirConnect("localhost", &pDirContext);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsDirGetDomainZonesDN(pDirContext, &pszBaseDN);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsDirBuildZoneDN(pszBaseDN, pszZone, &pszZoneDN);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsDirGetRecordsByName(
+                        pDirContext,
+                        pszZoneDN,
+                        pszName,
+                        &pRecordListTemp);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppRecordList = pRecordListTemp;
+
+cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pszBaseDN);
+    VMDNS_SAFE_FREE_STRINGA(pszZoneDN);
+    VmDnsDirClose(pDirContext);
+
+    return dwError;
+
+error:
+
+    if (ppRecordList)
+    {
+        *ppRecordList = NULL;
+    }
+
+    VmDnsRecordListRelease(pRecordListTemp);
+
+    goto cleanup;
+}
+
+DWORD
+VmDnsDirListRecords(
+    PCSTR         pszZone,
+    PVMDNS_RECORD_LIST *ppRecordList
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_DIR_CONTEXT pDirContext = NULL;
+    PSTR pszBaseDN = NULL;
+    PSTR pszZoneDN = NULL;
+    PVMDNS_RECORD_LIST pRecordListTemp = NULL;
+
+    if (!ppRecordList)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsDirConnect("localhost", &pDirContext);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsDirGetDomainZonesDN(pDirContext, &pszBaseDN);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsDirBuildZoneDN(pszBaseDN, pszZone, &pszZoneDN);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsDirGetAllRecords(
+                    pDirContext,
+                    pszZoneDN,
+                    &pRecordListTemp);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppRecordList = pRecordListTemp;
+
+cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pszBaseDN);
+    VMDNS_SAFE_FREE_STRINGA(pszZoneDN);
+    VmDnsDirClose(pDirContext);
+
+    return dwError;
+
+error:
+
+    if (ppRecordList)
+    {
+        *ppRecordList = NULL;
+    }
+
+    VmDnsRecordListRelease(pRecordListTemp);
+
+    goto cleanup;
+}
+
+DWORD
+VmDnsDirGetRecordsByName(
+    PVMDNS_DIR_CONTEXT  pDirContext,
+    PCSTR               pszZoneDN,
+    PCSTR               pszEntryName,
+    PVMDNS_RECORD_LIST  *ppRecordList
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszRecordDN = NULL;
+    PSTR ppszAttrs[] = {
+            VMDNS_LDAP_ATTR_DC,
+            VMDNS_LDAP_ATTR_NAME,
+            VMDNS_LDAP_ATTR_DNS_RECORD,
+            NULL
+            };
+    LDAPMessage* pSearchRes = NULL;
+    LDAPMessage* pEntry = NULL;
+    struct berval** ppValues = NULL;
+    //CHAR szDc[256] = { 0 };
+    //BOOL bFqdn = FALSE;
+    DWORD dwCount = 0, i = 0;
+    PVMDNS_RECORD_LIST pRecordList = NULL;
+    PVMDNS_RECORD_OBJECT pRecordObj = NULL;
+    PVMDNS_RECORD pRecord = NULL;
+
+    assert(pDirContext);
+    assert(pszZoneDN);
+    assert(pszEntryName);
+    assert(ppRecordList);
+
+    dwError = VmDnsAllocateStringPrintfA(
+                        &pszRecordDN,
+                        "DC=%s, %s",
+                        pszEntryName,
+                        pszZoneDN);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = ldap_search_ext_s(
+                        pDirContext->pLdap,
+                        pszRecordDN,
+                        LDAP_SCOPE_BASE,
+                        "(objectClass=*)",
+                        ppszAttrs,
+                        FALSE,             /* attrs only  */
+                        NULL,              /* serverctrls */
+                        NULL,              /* clientctrls */
+                        NULL,              /* timeout */
+                        0,
+                        &pSearchRes);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    pEntry = ldap_first_entry(
+                        pDirContext->pLdap,
+                        pSearchRes);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    if (!pEntry)
+    {
+        dwError = ERROR_NOT_FOUND;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    ppValues = ldap_get_values_len(
+                    pDirContext->pLdap,
+                    pEntry,
+                    VMDNS_LDAP_ATTR_DC);
+
+    if (ppValues)
+    {
+
+        //if (ppValues[0]->bv_len > 0 && ppValues[0]->bv_len < 256)
+        //{
+        //    memcpy(szDc, ppValues[0]->bv_val, ppValues[0]->bv_len);
+        //    szDc[ppValues[0]->bv_len] = '\0';
+        //    bFqdn = szDc[ppValues[0]->bv_len - 1] == '.';
+        //}
+        ldap_value_free_len(ppValues);
+        ppValues = NULL;
+    }
+
+    ppValues = ldap_get_values_len(
+                    pDirContext->pLdap,
+                    pEntry,
+                    VMDNS_LDAP_ATTR_DNS_RECORD);
+
+    dwCount = ldap_count_values_len(ppValues);
+
+    if (dwCount > 0)
+    {
+        dwError = VmDnsRecordListCreate(&pRecordList);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        for (i = 0; i < dwCount; ++i)
+        {
+            dwError = VmDnsDeserializeDnsRecord(
+                                ppValues[i]->bv_val,
+                                (DWORD)ppValues[i]->bv_len,
+                                &pRecord,
+                                FALSE);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            //if (pRecord->dwType == VMDNS_RR_TYPE_A ||
+            //    pRecord->dwType == VMDNS_RR_TYPE_AAAA)
+            //{
+            //    if (bFqdn)
+            //    {
+            //        if (!VmDnsAllocateStringA(szDc, &pszNewName))
+            //        {
+            //            VmDnsFreeStringA(pRecord->pszName);
+            //            pRecord->pszName = pszNewName;
+            //        }
+            //    }
+            //}
+
+            dwError = VmDnsRecordObjectCreate(pRecord, &pRecordObj);
+            BAIL_ON_VMDNS_ERROR(dwError);
+            pRecord = NULL;
+
+            dwError = VmDnsRecordListAdd(pRecordList, pRecordObj);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            VmDnsRecordObjectRelease(pRecordObj);
+            pRecordObj = NULL;
+        }
+    }
+    else
+    {
+        dwError = ERROR_NOT_FOUND;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    *ppRecordList = pRecordList;
+
+cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pszRecordDN);
+    return dwError;
+
+error:
+    VMDNS_FREE_RECORD(pRecord);
+    VmDnsRecordObjectRelease(pRecordObj);
+    VmDnsRecordListRelease(pRecordList);
+    goto cleanup;
+}
+
+DWORD
+VmDnsDirGetAllZones(
     PVMDNS_DIR_CONTEXT      pDirContext,
-    PVMDNS_DIR_DNS_INFO     pZoneInfo
+    PSTR**                  pppszZones,
+    PDWORD                  pdwCount
     )
 {
     DWORD dwError = 0;
     PSTR pszSearchBase = NULL;
     PSTR pszFilter = NULL;
     PSTR ppszAttrs[] = { VMDNS_LDAP_ATTR_DC, NULL };
-    PSTR pszZoneName = NULL;
+    DWORD dwCount = 0, i = 0;
+    PSTR* ppszZones = NULL;
 
     LDAPMessage* pSearchRes = NULL;
     LDAPMessage* pEntry = NULL;
     struct berval** ppValues = NULL;
-    PVMDNS_DIR_ZONE_ENTRY pZoneEntry = NULL;
+
+    assert(pppszZones);
+    assert(pdwCount);
 
     dwError = VmDnsAllocateStringPrintfA(
                             &pszFilter,
                             "(%s=%s)",
                             VMDNS_LDAP_ATTR_OBJECTCLASS,
                             VMDNS_LDAP_OC_DNSZONE);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsDirGetDomainZonesDN(pDirContext, &pszSearchBase);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = ldap_search_ext_s(
@@ -1457,10 +1693,18 @@ VmDnsDirGetZoneList(
                             &pSearchRes);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    pEntry = ldap_first_entry(
+    dwCount = ldap_count_entries(
                             pDirContext->pLdap,
                             pSearchRes);
 
+    dwError = VmDnsAllocateMemory(
+                            (dwCount + 1) * sizeof(PSTR),
+                            (PVOID*)&ppszZones);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    pEntry = ldap_first_entry(
+                            pDirContext->pLdap,
+                            pSearchRes);
     while (pEntry)
     {
         ppValues = ldap_get_values_len(
@@ -1474,14 +1718,8 @@ VmDnsDirGetZoneList(
             BAIL_ON_VMDNS_ERROR(dwError);
         }
 
-        dwError = VmDnsAllocateMemory(
-                            sizeof(VMDNS_DIR_ZONE_ENTRY),
-                            (PVOID *)&pZoneEntry
-                            );
-        BAIL_ON_VMDNS_ERROR(dwError);
-
         dwError = VmDnsAllocateStringPrintfA(
-                            &pszZoneName,
+                            &ppszZones[i],
                             "%s",
                             ppValues[0]->bv_val);
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -1489,16 +1727,12 @@ VmDnsDirGetZoneList(
         ldap_value_free_len(ppValues);
         ppValues = NULL;
 
-        VMDNS_LOG_DEBUG("DirSync retrieved zone: %s", pszZoneName);
-
-        pZoneEntry->ZoneName = pszZoneName;
-        pszZoneName = NULL;
-
-        PushEntryList(&pZoneInfo->Zones, &(pZoneEntry->ListEntry));
-        pZoneEntry = NULL;
-
         pEntry = ldap_next_entry(pDirContext->pLdap, pEntry);
+        ++i;
     }
+
+    *pppszZones = ppszZones;
+    *pdwCount = dwCount;
 
 cleanup:
 
@@ -1518,67 +1752,32 @@ cleanup:
 
     return dwError;
 error:
-    VmDnsCleanupZoneEntry(pZoneEntry);
-    VMDNS_SAFE_FREE_MEMORY(pszZoneName);
+
+    VmDnsFreeStringArrayA(ppszZones);
 
     goto cleanup;
 }
 
 DWORD
-VmDnsDirPopulateZone(
-    PVMDNS_DIR_CONTEXT      pDirContext,
-    PVMDNS_DIR_DNS_INFO     pZoneInfo
-    )
-{
-    DWORD dwError = 0;
-    PSINGLE_LIST_ENTRY  pNextEntry = pZoneInfo->Zones.Next;
-    PVMDNS_DIR_ZONE_ENTRY pZoneEntry = NULL;
-
-    while (pNextEntry)
-    {
-        pZoneEntry = CONTAINING_RECORD(pNextEntry, VMDNS_DIR_ZONE_ENTRY, ListEntry);
-
-        dwError = VmDnsDirPopulateZoneRecords(
-                            pDirContext,
-                            pZoneEntry);
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        pNextEntry = pNextEntry->Next;
-    }
-
-cleanup:
-
-    return dwError;
-error:
-
-    goto cleanup;
-}
-
-DWORD
-VmDnsDirPopulateZoneRecords(
-    PVMDNS_DIR_CONTEXT      pDirContext,
-    PVMDNS_DIR_ZONE_ENTRY   pZoneEntry
+VmDnsDirGetAllRecords(
+    PVMDNS_DIR_CONTEXT  pDirContext,
+    PCSTR               pszZoneDN,
+    PVMDNS_RECORD_LIST *ppRecordList
     )
 {
     DWORD dwError = 0;
     PSTR pszSearchBase = NULL;
-    PSTR pszZoneDN = NULL;
     PSTR pszFilter = NULL;
     PSTR ppszAttrs[] = { VMDNS_LDAP_ATTR_DC, VMDNS_LDAP_ATTR_NAME, VMDNS_LDAP_ATTR_DNS_RECORD, NULL };
     PSTR pszNewName = NULL;
     CHAR szDc[256];
     BOOL bFqdn = FALSE;
-    PVMDNS_RECORD_ENTRY pRecordEntry = NULL;
+    PVMDNS_RECORD_OBJECT pRecordObj = NULL;
     PVMDNS_RECORD pRecord = NULL;
     LDAPMessage* pSearchRes = NULL;
     LDAPMessage* pEntry = NULL;
     struct berval** ppValues = NULL;
-
-    dwError = VmDnsDirGetDomainZonesDN(pDirContext, &pszSearchBase);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsDirBuildZoneDN(pszSearchBase, pZoneEntry->ZoneName, &pszZoneDN);
-    BAIL_ON_VMDNS_ERROR(dwError);
+    PVMDNS_RECORD_LIST pRecordList = NULL;
 
     dwError = VmDnsAllocateStringPrintfA(
                         &pszFilter,
@@ -1605,6 +1804,9 @@ VmDnsDirPopulateZoneRecords(
     pEntry = ldap_first_entry(
                     pDirContext->pLdap,
                     pSearchRes);
+
+    dwError = VmDnsRecordListCreate(&pRecordList);
+    BAIL_ON_VMDNS_ERROR(dwError);
 
     while (pEntry)
     {
@@ -1656,21 +1858,15 @@ VmDnsDirPopulateZoneRecords(
                         }
                     }
                 }
-                dwError = VmDnsAllocateMemory(
-                                    sizeof(VMDNS_RECORD_ENTRY),
-                                    (PVOID *)&pRecordEntry
-                                    );
-                BAIL_ON_VMDNS_ERROR(dwError);
+                ++i;
 
-                pRecordEntry->Record = pRecord;
+                dwError = VmDnsRecordObjectCreate(pRecord, &pRecordObj);
+                BAIL_ON_VMDNS_ERROR(dwError);
                 pRecord = NULL;
 
-                PushEntryList(&pZoneEntry->Records, &(pRecordEntry->ListEntry));
-                VMDNS_LOG_DEBUG("DirSync retrieved record: %s %u",
-                                pRecordEntry->Record->pszName,
-                                pRecordEntry->Record->dwType);
-                pRecordEntry = NULL;
-                ++i;
+                dwError = VmDnsRecordListAdd(pRecordList, pRecordObj);
+                BAIL_ON_VMDNS_ERROR(dwError);
+                pRecordObj = NULL;
             }
 
             ldap_value_free_len(ppValues);
@@ -1679,6 +1875,8 @@ VmDnsDirPopulateZoneRecords(
 
         pEntry = ldap_next_entry(pDirContext->pLdap, pEntry);
     }
+
+    *ppRecordList = pRecordList;
 
 cleanup:
 
@@ -1694,245 +1892,15 @@ cleanup:
     }
 
     VMDNS_SAFE_FREE_MEMORY(pszSearchBase);
-    VMDNS_SAFE_FREE_MEMORY(pszZoneDN);
     VMDNS_SAFE_FREE_MEMORY(pszFilter);
 
     return dwError;
 
 error:
 
-    VmDnsCleanupRecordEntry(pRecordEntry);
-
-goto cleanup;
-}
-
-VOID
-VmDnsCleanupZoneInfo(
-    PVMDNS_DIR_DNS_INFO     pDirZoneInfo
-    )
-{
-    if (pDirZoneInfo)
-    {
-        PSINGLE_LIST_ENTRY  pNextEntry = pDirZoneInfo->Zones.Next;
-        PVMDNS_DIR_ZONE_ENTRY pZoneEntry = NULL;
-
-        while (pNextEntry)
-        {
-
-            pZoneEntry = CONTAINING_RECORD(pNextEntry, VMDNS_DIR_ZONE_ENTRY, ListEntry);
-            pNextEntry = pNextEntry->Next;
-            VmDnsCleanupZoneEntry(pZoneEntry);
-        }
-
-        VMDNS_SAFE_FREE_MEMORY(pDirZoneInfo);
-    }
-}
-
-VOID
-VmDnsCleanupZoneEntry(
-    PVMDNS_DIR_ZONE_ENTRY   pZoneEntry
-    )
-{
-    if (pZoneEntry)
-    {
-        PSINGLE_LIST_ENTRY  pNextEntry = pZoneEntry->Records.Next;
-        PVMDNS_RECORD_ENTRY pRecordEntry = NULL;
-
-        while (pNextEntry)
-        {
-            pRecordEntry = CONTAINING_RECORD(pNextEntry, VMDNS_RECORD_ENTRY, ListEntry);
-            pNextEntry = pNextEntry->Next;
-            VmDnsCleanupRecordEntry(pRecordEntry);
-        }
-
-        VMDNS_SAFE_FREE_STRINGA(pZoneEntry->ZoneName);
-        VMDNS_SAFE_FREE_MEMORY(pZoneEntry);
-    }
-}
-
-VOID
-VmDnsCleanupRecordEntry(
-    PVMDNS_RECORD_ENTRY pRecordEntry
-    )
-{
-    if (pRecordEntry)
-    {
-        VMDNS_FREE_RECORD(pRecordEntry->Record);
-        VMDNS_SAFE_FREE_MEMORY(pRecordEntry);
-    }
-}
-
-DWORD
-VmDnsDirUpdateCachedZoneInfo(
-    PVMDNS_DIR_DNS_INFO     pZoneInfo
-    )
-{
-    DWORD dwError = 0;
-    PVMDNS_ZONE_INFO_ARRAY pZoneArray = NULL;
-    PSINGLE_LIST_ENTRY  pNextEntry = pZoneInfo->Zones.Next;
-    PVMDNS_DIR_ZONE_ENTRY pZoneEntry = NULL;
-    BOOL* pKeepIndexes = NULL;
-    DWORD i = 0;
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx = NULL;
-
-    VMDNS_LOCKWRITE(gpDNSDriverGlobals->pZoneList->pLock);
-
-    dwError = VmdnsZoneBeginUpdate(&pCtx);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsZoneList(&pZoneArray);
-    if (dwError == 0 && pZoneArray->dwCount != 0)
-    {
-        dwError = VmDnsAllocateMemory(
-                                sizeof(BOOL) * pZoneArray->dwCount,
-                                (PVOID)&pKeepIndexes
-                                );
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
-    while (pNextEntry)
-    {
-        pZoneEntry = CONTAINING_RECORD(pNextEntry, VMDNS_DIR_ZONE_ENTRY, ListEntry);
-
-        dwError = VmDnsDirUpdateCachedZone(pCtx, pZoneEntry);
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        dwError = VmDnsDirUpdateCachedZoneRecords(
-                            pCtx,
-                            pZoneEntry
-                            );
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        if (pZoneArray)
-        {
-            for (i = 0; i < pZoneArray->dwCount; ++i)
-            {
-                if (0 == VmDnsStringCompareA(
-                                    pZoneArray->ZoneInfos[i].pszName,
-                                    pZoneEntry->ZoneName,
-                                    TRUE))
-                {
-                    pKeepIndexes[i] = TRUE;
-                    break;
-                }
-            }
-        }
-
-        pNextEntry = pNextEntry->Next;
-    }
-
-    if (pZoneArray)
-    {
-        for (i = 0; i < pZoneArray->dwCount; ++i)
-        {
-            if (!pKeepIndexes[i])
-            {
-                VmDnsZoneDelete(pCtx, pZoneArray->ZoneInfos[i].pszName);
-                BAIL_ON_VMDNS_ERROR(dwError);
-            }
-        }
-    }
-
-    dwError = VmdnsZoneEndUpdate(pCtx);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-cleanup:
-    VMDNS_UNLOCKWRITE(gpDNSDriverGlobals->pZoneList->pLock);
-    VMDNS_SAFE_FREE_MEMORY(pKeepIndexes);
-    VMDNS_FREE_ZONE_INFO_ARRAY(pZoneArray);
-
-    return dwError;
-error:
-
-    goto cleanup;
-}
-
-static
-DWORD
-VmDnsDirUpdateCachedZoneRecords(
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
-    PVMDNS_DIR_ZONE_ENTRY       pZoneInfo
-    )
-{
-    DWORD dwError = 0;
-    PVMDNS_RECORD_ARRAY pRecords = NULL;
-    PSINGLE_LIST_ENTRY  pNextEntry = pZoneInfo->Records.Next;
-    PVMDNS_RECORD_ENTRY pRecordEntry = NULL;
-    BOOL* pKeepIndexes = NULL;
-    DWORD i = 0;
-    BOOL bAddedSrvRecord = FALSE;
-
-    dwError = VmDnsZoneListRecord(pZoneInfo->ZoneName, &pRecords);
-    if (dwError == 0 && pRecords->dwCount != 0)
-    {
-        dwError = VmDnsAllocateMemory(
-                                sizeof(BOOL) * pRecords->dwCount,
-                                (PVOID)&pKeepIndexes
-                                );
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
-    dwError = 0;
-
-    while (pNextEntry)
-    {
-        pRecordEntry = CONTAINING_RECORD(pNextEntry, VMDNS_RECORD_ENTRY, ListEntry);
-
-        dwError = VmDnsZoneAddRecord(pCtx, pZoneInfo->ZoneName, pRecordEntry->Record, FALSE);
-        if (!dwError && pRecordEntry->Record->dwType == VMDNS_RR_TYPE_SRV)
-        {
-            bAddedSrvRecord = TRUE;
-        }
-        if (dwError == ERROR_ALREADY_EXISTS)
-        {
-            dwError = ERROR_SUCCESS;
-        }
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        if (pRecords && pRecords->dwCount != 0)
-        {
-            for (i = 0; i < pRecords->dwCount; ++i)
-            {
-                if (VmDnsCompareRecord(&pRecords->Records[i], pRecordEntry->Record))
-                {
-                    pKeepIndexes[i] = TRUE;
-                    break;
-                }
-            }
-        }
-
-        pNextEntry = pNextEntry->Next;
-    }
-
-    if (pRecords && pRecords->dwCount != 0)
-    {
-        for (i = 0; i < pRecords->dwCount; ++i)
-        {
-            if (!pKeepIndexes[i])
-            {
-                VMDNS_LOG_DEBUG("Deleting record from zone repo per dirsync: %s %u",
-                                pRecords->Records[0].pszName,
-                                pRecords->Records[0].dwType);
-                VmDnsZoneDeleteRecord(pCtx, pZoneInfo->ZoneName, &pRecords->Records[i], FALSE);
-                BAIL_ON_VMDNS_ERROR(dwError);
-            }
-        }
-    }
-
-    if (bAddedSrvRecord)
-    {
-        dwError = VmDnsDirUpdateState(pZoneInfo);
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
-cleanup:
-
-    VMDNS_SAFE_FREE_MEMORY(pKeepIndexes);
-    VMDNS_FREE_RECORD_ARRAY(pRecords);
-
-    return dwError;
-
-error:
+    VMDNS_FREE_RECORD(pRecord);
+    VmDnsRecordObjectRelease(pRecordObj);
+    VmDnsRecordListRelease(pRecordList);
 
     goto cleanup;
 }
@@ -1996,76 +1964,6 @@ error:
     }
     goto cleanup;
 }
-
-static
-DWORD
-VmDnsDirUpdateCachedZone(
-    PVMDNS_ZONE_UPDATE_CONTEXT  pCtx,
-    PVMDNS_DIR_ZONE_ENTRY       pZoneEntry
-    )
-{
-    DWORD                   dwError = 0;
-    VMDNS_ZONE_INFO         zoneInfo = { 0 };
-
-    zoneInfo.pszName = pZoneEntry->ZoneName;
-
-    dwError = VmDnsDirZoneInfoCopy(pZoneEntry, &zoneInfo);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsZoneUpdate(pCtx, &zoneInfo, FALSE);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-cleanup:
-    return dwError;
-error:
-    goto cleanup;
-}
-
-static
-DWORD
-VmDnsDirZoneInfoCopy(
-    PVMDNS_DIR_ZONE_ENTRY   pZoneEntry,
-    PVMDNS_ZONE_INFO        pZoneInfo
-    )
-{
-    DWORD                   dwError = ERROR_INVALID_DATA;
-    PSINGLE_LIST_ENTRY      pNextEntry = pZoneEntry->Records.Next;
-    PVMDNS_RECORD_ENTRY     pRecordEntry = NULL;
-    PVMDNS_RECORD           pRecord = NULL;
-
-    BAIL_ON_VMDNS_INVALID_POINTER(pZoneEntry, dwError);
-    BAIL_ON_VMDNS_INVALID_POINTER(pZoneInfo, dwError);
-
-    while (pNextEntry)
-    {
-        pRecordEntry = CONTAINING_RECORD(pNextEntry, VMDNS_RECORD_ENTRY, ListEntry);
-        if (pRecordEntry->Record->dwType == VMDNS_RR_TYPE_SOA)
-        {
-            pRecord = pRecordEntry->Record;
-            pZoneInfo->pszPrimaryDnsSrvName = pRecord->Data.SOA.pNamePrimaryServer;
-            pZoneInfo->pszRName = pRecord->Data.SOA.pNameAdministrator;
-            pZoneInfo->expire = pRecord->Data.SOA.dwExpire;
-            pZoneInfo->minimum = pRecord->Data.SOA.dwDefaultTtl;
-            pZoneInfo->refreshInterval = pRecord->Data.SOA.dwRefresh;
-            pZoneInfo->retryInterval = pRecord->Data.SOA.dwRetry;
-            pZoneInfo->serial = pRecord->Data.SOA.dwSerialNo;
-            pZoneInfo->dwZoneType = VmDnsIsReverseZoneName(pZoneEntry->ZoneName) ?
-                            VMDNS_ZONE_TYPE_REVERSE : VMDNS_ZONE_TYPE_FORWARD;
-
-            dwError = ERROR_SUCCESS;
-
-            break;
-        }
-
-        pNextEntry = pNextEntry->Next;
-    }
-
-cleanup:
-    return dwError;
-error:
-    goto cleanup;
-}
-
 
 DWORD
 VmDnsDirSetForwarders(
@@ -2154,6 +2052,34 @@ error:
 }
 
 DWORD
+VmDnsDirLoadForwarders(
+    PDWORD              pdwCount,
+    PSTR**              pppszForwarders
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_DIR_CONTEXT pDirContext = NULL;
+
+    dwError = VmDnsDirConnect("localhost", &pDirContext);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsDirGetForwarders(
+        pDirContext,
+        pppszForwarders,
+        pdwCount);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+    VmDnsDirClose(pDirContext);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+
+DWORD
 VmDnsDirGetForwarders(
     PVMDNS_DIR_CONTEXT  pDirContext,
     PSTR**           pppszForwarders,
@@ -2166,9 +2092,8 @@ VmDnsDirGetForwarders(
     LDAPMessage* pSearchRes = NULL;
     LDAPMessage* pEntry = NULL;
     struct berval** ppValues = NULL;
-    DWORD dwCount = 0;
+    DWORD dwCount = 0, i = 0;
     PSTR* ppszValueArray = NULL;
-    int i = 0;
     PSTR  ppszAttrs[] =
     {
         VMDNS_LDAP_ATTR_FORWARDERS,
@@ -2261,172 +2186,399 @@ error:
     goto cleanup;
 }
 
-static
 DWORD
-VmDnsDirUpdateState(
-    PVMDNS_DIR_ZONE_ENTRY pZoneEntry
+VmDnsDirSyncDeleted(
+    DWORD                        dwLastChangedUSN,
+    DWORD                        dwNewUSN,
+    LPVMDNS_ADD_REMOVE_ZONE_PROC LpRemoveZoneProc,
+    PVOID                        pData
     )
 {
-    DWORD   dwError = 0;
-    DWORD   dwCompare = 0;
-    PSTR    pszAccount = NULL;
-    PSTR    pszDomainName = NULL;
-    PSTR    pszPassword = NULL;
-    PSTR    pszPnid = NULL;
-    PSTR    pszTarget = NULL;
-    PSINGLE_LIST_ENTRY  pNextEntry = NULL;
-    PVMDNS_RECORD_ENTRY pRecordEntry = NULL;
+    DWORD dwError = 0;
+    LDAPMessage* pResult = NULL;
+    LDAPMessage* pEntry = NULL;
 
-    BAIL_ON_VMDNS_INVALID_POINTER(pZoneEntry, dwError);
+    PSTR pszNodeDNCopy = NULL;
+    PSTR pszNodeDC = NULL;
+    PSTR pszFilter = NULL;
+    PSTR pszNodeDN = NULL;
+    PCSTR pszParentDC = NULL;
+    PCSTR pszZone = NULL;
+    PCSTR pBaseDN = VMDNS_LDAP_DELETE_BASEDN;
+    PCSTR ppszAttrs[] = {NULL};
+    PVMDNS_DIR_CONTEXT pDirContext = NULL;
+    LDAPControl* ppServerControl[2] = {NULL, NULL};
 
-    pNextEntry = pZoneEntry->Records.Next;
+    dwError = VmDnsDirConnect("localhost", &pDirContext);
+    BAIL_ON_VMDNS_ERROR(dwError);
 
-    VMDNS_STATE state = VmDnsGetState();
-    if (state == VMDNS_UNINITIALIZED)
+    dwError = VmDnsAllocateStringPrintfA(
+                        &pszFilter,
+                        "(&(!(%s<=%d))(%s<=%d)(%s=%s))",
+                        VMDNS_LDAP_ATTR_USNCHANGED,
+                        dwLastChangedUSN,
+                        VMDNS_LDAP_ATTR_USNCHANGED,
+                        dwNewUSN,
+                        VMDNS_LDAP_ATTR_OBJECTCLASS,
+                        VMDNS_LDAP_OC_DNSZONE
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = ldap_control_create(
+                        VMDNS_LDAP_DELETE_CONTROL,
+                        0,
+                        NULL,
+                        0,
+                        ppServerControl
+                        );
+    BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != LDAP_SUCCESS);
+
+    //sync zones, remove any from cache that do not exist in store
+    dwError = ldap_search_ext_s(
+                        pDirContext->pLdap,
+                        pBaseDN,
+                        LDAP_SCOPE_SUB,
+                        pszFilter,
+                        (PSTR*)ppszAttrs,
+                        FALSE,
+                        ppServerControl,
+                        NULL,
+                        NULL,
+                        0,
+                        &pResult
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    pEntry = ldap_first_entry(pDirContext->pLdap, pResult);
+    while (pEntry)
     {
-        dwError = VmDnsDirGetMachineAccountInfoA(
-                    &pszAccount,
-                    &pszDomainName,
-                    &pszPassword);
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        dwError = VmDnsDirGetPnid(&pszPnid);
-        BAIL_ON_VMDNS_ERROR(dwError);
-
-        VMDNS_LOG_INFO("%s: pnid: %s", __FUNCTION__, pszPnid);
-        VmDnsStringTrimA(pszPnid, ".", TRUE);
-
-        while (pNextEntry)
+        pszNodeDN = ldap_get_dn(pDirContext->pLdap, pEntry);
+        if (IsNullOrEmptyString(pszNodeDN))
         {
-            pRecordEntry = CONTAINING_RECORD(pNextEntry, VMDNS_RECORD_ENTRY, ListEntry);
+            dwError = ERROR_INVALID_DATA;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
 
-            if (pRecordEntry->Record->dwType == VMDNS_RR_TYPE_SRV &&
-                !VmDnsStringCompareA(
-                        pRecordEntry->Record->pszName,
-                        VMDNS_LDAP_SRV_NAME,
-                        FALSE
-                        ) &&
-                !VmDnsStringCompareA(
-                            pZoneEntry->ZoneName,
-                            pszDomainName,
-                            FALSE))
+        dwError = VmDnsAllocateStringA(pszNodeDN, &pszNodeDNCopy);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwError = VmDnsDirParseDN(pszNodeDNCopy, (PCSTR*)&pszNodeDC, &pszParentDC);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        //format zone1.#ObjectGUID
+        pszZone = strtok(pszNodeDC, VMDNS_LDAP_DELETE_DELIMITER);
+        if (!pszZone)
+        {
+            dwError = ERROR_INVALID_DATA;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+
+        dwError = LpRemoveZoneProc(pData, pszZone);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        pEntry = ldap_next_entry(pDirContext->pLdap, pEntry);
+
+        VMDNS_SAFE_FREE_MEMORY(pszNodeDNCopy);
+
+        if (pszNodeDN)
+        {
+            ldap_memfree(pszNodeDN);
+            pszNodeDN = NULL;
+        }
+
+    }
+
+cleanup:
+    VmDnsDirClose(pDirContext);
+
+    VMDNS_SAFE_FREE_MEMORY(pszFilter);
+
+    VMDNS_SAFE_FREE_MEMORY(pszNodeDNCopy);
+
+    if (pszNodeDN)
+    {
+        ldap_memfree(pszNodeDN);
+    }
+
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDnsDirSyncNewObjects(
+    DWORD                        dwLastChangedUSN,
+    DWORD                        dwNewUSN,
+    LPVMDNS_ADD_REMOVE_ZONE_PROC LpSyncZoneProc,
+    LPVMDNS_PURGE_RECORD_PROC    LpPurgeRecordProc,
+    PVOID                        pData
+    )
+{
+    DWORD i;
+    DWORD dwError = 0;
+    LDAPMessage* pResult = NULL;
+    LDAPMessage* pEntry = NULL;
+    BerValue** ppValues = NULL;
+    PVMDNS_DIR_CONTEXT pDirContext = NULL;
+    PSTR pszNodeDNCopy = NULL;
+    PSTR pszFilter = NULL;
+    PSTR pszNodeDN = NULL;
+    PCSTR pszNodeDC = NULL;
+    PCSTR pszParentDC = NULL;
+    PCSTR pBaseDN = VMDNS_LDAP_ATTR_DNSBASEDN;
+    PCSTR ppszAttrs[] = {VMDNS_LDAP_ATTR_OBJECTCLASS, VMDNS_LDAP_ATTR_DC, NULL};
+
+    dwError = VmDnsDirConnect("localhost", &pDirContext);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsAllocateStringPrintfA(
+                        &pszFilter,
+                        "(&(!(%s<=%d))(%s<=%d)(%s=%s))",
+                        VMDNS_LDAP_ATTR_USNCHANGED,
+                        dwLastChangedUSN,
+                        VMDNS_LDAP_ATTR_USNCHANGED,
+                        dwNewUSN,
+                        VMDNS_LDAP_ATTR_OBJECTCLASS,
+                        VMDNS_LDAP_ATTR_DNSANY
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = ldap_search_ext_s(
+                        pDirContext->pLdap,
+                        pBaseDN,
+                        LDAP_SCOPE_SUB,
+                        pszFilter,
+                        (PSTR*)ppszAttrs,
+                        FALSE,
+                        NULL,
+                        NULL,
+                        NULL,
+                        0,
+                        &pResult
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    pEntry = ldap_first_entry(pDirContext->pLdap, pResult);
+    while (pEntry)
+    {
+        pszNodeDN = ldap_get_dn(pDirContext->pLdap, pEntry);
+        if (IsNullOrEmptyString(pszNodeDN))
+        {
+            dwError = ERROR_INVALID_DATA;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+
+        dwError = VmDnsAllocateStringA(pszNodeDN, &pszNodeDNCopy);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwError = VmDnsDirParseDN(pszNodeDNCopy, &pszNodeDC, &pszParentDC);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        ppValues = ldap_get_values_len(
+                            pDirContext->pLdap,
+                            pEntry,
+                            VMDNS_LDAP_ATTR_OBJECTCLASS
+                            );
+        if (!ppValues)
+        {
+            dwError = ERROR_NO_DATA;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+        //get type of object: Node or Zone
+        for (i = 0; i < ldap_count_values_len(ppValues); i++)
+        {
+            if (VmDnsStringNCompareA(
+                            ppValues[i]->bv_val,
+                            VMDNS_LDAP_OC_DNSNODE,
+                            VmDnsStringLenA(VMDNS_LDAP_OC_DNSNODE),
+                            FALSE
+                            ) == 0)
             {
-                VMDNS_LOG_INFO(
-                    "%s: _ldap._tcp target: %s",
-                    __FUNCTION__,
-                    pRecordEntry->Record->Data.SRV.pNameTarget);
-                if (!VmDnsAllocateStringA(
-                        pRecordEntry->Record->Data.SRV.pNameTarget,
-                        &pszTarget
-                        ))
-                {
-                    VmDnsStringTrimA(pszTarget, ".", TRUE);
-                    VmDnsTrimDomainNameSuffix(pszPnid, pszDomainName);
-                    VmDnsTrimDomainNameSuffix(pszTarget, pszDomainName);
-                    VMDNS_LOG_INFO(
-                        "%s: Comparing pnid [%s] against target [%s]",
-                        __FUNCTION__,
-                        pszPnid,
-                        pszTarget);
-                    dwCompare = VmDnsStringCompareA(
-                                    pszTarget,
-                                    pszPnid,
-                                    FALSE
-                                );
-                    VmDnsFreeStringA(pszTarget);
-                    if (!dwCompare)
-                    {
-                        VMDNS_LOG_INFO(
-                            "%s found matching SRV record. "
-                            "Attempting to update state from UNINIT to INIT.",
-                            __FUNCTION__);
-                        VmDnsConditionalSetState(VMDNS_INITIALIZED, VMDNS_UNINITIALIZED);
-                        break;
-                    }
-                }
+                //Purge records if exist in cache
+                dwError = LpPurgeRecordProc(pData, pszParentDC, pszNodeDC);
+                BAIL_ON_VMDNS_ERROR(dwError);
             }
+            else if (VmDnsStringNCompareA(
+                                ppValues[i]->bv_val,
+                                VMDNS_LDAP_OC_DNSZONE,
+                                VmDnsStringLenA(VMDNS_LDAP_OC_DNSZONE),
+                                FALSE
+                                ) == 0)
+            {
+                //Create Zone
+                dwError = LpSyncZoneProc(pData, pszNodeDC);
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
+        }
+        //set to null so if parseDN() fails, null sting will trigger error
+        pszNodeDC = NULL;
+        pszParentDC = NULL;
 
-            pNextEntry = pNextEntry->Next;
+        VMDNS_SAFE_FREE_MEMORY(pszNodeDNCopy);
+
+        if (pszNodeDN)
+        {
+            ldap_memfree(pszNodeDN);
+            pszNodeDN = NULL;
+        }
+
+        pEntry = ldap_next_entry(pDirContext->pLdap, pEntry);
+    }
+
+cleanup:
+    VmDnsDirClose(pDirContext);
+
+    VMDNS_SAFE_FREE_MEMORY(pszFilter);
+
+    VMDNS_SAFE_FREE_MEMORY(pszNodeDNCopy);
+
+    if (pszNodeDN)
+    {
+        ldap_memfree(pszNodeDN);
+    }
+
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDnsDirGetReplicationStatus(
+    PDWORD             pdwLastChangedUSN
+    )
+{
+    LDAPMessage* pResult = NULL;
+    LDAPMessage* pEntry = NULL;
+    BerValue** ppValues = NULL;
+    PVMDNS_DIR_CONTEXT pDirContext = NULL;
+    DWORD dwError = 0;
+    DWORD dwUsnLen;
+    DWORD i;
+    PCSTR pBaseDN = VMDNS_REPL_BASEDN;
+    PCSTR pszFilter = VMDNS_REPL_FILTER;
+    PCSTR ppszAttrs[] = {VMDNS_LDAP_ATTR_RUNTIMESTATUS, NULL};
+
+    if (!pdwLastChangedUSN)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsDirConnect("localhost", &pDirContext);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = ldap_search_ext_s(
+                    pDirContext->pLdap,
+                    pBaseDN,
+                    LDAP_SCOPE_BASE,
+                    pszFilter,
+                    (PSTR*)ppszAttrs,
+                    FALSE,
+                    NULL,
+                    NULL,
+                    NULL,
+                    0,
+                    &pResult
+                    );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    pEntry = ldap_first_entry(pDirContext->pLdap, pResult);
+    ppValues = ldap_get_values_len(
+                      pDirContext->pLdap,
+                      pEntry,
+                      VMDNS_LDAP_ATTR_RUNTIMESTATUS
+                      );
+
+    dwUsnLen = VmDnsStringLenA(VMDNS_LDAP_ATTR_USN);
+    for (i = 0; i < ldap_count_values_len(ppValues); i++)
+    {
+        if (VmDnsStringNCompareA(
+                    ppValues[i]->bv_val,
+                    VMDNS_LDAP_ATTR_USN,
+                    dwUsnLen,
+                    FALSE
+                    ) == 0)
+        {
+            *pdwLastChangedUSN = atoi(ppValues[i]->bv_val+dwUsnLen);
+            break;
         }
     }
 
 cleanup:
-    VMDNS_SAFE_FREE_STRINGA(pszPnid);
-    VMDNS_SAFE_FREE_STRINGA(pszAccount);
-    VMDNS_SAFE_FREE_STRINGA(pszDomainName);
-    VMDNS_SAFE_FREE_STRINGA(pszPassword);
+    VmDnsDirClose(pDirContext);
+
+    if (ppValues != NULL)
+    {
+        ldap_value_free_len(ppValues);
+        ppValues = NULL;
+    }
+
+    if (pResult != NULL)
+    {
+        ldap_msgfree(pResult);
+    }
 
     return dwError;
 
 error:
-
     goto cleanup;
 }
 
 static
 DWORD
-VmDnsDirGetPnid(
-    PSTR* ppszPnid
+VmDnsDirParseDN(
+    PSTR               pszNodeDN,
+    PCSTR*             ppszNodeDC,
+    PCSTR*             ppszParentDC
     )
 {
     DWORD dwError = 0;
-    PVMDNS_CFG_CONNECTION pConnection = NULL;
-    PVMDNS_CFG_KEY pRootKey = NULL;
-    CHAR szAfdParamsKeyPath[] = VMAFD_CONFIG_PARAMETER_KEY_PATH;
-    CHAR szRegValPnid[] = VMAFD_REG_KEY_PNID;
-    PVMDNS_CFG_KEY pAfdParamsKey = NULL;
-    PSTR pszPnid = NULL;
+    DWORD dwNodeDCFound = 0;
 
-    dwError = VmDnsConfigOpenConnection(&pConnection);
-    BAIL_ON_VMDNS_ERROR(dwError);
+    if (!pszNodeDN || !ppszParentDC || !ppszNodeDC)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
 
-    dwError = VmDnsConfigOpenRootKey(
-                        pConnection,
-                        "HKEY_LOCAL_MACHINE",
-                        0,
-                        KEY_READ,
-                        &pRootKey);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsConfigOpenKey(
-                        pConnection,
-                        pRootKey,
-                        &szAfdParamsKeyPath[0],
-                        0,
-                        KEY_READ,
-                        &pAfdParamsKey);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsConfigReadStringValue(
-                        pAfdParamsKey,
-                        NULL,
-                        &szRegValPnid[0],
-                        &pszPnid);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    *ppszPnid = pszPnid;
+    PSTR pszToken = strtok(pszNodeDN, ",");
+    while (pszToken != NULL)
+    {
+        while (*pszToken == ' ')
+        {
+            pszToken++;
+        }
+        if (VmDnsStringNCompareA(pszToken, "DC=", 3, FALSE) == 0)
+        {
+            if (dwNodeDCFound)
+            {
+                *ppszParentDC = pszToken+3;
+                break;
+            }
+            else
+            {
+                *ppszNodeDC = pszToken+3;
+                dwNodeDCFound = 1;
+            }
+        }
+        pszToken = strtok(NULL, ",");
+    }
 
 cleanup:
-
-    if (pAfdParamsKey)
-    {
-        VmDnsConfigCloseKey(pAfdParamsKey);
-    }
-    if (pRootKey)
-    {
-        VmDnsConfigCloseKey(pRootKey);
-    }
-    if (pConnection)
-    {
-        VmDnsConfigCloseConnection(pConnection);
-    }
-
     return dwError;
 
 error:
-
-    VMDNS_SAFE_FREE_STRINGA(pszPnid);
-
     goto cleanup;
 }
-

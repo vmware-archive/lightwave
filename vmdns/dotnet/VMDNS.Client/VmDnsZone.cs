@@ -55,6 +55,10 @@ namespace VMDNS.Client
             {
                 return zoneInfo.serial;
             }
+            set
+            {
+                this.zoneInfo.serial = value;
+            }
         }
 
         public string DNSName
@@ -87,6 +91,10 @@ namespace VMDNS.Client
             {
                 return this.zoneInfo.refreshInterval;
             }
+            set
+            {
+                this.zoneInfo.refreshInterval = value;
+            }
         }
 
         public uint RetryInterval
@@ -94,6 +102,10 @@ namespace VMDNS.Client
             get
             {
                 return this.zoneInfo.retryInterval;
+            }
+            set
+            {
+                this.zoneInfo.retryInterval = value;
             }
         }
 
@@ -103,6 +115,10 @@ namespace VMDNS.Client
             {
                 return this.zoneInfo.minimum;
             }
+            set
+            {
+                this.zoneInfo.minimum = value;
+            }
         }
 
         public uint ExpiresAfter
@@ -110,6 +126,10 @@ namespace VMDNS.Client
             get
             {
                 return this.zoneInfo.expire;
+            }
+            set
+            {
+                this.zoneInfo.expire = value;
             }
         }
 

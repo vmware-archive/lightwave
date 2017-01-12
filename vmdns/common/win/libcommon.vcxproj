@@ -121,6 +121,8 @@
     <ClCompile Include="..\record-ptr.c" />
     <ClCompile Include="..\record-soa.c" />
     <ClCompile Include="..\record-srv.c" />
+    <ClCompile Include="..\record-tkey.c" />
+    <ClCompile Include="..\record-tsig.c" />
     <ClCompile Include="..\rpcmemory.c" />
     <ClCompile Include="..\threading.c" />
     <ClCompile Include="..\utils.c" />

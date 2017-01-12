@@ -350,26 +350,18 @@ VmDnsDeserializeDnsIp6AddressRecord(
                               );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    if (!dwRDataLength)
+    if (dwRDataLength)
     {
-        dwError = ERROR_EMPTY;
-        BAIL_ON_VMDNS_ERROR(dwError);
+        for (; idx < ip6AddrLength; ++idx)
+        {
+            dwError = VmDnsReadUCharFromBuffer(
+                                      pVmDnsBuffer,
+                                      &pData->AAAA.Ip6Address.IP6Byte[idx]
+                                      );
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
     }
 
-    if (dwRDataLength != ip6AddrLength)
-    {
-        dwError = ERROR_INSUFFICIENT_BUFFER;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
-    for (; idx < ip6AddrLength; ++idx)
-    {
-        dwError = VmDnsReadUCharFromBuffer(
-                                  pVmDnsBuffer,
-                                  &pData->AAAA.Ip6Address.IP6Byte[idx]
-                                  );
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
 
 cleanup:
 

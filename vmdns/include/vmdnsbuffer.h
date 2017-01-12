@@ -22,7 +22,16 @@ extern "C" {
 
 #define VMDNS_MAX_SIZE_BUFFER 2048
 
-typedef struct __VMDNS_MESSAGE_BUFFER *PVMDNS_MESSAGE_BUFFER;
+typedef struct _VMDNS_MESSAGE_BUFFER
+{
+    size_t szMaxSize;
+    size_t szCurrentSize;
+    size_t szLength; //write cursor
+    size_t szCursor; //read cursor
+    BOOL  bCanWrite;
+    BOOL  bTokenizeDomainName;
+    PBYTE pMessage;
+}VMDNS_MESSAGE_BUFFER, *PVMDNS_MESSAGE_BUFFER;
 
 DWORD
 VmDnsAllocateBufferStream(
@@ -132,8 +141,8 @@ VmDnsWriteStringToBuffer(
 
 DWORD
 VmDnsWriteBlobToBuffer(
-    PBYTE pBlob,
-    DWORD dwSize,
+    PVMDNS_BLOB pBlob,
+    BOOL bWriteSize,
     PVMDNS_MESSAGE_BUFFER pVmDnsBuffer
     );
 
@@ -201,14 +210,23 @@ DWORD
 VmDnsReadStringFromBuffer(
     PVMDNS_MESSAGE_BUFFER pVmDnsBuffer,
     PSTR *ppszString,
-    PDWORD pdwStringLength
+    PDWORD pdwStringLength,
+    PBOOL pbEndOfString
+    );
+
+DWORD
+VmDnsReadOffsetStringFromBuffer(
+    PVMDNS_MESSAGE_BUFFER pVmDnsBuffer,
+    UINT8 unOffset,
+    PSTR *ppszString,
+    PDWORD pdwStringLength,
+    PBOOL pbEndOfString
     );
 
 DWORD
 VmDnsReadBlobFromBuffer(
     PVMDNS_MESSAGE_BUFFER pVmDnsBuffer,
-    PBYTE *pBlob,
-    PDWORD pdwSize
+    PVMDNS_BLOB *ppBlob
     );
 
 DWORD

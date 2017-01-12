@@ -15,4 +15,4 @@
 #include "includes.h"
 
 VMW_DNS_DRIVER_GLOBALS gDNSDriverGlobals;
-PVMW_DNS_DRIVER_GLOBALS gpDNSDriverGlobals = &gDNSDriverGlobals;
+PVMW_DNS_DRIVER_GLOBALS gpSrvContext = &gDNSDriverGlobals;

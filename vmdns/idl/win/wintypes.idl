@@ -14,6 +14,7 @@ typedef unsigned8           UCHAR, *PUCHAR;
 typedef unsigned8           UINT8, *PUINT8;
 typedef unsigned16          UINT16, *PUINT16;
 typedef unsigned32          UINT32, *PUINT32;
+typedef unsigned hyper      ULONG, UINT64, *PUINT64;
 typedef char                *PSTR;
 typedef unsigned16          *PWSTR;
 cpp_quote("#endif")

@@ -287,9 +287,11 @@ VmAfSrvPromoteVmDir(
     else
     {
         dwError = VmAfSrvGetDomainName(&pwszCurDomainName);
+        VmAfdLog( VMAFD_DEBUG_ERROR,"Cur Domain name = %d",dwError);
         BAIL_ON_VMAFD_ERROR(dwError);
 
         dwError = VmAfdAllocateStringAFromW(pwszCurDomainName, &pszDomainName);
+        VmAfdLog( VMAFD_DEBUG_ERROR,"Cur Domain name = %s",pszDomainName );
         BAIL_ON_VMAFD_ERROR(dwError);
 
         dwError = VmAfdAllocateStringA(pszDomainName, &pszDefaultRealm);
@@ -610,7 +612,17 @@ VmAfSrvJoinVmDir(
 
     dwError = VmAfSrvGetDomainState(&domainState);
     BAIL_ON_VMAFD_ERROR(dwError);
-    if (domainState != VMAFD_DOMAIN_STATE_NONE)
+
+    // If already joined as a client, then force-leave first
+    if (domainState == VMAFD_DOMAIN_STATE_CLIENT)
+    {
+        dwError = VmAfSrvLeaveVmDir(NULL, NULL, VMAFD_DOMAIN_LEAVE_FLAGS_FORCE);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else if (domainState != VMAFD_DOMAIN_STATE_NONE)
     {
         dwError = ERROR_CANNOT_JOIN_VMDIR;
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -662,13 +674,24 @@ VmAfSrvJoinVmDir(
     dwError = VmAfSrvSetDomainName(pwszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_CLIENT);
+    dwError = VmAfSrvSetDCName(pwszServerName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvGetSiteNameForDC(pwszServerName, &pwszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvSetSiteName(pwszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvSetDNSRecords(
+                      pszServerName,
+                      pszDomainName,
+                      pszUserName,
+                      pszPassword,
+                      pszMachineName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_CLIENT);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     VmAfdLog(VMAFD_DEBUG_ANY,
@@ -769,7 +792,16 @@ VmAfSrvJoinVmDir2(
     dwError = VmAfSrvGetDomainState(&domainState);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (domainState != VMAFD_DOMAIN_STATE_NONE)
+    // If already joined as a client, then force-leave first
+    if (domainState == VMAFD_DOMAIN_STATE_CLIENT)
+    {
+        dwError = VmAfSrvLeaveVmDir(NULL, NULL, VMAFD_DOMAIN_LEAVE_FLAGS_FORCE);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else if (domainState != VMAFD_DOMAIN_STATE_NONE)
     {
         dwError = ERROR_CANNOT_JOIN_VMDIR;
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -956,7 +988,9 @@ error:
 }
 
 DWORD
-VmAfSrvForceLeave()
+VmAfSrvForceLeave(
+    VOID
+    )
 {
     DWORD   dwError = 0;
 
@@ -993,8 +1027,8 @@ VmAfSrvForceLeave()
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
-
     return dwError;
+
 error:
     goto cleanup;
 }
@@ -1007,7 +1041,6 @@ VmAfSrvLeaveVmDir(
     )
 {
     DWORD dwError = 0;
-    DWORD dwLeaveSucceeded = 0;
     PSTR pszServerName = NULL;
     PSTR pszUserName = NULL;
     PSTR pszPassword = NULL;
@@ -1052,22 +1085,26 @@ VmAfSrvLeaveVmDir(
                     );
     }
 
-    dwLeaveSucceeded = VmDirClientLeave(
+    dwError = VmDirClientLeave(
                     pszServerName,
                     pszUserName,
                     pszPassword
                     );
-    if (    (dwLeaveSucceeded != 0) &&
-            (dwLeaveFlags & VMAFD_DOMAIN_LEAVE_FLAGS_FORCE) ) //TODO: Add check for administrator access
+
+    if (dwError)
     {
-        VmAfdLog(VMAFD_DEBUG_TRACE, "VmDirClientLeave failed. Error [%d].", dwLeaveSucceeded);
-        dwError = VmAfSrvForceLeave();
-        BAIL_ON_VMAFD_ERROR(dwError);
-    } else
-    {
-        dwError = dwLeaveSucceeded;
-        BAIL_ON_VMAFD_ERROR(dwError);
+        VmAfdLog(VMAFD_DEBUG_TRACE, "VmDirClientLeave failed. Error [%d].", dwError);
+
+        if (dwLeaveFlags & VMAFD_DOMAIN_LEAVE_FLAGS_FORCE)
+        {
+            //TODO: Add check for administrator access
+            dwError = VmAfSrvForceLeave();
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
     }
+
+    dwError = VecsDbReset();
+    BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -1689,9 +1726,9 @@ VmAfSrvSetDNSRecords(
     DWORD dwNumV6Address = 0;
     size_t i = 0;
     PVMDNS_RECORD_ARRAY pRecordArray = NULL;
-    PSTR pszZone = (PSTR)pszDomain;
     PSTR pszName = (PSTR)pszMachineName;
     VMDNS_RECORD record = {0};
+    CHAR szZone[255] = {0};
 
     dwError = VmDnsOpenServerA(
                     pszDCAddress,
@@ -1703,11 +1740,22 @@ VmAfSrvSetDNSRecords(
                     &pServerContext);
     if (dwError)
     {
-        VmAfdLog(VMAFD_DEBUG_ANY,
+        VmAfdLog(VMAFD_DEBUG_ERROR,
                  "%s: failed to connect to DNS server %s (%u)",
                  __FUNCTION__, pszDCAddress, dwError);
     }
     BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdStringCpyA(szZone,255,pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    DWORD dwDomainNameStrLen = strlen(szZone);
+
+    if (szZone[dwDomainNameStrLen -1 ] != '.')
+    {
+        szZone[dwDomainNameStrLen] = '.';
+        szZone[dwDomainNameStrLen +1] = 0;
+    }
 
     dwError = VmAfSrvGetIPAddressesWrap(
                     &pV4Addresses,
@@ -1729,7 +1777,7 @@ VmAfSrvSetDNSRecords(
 
     dwError = VmDnsQueryRecordsA(
                     pServerContext,
-                    pszZone,
+                    szZone,
                     pszName,
                     VMDNS_RR_TYPE_A,
                     0,
@@ -1737,8 +1785,8 @@ VmAfSrvSetDNSRecords(
     if (dwError != 0 && dwError != ERROR_NOT_FOUND)
     {
         VmAfdLog(VMAFD_DEBUG_ANY,
-                 "%s: failed to query DNS records (%u)",
-                 __FUNCTION__, dwError);
+                 "%s: failed to query DNS records (%u),%s, %s",
+                 __FUNCTION__, dwError, szZone,pszName);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -1751,7 +1799,7 @@ VmAfSrvSetDNSRecords(
         {
             dwError = VmDnsDeleteRecordA(
                             pServerContext,
-                            pszZone,
+                            szZone,
                             &pRecordArray->Records[i]);
             if (dwError)
             {
@@ -1770,7 +1818,7 @@ VmAfSrvSetDNSRecords(
 
         dwError = VmDnsAddRecordA(
                         pServerContext,
-                        pszZone,
+                        szZone,
                         &record);
         if (dwError)
         {

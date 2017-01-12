@@ -158,7 +158,9 @@
   <ItemGroup>
     <ClCompile Include="..\AllTests.c" />
     <ClCompile Include="..\CuTest.c" />
-    <ClCompile Include="..\TestZones.c" />
+    <ClCompile Include="..\LruListTest.c" />
+    <ClCompile Include="..\test-nameentry.c" />
+    <ClCompile Include="..\test-recordlist.c" />
     <ClCompile Include="..\TestUtils.c" />
     <ClCompile Include="dnstest.cpp" />
     <ClCompile Include="stdafx.cpp" />

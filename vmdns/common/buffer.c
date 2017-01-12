@@ -164,10 +164,7 @@ VmDnsAllocateBufferStreamWithBuffer(
     PBYTE pTempBuffer = NULL;
     PVMDNS_MESSAGE_BUFFER pVmDnsBuffer = NULL;
 
-    if (!pBuffer ||
-        !szBufSize ||
-        !ppVmDnsBuffer
-       )
+    if (!pBuffer || !szBufSize || !ppVmDnsBuffer)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -817,14 +814,60 @@ error:
 
 DWORD
 VmDnsWriteBlobToBuffer(
-    PBYTE pBlob,
-    DWORD dwSize,
+    PVMDNS_BLOB pBlob,
+    BOOL bWriteSize,
     PVMDNS_MESSAGE_BUFFER pVmDnsBuffer
     )
 {
     DWORD dwError = 0;
+    PBYTE pCursor = NULL;
 
-    BAIL_ON_VMDNS_ERROR(dwError);
+    if (!pVmDnsBuffer || !pBlob)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    if (!pVmDnsBuffer->bCanWrite)
+    {
+        dwError = ERROR_CANTWRITE;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    if (bWriteSize)
+    {
+        dwError = VmDnsWriteUINT16ToBuffer(
+                            pBlob->unSize,
+                            pVmDnsBuffer
+                            );
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    if (pBlob->unSize && !pBlob->pData)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmDnsAdjustMemoryBuffer(
+                            pVmDnsBuffer,
+                            pBlob->unSize
+                            );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        pCursor = pVmDnsBuffer->pMessage + pVmDnsBuffer->szLength;
+
+        dwError = VmDnsCopyMemory(
+                        pCursor,
+                        pVmDnsBuffer->szCurrentSize - pVmDnsBuffer->szLength,
+                        pBlob->pData,
+                        pBlob->unSize
+                        );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        pVmDnsBuffer->szLength += pBlob->unSize;
+    }
+
 
 cleanup:
 
@@ -844,9 +887,7 @@ VmDnsReadBoolFromBuffer(
     BOOL bData = FALSE;
     PBYTE pCurrentPos = NULL;
 
-    if (!pbData ||
-        !pVmDnsBuffer
-       )
+    if (!pbData || !pVmDnsBuffer)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -890,9 +931,7 @@ VmDnsReadBooleanFromBuffer(
     BOOLEAN bData = FALSE;
     PBYTE pCurrentPos = NULL;
 
-    if (!pbData ||
-        !pVmDnsBuffer
-       )
+    if (!pbData || !pVmDnsBuffer)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -936,9 +975,7 @@ VmDnsReadCharFromBuffer(
     CHAR cData = FALSE;
     PBYTE pCurrentPos = NULL;
 
-    if (!pcData ||
-        !pVmDnsBuffer
-       )
+    if (!pcData || !pVmDnsBuffer)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -978,9 +1015,7 @@ VmDnsReadUCharFromBuffer(
     UCHAR ucData = FALSE;
     PBYTE pCurrentPos = NULL;
 
-    if (!pucData ||
-        !pVmDnsBuffer
-       )
+    if (!pucData || !pVmDnsBuffer)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -1019,9 +1054,7 @@ VmDnsReadUINT16FromBuffer(
     UINT16 uData = FALSE;
     PBYTE pCurrentPos = NULL;
 
-    if (!puData ||
-        !pVmDnsBuffer
-       )
+    if (!puData || !pVmDnsBuffer)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -1033,11 +1066,11 @@ VmDnsReadUINT16FromBuffer(
     pCurrentPos = pVmDnsBuffer->pMessage + pVmDnsBuffer->szCursor;
 
     dwError = VmDnsCopyMemory(
-                        &uData,
-                        sizeof(uData),
-                        pCurrentPos,
-                        sizeof(UINT16)
-                        );
+                    &uData,
+                    sizeof(uData),
+                    pCurrentPos,
+                    sizeof(UINT16)
+                    );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     pVmDnsBuffer->szCursor += sizeof(UINT16);
@@ -1066,9 +1099,7 @@ VmDnsReadUINT32FromBuffer(
     UINT32 uData = FALSE;
     PBYTE pCurrentPos = NULL;
 
-    if (!puData ||
-        !pVmDnsBuffer
-       )
+    if (!puData || !pVmDnsBuffer)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -1080,11 +1111,11 @@ VmDnsReadUINT32FromBuffer(
     pCurrentPos = pVmDnsBuffer->pMessage + pVmDnsBuffer->szCursor;
 
     dwError = VmDnsCopyMemory(
-                         &uData,
-                         sizeof(uData),
-                         pCurrentPos,
-                         sizeof(UINT32)
-                         );
+                    &uData,
+                    sizeof(uData),
+                    pCurrentPos,
+                    sizeof(UINT32)
+                    );
     BAIL_ON_VMDNS_ERROR(dwError);
 
     pVmDnsBuffer->szCursor += sizeof(UINT32);
@@ -1113,9 +1144,7 @@ VmDnsReadUINT64FromBuffer(
     UINT64 uData = FALSE;
     PBYTE pCurrentPos = NULL;
 
-    if (!puData ||
-        !pVmDnsBuffer
-       )
+    if (!puData || !pVmDnsBuffer)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -1159,9 +1188,7 @@ VmDnsReadINT16FromBuffer(
     INT16 iData = FALSE;
     PBYTE pCurrentPos = NULL;
 
-    if (!piData ||
-        !pVmDnsBuffer
-       )
+    if (!piData || !pVmDnsBuffer)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -1206,9 +1233,7 @@ VmDnsReadINT32FromBuffer(
     INT32 iData = FALSE;
     PBYTE pCurrentPos = NULL;
 
-    if (!piData ||
-        !pVmDnsBuffer
-       )
+    if (!piData || !pVmDnsBuffer)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -1253,9 +1278,7 @@ VmDnsReadINT64FromBuffer(
     INT64 iData = FALSE;
     PBYTE pCurrentPos = NULL;
 
-    if (!piData ||
-        !pVmDnsBuffer
-       )
+    if (!piData || !pVmDnsBuffer)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -1293,18 +1316,17 @@ DWORD
 VmDnsReadStringFromBuffer(
     PVMDNS_MESSAGE_BUFFER pVmDnsBuffer,
     PSTR *ppszString,
-    PDWORD pdwStringLength
+    PDWORD pdwStringLength,
+    PBOOL pbEndOfString
     )
 {
     DWORD dwError = 0;
     DWORD dwStringLength = 0;
     PSTR pszString = NULL;
     PBYTE pCurrentPos = NULL;
+    BOOL bEndOfString = FALSE;
 
-    if (!pVmDnsBuffer ||
-        !ppszString ||
-        !pdwStringLength
-       )
+    if (!pVmDnsBuffer || !ppszString || !pdwStringLength || !pbEndOfString)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -1321,32 +1343,62 @@ VmDnsReadStringFromBuffer(
 
     if (dwStringLength)
     {
-        dwError = VmDnsCheckMemory(pVmDnsBuffer, dwStringLength);
-        BAIL_ON_VMDNS_ERROR(dwError);
+        if (dwStringLength > VMDNS_NAME_LENGTH_MAX)
+        {
+            dwError = ERROR_LABEL_TOO_LONG;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
 
-        dwError = VmDnsAllocateMemory(
-                                   dwStringLength+1,
-                                   (PVOID *)&pszString
-                                   );
-        BAIL_ON_VMDNS_ERROR(dwError);
+        if (VMDNS_COMPRESSED_NAME(dwStringLength))
+        {
+            pCurrentPos = pVmDnsBuffer->pMessage + pVmDnsBuffer->szCursor;
 
-        pCurrentPos = pVmDnsBuffer->pMessage + pVmDnsBuffer->szCursor;
+            dwError = VmDnsReadOffsetStringFromBuffer(
+                                pVmDnsBuffer,
+                                (UINT8)*pCurrentPos,
+                                &pszString,
+                                &dwStringLength,
+                                &bEndOfString
+                                );
+            BAIL_ON_VMDNS_ERROR(dwError);
 
-        dwError = VmDnsCopyMemory(
-                            pszString,
-                            dwStringLength+1,
-                            pCurrentPos,
-                            dwStringLength
+            pVmDnsBuffer->szCursor += sizeof(UINT8);
+        }
+        else
+        {
+            dwError = VmDnsCheckMemory(pVmDnsBuffer, dwStringLength);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            dwError = VmDnsAllocateMemory(
+                            dwStringLength + 1,
+                            (PVOID *)&pszString
                             );
-        BAIL_ON_VMDNS_ERROR(dwError);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            pCurrentPos = pVmDnsBuffer->pMessage + pVmDnsBuffer->szCursor;
+
+            dwError = VmDnsCopyMemory(
+                        pszString,
+                        dwStringLength + 1,
+                        pCurrentPos,
+                        dwStringLength
+                        );
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+
+            pVmDnsBuffer->szCursor += dwStringLength;
+        }
 
         pszString[dwStringLength] = '\0';
-
-        pVmDnsBuffer->szCursor += dwStringLength;
+    }
+    else
+    {
+        bEndOfString = TRUE;
     }
 
     *ppszString = pszString;
     *pdwStringLength = dwStringLength;
+    *pbEndOfString = bEndOfString;
 cleanup:
 
     return dwError;
@@ -1360,6 +1412,125 @@ error:
     {
         *pdwStringLength = 0;
     }
+    if (pbEndOfString)
+    {
+        *pbEndOfString = TRUE;
+    }
+    VMDNS_SAFE_FREE_MEMORY(pszString);
+
+    goto cleanup;
+}
+
+DWORD
+VmDnsReadOffsetStringFromBuffer(
+    PVMDNS_MESSAGE_BUFFER pVmDnsBuffer,
+    UINT8 unOffset,
+    PSTR *ppszString,
+    PDWORD pdwStringLength,
+    PBOOL pbEndOfString
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwStringLength = 0;
+    DWORD dwLabelLength = 0;
+    PBYTE pCurrentPos = NULL;
+    PSTR pszString = NULL;
+    PSTR pszTempString = NULL;
+    PSTR pszTempStringCursor = NULL;
+    BOOL bEndOfString = FALSE;
+
+    if (!pVmDnsBuffer || !ppszString || !pdwStringLength || !pbEndOfString)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsAllocateMemory(
+                        VMDNS_NAME_LENGTH_MAX + 1,
+                        (PVOID *)&pszTempString
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    pCurrentPos = pVmDnsBuffer->pMessage + unOffset;
+
+    pszTempStringCursor = pszTempString;
+
+    dwLabelLength = *(PUINT8)pCurrentPos;
+
+    while (dwLabelLength)
+    {
+        if (dwLabelLength > VMDNS_LABEL_LENGTH_MAX)
+        {
+            dwError = ERROR_LABEL_TOO_LONG;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+
+        dwError = VmDnsCheckMemory(pVmDnsBuffer, dwLabelLength);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        pCurrentPos += sizeof(UINT8);
+
+        dwError = VmDnsCopyMemory(
+                        pszTempStringCursor,
+                        dwLabelLength + 1,
+                        pCurrentPos,
+                        dwLabelLength
+                        );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        if (dwLabelLength > (VMDNS_NAME_LENGTH_MAX - dwStringLength))
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+
+        pszTempStringCursor[dwLabelLength]='.';
+        dwLabelLength++;
+
+        pszTempStringCursor = &pszTempStringCursor[dwLabelLength];
+        dwStringLength += dwLabelLength;
+
+        if (dwStringLength > VMDNS_NAME_LENGTH_MAX)
+        {
+            dwError = ERROR_LABEL_TOO_LONG;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+
+        pCurrentPos += dwLabelLength - 1;
+
+        dwLabelLength = *(PUINT8)pCurrentPos;
+    }
+
+    bEndOfString = TRUE;
+
+    dwError = VmDnsAllocateStringA(
+                        pszTempString,
+                        &pszString
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppszString = pszString;
+    *pdwStringLength = dwStringLength;
+    *pbEndOfString = bEndOfString;
+cleanup:
+
+    VMDNS_SAFE_FREE_MEMORY(pszTempString);
+
+    return dwError;
+error:
+
+    if (ppszString)
+    {
+        *ppszString = NULL;
+    }
+    if (pdwStringLength)
+    {
+        *pdwStringLength = 0;
+    }
+    if (pbEndOfString)
+    {
+        *pbEndOfString = TRUE;
+    }
     VMDNS_SAFE_FREE_MEMORY(pszString);
 
     goto cleanup;
@@ -1368,18 +1539,66 @@ error:
 DWORD
 VmDnsReadBlobFromBuffer(
     PVMDNS_MESSAGE_BUFFER pVmDnsBuffer,
-    PBYTE *pBlob,
-    PDWORD pdwSize
+    PVMDNS_BLOB *ppBlob
     )
 {
     DWORD dwError = 0;
+    UINT16 unBlobSize = 0;
+    PBYTE pCurrentPos = NULL;
+    PVMDNS_BLOB pBlob = NULL;
 
+    if (!pVmDnsBuffer || !ppBlob)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsReadUINT16FromBuffer(
+                        pVmDnsBuffer,
+                        &unBlobSize
+                        );
     BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsCheckMemory(
+                    pVmDnsBuffer,
+                    unBlobSize
+                    );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsAllocateBlob(
+                        unBlobSize,
+                        &pBlob
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    pCurrentPos = pVmDnsBuffer->pMessage + pVmDnsBuffer->szCursor;
+
+    if (unBlobSize)
+    {
+        dwError = VmDnsCopyMemory(
+                        pBlob->pData,
+                        unBlobSize,
+                        pCurrentPos,
+                        unBlobSize
+                        );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        pVmDnsBuffer->szCursor += unBlobSize;
+    }
+
+    *ppBlob = pBlob;
+
 
 cleanup:
 
     return dwError;
 error:
+
+    VmDnsFreeBlob(pBlob);
+    if (ppBlob)
+    {
+        *ppBlob = NULL;
+    }
 
     goto cleanup;
 }
@@ -1462,6 +1681,7 @@ error:
     goto cleanup;
 }
 
+
 static
 DWORD
 VmDnsCheckMemory(
@@ -1527,11 +1747,11 @@ VmDnsNToH(
     else
     {
         dwError = VmDnsCopyMemory(
-                            pOutData,
-                            szData,
-                            pInData,
-                            szData
-                            );
+                        pOutData,
+                        szData,
+                        pInData,
+                        szData
+                        );
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
@@ -1552,161 +1772,8 @@ VmDnsHToN(
     )
 {
     return VmDnsNToH(
-                  pInData,
-                  szData,
-                  pOutData
-                  );
+                pInData,
+                szData,
+                pOutData
+                );
 }
-
-/*
- *static
- *DWORD
- *VmDnsWriteToBuffer16(
- *    PVMDNS_MESSAGE_BUFFER pVmDnsBuffer,
- *    PVOID pData,
- *    size_t szDataSize
- *    )
- *{
- *    DWORD dwError = 0;
- *    size_t szRequired = pVmDnsBuffer->szLength + sizeof(INT16);
- *    PBYTE pCurrentPos = pVmDnsBuffer->pMessage + pVmDnsBuffer->szLength;
- *    INT16 i16Temp = 0;
- *    PINT16 pCursor = (PINT16) (pCurrentPos);
- *
- *    if (szRequired > pVmDnsBuffer->szCurrentSize ||
- *        szDataSize < sizeof(INT16))
- *    {
- *        dwError = ERROR_INSUFFICIENT_BUFFER;
- *        BAIL_ON_VMDNS_ERROR(dwError);
- *    }
- *
- *    i16Temp = htons(*(PINT16)pData);
- *
- *    *pCursor = i16Temp;
- *
- *    pVmDnsBuffer->szLength += sizeof(INT16);
- *
- *cleanup:
- *
- *    return dwError;
- *error:
- *
- *    goto cleanup;
- *}
- *
- *static
- *DWORD
- *VmDnsWriteToBuffer32(
- *    PVMDNS_MESSAGE_BUFFER pVmDnsBuffer,
- *    PVOID pData,
- *    size_t szDataSize
- *    )
- *{
- *    DWORD dwError = 0;
- *    size_t szRequired = pVmDnsBuffer->szLength + sizeof(INT32);
- *    PBYTE pCurrentPos = pVmDnsBuffer->pMessage + pVmDnsBuffer->szLength;
- *    INT32 i32Temp = 0;
- *    PINT32 pCursor = (PINT32) (pCurrentPos);
- *
- *    if (
- *        szRequired > pVmDnsBuffer->szCurrentSize ||
- *        szDataSize < sizeof(INT32)
- *       )
- *    {
- *        dwError = ERROR_INSUFFICIENT_BUFFER;
- *        BAIL_ON_VMDNS_ERROR(dwError);
- *    }
- *
- *    i32Temp = htonl(*(PINT32)pData);
- *
- *    *pCursor = i32Temp;
- *
- *    pVmDnsBuffer->szLength += sizeof(INT32);
- *
- *cleanup:
- *
- *    return dwError;
- *error:
- *
- *    goto cleanup;
- *}
- *
- *static
- *DWORD
- *VmDnsReadFromBuffer16(
- *    PVMDNS_MESSAGE_BUFFER pVmDnsBuffer,
- *    PVOID pData,
- *    size_t szDataSize
- *    )
- *{
- *    DWORD dwError = 0;
- *    INT16 i16Temp = 0;
- *    PBYTE pCurrentPos = NULL;
- *
- *    if (szDataSize < sizeof(INT16))
- *    {
- *      dwError = ERROR_INSUFFICIENT_BUFFER;
- *      BAIL_ON_VMDNS_ERROR(dwError);
- *    }
- *    if (!pVmDnsBuffer || !pData)
- *    {
- *        dwError = ERROR_INVALID_PARAMETER;
- *        BAIL_ON_VMDNS_ERROR(dwError);
- *    }
- *
- *    pCurrentPos=pVmDnsBuffer->pMessage+pVmDnsBuffer->szCursor;
- *
- *    i16Temp = ntohs(*(PINT16)pCurrentPos);
- *
- *    pVmDnsBuffer->szCursor += sizeof(INT16);
- *
- *    *(PINT16)pData = i16Temp;
- *
- *cleanup:
- *
- *    return dwError;
- *error:
- *
- *    goto cleanup;
- *}
- *
- *static
- *DWORD
- *VmDnsReadFromBuffer32(
- *    PVMDNS_MESSAGE_BUFFER pVmDnsBuffer,
- *    PVOID pData,
- *    size_t szDataSize
- *    )
- *{
- *    DWORD dwError = 0;
- *    INT32 i32Temp = 0;
- *    PBYTE pCurrentPos = NULL;
- *
- *    if (szDataSize < sizeof(INT32))
- *    {
- *      dwError = ERROR_INSUFFICIENT_BUFFER;
- *      BAIL_ON_VMDNS_ERROR(dwError);
- *    }
- *    if (!pVmDnsBuffer || !pData)
- *    {
- *        dwError = ERROR_INVALID_PARAMETER;
- *        BAIL_ON_VMDNS_ERROR(dwError);
- *    }
- *
- *    pCurrentPos=pVmDnsBuffer->pMessage+pVmDnsBuffer->szCursor;
- *
- *    i32Temp = ntohl(*(PINT32)pCurrentPos);
- *
- *    pVmDnsBuffer->szCursor += sizeof(INT32);
- *
- *    *(PINT32)pData = i32Temp;
- *
- *cleanup:
- *
- *    return dwError;
- *error:
- *
- *    goto cleanup;
- *}
- *
- */

@@ -17,7 +17,11 @@ dnl
 case "${host_os}:${host_cpu}" in
 
     linux*:x86_64)
-	;;
+        PLATFORM_LIB_PREFIX=lib64
+        ;;
+    darwin*:x86_64)
+        PLATFORM_LIB_PREFIX=lib
+        ;;
     *)
         AC_ERROR("Unsupported operating system - ${host_os}:${host_cpu}")
         ;;
@@ -87,13 +91,24 @@ AC_DEFINE_UNQUOTED(SEAACL_CHECK_DISABLED, "1", [ Disable ACL checks on search ])
 fi
 
 # openssl component
+case "${host_os}:${host_cpu}" in
+    linux*:x86_64)
+    OPEN_SSL_DEFAULT_PATH=/opt/vmware/lib64
+    ;;
+    darwin*:x86_64)
+    OPEN_SSL_DEFAULT_PATH=/opt/vmware/lib
+    ;;
+    *)
+    AC_ERROR("Unsupported operating system - ${host_os}:${host_cpu}")
+    ;;
+esac
 
 AC_ARG_WITH([ssl],
     [AC_HELP_STRING([--with-ssl=<dir>], [use SSL binaries rooted at prefix <dir> ])],
     [
         OPENSSL_BASE_PATH="$withval"
         OPENSSL_INCLUDES="-I$withval/include"
-        OPENSSL_LDFLAGS="-L$withval/lib -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+        OPENSSL_LDFLAGS="-L$withval/$PLATFORM_LIB_PREFIX -Wl,-rpath,$OPEN_SSL_DEFAULT_PATH"
     ])
 
 AC_ARG_WITH([ssl-includes],
@@ -114,12 +129,25 @@ AC_SUBST(OPENSSL_LDFLAGS)
 
 # Likewise components
 
+case "${host_os}:${host_cpu}" in
+
+    linux*:x86_64)
+    LIKEWISE_DEFAULT_PATH=/opt/likewise/lib64
+    ;;
+    darwin*:x86_64)
+    LIKEWISE_DEFAULT_PATH=/opt/likewise/lib
+    ;;
+    *)
+    AC_ERROR("Unsupported operating system - ${host_os}:${host_cpu}")
+    ;;
+esac
+
 AC_ARG_WITH([likewise],
     [AC_HELP_STRING([--with-likewise=<dir>], [use likewise binaries rooted at prefix <dir> ])],
     [
         LW_BASE_PATH="$withval"
         LW_INCLUDES="-I$withval/include"
-        LW_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/likewise/lib64 -Wl,-rpath-link,/opt/likewise/lib64"
+        LW_LDFLAGS="-L$withval/$PLATFORM_LIB_PREFIX -Wl,-rpath,LIKEWISE_DEFAULT_PATH -Wl,-rpath-link,$withval/$PLATFORM_LIB_PREFIX"
     ])
 
 AC_ARG_WITH([likewise-includes],
@@ -184,13 +212,22 @@ AC_CHECK_HEADERS(openssl/crypto.h openssl/ssl.h openssl/err.h)
 CPPFLAGS="$saved_CPPFLAGS"
 
 # VMDIR component
+VMDIR_DEFAULT_PATH=/usr/lib/vmware-vmdir/lib64
+
+VMDIR_RPATH=$VMDIR_DEFAULT_PATH
+AC_ARG_WITH([vmdir-rpath],
+    [AC_HELP_STRING([--with-vmdir-rpath=<dir>], [use vmdir libraries located at
+<dir> at runtime])],
+    [
+        VMDIR_RPATH="$withval"
+    ])
 
 AC_ARG_WITH([vmdir],
     [AC_HELP_STRING([--with-vmdir=<dir>], [use VMDIR binaries rooted at prefix <dir> ])],
     [
         VMDIR_BASE_PATH="$withval"
         VMDIR_INCLUDES="-I$withval/include"
-        VMDIR_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/usr/lib/vmware-vmdir/lib64 -Wl,-rpath-link,/usr/lib/vmware-vmdir/lib64"
+        VMDIR_LDFLAGS="-L$withval/lib64 -Wl,-rpath,$VMDIR_RPATH -Wl,-rpath-link,$withval/lib64"
     ])
 
 AC_ARG_WITH([vmdir-includes],
@@ -202,7 +239,7 @@ AC_ARG_WITH([vmdir-includes],
 AC_ARG_WITH([vmdir-libs],
     [AC_HELP_STRING([--with-vmdir-libs=<dir>], [use VMDIR libraries located in prefix <dir> ])],
     [
-        VMDIR_LDFLAGS="-L$withval"
+        VMDIR_LDFLAGS="-L$withval -Wl,-rpath,$VMDIR_RPATH -Wl,-rpath-link,$withval"
     ])
 
 AC_SUBST(VMDIR_BASE_PATH)

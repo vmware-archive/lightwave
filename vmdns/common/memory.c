@@ -664,3 +664,120 @@ VmDnsFreeStringCountedArrayA(
 
     VMDNS_SAFE_FREE_MEMORY(ppszString);
 }
+
+DWORD
+VmDnsAllocateBlob(
+    UINT16 unSize,
+    PVMDNS_BLOB *ppBlob
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_BLOB pBlob = NULL;
+
+    if (!ppBlob)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsAllocateMemory(
+                        sizeof(VMDNS_BLOB),
+                        (PVOID*)&pBlob
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    if (unSize)
+    {
+        dwError = VmDnsAllocateMemory(
+                            unSize,
+                            (PVOID*)&pBlob->pData
+                            );
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        pBlob->unSize = unSize;
+    }
+    else
+    {
+        pBlob->pData = NULL;
+    }
+
+    *ppBlob = pBlob;
+
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmDnsFreeBlob(pBlob);
+    if (ppBlob)
+    {
+        *ppBlob = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+VmDnsCopyBlob(
+    PVMDNS_BLOB pSrcBlob,
+    PVMDNS_BLOB *ppDstBlob
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_BLOB pDstBlob = NULL;
+
+    if (!pSrcBlob || !ppDstBlob)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsAllocateBlob(
+                        pSrcBlob->unSize,
+                        &pDstBlob
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsCopyMemory(
+                    pDstBlob->pData,
+                    pDstBlob->unSize,
+                    pSrcBlob->pData,
+                    pSrcBlob->unSize
+                    );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppDstBlob = pDstBlob;
+
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmDnsFreeBlob(pDstBlob);
+    if (ppDstBlob)
+    {
+        *ppDstBlob = NULL;
+    }
+
+    goto cleanup;
+}
+
+VOID
+VmDnsFreeBlob(
+    PVMDNS_BLOB pBlob
+    )
+{
+    if (pBlob)
+    {
+        if (pBlob->unSize)
+        {
+            VMDNS_SAFE_FREE_MEMORY(pBlob->pData);
+        }
+
+        VMDNS_SAFE_FREE_MEMORY(pBlob);
+    }
+}

@@ -540,6 +540,19 @@ VmDnsCliDelRecord(
 
     VmDnsTrimDomainNameSuffix(pContext->record.pszName, pContext->pszZone);
 
+    dwError = VmDnsMakeFQDN(
+                    pContext->record.pszName,
+                    pContext->pszZone,
+                    &pszTargetFQDN);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    if (pszTargetFQDN)
+    {
+        VMDNS_SAFE_FREE_STRINGA(pContext->record.pszName);
+        pContext->record.pszName = pszTargetFQDN;
+        pszTargetFQDN = NULL;
+    }
+
     dwError = VmDnsQueryRecordsA(
                     pContext->pServerContext,
                     pContext->pszZone,
@@ -551,9 +564,7 @@ VmDnsCliDelRecord(
 
     for (; idx < pRecordArray->dwCount; ++idx)
     {
-        VmDnsTrimDomainNameSuffix(
-            pRecordArray->Records[idx].pszName,
-            pContext->pszZone);
+
         if (VmDnsMatchRecord(&pRecordArray->Records[idx],
                              &pContext->record))
         {
@@ -584,6 +595,7 @@ VmDnsCliValidateAndCompleteRecord(
     )
 {
     DWORD dwError = 0;
+    PSTR pszTargetFQDN = NULL;
 
     pContext->record.iClass = VMDNS_CLASS_IN;
     pContext->record.dwTtl = VMDNS_DEFAULT_TTL;
@@ -595,9 +607,19 @@ VmDnsCliValidateAndCompleteRecord(
     {
         case VMDNS_RR_TYPE_A:
         case VMDNS_RR_TYPE_AAAA:
-            VmDnsTrimDomainNameSuffix(
-                pContext->record.pszName,
-                pContext->pszZone);
+
+            dwError = VmDnsMakeFQDN(
+                        pContext->record.pszName,
+                        pContext->pszZone,
+                        &pszTargetFQDN);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            if (pszTargetFQDN)
+            {
+                VMDNS_SAFE_FREE_STRINGA(pContext->record.pszName);
+                pContext->record.pszName = pszTargetFQDN;
+                pszTargetFQDN = NULL;
+            }
             break;
 
         case VMDNS_RR_TYPE_SRV:
@@ -621,9 +643,18 @@ VmDnsCliValidateAndCompleteRecord(
                 dwError = ERROR_INVALID_PARAMETER;
                 BAIL_ON_VMDNS_ERROR(dwError);
             }
-            VmDnsTrimDomainNameSuffix(
-                pContext->record.pszName,
-                pContext->pszZone);
+            dwError = VmDnsMakeFQDN(
+                            pContext->record.pszName,
+                            pContext->pszZone,
+                            &pszTargetFQDN);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            if (pszTargetFQDN)
+            {
+                VMDNS_SAFE_FREE_STRINGA(pContext->record.pszName);
+                pContext->record.pszName = pszTargetFQDN;
+                pszTargetFQDN = NULL;
+            }
             break;
 
         case VMDNS_RR_TYPE_CNAME:

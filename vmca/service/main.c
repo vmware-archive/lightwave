@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -23,30 +23,39 @@ static DWORD
 VMCAParseArgs(
     int argc,
     char* argv[],
-    PBOOL pbEnableSysLog
+    PBOOL pbEnableSysLog,
+    PBOOL pbConsoleLogging
 )
 {
     DWORD dwError = ERROR_SUCCESS;
     int opt = 0;
     BOOL bEnableSysLog = FALSE;
+    BOOL bEnableConsoleLogging = FALSE;
 
     while ( (opt = getopt( argc, argv, VMCA_OPTIONS_VALID)) != EOF )
     {
         switch ( opt )
         {
-            case VMCA_OPTION_ENABLE_SYSLOG:
-                bEnableSysLog = TRUE;
-                break;
-
-            default:
-                dwError = ERROR_INVALID_PARAMETER;
-                BAIL_ON_VMCA_ERROR(dwError);
+        case VMCA_OPTION_ENABLE_SYSLOG:
+            bEnableSysLog = TRUE;
+            break;
+        case VMCA_OPTION_CONSOLE_LOGGING:
+            bEnableConsoleLogging = TRUE;
+            break;
+        default:
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMCA_ERROR(dwError);
         }
     }
 
     if (pbEnableSysLog != NULL)
     {
-        *pbEnableSysLog = bEnableSysLog;  
+        *pbEnableSysLog = bEnableSysLog;
+    }
+
+    if (pbConsoleLogging)
+    {
+        *pbConsoleLogging = bEnableConsoleLogging;
     }
 
 error:
@@ -65,17 +74,22 @@ main(
     int notifyCode = 0;
     int ret = -1;
     BOOL bEnableSysLog = FALSE;
+    BOOL bConsoleLogging = FALSE;
 
     setlocale(LC_ALL, "");
 
     VMCABlockSelectedSignals();
 
-    dwError = VMCAParseArgs(argc, argv, &bEnableSysLog);
+    dwError = VMCAParseArgs(argc, argv, &bEnableSysLog, &bConsoleLogging);
     BAIL_ON_VMCA_ERROR(dwError);
 
     if (bEnableSysLog)
     {
         gVMCALogType = VMCA_LOG_TYPE_SYSLOG;
+    }
+    else if (bConsoleLogging)
+    {
+        gVMCALogType = VMCA_LOG_TYPE_CONSOLE;
     }
     else
     {
@@ -147,4 +161,3 @@ PrintCurrentState(
         printf("VMCA Server Functional level is VMCA_FUNC_LEVEL_SELF_CA\n");
     }
 }
-

@@ -214,6 +214,4 @@ extern "C" {
 }
 #endif
 
-#define VMDNS_SOA_RECORD_NAME           "@"
-
 #endif /* __VMDNSDEFINES_H__ */

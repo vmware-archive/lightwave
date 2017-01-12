@@ -1,0 +1,98 @@
+#!/bin/bash
+
+# entry into container
+
+JSVC_BIN=/var/opt/commons-daemon-1.0.15/bin/jsvc
+JAVA_HOME=/var/opt/OpenJDK-1.8.0.102-bin
+
+function stop_idmd {
+    local SERVICE_NAME=vmware-idmd
+    local PIDFILE=/var/run/vmware-idmd.pid
+    local DAEMON_CLASS=com.vmware.identity.idm.server.IdmServer
+
+    $JSVC_BIN -procname $SERVICE_NAME \
+              -stop \
+              -home $JAVA_HOME \
+              -pidfile $PIDFILE \
+              $DAEMON_CLASS
+    rc=$?
+    if [ $rc -ne 0 ]; then
+        echo "failed to stop IDM service. Error code : $rc"
+    fi
+
+}
+
+function stop_stsd {
+    local SERVICE_NAME=vmware-sts-stsd
+    local STSD_LOG_DIR="/var/log/vmware/sso"
+    local STSD_SERVICE_PID="$STSD_LOG_DIR/tcserver.pid"
+    local DAEMON_CLASS=org.apache.catalina.startup.Bootstrap
+
+    $JSVC_BIN -procname $SERVICE_NAME \
+              -stop \
+              -home $JAVA_HOME \
+              -pidfile $STSD_SERVICE_PID \
+              $DAEMON_CLASS
+    rc=$?
+    if [ $rc -ne 0 ]; then
+        echo "failed to stop STS service. Error code : $rc"
+    fi
+}
+
+function clean_up {
+
+    # Perform program exit housekeeping
+    echo "shutdown signal handled"
+
+    # stop java processes
+    stop_stsd
+    stop_idmd
+
+    # stop lwsm
+    if [ `pidof lwsmd` ];  then
+        /opt/likewise/bin/lwsm shutdown
+        while [ `pidof lwsmd` ];  do
+            sleep 1
+        done
+
+    fi
+    exit $1
+}
+
+trap clean_up SIGHUP SIGINT SIGTERM
+
+# Need haveged for vmca
+/usr/sbin/haveged -w 1024 -v 1
+
+/opt/vmware/bin/configure-lightwave-server --config-file /var/lib/vmware/config/lightwave-server.cfg
+
+if [ $? -ne 0 ]; then
+    echo "failed to configure lightwave server"
+    clean_up 1
+fi
+
+/opt/likewise/sbin/lwsmd &
+sleep 1
+
+echo "perform autostart"
+/opt/likewise/bin/lwsm autostart
+
+if [ $? -ne 0 ]; then
+    echo "failed to autostart services"
+    clean_up 1
+fi
+
+sleep 1
+
+/opt/vmware/bin/configure-identity-server
+
+if [ $? -ne 0 ]; then
+    echo "failed to initialize identity services"
+    clean_up 1
+fi
+
+while :
+do
+    sleep 5 &
+    wait
+done

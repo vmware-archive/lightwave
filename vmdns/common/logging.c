@@ -52,12 +52,7 @@ VmDnsLogInitialize(
    }
    if (vmdns_syslog)
    {
-      int log_level = vmdns_syslog_level ?
-                          vmdns_syslog_level : VMDNS_LOG_LEVEL_ERROR;
-
       openlog("vmdnsd", 0, LOG_DAEMON);
-
-      setlogmask(LOG_UPTO(logLevelToSysLogLevel(log_level)));
    }
 
 done:
@@ -128,7 +123,11 @@ VmDnsLog(
          }
          else
          {
-            fprintf(stderr, "%s%s\n", extraLogMessage, logMessage);
+             logLevelTag = logLevelToTag(level);
+             fprintf(stderr, "VMDNS:t@%lu:%-3.7s: %s\n",
+                     (unsigned long) pthread_self(),
+                     logLevelTag? logLevelTag : "UNKNOWN",
+                     logMessage);
             fflush( stderr );
          }
       }
@@ -150,7 +149,7 @@ logLevelToTag(
        case VMDNS_LOG_LEVEL_DEBUG:
             return "DEBUG";
       default:
-            return "UNKNOWN";
+            return "DEBUG";
    }
 }
 
@@ -162,14 +161,8 @@ logLevelToSysLogLevel(
    {
       case VMDNS_LOG_LEVEL_ERROR:
          return LOG_ERR;
-      case VMDNS_LOG_LEVEL_INFO:
-         return LOG_INFO;
-      case VMDNS_LOG_LEVEL_WARNING:
-         return LOG_WARNING;
-      case VMDNS_LOG_LEVEL_DEBUG:
-         return LOG_DEBUG;
       default:
-         return LOG_ERR;
+         return LOG_DEBUG;
    }
 }
 

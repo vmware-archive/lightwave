@@ -799,7 +799,6 @@ VmSockWinRead(
 
     wsaBuff.buf = pIoBuffer->pData + pIoBuffer->dwCurrentSize;
     wsaBuff.len = pIoBuffer->dwExpectedSize - pIoBuffer->dwCurrentSize;
-    pIoContext->IoBuffer.addrLen = sizeof pIoContext->IoBuffer.clientAddr;
     pOverlapped = (pSocket->pEventQueue) ? &pIoContext->Overlapped : NULL;
 
     if (pSocket->protocol == VM_SOCK_PROTOCOL_UDP)
@@ -810,6 +809,8 @@ VmSockWinRead(
                 (DWORD)pIoBuffer,
                 pIoContext->eventType,
                 pIoBuffer->dwExpectedSize);
+
+        pIoContext->IoBuffer.addrLen = sizeof pIoContext->IoBuffer.clientAddr;
 
         sockError = WSARecvFrom(
                             pSocket->hSocket,
@@ -1399,6 +1400,7 @@ VmSockWinGetAddress(
     }
 
     memcpy_s(pAddress, *pAddresLen, &pSocket->addr, pSocket->addrLen);
+    *pAddresLen = pSocket->addrLen;
 
 cleanup:
 
