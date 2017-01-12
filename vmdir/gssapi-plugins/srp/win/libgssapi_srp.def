@@ -1,0 +1,4 @@
+LIBRARY "libgssapi_srp"
+
+EXPORTS
+  gss_mech_initialize
