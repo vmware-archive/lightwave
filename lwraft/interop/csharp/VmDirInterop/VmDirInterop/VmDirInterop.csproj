@@ -1,0 +1,139 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{CA2F370A-7C11-4173-8BDF-9FD143896E01}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>VmDirInterop</RootNamespace>
+    <AssemblyName>VmDirInterop</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <UseMSBuildEngine>False</UseMSBuildEngine>
+    <ReleaseVersion>0.2</ReleaseVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="LDAP\Input.cs" />
+    <Compile Include="LDAP\Constants\LdapStatus.cs" />
+    <Compile Include="LDAP\Constants\LDAPOptions.cs" />
+    <Compile Include="LDAP\Interfaces\ILdapConnection.cs" />
+    <Compile Include="LDAP\Interfaces\ILdapEntry.cs" />
+    <Compile Include="LDAP\Interfaces\ILdapMessage.cs" />
+    <Compile Include="LDAP\Exceptions\LdapException.cs" />
+    <Compile Include="LDAP\ErrorCheckerHelper.cs" />
+    <Compile Include="LDAP\LdapConnection.cs" />
+    <Compile Include="LDAP\LdapEntry.cs" />
+    <Compile Include="LDAP\LdapMessage.cs" />
+    <Compile Include="LDAP\LdapClientLibrary.cs" />
+    <Compile Include="LDAP\LdapMod.cs" />
+    <Compile Include="LDAP\LdapScope.cs" />
+    <Compile Include="LDAP\LdapValue.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Schema\Constants\AttributeConstants.cs" />
+    <Compile Include="Schema\Constants\ClassConstants.cs" />
+    <Compile Include="Schema\Constants\CnConstants.cs" />
+    <Compile Include="Schema\Constants\DnConstants.cs" />
+    <Compile Include="Schema\Constants\FilterStr.cs" />
+    <Compile Include="Schema\Constants\SearchScope.cs" />
+    <Compile Include="Schema\Definitions\AttributeType.cs" />
+    <Compile Include="Schema\Definitions\SchemaDefinition.cs" />
+    <Compile Include="Schema\Definitions\ContentRule.cs" />
+    <Compile Include="Schema\Definitions\ObjectClass.cs" />
+    <Compile Include="Schema\Diffs\SchemaDefinitionDiff.cs" />
+    <Compile Include="Schema\Diffs\SchemaMetadataDiff.cs" />
+    <Compile Include="Schema\Entries\DseRootEntry.cs" />
+    <Compile Include="Schema\Entries\SchemaEntry.cs" />
+    <Compile Include="Schema\EntryFetcher.cs" />
+    <Compile Include="Schema\EntryFetcherFactory.cs" />
+    <Compile Include="Schema\Exceptions\SchemaConnectionException.cs" />
+    <Compile Include="Schema\Interfaces\IEntryFetcher.cs" />
+    <Compile Include="Schema\Interfaces\IEntryFetcherFactory.cs" />
+    <Compile Include="Schema\Interfaces\ISchemaComparable.cs" />
+    <Compile Include="Schema\SchemaComparableList.cs" />
+    <Compile Include="Schema\Interfaces\ISchemaConnection.cs" />
+    <Compile Include="Schema\Metadata\AttributeMetadata.cs" />
+    <Compile Include="Schema\Utils\Parallel.cs" />
+    <Compile Include="Schema\SchemaConnection.cs" />
+    <Compile Include="Schema\Entries\ServerEntry.cs" />
+    <Compile Include="Schema\Entries\SubSchemaSubEntry.cs" />
+    <Compile Include="Schema\Utils\Tuple.cs" />
+    <Compile Include="Schema\Utils\TupleList.cs" />
+    <Compile Include="SuperLogging\Constants\LDAPOperations.cs" />
+    <Compile Include="SuperLogging\Constants\SuperLogTableColumn.cs" />
+    <Compile Include="SuperLogging\Exceptions\SuperLoggingException.cs" />
+    <Compile Include="SuperLogging\Interfaces\ISuperLogEntryList.cs" />
+    <Compile Include="SuperLogging\Interfaces\ISuperLogEntry.cs" />
+    <Compile Include="SuperLogging\Interfaces\ISuperLoggingConnection.cs" />
+    <Compile Include="SuperLogging\Interfaces\ISuperLoggingCookie.cs" />
+    <Compile Include="SuperLogging\Interfaces\ISuperLogTable.cs" />
+    <Compile Include="SuperLogging\Interfaces\ISuperLogTableRow.cs" />
+    <Compile Include="SuperLogging\SuperLogSearchEntry.cs" />
+    <Compile Include="SuperLogging\SuperLogTableColumnSet.cs" />
+    <Compile Include="SuperLogging\SuperLogEntryList.cs" />
+    <Compile Include="SuperLogging\SuperLoggingClientLibrary.cs" />
+    <Compile Include="SuperLogging\SuperLoggingConnection.cs" />
+    <Compile Include="SuperLogging\SuperLogEntry.cs" />
+    <Compile Include="SuperLogging\SuperLoggingCookie.cs" />
+    <Compile Include="SuperLogging\SuperLoggingStructs.cs" />
+    <Compile Include="SuperLogging\SuperLogTable.cs" />
+    <Compile Include="SuperLogging\SuperLogTableRow.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+  <ItemGroup>
+    <None Include="VmDirInterop.dll.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

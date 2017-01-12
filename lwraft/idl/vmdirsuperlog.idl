@@ -1,0 +1,75 @@
+/*
+ * Copyright (C) 2015 VMware, Inc. All rights reserved.
+ *
+ * Module   : vmdirsuperlog.idl
+ *
+ * Abstract :
+ *
+ *            VMware Directory Service
+ *
+ *            Interface Definition
+ *
+ *            SuperLog API
+ *
+ * Authors  :
+ *
+ */
+[
+    uuid (50E8189F-654E-4DCE-BFFA-0F7EA0D8AFC1),
+    version(1.0),
+    pointer_default(unique)
+]
+
+interface vmdirsuperlog
+{
+
+#include <vmdirtypes.h>
+
+UINT32
+RpcVmDirSuperLogQueryServerData(
+    [in]                 handle_t                    hBinding,
+    [out]                PVMDIR_SUPERLOG_SERVER_DATA *ppServerData
+);
+
+UINT32
+RpcVmDirSuperLogEnable(
+    [in]                 handle_t     hBinding
+);
+
+UINT32
+RpcVmDirSuperLogDisable(
+    [in]                 handle_t     hBinding
+);
+
+UINT32
+RpcVmDirIsSuperLogEnabled(
+    [in]                 handle_t     hBinding,
+    [out]                BOOLEAN      *enabled
+);
+
+UINT32
+RpcVmDirSuperLogFlush(
+    [in]                 handle_t     hBinding
+);
+
+UINT32
+RpcVmDirSuperLogSetSize(
+    [in]                 handle_t     hBinding,
+    [in]                 UINT32       size
+);
+
+UINT32
+RpcVmDirSuperLogGetSize(
+    [in]                 handle_t     hBinding,
+    [in, out]            UINT32       *size
+);
+
+UINT32
+RpcVmDirSuperLogGetEntriesLdapOperation(
+    [in]                 handle_t                                  hBinding,
+    [in, out]            vmdir_superlog_cookie_t                   *pEnumerationCookie,
+    [in]                 UINT32                                    dwCountRequested,
+    [in, out]            PVMDIR_SUPERLOG_ENTRY_LDAPOPERATION_ARRAY *ppEntries
+);
+
+}

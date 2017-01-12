@@ -1,0 +1,94 @@
+# extended LDIF
+#
+# LDAPv3
+# base <> with scope baseObject
+# filter: objectclass=*
+# requesting: * + 
+#
+
+#
+dn:
+currentTime: 20111013210900.0Z
+subschemaSubentry: CN=Aggregate,CN=Schema,CN=Configuration,DC=sj-dom1,DC=jains
+ ,DC=com
+dsServiceName: CN=NTDS Settings,CN=WIN-G83HOGLGJFB,CN=Servers,CN=Default-First
+ -Site-Name,CN=Sites,CN=Configuration,DC=sj-dom1,DC=jains,DC=com
+namingContexts: DC=sj-dom1,DC=jains,DC=com
+namingContexts: CN=Configuration,DC=sj-dom1,DC=jains,DC=com
+namingContexts: CN=Schema,CN=Configuration,DC=sj-dom1,DC=jains,DC=com
+namingContexts: DC=DomainDnsZones,DC=sj-dom1,DC=jains,DC=com
+namingContexts: DC=ForestDnsZones,DC=sj-dom1,DC=jains,DC=com
+defaultNamingContext: DC=sj-dom1,DC=jains,DC=com
+schemaNamingContext: CN=Schema,CN=Configuration,DC=sj-dom1,DC=jains,DC=com
+configurationNamingContext: CN=Configuration,DC=sj-dom1,DC=jains,DC=com
+rootDomainNamingContext: DC=sj-dom1,DC=jains,DC=com
+supportedControl: 1.2.840.113556.1.4.319
+supportedControl: 1.2.840.113556.1.4.801
+supportedControl: 1.2.840.113556.1.4.473
+supportedControl: 1.2.840.113556.1.4.528
+supportedControl: 1.2.840.113556.1.4.417
+supportedControl: 1.2.840.113556.1.4.619
+supportedControl: 1.2.840.113556.1.4.841
+supportedControl: 1.2.840.113556.1.4.529
+supportedControl: 1.2.840.113556.1.4.805
+supportedControl: 1.2.840.113556.1.4.521
+supportedControl: 1.2.840.113556.1.4.970
+supportedControl: 1.2.840.113556.1.4.1338
+supportedControl: 1.2.840.113556.1.4.474
+supportedControl: 1.2.840.113556.1.4.1339
+supportedControl: 1.2.840.113556.1.4.1340
+supportedControl: 1.2.840.113556.1.4.1413
+supportedControl: 2.16.840.1.113730.3.4.9
+supportedControl: 2.16.840.1.113730.3.4.10
+supportedControl: 1.2.840.113556.1.4.1504
+supportedControl: 1.2.840.113556.1.4.1852
+supportedControl: 1.2.840.113556.1.4.802
+supportedControl: 1.2.840.113556.1.4.1907
+supportedControl: 1.2.840.113556.1.4.1948
+supportedControl: 1.2.840.113556.1.4.1974
+supportedControl: 1.2.840.113556.1.4.1341
+supportedControl: 1.2.840.113556.1.4.2026
+supportedControl: 1.2.840.113556.1.4.2064
+supportedControl: 1.2.840.113556.1.4.2065
+supportedLDAPVersion: 3
+supportedLDAPVersion: 2
+supportedLDAPPolicies: MaxPoolThreads
+supportedLDAPPolicies: MaxDatagramRecv
+supportedLDAPPolicies: MaxReceiveBuffer
+supportedLDAPPolicies: InitRecvTimeout
+supportedLDAPPolicies: MaxConnections
+supportedLDAPPolicies: MaxConnIdleTime
+supportedLDAPPolicies: MaxPageSize
+supportedLDAPPolicies: MaxQueryDuration
+supportedLDAPPolicies: MaxTempTableSize
+supportedLDAPPolicies: MaxResultSetSize
+supportedLDAPPolicies: MinResultSets
+supportedLDAPPolicies: MaxResultSetsPerConn
+supportedLDAPPolicies: MaxNotificationPerConn
+supportedLDAPPolicies: MaxValRange
+highestCommittedUSN: 25497
+supportedSASLMechanisms: GSSAPI
+supportedSASLMechanisms: GSS-SPNEGO
+supportedSASLMechanisms: EXTERNAL
+supportedSASLMechanisms: DIGEST-MD5
+dnsHostName: WIN-G83HOGLGJFB.sj-dom1.jains.com
+ldapServiceName: sj-dom1.jains.com:win-g83hoglgjfb$@SJ-DOM1.JAINS.COM
+serverName: CN=WIN-G83HOGLGJFB,CN=Servers,CN=Default-First-Site-Name,CN=Sites,
+ CN=Configuration,DC=sj-dom1,DC=jains,DC=com
+supportedCapabilities: 1.2.840.113556.1.4.800
+supportedCapabilities: 1.2.840.113556.1.4.1670
+supportedCapabilities: 1.2.840.113556.1.4.1791
+supportedCapabilities: 1.2.840.113556.1.4.1935
+supportedCapabilities: 1.2.840.113556.1.4.2080
+isSynchronized: TRUE
+isGlobalCatalogReady: TRUE
+domainFunctionality: 4
+forestFunctionality: 4
+domainControllerFunctionality: 4
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1

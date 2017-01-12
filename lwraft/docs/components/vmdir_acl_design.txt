@@ -1,0 +1,152 @@
+/*  Author: Wei Fu (wfu@vmware.com)
+    04/20/2012 
+    VERSION: 1.0 */
+
+
+LOTUS ACL MODULE Design Implementation Draft(Currently we only support access check at directory entry level)
+
+
+
+******************************************************
+1. Overview of LOTUS ACL - Top level access check API
+******************************************************
+
+
+LOTUS access check utilizes a set of security related APIs that are implemented and delivered in 'vmware-likewise' package (refer to 'security-api.h' for API information in 'vmware-likewise' tree) for various Linux platforms. A similar set of security APIs (one-to-one mapping) are available on Windows platform, which allows a smooth porting of LOTUS to Windows Platforms.
+
+The top level LOTUS AccessCheck function - 'VmDirSrvAccessCheck' determines whether a given security descriptor on a directory entry grants a specified set of access rights to the client identified by an access token.  In LOTUS, each directory entry has a security descriptor that defines access rights for the entry, i.e., who is allowed what type of access, who is denied and so on. An access token is created upon a sucessful ldap bind to represent who (which user) is accessing directory entries. 
+
+The LOTUS entry level access check API signature is defined as:
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+DWORD
+VmDirSrvAccessCheck(    
+    PVDIR_OPERATION pOperation, /* optional */
+    PVDIR_ACCESS_INFO pAccessInfo,
+    PVDIR_ENTRY pEntry,
+    ACCESS_MASK AccessDesired
+    );
+++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+'pAccessInfo' represents the client (user) who tries to access directory entries, 'pEntry' is the target object client attempts to access,  'accessDesired' gives what type of access client tries to get. 'pOperation' is optional, in case, a backend operation is needed to figure out diretory entry information within an existing database context. 
+
+
+Please refer to 'vmacl.h' (public header) for various access mask defined, the most commonly used one is
+
+- 'VMDIR_ENTRY_GENERIC_READ': read access within the context of entry, in other words, entry attributes
+- 'VMDIR_ENTRY_GENERIC_WRITE': write access within the context of entry, in other words, entry attributes
+- 'VMDIR_ENTRY_READ': read access in order to traverse container entry (enumerate all children)
+- 'VMDIR_ENTRY_WRITE': write access in order to add/delete child entry in a container entry
+- 'VMDIR_ENTRY_ALL_ACCESS': all access (including all the above access rights and some more)
+
+'VmDirSrvAccessCheck' is called before any directory entry operations can be done, for instance:
+
+- EntryAdd/EntryDelete: 'VmDirSrvAccessCheck' is checked against the target entry's parent Entry for 'VMDIR_ENTRY_WRITE' desired access right
+- EntryMod: 'VmDirSrvAccessCheck' is checked against the target entry for 'VMDIR_ENTRY_GENERIC_WRITE' desired access right
+- EntrySearch: 'VmDirSrvAccessCheck' is checked against the candidate 'found' entry for 'VMDIR_ENTRY_GENERIC_READ' desired access right
+
+In order to make sure of the security primitive APIs, for each directory entry in LOTUS, there should be a unique security identifier generated, in section 2, such identifier generation is discussed.
+
+
+******************************************************
+2. LOTUS ObjectSid generation
+******************************************************
+
+In LOTUS, we define 'vmwObjectSid' attribute to store a globally unique object identifier for each directory entry. This object identifier is used in access token as well as security descriptor as means of entry identity. LOTUS is responsibly for generating such 'vmwObjectSid' attribute when a new directory entry is added. The format of LOTUS entry objectSid is discussed below.
+
+2.1 DomainSid (objectSid of a domain object)
+
+A domain sid is structured as "S-1-7-21-subauthority1-subauthority2-subauthority3 ", in which "subauthority1-subauthority2-subauthority3" is generated with a mapping from a randomly generated unique GUID (uuid_t). A domain object is determined when its 'objectClass' attribute value is 'dcObject'.
+
+In order to support replication, domain entries created before replication agreements set up have fixed SID, which uses a pre-defined GUID to generate their domainSids. The objects are 'dc=com' and the vmware host domain instance created with 'vdcpromo', for instance, 'dc=vmwhost,dc=com' before any tenants can be created.
+
+2.2 ObjectSid of a non-domain object
+
+A non-domain object's sid is constructed by appending a generated rid to the sid of domain, where the object belongs to. 
+
+It is in the format of 'DomainSid-Rid', which is extended as "S-1-7-21-subauthority1-subauthority2-subauthority3-RID". The 'RID' part of a non-domain objectSid is 32-bit, which is further constructed as a 8-bit 'ServerId' plus a 24-bit 'ridSequenceId'. The 'ServerId' is given/maintained by 'REPLICATION' module in LOTUS, which tells where an directory entry is located (i.e. on which server replica). The 'ridSequenceId' is generated/maintained/persisted by 'ACL' module by simple 1-increment over a current 'sidSequence' value in the domain.
+
+Currently, the RID is 8-bit ServerId and 24-bit ridSequenceId, since replication module provides the 'ServerId' using the last 8-bit in the replication host's IP address. We can allow 7-bit ServerId with a more advanced 'ServerId' generation model when needed, then the number of directory entries can be improved to 25-bit space.
+
+2.3 Global objectSid generation state
+
+LOTUS 'vmdird' maintains a global state for sid generation to make sure each object is assigned an unique objectSid. Such global state is populated in memory during directory service start up and keep in-sync with the curent sid generation state, and finally persisted on-disk during directory service shutdown. Certain state information will also write out to disk periodically.
+
+
+
+******************************************************
+3. LOTUS Security descriptor 
+******************************************************
+
+In LOTUS, each directory entry owns a security descriptor(SD) so that an access check can be done against the SD to grant or deny access to the client (represented as access token during a LDAP bind). Attribute named 'vmwSecurityDescriptor' stores such SD for each directory entry. Currently in LOTUS, each entry has its own SD store in backend. 
+
+3.1 Default security descriptor
+
+When setting up LOTUS instance, if no explicit 'vmwSecurityDescriptor' is given for the objects created during bootstrapping, a default security descriptor is generated. Currently, the default security descriptor allows 'ALL_ACCESS' to 'domain\administrator', members of 'domain\admins' and entry level 'READ/WRITE' access to 'ONE SELF' (one can read/write its own entry attributes.)
+
+After directory instances are set up, if there is no explicit 'vmwSecurityDescriptor' attribute value given for an entry that is being added, a SD is inherited from its parent directory entry.
+
+
+3.2 Potential optimization on disk space
+
+As mentioned, each directory entry carries its own SD, which could be exactly the same as its parent's. We could omit saving 'SD' for each object, instead, recursivel query its parent until there is a stored SD when determing an entry's SD. This could be potential disk space savings with the cost of more time complexity. We then could build in-memory security descriptor cache, and minimze look ups on disk to minimize time complexity. All these discussion can be further extended when need as optimization performance work.
+
+
+******************************************************
+4. Access check semantics
+******************************************************
+
+In this section, some highlights of access check semantics are listed. 
+
+4.1 Admin Roles (members of a domain built-in administrators group)
+
+When a SD contains access right pertaining to a built-in administrators group, access check function needs to figure out whether the binded client is a member of administrators group to grant access accordingly.
+
+'AdminRole' allows differentiating between password 'set' (performed as 'admins') or 'change' (performed as user itself).
+
+4.2 SELF access check
+
+When a SD contains access right pertaining to one self, access check function needs to figure out whether the binded client is the attempted access entry itself to grant access accordingly.
+
+4.3 Passord special check
+
+Until we have attribute level ACL, password 'READ' (i.e. during a explicit/implicit search) is denied by NOT sending 'userPassword' attribute content back to client. Password write is guarded by 'admin' role logic. 
+
+Password 'READ' should probably be allowed if the client comes in as a 'backup Operators', again, the work-around exists until attribute level access check is in-place.
+
+4.4 Special search allowance
+
+There is some special exception to bypass ACL check during search:
+
+- Anonymous search is allowed on the internally constructed 'DSERoot'/PERSISTED_DSE_ROOT_DN/SCHEMA to 'unblock' initial LDAP connection/bind to establish. (Refer to 'IsSpecialAllowedSearchEntry' function)
+
+
+
+******************************************************
+5. ACL Test
+******************************************************
+
+Acl related tests can be find in 'vmdir/main/tests/acl', there are regular acl tests, and a test script pertains to multiple tenants scenario.
+
+
+******************************************************
+6. Conclusion
+******************************************************
+The entry level access check is completed. One can set SD on entry and have access check done against the explicit SD or default SD is generated/applied. 
+
+TODO:
+1. Ways to explicit apply SD on a directory entry in a readible way (Bug#857954):
+(1) through ADSI
+(2) using 'SDDL' string in 'ldif' 
+
+2. Attribute level ACL check (Bug# 867787)
+
+
+
+
+
+
+
+
+
+  

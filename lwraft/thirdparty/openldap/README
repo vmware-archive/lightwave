@@ -1,0 +1,3 @@
+The directories include, libraries/liblber/, libraries/libldap/, libraries/libldap_r, libraries/libunicode correspond to the OpenLDAP 2.4.16 release and a copy of the LICENSE is included in this directory.
+
+The directory libraries/mdb contains information regarding its provinence.

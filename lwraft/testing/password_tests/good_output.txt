@@ -1,0 +1,408 @@
+#########################################################
+set policy parameter
+#########################################################
+
+modifying entry "cn=password and lockout policy,dc=vmware,dc=com"
+
+#########################################################
+Create password test user cn=password_test,cn=users,dc=vmware,dc=com
+#########################################################
+
+adding new entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+#########################################################
+ TEST CASE 1
+ BIND : administrator user
+ ACTION: set password
+ RESULT: should fail - more than one userpassword
+#########################################################
+
+ldap_modify: Server is unwilling to perform (53)
+	additional info: Invalid MOD_REPLACE
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+#########################################################
+ TEST CASE 2
+ BIND : administrator user
+ ACTION: set password
+ RESULT: should succeed
+#########################################################
+
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+#########################################################
+ verify password change
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <cn=password_test,cn=users,dc=vmware,dc=com> with scope baseObject
+# filter: objectclass=*
+# requesting: dn 
+#
+
+# password_test, users, vmware.com
+dn: cn=password_test,cn=users,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+ TEST CASE 3
+ BIND : self user
+ ACTION: change password
+ RESULT: should fail - combine password change with other attribute
+#########################################################
+
+ldap_modify: Server is unwilling to perform (53)
+	additional info: Password modification must be a stand alone request
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+#########################################################
+ TEST CASE 4
+ BIND : self user
+ ACTION: change password
+ RESULT: should fail - add and delete not in pair
+#########################################################
+
+ldap_modify: Server is unwilling to perform (53)
+	additional info: Password add and delete must come in pair
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+#########################################################
+ TEST CASE 5
+ BIND : self user
+ ACTION: change password
+ RESULT: should fail - add and delete not in pair
+#########################################################
+
+ldap_modify: Server is unwilling to perform (53)
+	additional info: Password add and delete must come in pair
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+#########################################################
+ TEST CASE 6
+ BIND : self user
+ ACTION: change password
+ RESULT: should fail - two values of userpassword
+#########################################################
+
+ldap_modify: Server is unwilling to perform (53)
+	additional info: Invalid MOD_OP_ADD
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+#########################################################
+ TEST CASE 7
+ BIND : self user
+ ACTION: change password
+ RESULT: should fail - bad old password
+#########################################################
+
+ldap_modify: Invalid credentials (49)
+	additional info: ApplyModsToEntryStruct failed - (9234)((null))
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+#########################################################
+ TEST CASE 8
+ BIND : self user
+ ACTION: change password
+ RESULT: should fail - strength fail - len < min
+#########################################################
+
+ldap_modify: Constraint violation (19)
+	additional info:  Password strength check failed
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+#########################################################
+ TEST CASE 9
+ BIND : self user
+ ACTION: change password
+ RESULT: should fail - strength fail - len > max
+#########################################################
+
+ldap_modify: Constraint violation (19)
+	additional info:  Password strength check failed
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+#########################################################
+ TEST CASE 10
+ BIND : self user
+ ACTION: change password
+ RESULT: should fail - strength fail - no special char
+#########################################################
+
+ldap_modify: Constraint violation (19)
+	additional info:  Password strength check failed
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+#########################################################
+ TEST CASE 11
+ BIND : self user
+ ACTION: change password
+ RESULT: should fail - strength fail - no upper case char
+#########################################################
+
+ldap_modify: Constraint violation (19)
+	additional info:  Password strength check failed
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+#########################################################
+ TEST CASE 12
+ BIND : self user
+ ACTION: change password
+ RESULT: should fail - strength fail - no numeric char
+#########################################################
+
+ldap_modify: Constraint violation (19)
+	additional info:  Password strength check failed
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+#########################################################
+ TEST CASE 13
+ BIND : self user
+ ACTION: change password
+ RESULT: should succeed - selfCHG9@
+#########################################################
+
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+#########################################################
+ verify password change
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <cn=password_test,cn=users,dc=vmware,dc=com> with scope baseObject
+# filter: objectclass=*
+# requesting: dn 
+#
+
+# password_test, users, vmware.com
+dn: cn=password_test,cn=users,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+ TEST CASE 14 - PREPARE
+#########################################################
+
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+# extended LDIF
+#
+# LDAPv3
+# base <cn=password_test,cn=users,dc=vmware,dc=com> with scope baseObject
+# filter: objectclass=*
+# requesting: dn 
+#
+
+# password_test, users, vmware.com
+dn: cn=password_test,cn=users,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+ TEST CASE 14
+ BIND : self user
+ ACTION: set password but use prior value
+ RESULT: should fail - recycle password
+#########################################################
+ldap_modify: Constraint violation (19)
+	additional info: Password recycle
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+#########################################################
+ TEST CASE 15 - PREPARE
+ useraccountcontrol lockout flag is clear 0x00000000
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <cn=password_test,cn=users,dc=vmware,dc=com> with scope baseObject
+# filter: objectclass=*
+# requesting: useraccountcontrol 
+#
+
+# password_test, users, vmware.com
+dn: cn=password_test,cn=users,dc=vmware,dc=com
+userAccountControl: 0
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+
+
+#########################################################
+ max fail attempt to trigger lockout - all search should fail
+ NOTE, we only need two more failures to exceed Max (2) as recycle
+ check above count one already.
+#########################################################
+
+ldap_bind: Invalid credentials (49)
+ldap_bind: Invalid credentials (49)
+#########################################################
+ TEST CASE 15
+ BIND : sefl user
+ ACTION: fail attempt > max allowed to trigger lockout
+ RESULT: should fail - account lockout
+#########################################################
+ldap_bind: Invalid credentials (49)
+#########################################################
+ TEST CASE 15-1
+ BIND : administrator user
+ ACTION: fail attempt > max allowed to trigger lockout
+ RESULT:  useraccountcontrol lockout flag is set 0x00000010
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <cn=password_test,cn=users,dc=vmware,dc=com> with scope baseObject
+# filter: objectclass=*
+# requesting: useraccountcontrol 
+#
+
+# password_test, users, vmware.com
+dn: cn=password_test,cn=users,dc=vmware,dc=com
+userAccountControl: 16
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+
+#########################################################
+ sleep 3 secs for auto unlock interval
+#########################################################
+
+
+#########################################################
+ TEST CASE 16
+ BIND : self user
+ ACTION: lockout with autounlock time pass
+ RESULT:  useraccountcontrol lockout flag is set 0x00000000
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <cn=password_test,cn=users,dc=vmware,dc=com> with scope baseObject
+# filter: objectclass=*
+# requesting: useraccountcontrol 
+#
+
+# password_test, users, vmware.com
+dn: cn=password_test,cn=users,dc=vmware,dc=com
+userAccountControl: 0
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+ TEST CASE 17
+ BIND : administrator user
+ ACTION: set user password that violate strength policy
+ RESULT:  should fail
+#########################################################
+
+ldap_modify: Constraint violation (19)
+	additional info:  Password strength check failed
+modifying entry "cn=password_test,cn=users,dc=vmware,dc=com"
+
+
+#########################################################
+ self verify administrator set password fail in TEST CASE 18 - search should succceed
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <cn=password_test,cn=users,dc=vmware,dc=com> with scope baseObject
+# filter: objectclass=*
+# requesting: useraccountcontrol 
+#
+
+# password_test, users, vmware.com
+dn: cn=password_test,cn=users,dc=vmware,dc=com
+userAccountControl: 0
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+
+#########################################################
+ TEST CASE 18 - PREPARE
+#########################################################
+
+ldap_bind: Invalid credentials (49)
+ldap_bind: Invalid credentials (49)
+ldap_bind: Invalid credentials (49)
+ldap_bind: Invalid credentials (49)
+
+#########################################################
+ TEST CASE 18
+ BIND : administrator user
+ ACTION: fail login exceed max allowed in policy
+ RESULT: should succeed - administrator account is NOT locked out
+#########################################################
+
+# extended LDIF
+#
+# LDAPv3
+# base <cn=administrator,cn=users,dc=vmware,dc=com> with scope baseObject
+# filter: objectclass=*
+# requesting: useraccountcontrol 
+#
+
+# Administrator, Users, vmware.com
+dn: cn=Administrator,cn=Users,dc=vmware,dc=com
+
+# search result
+search: 2
+result: 0 Success
+
+# numResponses: 2
+# numEntries: 1
+#########################################################
+ TEST CASE 19
+ BIND : administrator user
+ ACTION: create user with password strength violoation
+ RESULT: should fail
+#########################################################
+
+ldap_add: Constraint violation (19)
+	additional info: Password strength check
+adding new entry "cn=password_test_next,cn=users,dc=vmware,dc=com"
+
+
+#########################################################
+Delete password test user cn=password_test,cn=users,dc=vmware,dc=com
+#########################################################
+
+deleting entry "cn=password_test,cn=users,dc=vmware,dc=com"
+

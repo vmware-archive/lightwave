@@ -11,6 +11,9 @@ PACKAGES=\
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDIR_SERVER_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDIR_CLIENT_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDIR_CLIENT_DEVEL_RPM) \
+    $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_SERVER_RPM) \
+    $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_RPM) \
+    $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_DEVEL_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDNS_SERVER_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDNS_CLIENT_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDNS_CLIENT_DEVEL_RPM) \
@@ -145,6 +148,31 @@ vmdir-clean:
 	@cd $(SRCROOT)/vmdir/build && make -f Makefile.bootstrap clean
 	@if [ -d $(LIGHTWAVE_STAGE_DIR)/x86_64 ]; then \
 	    cd $(LIGHTWAVE_STAGE_DIR)/x86_64 && $(RM) -f $(VMDIR_RPMS); \
+	fi
+
+lwraft-client-install: $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_RPM) $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_DEVEL_RPM)
+	$(RPM) -Uvh --force --nodeps $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_RPM) $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_DEVEL_RPM)
+
+$(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_RPM):$(LWRAFT_PKGDIR)/$(LWRAFT_CLIENT_RPM)
+	$(CP) -f $< $@
+
+$(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_CLIENT_DEVEL_RPM):$(LWRAFT_PKGDIR)/$(LWRAFT_CLIENT_DEVEL_RPM)
+	$(CP) -f $< $@
+
+$(LIGHTWAVE_STAGE_DIR)/x86_64/$(LWRAFT_SERVER_RPM):$(LWRAFT_PKGDIR)/$(LWRAFT_SERVER_RPM)
+	$(CP) -f $< $@
+
+$(LWRAFT_PKGDIR)/$(LWRAFT_CLIENT_RPM):$(LWRAFT_PKGDIR)/$(LWRAFT_SERVER_RPM)
+
+$(LWRAFT_PKGDIR)/$(LWRAFT_CLIENT_DEVEL_RPM):$(LWRAFT_PKGDIR)/$(LWRAFT_SERVER_RPM)
+
+$(LWRAFT_PKGDIR)/$(LWRAFT_SERVER_RPM):$(LIGHTWAVE_STAGE_DIR) vmevent-client-install
+	@cd $(SRCROOT)/lwraft/build && make -f Makefile.bootstrap
+
+lwraft-clean:
+	@cd $(SRCROOT)/lwraft/build && make -f Makefile.bootstrap clean
+	@if [ -d $(LIGHTWAVE_STAGE_DIR)/x86_64 ]; then \
+	    cd $(LIGHTWAVE_STAGE_DIR)/x86_64 && $(RM) -f $(LWRAFT_RPMS); \
 	fi
 
 vmdns-client-install: $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDNS_CLIENT_RPM) $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDNS_CLIENT_DEVEL_RPM)
@@ -291,7 +319,7 @@ resources-folder-clean:
 docker-clean:
 	@$(RM) -rf $(LIGHTWAVE_STAGE_DIR)/docker-published
 
-clean: config-clean vmca-clean vmafd-clean vmdns-clean vmdir-clean vmevent-clean \
+clean: config-clean vmca-clean vmafd-clean vmdns-clean lwraft-clean vmdir-clean vmevent-clean \
 		lw-server-clean lw-clients-clean vmsts-clean docker-clean lw-build-clean \
 		properties-clean diagnostics-folder-clean resources-folder-clean \
 		appliance-clean

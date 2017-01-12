@@ -1,0 +1,11 @@
+CFLAGS = -g -I/build/toolchain/lin64/openssl-1.0.1j
+LDFLAGS = -L/build/toolchain/lin64/openssl-1.0.1j/lib -lcrypto
+
+all: test_srp
+
+srp.o: srp.c
+test_srp: srp.o test_srp.o
+	$(CC) -o test_srp test_srp.o srp.o $(LDFLAGS)
+
+srp.c: srp.h
+test_srp.c: srp.h
