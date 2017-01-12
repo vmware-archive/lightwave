@@ -2342,6 +2342,10 @@ VmDirLdapSetupServiceAccount(
         {
             bAcctExists = TRUE;
             dwError = 0;
+
+            // reset ServiceAccount password. NOTE pByteDCAccountPasswd is null terminted.
+            dwError = VmDirLdapModReplaceAttribute( pLd, pszMSADN, ATTR_USER_PASSWORD, pByteMSAPasswd );
+            BAIL_ON_VMDIR_ERROR(dwError);
             break;
         }
         else if (dwError == LDAP_CONSTRAINT_VIOLATION)

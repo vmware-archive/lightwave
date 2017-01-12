@@ -4186,7 +4186,7 @@ VmDirUpdateKeytabFile(
         goto cleanup;
     }
 
-    dwError = VmDirKeyTabOpen(pszKeyTabFileName, "w", &pKeyTabHandle);
+    dwError = VmDirKeyTabOpen(pszKeyTabFileName, "a", &pKeyTabHandle);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf( &pszMachineAccountUPN, "%s@%s", pszLowerCaseHostName, pszUpperCaseDomainName );

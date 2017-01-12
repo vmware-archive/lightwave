@@ -670,6 +670,7 @@ VmKdcStringToKeysEncrypt(
     PSTR password,
     PBYTE pKey,
     DWORD keyLen,
+    DWORD kvno,
     PBYTE *ppUpnKeys,
     PDWORD pUpnKeysLen);
 
