@@ -16,10 +16,23 @@ mkdir -p /var/run/sshd; chmod -rx /var/run/sshd
 rm -rf /etc/ssh/ssh_host_rsa_key
 ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key
 
+# Argument indicates using rpms on vm
+if [ "$#" -ge 1 ]; then
+    tdnf -y install createrepo
+    createrepo "/tmp/vmware/lightwave"
+    sed -i -e "s/https:\/\/dl.bintray.com/file:\/\/\/tmp/" -e "s/gpgcheck=1/gpgcheck=0/" /etc/yum.repos.d/lightwave.repo
+fi
+
 sed -i 's/#Storage=auto/Storage=persistent/' /etc/systemd/journald.conf
+
+tdnf install -y commons-daemon-1.0.15-7.ph1.x86_64 \
+     openjre-1.8.0.102 \
+     apache-tomcat-8.0.37
+tdnf install -y likewise-open-devel-6.2.11
+tdnf install -y boost-devel-1.60.0
+tdnf install -y jaxws-ri
 tdnf install -y procps-ng
-tdnf install -y commons-daemon apache-tomcat boost-1.56.0
-tdnf install -y vmware-lightwave-server
+tdnf install -y vmware-lightwave-server-6.6.3
 
 # open iptables ports
 # EXPOSE 22 53/udp 53 88/udp 88 389 443 636 2012 2014 2020

@@ -164,7 +164,9 @@ CFG_VERSION=$(CFG_MAJOR_VER).$(CFG_MINOR_VER).$(CFG_RELEASE_VER)-$(CFG_PATCH_VER
 CFG_PKG_NAME=vmware-ic-config
 CFG_RPM=$(CFG_PKG_NAME)-$(CFG_VERSION).$(ARCH).rpm
 
-LIGHTWAVE_OVA=$(LIGHTWAVE_STAGE_DIR)/lw-appliance/lightwave.ova
+LIGHTWAVE_OVA_STAGE=$(LIGHTWAVE_STAGE_DIR)/lw-appliance
+LIGHTWAVE_OVA=$(LIGHTWAVE_OVA_STAGE)/lightwave-$(LW_SERVER_VERSION).ova
+LIGHTWAVE_SB_OVA=$(LIGHTWAVE_OVA_STAGE)/lightwave-sb.ova
 PHOTON_OVA=$(LIGHTWAVE_STAGE_DIR)/lw-appliance/photon-ova-build/photon-ova-virtualbox.ova
 APPLIANCE_BUILDER=$(SRCROOT)/appliance/build-lightwave-ova.sh
 

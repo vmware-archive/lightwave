@@ -33,13 +33,21 @@ all: $(LIGHTWAVE_STAGE_DIR) $(PACKAGES)
 
 appliance: $(PHOTON_OVA) $(LIGHTWAVE_OVA)
 
+appliance-sandbox: $(PACKAGES) $(PHOTON_OVA) $(LIGHTWAVE_SB_OVA)
+
 $(PHOTON_OVA): $(LIGHTWAVE_STAGE_DIR)
 	$(MKDIR) -p $(LIGHTWAVE_STAGE_DIR)/lw-appliance
 	cd $(SRCROOT)/appliance/photon-ova && ./build.sh $(LIGHTWAVE_STAGE_DIR)/lw-appliance
 
+$(LIGHTWAVE_SB_OVA): $(LIGHTWAVE_STAGE_DIR)
+	$(MKDIR) -p $(LIGHTWAVE_STAGE_DIR)/lw-appliance
+	cd $(SRCROOT)/appliance && $(APPLIANCE_BUILDER) -p $(LIGHTWAVE_STAGE_DIR)/lw-appliance -s
+	-$(MV) $(LIGHTWAVE_OVA_STAGE)/lightwave.ova $(LIGHTWAVE_SB_OVA)
+
 $(LIGHTWAVE_OVA): $(LIGHTWAVE_STAGE_DIR)
 	$(MKDIR) -p $(LIGHTWAVE_STAGE_DIR)/lw-appliance
-	cd $(SRCROOT)/appliance && $(APPLIANCE_BUILDER) $(LIGHTWAVE_STAGE_DIR)/lw-appliance
+	cd $(SRCROOT)/appliance && $(APPLIANCE_BUILDER) -p $(LIGHTWAVE_STAGE_DIR)/lw-appliance
+	-$(MV) $(LIGHTWAVE_OVA_STAGE)/lightwave.ova $(LIGHTWAVE_OVA)
 
 appliance-clean: lightwave-ova-clean photon_ova_clean
 	-$(RM) $(LIGHTWAVE_STAGE_DIR)/lw-appliance/*.ova

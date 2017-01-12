@@ -12,15 +12,27 @@
 
 # if staging path is not given, use working dir
 WORKING_PATH=`pwd`
-if [ -n "$1" ]; then
-    STAGE_PATH="$1"
-    if [[ ! -d $STAGE_PATH ]]; then
-        echo "Invalid staging directory: $STAGE_PATH"
-        exit  -1
-    fi
-else
-    STAGE_PATH=$WORKING_PATH
-fi
+STAGE_PATH=$WORKING_PATH
+
+while getopts "sp:" opt; do
+    case $opt in
+        s)
+            echo "Lightwave sandbox OVA" >&2
+            export SANDBOX_BUILD="sb"
+            ;;
+        p)
+            echo "Stage path: -$OPTARG" >&2
+            STAGE_PATH="$OPTARG"
+            if [[ ! -d $STAGE_PATH ]]; then
+                echo "Invalid staging directory: $STAGE_PATH"
+                exit  -1
+            fi
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            ;;
+    esac
+done
 
 # only build photon ova if directed
 if [ $PHOTON_BUILD ]; then

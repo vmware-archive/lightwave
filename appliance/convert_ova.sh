@@ -6,6 +6,9 @@ packerVM="$1"
 outputVM="$2"
 customModScript="$3"
 
+OVA_NAME=`basename $outputVM`
+TAR_DIR=`dirname $outputVM`
+
 if [[ -z "${packerVM}" ]]; then
   echo "Error: Missing input OVA argument"
   show_usage=1
@@ -38,7 +41,11 @@ if [[ ! -z ${customModScript} ]]; then
   eval ${customModScript} ${packerVM} ${outputVM}
 fi
 
+python remove_vbox_hardware.py ${outputVM}.ovf
+
 newOvfSha=$(sha1sum ${outputVM}.ovf | awk '{ print $1 }')
 sed -i.bak "s/$oldOvfSha/$newOvfSha/" ${outputVM}.mf
 
-tar cvf ${outputVM}.ova ${outputVM}.ovf ${outputVM}*.vmdk ${outputVM}.mf
+pushd $TAR_DIR
+tar cvf ${outputVM}.ova ${OVA_NAME}.ovf ${OVA_NAME}*.vmdk ${OVA_NAME}.mf
+popd
