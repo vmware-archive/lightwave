@@ -231,7 +231,7 @@ VmDirSrvSetupHostInstance(
     PSTR                          pszUserDN = NULL;
     PCSTR                         pszUsersContainerName    = "Users";
     PSTR                          pszUsersContainerDN   = NULL; // CN=Users,<domain DN>
-    VMDIR_SECURITY_DESCRIPTOR SecDescAnonymous = {0};
+    VMDIR_SECURITY_DESCRIPTOR SecDescAnonymousRead = {0};
     VMDIR_SECURITY_DESCRIPTOR SecDescServices = {0};
     VMDIR_SECURITY_DESCRIPTOR SecDescDeletedItems = {0};
 
@@ -464,8 +464,8 @@ VmDirSrvSetupHostInstance(
                     pszDomainDN,
                     pszUsername,
                     pszPassword,
-                    &SecDescAnonymous,
                     &SecDescServices,
+                    &SecDescAnonymousRead,
                     &SecDescDeletedItems
                     );
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -482,7 +482,7 @@ VmDirSrvSetupHostInstance(
         //
         // Go back and ACL objects that were created early.
         //
-        dwError = _VmDirAclServerObjects(&SecDescAnonymous, &SecDescDeletedItems);
+        dwError = _VmDirAclServerObjects(&SecDescAnonymousRead, &SecDescDeletedItems);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // Create Domain Controllers container
@@ -579,7 +579,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszUserDN);
     VMDIR_SAFE_FREE_MEMORY(pszDefaultAdminDN);
     VMDIR_SAFE_FREE_MEMORY(pszLowerCaseHostName);
-    VMDIR_SAFE_FREE_MEMORY(SecDescAnonymous.pSecDesc);
+    VMDIR_SAFE_FREE_MEMORY(SecDescAnonymousRead.pSecDesc);
     VMDIR_SAFE_FREE_MEMORY(SecDescServices.pSecDesc);
     VMDIR_SAFE_FREE_MEMORY(SecDescDeletedItems.pSecDesc);
 
@@ -601,8 +601,8 @@ VmDirSrvSetupDomainInstance(
     PCSTR            pszDomainDN,
     PCSTR            pszUsername,
     PCSTR            pszPassword,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDescAnonymousOut, // OPTIONAL
     PVMDIR_SECURITY_DESCRIPTOR pSecDescServicesOut, // OPTIONAL
+    PVMDIR_SECURITY_DESCRIPTOR pSecDescAnonymousReadOut, // OPTIONAL
     PVMDIR_SECURITY_DESCRIPTOR pSecDescDeletedObjectsOut // OPTIONAL
     )
 {
@@ -1015,15 +1015,6 @@ VmDirSrvSetupDomainInstance(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    //
-    // If the caller wants this SD then re-assign ownership of it.
-    //
-    if (pSecDescAnonymousOut != NULL)
-    {
-        *pSecDescAnonymousOut = SecDescAnonymousRead;
-        SecDescAnonymousRead.pSecDesc = NULL;
-    }
-
     if (pSecDescServicesOut != NULL)
     {
         *pSecDescServicesOut = SecDescServices;
@@ -1034,6 +1025,12 @@ VmDirSrvSetupDomainInstance(
     {
         *pSecDescDeletedObjectsOut = SecDescNoDelete;
         SecDescNoDelete.pSecDesc = NULL;
+    }
+
+    if (pSecDescAnonymousReadOut != NULL)
+    {
+        *pSecDescAnonymousReadOut = SecDescAnonymousRead;
+        SecDescAnonymousRead.pSecDesc = NULL;
     }
 
 cleanup:

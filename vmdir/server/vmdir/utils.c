@@ -395,6 +395,7 @@ VmDirServerStatusEntry(
     dwError = VmDirAttrListToNewEntry( pSchemaCtx,
                                        SERVER_STATUS_DN,
                                        ppszAttrList,
+                                       FALSE,
                                        &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -529,6 +530,7 @@ VmDirReplicationStatusEntry(
     dwError = VmDirAttrListToNewEntry( pSchemaCtx,
                                        REPLICATION_STATUS_DN,
                                        ppszAttrList,
+                                       FALSE,
                                        &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 

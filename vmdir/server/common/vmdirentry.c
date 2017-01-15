@@ -1011,16 +1011,71 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+_VmDirCreateTransientSecurityDescriptor(
+    PCSTR pszDomainDN,
+    BOOLEAN bAllowAnonymousRead,
+    PVMDIR_SECURITY_DESCRIPTOR pvsd
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszAdminsGroupSid = NULL;
+    PSTR pszDomainAdminsGroupSid = NULL;
+    PSTR pszDomainClientsGroupSid = NULL;
+    VMDIR_SECURITY_DESCRIPTOR SecDesc = {0};
+
+    dwError = VmDirGenerateWellknownSid(pszDomainDN,
+                                        VMDIR_DOMAIN_ALIAS_RID_ADMINS,
+                                        &pszAdminsGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGenerateWellknownSid(pszDomainDN,
+                                        VMDIR_DOMAIN_ADMINS_RID,
+                                        &pszDomainAdminsGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGenerateWellknownSid(pszDomainDN,
+                                        VMDIR_DOMAIN_CLIENTS_RID,
+                                        &pszDomainClientsGroupSid);
+
+    dwError = VmDirSrvCreateSecurityDescriptor(
+                VMDIR_ENTRY_ALL_ACCESS_NO_DELETE_CHILD,
+                BERVAL_NORM_VAL(gVmdirServerGlobals.bvDefaultAdminDN),
+                pszAdminsGroupSid,
+                pszDomainAdminsGroupSid,
+                pszDomainClientsGroupSid,
+                FALSE,
+                bAllowAnonymousRead,
+                FALSE,
+                &SecDesc);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pvsd->pSecDesc = SecDesc.pSecDesc;
+    pvsd->ulSecDesc = SecDesc.ulSecDesc;
+    pvsd->SecInfo = SecDesc.SecInfo;
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszAdminsGroupSid);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainAdminsGroupSid);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainClientsGroupSid);
+    return dwError;
+error:
+    goto cleanup;
+}
+
 DWORD
 VmDirAttrListToNewEntry(
     PVDIR_SCHEMA_CTX    pSchemaCtx,
     PSTR                pszDN,
     PSTR*               ppszAttrList,
+    BOOLEAN             bAllowAnonymousRead,
     PVDIR_ENTRY*        ppEntry
     )
 {
     DWORD   dwError = 0;
     PVDIR_ENTRY  pEntry = NULL;
+    VMDIR_SECURITY_DESCRIPTOR vsd = {0};
 
     assert(pSchemaCtx && pszDN && ppszAttrList && ppEntry);
 
@@ -1036,10 +1091,22 @@ VmDirAttrListToNewEntry(
         pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = _VmDirCreateTransientSecurityDescriptor(
+                BERVAL_NORM_VAL(gVmdirServerGlobals.systemDomainDN),
+                bAllowAnonymousRead,
+                &vsd);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirEntryCacheSecurityDescriptor(
+                pEntry,
+                vsd.pSecDesc,
+                vsd.ulSecDesc);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     *ppEntry = pEntry;
 
 cleanup:
-
+    VMDIR_SAFE_FREE_MEMORY(vsd.pSecDesc);
     return dwError;
 
 error:

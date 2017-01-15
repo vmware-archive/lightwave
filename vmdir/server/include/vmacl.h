@@ -266,6 +266,13 @@ VmDirSetSecurityDescriptorForDn(
     );
 
 DWORD
+VmDirEntryCacheSecurityDescriptor(
+    PVDIR_ENTRY pEntry,
+    PSECURITY_DESCRIPTOR_RELATIVE pSecDescRelToSet,
+    ULONG ulSecDescToSetLen
+    );
+
+DWORD
 VmDirSetRecursiveSecurityDescriptorForDn(
     PCSTR pszObjectDn,
     PVMDIR_SECURITY_DESCRIPTOR pSecDesc

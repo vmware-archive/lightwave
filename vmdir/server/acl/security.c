@@ -34,14 +34,6 @@ VmDirInternalUpdateObjectSD(
     ULONG ulSecDescRel
     );
 
-static
-DWORD
-VmDirEntryCacheSecurityDescriptor(
-    PVDIR_ENTRY pEntry,
-    PSECURITY_DESCRIPTOR_RELATIVE pSecDescRelToSet,
-    ULONG ulSecDescToSetLen
-    );
-
 DWORD
 VmDirGetSecurityDescriptorForEntry(
     PVDIR_ENTRY pEntry,
@@ -525,7 +517,6 @@ error:
     goto cleanup;
 }
 
-static
 DWORD
 VmDirEntryCacheSecurityDescriptor(
     PVDIR_ENTRY pEntry,

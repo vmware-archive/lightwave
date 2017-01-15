@@ -885,6 +885,7 @@ VmDirAttrListToNewEntry(
     PVDIR_SCHEMA_CTX    pSchemaCtx,
     PSTR                pszDN,
     PSTR*               ppszAttrList,
+    BOOLEAN             bAllowAnonymousRead,
     PVDIR_ENTRY*        ppEntry
     );
 
