@@ -1,5 +1,5 @@
-thirdparty_srcdir = $(top_srcdir)/../vmdir/thirdparty
-thirdparty_builddir = $(top_builddir)/../../vmdir/build/thirdparty
+thirdparty_srcdir = $(top_srcdir)/thirdparty
+thirdparty_builddir = $(top_builddir)/thirdparty
 
 noinst_PROGRAMS = \
     parsedb \
