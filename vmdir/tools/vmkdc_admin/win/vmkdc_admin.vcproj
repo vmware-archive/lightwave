@@ -40,7 +40,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)..\include\public&quot;;&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\include\win&quot;;&quot;$(SolutionDir)..\common\win&quot;;&quot;$(SolutionDir)..\server&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\likewise-security-sd-win32\lwbase\include\win32&quot;;&quot;$(SolutionDir)..\thirdparty\likewise-security-sd-win32\lwbase\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)..\include\public&quot;;&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\include\win&quot;;&quot;$(SolutionDir)..\common\win&quot;;&quot;$(SolutionDir)..\server&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(VMDIR_LIKEWISE_ROOT)\include\win32&quot;;&quot;$(VMDIR_LIKEWISE_ROOT)\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;PACKAGE_NAME;HAVE_DCERPC_WIN32"
 				RuntimeLibrary="3"
 				DebugInformationFormat="3"
@@ -57,7 +57,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib libcommon.lib libvmdirclient.lib liblwbase-sd-win32.lib dcelib.lib ws2_32.lib user32.lib Gdi32.lib wldap32.lib libkdctools.lib libkrb5-crypto.lib libasn1db.lib libasn1.lib libkdckrb5.lib pthreadVC2.lib libeay32.lib ssleay32.lib"
+				AdditionalDependencies="advapi32.lib libcommon.lib libvmdirclient.lib liblwbase.lib dcelib.lib ws2_32.lib user32.lib Gdi32.lib wldap32.lib libkdctools.lib libkrb5-crypto.lib libasn1db.lib libasn1.lib libkdckrb5.lib pthreadVC2.lib libeay32.lib ssleay32.lib"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)..\vmdir\vmdird\$(PlatformName)\$(ConfigurationName)&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
 				GenerateDebugInformation="true"
 				TargetMachine="17"
@@ -108,7 +108,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)..\include\public&quot;;&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\include\win&quot;;&quot;$(SolutionDir)..\common\win&quot;;&quot;$(SolutionDir)..\server&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\likewise-security-sd-win32\lwbase\include\win32&quot;;&quot;$(SolutionDir)..\thirdparty\likewise-security-sd-win32\lwbase\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)..\include\public&quot;;&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\include\win&quot;;&quot;$(SolutionDir)..\common\win&quot;;&quot;$(SolutionDir)..\server&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(VMDIR_LIKEWISE_ROOT)\include\win32&quot;;&quot;$(VMDIR_LIKEWISE_ROOT)\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;PACKAGE_NAME;HAVE_DCERPC_WIN32"
 				RuntimeLibrary="2"
 			/>
@@ -124,7 +124,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib libcommon.lib libvmdirclient.lib liblwbase-sd-win32.lib dcelib.lib ws2_32.lib user32.lib Gdi32.lib wldap32.lib libkdctools.lib libkrb5-crypto.lib libasn1db.lib libasn1.lib libkdckrb5.lib pthreadVC2.lib libeay32.lib ssleay32.lib"
+				AdditionalDependencies="advapi32.lib libcommon.lib libvmdirclient.lib liblwbase.lib dcelib.lib ws2_32.lib user32.lib Gdi32.lib wldap32.lib libkdctools.lib libkrb5-crypto.lib libasn1db.lib libasn1.lib libkdckrb5.lib pthreadVC2.lib libeay32.lib ssleay32.lib"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)..\vmdir\vmdird\$(PlatformName)\$(ConfigurationName)&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
 				TargetMachine="17"
 			/>

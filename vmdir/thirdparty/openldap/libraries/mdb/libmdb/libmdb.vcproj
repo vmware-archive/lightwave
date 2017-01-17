@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="vdcleavefed"
-	ProjectGUID="{2E007E01-5792-4372-8B84-399550673CCC}"
-	RootNamespace="vdcleavefed"
+	Name="libmdb"
+	ProjectGUID="{5798A1C5-F942-40C5-BCEF-0BC9F1736C11}"
+	RootNamespace="libmdb"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -20,9 +20,8 @@
 			Name="Debug|x64"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="..\..\..\vmdird\vs2008CommonProjectProperty.vsprops"
-			CharacterSet="1"
+			ConfigurationType="4"
+			CharacterSet="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -43,14 +42,12 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\tools\include&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;.."
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS"
-				GeneratePreprocessedFile="0"
+				AdditionalIncludeDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;HAVE_PTHREADS_WIN32"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderThrough=""
 				WarningLevel="3"
 				WarnAsError="true"
 				DebugInformationFormat="3"
@@ -60,23 +57,15 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
-				ShowProgress="false"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="Shlwapi.lib user32.lib libcommon.lib ws2_32.lib liblber.lib libldap_r.lib libeay32.lib ssleay32.lib libvmdirclient.lib liblwbase.lib libvmdirlogging.lib"
-				AdditionalLibraryDirectories="&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
-				GenerateDebugInformation="true"
+				Name="VCLibrarianTool"
 			/>
 			<Tool
 				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -88,9 +77,6 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
-				Name="VCAppVerifierTool"
-			/>
-			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -98,9 +84,8 @@
 			Name="Release|x64"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="..\..\..\vmdird\vs2008CommonProjectProperty.vsprops"
-			CharacterSet="1"
+			ConfigurationType="4"
+			CharacterSet="0"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -121,15 +106,13 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				UseUnicodeResponseFiles="true"
-				Optimization="0"
+				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\tools\include&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;.."
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS"
+				AdditionalIncludeDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;HAVE_PTHREADS_WIN32"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderThrough=""
 				WarningLevel="3"
 				WarnAsError="true"
 				DebugInformationFormat="3"
@@ -139,23 +122,15 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
-				ShowProgress="false"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="Shlwapi.lib user32.lib libcommon.lib ws2_32.lib liblber.lib libldap_r.lib libeay32.lib ssleay32.lib libvmdirclient.lib liblwbase.lib libvmdirlogging.lib"
-				AdditionalLibraryDirectories="&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
-				GenerateDebugInformation="true"
+				Name="VCLibrarianTool"
 			/>
 			<Tool
 				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -165,9 +140,6 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -180,45 +152,28 @@
 		<Filter
 			Name="Source Files"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\main.c"
-				>
-			</File>
-			<File
-				RelativePath="..\parseargs.c"
+				RelativePath="..\mdb.c"
 				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
+			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\defines.h"
-				>
-			</File>
-			<File
-				RelativePath="..\includes.h"
-				>
-			</File>
-			<File
-				RelativePath="..\prototypes.h"
-				>
-			</File>
-			<File
-				RelativePath=".\resource.h"
+				RelativePath="..\lmdb.h"
 				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
+			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
-			<File
-				RelativePath=".\vdcleavefed.rc"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>

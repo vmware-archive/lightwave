@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="vdcleavefed"
-	ProjectGUID="{2E007E01-5792-4372-8B84-399550673CCC}"
-	RootNamespace="vdcleavefed"
+	Name="liblber"
+	ProjectGUID="{6A7D33DD-889F-4A32-9BE2-7E02170B4262}"
+	RootNamespace="liblber"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -20,9 +20,9 @@
 			Name="Debug|x64"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="..\..\..\vmdird\vs2008CommonProjectProperty.vsprops"
-			CharacterSet="1"
+			ConfigurationType="2"
+			InheritedPropertySheets="$(SolutionDir)\vs2008CommonProjectProperty.vsprops"
+			CharacterSet="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -38,13 +38,12 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				TargetEnvironment="3"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\tools\include&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;.."
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\..\..\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;LIBLBER_EXPORTS;LBER_LIBRARY"
 				GeneratePreprocessedFile="0"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -60,16 +59,15 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
-				ShowProgress="false"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Shlwapi.lib user32.lib libcommon.lib ws2_32.lib liblber.lib libldap_r.lib libeay32.lib ssleay32.lib libvmdirclient.lib liblwbase.lib libvmdirlogging.lib"
+				AdditionalDependencies="ws2_32.lib"
 				AdditionalLibraryDirectories="&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
+				ModuleDefinitionFile="$(ProjectDir)liblber.def"
 				GenerateDebugInformation="true"
 			/>
 			<Tool
@@ -98,9 +96,9 @@
 			Name="Release|x64"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="..\..\..\vmdird\vs2008CommonProjectProperty.vsprops"
-			CharacterSet="1"
+			ConfigurationType="2"
+			InheritedPropertySheets="$(SolutionDir)\vs2008CommonProjectProperty.vsprops"
+			CharacterSet="0"
 			WholeProgramOptimization="1"
 			>
 			<Tool
@@ -117,19 +115,16 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				TargetEnvironment="3"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				UseUnicodeResponseFiles="true"
-				Optimization="0"
+				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\tools\include&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;.."
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\..\..\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;LIBLBER_EXPORTS;LBER_LIBRARY"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderThrough=""
 				WarningLevel="3"
 				WarnAsError="true"
 				DebugInformationFormat="3"
@@ -140,15 +135,15 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				AdditionalIncludeDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
-				ShowProgress="false"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Shlwapi.lib user32.lib libcommon.lib ws2_32.lib liblber.lib libldap_r.lib libeay32.lib ssleay32.lib libvmdirclient.lib liblwbase.lib libvmdirlogging.lib"
+				AdditionalDependencies="ws2_32.lib"
 				AdditionalLibraryDirectories="&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
+				ModuleDefinitionFile="$(ProjectDir)liblber.def"
 				GenerateDebugInformation="true"
 			/>
 			<Tool
@@ -180,45 +175,80 @@
 		<Filter
 			Name="Source Files"
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\main.c"
+				RelativePath="..\assert.c"
 				>
 			</File>
 			<File
-				RelativePath="..\parseargs.c"
+				RelativePath="..\bprint.c"
+				>
+			</File>
+			<File
+				RelativePath="..\debug.c"
+				>
+			</File>
+			<File
+				RelativePath="..\decode.c"
+				>
+			</File>
+			<File
+				RelativePath="..\encode.c"
+				>
+			</File>
+			<File
+				RelativePath="..\io.c"
+				>
+			</File>
+			<File
+				RelativePath="..\memory.c"
+				>
+			</File>
+			<File
+				RelativePath="..\nt_err.c"
+				>
+			</File>
+			<File
+				RelativePath="..\options.c"
+				>
+			</File>
+			<File
+				RelativePath="..\sockbuf.c"
+				>
+			</File>
+			<File
+				RelativePath="..\stdio.c"
 				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
+			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\defines.h"
+				RelativePath="..\lber-int.h"
 				>
 			</File>
 			<File
-				RelativePath="..\includes.h"
+				RelativePath="..\..\..\include\lber.h"
 				>
 			</File>
 			<File
-				RelativePath="..\prototypes.h"
+				RelativePath="..\..\..\include\lber_pvt.h"
 				>
 			</File>
 			<File
-				RelativePath=".\resource.h"
+				RelativePath="..\..\..\include\lber_types.h"
 				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
+			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
-			<File
-				RelativePath=".\vdcleavefed.rc"
-				>
-			</File>
 		</Filter>
 	</Files>
 	<Globals>
