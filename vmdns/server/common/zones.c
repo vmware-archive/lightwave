@@ -1243,7 +1243,9 @@ VmDnsZoneRestoreRecordFQDN(
     for (; idx < pRecords->dwCount; ++idx)
     {
         pRecord = &pRecords->Records[idx];
-        if (VmDnsIsShortNameRecordType(pRecord->dwType))
+        if (VmDnsIsShortNameRecordType(pRecord->dwType) &&
+            !VmDnsCheckIfIPV4AddressA(pRecord->pszName) &&
+            !VmDnsCheckIfIPV6AddressA(pRecord->pszName))
         {
             dwError = VmDnsMakeFQDN(pRecord->pszName, pszDomainName, &pszTemp);
             BAIL_ON_VMDNS_ERROR(dwError);
@@ -1256,7 +1258,9 @@ VmDnsZoneRestoreRecordFQDN(
             }
         }
 
-        if (pRecord->dwType == VMDNS_RR_TYPE_SRV)
+        if (pRecord->dwType == VMDNS_RR_TYPE_SRV &&
+            !VmDnsCheckIfIPV4AddressA(pRecord->Data.SRV.pNameTarget) &&
+            !VmDnsCheckIfIPV6AddressA(pRecord->Data.SRV.pNameTarget))
         {
             dwError = VmDnsMakeFQDN(
                         pRecord->Data.SRV.pNameTarget,

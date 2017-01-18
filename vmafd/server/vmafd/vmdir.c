@@ -26,6 +26,14 @@ VmAfSrvSignalVmdirProvider(
 
 static
 DWORD
+VmAfdAppendDomain(
+    PCSTR   pszServerName,
+    PCSTR   pszDomainName,
+    PSTR*   ppszServerFQDN
+    );
+
+static
+DWORD
 VmAfSrvDirOpenConnection(
     PCWSTR pwszDCName,
     PCWSTR pwszDomain,
@@ -1742,9 +1750,15 @@ VmAfSrvSetDNSRecords(
     DWORD dwNumV6Address = 0;
     size_t i = 0;
     PVMDNS_RECORD_ARRAY pRecordArray = NULL;
-    PSTR pszName = (PSTR)pszMachineName;
+    PSTR pszName = NULL;
     VMDNS_RECORD record = {0};
     CHAR szZone[255] = {0};
+
+    if (VmDnsCheckIfIPV4AddressA(pszMachineName) ||
+        VmDnsCheckIfIPV6AddressA(pszMachineName))
+    {
+       return dwError;
+    }
 
     dwError = VmDnsOpenServerA(
                     pszDCAddress,
@@ -1754,6 +1768,7 @@ VmAfSrvSetDNSRecords(
                     dwFlags,
                     NULL,
                     &pServerContext);
+
     if (dwError)
     {
         VmAfdLog(VMAFD_DEBUG_ERROR,
@@ -1773,6 +1788,11 @@ VmAfSrvSetDNSRecords(
         szZone[dwDomainNameStrLen +1] = 0;
     }
 
+    dwError = VmAfdAppendDomain(pszMachineName, pszDomain, &pszName);
+    VmAfdLog(VMAFD_DEBUG_ERROR, "%s: DNS namer %s (%u)",
+                 __FUNCTION__, pszName, dwError);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
     dwError = VmAfSrvGetIPAddressesWrap(
                     &pV4Addresses,
                     &dwNumV4Address,
@@ -1780,7 +1800,7 @@ VmAfSrvSetDNSRecords(
                     &dwNumV6Address);
     if (dwError)
     {
-        VmAfdLog(VMAFD_DEBUG_ANY,
+        VmAfdLog(VMAFD_DEBUG_ERROR,
                  "%s: failed to get interface addresses (%u)",
                  __FUNCTION__, dwError);
     }
@@ -1800,7 +1820,7 @@ VmAfSrvSetDNSRecords(
                     &pRecordArray);
     if (dwError != 0 && dwError != ERROR_NOT_FOUND)
     {
-        VmAfdLog(VMAFD_DEBUG_ANY,
+        VmAfdLog(VMAFD_DEBUG_ERROR,
                  "%s: failed to query DNS records (%u),%s, %s",
                  __FUNCTION__, dwError, szZone,pszName);
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -1903,3 +1923,143 @@ error:
     goto cleanup;
 }
 #endif
+
+static
+DWORD
+VmAfdAppendDomain(
+    PCSTR   pszServerName,
+    PCSTR   pszDomainName,
+    PSTR*   ppszServerFQDN
+    )
+{
+
+    DWORD dwError = 0;
+    PSTR  pszServerFQDN = NULL;
+    DWORD dwServerStrLen = 0;
+    DWORD dwDomainStrLen = 0;
+    DWORD dwCursor = 0 ;
+
+    if (!pszServerName || !pszDomainName)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    dwServerStrLen = strlen (pszServerName);
+    dwDomainStrLen = strlen (pszDomainName);
+
+    if (dwDomainStrLen  > dwServerStrLen)
+    {
+        // Let assume the hostname is abc and the domain name is xyz.com
+        if (pszServerName[dwDomainStrLen-1] != '.')
+        {
+            // Let assume the hostname is abc and the domain name is xyz.com
+            if (pszDomainName[dwDomainStrLen -1] != '.')
+            {
+                VmAfdAllocateStringPrintf(
+                        &pszServerFQDN,"%s.%s.",pszServerName,pszDomainName);
+            }
+            else
+            {
+                VmAfdAllocateStringPrintf(
+                        &pszServerFQDN,"%s.%s",pszServerName,pszDomainName);
+            }
+        }
+        else
+        {
+            // Let assume the hostname is abc. and the domain name is xyz.com
+            if (pszDomainName[dwDomainStrLen -1] != '.')
+            {
+                VmAfdAllocateStringPrintf(
+                        &pszServerFQDN,"%s.%s.",pszServerName,pszDomainName);
+            }
+            else
+            {
+                VmAfdAllocateStringPrintf(
+                        &pszServerFQDN,"%s.%s",pszServerName,pszDomainName);
+            }
+
+        }
+    }
+    else if (VmAfdStringStrA(pszServerName,pszDomainName))
+    {
+        if (pszServerName[dwDomainStrLen -1 ] == '.')
+        {
+           // server name is abc.xyz.com. and domain name is xyz.com
+           pszServerFQDN = (PSTR) pszServerName;
+        }
+        else
+        {
+           // server name is abc.xyz.com and domain name is xyz.com
+           VmAfdAllocateStringPrintf(
+                               &pszServerFQDN,
+                               "%s.",
+                               pszServerName);
+        }
+
+    }
+    else
+    {
+       dwCursor = dwServerStrLen - dwDomainStrLen;
+       if (VmAfdStringCompareA(
+                  &pszServerName[dwCursor],
+                  pszDomainName,
+                  FALSE) != 0)
+       {
+            if (pszServerName[dwServerStrLen - 1] != '.')
+            {
+                if (pszDomainName[dwDomainStrLen -1 ] != '.')
+                {
+                    VmAfdAllocateStringPrintf(
+                               &pszServerFQDN,
+                               "%s.%s.",
+                               pszServerName,
+                               pszDomainName);
+                }
+                else
+                {
+                    VmAfdAllocateStringPrintf(
+                               &pszServerFQDN,
+                               "%s.%s",
+                               pszServerName,
+                               pszDomainName);
+                }
+
+            }
+            else
+            {
+                if (pszDomainName[dwDomainStrLen -1 ] != '.')
+                {
+                    VmAfdAllocateStringPrintf(
+                                &pszServerFQDN,
+                                "%s%s.",
+                                pszServerName,
+                                pszDomainName);
+                }
+                else
+                {
+                    VmAfdAllocateStringPrintf(
+                                &pszServerFQDN,
+                                "%s%s",
+                                pszServerName,
+                                pszDomainName);
+
+                }
+            }
+       }
+       else
+       {
+           VmAfdAllocateStringPrintf(
+                          &pszServerFQDN,
+                          "%s.",
+                          pszServerName);
+       }
+    }
+    *ppszServerFQDN = pszServerFQDN;
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+
+}
+
