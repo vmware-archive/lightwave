@@ -8,13 +8,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
-import java.nio.file.Paths;
+
+import com.vmware.identity.installer.ReleaseUtil;
 import com.vmware.identity.interop.registry.IRegistryAdapter;
 import com.vmware.identity.interop.registry.IRegistryKey;
 import com.vmware.identity.interop.registry.RegKeyAccess;
@@ -49,16 +51,27 @@ public class LinuxInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String[] getSTSServiceStartCommand() {
-       if (Files.exists(Paths.get("/.dockerenv"))) {
-            return new String[] { "/opt/vmware/sbin/vmware-stsd.sh", "start" };
-        } else {
-            return new String[] { "systemctl", "restart", "vmware-stsd" };
+    public String[] getSTSServiceStartCommand() throws SecureTokenServerInstallerException {
+        String[] stsStartCommand = null;
+        try {
+            if(ReleaseUtil.isLightwave()) {
+                 if (Files.exists(Paths.get("/.dockerenv"))) {
+                        return new String[] { "/opt/vmware/sbin/vmware-stsd.sh", "start" };
+                    } else {
+                        return new String[] { "systemctl", "restart", "vmware-stsd" };
+            } 
+                 }else {
+                stsStartCommand = new String[] { "/etc/init.d/vmware-stsd", "restart" };
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to get STS service start command");
+            throw new SecureTokenServerInstallerException("Failed to retrieve STS service start command", e);
         }
+        return stsStartCommand;
     }
 
     @Override
-    public String getTCBase() {
+    public String getTCBase() throws SecureTokenServerInstallerException {
         String tcRoot = getSSOHomePath();
         return tcRoot + File.separator + "vmware-sts";
     }
@@ -142,12 +155,21 @@ public class LinuxInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String getCertoolPath() {
-        return "/opt/vmware/bin/certool";
+    public String getCertoolPath() throws SecureTokenServerInstallerException {
+        try {
+            if(ReleaseUtil.isLightwave()) {
+                return "/opt/vmware/bin/certool";
+            } else {
+                return "/usr/lib/vmware-vmca/bin/certool";
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to get cert tool path");
+            throw new SecureTokenServerInstallerException("Failed to get cert tool path", e);
+        }
     }
 
     @Override
-    public String getVmcaSvcChkCommand(String hostname) {
+    public String getVmcaSvcChkCommand(String hostname) throws SecureTokenServerInstallerException {
         String command = null;
         if (hostname != null && !hostname.isEmpty()) {
             command = getCertoolPath() + " --WaitVMCA --server=" + hostname
@@ -176,8 +198,17 @@ public class LinuxInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String getSSOHomePath() {
-        return "/opt/vmware";
+    public String getSSOHomePath() throws SecureTokenServerInstallerException {
+        try {
+            if(ReleaseUtil.isLightwave()) {
+                return "/opt/vmware";
+            } else {
+                return "/usr/lib/vmware-sso";
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to get SSO homepath");
+            throw new SecureTokenServerInstallerException("Failed to get SSO homepath", e);
+        }
     }
 
     @Override

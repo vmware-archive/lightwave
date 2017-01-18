@@ -310,9 +310,9 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
 
     private void setServerAttributes() {
 
+	try {
         String filePath = InstallerUtils.joinPath( InstallerUtils.getInstallerHelper().getTCBase(),
                             "conf","server.xml");
-        try {
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
             Document doc = builder.parse(new File(filePath));
             NodeList connectorList = doc.getElementsByTagName("Connector");

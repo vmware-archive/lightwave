@@ -66,7 +66,7 @@ public class WinInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String getTCBase() {
+    public String getTCBase() throws SecureTokenServerInstallerException  {
         String runTimeFolder = System.getenv("VMWARE_RUNTIME_DATA_DIR");
         if (runTimeFolder == null) {
             String tcRoot = joinPath(System.getenv("ProgramData"),
@@ -92,7 +92,7 @@ public class WinInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String[] getSTSServiceStartCommand() {
+    public String[] getSTSServiceStartCommand() throws SecureTokenServerInstallerException {
         return new String[] { "sc.exe", "start", "VMwareSTS" };
     }
 
@@ -127,14 +127,14 @@ public class WinInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String getCertoolPath() {
+    public String getCertoolPath() throws SecureTokenServerInstallerException {
         return "\""
                 + joinPath(readRegEdit(VMCA_ROOT_KEY, INSTALL_PATH), "certool")
                 + "\"";
     }
 
     @Override
-    public String getVmcaSvcChkCommand(String hostname) {
+    public String getVmcaSvcChkCommand(String hostname) throws SecureTokenServerInstallerException {
         if (hostname != null && !hostname.isEmpty()) {
             return getCertoolPath() + " --WaitVMCA --server=" + hostname
                     + " --wait=10";

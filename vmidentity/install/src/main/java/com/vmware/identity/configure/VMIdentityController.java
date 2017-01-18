@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.vmware.identity.installer.ReleaseUtil;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
 import com.vmware.identity.interop.ldap.LdapBindMethod;
 import com.vmware.identity.interop.ldap.LdapConnectionFactoryEx;
@@ -250,10 +251,21 @@ public class VMIdentityController {
 
     private List<IPlatformComponentInstaller> getComponents(
             VmIdentityParams standaloneParams) {
-
         List<IPlatformComponentInstaller> components = new ArrayList<IPlatformComponentInstaller>();
-        components.add(new IdentityManagerInstaller(false, standaloneParams.isUpgradeMode()));
-        components.add(new SecureTokenServerInstaller(standaloneParams));
+        try {
+            if(ReleaseUtil.isLightwave()) {
+                components.add(new IdentityManagerInstaller(false, standaloneParams.isUpgradeMode()));
+                components.add(new SecureTokenServerInstaller(standaloneParams));
+                components.add(new LightwaveUIInstaller(standaloneParams));
+            } else {
+                components.add(new IdentityManagerInstaller(false, standaloneParams.isUpgradeMode()));
+                // components.add(new LookupServiceInstaller(false));
+                components.add(new SecureTokenServerInstaller(standaloneParams));
+                }
+        } catch (IOException e) {
+            System.err.println("Failed to fetch components for SecureTokenservice");
+            System.exit(1);
+        }
         return components;
     }
 

@@ -10,9 +10,9 @@ import java.nio.file.Path;
 public interface InstallerHelper {
     public String getSSOCertPath();
 
-    public String getCertoolPath();
+    public String getCertoolPath() throws SecureTokenServerInstallerException;
 
-    public String getVmcaSvcChkCommand(String hostname);
+    public String getVmcaSvcChkCommand(String hostname) throws SecureTokenServerInstallerException;
 
     public String getConfigFolderPath();
 
@@ -22,7 +22,7 @@ public interface InstallerHelper {
 
     public String getReverseProxyPath();
 
-    public String[] getSTSServiceStartCommand();
+    public String[] getSTSServiceStartCommand() throws SecureTokenServerInstallerException;
 
     public void configRegistry();
 
@@ -34,7 +34,7 @@ public interface InstallerHelper {
 
     public String getLogPaths();
 
-    public String getTCBase();
+    public String getTCBase() throws SecureTokenServerInstallerException;
 
     public String getConfigureStsPath();
 
@@ -42,7 +42,7 @@ public interface InstallerHelper {
 
     public void setPermissions(Path path) throws IOException;
 
-    public String getSSOHomePath();
+    public String getSSOHomePath() throws SecureTokenServerInstallerException;
 
     public String getIdmLoginPath();
 

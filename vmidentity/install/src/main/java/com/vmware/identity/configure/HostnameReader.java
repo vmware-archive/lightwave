@@ -1,5 +1,7 @@
 package com.vmware.identity.configure;
 
+import com.vmware.identity.installer.ReleaseUtil;
+
 /*
  *  Copyright (c) 2016 VMware, Inc.  All Rights Reserved.
  *
@@ -30,9 +32,9 @@ import java.io.IOException;
 public class HostnameReader {
     private static final String CONFIG_IDENTITY_ROOT_KEY = "Software\\VMware\\Identity\\Configuration";
     private static final String HOST_NAME_KEY = "Hostname";
-    private static final String PORT_NUMBER_KEY = "StsTcPort";
+    private static final String PORT_NUMBER_KEY_VSPHERE = "StsLocalTcPort"; // 7444
+    private static final String PORT_NUMBER_KEY_LIGHTWAVE = "StsTcPort"; // 443
     private String hostname;
-
 
     private static String read(String key) throws Exception {
         String value = null;
@@ -66,8 +68,17 @@ public class HostnameReader {
         return hostname;
     }
 
+    /**
+     * The HTTPS ports for STS varies based on release.
+     * <li> In lightwave, STS secure port is 443 </li>
+     * <li> In Vsphere release, STS secure port is 7444 </li>
+     */
     public static String readPortNumber() throws Exception {
-        return read(PORT_NUMBER_KEY);
+        if(ReleaseUtil.isLightwave()) {
+            return read(PORT_NUMBER_KEY_LIGHTWAVE);
+        } else {
+            return read(PORT_NUMBER_KEY_VSPHERE);
+        }
     }
 
     private static String readHostnameFromFile() throws IOException{
@@ -85,7 +96,7 @@ public class HostnameReader {
             String str = br.readLine().trim();
             if (str != null)
                 hostname  = str;
-       } catch (Exception ex){
+        } catch (Exception ex){
             System.out.println("failed to read hostname.txt file");
         } finally {
 
