@@ -146,6 +146,7 @@ VmDirSrvAccessCheck(
     ACCESS_MASK samGranted = 0;
     PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs = NULL;
     PVDIR_ENTRY pTargetEntry = pEntry;
+    BOOLEAN bIsAdminRole = FALSE;
 
     assert(pOperation);
     assert(accessDesired != 0);
@@ -179,6 +180,28 @@ VmDirSrvAccessCheck(
     }
     else
     {
+        //
+        // If the object doesn't have a security descriptor then we only allow
+        // access if the caller is an administrator. In general the only objects
+        // that don't have SDs are the tombstone entries.
+        //
+        if (pSecDescAbs == NULL)
+        {
+            dwError = VmDirSrvAccessCheckIsAdminRole(
+                        NULL,
+                        pAccessInfo->pszNormBindedDn,
+                        pAccessInfo,
+                        &bIsAdminRole);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            if (!bIsAdminRole)
+            {
+                BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
+            }
+
+            samGranted = accessDesired;
+            goto cleanup;
+        }
         // Check Access Token in connection
         dwError = VmDirSrvAccessCheckEntry(pAccessInfo->pAccessToken, pSecDescAbs, accessDesired, &samGranted);
         if (!dwError)
