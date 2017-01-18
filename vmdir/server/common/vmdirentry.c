@@ -1023,6 +1023,7 @@ _VmDirCreateTransientSecurityDescriptor(
     PSTR pszAdminsGroupSid = NULL;
     PSTR pszDomainAdminsGroupSid = NULL;
     PSTR pszDomainClientsGroupSid = NULL;
+    PSTR pszUsersGroupSid = NULL;
     VMDIR_SECURITY_DESCRIPTOR SecDesc = {0};
 
     dwError = VmDirGenerateWellknownSid(pszDomainDN,
@@ -1038,6 +1039,12 @@ _VmDirCreateTransientSecurityDescriptor(
     dwError = VmDirGenerateWellknownSid(pszDomainDN,
                                         VMDIR_DOMAIN_CLIENTS_RID,
                                         &pszDomainClientsGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGenerateWellknownSid(pszDomainDN,
+                                        VMDIR_DOMAIN_ALIAS_RID_USERS,
+                                        &pszUsersGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSrvCreateSecurityDescriptor(
                 VMDIR_ENTRY_ALL_ACCESS_NO_DELETE_CHILD,
@@ -1045,6 +1052,7 @@ _VmDirCreateTransientSecurityDescriptor(
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
                 pszDomainClientsGroupSid,
+                pszUsersGroupSid,
                 FALSE,
                 bAllowAnonymousRead,
                 FALSE,
@@ -1059,6 +1067,7 @@ cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszAdminsGroupSid);
     VMDIR_SAFE_FREE_STRINGA(pszDomainAdminsGroupSid);
     VMDIR_SAFE_FREE_STRINGA(pszDomainClientsGroupSid);
+    VMDIR_SAFE_FREE_STRINGA(pszUsersGroupSid);
     return dwError;
 error:
     goto cleanup;

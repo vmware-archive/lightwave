@@ -22,6 +22,7 @@ VmDirBuildDefaultDaclForEntry(
     PCSTR   pszAdminsGroupSid,
     PCSTR   pszDomainAdminsGroupSid,
     PCSTR   pszDomainClientsGroupSid,
+    PCSTR   pszUsersGroupSid,
     BOOLEAN bAnonymousRead,
     BOOLEAN bServicesDacl,
     PACL *  ppDacl
@@ -357,6 +358,7 @@ VmDirSrvCreateSecurityDescriptor(
     PCSTR pszAdminsGroupSid,
     PCSTR pszDomainAdminsGroupSid,
     PCSTR pszDomainClientsGroupSid,
+    PCSTR   pszUsersGroupSid,
     BOOLEAN bProtectedDacl,
     BOOLEAN bAnonymousRead,
     BOOLEAN bServicesDacl,
@@ -422,6 +424,7 @@ VmDirSrvCreateSecurityDescriptor(
                                             pszAdminsGroupSid,
                                             pszDomainAdminsGroupSid,
                                             pszDomainClientsGroupSid,
+                                            pszUsersGroupSid,
                                             bAnonymousRead,
                                             bServicesDacl,
                                             &pDacl);
@@ -570,6 +573,7 @@ VmDirBuildDefaultDaclForEntry(
     PCSTR   pszAdminsGroupSid,
     PCSTR   pszDomainAdminsGroupSid,
     PCSTR   pszDomainClientsGroupSid,
+    PCSTR   pszUsersGroupSid,
     BOOLEAN bAnonymousRead,
     BOOLEAN bServicesDacl,
     PACL *  ppDacl
@@ -582,6 +586,7 @@ VmDirBuildDefaultDaclForEntry(
     PSID    pDomainClients = NULL;
     PSID    pSelfSid = NULL;
     PSID    pAnonymousSid = NULL;
+    PSID    pUsersGroupSid = NULL;
     DWORD   dwSidCount = 0;
     PACL    pDacl = NULL;
 
@@ -595,6 +600,10 @@ VmDirBuildDefaultDaclForEntry(
     if (bAnonymousRead)
     {
         dwError = VmDirAllocateSidFromCString(VMDIR_ANONYMOUS_LOGON_SID, &pAnonymousSid);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        dwSidCount++;
+
+        dwError = VmDirAllocateSidFromCString(pszUsersGroupSid, &pUsersGroupSid);
         BAIL_ON_VMDIR_ERROR(dwError);
         dwSidCount++;
     }
@@ -616,6 +625,7 @@ VmDirBuildDefaultDaclForEntry(
         VmDirLengthSid(pOwnerSid) +
         VmDirLengthSid(pSelfSid) +
         (bAnonymousRead ? VmDirLengthSid(pAnonymousSid) : 0) +
+        (bAnonymousRead ? VmDirLengthSid(pUsersGroupSid) : 0) +
         VmDirLengthSid(pBuiltInAdmins) +
         VmDirLengthSid(pDomainAdmins) +
         VmDirLengthSid(pDomainClients) -
@@ -672,12 +682,20 @@ VmDirBuildDefaultDaclForEntry(
                                              VMDIR_RIGHT_DS_READ_PROP,
                                              pAnonymousSid);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirAddAccessAllowedAceEx(pDacl,
+                                             ACL_REVISION,
+                                             OBJECT_INHERIT_ACE | CONTAINER_INHERIT_ACE,
+                                             VMDIR_RIGHT_DS_READ_PROP,
+                                             pUsersGroupSid);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     *ppDacl = pDacl;
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pSelfSid);
+    VMDIR_SAFE_FREE_MEMORY(pUsersGroupSid);
     VMDIR_SAFE_FREE_MEMORY(pAnonymousSid);
     VMDIR_SAFE_FREE_MEMORY(pDomainAdmins);
     VMDIR_SAFE_FREE_MEMORY(pDomainClients);

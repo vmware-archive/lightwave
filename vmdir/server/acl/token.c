@@ -31,6 +31,7 @@ static
 DWORD
 _VmDirBuildTokenGroups(
     PVDIR_ENTRY     pEntry,
+    PCSTR           pszBuiltinUsersGroupSid,
     PTOKEN_GROUPS * ppTokenGroups
     );
 
@@ -116,7 +117,7 @@ VmDirSrvCreateAccessTokenWithEntry(
     dwError = VmDirAllocateSidFromCString(pszBuildinUsersGroupSid, &primaryGroup.PrimaryGroup);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _VmDirBuildTokenGroups(pEntry, &pGroups);
+    dwError = _VmDirBuildTokenGroups(pEntry, pszBuildinUsersGroupSid, &pGroups);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirCreateAccessToken(&pToken,
@@ -171,10 +172,16 @@ error:
 }
 
 
+//
+// Builds up a list of all the groups this user is a member of. Note that all
+// known/authenticated users belong to the "Users" group (and the rest are
+// dictated by the "memberOf" attribute).
+//
 static
 DWORD
 _VmDirBuildTokenGroups(
     PVDIR_ENTRY     pEntry,
+    PCSTR           pszBuiltinUsersGroupSid,
     PTOKEN_GROUPS * ppTokenGroups)
 {
     DWORD               dwError = ERROR_SUCCESS;
@@ -184,6 +191,7 @@ _VmDirBuildTokenGroups(
     VDIR_OPERATION      searchOp = {0};
     BOOLEAN             bHasTxn = FALSE;
     PTOKEN_GROUPS       pLocalTokenGroups = NULL;
+    DWORD               dwGroupCount = 0;
 
     if ( pEntry == NULL || ppTokenGroups == NULL )
     {
@@ -205,15 +213,33 @@ _VmDirBuildTokenGroups(
     dwError = VmDirBuildMemberOfAttribute( &searchOp, pEntry, &pMemberOfAttr );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (pMemberOfAttr != NULL)
+    {
+        dwGroupCount = pMemberOfAttr->numVals + 1;
+    }
+    else
+    {
+        dwGroupCount = 1;
+    }
+
     // SJ-TBD: Do we need to align the address??
     dwError = VmDirAllocateMemory( sizeof(TOKEN_GROUPS) +
-                                   (sizeof(SID_AND_ATTRIBUTES) * (pMemberOfAttr ? pMemberOfAttr->numVals : 0)),
+                                   (sizeof(SID_AND_ATTRIBUTES) * dwGroupCount),
                                    (PVOID*)&pLocalTokenGroups );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirAllocateSidFromCString(
+                pszBuiltinUsersGroupSid,
+                &pLocalTokenGroups->Groups[0].Sid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // SJ-TBD: should be set on the basis of status of the group??
+    pLocalTokenGroups->Groups[0].Attributes = SE_GROUP_ENABLED;
+
+    pLocalTokenGroups->GroupCount = dwGroupCount;
+
     if (pMemberOfAttr)
     {
-        pLocalTokenGroups->GroupCount = pMemberOfAttr->numVals;
 
         for (i = 0; i < pMemberOfAttr->numVals; i++)
         {
@@ -227,11 +253,11 @@ _VmDirBuildTokenGroups(
                 continue;
             }
 
-            dwError = VmDirGetObjectSidFromEntry(pGroupEntry, NULL, &pLocalTokenGroups->Groups[i].Sid);
+            dwError = VmDirGetObjectSidFromEntry(pGroupEntry, NULL, &pLocalTokenGroups->Groups[i + 1].Sid);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             // SJ-TBD: should be set on the basis of status of the group??
-            pLocalTokenGroups->Groups[i].Attributes = SE_GROUP_ENABLED;
+            pLocalTokenGroups->Groups[i + 1].Attributes = SE_GROUP_ENABLED;
 
             VmDirFreeEntry(pGroupEntry);
             pGroupEntry = NULL;

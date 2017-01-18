@@ -638,6 +638,7 @@ VmDirSrvSetupDomainInstance(
     PSTR pszAdminsGroupSid = NULL;
     PSTR pszDomainAdminsGroupSid = NULL;
     PSTR pszDomainClientsGroupSid = NULL;
+    PSTR pszUsersGroupSid = NULL;
     PSTR pszKrbtgtSid = NULL;
     PSTR pszAdminUserKrbUPN = NULL;
 
@@ -778,6 +779,11 @@ VmDirSrvSetupDomainInstance(
                                         &pszDomainClientsGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirGenerateWellknownSid(pszDomainDN,
+                                        VMDIR_DOMAIN_ALIAS_RID_USERS,
+                                        &pszUsersGroupSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     //
     // Create the admin group for tenant setup or for first host setup.
     //
@@ -846,6 +852,7 @@ VmDirSrvSetupDomainInstance(
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
                 pszDomainClientsGroupSid,
+                pszUsersGroupSid,
                 FALSE,
                 FALSE,
                 FALSE,
@@ -863,6 +870,7 @@ VmDirSrvSetupDomainInstance(
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
                 pszDomainClientsGroupSid,
+                pszUsersGroupSid,
                 TRUE,
                 FALSE,
                 FALSE,
@@ -882,6 +890,7 @@ VmDirSrvSetupDomainInstance(
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
                 pszDomainClientsGroupSid,
+                pszUsersGroupSid,
                 FALSE,
                 FALSE,
                 FALSE,
@@ -894,6 +903,7 @@ VmDirSrvSetupDomainInstance(
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
                 pszDomainClientsGroupSid,
+                pszUsersGroupSid,
                 FALSE,
                 TRUE,
                 FALSE,
@@ -906,6 +916,7 @@ VmDirSrvSetupDomainInstance(
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
                 pszDomainClientsGroupSid,
+                pszUsersGroupSid,
                 FALSE,
                 FALSE,
                 TRUE,
@@ -918,6 +929,7 @@ VmDirSrvSetupDomainInstance(
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
                 pszDomainClientsGroupSid,
+                pszUsersGroupSid,
                 TRUE,
                 FALSE,
                 TRUE,
@@ -1059,6 +1071,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszAdminsGroupSid);
     VMDIR_SAFE_FREE_MEMORY(pszDomainAdminsGroupSid);
     VMDIR_SAFE_FREE_MEMORY(pszDomainClientsGroupSid);
+    VMDIR_SAFE_FREE_MEMORY(pszUsersGroupSid);
     VMDIR_SAFE_FREE_STRINGA(pszKrbtgtSid);
     VMDIR_SAFE_FREE_MEMORY(pszAdminUserKrbUPN);
     VMDIR_SAFE_FREE_MEMORY(pszTgtDN);
