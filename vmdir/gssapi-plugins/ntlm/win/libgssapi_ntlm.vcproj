@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\thirdparty&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\thirdparty&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
 				PreprocessorDefinitions="WIN32;WIN32_LEAN_AND_MEAN;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;_MIT_KRB5_1_11"
 				GeneratePreprocessedFile="0"
 				MinimalRebuild="true"
@@ -60,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -68,7 +68,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libvmdirclient.lib libcsrp.lib libsasl.lib liblber.lib libldap_r.lib gssapi64.lib krb5_64.lib ws2_32.lib libeay32.lib ssleay32.lib"
-				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
 				ModuleDefinitionFile="libgssapi_ntlm.def"
 				GenerateDebugInformation="true"
 				TargetMachine="17"
@@ -124,7 +124,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\thirdparty&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\thirdparty&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
 				PreprocessorDefinitions="WIN32;WIN32_LEAN_AND_MEAN;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;_MIT_KRB5_1_11"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -139,7 +139,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -147,7 +147,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libvmdirclient.lib libcsrp.lib libsasl.lib liblber.lib libldap_r.lib gssapi64.lib krb5_64.lib ws2_32.lib libeay32.lib ssleay32.lib"
-				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
 				ModuleDefinitionFile="libgssapi_ntlm.def"
 				TargetMachine="17"
 			/>

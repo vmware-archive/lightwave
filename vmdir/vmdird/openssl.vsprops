@@ -11,17 +11,17 @@
 
     <Tool
         Name="VCCLCompilerTool"
-        AdditionalIncludeDirectories="&quot;$(VMDIR_OPENSSL_ROOT)\win64_vc90sp1\include&quot;"
+        AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_OPENSSL_ROOT)\win64_vc90sp1\include&quot;"
     />
 
     <Tool
         Name="VCLibrarianTool"
-        AdditionalLibraryDirectories="&quot;$(VMDIR_OPENSSL_ROOT)\win64_vc90sp1\lib&quot;"
+        AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_OPENSSL_ROOT)\win64_vc90sp1\lib&quot;"
     />
 
     <Tool
         Name="VCLinkerTool"
-        AdditionalLibraryDirectories="&quot;$(VMDIR_OPENSSL_ROOT)\win64_vc90sp1\lib&quot;"
+        AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_OPENSSL_ROOT)\win64_vc90sp1\lib&quot;"
     />
 
 </VisualStudioPropertySheet>

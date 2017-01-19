@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;HAVE_PTHREADS_WIN32"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -108,7 +108,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;HAVE_PTHREADS_WIN32"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"

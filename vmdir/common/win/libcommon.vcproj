@@ -68,7 +68,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalDependencies="libasn1.lib libasn1db.lib libkrb5-crypto.lib ssleay32.lib liblber.lib libldap_r.lib libeay32.lib"
-				AdditionalLibraryDirectories="&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(configurationName)\lib&quot;;&quot;$(OutDir)&quot;"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(configurationName)\lib&quot;;&quot;$(OutDir)&quot;"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -138,7 +138,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				AdditionalDependencies="libasn1.lib libasn1db.lib libkrb5-crypto.lib ssleay32.lib liblber.lib libldap_r.lib libeay32.lib"
-				AdditionalLibraryDirectories="&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(configurationName)\lib&quot;;&quot;$(OutDir)&quot;"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(configurationName)\lib&quot;;&quot;$(OutDir)&quot;"
 			/>
 			<Tool
 				Name="VCALinkTool"

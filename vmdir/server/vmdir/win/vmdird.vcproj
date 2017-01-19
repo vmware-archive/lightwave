@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(OutDir)&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;&quot;$(SolutionDir)..\thirdparty&quot;;&quot;$(VMDIR_EVENT_LOG_ROOT)\include&quot;;.."
+				AdditionalIncludeDirectories="&quot;$(OutDir)&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;&quot;$(SolutionDir)..\thirdparty&quot;;&quot;$(LIGHTWAVE_EVENT_LOG_ROOT)\include&quot;;.."
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS"
 				GeneratePreprocessedFile="0"
 				MinimalRebuild="true"
@@ -60,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -68,7 +68,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libldap-head.lib libldap_r.lib libsasl.lib libasn1.lib libasn1db.lib libkrb5-crypto.lib liblber.lib libmdb.lib libeay32.lib ssleay32.lib ws2_32.lib user32.lib Gdi32.lib libcommon.lib libsrvcommon.lib libbackend.lib libindexcfg.lib libmiddle-layer.lib libvmdirclient.lib libreplication.lib libschema.lib libvmacl.lib libmdb-store.lib libkdcd.lib libcsrp.lib krb5_64.lib Shlwapi.lib libvmdirlogging.lib"
-				AdditionalLibraryDirectories="&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
 				GenerateDebugInformation="true"
 			/>
 			<Tool
@@ -123,7 +123,7 @@
 				UseUnicodeResponseFiles="true"
 				Optimization="0"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(OutDir)&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;&quot;$(SolutionDir)..\thirdparty&quot;;&quot;$(VMDIR_EVENT_LOG_ROOT)\include&quot;;.."
+				AdditionalIncludeDirectories="&quot;$(OutDir)&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;&quot;$(SolutionDir)..\thirdparty&quot;;&quot;$(LIGHTWAVE_EVENT_LOG_ROOT)\include&quot;;.."
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -138,7 +138,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
 				ShowProgress="false"
 			/>
 			<Tool
@@ -147,7 +147,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libldap-head.lib libldap_r.lib libsasl.lib libasn1.lib libasn1db.lib libkrb5-crypto.lib liblber.lib libmdb.lib libeay32.lib ssleay32.lib ws2_32.lib user32.lib Gdi32.lib libcommon.lib libsrvcommon.lib libbackend.lib libindexcfg.lib libmiddle-layer.lib libvmdirclient.lib libreplication.lib libschema.lib libvmacl.lib libmdb-store.lib libkdcd.lib libcsrp.lib krb5_64.lib Shlwapi.lib libvmdirlogging.lib"
-				AdditionalLibraryDirectories="&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
 				IgnoreAllDefaultLibraries="false"
 				GenerateDebugInformation="true"
 			/>

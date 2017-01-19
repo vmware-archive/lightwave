@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\server\kdctools&quot;;&quot;$(SolutionDir)..\include\win&quot;;&quot;$(SolutionDir)..\include\public&quot;;&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\server&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\server\kdctools&quot;;&quot;$(SolutionDir)..\include\win&quot;;&quot;$(SolutionDir)..\include\public&quot;;&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\server&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;PACKAGE_NAME;_STATIC_ASN1_LIB"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -106,7 +106,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\server\kdctools&quot;;&quot;$(SolutionDir)..\server&quot;;&quot;$(solutionDir)..\server\include&quot;;&quot;$(SolutionDir)\include\win&quot;;&quot;$(SolutionDir)include\public&quot;;&quot;$(SolutionDir)\include&quot;;&quot;$(SolutionDir)server\include&quot;;&quot;$(SolutionDir)server&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\server\kdctools&quot;;&quot;$(SolutionDir)..\server&quot;;&quot;$(solutionDir)..\server\include&quot;;&quot;$(SolutionDir)\include\win&quot;;&quot;$(SolutionDir)include\public&quot;;&quot;$(SolutionDir)\include&quot;;&quot;$(SolutionDir)server\include&quot;;&quot;$(SolutionDir)server&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;PACKAGE_NAME;_STATIC_ASN1_LIB"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"

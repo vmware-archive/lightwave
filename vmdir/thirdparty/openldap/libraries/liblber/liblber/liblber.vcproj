@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\..\..\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\..\..\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;LIBLBER_EXPORTS;LBER_LIBRARY"
 				GeneratePreprocessedFile="0"
 				MinimalRebuild="true"
@@ -66,7 +66,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib"
-				AdditionalLibraryDirectories="&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
 				ModuleDefinitionFile="$(ProjectDir)liblber.def"
 				GenerateDebugInformation="true"
 			/>
@@ -120,7 +120,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\..\..\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\..\..\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;LIBLBER_EXPORTS;LBER_LIBRARY"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -134,7 +134,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -142,7 +142,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib"
-				AdditionalLibraryDirectories="&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
 				ModuleDefinitionFile="$(ProjectDir)liblber.def"
 				GenerateDebugInformation="true"
 			/>

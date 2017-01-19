@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include\win&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include\win&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -64,7 +64,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libeay32.lib ws2_32.lib"
-				AdditionalLibraryDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Lib\amd6&quot;"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd6&quot;"
 				ModuleDefinitionFile="krb5-crypto.def"
 				GenerateDebugInformation="true"
 				TargetMachine="17"
@@ -116,7 +116,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include\win&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\include\win&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
 				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
@@ -136,7 +136,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libeay32.lib ws2_32.lib"
-				AdditionalLibraryDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\Lib\amd6&quot;"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd6&quot;"
 				ModuleDefinitionFile="krb5-crypto.def"
 				GenerateDebugInformation="true"
 				TargetMachine="17"

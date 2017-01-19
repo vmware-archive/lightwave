@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;.."
+				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;.."
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS"
 				GeneratePreprocessedFile="0"
 				MinimalRebuild="true"
@@ -113,7 +113,7 @@
 				UseUnicodeResponseFiles="true"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;.."
+				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;.."
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"

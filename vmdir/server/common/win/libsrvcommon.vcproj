@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;..\..;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;;&quot;$(SolutionDir)..\thirdparty&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;.."
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)..\server\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;..\..;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;;&quot;$(SolutionDir)..\thirdparty&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;.."
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS"
 				GeneratePreprocessedFile="0"
 				MinimalRebuild="true"

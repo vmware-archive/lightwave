@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;;&quot;$(VMDIR_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;"
+				AdditionalIncludeDirectories="..;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;PACKAGE_NAME;_USRDLL;LOGGING_EXPORTS"
 				GeneratePreprocessedFile="0"
 				MinimalRebuild="true"
@@ -60,7 +60,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
@@ -136,7 +136,7 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(VMDIR_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(VMDIR_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
