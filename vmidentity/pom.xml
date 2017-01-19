@@ -95,7 +95,6 @@
     <streambuffer.version>1.5.3</streambuffer.version>
     <stax2-api.version>3.0.1</stax2-api.version>
     <woodstox-core.version>4.0.5</woodstox-core.version>
-    <opensaml.xml.version>2.10.0</opensaml.xml.version>
 
     <easymock.version>3.2</easymock.version>
     <cobertura.version>1.9.4.1</cobertura.version>

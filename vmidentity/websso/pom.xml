@@ -114,10 +114,12 @@
       <dependency>
         <groupId>com.vmware.identity</groupId>
         <artifactId>vmware-identity-diagnostics</artifactId>
+        <version>${vmware.version}</version>
       </dependency>
       <dependency>
         <groupId>com.vmware.identity.idm</groupId>
         <artifactId>vmware-identity-idm-client</artifactId>
+        <version>${vmware.version}</version>
         <exclusions>
          <exclusion>
           <groupId>javax.servlet</groupId>
@@ -128,64 +130,77 @@
       <dependency>
         <groupId>com.vmware.identity.idm</groupId>
         <artifactId>vmware-identity-idm-interface</artifactId>
+        <version>${vmware.version}</version>
       </dependency>
       <dependency>
         <groupId>com.vmware.identity</groupId>
         <artifactId>vmware-identity-websso-client</artifactId>
+        <version>${vmware.version}</version>
       </dependency>
       <dependency>
         <groupId>com.vmware.identity</groupId>
         <artifactId>afd-heartbeat-service</artifactId>
+        <version>${vmware.version}</version>
         <scope>provided</scope>
       </dependency>
       <dependency>
         <groupId>com.vmware.identity.commons</groupId>
         <artifactId>samltoken</artifactId>
+        <version>${vmware.version}</version>
       </dependency>
       <dependency>
         <groupId>com.vmware.identity</groupId>
         <artifactId>samlauthority</artifactId>
+        <version>${vmware.version}</version>
       </dependency>
 
-      <!-- Spring dependencies -->
+
+     <!-- Spring dependencies -->
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-core</artifactId>
+        <version>${spring.release.version}</version>
       </dependency>
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-aop</artifactId>
+        <version>${spring.release.version}</version>
       </dependency>
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-beans</artifactId>
+        <version>${spring.release.version}</version>
       </dependency>
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-context</artifactId>
+        <version>${spring.release.version}</version>
       </dependency>
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-expression</artifactId>
+        <version>${spring.release.version}</version>
       </dependency>
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-test</artifactId>
+        <version>${spring.release.version}</version>
       </dependency>
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-web</artifactId>
+        <version>${spring.release.version}</version>
       </dependency>
       <dependency>
         <groupId>org.springframework</groupId>
         <artifactId>spring-webmvc</artifactId>
+        <version>${spring.release.version}</version>
       </dependency>
-
 
       <dependency>
         <groupId>javax.servlet.jsp.jstl</groupId>
         <artifactId>jstl-api</artifactId>
-        <version>1.2</version>
+        <version>${jstl.version}</version>
         <exclusions>
          <exclusion>
           <groupId>javax.servlet</groupId>
@@ -196,7 +211,7 @@
       <dependency>
         <groupId>org.glassfish.web</groupId>
         <artifactId>jstl-impl</artifactId>
-       <version>1.2</version>
+        <version>${jstl.version}</version>
         <exclusions>
          <exclusion>
           <groupId>javax.servlet</groupId>
@@ -207,35 +222,42 @@
       <dependency>
         <groupId>javax.servlet</groupId>
         <artifactId>javax.servlet-api</artifactId>
-        <version>3.0.1</version>
+        <version>${javax.servlet.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-api</artifactId>
+        <version>${apache.log4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-core</artifactId>
+        <version>${apache.log4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>jcl-over-slf4j</artifactId>
+        <version>${slf4j.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-1.2-api</artifactId>
+        <version>${log4j.12.api.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-slf4j-impl</artifactId>
+        <version>${apache.log4j.version}</version>
       </dependency>
       <dependency>
        <groupId>log4j</groupId>
        <artifactId>log4j</artifactId>
+       <version>${log4j.version}</version>
       </dependency>
 
       <!-- Http Dependencies -->
@@ -322,47 +344,58 @@
       <dependency>
         <groupId>xerces</groupId>
         <artifactId>xercesImpl</artifactId>
+        <version>${xerces.impl.version}</version>
       </dependency>
       <dependency>
         <groupId>xalan</groupId>
         <artifactId>xalan</artifactId>
+        <version>${xalan.version}</version>
       </dependency>
       <dependency>
         <groupId>xml-resolver</groupId>
         <artifactId>xml-resolver</artifactId>
+        <version>${xml.resolver.version}</version>
       </dependency>
       <dependency>
         <groupId>xml-apis</groupId>
         <artifactId>xml-apis</artifactId>
+        <version>${xml.api.version}</version>
       </dependency>
       <dependency>
         <groupId>xalan</groupId>
         <artifactId>serializer</artifactId>
+        <version>${serializer.version}</version>
       </dependency>
 
 
      <dependency>
        <groupId>junit</groupId>
        <artifactId>junit</artifactId>
+       <version>${junit.version}</version>
        <scope>test</scope>
      </dependency>
      <dependency>
        <groupId>org.easymock</groupId>
        <artifactId>easymock</artifactId>
+       <version>${easymock.version}</version>
        <scope>test</scope>
      </dependency>
      <dependency>
         <groupId>org.objenesis</groupId>
         <artifactId>objenesis</artifactId>
+        <version>${objenesis.version}</version>
      </dependency>
      <dependency>
         <groupId>cglib</groupId>
         <artifactId>cglib</artifactId>
+        <version>${cglib.version}</version>
      </dependency>
      <dependency>
         <groupId>asm</groupId>
         <artifactId>asm</artifactId>
+        <version>${asm.version}</version>
      </dependency>
+
  </dependencies>
 
  <properties>

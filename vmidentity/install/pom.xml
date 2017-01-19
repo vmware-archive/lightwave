@@ -109,62 +109,74 @@
       <dependency>
         <groupId>com.vmware.identity</groupId>
         <artifactId>vmware-identity-diagnostics</artifactId>
+        <version>${vmware.version}</version>
       </dependency>
 
       <dependency>
         <groupId>com.vmware.identity</groupId>
         <artifactId>vmware-identity-platform</artifactId>
+        <version>${vmware.version}</version>
       </dependency>
 
       <dependency>
         <groupId>com.vmware.identity.idm</groupId>
         <artifactId>vmware-identity-idm-client</artifactId>
+        <version>${vmware.version}</version>
       </dependency>
 
       <dependency>
         <groupId>com.vmware.identity.idm</groupId>
         <artifactId>vmware-identity-idm-interface</artifactId>
+        <version>${vmware.version}</version>
       </dependency>
 
       <dependency>
         <groupId>com.vmware.identity.idm</groupId>
         <artifactId>vmware-identity-idm-server</artifactId>
+        <version>${vmware.version}</version>
       </dependency>
 
       <dependency>
         <groupId>com.vmware.identity.commons</groupId>
         <artifactId>samltoken</artifactId>
+        <version>${vmware.version}</version>
       </dependency>
 
      <dependency>
        <groupId>com.vmware.identity</groupId>
        <artifactId>vmware-endpoint-certificate-store</artifactId>
+       <version>${vmware.version}</version>
      </dependency>
 
      <dependency>
        <groupId>com.vmware.identity</groupId>
        <artifactId>vmware-vmca-client</artifactId>
+       <version>${vmware.version}</version>
      </dependency>
 
      <dependency>
        <groupId>com.vmware.identity</groupId>
        <artifactId>authentication-framework</artifactId>
+       <version>${vmware.version}</version>
      </dependency>
 
      <!-- Commons Dependencies -->
      <dependency>
        <groupId>commons-logging</groupId>
        <artifactId>commons-logging</artifactId>
+       <version>${commons.logging.version}</version>
      </dependency>
 
      <dependency>
        <groupId>commons-codec</groupId>
        <artifactId>commons-codec</artifactId>
+       <version>${commons.codec.version}</version>
      </dependency>
 
       <dependency>
         <groupId>commons-lang</groupId>
         <artifactId>commons-lang</artifactId>
+        <version>${commons.lang.version}</version>
       </dependency>
 
     <!-- Logger Dependencies -->
@@ -172,51 +184,61 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jcl-over-slf4j</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>
+      <version>${apache.log4j.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
+      <version>${apache.log4j.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-1.2-api</artifactId>
+      <version>${log4j.12.api.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-slf4j-impl</artifactId>
+      <version>${apache.log4j.version}</version>
     </dependency>
 
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
       </dependency>
 
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>jcl-over-slf4j</artifactId>
+        <version>${slf4j.version}</version>
      </dependency>
 
      <dependency>
        <groupId>org.slf4j</groupId>
        <artifactId>slf4j-log4j12</artifactId>
+       <version>${slf4j.version}</version>
      </dependency>
 
      <dependency>
        <groupId>log4j</groupId>
        <artifactId>log4j</artifactId>
+       <version>${log4j.version}</version>
     </dependency>
 
  </dependencies>

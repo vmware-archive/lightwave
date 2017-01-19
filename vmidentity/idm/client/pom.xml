@@ -68,54 +68,67 @@
 
   <dependencies>
 
-    <dependency>
+   <dependency>
       <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-interface</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.vmware.identity.idm</groupId>
-      <artifactId>vmware-identity-idm-server</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
     <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>vmware-identity-diagnostics</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.vmware.identity.idm</groupId>
+      <artifactId>vmware-identity-idm-server</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
 
     <dependency>
       <groupId>xerces</groupId>
       <artifactId>xercesImpl</artifactId>
+      <version>${xerces.impl.version}</version>
     </dependency>
     <dependency>
       <groupId>xalan</groupId>
       <artifactId>xalan</artifactId>
+      <version>${xalan.version}</version>
     </dependency>
     <dependency>
       <groupId>xml-resolver</groupId>
       <artifactId>xml-resolver</artifactId>
+      <version>${xml.resolver.version}</version>
     </dependency>
+
     <dependency>
       <groupId>org.opensaml</groupId>
       <artifactId>xmltooling</artifactId>
+      <version>${xml.tooling.version}</version>
     <exclusions>
       <exclusion>
         <groupId>org.bouncycastle</groupId>
         <artifactId>bcprov-jdk15</artifactId>
       </exclusion>
-    </exclusions> 
+    </exclusions>
    </dependency>
+
     <dependency>
       <groupId>commons-logging</groupId>
       <artifactId>commons-logging</artifactId>
+      <version>${commons.logging.version}</version>
     </dependency>
 
     <dependency>
       <groupId>net.sourceforge.cobertura</groupId>
       <artifactId>cobertura</artifactId>
+      <version>${cobertura.version}</version>
     </dependency>
 
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
+      <version>${commons.lang.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -123,44 +136,53 @@
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>
+      <version>${apache.log4j.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
+      <version>${apache.log4j.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-1.2-api</artifactId>
+      <version>${log4j.12.api.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-slf4j-impl</artifactId>
+      <version>${apache.log4j.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jcl-over-slf4j</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
 
     <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
+      <version>${log4j.version}</version>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
+
  </dependencies>
 
  <properties>

@@ -136,11 +136,13 @@
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
+      <version>${commons.lang.version}</version>
     </dependency>
 
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
+      <version>${commons.codec.version}</version>
     </dependency>
 
     <!-- Logger Dependencies -->
@@ -148,16 +150,19 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jcl-over-slf4j</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-log4j12</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
 
      <dependency>
@@ -165,12 +170,15 @@
        <artifactId>log4j</artifactId>
        <version>${log4j.version}</version>
      </dependency>
+
      <dependency>
        <groupId>junit</groupId>
        <artifactId>junit</artifactId>
+       <version>${junit.version}</version>
      </dependency>
 
- </dependencies>
+
+   </dependencies>
 
  <properties>
     <bundle.manifestTemplatePath>${basedir}/conf/osgi/ssoClientTemplate.mf</bundle.manifestTemplatePath>

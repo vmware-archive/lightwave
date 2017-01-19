@@ -96,18 +96,22 @@
     <dependency>
       <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-client</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
     <dependency>
       <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-interface</artifactId>
+      <version>${vmware.version}</version>
       </dependency>
     <dependency>
       <groupId>com.vmware.identity.commons</groupId>
       <artifactId>samltoken</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
+      <version>${commons.lang.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>
@@ -117,6 +121,7 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
       <scope>test</scope>
     </dependency>
  </dependencies>

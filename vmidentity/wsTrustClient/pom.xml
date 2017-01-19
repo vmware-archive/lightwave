@@ -109,16 +109,19 @@ Bundle-Vendor: ${bundle.vendor}
     <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>client-domain-controller-cache</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.vmware.identity</groupId>
       <artifactId>vmware-endpoint-certificate-store</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
 
     <dependency>
       <groupId>com.vmware.identity.commons</groupId>
       <artifactId>samltoken</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
     <dependency>
       <groupId>com.vmware.identity.commons</groupId>
@@ -129,6 +132,7 @@ Bundle-Vendor: ${bundle.vendor}
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
+      <version>${commons.codec.version}</version>
     </dependency>
 
     <!-- Logger Dependencies -->
@@ -136,16 +140,19 @@ Bundle-Vendor: ${bundle.vendor}
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jcl-over-slf4j</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-log4j12</artifactId>
+      <version>${slf4j.version}</version>
     </dependency>
 
     <dependency>
@@ -157,24 +164,29 @@ Bundle-Vendor: ${bundle.vendor}
      <dependency>
        <groupId>junit</groupId>
        <artifactId>junit</artifactId>
+       <version>${junit.version}</version>
        <scope>test</scope>
      </dependency>
      <dependency>
        <groupId>org.easymock</groupId>
        <artifactId>easymock</artifactId>
+       <version>${easymock.version}</version>
        <scope>test</scope>
      </dependency>
       <dependency>
         <groupId>org.objenesis</groupId>
         <artifactId>objenesis</artifactId>
+        <version>${objenesis.version}</version>
       </dependency>
       <dependency>
         <groupId>cglib</groupId>
         <artifactId>cglib</artifactId>
+        <version>${cglib.version}</version>
       </dependency>
       <dependency>
         <groupId>asm</groupId>
         <artifactId>asm</artifactId>
+        <version>${asm.version}</version>
       </dependency>
 
  </dependencies>
