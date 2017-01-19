@@ -7,7 +7,7 @@
 	<Tool
 		Name="VCCLCompilerTool"
 		AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;&quot;$(SolutionDir)..\common\win&quot;;&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\include\public&quot;;&quot;$(SolutionDir)..\include\win&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\include\win32&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\libldap&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\mdb&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\libraries\liblber&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
-		PreprocessorDefinitions="HAVE_DCERPC_WIN32;HAVE_PTHREADS_WIN32;HAVE_NCACN_IP_TCP;UUID_DEFINED;VDIR_PSC_VERSION=&quot;$(LIGHTWAVE_VERSION)&quot;"
+		PreprocessorDefinitions="HAVE_DCERPC_WIN32;HAVE_PTHREADS_WIN32;HAVE_NCACN_IP_TCP;UUID_DEFINED;VDIR_PSC_VERSION=$(LIGHTWAVE_VERSION_STRING)"
 	/>
 	<Tool
 		Name="VCLinkerTool"
