@@ -40,7 +40,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)..\include\public&quot;;&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\include\win&quot;;&quot;$(SolutionDir)..\common\win&quot;;&quot;$(SolutionDir)..\server&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(VMDIR_LIKEWISE_ROOT)\include\win32&quot;;&quot;$(VMDIR_LIKEWISE_ROOT)\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)..\include\public&quot;;&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\include\win&quot;;&quot;$(SolutionDir)..\common\win&quot;;&quot;$(SolutionDir)..\server&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\include\win32&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;PACKAGE_NAME;HAVE_DCERPC_WIN32"
 				RuntimeLibrary="3"
 				DebugInformationFormat="3"
@@ -108,7 +108,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)..\include\public&quot;;&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\include\win&quot;;&quot;$(SolutionDir)..\common\win&quot;;&quot;$(SolutionDir)..\server&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(VMDIR_LIKEWISE_ROOT)\include\win32&quot;;&quot;$(VMDIR_LIKEWISE_ROOT)\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)..\include\public&quot;;&quot;$(SolutionDir)..\include&quot;;&quot;$(SolutionDir)..\include\win&quot;;&quot;$(SolutionDir)..\common\win&quot;;&quot;$(SolutionDir)..\server&quot;;&quot;$(SolutionDir)..\server\include&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\include\win32&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\include&quot;;&quot;$(SolutionDir)..\thirdparty\openldap\include&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;PACKAGE_NAME;HAVE_DCERPC_WIN32"
 				RuntimeLibrary="2"
 			/>
