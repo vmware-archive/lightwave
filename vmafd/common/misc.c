@@ -1391,7 +1391,7 @@ VmAfdSaveStringToFile(
         BAIL_ON_VMAFD_ERROR (dwError);
     }
 
-    dwError = VmAfdOpenFilePath(pcszOutFilePath, "w+", &fpOutput);
+    dwError = VmAfdOpenFilePath(pcszOutFilePath, "w+", &fpOutput, 0);
     BAIL_ON_VMAFD_ERROR (dwError);
 
     if (!fpOutput)

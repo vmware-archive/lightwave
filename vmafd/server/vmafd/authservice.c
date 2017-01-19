@@ -615,6 +615,12 @@ VecsSrvCloseCertStoreHandle (
                            pStore,
                            pConnectionContext->pSecurityContext
                          );
+
+    if (pStore != pConnectionContext->pStoreHandle)
+    {
+        VMAFD_SAFE_FREE_MEMORY(pConnectionContext->pStoreHandle);
+        pConnectionContext->pStoreHandle = NULL;
+    }
     BAIL_ON_VMAFD_ERROR (dwError);
 cleanup:
     return dwError;

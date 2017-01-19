@@ -244,6 +244,14 @@ DirCliModifyAttributeUserA(
     USER_MODIFY_OPT userModifyOpt
     );
 
+
+DWORD
+DirCliMachineAccountReset(
+    PCSTR pszServerName, /* OPTIONAL */
+    PCSTR pszLogin,
+    PCSTR pszPassword
+    );
+
 // ldap.c
 
 DWORD
@@ -629,4 +637,26 @@ DirCliListNodesA(
     PCSTR     pszHostName,
     PCSTR     pszLogin,
     PCSTR     pszPassword
+    );
+
+DWORD
+DirCliCreateTenant(
+    PCSTR pszLogin,
+    PCSTR pszPassword,
+    PCSTR pszDomainName,
+    PCSTR pszNewUserName,
+    PCSTR pszNewUserPassword
+    );
+
+DWORD
+DirCliDeleteTenant(
+    PCSTR pszLogin,
+    PCSTR pszPassword,
+    PCSTR pszDomainName
+    );
+
+DWORD
+DirCliEnumerateTenants(
+    PCSTR pszLogin,
+    PCSTR pszPassword
     );

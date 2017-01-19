@@ -488,6 +488,34 @@ error:
 }
 
 DWORD
+VmAfdCheckAclContext(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PSTR pszSddlAcl,
+    BOOL *pbIsAllowed
+    )
+{
+    DWORD dwError = 0;
+    BOOL bIsAllowed = FALSE;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(pConnectionContext, dwError);
+
+    dwError = gIPCVtable.pfnCheckAclContext(
+                  pConnectionContext,
+                  pszSddlAcl,
+                  &bIsAllowed
+              );
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *pbIsAllowed = bIsAllowed;
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 VmAfdGenRandom(
                 PDWORD pdwRandomNumber
               )

@@ -49,6 +49,48 @@ VmAfdGetHeartbeatInfo(
     );
 
 DWORD
+VmAfSrvInitHeartbeatTable(
+    VOID
+    )
+{
+    DWORD dwError = 0;
+    WCHAR heartbeatEntryNames[][32] = VMAFD_HEARTBEAT_ENTRY_NAMES_W;
+    DWORD dwHeartbeatPorts[] = VMAFD_HEARTBEAT_ENTRY_PORTS;
+    DWORD dwEntriesCount = 0;
+    DWORD dwIndex = 0;
+
+    dwEntriesCount = sizeof(dwHeartbeatPorts) / sizeof(dwHeartbeatPorts[0]);
+
+    for (; dwIndex < dwEntriesCount; ++dwIndex)
+    {
+        PVMAFD_HB_NODE pNodeToInsert = NULL;
+        dwError = VmAfdFindNode(
+                            heartbeatEntryNames[dwIndex],
+                            dwHeartbeatPorts[dwIndex],
+                            &pNodeToInsert
+                            );
+        if (dwError == ERROR_OBJECT_NOT_FOUND)
+        {
+            dwError = VmAfdInsertNode(
+                                heartbeatEntryNames[dwIndex],
+                                dwHeartbeatPorts[dwIndex],
+                                &pNodeToInsert
+                                );
+        }
+
+        pNodeToInsert->tLastPing = VmAfdGetTickCount();
+
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 VmAfSrvPostHeartbeat(
     PCWSTR pwszServiceName,
     DWORD  dwPort
@@ -81,7 +123,7 @@ VmAfSrvPostHeartbeat(
 
     VMAFD_LOCK_MUTEX_EXCLUSIVE(&rwlockHeartbeatTable, bIsHoldingLock);
 
-    pNode->tLastPing = time(NULL);
+    pNode->tLastPing = VmAfdGetTickCount();
 
     VMAFD_LOCK_MUTEX_UNLOCK(&rwlockHeartbeatTable, bIsHoldingLock);
 
@@ -318,7 +360,7 @@ VmAfdFindNode(
     if (!pNode)
     {
         dwError = ERROR_OBJECT_NOT_FOUND;
-        BAIL_ON_VMAFD_ERROR(dwError);
+        BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
     }
 
     *ppNode = pNode;
@@ -409,8 +451,18 @@ VmAfdCheckServiceStatus(
     )
 {
     BOOL bIsAlive = TRUE;
+    DWORD dwHeartbeatInterval = 0;
 
-    if (pNode->tLastPing < time(NULL)-(3*VMAFD_HEARTBEAT_INTERVAL))
+
+    if (VmAfdRegGetInteger(
+            VMAFD_REG_KEY_HEARTBEAT,
+            &dwHeartbeatInterval) != 0
+       )
+    {
+        dwHeartbeatInterval = VMAFD_HEARTBEAT_INTERVAL;
+    }
+
+    if (pNode->tLastPing < VmAfdGetTickCount()-(3*dwHeartbeatInterval))
     {
         bIsAlive = FALSE;
     }

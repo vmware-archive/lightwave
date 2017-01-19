@@ -30,7 +30,7 @@ VmAfConfigOpenConnection(
     }
 
     dwError =  gpVmAfCfgApiGlobals->pCfgPackage->pfnOpenConnection(ppConnection);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
 cleanup:
 
@@ -63,7 +63,7 @@ VmAfConfigOpenRootKey(
                             dwOptions,
                             dwAccess,
                             ppKey);
-      BAIL_ON_VMAFD_ERROR(dwError);
+      BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
 cleanup:
 
@@ -98,7 +98,7 @@ VmAfConfigOpenKey(
                                                 dwOptions,
                                                 dwAccess,
                                                 ppKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
 cleanup:
 
@@ -133,7 +133,7 @@ VmAfConfigCreateKey(
                                                 dwOptions,
                                                 dwAccess,
                                                 ppKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
 cleanup:
 
@@ -163,7 +163,7 @@ VmAfConfigDeleteKey(
                                                 pKey,
                                                 pszSubKey
                                                 );
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
 cleanup:
 
@@ -195,7 +195,7 @@ VmAfConfigEnumKeys(
                                                 ppszKeyNames,
                                                 pdwKeyNameCount
                                                 );
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
 cleanup:
 
@@ -227,7 +227,7 @@ VmAfConfigReadStringValue(
                                                 pszSubkey,
                                                 pszName,
                                                 ppszValue);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
 cleanup:
 
@@ -258,7 +258,7 @@ VmAfConfigReadDWORDValue(
                                                 pszSubkey,
                                                 pszName,
                                                 pdwValue);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
 cleanup:
 
@@ -291,7 +291,7 @@ VmAfConfigSetValue(
 												dwType,
 												pValue,
 												dwSize);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
 cleanup:
 
@@ -319,7 +319,7 @@ VmAfConfigDeleteValue(
                                                               pKey,
                                                               pszName
                                                               );
-    BAIL_ON_VMAFD_ERROR(dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
 cleanup:
 
@@ -329,6 +329,32 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmAfConfigGetSecurity(
+    PVMAF_CFG_KEY         pKey,
+    PSTR                 *ppszSecurityDescriptor
+    )
+{
+    DWORD dwError = 0;
+
+    if (!gpVmAfCfgApiGlobals->pCfgPackage)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError =  gpVmAfCfgApiGlobals->pCfgPackage->pfnGetSecurity(
+                   pKey,
+                   ppszSecurityDescriptor
+                   );
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
 
 VOID
 VmAfConfigCloseKey(

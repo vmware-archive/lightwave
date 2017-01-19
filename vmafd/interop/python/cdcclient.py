@@ -47,8 +47,8 @@ class CdcClient:
     def disableClientAffinity(self):
         self._client_context.DisableClientAffinity()
 
-    def affinitizedDC(self, domainName):
-        affinitized_dc = self._client_context.GetAffinitizedDC(domainName)
+    def affinitizedDC(self, domainName, forceRefresh=0):
+        affinitized_dc = self._client_context.GetAffinitizedDC(domainName, forceRefresh)
         return affinitized_dc
 
     def state(self):

@@ -243,6 +243,8 @@ error:
     {
         *pdwPort = 0;
     }
+    VmAfdLog(VMAFD_DEBUG_ERROR, "RpcVmAfdGetRHTTPProxyPort failed. Error(%u)",
+                              dwError);
 
     goto cleanup;
 }
@@ -728,6 +730,8 @@ error:
     {
         VmAfdRpcServerFreeMemory(pwszGUID_rpc);
     }
+    VmAfdLog(VMAFD_DEBUG_ERROR, "VmAfdRpcGetSiteGUID failed. Error(%u)",
+                              dwError);
 
     goto cleanup;
 }
@@ -773,6 +777,8 @@ error:
     {
         VmAfdRpcServerFreeMemory(pwszGUID_rpc);
     }
+    VmAfdLog(VMAFD_DEBUG_ERROR, "VmAfdRpcGetMachineID failed. Error(%u)",
+                              dwError);
 
     goto cleanup;
 }
@@ -799,6 +805,8 @@ cleanup:
     return dwError;
 
 error:
+    VmAfdLog(VMAFD_DEBUG_ERROR, "VmAfdRpcSetMachineID failed. Error(%u)",
+                              dwError);
 
     goto cleanup;
 }
@@ -906,6 +914,9 @@ cleanup:
     return dwError;
 
 error:
+    VmAfdLog(VMAFD_DEBUG_ERROR, "VmAfdRpcTriggerRootCertsRefresh failed. Error(%u)",
+                              dwError);
+
     goto cleanup;
 }
 
@@ -1067,6 +1078,12 @@ cleanup:
 
     return dwError;
 error:
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
+
 
     goto cleanup;
 }
@@ -1127,6 +1144,12 @@ error:
     {
         VecsSrvRpcFreeCertStoreArray(pCertStoreArray);
     }
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
+
 
     goto cleanup;
 }
@@ -1155,6 +1178,11 @@ Srv_VecsRpcDeleteCertStore(
     BAIL_ON_VMAFD_ERROR(dwError);
 
 error:
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
 
     return dwError;
 }
@@ -1213,6 +1241,11 @@ error:
     {
       VecsSrvReleaseEnumContext(pEnumContext);
     }
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -1277,6 +1310,11 @@ error:
     {
       VecsSrvRpcFreeCertArray(pCertContainer_rpc);
     }
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -1310,6 +1348,11 @@ cleanup:
     return dwError;
 
 error:
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -1359,6 +1402,11 @@ error:
     {
         *pdwSize = 0;
     }
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -1423,6 +1471,11 @@ error:
     {
       VmAfdRpcServerFreeMemory(pszCert_rpc);
     }
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -1489,6 +1542,11 @@ error:
     {
         VmAfdRpcServerFreeMemory(pszPrivateKey_Rpc);
     }
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -1551,6 +1609,12 @@ cleanup:
     }
     return dwError;
 error:
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -1606,6 +1670,11 @@ error:
     {
         *pEntryType = 0;
     }
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -1658,6 +1727,12 @@ error:
     {
         *pdwDate = 0;
     }
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -1727,6 +1802,11 @@ error:
     {
         VecsSrvRpcFreeCertArray(pCertContainer_rpc);
     }
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -1771,6 +1851,12 @@ cleanup:
 
     return dwError;
 error:
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -1820,6 +1906,12 @@ error:
     {
         VmAfdRpcFreeHeartbeatStatus(pRpcHeartbeatStatus);
     }
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -1855,6 +1947,12 @@ error:
     {
         VmAfdRpcServerFreeMemory(pwszRpcSiteName);
     }
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -1877,6 +1975,12 @@ Srv_CdcRpcGetCurrentState(
 cleanup:
     return dwError;
 error:
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -1899,6 +2003,12 @@ Srv_CdcRpcEnableDefaultHA(
 cleanup:
     return dwError;
 error:
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -1921,6 +2031,12 @@ Srv_CdcRpcEnableLegacyModeHA(
 cleanup:
     return dwError;
 error:
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -1936,31 +2052,13 @@ Srv_CdcRpcGetDCName(
     DWORD dwError = 0;
     PCDC_DC_INFO_W pAffinitizedDC = NULL;
     PCDC_DC_INFO_W pRpcAffinitizedDC = NULL;
-    BOOL bForceRefresh = FALSE;
     DWORD dwRpcFlags = VMAFD_RPC_FLAG_ALLOW_TCPIP
                      | VMAFD_RPC_FLAG_REQUIRE_AUTH_TCPIP;
 
     dwError = VmAfdRpcServerCheckAccess(hBinding, dwRpcFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    bForceRefresh = dwFlags | CDC_FORCE_REFRESH;
-
-    if (bForceRefresh)
-    {
-        /*
-         *TODO: Fix this as part of the failover changes
-         *if (!gVmafdGlobals.pDCCacheThr)
-         *{
-         *    dwError = ERROR_INVALID_STATE;
-         *}
-         *else
-         *{
-         *    CdcWakeupDCCachingThread(gVmafdGlobals.pDCCacheThr, TRUE);
-         *}
-         */
-    }
-
-    dwError = CdcSrvGetDCName(pszDomainName, &pAffinitizedDC);
+    dwError = CdcSrvGetDCName(pszDomainName, dwFlags, &pAffinitizedDC);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = CdcRpcServerAllocateDCInfoW(pAffinitizedDC, &pRpcAffinitizedDC);
@@ -1979,6 +2077,12 @@ error:
     {
         CdcRpcServerFreeDCInfoW(pRpcAffinitizedDC);
     }
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -2031,6 +2135,12 @@ cleanup:
 error:
     VmAfdRpcServerFreeStringArrayW(pwszRpcDCEntriesArray, dwDCEntriesCount);
     VmAfdRpcServerFreeMemory(pDCEntries);
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 
@@ -2114,6 +2224,12 @@ error:
     {
         VmAfdRpcFreeHeartbeatStatus(pRpcHbStatus);
     }
+    VmAfdLog (
+            VMAFD_DEBUG_ERROR,
+            "%s failed. Error (%u)",
+            __FUNCTION__,
+            dwError);
+
     goto cleanup;
 }
 

@@ -339,6 +339,11 @@ VmAfSrvPromoteVmDir(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
+
+#ifndef _WIN32
+    chmod(gVmafdGlobals.pszKrb5Keytab, 0600);
+#endif
+
     dwError = VmAfSrvSetDomainNameA(pszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -366,6 +371,11 @@ VmAfSrvPromoteVmDir(
     dwError = VmAfSrvGetPNID(&pwszPNID);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    dwError = VmAfdRegSetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                           VMAFD_REG_KEY_DC_NAME,
+                           pwszLotusServerName);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
     dwError = VmAfSrvConfigureDNSW(
                       pwszPNID,
                       pwszDomainName,
@@ -388,14 +398,10 @@ VmAfSrvPromoteVmDir(
             __FUNCTION__);
     }
 
-    dwError = VmAfdInitCertificateThread(&gVmafdGlobals.pCertUpdateThr);
-    if (dwError)
+    dwError = VmAfdInitSourceIpThread(&gVmafdGlobals.pSourceIpContext);
+    if(dwError)
     {
-        VmAfdLog(
-            VMAFD_DEBUG_ANY,
-            "%s failed to initiate certificate thread. Error(%u)",
-            __FUNCTION__,
-            dwError);
+        VmAfdLog(VMAFD_DEBUG_ANY, "Source IP init failed!");
         dwError = 0;
     }
 
@@ -459,9 +465,9 @@ VmAfSrvDemoteVmDir(
 
     if (!pwszServerNameLocal)
     {
-    dwError = VmAfdAllocateStringWFromA("localhost", &pwszServerName1);
+        dwError = VmAfdAllocateStringWFromA("localhost", &pwszServerName1);
         BAIL_ON_VMAFD_ERROR(dwError);
-    pwszServerNameLocal = pwszServerName1;
+        pwszServerNameLocal = pwszServerName1;
     }
 
     dwError = VmAfdAllocateStringAFromW(pwszUserName, &pszUserName);
@@ -474,26 +480,26 @@ VmAfSrvDemoteVmDir(
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfSrvUnconfigureDNSW(
-            pwszServerNameLocal,
-            pwszDomainName,
-            pwszUserName,
-            pwszPassword);
+                        pwszServerNameLocal,
+                        pwszDomainName,
+                        pwszUserName,
+                        pwszPassword);
 
     if (dwError)
     {
-    VmAfdLog(
-        VMAFD_DEBUG_ANY,
-        "%s failed to uninitialize dns. Error(%u)",
-        __FUNCTION__,
-        dwError);
-    dwError = 0;
+        VmAfdLog(
+            VMAFD_DEBUG_ANY,
+            "%s failed to uninitialize dns. Error(%u)",
+            __FUNCTION__,
+            dwError);
+        dwError = 0;
     }
     else
     {
-    VmAfdLog(
-        VMAFD_DEBUG_ANY,
-        "%s successfully uninitialized dns.",
-        __FUNCTION__);
+        VmAfdLog(
+            VMAFD_DEBUG_ANY,
+            "%s successfully uninitialized dns.",
+            __FUNCTION__);
     }
 
     dwError = VmDirDemote(pszUserName, pszPassword);
@@ -501,6 +507,9 @@ VmAfSrvDemoteVmDir(
 
     dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
     BAIL_ON_VMAFD_ERROR(dwError);
+
+    VmAfdShutdownSrcIpThread(gVmafdGlobals.pSourceIpContext);
+    gVmafdGlobals.pSourceIpContext = NULL;
 
 #if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
     dwError = VmAfSrvSignalVmdirProvider();
@@ -671,6 +680,10 @@ VmAfSrvJoinVmDir(
                       NULL);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+#ifndef _WIN32
+    chmod(gVmafdGlobals.pszKrb5Keytab, 0600);
+#endif
+
     dwError = VmAfSrvSetDomainName(pwszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -698,15 +711,14 @@ VmAfSrvJoinVmDir(
              "%s: joined Vmdir.",
              __FUNCTION__);
 
-    dwError = VmAfdInitCertificateThread(&gVmafdGlobals.pCertUpdateThr);
-    if (dwError)
+    dwError = VmDdnsInitThread(&gVmafdGlobals.pDdnsContext);
+    if(dwError)
     {
         VmAfdLog(
             VMAFD_DEBUG_ANY,
-            "%s failed to initiate certificate thread. Error(%u)",
-            __FUNCTION__,
-            dwError);
-        dwError = 0;
+            "Ddns client failed to Initialise. Error(%d)",
+            dwError
+        );
     }
 
     dwError = CdcSrvInitDefaultHAMode(gVmafdGlobals.pCdcContext);
@@ -876,6 +888,10 @@ VmAfSrvJoinVmDir2(
                       pszDCHostname,
                       NULL);
     BAIL_ON_VMAFD_ERROR(dwError);
+
+#ifndef _WIN32
+    chmod(gVmafdGlobals.pszKrb5Keytab, 0600);
+#endif
 
     dwError = VmAfSrvSetDomainName(pwszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);

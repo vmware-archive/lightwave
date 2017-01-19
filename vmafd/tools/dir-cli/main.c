@@ -87,7 +87,21 @@ DirCliExecTopologyRequest(
 
 static
 DWORD
+DirCliExecMachineAccountReset(
+    int   argc,
+    char* argv[]
+    );
+
+static
+DWORD
 DirCliExecStateRequest(
+    int   argc,
+    char* argv[]
+    );
+
+static
+DWORD
+DirCliExecTenantRequest(
     int   argc,
     char* argv[]
     );
@@ -131,6 +145,9 @@ int _tmain(int argc, _TCHAR* targv[])
     setlocale(LC_ALL, "");
 
 #endif /* ifdef _WIN32 */
+
+    dwError = VmAfCfgInit();
+    BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = ParseArgs(argc, argv);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -317,9 +334,21 @@ ParseArgs(
                         dwArgsLeft,
                         dwArgsLeft > 0 ? &argv[iArg] : NULL);
     }
+    else if (!VmAfdStringCompareA(pszArg, "computer", TRUE))
+    {
+        dwError = DirCliExecMachineAccountReset(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL);
+    }
     else if (!VmAfdStringCompareA(pszArg, "state", TRUE))
     {
         dwError = DirCliExecStateRequest(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL);
+    }
+    else if (!VmAfdStringCompareA(pszArg, "tenant", TRUE))
+    {
+        dwError = DirCliExecTenantRequest(
                         dwArgsLeft,
                         dwArgsLeft > 0 ? &argv[iArg] : NULL);
     }
@@ -1305,6 +1334,154 @@ DirCliExecTopologyRequest(
     {
         case DIR_COMMAND_NODES_LIST:
             dwError = DirCliListNodesA(pszServerName, pszLogin, pszPassword);
+            BAIL_ON_VMAFD_ERROR(dwError);
+            break;
+
+        default:
+            dwError = ERROR_INVALID_STATE;
+            break;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+DirCliExecMachineAccountReset(
+    int   argc,
+    char* argv[]
+    )
+{
+    DWORD dwError = 0;
+    DIR_COMMAND command = DIR_COMMAND_UNKNOWN;
+    DWORD idx = 0;
+    PSTR pszLogin = NULL;
+    PSTR pszPassword = NULL;
+    PSTR pszServerName = NULL;
+
+    typedef enum
+    {
+        PARSE_MODE_OPEN = 0,
+        PARSE_MODE_PASSWORD_RESET
+    } PARSE_MODE;
+
+    typedef enum
+    {
+        PARSE_SUB_MODE_OPEN = 0,
+        PARSE_SUB_MODE_SERVER_NAME,
+        PARSE_SUB_MODE_LOGIN,
+        PARSE_SUB_MODE_PASSWORD
+    } PARSE_SUB_MODE;
+
+    PARSE_MODE mode = PARSE_MODE_OPEN;
+    PARSE_SUB_MODE submode = PARSE_SUB_MODE_OPEN;
+
+    if (!argc)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    for (; idx < argc; idx++)
+    {
+        PSTR pszArg = argv[idx];
+
+        switch (mode)
+        {
+            case PARSE_MODE_OPEN:
+
+                if (!VmAfdStringCompareA(pszArg, "password-reset", TRUE))
+                {
+                    command = DIR_COMMAND_COMPUTER_PASSWORD_RESET;
+                    mode = PARSE_MODE_PASSWORD_RESET;
+                }
+                else
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+                break;
+
+            case PARSE_MODE_PASSWORD_RESET:
+                switch (submode)
+                {
+                    case PARSE_SUB_MODE_OPEN:
+
+                        if (!VmAfdStringCompareA(pszArg, "--live-dc-hostname", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_SERVER_NAME;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--login", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_LOGIN;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--password", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_PASSWORD;
+                        }
+                        else
+                        {
+                            dwError = ERROR_INVALID_PARAMETER;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        break;
+
+                    case PARSE_SUB_MODE_SERVER_NAME:
+
+                        if (pszServerName)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+
+                        pszServerName = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_LOGIN:
+
+                        pszLogin = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_PASSWORD:
+
+                        pszPassword = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    default:
+
+                        dwError = ERROR_INVALID_STATE;
+                        BAIL_ON_VMAFD_ERROR(dwError);
+
+                        break;
+                }
+                break;
+
+            default:
+                dwError = ERROR_INVALID_STATE;
+                break;
+        }
+    }
+
+    switch (command)
+    {
+        case DIR_COMMAND_COMPUTER_PASSWORD_RESET:
+            dwError = DirCliMachineAccountReset(
+                        pszServerName,
+                        pszLogin,
+                        pszPassword);
             BAIL_ON_VMAFD_ERROR(dwError);
             break;
 
@@ -3500,6 +3677,338 @@ error:
     goto cleanup;
 }
 
+
+static
+DWORD
+DirCliExecTenantRequest(
+    int   argc,
+    char* argv[]
+    )
+{
+    DWORD dwError = 0;
+    DIR_COMMAND command = DIR_COMMAND_UNKNOWN;
+    DWORD idx = 0;
+    PSTR pszLogin = NULL;
+    PSTR pszPassword = NULL;
+    PSTR pszUserName = NULL;
+    PSTR pszUserPassword = NULL;
+    PSTR pszDomainName = NULL;
+
+    typedef enum
+    {
+        PARSE_MODE_OPEN = 0,
+        PARSE_MODE_TENANT_CREATE,
+        PARSE_MODE_TENANT_DELETE,
+        PARSE_MODE_TENANT_LIST,
+    } PARSE_MODE;
+
+    typedef enum
+    {
+        PARSE_SUB_MODE_OPEN = 0,
+        PARSE_SUB_MODE_DOMAIN_NAME,
+        PARSE_SUB_MODE_LOGIN,
+        PARSE_SUB_MODE_PASSWORD,
+        PARSE_SUB_MODE_USER_NAME,
+        PARSE_SUB_MODE_USER_PASSWORD
+    } PARSE_SUB_MODE;
+
+    PARSE_MODE mode = PARSE_MODE_OPEN;
+    PARSE_SUB_MODE submode = PARSE_SUB_MODE_OPEN;
+
+    if (!argc)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    for (; idx < argc; idx++)
+    {
+        PSTR pszArg = argv[idx];
+
+        switch (mode)
+        {
+            case PARSE_MODE_OPEN:
+
+                if (!VmAfdStringCompareA(pszArg, "create", TRUE))
+                {
+                    command = DIR_COMMAND_TENANT_CREATE;
+                    mode = PARSE_MODE_TENANT_CREATE;
+                }
+                else if (!VmAfdStringCompareA(pszArg, "delete", TRUE))
+                {
+                    command = DIR_COMMAND_TENANT_DELETE;
+                    mode = PARSE_MODE_TENANT_DELETE;
+                }
+                else if (!VmAfdStringCompareA(pszArg, "list", TRUE))
+                {
+                    command = DIR_COMMAND_TENANT_LIST;
+                    mode = PARSE_MODE_TENANT_LIST;
+                }
+                else
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+                break;
+
+            case PARSE_MODE_TENANT_CREATE:
+                switch (submode)
+                {
+                    case PARSE_SUB_MODE_OPEN:
+
+                        if (!VmAfdStringCompareA(pszArg, "--domain-name", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_DOMAIN_NAME;
+                        }
+                        else if(!strcmp(pszArg, "--login"))
+                        {
+                            submode = PARSE_SUB_MODE_LOGIN;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--password", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_PASSWORD;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--user-name", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_USER_NAME;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--user-password", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_USER_PASSWORD;
+                        }
+                        else
+                        {
+                            dwError = ERROR_INVALID_PARAMETER;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        break;
+
+                    case PARSE_SUB_MODE_LOGIN:
+                        if (pszLogin)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszLogin = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_PASSWORD:
+                        if (pszPassword)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszPassword = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_DOMAIN_NAME:
+
+                        if (pszDomainName)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+
+                        pszDomainName = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_USER_NAME:
+
+                        if (pszUserName)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszUserName = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_USER_PASSWORD:
+
+                        if (pszUserPassword)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszUserPassword = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    default:
+
+                        dwError = ERROR_INVALID_STATE;
+                        BAIL_ON_VMAFD_ERROR(dwError);
+
+                        break;
+                }
+                break;
+
+            case PARSE_MODE_TENANT_DELETE:
+                switch (submode)
+                {
+                    case PARSE_SUB_MODE_OPEN:
+                        if(!strcmp(pszArg, "--login"))
+                        {
+                            submode = PARSE_SUB_MODE_LOGIN;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--password", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_PASSWORD;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--domain-name", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_DOMAIN_NAME;
+                        }
+                        else
+                        {
+                            dwError = ERROR_INVALID_PARAMETER;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        break;
+
+                    case PARSE_SUB_MODE_LOGIN:
+                        if (pszLogin)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszLogin = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_PASSWORD:
+                        if (pszPassword)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszPassword = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_DOMAIN_NAME:
+
+                        if (pszDomainName)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+
+                        pszDomainName = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    default:
+
+                        dwError = ERROR_INVALID_STATE;
+                        BAIL_ON_VMAFD_ERROR(dwError);
+                        break;
+                }
+                break;
+
+            case PARSE_MODE_TENANT_LIST:
+                switch (submode)
+                {
+                    case PARSE_SUB_MODE_OPEN:
+                        if(!strcmp(pszArg, "--login"))
+                        {
+                            submode = PARSE_SUB_MODE_LOGIN;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--password", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_PASSWORD;
+                        }
+                        break;
+
+                    case PARSE_SUB_MODE_LOGIN:
+                        if (pszLogin)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszLogin = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_PASSWORD:
+                        if (pszPassword)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszPassword = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+                    default:
+                        dwError = ERROR_INVALID_STATE;
+                        break;
+            }
+            break;
+
+            default:
+                dwError = ERROR_INVALID_STATE;
+                break;
+        }
+    }
+
+    switch (command)
+    {
+        case DIR_COMMAND_TENANT_CREATE:
+            dwError = DirCliCreateTenant(
+                        pszLogin,
+                        pszPassword,
+                        pszDomainName,
+                        pszUserName,
+                        pszUserPassword);
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            break;
+
+        case DIR_COMMAND_TENANT_DELETE:
+            dwError = DirCliDeleteTenant(pszLogin, pszPassword, pszDomainName);
+            BAIL_ON_VMAFD_ERROR(dwError);
+            break;
+
+        case DIR_COMMAND_TENANT_LIST:
+            dwError = DirCliEnumerateTenants(pszLogin, pszPassword);
+            BAIL_ON_VMAFD_ERROR(dwError);
+            break;
+
+        default:
+            dwError = ERROR_INVALID_STATE;
+            break;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 static
 void
 ShowUsage(
@@ -3593,22 +4102,26 @@ ShowUsage(
         "\t             [ --login    <admin user id>            ]\n"
         "\t             [ --password <password>                 ]\n"
         "\t             [ --server-name <server name>           ]\n"
-	"\tdomain-functional-level get\n"
+        "\tdomain-functional-level get\n"
         "\t             [ --login       <admin user id>         ]\n"
         "\t             [ --password    <password>              ]\n"
         "\t             [ --server-name <server name>           ]\n"
         "\t             [ --domain-name <domain name>           ]\n"
-	"\tdomain-functional-level set\n"
+        "\tdomain-functional-level set\n"
         "\t             [ --level       <level>                 ]\n"
         "\t             [ --login       <admin user id>         ]\n"
         "\t             [ --password    <password>              ]\n"
         "\t             [ --server-name <server name>           ]\n"
-	"\t             [ --domain-name <domain name>           ]\n"
-	"\tlist-domain-versions\n"
+        "\t             [ --domain-name <domain name>           ]\n"
+        "\tlist-domain-versions\n"
         "\t             [ --login       <admin user id>         ]\n"
         "\t             [ --password    <password>              ]\n"
         "\t             [ --server-name <server name>           ]\n"
-	"\t             [ --domain-name <domain name>           ]\n"
+        "\t             [ --domain-name <domain name>           ]\n"
+        "\tcomputer password-reset\n"
+        "\t             [ --login       <admin user id>         ]\n"
+        "\t             [ --password    <password>              ]\n"
+        "\t             [ --live-dc-hostname <server name>      ]\n"
         "\tstate get\n"
         "\t             [ --login       <admin user id>         ]\n"
         "\t             [ --password    <password>              ]\n"
@@ -3620,5 +4133,18 @@ ShowUsage(
         "\t             [ --password    <password>              ]\n"
         "\t             [ --server-name <server name>           ]\n"
         "\t             [ --domain-name <domain name>           ]\n"
+        "\ttenant create\n"
+        "\t             [ --login       <admin user id>         ]\n"
+        "\t             [ --password    <password>              ]\n"
+        "\t               --domain-name <domain name>            \n"
+        "\t               --user-name   <user name>              \n"
+        "\t               --user-password <user password>        \n"
+        "\ttenant list\n"
+        "\t             [ --login       <admin user id>         ]\n"
+        "\t             [ --password    <password>              ]\n"
+        "\ttenant delete\n"
+        "\t             [ --login       <admin user id>         ]\n"
+        "\t             [ --password    <password>              ]\n"
+        "\t               --domain-name <domain name>            \n"
         "\thelp\n");
 }

@@ -99,6 +99,10 @@ CdcInitCdcCacheUpdate(
 
     pContext->bRefreshCache = TRUE;
 
+    pContext->update_mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+    pContext->update_cond = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+    pContext->cdcThrState = CDC_UPDATE_THREAD_STATE_UNDEFINED;
+
     dwError = pthread_create(
                         &pContext->pUpdateThrContext->thread,
                         NULL,
@@ -157,10 +161,12 @@ CdcShutdownCdcCacheUpdate(
 DWORD
 CdcWakeupCdcCacheUpdate(
     PCDC_CACHE_UPDATE_CONTEXT pDCCaching,
-    BOOLEAN bRefresh
+    BOOLEAN bPurgeRefresh,
+    BOOLEAN bWaitForRefresh
     )
 {
     DWORD dwError = 0;
+    CDC_UPDATE_THREAD_STATE cdcCurrentState = CDC_UPDATE_THREAD_STATE_UNDEFINED;
 
     if (!pDCCaching)
     {
@@ -168,7 +174,18 @@ CdcWakeupCdcCacheUpdate(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    pDCCaching->bRefreshCache = bRefresh;
+    pDCCaching->bRefreshCache = bPurgeRefresh;
+
+    if (bWaitForRefresh)
+    {
+        pthread_mutex_lock(&pDCCaching->update_mutex);
+        cdcCurrentState = pDCCaching->cdcThrState;
+        if (cdcCurrentState == CDC_UPDATE_THREAD_STATE_UPDATED)
+        {
+            pDCCaching->cdcThrState = CDC_UPDATE_THREAD_STATE_SIGNALLED;
+        }
+        pthread_mutex_unlock(&pDCCaching->update_mutex);
+    }
 
     dwError = CdcWakeupThread(pDCCaching->pUpdateThrContext);
     if (dwError != 0)
@@ -177,6 +194,20 @@ CdcWakeupCdcCacheUpdate(
     }
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    if (bWaitForRefresh)
+    {
+        pthread_mutex_lock(&pDCCaching->update_mutex);
+        cdcCurrentState = pDCCaching->cdcThrState;
+        if (cdcCurrentState != CDC_UPDATE_THREAD_STATE_UPDATED)
+        {
+            pthread_cond_wait(
+                  &pDCCaching->update_cond,
+                  &pDCCaching->update_mutex
+                  );
+        }
+        pthread_mutex_unlock(&pDCCaching->update_mutex);
+    }
+
 cleanup:
 
     return dwError;
@@ -184,7 +215,6 @@ error:
 
     goto cleanup;
 }
-
 
 static
 PVOID
@@ -332,6 +362,10 @@ CdcHandleDCCaching(
             break;
         }
 
+        pthread_mutex_lock(&pThrArgs->update_mutex);
+        pThrArgs->cdcThrState = CDC_UPDATE_THREAD_STATE_POLLING;
+        pthread_mutex_unlock(&pThrArgs->update_mutex);
+
         dwError = CdcRegDbGetRefreshInterval(&dwRefreshInterval);
         if (dwError)
         {
@@ -368,6 +402,11 @@ CdcHandleDCCaching(
             }
         }
 
+        pthread_mutex_lock(&pThrArgs->update_mutex);
+        pThrArgs->cdcThrState = CDC_UPDATE_THREAD_STATE_UPDATED;
+        pthread_cond_broadcast(&pThrArgs->update_cond);
+        pthread_mutex_unlock(&pThrArgs->update_mutex);
+
         dwError = CdcDCCacheThreadSleep(
                                 pThrArgs,
                                 dwRefreshInterval,
@@ -382,6 +421,11 @@ CdcHandleDCCaching(
 
 cleanup:
 
+    VmAfdLog(
+        VMAFD_DEBUG_ANY,
+        "Exiting CdcUpdateThread due to error :[%d]",
+        dwError
+        );
     return NULL;
 error:
 
@@ -505,7 +549,7 @@ CdcGetDomainControllers(
                                 );
       BAIL_ON_VMAFD_ERROR(dwError);
 
-      dwError = CdcSrvGetDCName(pwszDomain,&pAffinitizedDC);
+      dwError = CdcSrvGetDCName(pwszDomain, 0, &pAffinitizedDC);
       BAIL_ON_VMAFD_ERROR(dwError);
 
       if (!VmAfdCheckIfServerIsUp(pAffinitizedDC->pszDCName, 2015))
@@ -952,6 +996,14 @@ CdcVmafdHeartbeatPing(
     BAIL_ON_VMAFD_ERROR(dwError);
 
     bIsAlive = pHeartbeatStatus->bIsAlive? TRUE: FALSE;
+
+    if (!bIsAlive)
+    {
+        VmAfdLog(VMAFD_DEBUG_ANY,
+                 "PSC [%s] is not Alive for requests",
+                 pszDCName?pszDCName:""
+                 );
+    }
 
     *pbIsAlive = bIsAlive;
     *ppHeartbeatStatus = pHeartbeatStatus;

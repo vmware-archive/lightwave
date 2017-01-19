@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -278,6 +278,14 @@ ParseArgsQueryAD(
 static
 DWORD
 ParseArgsGetHbStatus(
+    int                 argc,
+    char*               argv[],
+    PVM_AFD_CLI_CONTEXT pContext
+    );
+
+static
+DWORD
+ParseArgsChangePNID(
     int                 argc,
     char*               argv[],
     PVM_AFD_CLI_CONTEXT pContext
@@ -794,19 +802,28 @@ ParseArgs(
         pContext->action = VM_AFD_ACTION_GET_HEARTBEAT_STATUS;
 
         dwError = ParseArgsGetHbStatus(
-                                  dwArgsLeft,
-                                  dwArgsLeft > 0 ? &argv[iArg] : NULL,
-                                  pContext);
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL,
+                        pContext);
+    }
+    else if (!strcmp(pszArg, "change-pnid"))
+    {
+        pContext->action = VM_AFD_ACTION_CHANGE_PNID;
+
+        dwError = ParseArgsChangePNID(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL,
+                        pContext);
     }
     else if (!strcmp(pszArg, "get-dc-list"))
     {
         pContext->action = VM_AFD_ACTION_GET_DC_LIST;
 
         dwError = ParseArgsGetDCList(
-                                  dwArgsLeft,
-                                  dwArgsLeft > 0 ? &argv[iArg] : NULL,
-                                  pContext);
-    }
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL,
+                        pContext);
+                        }
     else
     {
         dwError = ERROR_LOCAL_OPTION_UNKNOWN;
@@ -3603,6 +3620,110 @@ ParseArgsGetDCList(
                 BAIL_ON_VMAFD_ERROR(dwError);
 
                 break;
+        }
+    }
+
+error:
+    return dwError;
+}
+
+
+static
+DWORD
+ParseArgsChangePNID(
+    int                 argc,
+    char*               argv[],
+    PVM_AFD_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+    typedef enum
+    {
+        PARSE_MODE_CHANGE_PNID_OPEN = 0,
+        PARSE_MODE_CHANGE_PNID_PNID,
+        PARSE_MODE_CHANGE_PNID_USER_NAME,
+        PARSE_MODE_CHANGE_PNID_PASSWORD,
+    } PARSE_MODE_CHANGE_PNID;
+    PARSE_MODE_CHANGE_PNID parseMode = PARSE_MODE_CHANGE_PNID_OPEN;
+    DWORD iArg = 0;
+
+    for (iArg = 0; iArg < argc; iArg++)
+    {
+        PSTR pszArg = argv[iArg];
+
+        switch (parseMode)
+        {
+        case PARSE_MODE_CHANGE_PNID_OPEN:
+            if (!strcmp(pszArg, "--pnid"))
+            {
+                parseMode = PARSE_MODE_CHANGE_PNID_PNID;
+            }
+            else if (!strcmp(pszArg, "--user-name"))
+            {
+                parseMode = PARSE_MODE_CHANGE_PNID_USER_NAME;
+            }
+            else if (!strcmp(pszArg, "--password"))
+            {
+                parseMode = PARSE_MODE_CHANGE_PNID_PASSWORD;
+            }
+            else
+            {
+                dwError = ERROR_LOCAL_OPTION_UNKNOWN;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+            break;
+
+        case PARSE_MODE_CHANGE_PNID_PNID:
+
+            if (pContext->pszPNID)
+            {
+                dwError = ERROR_LOCAL_OPTION_INVALID;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+
+            dwError = VmAfdAllocateStringA(pszArg, &pContext->pszPNID);
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            parseMode = PARSE_MODE_CHANGE_PNID_OPEN;
+
+            break;
+
+        case PARSE_MODE_CHANGE_PNID_USER_NAME:
+
+            if (pContext->pszUserName)
+            {
+                dwError = ERROR_LOCAL_OPTION_INVALID;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+
+            dwError = VmAfdAllocateStringA(pszArg, &pContext->pszUserName);
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            parseMode = PARSE_MODE_CHANGE_PNID_OPEN;
+
+            break;
+
+        case PARSE_MODE_CHANGE_PNID_PASSWORD:
+
+            if (pContext->pszPassword)
+            {
+                dwError = ERROR_LOCAL_OPTION_INVALID;
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
+
+            dwError = VmAfdAllocateStringA(pszArg, &pContext->pszPassword);
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            parseMode = PARSE_MODE_CHANGE_PNID_OPEN;
+
+            break;
+
+        default:
+
+            dwError = ERROR_INTERNAL_ERROR;
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            break;
         }
     }
 

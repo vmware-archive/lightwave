@@ -493,7 +493,12 @@ VmAfdFreeCertArray(
 VOID
 VmAfdFreeString(
     PSTR pszString
-);
+    );
+
+VOID
+VmAfdFreeWString(
+    PWSTR pwszString
+    );
 
 DWORD
 VmAfdGetSSLCertificate(
@@ -679,6 +684,20 @@ VmAfdClearSuperLog(
 DWORD
 VmAfdSuperLogDisable(
     PVMAFD_SERVER    pServer
+    );
+
+DWORD
+VmAfdChangePNIDA(
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszPNID
+    );
+
+DWORD
+VmAfdChangePNIDW(
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword,
+    PCWSTR pwszPNID
     );
 
 #ifdef UNICODE

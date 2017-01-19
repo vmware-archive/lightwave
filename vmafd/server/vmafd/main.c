@@ -111,8 +111,13 @@ main(
     dwError = CdcInitCdcService(&gVmafdGlobals.pCdcContext);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "vmafdd: started!" );
+    dwError = VmDdnsInitThread(&gVmafdGlobals.pDdnsContext);
+    BAIL_ON_VMAFD_ERROR(dwError);
 
+    dwError = VmAfdInitSourceIpThread(&gVmafdGlobals.pSourceIpContext);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "vmafdd: started!" );
     /*
      * Start the init loop which initializes configuration and
      * then waits until signaled to reinitialize.  It returns

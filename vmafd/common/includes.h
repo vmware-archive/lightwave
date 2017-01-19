@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -17,6 +17,8 @@
 #ifndef _WIN32
 #include <config.h>
 #include <vmafdsys.h>
+#include <net/if.h>
+#include <ifaddrs.h>
 #include <arpa/inet.h>
 #include <openssl/bio.h>
 #include <openssl/err.h>
@@ -27,6 +29,7 @@
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <pwd.h>
+#include <grp.h>
 #include <vmafd.h>
 #include <vmafdtypes.h>
 #include <vmafddefines.h>
@@ -52,6 +55,7 @@
 #pragma comment (lib, "Ws2_32.lib")
 #include <windows.h>
 #include <wincrypt.h>
+#include <psapi.h>
 #include <ws2tcpip.h>
 #include <stdint.h>
 #include <stdio.h>

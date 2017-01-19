@@ -61,7 +61,7 @@ _VmAfdCreateFile(
     DWORD dwError = 0;
     FILE *fp = NULL;
 
-    dwError = VmAfdOpenFilePath(pszFileName, "w", &fp);
+    dwError = VmAfdOpenFilePath(pszFileName, "w", &fp, 0);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     *pFile = fp;

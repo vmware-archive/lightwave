@@ -9,6 +9,7 @@
 #ifndef _WIN32
 
 #include <config.h>
+#include <reg/lwreg.h>
 
 #else
 
@@ -35,6 +36,7 @@
 
 #include <vmafdcommon.h>
 #include <vmafdclient.h>
+#include <vmdirclient.h>
 #include <vmafcfg.h>
 
 #include <vmafderrorcode.h>

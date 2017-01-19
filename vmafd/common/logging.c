@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -89,7 +89,7 @@ VmAfdLogInitialize(
         dwError = _VmAfdCreateDirs(pszLogFileName);
         BAIL_ON_VMAFD_LOG_ERROR(dwError);
 
-        dwError = VmAfdOpenFilePath(pszLogFileName, "a", &gVmafdLogFile);
+        dwError = VmAfdOpenFilePath(pszLogFileName, "a", &gVmafdLogFile, 0644);
         BAIL_ON_VMAFD_LOG_ERROR(dwError);
     }
     if (vmafd_syslog)
@@ -130,7 +130,7 @@ VmAfdLog(
    va_list     va;
    const char* logLevelTag = "";
 
-   if (level <= vmafd_syslog_level)
+   if (level >= vmafd_syslog_level)
    {
       va_start( va, fmt );
       vsnprintf( logMessage, sizeof(logMessage), fmt, va );

@@ -14,6 +14,8 @@ vmafdd_SOURCES = \
     cdcthread.c \
     cdcupdate.c \
     dcfinder.c    \
+    ddns.c	\
+    ddnspackets.c \
     dns.c         \
     globals.c     \
     heartbeat.c     \
@@ -34,6 +36,7 @@ vmafdd_SOURCES = \
     service.c     \
     signal.c      \
     shutdown.c    \
+    sourceip.c	  \
     storehash_util.c \
     superlogging.c \
     utils.c       \

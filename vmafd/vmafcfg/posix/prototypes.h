@@ -96,6 +96,12 @@ VmAfPosixCfgDeleteValue(
 	PCSTR               pszValue
 	);
 
+DWORD
+VmAfPosixCfgGetSecurity(
+    PVMAF_CFG_KEY           pKey,
+    PSTR                   *ppszSecurityDescriptor
+    );
+
 VOID
 VmAfPosixCfgCloseKey(
     PVMAF_CFG_KEY pKey

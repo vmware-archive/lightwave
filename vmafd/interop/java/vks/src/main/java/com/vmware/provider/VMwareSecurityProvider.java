@@ -32,6 +32,8 @@ public final class VMwareSecurityProvider extends Provider {
                public Object run() {
                   put("KeyStore.VKS",
                         "com.vmware.provider.VecsKeyStoreEngine");
+                  put("KeyStore.VKS2",
+                          "com.vmware.provider.VecsKeyStoreEngine2");
                   put("CertStore.VCS",
                           "com.vmware.provider.VecsCertStoreEngine");
                   return null;

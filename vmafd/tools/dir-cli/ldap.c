@@ -2633,7 +2633,12 @@ DirCliLdapAddGroupMember(
     dwError = DirCliLdapFindGroup(pLd, pszGroup, pszDomain, &pszGroupDN);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = DirCliLdapFindUser(pLd, pszAccount, pszDomain, &pszAccountDN);
+    // find user
+    if ((dwError = DirCliLdapFindUser(pLd, pszAccount, pszDomain, &pszAccountDN)) == ERROR_NO_SUCH_USER)
+    {
+        // find group
+        dwError = DirCliLdapFindGroup(pLd, pszAccount, pszDomain, &pszAccountDN);
+    }
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = DirCliLdapAddServiceToFQDNGroup(pLd, pszAccountDN, pszGroupDN);

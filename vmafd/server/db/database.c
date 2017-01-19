@@ -13,6 +13,14 @@
 #endif
 
 static
+VOID
+VmAfdSqliteLogCallback(
+        PVOID *pArg,
+        DWORD  dwError,
+        PCSTR  pszMessage
+        );
+
+static
 DWORD
 VecsDbLocalAuthenticationTablesCreate (
         sqlite3 *pDb
@@ -33,6 +41,8 @@ VecsDbDatabaseInitialize(
 
     dwError = VecsDbCreateAppDatabase(pszAppDBName);
     BAIL_ON_VECS_ERROR(dwError);
+
+    sqlite3_config(SQLITE_CONFIG_LOG, VmAfdSqliteLogCallback, NULL);
 
 #ifndef _WIN32
     // NT has no correspoding ownership or mod change ?
@@ -930,6 +940,23 @@ error :
     }
     return dwError;
 }
+
+
+static
+VOID
+VmAfdSqliteLogCallback(
+        PVOID *pArg,
+        DWORD  dwError,
+        PCSTR  pszMessage
+        )
+{
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "[SQLITE_ERROR:%d] - %s",
+             dwError,
+             IsNullOrEmptyString(pszMessage)?"":pszMessage
+             );
+}
+
 
 static
 DWORD

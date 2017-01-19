@@ -2502,7 +2502,7 @@ VmAfdDemoteVmDirA(
     PWSTR pwszPassword = NULL;
 
     if ( IsNullOrEmptyString(pszUserName) ||
-     IsNullOrEmptyString(pszPassword))
+	 IsNullOrEmptyString(pszPassword))
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -2510,8 +2510,8 @@ VmAfdDemoteVmDirA(
 
     if (pszServerName)
     {
-    dwError = VmAfdAllocateStringWFromA(pszServerName, &pwszServerName);
-    BAIL_ON_VMAFD_ERROR(dwError);
+	dwError = VmAfdAllocateStringWFromA(pszServerName, &pwszServerName);
+	BAIL_ON_VMAFD_ERROR(dwError);
     }
 
     dwError = VmAfdAllocateStringWFromA(pszUserName, &pwszUserName);
@@ -2549,7 +2549,7 @@ VmAfdDemoteVmDirW(
     DWORD dwError = 0;
 
     if (IsNullOrEmptyString(pwszUserName) ||
-    IsNullOrEmptyString(pwszPassword))
+	IsNullOrEmptyString(pwszPassword))
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -4609,3 +4609,80 @@ error:
     }
     goto cleanup;
 }
+
+DWORD
+VmAfdChangePNIDA(
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszPNID
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszUserName = NULL;
+    PWSTR pwszPassword = NULL;
+    PWSTR pwszPNID = NULL;
+
+    if (IsNullOrEmptyString(pszUserName) ||
+        IsNullOrEmptyString(pszPassword) ||
+        IsNullOrEmptyString(pszPNID))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringWFromA(pszUserName, &pwszUserName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszPassword, &pwszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszPNID, &pwszPNID);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdChangePNIDW(pwszUserName, pwszPassword, pwszPNID);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pwszPNID);
+    VMAFD_SAFE_FREE_MEMORY(pwszUserName);
+    VMAFD_SAFE_FREE_MEMORY(pwszPassword);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmAfdChangePNIDW(
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword,
+    PCWSTR pwszPNID
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = VmAfdLocalChangePNID(pwszUserName, pwszPassword, pwszPNID);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+VOID
+VmAfdFreeString(
+    PSTR pszString)
+{
+    VMAFD_SAFE_FREE_STRINGA(pszString);
+}
+
+VOID
+VmAfdFreeWString(
+    PWSTR pwszString)
+{
+    VMAFD_SAFE_FREE_STRINGW(pwszString);
+}
+

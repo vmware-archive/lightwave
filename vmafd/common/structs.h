@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -13,6 +13,16 @@
  */
 
 
+typedef struct __VMAFD_MESSAGE_BUFFER
+{
+     size_t szMaxSize;
+     size_t szCurrentSize;
+     size_t szLength; //write cursor
+     size_t szCursor; //read cursor
+     BOOL  bCanWrite;
+     BOOL  bTokenizeDomainName;
+     PBYTE pMessage;
+} VMAFD_MESSAGE_BUFFER;
 
 typedef struct  _VM_AFD_CONNECTION_
 {
@@ -21,6 +31,7 @@ typedef struct  _VM_AFD_CONNECTION_
 #else
     int fd;
 #endif
+    DWORD pid;
 } VM_AFD_CONNECTION;
 
 typedef struct _VM_AFD_SECURITY_CONTEXT_
@@ -51,6 +62,7 @@ typedef DWORD (*PFN_IPC_ALLOCATE_FROM_NAME) (PCWSTR , VM_AFD_SECURITY_CONTEXT **
 typedef DWORD (*PFN_IPC_COPY_CONTEXT) (VM_AFD_SECURITY_CONTEXT *pSecurityContextSrc, VM_AFD_SECURITY_CONTEXT **ppSecurityContextDst);
 typedef DWORD (*PFN_IPC_CREATE_ANONYMOUS_CONNECTION_CONTEXT) (VM_AFD_CONNECTION_CONTEXT **ppConnectionContext);
 typedef DWORD (*PFN_IPC_CREATE_WELLKNOWN_CONTEXT) (VM_AFD_CONTEXT_TYPE contextType, VM_AFD_SECURITY_CONTEXT **ppSecurityContext);
+typedef DWORD (*PFN_IPC_CHECK_ACL_CONTEXT) (VM_AFD_CONNECTION_CONTEXT *pConnectionContext, PSTR pszSddlAcl, BOOL *pIsAllowed);
 
 typedef struct _VM_AFD_VTABLE_
 {
@@ -74,6 +86,7 @@ typedef struct _VM_AFD_VTABLE_
     PFN_IPC_CREATE_ANONYMOUS_CONNECTION_CONTEXT pfnCreateAnonymousConnectionContext;
     PFN_IPC_CREATE_WELLKNOWN_CONTEXT pfnCreateWellKnownContext;
     PFN_IPC_COMPARE_CONTEXT pfnContextBelongsToGroup;
+    PFN_IPC_CHECK_ACL_CONTEXT pfnCheckAclContext;
 } VM_AFD_VTABLE;
 
 #ifndef _WIN32

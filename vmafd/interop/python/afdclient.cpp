@@ -441,7 +441,7 @@ ReadFileContentsToString(std::string FileName, PSTR *ppszData)
     dwError = VmAfdAllocateMemory(stDataSize + 1,(PVOID*) &pszFileData);
     BAIL_ON_ERROR(dwError);
 
-    dwError = VmAfdOpenFilePath(FileName.c_str(), "r", &fp);
+    dwError = VmAfdOpenFilePath(FileName.c_str(), "r", &fp, 0);
     BAIL_ON_ERROR(dwError);
 
     dwReadSize = fread(pszFileData, 1, stDataSize, fp);
@@ -1120,7 +1120,7 @@ error:
     goto cleanup;
 }
 
-std::string client::GetAffinitizedDC(std::string DomainName)
+std::string client::GetAffinitizedDC(std::string DomainName, bool bForceRefresh)
 {
     PSTR pszAffinitizedDC = NULL;
     DWORD dwError = 0;
@@ -1138,7 +1138,7 @@ std::string client::GetAffinitizedDC(std::string DomainName)
                          (PSTR)DomainName.c_str(),
                          NULL,
                          NULL,
-                         0,
+                         bForceRefresh,
                          &pDomainControllerInfo);
     BAIL_ON_ERROR(dwError);
 

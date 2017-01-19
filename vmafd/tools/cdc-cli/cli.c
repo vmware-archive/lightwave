@@ -213,6 +213,7 @@ CdcCliGetDCStatus(
     DWORD dwError = 0;
     PCDC_DC_STATUS_INFO_A pCdcStatusInfo = NULL;
     PVMAFD_HB_STATUS_A pHeartbeatStatus = NULL;
+    PSTR pszErrorMsg = NULL;
 
     dwError = CdcGetDCStatusInfoA(
                             pServer,
@@ -229,13 +230,28 @@ CdcCliGetDCStatus(
             stdout,
             "Last Ping     : %d\n"
             "Response Time : %d\n"
-            "Error(if any) : %d\n"
-            "Status        : %s\n",
+            "Status        : %s\n"
+            "Error(if any) : %d",
             pCdcStatusInfo->dwLastPing,
             pCdcStatusInfo->dwLastResponseTime,
-            pCdcStatusInfo->dwLastError,
-            pCdcStatusInfo->bIsAlive? "ALIVE" : "DOWN"
+            pCdcStatusInfo->bIsAlive? "ALIVE" : "DOWN",
+            pCdcStatusInfo->dwLastError
             );
+
+    if (pCdcStatusInfo->dwLastError)
+    {
+        fprintf (
+              stdout,
+              " [%s] \n",
+              VmAfdGetErrorString(pCdcStatusInfo->dwLastError, &pszErrorMsg)?
+              "Unknown Error":
+              pszErrorMsg
+              );
+    }
+    else
+    {
+        fprintf(stdout,"\n");
+    }
 
 cleanup:
 
@@ -247,6 +263,7 @@ cleanup:
     {
         VmAfdFreeHeartbeatStatusA(pHeartbeatStatus);
     }
+    VMAFD_SAFE_FREE_STRINGA(pszErrorMsg);
 
     return dwError;
 
