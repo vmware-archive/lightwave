@@ -9,11 +9,11 @@
 all: version-file
 
 BUILD_VERSION_H = ..\build-version.h
-SSOVERFILE = "'../../../support/gobuild/specs/ssoversion.py'"
 BUILD_VERSION_FILE_H = $(BUILD_VERSION_H:/=\)
+
 version-file:
-	%TCROOT%\win32\python-2.6.1\python -c "execfile($(SSOVERFILE)); print '\n'.join(['#define %%s %%s' %% t for t in zip(('VERSION_MAJOR','VERSION_MINOR','VERSION_MAINT'), SSO_VERSION.split('.'))])"                   > $(BUILD_VERSION_FILE_H)
-	echo #define BUILD_NUMBER $(BUILD_NUMBER)                    >> $(BUILD_VERSION_FILE_H)
-	echo #define BUILD_NUMBER_X $(BUILD_NUMBER)1                 >> $(BUILD_VERSION_FILE_H)
-	echo #define PRODUCT_BUILD_NUMBER $(PRODUCT_BUILD_NUMBER)    >> $(BUILD_VERSION_FILE_H)
-	echo #define PRODUCT_BUILD_NUMBER_X $(PRODUCT_BUILD_NUMBER)1 >> $(BUILD_VERSION_FILE_H)
+	echo #define VERSION_MAJOR $(LIGHTWAVE_MAJOR_VERSION)> $(BUILD_VERSION_FILE_H)
+	echo #define VERSION_MINOR $(LIGHTWAVE_MINOR_VERSION)>> $(BUILD_VERSION_FILE_H)
+	echo #define VERSION_MAINT $(LIGHTWAVE_MAINT_VERSION)>> $(BUILD_VERSION_FILE_H)
+	echo #define BUILD_NUMBER $(LIGHTWAVE_BUILD)>> $(BUILD_VERSION_FILE_H)
+	echo #define PRODUCT_BUILD_NUMBER $(LIGHTWAVE_WIN_BUILD)>> $(BUILD_VERSION_FILE_H)
