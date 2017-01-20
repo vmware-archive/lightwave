@@ -58,7 +58,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="advapi32.lib libcommon.lib libvmdirclient.lib liblwbase.lib dcelib.lib ws2_32.lib user32.lib Gdi32.lib wldap32.lib libkdctools.lib libkrb5-crypto.lib libasn1db.lib libasn1.lib libkdckrb5.lib pthreadVC2.lib libeay32.lib ssleay32.lib"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)..\vmdir\vmdird\$(PlatformName)\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)..\vmdir\vmdird\$(PlatformName)\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\lib&quot;"
 				GenerateDebugInformation="true"
 				TargetMachine="17"
 			/>
@@ -125,7 +125,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="advapi32.lib libcommon.lib libvmdirclient.lib liblwbase.lib dcelib.lib ws2_32.lib user32.lib Gdi32.lib wldap32.lib libkdctools.lib libkrb5-crypto.lib libasn1db.lib libasn1.lib libkdckrb5.lib pthreadVC2.lib libeay32.lib ssleay32.lib"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)..\vmdir\vmdird\$(PlatformName)\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
+				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)..\vmdir\vmdird\$(PlatformName)\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\lib&quot;"
 				TargetMachine="17"
 			/>
 			<Tool

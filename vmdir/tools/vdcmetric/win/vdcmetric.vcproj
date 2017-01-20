@@ -68,7 +68,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="Shlwapi.lib user32.lib libcommon.lib ws2_32.lib liblber.lib libldap_r.lib libeay32.lib ssleay32.lib libvmdirclient.lib liblwbase.lib"
-				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\lib&quot;"
 				GenerateDebugInformation="true"
 			/>
 			<Tool
@@ -146,7 +146,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="Shlwapi.lib user32.lib libcommon.lib ws2_32.lib liblber.lib libldap_r.lib libeay32.lib ssleay32.lib libvmdirclient.lib liblwbase.lib"
-				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\lib&quot;"
 				GenerateDebugInformation="true"
 			/>
 			<Tool
