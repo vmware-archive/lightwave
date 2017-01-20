@@ -147,6 +147,7 @@ VmDirSrvAccessCheck(
     PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs = NULL;
     PVDIR_ENTRY pTargetEntry = pEntry;
     BOOLEAN bIsAdminRole = FALSE;
+    BOOLEAN bIsMember = FALSE;
 
     assert(pOperation);
     assert(accessDesired != 0);
@@ -154,6 +155,28 @@ VmDirSrvAccessCheck(
     if (pOperation->conn == NULL || pOperation->opType != VDIR_OPERATION_TYPE_EXTERNAL)
     {
         goto cleanup; // Access Allowed
+    }
+
+    //
+    // In the replication case the normal machine account won't have access
+    // to the various sub-tenants' trees. As such, we have to special case them
+    // here.
+    //
+    if (pOperation->syncReqCtrl != NULL && accessDesired == VMDIR_RIGHT_DS_READ_PROP)
+    {
+        if (gVmdirServerGlobals.bvDCGroupDN.lberbv_val)
+        {
+            dwError = VmDirIsDirectMemberOf(pAccessInfo->pszBindedDn,
+                                            VDIR_ACCESS_DCGROUP_MEMBER_INFO,
+                                            &pAccessInfo->accessRoleBitmap,
+                                            &bIsMember);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            if (bIsMember)
+            {
+                goto cleanup; // Access Allowed
+            }
+        }
     }
 
     //
