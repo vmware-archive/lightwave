@@ -158,6 +158,10 @@
 				RelativePath="..\mdb.c"
 				>
 			</File>
+			<File
+				RelativePath="..\midl.c"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
