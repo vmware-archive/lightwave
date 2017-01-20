@@ -29,7 +29,9 @@
 #include "srprpc.h"
 #include <client/structs.h>
 
+#ifndef _WIN32
 #include <config.h>
+#endif
 
 #ifdef _WIN32
 

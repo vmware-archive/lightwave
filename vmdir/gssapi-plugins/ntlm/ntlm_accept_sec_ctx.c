@@ -24,7 +24,9 @@
 #include "ntlm_util.h"
 #include <lber.h>
 
+#ifndef _WIN32
 #include <config.h>
+#endif
 
 #ifdef _WIN32
 
