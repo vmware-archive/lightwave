@@ -43,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;"
+				AdditionalIncludeDirectories="..;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;PACKAGE_NAME"
 				GeneratePreprocessedFile="0"
 				MinimalRebuild="true"
@@ -67,8 +67,8 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="libasn1.lib libasn1db.lib libkrb5-crypto.lib ssleay32.lib liblber.lib libldap_r.lib libeay32.lib"
-				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(configurationName)\lib&quot;;&quot;$(OutDir)&quot;"
+				AdditionalDependencies="liblwbase.lib libasn1.lib libasn1db.lib libkrb5-crypto.lib ssleay32.lib liblber.lib libldap_r.lib libeay32.lib"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(configurationName)\lib&quot;;&quot;$(OutDir)&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\lib&quot;"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -116,7 +116,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				WholeProgramOptimization="false"
-				AdditionalIncludeDirectories="..;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;"
+				AdditionalIncludeDirectories="..;&quot;$(SolutionDir)..\thirdparty\heimdal&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\asn1&quot;;&quot;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;PACKAGE_NAME"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -137,8 +137,8 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="libasn1.lib libasn1db.lib libkrb5-crypto.lib ssleay32.lib liblber.lib libldap_r.lib libeay32.lib"
-				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(configurationName)\lib&quot;;&quot;$(OutDir)&quot;"
+				AdditionalDependencies="liblwbase.lib libasn1.lib libasn1db.lib libkrb5-crypto.lib ssleay32.lib liblber.lib libldap_r.lib libeay32.lib"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(configurationName)\lib&quot;;&quot;$(OutDir)&quot;;&quot;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\lib&quot;"
 			/>
 			<Tool
 				Name="VCALinkTool"
