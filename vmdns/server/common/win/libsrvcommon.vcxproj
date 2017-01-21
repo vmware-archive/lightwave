@@ -72,7 +72,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)server\include;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\include;$(GOBUILD_RD_DIRECTORY_SERVER_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)server\include;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_VMDIR_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -84,7 +84,7 @@
     <Link>
       <AdditionalDependencies>libcommon.lib;dcelib.lib;gssapi64.lib;ws2_32.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(SolutionDir)$(IntDir)$(ProjectName).dll</OutputFile>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <TargetMachine>MachineX64</TargetMachine>
@@ -98,7 +98,7 @@
       <TargetEnvironment>X64</TargetEnvironment>
     </Midl>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)server\include;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\include;$(GOBUILD_RD_DIRECTORY_SERVER_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)server\include;$(SolutionDir)server\common;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_VMDIR_ROOT)\win64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <PrecompiledHeader />
@@ -109,7 +109,7 @@
     <Link>
       <AdditionalDependencies>libcommon.lib;dcelib.lib; gssapi64.lib; ws2_32.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(SolutionDir)$(IntDir)$(ProjectName).dll</OutputFile>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>

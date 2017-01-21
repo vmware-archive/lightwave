@@ -75,7 +75,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>include;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -90,7 +90,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>include;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -107,7 +107,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>include;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -126,7 +126,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>include;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(GOBUILD_RD_PLATFORM_SDK_WINDOWS_ROOT)\$(Configuration)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include;$(SolutionDir)include\win;$(SolutionDir)include\public;$(SolutionDir)include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
