@@ -75,6 +75,10 @@
 		<url-pattern>/</url-pattern>
 	</servlet-mapping>
 
+    <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
+
     <!-- rest -->
     <listener>
         <listener-class>com.vmware.identity.rest.core.server.util.SLF4JListener</listener-class>
