@@ -345,12 +345,11 @@ Bundle-Vendor: ${bundle.vendor}
  </dependencies>
 
  <properties>
-    <outputDirectory>${basedir}/../build/${PRODUCT_NAME}/packages</outputDirectory>
-    <publishDirectory>${basedir}/../build/${PRODUCT_NAME}/publish</publishDirectory>
-    <build.dist>${basedir}/../build/${PRODUCT_NAME}/dist</build.dist>
+    <build.dist>${basedir}/../${distDir}</build.dist>
+    <outputDirectory>${basedir}/../${packageDir}</outputDirectory>
+    <publishDirectory>${basedir}/../${publishDir}</publishDirectory>
     <bundle.manifestTemplatePath>${basedir}/../commons/samltoken/conf/osgi/ssoClientTemplate.mf</bundle.manifestTemplatePath>
     <skip.unit.tests>false</skip.unit.tests>
-    <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
  </properties>
 
 </project>

@@ -110,7 +110,7 @@
 
   <properties>
     <skip.unit.tests>true</skip.unit.tests>
-    <outputDirectory>${basedir}/../build/vmware-sts/packages</outputDirectory>
+    <outputDirectory>${basedir}/../${packageDir}</outputDirectory>
   </properties>
 
 </project>

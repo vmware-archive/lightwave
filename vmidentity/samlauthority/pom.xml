@@ -276,9 +276,8 @@
  </dependencies>
 
  <properties>
-    <outputDirectory>${basedir}/../build/${PRODUCT_NAME}/packages</outputDirectory>
+    <outputDirectory>${basedir}/../${packageDir}</outputDirectory>
     <skip.unit.tests>false</skip.unit.tests>
-    <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
  </properties>
 
 </project>

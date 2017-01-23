@@ -399,12 +399,11 @@
  </dependencies>
 
  <properties>
-    <outputDirectory>${basedir}/../build/${PRODUCT_NAME}/packages</outputDirectory>
-    <classesOutputDirectory>${basedir}/../build/vmware-sts/websso/classes</classesOutputDirectory>
+    <outputDirectory>${basedir}/../${packageDir}</outputDirectory>
+    <classesOutputDirectory>${basedir}/../build/${PRODUCT_NAME}/websso/classes</classesOutputDirectory>
     <skip.unit.tests>false</skip.unit.tests>
     <resDirectory>${basedir}/src/main/resources</resDirectory>
     <ssoCommonResources>${basedir}/../sso-common/src/main/resources/</ssoCommonResources>
-    <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
     <websso.title>websso</websso.title>
     <websso.version>${vmware.version}</websso.version>
     <websso.vendor>VMWare, Inc.</websso.vendor>

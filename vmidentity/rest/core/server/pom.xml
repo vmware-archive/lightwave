@@ -158,6 +158,6 @@
   </dependencies>
 
   <properties>
-    <outputDirectory>${basedir}/../../../build/vmware-sts/packages</outputDirectory>
+    <outputDirectory>${basedir}/../../../${packageDir}</outputDirectory>
   </properties>
 </project>

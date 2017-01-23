@@ -192,11 +192,10 @@ Bundle-Vendor: ${bundle.vendor}
  </dependencies>
 
  <properties>
-    <outputDirectory>${basedir}/../build/${PRODUCT_NAME}/packages</outputDirectory>
-    <build.dist>${basedir}/../build/${PRODUCT_NAME}/dist</build.dist>
+    <outputDirectory>${basedir}/../${packageDir}</outputDirectory>
+    <build.dist>${basedir}/../${distDir}</build.dist>
     <bundle.manifestTemplatePath>${basedir}/../commons/samltoken/conf/osgi/ssoClientTemplate.mf</bundle.manifestTemplatePath>
     <skip.unit.tests>false</skip.unit.tests>
-    <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
  </properties>
 
 </project>

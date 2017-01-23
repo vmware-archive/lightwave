@@ -244,9 +244,8 @@
  </dependencies>
 
  <properties>
-    <outputDirectory>${basedir}/../build/${PRODUCT_NAME}/packages</outputDirectory>
-    <publishDirectory>${basedir}/../build/${PRODUCT_NAME}/publish</publishDirectory>
-    <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
+    <outputDirectory>${basedir}/../${packageDir}</outputDirectory>
+    <publishDirectory>${basedir}/../${publishDir}</publishDirectory>
     <classesOutputDirectory>${basedir}/../build/${PRODUCT_NAME}/vmware-identity-install/classes</classesOutputDirectory>
     <manifestPath>MANIFEST.MF</manifestPath>
  </properties>

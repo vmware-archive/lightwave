@@ -135,8 +135,7 @@
     </dependencies>
 
  <properties>
-    <outputDirectory>${basedir}/../build/${PRODUCT_NAME}/packages</outputDirectory>
-    <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
+    <outputDirectory>${basedir}/../${packageDir}</outputDirectory>
  </properties>
 
 </project>

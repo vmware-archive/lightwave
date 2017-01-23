@@ -478,10 +478,9 @@
  </dependencies>
 
  <properties>
-    <outputDirectory>${basedir}/../build/${PRODUCT_NAME}/packages</outputDirectory>
-    <classesOutputDirectory>${basedir}/../build/rd-identity-server/sts/classes</classesOutputDirectory>
+    <outputDirectory>${basedir}/../${packageDir}</outputDirectory>
+    <classesOutputDirectory>${basedir}/../build/${PRODUCT_NAME}/sts/classes</classesOutputDirectory>
     <skip.unit.tests>false</skip.unit.tests>
-    <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
  </properties>
 
 </project>

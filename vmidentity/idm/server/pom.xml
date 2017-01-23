@@ -248,8 +248,8 @@
 
  <properties>
     <skip.unit.tests>false</skip.unit.tests>
-    <outputDirectory>${basedir}/../../build/vmware-sts/packages</outputDirectory>
-    <classesOutputDirectory>${basedir}/../../build/vmware-sts/vmware-identity-idm-server/classes</classesOutputDirectory>
+    <outputDirectory>${basedir}/../../${packageDir}</outputDirectory>
+    <classesOutputDirectory>${basedir}/../../build/${PRODUCT_NAME}/vmware-identity-idm-server/classes</classesOutputDirectory>
     <manifestPath>src/main/resources/MANIFEST.MF</manifestPath>
  </properties>
 

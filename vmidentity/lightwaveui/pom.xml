@@ -434,12 +434,12 @@
  </dependencies>
 
  <properties>
-    <outputDirectory>${basedir}/../build/${PRODUCT_NAME}/packages</outputDirectory>
+
+    <outputDirectory>${basedir}/../${packageDir}</outputDirectory>
     <classesOutputDirectory>${basedir}/../build/${PRODUCT_NAME}/lightwaveui/classes</classesOutputDirectory>
     <resDirectory>${basedir}/src/main/resources</resDirectory>
     <ssoCommonResources>${basedir}/../sso-common/src/main/resources/</ssoCommonResources>
     <skip.unit.tests>false</skip.unit.tests>
-    <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
     <lightwaveui.title>lightwaveui</lightwaveui.title>
     <lightwaveui.version>${vmware.version}</lightwaveui.version>
     <lightwaveui.vendor>VMWare, Inc.</lightwaveui.vendor>

@@ -340,7 +340,7 @@
   </dependencies>
   <properties>
     <war.warName>vmdir</war.warName>
-    <outputDirectory>${basedir}/../../../build/vmware-sts/packages/</outputDirectory>
+    <outputDirectory>${basedir}/../../../${packageDir}</outputDirectory>
   </properties>
 
 </project>

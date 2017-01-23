@@ -182,11 +182,10 @@
 
  <properties>
     <bundle.manifestTemplatePath>${basedir}/conf/osgi/ssoClientTemplate.mf</bundle.manifestTemplatePath>
-    <build.dist>${basedir}/../../build/${PRODUCT_NAME}/dist</build.dist>
-    <outputDirectory>${basedir}/../../build/${PRODUCT_NAME}/packages</outputDirectory>
-    <publishDirectory>${basedir}/../../build/${PRODUCT_NAME}/publish</publishDirectory>
+    <build.dist>${basedir}/../../${distDir}</build.dist>
+    <outputDirectory>${basedir}/../../${packageDir}</outputDirectory>
+    <publishDirectory>${basedir}/../../${publishDir}</publishDirectory>
     <skip.unit.tests>false</skip.unit.tests>
-    <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
  </properties>
 
 </project>

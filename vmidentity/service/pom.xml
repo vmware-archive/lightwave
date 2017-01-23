@@ -722,8 +722,7 @@
  </dependencies>
 
  <properties>
-    <outputDirectory>${basedir}/../build/${PRODUCT_NAME}/packages</outputDirectory>
-    <PRODUCT_NAME>vmware-sts</PRODUCT_NAME>
+    <outputDirectory>${basedir}/../${packageDir}</outputDirectory>
     <service.title>SSO</service.title>
     <service.version>0.0.1.dev</service.version>
     <service.vendor>VMWare, Inc.</service.vendor>

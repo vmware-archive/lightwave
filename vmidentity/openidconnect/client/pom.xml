@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.vmware.identity</groupId>
+    <groupId>com.vmware.identity.oidc</groupId>
     <artifactId>vmware-identity-oidc</artifactId>
     <version>6.6.3</version>
   </parent>
@@ -19,7 +19,7 @@
         <easymock.version>3.2</easymock.version>
         <bouncycastle.version>1.52</bouncycastle.version>
         <powermock.version>1.6.2</powermock.version>
-        <outputDirectory>${basedir}/../../build/vmware-sts/packages/</outputDirectory>
+        <outputDirectory>${basedir}/../../${packageDir}</outputDirectory>
     </properties>
 
     <profiles>
