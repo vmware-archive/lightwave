@@ -10,8 +10,8 @@
   <property name="AFD_PACKAGE_BASE" value="${MAINSRCROOT}/../vmafd/build/authentication-framework/packages" />
   <property name="VMCA_PACKAGE_BASE" value="${MAINSRCROOT}/../vmca/build/packages" />
 
-  <!-- Artifacts of REST Project -->
-  <property name="IDM_VERSION" value="6.6.1" />
+  <!-- Artifacts of VMIDENTITY related Projects -->
+  <property name="IDM_VERSION" value="6.6.3" />
   <property name="VERSION" value="1.0-SNAPSHOT" />
 
  <property name="idmClient" value="vmware-identity-idm-client.jar"/>
@@ -68,7 +68,7 @@
     <exec executable="${maven}" failonerror="true">
       <env key="M2_HOME" value="${MavenHome}"/>
       <env key="JAVA_HOME" value="${JRE_HOME}"/>
-      <arg line=" -s settings.xml -Dskip.unit.tests=true clean compile package" />
+      <arg line=" -s settings.xml versions:set -DnewVersion=${IDM_VERSION} -Dskip.unit.tests=true clean compile package" />
     </exec>
   </target>
 

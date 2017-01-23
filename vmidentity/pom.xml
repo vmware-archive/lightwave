@@ -4,7 +4,7 @@
 
   <groupId>com.vmware.identity</groupId>
   <artifactId>vmware-identity</artifactId>
-  <version>6.6.1</version>
+  <version>6.6.3</version>
   <packaging>pom</packaging>
 
   <name>vmidentity</name>
@@ -12,7 +12,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <java.version>1.7</java.version>
-    <vmware.version>6.6.1</vmware.version>
+    <vmware.version>${project.version}</vmware.version>
     <rest.version>1.0-SNAPSHOT</rest.version>
     <maven.compiler.plugin.version>3.5.1</maven.compiler.plugin.version>
     <maven.jar.plugin.version>3.0.1</maven.jar.plugin.version>

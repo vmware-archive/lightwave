@@ -6,7 +6,7 @@
   <parent>
     <groupId>com.vmware.vmdir.rest</groupId>
     <artifactId>vmware-directory-rest</artifactId>
-    <version>6.6.1</version>
+    <version>6.6.3</version>
   </parent>
 
   <artifactId>vmware-directory-rest-server</artifactId>
@@ -236,13 +236,13 @@
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-core</artifactId>
-      <version>${log4j.version}</version>
+      <version>${apache.log4j.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>
-      <version>${log4j.version}</version>
+      <version>${apache.log4j.version}</version>
     </dependency>
 
     <!-- Required for native Jersey HTTP request/response logging-->

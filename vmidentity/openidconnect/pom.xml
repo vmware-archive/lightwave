@@ -4,10 +4,14 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-
+ <parent>
+    <groupId>com.vmware.identity</groupId>
+    <artifactId>vmware-identity</artifactId>
+    <version>6.6.3</version>
+  </parent>
     <groupId>com.vmware.identity</groupId>
     <artifactId>vmware-identity-oidc</artifactId>
-    <version>6.6.1</version>
+    <version>6.6.3</version>
     <packaging>pom</packaging>
 
     <name>vmware-identity-oidc</name>

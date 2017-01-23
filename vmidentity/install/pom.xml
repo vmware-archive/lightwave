@@ -7,11 +7,11 @@
   <parent>
     <groupId>com.vmware.identity</groupId>
     <artifactId>vmware-identity</artifactId>
-    <version>6.6.1</version>
+    <version>6.6.3</version>
   </parent>
 
   <artifactId>vmware-identity-install</artifactId>
-  <version>6.6.1</version>
+  <version>6.6.3</version>
   <packaging>jar</packaging>
   <name>vmware-identity-install</name>
 

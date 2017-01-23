@@ -6,11 +6,11 @@
   <parent>
     <groupId>com.vmware.identity.commons</groupId>
     <artifactId>vmware-identity-commons</artifactId>
-    <version>6.6.1</version>
+    <version>6.6.3</version>
   </parent>
 
   <artifactId>samltoken</artifactId>
-  <version>6.6.1</version>
+  <version>6.6.3</version>
   <packaging>jar</packaging>
   <name>samltoken</name>
 

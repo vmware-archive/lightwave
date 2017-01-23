@@ -6,11 +6,11 @@
   <parent>
     <groupId>com.vmware.identity</groupId>
     <artifactId>vmware-identity</artifactId>
-    <version>6.6.1</version>
+    <version>6.6.3</version>
   </parent>
 
   <artifactId>sts</artifactId>
-  <version>6.6.1</version>
+  <version>6.6.3</version>
   <packaging>jar</packaging>
   <name>sts</name>
 
