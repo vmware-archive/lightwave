@@ -36,12 +36,31 @@ VmDirGenerateDomainGuidSid_inlock(
     PSTR*   ppszDomainSid
     );
 
+#ifndef WINJOIN_CHECK_ENABLED
 static
 DWORD
 VmDirGenerateObjectRid(
     PDWORD  pdwRidSequence,
     PDWORD  pdwObjectRid
     );
+
+#else
+
+/*
+ * 4 bytes for RID : 1 byte server id + 3 bytes sequence number
+ */
+#define VMDIR_RID_SEQUENCE_NUMBER(dwRid, dwServerId)    \
+    (((dwRid) & 0x00FFFFFF) | ( ((DWORD)(dwServerId)) << 24))
+
+
+static
+DWORD
+VmDirGenerateObjectRid3(
+    UCHAR   ServerId,
+    PDWORD  pdwRidSequence,
+    PDWORD  pdwObjectRid
+    );
+#endif
 
 static
 DWORD
@@ -225,8 +244,15 @@ VmDirGenerateObjectSid(
     // for non-domain object, generate RID
     if (!IsDomainObject)
     {
+
+#ifndef WINJOIN_CHECK_ENABLED
         dwError = VmDirGenerateObjectRid(&pSidGenState->dwDomainRidSeqence,
                                          &dwObjectRid);
+#else
+        dwError = VmDirGenerateObjectRid3(gVmdirServerGlobals.serverId,
+                                         &pSidGenState->dwDomainRidSeqence,
+                                         &dwObjectRid);
+#endif
         BAIL_ON_VMDIR_ERROR(dwError);
 
         VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,
@@ -259,6 +285,7 @@ VmDirGenerateObjectSid(
             }
         }
 
+#ifndef WINJOIN_CHECK_ENABLED
         dwError = VmDirAllocateStringPrintf(
                         &pszObjectSid,
                         "%s-%u-%u",
@@ -266,6 +293,14 @@ VmDirGenerateObjectSid(
                         gVmdirServerGlobals.serverId,
                         dwObjectRid
                         );
+#else
+        dwError = VmDirAllocateStringPrintf(
+                        &pszObjectSid,
+                        "%s-%u",
+                        pSidGenState->pszDomainSid,
+                        dwObjectRid
+                        );
+#endif
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     else
@@ -787,6 +822,7 @@ error:
     goto cleanup;
 }
 
+#ifndef WINJOIN_CHECK_ENABLED
 /*
  * Get the next value from our per-domain counter. This value constitutes
  * part of the object's SID.
@@ -820,6 +856,47 @@ error:
     return dwError;
 }
 
+#else
+
+/* RID is structured in two parts:
+ * first 8-bit: serverId representing the server instance where an object is created
+ * last 24-bit: rid sequence number (0-2^24-1)
+ *
+ */
+static
+DWORD
+VmDirGenerateObjectRid3(
+    UCHAR   ucServerId,
+    PDWORD  pdwRidSequence,
+    PDWORD  pdwObjectRid
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwRid = *pdwRidSequence;
+
+    // Check to see whether current Rid hits the MAX
+    if (dwRid+1 > MAX_RID_SEQUENCE)
+    {
+        dwError = ERROR_RID_LIMIT_EXCEEDED;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwRid++;
+    *pdwRidSequence = dwRid;
+    *pdwObjectRid = VMDIR_RID_SEQUENCE_NUMBER(dwRid, ucServerId);
+
+error:
+    if (dwError)
+    {
+        *pdwObjectRid = 0;
+    }
+
+    return dwError;
+}
+
+#endif /* ifndef WINJOIN_CHECK_ENABLED */
+
+
 /*
  * Called during PVDIR_DOMAIN_SID_GEN_STATE instantiation.
  *
@@ -847,12 +924,24 @@ _VmDirSynchronizeRidSequence(
           dwCnt--
         )
     {
+#ifdef WINJOIN_CHECK_ENABLED
+        DWORD dwObjectRid = VMDIR_RID_SEQUENCE_NUMBER(
+                                dwCnt,
+                                (UCHAR) gVmdirServerGlobals.serverId);
+
+        dwError = VmDirAllocateStringPrintf(
+                        &pszObjectSid,
+                        "%s-%u",
+                        pDomainSidState->pszDomainSid,
+                        dwObjectRid);
+#else
         dwError = VmDirAllocateStringPrintf(
                         &pszObjectSid,
                         "%s-%u-%u",
                         pDomainSidState->pszDomainSid,
                         gVmdirServerGlobals.serverId,
                         dwCnt);
+#endif
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirSimpleEqualFilterInternalSearch(
