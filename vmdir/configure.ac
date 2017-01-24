@@ -129,17 +129,6 @@ AC_ARG_ENABLE([server],
     ])
 
 AM_CONDITIONAL(ENABLE_SERVER, [$ENABLE_SERVER])
-AM_CONDITIONAL([HAVE_MDB_STORE], [test x"$VMDIRD_DATASTORE" = x"mdb"])
-
-# mdb component
-
-saved_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS -I../thirdparty/openldap/libraries/mdb"
-if test x"$VMDIRD_DATASTORE" = x"mdb"
-then
-AC_CHECK_HEADERS(lmdb.h)
-fi
-CPPFLAGS="$saved_CPPFLAGS"
 
 # openssl component
 
@@ -390,7 +379,6 @@ AC_CHECK_FUNCS(strerror)
 
 AC_CHECK_LIB([dl], [dlopen], [DL_LIBS="-ldl"])
 AC_CHECK_LIB([pthread], [pthread_self], [PTHREAD_LIBS="-lpthread"])
-AC_CHECK_LIB([mdb],[mdb_strerror],[MDB_LIBS="-lmdb"],[],[])
 AC_CHECK_LIB([z],[inflate],[ZLIB_LIBS="-lz"],[],[$ZLIB_LDFLAGS])
 AC_CHECK_LIB([bz2],[BZ2_bzdopen],[BZIP_LIBS="-lbz2"],[],[$BZIP_LDFLAGS])
 AC_CHECK_LIB([uuid],[uuid_copy], [UUID_LIBS="-luuid"], [], [$LW_LDFLAGS -luuid])

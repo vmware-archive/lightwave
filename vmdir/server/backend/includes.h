@@ -49,17 +49,7 @@
 
 #include <backend.h>
 
-#ifdef HAVE_DB_H
-#include <bdbstore.h>
-#endif
-
-#ifdef HAVE_LMDB_H
 #include <mdbstore.h>
-#endif
-
-#ifdef HAVE_TCBDB_H
-#include <tcstore.h>
-#endif
 
 //#include "defines.h"
 #include "structs.h"
@@ -105,13 +95,7 @@
 
 #include <backend.h>
 
-#ifdef HAVE_DB_H
-#include <bdbstore.h>
-#endif
-
-#ifdef HAVE_LMDB_H
 #include <mdbstore.h>
-#endif
 
 #include "structs.h"
 #include "externs.h"
