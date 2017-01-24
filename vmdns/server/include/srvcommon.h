@@ -35,6 +35,8 @@ extern "C" {
 
 #define VMDNS_LDAP_SRV_NAME "_ldap._tcp"
 #define VMDNS_KERBEROS_SRV_NAME "_kerberos._tcp"
+#define VMDNS_LDAP_DC_SRV_NAME "_ldap._tcp.dc._msdcs"
+#define VMDNS_KERBEROS_DC_SRV_NAME "_kerberos._tcp.dc._msdcs"
 
 /*hash table*/
 
