@@ -20,6 +20,7 @@ static
 void
 SetupLdapPort(
    int port,
+   int sock_type,
    ber_socket_t *pIP4_sockfd,
    ber_socket_t *pIP6_sockfd
    );
@@ -34,6 +35,7 @@ BindListenOnPort(
    short         addr_type,
    int           addr_size,
 #endif
+    int sock_type,
     void         *pServ_addr,
     ber_socket_t *pSockfd
     );
@@ -383,6 +385,7 @@ static
 void
 SetupLdapPort(
    int port,
+   int sock_type,
    ber_socket_t *pIP4_sockfd,
    ber_socket_t *pIP6_sockfd
    )
@@ -412,7 +415,7 @@ SetupLdapPort(
        serv_4addr.sin_port = htons(port);
 
        addr_size = sizeof(struct sockaddr_in);
-       retVal = BindListenOnPort(addr_type, addr_size, (void *)&serv_4addr, pIP4_sockfd);
+       retVal = BindListenOnPort(addr_type, addr_size, sock_type, (void *)&serv_4addr, pIP4_sockfd);
        if (retVal != 0)
        {
            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: error listening on port %d for ipv4", __func__, port);
@@ -431,7 +434,7 @@ SetupLdapPort(
        serv_6addr.sin6_port = htons(port);
 
        addr_size = sizeof(struct sockaddr_in6);
-       retVal = BindListenOnPort(addr_type, addr_size, (void *)&serv_6addr, pIP6_sockfd);
+       retVal = BindListenOnPort(addr_type, addr_size, sock_type, (void *)&serv_6addr, pIP6_sockfd);
        if (retVal != 0)
        {
            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: error listening on port %d for ipv6", __func__, port);
@@ -455,6 +458,7 @@ BindListenOnPort(
    short         addr_type,
    int           addr_size,
 #endif
+    int sock_type,
     void         *pServ_addr,
     ber_socket_t *pSockfd
 )
@@ -473,7 +477,7 @@ BindListenOnPort(
 #endif
 
    *pSockfd = -1;
-   *pSockfd = socket(addr_type, SOCK_STREAM, 0);
+   *pSockfd = socket(addr_type, sock_type, 0);
    if (*pSockfd < 0)
    {
 #ifdef _WIN32
@@ -502,7 +506,7 @@ BindListenOnPort(
 
    on = 1;  // turn on TCP_NODELAY below
 
-   if (setsockopt(*pSockfd,  IPPROTO_TCP, TCP_NODELAY, (const char *)(&on), sizeof(on) ) < 0)
+   if (sock_type != SOCK_DGRAM && setsockopt(*pSockfd,  IPPROTO_TCP, TCP_NODELAY, (const char *)(&on), sizeof(on) ) < 0)
    {
 #ifdef _WIN32
       errno = WSAGetLastError();
@@ -575,7 +579,7 @@ BindListenOnPort(
                       "%s: bind() call failed with errno: %d", __func__, errno );
    }
 
-   if (listen(*pSockfd, LDAP_PORT_LISTEN_BACKLOG) != 0)
+   if (sock_type != SOCK_DGRAM && listen(*pSockfd, LDAP_PORT_LISTEN_BACKLOG) != 0)
    {
 #ifdef _WIN32
       errno = WSAGetLastError();
@@ -598,6 +602,43 @@ error:
         *pSockfd = -1;
     }
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, VDIR_SAFE_STRING(pszLocalErrMsg));
+    goto cleanup;
+}
+
+/*
+ *  Process UDP message; CLDAP requests are only supported so far.
+ */
+static
+DWORD
+ProcessUdpConnection(
+   PVOID pArg
+   )
+{
+    PVDIR_CONNECTION_CTX pConnCtx = NULL;
+    int            retVal = LDAP_SUCCESS;
+
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessUDPConnection called");
+
+    pConnCtx = (PVDIR_CONNECTION_CTX)pArg;
+
+    BAIL_ON_VMDIR_ERROR(retVal);
+#if 0
+    sendto(pConnCtx->udp_buf,
+           pCldapResponse,
+           dwCldapResponseLen,
+           0,
+           pConnCtx->udp_addr_buf,
+           pConnCtx->udp_addr_len);
+#endif
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pConnCtx->udp_addr_buf);
+    VMDIR_SAFE_FREE_MEMORY(pConnCtx->udp_buf);
+    VMDIR_SAFE_FREE_MEMORY(pConnCtx);
+
+    return 0;
+
+error:
     goto cleanup;
 }
 
@@ -916,6 +957,8 @@ vmdirConnAccept(
     int                  retVal = LDAP_SUCCESS;
     ber_socket_t         ip4_fd = -1;
     ber_socket_t         ip6_fd = -1;
+    ber_socket_t         ip4_udp_fd = -1;
+    ber_socket_t         ip6_udp_fd = -1;
     ber_socket_t         max_fd = -1;
     VMDIR_THREAD         threadId;
     BOOLEAN              bInLock = FALSE;
@@ -924,6 +967,12 @@ vmdirConnAccept(
     fd_set               event_fd_set;
     fd_set               poll_fd_set;
     struct timeval       timeout = {0};
+    BOOLEAN              bIsUdp = FALSE;
+    void                 *udp_buf = NULL;
+    void                 *udp_addr_buf = NULL;
+    socklen_t            udp_addr_len = 0;
+    size_t               udp_len = 0;
+    DWORD                (*pfnProcessAConnection)(void *) = NULL;
 
     // Wait for ***1st*** replication cycle to be over.
     if (gVmdirServerGlobals.serverId == 0) // instance has not been initialized
@@ -956,7 +1005,14 @@ vmdirConnAccept(
     iLocalLogMask = VmDirLogGetMask();
     ber_set_option(NULL, LBER_OPT_DEBUG_LEVEL, &iLocalLogMask);
 
-    SetupLdapPort(dwPort, &ip4_fd, &ip6_fd);
+    SetupLdapPort(dwPort, SOCK_STREAM, &ip4_fd, &ip6_fd);
+    if (ip4_fd < 0 && ip6_fd < 0)
+    {
+        VmDirSleep(1000);
+        goto cleanup;
+    }
+
+    SetupLdapPort(dwPort, SOCK_DGRAM, &ip4_udp_fd, &ip6_udp_fd);
     if (ip4_fd < 0 && ip6_fd < 0)
     {
         VmDirSleep(1000);
@@ -982,6 +1038,24 @@ vmdirConnAccept(
         }
     }
 
+    if (ip4_udp_fd >= 0)
+    {
+        FD_SET (ip4_udp_fd, &event_fd_set);
+        if (ip4_udp_fd > max_fd)
+        {
+            max_fd = ip4_udp_fd;
+        }
+    }
+
+    if (ip6_udp_fd >= 0)
+    {
+        FD_SET (ip6_udp_fd, &event_fd_set);
+        if (ip6_udp_fd > max_fd)
+        {
+            max_fd = ip6_udp_fd;
+        }
+    }
+
     retVal = VmDirSyncCounterIncrement(gVmdirGlobals.pPortListenSyncCounter);
     if (retVal != 0 )
     {
@@ -991,6 +1065,7 @@ vmdirConnAccept(
 
     while (TRUE)
     {
+        pfnProcessAConnection = ProcessAConnection;
         if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
         {
             goto cleanup;
@@ -999,6 +1074,7 @@ vmdirConnAccept(
         poll_fd_set = event_fd_set;
         timeout.tv_sec = 3;
         timeout.tv_usec = 0;
+        bIsUdp = FALSE;
         retVal = select ((int)max_fd+1, &poll_fd_set, NULL, NULL, &timeout);
         if (retVal < 0 )
         {
@@ -1024,7 +1100,33 @@ vmdirConnAccept(
         } else if (ip6_fd >= 0 && FD_ISSET(ip6_fd, &poll_fd_set))
         {
             newsockfd = accept(ip6_fd, (struct sockaddr *) NULL, NULL);
-        } else
+        } else if (ip4_udp_fd >= 0 && FD_ISSET(ip4_udp_fd, &poll_fd_set))
+        {
+            bIsUdp = TRUE;
+            newsockfd = ip4_udp_fd;
+
+            retVal = VmDirAllocateMemory(1500, (PVOID*)&udp_buf);
+            BAIL_ON_VMDIR_ERROR(retVal);
+
+            udp_addr_len = sizeof(struct sockaddr_in);
+            retVal = VmDirAllocateMemory(udp_addr_len, (PVOID*)&udp_addr_buf);
+            BAIL_ON_VMDIR_ERROR(retVal);
+
+            udp_len = recvfrom(newsockfd, udp_buf, 1500,  0, udp_addr_buf, &udp_addr_len);
+        } else if (ip6_udp_fd >= 0 && FD_ISSET(ip6_udp_fd, &poll_fd_set))
+        {
+            bIsUdp = TRUE;
+            newsockfd = ip6_udp_fd;
+
+            retVal = VmDirAllocateMemory(1500, (PVOID*)&udp_buf);
+            BAIL_ON_VMDIR_ERROR(retVal);
+
+            udp_addr_len = sizeof(struct sockaddr_in6);
+            retVal = VmDirAllocateMemory(udp_addr_len, (PVOID*)&udp_addr_buf);
+            BAIL_ON_VMDIR_ERROR(retVal);
+            udp_len = recvfrom(newsockfd, udp_buf, 1500,  0, udp_addr_buf, &udp_addr_len);
+        }
+        else
         {
             VMDIR_LOG_INFO( LDAP_DEBUG_CONNS, "%s: select() returned with no data (port %d), return: %d",
                             __func__, dwPort, retVal);
@@ -1060,9 +1162,18 @@ vmdirConnAccept(
 
         pConnCtx->sockFd  = newsockfd;
         newsockfd = -1;
-        pConnCtx->pSockbuf_IO = pSockbuf_IO;
 
-        retVal = VmDirCreateThread(&threadId, FALSE, ProcessAConnection, (PVOID)pConnCtx);
+        pConnCtx->pSockbuf_IO = pSockbuf_IO;
+        if (bIsUdp)
+        {
+            pConnCtx->udp_buf = udp_buf, udp_buf = NULL;
+            pConnCtx->udp_len = udp_len;
+            pConnCtx->udp_addr_buf = udp_addr_buf, udp_addr_buf = NULL;
+            pConnCtx->udp_addr_len = udp_addr_len;
+            pfnProcessAConnection = ProcessUdpConnection;
+        }
+
+        retVal = VmDirCreateThread(&threadId, TRUE, pfnProcessAConnection, (PVOID)pConnCtx);
         if (retVal != 0)
         {
             VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: VmDirCreateThread() (port) failed with errno: %d",
@@ -1099,6 +1210,8 @@ cleanup:
 #ifndef _WIN32
     raise(SIGTERM);
 #endif
+    VMDIR_SAFE_FREE_MEMORY(udp_buf);
+    VMDIR_SAFE_FREE_MEMORY(udp_addr_buf);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: Connection accept thread: stop (port %d)", __func__, dwPort);
 
