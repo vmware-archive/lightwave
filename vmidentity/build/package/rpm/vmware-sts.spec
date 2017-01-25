@@ -44,7 +44,9 @@ autoreconf -mif .. &&
              --localstatedir=%{_dbdir} \
              --with-afd=%{_prefix} \
              --with-likewise=%{_likewise_open_prefix} \
-             --with-ssl=/usr \
+             --with-jansson=%{_janssondir} \
+             --with-curl=%{_curldir} \
+             --with-ssl=%{_ssldir} \
              --with-java=%{_javahome} \
              --with-commons-daemon=%{_commons_daemondir} \
              --with-ant=%{_antdir} \
@@ -147,6 +149,7 @@ fi
 %{_sbindir}/vmware-stsd.sh
 %{_sbindir}/configure-build.sh
 %{_sbindir}/sso-config.sh
+%{_includedir}/*.h
 %{_lib64dir}/*.so*
 %{_binsdir}/test-ldapbind
 %{_binsdir}/test-logon
@@ -203,6 +206,11 @@ fi
 %{_jarsdir}/vmware-identity-rest-core-client.jar
 %{_jarsdir}/vmware-identity-rest-idm-client.jar
 %{_jarsdir}/vmware-directory-rest-client.jar
+%{_includedir}/*.h
+%{_lib64dir}/*.so*
+
+%exclude %{_bindir}/*test
+
 # %doc ChangeLog README COPYING
 
 %files samples

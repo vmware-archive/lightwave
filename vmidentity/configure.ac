@@ -44,6 +44,84 @@ AC_ARG_ENABLE([debug],
         fi
     ])
 
+# jansson components
+
+AC_ARG_WITH([jansson],
+    [AC_HELP_STRING([--with-jansson=<dir>], [use jansson binaries rooted at prefix <dir> ])],
+    [
+        JANSSON_BASE_PATH="$withval"
+        JANSSON_INCLUDES="-I$withval/include"
+        JANSSON_LDFLAGS="-L$withval/lib"
+    ])
+
+AC_ARG_WITH([jansson-includes],
+    [AC_HELP_STRING([--with-jansson-includes=<dir>], [use jansson headers located in prefix <dir> ])],
+    [
+        JANSSON_INCLUDES="-I$withval"
+    ])
+
+AC_ARG_WITH([jansson-libs],
+    [AC_HELP_STRING([--with-jansson-libs=<dir>], [use jansson libraries located in prefix <dir> ])],
+    [
+        JANSSON_LDFLAGS="-L$withval"
+    ])
+
+AC_SUBST(JANSSON_BASE_PATH)
+AC_SUBST(JANSSON_INCLUDES)
+AC_SUBST(JANSSON_LDFLAGS)
+
+# CURL components
+
+AC_ARG_WITH([curl],
+    [AC_HELP_STRING([--with-curl=<dir>], [use CURL binaries rooted at prefix <dir> ])],
+    [
+        CURL_BASE_PATH="$withval"
+        CURL_INCLUDES="-I$withval/include"
+        CURL_LDFLAGS="-L$withval/lib"
+    ])
+
+AC_ARG_WITH([curl-includes],
+    [AC_HELP_STRING([--with-curl-includes=<dir>], [use CURL headers located in prefix <dir> ])],
+    [
+        CURL_INCLUDES="-I$withval"
+    ])
+
+AC_ARG_WITH([curl-libs],
+    [AC_HELP_STRING([--with-curl-libs=<dir>], [use CURL libraries located in prefix <dir> ])],
+    [
+        CURL_LDFLAGS="-L$withval"
+    ])
+
+AC_SUBST(CURL_BASE_PATH)
+AC_SUBST(CURL_INCLUDES)
+AC_SUBST(CURL_LDFLAGS)
+
+# vmafd component
+
+AC_ARG_WITH([afd],
+    [AC_HELP_STRING([--with-afd=<dir>], [use afd-server binaries rooted at prefix <dir> ])],
+    [
+        VMAFD_BASE_PATH="$withval"
+        VMAFD_INCLUDES="-I$withval/include"
+        VMAFD_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/usr/lib/vmware-vmafd/lib64"
+    ])
+
+AC_ARG_WITH([afd-includes],
+    [AC_HELP_STRING([--with-afd-includes=<dir>], [use afd-server headers located in prefix <dir> ])],
+    [
+        VMAFD_INCLUDES="-I$withval"
+    ])
+
+AC_ARG_WITH([afd-libs],
+    [AC_HELP_STRING([--with-afd-libs=<dir>], [use afd-server libraries located in prefix <dir> ])],
+    [
+        VMAFD_LDFLAGS="-L$withval"
+    ])
+
+AC_SUBST(VMAFD_BASE_PATH)
+AC_SUBST(VMAFD_INCLUDES)
+AC_SUBST(VMAFD_LDFLAGS)
+
 # openssl component
 
 AC_ARG_WITH([ssl],
@@ -331,6 +409,18 @@ AC_CHECK_LIB(
     [$DCERPC_LDFLAGS $OPENSSL_LDFLAGS $GSSAPI_LIBS $SCHANNEL_LIBS $CRYPTO_LIBS $LWIO_LIBS
      $LWREG_LIBS $LWMSG_LIBS $LWBASE_LIBS
     ])
+AC_CHECK_LIB(
+    [jansson],
+    [json_loads],
+    [JANSSON_LIBS="-ljansson"],
+    [],
+    [$JANSSON_LDFLAGS])
+AC_CHECK_LIB(
+    [curl],
+    [main],
+    [CURL_LIBS="-lcurl"],
+    [],
+    [$CURL_LDFLAGS])
 
 AC_CHECK_LIB([shadow], [getspnam], [SHADOW_LIBS="-lshadow"])
 AC_CHECK_LIB([crypt], [crypt_r], [CRYPT_LIBS="-lcrypt"])
@@ -353,6 +443,10 @@ AC_SUBST(LBER_LIBS)
 AC_SUBST(SHADOW_LIBS)
 AC_SUBST(CRYPT_LIBS)
 AC_SUBST(SASL_LIBS)
+AC_SUBST(JANSSON_LIBS)
+AC_SUBST(ZLIB_LIBS)
+AC_SUBST(CARES_LIBS)
+AC_SUBST(CURL_LIBS)
 
 AC_PATH_PROG([IDL], [dceidl], [no], [$PATH:$DCERPC_PATH])
 
@@ -407,6 +501,41 @@ AC_CONFIG_FILES([Makefile
                  interop/idm/ad/server/Makefile
                  interop/idm/common/Makefile
                  interop/idm/localos/Makefile
+                 ssoclients/Makefile
+                 ssoclients/common/Makefile
+                 ssoclients/common/include/Makefile
+                 ssoclients/common/include/public/Makefile
+                 ssoclients/common/src/Makefile
+                 ssoclients/common/test/Makefile
+                 ssoclients/oidc/Makefile
+                 ssoclients/oidc/include/Makefile
+                 ssoclients/oidc/include/public/Makefile
+                 ssoclients/oidc/src/Makefile
+                 ssoclients/oidc/test/Makefile
+                 ssoclients/restclient/Makefile
+                 ssoclients/restclient/coreclient/Makefile
+                 ssoclients/restclient/coreclient/include/Makefile
+                 ssoclients/restclient/coreclient/include/public/Makefile
+                 ssoclients/restclient/coreclient/src/Makefile
+                 ssoclients/restclient/idmclient/Makefile
+                 ssoclients/restclient/idmclient/include/Makefile
+                 ssoclients/restclient/idmclient/include/public/Makefile
+                 ssoclients/restclient/idmclient/src/Makefile
+                 ssoclients/restclient/afdclient/Makefile
+                 ssoclients/restclient/afdclient/include/Makefile
+                 ssoclients/restclient/afdclient/include/public/Makefile
+                 ssoclients/restclient/afdclient/src/Makefile
+                 ssoclients/restclient/vmdirclient/Makefile
+                 ssoclients/restclient/vmdirclient/include/Makefile
+                 ssoclients/restclient/vmdirclient/include/public/Makefile
+                 ssoclients/restclient/vmdirclient/src/Makefile
+                 ssoclients/restclient/test/Makefile
+                 ssoclients/restclient/test/idmclienttest/Makefile
+                 ssoclients/restclient/test/idmclienttest/src/Makefile
+                 ssoclients/restclient/test/afdclienttest/Makefile
+                 ssoclients/restclient/test/afdclienttest/src/Makefile
+                 ssoclients/restclient/test/vmdirclienttest/Makefile
+                 ssoclients/restclient/test/vmdirclienttest/src/Makefile
                  build-maven/Makefile
                  make-target/Makefile
                 ])
