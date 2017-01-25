@@ -185,9 +185,11 @@ VmDnsCliCreateZone(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
-    if (IsNullOrEmptyString(pContext->pszNSHost))
+    if (IsNullOrEmptyString(pContext->pszNSHost)
+       || VmDnsCheckIfIPV4AddressA(pContext->pszNSHost)
+       || VmDnsCheckIfIPV6AddressA(pContext->pszNSHost))
     {
-        fprintf(stderr, "Error: Primary Nameserver host is not specified\n");
+        fprintf(stderr, "Error: Primary Nameserver host is not specified or the format is invalid\n");
 
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
