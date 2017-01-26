@@ -49,6 +49,11 @@
 #endif
 #include <dce/idlddefs.h>
 #include <pthread.h>
+#include <vmdirtypes.h>
 #include <vmkdccommon.h>
 #include <kdcsrvcommon.h>
 #include <vmkdcserver.h>
+
+#ifdef VMDIR_ENABLE_PAC
+#include "vmdir_pac_h.h"
+#endif

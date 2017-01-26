@@ -357,6 +357,15 @@ done
 
 AC_SUBST(IDLFLAGS)
 
+AC_ARG_ENABLE([pac],
+     AS_HELP_STRING([--disable-pac], [Disable Kerberos PAC]))
+AM_CONDITIONAL([VMDIR_ENABLE_PAC], [test "x$enable_pac" != "xno"]])
+if test x"$enable_pac" != x"no"
+then
+AC_DEFINE_UNQUOTED(VMDIR_ENABLE_PAC, 1, [ Enable PAC ])
+fi
+
+
 saved_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS $LW_INCLUDES"
 AC_CHECK_HEADERS(lw/base.h lw/types.h uuid/uuid.h limits.h)

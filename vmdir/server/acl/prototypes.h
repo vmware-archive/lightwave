@@ -52,13 +52,6 @@ VmDirGetObjectSidFromDn(
     );
 
 DWORD
-VmDirGetObjectSidFromEntry(
-    PVDIR_ENTRY pEntry,
-    PSTR* ppszObjectSid, /* Optional */
-    PSID* ppSid /* Optional */
-    );
-
-DWORD
 VmDirSrvCreateAccessTokenWithDn(
     PCSTR pszObjectDn,
     PACCESS_TOKEN* ppToken

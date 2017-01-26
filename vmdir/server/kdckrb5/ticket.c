@@ -65,7 +65,9 @@ VmKdcFreeEncTicketPart(
         VMKDC_SAFE_FREE_MEMORY(pEncTicketPart->starttime);
         VMKDC_SAFE_FREE_MEMORY(pEncTicketPart->renew_till);
         VMKDC_SAFE_FREE_PRINCIPAL(pEncTicketPart->cname);
+#ifdef VMDIR_ENABLE_PAC
         VMKDC_SAFE_FREE_AUTHZDATA(pEncTicketPart->authorization_data);
+#endif
         VMKDC_SAFE_FREE_MEMORY(pEncTicketPart);
     }
 }
@@ -140,6 +142,9 @@ VmKdcMakeEncTicketPart(
 #endif
     }
 
+#ifndef VMDIR_ENABLE_PAC
+    pEncTicketPart->authorization_data = authorization_data; // Don't know if there is authorization data if there isn't a PAC
+#else
     /* authorization_data (optional) */
     if (authorization_data)
     {
@@ -147,6 +152,7 @@ VmKdcMakeEncTicketPart(
                                      &pEncTicketPart->authorization_data);
         BAIL_ON_VMKDC_ERROR(dwError);
     }
+#endif
 
     *ppRetEncTicketPart = pEncTicketPart;
 
@@ -307,6 +313,9 @@ VmKdcEncodeEncTicketPart(
     /* caddr (optional) */
     heimPart.caddr = NULL; /* TBD */
 
+#ifndef VMDIR_ENABLE_PAC
+    heimPart.authorization_data = NULL;
+#else
     /* authorization_data (optional) */
     if (pEncTicketPart->authorization_data)
     {
@@ -327,6 +336,7 @@ VmKdcEncodeEncTicketPart(
             heimPart.authorization_data->val[i].ad_data.data = VMKDC_GET_PTR_DATA(pEncTicketPart->authorization_data->elem[i]->ad_data);
         }
     }
+#endif // VMDIR_ENABLE_PAC
 
     /*
      * Encode the EncTicketPart into Heimdal structure
@@ -383,9 +393,13 @@ VmKdcDecodeEncTicketPart(
     size_t partBufLen = 0;
     PVMKDC_KEY pKey = NULL;
     PVMKDC_PRINCIPAL pClient = NULL;
+#ifdef VMDIR_ENABLE_PAC
     PVMKDC_AUTHZDATA pAuthzData = NULL;
     size_t i = 0;
     PVMKDC_DATA pTmpData = NULL;
+#else
+    PVOID pAuthzData = NULL;
+#endif
 
     memset(&heimPart, 0, sizeof(heimPart));
     partBufPtr = VMKDC_GET_PTR_DATA(pData);
@@ -425,6 +439,7 @@ VmKdcDecodeEncTicketPart(
     /* renew_till */
     /* caddr */
 
+#ifdef VMDIR_ENABLE_PAC
     /* authorization_data */
     if (heimPart.authorization_data)
     {
@@ -449,6 +464,7 @@ VmKdcDecodeEncTicketPart(
             pTmpData = NULL;
         }
     }
+#endif // VMDIR_ENABLE_PAC
 
     /*
      * Translate the decoded EncTicketPart to a VMKDC_ENCTICKETPART structure.
@@ -475,11 +491,12 @@ error:
         VMKDC_SAFE_FREE_ENCTICKETPART(pEncTicketPart);
     }
     free_EncTicketPart(&heimPart);
-    VMKDC_SAFE_FREE_AUTHZDATA(pAuthzData);
     VMKDC_SAFE_FREE_PRINCIPAL(pClient);
     VMKDC_SAFE_FREE_KEY(pKey);
+#ifdef ENABLE_VMDIR_PAC
+    VMKDC_SAFE_FREE_AUTHZDATA(pAuthzData);
     VMKDC_SAFE_FREE_DATA(pTmpData);
-
+#endif
     return dwError;
 }
 

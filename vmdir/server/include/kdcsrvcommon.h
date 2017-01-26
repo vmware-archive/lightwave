@@ -87,9 +87,8 @@ VOID
 VmKdcSleep(
     DWORD dwMilliseconds);
 
+#ifdef VMDIR_ENABLE_PAC
 /* pacops.c */
-
-typedef struct _VMDIR_AUTHZ_INFO VMDIR_AUTHZ_INFO, *PVMDIR_AUTHZ_INFO;
 
 DWORD
 VmKdcEncodeAuthzInfo(
@@ -104,6 +103,7 @@ VmKdcDecodeAuthzInfo(
     void *buf,
     VMDIR_AUTHZ_INFO **pac
     );
+#endif
 
 #ifdef __cplusplus
 }

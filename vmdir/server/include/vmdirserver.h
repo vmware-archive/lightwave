@@ -289,8 +289,7 @@ VmDirKrbRealmNameNormalize(
     PSTR*       ppszNormalizeName
     );
 
-typedef struct _VMDIR_AUTHZ_INFO VMDIR_AUTHZ_INFO;
-
+#ifdef VMDIR_ENABLE_PAC
 DWORD
 VmDirKrbGetAuthzInfo(
     PCSTR pszUpnName,
@@ -301,6 +300,7 @@ VOID
 VmDirKrbFreeAuthzInfo(
     VMDIR_AUTHZ_INFO* pInfo
     );
+#endif
 
 // utils.c
 VDIR_SERVER_STATE

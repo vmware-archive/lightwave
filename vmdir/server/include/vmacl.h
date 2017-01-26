@@ -250,6 +250,13 @@ VmDirIsFailedAccessInfo(
     PVDIR_ACCESS_INFO pAccessInfo
     );
 
+DWORD
+VmDirGetObjectSidFromEntry(
+    PVDIR_ENTRY pEntry,
+    PSTR* ppszObjectSid, /* Optional */
+    PSID* ppSid /* Optional */
+    );
+
 // security.c
 
 DWORD

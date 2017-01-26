@@ -6,7 +6,7 @@
 
 interface vmdir_pac
 {
-#include <vmdir_pac_type.h>
+#include <vmdirtypes.h>
 
     void VmKdcNdrEncodeAuthzInfo(
         [in] handle_t h,

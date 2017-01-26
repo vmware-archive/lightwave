@@ -54,18 +54,6 @@ int main(void)
     int encpac_len = 0;
     MES_header mes_header = {0};
 
-   
-    typedef struct _MES_header
-{
-    unsigned8 Version;
-    unsigned8 Endianness;
-    unsigned16 CommonHeaderLength;
-    unsigned32 Filler1;
-    unsigned32 OutputBufferLength;
-    unsigned32 Filler2;
-    unsigned32 Referent;
-} MES_header, *PMES_header;
-
     mes_header.Version = 1;    /* Must be version 1 */
     mes_header.Endianness = 0x10; /* LE  = 0x10, BE = 0x00 */
     mes_header.CommonHeaderLength = 8; /* Header must be 8 */

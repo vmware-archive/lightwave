@@ -52,6 +52,7 @@ error:
     return dwError;
 }
 
+#ifdef VMDIR_ENABLE_PAC
 static
 DWORD
 VmKdcCreateAuthzData(
@@ -188,6 +189,8 @@ error:
     goto cleanup;
 }
 
+#endif // VMDIR_ENABLE_PAC
+
 static
 DWORD
 VmKdcProcessAsReq(
@@ -220,7 +223,11 @@ VmKdcProcessAsReq(
     time_t kdc_time = 0;
     time_t maxrt = 0;
     BOOLEAN renewable_ok = 0;
+#ifdef VMDIR_ENABLE_PAC
     PVMKDC_AUTHZDATA pAuthzData = NULL;
+#else
+    PVOID pAuthzData = NULL;
+#endif
 
     dwError = VmKdcAllocateData(
                   pContext->pRequest->requestBuf,
@@ -542,8 +549,9 @@ error:
     VMKDC_SAFE_FREE_TICKET(pTicket);
     VMKDC_SAFE_FREE_DATA(pAsnData);
     VMKDC_SAFE_FREE_STRINGA(pszClientName);
+#ifdef VMDIR_ENABLE_PAC
     VMKDC_SAFE_FREE_AUTHZDATA(pAuthzData);
-
+#endif
     return dwError;
 }
 
@@ -560,7 +568,6 @@ VmKdcProcessTgsReq(
     PVMKDC_KEY pSKey = NULL;
     PVMKDC_KEY pPresentedSKey = NULL;
     PVMKDC_KEY pSessionKey = NULL;
-    PVMKDC_KEY pKrbtgtKey = NULL;
     PVMKDC_PRINCIPAL pSname = NULL;
     DWORD nonce = 0;
     PVMKDC_DATA pAsnData = NULL;
@@ -579,11 +586,16 @@ VmKdcProcessTgsReq(
     PVMKDC_AUTHENTICATOR pAuthenticator = NULL;
     PVMKDC_DIRECTORY_ENTRY pServerEntry = NULL;
     PVMKDC_DIRECTORY_ENTRY pDirectoryEntry = NULL;
-    PVMKDC_DIRECTORY_ENTRY pKrbtgtEntry = NULL;
     PSTR pszServerName = NULL;
     VMKDC_TICKET_FLAGS flags = 0;
     BOOLEAN renew = FALSE;
+#ifdef VMDIR_ENABLE_PAC
+    PVMKDC_KEY pKrbtgtKey = NULL;
+    PVMKDC_DIRECTORY_ENTRY pKrbtgtEntry = NULL;
     PVMKDC_AUTHZDATA pAuthzData = NULL;
+#else
+    PVOID pAuthzData = NULL;
+#endif
 
     dwError = VmKdcAllocateData(
                   pContext->pRequest->requestBuf,
@@ -771,6 +783,7 @@ VmKdcProcessTgsReq(
         VMKDC_FLAG_SET(flags, VMKDC_TF_PROXIABLE);
     }
 
+#ifdef VMDIR_ENABLE_PAC
     /*
      * Get the krbtgt key
      */
@@ -797,6 +810,7 @@ VmKdcProcessTgsReq(
                       pKrbtgtKey,
                       &pAuthzData);
     BAIL_ON_VMKDC_ERROR(dwError);
+#endif
 
     /*
      * Build a TICKET
@@ -932,8 +946,9 @@ error:
     VMKDC_SAFE_FREE_TICKET(pTicket);
     VMKDC_SAFE_FREE_DATA(pAsnData);
     VMKDC_SAFE_FREE_STRINGA(pszServerName);
+#ifdef VMDIR_ENABLE_PAC
     VMKDC_SAFE_FREE_AUTHZDATA(pAuthzData);
     VMKDC_SAFE_FREE_DIRECTORY_ENTRY(pKrbtgtEntry);
-
+#endif
     return dwError;
 }

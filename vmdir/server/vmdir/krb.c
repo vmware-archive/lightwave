@@ -258,6 +258,7 @@ error:
     goto cleanup;
 }
 
+#ifdef VMDIR_ENABLE_PAC
 static
 DWORD
 VmDirGetDomainSidFromUpn(
@@ -614,3 +615,4 @@ VmDirKrbFreeAuthzInfo(
         VmDirFreeMemory(pInfo);
     }
 }
+#endif // VMDIR_ENABLE_PAC

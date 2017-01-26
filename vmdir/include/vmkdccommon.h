@@ -571,14 +571,6 @@ VmKdcFreeVmKdcThread(
     PVMKDC_THREAD pThread
 );
 
-DWORD
-VmDirKeySetGetKvno(
-    PBYTE pUpnKeys,
-    DWORD upnKeysLen,
-    DWORD *kvno
-);
-
-
 #ifdef __cplusplus
 }
 #endif

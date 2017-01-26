@@ -1458,6 +1458,13 @@ VmDirBuildTokenGroups(
     PTOKEN_GROUPS * ppTokenGroups
     );
 
+DWORD
+VmDirKeySetGetKvno(
+    PBYTE pUpnKeys,
+    DWORD upnKeysLen,
+    DWORD *kvno
+);
+
 #ifdef __cplusplus
 }
 #endif
