@@ -154,7 +154,6 @@
 #include "srp_verifier_h.h"
 #include "vmdirsuperlog_h.h"
 #include "vmdirurgentrepl_h.h"
-#include "vmdir_pac_h.h"
 
 #include "prototypes.h"
 

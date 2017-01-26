@@ -202,7 +202,7 @@ VmDirKrbUPNKeySet(
             /* Decode existing key to get kvno value */
             dwError = VmDirKeySetGetKvno(
                           pAttrUPN->vals[0].lberbv.bv_val,
-                          pAttrUPN->vals[0].lberbv.bv_len,
+                          (DWORD) pAttrUPN->vals[0].lberbv.bv_len,
                           &kvno);
         }
 
@@ -228,7 +228,7 @@ VmDirKrbUPNKeySet(
             /* Decode existing key to get kvno value */
             dwError = VmDirKeySetGetKvno(
                           pOldKeyBlob->vals[0].lberbv.bv_val,
-                          pOldKeyBlob->vals[0].lberbv.bv_len,
+                          (DWORD) pOldKeyBlob->vals[0].lberbv.bv_len,
                           &kvno);
             BAIL_ON_VMDIR_ERROR(dwError);
             kvno++;

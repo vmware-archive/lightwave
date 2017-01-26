@@ -406,7 +406,7 @@ krb5_storage_set_flags (
 
 KRB5_LIB_FUNCTION krb5_storage * KRB5_LIB_CALL
 krb5_storage_from_mem (
-        void */*buf*/,
+        void * /*buf*/,
         size_t /*len*/);
 
 KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
@@ -417,18 +417,18 @@ krb5_checksum_is_keyed (
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_crypto_init (
         krb5_context /*context*/,
-        const krb5_keyblock */*key*/,
+        const krb5_keyblock * /*key*/,
         krb5_enctype /*etype*/,
-        krb5_crypto */*crypto*/);
+        krb5_crypto * /*crypto*/);
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_verify_checksum (
         krb5_context /*context*/,
         krb5_crypto /*crypto*/,
         krb5_key_usage /*usage*/,
-        void */*data*/,
+        void * /*data*/,
         size_t /*len*/,
-        Checksum */*cksum*/);
+        Checksum * /*cksum*/);
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_crypto_destroy (
@@ -441,23 +441,23 @@ krb5_create_checksum (
         krb5_crypto /*crypto*/,
         krb5_key_usage /*usage*/,
         int /*type*/,
-        void */*data*/,
+        void * /*data*/,
         size_t /*len*/,
-        Checksum */*result*/);
+        Checksum * /*result*/);
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_parse_name_flags (
         krb5_context /*context*/,
-        const char */*name*/,
+        const char * /*name*/,
         int /*flags*/,
-        krb5_principal */*principal*/);
+        krb5_principal * /*principal*/);
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_unparse_name_flags (
         krb5_context /*context*/,
         krb5_const_principal /*principal*/,
         int /*flags*/,
-        char **/*name*/);
+        char ** /*name*/);
 
 KRB5_LIB_FUNCTION krb5_boolean KRB5_LIB_CALL
 krb5_principal_compare_any_realm (
@@ -474,20 +474,20 @@ krb5_free_principal (
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_copy_data (
         krb5_context /*context*/,
-        const krb5_data */*indata*/,
-        krb5_data **/*outdata*/);
+        const krb5_data * /*indata*/,
+        krb5_data ** /*outdata*/);
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_crypto_get_checksum_type (
         krb5_context /*context*/,
         krb5_crypto /*crypto*/,
-        krb5_cksumtype */*type*/);
+        krb5_cksumtype * /*type*/);
 
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 krb5_checksumsize (
         krb5_context /*context*/,
         krb5_cksumtype /*type*/,
-        size_t */*size*/);
+        size_t * /*size*/);
 
 /* pac.c */
 

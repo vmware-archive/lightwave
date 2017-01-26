@@ -14,8 +14,7 @@ all: $(OUTDIR_DEBUG)\vmdir_h.h $(OUTDIR_RELEASE)\vmdir_h.h \
       $(OUTDIR_DEBUG)\vmdirdbcp_h.h $(OUTDIR_RELEASE)\vmdirdbcp_h.h \
       $(OUTDIR_DEBUG)\srp_verifier_h.h $(OUTDIR_RELEASE)\srp_verifier_h.h \
       $(OUTDIR_DEBUG)\vmdirsuperlog_h.h $(OUTDIR_RELEASE)\vmdirsuperlog_h.h \
-      $(OUTDIR_DEBUG)\vmdirurgentrepl_h.h $(OUTDIR_RELEASE)\vmdirurgentrepl_h.h \
-      $(OUTDIR_DEBUG)\vmdir_pac_h.h $(OUTDIR_RELEASE)\vmdir_pac.h.h
+      $(OUTDIR_DEBUG)\vmdirurgentrepl_h.h $(OUTDIR_RELEASE)\vmdirurgentrepl_h.h
 
 #
 # vmdir.idl debug/release stub generation
@@ -83,17 +82,6 @@ $(OUTDIR_RELEASE)\vmdirurgentrepl_h.h $(OUTDIR_RELEASE)\vmdirurgentrepl_s.c $(OU
 	-mkdir $(OUTDIR_RELEASE)
 	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_RELEASE)\vmdirurgentrepl_c.c -sstub $(OUTDIR_RELEASE)\vmdirurgentrepl_s.c -header $(OUTDIR_RELEASE)\vmdirurgentrepl_h.h vmdirurgentrepl.idl 2>&1
 
-#
-# vmdir_pac.idl debug/release stub generation
-#
-$(OUTDIR_DEBUG)\vmdir_pac_h.h $(OUTDIR_DEBUG)\vmdir_pac_s.c $(OUTDIR_DEBUG)\vmdir_pac_c.c: vmdir_pac.idl
-	-mkdir $(OUTDIR_DEBUG)
-	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_DEBUG)\vmdir_pac_c.c -sstub $(OUTDIR_DEBUG)\vmdir_pac_s.c -header $(OUTDIR_DEBUG)\vmdir_pac_h.h vmdir_pac.idl 2>&1
-
-$(OUTDIR_RELEASE)\vmdir_pac_h.h $(OUTDIR_RELEASE)\vmdir_pac_s.c $(OUTDIR_RELEASE)\vmdir_pac_c.c: vmdir_pac.idl
-	-mkdir $(OUTDIR_RELEASE)
-	$(DCEIDL) -DHAVE_DCERPC_WIN32 $(DCE_INCLUDE) -sstub_pref Srv_ -keep c_source $(NCK_IDLFLAGS) -cstub $(OUTDIR_RELEASE)\vmdir_pac_c.c -sstub $(OUTDIR_RELEASE)\vmdir_pac_s.c -header $(OUTDIR_RELEASE)\vmdir_pac_h.h vmdir_pac.idl 2>&1
-
 clean:
 	-del /f $(OUTDIR_DEBUG)\vmdir_c.c $(OUTDIR_DEBUG)\vmdir_s.c $(OUTDIR_DEBUG)\vmdir_h.h
 	-del /f $(OUTDIR_RELEASE)\vmdir_c.c $(OUTDIR_RELEASE)\vmdir_s.c $(OUTDIR_RELEASE)\vmdir_h.h
@@ -107,5 +95,3 @@ clean:
 	-del /f $(OUTDIR_RELEASE)\vmdirsuperlog_c.c $(OUTDIR_RELEASE)\vmdirsuperlog_s.c $(OUTDIR_RELEASE)\vmdirsuperlog_h.h
 	-del /f $(OUTDIR_DEBUG)\vmdirurgentrepl_c.c $(OUTDIR_DEBUG)\vmdirurgentrepl_s.c $(OUTDIR_DEBUG)\vmdirurgentrepl_h.h
 	-del /f $(OUTDIR_RELEASE)\vmdirurgentrepl_c.c $(OUTDIR_RELEASE)\vmdirurgentrepl_s.c $(OUTDIR_RELEASE)\vmdirurgentrepl_h.h
-	-del /f $(OUTDIR_DEBUG)\vmdir_pac_c.c $(OUTDIR_DEBUG)\vmdir_pac_s.c $(OUTDIR_DEBUG)\vmdir_pac_h.h
-	-del /f $(OUTDIR_RELEASE)\vmdir_pac_c.c $(OUTDIR_RELEASE)\vmdir_pac_s.c $(OUTDIR_RELEASE)\vmdir_pac_h.h
