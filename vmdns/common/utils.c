@@ -523,16 +523,32 @@ VmDnsMakeFQDN(
             (pszHostName)[dwLength - 1] != '.' &&
             !VmDnsStringStrA(pszHostName, pszDomainName))
         {
-            dwError = VmDnsAllocateStringPrintfA(
-                        &pszFQDN,
-                        "%s.%s",
-                        pszHostName,
-                        pszDomainName);
-            BAIL_ON_VMDNS_ERROR(dwError);
-
+            DWORD dwDomainLength = VmDnsStringLenA(pszDomainName);
+            if ( pszDomainName[dwDomainLength -1] != '.')
+            {
+                dwError = VmDnsAllocateStringPrintfA(
+                                             &pszFQDN,
+                                             "%s.%s.",
+                                             pszHostName,
+                                             pszDomainName);
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
+            else
+            {
+                dwError = VmDnsAllocateStringPrintfA(
+                                             &pszFQDN,
+                                             "%s.%s",
+                                             pszHostName,
+                                             pszDomainName);
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
             *ppszFQDN = pszFQDN;
             pszFQDN = NULL;
         }
+    }
+    else
+    {
+        *ppszFQDN = (PSTR) pszHostName;
     }
 
 cleanup:
@@ -592,5 +608,4 @@ error:
     }
     goto cleanup;
 }
-
 
