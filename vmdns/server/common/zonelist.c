@@ -93,6 +93,14 @@ VmDnsZoneListAddZone(
             pDnsZoneList->Zones[i] = pZoneObject;
             break;
         }
+        else
+        {
+            PVMDNS_ZONE_OBJECT pObject = pDnsZoneList->Zones[i];
+            if (0 == VmDnsStringCompareA(pObject->pszName,pZoneObject->pszName , FALSE))
+            {
+                break;
+            }
+        }
     }
 
     if (i == VMDNS_MAX_ZONES)

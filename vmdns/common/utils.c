@@ -28,6 +28,7 @@
 #define LOW_HEX(byte) ((byte) & 0xF)
 #define HIGH_HEX(byte) (((byte) & 0xF0) >> 4)
 
+
 VOID
 VmDnsClearZoneInfo(
     PVMDNS_ZONE_INFO    pZoneInfo
@@ -540,17 +541,47 @@ VmDnsMakeFQDN(
                                              "%s.%s",
                                              pszHostName,
                                              pszDomainName);
+
                 BAIL_ON_VMDNS_ERROR(dwError);
             }
             *ppszFQDN = pszFQDN;
             pszFQDN = NULL;
         }
+        else
+        {
+           if ((pszHostName)[dwLength - 1] != '.')
+           {
+                dwError = VmDnsAllocateStringPrintfA(
+                                             &pszFQDN,
+                                             "%s.",
+                                             pszHostName);
+                BAIL_ON_VMDNS_ERROR(dwError);
+                *ppszFQDN = pszFQDN;
+                pszFQDN = NULL;
+           }
+           else
+           {
+               dwError = VmDnsAllocateStringPrintfA(
+                                             &pszFQDN,
+                                             "%s",
+                                             pszHostName);
+                BAIL_ON_VMDNS_ERROR(dwError);
+                *ppszFQDN = pszFQDN;
+                pszFQDN = NULL;
+           }
+
+        }
     }
     else
     {
-        *ppszFQDN = (PSTR) pszHostName;
+        dwError = VmDnsAllocateStringPrintfA(
+                                      &pszFQDN,
+                                      "%s",
+                                       pszHostName);
+        BAIL_ON_VMDNS_ERROR(dwError);
+        *ppszFQDN = pszFQDN;
+        pszFQDN = NULL;
     }
-
 cleanup:
     return dwError;
 
