@@ -751,8 +751,28 @@ VmAfdUnMarshalHeartbeatStatusArray (
                            PVMAFD_HB_INFO_W *ppInfoArray
                            );
 
+DWORD
+VmAfdMarshalGetDCListArrLength(
+              PVMAFD_DC_INFO_W pVmAfdDCInfoList,
+              DWORD dwCount,
+              PDWORD pdwSizeRequired
+              );
 
+DWORD
+VmAfdMarshalGetDCList(
+              DWORD dwCount,
+              PVMAFD_DC_INFO_W pVmAfdDCInfoList,
+              DWORD dwBlobSize,
+              PBYTE pMarshaledBlob
+              );
 
+DWORD
+VmAfdUnMarshalGetDCList(
+              DWORD dwServerCount,
+              DWORD dwBlobSize,
+              PBYTE pMarshaledBlob,
+              PVMAFD_DC_INFO_W *ppVmAfdDCInfoList
+              );
 
 DWORD
 VmAfdInitializeConnectionContext(
