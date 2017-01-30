@@ -56,16 +56,23 @@
     doc     = "DC Cache update frequency"
 }
 "DcCacheHeartBeat" = {
-    default = dword:0000003C
+    default = dword:0000001E
     doc     = "DC Cache heartbeat frequency"
 }
 "EnableDCERPC" = {
     default = dword:00000001
     doc     = "Enable or Disable DCE/RPC Server"
 }
-"EnableHA" = {
+"LegacyModeHA" = {
     default = dword:00000000
-    doc     = "Enable or Disable DCE/RPC Server"
+    doc     = "Enable or Disable Legacy Mode for HA"
 }
-
+"EnableDnsUpdates" = {
+    default = dword:00000000
+    doc     = "Enable or disable DNS Updates"
+}
+"HeartbeatInterval" = {
+    default = dword:0000000A
+    doc     = "Set the heartbeat interval frequency"
+}
 

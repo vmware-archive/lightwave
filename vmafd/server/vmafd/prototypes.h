@@ -611,7 +611,7 @@ VmAfdSrvGetDomainState(
     );
 
 DWORD
-VmAfdGetRegArgs(
+VmAfdGetMachineInfo(
     PVMAFD_REG_ARG *ppArgs
     );
 
@@ -813,7 +813,7 @@ VmAfdWakeupCertificateUpdatesThr(
 
 DWORD
 VmAfdRootFetchTask(
-    BOOLEAN bForceFlush
+    BOOLEAN bLogOnDuplicate
     );
 
 
