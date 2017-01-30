@@ -77,10 +77,5 @@ typedef struct _VMDIR_FTP_DATA_CONTAINER
        RpcVmDirCloseDBFile(
            [in]                     handle_t  hBinding,
            [in]                     vmdir_ftp_handle_t fileHandle
-       );
-       UINT32
-       RpcVmDirSetMode(
-           [in]                     handle_t   hBinding,
-           [in]                     UINT32     dwMode
-       );
+      );
 }

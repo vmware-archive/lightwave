@@ -334,12 +334,7 @@ VmDirSecurityAclSelfRelativeToAbsoluteSD(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateMemory(SECURITY_DESCRIPTOR_ABSOLUTE_MIN_SIZE, (PVOID*)&pAbsolute);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirCreateSecurityDescriptorAbsolute(
-                  pAbsolute,
-                  SECURITY_DESCRIPTOR_REVISION);
+    dwError = VmDirCreateSecurityDescriptorAbsolute(&pAbsolute);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (ulDaclSize)

@@ -277,68 +277,6 @@ error:
 
 static
 DWORD
-VmDirLdapGetAttributeValues(
-    LDAP* pLd,
-    PCSTR pszDN,
-    PCSTR pszAttribute,
-    LDAPControl** ppSrvCtrls,
-    BerValue*** pppBerValues
-    )
-{
-    DWORD           dwError = 0;
-    PCSTR           ppszAttrs[] = {pszAttribute, NULL};
-    LDAPMessage*    pSearchRes = NULL;
-    LDAPMessage*    pEntry = NULL;
-    BerValue**      ppBerValues = NULL;
-
-    dwError = ldap_search_ext_s(
-                            pLd,
-                            pszDN,
-                            LDAP_SCOPE_BASE,
-                            NULL,       /* filter */
-                            (PSTR*)ppszAttrs,
-                            FALSE,      /* attrsonly */
-                            ppSrvCtrls, /* serverctrls */
-                            NULL,       /* clientctrls */
-                            NULL,       /* timeout */
-                            0,         /* sizelimit */
-                            &pSearchRes);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pEntry = ldap_first_entry(pLd, pSearchRes);
-    if (!pEntry)
-    {
-        dwError = LDAP_NO_SUCH_ATTRIBUTE;
-    }
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    ppBerValues = ldap_get_values_len(pLd, pEntry, pszAttribute);
-    if (!ppBerValues)
-    {
-        dwError = LDAP_NO_SUCH_ATTRIBUTE;
-    }
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *pppBerValues = ppBerValues;
-cleanup:
-    if (pSearchRes)
-    {
-        ldap_msgfree(pSearchRes);
-    }
-    return dwError;
-error:
-    *pppBerValues = NULL;
-    if(ppBerValues)
-    {
-        ldap_value_free_len(ppBerValues);
-    }
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirLdapGetAttributeValues failed. Error(%u)", dwError);
-    goto cleanup;
-}
-
-static
-DWORD
 VmDirLdapWriteAttributeValues(
     LDAP* pLd,
     PCSTR pszDN,
@@ -1366,78 +1304,6 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirCreateCMSubtree failed. Error(%u)", dwError);
-    goto cleanup;
-}
-
-
-DWORD
-VmDirGetServerName(
-    PCSTR pszHostName,
-    PSTR* ppszServerName)
-{
-    DWORD       dwError = 0;
-    PSTR        pszHostURI = NULL;
-    LDAP*       pLd = NULL;
-    PSTR        pszServerName = NULL;
-    BerValue**  ppBerValues = NULL;
-
-    if (IsNullOrEmptyString(pszHostName) || ppszServerName == NULL)
-    {
-        dwError =  LDAP_INVALID_SYNTAX;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    if ( VmDirIsIPV6AddrFormat( pszHostName ) )
-    {
-        dwError = VmDirAllocateStringPrintf( &pszHostURI, "%s://[%s]:%d",
-                                                 VMDIR_LDAP_PROTOCOL,
-                                                 pszHostName,
-                                                 DEFAULT_LDAP_PORT_NUM);
-    }
-    else
-    {
-        dwError = VmDirAllocateStringPrintf( &pszHostURI, "%s://%s:%d",
-                                                 VMDIR_LDAP_PROTOCOL,
-                                                 pszHostName,
-                                                 DEFAULT_LDAP_PORT_NUM);
-    }
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAnonymousLDAPBind( &pLd, pszHostURI );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirLdapGetAttributeValues(
-                                pLd,
-                                "",
-                                ATTR_SERVER_NAME,
-                                NULL,
-                                &ppBerValues);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirDnLastRDNToCn(ppBerValues[0]->bv_val, &pszServerName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppszServerName = pszServerName;
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszHostURI);
-
-    if (pLd)
-    {
-        ldap_unbind_ext_s(pLd, NULL, NULL);
-    }
-
-    if(ppBerValues)
-    {
-        ldap_value_free_len(ppBerValues);
-    }
-
-    return dwError;
-error:
-    *ppszServerName = NULL;
-    VMDIR_SAFE_FREE_MEMORY(pszServerName);
-
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirGetServerName failed with error (%u)", dwError);
     goto cleanup;
 }
 
@@ -3119,73 +2985,6 @@ error:
 }
 
 /*
- * query single attribute value of a DN via ldap
- * "*ppByte" is NULL terminated.
- */
-DWORD
-VmDirLdapGetSingleAttribute(
-    LDAP*   pLD,
-    PCSTR   pszDN,
-    PCSTR   pszAttr,
-    PBYTE*  ppByte,
-    DWORD*  pdwLen
-    )
-{
-    DWORD           dwError=0;
-    PBYTE           pLocalByte = NULL;
-    BerValue**      ppBerValues = NULL;
-
-    if ( !pLD || !pszDN || !pszAttr || !ppByte || !pdwLen )
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirLdapGetAttributeValues( pLD,
-                                           pszDN,
-                                           pszAttr,
-                                           NULL,
-                                           &ppBerValues);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if ( ppBerValues[0] == NULL || ppBerValues[0]->bv_val == NULL )
-    {
-        dwError = VMDIR_ERROR_NO_SUCH_ATTRIBUTE;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    if ( ppBerValues[1] != NULL )   // more than one attribute value
-    {
-        dwError = VMDIR_ERROR_INVALID_RESULT;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateAndCopyMemory(
-                            ppBerValues[0]->bv_val,
-                            ppBerValues[0]->bv_len + 1,
-                            (PVOID*)&pLocalByte);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppByte = pLocalByte;
-    *pdwLen = (DWORD)ppBerValues[0]->bv_len;
-    pLocalByte = NULL;
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pLocalByte);
-    if(ppBerValues)
-    {
-        ldap_value_free_len(ppBerValues);
-    }
-
-    return dwError;
-
-error:
-
-    goto cleanup;
-}
-
-/*
  * reset attribute value via ldap
  */
 DWORD
@@ -3328,56 +3127,6 @@ error:
     VMDIR_SAFE_FREE_MEMORY(pszContainerDN);
     goto cleanup;
 
-}
-
-DWORD
-VmDirGetServerAccountDN(
-    PCSTR pszDomain,
-    PCSTR pszMachineName,
-    PSTR* ppszServerDN
-    )
-{
-    DWORD dwError = 0;
-    PSTR  pszDomainDN = NULL;
-    PSTR  pszServerDN = NULL;
-
-    if (IsNullOrEmptyString(pszDomain) ||
-        IsNullOrEmptyString(pszMachineName) ||
-        !ppszServerDN)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirSrvCreateDomainDN(pszDomain, &pszDomainDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringPrintf(
-                    &pszServerDN,
-                    "CN=%s,OU=%s,%s",
-                    pszMachineName,
-                    VMDIR_DOMAIN_CONTROLLERS_RDN_VAL,
-                    pszDomainDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppszServerDN = pszServerDN;
-
-cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
-
-    return dwError;
-
-error:
-
-    if (ppszServerDN)
-    {
-        *ppszServerDN = NULL;
-    }
-
-    VMDIR_SAFE_FREE_MEMORY(pszServerDN);
-
-    goto cleanup;
 }
 
 DWORD

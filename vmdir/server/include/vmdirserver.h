@@ -110,10 +110,6 @@ typedef struct _VMDIR_SERVER_GLOBALS
     // Data that controls the thread that cleans up deleted entries.
     DWORD                dwTombstoneExpirationPeriod;
     DWORD                dwTombstoneThreadFrequency;
-    //
-    // This is the default security descriptor that entries used prior to 7.0.
-    //
-    VMDIR_SECURITY_DESCRIPTOR vsdLegacyDescriptor;
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;

@@ -1,18 +1,20 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright (C) 2011 VMware, Inc. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the “License”); you may not
- * use this file except in compliance with the License.  You may obtain a copy
- * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an “AS IS” BASIS, without
- * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Module   : vmsecurity-sd.c
+ *
+ * Abstract :
+ *
+ *            VMware Directory Service
+ *
+ *            Common Utilities (Client & Server)
+ *
+ *            Security Descriptor Management
+ *
+ * Authors  : Wei Fu (wfu@vmware.com)
+ *
+ *
  */
-
-
 
 #include "includes.h"
 
@@ -175,32 +177,12 @@ VmDirSetSecurityDescriptorInfo(
 
 DWORD
 VmDirCreateSecurityDescriptorAbsolute(
-    PSECURITY_DESCRIPTOR_ABSOLUTE *ppSecurityDescriptor
+    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor,
+    ULONG Revision
     )
 {
-    DWORD dwError = 0;
-    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor = NULL;
-    NTSTATUS Status = 0;
-
-    dwError = VmDirAllocateMemory(
-                SECURITY_DESCRIPTOR_ABSOLUTE_MIN_SIZE,
-                (PVOID*)&SecurityDescriptor);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    Status = RtlCreateSecurityDescriptorAbsolute(
-                SecurityDescriptor,
-                SECURITY_DESCRIPTOR_REVISION);
-    dwError = LwNtStatusToWin32Error(Status);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppSecurityDescriptor = SecurityDescriptor;
-    SecurityDescriptor = NULL;
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(SecurityDescriptor);
-    return dwError;
-error:
-    goto cleanup;
+    return LwNtStatusToWin32Error(
+            RtlCreateSecurityDescriptorAbsolute(SecurityDescriptor, Revision));
 }
 
 VOID
@@ -255,16 +237,6 @@ VmDirCreateAcl(
 }
 
 DWORD
-VmDirGetAce(
-    PACL pAcl,
-    ULONG dwIndex,
-    PACE_HEADER *ppAce
-    )
-{
-    return LwNtStatusToWin32Error(RtlGetAce(pAcl, dwIndex, (PVOID*)ppAce));
-}
-
-DWORD
 VmDirAddAccessAllowedAceEx(
     PACL Acl,
     ULONG AceRevision,
@@ -274,22 +246,6 @@ VmDirAddAccessAllowedAceEx(
     )
 {
     return LwNtStatusToWin32Error(RtlAddAccessAllowedAceEx(Acl,
-                                                           AceRevision,
-                                                           AceFlags,
-                                                           AccessMask,
-                                                           Sid));
-}
-
-DWORD
-VmDirAddAccessDeniedAceEx(
-    PACL Acl,
-    ULONG AceRevision,
-    ULONG AceFlags,
-    ACCESS_MASK AccessMask,
-    PSID Sid
-    )
-{
-    return LwNtStatusToWin32Error(RtlAddAccessDeniedAceEx(Acl,
                                                            AceRevision,
                                                            AceFlags,
                                                            AccessMask,
@@ -409,18 +365,4 @@ VmDirAllocateSddlCStringFromSecurityDescriptor(
 error:
 
     return dwError;
-}
-
-DWORD
-VmDirSetSecurityDescriptorControl(
-    PSECURITY_DESCRIPTOR_ABSOLUTE pSecurityDescriptor,
-    SECURITY_DESCRIPTOR_CONTROL BitsToChange,
-    SECURITY_DESCRIPTOR_CONTROL BitsToSet
-    )
-{
-    return LwNtStatusToWin32Error(
-                RtlSetSecurityDescriptorControl(
-                    pSecurityDescriptor,
-                    BitsToChange,
-                    BitsToSet));
 }

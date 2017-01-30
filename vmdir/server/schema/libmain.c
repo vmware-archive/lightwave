@@ -222,7 +222,7 @@ VmDirSchemaLibPrepareUpdateViaEntries(
 
     if (!pAtEntries || !pOcEntries)
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -304,14 +304,21 @@ VmDirSchemaLibPrepareUpdateViaModify(
 
     if (!pSchemaEntry || !pOperation)
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (!VDIR_CUSTOM_SCHEMA_MODIFICATION_ENABLED)
+    {
+        dwError = VMDIR_ERROR_OPERATION_NOT_PERMITTED;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
+                "custom schema modification is not enabled");
     }
 
     pClassAttr = VmDirFindAttrByName(pSchemaEntry, ATTR_OBJECT_CLASS);
     if (!pClassAttr)
     {
-        dwError = ERROR_INVALID_ENTRY;
+        dwError = VMDIR_ERROR_OBJECTCLASS_VIOLATION;
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
                 "missing objectclass attribute");
     }

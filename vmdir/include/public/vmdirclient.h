@@ -750,18 +750,6 @@ VmDirUrgentReplicationResponse(
     );
 
 DWORD
-VmDirGetMode(
-    PVMDIR_SERVER_CONTEXT hInBinding,
-    UINT32*               pdwMode
-    );
-
-DWORD
-VmDirSetMode(
-    PVMDIR_SERVER_CONTEXT hInBinding,
-    UINT32                dwMode
-    );
-
-DWORD
 VmDirChangePNID(
     PSTR    pszUsername,
     PSTR    pszPassword,

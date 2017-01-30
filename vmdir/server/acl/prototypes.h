@@ -52,6 +52,13 @@ VmDirGetObjectSidFromDn(
     );
 
 DWORD
+VmDirGetObjectSidFromEntry(
+    PVDIR_ENTRY pEntry,
+    PSTR* ppszObjectSid, /* Optional */
+    PSID* ppSid /* Optional */
+    );
+
+DWORD
 VmDirSrvCreateAccessTokenWithDn(
     PCSTR pszObjectDn,
     PACCESS_TOKEN* ppToken
@@ -86,8 +93,7 @@ VmDirLegacyAccessCheck(
 
 BOOLEAN
 VmDirIsLegacySecurityDescriptor(
-    PSECURITY_DESCRIPTOR_RELATIVE pSecurityDescriptor,
-    ULONG ulSecDescLength
+    VOID
     );
 
 // security.c

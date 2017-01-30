@@ -119,6 +119,15 @@ getPSCVersion(
     PSTR* ppszPSCVer
     );
 
+static
+DWORD
+UpdatePartnerCertFiles(
+    LDAP* pLd,
+    PSTR pszServerName,
+    PSTR pszAdminUPN,
+    PSTR pszPassword
+    );
+
 #ifdef _WIN32
 
 int wmain(int argc, wchar_t* argv[])
@@ -235,6 +244,10 @@ VmDirMain(
     // Only patch ACL from 5.5
     if (VmDirStringNCompareA(pszVersion, "5.5", 3, FALSE) == 0)
     {
+        // For upgrade from 5.5, create partner cert files
+        dwError = UpdatePartnerCertFiles(pLd, pszServerName, pszAdminUPN, pszPasswordBuf);
+	BAIL_ON_VMDIR_ERROR(dwError);
+
 	// do ACL patch first, so newly added entry will have correct ACL.
 	dwError = UpdateEntriesACL( pLd, pszServerName, pszAdminUPN);
 	BAIL_ON_VMDIR_ERROR(dwError);
@@ -1068,6 +1081,155 @@ cleanup:
 
 error:
     goto cleanup;
+}
+
+/*
+ * If upgrading from 5.5, create user certificate files. These are used for
+ * replicating with partners that are still at version 5.5.
+ * In WinToLin upgrade, 5.5 nodes may have been using a kerberos auth
+ * that is not migrated to linux. These will fallback to using user certificates.
+ */
+static
+DWORD
+UpdatePartnerCertFiles(
+    LDAP* pLd,
+    PSTR pszServerName,
+    PSTR pszAdminUPN,
+    PSTR pszPassword
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwNumReplPartner = 0;
+    DWORD dwAttrLen = 0;
+    DWORD dwWriteLen = 0;
+    DWORD dwCnt = 0;
+    PSTR pszPartnerName = NULL;
+    PSTR pszPartnerDN = NULL;
+    PSTR pszDomainName = NULL;
+    PSTR pszUserName = NULL;
+    PSTR pszFileName = NULL;
+    PVMDIR_REPL_PARTNER_INFO pReplPartnerInfo = NULL;
+    PBYTE pUserCertificate = NULL;
+    FILE* certFp = NULL;
+    BOOLEAN bFound = FALSE;
+
+    if (!pLd |
+        !pszAdminUPN |
+        !pszServerName |
+        !pszPassword)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirUPNToNameAndDomain(
+                                pszAdminUPN,
+                                &pszUserName,
+                                &pszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // Find all partners
+    dwError = VmDirGetReplicationPartners(
+                                pszServerName,
+                                pszUserName,
+                                pszPassword,
+                                &pReplPartnerInfo,
+                                &dwNumReplPartner);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for ( dwCnt=0; dwCnt < dwNumReplPartner; dwCnt++ )
+    {
+        VMDIR_SAFE_FREE_MEMORY(pszPartnerName);
+        VMDIR_SAFE_FREE_MEMORY(pszFileName);
+        VMDIR_SAFE_FREE_MEMORY(pszPartnerDN);
+        VMDIR_SAFE_FREE_MEMORY(pUserCertificate);
+
+        if (certFp)
+        {
+            fclose(certFp);
+            certFp = NULL;
+        }
+
+        dwError = VmDirReplURIToHostname(
+                                pReplPartnerInfo[dwCnt].pszURI,
+                                &pszPartnerName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // Get user cert file name for this partner
+        dwError = VmDirCertificateFileNameFromHostName(
+                                pszPartnerName,
+                                &pszFileName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirFileExists(pszFileName, &bFound);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // Was file migrated?
+        if (bFound)
+        {
+            continue;
+        }
+
+        dwError = VmDirGetServerAccountDN(
+                                pszDomainName,
+                                pszPartnerName,
+                                &pszPartnerDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // Get partner user cert
+        dwError = VmDirLdapGetSingleAttribute(
+                                pLd,
+                                pszPartnerDN,
+                                ATTR_USER_CERTIFICATE,
+                                &pUserCertificate,
+                                &dwAttrLen);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if ( pUserCertificate != NULL )
+        {
+            if ((certFp = fopen((const char *)pszFileName, "wb")) == NULL)
+            {
+                printf("Failed to create user certificate file %s\n", pszFileName);
+                dwError = VMDIR_ERROR_NO_SUCH_FILE_OR_DIRECTORY;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+
+            // write cert to file
+            dwWriteLen = (DWORD)fwrite(pUserCertificate, 1, dwAttrLen, certFp);
+
+            if (dwWriteLen != dwAttrLen)
+            {
+                printf("Failed to write user certificate file %s\n", pszFileName);
+                dwError = VMDIR_ERROR_IO;
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+        }
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszPartnerName);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
+    VMDIR_SAFE_FREE_MEMORY(pszUserName);
+    VMDIR_SAFE_FREE_MEMORY(pszPartnerDN);
+    VMDIR_SAFE_FREE_MEMORY(pUserCertificate);
+    VMDIR_SAFE_FREE_MEMORY(pszFileName);
+
+    if (certFp)
+     {
+         fclose(certFp);
+     }
+
+    for (dwCnt=0; dwCnt < dwNumReplPartner; dwCnt++)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pReplPartnerInfo[dwCnt].pszURI);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pReplPartnerInfo);
+
+    return dwError;
+
+error:
+    goto cleanup;
+
 }
 
 static

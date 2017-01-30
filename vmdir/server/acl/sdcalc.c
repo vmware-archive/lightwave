@@ -110,6 +110,8 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pGroups->Groups[0].Sid);
     VMDIR_SAFE_FREE_MEMORY(pGroups);
     VMDIR_SAFE_FREE_MEMORY(user.User.Sid);
+    VMDIR_SAFE_FREE_MEMORY(pszBuiltinUsersGroupSid);
+    VMDIR_SAFE_FREE_MEMORY(primaryGroup.PrimaryGroup);
 
     return dwError;
 
@@ -222,7 +224,6 @@ error:
 static
 DWORD
 _VmDirGetSchemaDefaultSecurityDescriptor(
-    PVDIR_OPERATION pOperation,
     PVDIR_ENTRY pEntry,
     PSECURITY_DESCRIPTOR_RELATIVE *ppSecDesc,
     PULONG pulLength
@@ -335,8 +336,8 @@ _VmDirLogSecurityDescriptor(
  * inheritable ACEs from the parent.
  */
 DWORD
-VmDirAddPrepareObjectSD(
-    PVDIR_OPERATION  pOperation,
+VmDirComputeObjectSecurityDescriptor(
+    PVDIR_ACCESS_INFO pAccessInfo,
     PVDIR_ENTRY      pEntry,
     PVDIR_ENTRY      pParentEntry
     )
@@ -359,7 +360,6 @@ VmDirAddPrepareObjectSD(
     if (pSecDesc == NULL)
     {
         dwError = _VmDirGetSchemaDefaultSecurityDescriptor(
-                    pOperation,
                     pEntry,
                     &pSecDesc,
                     &ulLength);
@@ -385,17 +385,17 @@ VmDirAddPrepareObjectSD(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_SECURITY_DESCRIPTOR);
     }
 
-    if (pOperation->conn->AccessInfo.pAccessToken == NULL)
+    if (pAccessInfo->pAccessToken == NULL)
     {
         dwError = _VmDirSrvCreateAccessTokenForAdmin(&pAccessToken);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     else
     {
-        pAccessToken = pOperation->conn->AccessInfo.pAccessToken;
+        pAccessToken = pAccessInfo->pAccessToken;
     }
 
-    if (pParentSecDesc != NULL && VmDirIsLegacySecurityDescriptor(pParentSecDesc, ulLength))
+    if (pParentSecDesc != NULL && VmDirIsLegacySecurityDescriptor())
     {
         if (pSecDesc == NULL)
         {
@@ -468,7 +468,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pParentSecDesc);
     VMDIR_SAFE_FREE_MEMORY(pSecDesc);
 
-    if (pAccessToken != pOperation->conn->AccessInfo.pAccessToken)
+    if (pAccessToken != pAccessInfo->pAccessToken)
     {
         VmDirReleaseAccessToken(&pAccessToken);
     }
@@ -480,12 +480,12 @@ error:
     {
         // Some initial objects created during startup/vdcpromo do not have SD. Their SD is setup after cn=Administrator,...
         // object is created
-        VMDIR_LOG_WARNING( LDAP_DEBUG_ACL, "VmDirAddPrepareObjectSD failed for (%s), error code (%d)",
+        VMDIR_LOG_WARNING( LDAP_DEBUG_ACL, "VmDirComputeObjectSecurityDescriptor failed for (%s), error code (%d)",
                            VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val), dwError );
     }
     else
     {
-        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirAddPrepareObjectSD failed for (%s), error code (%d)",
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirComputeObjectSecurityDescriptor failed for (%s), error code (%d)",
                          VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val), dwError );
     }
 

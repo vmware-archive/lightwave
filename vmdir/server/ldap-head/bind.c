@@ -45,6 +45,7 @@ VmDirPerformBind(
    ber_len_t    berLen = 0;
    ber_tag_t    berTag = 0;
    BOOLEAN      bResultAlreadySent = FALSE;
+   PCSTR        pszBindMethod = VMDIR_PCSTR_UNKNOWN;
 
    memset( pBindReq, 0, sizeof( BindReq ));
 
@@ -79,6 +80,7 @@ VmDirPerformBind(
                                              "Decoding error while parsing simple credentials.");
                }
 
+               pszBindMethod = "Simple";
                break;
 
        case LDAP_AUTH_SASL:
@@ -103,6 +105,7 @@ VmDirPerformBind(
                                               "Decoding error.");
                }
 
+               pszBindMethod = "SASL";
                break;
 
        default:
@@ -115,21 +118,21 @@ VmDirPerformBind(
     if (retVal && retVal != LDAP_SASL_BIND_IN_PROGRESS)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-            "Bind Request Failed (%s) error %u: Protocol version: %d, Bind DN: \"%s\", Method: %ld",
+            "Bind Request Failed (%s) error %u: Protocol version: %d, Bind DN: \"%s\", Method: %s",
             pOperation->conn->szClientIP,
             retVal,
             pOperation->protocol,
             VDIR_SAFE_STRING(pOperation->reqDn.lberbv.bv_val),
-            pBindReq->method );
+            pszBindMethod );
     }
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
 
     VMDIR_LOG_INFO(LDAP_DEBUG_AUTH,
-            "Bind Request Succeeded (%s) Bind DN: \"%s\", Method: %ld",
+            "Bind Request Succeeded (%s) Bind DN: \"%s\", Method: %s",
             pOperation->conn->szClientIP,
             VDIR_SAFE_STRING(pOperation->reqDn.lberbv.bv_val),
-            pBindReq->method );
+            pszBindMethod );
 
 cleanup:
 

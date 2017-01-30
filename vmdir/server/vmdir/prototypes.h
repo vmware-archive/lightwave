@@ -134,7 +134,7 @@ VmDirSrvSetupDomainInstance(
     PCSTR            pszUsername,
     PCSTR            pszPassword,
     PVMDIR_SECURITY_DESCRIPTOR pSecDescServicesOut, // OPTIONAL
-    PVMDIR_SECURITY_DESCRIPTOR pSecDescAnonymousReadOut, // OPTIONAL
+    PVMDIR_SECURITY_DESCRIPTOR pSecDescAnonymousRead, // OPTIONAL
     PVMDIR_SECURITY_DESCRIPTOR pSecDescDeletedObjectsOut // OPTIONAL
     );
 

@@ -216,6 +216,9 @@ VmDirInitBackend(
 
     if (bInitializeEntries)
     {
+        dwError = VmDirRegisterACLMode();
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         dwError = _VmDirGenerateInvocationId(); // to be used in replication meta data for the entries created in
         BAIL_ON_VMDIR_ERROR(dwError);           // InitializeVmdirdSystemEntries()
 

@@ -184,8 +184,8 @@ VmDirSendLdapResult(
    {
        VMDIR_LOG_ERROR(
           VMDIR_LOG_MASK_ALL,
-          "VmDirSendLdapResult: Request (%d), Error (%d), Message (%s), (%u) socket (%s)",
-          op->reqCode,
+          "VmDirSendLdapResult: Request (%s), Error (%d), Message (%s), (%u) socket (%s)",
+          VmDirLdapReqCodeToName(op->reqCode),
           op->ldapResult.errCode,
           VDIR_SAFE_STRING(op->ldapResult.pszErrMsg),
           iNumSearchEntrySent,
@@ -195,8 +195,8 @@ VmDirSendLdapResult(
    {
        VMDIR_LOG_INFO(
           LDAP_DEBUG_ARGS,
-          "VmDirSendLdapResult: Request (%d), Error (%d), Message (%s), (%u) socket (%s)",
-          op->reqCode,
+          "VmDirSendLdapResult: Request (%s), Error (%d), Message (%s), (%u) socket (%s)",
+          VmDirLdapReqCodeToName(op->reqCode),
           op->ldapResult.errCode,
           VDIR_SAFE_STRING(op->ldapResult.pszErrMsg),
           iNumSearchEntrySent,

@@ -83,6 +83,7 @@
 #include <backend.h>
 #include <indexcfg.h>
 #include <schema.h>
+#include <vmdirserver.h>
 #include <middlelayer.h>
 
 #include "defines.h"

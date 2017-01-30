@@ -74,7 +74,7 @@ VmDirPluginGroupTypePreAdd(
                                        GROUPTYPE_GLOBAL_SCOPE, FALSE) != 0
                )
             {
-                dwError = ERROR_INVALID_ENTRY;
+                dwError = ERROR_DATA_CONSTRAINT_VIOLATION;
                 BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrorMsg, "invalid or unsupported grouptype (%s)",
                                               VDIR_SAFE_STRING( pAttrGroupType->vals[0].lberbv.bv_val));
             }
@@ -125,7 +125,7 @@ VmDirPluginGroupTypePreModify(
              VmDirStringCompareA( pAttrGroupType->vals[0].lberbv.bv_val , GROUPTYPE_GLOBAL_SCOPE, FALSE) != 0
            )
         {
-            dwError = ERROR_INVALID_ENTRY;
+            dwError = ERROR_DATA_CONSTRAINT_VIOLATION;
             BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrorMsg, "invalid or unsupported grouptype (%s)",
                                           VDIR_SAFE_STRING( pAttrGroupType->vals[0].lberbv.bv_val));
         }

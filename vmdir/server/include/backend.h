@@ -803,6 +803,18 @@ VmDirBackendRemoveOriginatingUSN(
     PVDIR_BACKEND_CTX      pBECtx
     );
 
+DWORD
+VmDirBackendUniqKeyGetValue(
+    PCSTR       pKey,
+    PSTR*       ppValue
+    );
+
+DWORD
+VmDirBackendUniqKeySetValue(
+    PCSTR       pKey,
+    PCSTR       pValue,
+    BOOLEAN     bForce
+    );
 
 // util.c
 DWORD

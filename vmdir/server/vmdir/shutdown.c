@@ -189,8 +189,6 @@ VmDirCleanupGlobals(
     VmDirFreeBervalContent(&gVmdirServerGlobals.utdVector);
     VmDirFreeBervalContent(&gVmdirServerGlobals.bvServerObjName);
 
-    VMDIR_SAFE_FREE_MEMORY(gVmdirServerGlobals.vsdLegacyDescriptor.pSecDesc);
-
     // Free vmdir global 'gVmdirGlobals' upon shutdown
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBDBHome);
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBootStrapSchemaFile);

@@ -31,8 +31,8 @@ _MarkDefaultIndices(
  * Examines the following options in order and use the first detected source
  * to initialize schema:
  *
- * 1. Individual schema entries (7.0)
- * 2. Subschema subentry (6.x)
+ * 1. Schema subtree (6.6 and higher)
+ * 2. Subschema subentry (6.5 and lower)
  * 3. Schema file
  *
  * OUTPUT:
@@ -142,7 +142,7 @@ error:
 }
 
 /*
- * During upgrade 7.0 or later, we can patch schema via this function.
+ * If upgrading from 6.6 or higher, use this function to patch schema.
  *
  * INPUT:
  * new version of Lotus schema file
@@ -165,6 +165,11 @@ VmDirSchemaPatchViaFile(
     dwError = VmDirSchemaLibUpdate(0);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // support for mixed version (with 6.5 or lower) federation upgrade scenario
+    dwError = VmDirPatchLocalSubSchemaSubEntry();
+    dwError = dwError == ERROR_BACKEND_ENTRY_NOTFOUND ? 0 : dwError;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirSchemaCtxAcquire(&pNewSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -184,7 +189,7 @@ error:
 }
 
 /*
- * During upgrade 6.x, we can patch schema via this function.
+ * If upgrading from 6.5 or lower, use this function to patch schema.
  * Should be called if InitializeSchema() results pbLegacyDataLoaded = TRUE
  *
  * INPUT:

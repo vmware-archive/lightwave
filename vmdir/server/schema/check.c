@@ -46,7 +46,7 @@ _getOCAttr(
         VmDirAllocateStringPrintf(&pCtx->pszErrorMsg,
                 "Entry has no objectclass");
 
-        dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+        dwError = pCtx->dwErrorCode = VMDIR_ERROR_OBJECTCLASS_VIOLATION;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -102,7 +102,7 @@ _getOCDescs(
                     "Objectclass (%s) is not defined in schema",
                     pszOCName);
 
-            dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+            dwError = pCtx->dwErrorCode = ERROR_NO_SUCH_OBJECTCLASS;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
@@ -242,7 +242,7 @@ _checkAttributeDimension(
                     "Attribute (%s) can have at most one value",
                     VDIR_SAFE_STRING(pAttr->type.lberbv.bv_val));
 
-            dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+            dwError = pCtx->dwErrorCode = ERROR_DATA_CONSTRAINT_VIOLATION;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
@@ -278,7 +278,7 @@ _checkObjectClassHierarchy(
                     "Entry has incompatible structural objectclass (%s) (%s)",
                     pBottomOC->pszName, ppStrOCs[i]->pszName);
 
-            dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+            dwError = pCtx->dwErrorCode = ERROR_DATA_CONSTRAINT_VIOLATION;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
@@ -289,7 +289,7 @@ _checkObjectClassHierarchy(
         VmDirAllocateStringPrintf(&pCtx->pszErrorMsg,
                 "Entry has no structural objectclass");
 
-        dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+        dwError = pCtx->dwErrorCode = ERROR_DATA_CONSTRAINT_VIOLATION;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -302,7 +302,7 @@ _checkObjectClassHierarchy(
                    "Entry has invalid abstract objectclass (%s)",
                    ppAbsOCs[i]->pszName);
 
-           dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+           dwError = pCtx->dwErrorCode = ERROR_DATA_CONSTRAINT_VIOLATION;
            BAIL_ON_VMDIR_ERROR(dwError);
        }
     }
@@ -350,7 +350,7 @@ _checkAuxContentRules(
                     "Aux objectclass (%s) is not allowed.",
                     ppAuxOCs[i]->pszName);
 
-            dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+            dwError = pCtx->dwErrorCode = ERROR_DATA_CONSTRAINT_VIOLATION;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
@@ -424,7 +424,7 @@ _checkAttributePresences(
                     "Attribute (%s) is not allowed.",
                     pAttr->pATDesc->pszName);
 
-            dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+            dwError = pCtx->dwErrorCode = VMDIR_ERROR_OBJECTCLASS_VIOLATION;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
@@ -450,7 +450,7 @@ _checkAttributePresences(
                 "Missing must attribute (%s)",
                 pszAttrName);
 
-        dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+        dwError = pCtx->dwErrorCode = VMDIR_ERROR_OBJECTCLASS_VIOLATION;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -678,7 +678,7 @@ VmDirSchemaCheckSetAttrDesc(
                         "Attribute (%s) is not defined in schema",
                         VDIR_SAFE_STRING(pAttr->type.lberbv.bv_val));
 
-                dwError = pCtx->dwErrorCode = ERROR_INVALID_ENTRY;
+                dwError = pCtx->dwErrorCode = ERROR_NO_SUCH_ATTRIBUTE;
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
         }
@@ -718,13 +718,13 @@ VmDirSchemaGetEntryStructureOCDesc(
             pEntry->pSchemaCtx,
             pObjectClassAttr->vals[0].lberbv.bv_val,
             &pOCDesc);
-
-    if (dwError == ERROR_NO_SUCH_OBJECTCLASS ||
-            pOCDesc->type != VDIR_LDAP_STRUCTURAL_CLASS)
-    {
-        dwError = ERROR_INVALID_ENTRY;
-    }
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pOCDesc->type != VDIR_LDAP_STRUCTURAL_CLASS)
+    {
+        dwError = ERROR_DATA_CONSTRAINT_VIOLATION;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     // pszStructureOC point into pEntry->attrs content.
     pEntry->pszStructureOC = pObjectClassAttr->vals[0].lberbv.bv_val;

@@ -64,6 +64,9 @@ extern "C" {
 #define VMDIR_RUN_MODE_RESTORE          "restore"
 #define VMDIR_RUN_MODE_STANDALONE       "standalone"
 
+// backend generic table keys
+#define VMDIR_KEY_BE_GENERIC_ACL_MODE   "acl-mode"
+#define VMDIR_ACL_MODE_ENABLED          "enabled"
 
 #define VMDIR_DEFAULT_REPL_LAST_USN_PROCESSED_LEN   sizeof(VMDIR_DEFAULT_REPL_LAST_USN_PROCESSED)
 
@@ -86,12 +89,33 @@ extern "C" {
 // Mapping of functionality to levels
 // Base DFL, support for all 6.0 and earlier functionality
 #define VDIR_DFL_DEFAULT 1
+
 // Support for 6.5 functionality, PSCHA
 #define VDIR_DFL_PSCHA   2
-// Support for 7.0 functionality, ModDn
+
+// Support for 6.6 functionality, ModDn
+// Support for LW 1.0 functionality, ModDn
 #define VDIR_DFL_MODDN   3
-// Support for 7.0 functionality, Concurrent Attribute Value Update
+
+// Support for 6.6 functionality, Custom Schema Modification
+// Support for LW 1.0 functionality, Custom Schema Modification
+#define VDIR_DFL_CUSTOM_SCHEMA_MODIFICATION     3
+
+// Support for 6.6 functionality, Concurrent Attribute Value Update
+// Support for LW 1.1 functionality, Concurrent Attribute Value Update
 #define VDIR_DFL_CONCURRENT_ATTR_VALUE_UPDATE   4
+
+// Support for 6.6 functionality, better write operation audit
+// Support for LW 1.1 functionality, better write operation audit
+#define VDIR_DFL_WRITE_OP_AUDIT                 4
+
+#define VDIR_CUSTOM_SCHEMA_MODIFICATION_ENABLED     \
+    (gVmdirServerGlobals.dwDomainFunctionalLevel >= \
+            VDIR_DFL_CUSTOM_SCHEMA_MODIFICATION)
+
+#define VDIR_WRITE_OP_AUDIT_ENABLED   \
+    (gVmdirServerGlobals.dwDomainFunctionalLevel >= \
+            VDIR_DFL_WRITE_OP_AUDIT)
 
 #define VDIR_CONCURRENT_ATTR_VALUE_UPDATE_ENABLED   \
     (gVmdirServerGlobals.dwDomainFunctionalLevel >= \
@@ -610,6 +634,12 @@ typedef struct _VDIR_OPERATION
     PSTR                pszFilters; // filter candidates' size recorded in string
 
     DWORD               dwSentEntries; // number of entries sent back to client
+
+    ///////////////////////////////////////////////////////////////////////////
+    // fields valid for REPLICATION operations
+    ///////////////////////////////////////////////////////////////////////////
+    USN                 ulPartnerUSN; // in replication, the partner USN been processed.
+
 } VDIR_OPERATION, *PVDIR_OPERATION;
 
 typedef struct _VDIR_THREAD_INFO
@@ -1071,6 +1101,21 @@ VmDirValidValueMetaEntry(
     PVDIR_BERVALUE  pValueMetaData
     );
 
+PCSTR
+VmDirLdapModOpTypeToName(
+    VDIR_LDAP_MOD_OP modOp
+    );
+
+PCSTR
+VmDirLdapReqCodeToName(
+    ber_tag_t reqCode
+    );
+
+PCSTR
+VmDirOperationTypeToName(
+    VDIR_OPERATION_TYPE opType
+    );
+
 // candidates.c
 void
 AndFilterResults(
@@ -1262,7 +1307,23 @@ VmDirCreateAcl(
     );
 
 DWORD
+VmDirGetAce(
+    PACL pAcl,
+    ULONG dwIndex,
+    PACE_HEADER *ppAce
+    );
+
+DWORD
 VmDirAddAccessAllowedAceEx(
+    PACL Acl,
+    ULONG AceRevision,
+    ULONG AceFlags,
+    ACCESS_MASK AccessMask,
+    PSID Sid
+    );
+
+DWORD
+VmDirAddAccessDeniedAceEx(
     PACL Acl,
     ULONG AceRevision,
     ULONG AceFlags,
@@ -1373,8 +1434,7 @@ VmDirSetSecurityDescriptorInfo(
 
 DWORD
 VmDirCreateSecurityDescriptorAbsolute(
-    PSECURITY_DESCRIPTOR_ABSOLUTE SecurityDescriptor,
-    ULONG Revision
+    PSECURITY_DESCRIPTOR_ABSOLUTE *ppSecurityDescriptor
     );
 
 VOID
@@ -1420,6 +1480,13 @@ VmDirAllocateSddlCStringFromSecurityDescriptor(
     PSTR* ppStringSecurityDescriptor
 );
 
+DWORD
+VmDirSetSecurityDescriptorControl(
+    PSECURITY_DESCRIPTOR_ABSOLUTE pSecurityDescriptor,
+    SECURITY_DESCRIPTOR_CONTROL BitsToChange,
+    SECURITY_DESCRIPTOR_CONTROL BitsToSet
+    );
+
 // srp.c
 DWORD
 VmDirSRPCreateSecret(
@@ -1451,20 +1518,6 @@ DWORD
 VmDirOpenVmAfdClientLib(
     VMDIR_LIB_HANDLE*   pplibHandle
     );
-
-DWORD
-VmDirBuildTokenGroups(
-    PVDIR_ENTRY     pEntry,
-    PTOKEN_GROUPS * ppTokenGroups
-    );
-
-DWORD
-VmDirKeySetGetKvno(
-    PBYTE pUpnKeys,
-    DWORD upnKeysLen,
-    DWORD *kvno
-);
-
 #ifdef __cplusplus
 }
 #endif

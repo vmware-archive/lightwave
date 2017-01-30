@@ -141,6 +141,11 @@ VmDirDeleteConnection(
             // clean and free sockbuf (io descriptor and socket ...etc.)
             ber_sockbuf_free((*conn)->sb);
         }
+        else if ((*conn)->sd)
+        {   // normally, ber_sockbuf_free above will close socket.
+            // if no ber_sockbuf, close socket if exists
+            tcp_close((*conn)->sd);
+        }
 
         VmDirFreeAccessInfo(&((*conn)->AccessInfo));
         _VmDirScrubSuperLogContent(LDAP_REQ_UNBIND, &( (*conn)->SuperLogRec) );
@@ -320,6 +325,7 @@ NewConnection(
 
     pConn->bIsAnonymousBind = TRUE;  // default to anonymous bind
     pConn->sd = sfd;                 // pConn takes over sfd
+    sfd = -1;                        // valid fd > 0
 
     retVal = VmDirGetNetworkInfoFromSocket(pConn->sd, pConn->szClientIP, sizeof(pConn->szClientIP), &pConn->dwClientPort, true);
     BAIL_ON_VMDIR_ERROR(retVal);
@@ -341,7 +347,7 @@ NewConnection(
        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "NewConnection (%s): ber_sockbuf_ctrl() failed while setting MAX_INCOMING", pConn->szClientIP);
     }
 
-    if (ber_sockbuf_add_io(pConn->sb, pSockbuf_IO, LBER_SBIOD_LEVEL_PROVIDER, (void *)&sfd) != 0)
+    if (ber_sockbuf_add_io(pConn->sb, pSockbuf_IO, LBER_SBIOD_LEVEL_PROVIDER, (void *)&pConn->sd) != 0)
     {
        retVal = LDAP_OPERATIONS_ERROR;
        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "NewConnection (%s): ber_sockbuf_addd_io() failed while setting LEVEL_PROVIDER", pConn->szClientIP);
@@ -357,6 +363,10 @@ NewConnection(
     *ppConnection = pConn;
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+    if (sfd != -1)
+    {
+        tcp_close(sfd);
+    }
 
     return retVal;
 

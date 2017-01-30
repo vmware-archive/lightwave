@@ -54,6 +54,7 @@ VmDirPerformModify(
    BerValue*          pLberBerv = NULL;
    PSTR               pszLocalErrorMsg = NULL;
    BOOLEAN            bResultAlreadySent = FALSE;
+   DWORD              dwModCount = 0;
 
    // Get entry DN. 'm' => reqDn.bv_val points to DN within (in-place) ber
    if ( ber_scanf( pOperation->ber, "{m", &(pOperation->reqDn.lberbv) ) == LBER_ERROR )
@@ -135,13 +136,34 @@ VmDirPerformModify(
               PCSTR pszLogValue = (0 == VmDirStringCompareA( pMod->attr.type.lberbv.bv_val, ATTR_USER_PASSWORD, FALSE)) ?
                                     "XXX" : pLberBerv[iCnt].bv_val;
 
-              VMDIR_LOG_VERBOSE( LDAP_DEBUG_ARGS, "MOD VALUE: (%.*s)",
-                        VMDIR_MIN(pLberBerv[iCnt].bv_len, VMDIR_MAX_LOG_OUTPUT_LEN),
-                        VDIR_SAFE_STRING( pszLogValue ));
+              if (iCnt < MAX_NUM_MOD_CONTENT_LOG)
+              {
+                  VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "MOD %d,%s,%s: (%.*s)",
+                            ++dwModCount,
+                            VmDirLdapModOpTypeToName(pMod->operation),
+                            VDIR_SAFE_STRING(pMod->attr.type.lberbv.bv_val),
+                            VMDIR_MIN(pLberBerv[iCnt].bv_len, VMDIR_MAX_LOG_OUTPUT_LEN),
+                            VDIR_SAFE_STRING( pszLogValue ));
+              }
+              else if (iCnt == MAX_NUM_MOD_CONTENT_LOG)
+              {
+                  VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "MOD %d,%s,%s: .... Total MOD %d)",
+                            ++dwModCount,
+                            VmDirLdapModOpTypeToName(pMod->operation),
+                            VDIR_SAFE_STRING(pMod->attr.type.lberbv.bv_val),
+                            size);
+              }
 
               pMod->attr.vals[iCnt].lberbv.bv_val = pLberBerv[iCnt].bv_val;
               pMod->attr.vals[iCnt].lberbv.bv_len = pLberBerv[iCnt].bv_len;
           }
+      }
+      else
+      {   // delete attribute
+          VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "MOD %d,%s,%s",
+                    ++dwModCount,
+                    VmDirLdapModOpTypeToName(pMod->operation),
+                    VDIR_SAFE_STRING(pMod->attr.type.lberbv.bv_val));
       }
 
       // we should be safe to cast ...

@@ -365,7 +365,8 @@ txnretry:
     // ************************************************************************************
 
     gVmdirGlobals.dwLdapWrites++;
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Delete Entry (%s)", VDIR_SAFE_STRING(pEntry->dn.lberbv_val));
+
+    VmDirAuditWriteOp(pOperation, VDIR_SAFE_STRING(pEntry->dn.lberbv_val));
 
     // Post delete entry
     // TODO, make it into a separate file deletePlugin.c

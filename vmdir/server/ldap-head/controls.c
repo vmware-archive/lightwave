@@ -32,6 +32,14 @@ _ParsePagedResultControlVal(
     VDIR_LDAP_RESULT *                  lr                  // Output
     );
 
+static
+int
+_ParseSyncStateControlVal(
+    BerValue *  controlValue,   // Input: control value encoded as ber,
+    int *       entryState,     // Output
+    USN*        pPartnerUSN     // Output
+    );
+
 /*
  * RFC 4511:
  * Section 4.1.1 Message Envelope:
@@ -404,7 +412,9 @@ WriteSyncStateControl(
     BerElementBuffer    ctrlValBerbuf;
     BerElement *        ctrlValBer = (BerElement *) &ctrlValBerbuf;
     VDIR_BERVALUE       bvCtrlVal = VDIR_BERVALUE_INIT;
+    PVDIR_BERVALUE      pbvUSN = NULL;
     PSTR                pszLocalErrorMsg = NULL;
+    BOOLEAN             bHasFinalSyncState = FALSE;
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "WriteSyncStateControl: Begin" );
 
@@ -422,9 +432,15 @@ WriteSyncStateControl(
 
     for ( ; pAttr != NULL; pAttr = pAttr->next)
     {
-        if (pAttr->metaData[0] != '\0') // We are sending back this attribute's meta data. => Attribute is in
-                                        // replication scope. SJ-TBD: we are overloading pAttr->metaData
-                                        // field. Should we have another field (e.g. inReplScope) in Attribute
+        if (VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE ) == 0)
+        {
+            pbvUSN = pAttr->vals;
+        }
+
+        // We are sending back this attribute's meta data. => Attribute is in
+        // replication scope. SJ-TBD: we are overloading pAttr->metaData
+        // field. Should we have another field (e.g. inReplScope) in Attribute
+        if (pAttr->metaData[0] != '\0' && !bHasFinalSyncState)
         {
             if ( VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_IS_DELETED, FALSE ) == 0 &&
                  VmDirStringCompareA( pAttr->vals[0].lberbv.bv_val, VMDIR_IS_DELETED_TRUE_STR, FALSE ) == 0)
@@ -436,10 +452,13 @@ WriteSyncStateControl(
             if (VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USN_CREATED, FALSE ) == 0)
             {
                 entryState = LDAP_SYNC_ADD;
-                break;
+                bHasFinalSyncState = TRUE;
             }
         }
     }
+
+    // we always send uSNChanged attribute
+    assert(pbvUSN);
 
     if (ber_printf( ber, "t{{O", LDAP_TAG_CONTROLS, &(syncStateCtrlType.lberbv) ) == -1 )
     {
@@ -454,7 +473,11 @@ WriteSyncStateControl(
     (void) memset( (char *)&ctrlValBerbuf, '\0', sizeof( BerElementBuffer ));
     ber_init2( ctrlValBer, NULL, LBER_USE_DER );
 
-    if (ber_printf( ctrlValBer, "{i}", entryState ) == -1 )
+    if ( (VDIR_WRITE_OP_AUDIT_ENABLED &&
+          (ber_printf( ctrlValBer, "{iO}", entryState, pbvUSN ) == -1 ))
+        ||
+         (ber_printf( ctrlValBer, "{i}", entryState) == -1)
+       )
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "SendLdapResult: ber_printf (to print Sync Done Control ...) failed" );
         retVal = LDAP_OPERATIONS_ERROR;
@@ -504,42 +527,61 @@ error:
     goto cleanup;
 }
 
+static
 int
-ParseSyncStateControlVal(
+_ParseSyncStateControlVal(
     BerValue *  controlValue,   // Input: control value encoded as ber,
-    int *       entryState)     // Output
+    int *       entryState,     // Output
+    USN*        pPartnerUSN     // Output
+    )
 {
     int                 retVal = LDAP_SUCCESS;
     BerElementBuffer    berbuf;
     BerElement *        ber = (BerElement *)&berbuf;
-
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "ParseSyncStateControlVal: Begin." );
+    BerValue            bvPartnerUSN = {0};
 
     ber_init2( ber, controlValue, LBER_USE_DER );
 
-    if (ber_scanf( ber, "{i}", entryState ) == -1 )
+    if  (VDIR_WRITE_OP_AUDIT_ENABLED)
     {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ParseSyncStateControlVal: ber_scanf to read entryState failed" );
-        retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR( retVal );
+        if (ber_scanf( ber, "{im}", entryState, &bvPartnerUSN ) == -1 )
+        {
+            BAIL_WITH_VMDIR_ERROR(retVal, LDAP_OPERATIONS_ERROR);
+        }
+
+        if (pPartnerUSN && bvPartnerUSN.bv_len > 0)
+        {
+            *pPartnerUSN = atol(bvPartnerUSN.bv_val);
+        }
+    }
+    else
+    {
+        if (ber_scanf( ber, "{i}", entryState ) == -1 )
+        {
+            BAIL_WITH_VMDIR_ERROR(retVal, LDAP_OPERATIONS_ERROR);
+        }
     }
 
+
 cleanup:
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "ParseSyncStateControlVal: Begin." );
+
     return retVal;
 
 error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: ber_scanf to read entryState failed", __FUNCTION__ );
     goto cleanup;
 }
 
 int
 ParseAndFreeSyncStateControl(
     LDAPControl ***pCtrls,
-    int *piEntryState
+    int*        piEntryState,
+    USN*        pulPartnerUSN
     )
 {
     int retVal = LDAP_SUCCESS;
     int entryState = -1;
+    USN ulPartnerUSN = 0;
 
     if (pCtrls == NULL)
     {
@@ -562,13 +604,14 @@ ParseAndFreeSyncStateControl(
         BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
 
-    retVal = ParseSyncStateControlVal(&(*pCtrls)[0]->ldctl_value, &entryState);
+    retVal = _ParseSyncStateControlVal(&(*pCtrls)[0]->ldctl_value, &entryState, &ulPartnerUSN);
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
     ldap_controls_free(*pCtrls);
     *pCtrls = NULL;
 
     *piEntryState = entryState;
+    *pulPartnerUSN = ulPartnerUSN;
 
 cleanup:
     return retVal;

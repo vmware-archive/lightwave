@@ -228,4 +228,12 @@ VmDirGenerateRandomPasswordByDefaultPolicy
     PSTR *ppRandPwd
     );
 
+// util.c
+
+VOID
+VmDirAuditWriteOp(
+    PVDIR_OPERATION  pOp,
+    PCSTR            pszDN
+    );
+
 #endif /* ML_INTERFACE_H_ */

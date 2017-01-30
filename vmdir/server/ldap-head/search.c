@@ -237,13 +237,13 @@ VmDirPerformSearch(
    PVDIR_LDAP_RESULT   pResult = &(pOperation->ldapResult);
    BOOLEAN             bSetAccessInfo = FALSE;
 
-   if (pOperation->conn->AccessInfo.pszBindedObjectSid == NULL)
-   {
-      retVal = VmDirMLSetupAnonymousAccessInfo(&pOperation->conn->AccessInfo);
-      BAIL_ON_VMDIR_ERROR(retVal);
+    if (pOperation->conn->AccessInfo.pszBindedObjectSid == NULL)
+    {
+        retVal = VmDirMLSetupAnonymousAccessInfo(&pOperation->conn->AccessInfo);
+        BAIL_ON_VMDIR_ERROR(retVal);
 
-      bSetAccessInfo = TRUE;
-   }
+        bSetAccessInfo = TRUE;
+    }
 
    // Parse base object, scope, deref alias, sizeLimit, timeLimit and typesOnly search parameters.
    if ( ber_scanf( pOperation->ber, "{miiiib", &(pOperation->reqDn.lberbv), &sr->scope, &sr->derefAlias, &sr->sizeLimit,
@@ -342,6 +342,7 @@ cleanup:
     {
         VmDirFreeAccessInfo(&pOperation->conn->AccessInfo);
     }
+
     VMDIR_SAFE_FREE_MEMORY(pLberBerv);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
 

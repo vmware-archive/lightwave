@@ -1015,7 +1015,7 @@ static
 DWORD
 _VmDirCreateTransientSecurityDescriptor(
     PCSTR pszDomainDN,
-    BOOLEAN bAllowAnonymousRead,
+    BOOL bAllowAnonymousRead,
     PVMDIR_SECURITY_DESCRIPTOR pvsd
     )
 {
@@ -1046,8 +1046,12 @@ _VmDirCreateTransientSecurityDescriptor(
                                         &pszUsersGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+
+    //
+    // Create default security descriptor for internally-created entries.
+    //
     dwError = VmDirSrvCreateSecurityDescriptor(
-                VMDIR_ENTRY_ALL_ACCESS_NO_DELETE_CHILD,
+                VMDIR_ENTRY_ALL_ACCESS_NO_DELETE_CHILD_BUT_DELETE_OBJECT,
                 BERVAL_NORM_VAL(gVmdirServerGlobals.bvDefaultAdminDN),
                 pszAdminsGroupSid,
                 pszDomainAdminsGroupSid,
@@ -1055,6 +1059,7 @@ _VmDirCreateTransientSecurityDescriptor(
                 pszUsersGroupSid,
                 FALSE,
                 bAllowAnonymousRead,
+                FALSE,
                 FALSE,
                 &SecDesc);
     BAIL_ON_VMDIR_ERROR(dwError);

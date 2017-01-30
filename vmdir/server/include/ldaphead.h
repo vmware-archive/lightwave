@@ -86,14 +86,10 @@ ParseRequestControls(
    VDIR_LDAP_RESULT *   lr );
 
 int
-ParseSyncStateControlVal(
-    BerValue *  controlValue,
-    int *       entryState);
-
-int
 ParseAndFreeSyncStateControl(
     LDAPControl ***pCtrls,
-    int *piEntryState
+    int*        piEntryState,
+    USN*        pulPartnerUSN
     );
 
 int

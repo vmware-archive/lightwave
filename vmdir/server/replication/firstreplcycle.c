@@ -476,10 +476,12 @@ _VmDirSwapDB(
     if (bLegacyDataLoaded)
     {
         retVal = VmDirPatchLocalSubSchemaSubEntry();
-        BAIL_ON_VMDIR_ERROR(retVal);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrorMsg,
+                "_VmDirSwapDB: failed to patch subschema subentry: %d", retVal );
 
         retVal = VmDirWriteSchemaObjects();
-        BAIL_ON_VMDIR_ERROR(retVal);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrorMsg,
+                "_VmDirSwapDB: failed to create schema tree: %d", retVal );
     }
 
     VmDirdStateSet(VMDIRD_STATE_NORMAL);

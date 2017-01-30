@@ -39,6 +39,7 @@
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>
+#include <vmdirerrors.h>
 #include <vmdirerrorcode.h>
 
 #include <vmdircommon.h>
@@ -85,6 +86,7 @@
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>
+#include <vmdirerrors.h>
 #include <vmdirerrorcode.h>
 
 #include <vmdircommon.h>

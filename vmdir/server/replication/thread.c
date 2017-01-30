@@ -1488,6 +1488,10 @@ _VmDirConsumePartner(
                     &bervalSyncDoneCtrl,
                     replAgr);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+                "Replication supplier %s USN range (%llu,%s) processed.",
+                replAgr->ldapURI, initUsn, replAgr->lastLocalUsnProcessed.lberbv_val);
         }
         pContext->bFirstReplicationCycle = FALSE;
     }
@@ -1638,15 +1642,17 @@ _VmDirFetchReplicationPage(
              entry = ldap_next_entry( pLd, entry ) )
         {
             int entryState = -1;
+            USN ulPartnerUSN = 0;
 
             retVal = ldap_get_entry_controls( pLd, entry, &ctrls );
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-            retVal = ParseAndFreeSyncStateControl(&ctrls, &entryState);
+            retVal = ParseAndFreeSyncStateControl(&ctrls, &entryState, &ulPartnerUSN);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
             pPage->pEntries[iEntries].entry = entry;
             pPage->pEntries[iEntries].entryState = entryState;
+            pPage->pEntries[iEntries].ulPartnerUSN = ulPartnerUSN;
             pPage->pEntries[iEntries].dwDnLength = 0;
             if (VmDirParseEntryForDn(entry, &(pPage->pEntries[iEntries].pszDn)) == 0)
             {
@@ -1778,12 +1784,11 @@ _VmDirProcessReplicationPage(
     for (i = 0; i < pPage->iEntriesReceived; i++)
     {
         int errVal = 0;
-        LDAPMessage *entry = pPage->pEntries[i].entry;
         int entryState = pPage->pEntries[i].entryState;
 
         if (entryState == LDAP_SYNC_ADD)
         {
-            errVal = ReplAddEntry( pSchemaCtx, entry, &pSchemaCtx,
+            errVal = ReplAddEntry( pSchemaCtx, pPage->pEntries+i, &pSchemaCtx,
                     pContext->bFirstReplicationCycle );
             pContext->pSchemaCtx = pSchemaCtx ;
 
@@ -1796,7 +1801,7 @@ _VmDirProcessReplicationPage(
         }
         else if (entryState == LDAP_SYNC_MODIFY)
         {
-            errVal = ReplModifyEntry( pSchemaCtx, entry, &pSchemaCtx);
+            errVal = ReplModifyEntry( pSchemaCtx, pPage->pEntries+i, &pSchemaCtx);
             if (errVal == LDAP_NOT_ALLOWED_ON_NONLEAF)
             {
                 pPage->iEntriesOutOfSequence++;
@@ -1806,7 +1811,7 @@ _VmDirProcessReplicationPage(
         }
         else if (entryState == LDAP_SYNC_DELETE)
         {
-            errVal = ReplDeleteEntry( pSchemaCtx, entry);
+            errVal = ReplDeleteEntry( pSchemaCtx, pPage->pEntries+i);
             if (errVal == LDAP_NOT_ALLOWED_ON_NONLEAF)
             {
                 pPage->iEntriesOutOfSequence++;

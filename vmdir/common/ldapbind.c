@@ -626,6 +626,9 @@ VmDirConnectLDAPServerWithMachineAccount(
     dwError = VmDirStringPrintFA( bufUPN, sizeof(bufUPN)-1,  "%s@%s", pszDCAccount, pszDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirGetServerName( pszHostName, &pszServerName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirSafeLDAPBind( &pLd, pszServerName, bufUPN, pszDCAccountPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 

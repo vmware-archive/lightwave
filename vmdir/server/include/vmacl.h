@@ -190,6 +190,11 @@ VmDirVmAclShutdown(
     VOID
     );
 
+DWORD
+VmDirRegisterACLMode(
+    VOID
+    );
+
 // acl.c
 
 DWORD
@@ -213,12 +218,6 @@ VmDirAclCtxContentFree(
     );
 
 DWORD
-VmDirSrvCreateLegacySecurityDescriptor(
-    PCSTR pszDomainDn,
-    PVMDIR_SECURITY_DESCRIPTOR pSecDesc
-    );
-
-DWORD
 VmDirSrvCreateSecurityDescriptor(
     ACCESS_MASK amAccess,
     PCSTR pszSystemAdministratorDn,
@@ -229,6 +228,7 @@ VmDirSrvCreateSecurityDescriptor(
     BOOLEAN bProtectedDacl,
     BOOLEAN bAnonymousRead,
     BOOLEAN bServicesDacl,
+    BOOLEAN bTenantDomain,
     PVMDIR_SECURITY_DESCRIPTOR pSecDesc
     );
 
@@ -251,10 +251,11 @@ VmDirIsFailedAccessInfo(
     );
 
 DWORD
-VmDirGetObjectSidFromEntry(
+VmDirAddAceToSecurityDescriptor(
     PVDIR_ENTRY pEntry,
-    PSTR* ppszObjectSid, /* Optional */
-    PSID* ppSid /* Optional */
+    PSECURITY_DESCRIPTOR_RELATIVE pSecDesc,
+    PCSTR pszAdminUserDn,
+    ACCESS_MASK amAccess
     );
 
 // security.c
@@ -296,10 +297,10 @@ VmDirSetSecurityDescriptorForEntry(
 
 // sdcalc.c
 DWORD
-VmDirAddPrepareObjectSD(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    PVDIR_ENTRY      pParentEntry
+VmDirComputeObjectSecurityDescriptor(
+    PVDIR_ACCESS_INFO pAccessInfo,
+    PVDIR_ENTRY pEntry,
+    PVDIR_ENTRY pParentEntry
     );
 
 // token.c

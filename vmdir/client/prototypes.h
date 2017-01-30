@@ -213,11 +213,6 @@ VmDirGetDomainName(
     PSTR* ppszDomainName);
 
 DWORD
-VmDirGetServerName(
-    PCSTR pszHostName,
-    PSTR* ppszServerName);
-
-DWORD
 VmDirGetLocalLduGuid(
     PSTR pszLduGuid
     );
@@ -443,15 +438,6 @@ VmDirDnLastRDNToCn(
     );
 
 DWORD
-VmDirLdapGetSingleAttribute(
-    LDAP*   pLD,
-    PCSTR   pszDN,
-    PCSTR   pszAttr,
-    PBYTE*  ppByte,
-    DWORD*  pdwLen
-    );
-
-DWORD
 VmDirLdapModReplaceAttribute(
     LDAP*   pLd,
     PCSTR   pszDN,
@@ -470,13 +456,6 @@ DWORD
 VmDirGetDCContainerDN(
     PCSTR pszDomain,
     PSTR* ppszContainerDN
-    );
-
-DWORD
-VmDirGetServerAccountDN(
-    PCSTR pszDomain,
-    PCSTR pszMachineName,
-    PSTR* ppszServerDN
     );
 
 DWORD

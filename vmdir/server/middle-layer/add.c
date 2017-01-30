@@ -246,7 +246,7 @@ txnretry:
         {
             // Skip SD in case of a replication operation (SD should exist by then anyways)
             // so that we do not manipulate data in replication operation (replicate 'purely')
-            retVal = VmDirAddPrepareObjectSD(pOperation, pEntry, pEntry->pParentEntry);
+            retVal = VmDirComputeObjectSecurityDescriptor(&pOperation->conn->AccessInfo, pEntry, pEntry->pParentEntry);
             BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Prepare object SD failed, (%u)", retVal );
 
             // check and read lock dn referenced entries
@@ -292,7 +292,8 @@ txnretry:
     // ************************************************************************************
 
     gVmdirGlobals.dwLdapWrites++; //occasionally concurrent update error is fine on the counter
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Add Entry (%s)", VDIR_SAFE_STRING(pEntry->dn.lberbv_val));
+
+    VmDirAuditWriteOp(pOperation, VDIR_SAFE_STRING(pEntry->dn.lberbv_val));
 
 cleanup:
     {

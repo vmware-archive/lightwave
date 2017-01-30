@@ -132,14 +132,12 @@ VmDirSrvCreateAccessTokenWithEntry(
     if (ppszObjectSid)
     {
         *ppszObjectSid = pszObjectSid;
+        pszObjectSid = NULL;
     }
     *ppToken = pToken;
 
 cleanup:
-    if (!ppszObjectSid)
-    {
-        VMDIR_SAFE_FREE_MEMORY(pszObjectSid);
-    }
+    VMDIR_SAFE_FREE_MEMORY(pszObjectSid);
     VMDIR_SAFE_FREE_MEMORY(user.User.Sid);
     VMDIR_SAFE_FREE_MEMORY(primaryGroup.PrimaryGroup);
     VMDIR_SAFE_FREE_MEMORY(pszBuildinUsersGroupSid);
@@ -155,19 +153,9 @@ cleanup:
     return dwError;
 
 error:
-    if (ppszObjectSid)
-    {
-        *ppszObjectSid = NULL;
-    }
+    *ppToken = NULL; // TODO
 
-    *ppToken = NULL;
-
-    if (pToken)
-    {
-        VmDirReleaseAccessToken(&pToken);
-    }
-    VMDIR_SAFE_FREE_MEMORY(pszObjectSid);
-
+    VmDirReleaseAccessToken(&pToken);
     goto cleanup;
 }
 
@@ -240,7 +228,6 @@ _VmDirBuildTokenGroups(
 
     if (pMemberOfAttr)
     {
-
         for (i = 0; i < pMemberOfAttr->numVals; i++)
         {
             if ((dwError = VmDirSimpleDNToEntry(pMemberOfAttr->vals[i].lberbv.bv_val, &pGroupEntry)) != 0)
