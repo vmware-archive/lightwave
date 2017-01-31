@@ -476,6 +476,14 @@ VmAfdQueryADW(
     );
 
 DWORD
+VmAfdGetDCList (
+    PCSTR  pszServerName,
+    PCSTR  pszDomain,
+    PDWORD pdwServerCount,
+    PVMAFD_DC_INFO_W *ppVmAfdDCInfoList
+    );
+
+DWORD
 VmAfdForceReplicationA(
     PCSTR pszServerName       /* IN              */
     );

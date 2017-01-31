@@ -387,11 +387,6 @@ typedef struct _VMAFD_CRED_CONTEXT_W
     PWSTR pwszPassword;
 } VMAFD_CRED_CONTEXT_W, *PVMAFD_CRED_CONTEXT_W;
 
-typedef struct _VMAFD_DC_INFO_W
-{
-    PWSTR pwszHostName;
-    PWSTR pwszAddress;
-}VMAFD_DC_INFO_W, *PVMAFD_DC_INFO_W;
 
 //Heartbeat
 #define VMAFD_HEARTBEAT_INTERVAL 10

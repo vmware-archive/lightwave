@@ -136,8 +136,8 @@ VmAfSrvConfigureDNSA(
         szDomainFQDN[strlen(szDomainFQDN)+1] = 0;
     }
 
-    if (!VmDnsCheckIfIPV4AddressA(pszServerName) &&
-        !VmDnsCheckIfIPV6AddressA(pszServerName))
+    if (!VmAfdCheckIfIPV4AddressA(pszServerName) &&
+        !VmAfdCheckIfIPV6AddressA(pszServerName))
     {
         dwError = VmAfdAppendDomain(pszServerName, pszDomainName, &pszServerFQDN);
         BAIL_ON_VMAFD_ERROR(dwError);

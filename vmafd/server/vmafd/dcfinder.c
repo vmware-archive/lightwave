@@ -150,8 +150,6 @@ error:
 DWORD
 VmAfdGetDomainControllerList(
     PCSTR pszDomain,
-    PCSTR pszUserName,
-    PCSTR pszPassword,
     PVMAFD_DC_INFO_W *ppVmAfdDCInfoList,
     PDWORD pdCount
     )

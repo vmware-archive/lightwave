@@ -1754,8 +1754,8 @@ VmAfSrvSetDNSRecords(
     VMDNS_RECORD record = {0};
     CHAR szZone[255] = {0};
 
-    if (VmDnsCheckIfIPV4AddressA(pszMachineName) ||
-        VmDnsCheckIfIPV6AddressA(pszMachineName))
+    if (VmAfdCheckIfIPV4AddressA(pszMachineName) ||
+        VmAfdCheckIfIPV6AddressA(pszMachineName))
     {
        return dwError;
     }

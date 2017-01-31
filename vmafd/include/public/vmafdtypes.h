@@ -527,6 +527,16 @@ typedef struct _CDC_DC_STATUS_INFO_W
 #endif
 
 
+#ifndef VMAFD_DC_INFO_W_DEFINED
+#define VMAFD_DC_INFO_W_DEFINED         1
+
+typedef struct _VMAFD_DC_INFO_W
+{
+    wstring_t  pwszHostName;
+    wstring_t  pwszAddress;
+}VMAFD_DC_INFO_W, *PVMAFD_DC_INFO_W;
+#endif
+
 #ifndef VMAFD_MAX_DN_LEN
 #define VMAFD_MAX_DN_LEN 1024
 #endif

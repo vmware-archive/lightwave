@@ -323,6 +323,13 @@ VmAfdGetDomainController(
     PSTR* ppszDCAddress
     );
 
+DWORD
+VmAfdGetDomainControllerList(
+    PCSTR pszDomain,
+    PVMAFD_DC_INFO_W *ppVmAfdDCInfoList,
+    PDWORD pdCount
+    );
+
 /* dns.c */
 
 DWORD
@@ -1214,6 +1221,13 @@ VmAfdIpcJoinValidateCredentials(
     DWORD dwRequestSize,
     PBYTE * ppResponse,
     PDWORD pdwResponseSize
+    );
+
+DWORD
+VmAfSrvJoinValidateCredentials(
+    PWSTR pwszDomainName,       /* IN            */
+    PWSTR pwszUserName,         /* IN            */
+    PWSTR pwszPassword          /* IN            */
     );
 
 DWORD
