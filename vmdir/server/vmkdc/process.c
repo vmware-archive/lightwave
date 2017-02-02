@@ -223,6 +223,8 @@ VmKdcProcessAsReq(
     time_t kdc_time = 0;
     time_t maxrt = 0;
     BOOLEAN renewable_ok = 0;
+    VMKDC_ENCTYPE etype = 0;
+    unsigned int i = 0;
 #ifdef VMDIR_ENABLE_PAC
     PVMKDC_AUTHZDATA pAuthzData = NULL;
 #else
@@ -242,6 +244,7 @@ VmKdcProcessAsReq(
     pSname = asRequest->req_body.sname;
     nonce = asRequest->req_body.nonce;
 
+    etype = asRequest->req_body.etype.type[0];
 /* RFC4120 Page 26
  * If the requested starttime is absent, indicates a time in the past,
  * or is within the window of acceptable clock skew for the KDC and the
@@ -304,7 +307,7 @@ VmKdcProcessAsReq(
 
     t_end = t_start + pContext->pGlobals->iMaxLife;
     t_reqTill = asRequest->req_body.till;
-    if (t_reqTill)
+    if (t_reqTill && *t_reqTill != 0)
     {
         if (*t_reqTill > t_end)
         {
@@ -352,12 +355,24 @@ VmKdcProcessAsReq(
     BAIL_ON_VMKDC_ERROR(dwError);
 
     /*
-     * TBD: Adam below using first ENCTYPE req_body.etype.type[0];
-     * Need to search for strongest supported between C/S and KDC policy
+     * Select one of two supported ENCTYPEs (prefer AES256)
      */
+    for (i=0; i<asRequest->req_body.etype.count; i++)
+    {
+        if (asRequest->req_body.etype.type[i] == ENCTYPE_AES256_CTS_HMAC_SHA1_96)
+        {
+            etype = ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+            break;
+        }
+        if (asRequest->req_body.etype.type[i] == ENCTYPE_ARCFOUR_HMAC_MD5)
+        {
+            etype = ENCTYPE_ARCFOUR_HMAC_MD5;
+        }
+    }
+
     dwError = VmKdcFindKeyByEType(
                   pClientEntry,
-                  asRequest->req_body.etype.type[0], // Use first ENCTYPE; need to search for strongest supported between C/S
+                  etype,
                   &pCKey);
     BAIL_ON_VMKDC_ERROR(dwError);
 
@@ -372,7 +387,7 @@ VmKdcProcessAsReq(
 
     dwError = VmKdcFindKeyByEType(
                   pServerEntry,
-                  asRequest->req_body.etype.type[0], // Use first ENCTYPE; need to search for strongest supported between C/S
+                  etype,
                   &pSKey);
     BAIL_ON_VMKDC_ERROR(dwError);
 
@@ -391,7 +406,7 @@ VmKdcProcessAsReq(
      * Create a random session key
      */
     dwError = VmKdcRandomKey(pContext,
-                             asRequest->req_body.etype.type[0],
+                             etype,
                              &pSessionKey);
     BAIL_ON_VMKDC_ERROR(dwError);
 
@@ -589,6 +604,8 @@ VmKdcProcessTgsReq(
     PSTR pszServerName = NULL;
     VMKDC_TICKET_FLAGS flags = 0;
     BOOLEAN renew = FALSE;
+    VMKDC_ENCTYPE etype = 0;
+    unsigned int i = 0;
 #ifdef VMDIR_ENABLE_PAC
     PVMKDC_KEY pKrbtgtKey = NULL;
     PVMKDC_DIRECTORY_ENTRY pKrbtgtEntry = NULL;
@@ -610,6 +627,8 @@ VmKdcProcessTgsReq(
     nonce = tgsRequest->req_body.nonce;
     pMethodData = tgsRequest->padata;
 
+    etype = tgsRequest->req_body.etype.type[0];
+
     dwError = VmKdcUnparsePrincipalName(pSname, &pszServerName);
     BAIL_ON_VMKDC_ERROR(dwError);
 
@@ -626,9 +645,25 @@ VmKdcProcessTgsReq(
                   &pServerEntry);
     BAIL_ON_VMKDC_ERROR(dwError);
 
+    /*
+     * Select one of two supported ENCTYPEs (prefer AES256)
+     */
+    for (i=0; i<tgsRequest->req_body.etype.count; i++)
+    {
+        if (tgsRequest->req_body.etype.type[i] == ENCTYPE_AES256_CTS_HMAC_SHA1_96)
+        {
+            etype = ENCTYPE_AES256_CTS_HMAC_SHA1_96;
+            break;
+        }
+        if (tgsRequest->req_body.etype.type[i] == ENCTYPE_ARCFOUR_HMAC_MD5)
+        {
+            etype = ENCTYPE_ARCFOUR_HMAC_MD5;
+        }
+    }
+
     dwError = VmKdcFindKeyByEType(
                   pServerEntry,
-                  tgsRequest->req_body.etype.type[0], // Use first ENCTYPE; need to search for strongest supported between C/S
+                  etype,
                   &pSKey);
     BAIL_ON_VMKDC_ERROR(dwError);
 
@@ -660,7 +695,7 @@ VmKdcProcessTgsReq(
 
     dwError = VmKdcFindKeyByEType(
                   pDirectoryEntry,
-                  tgsRequest->req_body.etype.type[0], // Use first ENCTYPE; need to search for strongest supported between C/S
+                  etype,
                   &pPresentedSKey);
     BAIL_ON_VMKDC_ERROR(dwError);
 
@@ -702,7 +737,7 @@ VmKdcProcessTgsReq(
      * Create a random session key
      */
     dwError = VmKdcRandomKey(pContext,
-                             tgsRequest->req_body.etype.type[0],
+                             etype,
                              &pSessionKey);
     BAIL_ON_VMKDC_ERROR(dwError);
 
@@ -756,7 +791,7 @@ VmKdcProcessTgsReq(
     {
         t_end = *pEncTicketPart->starttime + pContext->pGlobals->iMaxLife;
         t_reqTill = tgsRequest->req_body.till;
-        if (t_reqTill)
+        if (t_reqTill && *t_reqTill != 0)
         {
             if (*t_reqTill < t_end)
             {
@@ -795,7 +830,7 @@ VmKdcProcessTgsReq(
 
     dwError = VmKdcFindKeyByEType(
                       pKrbtgtEntry,
-                      tgsRequest->req_body.etype.type[0],
+                      etype,
                       &pKrbtgtKey);
     BAIL_ON_VMKDC_ERROR(dwError);
 
