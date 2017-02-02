@@ -240,6 +240,10 @@
 				RelativePath="..\srputil.c"
 				>
 			</File>
+			<File
+				RelativePath="..\util.c"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
