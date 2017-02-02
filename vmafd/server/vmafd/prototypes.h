@@ -1446,6 +1446,15 @@ VmAfdIpcChangePNID(
     PDWORD pdwResponseSize
     );
 
+DWORD
+VmAfdIpcGetDCList(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE *ppResponse,
+    PDWORD pdwResponseSize
+    );
+
 //rpcserv_internal.c
 
 DWORD
