@@ -46,7 +46,6 @@ VmDirPerformRename(
     PVDIR_LDAP_RESULT  pResult = &(pOperation->ldapResult);
     ber_len_t          size = 0;
     PSTR               pszLocalErrorMsg = NULL;
-    BOOLEAN            bResultAlreadySent = FALSE;
 
     if (!_VmDirIsRenameSupported())
     {
@@ -86,22 +85,18 @@ VmDirPerformRename(
    }
 
    retVal = pResult->errCode = VmDirMLModify( pOperation );
-   bResultAlreadySent = TRUE;
    BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-
-    return retVal;
-
-error:
-
-    VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
-    if (retVal != LDAP_NOTICE_OF_DISCONNECT && bResultAlreadySent == FALSE)
+    if (retVal != LDAP_NOTICE_OF_DISCONNECT)
     {
         VmDirSendLdapResult( pOperation );
     }
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    return retVal;
+
+error:
+    VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
     goto cleanup;
 }
 

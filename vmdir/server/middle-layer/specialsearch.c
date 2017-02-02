@@ -43,7 +43,6 @@ VmDirHandleSpecialSearch(
     DWORD       dwError = 0;
     BOOLEAN     bRetVal = FALSE;
     BOOLEAN     bHasTxn = FALSE;
-    VDIR_ENTRY  dseRootEntry = {0};
     PVDIR_ENTRY pEntry = NULL;
     VDIR_SPECIAL_SEARCH_ENTRY_TYPE entryType = REGULAR_SEARCH_ENTRY_TYPE;
     static PCSTR pszEntryType[] =
@@ -64,15 +63,16 @@ VmDirHandleSpecialSearch(
     {
         entryType = SPECIAL_SEARCH_ENTRY_TYPE_DSE_ROOT;
 
-        dwError = pOp->pBEIF->pfnBESimpleIdToEntry(DSE_ROOT_ENTRY_ID, &dseRootEntry);
+        dwError = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*)&pEntry);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = pOp->pBEIF->pfnBESimpleIdToEntry(DSE_ROOT_ENTRY_ID, pEntry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
                 "%s Entry search failed.", pszEntryType[entryType]);
 
-        dwError = VmDirBuildComputedAttribute( pOp, &dseRootEntry );
+        dwError = VmDirBuildComputedAttribute( pOp, pEntry );
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
                 "%s Entry send failed.", pszEntryType[entryType]);
-
-        pEntry = &dseRootEntry;
     }
     else if (VmDirIsSearchForSchemaEntry( pOp ))
     {
@@ -111,31 +111,27 @@ VmDirHandleSpecialSearch(
         dwError = VmDirSendSearchEntry( pOp, pEntry );
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
                 "%s Entry send failed.", pszEntryType[entryType]);
+
+        if (pOp->request.searchReq.bStoreRsltInMem && pEntry->bSearchEntrySent)
+        {
+            pOp->internalSearchEntryArray.iSize = 1;
+            pOp->internalSearchEntryArray.pEntry = pEntry;
+            pEntry = NULL;
+        }
     }
 
 cleanup:
-
     if (bHasTxn)
     {
         pOp->pBEIF->pfnBETxnCommit(pOp->pBECtx);
     }
-
-    if (entryType == SPECIAL_SEARCH_ENTRY_TYPE_DSE_ROOT)
-    {
-        VmDirFreeEntryContent(&dseRootEntry);
-    }
-    else
-    {
-        VmDirFreeEntry(pEntry);
-    }
-
+    VmDirFreeEntry(pEntry);
     return bRetVal;
 
 error:
-
-    VmDirLog( LDAP_DEBUG_ANY, "VmDirHandleSpecialSearch: (%d)(%s)", dwError, VDIR_SAFE_STRING(pLdapResult->pszErrMsg) );
+    VmDirLog( LDAP_DEBUG_ANY, "VmDirHandleSpecialSearch: (%d)(%s)",
+            dwError, VDIR_SAFE_STRING(pLdapResult->pszErrMsg) );
     pLdapResult->errCode = dwError;
-
     goto cleanup;
 }
 

@@ -75,6 +75,11 @@ VmDirFreeAccessInfo(
     PVDIR_ACCESS_INFO pAccessInfo
     );
 
+void
+VmDirDeleteConnection(
+    VDIR_CONNECTION **  conn
+    );
+
 // controls.c
 void
 DeleteControls(

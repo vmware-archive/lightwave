@@ -89,8 +89,8 @@ VmDirToLDAPError(
             case  VMDIR_ERROR_ENTRY_NOT_FOUND:
             case  VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND:
             case  VMDIR_ERROR_BACKEND_PARENT_NOTFOUND:
-                    dwError = LDAP_NO_SUCH_OBJECT;
-                    break;
+                dwError = LDAP_NO_SUCH_OBJECT;
+                break;
 
             case VMDIR_ERROR_PASSWORD_POLICY_VIOLATION:
             case VMDIR_ERROR_INVALID_POLICY_DEFINITION:
@@ -134,9 +134,13 @@ VmDirToLDAPError(
                 dwError = LDAP_SASL_BIND_IN_PROGRESS;
                 break;
 
+            case VMDIR_ERROR_INVALID_REQUEST:
+                dwError = LDAP_PROTOCOL_ERROR;
+                break;
+
             default:
-            dwError = LDAP_OPERATIONS_ERROR;
-            break;
+                dwError = LDAP_OPERATIONS_ERROR;
+                break;
         }
     }
     else if ( NOT_LDAP_ERROR_SPACE( dwVmDirError ) )

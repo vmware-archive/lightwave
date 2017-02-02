@@ -199,7 +199,18 @@
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000" LEGACY_DEFAULT_LDAPS_PORT_STR "\000", \
         /*.pszValue       = */ NULL                              \
-    },                                                            \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_REST_LISTEN_PORT,   \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_STRING,   \
+        /*.RegDataType    = */ REG_SZ,                           \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 0,                                \
+        /*.dwDefault      = */ 0,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ DEFAULT_REST_PORT_STR,            \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
     {                                                            \
         /*.pszName        = */ VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC,  \
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
