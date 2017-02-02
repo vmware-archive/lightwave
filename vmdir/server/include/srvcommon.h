@@ -1518,6 +1518,14 @@ DWORD
 VmDirOpenVmAfdClientLib(
     VMDIR_LIB_HANDLE*   pplibHandle
     );
+
+DWORD
+VmDirKeySetGetKvno(
+    PBYTE pUpnKeys,
+    DWORD upnKeysLen,
+    DWORD *kvno
+);
+
 #ifdef __cplusplus
 }
 #endif

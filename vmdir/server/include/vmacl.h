@@ -258,6 +258,13 @@ VmDirAddAceToSecurityDescriptor(
     ACCESS_MASK amAccess
     );
 
+DWORD
+VmDirGetObjectSidFromEntry(
+    PVDIR_ENTRY pEntry,
+    PSTR* ppszObjectSid, /* Optional */
+    PSID* ppSid /* Optional */
+    );
+
 // security.c
 
 DWORD
