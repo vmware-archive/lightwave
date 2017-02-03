@@ -15,6 +15,39 @@
 
 
 #include "includes.h"
+#if 0
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <lber.h>
+#endif
+
+#define FDC           (1 << 31)
+#define DNC           (1 << 30)
+#define DNS           (1 << 29)
+
+#define UNK4          (1 << 15)
+#define UNK3          (1 << 14)
+#define UNK2          (1 << 13)
+#define WDC           (1 << 12)
+
+#define RODC          (1 << 11)
+#define NDNC          (1 << 10)
+#define GOOD_TIME_SRV (1 <<  9)
+#define WRITABLE      (1 <<  8)
+
+#define CLOSEST       (1 <<  7)
+#define TIME_SRV      (1 <<  6)
+#define KDC           (1 <<  5)
+#define DS            (1 <<  4)
+
+#define LDAP          (1 <<  3)
+#define GC            (1 <<  2)
+#define UNK1          (1 <<  1)
+#define PDC           (1 <<  0)
+
+#define DNS_NAME_COMPRESSION 0xC0
 
 static
 void
@@ -605,6 +638,208 @@ error:
     goto cleanup;
 }
 
+
+static int format_dns_name(unsigned char *buf, int off, char *forest)
+{
+    int i = 0;
+    unsigned char *pblen = NULL;
+
+    pblen = &buf[off++];
+    *pblen = 0;
+
+    /* Encode an empty string a 0 length */
+    if (!forest || strlen(forest) == 0)
+    {
+        *pblen = 0;
+        return off;
+    }
+
+    do
+    {
+        if (forest[i] == '.' || forest[i] == '\0')
+        {
+            if (forest[i] == '\0')
+            {
+                buf[off++] = forest[i];
+            }
+            else
+            {
+                pblen = &buf[off++];
+                *pblen = 0;
+            }
+        }
+        else
+        {
+            buf[off++] = forest[i];
+            (*pblen)++;
+        }
+    } while (forest[i++]);
+    return off;
+}
+
+int format_cldap_ping_response_msg(
+    int messageId,
+    char *forest,
+    char *domainName,
+    char *hostName,
+    char *user,
+    char *site,
+    char *clientSite,
+    unsigned char *GUID,
+    int GUID_len,
+    struct berval **ret_flatten)
+{
+    int sts = 0;
+    BerElement *ber = NULL;
+    struct berval *flatten = NULL;
+    int berror = 0;
+    unsigned int type = 23;
+    unsigned int flags = 0;
+    unsigned char buf[512];
+    char NetBiosBuf[15] = {0};
+    unsigned int version = 5;
+    unsigned short LMToken = 0xffff;
+    unsigned short NtToken = 0xffff;
+    unsigned char blen = 0;
+    unsigned char off_forest = 0;
+    unsigned char off_site = 0;
+    int off = 0;
+    int i = 0;
+
+    ber = ber_alloc_t(LBER_USE_DER);
+    if (!ber)
+    {
+        sts = -1;
+        goto error;
+    }
+
+    /*
+     * Pack "vals" list with data
+     */
+
+    /* type */
+    memcpy(&buf[off], &type, sizeof(type)); /* This value is supposed to be LE */
+    off += sizeof(type);
+
+    /* flags */
+    flags = PDC | GC | LDAP | DS | KDC | TIME_SRV | CLOSEST | WRITABLE | 
+            GOOD_TIME_SRV | WDC  | UNK2;
+    memcpy(&buf[off], &flags, sizeof(flags)); /* This value is supposed to be LE */
+    off += sizeof(flags);
+    
+    /* Domain GUID */
+    memcpy(&buf[off], GUID, GUID_len);   /* This value is supposed to be LE */
+    off += GUID_len;
+
+    /* Forest: pointer to length location of forest name component */
+    off_forest = off;
+
+    /* Location of the "Forest" string in this buffer */
+    off = format_dns_name(buf, off, forest);
+
+    /* Domain */
+    buf[off++] = DNS_NAME_COMPRESSION;
+    buf[off++] = off_forest;
+
+    /* Hostname */
+    off = format_dns_name(buf, off, hostName);
+    off--;  /* Destroy '\0' terminator added in this context */
+
+    /* hostname . domain */
+    buf[off++] = DNS_NAME_COMPRESSION;
+    buf[off++] = off_forest; 
+
+    /* NetBios Domain */
+    for (i=0, blen = 0; domainName[i] && i<15 && domainName[i] != '.'; i++, blen++)
+    {
+        NetBiosBuf[i] = toupper((int) domainName[i]);
+    }
+    NetBiosBuf[15] = '\0';
+    off = format_dns_name(buf, off, NetBiosBuf);
+
+    /* NetBios Hostname */
+    for (i=0, blen = 0; hostName[i] && i<15; i++, blen++)
+    {
+        NetBiosBuf[i] = toupper((int) hostName[i]);
+    }
+    NetBiosBuf[15] = '\0';
+    off = format_dns_name(buf, off, NetBiosBuf);
+
+    /* User */
+    off = format_dns_name(buf, off, user);
+
+    /* Site; is null terminated */
+    off_site = off;
+    off = format_dns_name(buf, off, site);
+
+    if (clientSite == NULL)
+    {
+        /* Client Site */
+        buf[off++] = DNS_NAME_COMPRESSION;
+        buf[off++] = off_site;
+    }
+    else
+    {
+        off = format_dns_name(buf, off, clientSite);
+    }
+
+    /* version; LE format */
+    memcpy(&buf[off], &version, sizeof(version));
+    off += sizeof(version);
+    
+    /* LM Token; LE format */
+    memcpy(&buf[off], &LMToken, sizeof(LMToken));
+    off += sizeof(LMToken);
+    
+    /* LM Token; LE format */
+    memcpy(&buf[off], &NtToken, sizeof(NtToken));
+    off += sizeof(NtToken);
+    
+    berror = ber_printf(ber,"{it{o{{o[o]}}}}",
+                        messageId, 
+                        0x64, /* tag 4; 6=Application/Constructed */
+                        "", (ber_len_t) 0, /* Empty string; 1st "o" */
+                        "netlogon", (ber_len_t) 8, /* 2nd "o" */
+                        buf, (ber_len_t)  off);  /* 3rd "o" */
+    if (berror == -1)
+    {
+        sts = -2;
+        goto error;
+    }
+                 
+    berror = ber_printf(ber,"{it{eoo}}",
+                        messageId,
+                        0x65, /* tag 5; 6=Application/Constructed */
+                        0, /* enumerated field */
+                        "", (ber_len_t) 0,
+                        "", (ber_len_t) 0);
+    if (berror == -1)
+    {
+        sts = -3;
+        goto error;
+    }
+
+    berror = ber_flatten(ber, &flatten);
+    if (berror == -1)
+    {
+        sts = -4;
+        goto error;
+    }
+    *ret_flatten = flatten; flatten = NULL;
+
+error:
+    if (ber)
+    {
+        ber_free(ber, 1);
+    }
+    if (flatten)
+    {
+        ber_bvfree(flatten);
+    }
+    return sts;
+}
+
+
 /*
  *  Process UDP message; CLDAP requests are only supported so far.
  */
@@ -616,22 +851,71 @@ ProcessUdpConnection(
 {
     PVDIR_CONNECTION_CTX pConnCtx = NULL;
     int            retVal = LDAP_SUCCESS;
+    ber_int_t messageId = 0;
+    struct berval *flatten = NULL;
+    struct berval in_ber_val = {0};
+    BerElement *in_ber = NULL;
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessUDPConnection called");
+    char *forest = "lightwave.local";
+    char DomainName[] = "lightwave.local";
+    char HostName[] = "photon-psc-adam";
+    char *user = "";
+    char *site = "Default-First-Site-Name";
+    unsigned char GUID[] = {
+        0x81, 0x2d, 0xe7, 0xdf, 0x97, 0x57, 0x4b, 0x40, 
+        0x95, 0x63, 0x88, 0xe8, 0xce, 0x1c, 0x39, 0x8f, };
+    DWORD dwCldapResponseLen = 0;
+    PVOID *pCldapResponse = NULL;
 
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessUdpConnection called");
     pConnCtx = (PVDIR_CONNECTION_CTX)pArg;
 
+    in_ber_val.bv_val = pConnCtx->udp_buf;
+    in_ber_val.bv_len = (ber_len_t) pConnCtx->udp_len;
+    in_ber = ber_init(&in_ber_val);
+
+    retVal = ber_scanf(in_ber, "{i", &messageId);
+    if (retVal == LBER_ERROR)
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessUdpConnection: ber_scanf failed!");
+        got error;
+    }
+
+    retVal = format_cldap_ping_response_msg(
+                messageId,
+                forest,
+                DomainName,
+                HostName,
+                user,
+                site,
+                NULL,
+                GUID,
+                sizeof(GUID),
+                &flatten);
+    if (retVal != 0)
+    {
+        goto error;
+    }
+    dwCldapResponseLen = flatten->bv_len; 
+    pCldapResponse = (void *)flatten->bv_val;
+    retVal = sendto(pConnCtx->sockFd,
+                pCldapResponse,
+                dwCldapResponseLen,
+                0,
+                pConnCtx->udp_addr_buf,
+                pConnCtx->udp_addr_len);
     BAIL_ON_VMDIR_ERROR(retVal);
-#if 0
-    sendto(pConnCtx->udp_buf,
-           pCldapResponse,
-           dwCldapResponseLen,
-           0,
-           pConnCtx->udp_addr_buf,
-           pConnCtx->udp_addr_len);
-#endif
+
 
 cleanup:
+    if (flatten)
+    {
+        ber_bvfree(flatten);
+    }
+    if (in_ber)
+    {
+        ber_free(in_ber, 1);
+    }
     VMDIR_SAFE_FREE_MEMORY(pConnCtx->udp_addr_buf);
     VMDIR_SAFE_FREE_MEMORY(pConnCtx->udp_buf);
     VMDIR_SAFE_FREE_MEMORY(pConnCtx);
