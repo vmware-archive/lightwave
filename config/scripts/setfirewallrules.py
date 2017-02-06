@@ -147,8 +147,13 @@ def main():
     for service in rules:
         if 'ip4_rules' in rules[service]:
             for ip4_rules in rules[service]['ip4_rules']:
-                cmd = [IPTABLES, '-I', dir_map[ip4_rules['direction']], '-p', ip4_rules['protocol'],
-                       '--dport', ip4_rules['port'], '-j', 'ACCEPT']
+                if 'port' in ip4_rules.keys():
+                    cmd = [IPTABLES, '-I', dir_map[ip4_rules['direction']],
+                           '-p', ip4_rules['protocol'], '--dport', ip4_rules['port'],
+                           '-j', 'ACCEPT']
+                else:
+                    cmd = [IPTABLES, '-I', dir_map[ip4_rules['direction']], '-p',
+                           ip4_rules['protocol'], '-j', 'ACCEPT']
                 (rc, stdout, stderr) = run_command(cmd)
                 if rc != 0:
                     syslog.syslog(syslog.LOG_ERR, "Error: Service " + service + " port " + ip4_rules['port'] +
