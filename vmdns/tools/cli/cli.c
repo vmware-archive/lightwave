@@ -174,6 +174,7 @@ VmDnsCliCreateZone(
     VMDNS_ZONE_INFO zoneInfo = { 0 };
     VMDNS_RECORD nsRecord = {0};
     VMDNS_RECORD addrRecord = {0};
+    PSTR pszTargetFQDN = NULL;
     int ret = 0;
     int af = AF_INET;
     unsigned char buf[sizeof(struct in6_addr)];
@@ -208,8 +209,13 @@ VmDnsCliCreateZone(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
+    dwError = VmDnsMakeFQDN(pContext->pszNSHost,
+                           pContext->pszZone,
+                           &pszTargetFQDN);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
     zoneInfo.pszName                = pContext->pszZone;
-    zoneInfo.pszPrimaryDnsSrvName   = pContext->pszNSHost;
+    zoneInfo.pszPrimaryDnsSrvName   = pszTargetFQDN;
     zoneInfo.pszRName               = pszMboxDomain ? pszMboxDomain : pContext->pszMboxDomain;
     zoneInfo.serial                 = 1;
     zoneInfo.refreshInterval        = VMDNS_DEFAULT_REFRESH_INTERVAL;
@@ -226,7 +232,7 @@ VmDnsCliCreateZone(
     if (!IsNullOrEmptyString(pContext->pszNSHost))
     {
         nsRecord.pszName = pContext->pszZone;
-        nsRecord.Data.NS.pNameHost = pContext->pszNSHost;
+        nsRecord.Data.NS.pNameHost = pszTargetFQDN;
         nsRecord.iClass   = VMDNS_CLASS_IN;
         nsRecord.pszName = pContext->pszZone;
         nsRecord.dwType    = VMDNS_RR_TYPE_NS;
@@ -242,9 +248,10 @@ VmDnsCliCreateZone(
     if (!IsNullOrEmptyString(pContext->pszNSHost) &&
         !IsNullOrEmptyString(pContext->pszNSIp) &&
         pContext->dwZoneType == VMDNS_ZONE_TYPE_FORWARD)
+
     {
         addrRecord.iClass   = VMDNS_CLASS_IN;
-        addrRecord.pszName  = pContext->pszNSHost;
+        addrRecord.pszName  = pszTargetFQDN;
         addrRecord.dwType   = VMDNS_RR_TYPE_A;
         addrRecord.dwTtl    = pContext->record.dwTtl;
 
@@ -626,9 +633,10 @@ VmDnsCliValidateAndCompleteRecord(
 
         case VMDNS_RR_TYPE_SRV:
             dwError = VmDnsAllocateStringPrintfA(&pContext->record.pszName,
-                                                "%s.%s",
+                                                "%s.%s.%s",
                                                 pContext->pszService,
-                                                pContext->pszProtocol);
+                                                pContext->pszProtocol,
+                                                pContext->pszZone);
             BAIL_ON_VMDNS_ERROR(dwError);
 
             break;
