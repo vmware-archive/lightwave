@@ -2,9 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="cdc-cli"
-	ProjectGUID="{BA01FACC-2AE1-483F-A226-3602BE9C84FF}"
-	RootNamespace="cdc-cli"
+	Name="libvmeventcommon"
+	ProjectGUID="{E3BF28A4-108F-4BA3-9F20-F07A4E0FD648}"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="0"
 	>
@@ -20,8 +19,8 @@
 			Name="Debug|x64"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="..\..\..\openssl.vsprops"
+			ConfigurationType="4"
+			InheritedPropertySheets="$(SolutionDir)\openssl.vsprops"
 			CharacterSet="1"
 			>
 			<Tool
@@ -38,12 +37,19 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
+				TargetEnvironment="3"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)include\win&quot;;&quot;$(SolutionDir)include\public&quot;;&quot;$(SolutionDir)include&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;PACKAGE_NAME"
+				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\..\common&quot;;&quot;$(ProjectDir)..\..\include\win&quot;;&quot;$(ProjectDir)..\..\include\public&quot;;&quot;$(ProjectDir)..\..\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -51,23 +57,16 @@
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib ws2_32.lib user32.lib Gdi32.lib libcommon.lib libvmafdclient.lib dcelib.lib pthreadVC2.lib"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
-				GenerateDebugInformation="true"
-				TargetMachine="17"
+				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\$(ProjectName).lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -77,9 +76,6 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -89,8 +85,8 @@
 			Name="Release|x64"
 			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
 			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
-			ConfigurationType="1"
-			InheritedPropertySheets="..\..\..\openssl.vsprops"
+			ConfigurationType="4"
+			InheritedPropertySheets="$(SolutionDir)\openssl.vsprops"
 			CharacterSet="1"
 			>
 			<Tool
@@ -107,36 +103,32 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
+				TargetEnvironment="3"
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="2"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(SolutionDir)include\win&quot;;&quot;$(SolutionDir)include\public&quot;;&quot;$(SolutionDir)include&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;PACKAGE_NAME"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\..\common&quot;;&quot;$(ProjectDir)..\..\include\win&quot;;&quot;$(ProjectDir)..\..\include\public&quot;;&quot;$(ProjectDir)..\..\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS"
 				RuntimeLibrary="2"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="false"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include&quot;"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib ws2_32.lib user32.lib Gdi32.lib libcommon.lib dcelib.lib pthreadVC2.lib libvmafdclient.lib"
-				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
-				GenerateDebugInformation="true"
-				TargetMachine="17"
+				Name="VCLibrarianTool"
 			/>
 			<Tool
 				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -146,9 +138,6 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -168,10 +157,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\prototypes.h"
-				>
-			</File>
-			<File
 				RelativePath="..\structs.h"
 				>
 			</File>
@@ -181,10 +166,6 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
-			<File
-				RelativePath=".\cdc-cli.rc"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Source Files"
@@ -192,11 +173,23 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\cli.c"
+				RelativePath=".\includes.c"
 				>
 			</File>
 			<File
-				RelativePath="..\main.c"
+				RelativePath="..\misc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\memory.c"
+				>
+			</File>
+			<File
+				RelativePath=".\string.c"
+				>
+			</File>
+			<File
+				RelativePath=".\utils.c"
 				>
 			</File>
 		</Filter>

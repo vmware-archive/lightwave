@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="cdc-cli"
-	ProjectGUID="{BA01FACC-2AE1-483F-A226-3602BE9C84FF}"
-	RootNamespace="cdc-cli"
+	Name="vecs-cli"
+	ProjectGUID="{EBBEEAD4-286E-47CA-8D0B-6DC37E1AB955}"
+	RootNamespace="vecs-cli"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="0"
 	>
@@ -182,7 +182,7 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
-				RelativePath=".\cdc-cli.rc"
+				RelativePath=".\vecs-cli.rc"
 				>
 			</File>
 		</Filter>
@@ -197,6 +197,10 @@
 			</File>
 			<File
 				RelativePath="..\main.c"
+				>
+			</File>
+			<File
+				RelativePath="..\utils.c"
 				>
 			</File>
 		</Filter>
