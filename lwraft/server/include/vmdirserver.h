@@ -200,6 +200,8 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwEnableRaftReferral;
     DWORD                           dwRaftElectionTimeoutMS;
     DWORD                           dwRaftPingIntervalMS;
+    //Raft logs to keep in 1000
+    DWORD                           dwRaftKeeplogs;
 } VMDIR_GLOBALS, *PVMDIR_GLOBALSS;
 
 extern VMDIR_GLOBALS gVmdirGlobals;

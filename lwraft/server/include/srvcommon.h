@@ -581,6 +581,7 @@ typedef struct _VDIR_OPERATION
     PSTR                pszFilters; // filter candidates' size recorded in string
 
     DWORD               dwSentEntries; // number of entries sent back to client
+    BOOLEAN             bSuppressLogInfo;
 } VDIR_OPERATION, *PVDIR_OPERATION;
 
 typedef struct _VDIR_THREAD_INFO

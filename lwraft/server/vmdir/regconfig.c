@@ -261,6 +261,12 @@ VmDirSrvUpdateConfig(
                     TRUE))
        {
            gVmdirGlobals.dwRaftElectionTimeoutMS = pEntry->dwValue;
+       } else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_RAFT_KEEP_LOGS,
+                    TRUE))
+       {
+           gVmdirGlobals.dwRaftKeeplogs = pEntry->dwValue;
        }
     }
 

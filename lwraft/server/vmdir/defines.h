@@ -154,6 +154,7 @@
 #define VMDIR_REG_KEY_ENABLE_RAFT_REFERRAL    "EnableRaftReferral"
 #define VMDIR_REG_KEY_RAFT_ELECTION_TIMEOUT   "RaftElectionTimeoutMS"
 #define VMDIR_REG_KEY_RAFT_PING_INTERVAL      "RaftPingIntervalMS"
+#define VMDIR_REG_KEY_RAFT_KEEP_LOGS          "RaftKeepLogsInK"
 
 #define VMDIR_CONFIG_INIT_TABLE_INITIALIZER                      \
 {                                                                \
@@ -360,7 +361,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 200,                              \
         /*.dwMax          = */ 90000,                            \
-        /*.dwDefault      = */ 2100,                             \
+        /*.dwDefault      = */ 20000,                             \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
@@ -371,7 +372,18 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 100,                              \
         /*.dwMax          = */ 30000,                            \
-        /*.dwDefault      = */ 1000,                                \
+        /*.dwDefault      = */ 7000,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_RAFT_KEEP_LOGS,     \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 50,                               \
+        /*.dwMax          = */ 10000,                            \
+        /*.dwDefault      = */ 100,                                \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \

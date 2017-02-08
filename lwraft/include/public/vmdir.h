@@ -346,6 +346,7 @@ extern "C" {
 #define ATTR_RAFT_LOGINDEX                  "vmwRaftLogindex"
 #define ATTR_RAFT_TERM                      "vmwRaftTerm"
 #define ATTR_RAFT_LAST_APPLIED              "vmwRaftLastApplied"
+#define ATTR_RAFT_FIRST_LOGINDEX            "vmwRaftFirstLogindex"
 #define ATTR_RAFT_VOTEDFOR_TERM             "vmwRaftVotedForTerm"
 #define ATTR_RAFT_VOTEDFOR                  "vmwRaftVotedFor"
 #define ATTR_RAFT_LOG_ENTRIES               "vmwRaftLogEntries"

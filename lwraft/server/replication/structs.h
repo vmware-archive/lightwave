@@ -176,6 +176,9 @@ typedef struct _VDIR_RAFT_STAT
     UINT64 commitIndex; //the highest log entry index known to be commited
     UINT32 commitIndexTerm; //the term associated with commitIndex
     UINT64 lastLogIndex; //the log entry index with the highest index.
+    UINT64 firstLogIndex; //the first log entry index
+    unsigned long long indexToApply; //log index that the log application thread can apply.
+    int opCounts; //number of logs created, as a Raft leader, since last logs compaction.
     UINT32 lastLogTerm;  //the term associated with lastLogIndex
     VDIR_BERVALUE leader; //leader's hostname for referal
     BOOLEAN disallowUpdates; //disallow external LDAP add/modify/delete; momently for newly elected leader.
@@ -191,36 +194,7 @@ typedef struct _VDIR_RAFT_STAT
 #define WAIT_PEERS_READY_MS 3000
 
 //Wait time in sec for majority of requestVote, appendEntries or ping to be received from peers.
-#define WAIT_CONSENSUS_TIMEOUT_MS 2000
+#define WAIT_CONSENSUS_TIMEOUT_MS 8000
 
 //reelection wait random time in miliseconds (0 ~ 310) on top of a base number (150) - use a prime number for modulus op.
 #define WAIT_REELECTION_RAND_MS 311
-
-extern VDIR_RAFT_STATE gRaftState;
-extern DWORD VmDirSchemaEntryPreAdd(PVDIR_OPERATION, PVDIR_ENTRY);
-
-BOOLEAN _VmDirRaftPeerIsReady(PCSTR pPeerHostName);
-DWORD VmDirInitRaftPsState(VOID);
-DWORD _VmDirLoadRaftState(VOID);
-DWORD _VmDirUpdateRaftPsState(int term, BOOLEAN updateVotedForTerm, UINT32 votedForTerm, PVDIR_BERVALUE pVotedFor, UINT64 lastApplied);
-DWORD VmDirAddRaftEntry(PVDIR_SCHEMA_CTX pSchemaCtx, PVDIR_RAFT_LOG pLogEntry, PVDIR_OPERATION pOp);
-DWORD _VmDirLogLookup(unsigned long long logIndex, UINT32 logTerm, BOOLEAN *pbLogFound, BOOLEAN *pbTermMatch);
-DWORD _VmDirDeleteAllLogs(unsigned long long startLogIndex);
-DWORD _VmDirPersistLog(PVDIR_RAFT_LOG pLogEntry);
-DWORD _VmDirFetchLogEntry(unsigned long long logIndex, PVDIR_RAFT_LOG pLogEntry, int);
-DWORD _VmdirDeleteLog(PSTR pDn);
-DWORD _VmDirGetPrevLogArgs(unsigned long long*, UINT32*, UINT64, int);
-DWORD _VmDirGetNextLog(UINT64, UINT64, PVDIR_RAFT_LOG, int);
-VOID _VmDirClearProxyLogReplicatedInLock();
-DWORD _VmDirGetAppendEntriesConsensusCountInLock();
-DWORD _VmDirPeersConnectedInLock();
-DWORD _VmDirPeersIdleInLock();
-DWORD _VmDirPackLogEntry(PVDIR_RAFT_LOG pLogEntry);
-DWORD _VmDirUnpackLogEntry(PVDIR_RAFT_LOG pLogEntry);
-VOID _VmDirEncodeUINT32(unsigned char ** ppbuf, UINT32 value);
-UINT32 _VmDirDecodeUINT32(unsigned char ** ppbuf);
-VOID _VmDirEncodeUINT64(unsigned char ** ppbuf, UINT64 value);
-UINT64 _VmDirDecodeUINT64(unsigned char ** ppbuf);
-VOID _VmDirChgLogFree( PVDIR_RAFT_LOG chgLog);
-DWORD _VmDirGetLogTerm(UINT64 index, UINT32 *term);
-DWORD _VmDirRaftLoadGlobals(PSTR *);
