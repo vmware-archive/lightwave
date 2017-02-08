@@ -400,42 +400,5 @@ error:
     return dwError;
 }
 
-
-DWORD
-VmDnsStringToLower(
-    PCSTR pszSrcStr,
-    PSTR *pszDstStr
-    )
-{
-    DWORD dwError = 0;
-    DWORD dwSrcStrLen = 0;
-    PSTR  pszToLowerStr = NULL;
-    DWORD index = 0;
-
-    if (IsNullOrEmptyString(pszSrcStr))
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
-
-    dwSrcStrLen = strlen (pszSrcStr);
-
-    dwError = VmDnsAllocateMemory (dwSrcStrLen, (VOID *) &pszToLowerStr);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    for (; index < dwSrcStrLen; index++)
-    {
-        pszToLowerStr [index] = tolower(pszSrcStr [index]);
-    }
-    *pszDstStr = pszToLowerStr;
-    pszToLowerStr = NULL;
-cleanup:
-    return dwError;
-error:
-     VMDNS_SAFE_FREE_MEMORY(pszToLowerStr);
-     goto cleanup;
-}
-
-
 #endif //#ifndef _WIN32
 
