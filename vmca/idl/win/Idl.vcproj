@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioProject
+	ProjectType="Visual C++"
+	Version="9.00"
+	Name="Idl"
+	ProjectGUID="{446DAC92-7F09-4412-A252-A73E83E916C1}"
+	RootNamespace="Idl"
+	Keyword="Win32Proj"
+	TargetFrameworkVersion="196613"
+	>
+	<Platforms>
+		<Platform
+			Name="x64"
+		/>
+	</Platforms>
+	<ToolFiles>
+	</ToolFiles>
+	<Configurations>
+		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\"
+			ConfigurationType="10"
+			InheritedPropertySheets="..\..\VmcaVS2008CommonProp.vsprops"
+			CharacterSet="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+				CommandLine="set MAKEFLAGS= &amp;&amp; cd .. &amp;&amp;  if exist ..\client\win\$(IntDir)\vmafd_stub.obj  ( nmake  /f makefile.x64 &quot;ConfigurationName = $(ConfigurationName)&quot; ) else ( nmake  /f makefile.x64 &quot;ConfigurationName = $(ConfigurationName)&quot; clean &amp;&amp; nmake /f makefile.x64 &quot;ConfigurationName = $(ConfigurationName)&quot; )"
+				ExcludedFromBuild="false"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				WarnAsError="true"
+				TargetEnvironment="3"
+				OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+				DLLDataFileName=""
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)\"
+			ConfigurationType="10"
+			InheritedPropertySheets="..\..\VmcaVS2008CommonProp.vsprops"
+			CharacterSet="1"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+				CommandLine="set MAKEFLAGS= &amp;&amp; cd .. &amp;&amp;  if exist ..\client\win\$(IntDir)\vmafd_stub.obj  ( nmake  /f makefile.x64 &quot;ConfigurationName = $(ConfigurationName)&quot; ) else ( nmake  /f makefile.x64 &quot;ConfigurationName = $(ConfigurationName)&quot; clean &amp;&amp; nmake /f makefile.x64 &quot;ConfigurationName = $(ConfigurationName)&quot; )"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				WarnAsError="true"
+				TargetEnvironment="3"
+				OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+				DLLDataFileName=""
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+	</Configurations>
+	<References>
+	</References>
+	<Files>
+		<Filter
+			Name="Source Files"
+			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
+			>
+		</Filter>
+		<Filter
+			Name="Header Files"
+			Filter="h;hpp;hxx;hm;inl;inc;xsd"
+			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
+			>
+		</Filter>
+		<Filter
+			Name="Resource Files"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
+			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
+			>
+		</Filter>
+	</Files>
+	<Globals>
+	</Globals>
+</VisualStudioProject>
