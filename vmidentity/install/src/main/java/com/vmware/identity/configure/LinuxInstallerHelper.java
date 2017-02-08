@@ -40,7 +40,7 @@ public class LinuxInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String getSecureTokenServiceLogFile() {
+    public String getIDMServiceLogFile() {
         return "/tmp/vmware-sts-idmd.log";
     }
 
@@ -49,6 +49,17 @@ public class LinuxInstallerHelper implements InstallerHelper {
         // TODO Auto-generated method stub
         return null;
     }
+
+  /**
+  * IDM service (dummy) EXISTS ONLY IN VSPHERE context. This was created only for the purpose of 
+  * backward compatibility such that VCHA will address in their code base to remove IDM service. 
+  * LIGHTWAVE is totally independent of these thick dependencies, Hence, we avoid this service.
+  **/
+   @Override
+   public String[] getIDMServiceStartCommand() {
+        return new String[] { "/etc/init.d/vmware-sts-idmd", "restart" };
+    }
+
 
     @Override
     public String[] getSTSServiceStartCommand() throws SecureTokenServerInstallerException {

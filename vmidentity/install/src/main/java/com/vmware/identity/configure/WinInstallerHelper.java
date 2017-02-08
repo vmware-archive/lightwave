@@ -15,6 +15,7 @@ import java.nio.file.attribute.AclEntryType;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.UserPrincipal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -50,13 +51,18 @@ public class WinInstallerHelper implements InstallerHelper {
     }
 
     @Override
+    public String[] getIDMServiceStartCommand() {
+        return new String[] { "sc", "start", "VMwareIdentityMgmtService" };
+    }
+
+    @Override
     public String getLogPaths() {
         return getConfiguredPath(VMIDM_ROOT_KEY, LOGS_PATH);
     }
 
     @Override
-    public String getSecureTokenServiceLogFile() {
-        return joinPath(getLogPaths(), "VMwareSecureTokenService.log");
+    public String getIDMServiceLogFile() {
+        return joinPath(getLogPaths(), "VMwareIdentityMgmtService.log");
     }
 
     @Override
@@ -66,7 +72,7 @@ public class WinInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String getTCBase() throws SecureTokenServerInstallerException  {
+    public String getTCBase() throws SecureTokenServerInstallerException {
         String runTimeFolder = System.getenv("VMWARE_RUNTIME_DATA_DIR");
         if (runTimeFolder == null) {
             String tcRoot = joinPath(System.getenv("ProgramData"),
@@ -98,7 +104,79 @@ public class WinInstallerHelper implements InstallerHelper {
 
     @Override
     public void configRegistry() {
-        // no OP on the Windows side.
+        IRegistryAdapter registryAdapter = RegistryAdapterFactory.getInstance()
+                .getRegistryAdapter();
+        IRegistryKey rootKey = registryAdapter
+                .openRootKey((int) RegKeyAccess.KEY_ALL_ACCESS);
+
+        IRegistryKey idmKey;
+        String subkey = String
+                .format("SOFTWARE\\Wow6432Node\\Apache Software Foundation\\Procrun 2.0\\%s\\Parameters",
+                        getIDMServiceName());
+
+        boolean exists = registryAdapter.doesKeyExist(rootKey, subkey);
+
+        if (exists) {
+            idmKey = registryAdapter.openKey(rootKey, subkey, 0,
+                    (int) RegKeyAccess.KEY_ALL_ACCESS);
+        } else {
+            idmKey = registryAdapter.createKey(rootKey, subkey, null,
+                    (int) RegKeyAccess.KEY_ALL_ACCESS);
+        }
+
+        String identityInstallPath = getVMIdentityInstallPath();
+        String identityInstallPathCommonLib = InstallerUtils.joinPath(
+                getSSOHomePath(), "commonlib");
+        // Add Java key
+        String javaHomePath = getJavaHomePath();
+        IRegistryKey keyJava = registryAdapter.createKey(idmKey, "Java", null,
+                (int) RegKeyAccess.KEY_ALL_ACCESS);
+        registryAdapter.setStringValue(keyJava, "ClassPath", String
+                .format("%s\\lib\\*;%s\\lib\\ext\\*;%s\\*;%s\\*", javaHomePath,
+                        javaHomePath, identityInstallPath,
+                        identityInstallPathCommonLib));
+        registryAdapter.setStringValue(keyJava, "JavaHome",
+                String.format("%s\\", javaHomePath));
+        registryAdapter.setStringValue(keyJava, "Jvm",
+                String.format("%s\\bin\\server\\jvm.dll", javaHomePath));
+
+        // Define options for 'Java' key
+        Collection<String> options = new ArrayList<String>();
+        options.add(String.format(
+                "-Dvmware.log.dir=%s",
+                getLogPaths()));
+        options.add(String.format(
+                "-Djava.security.policy=%s\\server_policy.txt",
+                identityInstallPath));
+        options.add(String.format(
+                "-Dlog4j.configurationFile=file:%s\\log4j2.xml",
+                identityInstallPath));
+        options.add("-Xmx160m");
+        options.add("-XX:MaxPermSize=160m");
+
+        options.add(String.format("-XX:ErrorFile=%s", getLogPaths()));
+        registryAdapter.setMultiStringValue(keyJava, "Options", options);
+
+        // Add 'Log' key
+        IRegistryKey keyLog = registryAdapter.createKey(idmKey, "Log", null,
+                (int) RegKeyAccess.KEY_ALL_ACCESS);
+        registryAdapter.setStringValue(keyLog, "Path", getLogPaths());
+
+        // Add 'Start' key
+        IRegistryKey keyStart = registryAdapter.createKey(idmKey, "Start",
+                null, (int) RegKeyAccess.KEY_ALL_ACCESS);
+        registryAdapter.setStringValue(keyStart, "Mode", "jvm");
+        registryAdapter.setStringValue(keyStart, "Class",
+                "com.vmware.identity.idm.server.IdmServer");
+        registryAdapter.setStringValue(keyStart, "Method", "startserver");
+
+        // Add 'Stop' key
+        IRegistryKey keyStop = registryAdapter.createKey(idmKey, "Stop", null,
+                (int) RegKeyAccess.KEY_ALL_ACCESS);
+        registryAdapter.setStringValue(keyStop, "Mode", "jvm");
+        registryAdapter.setStringValue(keyStop, "Class",
+                "com.vmware.identity.idm.server.IdmServer");
+        registryAdapter.setStringValue(keyStop, "Method", "stopserver");
     }
 
     @Override
@@ -134,7 +212,7 @@ public class WinInstallerHelper implements InstallerHelper {
     }
 
     @Override
-    public String getVmcaSvcChkCommand(String hostname) throws SecureTokenServerInstallerException {
+    public String getVmcaSvcChkCommand(String hostname) throws SecureTokenServerInstallerException{
         if (hostname != null && !hostname.isEmpty()) {
             return getCertoolPath() + " --WaitVMCA --server=" + hostname
                     + " --wait=10";
@@ -190,6 +268,10 @@ public class WinInstallerHelper implements InstallerHelper {
         aclView.setAcl(securityDesc);
     }
 
+    private String getIDMServiceName() {
+        return "VMwareIdentityMgmtService";
+    }
+
     @Override
     public String getSSOHomePath() {
         return joinPath(getInstallFolder(), "vmware-sso");
@@ -209,7 +291,6 @@ public class WinInstallerHelper implements InstallerHelper {
         return joinPath(readRegEdit(VMIDM_ROOT_KEY, CONFIG_PATH),"keys");
     }
 
-    @Override
     public String getConfigDirectoryRootKey() {
         return "System\\CurrentControlset\\Services\\VMwareDirectoryService";
     }

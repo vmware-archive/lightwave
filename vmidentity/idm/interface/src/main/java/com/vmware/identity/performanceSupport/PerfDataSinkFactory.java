@@ -15,9 +15,7 @@
  */
 package com.vmware.identity.performanceSupport;
 
-
 public class PerfDataSinkFactory {
-
     private static final int reportHitCount = 100; // Trigger report by number of entries
     private static final int reportInterval = 5; // Trigger report by time interval in minutes
     private static IPerfDataSink perfDataSink;
@@ -31,7 +29,6 @@ public class PerfDataSinkFactory {
         if (perfDataSink == null) {
             perfDataSink = new PerfDataSink(reportHitCount, reportInterval);
         }
-
         return perfDataSink;
     }
 }
