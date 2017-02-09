@@ -10,7 +10,7 @@
     doc = ""
 }
 "Arguments" = {
-    default = "@VMAFD_SBIN_DIR@/vmafdd -s"
+    default = "@VMAFD_SBIN_DIR@/vmafdd -s -l -4"
     doc = ""
 }
 "Environment" = {
