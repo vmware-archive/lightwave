@@ -7,13 +7,13 @@
 #ifdef VERSION_MAJOR
 #define PROD_MAJOR VERSION_MAJOR
 #else
-#define PROD_MAJOR 5
+#define PROD_MAJOR 6
 #endif
 
 #ifdef VERSION_MINOR
 #define PROD_MINOR VERSION_MINOR
 #else
-#define PROD_MINOR 9
+#define PROD_MINOR 6
 #endif
 
 #ifdef VERSION_MAINT
@@ -22,13 +22,13 @@
 #define FILE_MAJOR 0
 #endif
 
-#if !defined(BUILD_NUMBER) || (BUILD_NUMBER_X == 1)
+#if !defined(BUILD_NUMBER)
 #define FILE_MINOR 1
 #else
 #define FILE_MINOR BUILD_NUMBER
 #endif
 
-#if !defined(PRODUCT_BUILD_NUMBER) || (PRODUCT_BUILD_NUMBER_X == 1)
+#if !defined(PRODUCT_BUILD_NUMBER)
 #define PRODUCT_FILE_MINOR 1
 #else
 #define PRODUCT_FILE_MINOR PRODUCT_BUILD_NUMBER
