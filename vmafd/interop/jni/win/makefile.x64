@@ -11,8 +11,8 @@ JARDIR=..\..\..\..\build\authentication-framework\packages\vmware-endpoint-certi
 all: vecsjni.h
 
 vecsjni.h: $(JARDIR)
-    @echo $(JAVAH) -o ..\vecsjni.h -classpath $(JARDIR) $(CLASSNAME)
-    $(JAVAH) -o ..\vecsjni.h -classpath $(JARDIR) $(CLASSNAME)
+	@echo $(JAVAH) -o ..\vecsjni.h -classpath $(JARDIR) $(CLASSNAME)
+	$(JAVAH) -o ..\vecsjni.h -classpath $(JARDIR) $(CLASSNAME)
 
 clean:
-    -del /f ..\vecsjni.h
+	-del /f ..\vecsjni.h

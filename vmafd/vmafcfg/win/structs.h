@@ -12,9 +12,16 @@
  * under the License.
  */
 
-#include "includes.h"
-
-
-VOID InitializeGlobals()
+typedef struct _VMAF_CFG_CONNECTION
 {
-}
+    LONG   refCount;
+
+} VMAF_CFG_CONNECTION;
+
+typedef struct _VMAF_CFG_KEY
+{
+    PVMAF_CFG_CONNECTION pConnection;
+
+    HKEY hKey;
+
+} VMAF_CFG_KEY;

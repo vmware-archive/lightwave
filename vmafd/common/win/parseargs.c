@@ -14,8 +14,10 @@
 
 #include "includes.h"
 
+#ifdef _WIN32
+
 BOOLEAN
-EventLogIsCmdLineOption(
+VmAfdIsCmdLineOption(
     char* arg
 )
 {
@@ -24,37 +26,54 @@ EventLogIsCmdLineOption(
            ( arg[0] == '-' );
 }
 
+VOID
+VmAfdGetCmdLineOption(
+    int argc,
+    PSTR argv[],
+    int* pCurrentIndex,
+    PCSTR* ppszOptionValue
+)
+{
+    if ( (*pCurrentIndex + 1 < argc)
+         &&
+         ( VmAfdIsCmdLineOption(argv[*pCurrentIndex + 1]) == FALSE) )
+    {
+        *pCurrentIndex = *pCurrentIndex + 1;
+        if ( ppszOptionValue != NULL )
+        {
+            *ppszOptionValue = argv[*pCurrentIndex];
+        }
+    }
+    else
+    {
+        if ( ppszOptionValue != NULL )
+        {
+            *ppszOptionValue = NULL;
+        }
+    }
+}
+
 DWORD
-EventLogParseArgs(
-    int         argc,
-    char*       argv[],
-    PBOOLEAN    pbConsoleMode
-    )
+VmAfdGetCmdLineIntOption(
+    int argc,
+    PSTR argv[],
+    int* pCurrentIndex,
+    int* pValue
+)
 {
     DWORD dwError = ERROR_SUCCESS;
-    int i = 1; // first arg is the <name of exe>.exe
+    PCSTR pOptValStr = NULL;
 
-    while( i < argc )
+    VmAfdGetCmdLineOption( argc, argv, pCurrentIndex, &pOptValStr );
+    if ( ( pOptValStr != NULL ) && (pValue != NULL) )
     {
-        if( EventLogIsCmdLineOption( argv[i] ) != FALSE )
+        *pValue = atoi(pOptValStr);
+        if ( ( errno == EINVAL )  || (errno == ERANGE) )
         {
-            if ( EventLogStringCompareA(
-                            VMEVENT_OPTION_ENABLE_CONSOLE, argv[i], TRUE ) == 0 )
-            {
-                if ( pbConsoleMode != NULL )
-                {
-                    *pbConsoleMode = TRUE;
-                }
-            }
-            else
-            {
-                dwError = ERROR_INVALID_PARAMETER;
-                BAIL_ON_VMEVENT_ERROR(dwError);
-            }
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMAFD_ERROR(dwError);
         }
-
-        i++;
-    } // while
+    }
 
 error:
 
@@ -62,7 +81,7 @@ error:
 }
 
 DWORD
-EventLogAllocateArgsAFromArgsW(
+VmAfdAllocateArgsAFromArgsW(
     int argc,
     WCHAR* argv[],
     PSTR** argvA
@@ -74,22 +93,22 @@ EventLogAllocateArgsAFromArgsW(
     if ( argvA == NULL )
     {
         dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMEVENT_ERROR(dwError);
+        BAIL_ON_VMAFD_ERROR(dwError);
     }
     *argvA = NULL;
 
     if ( (argc > 0) && ( argv != NULL ) )
     {
         int i = 0;
-        dwError = EventLogAllocateMemory(
+        dwError = VmAfdAllocateMemory(
             argc*sizeof(char*), (PVOID*)(&retArgV) );
-        BAIL_ON_VMEVENT_ERROR(dwError);
+        BAIL_ON_VMAFD_ERROR(dwError);
         for(i = 0; i < argc; i++)
         {
             if( IsNullOrEmptyString( argv[i] ) == FALSE )
             {
-                dwError = EventLogAllocateStringAFromW( argv[i], (retArgV + i));
-                BAIL_ON_VMEVENT_ERROR(dwError);
+                dwError = VmAfdAllocateStringAFromW( argv[i], (retArgV + i));
+                BAIL_ON_VMAFD_ERROR(dwError);
             }
             else
             {
@@ -103,14 +122,14 @@ EventLogAllocateArgsAFromArgsW(
 
 error:
 
-    EventLogDeallocateArgsA( argc, retArgV );
+    VmAfdDeallocateArgsA( argc, retArgV );
     retArgV = NULL;
 
     return dwError;
 }
 
 VOID
-EventLogDeallocateArgsA(
+VmAfdDeallocateArgsA(
     int argc,
     PSTR argv[]
 )
@@ -122,10 +141,12 @@ EventLogDeallocateArgsA(
         {
             if(argv[i] != NULL)
             {
-                EventLogFreeStringA( argv[i] );
+                VmAfdFreeStringA( argv[i] );
                 argv[i] = NULL;
             }
         }
-        EventLogFreeMemory( argv );
+        VmAfdFreeMemory( argv );
     }
 }
+
+#endif

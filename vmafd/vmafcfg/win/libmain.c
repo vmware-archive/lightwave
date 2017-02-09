@@ -14,7 +14,22 @@
 
 #include "includes.h"
 
-
-VOID InitializeGlobals()
+DWORD
+VmAfWinCreateConfigPackage(
+    PVMAF_CFG_PACKAGE* ppPackage
+    )
 {
+	DWORD dwError = 0;
+
+	*ppPackage = gpVmAfWinCfgApiTable;
+
+	return dwError;
+}
+
+DWORD
+VmAfWinFreeConfigPackage(
+    PVMAF_CFG_PACKAGE pPackage
+    )
+{
+	return ERROR_SUCCESS;
 }

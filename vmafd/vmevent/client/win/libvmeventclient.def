@@ -1,0 +1,6 @@
+LIBRARY "libvmeventclient"
+
+EXPORTS
+	EventLogAdd
+	EventLogInitEnumEventsHandle
+	EventLogEnumEvents

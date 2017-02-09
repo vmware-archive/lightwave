@@ -12,9 +12,4 @@
  * under the License.
  */
 
-#include "includes.h"
-
-
-VOID InitializeGlobals()
-{
-}
+extern PVMAF_CFG_PACKAGE gpVmAfWinCfgApiTable;

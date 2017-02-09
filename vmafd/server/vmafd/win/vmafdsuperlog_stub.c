@@ -13,8 +13,4 @@
  */
 
 #include "includes.h"
-
-
-VOID InitializeGlobals()
-{
-}
+#include "./vmafdsuperlog_s.c "
