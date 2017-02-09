@@ -79,7 +79,6 @@ _VmDirLoadSecurityDescriptorForEntry(
         //
         if (dwError == ERROR_NO_SECURITY_DESCRIPTOR)
         {
-            VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "No SD found for %s", pEntry->dn.lberbv.bv_val);
             dwError = 0;
         }
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -119,7 +118,7 @@ _VmDirLogFailedAccessCheck(
                                         OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION | SACL_SECURITY_INFORMATION));
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_ERROR(
+    VMDIR_LOG_WARNING(
         VMDIR_LOG_MASK_ALL,
         "Caller (%s/%s) failed to get 0x%x permission to %s. Legacy mode is %s. Object's SD: %s",
         pAccessInfo->pszNormBindedDn,
@@ -271,7 +270,18 @@ cleanup:
     return dwError;
 
 error:
-    _VmDirLogFailedAccessCheck(pAccessInfo, pEntry, accessDesired);
+    //
+    // VMDIR_RIGHT_DS_DELETE_OBJECT is a new permission that works in
+    // conjunction with VMDIR_RIGHT_DS_DELETE_CHILD to control the deleting
+    // of objects. Thus, it's not necessarily interesting that the client
+    // doesn't have this right: We'll try again to delete the object using
+    // the latter permission (and if *that* fails then we'll log appropriately
+    // here).
+    //
+    if (accessDesired != VMDIR_RIGHT_DS_DELETE_OBJECT)
+    {
+        _VmDirLogFailedAccessCheck(pAccessInfo, pEntry, accessDesired);
+    }
     goto cleanup;
 }
 
