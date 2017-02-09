@@ -280,6 +280,28 @@ VmDirKrbRealmNameNormalize(
     );
 
 #ifdef VMDIR_ENABLE_PAC
+/*
+ * Incomplete types needed for below prototypes
+ */
+typedef struct _KERB_VALIDATION_INFO KERB_VALIDATION_INFO;
+typedef struct _VMDIR_AUTHZ_INFO VMDIR_AUTHZ_INFO;
+
+#ifdef WINJOIN_CHECK_ENABLED
+/* use ms-pac format */
+
+DWORD
+VmDirKrbGetKerbValidationInfo(
+    PCSTR pszUpnName,
+    KERB_VALIDATION_INFO** ppInfo
+    );
+
+VOID
+VmDirKrbFreeKerbValidationInfo(
+    KERB_VALIDATION_INFO* pInfo
+    );
+#else
+/* use vmdir-pac format */
+
 DWORD
 VmDirKrbGetAuthzInfo(
     PCSTR pszUpnName,

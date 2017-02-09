@@ -2,6 +2,16 @@ sbin_PROGRAMS = vmdird
 
 idl_srcdir=$(top_srcdir)/vmdir/idl
 
+if MSPAC_SUPPORT
+    PAC_SRC = krb-mspac.c ms_pac_cstub.c
+    BUILT_SOURCES_PAC = ms_pac_h.h
+    CLEAN_PAC = ms_pac_h.h ms_pac_cstub.c
+else
+    PAC_SRC = krb.c vmdir_pac_cstub.c
+    BUILT_SOURCES_PAC = vmdir_pac_h.h
+    CLEAN_PAC = vmdir_pac_h.h vmdir_pac_cstub.c
+endif
+
 vmdird_SOURCES = \
     accountmgmt.c \
     auth.c \
@@ -34,6 +44,7 @@ vmdird_SOURCES = \
     tombstone.c \
     tracklastlogin.c \
     utils.c \
+    $(PAC_SRC) \
     vmdir_sstub.c \
     vmdirftp_sstub.c \
     vmdirdbcp_sstub.c \
@@ -124,9 +135,10 @@ CLEANFILES = \
     srp_verifier_sstub.c \
     vmdirsuperlog_h.h \
     vmdirsuperlog_cstub.c \
-    vmdirsuperlog_sstrub.c
+    vmdirsuperlog_sstrub.c \
+    $(CLEAN_PAC)
 
-BUILT_SOURCES = vmdir_h.h vmdirftp_h.h vmdirdbcp_h.h srp_verifier_h.h vmdirsuperlog_h.h
+BUILT_SOURCES = vmdir_h.h vmdirftp_h.h vmdirdbcp_h.h srp_verifier_h.h vmdirsuperlog_h.h $(BUILT_SOURCES_PAC)
 
 vmdir_h.h vmdir_sstub.c: $(idl_srcdir)/vmdir.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header vmdir_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<
@@ -141,4 +153,12 @@ srp_verifier_h.h srp_verifier_sstub.c: $(idl_srcdir)/srp_verifier.idl
 	$(IDL) $(IDLFLAGS) -keep c_source -header srp_verifier_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) $<
 
 vmdirsuperlog_h.h vmdirsuperlog_sstub.c: $(idl_srcdir)/vmdirsuperlog.idl
-	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirsuperlog_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/vmdir/include/public $<
+	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirsuperlog_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/include/public $<
+
+if MSPAC_SUPPORT
+ms_pac_cstub.c ms_pac_h.h: $(idl_srcdir)/ms_pac.idl $(idl_srcdir)/ms_pac.acf $(idl_srcdir)/ms_pac_type.h
+	$(IDL) $(IDLFLAGS) -keep c_source -header ms_pac_h.h -I$(idl_srcdir) $<
+else
+vmdir_pac_cstub.c vmdir_pac_h.h: $(idl_srcdir)/vmdir_pac.idl $(idl_srcdir)/vmdir_pac.acf $(idl_srcdir)/vmdir_pac_type.h
+	$(IDL) $(IDLFLAGS) -keep c_source -header vmdir_pac_h.h -I$(idl_srcdir) $<
+endif

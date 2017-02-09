@@ -1,0 +1,5 @@
+interface vmdir_ms_pac
+{
+    [encode] VmKdcNdrEncodeLogonInfo();
+    [decode] VmKdcNdrDecodeLogonInfo();
+}

@@ -2,7 +2,11 @@
 
 unsigned32
 VmKdcEncodeAuthzInfo(
+#ifdef WINJOIN_CHECK_ENABLED
+    KERB_VALIDATION_INFO *pac,
+#else
     VMDIR_AUTHZ_INFO *pac,
+#endif
     long *bufsiz,
     void **buf)
 {
@@ -23,7 +27,11 @@ VmKdcEncodeAuthzInfo(
     idl_es_set_attrs(es_handle, IDL_ES_MIDL_COMPAT, &sts);
     if (sts) goto error;
 
+#ifdef WINJOIN_CHECK_ENABLED
+    VmKdcNdrEncodeLogonInfo(es_handle, pac);
+#else
     VmKdcNdrEncodeAuthzInfo(es_handle, pac);
+#endif
 
     retbuf = calloc(ret_bufsiz, sizeof(unsigned char));
     if (!retbuf)
@@ -50,7 +58,11 @@ unsigned32
 VmKdcDecodeAuthzInfo(
     long bufsiz,
     void *buf,
+#ifdef WINJOIN_CHECK_ENABLED
+    KERB_VALIDATION_INFO *pac
+#else
     VMDIR_AUTHZ_INFO **pac
+#endif
     )
 {
     idl_es_handle_t es_handle = NULL;
@@ -71,7 +83,11 @@ VmKdcDecodeAuthzInfo(
     /* TBD: validate mes_header here*/
     memcpy(&mes_header, buf, sizeof(mes_header));
 
+#ifdef WINJOIN_CHECK_ENABLED
+    VmKdcNdrDecodeLogonInfo(es_handle, pac);
+#else
     VmKdcNdrDecodeAuthzInfo(es_handle, pac);
+#endif
 
 error:
     if (es_handle)

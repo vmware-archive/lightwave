@@ -80,6 +80,12 @@
 #include "srp_verifier_h.h"
 #include "vmdirsuperlog_h.h"
 
+#ifdef WINJOIN_CHECK_ENABLED
+#include "ms_pac_h.h"
+#else
+#include "vmdir_pac_h.h"
+#endif
+
 #include "prototypes.h"
 #include "externs.h"
 
@@ -146,6 +152,12 @@
 #include "vmdirdbcp_h.h"
 #include "srp_verifier_h.h"
 #include "vmdirsuperlog_h.h"
+
+#ifdef WINJOIN_CHECK_ENABLED
+#include "ms_pac_h.h"
+#else
+#include "vmdir_pac_h.h"
+#endif
 
 #include "prototypes.h"
 

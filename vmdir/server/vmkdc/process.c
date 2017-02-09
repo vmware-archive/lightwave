@@ -74,7 +74,11 @@ VmKdcCreateAuthzData(
     long access_info_size = 0;
     unsigned char *access_info_data = NULL;
     PSTR pszName = NULL;
+#ifdef WINJOIN_CHECK_ENABLED
+    KERB_VALIDATION_INFO  *pInfo = NULL;
+#else
     PVMDIR_AUTHZ_INFO pInfo = NULL;
+#endif
 
     dwError = VmKdcAllocatePAC(
                       pContext,
@@ -86,10 +90,16 @@ VmKdcCreateAuthzData(
                       &pszName);
     BAIL_ON_VMKDC_ERROR(dwError);
 
+#ifdef WINJOIN_CHECK_ENABLED
+    dwError = VmDirKrbGetKerbValidationInfo(
+                  pszName,
+                  &pInfo);
+#else
     dwError = VmDirKrbGetAuthzInfo(
                       pszName,
                       &pInfo);
     BAIL_ON_VMKDC_ERROR(dwError);
+#endif
 
     /* NDR encode the access info data */
 
@@ -133,7 +143,11 @@ VmKdcCreateAuthzData(
     dwError = VmKdcAddAuthzData(
                       pAuthzDataPac,
                       pPACData,
-                      VMKDC_AUTHZDATA_VMDIR_PAC
+#ifdef WINJOIN_CHECK_ENABLED
+                      VMKDC_AUTHZDATA_WIN2K_PAC /* ms-pac */
+#else
+                      VMKDC_AUTHZDATA_VMDIR_PAC /* vmdir-pac */
+#endif
                       );
     BAIL_ON_VMKDC_ERROR(dwError);
 
@@ -179,7 +193,11 @@ cleanup:
     VMKDC_SAFE_FREE_AUTHZDATA(pAuthzDataPac);
     if (pInfo)
     {
+#ifdef WINJOIN_CHECK_ENABLED
+        VmDirKrbFreeKerbValidationInfo(pInfo);
+#else
         VmDirKrbFreeAuthzInfo(pInfo);
+#endif
     }
 
     return dwError;

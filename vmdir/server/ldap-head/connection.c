@@ -878,7 +878,7 @@ ProcessUdpConnection(
     if (retVal == LBER_ERROR)
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "ProcessUdpConnection: ber_scanf failed!");
-        got error;
+        goto error;
     }
 
     retVal = format_cldap_ping_response_msg(

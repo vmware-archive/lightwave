@@ -90,9 +90,16 @@ VmKdcSleep(
 #ifdef VMDIR_ENABLE_PAC
 /* pacops.c */
 
+typedef struct _KERB_VALIDATION_INFO KERB_VALIDATION_INFO, *PKERB_VALIDATION_INFO; /* ms-pac */
+typedef struct _VMDIR_AUTHZ_INFO VMDIR_AUTHZ_INFO, *PVMDIR_AUTHZ_INFO; /* vmdir-pac */
+
 DWORD
 VmKdcEncodeAuthzInfo(
+#ifdef WINJOIN_CHECK_ENABLED
+    KERB_VALIDATION_INFO *pac,
+#else
     VMDIR_AUTHZ_INFO *pac,
+#endif
     long *bufsiz,
     void **buf
     );
@@ -101,7 +108,11 @@ DWORD
 VmKdcDecodeAuthzInfo(
     long bufsiz,
     void *buf,
+#ifdef WINJOIN_CHECK_ENABLED
+    KERB_VALIDATION_INFO *pac
+#else
     VMDIR_AUTHZ_INFO **pac
+#endif
     );
 #endif
 
