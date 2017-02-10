@@ -1970,13 +1970,13 @@ VmAfdMarshalGetDCList(
         for (; dwIndex < dwCount ; dwIndex++)
         {
            PVMAFD_DC_INFO_W pDCInfo = &pVmAfdDCInfoList[dwIndex];
+           DWORD dwBytesToMove = 0;
 
            if (!pDCInfo)
            {
                dwError = ERROR_INVALID_PARAMETER;
                BAIL_ON_VMAFD_ERROR (dwError);
            }
-           DWORD dwBytesToMove = 0;
 
            dwError = VmAfdMarshalStringW (
                                           pDCInfo->pwszHostName,
