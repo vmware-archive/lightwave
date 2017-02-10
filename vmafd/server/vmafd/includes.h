@@ -122,6 +122,7 @@
 #include <cdcdb.h>
 #include <vecsauth.h>
 #include <authdb.h>
+#include <regdb.h>
 #include <vmafdclient.h>
 #include <vmdirclient.h>
 #include <vmdirerrors.h>

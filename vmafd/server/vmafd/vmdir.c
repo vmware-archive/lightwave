@@ -1018,35 +1018,23 @@ VmAfSrvForceLeave(
 {
     DWORD   dwError = 0;
 
-    dwError = RegUtilDeleteValue(
-              NULL,
-              HKEY_THIS_MACHINE,
+    dwError = VmAfdRegDeleteValue(
               VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
-              NULL,
               VMAFD_REG_KEY_DC_ACCOUNT);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = RegUtilDeleteValue(
-              NULL,
-              HKEY_THIS_MACHINE,
+    dwError = VmAfdRegDeleteValue(
               VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
-              NULL,
               VMAFD_REG_KEY_DC_ACCOUNT_DN);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = RegUtilDeleteValue(
-              NULL,
-              HKEY_THIS_MACHINE,
+    dwError = VmAfdRegDeleteValue(
               VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
-              NULL,
               VMAFD_REG_KEY_DC_PASSWORD);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = RegUtilDeleteValue(
-              NULL,
-              HKEY_THIS_MACHINE,
+    dwError = VmAfdRegDeleteValue(
               VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
-              NULL,
               VMAFD_REG_KEY_MACHINE_GUID);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -1753,6 +1741,7 @@ VmAfSrvSetDNSRecords(
     PSTR pszName = NULL;
     VMDNS_RECORD record = {0};
     CHAR szZone[255] = {0};
+    DWORD dwDomainNameStrLen = 0;
 
     if (VmAfdCheckIfIPV4AddressA(pszMachineName) ||
         VmAfdCheckIfIPV6AddressA(pszMachineName))
@@ -1780,7 +1769,7 @@ VmAfSrvSetDNSRecords(
     dwError = VmAfdStringCpyA(szZone,255,pszDomain);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    DWORD dwDomainNameStrLen = strlen(szZone);
+    dwDomainNameStrLen = strlen(szZone);
 
     if (szZone[dwDomainNameStrLen -1 ] != '.')
     {
@@ -1944,8 +1933,8 @@ VmAfdAppendDomain(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMAFD_ERROR(dwError);
     }
-    dwServerStrLen = strlen (pszServerName);
-    dwDomainStrLen = strlen (pszDomainName);
+    dwServerStrLen = (DWORD)strlen (pszServerName);
+    dwDomainStrLen = (DWORD)strlen (pszDomainName);
 
     if (dwDomainStrLen  > dwServerStrLen)
     {
