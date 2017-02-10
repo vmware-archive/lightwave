@@ -64,7 +64,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libcommon.lib libvmafdlogging.lib dcelib.lib gssapi64.lib pthreadVC2.lib ws2_32.lib libeay32.lib ssleay32.lib"
+				AdditionalDependencies="libcommon.lib libvmafdlogging.lib dcelib.lib gssapi64.lib pthreadVC2.lib ws2_32.lib libeay32.lib ssleay32.lib Psapi.lib"
 				OutputFile="$(SolutionDir)$(IntDir)\$(ProjectName).dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories=";&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
@@ -144,7 +144,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libcommon.lib libvmafdlogging.lib dcelib.lib gssapi64.lib pthreadVC2.lib ws2_32.lib libeay32.lib ssleay32.lib"
+				AdditionalDependencies="libcommon.lib libvmafdlogging.lib dcelib.lib gssapi64.lib pthreadVC2.lib ws2_32.lib libeay32.lib ssleay32.lib Psapi.lib"
 				OutputFile="$(SolutionDir)$(IntDir)\$(ProjectName).dll"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"

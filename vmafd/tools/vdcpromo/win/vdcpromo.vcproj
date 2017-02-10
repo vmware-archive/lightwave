@@ -67,7 +67,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib user32.lib libcommon.lib ws2_32.lib pthreadVC2.lib libvmafdclient.lib libvmafcfgapi.lib libvmafcfgwin.lib"
+				AdditionalDependencies="advapi32.lib user32.lib libcommon.lib ws2_32.lib Psapi.lib pthreadVC2.lib libvmafdclient.lib libvmafcfgapi.lib libvmafcfgwin.lib"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(LIGHTWAVE_VMDNS_ROOT)\win64\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
 				IgnoreAllDefaultLibraries="false"
 				GenerateDebugInformation="true"
@@ -147,7 +147,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib user32.lib libcommon.lib ws2_32.lib pthreadVC2.lib libvmafdclient.lib libvmafcfgapi.lib libvmafcfgwin.lib"
+				AdditionalDependencies="advapi32.lib user32.lib Psapi.lib libcommon.lib ws2_32.lib pthreadVC2.lib libvmafdclient.lib libvmafcfgapi.lib libvmafcfgwin.lib"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(LIGHTWAVE_VMDNS_ROOT)\win64\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(TargetDir)vmafd_$(TargetName).pdb"

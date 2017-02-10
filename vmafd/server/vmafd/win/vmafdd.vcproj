@@ -69,7 +69,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib ws2_32.lib user32.lib netapi32.lib Gdi32.lib libldap_r.lib liblber.lib libcommon.lib dcelib.lib pthreadVC2.lib libeay32.lib ssleay32.lib libvmdirclient.lib libvmdnsclient.lib libvmafdclient.lib vmeventd.lib"
+				AdditionalDependencies="advapi32.lib ws2_32.lib user32.lib netapi32.lib Gdi32.lib libldap_r.lib liblber.lib libcommon.lib dcelib.lib pthreadVC2.lib libeay32.lib ssleay32.lib libvmdirclient.lib libvmdnsclient.lib libvmafdclient.lib vmeventd.lib Psapi.lib "
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_VMDNS_ROOT)\win64\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
 				GenerateDebugInformation="true"
@@ -150,7 +150,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib ws2_32.lib user32.lib netapi32.lib Gdi32.lib libldap_r.lib liblber.lib libcommon.lib dcelib.lib pthreadVC2.lib libeay32.lib ssleay32.lib libvecsdb.lib libvmdirclient.lib libvmdnsclient.lib libvmafdclient.lib vmeventd.lib"
+				AdditionalDependencies="advapi32.lib ws2_32.lib user32.lib netapi32.lib Gdi32.lib libldap_r.lib liblber.lib libcommon.lib dcelib.lib pthreadVC2.lib libeay32.lib ssleay32.lib libvecsdb.lib libvmdirclient.lib libvmdnsclient.lib libvmafdclient.lib vmeventd.lib Psapi.lib "
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_VMDNS_ROOT)\win64\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
 				GenerateDebugInformation="true"

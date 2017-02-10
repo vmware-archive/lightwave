@@ -58,7 +58,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib ws2_32.lib user32.lib Gdi32.lib libcommon.lib libvmafdclient.lib dcelib.lib pthreadVC2.lib"
+				AdditionalDependencies="advapi32.lib ws2_32.lib user32.lib Psapi.lib Gdi32.lib libcommon.lib libvmafdclient.lib dcelib.lib pthreadVC2.lib"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
 				GenerateDebugInformation="true"
 				TargetMachine="17"
@@ -127,7 +127,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="advapi32.lib ws2_32.lib user32.lib Gdi32.lib libcommon.lib dcelib.lib pthreadVC2.lib libvmafdclient.lib"
+				AdditionalDependencies="advapi32.lib ws2_32.lib user32.lib Psapi.lib Gdi32.lib libcommon.lib dcelib.lib pthreadVC2.lib libvmafdclient.lib"
 				AdditionalLibraryDirectories="&quot;$(SolutionDir)$(IntDir)&quot;;&quot;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(ConfigurationName)\lib&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
 				GenerateDebugInformation="true"
 				TargetMachine="17"
