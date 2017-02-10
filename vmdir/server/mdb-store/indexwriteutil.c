@@ -537,8 +537,11 @@ MdbValidateAttrUniqueness(
 cleanup:
     VMDIR_UNLOCK_MUTEX(bInLock, pMutex);
     VmDirMDBIndexIteratorFree(pIterator);
-    LwRtlHashMapClear(pOccupiedScopes, VmDirSimpleHashMapPairFree, NULL);
-    LwRtlFreeHashMap(&pOccupiedScopes);
+    if (pOccupiedScopes)
+    {
+        LwRtlHashMapClear(pOccupiedScopes, VmDirSimpleHashMapPairFree, NULL);
+        LwRtlFreeHashMap(&pOccupiedScopes);
+    }
     VMDIR_SAFE_FREE_MEMORY(pszVal);
     VmDirFreeEntryContent(&entry);
     return dwError;
