@@ -644,6 +644,11 @@ VmDirApplyModsToEntryStruct(
                                         VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val));
     }
 
+    retVal = _VmDirPatchBadMemberData( pSchemaCtx, pEntry );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                    "Patch Bad member data failed (%s)",
+                                    VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val));
+
     for (currMod = modReq->mods; currMod != NULL; )
     {
         switch (currMod->operation)
@@ -772,10 +777,6 @@ VmDirApplyModsToEntryStruct(
         }
     }
 
-    retVal = _VmDirPatchBadMemberData( pSchemaCtx, pEntry );
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                    "Patch Bad member data failed (%s)",
-                                    VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val));
 
 cleanup:
 
