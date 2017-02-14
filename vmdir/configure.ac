@@ -569,6 +569,16 @@ AC_CONFIG_FILES([Makefile
                  testing/Makefile
                  testing/query/Makefile
                  testing/kerberos/Makefile
+                 testing/test_lib/Makefile
+                 testing/test_runner/Makefile
+                 testing/integration_tests/Makefile
+                 testing/integration_tests/acls/Makefile
+                 testing/integration_tests/misc/Makefile
+                 testing/integration_tests/multitenancy/Makefile
+                 testing/integration_tests/passwordapis/Makefile
+                 testing/integration_tests/search/Makefile
+                 testing/unittests/Makefile
+                 testing/unittests/libcommon/Makefile
                  tools/Makefile
                  tools/vdcaclmgr/Makefile
                  tools/vdcadmintool/Makefile

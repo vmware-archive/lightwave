@@ -393,13 +393,39 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_lib64dir}/libgssapi_unix.a
 %{_lib64dir}/libgssapi_unix.la
 
-%exclude %{_bindir}/dequetest
 %exclude %{_bindir}/vdcpromo
 %exclude %{_bindir}/vmdirclienttest
-%exclude %{_bindir}/circularbuffertest
-%exclude %{_bindir}/parseargstest
-%exclude %{_bindir}/registrytest
-%exclude %{_bindir}/stringtest
+%exclude %{_lib64dir}/libcommonunittests.a
+%exclude %{_lib64dir}/libcommonunittests.la
+%exclude %{_lib64dir}/libcommonunittests.so
+%exclude %{_lib64dir}/libcommonunittests.so.0
+%exclude %{_lib64dir}/libcommonunittests.so.0.0.0
+%exclude %{_lib64dir}/libmisctests.a
+%exclude %{_lib64dir}/libmisctests.la
+%exclude %{_lib64dir}/libmisctests.so
+%exclude %{_lib64dir}/libmisctests.so.0
+%exclude %{_lib64dir}/libmisctests.so.0.0.0
+%exclude %{_lib64dir}/libmultitenancytests.a
+%exclude %{_lib64dir}/libmultitenancytests.la
+%exclude %{_lib64dir}/libmultitenancytests.so
+%exclude %{_lib64dir}/libmultitenancytests.so.0
+%exclude %{_lib64dir}/libmultitenancytests.so.0.0.0
+%exclude %{_lib64dir}/libpasswordapistests.a
+%exclude %{_lib64dir}/libpasswordapistests.la
+%exclude %{_lib64dir}/libpasswordapistests.so
+%exclude %{_lib64dir}/libpasswordapistests.so.0
+%exclude %{_lib64dir}/libpasswordapistests.so.0.0.0
+%exclude %{_lib64dir}/libsearchtests.a
+%exclude %{_lib64dir}/libsearchtests.la
+%exclude %{_lib64dir}/libsearchtests.so
+%exclude %{_lib64dir}/libsearchtests.so.0
+%exclude %{_lib64dir}/libsearchtests.so.0.0.0
+%exclude %{_lib64dir}/libsecuritydescriptortests.a
+%exclude %{_lib64dir}/libsecuritydescriptortests.la
+%exclude %{_lib64dir}/libsecuritydescriptortests.so
+%exclude %{_lib64dir}/libsecuritydescriptortests.so.0
+%exclude %{_lib64dir}/libsecuritydescriptortests.so.0.0.0
+
 %exclude %{_lib64dir}/libkrb5crypto.a
 %exclude %{_lib64dir}/libkrb5crypto.la
 %exclude %{_lib64dir}/sasl2/libsaslvmdirdb.a

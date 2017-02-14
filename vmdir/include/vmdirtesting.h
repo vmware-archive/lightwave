@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -49,6 +49,7 @@ typedef struct _VMDIR_TEST_STATE
     PCSTR pszTestContainerName; // The name of the test container; all objects should be created beneath this.
     PCSTR pszInternalUserName;  // The name of the internal user we create for operations that shouldn't be run as admin.
     BOOLEAN bKeepGoing;         // Keep going if an individual test fails.
+    BOOLEAN bBreakIntoDebugger; // Break into the debugger when a test fails.
 } VMDIR_TEST_STATE, *PVMDIR_TEST_STATE;
 
 VOID
@@ -117,7 +118,13 @@ VmDirTestGetAttributeValue(
     PDWORD pdwAttributeLength
     );
 
-// testinfrastructure.c
+DWORD
+VmDirTestGetObjectList(
+    LDAP *pLd,
+    PCSTR pszDn,
+    PVMDIR_STRING_LIST *ppObjectList /* OPTIONAL */
+    );
+
 VOID
 VmDirTestReportAssertionFailure(
     PCSTR pszExpression,
@@ -174,11 +181,31 @@ VmDirTestGetInternalUserDn(
     );
 
 DWORD
+VmDirTestCreateContainer(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszName
+    );
+
+DWORD
 VmDirTestCreateUser(
     PVMDIR_TEST_STATE pState,
     PCSTR pszContainer,
     PCSTR pszUserName,
     PCSTR pszAcl /* OPTIONAL */
+    );
+
+DWORD
+VmDirTestAddUserToGroup(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszUserDn,
+    PCSTR pszGroupDn
+    );
+
+DWORD
+VmDirTestRemoveUserFromGroup(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszUserDn,
+    PCSTR pszGroupDn
     );
 
 DWORD
@@ -228,6 +255,13 @@ VmDirTestCreateUserWithLimitedAccount(
     );
 
 DWORD
+VmDirTestConnectionFromUser(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszUserName,
+    LDAP **ppLd
+    );
+
+DWORD
 VmDirTestCreateClass(
     PVMDIR_TEST_STATE pState,
     PCSTR pszClassName
@@ -239,6 +273,12 @@ VmDirTestCreateObject(
     PCSTR pszContainer,
     PCSTR pszClassName,
     PCSTR pszObjectName
+    );
+
+DWORD
+VmDirTestDeleteContainer(
+    LDAP *pLd,
+    PCSTR pszContainerDn
     );
 
 DWORD
