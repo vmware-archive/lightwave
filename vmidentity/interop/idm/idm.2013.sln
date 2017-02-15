@@ -1,0 +1,46 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "idmcommon", "common\common.vcxproj", "{05DE45D6-57F2-4F57-B613-D72CD08775E0}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "idm", "ad\idm.vcxproj", "{65EE8562-B7C5-425C-A99C-E310C3BFEE30}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SSPIServer", "SSPIServer\SSPIServer.vcxproj", "{576269AD-9064-4F11-AD6F-1DACEC0E75B2}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SSPIClient", "SSPIClient\SSPIClient.vcxproj", "{5DA6CA33-56ED-478C-89D0-FE23DCA1A9E7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LogonUser", "LogonUser\LogonUser.vcxproj", "{4718397A-2F96-4FBA-9B99-169B0D11C714}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{05DE45D6-57F2-4F57-B613-D72CD08775E0}.Debug|x64.ActiveCfg = Debug|x64
+		{05DE45D6-57F2-4F57-B613-D72CD08775E0}.Debug|x64.Build.0 = Debug|x64
+		{05DE45D6-57F2-4F57-B613-D72CD08775E0}.Release|x64.ActiveCfg = Release|x64
+		{05DE45D6-57F2-4F57-B613-D72CD08775E0}.Release|x64.Build.0 = Release|x64
+		{65EE8562-B7C5-425C-A99C-E310C3BFEE30}.Debug|x64.ActiveCfg = Debug|x64
+		{65EE8562-B7C5-425C-A99C-E310C3BFEE30}.Debug|x64.Build.0 = Debug|x64
+		{65EE8562-B7C5-425C-A99C-E310C3BFEE30}.Release|x64.ActiveCfg = Release|x64
+		{65EE8562-B7C5-425C-A99C-E310C3BFEE30}.Release|x64.Build.0 = Release|x64
+		{576269AD-9064-4F11-AD6F-1DACEC0E75B2}.Debug|x64.ActiveCfg = Debug|x64
+		{576269AD-9064-4F11-AD6F-1DACEC0E75B2}.Debug|x64.Build.0 = Debug|x64
+		{576269AD-9064-4F11-AD6F-1DACEC0E75B2}.Release|x64.ActiveCfg = Release|x64
+		{576269AD-9064-4F11-AD6F-1DACEC0E75B2}.Release|x64.Build.0 = Release|x64
+		{5DA6CA33-56ED-478C-89D0-FE23DCA1A9E7}.Debug|x64.ActiveCfg = Debug|x64
+		{5DA6CA33-56ED-478C-89D0-FE23DCA1A9E7}.Debug|x64.Build.0 = Debug|x64
+		{5DA6CA33-56ED-478C-89D0-FE23DCA1A9E7}.Release|x64.ActiveCfg = Release|x64
+		{5DA6CA33-56ED-478C-89D0-FE23DCA1A9E7}.Release|x64.Build.0 = Release|x64
+		{4718397A-2F96-4FBA-9B99-169B0D11C714}.Debug|x64.ActiveCfg = Debug|x64
+		{4718397A-2F96-4FBA-9B99-169B0D11C714}.Debug|x64.Build.0 = Debug|x64
+		{4718397A-2F96-4FBA-9B99-169B0D11C714}.Release|x64.ActiveCfg = Release|x64
+		{4718397A-2F96-4FBA-9B99-169B0D11C714}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
