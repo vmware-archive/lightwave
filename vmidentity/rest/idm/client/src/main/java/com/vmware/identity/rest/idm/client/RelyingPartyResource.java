@@ -89,7 +89,7 @@ public class RelyingPartyResource extends ClientResource {
     public RelyingPartyDTO register(String tenant, String relyingPartyConfigData) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
         URI uri = buildURI(parent.getHostRetriever(), RELYING_PARTY_URI, tenant);
 
-        HttpPost post = RequestFactory.createPostRequest(uri, parent.getToken(), relyingPartyConfigData);
+        HttpPost post = RequestFactory.createPostRequestWithXml(uri, parent.getToken(), relyingPartyConfigData);
         return execute(parent.getClient(), post, RelyingPartyDTO.class);
     }
 

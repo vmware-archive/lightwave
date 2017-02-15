@@ -176,9 +176,19 @@ public class ExternalIDPResourceIT extends TestBase {
         }
     }
 
+    @Test
+    public void testDeleteJitUsers() throws Exception {
+        IDPConfig config = IDPConfigUtil.createIDPConfig();
+        try {
+            register(config);
+        } finally {
+            delete(config, true);
+        }
+    }
+
     @Test(expected = NotFoundException.class)
     public void testDelete_NoSuchEntity() throws Exception {
-        resource.delete("junk");
+        resource.delete("junk", false);
     }
 
     @Test(expected = NotFoundException.class)
@@ -186,7 +196,7 @@ public class ExternalIDPResourceIT extends TestBase {
         resource = new ExternalIDPResource("unknown.local", request, null);
         resource.setIDMClient(idmClient);
 
-        resource.delete("junk");
+        resource.delete("junk", false);
     }
 
     private ExternalIDPDTO register(IDPConfig config) throws Exception {
@@ -198,11 +208,19 @@ public class ExternalIDPResourceIT extends TestBase {
     }
 
     private void delete(IDPConfig config) throws Exception {
-        resource.delete(config.getEntityID());
+        resource.delete(config.getEntityID(), false);
+    }
+
+    private void delete(IDPConfig config, boolean removeJitUsers) throws Exception {
+        resource.delete(config.getEntityID(), removeJitUsers);
     }
 
     private void delete(String externalIdpEntityId) throws Exception {
-        resource.delete(externalIdpEntityId);
+        resource.delete(externalIdpEntityId, false);
+    }
+
+    private void delete(String externalIdpEntityId, boolean removeJitUsers) throws Exception {
+        resource.delete(externalIdpEntityId, removeJitUsers);
     }
 
 }

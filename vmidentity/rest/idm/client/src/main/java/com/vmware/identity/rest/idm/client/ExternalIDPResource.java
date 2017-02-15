@@ -15,11 +15,13 @@ package com.vmware.identity.rest.idm.client;
 
 import static com.vmware.identity.rest.core.client.RequestExecutor.execute;
 import static com.vmware.identity.rest.core.client.RequestExecutor.executeAndReturnList;
+import static com.vmware.identity.rest.core.client.URIFactory.buildParameters;
 import static com.vmware.identity.rest.core.client.URIFactory.buildURI;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.http.HttpException;
 import org.apache.http.client.ClientProtocolException;
@@ -88,7 +90,7 @@ public class ExternalIDPResource extends ClientResource {
     public ExternalIDPDTO register(String tenant, String metadata) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
         URI uri = buildURI(parent.getHostRetriever(), EXTERNAL_IDP_URI, tenant);
 
-        HttpPost post = RequestFactory.createPostRequest(uri, parent.getToken(), metadata);
+        HttpPost post = RequestFactory.createPostRequestWithXml(uri, parent.getToken(), metadata);
         return execute(parent.getClient(), post, ExternalIDPDTO.class);
     }
 
@@ -147,10 +149,28 @@ public class ExternalIDPResource extends ClientResource {
      * @throws IOException if there was an error with the IO stream.
      */
     public void delete(String tenant, String entityId) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
-        URI uri = buildURI(parent.getHostRetriever(), EXTERNAL_IDP_NAME_URI, tenant, entityId);
+        delete(tenant, entityId, false);
+    }
+
+    /**
+     * Delete a specific external identity provider.
+     *
+     * <p><b>Required Role:</b> {@code administrator}.
+     *
+     * @param tenant the tenant to delete the external identity provider from.
+     * @param entityId the entity identifier for the external identity provider.
+     * @param removeJitUsers true to remove jit users associated with the external IDP
+     * @throws ClientException if a client side error occurs.
+     * @throws ClientProtocolException in case of an http protocol error.
+     * @throws WebApplicationException in the event of an application error.
+     * @throws HttpException if there was a generic error with the remote call.
+     * @throws IOException if there was an error with the IO stream.
+     */
+    public void delete(String tenant, String entityId, boolean removeJitUsers) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
+    	Map<String, Object> params = buildParameters("remove", String.valueOf(removeJitUsers));
+    	URI uri = buildURI(parent.getHostRetriever(), EXTERNAL_IDP_NAME_URI, tenant, entityId, params);
 
         HttpDeleteWithBody delete = RequestFactory.createDeleteRequest(uri, parent.getToken());
         execute(parent.getClient(), delete);
     }
-
 }

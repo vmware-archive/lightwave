@@ -20,6 +20,7 @@
        <resources>
 
           <!-- CORE (COMPILE_TIME + RUN_TIME)DEPENDENCIES -->
+           <url url="http://central.maven.org/maven2/args4j/args4j/2.33/args4j-2.33.jar" />
            <url url="http://central.maven.org/maven2/commons-cli/commons-cli/1.2/commons-cli-1.2.jar" />
            <url url="http://central.maven.org/maven2/com/sun/xml/bind/jaxb-core/2.2.10/jaxb-core-2.2.10.jar" />
            <url url="http://central.maven.org/maven2/org/apache/tomcat/tomcat-coyote/7.0.26/tomcat-coyote-7.0.26.jar" />
@@ -44,8 +45,8 @@
            <url url="http://central.maven.org/maven2/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar" />
            <url url="http://central.maven.org/maven2/commons-validator/commons-validator/1.4.0/commons-validator-1.4.0.jar" />
            <url url="http://central.maven.org/maven2/org/owasp/esapi/esapi/2.0.1/esapi-2.0.1.jar" />
-           <url url="http://central.maven.org/maven2/org/apache/httpcomponents/httpclient/4.3.3/httpclient-4.3.3.jar" />
-           <url url="http://central.maven.org/maven2/org/apache/httpcomponents/httpcore/4.3.2/httpcore-4.3.2.jar" />
+           <url url="http://central.maven.org/maven2/org/apache/httpcomponents/httpcore/4.4.3/httpcore-4.4.3.jar" />
+           <url url="http://central.maven.org/maven2/org/apache/httpcomponents/httpclient/4.5.1/httpclient-4.5.1.jar" />
            <url url="http://central.maven.org/maven2/net/jcip/jcip-annotations/1.0/jcip-annotations-1.0.jar" />
            <url url="http://central.maven.org/maven2/org/slf4j/jcl-over-slf4j/1.7.10/jcl-over-slf4j-1.7.10.jar" />
            <url url="http://central.maven.org/maven2/net/java/dev/jna/jna/4.2.1/jna-4.2.1.jar" />
@@ -60,8 +61,11 @@
            <url url="http://central.maven.org/maven2/org/apache/logging/log4j/log4j-slf4j-impl/2.2/log4j-slf4j-impl-2.2.jar" />
            <url url="http://central.maven.org/maven2/log4j/log4j/1.2.16/log4j-1.2.16.jar" />
            <url url="http://central.maven.org/maven2/javax/mail/mail/1.4.7/mail-1.4.7.jar" />
-           <url url="http://central.maven.org/maven2/com/nimbusds/nimbus-jose-jwt/3.1.2/nimbus-jose-jwt-3.1.2.jar" />
+           <url url="http://central.maven.org/maven2/com/nimbusds/nimbus-jose-jwt/4.12/nimbus-jose-jwt-4.12.jar" />
            <url url="http://central.maven.org/maven2/com/nimbusds/oauth2-oidc-sdk/4.9/oauth2-oidc-sdk-4.9.jar" />
+           <url url="http://central.maven.org/maven2/com/fasterxml/jackson/core/jackson-core/2.3.2/jackson-core-2.3.2.jar" />
+           <url url="http://central.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.3.2/jackson-annotations-2.3.2.jar" />
+           <url url="http://central.maven.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.3.2/jackson-databind-2.3.2.jar" />
            <url url="http://central.maven.org/maven2/org/opensaml/opensaml/2.5.3/opensaml-2.5.3.jar" />
            <url url="http://central.maven.org/maven2/org/opensaml/openws/1.4.4/openws-1.4.4.jar" />
            <url url="http://central.maven.org/maven2/net/java/dev/jna/jna-platform/4.2.1/jna-platform-4.2.1.jar" />
@@ -84,7 +88,6 @@
            <url url="http://central.maven.org/maven2/org/springframework/spring-webmvc/4.0.6.RELEASE/spring-webmvc-4.0.6.RELEASE.jar" />
            <url url="http://central.maven.org/maven2/org/springframework/spring-asm/3.0.5.RELEASE/spring-asm-3.0.5.RELEASE.jar" />
            <url url="http://central.maven.org/maven2/org/apache/commons/commons-lang3/3.3.1/commons-lang3-3.3.1.jar" />
-
 
            <!-- TEST DEPENDENCIES -->
            

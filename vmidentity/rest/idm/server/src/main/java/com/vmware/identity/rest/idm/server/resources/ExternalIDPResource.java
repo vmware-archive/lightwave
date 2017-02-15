@@ -19,12 +19,14 @@ import java.io.IOException;
 import java.util.Collection;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -156,9 +158,9 @@ public class ExternalIDPResource extends BaseSubResource {
 
     @DELETE @Path("/{entityID}")
     @RequiresRole(role=Role.ADMINISTRATOR)
-    public void delete(@PathParam("entityID") String entityID) {
+    public void delete(@PathParam("entityID") String entityID, @DefaultValue("false") @QueryParam("remove") Boolean removeJitUsers) {
         try {
-            getIDMClient().removeExternalIdpConfig(tenant, entityID);
+            getIDMClient().removeExternalIdpConfig(tenant, entityID, removeJitUsers);
         } catch (NoSuchTenantException | NoSuchExternalIdpConfigException e) {
             log.warn("Failed to remove external identity provider '{}' from tenant '{}'", entityID, tenant, e);
             throw new NotFoundException(sm.getString("ec.404"), e);
