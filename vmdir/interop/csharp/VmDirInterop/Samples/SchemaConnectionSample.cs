@@ -78,14 +78,14 @@ namespace Samples
                 {
                     foreach (Tuple<AttributeType, AttributeType> t in diff.GetAttributeTypeDiff())
                     {
-                        Console.WriteLine("\tBASE: {0}", t.item1);
-                        Console.WriteLine("\tOTHE: {0}", t.item2);
+                        Console.WriteLine("\tBASE: {0}", t.Item1);
+                        Console.WriteLine("\tOTHE: {0}", t.Item2);
                         Console.WriteLine("\t-----");
                     }
                     foreach (Tuple<ObjectClass, ObjectClass> t in diff.GetObjectClassDiff())
                     {
-                        Console.WriteLine("\tBASE: {0}", t.item1);
-                        Console.WriteLine("\tOTHE: {0}", t.item2);
+                        Console.WriteLine("\tBASE: {0}", t.Item1);
+                        Console.WriteLine("\tOTHE: {0}", t.Item2);
                         Console.WriteLine("\t-----");
                     }
                 }
@@ -115,11 +115,11 @@ namespace Samples
                 {
                     foreach (Tuple<SchemaEntry, SchemaEntry> t in diff.GetAttributeTypeDiff())
                     {
-                        listSchemaMetadataDiffBreakdown(t.item1, t.item2);
+                        listSchemaMetadataDiffBreakdown(t.Item1, t.Item2);
                     }
                     foreach (Tuple<SchemaEntry, SchemaEntry> t in diff.GetObjectClassDiff())
                     {
-                        listSchemaMetadataDiffBreakdown(t.item1, t.item2);
+                        listSchemaMetadataDiffBreakdown(t.Item1, t.Item2);
                     }
                 }
                 else
@@ -146,13 +146,13 @@ namespace Samples
                 Console.WriteLine("\tBASE: {0}", e1.defName);
                 foreach (Tuple<AttributeMetadata, AttributeMetadata> t in diff)
                 {
-                    Console.WriteLine("\t\t{0}", t.item1);
+                    Console.WriteLine("\t\t{0}", t.Item1);
                 }
 
                 Console.WriteLine("\tOTHE: {0}", e2.defName);
                 foreach (Tuple<AttributeMetadata, AttributeMetadata> t in diff)
                 {
-                    Console.WriteLine("\t\t{0}", t.item2);
+                    Console.WriteLine("\t\t{0}", t.Item2);
                 }
             }
             else if (e1 != null)

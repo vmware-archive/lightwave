@@ -34,13 +34,9 @@ extern "C" {
 
 #ifndef _DCE_IDL_
 
-#if defined(_WIN32) || defined(WIN32_LEAN_AND_MEAN)
-typedef     _Longlong             EntryId;
-typedef     _Longlong             USN;
-#else
 typedef     int64_t               EntryId;
 typedef     int64_t               USN;
-#endif
+
 ////////////////////////////////////////////////////////////////////////////
 // !!!!!!!!!!!!!!!!!!! IMPORTANT IMPORTANT IMPORTANT !!!!!!!!!!!!!!!!!!!!!!!
 // !!!!!!!!!!!!!!!!!!! READ READ READ READ READ READ !!!!!!!!!!!!!!!!!!!!!!!

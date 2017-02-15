@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -18,122 +18,196 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\rdwr.c" />
-    <ClCompile Include="..\rmutex.c" />
-    <ClCompile Include="..\rq.c" />
-    <ClCompile Include="..\threads.c" />
-    <ClCompile Include="..\thr_cthreads.c" />
-    <ClCompile Include="..\thr_debug.c" />
-    <ClCompile Include="..\thr_lwp.c" />
-    <ClCompile Include="..\thr_nt.c" />
-    <ClCompile Include="..\thr_posix.c" />
-    <ClCompile Include="..\thr_pth.c" />
-    <ClCompile Include="..\thr_stub.c" />
-    <ClCompile Include="..\thr_thr.c" />
-    <ClCompile Include="..\tpool.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\ldap_thr_debug.h" />
-  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{3DB6BBD4-014C-4265-8AB1-12E9A13C385C}</ProjectGuid>
-    <RootNamespace>liblber</RootNamespace>
+    <ProjectGuid>{C03FE715-86FC-4449-B945-118CCE3B5E3F}</ProjectGuid>
+    <RootNamespace>libldap_r</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <CharacterSet>MultiByte</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <CharacterSet>MultiByte</CharacterSet>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>NotSet</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\..\..\vmdird\CommonProjectProperties.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\..\..\..\..\vmdird\CommonProjectProperties.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetExt>.lib</TargetExt>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TargetExt>.lib</TargetExt>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
-    </ClCompile>
-    <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
-  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\libldap;$(ProjectDir)..\..\..\include</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessToFile>false</PreprocessToFile>
-    </ClCompile>
-    <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\libraries\libldap;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(ProjectDir)..\..\..\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;LIBLDAPRDLL_EXPORTS;LDAP_LIBRARY;LDAP_LIBS_DYNAMIC;LDAP_R_COMPILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
     <Link>
+      <AdditionalDependencies>liblber.lib;libsasl.lib;libeay32.lib;ssleay32.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ModuleDefinitionFile>$(ProjectDir)libldap_r.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX64</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\libldap;$(ProjectDir)..\..\..\include</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\libraries\libldap;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(ProjectDir)..\..\..\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;LIBLDAPRDLL_EXPORTS;LDAP_LIBRARY;LDAP_LIBS_DYNAMIC;LDAP_R_COMPILE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <TreatWarningAsError>false</TreatWarningAsError>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <Link>
+      <AdditionalDependencies>ws2_32.lib;liblber.lib;libsasl.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(SolutionDir)$(Platform)\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ModuleDefinitionFile>$(ProjectDir)libldap_r.def</ModuleDefinitionFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <SubSystem>Windows</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX64</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\rdwr.c" />
+    <ClCompile Include="..\rmutex.c" />
+    <ClCompile Include="..\rq.c" />
+    <ClCompile Include="..\thr_debug.c" />
+    <ClCompile Include="..\thr_lwp.c" />
+    <ClCompile Include="..\thr_posix.c" />
+    <ClCompile Include="..\thr_thr.c" />
+    <ClCompile Include="..\threads.c" />
+    <ClCompile Include="..\tpool.c" />
+    <ClCompile Include="..\..\libldap\abandon.c" />
+    <ClCompile Include="..\..\libldap\add.c" />
+    <ClCompile Include="..\..\libldap\addentry.c" />
+    <ClCompile Include="..\..\libldap\assertion.c" />
+    <ClCompile Include="..\..\libldap\bind.c" />
+    <ClCompile Include="..\..\libldap\cancel.c" />
+    <ClCompile Include="..\..\libldap\charray.c" />
+    <ClCompile Include="..\..\libldap\compare.c" />
+    <ClCompile Include="..\..\libldap\controls.c" />
+    <ClCompile Include="..\..\libldap\cyrus.c" />
+    <ClCompile Include="..\..\libldap\dds.c" />
+    <ClCompile Include="..\..\libldap\delete.c" />
+    <ClCompile Include="..\..\libldap\deref.c" />
+    <ClCompile Include="..\..\libldap\dnssrv.c" />
+    <ClCompile Include="..\..\libldap\error.c" />
+    <ClCompile Include="..\..\libldap\extended.c" />
+    <ClCompile Include="..\..\libldap\filter.c" />
+    <ClCompile Include="..\..\libldap\free.c" />
+    <ClCompile Include="..\..\libldap\getattr.c" />
+    <ClCompile Include="..\..\libldap\getdn.c" />
+    <ClCompile Include="..\..\libldap\getentry.c" />
+    <ClCompile Include="..\..\libldap\getvalues.c" />
+    <ClCompile Include="..\..\libldap\gssapi.c" />
+    <ClCompile Include="..\..\libldap\init.c" />
+    <ClCompile Include="..\..\libldap\ldap_sync.c" />
+    <ClCompile Include="..\..\libldap\messages.c" />
+    <ClCompile Include="..\..\libldap\modify.c" />
+    <ClCompile Include="..\..\libldap\modrdn.c" />
+    <ClCompile Include="..\..\libldap\open.c" />
+    <ClCompile Include="..\..\libldap\options.c" />
+    <ClCompile Include="..\..\libldap\os-ip.c" />
+    <ClCompile Include="..\..\libldap\os-local.c" />
+    <ClCompile Include="..\..\libldap\pagectrl.c" />
+    <ClCompile Include="..\..\libldap\passwd.c" />
+    <ClCompile Include="..\..\libldap\ppolicy.c" />
+    <ClCompile Include="..\..\libldap\print.c" />
+    <ClCompile Include="..\..\libldap\references.c" />
+    <ClCompile Include="..\..\libldap\request.c" />
+    <ClCompile Include="..\..\libldap\result.c" />
+    <ClCompile Include="..\..\libldap\sasl.c" />
+    <ClCompile Include="..\..\libldap\sbind.c" />
+    <ClCompile Include="..\..\libldap\schema.c" />
+    <ClCompile Include="..\..\libldap\search.c" />
+    <ClCompile Include="..\..\libldap\sort.c" />
+    <ClCompile Include="..\..\libldap\sortctrl.c" />
+    <ClCompile Include="..\..\libldap\stctrl.c" />
+    <ClCompile Include="..\..\libldap\string.c" />
+    <ClCompile Include="..\..\libldap\t61.c" />
+    <ClCompile Include="..\..\libldap\tls2.c" />
+    <ClCompile Include="..\..\libldap\tls_g.c" />
+    <ClCompile Include="..\..\libldap\tls_m.c" />
+    <ClCompile Include="..\..\libldap\tls_o.c" />
+    <ClCompile Include="..\..\libldap\turn.c" />
+    <ClCompile Include="..\..\libldap\txn.c" />
+    <ClCompile Include="..\..\libldap\unbind.c" />
+    <ClCompile Include="..\..\libldap\url.c" />
+    <ClCompile Include="..\..\libldap\utf-8-conv.c" />
+    <ClCompile Include="..\..\libldap\utf-8.c" />
+    <ClCompile Include="..\..\libldap\util-int.c" />
+    <ClCompile Include="..\..\libldap\vlvctrl.c" />
+    <ClCompile Include="..\..\libldap\whoami.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\ldap-int.h" />
+    <ClInclude Include="..\ldap-tls.h" />
+    <ClInclude Include="..\..\libldap\ldap_thr_debug.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\liblber\liblber\liblber.vcxproj">
+      <Project>{6a7d33dd-889f-4a32-9be2-7e02170b4262}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
