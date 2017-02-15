@@ -29,6 +29,8 @@
 
 #include "includes.h"
 
+int _forceCRTManifestCUR = 0;
+
 DWORD
 EventLogDbInitialize(
     PCSTR pszDbPath
