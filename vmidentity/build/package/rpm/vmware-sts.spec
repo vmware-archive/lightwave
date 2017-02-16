@@ -149,7 +149,7 @@ fi
 %{_sbindir}/vmware-stsd.sh
 %{_sbindir}/configure-build.sh
 %{_sbindir}/sso-config.sh
-#%{_includedir}/*.h
+%{_includedir}/*.h
 %{_lib64dir}/*.so*
 %{_binsdir}/test-ldapbind
 %{_binsdir}/test-logon
@@ -206,7 +206,7 @@ fi
 %{_jarsdir}/vmware-identity-rest-core-client.jar
 %{_jarsdir}/vmware-identity-rest-idm-client.jar
 %{_jarsdir}/vmware-directory-rest-client.jar
-#%{_includedir}/*.h
+%{_includedir}/*.h
 %{_lib64dir}/*.so*
 
 %exclude %{_bindir}/*test
