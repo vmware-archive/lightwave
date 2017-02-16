@@ -169,6 +169,10 @@ newParentIdIndexIterator:
 
             if ((++dwExpiredCount % TOMBSTONE_REAPING_THROTTLE_COUNT) == 0)
             {
+                if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+                {
+                    break;
+                }
                 VmDirSleep(TOMBSTONE_REAPING_THROTTLE_SLEEP);
             }
         }
@@ -223,6 +227,11 @@ _VmDirTombstoneReapingThreadFun(
 
     while (TRUE)
     {
+        if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+        {
+            goto cleanup;
+        }
+
         VMDIR_LOCK_MUTEX(bInLock, pThreadInfo->mutexUsed);
 
         // main thread will signal during shutdown

@@ -27,6 +27,8 @@ VmDirModificationFree(
         VmDirFreeBervalContent(&pMod->attr.type);
         VmDirFreeBervalArrayContent(pMod->attr.vals, pMod->attr.numVals);
         VMDIR_SAFE_FREE_MEMORY(pMod->attr.vals);
+        VmDirFreeAttrValueMetaDataContent(&pMod->attr.valueMetaDataToAdd);
+        VmDirFreeAttrValueMetaDataContent(&pMod->attr.valueMetaDataToDelete);
         VMDIR_SAFE_FREE_MEMORY(pMod);
     }
 }
