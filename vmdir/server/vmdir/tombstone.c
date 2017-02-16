@@ -123,10 +123,13 @@ _VmDirReapExpiredEntries(
     VDIR_ENTRY entry = {0};
     DWORD dwExpiredCount = 0;
     DWORD dwUnexpiredCount = 0;
+    int expiredInBatch = 0;
 
     pBE = VmDirBackendSelect(NULL);
     dwError = VmDirSimpleDNToEntry(gVmdirServerGlobals.delObjsContainerDN.lberbv.bv_val, &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+newParentIdIndexIterator:
 
     dwError = pBE->pfnBEParentIdIndexIteratorInit(pEntry->eId, &pIterator);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -162,6 +165,8 @@ _VmDirReapExpiredEntries(
                     dwError);
             }
 
+            expiredInBatch++;
+
             if ((++dwExpiredCount % TOMBSTONE_REAPING_THROTTLE_COUNT) == 0)
             {
                 VmDirSleep(TOMBSTONE_REAPING_THROTTLE_SLEEP);
@@ -173,6 +178,16 @@ _VmDirReapExpiredEntries(
         }
 
         VmDirFreeEntryContent(&entry);
+
+        if (expiredInBatch >= VDIR_REAP_EXPIRED_ENTRIES_BATCH)
+        {
+            // Must shorten the read-only transaction so that
+            // MDB can free the allocated blocks from the expired entries.
+            pBE->pfnBEParentIdIndexIteratorFree(pIterator);
+            pIterator = NULL;
+            expiredInBatch = 0;
+            goto newParentIdIndexIterator;
+        }
     }
 
 cleanup:
