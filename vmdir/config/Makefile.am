@@ -3,7 +3,6 @@ vmdirconf_DATA = \
     vmdir.reg        \
     vmdir-client.reg \
     vmdird-syslog-ng.conf \
-    saslvmdird.conf \
-    vmdir-rest.json
+    saslvmdird.conf
 
 bin_SCRIPTS = vmdir_upgrade.sh

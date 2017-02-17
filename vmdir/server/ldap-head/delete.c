@@ -29,9 +29,9 @@ VmDirPerformDelete(
    PVDIR_OPERATION pOperation
    )
 {
-    int         retVal = LDAP_SUCCESS;
-    DeleteReq * dr = &(pOperation->request.deleteReq);
-
+    int              retVal = LDAP_SUCCESS;
+    DeleteReq *      dr = &(pOperation->request.deleteReq);
+    BOOLEAN         bResultAlreadySent = FALSE;
     // Get entry DN. 'm' => pOperation->reqDn.lberbv.bv_val points to DN within (in-place) ber
     if ( ber_scanf( pOperation->ber, "m", &(pOperation->reqDn.lberbv) ) == LBER_ERROR )
     {
@@ -52,16 +52,19 @@ VmDirPerformDelete(
     BAIL_ON_VMDIR_ERROR(retVal);
 
     retVal = VmDirMLDelete( pOperation );
+    bResultAlreadySent = TRUE;
     BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:
-    if (retVal != LDAP_NOTICE_OF_DISCONNECT)
-    {
-        VmDirSendLdapResult( pOperation );
-    }
+
     return retVal;
 
 error:
+    if (retVal != LDAP_NOTICE_OF_DISCONNECT && bResultAlreadySent == FALSE)
+    {
+        VmDirSendLdapResult( pOperation );
+    }
+
     goto cleanup;
 }
 

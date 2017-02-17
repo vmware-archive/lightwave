@@ -45,11 +45,6 @@ VmDirShutdown(
 
     pBE = VmDirBackendSelect(NULL);
 
-#if 0
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: stop REST listening threads", __func__);
-    VmDirRESTServerShutdown();
-#endif
-
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: stop LDAP listening threads", __func__);
     VmDirShutdownConnAcceptThread();
 
@@ -197,7 +192,6 @@ VmDirCleanupGlobals(
     // Free vmdir global 'gVmdirGlobals' upon shutdown
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBDBHome);
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBootStrapSchemaFile);
-    VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszRestListenPort);
     VMDIR_SAFE_FREE_MEMORY(gVmdirUrgentRepl.pUTDVector);
 
     VMDIR_SAFE_FREE_MUTEX( gVmdirGlobals.replCycleDoneMutex );

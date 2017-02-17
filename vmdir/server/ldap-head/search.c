@@ -233,6 +233,7 @@ VmDirPerformSearch(
    int           retVal = LDAP_SUCCESS;
    BerValue*           pLberBerv = NULL;
    PSTR                pszLocalErrorMsg = NULL;
+   BOOLEAN             bResultAlreadySent = FALSE;
    PVDIR_LDAP_RESULT   pResult = &(pOperation->ldapResult);
    BOOLEAN             bSetAccessInfo = FALSE;
 
@@ -330,16 +331,13 @@ VmDirPerformSearch(
    BAIL_ON_VMDIR_ERROR(retVal);
 
    retVal = pResult->errCode = VmDirMLSearch(pOperation);
+   bResultAlreadySent = TRUE;
    BAIL_ON_VMDIR_ERROR(retVal);
 
    retVal = _VmDirLogSearchParameters(pOperation);
    BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:
-    if (retVal != LDAP_NOTICE_OF_DISCONNECT)
-    {
-        VmDirSendLdapResult( pOperation );
-    }
     if (bSetAccessInfo)
     {
         VmDirFreeAccessInfo(&pOperation->conn->AccessInfo);
@@ -347,38 +345,36 @@ cleanup:
 
     VMDIR_SAFE_FREE_MEMORY(pLberBerv);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+
     return retVal;
 
 error:
+
     VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
+    if (retVal != LDAP_NOTICE_OF_DISCONNECT && bResultAlreadySent == FALSE)
+    {
+        VmDirSendLdapResult( pOperation );
+    }
+
     goto cleanup;
 }
 
 void
 VmDirFreeSearchRequest(
    SearchReq * sr,
-   BOOLEAN     freeSelf
-   )
+   BOOLEAN     freeSelf)
 {
-    if (sr)
-    {
-        if (sr->attrs)
-        {
-            int i = 0;
-            for (i = 0; sr->attrs[i].lberbv.bv_val; i++)
-            {
-                VmDirFreeBervalContent(&sr->attrs[i]);
-            }
-            VMDIR_SAFE_FREE_MEMORY(sr->attrs);
-        }
+   if (sr != NULL)
+   {
+      DeleteFilter( sr->filter );
+      VMDIR_SAFE_FREE_MEMORY( sr->attrs );
+      if (freeSelf)
+      {
+          VMDIR_SAFE_FREE_MEMORY( sr );
+      }
+   }
 
-        DeleteFilter(sr->filter);
-
-        if (freeSelf)
-        {
-            VMDIR_SAFE_FREE_MEMORY(sr);
-        }
-    }
-
-    return;
+   return;
 }
+
+

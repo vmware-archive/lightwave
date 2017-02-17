@@ -35,13 +35,13 @@
 #define VMDIR_SCHEMA_ERROR_BASE     600
 #define VMDIR_BACKEND_ERROR_BASE    700
 
-#define VMDIR_SUCCESS   0
-
 #define VMDIR_RANGE(n,x,y)                  (((x) <= (n)) && ((n) <= (y)))
 
 // VmDir error space 9000~9999
 #define IS_VMDIR_ERROR_SPACE(n) \
-    VMDIR_RANGE((n), (VMDIR_ERROR_BASE), (VMDIR_ERROR_BASE + 999)) || n == VMDIR_SUCCESS
+    VMDIR_RANGE((n),(VMDIR_ERROR_BASE ) , (VMDIR_ERROR_BASE + 999) )
+
+#define VMDIR_SUCCESS   0
 
 // WARNING: definitions MUST stay in sync with error-message table in client defines.h
 
@@ -89,7 +89,6 @@
 #define VMDIR_ERROR_NO_FUNC_LVL                       (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 28)      // 9128
 #define VMDIR_ERROR_INVALID_FUNC_LVL                  (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 29)      // 9129
 #define VMDIR_ERROR_INCOMPLETE_MAX_DFL                (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 30)      // 9130
-#define VMDIR_ERROR_AUTH_BAD_DATA                     (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 31)      // 9131
 
 // SID/ACL 9200 ~9229
 #define VMDIR_ERROR_RID_LIMIT_EXCEEDED                (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 100 )    // 9200

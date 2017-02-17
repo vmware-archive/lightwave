@@ -39,6 +39,12 @@ VmDirOPStatisticUpdate(
     uint64_t iThisTimeInMilliSecs
     );
 
+// connection.c
+void
+VmDirDeleteConnection(
+    VDIR_CONNECTION **  conn
+    );
+
 // vecs.c
 DWORD
 VmDirGetVecsMachineCert(

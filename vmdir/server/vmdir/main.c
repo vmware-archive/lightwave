@@ -119,33 +119,34 @@ main(
 
 cleanup:
 
-    if ( bShutdownKDCService )
-    {
-        VmKdcServiceShutdown();
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Lotus Vmkdcd: stop" );
-    }
+   if ( bShutdownKDCService )
+   {
+       VmKdcServiceShutdown();
+       VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Lotus Vmkdcd: stop" );
+   }
 
-    if ( bVmDirInit )
-    {
-        VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
-        VmDirShutdown(&bWaitTimeOut);
-        if (bWaitTimeOut)
-        {
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Lotus Vmdird: stop" );
-            goto done;
-        }
+   if ( bVmDirInit )
+   {
+       VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
+       VmDirShutdown(&bWaitTimeOut);
+       if (bWaitTimeOut)
+       {
+           VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Lotus Vmdird: stop" );
+           goto done;
+       }
 
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Lotus Vmdird: stop" );
-    }
+       VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Lotus Vmdird: stop" );
+   }
 
-    VmDirLogTerminate();
+   VmDirLogTerminate();
 
-    VmDirSrvFreeConfig();
+   VmDirSrvFreeConfig();
 
 done:
-    return dwError;
+   return dwError;
 
 error:
+
     goto cleanup;
 }
 
