@@ -14,41 +14,41 @@ Deliverables
 
 2.  RPMs
 
-    1.  vmware-event-devel-6.6.3-0.x86\_64.rpm
+    1.  vmware-event-devel-6.7.0-0.x86\_64.rpm
 
-    2.  vmware-directory-client-6.6.3-0.x86\_64.rpm
+    2.  vmware-directory-client-6.7.0-0.x86\_64.rpm
 
-    3.  vmware-directory-6.6.3-0.x86\_64.rpm
+    3.  vmware-directory-6.7.0-0.x86\_64.rpm
 
-    4.  vmware-directory-client-devel-6.6.3-0.x86\_64.rpm
+    4.  vmware-directory-client-devel-6.7.0-0.x86\_64.rpm
 
-    5.  vmware-dns-client-6.6.3-0.x86\_64.rpm
+    5.  vmware-dns-client-6.7.0-0.x86\_64.rpm
 
-    6.  vmware-dns-6.6.3-0.x86\_64.rpm
+    6.  vmware-dns-6.7.0-0.x86\_64.rpm
 
-    7.  vmware-dns-client-devel-6.6.3-0.x86\_64.rpm
+    7.  vmware-dns-client-devel-6.7.0-0.x86\_64.rpm
 
-    8.  vmware-afd-client-6.6.3-0.x86\_64.rpm
+    8.  vmware-afd-client-6.7.0-0.x86\_64.rpm
 
-    9.  vmware-afd-6.6.3-0.x86\_64.rpm
+    9.  vmware-afd-6.7.0-0.x86\_64.rpm
 
-    10. vmware-afd-client-devel-6.6.3-0.x86\_64.rpm
+    10. vmware-afd-client-devel-6.7.0-0.x86\_64.rpm
 
-    11. vmware-ca-6.6.3-0.x86\_64.rpm
+    11. vmware-ca-6.7.0-0.x86\_64.rpm
 
-    12. vmware-ca-client-6.6.3-0.x86\_64.rpm
+    12. vmware-ca-client-6.7.0-0.x86\_64.rpm
 
-    13. vmware-ca-client-devel-6.6.3-0.x86\_64.rpm
+    13. vmware-ca-client-devel-6.7.0-0.x86\_64.rpm
 
-    14. vmware-sts-6.6.3-0.x86\_64.rpm
+    14. vmware-sts-6.7.0-0.x86\_64.rpm
 
-    15. vmware-sts-client-6.6.3-0.x86\_64.rpm
+    15. vmware-sts-client-6.7.0-0.x86\_64.rpm
 
-    16. vmware-ic-config-6.6.3-0.x86\_64.rpm
+    16. vmware-ic-config-6.7.0-0.x86\_64.rpm
 
-    17. vmware-lightwave-clients-6.6.3-0.x86\_64.rpm
+    17. vmware-lightwave-clients-6.7.0-0.x86\_64.rpm
 
-    18. vmware-lightwave-server-6.6.3-0.x86\_64.rpm
+    18. vmware-lightwave-server-6.7.0-0.x86\_64.rpm
 
  
 

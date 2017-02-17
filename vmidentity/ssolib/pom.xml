@@ -6,11 +6,11 @@
   <parent>
     <groupId>com.vmware.identity</groupId>
     <artifactId>vmware-identity</artifactId>
-    <version>6.6.3</version>
+    <version>6.7.0</version>
   </parent>
 
   <artifactId>vmware-identity-websso-client</artifactId>
-  <version>6.6.3</version>
+  <version>6.7.0</version>
   <packaging>jar</packaging>
   <name>vmware-identity-websso-client</name>
 

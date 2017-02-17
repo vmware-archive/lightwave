@@ -6,11 +6,11 @@
   <parent>
     <groupId>com.vmware.identity</groupId>
     <artifactId>vmware-identity</artifactId>
-    <version>6.6.3</version>
+    <version>6.7.0</version>
   </parent>
 
   <artifactId>ROOT</artifactId>
-  <version>6.6.3</version>
+  <version>6.7.0</version>
   <packaging>war</packaging>
   <name>ROOT</name>
 

@@ -79,6 +79,7 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 #define VMDIR_DFL_6_0 "6.0"
 #define VMDIR_DFL_6_5 "6.5"
 #define VMDIR_DFL_6_6 "6.6"
+#define VMDIR_DFL_6_7 "6.7"
 #define VMDIR_DFL_7_0 "7.0"
 #define VMDIR_DFL_DEFAULT 1
 #define VMDIR_DFL_MODDN 3

@@ -50,8 +50,8 @@ $(LIGHTWAVE_OVA): $(LIGHTWAVE_STAGE_DIR)
 	-$(MV) $(LIGHTWAVE_OVA_STAGE)/lightwave.ova $(LIGHTWAVE_OVA)
 
 appliance-clean: lightwave-ova-clean photon_ova_clean
-	-$(RM) $(LIGHTWAVE_STAGE_DIR)/lw-appliance/*.ova
-	-$(RM) $(LIGHTWAVE_STAGE_DIR)/lw-appliance/*.iso
+	-$(RM) -f $(LIGHTWAVE_STAGE_DIR)/lw-appliance/*.ova
+	-$(RM) -f $(LIGHTWAVE_STAGE_DIR)/lw-appliance/*.iso
 	-$(RM) -rf $(LIGHTWAVE_STAGE_DIR)/lw-appliance/packer_cache
 	-$(RM) -rf $(LIGHTWAVE_STAGE_DIR)/lw-appliance
 
