@@ -408,28 +408,31 @@ VmDirServiceMain(
     );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmDirdStateSet(VMDIRD_STATE_NORMAL);
+    VmDirdStateSet(VmDirdGetTargetState());
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
                     "Lotus Vmdird: running... state (%d)",
                     VmDirdState());
 
-    /*
-    MSDN:
-        should perform clean-up tasks, including closing the global event,
-        and call SetServiceStatus with SERVICE_STOPPED.
-        After the service has stopped, you should not execute any additional
-        service code because you can introduce a race condition if the service
-        receives a start control and ServiceMain is called again.
-        Note that this problem is more likely to occur when
-        multiple services share a process.
-    */
-    if ( WaitForSingleObject(
-            vmDirNtServiceData.stopServiceEvent, INFINITE
-         ) == WAIT_FAILED )
+    if ( ! gVmdirGlobals.bPatchSchema && VmDirdState() != VMDIRD_STATE_RESTORE )
     {
-        dwError = GetLastError();
-        BAIL_ON_VMDIR_ERROR(dwError);
+        /*
+          MSDN:
+              should perform clean-up tasks, including closing the global event,
+              and call SetServiceStatus with SERVICE_STOPPED.
+              After the service has stopped, you should not execute any additional
+              service code because you can introduce a race condition if the service
+              receives a start control and ServiceMain is called again.
+              Note that this problem is more likely to occur when
+              multiple services share a process.
+        */
+        if ( WaitForSingleObject(
+                 vmDirNtServiceData.stopServiceEvent, INFINITE
+                 ) == WAIT_FAILED )
+        {
+            dwError = GetLastError();
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
     }
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Lotus Vmdird: exiting..." );

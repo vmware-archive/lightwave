@@ -87,6 +87,15 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 // Special SELF sid for internal use (not assigned to object as attribute)
 #define VMDIR_SELF_SID "S-1-7-32-666"
 
+// Values for RestoreStatus Key
+enum
+{
+    VMDIR_RESTORE_NOT_REQUIRED = 0,
+    VMDIR_RESTORE_REQUIRED,
+    VMDIR_RESTORE_READONLY,
+    VMDIR_RESTORE_FAILED
+};
+
 /* mutexes/threads/conditions */
 typedef struct _VMDIR_MUTEX* PVMDIR_MUTEX;
 typedef struct _VMDIR_RWLOCK* PVMDIR_RWLOCK;
@@ -888,6 +897,7 @@ typedef enum
 #define VMDIR_REG_KEY_SSL_DISABLED_PROTOCOLS "SslDisabledProtocols"
 #define VMDIR_REG_KEY_SSL_CIPHER_SUITE       "SslCipherSuite"
 #define VMDIR_REG_KEY_DIRTY_SHUTDOWN         "DirtyShutdown"
+#define VMDIR_REG_KEY_RESTORE_STATUS         "RestoreStatus"
 #define VMDIR_REG_KEY_ENABLE_RENAME          "EnableRename"
 #define VMAFD_REG_KEY_KRB5_CONF              "Krb5Conf"
 #define VMDIR_REG_KEY_LDAP_PORT               "LdapPort"

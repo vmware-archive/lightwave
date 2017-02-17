@@ -92,6 +92,12 @@ _VmDirCheckPartnerDomainFunctionalLevel(
     VOID
     );
 
+static
+DWORD
+VmDirCheckRestoreStatus(
+    VDIR_SERVER_STATE* pTargetState
+    );
+
 /*
  * load krb master key into gVmdirKrbGlobals.bervMasterKey
  */
@@ -304,6 +310,9 @@ VmDirInit(
     dwError = VmDirCheckForDirtyShutdown(&bDirtyShutdown);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirCheckRestoreStatus(&targetState);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = InitializeGlobalVars();
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -383,7 +392,8 @@ VmDirInit(
     {
         // Startup actions depend on what state is next.
         if ( targetState == VMDIRD_STATE_NORMAL ||
-             targetState == VMDIRD_STATE_STANDALONE )
+             targetState == VMDIRD_STATE_STANDALONE ||
+             targetState == VMDIRD_STATE_READ_ONLY)
         {
 
             dwError = _VmDirCheckPartnerDomainFunctionalLevel();
@@ -579,6 +589,12 @@ _VmDirRestoreInstance(
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Single node deployment topology, skip restore procedure.");
         printf("Single node deployment topology, skip restore procedure.\n");
 
+        dwError = VmDirSetRegKeyValueDword(
+                        VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                        VMDIR_REG_KEY_RESTORE_STATUS,
+                        VMDIR_RESTORE_NOT_REQUIRED);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         goto cleanup;
     }
 
@@ -607,9 +623,18 @@ _VmDirRestoreInstance(
     }
     if (dwError !=0 || restoredUsn == 0)
     {
+
+        // Failed to contact partners.
+        // Next server start needs to be in readonly.
+        dwError = VmDirSetRegKeyValueDword(
+                        VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                        VMDIR_REG_KEY_RESTORE_STATUS,
+                        VMDIR_RESTORE_READONLY);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         if (restoredUsn == 0 )
         {
-            dwError = ERROR_NOT_FOUND;
+            dwError = VMDIR_ERROR_RESTORE_PARTNERS_UNAVAILABLE;
         }
         printf("_VmDirRestoreInstance: failed to get restored USN from partners, error code: %d\n.", dwError );
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
@@ -714,6 +739,14 @@ _VmDirRestoreInstance(
     // Advance RID for all realms, USN advance (all writes) should >= RID advance (new entries).
     dwError = VmDirAdvanceDomainRID( dwAdvanceRID );
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    // Set registry to indicate that restore succeeded
+    dwError = VmDirSetRegKeyValueDword(
+                        VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                        VMDIR_REG_KEY_RESTORE_STATUS,
+                        VMDIR_RESTORE_NOT_REQUIRED);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     printf("Domain RID advanced count=%u\n", dwAdvanceRID);
 
     printf("Lotus instance restore succeeded.\n");
@@ -1672,5 +1705,117 @@ cleanup:
 
 error:
     VMDIR_SAFE_FREE_MEMORY(pszValue);
+    goto cleanup;
+}
+
+/*
+ * This function provides a mechanism to determine if vmdird needs to run
+ * in restore or in read-only mode because of a previously failed restore
+ * due to no reachable partners.
+ *
+ * If restore fails, the next start will run in read-only mode.
+ * The following restart will force attempt to restore. This cycle will
+ * continue until either a partner is available, or user intervention
+ * occurs.
+ *
+ * At startup we check for a registry value called "RestoreStatus". If
+ * that value doesn't exist or is VMDIR_RESTORE_NOT_REQUIRED then continue
+ * with requested startup.
+ *
+ * If its value is VMDIR_RESTORE_REQUIRED, start up vmdir server in
+ * restore mode and preemptively set registry to VMDIR_RESTORE_FAILED.
+ * At the end of restore mode, the registry will be in the next appropriate
+ * state, one of VMDIR_READONLY_REQUIRED, VMDIR_RESTORE_NOT_REQUIRED, or
+ * VMDIR_RESTORE_FAILED.
+ *
+ * If the value is VMDIR_READONLY_REQUIRED, change the registry to
+ * VMDIR_REG_RESTORE_REQUIRED and start vmdird in readonly mode.
+ * This will compel vmdir to retry restore on next start.
+ *
+ * VMDIR_RESTORE_FAILED indicates that the last restore operation failed
+ * for a reason other than unreachable partners and server will exit out.
+ * A successful restore or other manual intervention is required
+ * before server can be started normally again.
+ */
+static
+DWORD
+VmDirCheckRestoreStatus(
+    VDIR_SERVER_STATE* pTargetState
+    )
+{
+    DWORD dwError = 0;
+    VDIR_SERVER_STATE targetState = VMDIRD_STATE_UNDEFINED;
+    DWORD dwRestoreStatus = VMDIR_RESTORE_NOT_REQUIRED;
+
+    assert(pTargetState);
+    targetState = *pTargetState;
+
+    // Get the RestoreStatus value.
+    // Ignore error meaning val doesn't exist, proceed with
+    // requested startup.
+    (VOID)VmDirGetRegKeyValueDword(
+                VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                VMDIR_REG_KEY_RESTORE_STATUS,
+                &dwRestoreStatus,
+                VMDIR_RESTORE_NOT_REQUIRED);
+
+    // Either a restore was requested, or a previous
+    // restore failure occurred and was running in readonly.
+    if (dwRestoreStatus == VMDIR_RESTORE_REQUIRED ||
+        targetState == VMDIRD_STATE_RESTORE)
+    {
+
+        targetState = VMDIRD_STATE_RESTORE;
+
+        // Set to restore failure.
+        // Restore action will change this as needed but failure
+        // is asssumed until restore determine otherwise.
+        dwError = VmDirSetRegKeyValueDword(
+                        VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                        VMDIR_REG_KEY_RESTORE_STATUS,
+                        VMDIR_RESTORE_FAILED);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    // Previous attempt to restore failed due to no available partners
+    // Go into readonly mode
+    else if (dwRestoreStatus == VMDIR_RESTORE_READONLY)
+    {
+        targetState = VMDIRD_STATE_READ_ONLY;
+
+        dwError = VmDirSetRegKeyValueDword(
+                        VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+                        VMDIR_REG_KEY_RESTORE_STATUS,
+                        VMDIR_RESTORE_REQUIRED);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    // Unknown error occurred in previous restore attempt.
+    else if (dwRestoreStatus == VMDIR_RESTORE_FAILED)
+    {
+            targetState = VMDIRD_STATE_SHUTDOWN;
+            dwError = VMDIR_ERROR_RESTORE_ERROR;
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                            "%s: Previous restore attempt failed. Shutting down server.",
+                        __FUNCTION__);
+            BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    // Unknown value in registry
+    else if (dwRestoreStatus != VMDIR_RESTORE_NOT_REQUIRED)
+    {
+        dwError = ERROR_INVALID_CONFIGURATION;
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                        "%s: Unknown value (%d) read from registry key RetoreStatus",
+                        __FUNCTION__,
+                        dwRestoreStatus);
+
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    // no return value
+    VmDirdSetTargetState(targetState);
+    *pTargetState = targetState;
+
+cleanup:
+    return dwError;
+error:
     goto cleanup;
 }
