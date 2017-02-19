@@ -174,3 +174,4 @@ EXPORTS
     VmAfdSuperLogDisable
     VmAfdChangePNIDA
     VmAfdChangePNIDW
+    VmAfdGetDCList

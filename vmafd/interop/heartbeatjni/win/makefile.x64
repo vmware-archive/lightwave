@@ -5,7 +5,7 @@ JDK_BASE = $(LIGHTWAVE_JDK_ROOT:/=\)
 
 JAVAH = $(JDK_BASE)\bin\javah.exe
 CLASSNAME = com.vmware.identity.heartbeat.VmAfdHeartbeatAdapter
-JARDIR=..\..\..\..\build\authentication-framework\packages\afd-heartbeat-service.jar
+JARDIR=..\..\..\build\authentication-framework\packages\afd-heartbeat-service.jar
 
 
 all: heartbeatjni.h

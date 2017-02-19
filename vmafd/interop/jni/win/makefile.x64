@@ -5,7 +5,7 @@ JDK_BASE = $(LIGHTWAVE_JDK_ROOT:/=\)
 
 JAVAH = $(JDK_BASE)\bin\javah.exe
 CLASSNAME = com.vmware.identity.vecs.VecsAdapter
-JARDIR=..\..\..\..\build\authentication-framework\packages\vmware-endpoint-certificate-store.jar
+JARDIR=..\..\..\build\authentication-framework\packages\vmware-endpoint-certificate-store.jar
 
 
 all: vecsjni.h

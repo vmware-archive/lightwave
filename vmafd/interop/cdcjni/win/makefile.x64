@@ -5,7 +5,7 @@ JDK_BASE = $(LIGHTWAVE_JDK_ROOT:/=\)
 
 JAVAH = $(JDK_BASE)\bin\javah.exe
 CLASSNAME = com.vmware.identity.cdc.CdcAdapter
-JARDIR=..\..\..\..\build\authentication-framework\packages\client-domain-controller-cache.jar
+JARDIR=..\..\..\build\authentication-framework\packages\client-domain-controller-cache.jar
 
 
 all: cdcjni.h

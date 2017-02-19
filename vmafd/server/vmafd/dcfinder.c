@@ -21,6 +21,16 @@ VmAfdGetDomainController(
     return ERROR_NOT_SUPPORTED;
 }
 
+DWORD
+VmAfdGetDomainControllerList(
+    PCSTR pszDomain,
+    PVMAFD_DC_INFO_W *ppVmAfdDCInfoList,
+    PDWORD pdCount
+    )
+{
+    return ERROR_NOT_SUPPORTED;
+}
+
 #else
 
 static
