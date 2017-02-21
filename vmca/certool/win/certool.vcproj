@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_BOOST_ROOT)\include&quot;;&quot;$(SolutionDir)idl\win&quot;;&quot;$(SolutionDir)include&quot;;&quot;$(SolutionDir)include\public&quot;;&quot;$(SolutionDir)include\win&quot;;&quot;$(LIGHTWAVE_VMAFD_ROOT)\include&quot;;&quot;$(SolutionDir)\x64\$(ConfigurationName)&quot;"
+				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_BOOST_ROOT)\include&quot;;&quot;$(SolutionDir)idl\win&quot;;&quot;$(SolutionDir)include&quot;;&quot;$(SolutionDir)include\public&quot;;&quot;$(SolutionDir)include\win&quot;;&quot;$(LIGHTWAVE_VMAFD_ROOT)\win64\include&quot;;&quot;$(SolutionDir)\x64\$(ConfigurationName)&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;WIN32_LEAN_AND_MEAN"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -121,7 +121,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_BOOST_ROOT)\include&quot;;&quot;$(SolutionDir)idl\win&quot;;&quot;$(SolutionDir)include&quot;;&quot;$(SolutionDir)include\public&quot;;&quot;$(SolutionDir)include\win&quot;;&quot;$(LIGHTWAVE_VMAFD_ROOT)\include&quot;;&quot;$(SolutionDir)\x64\$(ConfigurationName)&quot;"
+				AdditionalIncludeDirectories="&quot;$(LIGHTWAVE_BOOST_ROOT)\include&quot;;&quot;$(SolutionDir)idl\win&quot;;&quot;$(SolutionDir)include&quot;;&quot;$(SolutionDir)include\public&quot;;&quot;$(SolutionDir)include\win&quot;;&quot;$(LIGHTWAVE_VMAFD_ROOT)\win64\include&quot;;&quot;$(SolutionDir)\x64\$(ConfigurationName)&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;WIN32_LEAN_AND_MEAN"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
