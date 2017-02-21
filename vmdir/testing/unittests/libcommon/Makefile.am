@@ -3,6 +3,7 @@ lib_LTLIBRARIES = libcommonunittests.la
 libcommonunittests_la_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
+    @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
 
 libcommonunittests_la_SOURCES = \
