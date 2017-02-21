@@ -2015,6 +2015,11 @@ VMCAJavaGenCertA(
         BAIL_ON_ERROR(dwError);
     }
 
+    if (!IsNullOrEmptyString(pszDNSName)) {
+        dwError = VMCASetCertValueA( VMCA_OID_DNS, pCertReqData, pszDNSName);
+        BAIL_ON_ERROR(dwError);
+    }
+
     dwError = VMCASetKeyUsageConstraintsA(pCertReqData,dwKeyUsageConstraints);
     BAIL_ON_ERROR(dwError);
 
@@ -2128,6 +2133,11 @@ VMCAJavaGenCertHA(
 
     if (!IsNullOrEmptyString(pszIPAddress)) {
         dwError = VMCASetCertValueA( VMCA_OID_IPADDRESS, pCertReqData, pszIPAddress);
+        BAIL_ON_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pszDNSName)) {
+        dwError = VMCASetCertValueA( VMCA_OID_DNS, pCertReqData, pszDNSName);
         BAIL_ON_ERROR(dwError);
     }
 
