@@ -422,8 +422,14 @@ VMCALog(
     }
     if (gVMCALogType == VMCA_LOG_TYPE_CONSOLE)
     {
+        unsigned long ulThreadId = -1;
+#ifdef _WIN32
+        ulThreadId = (unsigned long) pthread_self().p;
+#else
+        ulThreadId = (unsigned long) pthread_self();
+#endif
         fprintf(stderr, "VMCA:t@%lu:%-3.7s: %s\n",
-                (unsigned long) pthread_self(),
+                ulThreadId,
                 VMCALevelToText(level),
                 logMessage);
         fflush( stderr );
