@@ -40,7 +40,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)common\include&quot;;&quot;$(SolutionDir)common\include\public&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\Include&quot;;&quot;$(GOBUILD_CAYMAN_CURL_ROOT)\win64_vc90sp1\include&quot;;&quot;$(TCROOT)\win64\jansson-2.5-vc90sp1\include&quot;;&quot;$(GOBUILD_CAYMAN_OPENSSL_ROOT)\win64_vc90sp1\include&quot;;&quot;$(GOBUILD_RD_AUTHENTICATION_FRAMEWORK_ROOT)\include&quot;;$(NOINHERIT)"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)common\include&quot;;&quot;$(SolutionDir)common\include\public&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_CURL_ROOT)\include&quot;;&quot;$(LIGHTWAVE_JANSSON_ROOT)\include&quot;;&quot;$(LIGHTWAVE_OPENSSL_ROOT)\include&quot;;&quot;$(LIGHTWAVE_VMAFD_ROOT)\include&quot;;$(NOINHERIT)"
 				RuntimeLibrary="2"
 			/>
 			<Tool
@@ -56,7 +56,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libcurl.lib jansson.lib libeay32.lib"
 				OutputFile="$(OutDir)\libsso$(ProjectName).dll"
-				AdditionalLibraryDirectories="&quot;$(GOBUILD_CAYMAN_CURL_ROOT)\win64_vc90sp1\bin&quot;;&quot;$(TCROOT)\win64\jansson-2.5-vc90sp1\lib&quot;;&quot;$(GOBUILD_CAYMAN_OPENSSL_ROOT)\win64_vc90sp1\bin&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\Lib\x64&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\VC\Lib\amd64&quot;"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_CURL_ROOT)\bin&quot;;&quot;$(LIGHTWAVE_JANSSON_ROOT)\lib&quot;;&quot;$(LIGHTWAVE_OPENSSL_ROOT)\bin&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
 				ModuleDefinitionFile="common.def"
 				SubSystem="2"
 				TargetMachine="17"
@@ -107,7 +107,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)common\include&quot;;&quot;$(SolutionDir)common\include\public&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\Include&quot;;&quot;$(GOBUILD_CAYMAN_CURL_ROOT)\win64_vc90sp1\include&quot;;&quot;$(TCROOT)\win64\jansson-2.5-vc90sp1\include&quot;;&quot;$(GOBUILD_CAYMAN_OPENSSL_ROOT)\win64_vc90sp1\include&quot;;&quot;$(GOBUILD_RD_AUTHENTICATION_FRAMEWORK_ROOT)\include&quot;;$(NOINHERIT)"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)common\include&quot;;&quot;$(SolutionDir)common\include\public&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include&quot;;&quot;$(LIGHTWAVE_CURL_ROOT)\include&quot;;&quot;$(LIGHTWAVE_JANSSON_ROOT)\include&quot;;&quot;$(LIGHTWAVE_OPENSSL_ROOT)\include&quot;;&quot;$(LIGHTWAVE_VMAFD_ROOT)\include&quot;;$(NOINHERIT)"
 				RuntimeLibrary="2"
 			/>
 			<Tool
@@ -123,7 +123,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="libcurl.lib jansson.lib libeay32.lib"
 				OutputFile="$(OutDir)\libsso$(ProjectName).dll"
-				AdditionalLibraryDirectories="&quot;$(GOBUILD_CAYMAN_CURL_ROOT)\win64_vc90sp1\bin&quot;;&quot;$(TCROOT)\win64\jansson-2.5-vc90sp1\lib&quot;;&quot;$(GOBUILD_CAYMAN_OPENSSL_ROOT)\win64_vc90sp1\bin&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\Lib\x64&quot;;&quot;$(TCROOT)\win32\winsdk-7.0.7600\VC\Lib\amd64&quot;"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_CURL_ROOT)\bin&quot;;&quot;$(LIGHTWAVE_JANSSON_ROOT)\lib&quot;;&quot;$(LIGHTWAVE_OPENSSL_ROOT)\bin&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64&quot;"
 				ModuleDefinitionFile="common.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
