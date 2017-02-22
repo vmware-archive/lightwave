@@ -219,9 +219,9 @@ VmAfdHandlePassRefresh(
                                        &pszActPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    if (IsNullOrEmptyString(pszActPassword))
+    if (! IsNullOrEmptyString(pszActPassword))
     {
-                    // store new password in registry
+        // store new password in registry
         dwError = VmAfdAllocateStringWFromA( pszActPassword, &pwszActPassword );
         BAIL_ON_VMAFD_ERROR(dwError);
 
