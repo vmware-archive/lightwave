@@ -13,7 +13,7 @@
  */
 
 #include "includes.h"
-#include <vmafdtypes.h>
+#include "../../../../vmafd/include/public/vmafdtypes.h"
 
 #ifdef _WIN32
 static PCSTRING const VMAFD_CLIENT_LIB_PATH = "libvmafdclient";

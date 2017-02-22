@@ -1,0 +1,94 @@
+SRCROOT = ../../
+MAKEROOT=$(SRCROOT)/support/make
+include $(MAKEROOT)/makedefs.mk
+
+MKDIR=/bin/mkdir
+RM=/bin/rm
+CP=/bin/cp
+LN=/bin/ln
+RPMBUILD=/usr/bin/rpmbuild
+
+RPMBUILD_ROOT=$(CURDIR)/rpmbuild
+RPMBUILD_BUILD=$(RPMBUILD_ROOT)/BUILD
+RPMBUILD_SPECS=$(RPMBUILD_ROOT)/SPECS
+RPMBUILD_RPMS=$(RPMBUILD_ROOT)/RPMS
+RPMBUILD_SOURCES=$(RPMBUILD_ROOT)/SOURCES
+RPMBUILD_SRPMS=$(RPMBUILD_ROOT)/SRPMS
+RPMBUILD_TMP=$(RPMBUILD_ROOT)/tmp
+
+RPMBUILD_DIRS= \
+    $(RPMBUILD_BUILD) \
+    $(RPMBUILD_SPECS) \
+    $(RPMBUILD_RPMS)  \
+    $(RPMBUILD_SOURCES) \
+    $(RPMBUILD_SRPMS) \
+    $(RPMBUILD_TMP)
+
+SRCROOT=..
+
+CLEAN_OBJECTS = \
+    ssoclients
+
+PKG_SPEC=vmware-sts-c-client.spec
+
+.PHONY: all package
+
+all: package
+
+package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
+	cd $(RPMBUILD_ROOT) && \
+	$(RPMBUILD) \
+              -ba \
+              --define "_topdir $(RPMBUILD_ROOT)" \
+              --define "_prefix /opt/vmware" \
+              --define "_bindir /opt/vmware/bin" \
+              --define "_sbindir /opt/vmware/sbin" \
+              --define "_lib64dir /opt/vmware/lib64" \
+              --define "_datadir /opt/vmware/share" \
+              --define "_includedir /opt/vmware/include" \
+              --define "_likewise_open_prefix /opt/likewise" \
+              --define "_janssondir /usr" \
+              --define "_curldir /usr" \
+              --define "_ssldir /usr" \
+              --define "_commons_daemondir ${COMMONS_DAEMON}" \
+              --define "_javahome ${JAVA_HOME}" \
+              --define "_antdir ${ANT_HOME}" \
+              --define "_tomcatdir ${TOMCAT_HOME}" \
+              --define "_jaxwsdir ${JAXWS_HOME}" \
+              --define "_mavendir ${MAVEN_HOME}" \
+              --define "_version $(VMSTS_MAJOR_VER).$(VMSTS_MINOR_VER).$(VMSTS_RELEASE_VER)" \
+              --define "_patch $(VMSTS_PATCH_VER)" \
+              --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
+              SPECS/$(PKG_SPEC)
+
+$(RPMBUILD_SPECS)/$(PKG_SPEC) : $(CURDIR)/package/rpm/$(PKG_SPEC) | $(RPMBUILD_SPECS)
+	@$(CP) -f $< $@
+
+$(RPMBUILD_BUILD): $(realpath $(SRCROOT)) | $(RPMBUILD_ROOT)
+	@$(LN) -s $< $@
+
+$(RPMBUILD_SPECS):
+	@$(MKDIR) -p $@
+
+$(RPMBUILD_RPMS):
+	@$(MKDIR) -p $@
+
+$(RPMBUILD_SOURCES):
+	@$(MKDIR) -p $@
+
+$(RPMBUILD_SRPMS):
+	@$(MKDIR) -p $@
+
+$(RPMBUILD_TMP):
+	@$(MKDIR) -p $@
+
+$(RPMBUILD_ROOT):
+	@$(MKDIR) -p $@
+
+clean:
+	@if [ -f Makefile ]; then \
+		$(MAKE) distclean; \
+	fi
+	@$(RM) -rf $(CLEAN_OBJECTS)
+	@$(RM) -f `find .. -name Makefile.in`
+
