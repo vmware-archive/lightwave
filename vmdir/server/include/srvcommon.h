@@ -482,7 +482,8 @@ typedef struct SearchReq
     VDIR_BERVALUE * attrs;
     VDIR_FILTER *   filter;
     VDIR_BERVALUE   filterStr;
-    size_t          iNumEntrySent;  // total number entries sent for this request
+    size_t          iNumEntrySent;      // total number entries sent for this request
+    BOOLEAN         bStoreRsltInMem;    // store results in mem vs. writing to ber
 } SearchReq;
 
 typedef union _VDIR_LDAP_REQUEST
@@ -854,7 +855,7 @@ VmDirAttributeDup(
 
 DWORD
 VmDirStringToBervalContent(
-    PSTR               pszBerval,
+    PCSTR              pszBerval,
     PVDIR_BERVALUE     pDupBerval
     );
 
@@ -902,12 +903,6 @@ DWORD
 VmDirBervalContentDup(
     PVDIR_BERVALUE     pBerval,
     PVDIR_BERVALUE     pDupBerval
-    );
-
-DWORD
-VmDirNewEntry(
-    PCSTR pszDn,
-    PVDIR_ENTRY* ppEntry
     );
 
 DWORD

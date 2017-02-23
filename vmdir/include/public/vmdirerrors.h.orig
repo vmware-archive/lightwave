@@ -89,8 +89,12 @@
 #define VMDIR_ERROR_NO_FUNC_LVL                       (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 28)      // 9128
 #define VMDIR_ERROR_INVALID_FUNC_LVL                  (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 29)      // 9129
 #define VMDIR_ERROR_INCOMPLETE_MAX_DFL                (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 30)      // 9130
+<<<<<<< HEAD
 #define VMDIR_ERROR_RESTORE_ERROR                     (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 31)      // 9131
 #define VMDIR_ERROR_AUTH_BAD_DATA                     (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 32)      // 9132
+=======
+#define VMDIR_ERROR_AUTH_BAD_DATA                     (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 31)      // 9131
+>>>>>>> parent of 2891037... Revert "vmdir rest head implementation (excluded from build)"
 
 // SID/ACL 9200 ~9229
 #define VMDIR_ERROR_RID_LIMIT_EXCEEDED                (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 100 )    // 9200

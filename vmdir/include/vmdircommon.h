@@ -907,6 +907,7 @@ typedef enum
 #define VMDIR_REG_KEY_LDAPS_LISTEN_PORTS      "LdapsListenPorts"
 #define VMDIR_REG_KEY_LDAP_CONNECT_PORTS      "LdapConnectPorts"
 #define VMDIR_REG_KEY_LDAPS_CONNECT_PORTS     "LdapsConnectPorts"
+#define VMDIR_REG_KEY_REST_LISTEN_PORT        "RestListenPort"
 #define VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC   "LdapRecvTimeoutSec"
 #define VMDIR_REG_KEY_ALLOW_ADMIN_LOCKOUT     "AllowAdminLockout"
 #define VMDIR_REG_KEY_MAX_OP_THREADS          "MaxLdapOpThrs"
