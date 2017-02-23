@@ -1,17 +1,17 @@
-bin_PROGRAMS = vdcleavefed
+bin_PROGRAMS = lwraftleavefed
 
-vdcleavefed_SOURCES = \
+lwraftleavefed_SOURCES = \
     parseargs.c \
     main.c
 
-vdcleavefed_CPPFLAGS = \
+lwraftleavefed_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
     -I$(top_srcdir)/tools/include \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
-vdcleavefed_LDADD = \
+lwraftleavefed_LDADD = \
     $(top_builddir)/client/liblwraftclient.la \
     $(top_builddir)/common/libcommon.la \
     @LWIO_LIBS@ \
@@ -24,6 +24,6 @@ vdcleavefed_LDADD = \
     @GSSAPI_LIBS@ \
     @LDAP_LIBS@
 
-vdcleavefed_LDFLAGS = \
+lwraftleavefed_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@

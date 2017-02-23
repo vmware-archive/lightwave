@@ -98,3 +98,8 @@ tools/win/wininstaller/wininstaller.v12.suo
 */build/libtool
 */build/Makefile
 stage/*
+*~
+*/lw-lwraft/rpmbuild/*
+lw-raft/rpmbuild/*
+vmidentity/rest/core/server/${sys:vmware.log.dir}
+vmidentity/service/target/

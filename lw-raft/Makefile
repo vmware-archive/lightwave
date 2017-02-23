@@ -1,4 +1,6 @@
-include ../../support/make/makedefs.mk
+SRCROOT := ../
+MAKEROOT=$(SRCROOT)/support/make
+include $(MAKEROOT)/makedefs.mk
 
 MKDIR=/bin/mkdir
 RM=/bin/rm
@@ -25,34 +27,9 @@ RPMBUILD_DIRS= \
 SRCROOT=..
 
 CLEAN_OBJECTS = \
-    client \
-    common \
-    config \
-    config.log \
-    config.status \
-    gssapi-plugins \
-    include \
-    kdccommon \
-    libtool \
-    rpmbuild \
-    server \
-    testing \
-    thirdparty \
-    tools \
-    $(SRCROOT)/aclocal.m4 \
-    $(SRCROOT)/ar-lib \
-    $(SRCROOT)/autom4te.cache \
-    $(SRCROOT)/compile \
-    $(SRCROOT)/config.guess \
-    $(SRCROOT)/config.sub \
-    $(SRCROOT)/configure \
-    $(SRCROOT)/depcomp \
-    $(SRCROOT)/include/config.h.in* \
-    $(SRCROOT)/install-sh \
-    $(SRCROOT)/ltmain.sh \
-    $(SRCROOT)/missing
+    rpmbuild
 
-PKG_SPEC=lwraft.spec
+PKG_SPEC=vmware-lightwave-raft.spec
 
 .PHONY: all package
 
@@ -67,13 +44,8 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_bindir /opt/vmware/bin" \
               --define "_sbindir /opt/vmware/sbin" \
               --define "_lib64dir /opt/vmware/lib64" \
-              --define "_datadir /opt/vmware/share" \
-              --define "_includedir /opt/vmware/include" \
-              --define "_likewise_open_prefix /opt/likewise" \
-              --define "_vmevent_prefix /opt/vmware" \
-              --define "_version $(LWRAFT_MAJOR_VER).$(LWRAFT_MINOR_VER).$(LWRAFT_RELEASE_VER)" \
-              --define "_vmevent_ver $(VMEVENT_MAJOR_VER).$(VMEVENT_MINOR_VER)" \
-              --define "_patch $(LWRAFT_PATCH_VER)" \
+              --define "_version $(LW_RAFT_MAJOR_VER).$(LW_RAFT_MINOR_VER).$(LW_RAFT_RELEASE_VER)" \
+              --define "_patch $(LW_RAFT_PATCH_VER)" \
               --buildroot $(RPMBUILD_ROOT)/BUILDROOT \
               SPECS/$(PKG_SPEC)
 
@@ -102,9 +74,5 @@ $(RPMBUILD_ROOT):
 	@$(MKDIR) -p $@
 
 clean:
-	@if [ -f Makefile ]; then \
-		$(MAKE) distclean; \
-	fi
 	@$(RM) -rf $(CLEAN_OBJECTS)
-	@$(RM) -f `find .. -name Makefile.in`
 

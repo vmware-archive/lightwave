@@ -573,20 +573,9 @@ AC_CONFIG_FILES([Makefile
                  testing/query/Makefile
                  testing/kerberos/Makefile
                  tools/Makefile
-                 tools/vdcaclmgr/Makefile
-                 tools/vdcadmintool/Makefile
                  tools/lwraftpromo/Makefile
-                 tools/vdcpass/Makefile
-                 tools/vdcrepadmin/Makefile
-                 tools/vdcsetupldu/Makefile
-                 tools/vdcbackup/Makefile
-                 tools/vmkdc_admin/Makefile
-                 tools/vdcsrp/Makefile
-                 tools/vdcupgrade/Makefile
+                 tools/vdcadmintool/Makefile
                  tools/vdcleavefed/Makefile
-                 tools/vdcresetMachineActCred/Makefile
-                 tools/vdcmetric/Makefile
-                 tools/vdcschema/Makefile
                  tools/test/Makefile
                  tools/test/circularbuffer/Makefile
                  tools/test/dequetest/Makefile

@@ -25,6 +25,12 @@ BuildRequires:  coreutils >= 8.22, openssl-devel >= 1.0.2, krb5 >= 1.14, cyrus-s
 %define _likewise_open_bindir %{_likewise_open_prefix}/bin
 %define _likewise_open_sbindir %{_likewise_open_prefix}/sbin
 
+#The %_unpackaged_files_terminate_build macro,
+#if set to 1, tells rpmbuild to exit if it finds files that are in the #
+#$RPM_BUILD_ROOT directory but not listed as part of the package. #
+#Set this macro to 0 to turn off the Fascist build policy
+%define _unpackaged_files_terminate_build 0
+
 %if 0%{?_vmevent_prefix:1} == 0
 %define _vmevent_prefix /opt/vmware
 %endif
@@ -188,27 +194,6 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 
 %post client
 
-    # add libgssapi_srp.so to GSSAPI plugin directory
-    if [ ! -h %{_krb5_lib_dir}/gss/libgssapi_srp.so ]; then
-        /bin/ln -s %{_lib64dir}/libgssapi_srp.so %{_krb5_lib_dir}/gss/libgssapi_srp.so
-    fi
-
-    # Add GSSAPI SRP plugin configuration to GSS mech file
-    if [ -f %{_krb5_gss_conf_dir}/mech ]; then
-        if [ `grep -c  "1.2.840.113554.1.2.10" %{_krb5_gss_conf_dir}/mech` -lt 1 ]; then
-            echo "srp  1.2.840.113554.1.2.10 libgssapi_srp.so" >> %{_krb5_gss_conf_dir}/mech
-        fi
-    fi
-
-    # Restore commented out NTLM mech oid if found
-    if [ `grep -c  "#ntlm " %{_krb5_gss_conf_dir}/mech` -ge 1 ]; then
-        /bin/mv %{_krb5_gss_conf_dir}/mech %{_krb5_gss_conf_dir}/mech-$$
-        /bin/cat %{_krb5_gss_conf_dir}/mech-$$ | sed 's|^#ntlm|ntlm|' > %{_krb5_gss_conf_dir}/mech
-        if [ -s %{_krb5_gss_conf_dir}/mech ]; then
-            /bin/rm %{_krb5_gss_conf_dir}/mech-$$
-        fi
-    fi
-
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
 
@@ -295,26 +280,6 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
     # First argument is 0 => Uninstall
     # First argument is 1 => Upgrade
 
-    case "$1" in
-        0)
-            # Cleanup GSSAPI SRP symlink
-            if [ -h %{_krb5_lib_dir}/gss/libgssapi_srp.so ]; then
-                /bin/rm -f %{_krb5_lib_dir}/gss/libgssapi_srp.so
-            fi
-
-            # Remove GSSAPI SRP Plugin configuration from GSS mech file
-            if [ -f %{_krb5_gss_conf_dir}/mech ]; then
-                if [ `grep -c "1.2.840.113554.1.2.10" %{_krb5_gss_conf_dir}/mech` -gt 0 ]; then
-                    /bin/cat %{_krb5_gss_conf_dir}/mech | sed '/1.2.840.113554.1.2.10/d' > "/tmp/mech-$$"
-                    if [ -s /tmp/mech-$$ ]; then
-                        /bin/mv "/tmp/mech-$$" %{_krb5_gss_conf_dir}/mech
-                    fi
-                fi
-            fi
-
-            ;;
-    esac
-
 %postun
 
     # First argument is 0 => Uninstall
@@ -343,25 +308,11 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %files
 %defattr(-,root,root)
 %{_sbindir}/*
-%{_bindir}/vdcadmintool
-%{_bindir}/vdcbackup
-%{_bindir}/vdcaclmgr
-%{_bindir}/vdcleavefed
-%{_bindir}/vdcpass
-%{_bindir}/vdcrepadmin
 %{_bindir}/lwraftpromo
-%{_bindir}/vdcsetupldu
-%{_bindir}/vdcsrp
+%{_bindir}/lwraftadmintool
+%{_bindir}/lwraftleavefed
 %{_bindir}/unix_srp
-%{_bindir}/vdcupgrade
-%{_bindir}/vmkdc_admin
-%{_bindir}/vdcmetric
-%{_bindir}/vdcschema
-%{_bindir}/lwraft_upgrade.sh
-%{_bindir}/vdcresetMachineActCred
-%{_lib64dir}/libkrb5crypto.so*
 %{_lib64dir}/sasl2/libsasllwraftdb.so*
-%{_lib64dir}/libvmkdcserv.so*
 %{_datadir}/config/sasllwraftd.conf
 %{_datadir}/config/lwraft.reg
 %{_datadir}/config/lwraftschema.ldif
@@ -372,9 +323,6 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_datadir}/config/lwraft-client.reg
 %{_lib64dir}/liblwraftclient.so*
 %{_lib64dir}/libcsrp.so*
-%{_lib64dir}/libgssapi_ntlm.so*
-%{_lib64dir}/libgssapi_srp.so*
-%{_lib64dir}/libgssapi_unix.so*
 
 %files client-devel
 %defattr(-,root,root)
@@ -387,12 +335,6 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_lib64dir}/liblwraftclient.la
 %{_lib64dir}/libcsrp.a
 %{_lib64dir}/libcsrp.la
-%{_lib64dir}/libgssapi_ntlm.a
-%{_lib64dir}/libgssapi_ntlm.la
-%{_lib64dir}/libgssapi_srp.a
-%{_lib64dir}/libgssapi_srp.la
-%{_lib64dir}/libgssapi_unix.a
-%{_lib64dir}/libgssapi_unix.la
 
 %exclude %{_bindir}/dequetest
 %exclude %{_bindir}/lwraftclienttest
@@ -400,12 +342,8 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %exclude %{_bindir}/parseargstest
 %exclude %{_bindir}/registrytest
 %exclude %{_bindir}/stringtest
-%exclude %{_lib64dir}/libkrb5crypto.a
-%exclude %{_lib64dir}/libkrb5crypto.la
 %exclude %{_lib64dir}/sasl2/libsasllwraftdb.a
 %exclude %{_lib64dir}/sasl2/libsasllwraftdb.la
-%exclude %{_lib64dir}/libvmkdcserv.a
-%exclude %{_lib64dir}/libvmkdcserv.la
 
 # %doc ChangeLog README COPYING
 

@@ -1,11 +1,11 @@
-bin_PROGRAMS = vdcadmintool
+bin_PROGRAMS = lwraftadmintool
 
-vdcadmintool_SOURCES = \
+lwraftadmintool_SOURCES = \
     main.c \
     ldapbindclient.c \
     util.c
 
-vdcadmintool_CPPFLAGS = \
+lwraftadmintool_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/include/public \
     -I$(top_srcdir)/tools/include \
@@ -15,7 +15,7 @@ vdcadmintool_CPPFLAGS = \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
-vdcadmintool_LDADD = \
+lwraftadmintool_LDADD = \
     $(top_builddir)/common/libcommon.la \
     $(top_builddir)/client/liblwraftclient.la \
     @DCERPC_LIBS@ \
@@ -30,6 +30,6 @@ vdcadmintool_LDADD = \
     @SASL_LIBS@ \
     @LDAP_LIBS@
 
-vdcadmintool_LDFLAGS = \
+lwraftadmintool_LDFLAGS = \
     @DCERPC_LDFLAGS@ \
     @LW_LDFLAGS@
