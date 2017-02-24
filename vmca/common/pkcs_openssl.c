@@ -1646,7 +1646,11 @@ VMCASetCSRSubjectKeyIdentifier(
     X509V3_set_ctx_nodb(&ctx);
     X509V3_set_ctx(&ctx, NULL, NULL, pReq, NULL, 0);
 
-    pExtension = X509V3_EXT_conf_nid(NULL, &ctx, NID_subject_key_identifier, "hash");
+    pExtension = X509V3_EXT_conf_nid(
+                                NULL,
+                                &ctx,
+                                NID_subject_key_identifier,
+                                (char*)"hash");
     if (pExtension == NULL)
     {
         dwError = VMCA_INVALID_CSR_FIELD;
@@ -1655,6 +1659,49 @@ VMCASetCSRSubjectKeyIdentifier(
 
     sk_X509_EXTENSION_push(pStack, pExtension);
 error:
+    return dwError;
+}
+
+static DWORD
+VMCASetCSRAuthorityInfoAccess(
+    STACK_OF(X509_EXTENSION) *pStack,
+    X509 *pCert,
+    X509 *pIssuer
+    )
+{
+    DWORD dwError = 0;
+    X509V3_CTX ctx;
+    X509_EXTENSION *pExtension = NULL;
+    PSTR pszIPAddress = NULL;
+    PSTR pszAIAString = NULL;
+
+    X509V3_set_ctx_nodb(&ctx);
+    X509V3_set_ctx(&ctx, pIssuer, pCert, NULL, NULL, 0);
+
+    dwError = VmAfdGetPNIDA(NULL, &pszIPAddress);
+    BAIL_ON_ERROR(dwError);
+
+    dwError = VMCAAllocateStringPrintfA(
+                                &pszAIAString,
+                                "caIssuers;URI:https://%s/afd/vecs/ssl",
+                                pszIPAddress);
+    BAIL_ON_ERROR(dwError);
+
+    pExtension = X509V3_EXT_conf_nid(
+                                NULL,
+                                &ctx,
+                                NID_info_access,
+                                (char*)pszAIAString);
+    if (pExtension == NULL)
+    {
+        dwError = VMCA_INVALID_CSR_FIELD;
+        BAIL_ON_ERROR(dwError);
+    }
+
+    sk_X509_EXTENSION_push(pStack, pExtension);
+error:
+    VMCA_SAFE_FREE_MEMORY(pszIPAddress);
+    VMCA_SAFE_FREE_MEMORY(pszAIAString);
     return dwError;
 }
 
@@ -1672,7 +1719,11 @@ VMCASetAuthorityKeyIdentifier(
     X509V3_set_ctx_nodb(&ctx);
     X509V3_set_ctx(&ctx, pIssuer, pCert, NULL, NULL, 0);
 
-    pExtension = X509V3_EXT_conf_nid(NULL, &ctx, NID_authority_key_identifier, "keyid");
+    pExtension = X509V3_EXT_conf_nid(
+                                NULL,
+                                &ctx,
+                                NID_authority_key_identifier,
+                                "keyid");
     if (pExtension == NULL)
     {
         dwError = VMCA_INVALID_CSR_FIELD;
@@ -2010,6 +2061,9 @@ VMCACreateSigningRequestPrivate(
 
     dwError = VMCASetCSRSubjectKeyIdentifier(pStack, pReq);
     BAIL_ON_ERROR(dwError);
+
+//    dwError = VMCASetCSRAuthorityInfoAccess(pStack, pReq, pCertRequest->pszIPAddress);
+//    BAIL_ON_ERROR(dwError);
 
     dwError = X509_REQ_add_extensions(pReq, pStack);
     BAIL_ON_SSL_ERROR(dwError, VMCA_SSL_ADD_EXTENSION);
@@ -2597,6 +2651,9 @@ VMCACopyExtensions(
 
     // Copy AuthorityKeyId from CA certificate
     dwError = VMCASetAuthorityKeyIdentifier(pStack, pCertificate, pCACertificate);
+    BAIL_ON_ERROR(dwError);
+
+    dwError = VMCASetCSRAuthorityInfoAccess(pStack, pCertificate, pCACertificate);
     BAIL_ON_ERROR(dwError);
 
     extCount = sk_X509_EXTENSION_num(pStack);
