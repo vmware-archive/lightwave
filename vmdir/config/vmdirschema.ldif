@@ -20098,6 +20098,57 @@ attributeTypes: (
     SINGLE-VALUE
     )
 
+attributeTypes: (
+    VMWare.OIDC.attribute.12
+    NAME 'vmwOidcClientSecret'
+    DESC 'Client Secret'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.13
+    NAME 'vmwOidcClientAuthorities'
+    DESC 'Client Authorities'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.14
+    NAME 'vmwOidcResourceIds'
+    DESC 'Resources that the Client can access'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.15
+    NAME 'vmwOidcScopes'
+    DESC 'The Scope of the Client'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.16
+    NAME 'vmwOidcAutoApproveScopes'
+    DESC 'The Scopes for which the Client does not require user approval'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.17
+    NAME 'vmwOidcAuthorizedGrantTypes'
+    DESC 'The grant types for which this client is authorized'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    VMWare.OIDC.attribute.18
+    NAME 'vmwOidcAdditionalInformation'
+    DESC 'Additional information not required for vanilla OAuth (JSON blob)'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
 objectClasses: (
     VMWare.OIDC.objectclass.1
     NAME 'vmwOidcRelyingParty'
@@ -20111,7 +20162,14 @@ objectClasses: (
           vmwOidcPostLogoutRedirectURI $
           vmwOidcLogoutURI $
           vmwOidcCertSubDN $
-          vmwOidcAuthnRequestClientAssertionLifetimeMS )
+          vmwOidcAuthnRequestClientAssertionLifetimeMS $
+          vmwOidcClientSecret $
+          vmwOidcClientAuthorities $
+          vmwOidcResourceIds $
+          vmwOidcScopes $
+          vmwOidcAutoApproveScopes $
+          vmwOidcAuthorizedGrantTypes $
+          vmwOidcAdditionalInformation )
     )
 
 objectClasses: (

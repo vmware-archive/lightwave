@@ -48,7 +48,7 @@ public class OIDCClientMapper {
         OIDCClient oidcClient  = null;
         try {
             Long lifetimeMS = oidcClientMetadataDTO.getAuthnRequestClientAssertionLifetimeMS();
-            oidcClient = new OIDCClient.Builder(null).
+            oidcClient = new OIDCClient.Builder().
                          redirectUris(oidcClientMetadataDTO.getRedirectUris()).
                          tokenEndpointAuthMethod(oidcClientMetadataDTO.getTokenEndpointAuthMethod()).
                          postLogoutRedirectUris(oidcClientMetadataDTO.getPostLogoutRedirectUris()).

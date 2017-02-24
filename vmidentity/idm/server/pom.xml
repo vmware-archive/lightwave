@@ -141,6 +141,12 @@
         <artifactId>commons-pool2</artifactId>
     </dependency>
 
+    <!-- Jackson Parser -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
 
     <!-- Bouncy Castle dependencies -->
       <dependency>

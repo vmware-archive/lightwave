@@ -29,6 +29,7 @@
 package com.vmware.identity.idm.server.config.directory;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
@@ -67,6 +68,7 @@ import com.vmware.identity.idm.ClientCertPolicy;
 import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.DuplicateCertificateException;
 import com.vmware.identity.idm.DuplicateProviderException;
+import com.vmware.identity.idm.DuplicatedOIDCClientException;
 import com.vmware.identity.idm.DuplicatedOIDCRedirectURLException;
 import com.vmware.identity.idm.IDMException;
 import com.vmware.identity.idm.IDPConfig;
@@ -2055,26 +2057,36 @@ public class DirectoryConfigStore implements IConfigStore
 
             OIDCClientLdapObject oidcClientLdapObject = OIDCClientLdapObject.getInstance();
 
-            List<String> uriStrings = oidcClient.getRedirectUris();
-            String[] uris = uriStrings.toArray(new String[uriStrings.size()]);
-            String urisFilter = oidcClientLdapObject.getInSetSearchFilter(OIDCClientLdapObject.PROPERTY_OIDC_REDIRECT_URIS, uris);
+            if (oidcClient.getRedirectUris() != null && !oidcClient.getRedirectUris().isEmpty()) {
+                List<String> uriStrings = oidcClient.getRedirectUris();
+                String[] uris = uriStrings.toArray(new String[uriStrings.size()]);
+                String urisFilter = oidcClientLdapObject.getInSetSearchFilter(OIDCClientLdapObject.PROPERTY_OIDC_REDIRECT_URIS, uris);
 
-            uriStrings = oidcClient.getPostLogoutRedirectUris();
-            if (uriStrings != null && uriStrings.size() > 0) {
-                uris = uriStrings.toArray(new String[uriStrings.size()]);
-                urisFilter = String.format( "(|%s%s)", urisFilter,
-                        oidcClientLdapObject.getInSetSearchFilter(OIDCClientLdapObject.PROPERTY_OIDC_POST_LOGOUT_REDIRECT_URI, uris));
-            }
+                uriStrings = oidcClient.getPostLogoutRedirectUris();
+                if (uriStrings != null && uriStrings.size() > 0) {
+                    uris = uriStrings.toArray(new String[uriStrings.size()]);
+                    urisFilter = String.format( "(|%s%s)", urisFilter,
+                            oidcClientLdapObject.getInSetSearchFilter(OIDCClientLdapObject.PROPERTY_OIDC_POST_LOGOUT_REDIRECT_URI, uris));
+                }
 
-            Collection<OIDCClient> oidcClients = DirectoryConfigStore.getOIDCClients(this, connection, tenantName, urisFilter);
+                Collection<OIDCClient> oidcClients = DirectoryConfigStore.getOIDCClients(this, connection, tenantName, urisFilter);
 
-            if (!oidcClients.isEmpty()) {
-                throw new DuplicatedOIDCRedirectURLException(
-                        String.format("At least one of the OIDC client redirect URI: %s is already registered.", Arrays.toString(uris)));
+                if (!oidcClients.isEmpty()) {
+                    throw new DuplicatedOIDCRedirectURLException(
+                            String.format("At least one of the OIDC client redirect URI: %s is already registered.", Arrays.toString(uris)));
+                }
             }
 
             String oidcClientDn = oidcClientLdapObject.getDnFromObject(oidcClientsContainerDn, oidcClient);
+
+            if (oidcClient.getClientSecret() != null && !oidcClient.getClientSecret().isEmpty()) {
+                Tenant tenant = this.getTenant(connection, tenantName);
+                oidcClient = encryptPassword(tenant._tenantKey, oidcClient);
+            }
+
             oidcClientLdapObject.createObject(connection, oidcClientDn, oidcClient);
+        } catch (AlreadyExistsLdapException e) {
+            throw new DuplicatedOIDCClientException(String.format("OIDC client with ID '%s' is already registered.", oidcClient.getClientId()));
         } finally {
             connection.close();
         }
@@ -2156,7 +2168,12 @@ public class DirectoryConfigStore implements IConfigStore
                 throw new NoSuchOIDCClientException(String.format("The OIDC client %s does not exist on tenant %s", clientID, tenantName));
             }
 
-            return oidcClient;
+            if (oidcClient.getClientSecret() != null && !oidcClient.getClientSecret().isEmpty()) {
+                Tenant tenant = this.getTenant(connection, tenantName);
+                return decryptPassword(tenant._tenantKey, oidcClient);
+            } else {
+                return oidcClient;
+            }
         } finally {
             connection.close();
         }
@@ -2179,8 +2196,24 @@ public class DirectoryConfigStore implements IConfigStore
         ValidateUtil.validateNotEmpty(tenantName, "tenantName");
 
         ILdapConnectionEx connection = this.getConnection();
+        Tenant tenant = null;
         try {
-            return DirectoryConfigStore.getOIDCClients(this, connection, tenantName, null);
+            Collection<OIDCClient> clients = DirectoryConfigStore.getOIDCClients(this, connection, tenantName, null);
+
+            ArrayList<OIDCClient> decryptedClients = new ArrayList<OIDCClient>(clients.size());
+            for (OIDCClient client : clients) {
+                if (client.getClientSecret() != null && !client.getClientSecret().isEmpty()) {
+                    if (tenant == null) {
+                        tenant = this.getTenant(connection, tenantName);
+                    }
+
+                    decryptedClients.add(decryptPassword(tenant._tenantKey, client));
+                } else {
+                    decryptedClients.add(client);
+                }
+            }
+
+            return decryptedClients;
         } finally {
             connection.close();
         }
@@ -5281,6 +5314,20 @@ public class DirectoryConfigStore implements IConfigStore
                 idsDataEx.setPassword(new BASE64Encoder().encode(cryptoAES.encrypt(secret)));
             }
         }
+    }
+
+    private OIDCClient encryptPassword(String tenantKey, OIDCClient client) throws Exception {
+        CryptoAESE crypto = new CryptoAESE(tenantKey, StandardCharsets.UTF_16);
+        OIDCClient.Builder builder = new OIDCClient.Builder(client);
+        builder.clientSecret(new BASE64Encoder().encode(crypto.encrypt(client.getClientSecret())));
+        return builder.build();
+    }
+
+    private OIDCClient decryptPassword(String tenantKey, OIDCClient client) throws Exception {
+        CryptoAESE crypto = new CryptoAESE(tenantKey, StandardCharsets.UTF_16);
+        OIDCClient.Builder builder = new OIDCClient.Builder(client);
+        builder.clientSecret(crypto.decrypt(new BASE64Decoder().decodeBuffer(client.getClientSecret())));
+        return builder.build();
     }
 
     private void deCryptPassword(CryptoAESE cryptoAES, IIdentityStoreDataEx idsDataEx) throws Exception

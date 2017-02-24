@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 //The semantic of OIDC client fields can be found in the following links:
@@ -41,6 +42,13 @@ public class OIDCClient implements Serializable {
     private final String logoutUri;
     private final String certSubjectDN;
     private final long authnRequestClientAssertionLifetimeMS;
+    private final String clientSecret;
+    private final List<String> authorities;
+    private final List<String> resourceIds;
+    private final List<String> scopes;
+    private final List<String> autoApproveScopes;
+    private final List<String> authorizedGrantTypes;
+    private final Map<String, Object> additionalInformation;
 
     private OIDCClient(Builder oidcClientBuilder) {
 
@@ -56,6 +64,13 @@ public class OIDCClient implements Serializable {
         this.logoutUri = oidcClientBuilder.logoutUri;
         this.certSubjectDN = oidcClientBuilder.certSubjectDN;
         this.authnRequestClientAssertionLifetimeMS = oidcClientBuilder.authnRequestClientAssertionLifetimeMS;
+        this.clientSecret = oidcClientBuilder.clientSecret;
+        this.authorities = oidcClientBuilder.authorities;
+        this.resourceIds = oidcClientBuilder.resourceIds;
+        this.scopes = oidcClientBuilder.scopes;
+        this.autoApproveScopes = oidcClientBuilder.autoApproveScopes;
+        this.authorizedGrantTypes = oidcClientBuilder.authorizedGrantTypes;
+        this.additionalInformation = oidcClientBuilder.additionalInformation;
     }
 
     public String getClientId() {
@@ -94,6 +109,34 @@ public class OIDCClient implements Serializable {
         return this.authnRequestClientAssertionLifetimeMS;
     }
 
+    public String getClientSecret() {
+        return this.clientSecret;
+    }
+
+    public List<String> getAuthorities() {
+        return this.authorities;
+    }
+
+    public List<String> getResourceIds() {
+        return this.resourceIds;
+    }
+
+    public List<String> getScopes() {
+        return this.scopes;
+    }
+
+    public List<String> getAutoApproveScopes() {
+        return this.autoApproveScopes;
+    }
+
+    public List<String> getAuthorizedGrantTypes() {
+        return this.authorizedGrantTypes;
+    }
+
+    public Map<String, Object> getAdditionalInformation() {
+        return this.additionalInformation;
+    }
+
     // The builder class with additional data validation and defaults setting
     public static class Builder {
 
@@ -109,6 +152,17 @@ public class OIDCClient implements Serializable {
         private String logoutUri;
         private String certSubjectDN;
         private long authnRequestClientAssertionLifetimeMS;
+        private String clientSecret;
+        private List<String> authorities;
+        private List<String> resourceIds;
+        private List<String> scopes;
+        private List<String> autoApproveScopes;
+        private List<String> authorizedGrantTypes;
+        private Map<String, Object> additionalInformation;
+
+        public Builder() {
+            this.clientId = UUID.randomUUID().toString();
+        }
 
         public Builder(String clientId) {
             // create client id as an UUID string if it is null.
@@ -117,6 +171,25 @@ public class OIDCClient implements Serializable {
             } else {
                 this.clientId = clientId;
             }
+        }
+
+        public Builder(OIDCClient client) {
+            this.clientId = client.getClientId();
+            this.redirectUris = client.getRedirectUris();
+            this.tokenEndpointAuthMethod = client.getTokenEndpointAuthMethod();
+            this.tokenEndpointAuthSigningAlg = client.getTokenEndpointAuthSigningAlg();
+            this.idTokenSignedResponseAlg = client.getIdTokenSignedResponseAlg();
+            this.postLogoutRedirectUris = client.getPostLogoutRedirectUris();
+            this.logoutUri = client.getLogoutUri();
+            this.certSubjectDN = client.getCertSubjectDN();
+            this.authnRequestClientAssertionLifetimeMS = client.getAuthnRequestClientAssertionLifetimeMS();
+            this.clientSecret = client.getClientSecret();
+            this.authorities = client.getAuthorities();
+            this.resourceIds = client.getResourceIds();
+            this.scopes = client.getScopes();
+            this.autoApproveScopes = client.getAutoApproveScopes();
+            this.authorizedGrantTypes = client.getAuthorizedGrantTypes();
+            this.additionalInformation = client.getAdditionalInformation();
         }
 
         public Builder redirectUris(List<String> redirectUris) {
@@ -159,6 +232,41 @@ public class OIDCClient implements Serializable {
             return this;
         }
 
+        public Builder clientSecret(String clientSecret) {
+            this.clientSecret = clientSecret;
+            return this;
+        }
+
+        public Builder authorities(List<String> authorities) {
+            this.authorities = authorities;
+            return this;
+        }
+
+        public Builder resourceIds(List<String> resourceIds) {
+            this.resourceIds = resourceIds;
+            return this;
+        }
+
+        public Builder scopes(List<String> scopes) {
+            this.scopes = scopes;
+            return this;
+        }
+
+        public Builder autoApproveScopes(List<String> autoApproveScopes) {
+            this.autoApproveScopes = autoApproveScopes;
+            return this;
+        }
+
+        public Builder authorizedGrantTypes(List<String> authorizedGrantTypes) {
+            this.authorizedGrantTypes = authorizedGrantTypes;
+            return this;
+        }
+
+        public Builder additionalInformation(Map<String, Object> additionalInformation) {
+            this.additionalInformation = additionalInformation;
+            return this;
+        }
+
         public OIDCClient build() {
 
             // Validate, set defaults and check data.
@@ -171,14 +279,9 @@ public class OIDCClient implements Serializable {
         // Validate and set OIDC meta data defaults
         // Refer OIDC SDK code for string representation of each fields
         private void validateAndSetDefaults() {
-            if (this.redirectUris == null || this.redirectUris.size() == 0) {
-                throw new IllegalArgumentException("Invalid client metadata: "
-                        + "Redirect URI is required.");
-            } else {
-                for (String uri : this.redirectUris) {
-                    if (!isValidUri(uri)) {
-                        throw new IllegalArgumentException("Invalid redirect URI: " + uri);
-                    }
+            for (String uri : this.redirectUris) {
+                if (!isValidUri(uri)) {
+                    throw new IllegalArgumentException("Invalid redirect URI: " + uri);
                 }
             }
 
