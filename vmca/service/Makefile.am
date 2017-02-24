@@ -27,6 +27,7 @@ vmcad_CPPFLAGS =                    \
     @DCERPC_INCLUDES@               \
     @LW_INCLUDES@                   \
     @POPT_INCLUDES@                 \
+    @OPENSSL_INCLUDES@              \
     @VMAFD_INCLUDES@
 
 vmcad_LDADD = \
