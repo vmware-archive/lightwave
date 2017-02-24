@@ -730,8 +730,8 @@ VOID
 VMCARESTFreeKrb(
     PVMCA_ACCESS_TOKEN pAccessToken
     );
+#endif
 
 #ifdef __cplusplus
 }
-#endif
 #endif
