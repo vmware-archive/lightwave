@@ -384,7 +384,7 @@ VmDnsSrvDeleteRecord(
         BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
         if (pRecordList &&
-            VmDnsRecordListGetSize(pRecordList) == 1)
+            VmDnsRecordListGetSize(pRecordList) < 1)
         {
             dwError = ERROR_INVALID_PARAMETER;
             BAIL_ON_VMDNS_ERROR(dwError);

@@ -727,6 +727,30 @@ VmDnsCliValidateAndCompleteRecord(
             break;
 
         case VMDNS_RR_TYPE_CNAME:
+            dwError = VmDnsMakeFQDN(pContext->record.Data.CNAME.pNameHost,
+                                    pContext->pszZone,
+                                    &pszTargetFQDN);
+            BAIL_ON_VMDNS_ERROR(dwError);
+            if (pszTargetFQDN)
+            {
+                VMDNS_SAFE_FREE_STRINGA(pContext->record.Data.CNAME.pNameHost);
+                pContext->record.Data.NS.pNameHost = pszTargetFQDN;
+                pszTargetFQDN = NULL;
+            }
+
+            dwError = VmDnsMakeFQDN(
+                        pContext->record.pszName,
+                        pContext->pszZone,
+                        &pszTargetFQDN);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            if (pszTargetFQDN)
+            {
+                VMDNS_SAFE_FREE_STRINGA(pContext->record.pszName);
+                pContext->record.pszName = pszTargetFQDN;
+                pszTargetFQDN = NULL;
+            }
+
             break;
 
         default:
