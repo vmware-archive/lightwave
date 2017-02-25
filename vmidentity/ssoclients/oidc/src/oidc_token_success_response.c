@@ -24,7 +24,7 @@ OidcTokenSuccessResponseParse(
     SSOERROR e = SSOERROR_NONE;
     PSSO_JSON pJson = NULL;
     PSSO_JSON pJsonValue = NULL;
-    PCSTRING pszJsonString = NULL;
+    PSTRING pszJsonString = NULL;
     bool isNullRefreshToken = false;
     POIDC_TOKEN_SUCCESS_RESPONSE p = NULL;
 
@@ -49,9 +49,7 @@ OidcTokenSuccessResponseParse(
 
     e = SSOJsonObjectGet(pJson, "access_token", &pJsonValue);
     BAIL_ON_ERROR(e);
-    e = SSOJsonStringValue(pJsonValue, &pszJsonString);
-    BAIL_ON_ERROR(e);
-    e = SSOStringAllocate(pszJsonString, &p->pszAccessToken);
+    e = SSOJsonStringValue(pJsonValue, &p->pszAccessToken);
     BAIL_ON_ERROR(e);
     SSOJsonDelete(pJsonValue);
     pJsonValue = NULL;
@@ -62,9 +60,7 @@ OidcTokenSuccessResponseParse(
     BAIL_ON_ERROR(e);
     if (!isNullRefreshToken)
     {
-        e = SSOJsonStringValue(pJsonValue, &pszJsonString);
-        BAIL_ON_ERROR(e);
-        e = SSOStringAllocate(pszJsonString, &p->pszRefreshToken);
+        e = SSOJsonStringValue(pJsonValue, &p->pszRefreshToken);
         BAIL_ON_ERROR(e);
     }
     SSOJsonDelete(pJsonValue);
@@ -75,6 +71,8 @@ OidcTokenSuccessResponseParse(
 error:
     SSOJsonDelete(pJson);
     SSOJsonDelete(pJsonValue);
+    SSOStringFree(pszJsonString);
+
     if (e != SSOERROR_NONE)
     {
         OidcTokenSuccessResponseDelete(p);

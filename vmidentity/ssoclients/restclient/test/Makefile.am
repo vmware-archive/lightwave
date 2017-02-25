@@ -1,4 +1,2 @@
 SUBDIRS = \
-    idmclienttest \
-    afdclienttest \
-    vmdirclienttest
+    src

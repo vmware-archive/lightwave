@@ -72,10 +72,14 @@ void
 IdmEventLogLdapQueryStatArrayDataDelete(
     IDM_EVENT_LOG_LDAP_QUERY_STAT_ARRAY_DATA* pEventLogLdapQueryStatArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pEventLogLdapQueryStatArray->ppEntry,
-        pEventLogLdapQueryStatArray->length,
-        (GenericDestructorFunction) IdmEventLogLdapQueryStatDataDelete);
+    if (pEventLogLdapQueryStatArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pEventLogLdapQueryStatArray->ppEntry,
+            pEventLogLdapQueryStatArray->length,
+            (GenericDestructorFunction) IdmEventLogLdapQueryStatDataDelete);
+        SSOMemoryFree(pEventLogLdapQueryStatArray, sizeof(IDM_EVENT_LOG_LDAP_QUERY_STAT_ARRAY_DATA));
+    }
 }
 
 SSOERROR

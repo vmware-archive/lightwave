@@ -74,10 +74,14 @@ void
 IdmExternalIdpArrayDataDelete(
     IDM_EXTERNAL_IDP_ARRAY_DATA* pExternalIdpArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pExternalIdpArray->ppEntry,
-        pExternalIdpArray->length,
-        (GenericDestructorFunction) IdmExternalIdpDataDelete);
+    if (pExternalIdpArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pExternalIdpArray->ppEntry,
+            pExternalIdpArray->length,
+            (GenericDestructorFunction) IdmExternalIdpDataDelete);
+        SSOMemoryFree(pExternalIdpArray, sizeof(IDM_EXTERNAL_IDP_ARRAY_DATA));
+    }
 }
 
 SSOERROR

@@ -67,10 +67,14 @@ void
 IdmTokenClaimGroupArrayDataDelete(
     IDM_TOKEN_CLAIM_GROUP_ARRAY_DATA* pTokenClaimGroupArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pTokenClaimGroupArray->ppEntry,
-        pTokenClaimGroupArray->length,
-        (GenericDestructorFunction) IdmTokenClaimGroupDataDelete);
+    if (pTokenClaimGroupArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pTokenClaimGroupArray->ppEntry,
+            pTokenClaimGroupArray->length,
+            (GenericDestructorFunction) IdmTokenClaimGroupDataDelete);
+        SSOMemoryFree(pTokenClaimGroupArray, sizeof(IDM_TOKEN_CLAIM_GROUP_ARRAY_DATA));
+    }
 }
 
 SSOERROR

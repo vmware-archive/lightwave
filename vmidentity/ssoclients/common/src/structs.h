@@ -44,7 +44,6 @@ typedef struct SSO_STRING_BUILDER
 typedef struct SSO_JSON
 {
     json_t* pJson_t;
-    bool borrowedRef;
 } SSO_JSON;
 
 typedef struct SSO_JWT

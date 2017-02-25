@@ -67,10 +67,14 @@ void
 IdmAttributeArrayDataDelete(
     IDM_ATTRIBUTE_ARRAY_DATA* pAttributeArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pAttributeArray->ppEntry,
-        pAttributeArray->length,
-        (GenericDestructorFunction) IdmAttributeDataDelete);
+    if (pAttributeArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pAttributeArray->ppEntry,
+            pAttributeArray->length,
+            (GenericDestructorFunction) IdmAttributeDataDelete);
+        SSOMemoryFree(pAttributeArray, sizeof(IDM_ATTRIBUTE_ARRAY_DATA));
+    }
 }
 
 SSOERROR
@@ -107,22 +111,12 @@ IdmJsonToAttributeArrayData(
 {
     SSOERROR e = SSOERROR_NONE;
     IDM_ATTRIBUTE_ARRAY_DATA* pAttributeArray = NULL;
-    size_t size = 0;
 
     if (pJson == NULL || ppAttributeArray == NULL)
     {
         e = SSOERROR_INVALID_ARGUMENT;
         BAIL_ON_ERROR(e);
     }
-
-    e = SSOMemoryAllocate(sizeof(IDM_ATTRIBUTE_ARRAY_DATA), (void**) &pAttributeArray);
-    BAIL_ON_ERROR(e);
-
-    e = SSOJsonArraySize(pJson, &size);
-    BAIL_ON_ERROR(e);
-
-    e = SSOMemoryAllocate(size * sizeof(IDM_ATTRIBUTE_DATA*), (void**) &(pAttributeArray->ppEntry));
-    BAIL_ON_ERROR(e);
 
     e = RestJsonToArrayData(
         pJson,

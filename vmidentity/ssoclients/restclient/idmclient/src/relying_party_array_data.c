@@ -74,10 +74,14 @@ void
 IdmRelyingPartyArrayDataDelete(
     IDM_RELYING_PARTY_ARRAY_DATA* pRelyingPartyArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pRelyingPartyArray->ppEntry,
-        pRelyingPartyArray->length,
-        (GenericDestructorFunction) IdmRelyingPartyDataDelete);
+    if (pRelyingPartyArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pRelyingPartyArray->ppEntry,
+            pRelyingPartyArray->length,
+            (GenericDestructorFunction) IdmRelyingPartyDataDelete);
+        SSOMemoryFree(pRelyingPartyArray, sizeof(IDM_RELYING_PARTY_ARRAY_DATA));
+    }
 }
 
 SSOERROR

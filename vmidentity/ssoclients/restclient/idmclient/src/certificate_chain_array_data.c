@@ -66,10 +66,14 @@ void
 IdmCertificateChainArrayDataDelete(
     IDM_CERTIFICATE_CHAIN_ARRAY_DATA* pCertificateChainArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pCertificateChainArray->ppEntry,
-        pCertificateChainArray->length,
-        (GenericDestructorFunction) IdmCertificateChainDataDelete);
+    if (pCertificateChainArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pCertificateChainArray->ppEntry,
+            pCertificateChainArray->length,
+            (GenericDestructorFunction) IdmCertificateChainDataDelete);
+        SSOMemoryFree(pCertificateChainArray, sizeof(IDM_CERTIFICATE_CHAIN_ARRAY_DATA));
+    }
 }
 
 SSOERROR

@@ -28,7 +28,7 @@ SSOJsonStringNew
 SSOJsonIntegerNew
 SSOJsonLongNew
 SSOJsonBooleanNew
-SSOJsonObjectSetNew
+SSOJsonObjectSet
 SSOJsonIsObject
 SSOJsonObjectSize
 SSOJsonObjectGet
@@ -36,10 +36,11 @@ SSOJsonStringValue
 SSOJsonIntegerValue
 SSOJsonLongValue
 SSOJsonBooleanValue
-SSOJsonArrayAppendNew
+SSOJsonArrayAppend
 SSOJsonArraySize
 SSOJsonArrayGet
 SSOJsonToString
+SSOJsonIteratorDelete
 SSOJsonObjectIterator
 SSOJsonObjectIteratorHasNext
 SSOJsonObjectIteratorNext

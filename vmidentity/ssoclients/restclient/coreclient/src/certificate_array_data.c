@@ -63,10 +63,14 @@ void
 RestCertificateArrayDataDelete(
     REST_CERTIFICATE_ARRAY_DATA* pCertificateArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pCertificateArray->ppEntry,
-        pCertificateArray->length,
-        (GenericDestructorFunction) RestCertificateDataDelete);
+    if (pCertificateArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pCertificateArray->ppEntry,
+            pCertificateArray->length,
+            (GenericDestructorFunction) RestCertificateDataDelete);
+        SSOMemoryFree(pCertificateArray, sizeof(REST_CERTIFICATE_ARRAY_DATA));
+    }
 }
 
 SSOERROR

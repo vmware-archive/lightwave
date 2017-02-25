@@ -69,10 +69,14 @@ void
 IdmSchemaObjectMappingMapDataDelete(
     IDM_SCHEMA_OBJECT_MAPPING_MAP_DATA* pSchemaObjectMappingMap)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pSchemaObjectMappingMap->ppEntry,
-        pSchemaObjectMappingMap->length,
-        (GenericDestructorFunction) IdmSchemaObjectMappingMapEntryDataDelete);
+    if (pSchemaObjectMappingMap != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pSchemaObjectMappingMap->ppEntry,
+            pSchemaObjectMappingMap->length,
+            (GenericDestructorFunction) IdmSchemaObjectMappingMapEntryDataDelete);
+        SSOMemoryFree(pSchemaObjectMappingMap, sizeof(IDM_SCHEMA_OBJECT_MAPPING_MAP_DATA));
+    }
 }
 
 SSOERROR
@@ -118,9 +122,10 @@ IdmJsonToSchemaObjectMappingMapData(
     IDM_SCHEMA_OBJECT_MAPPING_MAP_DATA* pSchemaObjectMappingMap = NULL;
     IDM_SCHEMA_OBJECT_MAPPING_DATA* pSchemaObjectMapping = NULL;
     PSSO_JSON_ITERATOR pJsonIter = NULL;
+    PSSO_JSON_ITERATOR pJsonIterNext = NULL;
     bool jsonIterHasNext = false;
     PCSTRING key = NULL;
-    PSSO_JSON value = NULL;
+    PSSO_JSON pJsonValue = NULL;
     size_t i = 0;
 
     if (pJson == NULL || ppSchemaObjectMappingMap == NULL)
@@ -147,20 +152,20 @@ IdmJsonToSchemaObjectMappingMapData(
     e = SSOJsonObjectIteratorHasNext(pJsonIter, &jsonIterHasNext);
     BAIL_ON_ERROR(e);
 
-    while (!jsonIterHasNext)
+    while (jsonIterHasNext)
     {
         e = SSOJsonObjectIteratorKey(pJsonIter, &key);
         BAIL_ON_ERROR(e);
 
-        e = SSOJsonObjectIteratorValue(pJsonIter, &value);
+        e = SSOJsonObjectIteratorValue(pJsonIter, &pJsonValue);
         BAIL_ON_ERROR(e);
 
-        e = SSOJsonIsObject(value, &isObject);
+        e = SSOJsonIsObject(pJsonValue, &isObject);
         BAIL_ON_ERROR(e);
 
         if (isObject)
         {
-            e = IdmJsonToSchemaObjectMappingData(value, &pSchemaObjectMapping);
+            e = IdmJsonToSchemaObjectMappingData(pJsonValue, &pSchemaObjectMapping);
             BAIL_ON_ERROR(e);
 
             e = IdmSchemaObjectMappingMapEntryDataNew(
@@ -168,6 +173,8 @@ IdmJsonToSchemaObjectMappingMapData(
                 key,
                 pSchemaObjectMapping);
             BAIL_ON_ERROR(e);
+
+            IdmSchemaObjectMappingDataDelete(pSchemaObjectMapping);
         }
         else
         {
@@ -175,10 +182,17 @@ IdmJsonToSchemaObjectMappingMapData(
             BAIL_ON_ERROR(e);
         }
 
+        SSOJsonDelete(pJsonValue);
+
         i = i + 1;
 
-        e = SSOJsonObjectIteratorNext(pJson, pJsonIter, &pJsonIter);
+        e = SSOJsonObjectIteratorNext(pJson, pJsonIter, &pJsonIterNext);
         BAIL_ON_ERROR(e);
+
+        // cleanup the old pJsonIter
+        SSOJsonIteratorDelete(pJsonIter);
+
+        pJsonIter = pJsonIterNext;
 
         e = SSOJsonObjectIteratorHasNext(pJsonIter, &jsonIterHasNext);
         BAIL_ON_ERROR(e);
@@ -192,6 +206,9 @@ IdmJsonToSchemaObjectMappingMapData(
     {
         IdmSchemaObjectMappingMapDataDelete(pSchemaObjectMappingMap);
     }
+
+    // cleanup
+    SSOJsonIteratorDelete(pJsonIter);
 
     return e;
 }

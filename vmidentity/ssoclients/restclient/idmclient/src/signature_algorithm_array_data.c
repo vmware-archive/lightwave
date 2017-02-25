@@ -70,10 +70,14 @@ void
 IdmSignatureAlgorithmArrayDataDelete(
     IDM_SIGNATURE_ALGORITHM_ARRAY_DATA* pSignatureAlgorithmArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pSignatureAlgorithmArray->ppEntry,
-        pSignatureAlgorithmArray->length,
-        (GenericDestructorFunction) IdmSignatureAlgorithmDataDelete);
+    if (pSignatureAlgorithmArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pSignatureAlgorithmArray->ppEntry,
+            pSignatureAlgorithmArray->length,
+            (GenericDestructorFunction) IdmSignatureAlgorithmDataDelete);
+        SSOMemoryFree(pSignatureAlgorithmArray, sizeof(IDM_SIGNATURE_ALGORITHM_ARRAY_DATA));
+    }
 }
 
 SSOERROR

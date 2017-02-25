@@ -66,10 +66,14 @@ void
 IdmOidcClientArrayDataDelete(
     IDM_OIDC_CLIENT_ARRAY_DATA* pOidcClientArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pOidcClientArray->ppEntry,
-        pOidcClientArray->length,
-        (GenericDestructorFunction) IdmOidcClientDataDelete);
+    if (pOidcClientArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pOidcClientArray->ppEntry,
+            pOidcClientArray->length,
+            (GenericDestructorFunction) IdmOidcClientDataDelete);
+        SSOMemoryFree(pOidcClientArray, sizeof(IDM_OIDC_CLIENT_ARRAY_DATA));
+    }
 }
 
 SSOERROR

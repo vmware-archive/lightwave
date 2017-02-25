@@ -72,10 +72,14 @@ void
 VmdirUserArrayDataDelete(
     VMDIR_USER_ARRAY_DATA* pUserArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pUserArray->ppEntry,
-        pUserArray->length,
-        (GenericDestructorFunction) VmdirUserDataDelete);
+    if (pUserArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pUserArray->ppEntry,
+            pUserArray->length,
+            (GenericDestructorFunction) VmdirUserDataDelete);
+        SSOMemoryFree(pUserArray, sizeof(VMDIR_USER_ARRAY_DATA));
+    }
 }
 
 SSOERROR

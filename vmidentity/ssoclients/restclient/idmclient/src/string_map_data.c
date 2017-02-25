@@ -63,10 +63,14 @@ void
 IdmStringMapDataDelete(
     IDM_STRING_MAP_DATA* pStringMap)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pStringMap->ppEntry,
-        pStringMap->length,
-        (GenericDestructorFunction) IdmStringMapEntryDataDelete);
+    if (pStringMap != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pStringMap->ppEntry,
+            pStringMap->length,
+            (GenericDestructorFunction) IdmStringMapEntryDataDelete);
+        SSOMemoryFree(pStringMap, sizeof(IDM_STRING_MAP_DATA));
+    }
 }
 
 SSOERROR
@@ -110,10 +114,11 @@ IdmJsonToStringMapData(
     SSOERROR e = SSOERROR_NONE;
     IDM_STRING_MAP_DATA* pStringMap = NULL;
     PSSO_JSON_ITERATOR pJsonIter = NULL;
+    PSSO_JSON_ITERATOR pJsonIterNext = NULL;
     bool jsonIterHasNext = false;
     PCSTRING key = NULL;
     PSSO_JSON pJsonValue = NULL;
-    PCSTRING value = NULL;
+    PSTRING value = NULL;
     size_t i = 0;
 
     if (pJson == NULL || ppStringMap == NULL)
@@ -137,7 +142,7 @@ IdmJsonToStringMapData(
     e = SSOJsonObjectIteratorHasNext(pJsonIter, &jsonIterHasNext);
     BAIL_ON_ERROR(e);
 
-    while (!jsonIterHasNext)
+    while (jsonIterHasNext)
     {
         e = SSOJsonObjectIteratorKey(pJsonIter, &key);
         BAIL_ON_ERROR(e);
@@ -148,13 +153,22 @@ IdmJsonToStringMapData(
         e = SSOJsonStringValue(pJsonValue, &value);
         BAIL_ON_ERROR(e);
 
+        SSOJsonDelete(pJsonValue);
+
         e = IdmStringMapEntryDataNew(&(pStringMap->ppEntry[i]), key, value);
         BAIL_ON_ERROR(e);
 
+        SSOStringFree(value);
+
         i = i + 1;
 
-        e = SSOJsonObjectIteratorNext(pJson, pJsonIter, &pJsonIter);
+        e = SSOJsonObjectIteratorNext(pJson, pJsonIter, &pJsonIterNext);
         BAIL_ON_ERROR(e);
+
+        // cleanup the old pJsonIter
+        SSOJsonIteratorDelete(pJsonIter);
+
+        pJsonIter = pJsonIterNext;
 
         e = SSOJsonObjectIteratorHasNext(pJsonIter, &jsonIterHasNext);
         BAIL_ON_ERROR(e);
@@ -168,6 +182,9 @@ IdmJsonToStringMapData(
     {
         IdmStringMapDataDelete(pStringMap);
     }
+
+    // cleanup
+    SSOJsonIteratorDelete(pJsonIter);
 
     return e;
 }

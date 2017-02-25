@@ -69,10 +69,14 @@ void
 IdmGroupArrayDataDelete(
     IDM_GROUP_ARRAY_DATA* pGroupArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pGroupArray->ppEntry,
-        pGroupArray->length,
-        (GenericDestructorFunction) IdmGroupDataDelete);
+    if (pGroupArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pGroupArray->ppEntry,
+            pGroupArray->length,
+            (GenericDestructorFunction) IdmGroupDataDelete);
+        SSOMemoryFree(pGroupArray, sizeof(IDM_GROUP_ARRAY_DATA));
+    }
 }
 
 SSOERROR

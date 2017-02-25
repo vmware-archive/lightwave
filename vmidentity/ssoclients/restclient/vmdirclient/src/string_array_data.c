@@ -63,10 +63,14 @@ void
 VmdirStringArrayDataDelete(
     VMDIR_STRING_ARRAY_DATA* pStringArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pStringArray->ppEntry,
-        pStringArray->length,
-        (GenericDestructorFunction) RestStringDataDelete);
+    if (pStringArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pStringArray->ppEntry,
+            pStringArray->length,
+            (GenericDestructorFunction) RestStringDataDelete);
+        SSOMemoryFree(pStringArray, sizeof(VMDIR_STRING_ARRAY_DATA));
+    }
 }
 
 SSOERROR
@@ -92,7 +96,7 @@ VmdirStringArrayDataToJson(
             e = SSOJsonStringNew(&pJsonValue, pStringArray->ppEntry[i]);
             BAIL_ON_ERROR(e);
 
-            e = SSOJsonArrayAppendNew(pJson, pJsonValue);
+            e = SSOJsonArrayAppend(pJson, pJsonValue);
             BAIL_ON_ERROR(e);
         }
     }

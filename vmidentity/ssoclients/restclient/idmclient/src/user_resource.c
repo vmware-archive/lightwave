@@ -18,7 +18,7 @@ static PCSTRING const TENANT_URI = "/idm/tenant";
 static PCSTRING const TENANT_POST_URI = "/idm/post/tenant";
 
 SSOERROR
-IdmUserCreate(
+IdmExternalUserCreate(
     PCREST_CLIENT pClient,
     PCSTRING tenant,
     const IDM_PRINCIPAL_DATA* pPrincipal,
@@ -223,7 +223,7 @@ IdmUserGetGroups(
 }
 
 SSOERROR
-IdmUserDelete(
+IdmExternalUserDelete(
     PCREST_CLIENT pClient,
     PCSTRING tenant,
     PCSTRING name,

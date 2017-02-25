@@ -88,6 +88,9 @@ RestParseHttpResponse(
             // set server error code
             e = RestServerErrorGetSSOErrorCode(pError->error);
         }
+
+        // cleanup
+        SSOJsonDelete(pJson);
     }
 
     error:
@@ -249,7 +252,7 @@ RestBuildAndExecuteHttp(
     e = RestParseHttpResponse(httpResponse, httpStatusCode, fJsonToDataObject, &pDataObjectReturn, &pError);
     BAIL_ON_ERROR(e);
 
-    if (ppDataObjectReturn != NULL)
+    if (pDataObjectReturn != NULL)
     {
         *ppDataObjectReturn = pDataObjectReturn;
     }

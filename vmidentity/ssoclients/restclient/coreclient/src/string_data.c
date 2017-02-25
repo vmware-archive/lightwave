@@ -88,7 +88,7 @@ RestJsonToStringData(
 {
     SSOERROR e = SSOERROR_NONE;
     PSTRING pString = NULL;
-    PCSTRING value = NULL;
+    PSTRING value = NULL;
 
     if (pJson == NULL || ppString == NULL)
     {
@@ -110,6 +110,8 @@ RestJsonToStringData(
     {
         RestStringDataDelete(pString);
     }
+
+    SSOStringFree(value);
 
     return e;
 }

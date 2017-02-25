@@ -134,13 +134,20 @@ IdmIdentityProviderProbe(
     e = IdmIdentityProviderCreateInternal(pClient, tenant, pIdentityProvider, true, &pIdentityProviderReturn, &pError);
     BAIL_ON_ERROR(e);
 
+    // debug
+    if (DEBUG)
+    {
+        RestDebugJsonObject(pIdentityProviderReturn, (DataObjectToJsonFunc) IdmIdentityProviderDataToJson);
+    }
+
     error:
 
     if (e != SSOERROR_NONE)
     {
-        IdmIdentityProviderDataDelete(pIdentityProviderReturn);
         *ppError = pError;
     }
+
+    IdmIdentityProviderDataDelete(pIdentityProviderReturn);
 
     return e;
 }

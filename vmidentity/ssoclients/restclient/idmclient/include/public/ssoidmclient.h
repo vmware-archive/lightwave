@@ -1665,7 +1665,7 @@ IdmTenantSearch(
     REST_SERVER_ERROR** ppError);
 
 SSOERROR
-IdmUserCreate(
+IdmExternalUserCreate(
     PCREST_CLIENT pClient,
     PCSTRING tenant,
     const IDM_PRINCIPAL_DATA* pPrincipal,
@@ -1692,7 +1692,7 @@ IdmUserGetGroups(
     REST_SERVER_ERROR** ppError);
 
 SSOERROR
-IdmUserDelete(
+IdmExternalUserDelete(
     PCREST_CLIENT pClient,
     PCSTRING tenant,
     PCSTRING name,

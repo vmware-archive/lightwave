@@ -73,16 +73,13 @@ RestDataToJson(
             e = f(pData, pJsonValue);
             BAIL_ON_ERROR(e);
         }
-        e = SSOJsonObjectSetNew(pJson, key, pJsonValue);
+        e = SSOJsonObjectSet(pJson, key, pJsonValue);
         BAIL_ON_ERROR(e);
     }
 
     error:
 
-    if (e != SSOERROR_NONE)
-    {
-        SSOJsonDelete(pJsonValue);
-    }
+    SSOJsonDelete(pJsonValue);
 
     return e;
 }
@@ -116,12 +113,14 @@ RestJsonToData(
     {
         if (type == REST_JSON_OBJECT_TYPE_STRING)
         {
-            PCSTRING value = NULL;
+            PSTRING value = NULL;
             e = SSOJsonStringValue(pJsonValue, &value);
             BAIL_ON_ERROR(e);
 
             e = RestStringDataNew((PSTRING*) &pData, value);
             BAIL_ON_ERROR(e);
+
+            SSOStringFree(value);
         }
         else if (type == REST_JSON_OBJECT_TYPE_INTEGER)
         {
@@ -171,6 +170,8 @@ RestJsonToData(
         SSOMemoryFree(pData, 0);
     }
 
+    SSOJsonDelete(pJsonValue);
+
     return e;
 }
 
@@ -194,17 +195,14 @@ RestArrayDataToJson(
             e = f(pArray->ppEntry[i], pJsonValue);
             BAIL_ON_ERROR(e);
 
-            e = SSOJsonArrayAppendNew(pJson, pJsonValue);
+            e = SSOJsonArrayAppend(pJson, pJsonValue);
             BAIL_ON_ERROR(e);
+
+            SSOJsonDelete(pJsonValue);
         }
     }
 
     error:
-
-    if (e != SSOERROR_NONE)
-    {
-        SSOJsonDelete(pJsonValue);
-    }
 
     return e;
 }
@@ -242,6 +240,8 @@ RestJsonToArrayData(
 
         e = f(pJsonValue, &(pArray->ppEntry[i]));
         BAIL_ON_ERROR(e);
+
+        SSOJsonDelete(pJsonValue);
     }
 
     *ppArray = pArray;

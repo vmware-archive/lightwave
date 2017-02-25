@@ -17,6 +17,7 @@ OidcClientBuild
 OidcClientDelete
 OidcClientAcquireTokensByPassword
 OidcClientAcquireTokensByRefreshToken
+OidcClientAcquireTokensBySolutionUserCredentials
 OidcClientGetSigningCertificatePEM
 OidcErrorResponseParse
 OidcErrorResponseDelete

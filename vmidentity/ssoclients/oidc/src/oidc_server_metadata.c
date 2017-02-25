@@ -85,7 +85,6 @@ OidcServerMetadataAcquireEndpoints(
     PSSO_JSON pJson = NULL;
     PSSO_JSON pJsonTokenEndpoint = NULL;
     PSSO_JSON pJsonJwksEndpoint = NULL;
-    PCSTRING pszStringValue = NULL;
 
     e = SSOHttpClientSendGet(
         pHttpClient,
@@ -101,16 +100,12 @@ OidcServerMetadataAcquireEndpoints(
 
     e = SSOJsonObjectGet(pJson, "token_endpoint", &pJsonTokenEndpoint);
     BAIL_ON_ERROR(e);
-    e = SSOJsonStringValue(pJsonTokenEndpoint, &pszStringValue);
-    BAIL_ON_ERROR(e);
-    e = SSOStringAllocate(pszStringValue, &pszTokenEndpointUrl);
+    e = SSOJsonStringValue(pJsonTokenEndpoint, &pszTokenEndpointUrl);
     BAIL_ON_ERROR(e);
 
     e = SSOJsonObjectGet(pJson, "jwks_uri", &pJsonJwksEndpoint);
     BAIL_ON_ERROR(e);
-    e = SSOJsonStringValue(pJsonJwksEndpoint, &pszStringValue);
-    BAIL_ON_ERROR(e);
-    e = SSOStringAllocate(pszStringValue, &pszJwksEndpointUrl);
+    e = SSOJsonStringValue(pJsonJwksEndpoint, &pszJwksEndpointUrl);
     BAIL_ON_ERROR(e);
 
     *ppszTokenEndpointUrl = pszTokenEndpointUrl;

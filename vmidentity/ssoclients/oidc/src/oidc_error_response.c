@@ -41,7 +41,6 @@ OidcErrorResponseParse(
     SSOERROR e = SSOERROR_NONE;
     PSSO_JSON pJson = NULL;
     PSSO_JSON pJsonValue = NULL;
-    PCSTRING pszJsonString = NULL;
     POIDC_ERROR_RESPONSE p = NULL;
 
     ASSERT_NOT_NULL(pp);
@@ -55,18 +54,14 @@ OidcErrorResponseParse(
 
     e = SSOJsonObjectGet(pJson, "error", &pJsonValue);
     BAIL_ON_ERROR(e);
-    e = SSOJsonStringValue(pJsonValue, &pszJsonString);
-    BAIL_ON_ERROR(e);
-    e = SSOStringAllocate(pszJsonString, &p->pszError);
+    e = SSOJsonStringValue(pJsonValue, &p->pszError);
     BAIL_ON_ERROR(e);
     SSOJsonDelete(pJsonValue);
     pJsonValue = NULL;
 
     e = SSOJsonObjectGet(pJson, "error_description", &pJsonValue);
     BAIL_ON_ERROR(e);
-    e = SSOJsonStringValue(pJsonValue, &pszJsonString);
-    BAIL_ON_ERROR(e);
-    e = SSOStringAllocate(pszJsonString, &p->pszErrorDescription);
+    e = SSOJsonStringValue(pJsonValue, &p->pszErrorDescription);
     BAIL_ON_ERROR(e);
     SSOJsonDelete(pJsonValue);
     pJsonValue = NULL;

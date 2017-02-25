@@ -530,12 +530,7 @@ AC_CONFIG_FILES([Makefile
                  ssoclients/restclient/vmdirclient/include/public/Makefile
                  ssoclients/restclient/vmdirclient/src/Makefile
                  ssoclients/restclient/test/Makefile
-                 ssoclients/restclient/test/idmclienttest/Makefile
-                 ssoclients/restclient/test/idmclienttest/src/Makefile
-                 ssoclients/restclient/test/afdclienttest/Makefile
-                 ssoclients/restclient/test/afdclienttest/src/Makefile
-                 ssoclients/restclient/test/vmdirclienttest/Makefile
-                 ssoclients/restclient/test/vmdirclienttest/src/Makefile
+                 ssoclients/restclient/test/src/Makefile
                  build-maven/Makefile
                  make-target/Makefile
                 ])

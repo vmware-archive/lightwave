@@ -71,10 +71,14 @@ void
 IdmAssertionConsumerServiceArrayDataDelete(
     IDM_ASSERTION_CONSUMER_SERVICE_ARRAY_DATA* pAssertionConsumerServiceArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pAssertionConsumerServiceArray->ppEntry,
-        pAssertionConsumerServiceArray->length,
-        (GenericDestructorFunction) IdmAssertionConsumerServiceDataDelete);
+    if (pAssertionConsumerServiceArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pAssertionConsumerServiceArray->ppEntry,
+            pAssertionConsumerServiceArray->length,
+            (GenericDestructorFunction) IdmAssertionConsumerServiceDataDelete);
+        SSOMemoryFree(pAssertionConsumerServiceArray, sizeof(IDM_ASSERTION_CONSUMER_SERVICE_ARRAY_DATA));
+    }
 }
 
 SSOERROR

@@ -113,7 +113,7 @@ SSOJwtParse(
     PSTRING pszJsonPayload = NULL;
     PSSO_JSON pJsonHeader = NULL;
     PSSO_JSON pJsonValue = NULL;
-    PCSTRING pszSignatureAlgorithm = NULL;
+    PSTRING pszSignatureAlgorithm = NULL;
 
     ASSERT_NOT_NULL(pp);
     ASSERT_NOT_NULL(psz);
@@ -165,6 +165,7 @@ error:
     SSOStringFree(pszJsonPayload);
     SSOJsonDelete(pJsonHeader);
     SSOJsonDelete(pJsonValue);
+    SSOStringFree(pszSignatureAlgorithm);
 
     if (e != SSOERROR_NONE)
     {
@@ -196,7 +197,6 @@ SSOJwtGetStringClaim(
     SSOERROR e = SSOERROR_NONE;
     PSTRING pszValue = NULL;
     PSSO_JSON pJsonValue = NULL;
-    PCSTRING pszStringValue = NULL;
 
     ASSERT_NOT_NULL(p);
     ASSERT_NOT_NULL(pszKey);
@@ -205,10 +205,7 @@ SSOJwtGetStringClaim(
     e = SSOJsonObjectGet(p->pJsonPayload, pszKey, &pJsonValue);
     BAIL_ON_ERROR(e);
 
-    e = SSOJsonStringValue(pJsonValue, &pszStringValue);
-    BAIL_ON_ERROR(e);
-
-    e = SSOStringAllocate(pszStringValue, &pszValue);
+    e = SSOJsonStringValue(pJsonValue, &pszValue);
     BAIL_ON_ERROR(e);
 
     *ppszValue = pszValue;
@@ -231,7 +228,6 @@ SSOJwtGetStringArrayClaim(
     PSTRING* ppszValue = NULL;
     PSSO_JSON pJsonArray = NULL;
     PSSO_JSON pJsonArrayElement = NULL;
-    PCSTRING pszStringValue = NULL;
     size_t arraySize = 0;
     size_t i = 0;
 
@@ -254,10 +250,7 @@ SSOJwtGetStringArrayClaim(
         e = SSOJsonArrayGet(pJsonArray, i, &pJsonArrayElement);
         BAIL_ON_ERROR(e);
 
-        e = SSOJsonStringValue(pJsonArrayElement, &pszStringValue);
-        BAIL_ON_ERROR(e);
-
-        e = SSOStringAllocate(pszStringValue, ppszValue + i);
+        e = SSOJsonStringValue(pJsonArrayElement, ppszValue + i);
         BAIL_ON_ERROR(e);
 
         SSOJsonDelete(pJsonArrayElement);

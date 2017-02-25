@@ -70,10 +70,14 @@ void
 IdmAttributeConsumerServiceArrayDataDelete(
     IDM_ATTRIBUTE_CONSUMER_SERVICE_ARRAY_DATA* pAttributeConsumerServiceArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pAttributeConsumerServiceArray->ppEntry,
-        pAttributeConsumerServiceArray->length,
-        (GenericDestructorFunction) IdmAttributeConsumerServiceDataDelete);
+    if (pAttributeConsumerServiceArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pAttributeConsumerServiceArray->ppEntry,
+            pAttributeConsumerServiceArray->length,
+            (GenericDestructorFunction) IdmAttributeConsumerServiceDataDelete);
+        SSOMemoryFree(pAttributeConsumerServiceArray, sizeof(IDM_ATTRIBUTE_CONSUMER_SERVICE_ARRAY_DATA));
+    }
 }
 
 SSOERROR

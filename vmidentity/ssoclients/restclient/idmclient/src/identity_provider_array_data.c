@@ -89,10 +89,14 @@ void
 IdmIdentityProviderArrayDataDelete(
     IDM_IDENTITY_PROVIDER_ARRAY_DATA* pIdentityProviderArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pIdentityProviderArray->ppEntry,
-        pIdentityProviderArray->length,
-        (GenericDestructorFunction) IdmIdentityProviderDataDelete);
+    if (pIdentityProviderArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pIdentityProviderArray->ppEntry,
+            pIdentityProviderArray->length,
+            (GenericDestructorFunction) IdmIdentityProviderDataDelete);
+        SSOMemoryFree(pIdentityProviderArray, sizeof(IDM_IDENTITY_PROVIDER_ARRAY_DATA));
+    }
 }
 
 SSOERROR

@@ -67,10 +67,14 @@ void
 IdmServiceEndpointArrayDataDelete(
     IDM_SERVICE_ENDPOINT_ARRAY_DATA* pServiceEndpointArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pServiceEndpointArray->ppEntry,
-        pServiceEndpointArray->length,
-        (GenericDestructorFunction) IdmServiceEndpointDataDelete);
+    if (pServiceEndpointArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pServiceEndpointArray->ppEntry,
+            pServiceEndpointArray->length,
+            (GenericDestructorFunction) IdmServiceEndpointDataDelete);
+        SSOMemoryFree(pServiceEndpointArray, sizeof(IDM_SERVICE_ENDPOINT_ARRAY_DATA));
+    }
 }
 
 SSOERROR

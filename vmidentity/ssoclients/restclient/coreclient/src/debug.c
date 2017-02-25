@@ -57,6 +57,7 @@ RestDebugJsonObject(
     // cleanup
     SSOJsonDelete(pJson);
     SSOStringFree(string);
+    SSOJsonDelete(pJsonFromHttpResponse);
 
     return e;
 }
@@ -94,6 +95,7 @@ RestDebugJsonArray(
     // cleanup
     SSOJsonDelete(pJson);
     SSOStringFree(string);
+    SSOJsonDelete(pJsonFromHttpResponse);
 
     return e;
 }

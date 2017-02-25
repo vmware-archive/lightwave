@@ -66,10 +66,14 @@ void
 IdmResourceServerArrayDataDelete(
     IDM_RESOURCE_SERVER_ARRAY_DATA* pResourceServerArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pResourceServerArray->ppEntry,
-        pResourceServerArray->length,
-        (GenericDestructorFunction) IdmResourceServerDataDelete);
+    if (pResourceServerArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pResourceServerArray->ppEntry,
+            pResourceServerArray->length,
+            (GenericDestructorFunction) IdmResourceServerDataDelete);
+        SSOMemoryFree(pResourceServerArray, sizeof(IDM_RESOURCE_SERVER_ARRAY_DATA));
+    }
 }
 
 SSOERROR

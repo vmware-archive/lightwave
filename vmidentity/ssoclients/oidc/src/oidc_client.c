@@ -124,38 +124,52 @@ OidcClientBuildSolutionUserAssertionPayload(
 
     e = SSOJsonStringNew(&pJsonValue, "solution_user_assertion");
     BAIL_ON_ERROR(e);
-    e = SSOJsonObjectSetNew(pJson, "token_class", pJsonValue);
+    e = SSOJsonObjectSet(pJson, "token_class", pJsonValue);
     BAIL_ON_ERROR(e);
+    SSOJsonDelete(pJsonValue);
+    pJsonValue = NULL;
 
     e = SSOJsonStringNew(&pJsonValue, "Bearer");
     BAIL_ON_ERROR(e);
-    e = SSOJsonObjectSetNew(pJson, "token_type", pJsonValue);
+    e = SSOJsonObjectSet(pJson, "token_type", pJsonValue);
     BAIL_ON_ERROR(e);
+    SSOJsonDelete(pJsonValue);
+    pJsonValue = NULL;
 
     e = SSOJsonStringNew(&pJsonValue, pszJwtID);
     BAIL_ON_ERROR(e);
-    e = SSOJsonObjectSetNew(pJson, "jti", pJsonValue);
+    e = SSOJsonObjectSet(pJson, "jti", pJsonValue);
     BAIL_ON_ERROR(e);
+    SSOJsonDelete(pJsonValue);
+    pJsonValue = NULL;
 
     e = SSOJsonStringNew(&pJsonValue, pszCertificateSubjectDN);
     BAIL_ON_ERROR(e);
-    e = SSOJsonObjectSetNew(pJson, "iss", pJsonValue);
+    e = SSOJsonObjectSet(pJson, "iss", pJsonValue);
     BAIL_ON_ERROR(e);
+    SSOJsonDelete(pJsonValue);
+    pJsonValue = NULL;
 
     e = SSOJsonStringNew(&pJsonValue, pszCertificateSubjectDN);
     BAIL_ON_ERROR(e);
-    e = SSOJsonObjectSetNew(pJson, "sub", pJsonValue);
+    e = SSOJsonObjectSet(pJson, "sub", pJsonValue);
     BAIL_ON_ERROR(e);
+    SSOJsonDelete(pJsonValue);
+    pJsonValue = NULL;
 
     e = SSOJsonStringNew(&pJsonValue, p->pszTokenEndpointUrl);
     BAIL_ON_ERROR(e);
-    e = SSOJsonObjectSetNew(pJson, "aud", pJsonValue);
+    e = SSOJsonObjectSet(pJson, "aud", pJsonValue);
     BAIL_ON_ERROR(e);
+    SSOJsonDelete(pJsonValue);
+    pJsonValue = NULL;
 
     e = SSOJsonLongNew(&pJsonValue, currentTime);
     BAIL_ON_ERROR(e);
-    e = SSOJsonObjectSetNew(pJson, "iat", pJsonValue);
+    e = SSOJsonObjectSet(pJson, "iat", pJsonValue);
     BAIL_ON_ERROR(e);
+    SSOJsonDelete(pJsonValue);
+    pJsonValue = NULL;
 
     e = SSOJsonToString(pJson, &psz);
     BAIL_ON_ERROR(e);
@@ -170,6 +184,7 @@ error:
     }
 
     SSOJsonDelete(pJson); // pJsonValue's will be deleted by the this call
+    SSOJsonDelete(pJsonValue);
     SSOStringFree(pszJwtID);
 
     return e;

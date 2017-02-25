@@ -32,7 +32,7 @@ SSOJwkParseFromSet(
     PSSO_JSON pJsonValueExponent = NULL;
     PSSO_JSON pJsonArrayCertificates = NULL;
     PSSO_JSON pJsonValueCertificate = NULL;
-    PCSTRING pszStringValue = NULL;
+    PSTRING pszStringValue = NULL;
     bool x5cNull = false;
 
     ASSERT_NOT_NULL(pp);
@@ -57,6 +57,8 @@ SSOJwkParseFromSet(
         e = SSOERROR_INVALID_ARGUMENT;
         BAIL_ON_ERROR(e);
     }
+    SSOStringFree(pszStringValue);
+    pszStringValue = NULL;
 
     e = SSOJsonObjectGet(pJsonObjectKey, "kty", &pJsonValueKeyType);
     BAIL_ON_ERROR(e);
@@ -67,6 +69,8 @@ SSOJwkParseFromSet(
         e = SSOERROR_INVALID_ARGUMENT;
         BAIL_ON_ERROR(e);
     }
+    SSOStringFree(pszStringValue);
+    pszStringValue = NULL;
 
     e = SSOJsonObjectGet(pJsonObjectKey, "alg", &pJsonValueAlgorithm);
     BAIL_ON_ERROR(e);
@@ -77,19 +81,17 @@ SSOJwkParseFromSet(
         e = SSOERROR_INVALID_ARGUMENT;
         BAIL_ON_ERROR(e);
     }
+    SSOStringFree(pszStringValue);
+    pszStringValue = NULL;
 
     e = SSOJsonObjectGet(pJsonObjectKey, "n", &pJsonValueModulus);
     BAIL_ON_ERROR(e);
-    e = SSOJsonStringValue(pJsonValueModulus, &pszStringValue);
-    BAIL_ON_ERROR(e);
-    e = SSOStringAllocate(pszStringValue, &p->pszModulus);
+    e = SSOJsonStringValue(pJsonValueModulus, &p->pszModulus);
     BAIL_ON_ERROR(e);
 
     e = SSOJsonObjectGet(pJsonObjectKey, "e", &pJsonValueExponent);
     BAIL_ON_ERROR(e);
-    e = SSOJsonStringValue(pJsonValueExponent, &pszStringValue);
-    BAIL_ON_ERROR(e);
-    e = SSOStringAllocate(pszStringValue, &p->pszExponent);
+    e = SSOJsonStringValue(pJsonValueExponent, &p->pszExponent);
     BAIL_ON_ERROR(e);
 
     e = SSOJsonObjectGet(pJsonObjectKey, "x5c", &pJsonArrayCertificates);
@@ -101,9 +103,7 @@ SSOJwkParseFromSet(
         // x5c is optional, it will be present in the jwks endpoint response, but not in HOK tokens
         e = SSOJsonArrayGet(pJsonArrayCertificates, 0, &pJsonValueCertificate);
         BAIL_ON_ERROR(e);
-        e = SSOJsonStringValue(pJsonValueCertificate, &pszStringValue);
-        BAIL_ON_ERROR(e);
-        e = SSOStringAllocate(pszStringValue, &p->pszCertificate);
+        e = SSOJsonStringValue(pJsonValueCertificate, &p->pszCertificate);
         BAIL_ON_ERROR(e);
     }
 
@@ -126,6 +126,7 @@ error:
     SSOJsonDelete(pJsonValueExponent);
     SSOJsonDelete(pJsonArrayCertificates);
     SSOJsonDelete(pJsonValueCertificate);
+    SSOStringFree(pszStringValue);
 
     return e;
 }

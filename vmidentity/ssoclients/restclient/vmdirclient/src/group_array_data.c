@@ -69,10 +69,14 @@ void
 VmdirGroupArrayDataDelete(
     VMDIR_GROUP_ARRAY_DATA* pGroupArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pGroupArray->ppEntry,
-        pGroupArray->length,
-        (GenericDestructorFunction) VmdirGroupDataDelete);
+    if (pGroupArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pGroupArray->ppEntry,
+            pGroupArray->length,
+            (GenericDestructorFunction) VmdirGroupDataDelete);
+        SSOMemoryFree(pGroupArray, sizeof(VMDIR_GROUP_ARRAY_DATA));
+    }
 }
 
 SSOERROR

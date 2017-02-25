@@ -251,7 +251,7 @@ SSOJsonBooleanNew(
     bool value);
 
 SSOERROR
-SSOJsonObjectSetNew(
+SSOJsonObjectSet(
     PSSO_JSON pJson,
     PCSTRING key,
     PCSSO_JSON pJsonValue);
@@ -275,7 +275,7 @@ SSOJsonObjectGet(
 SSOERROR
 SSOJsonStringValue(
     PCSSO_JSON pJson,
-    PCSTRING* pValue);
+    PSTRING* pValue);
 
 SSOERROR
 SSOJsonIntegerValue(
@@ -293,7 +293,7 @@ SSOJsonBooleanValue(
     bool* pValue);
 
 SSOERROR
-SSOJsonArrayAppendNew(
+SSOJsonArrayAppend(
     PSSO_JSON pJson,
     PCSSO_JSON pJsonValue);
 
@@ -312,6 +312,10 @@ SSOERROR
 SSOJsonToString(
     PCSSO_JSON pJson,
     PSTRING* ppString);
+
+void
+SSOJsonIteratorDelete(
+    PSSO_JSON_ITERATOR pJsonIter);
 
 SSOERROR
 SSOJsonObjectIterator(

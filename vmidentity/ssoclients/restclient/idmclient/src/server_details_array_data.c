@@ -66,10 +66,14 @@ void
 IdmServerDetailsArrayDataDelete(
     IDM_SERVER_DETAILS_ARRAY_DATA* pServerDetailsArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pServerDetailsArray->ppEntry,
-        pServerDetailsArray->length,
-        (GenericDestructorFunction) IdmServerDetailsDataDelete);
+    if (pServerDetailsArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pServerDetailsArray->ppEntry,
+            pServerDetailsArray->length,
+            (GenericDestructorFunction) IdmServerDetailsDataDelete);
+        SSOMemoryFree(pServerDetailsArray, sizeof(IDM_SERVER_DETAILS_ARRAY_DATA));
+    }
 }
 
 SSOERROR

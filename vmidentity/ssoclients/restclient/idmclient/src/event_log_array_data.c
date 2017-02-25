@@ -70,10 +70,14 @@ void
 IdmEventLogArrayDataDelete(
     IDM_EVENT_LOG_ARRAY_DATA* pEventLogArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pEventLogArray->ppEntry,
-        pEventLogArray->length,
-        (GenericDestructorFunction) IdmEventLogDataDelete);
+    if (pEventLogArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pEventLogArray->ppEntry,
+            pEventLogArray->length,
+            (GenericDestructorFunction) IdmEventLogDataDelete);
+        SSOMemoryFree(pEventLogArray, sizeof(IDM_EVENT_LOG_ARRAY_DATA));
+    }
 }
 
 SSOERROR

@@ -20,10 +20,7 @@ SSOJsonDelete(
 {
     if (pJson != NULL)
     {
-        if (!pJson->borrowedRef)
-        {
-            json_decref(pJson->pJson_t);
-        }
+        json_decref(pJson->pJson_t);
         SSOMemoryFree(pJson, sizeof(SSO_JSON));
     }
 }
@@ -45,7 +42,6 @@ SSOJsonObjectNew(
     BAIL_ON_ERROR(e);
 
     pJson->pJson_t = json_object();
-    pJson->borrowedRef = false;
 
     if (pJson->pJson_t == NULL)
     {
@@ -82,7 +78,6 @@ SSOJsonArrayNew(
     BAIL_ON_ERROR(e);
 
     pJson->pJson_t = json_array();
-    pJson->borrowedRef = false;
 
     if (pJson->pJson_t == NULL)
     {
@@ -120,7 +115,6 @@ SSOJsonStringNew(
     BAIL_ON_ERROR(e);
 
     pJson->pJson_t = json_string(value);
-    pJson->borrowedRef = false;
 
     if (pJson->pJson_t == NULL)
     {
@@ -158,7 +152,6 @@ SSOJsonIntegerNew(
     BAIL_ON_ERROR(e);
 
     pJson->pJson_t = json_integer(value);
-    pJson->borrowedRef = false;
 
     if (pJson->pJson_t == NULL)
     {
@@ -196,7 +189,6 @@ SSOJsonLongNew(
     BAIL_ON_ERROR(e);
 
     pJson->pJson_t = json_integer(value);
-    pJson->borrowedRef = false;
 
     if (pJson->pJson_t == NULL)
     {
@@ -234,7 +226,6 @@ SSOJsonBooleanNew(
     BAIL_ON_ERROR(e);
 
     pJson->pJson_t = json_boolean(value);
-    pJson->borrowedRef = false;
 
     if (pJson->pJson_t == NULL)
     {
@@ -255,7 +246,7 @@ SSOJsonBooleanNew(
 }
 
 SSOERROR
-SSOJsonObjectSetNew(
+SSOJsonObjectSet(
     PSSO_JSON pJson,
     PCSTRING key,
     PCSSO_JSON pJsonValue)
@@ -268,7 +259,7 @@ SSOJsonObjectSetNew(
         BAIL_ON_ERROR(e);
     }
 
-    if (json_object_set_new(pJson->pJson_t, key, pJsonValue->pJson_t) != 0)
+    if (json_object_set(pJson->pJson_t, key, pJsonValue->pJson_t) != 0)
     {
         e = SSOERROR_JSON_FAILURE;
         BAIL_ON_ERROR(e);
@@ -337,8 +328,7 @@ SSOJsonObjectGet(
     e = SSOMemoryAllocate(sizeof(SSO_JSON), (void**) &pJsonValue);
     BAIL_ON_ERROR(e);
 
-    pJsonValue->pJson_t = json_object_get(pJson->pJson_t, key);
-    pJsonValue->borrowedRef = true;
+    pJsonValue->pJson_t = json_deep_copy(json_object_get(pJson->pJson_t, key));
 
     if (pJsonValue->pJson_t == NULL)
     {
@@ -360,10 +350,10 @@ SSOJsonObjectGet(
 SSOERROR
 SSOJsonStringValue(
     PCSSO_JSON pJson,
-    PCSTRING* pValue)
+    PSTRING* pValue)
 {
     SSOERROR e = SSOERROR_NONE;
-    PCSTRING value;
+    PSTRING value;
 
     if (pJson == NULL || json_is_string(pJson->pJson_t) == 0 || pValue == NULL)
     {
@@ -371,7 +361,7 @@ SSOJsonStringValue(
         BAIL_ON_ERROR(e);
     }
 
-    value = json_string_value(pJson->pJson_t);
+    e = SSOStringAllocate(json_string_value(pJson->pJson_t), &value);
 
     if (value == NULL)
     {
@@ -453,7 +443,7 @@ SSOJsonBooleanValue(
 }
 
 SSOERROR
-SSOJsonArrayAppendNew(
+SSOJsonArrayAppend(
     PSSO_JSON pJson,
     PCSSO_JSON pJsonValue)
 {
@@ -465,7 +455,7 @@ SSOJsonArrayAppendNew(
         BAIL_ON_ERROR(e);
     }
 
-    if (json_array_append_new(pJson->pJson_t, pJsonValue->pJson_t) != 0)
+    if (json_array_append(pJson->pJson_t, pJsonValue->pJson_t) != 0)
     {
         e = SSOERROR_JSON_FAILURE;
         BAIL_ON_ERROR(e);
@@ -514,8 +504,7 @@ SSOJsonArrayGet(
     e = SSOMemoryAllocate(sizeof(SSO_JSON), (void**) &pJsonValue);
     BAIL_ON_ERROR(e);
 
-    pJsonValue->pJson_t = json_array_get(pJson->pJson_t, index);
-    pJsonValue->borrowedRef = true;
+    pJsonValue->pJson_t = json_deep_copy(json_array_get(pJson->pJson_t, index));
 
     if (pJsonValue->pJson_t == NULL)
     {
@@ -569,14 +558,12 @@ SSOJsonToString(
     return e;
 }
 
-static
 void
 SSOJsonIteratorDelete(
     PSSO_JSON_ITERATOR pJsonIter)
 {
     if (pJsonIter != NULL)
     {
-        SSOMemoryFree(pJsonIter->pIter, 0);
         SSOMemoryFree(pJsonIter, sizeof(SSO_JSON_ITERATOR));
     }
 }
@@ -633,7 +620,7 @@ SSOJsonObjectIteratorHasNext(
         BAIL_ON_ERROR(e);
     }
 
-    *pBool = pJsonIter->pIter == NULL;
+    *pBool = pJsonIter->pIter != NULL;
 
     error:
 
@@ -726,8 +713,7 @@ SSOJsonObjectIteratorValue(
     e = SSOMemoryAllocate(sizeof(SSO_JSON), (void**) &pJsonValue);
     BAIL_ON_ERROR(e);
 
-    pJsonValue->pJson_t = json_object_iter_value(pJsonIter->pIter);
-    pJsonValue->borrowedRef = true;
+    pJsonValue->pJson_t = json_deep_copy(json_object_iter_value(pJsonIter->pIter));
 
     if (pJsonValue->pJson_t == NULL)
     {
@@ -765,7 +751,6 @@ SSOJsonParse(
     BAIL_ON_ERROR(e);
 
     pJson->pJson_t = json_loads(pData, JSON_DECODE_ANY, &error);
-    pJson->borrowedRef = false;
 
     if (pJson->pJson_t == NULL)
     {
@@ -804,7 +789,6 @@ SSOJsonReset(
     }
 
     pJson->pJson_t = json_deep_copy(pIn->pJson_t);
-    pJson->borrowedRef = false;
 
     if (pJson->pJson_t == NULL)
     {

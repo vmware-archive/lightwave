@@ -72,10 +72,14 @@ void
 IdmUserArrayDataDelete(
     IDM_USER_ARRAY_DATA* pUserArray)
 {
-    SSOMemoryFreeArrayOfObjects(
-        (void**) pUserArray->ppEntry,
-        pUserArray->length,
-        (GenericDestructorFunction) IdmUserDataDelete);
+    if (pUserArray != NULL)
+    {
+        SSOMemoryFreeArrayOfObjects(
+            (void**) pUserArray->ppEntry,
+            pUserArray->length,
+            (GenericDestructorFunction) IdmUserDataDelete);
+        SSOMemoryFree(pUserArray, sizeof(IDM_USER_ARRAY_DATA));
+    }
 }
 
 SSOERROR
