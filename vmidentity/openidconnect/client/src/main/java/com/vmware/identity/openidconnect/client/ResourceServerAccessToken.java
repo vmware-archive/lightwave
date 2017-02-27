@@ -65,7 +65,7 @@ public final class ResourceServerAccessToken {
         Validate.notEmpty(value, "value");
         Validate.notNull(providerPublicKey, "providerPublicKey");
         Validate.notNull(issuer, "issuer");
-        Validate.notEmpty(resourceServer, "resourceServer");
+        // resourceServer is nullable
         Validate.isTrue(0 <= clockToleranceInSeconds && clockToleranceInSeconds <= 10 * 60L, "0 <= clockToleranceInSeconds && clockToleranceInSeconds <= 10 * 60L");
 
         AccessToken accessToken;
@@ -83,7 +83,7 @@ public final class ResourceServerAccessToken {
             throw new TokenValidationException(TokenValidationError.PARSE_ERROR, "Token Signature verification process failed." + e.getMessage(), e);
         }
 
-        if (!accessToken.getAudience().contains(resourceServer)) {
+        if (resourceServer != null && !accessToken.getAudience().contains(resourceServer)) {
             throw new TokenValidationException(TokenValidationError.INVALID_AUDIENCE, "Audience in claim set does not contain the specified resource server.");
         }
 

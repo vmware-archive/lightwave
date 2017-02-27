@@ -256,6 +256,23 @@ public class OIDCClientIT extends OIDCClientITBase {
                 withRefreshSpec);
     }
 
+    // RegClientWithoutAuthn, PasswordGrant
+    @Test
+    public void testRegClientWithoutAuthnGetBearerWithRefreshByPasswordCredentialsGrant() throws Exception {
+        TestUtils.verifyTokensWithRefresh(
+                regClientWithoutAuthn,
+                passwordGrant,
+                withRefreshSpec);
+    }
+
+    @Test
+    public void testRegClientWithoutAuthnGetBearerWithoutRefreshByPasswordCredentialsGrant() throws Exception {
+        TestUtils.verifyTokens(
+                regClientWithoutAuthn,
+                passwordGrant,
+                withoutRefreshSpec);
+    }
+
     @Test
     public void testGroupFiltering() throws Exception {
         OIDCTokens tokens = nonRegNoHOKConfigClient.acquireTokens(passwordGrant, groupFilteringSpec);

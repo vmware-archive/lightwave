@@ -479,6 +479,14 @@ public class TestContext {
         return params;
     }
 
+    public static Map<String, String> tokenRequestParametersClientId(Flow flow) throws Exception {
+        assert flow.isTokenEndpointFlow();
+        assert flow != Flow.AUTHZ_CODE && flow != Flow.CLIENT_CREDS && flow != Flow.SOLUTION_USER_CREDS;
+        Map<String, String> params = tokenRequestParameters(flow, refreshTokenClaims().build());
+        params.put("client_id", CLIENT_ID);
+        return params;
+    }
+
     public static Map<String, String> logoutRequestParameters() throws Exception {
         Map<String, String> params = new HashMap<String, String>();
         params.put("id_token_hint", TestUtil.sign(idTokenClaims().build(), TENANT_PRIVATE_KEY).serialize());
@@ -782,7 +790,6 @@ public class TestContext {
 
         assertEquals("token_class", tokenClass, claims.getStringClaim("token_class"));
         assertEquals("scope", scope.getScopeValues(), Scope.parse(claims.getStringClaim("scope")).getScopeValues());
-        assertEquals("client_id", (wClientAssertion || flow.isImplicit()) ? CLIENT_ID : null, claims.getStringClaim("client_id"));
         assertEquals("tenant", TENANT_NAME, claims.getStringClaim("tenant"));
         assertEquals("issuer", ISSUER, claims.getIssuer());
 
@@ -790,16 +797,6 @@ public class TestContext {
                 SOLUTION_USER.getSubject().getValue() :
                 PERSON_USER.getSubject().getValue();
         assertEquals("subject", expectedSubject, claims.getSubject());
-
-        String expectedAudience;
-        if (wClientAssertion || flow.isImplicit()) {
-            expectedAudience = CLIENT_ID;
-        } else if (wSltnAssertion) {
-            expectedAudience = SOLUTION_USER.getSubject().getValue();
-        } else {
-            expectedAudience = PERSON_USER.getSubject().getValue();
-        }
-        assertTrue("audience", claims.getAudience().contains(expectedAudience));
 
         assertTrue("issued at", claims.getIssueTime().before(now));
         assertTrue("expiration", claims.getExpirationTime().after(now));

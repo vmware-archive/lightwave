@@ -134,8 +134,8 @@ public class IDTokenTest {
     public void testBuildIdTokenExpiredTokenNotBefore() throws Exception {
 
         Date now = new Date();
-        Date issueTime = new Date(now.getTime() - 2000L);
-        Date expirationTime = new Date(now.getTime() - 1000L); // expires 1 seconds ago
+        Date issueTime = new Date(now.getTime() + 1*60*1000L); // issued in the future
+        Date expirationTime = new Date(now.getTime() + 2*60*1000L);
         String idTokenString = TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getValue(), providerPrivateKey, issueTime, expirationTime);
         try {
             IDToken.build(idTokenString, providerPublicKey, issuer, clientID, 0L);
@@ -149,8 +149,8 @@ public class IDTokenTest {
     public void testBuildIdTokenExpiredTokenNotAfter() throws Exception {
 
         Date now = new Date();
-        Date issueTime = new Date(now.getTime() + 1000L); // issued 1 second in the future
-        Date expirationTime = new Date(now.getTime() + 2000L);
+        Date issueTime = new Date(now.getTime() - 2*60*1000L);
+        Date expirationTime = new Date(now.getTime() - 1*60*1000L); // expired
         String idTokenString = TestUtils.buildBaseToken(issuer, clientID.getValue(), TokenClass.ID_TOKEN.getValue(), providerPrivateKey, issueTime, expirationTime);
         try {
             IDToken.build(idTokenString, providerPublicKey, issuer, clientID, 0L);

@@ -130,14 +130,21 @@ public class TokenRequestProcessor {
         GrantType grantType = this.tokenRequest.getAuthorizationGrant().getGrantType();
 
         SolutionUser solutionUser = null;
-        if (this.tokenRequest.getClientAssertion() != null) {
+        if (this.tokenRequest.getClientID() != null) {
             ClientInfo clientInfo = this.clientInfoRetriever.retrieveClientInfo(this.tenant, this.tokenRequest.getClientID());
-            solutionUser = this.solutionUserAuthenticator.authenticateByClientAssertion(
-                    this.tokenRequest.getClientAssertion(),
-                    ASSERTION_LIFETIME_MS,
-                    this.httpRequest.getURI(),
-                    this.tenantInfo,
-                    clientInfo);
+            boolean certRegistered = clientInfo.getCertSubjectDN() != null;
+            if (certRegistered && this.tokenRequest.getClientAssertion() != null) {
+                solutionUser = this.solutionUserAuthenticator.authenticateByClientAssertion(
+                        this.tokenRequest.getClientAssertion(),
+                        ASSERTION_LIFETIME_MS,
+                        this.httpRequest.getURI(),
+                        this.tenantInfo,
+                        clientInfo);
+            } else if (certRegistered && this.tokenRequest.getClientAssertion() == null) {
+                throw new ServerException(ErrorObject.invalidClient("client_assertion parameter is required since client has registered a cert"));
+            } else if (!certRegistered && this.tokenRequest.getClientAssertion() != null) {
+                throw new ServerException(ErrorObject.invalidClient("client_assertion parameter is not allowed since client did not register a cert"));
+            }
         } else if (this.tokenRequest.getSolutionUserAssertion() != null) {
             solutionUser = this.solutionUserAuthenticator.authenticateBySolutionUserAssertion(
                     this.tokenRequest.getSolutionUserAssertion(),

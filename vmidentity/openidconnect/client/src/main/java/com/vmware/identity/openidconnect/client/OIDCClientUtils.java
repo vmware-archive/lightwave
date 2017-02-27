@@ -250,6 +250,7 @@ class OIDCClientUtils {
                 tokenSpec == TokenSpec.EMPTY ? null : scope,
                 solutionUserAssertion,
                 clientAssertion,
+                clientId,
                 new CorrelationID());
     }
 

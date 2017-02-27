@@ -13,8 +13,11 @@
  */
 
 package com.vmware.identity.openidconnect.server;
+
 import java.io.IOException;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -45,6 +48,10 @@ import com.vmware.identity.openidconnect.protocol.URIUtils;
 public class MetadataController {
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(MetadataController.class);
 
+    private static final List<String> RESPONSE_TYPES_SUPPORTED = Arrays.asList("code", "id_token", "token id_token");
+    private static final List<String> SUBJECT_TYPES_SUPPORTED = Arrays.asList("public");
+    private static final List<String> ID_TOKEN_SIGNING_ALGORITHM_VALUES_SUPPORTED = Arrays.asList("RS256");
+
     @Autowired
     private CasIdmClient idmClient;
 
@@ -65,7 +72,7 @@ public class MetadataController {
     }
 
     @RequestMapping(value = Endpoints.BASE + "/{tenant:.*}" + Endpoints.METADATA, method = RequestMethod.GET)
-    public void  metadata(
+    public void metadata(
             HttpServletRequest httpServletRequest,
             HttpServletResponse httpServletResponse,
             @PathVariable("tenant") String tenant) throws IOException {
@@ -78,12 +85,14 @@ public class MetadataController {
             }
             TenantInfo tenantInfo = tenantInfoRetriever.retrieveTenantInfo(tenant);
             Issuer issuer = tenantInfo.getIssuer();
-            ProviderMetadata providerMetadata = new ProviderMetadata(
-                    issuer,
-                    endpointURI(issuer, tenant, Endpoints.AUTHENTICATION),
-                    endpointURI(issuer, tenant, Endpoints.TOKEN),
-                    endpointURI(issuer, tenant, Endpoints.LOGOUT),
-                    endpointURI(issuer, tenant, Endpoints.JWKS));
+            ProviderMetadata providerMetadata = new ProviderMetadata.Builder(issuer).
+                        authorizationEndpointURI(endpointURI(issuer, tenant, Endpoints.AUTHENTICATION)).
+                        tokenEndpointURI(endpointURI(issuer, tenant, Endpoints.TOKEN)).
+                        endSessionEndpointURI(endpointURI(issuer, tenant, Endpoints.LOGOUT)).
+                        jwkSetURI(endpointURI(issuer, tenant, Endpoints.JWKS)).
+                        responseTypesSupported(RESPONSE_TYPES_SUPPORTED).
+                        subjectTypesSupported(SUBJECT_TYPES_SUPPORTED).
+                        idTokenSigningAlgorithmValuesSupported(ID_TOKEN_SIGNING_ALGORITHM_VALUES_SUPPORTED).build();
 
             httpResponse = HttpResponse.createJsonResponse(StatusCode.OK, ProviderMetadataMapper.toJSONObject(providerMetadata));
         } catch (ParseException e) {

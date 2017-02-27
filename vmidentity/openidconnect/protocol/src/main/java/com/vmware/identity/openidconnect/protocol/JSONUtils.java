@@ -16,6 +16,7 @@ package com.vmware.identity.openidconnect.protocol;
 
 import java.net.URI;
 
+import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 
 import org.apache.commons.lang3.Validate;
@@ -67,6 +68,33 @@ public final class JSONUtils {
         }
 
         return stringValue;
+    }
+
+    public static String[] getStringArray(JSONObject json, String key) throws ParseException {
+        Validate.notNull(json, "json");
+        Validate.notEmpty(key, "key");
+
+        Object objectValue = json.get(key);
+        if (objectValue == null) {
+            throw new ParseException(String.format("json is missing %s member", key));
+        }
+
+        if (!(objectValue instanceof JSONArray)) {
+            throw new ParseException(String.format("json has non-array %s member", key));
+        }
+
+        String[] stringArrayValue;
+        try {
+            stringArrayValue = ((JSONArray) objectValue).toArray(new String[0]);
+        } catch (ArrayStoreException e) {
+            throw new ParseException(String.format("json has non-string-array %s member", key), e);
+        }
+
+        if (stringArrayValue.length == 0) {
+            throw new ParseException(String.format("json has empty %s member", key));
+        }
+
+        return stringArrayValue;
     }
 
     public static URI getURI(JSONObject json, String key) throws ParseException {

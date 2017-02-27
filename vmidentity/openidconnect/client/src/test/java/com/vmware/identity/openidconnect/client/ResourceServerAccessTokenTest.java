@@ -74,6 +74,19 @@ public class ResourceServerAccessTokenTest {
     }
 
     @Test
+    public void testBuildAccessTokenNoResourceServer() throws Exception {
+
+        ResourceServerAccessToken accessToken = ResourceServerAccessToken.build(
+                TestUtils.buildBaseToken(issuer, resourceServer, TokenClass.ACCESS_TOKEN.getValue(), providerPrivateKey, tokenLifeTime),
+                providerPublicKey,
+                issuer,
+                null, // resourceServer
+                0L);
+        Assert.assertTrue(accessToken.getAudience().contains(resourceServer));
+        Assert.assertEquals(issuer, accessToken.getIssuer());
+    }
+
+    @Test
     public void testBuildAccessTokenByBuilder() throws Exception {
 
         Date now = new Date();
@@ -149,8 +162,8 @@ public class ResourceServerAccessTokenTest {
     public void testBuildAccessTokenExpiredTokenNotBefore() throws Exception {
 
         Date now = new Date();
-        Date issueTime = new Date(now.getTime() - 2000L);
-        Date expirationTime = new Date(now.getTime() - 1000L); // expires 1 seconds ago
+        Date issueTime = new Date(now.getTime() + 1*60*1000L); // issued in the future
+        Date expirationTime = new Date(now.getTime() + 2*60*1000L);
 
         try {
             ResourceServerAccessToken.build(
@@ -169,8 +182,8 @@ public class ResourceServerAccessTokenTest {
     public void testBuildAccessTokenExpiredTokenNotAfter() throws Exception {
 
         Date now = new Date();
-        Date issueTime = new Date(now.getTime() + 1000L); // issued 1 second in the future
-        Date expirationTime = new Date(now.getTime() + 2000L);
+        Date issueTime = new Date(now.getTime() - 2*60*1000L);
+        Date expirationTime = new Date(now.getTime() - 1*60*1000L); // expired
 
         try {
             ResourceServerAccessToken.build(

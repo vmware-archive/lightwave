@@ -57,10 +57,11 @@ public class OIDCClientITBase {
     static final long CLOCK_TOLERANCE_IN_SECONDS = 5 * 60L; // 5 mins
 
     static ClientID clientId;
+    static ClientID clientIdWithoutAuthn;
     static AccessToken accessToken;
     static ConnectionConfig connectionConfig;
     static ClientConfig clientConfig;
-    static OIDCClient nonRegNoHOKConfigClient, nonRegHOKConfigClient, regClient, regClientWithHA;
+    static OIDCClient nonRegNoHOKConfigClient, nonRegHOKConfigClient, regClient, regClientWithHA, regClientWithoutAuthn;
     static TokenSpec withRefreshSpec, withoutRefreshSpec, groupFilteringSpec;
     static PasswordGrant passwordGrant;
     static SolutionUserCredentialsGrant solutionUserCredentialsGrant;
@@ -165,6 +166,16 @@ public class OIDCClientITBase {
         OIDCClientDTO oidcClientDTO = idmClient.oidcClient().register(tenant, oidcClientMetadataDTO);
         clientId = new ClientID(oidcClientDTO.getClientId());
 
+        oidcClientMetadataDTO = new OIDCClientMetadataDTO.Builder()
+        .withRedirectUris(redirectURIs)
+        .withPostLogoutRedirectUris(postLogoutRedirectURIs)
+        .withLogoutUri(logoutURI)
+        .withTokenEndpointAuthMethod("none")
+        .withCertSubjectDN(null)
+        .build();
+        oidcClientDTO = idmClient.oidcClient().register(tenant, oidcClientMetadataDTO);
+        clientIdWithoutAuthn = new ClientID(oidcClientDTO.getClientId());
+
         // register resource server for group filtering tests
         Set<String> groupFilter = new HashSet<String>(Arrays.asList("dummyDomain\\dummyUser", tenant + "\\Administrators"));
         ResourceServerDTO resourceServer = new ResourceServerDTO.Builder().withName(RESOURCE_SERVER_NAME).withGroupFilter(groupFilter).build();
@@ -181,6 +192,8 @@ public class OIDCClientITBase {
         nonRegHOKConfigClient = new OIDCClient(clientConfig);
         clientConfig = new ClientConfig(connectionConfig, clientId, holderOfKeyConfig, CLOCK_TOLERANCE_IN_SECONDS);
         regClient = new OIDCClient(clientConfig);
+        clientConfig = new ClientConfig(connectionConfig, clientIdWithoutAuthn, null, CLOCK_TOLERANCE_IN_SECONDS);
+        regClientWithoutAuthn = new OIDCClient(clientConfig);
 
         // create registered HA client
         String domainName = null;
@@ -215,6 +228,7 @@ public class OIDCClientITBase {
     public static void tearDown() throws Exception {
         vmdirClient.user().delete(tenant, solutionUserName, tenant);
         idmClient.oidcClient().delete(tenant, clientId.getValue());
+        idmClient.oidcClient().delete(tenant, clientIdWithoutAuthn.getValue());
         idmClient.resourceServer().delete(tenant, RESOURCE_SERVER_NAME);
     }
 }
