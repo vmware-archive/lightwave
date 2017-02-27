@@ -64,12 +64,13 @@ public class SSOConfigurationUtils {
         try {
             IDP_HOST_ADDRESS = InetAddress.getLocalHost().getCanonicalHostName();
         } catch (UnknownHostException e) {
-            logger.error("Cannot resolve IDP FQDN. Using the default - ." + IDP_HOST_ADDRESS);
+            logger.error("Cannot resolve IDP FQDN. Using the default - " + IDP_HOST_ADDRESS);
         }
     }
 
     static final String DEFAULT_TENANT = "vsphere.local";
     static final int DEFAULT_OP_PORT = 443;
+
     static final String CREDENTIALS_FILE = getTcStsInstanceConfDir() + "/oidc_token";
     static final String KEY_VALUE_SEPARATOR = ":";
     static final String CHARSET = "UTF-8";
@@ -81,7 +82,7 @@ public class SSOConfigurationUtils {
     private static final String DISPLAY_PARAM_PASSWORD_AUTH = "IsPasswordAuthEnabled";
     private static final String DISPLAY_PARAM_WINDOWS_AUTH = "IsWindowsAuthEnabled";
     private static final String DISPLAY_PARAM_CERT_AUTH = "IsTLSClientCertAuthnEnabled";
-    private static final int DEFAULT_DISPLAY_WIDTH = 70;
+    private static final int DEFAULT_DISPLAY_WIDTH = 100;
     private static final int LDAPS_PORT = 636;
 
     private static final String UNDEFINED_CONFIG = "UndefinedConfig";
