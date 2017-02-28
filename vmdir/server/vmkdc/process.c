@@ -730,7 +730,7 @@ VmKdcProcessTgsReq(
     /*
      * Decode the encrypted part of the ticket
      */
-    dwError = VmKdcDecodeEncTicketPart(pData, &pEncTicketPart);
+    dwError = VmKdcDecodeEncTicketPart(pData, pSKey, &pEncTicketPart);
     BAIL_ON_VMKDC_ERROR(dwError);
 
     VMKDC_SAFE_FREE_DATA(pData);

@@ -47,14 +47,18 @@ VmKdcEncryptEncData(
     dwError = VmKdcAllocateMemory(sizeof(VMKDC_ENCDATA), (PVOID*)&pEncData);
     BAIL_ON_VMKDC_ERROR(dwError);
 
+    /* EncryptedData: cipher[2] */
     dwError = VmKdcCryptoEncrypt(pCrypto,
                                  keyUsage,
                                  pInData,
                                  &pEncData->data);
     BAIL_ON_VMKDC_ERROR(dwError);
 
-    pEncData->kvno = 0;
+    /* EncryptedData: etype[0] */
     pEncData->type = pKey->type;
+
+    /* EncryptedData: kvno[1] */
+    pEncData->kvno = pKey->kvno;
 
     *ppRetEncData = pEncData;
 
@@ -165,7 +169,7 @@ VmKdcDecodeEncData(
     }
 
     dwError = VmKdcMakeEncData(heimEncData.etype,
-                               0,
+                               heimEncData.kvno ? *heimEncData.kvno : 0,
                                heimEncData.cipher.data,
                                (DWORD)heimEncData.cipher.length,
                                &pEncData);

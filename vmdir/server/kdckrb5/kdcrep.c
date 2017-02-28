@@ -213,11 +213,7 @@ VmKdcEncodeKdcRep(
 #endif
 
     /* crealm */
-#if 1
     heimRep.crealm = (Realm)VMKDC_GET_PTR_DATA(pKdcRep->cname->realm);
-#else
-    heimRep.crealm = (Realm)VMKDC_GET_PTR_DATA(pKdcRep->crealm);
-#endif
 
     /* cname */
     heimRep.cname.name_type = pKdcRep->cname->type;
@@ -249,21 +245,13 @@ VmKdcEncodeKdcRep(
         heimRep.ticket.sname.name_string.val[i] = VMKDC_GET_PTR_DATA(pKdcRep->ticket->sname->components[i]);
     }
     heimRep.ticket.enc_part.etype = pKdcRep->enc_part->type;
-#if 1
-    heimRep.ticket.enc_part.kvno = NULL;
-#else
-    heimRep.ticket.enc_part.kvno = pKdcRep->enc_part->kvno;
-#endif
+    heimRep.ticket.enc_part.kvno = &pKdcRep->enc_part->kvno;
     heimRep.ticket.enc_part.cipher.length = VMKDC_GET_LEN_DATA(pKdcRep->ticket->enc_part->data);
     heimRep.ticket.enc_part.cipher.data = VMKDC_GET_PTR_DATA(pKdcRep->ticket->enc_part->data);
 
     /* enc-part */
     heimRep.enc_part.etype = pKdcRep->enc_part->type;
-#if 1
-    heimRep.enc_part.kvno = NULL;
-#else
-    heimRep.enc_part.kvno = pKdcRep->enc_part->kvno;
-#endif
+    heimRep.enc_part.kvno = &pKdcRep->enc_part->kvno;
     heimRep.enc_part.cipher.length = VMKDC_GET_LEN_DATA(pKdcRep->enc_part->data);
     heimRep.enc_part.cipher.data = VMKDC_GET_PTR_DATA(pKdcRep->enc_part->data);
 
@@ -861,6 +849,12 @@ VmKdcBuildTgsRep(
     /*
      * Encrypt the ASN.1 encoded TGS-REP-PART
      */
+#if 1 /* TBD:Adam-Determine what kvno is put into ticket */
+    if (pKey)
+    {
+        pSubKey = NULL;
+    }
+#endif
     if (pSubKey)
     {
         dwError = VmKdcEncryptEncData(pContext,

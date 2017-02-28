@@ -58,6 +58,7 @@ VmKdcEncodeEncTicketPart(
 DWORD
 VmKdcDecodeEncTicketPart(
     PVMKDC_DATA pData,
+    PVMKDC_KEY pSKey,
     PVMKDC_ENCTICKETPART *ppRetEncTicketPart);
 
 VOID

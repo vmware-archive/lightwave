@@ -383,6 +383,7 @@ error:
 DWORD
 VmKdcDecodeEncTicketPart(
     PVMKDC_DATA pData,
+    PVMKDC_KEY pSKey,
     PVMKDC_ENCTICKETPART *ppRetEncTicketPart)
 {
     DWORD dwError = 0;
@@ -419,7 +420,7 @@ VmKdcDecodeEncTicketPart(
 
     /* key */
     dwError = VmKdcMakeKey(heimPart.key.keytype,
-                           0,
+                           pSKey->kvno,
                            heimPart.key.keyvalue.data,
                            (int) heimPart.key.keyvalue.length,
                            &pKey);

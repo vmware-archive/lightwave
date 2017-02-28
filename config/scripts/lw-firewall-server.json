@@ -205,6 +205,7 @@
             {
                 "direction": "inbound",
                 "protocol": "tcp",
+                "protocol": "udp",
                 "porttype": "dst",
                 "port": "389",
                 "portoffset": 0
@@ -212,6 +213,13 @@
             {
                 "direction": "inbound",
                 "protocol": "icmp"
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "445",
+                "portoffset": 0
             },
             {
                 "direction": "inbound",
@@ -241,6 +249,20 @@
                 "protocol": "tcp",
                 "porttype": "dst",
                 "port": "389",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "udp",
+                "porttype": "dst",
+                "port": "389",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "445",
                 "portoffset": 0
             },
             {
