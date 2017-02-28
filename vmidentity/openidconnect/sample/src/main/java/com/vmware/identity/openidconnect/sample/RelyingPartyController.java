@@ -47,6 +47,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import com.vmware.identity.openidconnect.client.AuthenticationCodeResponse;
 import com.vmware.identity.openidconnect.client.AuthenticationTokensResponse;
+import com.vmware.identity.openidconnect.client.ClientAuthenticationMethod;
 import com.vmware.identity.openidconnect.client.ClientConfig;
 import com.vmware.identity.openidconnect.client.ConnectionConfig;
 import com.vmware.identity.openidconnect.client.GroupMembershipType;
@@ -673,7 +674,8 @@ public class RelyingPartyController {
                 new ClientID(clientId),
                 holderOfKeyConfig,
                 highAvailabilityEnabled ? new HighAvailabilityConfig(tenantName) : null,
-                CLOCK_TOLERANCE_SECONDS);
+                CLOCK_TOLERANCE_SECONDS,
+                ClientAuthenticationMethod.PRIVATE_KEY_JWT);
 
         client = new OIDCClient(clientConfig);
 

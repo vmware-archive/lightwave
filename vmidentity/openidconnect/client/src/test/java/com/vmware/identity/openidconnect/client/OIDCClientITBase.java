@@ -190,9 +190,9 @@ public class OIDCClientITBase {
         nonRegNoHOKConfigClient = new OIDCClient(clientConfig);
         clientConfig = new ClientConfig(connectionConfig, null, holderOfKeyConfig, CLOCK_TOLERANCE_IN_SECONDS);
         nonRegHOKConfigClient = new OIDCClient(clientConfig);
-        clientConfig = new ClientConfig(connectionConfig, clientId, holderOfKeyConfig, CLOCK_TOLERANCE_IN_SECONDS);
+        clientConfig = new ClientConfig(connectionConfig, clientId, holderOfKeyConfig, null, CLOCK_TOLERANCE_IN_SECONDS, ClientAuthenticationMethod.PRIVATE_KEY_JWT);
         regClient = new OIDCClient(clientConfig);
-        clientConfig = new ClientConfig(connectionConfig, clientIdWithoutAuthn, null, CLOCK_TOLERANCE_IN_SECONDS);
+        clientConfig = new ClientConfig(connectionConfig, clientIdWithoutAuthn, holderOfKeyConfig, CLOCK_TOLERANCE_IN_SECONDS);
         regClientWithoutAuthn = new OIDCClient(clientConfig);
 
         // create registered HA client
@@ -201,7 +201,7 @@ public class OIDCClientITBase {
         String availableDomainController = issuerUri.getHost();
         ClientDCCacheFactory factory = new MockClientDCCacheFactory(domainName, availableDomainController);
         HighAvailabilityConfig haConfig = new HighAvailabilityConfig(domainName, factory);
-        clientConfig = new ClientConfig(connectionConfig, clientId, holderOfKeyConfig, haConfig, CLOCK_TOLERANCE_IN_SECONDS);
+        clientConfig = new ClientConfig(connectionConfig, clientId, holderOfKeyConfig, haConfig, CLOCK_TOLERANCE_IN_SECONDS, ClientAuthenticationMethod.PRIVATE_KEY_JWT);
         regClientWithHA = new OIDCClient(clientConfig);
 
         withRefreshSpec = new TokenSpec.Builder(TokenType.BEARER).

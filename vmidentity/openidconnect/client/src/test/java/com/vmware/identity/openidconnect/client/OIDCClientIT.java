@@ -256,7 +256,7 @@ public class OIDCClientIT extends OIDCClientITBase {
                 withRefreshSpec);
     }
 
-    // RegClientWithoutAuthn, PasswordGrant
+    // RegClientWithoutAuthn
     @Test
     public void testRegClientWithoutAuthnGetBearerWithRefreshByPasswordCredentialsGrant() throws Exception {
         TestUtils.verifyTokensWithRefresh(
@@ -270,6 +270,14 @@ public class OIDCClientIT extends OIDCClientITBase {
         TestUtils.verifyTokens(
                 regClientWithoutAuthn,
                 passwordGrant,
+                withoutRefreshSpec);
+    }
+
+    @Test
+    public void testRegClientWithoutAuthnGetHOKWithoutRefreshBySolutionUserCredentialsGrant() throws Exception {
+        TestUtils.verifyTokens(
+                regClientWithoutAuthn,
+                solutionUserCredentialsGrant,
                 withoutRefreshSpec);
     }
 

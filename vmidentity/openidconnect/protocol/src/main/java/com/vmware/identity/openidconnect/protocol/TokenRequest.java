@@ -135,8 +135,14 @@ public final class TokenRequest extends ProtocolRequest {
         AuthorizationGrant authzGrant = AuthorizationGrant.parse(parameters);
 
         Scope scope = null;
-        if (parameters.containsKey("scope")) {
-            scope = Scope.parse(ParameterMapUtils.getString(parameters, "scope"));
+        if (authzGrant.getGrantType() == GrantType.AUTHORIZATION_CODE || authzGrant.getGrantType() == GrantType.REFRESH_TOKEN) {
+            // ignore scope, ignore instead of reject because kubectl will send scope in refresh_token request
+        } else {
+            if (parameters.containsKey("scope")) {
+                scope = Scope.parse(ParameterMapUtils.getString(parameters, "scope"));
+            } else {
+                throw new ParseException("missing scope parameter");
+            }
         }
 
         SolutionUserAssertion solutionUserAssertion = null;
@@ -186,21 +192,6 @@ public final class TokenRequest extends ProtocolRequest {
         }
 
         GrantType grantType = authzGrant.getGrantType();
-
-        // scope is not allowed in authz code and refresh token grants but required in all others
-        if (grantType == GrantType.AUTHORIZATION_CODE) {
-            if (scope != null) {
-                throw new ParseException("scope parameter is not allowed in token request for authz code grant");
-            }
-        } else if (grantType == GrantType.REFRESH_TOKEN) {
-            if (scope != null) {
-                throw new ParseException("scope parameter is not allowed in token request for refresh token grant");
-            }
-        } else {
-            if (scope == null) {
-                throw new ParseException("missing scope parameter");
-            }
-        }
 
         if (grantType == GrantType.CLIENT_CREDENTIALS && scope.contains(ScopeValue.OFFLINE_ACCESS)) {
             throw new ParseException(ErrorObject.invalidScope("refresh token (offline_access) is not allowed for client credentials grant"));

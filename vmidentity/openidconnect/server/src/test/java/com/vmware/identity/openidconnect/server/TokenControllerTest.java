@@ -17,6 +17,7 @@ package com.vmware.identity.openidconnect.server;
 import static com.vmware.identity.openidconnect.server.TestContext.ADMIN_SERVER_ROLE;
 import static com.vmware.identity.openidconnect.server.TestContext.AUTHZ_CODE;
 import static com.vmware.identity.openidconnect.server.TestContext.AUTHZ_ENDPOINT_URI;
+import static com.vmware.identity.openidconnect.server.TestContext.CLIENT_CERT_SUBJECT_DN;
 import static com.vmware.identity.openidconnect.server.TestContext.CLIENT_ID;
 import static com.vmware.identity.openidconnect.server.TestContext.CLIENT_PRIVATE_KEY;
 import static com.vmware.identity.openidconnect.server.TestContext.GROUP_FILTER_RS_X;
@@ -218,12 +219,12 @@ public class TokenControllerTest {
     }
 
     @Test
-    public void testAuthzCodeFlowTokenScopeParameter() throws Exception {
-        // in authz code flow, we do not allow scope token request parameter (because it was already supplied in the authn request)
+    public void testAuthzCodeFlowScopeParameter() throws Exception {
+        // in authz code flow, we ignore scope token request parameter (because it was already supplied in the authn request)
         Flow flow = Flow.AUTHZ_CODE;
         Map<String, String> params = tokenRequestParametersClient(flow);
         params.put("scope", "openid");
-        assertErrorResponse(flow, params, "invalid_request", "scope parameter is not allowed in token request for authz code grant");
+        assertSuccessResponse(flow, params);
     }
 
     @Test
@@ -334,9 +335,10 @@ public class TokenControllerTest {
     public void testSolutionUserCredentialsFlowClientId() throws Exception {
         Flow flow = Flow.SOLUTION_USER_CREDS;
         Map<String, String> params = tokenRequestParametersSltn(flow);
-        params.remove("solution_user_assertion");
         params.put("client_id", CLIENT_ID);
-        assertErrorResponse(flow, params, "invalid_request", "solution_user_assertion parameter is required for solution user credentials grant");
+        CasIdmClient idmClient = idmClientBuilder().tokenEndpointAuthMethod("none").clientCertSubjectDN(null).solutionUserCertSubjectDN(CLIENT_CERT_SUBJECT_DN).build();
+        TokenController controller = tokenController(idmClient);
+        assertSuccessResponse(flow, params, controller);
     }
 
     @Test
@@ -841,11 +843,11 @@ public class TokenControllerTest {
 
     @Test
     public void testRefreshTokenFlowScopeParameter() throws Exception {
-        // in refresh token flow, we do not allow scope token request parameter (because it was already supplied in previous request)
+        // in refresh token flow, we ignore scope token request parameter (because it was already supplied in previous request)
         Flow flow = Flow.REFRESH_TOKEN;
         Map<String, String> params = tokenRequestParameters(flow);
         params.put("scope", "openid");
-        assertErrorResponse(flow, params, "invalid_request", "scope parameter is not allowed in token request for refresh token grant");
+        assertSuccessResponse(flow, params);
     }
 
     @Test

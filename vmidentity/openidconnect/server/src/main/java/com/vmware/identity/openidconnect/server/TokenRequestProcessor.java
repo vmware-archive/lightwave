@@ -145,7 +145,8 @@ public class TokenRequestProcessor {
             } else if (!certRegistered && this.tokenRequest.getClientAssertion() != null) {
                 throw new ServerException(ErrorObject.invalidClient("client_assertion parameter is not allowed since client did not register a cert"));
             }
-        } else if (this.tokenRequest.getSolutionUserAssertion() != null) {
+        }
+        if (this.tokenRequest.getSolutionUserAssertion() != null) {
             solutionUser = this.solutionUserAuthenticator.authenticateBySolutionUserAssertion(
                     this.tokenRequest.getSolutionUserAssertion(),
                     ASSERTION_LIFETIME_MS,
