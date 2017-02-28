@@ -185,6 +185,16 @@ public class VMIdentityController {
             }
         }
 
+        if (params.getHostIP() == null || params.getHostIP().isEmpty()) {
+            try {
+                params.setHostIP(InetAddress.getLocalHost().getHostAddress());
+            } catch (UnknownHostException e) {
+                throw new DomainControllerNativeException(
+                        DeployUtilsErrors.ERROR_INVALID_NETNAME.getErrorCode(),
+                        e);
+            }
+        }
+
         checkPrerequisites(params);
 
         // check services vmafd, vmca and vmdir if they are confgiured.

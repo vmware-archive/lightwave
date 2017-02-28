@@ -7,6 +7,7 @@ package com.vmware.identity.configure;
 
 public class VmIdentityParams {
     private String hostname;
+    private String ip;
     private String hostnameType;
     private String username;
     private String password;
@@ -35,6 +36,14 @@ public class VmIdentityParams {
 
     public void setHostname(String hostname) {
         this.hostname = hostname;
+    }
+
+    public String getHostIP() {
+        return ip;
+    }
+
+    public void setHostIP(String ip) {
+        this.ip = ip;
     }
 
     public String getHostnameType() {
