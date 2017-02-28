@@ -133,7 +133,7 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
     { VMCA_INVALID_CSR_FIELD        , "VMCA_INVALID_CSR_FIELD","Invalid CSR field" }, \
     { VMCA_SELF_SIGNATURE_FAILED    , "VMCA_SELF_SIGNATURE_FAILED","Self Signature failed" }, \
     { VMCA_INIT_CA_FAILED           , "VMCA_INIT_CA_FAILED", "Init CA failure" } , \
-    { VMCA_ERROR_INVALID_KEY_LENGTH , "VMCA_ERROR_INVALID_KEY_LENGTH", "Key length has to be between 2048(2KB) and 16382(16KB)" }, \
+    { VMCA_ERROR_INVALID_KEY_LENGTH , "VMCA_ERROR_INVALID_KEY_LENGTH", "Key length has to be between 2048(2KB) and 16384(16KB)" }, \
     { VMCA_PKCS12_CREAT_FAIL        , "VMCA_PKCS12_CREAT_FAIL", "PKCS12 creation Failure" }, \
     { VMCA_PKCS12_IO_FAIL           , "VMCA_PKCS12_IO_FAIL","PCKS12 I/O failure" }, \
     { VMCA_CRL_ERROR                , "VMCA_CRL_ERROR", "CRL update failed"}, \
