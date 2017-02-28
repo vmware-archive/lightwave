@@ -89,12 +89,16 @@ VmDirRESTServerShutdown(
     PREST_API_MODULE    pModule = NULL;
 
     VmRESTStop();
-    for (pModule = gpVdirRestApiDef->pModules; pModule; pModule = pModule->pNext)
+    if (gpVdirRestApiDef)
     {
-        PREST_API_ENDPOINT pEndPoint = pModule->pEndPoints;
-        for (; pEndPoint; pEndPoint = pEndPoint->pNext)
+        pModule = gpVdirRestApiDef->pModules;
+        for (; pModule; pModule = pModule->pNext)
         {
-            (VOID)VmRESTUnRegisterHandler(pEndPoint->pszName);
+            PREST_API_ENDPOINT pEndPoint = pModule->pEndPoints;
+            for (; pEndPoint; pEndPoint = pEndPoint->pNext)
+            {
+                (VOID)VmRESTUnRegisterHandler(pEndPoint->pszName);
+            }
         }
     }
     VmRESTShutdown();
