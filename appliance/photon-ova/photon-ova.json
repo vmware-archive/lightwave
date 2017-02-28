@@ -55,6 +55,10 @@
         }
     ],
     "provisioners": [
+	{
+	    "type": "shell",
+	    "inline": "tdnf -y remove docker"
+	},
         {
             "type": "shell",
             "inline": "tdnf makecache && tdnf upgrade -y"
