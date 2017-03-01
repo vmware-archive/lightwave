@@ -17,7 +17,12 @@ class CdcAdapter {
         if (isWindows) {
             System.loadLibrary("libcdcjni");
         } else {
-            System.load("/opt/vmware/lib64/libcdcjni.so");
+            try {
+              System.load("/opt/vmware/lib64/libcdcjni.so");
+            }
+            catch (UnsatisfiedLinkError e) {
+              System.load("/usr/lib/vmware-vmafd/lib64/libcdcjni.so");
+            }
         }
       }
 

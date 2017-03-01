@@ -40,7 +40,12 @@ class VecsAdapter {
       if (isWindows) {
          System.loadLibrary("libvecsjni");
       } else {
-         System.load("/opt/vmware/lib64/libvecsjni.so");
+            try {
+              System.load("/opt/vmware/lib64/libvecsjni.so");
+            }
+            catch (UnsatisfiedLinkError e) {
+              System.load("/usr/lib/vmware-vmafd/lib64/libvecsjni.so");
+            }
       }
    }
 
