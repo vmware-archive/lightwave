@@ -374,6 +374,8 @@ VmDirInit(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, ">>> Schema patch starts <<<" );
+
         if (bLegacyDataLoaded)
         {
             dwError = VmDirSchemaPatchLegacyViaFile(

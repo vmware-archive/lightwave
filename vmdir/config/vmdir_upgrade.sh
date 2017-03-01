@@ -79,7 +79,7 @@ fi
 
 $LW_BIN_DIR/lwsm stop vmdir
 echo "Running schema patch"
-$VM_SBIN_DIR/vmdird -u -c -f $VM_CONFIG_DIR/vmdirschema.ldif >$VM_LOG_DIR/schema-patch.log 2>&1
+$VM_SBIN_DIR/vmdird -u -c -s -f $VM_CONFIG_DIR/vmdirschema.ldif
 echo "Schema patch finished"
 
 # Begin vdcupgrade
