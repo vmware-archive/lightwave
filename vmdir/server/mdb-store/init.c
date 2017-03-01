@@ -797,7 +797,7 @@ _VmDirCpMdbFile(
 {
 #ifndef WIN32
     DWORD dwError = 0;
-    static long copyDbMbPerSec = 50;
+    static long copyDbKbPerSec = 50000;
     PSTR pszLocalErrorMsg = NULL;
     char dbFilename[VMDIR_MAX_FILE_NAME_LEN] = {0};
     char dbHomeDir[VMDIR_MAX_FILE_NAME_LEN] = {0};
@@ -846,7 +846,11 @@ _VmDirCpMdbFile(
             "_VmDirCpMdbFile: failed to access or create staging directory %s errno %d", dbStagingDir, errno);
     }
 
-    estimate_time_sec = dbSizeMb / copyDbMbPerSec;
+    if (copyDbKbPerSec == 0)
+    {
+        copyDbKbPerSec = 1;
+    }
+    estimate_time_sec = dbSizeMb * 1000 / copyDbKbPerSec;
 
     if(estimate_time_sec > gVmdirGlobals.dwCopyDbBlockWriteInSec)
     {
@@ -945,9 +949,9 @@ _VmDirCpMdbFile(
     {
         duration = 1;
     }
-    copyDbMbPerSec = dbSizeMb / duration;
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirCpMdbFile: completed making snapshot with file size %dMb in %d seconds; data transfer rate: %dMB/sec",
-                   dbSizeMb, duration, copyDbMbPerSec);
+    copyDbKbPerSec = dbSizeMb * 1000 / duration;
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirCpMdbFile: completed making snapshot with file size %dMb in %d seconds; data transfer rate: %d.%dMB/sec",
+                   dbSizeMb, duration, copyDbKbPerSec/1000, copyDbKbPerSec%1000/100);
 
 cleanup:
     if (mdb_in_readonly)

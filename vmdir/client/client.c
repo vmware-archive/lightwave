@@ -1380,7 +1380,7 @@ _VmDirLeaveFederationSelf(
         dwError = VmDirDeleteDITSubtree( ppLDArray[dwCnt], pszServerDN );
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirLdapDeleteDCAccount( ppLDArray[dwCnt], pszDomain, pszDCAccount, TRUE);
+        dwError = VmDirLdapDeleteDCAccount( ppLDArray[dwCnt], pszDomain, pszDCAccount, TRUE, TRUE);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         bFinishedOnePartner = TRUE;
@@ -1473,7 +1473,7 @@ _VmDirDeleteSelfDCActInOtherDC(
         dwError = _VmDirCreateServerPLD(pDCStrList->pStringList[dwCnt], pszDomain, pszUserName, pszPassword, &pLD );
         if (dwError == 0)
         {   // ignore error
-            VmDirLdapDeleteDCAccount( pLD, pszDomain, pszSelfDC, TRUE);
+            VmDirLdapDeleteDCAccount( pLD, pszDomain, pszSelfDC, TRUE, TRUE);
         }
     }
 
@@ -4806,9 +4806,17 @@ _VmDirLeaveFederationOffline(
          "_VmDirLeaveFederationOffline: proceed to cleanup entries associated with domain controller %s", pszServerName);
 
     //The server is not a management node, then assume it is a domain controller
+
+    // Remove entries associated with the server under Domain Controllers.
+    // Bail if entry is not found since it is the first entry to be created on partner
+    // during join.
+    dwError = VmDirLdapDeleteDCAccount( pLD, pszDomain, pszServerName, FALSE, TRUE);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "fail to VmDirLdapDeleteDCAccount for domain controller %s", pszServerName)
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationOffline: complete deleting DC account for domain controller %s", pszServerName);
+
+    // Remove the server from the server tree.
     dwError = VmDirLdapCreateReplHostNameDN(&pszServerDN, pLD, pszServerName);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "fail to get server DN for domain controller %s", pszServerName);
-    if (pszServerDN)
+    if (dwError == 0 && pszServerDN)
     {
         //An example of the subtree to be deleted (cn=sea2-office-dhcp-97-183.eng.vmware.com,cn=Servers,...):
         //labeledURI=ldap://sea2-office-dhcp-97-124.eng.vmware.com,cn=Replication Agreements,cn=sea2-office-dhcp-97-183.eng.vmware.com,cn=Servers,...
@@ -4816,20 +4824,23 @@ _VmDirLeaveFederationOffline(
         //cn=sea2-office-dhcp-97-183.eng.vmware.com,cn=Servers,...
         dwError = VmDirDeleteDITSubtree( pLD, pszServerDN );
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
-             "fail to delete subtree under  %s", pszServerDN);
+             "fail to delete subtree under %s", pszServerDN);
     }
-
-    //Proceed cleaning up entries related to pszServerName even if VmDirLdapCreateReplHostNameDN doesn't found the server.
+    else
+    {
+        // DC does not have an entry under servers. Skip its delete and continue with cleanup.
+        VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+                          "%s: Failed to get server DN for domain controller %s with error (%u).",
+                          __FUNCTION__,
+                          pszServerName,
+                          dwError);
+        dwError = 0;
+    }
 
     //Remove RAs that lead to the server (pszServerName).
     dwError = _VmDirDeleteReplAgreementToHost( pLD, pszServerName);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "fail to delete RA(s) to domain controller %s", pszServerName);
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationOffline: deleted RA(s) to domain controller %s", pszServerName);
-
-    //Remove entries associated with the server under Domain Controllers
-    dwError = VmDirLdapDeleteDCAccount( pLD, pszDomain, pszServerName, TRUE);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "fail to VmDirLdapDeleteDCAccount for domain controller %s", pszServerName)
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirLeaveFederationOffline: complete deleting DC account for domain controller %s", pszServerName);
 
     //Remove Service Accounts
     for (i = 0; i < sizeof(pszServiceTable)/sizeof(pszServiceTable[0]); i++)

@@ -2272,7 +2272,7 @@ VmDirLdapDeleteDCAccountOnPartner(
     dwError = VmDirConnectLDAPServer( &pLd, pszHostName, pszDomainName, pszUsername, pszPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLdapDeleteDCAccount( pLd, pszDomainName, pszDCHostName, bActuallyDelete);
+    dwError = VmDirLdapDeleteDCAccount( pLd, pszDomainName, pszDCHostName, bActuallyDelete, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     /* TBD: Optionally: Remove DC account password from registry.
@@ -2793,6 +2793,7 @@ VmDirLdapDeleteDCAccount(
     LDAP *pLd,
     PCSTR   pszDomainName,
     PCSTR   pszDCHostName,             // Self host name
+    BOOLEAN bSuccessOnMissing,
     BOOLEAN bActuallyDelete
     )
 {
@@ -2818,7 +2819,10 @@ VmDirLdapDeleteDCAccount(
         {
             case LDAP_NO_SUCH_OBJECT:
                 VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Tried deleting DC account object (%s), No Such Object.", pszDCDN);
-                dwError = LDAP_SUCCESS;
+                if (bSuccessOnMissing)
+                {
+                    dwError = LDAP_SUCCESS;
+                }
                 break;
 
             case LDAP_SUCCESS:

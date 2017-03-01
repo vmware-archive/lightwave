@@ -255,7 +255,7 @@ _VmDirDeleteDefaultAccount(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirLdapDeleteDCAccount(pLd, pszDomain, pszDCAccount, TRUE);
+    dwError = VmDirLdapDeleteDCAccount(pLd, pszDomain, pszDCAccount, TRUE, TRUE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 error:

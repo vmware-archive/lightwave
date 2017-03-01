@@ -291,6 +291,7 @@ VmDirLdapDeleteDCAccount(
     LDAP*   pLd,
     PCSTR   pszDomainName,
     PCSTR   pszDCHostName,           // Self host name
+    BOOLEAN bSuccessOnMissing,
     BOOLEAN bActuallyDelete
     );
 
