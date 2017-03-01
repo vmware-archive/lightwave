@@ -18,8 +18,8 @@
             <DefaultRolloverStrategy max="10"/>
     </RollingFile>
 
-    <RollingFile name="Rolling-rest-idm" fileName="/var/log/vmware/sso/vmware-rest-idm.log"
-                       filePattern="vmware-rest-idm.%i.log.gz">
+    <RollingFile name="Rolling-rest-idm" fileName="${sys:catalina.base}/logs/vmware-rest-idm.log"
+                       filePattern="${sys:catalina.base}/logs/vmware-rest-idm-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
               <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
@@ -28,8 +28,8 @@
            <DefaultRolloverStrategy max="10" />
     </RollingFile>
 
-    <RollingFile name="Rolling-rest-afd" fileName="/var/log/vmware/sso/vmware-rest-afd.log"
-                       filePattern="vmware-rest-afd.%i.log.gz">
+    <RollingFile name="Rolling-rest-afd" fileName="${sys:catalina.base}/logs/vmware-rest-afd.log"
+                       filePattern="${sys:catalina.base}/logs/vmware-rest-afd-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
               <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
@@ -38,8 +38,8 @@
             <DefaultRolloverStrategy max="10" />
     </RollingFile>
 
-    <RollingFile name="Rolling-rest-vmdir" fileName="/var/log/vmware/sso/vmware-rest-vmdir.log"
-                       filePattern="vmware-rest-vmdir.%i.log.gz">
+    <RollingFile name="Rolling-rest-vmdir" fileName="${sys:catalina.base}/logs/vmware-rest-vmdir.log"
+                       filePattern="${sys:catalina.base}/logs/vmware-rest-vmdir-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
               <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
@@ -48,8 +48,8 @@
            <DefaultRolloverStrategy max="10" />
     </RollingFile>
 
-        <RollingFile name="Rolling-rest-lookup" fileName="/var/log/vmware/sso/vmware-rest-lookup.log"
-                       filePattern="vmware-rest-lookup.%i.log.gz">
+        <RollingFile name="Rolling-rest-lookup" fileName="${sys:catalina.base}/logs/vmware-rest-lookup.log"
+                       filePattern="${sys:catalina.base}/logs/vmware-rest-lookup-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
               <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
@@ -58,8 +58,8 @@
            <DefaultRolloverStrategy max="10" />
     </RollingFile>
 
-    <RollingFile name="Rolling-openidconnect" fileName="/var/log/vmware/sso/openidconnect.log"
-                       filePattern="openidconnect.%i.log.gz">
+    <RollingFile name="Rolling-openidconnect" fileName="${sys:catalina.base}/logs/openidconnect.log"
+                       filePattern="${sys:catalina.base}/logs/openidconnect-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
               <pattern>[%-5p][%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
@@ -68,8 +68,8 @@
             <DefaultRolloverStrategy max="10" />
     </RollingFile>
 
-    <RollingFile name="Rolling-websso" fileName="/var/log/vmware/sso/websso.log"
-                       filePattern="websso.%i.log.gz">
+    <RollingFile name="Rolling-websso" fileName="${sys:catalina.base}/logs/websso.log"
+                       filePattern="${sys:catalina.base}/logs/websso-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
               <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
@@ -78,8 +78,8 @@
             <DefaultRolloverStrategy max="10" />
      </RollingFile>
 
-     <RollingFile name="Rolling-sts" fileName="/var/log/vmware/sso/vmware-identity-sts.log"
-                       filePattern="vmware-identity-sts.%i.log.gz">
+     <RollingFile name="Rolling-sts" fileName="${sys:catalina.base}/logs/vmware-identity-sts.log"
+                       filePattern="${sys:catalina.base}/logs/vmware-identity-sts-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
               <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
@@ -88,8 +88,8 @@
             <DefaultRolloverStrategy max="10" />
      </RollingFile>
 
-     <RollingFile name="Rolling-ssoAdminServer" fileName="/var/log/vmware/sso/ssoAdminServer.log"
-                       filePattern="ssoAdminServer.%i.log.gz">
+     <RollingFile name="Rolling-ssoAdminServer" fileName="${sys:catalina.base}/logs/ssoAdminServer.log"
+                       filePattern="${sys:catalina.base}/logs/ssoAdminServer-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
               <pattern>[%-5p][%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}][%X{id}] %c{1} - %m%n</pattern>
@@ -98,8 +98,8 @@
             <DefaultRolloverStrategy max="10" />
       </RollingFile>
 
-      <RollingFile name="Rolling-lookupService" fileName="/var/log/vmware/sso/lookupServer.log"
-                       filePattern="lookupServer.%i.log.gz">
+      <RollingFile name="Rolling-lookupService" fileName="${sys:catalina.base}/logs/lookupServer.log"
+                       filePattern="${sys:catalina.base}/logs/lookupServer-%i.log.gz">
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="NEUTRAL"/>
             <PatternLayout>
               <pattern>[%-5p][%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}][%X{id}] %c{1} - %m%n</pattern>
@@ -142,8 +142,8 @@
 
       <!-- Route : DEFAULT STS Application LOG4J2 Configuration -->
         <Route>
-          <RollingFile name="Rolling-sts-default" fileName="/var/log/vmware/sso/vmware-identity-sts-default.log"
-                       filePattern="vmware-identity-sts-default.%i.log.gz">
+          <RollingFile name="Rolling-sts-default" fileName="${sys:catalina.base}/logs/vmware-identity-sts-default.log"
+                       filePattern="${sys:catalina.base}/logs/vmware-identity-sts-default-%i.log.gz">
             <PatternLayout>
               <pattern>[%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %t %-20X{TenantNameMDCKey} %-36X{CorrelationIdMDCKey} %-5p %c] %m%n</pattern>
             </PatternLayout>
