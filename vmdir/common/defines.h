@@ -17,14 +17,12 @@
 #define VMDIR_IPC_PACKET_SIZE 64*1024
 #define VMDIR_MAX_SCHEMACHECK_ATTR_COUNT 4
 
-
 #define VMDIR_DFL_VERSION_INITIALIZER   \
 {                                       \
     { 1, VMDIR_DFL_5_5 },               \
     { 1, VMDIR_DFL_6_0 },               \
     { 2, VMDIR_DFL_6_5 },               \
     { 3, VMDIR_DFL_6_6 },               \
-    { 4, VMDIR_DFL_6_7 },               \
 }
 
 #ifndef _WIN32

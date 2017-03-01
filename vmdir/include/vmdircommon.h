@@ -21,6 +21,11 @@
 extern "C" {
 #endif
 
+#ifndef MAKESTR
+#define MAKESTR(x) #x
+#define XSTR(x) MAKESTR(x)
+#endif
+
 #if defined(_WIN32)
 #ifndef __RPCDCE_H__
 typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
@@ -79,10 +84,13 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 #define VMDIR_DFL_6_0 "6.0"
 #define VMDIR_DFL_6_5 "6.5"
 #define VMDIR_DFL_6_6 "6.6"
-#define VMDIR_DFL_6_7 "6.7"
-#define VMDIR_DFL_7_0 "7.0"
+
 #define VMDIR_DFL_DEFAULT 1
 #define VMDIR_DFL_MODDN 3
+
+// Bump this value per release as needed
+#define VMDIR_MAX_DFL 4
+#define VMDIR_MAX_DFL_STRING XSTR(VMDIR_MAX_DFL)
 
 // Special SELF sid for internal use (not assigned to object as attribute)
 #define VMDIR_SELF_SID "S-1-7-32-666"

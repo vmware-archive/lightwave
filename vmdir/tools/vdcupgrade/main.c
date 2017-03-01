@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -89,6 +89,12 @@ UpdateEntriesACL(
     LDAP*   pLd,
     PCSTR pszServerName,
     PCSTR pszAdminUPN
+    );
+
+static
+DWORD
+_UpdateMaxDfl(
+    LDAP* pLd
     );
 
 static
@@ -306,6 +312,9 @@ UpgradeDirectory(
     DWORD dwError = 0;
 
     dwError = _UpdatePSCVersion(pLd);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _UpdateMaxDfl(pLd);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = AddComputersContainer(pLd, pszServerName);
@@ -667,6 +676,67 @@ cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszDCClientsGroupDN);
     VMDIR_SAFE_FREE_STRINGA(pszAdministratorDN);
 
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_UpdateMaxDfl(
+    LDAP* pLd
+    )
+{
+    DWORD  dwError = 0;
+    PSTR   pszDCAccountDN = NULL;
+    PSTR   ppszVals [] = { VMDIR_MAX_DFL_STRING, NULL };
+
+    if (!pLd)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VdcLdapReplaceAttributeValues(
+                pLd,
+                PERSISTED_DSE_ROOT_DN,
+                ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL,
+                (PCSTR*) ppszVals);
+    if (dwError)
+    {
+        printf("Failed to update DSE ROOT maximum domain functional level to %s, error (%d)\n",
+               VMDIR_MAX_DFL_STRING,
+               dwError);
+    }
+    else
+    {
+        printf("Update DSE ROOT maximum domain functional level to %s.\n",
+               VMDIR_MAX_DFL_STRING);
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRegReadDCAccountDn( &pszDCAccountDN );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VdcLdapReplaceAttributeValues(
+                pLd,
+                pszDCAccountDN,
+                ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL,
+                (PCSTR*) ppszVals);
+    if (dwError)
+    {
+        printf("Failed to update DC maximum domain functional level to %d, error (%d)\n",
+               VMDIR_MAX_DFL,
+               dwError);
+    }
+    else
+    {
+        printf("Update DC maximum domain functional level to %d.\n", VMDIR_MAX_DFL);
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszDCAccountDN);
     return dwError;
 
 error:
@@ -1280,4 +1350,3 @@ error:
     VMDIR_SAFE_FREE_MEMORY(pszPSCVer);
     goto cleanup;
 }
-

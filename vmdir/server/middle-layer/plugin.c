@@ -820,13 +820,13 @@ _VmDirPluginDflValidatePreModify(
     PVDIR_ATTRIBUTE pAttr = NULL;
     PVDIR_ATTRIBUTE pAttrVer = NULL;
     PVDIR_ATTRIBUTE pAttrCn = NULL;
+    PVDIR_ATTRIBUTE pAttrMaxDfl = NULL;
     PSTR pszDomainDN = NULL;
     PSTR pszDCContainerDN = NULL;
     VDIR_ENTRY_ARRAY entryArray = {0};
     int iCnt = 0;
     DWORD dwReqDfl = 0;
     DWORD dwMaxDfl = 0;
-    DWORD dwLocalDfl = 0;
     PSTR pszCn = NULL;
 
     pszDomainDN = gVmdirServerGlobals.systemDomainDN.bvnorm_val;
@@ -865,11 +865,8 @@ _VmDirPluginDflValidatePreModify(
                 }
             }
 
-            dwError = VmDirMapVersionToMaxDFL(VDIR_PSC_VERSION, &dwLocalDfl);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
             // Can local DC support DFL?
-            if(dwReqDfl > dwLocalDfl)
+            if(dwReqDfl > VMDIR_MAX_DFL)
             {
                 VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                                  "Server cannot support requested domain functional level (%d)",
@@ -907,6 +904,7 @@ _VmDirPluginDflValidatePreModify(
                 {
                     // Find its version number
                     pAttrVer = VmDirFindAttrByName(&(entryArray.pEntry[iCnt]), ATTR_PSC_VERSION);
+                    pAttrMaxDfl = VmDirFindAttrByName(&(entryArray.pEntry[iCnt]), ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL);
                     pAttrCn = VmDirFindAttrByName(&(entryArray.pEntry[iCnt]), ATTR_CN);
 
                     // Get Cn of DC
@@ -919,7 +917,11 @@ _VmDirPluginDflValidatePreModify(
                         pszCn = "n/a";
                     }
 
-                    if (pAttrVer)
+                    if (pAttrMaxDfl)
+                    {
+                        dwMaxDfl = atoi(BERVAL_NORM_VAL(pAttrVer->vals[0]));
+                    }
+                    else if (pAttrVer)
                     {
                         dwMaxDfl = 0;
 
@@ -927,18 +929,15 @@ _VmDirPluginDflValidatePreModify(
                         dwError = VmDirMapVersionToMaxDFL(BERVAL_NORM_VAL(pAttrVer->vals[0]), &dwMaxDfl);
                         BAIL_ON_VMDIR_ERROR(dwError);
 
-                        // Can DC support requested DFL?
-                        if( dwMaxDfl <  dwReqDfl)
-                        {
-                            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                                             "Domain Controller (%s) cannot support requested domain functional level (%d)",
-                                             pszCn,
-                                             dwReqDfl);
-                            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_FUNC_LVL);
-                        }
                     }
                     // PSC version not found for node, use default.
-                    else if (VMDIR_DFL_DEFAULT <  dwReqDfl)
+                    else
+                    {
+                        dwMaxDfl = VMDIR_DFL_DEFAULT;
+                    }
+
+                    // Can DC support requested DFL?
+                    if( dwMaxDfl <  dwReqDfl)
                     {
                         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                                          "Domain Controller (%s) cannot support requested domain functional level (%d)",

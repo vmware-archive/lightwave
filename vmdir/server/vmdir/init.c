@@ -500,6 +500,7 @@ _VmDirSrvCreatePersistedDSERoot(VOID)
             ATTR_SUPPORTED_CONTROL,             LDAP_CONTROL_PAGEDRESULTS,
             ATTR_SERVER_VERSION,                VDIR_SERVER_VERSION,
             ATTR_PSC_VERSION,                   VDIR_PSC_VERSION,
+            ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL,   VMDIR_MAX_DFL_STRING,
             ATTR_SUPPORTED_SASL_MECHANISMS ,    SASL_MECH,
             NULL
     };
@@ -791,7 +792,6 @@ _VmDirCheckPartnerDomainFunctionalLevel(
 {
     DWORD dwError = 0;
     DWORD dwDfl = 0;
-    DWORD dwLocalDfl = 0;
     LDAP* pPartnerLd = NULL;
     PSTR pszDCAccount = NULL;
     PSTR *ppszServerInfo = NULL;
@@ -872,11 +872,8 @@ _VmDirCheckPartnerDomainFunctionalLevel(
         }
         else if (dwDfl > gVmdirServerGlobals.dwDomainFunctionalLevel)
         {
-            dwError = VmDirMapVersionToMaxDFL(VDIR_PSC_VERSION, &dwLocalDfl);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
             // Can server support new DFL?
-            if(dwDfl > dwLocalDfl)
+            if(dwDfl > VMDIR_MAX_DFL)
             {
                 VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                                  "Server cannot support domain functional level (%d)",
@@ -1035,7 +1032,6 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
     PSTR                pszDcAccountPwd = NULL;
     PSTR                pszServerName = NULL;
     DWORD               dwCurrentDfl = VDIR_DFL_DEFAULT;
-    DWORD               dwLocalDfl = 0;
 
     dwError = VmDirInitStackOperation( &op,
                                        VDIR_OPERATION_TYPE_INTERNAL,
@@ -1355,10 +1351,7 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
     dwError = VmDirSrvGetDomainFunctionalLevel(&dwCurrentDfl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirMapVersionToMaxDFL(VDIR_PSC_VERSION, &dwLocalDfl);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if(dwCurrentDfl > dwLocalDfl)
+    if(dwCurrentDfl > VMDIR_MAX_DFL)
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                          "Server cannot support domain functional level (%d)",

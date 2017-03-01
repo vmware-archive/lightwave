@@ -5221,13 +5221,15 @@ VmDirGetDCNodesVersion (
     PSTR    pszRemotePSCVerion = NULL;
     PCSTR   pszAttrCN = ATTR_CN;
     PCSTR   pszAttrPSCVer = ATTR_PSC_VERSION;
-    PCSTR   ppszAttrs[] = { pszAttrPSCVer, pszAttrCN, NULL };
+    PCSTR   pszAttrMaxDfl = ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL;
+    PCSTR   ppszAttrs[] = { pszAttrPSCVer, pszAttrCN, pszAttrMaxDfl, NULL };
 
     PVMDIR_CONNECTION   pConnection = NULL;
     LDAPMessage*        pResult = NULL;
     LDAPMessage*        pEntry = NULL;
     struct berval**     ppPSCVerValues = NULL;
     struct berval**     ppCNValues = NULL;
+    struct berval**     ppMaxDflValues = NULL;
 
     dwError = VmDirConnectionOpenByHost(
                 pszHostName,
@@ -5305,6 +5307,14 @@ VmDirGetDCNodesVersion (
                     &pDCVerInfo->ppszServer[iIdx] );
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        // Retrieve Max DFL
+        if (ppMaxDflValues)
+        {
+            ldap_value_free_len(ppMaxDflValues);
+        }
+
+        ppMaxDflValues = ldap_get_values_len(pConnection->pLd, pEntry, pszAttrMaxDfl);
+
         // handle PSC Version
         if (ppPSCVerValues)
         {
@@ -5338,8 +5348,16 @@ VmDirGetDCNodesVersion (
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // Update max DFL to lower value
-        dwError = VmDirMapVersionToMaxDFL(pszThisVer, &dwCurDfl );
-        BAIL_ON_VMDIR_ERROR(dwError);
+        // Use max dfl attr starting lightwave 1.1/vsphere 6.6
+        if (ppMaxDflValues)
+        {
+            dwCurDfl = atoi(ppMaxDflValues[0]->bv_val);
+        }
+        else
+        {
+            dwError = VmDirMapVersionToMaxDFL(pszThisVer, &dwCurDfl );
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
 
         // MaxDFL of zero has not been set.
         if ( pDCVerInfo->dwMaxDomainFuncLvl > dwCurDfl ||
@@ -5360,6 +5378,10 @@ cleanup:
     if (ppCNValues)
     {
         ldap_value_free_len(ppCNValues);
+    }
+    if (ppMaxDflValues)
+    {
+        ldap_value_free_len(ppMaxDflValues);
     }
     if (pResult)
     {
@@ -5679,7 +5701,6 @@ _VmDirJoinPreCondition(
     PVDIR_LDAP_SCHEMA   pFileSchema = NULL;
     PSTR    pszErrMsg = NULL;
     DWORD   dwDfl = 0;
-    DWORD   dwLocalDfl = 0;
 
     // open connection to remote node
     dwError = VmDirConnectionOpenByHost(
@@ -5694,17 +5715,13 @@ _VmDirJoinPreCondition(
     dwError = VmDirGetDomainFuncLvlInternal(pConnection->pLd, pszDomainName, &dwDfl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // get max domain functional level of local node
-    dwError = VmDirMapVersionToMaxDFL(VDIR_PSC_VERSION, &dwLocalDfl);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     // Make sure local node can support DFL
-    if (dwLocalDfl < dwDfl)
+    if (VMDIR_MAX_DFL < dwDfl)
     {
         dwError = VmDirAllocateStringPrintf(&pszErrMsg,
                         "Maximum functional level (%u) is less than "
                         "domain functional level (%u)",
-                        dwLocalDfl,
+                        VMDIR_MAX_DFL,
                         dwDfl);
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_FUNC_LVL);
     }

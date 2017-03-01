@@ -1554,6 +1554,7 @@ VmDirLdapSetupDCAccountOnPartner(
     char* modv_upn[] = {(PSTR)NULL, NULL};
     char* modv_machine[] = {(PSTR)NULL, NULL};
     char* modv_PSCVersion[] = {(PSTR)NULL, NULL};
+    char* modv_MaxDfl[] = {(PSTR)NULL, NULL};
 
     BerValue    bvPasswd = {0};
     BerValue*   pbvPasswd[2] = { NULL, NULL};
@@ -1565,6 +1566,7 @@ VmDirLdapSetupDCAccountOnPartner(
     LDAPMod modUserPrincipalName = {0};
     LDAPMod modMachineGUID = {0};
     LDAPMod modPSCVersion = {0};
+    LDAPMod modMaxDfl = {0};
 
     LDAPMod* pDCMods[] =
     {
@@ -1575,6 +1577,7 @@ VmDirLdapSetupDCAccountOnPartner(
             &modUserPrincipalName,
             &modMachineGUID,
             &modPSCVersion,
+            &modMaxDfl,
             NULL
     };
 
@@ -1613,6 +1616,11 @@ VmDirLdapSetupDCAccountOnPartner(
     modPSCVersion.mod_type = ATTR_PSC_VERSION;
     modPSCVersion.mod_values = modv_PSCVersion;
     modv_PSCVersion[0]= VDIR_PSC_VERSION;
+
+    modMaxDfl.mod_op = LDAP_MOD_ADD;
+    modMaxDfl.mod_type = ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL;
+    modMaxDfl.mod_values = modv_MaxDfl;
+    modv_MaxDfl[0]= VMDIR_MAX_DFL_STRING;
 
     dwError = VmDirGenerateGUID(&pszMachineGUID);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1688,6 +1696,8 @@ VmDirLdapSetupDCAccountOnPartner(
                                      pByteDCAccountPasswd,
                                      ATTR_PSC_VERSION,
                                      VDIR_PSC_VERSION,
+                                     ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL,
+                                     VMDIR_MAX_DFL_STRING,
                                      NULL
                                     };
             // reset ComputerAccount password. NOTE pByteDCAccountPasswd is null terminated.

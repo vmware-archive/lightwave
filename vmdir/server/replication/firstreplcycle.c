@@ -693,6 +693,12 @@ _VmDirPatchDSERoot(
                               VmDirStringLenA(VDIR_PSC_VERSION) );
     BAIL_ON_VMDIR_ERROR( retVal );
 
+    retVal = VmDirAppendAMod( &op, MOD_OP_REPLACE, ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL,
+                              ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL_LEN,
+                              VMDIR_MAX_DFL_STRING,
+                              VmDirStringLenA(VMDIR_MAX_DFL_STRING) );
+    BAIL_ON_VMDIR_ERROR( retVal );
+
     if ((retVal = VmDirInternalModifyEntry( &op )) != 0)
     {
         // If VmDirInternall call failed, reset retVal to LDAP level error space (for B/C)

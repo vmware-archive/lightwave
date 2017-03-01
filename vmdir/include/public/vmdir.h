@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -256,6 +256,9 @@ extern "C" {
 #define ATTR_PASS_SPECIAL_CHARS             "vmwPasswordSpecialChars"
 // Attributes related to support for "functional levels" in vmdir
 #define ATTR_DOMAIN_FUNCTIONAL_LEVEL        "vmwDomainFunctionalLevel"
+#define ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL    "vmwMaximumDomainFunctionalLevel"
+#define ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL_LEN sizeof(ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL)-1
+
 #define ATTR_FOREST_FUNCTIONAL_LEVEL        "vmwForestFunctionalLevel"
 #define ATTR_SERVER_VERSION                 "vmwServerVersion"
 #define ATTR_PSC_VERSION                    "vmwPlatformServicesControllerVersion"
