@@ -467,7 +467,7 @@ public class LogonProcessorImpl implements LogonProcessorEx {
 
         if (isJitEnabled && !isSubjectValidated) {
             try {
-                subjectUpn = idmAccessor.createUserAccountJustInTime(servToken.getSubject(), tenant, extIdp);
+                subjectUpn = idmAccessor.createUserAccountJustInTime(servToken.getSubject(), tenant, extIdp, authnData.getAttributes());
             } catch (Exception e) {
                 log.error("Failure to create a temporary user.", e);
                 com.vmware.identity.websso.client.ValidationResult extResponseVr = new com.vmware.identity.websso.client.ValidationResult(

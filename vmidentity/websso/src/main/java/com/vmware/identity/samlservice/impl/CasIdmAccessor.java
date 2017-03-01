@@ -68,6 +68,9 @@ public class CasIdmAccessor implements IdmAccessor {
     private String tenant;
 
     private static final char[] invalidCharsForUserName;
+    private static final String UPNFormat = "http://schemas.xmlsoap.org/claims/UPN";
+    private static final String UPNSeparator = "@";
+    private static final String usernameDelimiter = "-";
 
     static {
         char[] invalidCharsForUserDetail = "^<>&%`".toCharArray();
@@ -713,8 +716,7 @@ public class CasIdmAccessor implements IdmAccessor {
 
     @Override
     public PrincipalId createUserAccountJustInTime(Subject subject, String tenant,
-            IDPConfig extIdp) throws Exception {
-        final String userNameDelimiter = "-";
+            IDPConfig extIdp, Collection<Attribute> claimAttributes) throws Exception {
         if (subject == null) {
             throw new InvalidTokenException("The subject retrieved from external token is null.");
         }
@@ -732,20 +734,37 @@ public class CasIdmAccessor implements IdmAccessor {
         if (subject.subjectUpn() != null) {
             subjectUpn = subject.subjectUpn();
             upnSuffix = subjectUpn.getDomain();
-            // add upn suffix to user name for ext users to avoid conflict with local user with the same name
-            userName = subjectUpn.getName() + userNameDelimiter + upnSuffix;
+            // generate a unique user name in order not to conflict with local users
+            userName = subjectUpn.getName() + usernameDelimiter + upnSuffix;
             extUserId = subjectUpn.getUPN();
         } else {
             // to support non-upn subject format in external token
-            String nameId = subject.subjectNameId().getName();
-            // compose user name as sanitizedExternalID.GUID
-            userName = sanitizeSubjectNameIdForUserName(nameId) + userNameDelimiter + UUID.randomUUID().toString();
-            upnSuffix = extIdp.getUpnSuffix();
-            if (upnSuffix == null || upnSuffix.isEmpty()) {
-                throw new IllegalStateException("UPN suffix is not set for external IDP: " + extIdp.getEntityID());
-            }
-            subjectUpn = new PrincipalId(userName, upnSuffix);
-            extUserId = nameId;
+            // look for upn from token attributes
+            extUserId = findUPNInTokenAttributes(claimAttributes);
+            if (extUserId != null) {
+                int pos = extUserId.indexOf(UPNSeparator);
+                if (pos > 0) {
+                    upnSuffix = extUserId.substring(pos + 1);
+                    // generate a unique user name in order not to conflict with local users
+                    userName = extUserId.substring(0, pos) + usernameDelimiter + upnSuffix;
+                    // subject upn is the same as the upn is external token attribute
+                    subjectUpn = new PrincipalId(extUserId.substring(0, pos), upnSuffix);
+                } else {
+                    // if the upn attribute is not in correct format
+                    throw new IllegalStateException("Invalid UPN received from external token: " + extUserId);
+                }
+            } else {
+                // upn is not found from token attributes
+                String nameId = subject.subjectNameId().getName();
+                // compose user name as sanitizedExternalID.GUID
+                userName = sanitizeSubjectNameIdForUserName(nameId) + usernameDelimiter + UUID.randomUUID().toString();
+                upnSuffix = extIdp.getUpnSuffix();
+                if (upnSuffix == null || upnSuffix.isEmpty()) {
+                    throw new IllegalStateException("UPN suffix is not set for external IDP: " + extIdp.getEntityID());
+                }
+                subjectUpn = new PrincipalId(userName, upnSuffix);
+                extUserId = nameId;
+        	}
         }
 
         // register upn suffix to system domain
@@ -768,7 +787,7 @@ public class CasIdmAccessor implements IdmAccessor {
 
     private String sanitizeSubjectNameIdForUserName(String nameId) {
         String sanitizedNameId = nameId;
-        int pos = nameId.indexOf("@");
+        int pos = nameId.indexOf(UPNSeparator);
         if (pos > 0) {
             sanitizedNameId = nameId.substring(0, pos);
         }
@@ -777,6 +796,17 @@ public class CasIdmAccessor implements IdmAccessor {
         }
 
         return sanitizedNameId;
+    }
+
+    private String findUPNInTokenAttributes(Collection<Attribute> claimAttributes) {
+        if (claimAttributes != null) {
+            for (Attribute attr : claimAttributes) {
+                if (UPNFormat.equalsIgnoreCase(attr.getName())) {
+                    return attr.getValues().iterator().next();
+                }
+            }
+        }
+        return null;
     }
 
     @Override
