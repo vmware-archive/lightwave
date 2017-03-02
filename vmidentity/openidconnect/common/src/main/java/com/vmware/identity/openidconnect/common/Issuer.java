@@ -27,6 +27,6 @@ public final class Issuer extends Identifier {
     public boolean equals(Object other) {
         return
                 other instanceof Issuer &&
-                ((Issuer) other).getValue().equals(this.getValue());
+                ((Issuer) other).getValue().equalsIgnoreCase(this.getValue());
     }
 }
