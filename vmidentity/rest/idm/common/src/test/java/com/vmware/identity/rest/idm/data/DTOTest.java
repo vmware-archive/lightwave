@@ -11,7 +11,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
-package com.vmware.identity.rest.idm.test.data;
+package com.vmware.identity.rest.idm.data;
 
 import static org.junit.Assert.assertEquals;
 
@@ -39,7 +39,7 @@ public class DTOTest {
     private static final String PACKAGE_LOCATION = "com.vmware.identity.rest.idm.data";
     private static final String SERIALIZED = "{ \"unknownField\": \"randomjunk\" }";
 
-    private Class<? extends DTO> klass;
+    private final Class<? extends DTO> klass;
 
     public DTOTest(Class<? extends DTO> klass) {
         this.klass = klass;

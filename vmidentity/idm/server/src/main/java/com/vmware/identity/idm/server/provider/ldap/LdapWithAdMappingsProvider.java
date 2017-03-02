@@ -2834,7 +2834,7 @@ public PrincipalId findActiveUser(String attributeName, String attributeValue) t
                 attrNames.add(ATTR_USER_PRINCIPAL_NAME);
                 attrNames.add(ATTR_NAME_USER_ACCT_CTRL);
 
-                if (attributeValue != null) {
+                if (additionalAttribute != null) {
                     attrNames.add(additionalAttribute);
                 }
 

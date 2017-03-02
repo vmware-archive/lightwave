@@ -2308,7 +2308,7 @@ public class LdapProvider extends BaseLdapProvider
             attrNames.add(ATTR_NAME_SAM_ACCOUNT);
             attrNames.add(ATTR_NAME_USER_ACCT_CTRL);
 
-            if (attributeValue != null) {
+            if (additionalAttribute != null) {
                 attrNames.add(additionalAttribute);
             }
 
@@ -2327,7 +2327,16 @@ public class LdapProvider extends BaseLdapProvider
             }
             ValidateUtil.validateNotNull(idsAttrNameForSearch, "idsAttrNameForSearch");
 
-            final String filter_by_attr = this.buildUserQueryByAttribute(idsAttrNameForSearch, attrValueForSearch);
+            final String filter_by_attr;
+
+            if (ldapAttrName.equals(SPECIAL_ATTR_USER_PRINCIPAL_NAME)) {
+
+                PrincipalId pid = ServerUtils.getPrincipalId(attributeValue);
+                filter_by_attr = this.buildUserQueryByPrincipalId(pid);
+            } else {
+
+                filter_by_attr = this.buildUserQueryByAttribute(idsAttrNameForSearch, attrValueForSearch);
+            }
 
             entries = findAccountLdapEntries(pooledConnection.getConnection(), filter_by_attr
                     , searchBaseDn, attrNames.toArray(new String[attrNames.size()]), false,

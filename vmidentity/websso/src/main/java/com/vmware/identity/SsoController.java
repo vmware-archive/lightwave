@@ -316,8 +316,8 @@ public class SsoController extends BaseSsoController {
         model.addAttribute("protocol", "websso");
         model.addAttribute("tenant_brandname", StringEscapeUtils.escapeJavaScript(getBrandName(tenant)));
         List<String> entityIdList = requestState.getIDPSelectionEntityIdList();
-        model.addAttribute("idp_entity_id_list", entityIdList);
-        model.addAttribute("idp_display_name_list", requestState.getIDPSelectionDisplayNameList(entityIdList));
+        model.addAttribute("idp_entity_id_list",  StringEscapeUtils.escapeJavaScript(entityIdList.toString()));
+        model.addAttribute("idp_display_name_list", StringEscapeUtils.escapeJavaScript(requestState.getIDPSelectionDisplayNameList(entityIdList).toString()) );
         model.addAttribute("title",
                 messageSource.getMessage("ChooseIDP.Title", null, locale));
     }

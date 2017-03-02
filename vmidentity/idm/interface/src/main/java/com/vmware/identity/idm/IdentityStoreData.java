@@ -128,6 +128,49 @@ public class IdentityStoreData implements IIdentityStoreData
         );
     }
 
+    public
+    static
+    IdentityStoreData
+    createActiveDirectoryIdentityStoreDataWithPIVControls(
+        String name,
+        String userName,
+        boolean useMachineAccount,
+        String servicePrincipalName,
+        String password,
+        Map<String, String> attributesMap,
+        IdentityStoreSchemaMapping schemaMapping,
+        int flags,
+        int[] authnTypes,
+        String hintAttrName,
+        boolean linkAccountWithUPN
+    )
+    {
+        return IdentityStoreData.CreateExternalIdentityStoreData(
+                name,
+                null, // alias - provider alias name
+                IdentityStoreType.IDENTITY_STORE_TYPE_ACTIVE_DIRECTORY,
+                AuthenticationType.USE_KERBEROS,
+                null, // friendlyName
+                300,  // searchTimeoutSeconds is set to 300
+                userName,
+                useMachineAccount,
+                servicePrincipalName,
+                password,
+                null,
+                null,
+                Collections.<String> emptyList(),
+                attributesMap,
+                schemaMapping,
+                null,
+                flags,
+                null, //certs
+                authnTypes,
+                hintAttrName,
+                linkAccountWithUPN
+        );
+    }
+
+
 
     public static IdentityStoreData CreateSystemIdentityStoreDataWithUpnSuffixes( String Name, Set<String> upnSuffixes)
     {
@@ -986,9 +1029,9 @@ public class IdentityStoreData implements IIdentityStoreData
         private Map<String, String> _attributesMap;
         private final IdentityStoreSchemaMapping _schemaMapping;
         private Set<String> _upnSuffixes;
-        private int _flags;
-        private Collection<X509Certificate> _certificates;
-        private int[] _authnTypes;
+        private final int _flags;
+        private final Collection<X509Certificate> _certificates;
+        private final int[] _authnTypes;
         private final String _hintAttributeName;
         private final boolean _accountLinkingUseUPN;
 

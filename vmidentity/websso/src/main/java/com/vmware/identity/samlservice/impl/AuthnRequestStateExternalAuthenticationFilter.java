@@ -14,10 +14,13 @@
 
 package com.vmware.identity.samlservice.impl;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 
 import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.lang.Validate;
+import org.opensaml.common.impl.SecureRandomIdentifierGenerator;
+import org.opensaml.saml2.core.AuthnRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -52,6 +55,15 @@ public class AuthnRequestStateExternalAuthenticationFilter implements
 
     private volatile Thread idpMetadataSynchronizer  = null;
 
+    private static SecureRandomIdentifierGenerator generator;
+
+    static {
+        try {
+            generator = new SecureRandomIdentifierGenerator();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Unexpected error in creating SecureRandomIdentifierGenerator", e);
+        }
+    }
 
     /**
      * SAML Metadata refreshing thread refreshing at interval of 10 minutes (600000 milliseconds). The thread runs at service starts
@@ -64,7 +76,7 @@ public class AuthnRequestStateExternalAuthenticationFilter implements
     class SAMLMetadataSynchronizer extends Thread
     {
         private final Integer CheckInterval = 600000;   // Check every IDP configuration changes every 10 minitues
-        private DefaultIdmAccessorFactory factory;
+        private final DefaultIdmAccessorFactory factory;
 
         SAMLMetadataSynchronizer() {
             this.factory = new DefaultIdmAccessorFactory();
@@ -219,9 +231,10 @@ public class AuthnRequestStateExternalAuthenticationFilter implements
             extSSORequestSetting.setProxyCount(this.getExtRequestProxyCount( t));
 
             LogonProcessorImpl logonProcessorImpl = (LogonProcessorImpl) getSsoRequestSender().getLogonProcessor();
-            logonProcessorImpl.setRequestState(t);
-            String redirectUrl = getSsoRequestSender().getRequestUrl(
-                    extSSORequestSetting);
+            String outGoingReqID = generator.generateIdentifier();
+            String redirectUrl = getSsoRequestSender().getRequestUrl(extSSORequestSetting, outGoingReqID);
+
+            logonProcessorImpl.registerRequestState(t.getAuthnRequest().getID(),outGoingReqID, t);
 
             if (t.getTenantIDPSelectHeader() != null) {
                 t.getResponse().addHeader(Shared.IDP_SELECTION_REDIRECT_URL, redirectUrl);

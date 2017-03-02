@@ -5770,11 +5770,21 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         return userId;
     }
 
+    /*
+     * VmwareDirectoryProvider does not support certificate authentication via altSecurityIdentities.
+     * So this impl does not support return additionalAttribute.
+     * Thus it ignore the userDomain input. Instead route to findActiveUser() call.
+     */
     @Override
     public UserSet findActiveUsersInDomain(String attributeName, String attributeValue
             , String userDomain, String additionalAttribute)
             throws Exception {
-        throw new IDMException("findActiveUsersInDomain() not supported in localos provider");
+        UserSet result = new UserSet();
+        PrincipalId pid = findActiveUser(attributeName, attributeValue);
+        if (pid != null) {
+            result.put(pid, null);
+        }
+        return result;
     }
 
     @Override

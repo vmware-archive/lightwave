@@ -3091,7 +3091,7 @@ public class IdentityManager implements IIdentityManager {
                 }
             }
 
-           PerfDataSinkFactory.getPerfDataSinkInstance().addMeasurement(
+            PerfDataSinkFactory.getPerfDataSinkInstance().addMeasurement(
                     new PerfBucketKey(
                             PerfMeasurementPoint.IDMAuthenticate,
                             principal),
@@ -3296,7 +3296,7 @@ public class IdentityManager implements IIdentityManager {
         certValidator.validateCertificatePath(targetCert, clusterID, authStatsExtension);
 
         //Principal account mapping and validation.
-        PrincipalId principal = certValidator.certficateAccounMapping(targetCert, hint);
+        PrincipalId principal = certValidator.certificateAccountMapping(targetCert, hint);
 
         authStatsExtension.put("Account mapping", String.format("%d Ms", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime)));
         recorder.end();
@@ -7318,41 +7318,6 @@ public class IdentityManager implements IIdentityManager {
         }
     }
 
-    /**
-     * install or remove jsafe provider only if secure ID authentication is enabled for
-     * at least one tenant.
-     *
-     * @param authnPolicy
-     * @throws Exception
-     */
-    private synchronized void installOrRemoveRSAProvider() throws Exception {
-
-        try {
-            Collection<String> allTenantNames = this.getAllTenants();
-            assert (allTenantNames != null && allTenantNames.size() > 0);
-
-            boolean serverNeedSecurID = false;
-
-            for (String tenantName : allTenantNames)
-            {
-                AuthnPolicy authnPolicy = this.findTenant(tenantName).getAuthnPolicy();
-
-                if (authnPolicy == null) {
-                    continue;
-                }
-
-                if (authnPolicy.IsRsaSecureIDAuthnEnabled()) {
-                    serverNeedSecurID = true;
-                    break;
-                }
-            }
-
-        }catch (Exception e) {
-            logger.error("Failed in trying to add or removing TLRSAJsafeProvider provider.");
-            throw e;
-        }
-    }
-
     private void registerTenant(Tenant tenant, String adminAccountName, char[] adminPwd) throws Exception
     {
         _configStore.addTenant(tenant, adminAccountName, adminPwd);
@@ -7472,7 +7437,6 @@ public class IdentityManager implements IIdentityManager {
         {
             _tenantCache.addTenant(tenantInfo);
             updateRSAConfigFiles(tenantInfo);
-            installOrRemoveRSAProvider();
             LdapConnectionPool.getInstance().createPool(tenantName);
         }
 

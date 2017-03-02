@@ -120,14 +120,28 @@ public class SloRequestSender {
      * @return url if succeed null if failed
      */
     public String getRequestUrl(SloRequestSettings requestSettings) {
+        return getRequestUrl(requestSettings,null);
+    }
+
+
+    /**
+     * Create logout request url with SloRerequestSettings object.
+     *
+     * @param requestSettings
+     *            SSO request settings
+     * @param reqID
+     * @return url if succeed null if failed
+     */
+    public String getRequestUrl(SloRequestSettings requestSettings, String reqID) {
 
         Validate.notNull(requestSettings);
+        Validate.notEmpty(reqID, "regID");
 
         String redirectUrl = null;
 
         try {
             logger.info("Producing redirect url");
-            LogoutRequest samlRequest = createRequest(requestSettings);
+            LogoutRequest samlRequest = createRequest(requestSettings, reqID);
             if (samlRequest != null) {
                 logger.info("SP LogoutRequest is created.");
 
@@ -220,9 +234,10 @@ public class SloRequestSender {
      * Construct LogoutRequest from requestSettings
      *
      * @param requestSettings
+     * @param reqID   optional requestID. The ID will be generated if not provided by caller.
      * @return openSaml LogoutRequest
      */
-    private LogoutRequest createRequest(SloRequestSettings requestSettings) {
+    private LogoutRequest createRequest(SloRequestSettings requestSettings, String reqID) {
 
         LogoutRequest request = null;
 
@@ -260,7 +275,7 @@ public class SloRequestSender {
 
             // 3. create openSaml LogoutRequest object
             request = samlUtils.createSamlLogoutRequest(
-                    null, // id. optional
+                    reqID,
                     destination, requestSettings.getNameIDFormat(), requestSettings.getSubject(),
                     requestSettings.getSessionIndex());
 

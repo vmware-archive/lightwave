@@ -2932,7 +2932,7 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
             attrNames.add(ATTR_USER_PRINCIPAL_NAME);
             attrNames.add(ATTR_NAME_ACCOUNT_FLAGS);
 
-            if (attributeValue != null) {
+            if (additionalAttribute != null) {
                 attrNames.add(additionalAttribute);
             }
 

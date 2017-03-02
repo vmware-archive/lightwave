@@ -813,7 +813,7 @@ public class IdmClientCertificateValidator {
      * @throws InvalidPrincipalException
      * @throws IdmClientCertificateParsingException
      */
-    public PrincipalId certficateAccounMapping(X509Certificate targetCert, String hint)
+    public PrincipalId certificateAccountMapping(X509Certificate targetCert, String hint)
             throws IdmClientCertificateParsingException,
             InvalidPrincipalException,
             IDMException {

@@ -16,7 +16,6 @@ package com.vmware.identity.rest.idm.server.test.mapper;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-//import static org.junit.Assert.assertNotEquals;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -55,6 +54,8 @@ public class IdentityProviderMapperTest {
     private static final String USER_NAME = "testUser@domain";
     private static final String PASSWORD = "UnitTest123!";
     private static final String SYSTEM_TENANT = "test.local";
+    private static final String HINT_ATTR_NAME = "userNameAttribute";
+    private static final Boolean ACCOUNT_LINKING_WITH_UPN = true;
 
     //Schema Mapping related constants
     private static final String OBJECT_CLASS_USER = "user";
@@ -117,6 +118,8 @@ public class IdentityProviderMapperTest {
         assertFalse(identityProviderDTO.isMachineAccount());
         assertEquals(AD_SPN, identityProviderDTO.getServicePrincipalName());
         assertEquals(3, identityProviderDTO.getAttributesMap().size());
+        assertEquals("Failed asserting linkAccountWithUPN", ACCOUNT_LINKING_WITH_UPN, identityProviderDTO.getLinkAccountWithUPN());
+        assertEquals("Failed asserting hintAttributeName", HINT_ATTR_NAME, identityProviderDTO.getHintAttributeName());
     }
 
     @Test
@@ -154,6 +157,8 @@ public class IdentityProviderMapperTest {
                                                           .withMatchingRuleInChainEnabled(true)
                                                           .withBaseDnForNestedGroupsEnabled(false)
                                                           .withDirectGroupsSearchEnabled(false)
+                                                          .withHintAttributeName(HINT_ATTR_NAME)
+                                                          .withLinkAccountWithUPN(ACCOUNT_LINKING_WITH_UPN)
                                                           .build();
 
         IIdentityStoreData identityStoreData = IdentityProviderMapper.getIdentityStoreData(ldapIDP);
@@ -171,15 +176,14 @@ public class IdentityProviderMapperTest {
         assertEquals(0, identityStoreData.getExtendedIdentityStoreData().getSearchTimeoutSeconds());
         assertEquals(3, identityStoreData.getExtendedIdentityStoreData().getAttributeMap().size());
         assertEquals(1,identityStoreData.getExtendedIdentityStoreData().getConnectionStrings().size());
-
+        assertEquals("Failed asserting linkAccountWithUPN", ACCOUNT_LINKING_WITH_UPN, identityStoreData.getExtendedIdentityStoreData().getCertLinkingUseUPN());
+        assertEquals("Failed asserting hintAttributeName", HINT_ATTR_NAME, identityStoreData.getExtendedIdentityStoreData().getCertUserHintAttributeName());
         assertEquals(IdentityProviderMapper.MATCHING_RULE_IN_CHAIN_ENABLED,
                 identityStoreData.getExtendedIdentityStoreData().getFlags() & IdentityProviderMapper.MATCHING_RULE_IN_CHAIN_ENABLED);
         assertEquals(IdentityProviderMapper.SITE_AFFINITY_ENABLED,
                 identityStoreData.getExtendedIdentityStoreData().getFlags() & IdentityProviderMapper.SITE_AFFINITY_ENABLED);
         assertEquals(IdentityProviderMapper.BASE_DN_FOR_NESTED_GROUPS_DISABLED,
                 identityStoreData.getExtendedIdentityStoreData().getFlags() & IdentityProviderMapper.BASE_DN_FOR_NESTED_GROUPS_DISABLED);
-        //assertNotEquals(IdentityProviderMapper.DIRECT_GROUPS_SEARCH_ENABLED,
-          //      identityStoreData.getExtendedIdentityStoreData().getFlags() & IdentityProviderMapper.MATCHING_RULE_IN_CHAIN_ENABLED);
     }
 
     @Test
@@ -221,6 +225,8 @@ public class IdentityProviderMapperTest {
                                                           .withFriendlyName(FRIENDLY_NAME)
                                                           .withUPNSuffixes(UPN_SUFFIXES)
                                                           .withConnectionStrings(CONNECTION_STRINGS)
+                                                          .withHintAttributeName(HINT_ATTR_NAME)
+                                                          .withLinkAccountWithUPN(ACCOUNT_LINKING_WITH_UPN)
                                                           .build();
         IIdentityStoreData identityStoreData = IdentityProviderMapper.getIdentityStoreData(ldapIDP);
         assertEquals(DomainType.EXTERNAL_DOMAIN.name(), identityStoreData.getDomainType().name());
@@ -236,6 +242,8 @@ public class IdentityProviderMapperTest {
         assertEquals(0, identityStoreData.getExtendedIdentityStoreData().getSearchTimeoutSeconds());
         assertEquals(3, identityStoreData.getExtendedIdentityStoreData().getAttributeMap().size());
         assertEquals(1,identityStoreData.getExtendedIdentityStoreData().getConnectionStrings().size());
+        assertEquals(HINT_ATTR_NAME, identityStoreData.getExtendedIdentityStoreData().getCertUserHintAttributeName());
+        assertEquals(ACCOUNT_LINKING_WITH_UPN, identityStoreData.getExtendedIdentityStoreData().getCertLinkingUseUPN());
     }
 
     @Test
@@ -245,6 +253,9 @@ public class IdentityProviderMapperTest {
         IdentityProviderDTO identityProvider = IdentityProviderMapper.getIdentityProviderDTO(identityStore);
         assertEquals(AD_PROVIDER_NAME, identityProvider.getName());
         assertEquals(AD_SPN, identityProvider.getServicePrincipalName());
+        assertEquals(HINT_ATTR_NAME, identityProvider.getHintAttributeName());
+        assertEquals(ACCOUNT_LINKING_WITH_UPN, identityProvider.getLinkAccountWithUPN());
+
         assertEquals(3, identityProvider.getAttributesMap().size());
         assertEquals(IdentityProviderType.IDENTITY_STORE_TYPE_ACTIVE_DIRECTORY.name(), identityProvider.getType());
         assertEquals(AuthenticationType.USE_KERBEROS.name(), identityProvider.getAuthenticationType());
@@ -262,6 +273,9 @@ public class IdentityProviderMapperTest {
         assertEquals(IdentityStoreType.IDENTITY_STORE_TYPE_ACTIVE_DIRECTORY, identityStoreData.getExtendedIdentityStoreData().getProviderType());
         assertEquals(300, identityStoreData.getExtendedIdentityStoreData().getSearchTimeoutSeconds()); // Default
         assertEquals(AD_SPN, identityStoreData.getExtendedIdentityStoreData().getServicePrincipalName());
+        assertEquals(HINT_ATTR_NAME, identityStoreData.getExtendedIdentityStoreData().getCertUserHintAttributeName());
+        assertEquals(ACCOUNT_LINKING_WITH_UPN, identityStoreData.getExtendedIdentityStoreData().getCertLinkingUseUPN());
+
         // Assert Schema
         IdentityStoreObjectMapping userSchema = identityStoreData.getExtendedIdentityStoreData().getIdentityStoreSchemaMapping().getObjectMapping(ObjectClass.User.getAttributeName());
         assertEquals(4, userSchema.getAttributeMappings().size());
@@ -274,25 +288,32 @@ public class IdentityProviderMapperTest {
     }
 
     private IdentityStoreData getTestADIdentityProvider() {
-        return IdentityStoreData.createActiveDirectoryIdentityStoreData(AD_PROVIDER_NAME,
+        return IdentityStoreData.createActiveDirectoryIdentityStoreDataWithPIVControls(AD_PROVIDER_NAME,
                                                                         USER_NAME,
                                                                         false,
                                                                         AD_SPN,
                                                                         PASSWORD,
                                                                         attributesMap,
                                                                         null,
-                                                                        null);
+                                                                        0, //flags
+                                                                        null,
+                                                                        HINT_ATTR_NAME,
+                                                                        ACCOUNT_LINKING_WITH_UPN);
     }
 
     private IdentityStoreData getTestADWithSchemaMapping() {
-        return IdentityStoreData.createActiveDirectoryIdentityStoreData(AD_PROVIDER_NAME,
+        return IdentityStoreData.createActiveDirectoryIdentityStoreDataWithPIVControls(AD_PROVIDER_NAME,
                                                                         USER_NAME,
                                                                         false,
                                                                         AD_SPN,
                                                                         PASSWORD,
                                                                         attributesMap,
                                                                         getADSchemaMapping(),
-                                                                        null);
+                                                                        0, //flags
+                                                                        null,
+                                                                        HINT_ATTR_NAME,
+                                                                        ACCOUNT_LINKING_WITH_UPN
+                                                                        );
     }
 
     private IdentityProviderDTO getTestADIdentityProviderDTO() {
@@ -350,6 +371,8 @@ public class IdentityProviderMapperTest {
                .withPassword(PASSWORD)
                .withAttributesMap(attributesMap)
                .withSchema(schemaMappings)
+               .withHintAttributeName(HINT_ATTR_NAME)
+               .withLinkAccountWithUPN(ACCOUNT_LINKING_WITH_UPN)
                .build();
     }
 
