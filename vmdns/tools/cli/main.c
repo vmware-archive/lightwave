@@ -162,6 +162,13 @@ VmDnsMakeZoneFQDN(
     PSTR* ppszZoneFqdn
     );
 
+static
+DWORD
+VmDnsSetDefaultParams(
+    PSTR* pszServer,
+    PSTR* pszUserName
+    );
+
 
 int main(int argc, char* argv[])
 {
@@ -381,6 +388,11 @@ ParseArgs(
         dwError = ERROR_INVALID_PARAMETER;
     }
     BAIL_ON_VMDNS_ERROR(dwError);
+    // set defaults if not set
+    dwError = VmDnsSetDefaultParams(&pContext->pszServer,
+                                    &pszUserName
+                                    );
+
 
     dwError = VerifyRemoteConnectionArgs(
                             &pContext->pszServer,
@@ -2576,6 +2588,41 @@ cleanup:
 
 error:
     VMDNS_SAFE_FREE_STRINGA(pszPassword);
+    goto cleanup;
+}
+
+
+static
+DWORD
+VmDnsSetDefaultParams(
+    PSTR* pszServer,
+    PSTR* pszUserName
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszServerName = NULL;
+    PSTR pszUser = NULL;
+
+    if ((*pszServer) == NULL )
+    {
+        dwError = VmDnsAllocateStringA("localhost", &pszServerName);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+    }
+
+    if ((*pszUserName) == NULL )
+    {
+        dwError = VmDnsAllocateStringA("Administrator", &pszUser );
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    *pszServer = pszServerName;
+    *pszUserName = pszUser;
+
+cleanup:
+    return dwError;
+
+error:
+
     goto cleanup;
 }
 
