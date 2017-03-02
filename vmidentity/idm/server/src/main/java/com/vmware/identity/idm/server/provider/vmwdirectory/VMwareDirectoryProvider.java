@@ -248,6 +248,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             "vmwServicePrincipal";
     private static final String ATTR_NAME_GROUP_NAME = "name";
     private static final String ATTR_NAME_MEMBER = "member";
+    private static final String ATTR_NAME_EXTERNAL_OBJECT_ID = "externalObjectId";
     private static final String ATTR_NAME_MEMBEROF = "memberOf";
     private static final String ATTR_NAME_CN = "cn";
     private static final String ATTR_NAME_ACCOUNT = "sAMAccountName";
@@ -2726,6 +2727,10 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
                        // Search from Users by default
                        String solutionSearchBaseDn = val.toString();
+                       if (solutionSearchBaseDn.startsWith(ATTR_NAME_EXTERNAL_OBJECT_ID)) {
+                           // skip external group members
+                           continue;
+                       }
                        solutionMessage =
                                connection.search(solutionSearchBaseDn,
                                        LdapScope.SCOPE_BASE, solutionFilter,
