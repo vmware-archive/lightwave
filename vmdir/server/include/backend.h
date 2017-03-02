@@ -471,6 +471,15 @@ typedef DWORD (*PFN_BACKEND_DELETE_ALL_ATTR_VALUE_META_DATA)(
                     ENTRYID
                     );
 
+/*
+ * Apply new matching rules to indices during schema upgrade
+ * return error -
+ * ERROR_BACKEND_ERROR:             all others
+ */
+typedef DWORD (*PFN_BACKEND_APPLY_INDICES_NEW_MR)(
+                    VOID
+                    );
+
 /*******************************************************************************
  * if success, interface function return 0.
  * if fail, interface function return ERROR_BACKEND_XXX. also, VDIR_BACKEND_CTX should
@@ -694,6 +703,14 @@ typedef struct _VDIR_BACKEND_INTERFACE
      * Delete all attribute value meta data for an entry
      */
     PFN_BACKEND_DELETE_ALL_ATTR_VALUE_META_DATA pfnBEDeleteAllAttrValueMetaData;
+
+    //////////////////////////////////////////////////////////////////////
+    // Upgrade specific (from 6.5 or lower)
+    //////////////////////////////////////////////////////////////////////
+    /*
+     * Apply new matching rules to indices during schema upgrade
+     */
+    PFN_BACKEND_APPLY_INDICES_NEW_MR        pfnBEApplyIndicesNewMR;
 
     //////////////////////////////////////////////////////////////////////
     // function to get the least outstanding USN in BACKEND_USN_LIST

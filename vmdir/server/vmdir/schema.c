@@ -155,6 +155,7 @@ VmDirSchemaPatchViaFile(
     DWORD    dwError = 0;
     PVDIR_SCHEMA_CTX    pOldSchemaCtx = NULL;
     PVDIR_SCHEMA_CTX    pNewSchemaCtx = NULL;
+    PVDIR_BACKEND_INTERFACE pBE = NULL;
 
     dwError = VmDirSchemaCtxAcquire(&pOldSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -174,6 +175,10 @@ VmDirSchemaPatchViaFile(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirPatchLocalSchemaObjects(pOldSchemaCtx, pNewSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pBE = VmDirBackendSelect(NULL);
+    dwError = pBE->pfnBEApplyIndicesNewMR();
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -201,6 +206,7 @@ VmDirSchemaPatchLegacyViaFile(
     )
 {
     DWORD    dwError = 0;
+    PVDIR_BACKEND_INTERFACE pBE = NULL;
 
     dwError = VmDirSchemaLibPrepareUpdateViaFile(pszSchemaFilePath);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -212,6 +218,10 @@ VmDirSchemaPatchLegacyViaFile(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirWriteSchemaObjects();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pBE = VmDirBackendSelect(NULL);
+    dwError = pBE->pfnBEApplyIndicesNewMR();
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:

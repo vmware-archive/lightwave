@@ -265,6 +265,16 @@ VmDirPatchLocalSubSchemaSubEntry(
     VOID
     );
 
+/*
+ * Override attribute type's matching rules - Use with caution
+ * (Utility purpose function for schema upgrade)
+ */
+DWORD
+VmDirSchemaATDescOverrideMR(
+    PVDIR_SCHEMA_AT_DESC    pATDesc,
+    PSTR                    pszSyntaxOid
+    );
+
 ///////////////////////////////////////////////////////////////////////////////
 // Schema context
 ///////////////////////////////////////////////////////////////////////////////

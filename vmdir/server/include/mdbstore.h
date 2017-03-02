@@ -154,6 +154,11 @@ VmDirMdbDeleteAllAttrValueMetaData(
     ENTRYID             entryId
     );
 
+DWORD
+VmDirMdbApplyIndicesNewMR(
+    VOID
+    );
+
 // txn.c
 DWORD
 VmDirMDBTxnBegin(

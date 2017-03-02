@@ -201,6 +201,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\legacy.c"
+				>
+			</File>
+			<File
 				RelativePath="..\txn.c"
 				>
 			</File>

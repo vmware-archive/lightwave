@@ -130,7 +130,8 @@ VmDirMDBBEInterface (
         VMDIR_SF_INIT(.pfnBEGetAttrValueMetaData, VmDirMDBGetAttrValueMetaData),
         VMDIR_SF_INIT(.pfnBEGetAllAttrValueMetaData, VmDirMDBGetAllAttrValueMetaData),
         VMDIR_SF_INIT(.pfnBEUpdateAttrValueMetaData, VmDirMdbUpdateAttrValueMetaData),
-        VMDIR_SF_INIT(.pfnBEDeleteAllAttrValueMetaData, VmDirMdbDeleteAllAttrValueMetaData)
+        VMDIR_SF_INIT(.pfnBEDeleteAllAttrValueMetaData, VmDirMdbDeleteAllAttrValueMetaData),
+        VMDIR_SF_INIT(.pfnBEApplyIndicesNewMR, VmDirMdbApplyIndicesNewMR)
     };
 
     return &mdbBEInterface;
