@@ -66,8 +66,8 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="libldap_r.lib liblber.lib libeay32.lib ssleay32.lib pthreadVC2.lib"
-				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;"
+				AdditionalDependencies="libvmafdclient.lib libldap_r.lib liblber.lib libeay32.lib ssleay32.lib pthreadVC2.lib"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_VMAFD_ROOT)\lib64\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -135,8 +135,8 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="libldap_r.lib liblber.lib libeay32.lib ssleay32.lib"
-				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;"
+				AdditionalDependencies="libvmafdclient.lib libldap_r.lib liblber.lib libeay32.lib ssleay32.lib pthreadVC2.lib"
+				AdditionalLibraryDirectories="&quot;$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_VMAFD_ROOT)\lib64\$(ConfigurationName)&quot;;&quot;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64&quot;"
 			/>
 			<Tool
 				Name="VCALinkTool"
