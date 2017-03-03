@@ -6,6 +6,7 @@ package com.vmware.identity.configure;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.Inet6Address;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -187,7 +188,13 @@ public class VMIdentityController {
 
         if (params.getHostIP() == null || params.getHostIP().isEmpty()) {
             try {
-                params.setHostIP(InetAddress.getLocalHost().getHostAddress());
+                InetAddress localIP = InetAddress.getLocalHost();
+                if (localIP instanceof Inet6Address) {
+                    Inet6Address ipv6 = (Inet6Address) localIP;
+                    params.setHostIP(ipv6.getHostAddress());
+                } else {
+                    params.setHostIP(localIP.getHostAddress());
+                }
             } catch (UnknownHostException e) {
                 throw new DomainControllerNativeException(
                         DeployUtilsErrors.ERROR_INVALID_NETNAME.getErrorCode(),
