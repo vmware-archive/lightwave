@@ -197,7 +197,7 @@ VmDirPluginGroupMemberPreModApplyDelete(
                 pMemberDN->lberbv.bv_len);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirInternalModifyEntry(&groupOp);
+        dwError = VmDirMLModify(&groupOp);
         // Handle possible conflicts gracefully:
         // - The member is already removed from group since search
         // - The group entry is deleted since search
