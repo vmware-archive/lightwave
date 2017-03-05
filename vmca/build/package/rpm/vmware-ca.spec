@@ -60,7 +60,6 @@ autoreconf -mif .. &&
             --with-java=%{_javahome} \
             --with-ant=%{_anthome} \
             --with-likewise=%{_likewise_open_prefix} \
-            --with-vmdir=%{_vmdir_prefix} \
             --with-afd=%{_vmafd_prefix} \
             --with-ssl=/usr \
             --with-boost=/usr \

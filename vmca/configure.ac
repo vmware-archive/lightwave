@@ -130,33 +130,6 @@ AC_SUBST(OPENSSL_BASE_PATH)
 AC_SUBST(OPENSSL_INCLUDES)
 AC_SUBST(OPENSSL_LDFLAGS)
 
-# vmdir component
-
-AC_ARG_WITH([vmdir],
-    [AC_HELP_STRING([--with-vmdir=<dir>], [use directory-server binaries rooted at prefix <dir> ])],
-    [
-        VMDIR_BASE_PATH="$withval"
-        VMDIR_INCLUDES="-I$withval/include"
-        VMDIR_LDFLAGS="-L$withval/lib -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
-    ])
-
-AC_ARG_WITH([vmdir-includes],
-    [AC_HELP_STRING([--with-vmdir-includes=<dir>], [use directory-server headers located in prefix <dir> ])],
-    [
-        VMDIR_INCLUDES="-I$withval"
-    ])
-
-AC_ARG_WITH([vmdir-libs],
-    [AC_HELP_STRING([--with-vmdir-libs=<dir>], [use directory-server libraries located in prefix <dir> ])],
-    [
-        VMDIR_LDFLAGS="-L$withval"
-    ])
-
-AC_SUBST(VMDIR_BASE_PATH)
-AC_SUBST(VMDIR_INCLUDES)
-AC_SUBST(VMDIR_LDFLAGS)
-
-
 # vmafd component
 
 AC_ARG_WITH([afd],
@@ -164,7 +137,7 @@ AC_ARG_WITH([afd],
     [
         VMAFD_BASE_PATH="$withval"
         VMAFD_INCLUDES="-I$withval/include"
-        VMAFD_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+        VMAFD_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,$withval/lib64"
     ])
 
 AC_ARG_WITH([afd-includes],
@@ -177,6 +150,12 @@ AC_ARG_WITH([afd-libs],
     [AC_HELP_STRING([--with-afd-libs=<dir>], [use afd-server libraries located in prefix <dir> ])],
     [
         VMAFD_LDFLAGS="-L$withval"
+    ])
+
+AC_ARG_WITH([afd-rpath],
+    [AC_HELP_STRING([--with-afd-rpath=<dir>], [use afd-server libraries located at <dir> at runtime])],
+    [
+        VMAFD_LDFLAGS="-L$VMAFD_BASE_PATH/lib64 -Wl,-rpath,$withval -Wl,-rpath-link,$VMAFD_BASE_PATH/lib64"
     ])
 
 saved_CPPFLAGS="$CPPFLAGS"
