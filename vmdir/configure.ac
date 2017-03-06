@@ -600,7 +600,7 @@ AC_DEFINE_UNQUOTED(VMDIR_LIB_DIR, "$VMDIR_LIB_DIR", [Lib directory])
 vmdirsasldir=$vmdirlibdir/sasl2
 AC_SUBST(vmdirsasldir)
 
-vmdirlogdir=/var/log/vmware/vmdir
+vmdirlogdir=/var/log/vmware/vmdir/
 AC_SUBST(vmdirlogdir)
 AS_AC_EXPAND(VMDIR_LOG_DIR, $vmdirlogdir)
 AC_DEFINE_UNQUOTED(VMDIR_LOG_DIR, "$VMDIR_LOG_DIR", [Log directory])
