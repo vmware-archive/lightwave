@@ -66,6 +66,8 @@ VmAfdServerShutdown(
         gVmafdGlobals.pCdcContext= NULL;
     }
 
+#if 0
+//TODO: Comment out DDNS client code for now
     if (gVmafdGlobals.pDdnsContext)
     {
         VmDdnsShutdown(
@@ -79,6 +81,7 @@ VmAfdServerShutdown(
             gVmafdGlobals.pSourceIpContext);
         gVmafdGlobals.pSourceIpContext = NULL;
     }
+#endif
 
     VmAfCfgShutdown();
 

@@ -406,12 +406,14 @@ VmAfSrvPromoteVmDir(
             __FUNCTION__);
     }
 
+#if 0
     dwError = VmAfdInitSourceIpThread(&gVmafdGlobals.pSourceIpContext);
     if(dwError)
     {
         VmAfdLog(VMAFD_DEBUG_ANY, "Source IP init failed!");
         dwError = 0;
     }
+#endif
 
 #if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
     dwError = VmAfSrvSignalVmdirProvider();
@@ -516,8 +518,10 @@ VmAfSrvDemoteVmDir(
     dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+#if 0
     VmAfdShutdownSrcIpThread(gVmafdGlobals.pSourceIpContext);
     gVmafdGlobals.pSourceIpContext = NULL;
+#endif
 
 #if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
     dwError = VmAfSrvSignalVmdirProvider();
@@ -719,6 +723,8 @@ VmAfSrvJoinVmDir(
              "%s: joined Vmdir.",
              __FUNCTION__);
 
+#if 0
+
     dwError = VmDdnsInitThread(&gVmafdGlobals.pDdnsContext);
     if(dwError)
     {
@@ -728,6 +734,7 @@ VmAfSrvJoinVmDir(
             dwError
         );
     }
+#endif
 
     dwError = CdcSrvInitDefaultHAMode(gVmafdGlobals.pCdcContext);
     if (dwError)
