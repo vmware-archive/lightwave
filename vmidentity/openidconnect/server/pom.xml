@@ -57,7 +57,6 @@
                 </dependencies> 
           <configuration>
             <trimStackTrace>false</trimStackTrace>
-            <skipTests>true</skipTests>
           </configuration>
             </plugin>
             <plugin>

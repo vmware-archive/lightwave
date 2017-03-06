@@ -77,16 +77,16 @@
               </configuration>
             </execution>
             <execution>
-              <id>copy-sso-common-resources</id>
+              <id>copy-string-resources</id>
               <phase>compile</phase>
               <goals>
                  <goal>copy-resources</goal>
               </goals>
               <configuration>
-                <outputDirectory>${resDirectory}</outputDirectory>
+                <outputDirectory>${basedir}/src/main/resources</outputDirectory>
                 <resources>
                   <resource>
-                    <directory>${ssoCommonResources}</directory>
+                    <directory>${basedir}/../service/resources/</directory>
                     <filtering>true</filtering>
                   </resource>
                 </resources>
