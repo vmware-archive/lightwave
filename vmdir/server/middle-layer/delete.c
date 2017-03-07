@@ -523,7 +523,8 @@ GenerateDeleteAttrsMods(
     {
         // Retain the following kind of attributes
         if (attr->pATDesc->usage != VDIR_LDAP_USER_APPLICATIONS_ATTRIBUTE ||
-            VmDirStringCompareA( attr->type.lberbv.bv_val, ATTR_OBJECT_CLASS, FALSE ) == 0)
+            VmDirStringCompareA( attr->type.lberbv.bv_val, ATTR_OBJECT_CLASS, FALSE ) == 0 ||
+            VmDirStringCompareA( attr->type.lberbv.bv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE ) == 0)
         {
             continue;
         }
