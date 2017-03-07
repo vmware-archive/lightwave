@@ -53,7 +53,7 @@ VmDirPerformModify(
    ber_len_t          size = 0;
    BerValue*          pLberBerv = NULL;
    PSTR               pszLocalErrorMsg = NULL;
-   BOOLEAN            bResultAlreadySent = FALSE;
+   BOOLEAN            bRefSent = FALSE;
    PSTR               pszRefStr = NULL;
 
    // Get entry DN. 'm' => reqDn.bv_val points to DN within (in-place) ber
@@ -173,8 +173,8 @@ VmDirPerformModify(
                    pOperation->reqDn.lberbv.bv_len > 0 ? pOperation->reqDn.lberbv.bv_val:"");
        BAIL_ON_VMDIR_ERROR(retVal);
 
-       VmDirSendLdapReferralResult(pOperation, pszRefStr, &bResultAlreadySent);
-       if (bResultAlreadySent)
+       VmDirSendLdapReferralResult(pOperation, pszRefStr, &bRefSent);
+       if (bRefSent)
        {
            goto cleanup;
        }
@@ -182,29 +182,21 @@ VmDirPerformModify(
     }
 
    retVal = pResult->errCode = VmDirMLModify( pOperation );
-   bResultAlreadySent = TRUE;
    BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-    VMDIR_SAFE_FREE_MEMORY(pLberBerv);
-    VMDIR_SAFE_FREE_MEMORY(pszRefStr);
-
-    return retVal;
-
-error:
-
-    if (pMod)
-    {
-        VmDirModificationFree( pMod );
-    }
-
-    VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
-    if (retVal != LDAP_NOTICE_OF_DISCONNECT && bResultAlreadySent == FALSE)
+    if (retVal != LDAP_NOTICE_OF_DISCONNECT && bRefSent == FALSE)
     {
         VmDirSendLdapResult( pOperation );
     }
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    VMDIR_SAFE_FREE_MEMORY(pLberBerv);
+    VMDIR_SAFE_FREE_MEMORY(pszRefStr);
+    return retVal;
+
+error:
+    VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
+    VmDirModificationFree( pMod );
     goto cleanup;
 }
 

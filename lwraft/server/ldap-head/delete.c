@@ -29,10 +29,10 @@ VmDirPerformDelete(
    PVDIR_OPERATION pOperation
    )
 {
-    int              retVal = LDAP_SUCCESS;
-    DeleteReq *      dr = &(pOperation->request.deleteReq);
-    BOOLEAN         bResultAlreadySent = FALSE;
-    PSTR             pszRefStr = NULL;
+    int         retVal = LDAP_SUCCESS;
+    DeleteReq * dr = &(pOperation->request.deleteReq);
+    BOOLEAN     bRefSent = FALSE;
+    PSTR        pszRefStr = NULL;
 
     // Get entry DN. 'm' => pOperation->reqDn.lberbv.bv_val points to DN within (in-place) ber
     if ( ber_scanf( pOperation->ber, "m", &(pOperation->reqDn.lberbv) ) == LBER_ERROR )
@@ -61,8 +61,8 @@ VmDirPerformDelete(
                    pOperation->reqDn.lberbv.bv_len > 0 ? pOperation->reqDn.lberbv.bv_val:"");
        BAIL_ON_VMDIR_ERROR(retVal);
 
-       VmDirSendLdapReferralResult(pOperation, pszRefStr, &bResultAlreadySent);
-       if (bResultAlreadySent)
+       VmDirSendLdapReferralResult(pOperation, pszRefStr, &bRefSent);
+       if (bRefSent)
        {
            goto cleanup;
        }
@@ -70,19 +70,17 @@ VmDirPerformDelete(
     }
 
     retVal = VmDirMLDelete( pOperation );
-    bResultAlreadySent = TRUE;
     BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:
+    if (retVal != LDAP_NOTICE_OF_DISCONNECT && bRefSent == FALSE)
+    {
+        VmDirSendLdapResult( pOperation );
+    }
     VMDIR_SAFE_FREE_MEMORY(pszRefStr);
     return retVal;
 
 error:
-    if (retVal != LDAP_NOTICE_OF_DISCONNECT && bResultAlreadySent == FALSE)
-    {
-        VmDirSendLdapResult( pOperation );
-    }
-
     goto cleanup;
 }
 

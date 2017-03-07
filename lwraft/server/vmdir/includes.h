@@ -68,6 +68,7 @@
 #include <vmkdcserver.h>
 #include <vmdirserver.h>
 #include <ldaphead.h>
+#include <resthead.h>
 #include <vmevent.h>
 
 #include "defines.h"

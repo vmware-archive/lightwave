@@ -787,7 +787,7 @@ VmDirFreeAttribute(
         return;
     }
 
-    // pAttr->type is always store in place and has NO bvnorm_val.  no need to free here.
+    VmDirFreeBervalContent(&pAttr->type);
     VmDirFreeBervalArrayContent(pAttr->vals, pAttr->numVals);
     VMDIR_SAFE_FREE_MEMORY(pAttr->vals);
     VMDIR_SAFE_FREE_MEMORY(pAttr);
@@ -798,7 +798,7 @@ VmDirFreeAttribute(
  */
 DWORD
 VmDirStringToBervalContent(
-    PSTR               pszBerval,
+    PCSTR              pszBerval,
     PVDIR_BERVALUE     pDupBerval
     )
 {
@@ -931,58 +931,6 @@ VmDirFreeBervalContent(
     memset(pBerv, 0, sizeof(*pBerv));
 
     return;
-}
-
-DWORD
-VmDirNewEntry(
-    PCSTR pszDn,
-    PVDIR_ENTRY* ppEntry
-    )
-{
-    DWORD dwError = 0;
-    PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
-    PVDIR_ENTRY pEntry = NULL;
-
-    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*) &pEntry);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pEntry->allocType = ENTRY_STORAGE_FORMAT_NORMAL;
-
-    pEntry->pSchemaCtx = VmDirSchemaCtxClone(pSchemaCtx);
-    if (!pEntry->pSchemaCtx)
-    {
-        dwError = ERROR_NO_MEMORY;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringA(
-            pszDn,
-            &pEntry->dn.lberbv.bv_val);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pEntry->dn.bOwnBvVal = TRUE;
-    pEntry->dn.lberbv.bv_len = VmDirStringLenA(pEntry->dn.lberbv.bv_val);
-
-    dwError = VmDirNormalizeDN( &(pEntry->dn), pEntry->pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppEntry = pEntry;
-
-cleanup:
-    if (pSchemaCtx)
-    {
-        VmDirSchemaCtxRelease(pSchemaCtx);
-    }
-    return dwError;
-error:
-    if (pEntry)
-    {
-        VmDirFreeEntry(pEntry);
-    }
-    goto cleanup;
 }
 
 DWORD

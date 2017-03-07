@@ -293,7 +293,18 @@ VmDirSendSearchEntry(
 
     if ( pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL )
     {
-        ; // no op in INTERNAL case
+        // This is an internal search operation.
+        // Set bSearchEntrySent = TRUE to indicate that ACL
+        // check passed and should be included in the result.
+        pSrEntry->bSearchEntrySent = TRUE;
+    }
+    else if ( sr->bStoreRsltInMem )
+    {
+        // This is an external search operation but wants to
+        // store the result in memory instead of sending.
+        // Set bSearchEntrySent = TRUE to indicate that ACL
+        // check passed and should be included in the result.
+        pSrEntry->bSearchEntrySent = TRUE;
     }
     else
     {

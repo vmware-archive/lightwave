@@ -35,13 +35,13 @@
 #define VMDIR_SCHEMA_ERROR_BASE     600
 #define VMDIR_BACKEND_ERROR_BASE    700
 
+#define VMDIR_SUCCESS   0
+
 #define VMDIR_RANGE(n,x,y)                  (((x) <= (n)) && ((n) <= (y)))
 
 // VmDir error space 9000~9999
 #define IS_VMDIR_ERROR_SPACE(n) \
-    VMDIR_RANGE((n),(VMDIR_ERROR_BASE ) , (VMDIR_ERROR_BASE + 999) )
-
-#define VMDIR_SUCCESS   0
+    VMDIR_RANGE((n), (VMDIR_ERROR_BASE), (VMDIR_ERROR_BASE + 999)) || n == VMDIR_SUCCESS
 
 // WARNING: definitions MUST stay in sync with error-message table in client defines.h
 

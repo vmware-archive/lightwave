@@ -81,7 +81,7 @@ VmDirSchemaCtxAcquire(
     PVDIR_SCHEMA_CTX* ppSchemaCtx
     )
 {
-	return VdirSchemaCtxAcquireInLock(FALSE, ppSchemaCtx);
+    return VdirSchemaCtxAcquireInLock(FALSE, ppSchemaCtx);
 }
 
 PVDIR_SCHEMA_CTX
@@ -543,6 +543,24 @@ VmDirSchemaAttrIsNumeric(
     }
 
     return bIsNumeric;
+}
+
+BOOLEAN
+VmDirSchemaAttrIsOctetString(
+    PVDIR_SCHEMA_AT_DESC    pATDesc
+    )
+{
+    BOOLEAN bIsOctetStr = FALSE;
+    if (pATDesc && pATDesc->pSyntax)
+    {
+        if (!IsNullOrEmptyString(pATDesc->pSyntax->pszOid) &&
+                 VmDirStringCompareA(pATDesc->pSyntax->pszOid, VDIR_OID_OCTET_STRING, FALSE) == 0)
+        {
+            bIsOctetStr = TRUE;
+        }
+    }
+
+    return bIsOctetStr;
 }
 
 /*

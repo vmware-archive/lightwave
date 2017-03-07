@@ -282,6 +282,85 @@ AC_SUBST(SASL_LDFLAGS)
 
 AC_DEFINE_UNQUOTED(LWRAFT_CONFIG_SASL2_LIB_PATH, "$SASL_PLUGINSPATH", [SASL2 Library path])
 
+# Trident
+
+AC_ARG_WITH([trident],
+    [AC_HELP_STRING([--with-trident=<dir>], [use trident-server binaries rooted at prefix <dir> ])],
+    [
+        TRIDENT_BASE_PATH="$withval"
+        TRIDENT_INCLUDES="-I$withval/include"
+        TRIDENT_LDFLAGS="-L$withval/lib64"
+    ])
+
+TRIDENT_LIBS="-lrestengine"
+AC_CHECK_HEADERS(vmrest.h)
+AC_SUBST(TRIDENT_BASE_PATH)
+AC_SUBST(TRIDENT_INCLUDES)
+AC_SUBST(TRIDENT_LDFLAGS)
+
+# Jansson
+
+AC_ARG_WITH([jansson],
+    [AC_HELP_STRING([--with-jansson=<dir>], [use jansson binaries rooted at prefix <dir> ])],
+    [
+        JANSSON_BASE_PATH="$withval"
+        JANSSON_INCLUDES="-I$withval/include"
+        JANSSON_LDFLAGS="-L$withval/lib"
+    ])
+
+JANSSON_LIBS="-ljansson"
+AC_CHECK_HEADERS(jansson.h)
+AC_SUBST(JANSSON_BASE_PATH)
+AC_SUBST(JANSSON_INCLUDES)
+AC_SUBST(JANSSON_LDFLAGS)
+
+# Copenapi
+
+AC_ARG_WITH([copenapi],
+    [AC_HELP_STRING([--with-copenapi=<dir>], [use copenapi binaries rooted at prefix <dir> ])],
+    [
+        COPENAPI_BASE_PATH="$withval"
+        COPENAPI_INCLUDES="-I$withval/include"
+        COPENAPI_LDFLAGS="-L$withval/lib"
+    ])
+
+COPENAPI_LIBS="-lcopenapi"
+AC_CHECK_HEADERS(copenapi/copenapi.h)
+AC_SUBST(COPENAPI_BASE_PATH)
+AC_SUBST(COPENAPI_INCLUDES)
+AC_SUBST(COPENAPI_LDFLAGS)
+
+# OIDC
+
+AC_ARG_WITH([ssocommon],
+    [AC_HELP_STRING([--with-ssocommon=<dir>], [use ssocommon binaries rooted at prefix <dir> ])],
+    [
+        SSOCOMMON_BASE_PATH="$withval"
+        SSOCOMMON_INCLUDES="-I$withval/include"
+        SSOCOMMON_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+    ])
+
+SSOCOMMON_LIBS="-lssocommon"
+AC_SUBST(SSOCOMMON_BASE_PATH)
+AC_SUBST(SSOCOMMON_INCLUDES)
+AC_SUBST(SSOCOMMON_LDFLAGS)
+
+AC_ARG_WITH([oidc],
+    [AC_HELP_STRING([--with-oidc=<dir>], [use oidc binaries rooted at prefix <dir> ])],
+    [
+        OIDC_BASE_PATH="$withval"
+        OIDC_INCLUDES="-I$withval/include"
+        OIDC_LDFLAGS="-L$withval/lib64 -Wl,-rpath,/opt/vmware/lib64 -Wl,-rpath-link,/opt/vmware/lib64"
+    ])
+
+OIDC_LIBS="-lssooidc"
+AC_CHECK_HEADERS(oidc.h)
+AC_CHECK_HEADERS(oidc_types.h)
+AC_CHECK_HEADERS(common_types.h)
+AC_SUBST(OIDC_BASE_PATH)
+AC_SUBST(OIDC_INCLUDES)
+AC_SUBST(OIDC_LDFLAGS)
+
 # Likewise components
 
 case "${host_os}:${host_cpu}" in
@@ -491,6 +570,11 @@ AC_SUBST(LBER_LIBS)
 AC_SUBST(SHADOW_LIBS)
 AC_SUBST(CRYPT_LIBS)
 AC_SUBST(SASL_LIBS)
+AC_SUBST(TRIDENT_LIBS)
+AC_SUBST(JANSSON_LIBS)
+AC_SUBST(COPENAPI_LIBS)
+AC_SUBST(SSOCOMMON_LIBS)
+AC_SUBST(OIDC_LIBS)
 
 AC_PATH_PROG([IDL], [dceidl], [no], [$PATH:$DCERPC_PATH])
 

@@ -181,8 +181,8 @@ VmDirPerformSearch(
    int           retVal = LDAP_SUCCESS;
    BerValue*           pLberBerv = NULL;
    PSTR                pszLocalErrorMsg = NULL;
-   BOOLEAN             bResultAlreadySent = FALSE;
    PVDIR_LDAP_RESULT   pResult = &(pOperation->ldapResult);
+   BOOLEAN             bRefSent = FALSE;
    PSTR                pszRefStr = NULL;
 
    // Parse base object, scope, deref alias, sizeLimit, timeLimit and typesOnly search parameters.
@@ -267,7 +267,7 @@ VmDirPerformSearch(
    BAIL_ON_VMDIR_ERROR( retVal );
 
    if (pOperation->manageDsaITCtrl == NULL &&
-       (gVmdirGlobals.dwEnableRaftReferral & VMDIR_RAFT_ENABLE_SEARCH_REFERRAL) && 
+       (gVmdirGlobals.dwEnableRaftReferral & VMDIR_RAFT_ENABLE_SEARCH_REFERRAL) &&
        VmDirRaftNeedReferral(pOperation->reqDn.lberbv.bv_val))
    {
        //Utilize ManageDsaIT Control (RFC 3297) to send local entry instead of a referral
@@ -276,8 +276,8 @@ VmDirPerformSearch(
                    sr->scope==0?"base":sr->scope==1?"one":"sub");
        BAIL_ON_VMDIR_ERROR(retVal);
 
-       VmDirSendLdapReferralResult(pOperation, pszRefStr, &bResultAlreadySent);
-       if (bResultAlreadySent)
+       VmDirSendLdapReferralResult(pOperation, pszRefStr, &bRefSent);
+       if (bRefSent)
        {
            goto cleanup;
        }
@@ -285,47 +285,51 @@ VmDirPerformSearch(
    }
 
    retVal = pResult->errCode = VmDirMLSearch(pOperation);
-   bResultAlreadySent = TRUE;
    BAIL_ON_VMDIR_ERROR(retVal);
 
    retVal = _VmDirLogSearchParameters(pOperation);
    BAIL_ON_VMDIR_ERROR(retVal);
 
 cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY(pLberBerv);
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-    VMDIR_SAFE_FREE_MEMORY(pszRefStr);
-
-    return retVal;
-
-error:
-
-    VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
-    if (retVal != LDAP_NOTICE_OF_DISCONNECT && bResultAlreadySent == FALSE)
+    if (retVal != LDAP_NOTICE_OF_DISCONNECT && bRefSent == FALSE)
     {
         VmDirSendLdapResult( pOperation );
     }
+    VMDIR_SAFE_FREE_MEMORY(pLberBerv);
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    VMDIR_SAFE_FREE_MEMORY(pszRefStr);
+    return retVal;
 
+error:
+    VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
     goto cleanup;
 }
 
 void
 VmDirFreeSearchRequest(
    SearchReq * sr,
-   BOOLEAN     freeSelf)
+   BOOLEAN     freeSelf
+   )
 {
-   if (sr != NULL)
-   {
-      DeleteFilter( sr->filter );
-      VMDIR_SAFE_FREE_MEMORY( sr->attrs );
-      if (freeSelf)
-      {
-          VMDIR_SAFE_FREE_MEMORY( sr );
-      }
-   }
+    if (sr)
+    {
+        if (sr->attrs)
+        {
+            int i = 0;
+            for (i = 0; sr->attrs[i].lberbv.bv_val; i++)
+            {
+                VmDirFreeBervalContent(&sr->attrs[i]);
+            }
+            VMDIR_SAFE_FREE_MEMORY(sr->attrs);
+        }
 
-   return;
+        DeleteFilter(sr->filter);
+
+        if (freeSelf)
+        {
+            VMDIR_SAFE_FREE_MEMORY(sr);
+        }
+    }
+
+    return;
 }
-
-

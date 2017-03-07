@@ -132,30 +132,6 @@
  *
  */
 
-#define VMDIR_REG_KEY_LDAP_PORT               "LdapPort"
-#define VMDIR_REG_KEY_ALLOW_INSECURE_AUTH     "AllowInsecureAuthentication"
-#define VMDIR_REG_KEY_ADMIN_PASSWD            "AdministratorPassword"
-#define VMDIR_REG_KEY_LDAP_LISTEN_PORTS       "LdapListenPorts"
-#define VMDIR_REG_KEY_LDAPS_LISTEN_PORTS      "LdapsListenPorts"
-#define VMDIR_REG_KEY_LDAP_CONNECT_PORTS      "LdapConnectPorts"
-#define VMDIR_REG_KEY_LDAPS_CONNECT_PORTS     "LdapsConnectPorts"
-#define VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC   "LdapRecvTimeoutSec"
-#define VMDIR_REG_KEY_ALLOW_ADMIN_LOCKOUT     "AllowAdminLockout"
-#define VMDIR_REG_KEY_MAX_OP_THREADS          "MaxLdapOpThrs"
-#define VMDIR_REG_KEY_DISABLE_VECS            "DisableVECSIntegration"
-#define VMDIR_REG_KEY_MAX_INDEX_SCAN          "MaxIndexScan"
-#define VMDIR_REG_KEY_SMALL_CANDIDATE_SET     "SmallCandidateSet"
-#define VMDIR_REG_KEY_MAX_SIZELIMIT_SCAN      "MaxSizeLimitScan"
-#define VMDIR_REG_KEY_ALLOW_IMPORT_OP_ATTR    "AllowImportOperationalAttrs"
-#define VMDIR_REG_KEY_LDAP_SEARCH_TIMEOUT_SEC "LdapSearchTimeoutSec"
-#define VMDIR_REG_KEY_TRACK_LAST_LOGIN_TIME   "TrackLastLoginTime"
-#define VMDIR_REG_KEY_URGENT_REPL_TIMEOUT_MSEC "UrgentReplTimeoutMilliSec"
-#define VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD "PagedSearchReadAhead"
-#define VMDIR_REG_KEY_ENABLE_RAFT_REFERRAL    "EnableRaftReferral"
-#define VMDIR_REG_KEY_RAFT_ELECTION_TIMEOUT   "RaftElectionTimeoutMS"
-#define VMDIR_REG_KEY_RAFT_PING_INTERVAL      "RaftPingIntervalMS"
-#define VMDIR_REG_KEY_RAFT_KEEP_LOGS          "RaftKeepLogsInK"
-
 #define VMDIR_CONFIG_INIT_TABLE_INITIALIZER                      \
 {                                                                \
     {                                                            \
@@ -223,7 +199,18 @@
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ DEFAULT_LDAPS_PORT_STR "\000",    \
         /*.pszValue       = */ NULL                              \
-    },                                                            \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_REST_LISTEN_PORT,   \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_STRING,   \
+        /*.RegDataType    = */ REG_SZ,                           \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 0,                                \
+        /*.dwDefault      = */ 0,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ DEFAULT_REST_PORT_STR,            \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
     {                                                            \
         /*.pszName        = */ VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC,  \
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \

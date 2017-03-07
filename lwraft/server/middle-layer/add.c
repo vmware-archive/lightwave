@@ -51,8 +51,8 @@ VmDirMLAdd(
    PVDIR_OPERATION pOperation
    )
 {
-    DWORD       dwError = 0;
-    PSTR        pszLocalErrMsg = NULL;
+    DWORD   dwError = 0;
+    PSTR    pszLocalErrMsg = NULL;
 
     assert(pOperation->conn);
 
@@ -86,16 +86,11 @@ VmDirMLAdd(
     }
 
 cleanup:
-    VmDirSendLdapResult( pOperation );
-
     VMDIR_SAFE_FREE_MEMORY( pszLocalErrMsg );
-
     return pOperation->ldapResult.errCode;
 
 error:
-
     VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), dwError, pszLocalErrMsg);
-
     goto cleanup;
 }
 

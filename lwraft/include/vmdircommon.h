@@ -881,6 +881,7 @@ typedef enum
 #define VMDIR_REG_KEY_LDAPS_LISTEN_PORTS      "LdapsListenPorts"
 #define VMDIR_REG_KEY_LDAP_CONNECT_PORTS      "LdapConnectPorts"
 #define VMDIR_REG_KEY_LDAPS_CONNECT_PORTS     "LdapsConnectPorts"
+#define VMDIR_REG_KEY_REST_LISTEN_PORT        "RestListenPort"
 #define VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC   "LdapRecvTimeoutSec"
 #define VMDIR_REG_KEY_ALLOW_ADMIN_LOCKOUT     "AllowAdminLockout"
 #define VMDIR_REG_KEY_MAX_OP_THREADS          "MaxLdapOpThrs"
@@ -895,6 +896,10 @@ typedef enum
 #define VMDIR_REG_KEY_URGENT_REPL_TIMEOUT_MSEC "UrgentReplTimeoutMilliSec"
 #define VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD "PagedSearchReadAhead"
 #define VMDIR_REG_KEY_OVERRIDE_PASS_SCHEME    "OverridePassScheme"
+#define VMDIR_REG_KEY_ENABLE_RAFT_REFERRAL    "EnableRaftReferral"
+#define VMDIR_REG_KEY_RAFT_ELECTION_TIMEOUT   "RaftElectionTimeoutMS"
+#define VMDIR_REG_KEY_RAFT_PING_INTERVAL      "RaftPingIntervalMS"
+#define VMDIR_REG_KEY_RAFT_KEEP_LOGS          "RaftKeepLogsInK"
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"

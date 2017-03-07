@@ -314,7 +314,7 @@ VmDirPerformAdd(
    )
 {
     int              retVal = LDAP_SUCCESS;
-    BOOLEAN          bResultAlreadySent = FALSE;
+    BOOLEAN          bRefSent = FALSE;
     PSTR             pszRefStr = NULL;
 
     retVal = VmDirParseEntry( pOperation );
@@ -328,8 +328,8 @@ VmDirPerformAdd(
                    pOperation->reqDn.lberbv.bv_len > 0 ? pOperation->reqDn.lberbv.bv_val:"");
        BAIL_ON_VMDIR_ERROR(retVal);
 
-       VmDirSendLdapReferralResult(pOperation, pszRefStr, &bResultAlreadySent);
-       if (bResultAlreadySent)
+       VmDirSendLdapReferralResult(pOperation, pszRefStr, &bRefSent);
+       if (bRefSent)
        {
            goto cleanup;
        }
@@ -337,19 +337,17 @@ VmDirPerformAdd(
     }
 
     retVal = VmDirMLAdd( pOperation );
-    bResultAlreadySent = TRUE;
     BAIL_ON_VMDIR_ERROR( retVal );
 
 cleanup:
+    if (retVal != LDAP_NOTICE_OF_DISCONNECT && bRefSent == FALSE)
+    {
+        VmDirSendLdapResult( pOperation );
+    }
     VMDIR_SAFE_FREE_MEMORY(pszRefStr);
     return retVal;
 
 error:
-
-    if (retVal != LDAP_NOTICE_OF_DISCONNECT && bResultAlreadySent == FALSE)
-    {
-        VmDirSendLdapResult( pOperation );
-    }
     goto cleanup;
 }
 
@@ -379,23 +377,20 @@ VmDirResetAddRequestEntry(
 
     if ( !pOp || !pEntry || pOp->reqCode != LDAP_REQ_ADD )
     {
-        dwError = ERROR_INVALID_PARAMETER;
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if ( pOp->request.addReq.pEntry )
-    {
-        VmDirFreeEntry( pOp->request.addReq.pEntry );
-    }
-
+    VmDirFreeEntry(pOp->request.addReq.pEntry);
     pOp->request.addReq.pEntry = pEntry;
 
-cleanup:
+    dwError = VmDirBervalContentDup(&pEntry->dn, &pOp->reqDn);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
+cleanup:
     return dwError;
 
 error:
-
     goto cleanup;
 }
 
