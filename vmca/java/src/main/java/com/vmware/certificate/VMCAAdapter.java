@@ -71,7 +71,7 @@ public final class VMCAAdapter {
             new StringBuilder(propValue == null ? "" : propValue);
 
       String paths[] =
-            { DEV_PATH, LIB_PATH_64, LIB_PATH, LIKEWISE_LIB64_PATH, VMCA_LIB64_PATH, VMCA_VC_LIB64_PATH };
+            {VMCA_VC_LIB64_PATH, DEV_PATH, LIB_PATH_64, LIB_PATH, LIKEWISE_LIB64_PATH, VMCA_LIB64_PATH};
 
       for (String path : paths) {
          File libDir = new File(path);

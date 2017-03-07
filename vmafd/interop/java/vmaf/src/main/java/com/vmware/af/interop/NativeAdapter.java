@@ -67,9 +67,9 @@ public abstract class NativeAdapter
         if (SystemUtils.IS_OS_LINUX)
         {
             paths = Arrays.asList(
+                        LINUX_VMDIR_VC_LIB64_PATH,
                         LINUX_VMDIR_LIB64_PATH,
-                        LINUX_LIKEWISE_LIB64_PATH,
-                        LINUX_VMDIR_VC_LIB64_PATH);
+                        LINUX_LIKEWISE_LIB64_PATH);
         }
         else if (SystemUtils.IS_OS_WINDOWS)
         {
