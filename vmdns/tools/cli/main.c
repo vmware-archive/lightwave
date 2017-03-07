@@ -165,8 +165,8 @@ VmDnsMakeZoneFQDN(
 static
 DWORD
 VmDnsSetDefaultParams(
-    PSTR* pszServer,
-    PSTR* pszUserName
+    PSTR* ppszServer,
+    PSTR* ppszUserName
     );
 
 
@@ -392,7 +392,7 @@ ParseArgs(
     dwError = VmDnsSetDefaultParams(&pContext->pszServer,
                                     &pszUserName
                                     );
-
+    BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VerifyRemoteConnectionArgs(
                             &pContext->pszServer,
@@ -2595,29 +2595,35 @@ error:
 static
 DWORD
 VmDnsSetDefaultParams(
-    PSTR* pszServer,
-    PSTR* pszUserName
+    PSTR* ppszServer,
+    PSTR* ppszUserName
     )
 {
     DWORD dwError = 0;
     PSTR pszServerName = NULL;
     PSTR pszUser = NULL;
 
-    if ((*pszServer) == NULL )
+    if ((*ppszServer) == NULL )
     {
         dwError = VmDnsAllocateStringA("localhost", &pszServerName);
         BAIL_ON_VMDNS_ERROR(dwError);
 
     }
 
-    if ((*pszUserName) == NULL )
+    if ((*ppszUserName) == NULL )
+
     {
         dwError = VmDnsAllocateStringA("Administrator", &pszUser );
         BAIL_ON_VMDNS_ERROR(dwError);
     }
-    *pszServer = pszServerName;
-    *pszUserName = pszUser;
-
+    if (pszServerName != NULL)
+    {
+        *ppszServer = pszServerName;
+    }
+    if (pszUser != NULL)
+    {
+        *ppszUserName = pszUser;
+    }
 cleanup:
     return dwError;
 
