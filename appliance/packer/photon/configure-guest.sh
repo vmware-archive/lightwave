@@ -222,8 +222,6 @@ function configure_lightwave()
 
     /opt/vmware/bin/configure-lightwave-server --config-file $LIGHTWAVE_CFG_INSTANCE_FILE
 
-    /opt/vmware/bin/configure-identity-server
-
     rm -rf $LIGHTWAVE_CFG_INSTANCE_FILE
 }
 
