@@ -34,6 +34,10 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
         <Label>Default Gateway</Label> \
         <Description>The default gateway address for the Lightwave vm network. (default: 172.16.127.2)</Description> \
       </Property> \
+      <Property ovf:key="enable_ssh" ovf:userConfigurable="true" ovf:type="string"> \
+        <Label>Enable Root SSH Logon</Label> \
+        <Description>Enables password logon via ssh for the root user. (default: false)</Description> \
+      </Property> \
       <Property ovf:key="DNS" ovf:userConfigurable="true" ovf:type="string"> \
         <Label>DNS</Label> \
         <Description>The domain name servers for the Lightwave vm (comma separated). (default: 172.16.127.2)</Description> \

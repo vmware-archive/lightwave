@@ -199,6 +199,17 @@ function set_photon_password()
     fi
 }
 
+function set_enable_ssh()
+{
+    if [ ! -z "$enable_ssh" ]
+    then
+        echo "Enabling root SSH login."
+        sed -i 's/PermitRootLogin no/PermitRootLogin yes/g' /etc/ssh/sshd_config
+        systemctl restart sshd
+        return
+    fi
+}
+
 function configure_lightwave()
 {
     context="{\
@@ -233,6 +244,7 @@ function parse_ovf_env()
     gateway=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='gateway']/../@*[local-name()='value'])")
     dns=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='DNS']/../@*[local-name()='value'])")
     ntp_servers=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ntp_servers']/../@*[local-name()='value'])")
+    enable_ssh=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='enable_ssh']/../@*[local-name()='value'])")
 
     # users
     root_password=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='root_password']/../@*[local-name()='value'])")
@@ -296,6 +308,8 @@ then
     set_network_properties
     set_root_password
     set_photon_password
+    set_enable_ssh
+
     configure_lightwave
 fi
 
