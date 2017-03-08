@@ -5123,27 +5123,12 @@ error:
     goto cleanup;
 }
 
-/* dwFileTransferState [in]:
- *   1 - set partner's backend to READONLY state
- *   2 - set  partner's backend to keep xlogs state (used for hot database file copy only)
- *   0 - clear partner's backend MDB_KEEPXLOGS flag or READONLY state
- * pdwLogNum [out]:
- *   The starting transaction log number if dwFileTransferState is 2 and partner support WAL;
- *   if dwFileTransferState is 2 but partner doesn't support WAL, then the partner would be put at READONLY mode, and pdwLogNum set to 0.
- * pdwDbSizeMb [out]: assigned size of the partner's backend database file in MB.
- * pDbPath [out]: the partner's database home path
- * dwDbPathSize [in]: the memory size of pDbPath.
- * Return:  0 success
- *   If the RPC call went through, the remote function may return non-zero indicating the following errors:
- *          1 function failed - invalid parameter
- *          2 function failed - invalid state, i.e.
- *            already in read-only when trying to set to read-only or not in read-only while trying to clear read-only state.
- *          3 function failed - db_path buffer too small
+/* @brief See lmdb.h for the parameters
  */
 DWORD
 VmDirSetBackendState(
     PVMDIR_SERVER_CONTEXT    hBinding,
-    UINT32     dwFileTransferState,
+    MDB_state_op op,
     UINT32     *pdwLogNum,
     UINT32     *pdwDbSizeMb,
     UINT32     *pdwDbMapSizeMb,
@@ -5168,7 +5153,7 @@ VmDirSetBackendState(
     *pdwDbMapSizeMb = 0;
     VMDIR_RPC_TRY
     {
-        dwError =  RpcVmDirSetBackendState( hBinding->hBinding, dwFileTransferState, &xlognum, &dbSizeMb,
+        dwError =  RpcVmDirSetBackendState( hBinding->hBinding, op, &xlognum, &dbSizeMb,
                                     &dbMapSizeMb, &readBufferContainer, dwDbPathSize);
     }
     VMDIR_RPC_CATCH

@@ -211,7 +211,7 @@ _VmDirRaftVoteSchdThread()
                 VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
                 continue;
             }
-        } else 
+        } else
         {
             //Server is a leader
             waitTime = gVmdirGlobals.dwRaftElectionTimeoutMS;
@@ -501,7 +501,7 @@ appendEntriesRepeat:
             //  (e.g. other peers proceed faster than this peer), and the completed RPC
             //  needs to replicate the new gEntries without waiting.
             VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
-            goto appendEntriesRepeat; 
+            goto appendEntriesRepeat;
         }
         VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
     }
@@ -536,10 +536,11 @@ _VmDirRemovePeerInLock(PCSTR pHostname)
     }
     if (curProxy)
     {
-        if (curProxy->isDeleted == FALSE)
+        if (curProxy->isDeleted == FALSE && curProxy->proxy_state != PENDING_ADD)
         {
             curProxy->isDeleted = TRUE;
             gRaftState.clusterSize--;
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRemovePeerInLock: raft cluster size changed to %d", gRaftState.clusterSize);
         }
     }
 }
@@ -912,7 +913,7 @@ _VmDirRequestVoteRpc(PVMDIR_SERVER_CONTEXT *ppServer, PVMDIR_PEER_PROXY pProxySe
         waitSignaled = TRUE;
         VmDirConditionSignal(gGotVoteResultCond);
     }
-    
+
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRequestVoteRpc: vote granted from peer %s voteConsensusCnt %d (term %d)",
                    pPeerHostName, gRaftState.voteConsensusCnt, gRaftState.voteConsenusuTerm);
 
@@ -1261,7 +1262,7 @@ _VmDirStartProxies(
             continue;
         }
         VmDirFreeBervalContent(&dcContainerDNrdn);
-        dwError = VmDirGetRdn(&entryArray.pEntry[i].dn, &dcContainerDNrdn);  
+        dwError = VmDirGetRdn(&entryArray.pEntry[i].dn, &dcContainerDNrdn);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         VMDIR_SAFE_FREE_STRINGA(pHostname);
@@ -1275,6 +1276,8 @@ _VmDirStartProxies(
 
         gRaftState.clusterSize++;
     }
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirStartProxies: raft cluster size %d", gRaftState.clusterSize);
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
@@ -1301,7 +1304,7 @@ _VmDirRequestVoteGetReply(UINT32 term, char *candidateId, unsigned long long las
     VDIR_BERVALUE bvVotedFor = {0};
 
     *voteGranted = 1; //Default to denied with reason split vote or other than larger highest logIndex of mine.
-    
+
     if (!gRaftState.initialized)
     {
         //Don't participate in vote if this server has not been initialized.
@@ -1416,7 +1419,7 @@ _VmDirAppendEntriesGetReply(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (gRaftState.leader.lberbv.bv_len == 0 || 
+    if (gRaftState.leader.lberbv.bv_len == 0 ||
         VmDirStringCompareA(gRaftState.leader.lberbv.bv_val, leader, FALSE) !=0 )
     {
         bLeaderChanged = TRUE;
@@ -1550,10 +1553,7 @@ int VmDirRaftCommitHook()
     if (gRaftState.clusterSize < 2)
     {
         //This is a standalone server
-        gRaftState.commitIndex = gRaftState.lastApplied = gLogEntry.index; 
-        gRaftState.commitIndexTerm = gLogEntry.term;
-        _VmDirChgLogFree(&gLogEntry);
-        goto cleanup;
+        goto update_volatile_state;
     }
 
     if (gRaftState.role != VDIR_RAFT_ROLE_LEADER)
@@ -1600,6 +1600,7 @@ int VmDirRaftCommitHook()
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+update_volatile_state:
     //The log entry is committed,
     gRaftState.cmd = ExecNone;
     gRaftState.commitIndex = gRaftState.lastApplied = gRaftState.lastLogIndex = gLogEntry.index;
@@ -1872,7 +1873,7 @@ _VmDirDeleteRaftProxy(char *dn_norm)
 
     if (VmDirStringCompareA(dn_norm, gVmdirServerGlobals.dcAccountDN.bvnorm_val, FALSE) == 0)
     {
-        /* 
+        /*
          * Deleting a Raft leader should follow the procedure:
          *  1. Shutdown the server which is the raft leader
          *  2. Send deleting account LDAP operation for this account toward the new Raft leader (or to be standalone server).
@@ -1998,7 +1999,8 @@ _VmDirRpcConnect(PVMDIR_SERVER_CONTEXT *ppServer, PVMDIR_PEER_PROXY pProxySelf)
        }
        VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
-       VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRpcConnect: RPC to %s established.", pPeerHostName);
+       VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRpcConnect: RPC to %s established with current raft cluster size %d",
+                      pPeerHostName, gRaftState.clusterSize);
        *ppServer = pServer;
        pServer = NULL;
        break;
@@ -2046,7 +2048,7 @@ _VmDirApplyLog(unsigned long long indexToApply)
     char logIndexStr[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
     char opStr[RAFT_CONTEXT_DN_MAX_LEN] = {0};
     BOOLEAN bLock = FALSE;
-    BOOLEAN bHasTxn = FALSE; 
+    BOOLEAN bHasTxn = FALSE;
     int iPostCommitPluginRtn = 0;
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
@@ -2097,7 +2099,7 @@ _VmDirApplyLog(unsigned long long indexToApply)
         dwError = ldapOp.pBEIF->pfnBETxnBegin(ldapOp.pBECtx, VDIR_BACKEND_TXN_WRITE);
         BAIL_ON_VMDIR_ERROR(dwError);
         bHasTxn = TRUE;
-    
+
         dwError = ldapOp.pBEIF->pfnBEEntryAdd(ldapOp.pBECtx, &entry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
               "pfnBEEntryAdd  %s from logIndx %llu", entry.dn.lberbv_val, indexToApply);
@@ -2203,10 +2205,10 @@ _VmDirApplyLog(unsigned long long indexToApply)
     dwError = VmDirStringPrintFA(logEntryDn, sizeof(logEntryDn),  "%s=%llu,%s",
                     ATTR_CN, logEntry.index, RAFT_LOGS_CONTAINER_DN);
     BAIL_ON_VMDIR_ERROR(dwError);
-    
+
     modOp.reqDn.lberbv.bv_val = logEntryDn;
     modOp.reqDn.lberbv.bv_len = VmDirStringLenA(logEntryDn);
-    
+
     dwError = VmDirStringPrintFA(logIndexStr, sizeof(logIndexStr), "%llu", indexToApply);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -2221,7 +2223,7 @@ _VmDirApplyLog(unsigned long long indexToApply)
     modOp.bSuppressLogInfo = TRUE;
     dwError = VmDirInternalModifyEntry(&modOp);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
-          "VmDirInternalModifyEntry mod on %s = %llu ", ATTR_RAFT_LAST_APPLIED, logIndexStr);  
+          "VmDirInternalModifyEntry mod on %s = %llu ", ATTR_RAFT_LAST_APPLIED, logIndexStr);
 
     dwError = ldapOp.pBEIF->pfnBETxnCommit(ldapOp.pBECtx);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -2329,8 +2331,8 @@ UINT64 VmDirRaftLogIndexToCommit()
     static UINT64 idxMajor = 0;
     UINT64 commitIndex = 0;
     BOOLEAN bLock = FALSE;
- 
-    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex); 
+
+    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
     if (gRaftState.commitIndex == prevIdx)
     {
         idxMajor++;
@@ -2341,7 +2343,7 @@ UINT64 VmDirRaftLogIndexToCommit()
     }
     commitIndex = (gRaftState.commitIndex + 1) | (idxMajor << 32);
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
-    
+
     return commitIndex;
 }
 

@@ -63,6 +63,18 @@ typedef struct _VMDIR_DBCP_DATA_CONTAINER
     [size_is(dwCount)] unsigned char * data;
 } VMDIR_DBCP_DATA_CONTAINER, *PVMDIR_DBCP_DATA_CONTAINER;
 
+cpp_quote("#ifndef MDB_STATE_OP")
+cpp_quote("#define MDB_STATE_OP")
+
+typedef enum {
+        MDB_STATE_CLEAR = 0,
+        MDB_STATE_READONLY,
+        MDB_STATE_KEEPXLOGS,
+        MDB_STATE_GETXLOGNUM
+} MDB_state_op;
+
+cpp_quote("#endif")
+
        UINT32
        RpcVmDirOpenDatabaseFile(
            [in]                     handle_t    hBinding,
@@ -87,7 +99,7 @@ typedef struct _VMDIR_DBCP_DATA_CONTAINER
        UINT32
        RpcVmDirSetBackendState(
            [in]                     handle_t  hBinding,
-           [in]                     UINT32    dwFileTransferState,
+           [in]                     MDB_state_op op,
            [out]                    UINT32  * pdwXlogNum,
            [out]                    UINT32  * pdwDbSizeMb,
            [out]                    UINT32  * pdwDbMapSizeMb,

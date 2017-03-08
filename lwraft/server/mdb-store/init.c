@@ -670,7 +670,7 @@ MDBFreeMdbGlobals(
  */
 DWORD
 VmDirSetMdbBackendState(
-    DWORD               dwFileTransferState,
+    MDB_state_op        op,
     DWORD               *pdwLogNum,
     DWORD               *pdwDbSizeMb,
     DWORD               *pdwDbMapSizeMb,
@@ -682,25 +682,16 @@ VmDirSetMdbBackendState(
     unsigned long  dbSizeMb = 0L;
     unsigned long  dbMapSizeMb = 0L;
 
-    if (dwFileTransferState < 0 || dwFileTransferState > 2)
+    if (op < MDB_STATE_CLEAR || op > MDB_STATE_GETXLOGNUM)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (dwFileTransferState == 0)
-    {
-        VmDirdStateSet(VMDIRD_STATE_NORMAL);
-    }
-    else
-    {
-        VmDirdStateSet(VMDIRD_STATE_READ_ONLY);
-    }
-
     *pdwLogNum = 0;
     *pdwDbSizeMb = 0;
     *pdwDbMapSizeMb = 0;
-    dwError = mdb_env_set_state(gVdirMdbGlobals.mdbEnv, dwFileTransferState, &lognum, &dbSizeMb, &dbMapSizeMb, pszDbPath, dwDbPathSize);
+    dwError = mdb_env_set_state(gVdirMdbGlobals.mdbEnv, op, &lognum, &dbSizeMb, &dbMapSizeMb, pszDbPath, dwDbPathSize);
     BAIL_ON_VMDIR_ERROR(dwError);
     *pdwLogNum = lognum;
     *pdwDbSizeMb = dbSizeMb;

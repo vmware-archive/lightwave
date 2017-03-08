@@ -8459,7 +8459,6 @@ int mdb_wal_init(MDB_env *env)
 
     env->me_walstate.walbuf_p = p;
     env->me_walstate.walbuf_pos = 0;
-    env->me_walstate.direct_io = 1; //Assume that file system suports direct I/O unless find out not
     return MDB_SUCCESS;
 }
 
@@ -8492,27 +8491,7 @@ int wal_write(MDB_env *env, txnid_t tid)
             rc = ENOMEM;
             goto done;
         }
-#ifndef _WIN32
-        if (env->me_walstate.direct_io)
-        {
-#ifdef O_DIRECT
-            rc = fcntl(fd, F_GETFL);
-            if (rc >=0)
-            {
-                rc = fcntl(fd, F_SETFL, rc | O_DIRECT);
-#endif
-#ifdef F_NOCACHE
-            if (1)
-            {
-                rc = fcntl(fd, F_NOCACHE, 1);
-#endif
-                if (rc != 0)
-                    env->me_walstate.direct_io = 0; //file system doesn't support direct I/O
-            } else
-                env->me_walstate.direct_io = 0;
-            rc = 0;
-        }
-#endif
+
         env->me_walstate.xlog_fd = fd;
         env->me_walstate.xlog_offset = 0;
         // now it is opened for writing;
@@ -8536,16 +8515,17 @@ int wal_write(MDB_env *env, txnid_t tid)
         rc = ENOMEM;
         goto done;
     }
+
 #ifndef _WIN32
-    if (!env->me_walstate.direct_io)
+    //direct-io is not safe with ESXi Linux VM though fcntl(fd, F_SETFL, rc | O_DIRECT) return 0
+    // So need to do a fdatasync.
+    if (MDB_FDATASYNC(env->me_walstate.xlog_fd)!=0)
     {
-        if(MDB_FDATASYNC(env->me_walstate.xlog_fd)!=0)
-        {
-            rc = ENOMEM;
-            goto done;
-        }
+        rc = ENOMEM;
+        goto done;
     }
 #endif
+
     DPRINTF(("WAL wrote %lu pages on txn %llu\n",
              env->me_walstate.walbuf_pos/env->me_psize,
              (unsigned long long)tid));
@@ -8739,41 +8719,46 @@ extend_map(MDB_env *env, pgno_t pgno, int num)
 #endif
 }
 
-/**
- * lmdb.h mdb_env_set_state for parameters
+/** @brief set, clear or query MDB state for database file cold or hot copy.
+ * Refer its description in lmdb.h for parameters.
  */
 int
-mdb_env_set_state(MDB_env *env, int fileTransferState, unsigned long *last_xlog_num, unsigned long *dbSizeMb, unsigned long *dbMapSizeMb, char *db_path, int db_path_size)
+mdb_env_set_state(MDB_env *env, MDB_state_op op, unsigned long *last_xlog_num, unsigned long *dbSizeMb,
+                  unsigned long *dbMapSizeMb, char *db_path, int db_path_size)
 {
     MDB_envinfo env_stats = {0};
     int ret = 0;
 
     if (env == NULL)
-        return 1; // invalid parameter
+        return EINVAL; 
 
     *last_xlog_num = 0;
     LOCK_MUTEX_W(env);
 
-    if (((env->me_flags & MDB_RDONLY) && fileTransferState == 1) || //Already in read-only state while trying to set to read-only
-        ((env->me_flags & MDB_RDONLY) && fileTransferState == 2) || //Already in read-only state while trying to set to keep XLOGS
-        (!(env->me_flags & MDB_RDONLY) && !(env->me_flags & MDB_KEEPXLOGS) &&
-         fileTransferState == 0) // Not in read-only state while trying to clear read-only or keep XLOGS state
+    if (((env->me_flags & MDB_RDONLY) && op == MDB_STATE_READONLY) ||
+        //Already in read-only state while trying to set to read-only
+        ((env->me_flags & MDB_RDONLY) && op == MDB_STATE_KEEPXLOGS) ||
+        //Already in read-only state while trying to set to keep XLOGS
+        (!(env->me_flags & MDB_RDONLY) && !(env->me_flags & MDB_KEEPXLOGS) && op == MDB_STATE_CLEAR)
+        // Not in read-only state while trying to clear read-only or keep XLOGS state
        )
-         ret = 2;
-    else if ( fileTransferState == 1)
+         ret = EINVAL;
+    else if ( op == MDB_STATE_READONLY)
          env->me_flags |= MDB_RDONLY;
-    else if (fileTransferState == 2 )
+    else if (op == MDB_STATE_KEEPXLOGS)
     {
          *last_xlog_num = env->me_walstate.xlog_num;
          env->me_flags |= MDB_KEEPXLOGS;
-    }
-    else if ( fileTransferState == 0)
+    } else if (op == MDB_STATE_GETXLOGNUM)
+    {
+         *last_xlog_num = env->me_walstate.xlog_num;
+    } else if ( op == MDB_STATE_CLEAR)
     {
          env->me_flags &= ~MDB_RDONLY;
          env->me_flags &= ~MDB_KEEPXLOGS;
     }
     else
-        ret = 1; // invalid parameter
+        ret = EINVAL;
 
     mdb_env_sync(env, 1);
     mdb_env_info(env, &env_stats);
@@ -8782,13 +8767,15 @@ mdb_env_set_state(MDB_env *env, int fileTransferState, unsigned long *last_xlog_
     *dbSizeMb = 1 + (unsigned long)(((unsigned long long)env_stats.me_last_pgno * (unsigned long long)env->me_psize) >> 20);
     *dbMapSizeMb = (unsigned long)((unsigned long long)env->me_mapsize >> 20);
     if (db_path == NULL || db_path_size <= 0 || strlen(env->me_path) >= db_path_size)
-        ret = 3;
+        ret = EOVERFLOW;
     else
         strcpy(db_path, env->me_path);
     UNLOCK_MUTEX_W(env);
     return ret;
 }
 
+/** @brief Set commit hook func for Raft
+ */
 void mdb_set_commit_hook_func(MDB_env *env, MDB_commit_hook_func *commit_hook_func)
 {
     env->me_commit_hook_func = commit_hook_func;

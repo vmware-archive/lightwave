@@ -1142,7 +1142,7 @@ error:
 }
 
 /*
- * Only allow two mdb files - data.mdb, lock.mdb, under vmdir datapath.
+ * Only allow data.mdb, lock.mdb, xlogs/ files under server's datapath.
  */
 static
 DWORD
@@ -1153,7 +1153,7 @@ _VmDirRemoteDBCopyWhiteList(
     DWORD   dwError             = 0;
     int     i                   = 0;
     BOOLEAN bAccessAllowed      = FALSE;
-    PSTR    pszDBFileNames[]    = {"data.mdb", "lock.mdb"};
+    PSTR    pszDBFileNames[]    = {VMDIR_MDB_DATA_FILE_NAME, VMDIR_MDB_LOCK_FILE_NAME, VMDIR_MDB_XLOGS_DIR_NAME};
     PSTR    pszFullPathName     = NULL;
 #ifdef _WIN32
     CHAR    pszFilePath[VMDIR_MAX_PATH_LEN] = {0};
@@ -1679,7 +1679,7 @@ error:
 UINT32
 Srv_RpcVmDirSetBackendState(
     handle_t    hBinding,
-    UINT32      fileTransferState,
+    MDB_state_op op,
     UINT32      *pdwXlogNum,
     UINT32      *pdwDbSizeMb,
     UINT32      *pdwDbMapSizeMb,
@@ -1710,7 +1710,7 @@ Srv_RpcVmDirSetBackendState(
 
     dwError = VmDirRpcAllocateMemory( dwDbPathSize, (PVOID*)&(pData) );
     BAIL_ON_VMDIR_ERROR(dwError);
-    dwError = VmDirSetMdbBackendState(fileTransferState, &dwXlogNum, &dwDbSizeMb, &dwDbMapSizeMb, pData, dwDbPathSize);
+    dwError = VmDirSetMdbBackendState(op, &dwXlogNum, &dwDbSizeMb, &dwDbMapSizeMb, pData, dwDbPathSize);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *pdwXlogNum = dwXlogNum;

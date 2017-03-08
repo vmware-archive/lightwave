@@ -188,7 +188,7 @@ _VmDirLoadRaftState(
     dwError = _VmDirFetchLogEntry(gRaftState.lastApplied, &logEntry, __LINE__);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    gRaftState.commitIndex = logEntry.index; 
+    gRaftState.commitIndex = logEntry.index;
     gRaftState.commitIndexTerm = logEntry.term;
 
     gRaftState.cmd = ExecNone;
@@ -741,7 +741,7 @@ _VmDirPeersConnectedInLock()
     for (pPeerProxy=gRaftState.proxies; pPeerProxy != NULL; pPeerProxy = pPeerProxy->pNext)
     {
         if (pPeerProxy->isDeleted || pPeerProxy->proxy_state == RPC_DISCONN ||
-            pPeerProxy->proxy_state == PENDING_ADD || pPeerProxy->proxy_state == PENDING_REMOVE)
+            pPeerProxy->proxy_state == PENDING_ADD)
         {
             continue;
         }
@@ -1002,7 +1002,7 @@ _VmDirRaftLoadGlobals(PSTR *ppszLocalErrorMsg)
 
     dwError = VmDirSimpleEqualFilterInternalSearch(pszDCAccountDn, LDAP_SCOPE_BASE,
                     ATTR_OBJECT_CLASS, OC_COMPUTER, &entryArray);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), 
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg),
            "VmDirSimpleEqualFilterInternalSearch failed on DN %s", pszDCAccountDn);
 
     if (entryArray.iSize != 1)

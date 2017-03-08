@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -116,9 +116,8 @@ typedef enum _VDIR_RAFT_PROXY_STATE
 {
     RPC_IDLE = 0, //The peer thread is idle and ready to handle new request
     RPC_BUSY,     //The peer thread is in process of serving a RPC request.
-    RPC_DISCONN,   //The peer thread is disconnected from the remote server or DCERPC service.
-    PENDING_REMOVE,//The peer thread is pending to be removed from cluster.
-    PENDING_ADD    //The peer thread is created, but waiting for a successsful DCE RPC call to the remote server
+    RPC_DISCONN,  //The peer thread is disconnected from the remote server or DCERPC service.
+    PENDING_ADD   //The peer thread is created, but waiting for a successsful DCE RPC call to the remote server
 } VDIR_RAFT_PROXY_STATE;
 
 typedef struct  _REQUEST_VOTE_ARGS
@@ -148,7 +147,7 @@ typedef struct _APPEND_ENTRIES_ARGS
     /* [in] */ char *entries;
     /* [out] */ UINT32 currentTerm;
     /* [out] */ UINT32 status;
-} APPEND_ENTRIES_ARGS; 
+} APPEND_ENTRIES_ARGS;
 
 typedef struct _VMDIR_PEER_PROXY
 {

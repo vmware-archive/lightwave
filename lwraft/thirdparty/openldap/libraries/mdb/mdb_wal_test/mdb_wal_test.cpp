@@ -16,6 +16,7 @@
 #include <time.h>
 #include "lmdb.h"
 #include <iomanip>
+#include <unistd.h>
 
 #ifdef _WIN32
 #define SLEEP(x) _sleep(x*1000)
@@ -57,7 +58,7 @@ class MdbTester
  private:
     int search_data(MDB_val *key, MDB_val *data);
     int search_data(MDB_val *key, MDB_val *data, MDB_txn *txn);
-    int test_search(int idx, char *key_prefix, MDB_txn *txn = NULL);
+    int test_search(int idx, const char *key_prefix, MDB_txn *txn = NULL);
 
  private:
     vector<int> _keys;
@@ -298,7 +299,7 @@ int MdbTester::test_provision_search(int idx)
     return test_search(idx, "provision key");
 }
 
-int MdbTester::test_search(int idx, char *key_prefix, MDB_txn *txn)
+int MdbTester::test_search(int idx, const char *key_prefix, MDB_txn *txn)
 {
   char kval[32];
   MDB_val key, data;
@@ -923,7 +924,7 @@ main(int argc, char **argv)
     mtp = new MdbTester(0, DB_DEFAULT_SIZE>>1, 1);
     mtp->provision(50000, 0); // idx 0 ~ 49999
     mtp->backup_db(); //backup database with 50K items in the database
-    mdb_env_set_state(mtp->get_dbenv(), 2, &current_xlog_num, &dbSizeMb, &dbMapSizeMb, db_path, sizeof(db_path));
+    mdb_env_set_state(mtp->get_dbenv(), MDB_STATE_KEEPXLOGS, &current_xlog_num, &dbSizeMb, &dbMapSizeMb, db_path, sizeof(db_path));
     printf ("current xlog number: %lu dbsize %lu MB dbMapSize %lu MB\n", current_xlog_num, dbSizeMb, dbMapSizeMb);
     //For database hop copy, only dbSizeMb is needed to be transfered instead of the whole file
     //  -- scp on mdb.data will not take avantage of the spare file.

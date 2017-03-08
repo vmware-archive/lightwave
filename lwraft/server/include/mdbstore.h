@@ -157,7 +157,7 @@ VmDirMDBShutdownDB(
 
 DWORD
 VmDirSetMdbBackendState(
-    DWORD               dwFileTransferState,
+    MDB_state_op        op,
     DWORD               *pdwLogNum,
     DWORD               *pdwDbSizeMb,
     DWORD               *pdwDbMapSizeMb,

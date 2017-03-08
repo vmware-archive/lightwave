@@ -353,6 +353,16 @@ VmDirSRPGetIdentityData(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    if (VmDirdState() != VMDIRD_STATE_NORMAL)
+    {
+        /*
+         * During local server promo, remote server rpc call
+         * may cause the local server to crash when the backend was shutdown (swapped)
+         */
+        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     dwError = VmDirSimpleEqualFilterInternalSearch(
                     "",
                     LDAP_SCOPE_SUBTREE,

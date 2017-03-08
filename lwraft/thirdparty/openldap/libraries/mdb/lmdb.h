@@ -436,6 +436,20 @@ typedef struct MDB_stat {
 	size_t		ms_entries;			/**< Number of data items */
 } MDB_stat;
 
+#define MDB_STATE_OP
+/** @brief set, clear or query MDB env state for database file transfer
+ * MDB_STATE_CLEAR clear MDB_KEEPXLOGS or READONLY state
+ * MDB_STATE_READONLY - set mdb to READONLY state
+ * MDB_STATE_KEEPXLOGS - set mdb to keep xlogs state
+ * MDB_STATE_GETXLOGNUM - query current xlog number
+ */
+typedef enum MDB_state_op {
+        MDB_STATE_CLEAR = 0,
+        MDB_STATE_READONLY,
+        MDB_STATE_KEEPXLOGS,
+        MDB_STATE_GETXLOGNUM
+} MDB_state_op;
+
 /** @brief Information about the environment */
 typedef struct MDB_envinfo {
 	void	*me_mapaddr;			/**< Address of map, if fixed */
@@ -1475,24 +1489,21 @@ int	mdb_reader_list(MDB_env *env, MDB_msg_func *func, void *ctx);
 	 */
 int	mdb_reader_check(MDB_env *env, int *dead);
 
-        /** @brief set or clear database file transfer state for remote file copy.
-         * @param[in]  env - environment handle returned by #mdb_env_create()
-         * @param[in]  1 - set mdb to READONLY state
-         *             2 - set mdb to keep xlogs state (used for hot database file copy only)
-         *             0 - clear MDB_KEEPXLOGS flag or mdb READONLY state
-         * @param[out] The starting transaction log number if dwFileTransferState is 2 and mdb support WAL.
-         *             If dwFileTransferState is 2 but mdb doesn't support WAL, then mdb would
-         *             be put at READONLY mode, and pdwLogNum set to 0.
-         * @param[out] assigned size of the partner's backend database file in MB.
-         * @param[out] the map size of the partner's backend database file in MB.
-         * @param[out] the path of the database home (where data.mdb and lock.mdb located)
-         * @param[in]  the memory size of db_path.
+        /** @brief set, clear or query MDB state for database file cold or hop copy.
+         * @param[in] env - environment handle returned by #mdb_env_create()
+         * @param[in] op - MDB_state_op
+         * @param[out] last_xlog_num - set to the current WAL log numbern if MDB supports WAL
+         *             otherwise set to 0.
+         * @param[out] dbSizeMb - allocated database size in MB (round to the next MB).
+         * @param[out] dbMapSizeMb - the database map size in MB.
+         * @param[out] db_path - the path of the database home where data.mdb and lock.mdb resides
+         * @param[in]  db_path_size - the memory size of db_path.
          * @return      0 success
-         *              1 failed - invalid environment handle
-         *              2 failed - invalid state
-         *              3 failed - db_path buffer too small
+         *              EINVAL invalid environment handle, input parameter or state
+         *              EOVERFLOW db_path buffer too small
          */
-int     mdb_env_set_state(MDB_env *env, int fileTransferState, unsigned long *last_xlog_num, unsigned long *dbSizeMb, unsigned long *dbMapSizeMb, char *db_path, int db_path_size);
+int     mdb_env_set_state(MDB_env *env, MDB_state_op op, unsigned long *last_xlog_num, unsigned long *dbSizeMb,
+                          unsigned long *dbMapSizeMb, char *db_path, int db_path_size);
 
 /**	@} */
 
