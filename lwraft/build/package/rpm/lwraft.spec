@@ -313,6 +313,8 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_bindir}/lwraftleavefed
 %{_bindir}/unix_srp
 %{_lib64dir}/sasl2/libsasllwraftdb.so*
+%{_lib64dir}/libkrb5crypto.so*
+%{_lib64dir}/libvmkdcserv.so*
 %{_datadir}/config/sasllwraftd.conf
 %{_datadir}/config/lwraft.reg
 %{_datadir}/config/lwraftschema.ldif
@@ -342,8 +344,12 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %exclude %{_bindir}/parseargstest
 %exclude %{_bindir}/registrytest
 %exclude %{_bindir}/stringtest
+%exclude %{_lib64dir}/libkrb5crypto.a
+%exclude %{_lib64dir}/libkrb5crypto.la
 %exclude %{_lib64dir}/sasl2/libsasllwraftdb.a
 %exclude %{_lib64dir}/sasl2/libsasllwraftdb.la
+%exclude %{_lib64dir}/libvmkdcserv.a
+%exclude %{_lib64dir}/libvmkdcserv.la
 
 # %doc ChangeLog README COPYING
 
