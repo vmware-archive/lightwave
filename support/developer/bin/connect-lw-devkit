@@ -1,0 +1,4 @@
+#!/bin/bash
+
+docker exec -it lightwave-dev /bin/bash
+
