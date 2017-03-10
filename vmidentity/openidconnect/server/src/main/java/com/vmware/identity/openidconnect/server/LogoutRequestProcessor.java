@@ -21,7 +21,6 @@ import java.util.Set;
 
 import javax.servlet.http.Cookie;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.nimbusds.jose.JOSEException;
@@ -52,7 +51,7 @@ public class LogoutRequestProcessor {
 
     private final SessionManager sessionManager;
     private final HttpRequest httpRequest;
-    private final String tenant;
+    private String tenant;
 
     private TenantInfo tenantInfo;
     private ClientInfo clientInfo;
@@ -97,6 +96,7 @@ public class LogoutRequestProcessor {
 
         try {
             this.tenantInfo = this.tenantInfoRetriever.retrieveTenantInfo(this.tenant);
+            this.tenant = this.tenantInfo.getName(); // use tenant name as it appears in directory
             this.clientInfo = this.clientInfoRetriever.retrieveClientInfo(this.tenant, clientId);
             if (!this.clientInfo.getPostLogoutRedirectURIs().contains(postLogoutRedirectUri)) {
                 throw new ServerException(ErrorObject.invalidRequest("unregistered post_logout_redirect_uri"));
@@ -186,7 +186,7 @@ public class LogoutRequestProcessor {
             throw new ServerException(ErrorObject.serverError("error while verifying id_token signature"), e);
         }
 
-        if (!StringUtils.equalsIgnoreCase(idToken.getTenant(), this.tenant)) {
+        if (!Objects.equals(idToken.getTenant(), this.tenant)) {
             throw new ServerException(ErrorObject.invalidRequest("id_token has incorrect tenant"));
         }
 

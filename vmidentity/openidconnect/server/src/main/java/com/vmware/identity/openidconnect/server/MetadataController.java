@@ -84,6 +84,7 @@ public class MetadataController {
                 tenant = tenantInfoRetriever.getDefaultTenantName();
             }
             TenantInfo tenantInfo = tenantInfoRetriever.retrieveTenantInfo(tenant);
+            tenant = tenantInfo.getName(); // use tenant name as it appears in directory
             Issuer issuer = tenantInfo.getIssuer();
             ProviderMetadata providerMetadata = new ProviderMetadata.Builder(issuer).
                         authorizationEndpointURI(endpointURI(issuer, tenant, Endpoints.AUTHENTICATION)).

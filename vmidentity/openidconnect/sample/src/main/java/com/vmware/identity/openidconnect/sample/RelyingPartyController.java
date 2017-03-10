@@ -516,10 +516,6 @@ public class RelyingPartyController {
             error = "incorrect client_id";
         }
 
-        if (error == null && !tenantName.equals(token.getTenant())) {
-            error = "incorrect tenant";
-        }
-
         Date now = new Date();
         Date adjustedExpirationTime = new Date(token.getExpirationTime().getTime() + CLOCK_TOLERANCE_SECONDS * 1000L);
         if (error == null && now.after(adjustedExpirationTime)) {

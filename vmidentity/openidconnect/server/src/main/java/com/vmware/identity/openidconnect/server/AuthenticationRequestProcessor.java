@@ -64,7 +64,7 @@ public class AuthenticationRequestProcessor {
     private final Model model;
     private final Locale locale;
     private final HttpRequest httpRequest;
-    private final String tenant;
+    private String tenant;
 
     private final boolean isAjaxRequest;
 
@@ -127,6 +127,7 @@ public class AuthenticationRequestProcessor {
         // check that tenant, client, and redirect_uri are registered (if not, return error to browser, not client)
         try {
             this.tenantInfo = this.tenantInfoRetriever.retrieveTenantInfo(this.tenant);
+            this.tenant = this.tenantInfo.getName(); // use tenant name as it appears in directory
             this.clientInfo = this.clientInfoRetriever.retrieveClientInfo(this.tenant, clientId);
             if (!this.clientInfo.getRedirectURIs().contains(redirectUri)) {
                 throw new ServerException(ErrorObject.invalidRequest("unregistered redirect_uri"));

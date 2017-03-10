@@ -20,8 +20,6 @@ import java.util.Date;
 import java.util.Objects;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
-
 import com.nimbusds.jose.JOSEException;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -113,6 +111,7 @@ public class TokenRequestProcessor {
                 this.tenant = this.tenantInfoRetriever.getDefaultTenantName();
             }
             this.tenantInfo = this.tenantInfoRetriever.retrieveTenantInfo(this.tenant);
+            this.tenant = this.tenantInfo.getName(); // use tenant name as it appears in directory
 
             TokenSuccessResponse tokenSuccessResponse = processInternal();
             HttpResponse httpResponse = tokenSuccessResponse.toHttpResponse();
@@ -420,7 +419,7 @@ public class TokenRequestProcessor {
             throw new ServerException(ErrorObject.invalidGrant("redirect_uri does not match that of the original authn request"));
         }
 
-        if (!StringUtils.equalsIgnoreCase(entry.getPersonUser().getTenant(), this.tenant)) {
+        if (!Objects.equals(entry.getPersonUser().getTenant(), this.tenant)) {
             throw new ServerException(ErrorObject.invalidGrant("tenant does not match that of the original authn request"));
         }
     }
@@ -434,7 +433,7 @@ public class TokenRequestProcessor {
             throw new ServerException(ErrorObject.serverError("error while verifying refresh_token signature"), e);
         }
 
-        if (!StringUtils.equalsIgnoreCase(refreshToken.getTenant(), this.tenant)) {
+        if (!Objects.equals(refreshToken.getTenant(), this.tenant)) {
             throw new ServerException(ErrorObject.invalidGrant("refresh_token was not issued to this tenant"));
         }
 

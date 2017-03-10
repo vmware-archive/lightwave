@@ -24,6 +24,7 @@ import org.apache.commons.lang3.Validate;
 
 import com.vmware.identity.idm.AuthnPolicy;
 import com.vmware.identity.idm.NoSuchTenantException;
+import com.vmware.identity.idm.Tenant;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ErrorObject;
 import com.vmware.identity.openidconnect.common.Issuer;
@@ -39,16 +40,19 @@ public class TenantInfoRetriever {
         this.idmClient = idmClient;
     }
 
-    public TenantInfo retrieveTenantInfo(String tenant) throws ServerException {
-        Validate.notEmpty(tenant, "tenant");
+    public TenantInfo retrieveTenantInfo(String tenantName) throws ServerException {
+        Validate.notEmpty(tenantName, "tenantName");
 
+        Tenant tenantObject;
         try {
-            this.idmClient.getTenant(tenant);
+            tenantObject = this.idmClient.getTenant(tenantName);
         } catch (NoSuchTenantException e) {
             throw new ServerException(ErrorObject.invalidRequest("non-existent tenant"), e);
         } catch (Exception e) {
             throw new ServerException(ErrorObject.serverError("idm error while retrieving tenant"), e);
         }
+
+        String tenant = tenantObject.getName(); // use tenant name as it appears in directory
 
         RSAPrivateKey privateKey;
         try {
@@ -126,10 +130,18 @@ public class TenantInfoRetriever {
     }
 
     public String getDefaultTenantName() throws ServerException {
+        String tenant;
+
         try {
-            return this.idmClient.getDefaultTenant();
+            tenant = this.idmClient.getDefaultTenant();
         } catch (Exception e) {
             throw new ServerException(ErrorObject.serverError("idm error while retrieving default tenant name"), e);
         }
+
+        if (tenant == null) {
+            throw new ServerException(ErrorObject.serverError("default tenant is not configured"));
+        }
+
+        return tenant;
     }
 }

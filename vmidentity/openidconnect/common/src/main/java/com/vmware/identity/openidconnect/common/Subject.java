@@ -26,6 +26,6 @@ public final class Subject extends Identifier {
     public boolean equals(Object other) {
         return
                 other instanceof Subject &&
-                ((Subject) other).getValue().equalsIgnoreCase(this.getValue());
+                ((Subject) other).getValue().equals(this.getValue());
     }
 }
