@@ -370,7 +370,6 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 %{_sbindir}/*
 %{_bindir}/vdcadmintool
 %{_bindir}/vdcbackup
-%{_bindir}/vdcaclmgr
 %{_bindir}/vdcleavefed
 %{_bindir}/vdcpass
 %{_bindir}/vdcrepadmin
@@ -394,6 +393,7 @@ cd build && make install DESTDIR=$RPM_BUILD_ROOT
 
 %files client
 %defattr(-,root,root)
+%{_bindir}/vdcaclmgr
 %{_datadir}/config/vmdir-client.reg
 %{_lib64dir}/libvmdirclient.so*
 %{_lib64dir}/libcsrp.so*
