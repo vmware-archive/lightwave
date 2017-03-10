@@ -10,6 +10,7 @@ SED=/bin/sed
 SRCROOT := $(realpath $(SRCROOT))
 
 LIGHTWAVE_STAGE_DIR=$(SRCROOT)/stage
+LIGHTWAVE_LOGDIR=/var/log/lightwave/
 
 ARCH=x86_64
 
