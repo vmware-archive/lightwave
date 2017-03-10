@@ -3698,7 +3698,8 @@ error:
 DWORD
 VMCAVerifyHostNameInSAN(
     X509_REQ* pCSR,
-    PCSTR szHostName
+    PCSTR szHostName,
+    PBOOLEAN pIsSANPresent
     )
 {
     DWORD dwError = ERROR_SUCCESS;
@@ -3765,6 +3766,12 @@ VMCAVerifyHostNameInSAN(
     }
 
 cleanup:
+
+    if (pIsSANPresent)
+    {
+        *pIsSANPresent = (pSANNames != NULL);
+    }
+
     if (pszSANName)
     {
         OPENSSL_free(pszSANName);
@@ -3874,6 +3881,7 @@ VMCAVerifyHostName(
     X509_REQ *pRequest = NULL;
     ASN1_OCTET_STRING* pAsnHostNameIp = NULL;
     ASN1_OCTET_STRING* pAnsHostIp = NULL;
+    BOOLEAN bIsSANPresent = FALSE;
 
     if (IsNullOrEmptyString(pszCSR))
     {
@@ -3884,36 +3892,42 @@ VMCAVerifyHostName(
     dwError = VMCAPEMToCSR(pszCSR, &pRequest);
     BAIL_ON_ERROR(dwError);
 
-    dwError = VMCAVerifyHostNameInCN(pRequest, pszHostName);
+    dwError = VMCAVerifyHostNameInSAN(pRequest, pszHostName, &bIsSANPresent);
     BAIL_ON_ERROR(dwError);
 
-    dwError = VMCAVerifyHostNameInSAN(pRequest, pszHostName);
-    BAIL_ON_ERROR(dwError);
-
-    pAsnHostNameIp = a2i_IPADDRESS(pszHostName);
-    if (pAsnHostNameIp)
+    if (bIsSANPresent)
     {
-        dwError = VMCAVerifyIpAddressInSAN(pRequest, pAsnHostNameIp);
-        BAIL_ON_ERROR(dwError);
-    }
-
-    if (!IsNullOrEmptyString(pszHostIp))
-    {
-        pAnsHostIp = a2i_IPADDRESS(pszHostIp);
-
-        if (!pszHostIp)
+        pAsnHostNameIp = a2i_IPADDRESS(pszHostName);
+        if (pAsnHostNameIp)
         {
-            dwError = ERROR_INVALID_PARAMETER;
+            dwError = VMCAVerifyIpAddressInSAN(pRequest, pAsnHostNameIp);
             BAIL_ON_ERROR(dwError);
         }
 
-        dwError = VMCAVerifyIpAddressInSAN(pRequest, pAnsHostIp);
-        BAIL_ON_ERROR(dwError);
-    }
+        if (!IsNullOrEmptyString(pszHostIp))
+        {
+            pAnsHostIp = a2i_IPADDRESS(pszHostIp);
 
-    if (!pAsnHostNameIp && IsNullOrEmptyString(pszHostIp))
+            if (!pszHostIp)
+            {
+                dwError = ERROR_INVALID_PARAMETER;
+                BAIL_ON_ERROR(dwError);
+            }
+
+            dwError = VMCAVerifyIpAddressInSAN(pRequest, pAnsHostIp);
+            BAIL_ON_ERROR(dwError);
+        }
+
+        if (!pAsnHostNameIp && IsNullOrEmptyString(pszHostIp))
+        {
+            dwError = VMCAVerifyIpAddressInSAN(pRequest, NULL);
+            BAIL_ON_ERROR(dwError);
+        }
+    }
+    else
     {
-        dwError = VMCAVerifyIpAddressInSAN(pRequest, NULL);
+        // If SAN is missing from CSR check CN for hostnane
+        dwError = VMCAVerifyHostNameInCN(pRequest, pszHostName);
         BAIL_ON_ERROR(dwError);
     }
 
@@ -3939,3 +3953,4 @@ cleanup:
 error:
     goto cleanup;
 }
+
