@@ -15,6 +15,7 @@ BuildRequires: coreutils >= 8.22, openssl-devel >= 1.0.2, likewise-open-devel >=
 %define _binsdir %_prefix/bin
 %define _webappsdir %_prefix/vmware-sts/webapps
 %define _backupdir /tmp/sso
+%define _lwisbindir %_likewise_open_prefix/bin
 
 %if 0%{?_javahome:1} == 0
 %define _javahome %_javahome
@@ -72,6 +73,7 @@ then
     fi
     /bin/cp "%{_prefix}/vmware-sts/conf/server.xml" "%{_backupdir}/server.xml"
 fi
+
 %post
 
     # First argument is 1 => New Installation
@@ -96,12 +98,39 @@ case "$1" in
         if [ $? -eq 0 ]; then
             /bin/systemctl daemon-reload
         fi
+
         ;;
 
     2)
         %{_sbindir}/configure-build.sh "%{_backupdir}"
         ;;
 esac
+
+if [ -x "%{_lwisbindir}/lwregshell" ]
+then
+    %{_lwisbindir}/lwregshell list_keys "[HKEY_THIS_MACHINE\Software\VMware\Identity]" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        # add key if not exist
+        %{_lwisbindir}/lwregshell add_key "[HKEY_THIS_MACHINE\Software]"
+        %{_lwisbindir}/lwregshell add_key "[HKEY_THIS_MACHINE\Software\VMware]"
+        %{_lwisbindir}/lwregshell add_key "[HKEY_THIS_MACHINE\Software\VMware\Identity]"
+    fi
+
+    %{_lwisbindir}/lwregshell list_values "[HKEY_THIS_MACHINE\Software\VMware\Identity]" | grep "Release" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        # add value if not exist
+        %{_lwisbindir}/lwregshell add_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Release" REG_SZ "Lightwave"
+    fi
+
+    %{_lwisbindir}/lwregshell list_values "[HKEY_THIS_MACHINE\Software\VMware\Identity]" | grep "Version" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        # add value if not exist
+        %{_lwisbindir}/lwregshell add_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" REG_SZ "%{_version}"
+    else
+        # set value if exists
+        %{_lwisbindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
+    fi
+fi
 
 %preun
 
@@ -138,6 +167,16 @@ fi
     case "$1" in
         0)
             /bin/rm -rf %{_dbdir}
+
+            if [ -x "%{_lwisbindir}/lwregshell" ]
+            then
+                %{_lwisbindir}/lwregshell list_keys "[HKEY_THIS_MACHINE\Software\VMware\Identity]" > /dev/null 2>&1
+                if [ $? -eq 0 ]; then
+                    # delete key if exist
+                    %{_lwisbindir}/lwregshell delete_tree "[HKEY_THIS_MACHINE\Software\VMware\Identity]"
+                fi
+            fi
+
             ;;
     esac
 
