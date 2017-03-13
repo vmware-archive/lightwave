@@ -163,6 +163,7 @@ typedef struct _SINGLE_LIST_ENTRY *PSINGLE_LIST_ENTRY;
 typedef struct _VMDNS_DIR_CONTEXT       *PVMDNS_DIR_CONTEXT;
 typedef struct _VMDNS_ZONE_LIST         *PVMDNS_ZONE_LIST;
 typedef struct _VMDNS_ZONE_OBJECT       *PVMDNS_ZONE_OBJECT;
+typedef struct _VMDNS_LRU_LIST          *PVMDNS_LRU_LIST;
 typedef struct _VMDNS_NAME_ENTRY        *PVMDNS_NAME_ENTRY;
 typedef struct _VMDNS_RECORD_LIST       *PVMDNS_RECORD_LIST;
 typedef struct _VMDNS_RECORD_OBJECT     *PVMDNS_RECORD_OBJECT;
