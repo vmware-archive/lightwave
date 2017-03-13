@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2017 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -12,34 +12,23 @@
  * under the License.
  */
 
-#ifndef _INCLUDES_H_
-#define _INCLUDES_H_
+#ifndef _SSO_TYPES_H_
+#define _SSO_TYPES_H_
 
-// system headers
-#ifdef _WIN32
-#include <windows.h>
+typedef unsigned char bool;
+#ifndef false
+#define false 0
 #endif
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
+#ifndef true
+#define true 1
+#endif
 
-// third party headers
-// ...
+typedef int INTEGER;
+typedef long long SSO_LONG;
 
-// headers from components the current component depends on
-#include "ssotypes.h"
-#include "defines.h"
-#include "common_types.h"
-#include "common.h"
-#include "ssoerrors.h"
+typedef unsigned int SSOERROR;
 
-// project public headers
-#include "oidc_types.h"
-#include "oidc.h"
-
-// local headers
-#include "structs.h"
-#include "prototypes.h"
+typedef       char*  PSTRING;
+typedef const char* PCSTRING;
 
 #endif

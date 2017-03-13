@@ -32,10 +32,11 @@
 #include <openssl/pem.h>
 
 // project public headers
+#include "ssotypes.h"
 #include "defines.h"
 #include "common_types.h"
 #include "common.h"
-#include <ssoerrors.h>
+#include "ssoerrors.h"
 
 // headers from components the current component depends on
 

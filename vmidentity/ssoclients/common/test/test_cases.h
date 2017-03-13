@@ -22,10 +22,11 @@
 #include <stdio.h>
 #include <stddef.h>
 
+#include "ssotypes.h"
 #include "defines.h"
 #include "common_types.h"
 #include "common.h"
-#include <ssoerrors.h>
+#include "ssoerrors.h"
 
 bool
 TestStringAllocate();

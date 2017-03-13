@@ -15,27 +15,6 @@
 #ifndef _PROTOTYPES_H_
 #define _PROTOTYPES_H_
 
-// OIDC_SERVER_METADATA
-
-SSOERROR
-OidcServerMetadataAcquire(
-    POIDC_SERVER_METADATA* pp,
-    PCSTRING pszServer,
-    int portNumber,
-    PCSTRING pszTenant);
-
-void
-OidcServerMetadataDelete(
-    POIDC_SERVER_METADATA p);
-
-PCSTRING
-OidcServerMetadataGetTokenEndpointUrl(
-    PCOIDC_SERVER_METADATA p);
-
-PCSTRING
-OidcServerMetadataGetSigningCertificatePEM(
-    PCOIDC_SERVER_METADATA p);
-
 // OIDC_ID_TOKEN
 
 SSOERROR

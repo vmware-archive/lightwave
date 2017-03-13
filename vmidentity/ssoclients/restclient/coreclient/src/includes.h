@@ -27,13 +27,14 @@
 // third party headers
 
 // common headers
+#include "ssotypes.h"
 #include "defines.h"
 #include "common_types.h"
 #include "common.h"
-#include <ssoerrors.h>
+#include "ssoerrors.h"
 
 // project headers
-#include <ssocoreclient.h>
+#include "ssocoreclient.h"
 #include "coreclient_structs.h"
 #include "coreclient_prototypes.h"
 #include "coreclient_debug.h"

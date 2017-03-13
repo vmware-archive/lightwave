@@ -15,18 +15,6 @@
 #ifndef _COMMON_TYPES_H_
 #define _COMMON_TYPES_H_
 
-typedef unsigned char bool;
-#define false 0
-#define true 1
-
-typedef int INTEGER;
-typedef long long SSO_LONG;
-
-typedef unsigned int SSOERROR;
-
-typedef       char*  PSTRING;
-typedef const char* PCSTRING;
-
 typedef void (*GenericDestructorFunction)(void*);
 
 typedef       struct SSO_HTTP_CLIENT*  PSSO_HTTP_CLIENT;
