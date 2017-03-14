@@ -760,8 +760,11 @@ _VmDirDbCopyThread(
             continue;
         }
 
-        if (bHasCpOnce == FALSE || (gVmdirGlobals.dwLdapWrites >= gVmdirGlobals.dwCopyDbWritesMin &&
-            (dwDbcpElapsedTime) >= gVmdirGlobals.dwCopyDbIntervalInSec))
+        if (bHasCpOnce == FALSE ||
+            (gVmdirGlobals.dwLdapWrites >= gVmdirGlobals.dwCopyDbWritesMin &&
+             dwDbcpElapsedTime >= gVmdirGlobals.dwCopyDbIntervalInSec
+            )
+           )
         {
             prev_dbcp_time = cur_dbcp_time;
             _VmDirCpMdbFile();
@@ -817,6 +820,7 @@ _VmDirCpMdbFile(
     const char   fileSeperator = '/';
     static char dbBuf[DB_BUFSIZE] = {0};
     int numRead = 0;
+    unsigned long long snapshotcopy_lasttid = 0;
 
     time(&start_ts);
     //Obtain the database size to be copied only
@@ -868,6 +872,8 @@ _VmDirCpMdbFile(
             "_VmDirCpMdbFile: pfnBETxnBegin with error: %d", dwError);
        bHasTxn = TRUE;
     }
+
+    snapshotcopy_lasttid = mdb_env_get_lasttid(gVdirMdbGlobals.mdbEnv);
 
     dwError = VmDirStringPrintFA(dbFilename, VMDIR_MAX_FILE_NAME_LEN, "%s%c%s", dbHomeDir, fileSeperator, "data.mdb");
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -951,8 +957,10 @@ _VmDirCpMdbFile(
         duration = 1;
     }
     copyDbKbPerSec = dbSizeMb * 1000 / duration;
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirCpMdbFile: completed making snapshot with file size %dMb in %d seconds; data transfer rate: %d.%dMB/sec",
-                   dbSizeMb, duration, copyDbKbPerSec/1000, copyDbKbPerSec%1000/100);
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirCpMdbFile: completed making snapshot with file size "
+                   "%dMb in %d seconds; data transfer rate: %d.%dMB/sec",
+                   dbSizeMb, duration, copyDbKbPerSec/1000, copyDbKbPerSec%1000/100, snapshotcopy_lasttid);
 
 cleanup:
     if (mdb_in_readonly)
