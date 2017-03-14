@@ -107,6 +107,13 @@ DirCliExecTenantRequest(
     );
 
 static
+DWORD
+DirCliExecOrgunitRequest(
+    int   argc,
+    char* argv[]
+    );
+
+static
 void
 ShowUsage(
     VOID
@@ -349,6 +356,12 @@ ParseArgs(
     else if (!VmAfdStringCompareA(pszArg, "tenant", TRUE))
     {
         dwError = DirCliExecTenantRequest(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL);
+    }
+    else if (!VmAfdStringCompareA(pszArg, "orgunit", TRUE))
+    {
+        dwError = DirCliExecOrgunitRequest(
                         dwArgsLeft,
                         dwArgsLeft > 0 ? &argv[iArg] : NULL);
     }
@@ -4010,6 +4023,257 @@ error:
 }
 
 static
+DWORD
+DirCliExecOrgunitRequest(
+    int   argc,
+    char* argv[]
+    )
+{
+    DWORD dwError = 0;
+    DIR_COMMAND command = DIR_COMMAND_UNKNOWN;
+    DWORD idx = 0;
+    PSTR pszLogin = NULL;
+    PSTR pszPassword = NULL;
+    PSTR pszOrgunit = NULL;
+    PSTR pszParentDN = NULL;
+    PSTR pszContainerDN = NULL;
+
+    typedef enum
+    {
+        PARSE_MODE_OPEN = 0,
+        PARSE_MODE_ORGUNIT_CREATE,
+        PARSE_MODE_ORGUNIT_LIST,
+    } PARSE_MODE;
+
+    typedef enum
+    {
+        PARSE_SUB_MODE_OPEN = 0,
+        PARSE_SUB_MODE_LOGIN,
+        PARSE_SUB_MODE_PASSWORD,
+        PARSE_SUB_MODE_ORGUNIT,
+        PARSE_SUB_MODE_PARENT_DN,
+        PARSE_SUB_MODE_CONTAINER_DN,
+    } PARSE_SUB_MODE;
+
+    PARSE_MODE mode = PARSE_MODE_OPEN;
+    PARSE_SUB_MODE submode = PARSE_SUB_MODE_OPEN;
+
+    if (!argc)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    for (; idx < argc; idx++)
+    {
+        PSTR pszArg = argv[idx];
+
+        switch (mode)
+        {
+            case PARSE_MODE_OPEN:
+
+                if (!VmAfdStringCompareA(pszArg, "create", TRUE))
+                {
+                    command = DIR_COMMAND_ORGUNIT_CREATE;
+                    mode = PARSE_MODE_ORGUNIT_CREATE;
+                }
+                else if (!VmAfdStringCompareA(pszArg, "list", TRUE))
+                {
+                    command = DIR_COMMAND_ORGUNIT_LIST;
+                    mode = PARSE_MODE_ORGUNIT_LIST;
+                }
+                else
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_VMAFD_ERROR(dwError);
+                }
+                break;
+
+            case PARSE_MODE_ORGUNIT_CREATE:
+                switch (submode)
+                {
+                    case PARSE_SUB_MODE_OPEN:
+
+                        if (!VmAfdStringCompareA(pszArg, "--login", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_LOGIN;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--password", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_PASSWORD;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--orgunit-name", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_ORGUNIT;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--parent-dn", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_PARENT_DN;
+                        }
+                        else
+                        {
+                            dwError = ERROR_INVALID_PARAMETER;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        break;
+
+                    case PARSE_SUB_MODE_LOGIN:
+                        if (pszLogin)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszLogin = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_PASSWORD:
+                        if (pszPassword)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszPassword = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_ORGUNIT:
+
+                        if (pszOrgunit)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszOrgunit = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_PARENT_DN:
+
+                        if (pszParentDN)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszParentDN = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    default:
+
+                        dwError = ERROR_INVALID_STATE;
+                        BAIL_ON_VMAFD_ERROR(dwError);
+
+                        break;
+                }
+                break;
+
+            case PARSE_MODE_ORGUNIT_LIST:
+                switch (submode)
+                {
+                    case PARSE_SUB_MODE_OPEN:
+                        if(!strcmp(pszArg, "--login"))
+                        {
+                            submode = PARSE_SUB_MODE_LOGIN;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--password", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_PASSWORD;
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--container-dn", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_CONTAINER_DN;
+                        }
+                        break;
+
+                    case PARSE_SUB_MODE_LOGIN:
+                        if (pszLogin)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszLogin = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_PASSWORD:
+                        if (pszPassword)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszPassword = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    case PARSE_SUB_MODE_CONTAINER_DN:
+                        if (pszContainerDN)
+                        {
+                            dwError = ERROR_LOCAL_OPTION_INVALID;
+                            BAIL_ON_VMAFD_ERROR(dwError);
+                        }
+                        pszContainerDN = pszArg;
+
+                        submode = PARSE_SUB_MODE_OPEN;
+
+                        break;
+
+                    default:
+                        dwError = ERROR_INVALID_STATE;
+                        break;
+            }
+            break;
+
+            default:
+                dwError = ERROR_INVALID_STATE;
+                break;
+        }
+    }
+
+    switch (command)
+    {
+        case DIR_COMMAND_ORGUNIT_CREATE:
+            dwError = DirCliCreateOrgunit(
+                          pszLogin,
+                          pszPassword,
+                          pszOrgunit,
+                          pszParentDN);
+            BAIL_ON_VMAFD_ERROR(dwError);
+            break;
+
+        case DIR_COMMAND_ORGUNIT_LIST:
+            dwError = DirCliEnumerateOrgunits(
+                          pszLogin,
+                          pszPassword,
+                          pszContainerDN);
+            BAIL_ON_VMAFD_ERROR(dwError);
+            break;
+
+        default:
+            dwError = ERROR_INVALID_STATE;
+            break;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
 void
 ShowUsage(
     VOID
@@ -4146,5 +4410,14 @@ ShowUsage(
         "\t             [ --login       <admin user id>         ]\n"
         "\t             [ --password    <password>              ]\n"
         "\t               --domain-name <domain name>            \n"
+        "\torgunit create\n"
+        "\t             [ --login       <admin user id>         ]\n"
+        "\t             [ --password    <password>              ]\n"
+        "\t               --orgunit-name <orgunit name>          \n"
+        "\t             [ --parent-dn   <parent DN>             ]\n"
+        "\torgunit list\n"
+        "\t             [ --login       <admin user id>         ]\n"
+        "\t             [ --password    <password>              ]\n"
+        "\t             [ --container-dn <container DN>         ]\n"
         "\thelp\n");
 }

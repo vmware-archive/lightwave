@@ -46,6 +46,8 @@ typedef enum
     DIR_COMMAND_TENANT_CREATE,
     DIR_COMMAND_TENANT_DELETE,
     DIR_COMMAND_TENANT_LIST,
+    DIR_COMMAND_ORGUNIT_CREATE,
+    DIR_COMMAND_ORGUNIT_LIST,
 } DIR_COMMAND;
 
 typedef enum
@@ -82,6 +84,8 @@ typedef enum
 #define OBJECT_CLASS_USER          "user"
 #define OBJECT_CLASS_COMPUTER      "computer"
 #define OBJECT_CLASS_GROUP         "group"
+#define OBJECT_CLASS_ORGANIZATIONAL_UNIT "organizationalUnit"
+#define OBJECT_CLASS_TOP           "top"
 
 #define ATTR_NAME_OBJECTCLASS "objectclass"
 #define ATTR_NAME_SUBJECT_DN  "vmwSTSSubjectDN"
@@ -103,6 +107,7 @@ typedef enum
 #define ATTR_NAME_PASS_EXP_IN_DAY  "vmwPasswordLifetimeDays"
 #define ATTR_NAME_PWD_LAST_SET     "pwdLastSet"
 #define ATTR_NAME_PWD_LOCKOUT_POLICY_CN "password and lockout policy"
+#define ATTR_NAME_OU          "ou"
 
 #define USER_ACC_CTRL_DISABLE_FLAG              0x00000002
 #define USER_ACC_CTRL_LOCKOUT_FLAG              0x00000010

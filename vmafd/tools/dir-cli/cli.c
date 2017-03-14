@@ -3935,3 +3935,188 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+DirCliCreateOrgunit(
+    PCSTR pszLogin,
+    PCSTR pszPassword,
+    PCSTR pszOrgunit,
+    PCSTR pszParentDN
+    )
+{
+    DWORD dwError = 0;
+    PCSTR pszLoginLocal = pszLogin ? pszLogin : DIR_LOGIN_DEFAULT;
+    PSTR  pszPassword1 = NULL;
+    PCSTR pszPasswordLocal = pszPassword;
+    PSTR  pszDCName = NULL;
+    PSTR  pszUser = NULL;
+    PSTR  pszDomain = NULL;
+    PSTR  pszAdminUPN = NULL;
+    PSTR  pszOrgunitDN = NULL;
+    LDAP* pLd = NULL;
+
+    if (IsNullOrEmptyString(pszOrgunit))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = DirCliParsePrincipal(pszLoginLocal, &pszUser, &pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (!pszPassword)
+    {
+        dwError = DirCliReadPassword(pszUser, pszDomain, NULL, &pszPassword1);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pszPasswordLocal = pszPassword1;
+    }
+
+    dwError = DirCliGetDCName(&pszDCName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = DirCliLdapConnect(
+                    pszDCName,
+                    pszUser,
+                    pszDomain,
+                    pszPasswordLocal,
+                    &pLd);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = DirCliLdapCreateOrgunit(
+                pLd,
+                pszOrgunit,
+                pszDomain,
+                pszParentDN,
+                &pszOrgunitDN);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    fprintf(stdout, "Orgunit %s successfully created\n", pszOrgunit);
+
+cleanup:
+
+    if (pLd)
+    {
+        DirCliLdapClose(pLd);
+    }
+    VMAFD_SAFE_FREE_MEMORY(pszOrgunitDN);
+    VMAFD_SAFE_FREE_MEMORY(pszAdminUPN);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword1);
+    VMAFD_SAFE_FREE_MEMORY(pszDCName);
+    VMAFD_SAFE_FREE_MEMORY(pszUser);
+    VMAFD_SAFE_FREE_MEMORY(pszDomain);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+DWORD
+DirCliEnumerateOrgunits(
+    PCSTR pszLogin,
+    PCSTR pszPassword,
+    PCSTR pszContainerDN
+    )
+{
+    DWORD dwError = 0;
+    PCSTR pszLoginLocal = pszLogin ? pszLogin : DIR_LOGIN_DEFAULT;
+    PSTR  pszPassword1 = NULL;
+    PCSTR pszPasswordLocal = pszPassword;
+    PSTR  pszDCName = NULL;
+    PSTR  pszUser = NULL;
+    PSTR  pszDomain = NULL;
+    PSTR  pszAdminUPN = NULL;
+    LDAP* pLd = NULL;
+    PDIR_CLI_ENUM_ORGUNIT_CONTEXT pEnumContext = NULL;
+    PSTR* ppszOrgunits = NULL;
+    DWORD dwOrgunitCount = 0;
+    DWORD dwCount = 0;
+
+    dwError = DirCliParsePrincipal(pszLoginLocal, &pszUser, &pszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (!pszPassword)
+    {
+        dwError = DirCliReadPassword(pszUser, pszDomain, NULL, &pszPassword1);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        pszPasswordLocal = pszPassword1;
+    }
+
+    dwError = DirCliGetDCName(&pszDCName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = DirCliLdapConnect(
+                    pszDCName,
+                    pszUser,
+                    pszDomain,
+                    pszPasswordLocal,
+                    &pLd);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = DirCliLdapBeginEnumOrgunits(
+                    pLd,
+                    pszContainerDN,
+                    pszDomain,
+                    256,
+                    &pEnumContext);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    do
+    {
+        DWORD idx = 0;
+
+        if (ppszOrgunits)
+        {
+            VmAfdFreeStringArrayCountA(ppszOrgunits, dwCount);
+            ppszOrgunits = NULL;
+        }
+
+        dwError = DirCliLdapEnumOrgunits(pEnumContext, &ppszOrgunits, &dwCount);
+        if (dwError == ERROR_NO_MORE_ITEMS)
+        {
+            dwError = 0;
+            break;
+        }
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        for (; idx < dwCount; idx++)
+        {
+            fprintf(stdout, "%s\n", ppszOrgunits[idx]);
+            dwOrgunitCount++;
+        }
+
+    } while (dwCount > 0);
+
+    if (dwOrgunitCount == 0)
+    {
+        fprintf(stderr, "Container has no organization units\n");
+    }
+
+cleanup:
+
+    if (pEnumContext)
+    {
+        DirCliLdapEndEnumOrgunits(pEnumContext);
+    }
+    if (pLd)
+    {
+        DirCliLdapClose(pLd);
+    }
+    if (ppszOrgunits)
+    {
+        VmAfdFreeStringArrayCountA(ppszOrgunits, dwCount);
+    }
+    VMAFD_SAFE_FREE_MEMORY(pszAdminUPN);
+    VMAFD_SAFE_FREE_MEMORY(pszPassword1);
+    VMAFD_SAFE_FREE_MEMORY(pszUser);
+    VMAFD_SAFE_FREE_MEMORY(pszDomain);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}

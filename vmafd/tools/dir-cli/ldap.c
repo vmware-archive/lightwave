@@ -2372,6 +2372,54 @@ error:
 }
 
 DWORD
+DirCliGetOrgunitDN(
+    PCSTR pszOrgunit,
+    PCSTR pszDomain,
+    PCSTR pszParentDN,
+    PSTR* ppszOrgunitDN
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszDomainDN = NULL;
+    PSTR pszOrgunitDN = NULL;
+    PSTR pszLocalParentDN = NULL;
+
+    if (!pszParentDN)
+    {
+        dwError = DirCliGetDomainDN(pszDomain, &pszDomainDN);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdAllocateStringPrintf(
+                        &pszLocalParentDN,
+                        "OU=Computers,%s",
+                        pszDomainDN);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringPrintf(
+                    &pszOrgunitDN,
+                    "OU=%s,%s",
+                    pszOrgunit,
+                    pszLocalParentDN ? pszLocalParentDN : pszParentDN);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppszOrgunitDN = pszOrgunitDN;
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pszDomainDN);
+    VMAFD_SAFE_FREE_MEMORY(pszLocalParentDN);
+
+    return dwError;
+
+error:
+
+    *ppszOrgunitDN = NULL;
+
+    goto cleanup;
+}
+
+DWORD
 DirCliGetGroupDN(
     PCSTR pszGroupName,
     PCSTR pszDomain,
@@ -2695,6 +2743,257 @@ cleanup:
 error:
 
     goto cleanup;
+}
+
+DWORD
+DirCliLdapCreateOrgunit(
+    LDAP*         pLd,
+    PCSTR         pszOrgunit,
+    PCSTR         pszDomain,
+    PCSTR         pszParentDN,
+    PSTR*         ppszOrgunitDN
+    )
+{
+    DWORD dwError = 0;
+    LDAPMod mod_oc = {0};
+    LDAPMod mod_ou = {0};
+    LDAPMod *mods[] =
+    {
+        &mod_oc,
+        &mod_ou,
+        NULL
+    };
+
+    PSTR  vals_oc[] = {OBJECT_CLASS_ORGANIZATIONAL_UNIT, OBJECT_CLASS_TOP, NULL};
+    PSTR  vals_ou[] = {(PSTR)pszOrgunit, NULL};
+
+    PSTR  pszOrgunitDN = NULL;
+
+    dwError = DirCliGetOrgunitDN(
+                  pszOrgunit,
+                  pszDomain,
+                  pszParentDN,
+                  &pszOrgunitDN);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    mod_oc.mod_op       = LDAP_MOD_ADD;
+    mod_oc.mod_type     = ATTR_NAME_OBJECTCLASS;
+    mod_oc.mod_vals.modv_strvals = vals_oc;
+
+    mod_ou.mod_op     = LDAP_MOD_ADD;
+    mod_ou.mod_type   = ATTR_NAME_OU;
+    mod_ou.mod_vals.modv_strvals = vals_ou;
+
+    dwError = ldap_add_ext_s(pLd, pszOrgunitDN, mods, NULL, NULL);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppszOrgunitDN = pszOrgunitDN;
+
+cleanup:
+
+    return dwError;
+
+error:
+    *ppszOrgunitDN = NULL;
+    VMAFD_SAFE_FREE_MEMORY(pszOrgunitDN);
+
+    goto cleanup;
+}
+
+DWORD
+DirCliLdapBeginEnumOrgunits(
+    LDAP*  pLd,
+    PCSTR  pszContainerDN,
+    PCSTR  pszDomain,
+    DWORD  dwMaxCount,
+    PDIR_CLI_ENUM_ORGUNIT_CONTEXT* ppContext
+    )
+{
+    DWORD dwError = 0;
+    PSTR  pszSearchBase = NULL;
+    PSTR  pszFilter = NULL;
+    PSTR  ppszAttrs[] = {ATTR_NAME_OU, NULL};
+    PDIR_CLI_ENUM_ORGUNIT_CONTEXT pContext = NULL;
+    PSTR  pszDomainDN = NULL;
+
+    dwError = VmAfdAllocateMemory(
+                    sizeof(DIR_CLI_ENUM_ORGUNIT_CONTEXT),
+                    (PVOID*)&pContext);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    pContext->pLd = pLd;
+    pContext->dwMaxCount = (dwMaxCount <= 256 ? 256 : dwMaxCount);
+
+    if (!pszContainerDN)
+    {
+        dwError = DirCliGetDomainDN(pszDomain, &pszDomainDN);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdAllocateStringPrintf(
+                        &pszSearchBase,
+                        "OU=Computers,%s",
+                        pszDomainDN);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringPrintf(
+                    &pszFilter,
+                    "(%s=%s)",
+                    ATTR_NAME_OBJECTCLASS,
+                    OBJECT_CLASS_ORGANIZATIONAL_UNIT);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = ldap_search_ext_s(
+                    pLd,
+                    pszSearchBase ? pszSearchBase : pszContainerDN,
+                    LDAP_SCOPE_SUBTREE,
+                    pszFilter,
+                    ppszAttrs,
+                    FALSE,             /* attrs only  */
+                    NULL,              /* serverctrls */
+                    NULL,              /* clientctrls */
+                    NULL,              /* timeout */
+                    0,
+                    &pContext->pSearchRes);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    pContext->dwNumEntries = ldap_count_entries(
+                                    pContext->pLd,
+                                    pContext->pSearchRes);
+
+    *ppContext = pContext;
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pszDomainDN);
+    VMAFD_SAFE_FREE_MEMORY(pszSearchBase);
+    VMAFD_SAFE_FREE_MEMORY(pszFilter);
+
+    return dwError;
+
+error:
+
+    *ppContext = NULL;
+
+    if (pContext)
+    {
+        DirCliLdapEndEnumOrgunits(pContext);
+    }
+
+    goto cleanup;
+}
+
+DWORD
+DirCliLdapEnumOrgunits(
+    PDIR_CLI_ENUM_ORGUNIT_CONTEXT pContext,
+    PSTR** pppszOrgunits,
+    PDWORD pdwCount
+    )
+{
+    DWORD dwError = 0;
+    PSTR* ppszOrgunits = NULL;
+    DWORD dwCount = 0;
+    DWORD idx = 0;
+    struct berval** ppValues = NULL;
+
+    if (!pContext->dwNumEntries ||
+         (pContext->dwNumRead == pContext->dwNumEntries))
+    {
+        dwError = ERROR_NO_MORE_ITEMS;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwCount = pContext->dwNumEntries - pContext->dwNumRead;
+    if (dwCount > pContext->dwMaxCount)
+    {
+        dwCount = pContext->dwMaxCount;
+    }
+
+    dwError = VmAfdAllocateMemory(sizeof(PSTR)*dwCount, (PVOID*)&ppszOrgunits);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    for (; idx < dwCount; idx++)
+    {
+        if (!pContext->pEntry)
+        {
+            pContext->pEntry = ldap_first_entry(
+                                    pContext->pLd,
+                                    pContext->pSearchRes);
+        }
+        else
+        {
+            pContext->pEntry = ldap_next_entry(
+                                    pContext->pLd,
+                                    pContext->pEntry);
+        }
+
+        if (!pContext->pEntry)
+        {
+            dwError = ERROR_INVALID_STATE;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
+        if (ppValues)
+        {
+            ldap_value_free_len(ppValues);
+            ppValues = NULL;
+        }
+
+        ppValues = ldap_get_values_len(
+                        pContext->pLd,
+                        pContext->pEntry,
+                        ATTR_NAME_OU);
+
+        if (!ppValues || (ldap_count_values_len(ppValues) != 1))
+        {
+            dwError = ERROR_INVALID_STATE;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
+        dwError = VmAfdAllocateStringPrintf(
+                        &ppszOrgunits[idx],
+                        "%s",
+                        ppValues[0]->bv_val);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    pContext->dwNumRead += dwCount;
+
+    *pppszOrgunits = ppszOrgunits;
+    *pdwCount = dwCount;
+
+cleanup:
+
+    if (ppValues)
+    {
+        ldap_value_free_len(ppValues);
+    }
+
+    return dwError;
+
+error:
+
+    *pppszOrgunits = NULL;
+    *pdwCount = 0;
+
+    if (ppszOrgunits)
+    {
+        VmAfdFreeStringArrayCountA(ppszOrgunits, dwCount);
+    }
+
+    goto cleanup;
+}
+
+VOID
+DirCliLdapEndEnumOrgunits(
+    PDIR_CLI_ENUM_ORGUNIT_CONTEXT pContext
+    )
+{
+    if (pContext->pSearchRes)
+    {
+        ldap_msgfree(pContext->pSearchRes);
+    }
+    VmAfdFreeMemory(pContext);
 }
 
 DWORD
@@ -3606,9 +3905,11 @@ error :
 
 static
 BOOLEAN
-_doLdapConnectRetry(DWORD dwError) {
-   BOOLEAN doRetry = FALSE;
-   switch (dwError)
+_doLdapConnectRetry(
+    DWORD dwError)
+{
+    BOOLEAN doRetry = FALSE;
+    switch (dwError)
     {
         case ERROR_INVALID_PARAMETER:
         case VMDIR_ERROR_INVALID_PARAMETER:

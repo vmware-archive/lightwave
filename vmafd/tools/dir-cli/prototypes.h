@@ -145,6 +145,14 @@ DirCliGetServiceDN(
     );
 
 DWORD
+DirCliGetOrgunitDN(
+    PCSTR pszOrgunit,
+    PCSTR pszDomain,
+    PCSTR pszParentDN,
+    PSTR* ppszOrgunitDN
+    );
+
+DWORD
 DirCliGetDomainDN(
     PCSTR pszDomain,
     PSTR* ppszDomainDN
@@ -328,6 +336,36 @@ DirCliLdapEnumMembers(
 VOID
 DirCliLdapEndEnumMembers(
     PDIR_CLI_ENUM_GROUP_CONTEXT pContext
+    );
+
+DWORD
+DirCliLdapCreateOrgunit(
+    LDAP*         pLd,
+    PCSTR         pszOrgunit,
+    PCSTR         pszDomain,
+    PCSTR         pszParentDN,
+    PSTR*         ppszOrgunitDN
+    );
+
+DWORD
+DirCliLdapBeginEnumOrgunits(
+    LDAP*  pLd,
+    PCSTR  pszContainerDN,
+    PCSTR  pszDomain,
+    DWORD  dwMaxCount,
+    PDIR_CLI_ENUM_ORGUNIT_CONTEXT* ppContext
+    );
+
+DWORD
+DirCliLdapEnumOrgunits(
+    PDIR_CLI_ENUM_ORGUNIT_CONTEXT pContext,
+    PSTR** pppszOrgunits,
+    PDWORD pdwCount
+    );
+
+VOID
+DirCliLdapEndEnumOrgunits(
+    PDIR_CLI_ENUM_ORGUNIT_CONTEXT pContext
     );
 
 DWORD
@@ -659,4 +697,19 @@ DWORD
 DirCliEnumerateTenants(
     PCSTR pszLogin,
     PCSTR pszPassword
+    );
+
+DWORD
+DirCliCreateOrgunit(
+    PCSTR pszLogin,
+    PCSTR pszPassword,
+    PCSTR pszOrgunit,
+    PCSTR pszParentDN
+    );
+
+DWORD
+DirCliEnumerateOrgunits(
+    PCSTR pszLogin,
+    PCSTR pszPassword,
+    PCSTR pszContainerDN
     );
