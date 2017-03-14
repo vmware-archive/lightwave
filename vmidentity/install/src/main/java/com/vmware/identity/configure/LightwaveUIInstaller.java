@@ -79,12 +79,12 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
     public void install() throws Exception {
 
         String servername = params.getHostname();
-        String serverIP = params.getHostIP();
+        String subjectAltName = params.getSubjectAltName();
         String domain = params.getDomainName();
         String username = params.getUsername();
         String password = params.getPassword();
         System.out.println("Configuring Lightwave UI for domain : " + domain);
-        registerOidcClientForLightwaveUI(servername, serverIP, domain, username, password);
+        registerOidcClientForLightwaveUI(servername, subjectAltName, domain, username, password);
         configureLandingPage();
     }
 
@@ -117,20 +117,26 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
         return response;
     }
 
-    private String registerOidc(String hostname, String hostIP, String domain, String token){
+    private String registerOidc(String hostname, String subjectAltName, String domain, String token){
         String oidcClientUri = "https://" + hostname + "/idm/tenant/" + domain + "/oidcclient";
-        String data = "{ " +
-              "\"redirectUris\": [" +
-                "\"https://" + hostname + "/lightwaveui/Home\"" +
-              ", \"https://" + hostIP + "/lightwaveui/Home\"" +
-              "]," +
+        String pnid = VmAfClientUtil.getHostname();
+
+        String redirectUriPattern = "\"https://%s/lightwaveui/Home\"";
+        String logoutUriPattern = "\"https://%s/lightwaveui\"";
+
+        String redirectUris = "\"redirectUris\": [" + String.format(redirectUriPattern, pnid);
+        String postLogoutRedirectUris = "\"postLogoutRedirectUris\": [" + String.format(logoutUriPattern, pnid);
+
+        if (subjectAltName != null && !subjectAltName.equalsIgnoreCase(pnid)) {
+               redirectUris += ", " + String.format(redirectUriPattern, subjectAltName);
+               postLogoutRedirectUris += ", " + String.format(logoutUriPattern, subjectAltName);
+        }
+
+        String data = "{ " + redirectUris + "]," +
               "\"tokenEndpointAuthMethod\": \"none\"," +
-              "\"postLogoutRedirectUris\": [" +
-              "\"https://" + hostname + "/lightwaveui\"" +
-              ", \"https://" + hostIP + "/lightwaveui\"" +
-              "]," +
-              "\"logoutUri\": \"https://" + hostname + "/lightwaveui\"" +
-         " }";
+              postLogoutRedirectUris + "]," +
+              "\"logoutUri\": " + String.format(logoutUriPattern, pnid) +
+              " }";
         String response = doPost(oidcClientUri, data, token);
         return response;
     }
@@ -275,12 +281,12 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
             }
         }
 
-    public void registerOidcClientForLightwaveUI(String hostname, String hostIP, String domain, String username, String password){
+    public void registerOidcClientForLightwaveUI(String hostname, String subjectAltName, String domain, String username, String password){
         try {
             System.out.println("Started regsitration for Oidc against tenant : " + domain);
 
             String token = authenticate(hostname, domain, username, password);
-            String oidc = registerOidc(hostname, hostIP, domain, token);
+            String oidc = registerOidc(hostname, subjectAltName, domain, token);
 
             System.out.println("Oidc successfully added. Details - " + oidc);
             String[] parts = oidc.split(",");

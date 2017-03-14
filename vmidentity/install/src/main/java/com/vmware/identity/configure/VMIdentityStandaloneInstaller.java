@@ -115,7 +115,9 @@ public class VMIdentityStandaloneInstaller {
                     params.setHostNameMode(true);
                 } else if (arg.equals("--sts-health-check")) {
                     params.setCheckSTSHealth(true);
-                }
+                } else if (arg.equals("--ssl-subject-alt-name")) {
+                    mode = ParseMode.PARSE_MODE_SSL_SUBJECT_ALT_NAME;
+                 }
                 break;
             case PARSE_MODE_HOSTNAME:
                 params.setHostname(arg);
@@ -157,6 +159,10 @@ public class VMIdentityStandaloneInstaller {
                 params.setVmIdentityConf(arg);
                 mode = ParseMode.PARSE_MODE_OPEN;
                 break;
+            case PARSE_MODE_SSL_SUBJECT_ALT_NAME:
+                params.setSubjectAltName(arg);
+                mode = ParseMode.PARSE_MODE_OPEN;
+                break;
             default:
                 break;
             }
@@ -176,6 +182,7 @@ public class VMIdentityStandaloneInstaller {
         PARSE_MODE_VMIDENTITY_CONF,
         PARSE_MODE_SOURCE_VERSION,
         PARSE_MODE_SOURCE_PLATFORM,
-        PARSE_MODE_EXPORT_FOLDER
+        PARSE_MODE_EXPORT_FOLDER,
+        PARSE_MODE_SSL_SUBJECT_ALT_NAME
     }
 }

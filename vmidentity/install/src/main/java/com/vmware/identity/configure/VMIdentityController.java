@@ -186,22 +186,6 @@ public class VMIdentityController {
             }
         }
 
-        if (params.getHostIP() == null || params.getHostIP().isEmpty()) {
-            try {
-                InetAddress localIP = InetAddress.getLocalHost();
-                if (localIP instanceof Inet6Address) {
-                    Inet6Address ipv6 = (Inet6Address) localIP;
-                    params.setHostIP(ipv6.getHostAddress());
-                } else {
-                    params.setHostIP(localIP.getHostAddress());
-                }
-            } catch (UnknownHostException e) {
-                throw new DomainControllerNativeException(
-                        DeployUtilsErrors.ERROR_INVALID_NETNAME.getErrorCode(),
-                        e);
-            }
-        }
-
         checkPrerequisites(params);
 
         // check services vmafd, vmca and vmdir if they are confgiured.

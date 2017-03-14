@@ -385,7 +385,7 @@ else
     if [ ! -f /.dockerenv ]; then
            $JAVA_HOME/bin/java -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
                     -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller \
-                    --hostname $LOTUS_HOSTNAME --username $LOTUS_ADMIN_DEFAULT  --domain $LOTUS_DOMAIN_DEFAULT --password $LOTUS_ADMIN_PASSWORD_DEFAULT
+                    --hostname $LOTUS_HOSTNAME --username $LOTUS_ADMIN_DEFAULT  --domain $LOTUS_DOMAIN_DEFAULT --password $LOTUS_ADMIN_PASSWORD_DEFAULT $LOTUS_SSL_SUBJECT_ALT_NAME_ARG
     fi
 
     if [ $? -ne 0 ]; then

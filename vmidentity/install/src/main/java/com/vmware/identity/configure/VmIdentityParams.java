@@ -7,8 +7,8 @@ package com.vmware.identity.configure;
 
 public class VmIdentityParams {
     private String hostname;
-    private String ip;
     private String hostnameType;
+    private String subjectAltName;
     private String username;
     private String password;
     private String domainName;
@@ -38,20 +38,20 @@ public class VmIdentityParams {
         this.hostname = hostname;
     }
 
-    public String getHostIP() {
-        return ip;
-    }
-
-    public void setHostIP(String ip) {
-        this.ip = ip;
-    }
-
     public String getHostnameType() {
         return hostnameType;
     }
 
     public void setHostnameType(String hostnameType) {
         this.hostnameType = hostnameType;
+    }
+
+    public void setSubjectAltName(String subject) {
+        this.subjectAltName = subject;
+    }
+
+    public String getSubjectAltName() {
+        return subjectAltName;
     }
 
     public String getPassword() {
