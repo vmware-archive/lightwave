@@ -466,6 +466,10 @@ error:
         VMDIR_SAFE_FREE_MEMORY(pLocalInfo);
     }
 
+    // SASL bind failed, clear up pSaslInfo to reset SASL state.
+    VmDirSASLSessionClose(pOperation->conn->pSaslInfo);
+    VMDIR_SAFE_FREE_MEMORY(pOperation->conn->pSaslInfo);
+
     VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), retVal, pszLocalErrMsg);
 
     goto cleanup;
