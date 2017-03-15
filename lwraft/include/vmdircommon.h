@@ -841,6 +841,8 @@ typedef enum
 #define WIN_SYSTEM32_PATH                   "c:\\windows\\system32"
 #endif
 
+#define VMDIR_ENV_OVERRIDE_AFD_DOMAIN_STATE "VMDIR_ENV_OVERRIDE_AFD_DOMAIN_STATE"
+
 #ifndef _WIN32
 #define VMAFD_CONFIG_KEY_ROOT               "Services\\Vmafd"
 #define VMAFD_CONFIG_PARAMETER_KEY_PATH     "Services\\Vmafd\\Parameters"

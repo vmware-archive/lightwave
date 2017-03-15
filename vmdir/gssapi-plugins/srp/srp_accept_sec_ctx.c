@@ -192,6 +192,7 @@ _srp_gss_auth_create_machine_acct_binding(
     char *hostname = NULL;
     void *hRegistry = NULL;
     PVMDIR_SERVER_CONTEXT hServer = NULL;
+    PSTR pEnv = NULL;
 
     dwError = srp_reg_get_handle((void **) &hRegistry);
     if (dwError)
@@ -201,13 +202,23 @@ _srp_gss_auth_create_machine_acct_binding(
         goto error;
     }
 
-    /* Determine if this system is a management node */
-    dwError = srp_reg_get_domain_state(hRegistry, &domainState);
-    if (dwError)
+    /* If invoked by lwraft or other server, it can override domain state
+     * (to value 1) since it could obtain peer's credential from its database
+     */
+    pEnv = getenv(VMDIR_ENV_OVERRIDE_AFD_DOMAIN_STATE);
+    if (pEnv)
     {
-        maj = GSS_S_FAILURE;
-        min = dwError;
-        goto error;
+        domainState = atoi(pEnv);
+    } else
+    {
+        /* Determine if this system is a management node */
+        dwError = srp_reg_get_domain_state(hRegistry, &domainState);
+        if (dwError)
+        {
+            maj = GSS_S_FAILURE;
+            min = dwError;
+            goto error;
+        }
     }
 
     /* Value "2" is a management node: Perform SRP pass-through */

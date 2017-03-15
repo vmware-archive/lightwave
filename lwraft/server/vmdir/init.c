@@ -303,6 +303,15 @@ VmDirInit(
     BAIL_ON_VMDIR_ERROR(dwError);
 #endif
 
+    /* Override vmafd domain state to (1=infrastructure node) for gss plugin so that lwraftd
+     * will use peer's identity in local ldap store for verifying peer's decrpc/srp binding.
+     */
+    if (setenv(VMDIR_ENV_OVERRIDE_AFD_DOMAIN_STATE, "1", 1) != 0)
+    {
+        dwError = ERROR_NO_MEMORY;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     dwError = ConstructSDForVmDirServ(&gVmdirGlobals.gpVmDirSrvSD);
     BAIL_ON_VMDIR_ERROR(dwError);
 

@@ -639,6 +639,12 @@ _VmDirReplicationThrFun(
         BAIL_ON_VMDIR_ERROR( dwError);
         VMDIR_UNLOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
 
+        if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+        {
+            dwError = LDAP_OPERATIONS_ERROR;
+            BAIL_ON_VMDIR_ERROR( dwError);
+        }
+
         if (gNewPartner[0] != '\0')
         {
             dwError=VmDirFirstReplicationCycle(gNewPartner);
@@ -749,7 +755,11 @@ cleanup:
     return 0;
 
 error:
-    VmDirdStateSet( VMDIRD_STATE_FAILURE );
+    if (VmDirdState() != VMDIRD_STATE_SHUTDOWN)
+    {
+        VmDirdStateSet( VMDIRD_STATE_FAILURE );
+    }
+
     if (pRaftVoteSchdThreadInfo)
     {
          VmDirSrvThrFree(pRaftVoteSchdThreadInfo);
