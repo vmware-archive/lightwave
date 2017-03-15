@@ -78,7 +78,7 @@ autoreconf -mif .. &&
             --with-ant=%{_anthome} \
             --with-maven=%{_mavendir} \
             --with-boost=/usr \
-            --enable-krb5-default
+            --enable-krb5-default=yes
 
 %install
 
