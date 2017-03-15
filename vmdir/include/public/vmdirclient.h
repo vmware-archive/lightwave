@@ -112,6 +112,16 @@ VmDirGetComputers(
     );
 
 DWORD
+VmDirGetComputersByOrgUnit(
+    PCSTR               pszHostName,
+    PCSTR               pszUserName,
+    PCSTR               pszPassword,
+    PCSTR               pszOrgUnit,
+    PSTR**              pppszComputers,
+    DWORD*              pdwNumComputers
+    );
+
+DWORD
 VmDirGetDCInfo(
     PCSTR               pszHostName,
     PCSTR               pszUserName,

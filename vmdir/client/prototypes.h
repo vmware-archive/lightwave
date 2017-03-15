@@ -259,11 +259,20 @@ VmDirLdapSetupDCAccountOnPartner(
     );
 
 DWORD
+VmDirLdapCreateComputerOUContainer(
+    LDAP* pLd,
+    PCSTR pszDomainName,
+    PCSTR pszOUContainer
+    );
+
+DWORD
 VmDirLdapSetupComputerAccount(
+    LDAP* pLd,
     PCSTR pszDomainName,
     PCSTR pszHostName,
     PCSTR pszUsername,
     PCSTR pszPassword,
+    PCSTR pszComputerOU,
     PCSTR pszComputerHostName
     );
 
@@ -297,6 +306,7 @@ VmDirLdapDeleteDCAccount(
 
 DWORD
 VmDirLdapSetupServiceAccount(
+    LDAP* pLd,
     PCSTR pszDomainName,
     PCSTR pszHostName,
     PCSTR pszUsername,

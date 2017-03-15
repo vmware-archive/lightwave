@@ -1665,6 +1665,14 @@ VmDirMapLdapError(
     int ldapErrorCode
     );
 
+// common/ldaputil.c
+DWORD
+VmDirConvertUPNToDN(
+     LDAP*      pLd,
+     PCSTR      pszUPN,
+     PSTR*      ppszOutDN
+     );
+
 // common/tsstack.c
 VOID
 VmDirFreeTSStack(
