@@ -99,6 +99,16 @@ srp_gss_delete_sec_context(
     }
 
     HMAC_CTX_cleanup(&srp_ctx->hmac_ctx);
+#ifdef SRP_FIPS_ENABLED
+    if (srp_ctx->evp_encrypt_ctx)
+    {
+        EVP_CIPHER_CTX_free(srp_ctx->evp_encrypt_ctx);
+    }
+    if (srp_ctx->evp_decrypt_ctx)
+    {
+        EVP_CIPHER_CTX_free(srp_ctx->evp_decrypt_ctx);
+    }
+#endif
 
     free(*context_handle);
     *context_handle = NULL;

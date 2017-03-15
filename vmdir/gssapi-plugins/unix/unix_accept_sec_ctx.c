@@ -1138,7 +1138,11 @@ srp_gss_accept_sec_context(
 
     if (srp_context_handle->state == SRP_AUTH_COMPLETE)
     {
+#ifdef SRP_FIPS_ENABLED
+        krb5_err = srp_make_enc_keyblock_FIPS(srp_context_handle);
+#else
         krb5_err = srp_make_enc_keyblock(srp_context_handle);
+#endif
         if (krb5_err)
         {
             maj = GSS_S_FAILURE;
