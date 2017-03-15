@@ -123,27 +123,31 @@ VmDirSchemaLibInit(
  * not compatible with the current definitions in the library.
  *
  * Should be called once during server startup / schema patch.
- *
- * New schema changes from this function is not effective until
- * VmDirSchemaLibUpdate() is called.
  */
 DWORD
-VmDirSchemaLibPrepareUpdateViaFile(
+VmDirSchemaLibLoadFile(
     PCSTR   pszSchemaFilePath
     );
 
 /*
- * Reads schema objects entries from data store and loads them
+ * Loads attribute schema objects entries from data store
  * into schema library.
  *
  * Should be called once during server startup.
- *
- * New schema changes from this function is not effective until
- * VmDirSchemaLibUpdate() is called.
  */
 DWORD
-VmDirSchemaLibPrepareUpdateViaEntries(
-    PVDIR_ENTRY_ARRAY   pAtEntries,
+VmDirSchemaLibLoadAttributeSchemaEntries(
+    PVDIR_ENTRY_ARRAY   pAtEntries
+    );
+
+/*
+ * Loads class schema objects entries from data store
+ * into schema library.
+ *
+ * Should be called once during server startup.
+ */
+DWORD
+VmDirSchemaLibLoadClassSchemaEntries(
     PVDIR_ENTRY_ARRAY   pOcEntries
     );
 
@@ -201,8 +205,12 @@ VmDirSchemaLibShutdown(
 // Schema storage read and write
 ///////////////////////////////////////////////////////////////////////////////
 DWORD
-VmDirReadSchemaObjects(
-    PVDIR_ENTRY_ARRAY*  ppAtEntries,
+VmDirReadAttributeSchemaObjects(
+    PVDIR_ENTRY_ARRAY*  ppAtEntries
+    );
+
+DWORD
+VmDirReadClassSchemaObjects(
     PVDIR_ENTRY_ARRAY*  ppOcEntries
     );
 
@@ -239,6 +247,11 @@ VmDirSchemaLibInitLegacy(
     VOID
     );
 
+DWORD
+VmDirReadSubSchemaSubEntry(
+    PVDIR_ENTRY*    ppSubSchemaSubEntry
+    );
+
 /*
  * Reads subschema subentry from legacy data store and loads it
  * into schema library.
@@ -246,18 +259,10 @@ VmDirSchemaLibInitLegacy(
  * Should be called once and only once in the node's lifetime when
  * 1) join to legacy partner.
  * 2) upgrade a legacy node.
- *
- * New schema changes from this function is not effective until
- * VmDirSchemaLibUpdate() is called.
  */
 DWORD
-VmDirSchemaLibPrepareUpdateViaSubSchemaSubEntry(
+VmDirSchemaLibLoadSubSchemaSubEntry(
     PVDIR_ENTRY pSchemaEntry
-    );
-
-DWORD
-VmDirReadSubSchemaSubEntry(
-    PVDIR_ENTRY*    ppSubSchemaSubEntry
     );
 
 DWORD

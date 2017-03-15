@@ -52,13 +52,16 @@ VmDirLoadSchema(
 
     assert(pbWriteSchemaEntry && pbLegacyDataLoaded);
 
-    dwError = VmDirReadSchemaObjects(&pAtEntries, &pOcEntries);
+    dwError = VmDirReadAttributeSchemaObjects(&pAtEntries);
     if (dwError == 0)
     {
-        dwError = VmDirSchemaLibPrepareUpdateViaEntries(pAtEntries, pOcEntries);
+        dwError = VmDirSchemaLibLoadAttributeSchemaEntries(pAtEntries);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirSchemaLibUpdate(0);
+        dwError = VmDirReadClassSchemaObjects(&pOcEntries);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSchemaLibLoadClassSchemaEntries(pOcEntries);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     else if (dwError == ERROR_BACKEND_ENTRY_NOTFOUND)
@@ -66,7 +69,7 @@ VmDirLoadSchema(
         dwError = VmDirReadSubSchemaSubEntry(&pSchemaEntry);
         if (dwError == 0)
         {
-            dwError = VmDirSchemaLibPrepareUpdateViaSubSchemaSubEntry(pSchemaEntry);
+            dwError = VmDirSchemaLibLoadSubSchemaSubEntry(pSchemaEntry);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             *pbLegacyDataLoaded = TRUE;
@@ -80,14 +83,11 @@ VmDirLoadSchema(
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
 
-            dwError = VmDirSchemaLibPrepareUpdateViaFile(pszSchemaFilePath);
+            dwError = VmDirSchemaLibLoadFile(pszSchemaFilePath);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             *pbWriteSchemaEntry = TRUE;
         }
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirSchemaLibUpdate(0);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = _MarkDefaultIndices();
@@ -160,10 +160,7 @@ VmDirSchemaPatchViaFile(
     dwError = VmDirSchemaCtxAcquire(&pOldSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSchemaLibPrepareUpdateViaFile(pszSchemaFilePath);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaLibUpdate(0);
+    dwError = VmDirSchemaLibLoadFile(pszSchemaFilePath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // support for mixed version (with 6.5 or lower) federation upgrade scenario
@@ -208,10 +205,7 @@ VmDirSchemaPatchLegacyViaFile(
     DWORD    dwError = 0;
     PVDIR_BACKEND_INTERFACE pBE = NULL;
 
-    dwError = VmDirSchemaLibPrepareUpdateViaFile(pszSchemaFilePath);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaLibUpdate(0);
+    dwError = VmDirSchemaLibLoadFile(pszSchemaFilePath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirPatchLocalSubSchemaSubEntry();
