@@ -7144,7 +7144,7 @@ public class IdentityManager implements IIdentityManager {
 
         // Set default brand name for LIGHTWAVE
         if(isLigthwave != null && isLigthwave.intValue() == 1) {
-            _configStore.setBrandName(tenantName, "LIGHTWAVE<br/>Single Sign On");
+            _configStore.setBrandName(tenantName, "Photon Platform<br/>Single Sign On");
         }
     }
 
