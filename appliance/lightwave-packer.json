@@ -77,6 +77,14 @@
         },
         {
             "type": "shell",
+            "inline": "systemctl disable vmware-idmd"
+        },
+        {
+            "type": "shell",
+            "inline": "systemctl disable vmware-stsd"
+        },
+        {
+            "type": "shell",
             "inline": "rm -rf /tmp/*"
         },
         {

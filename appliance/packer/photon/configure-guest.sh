@@ -82,6 +82,26 @@ function mask2cidr()
     echo "$bits"
 }
 
+function set_hostname_registry()
+{
+    LW_BIN_DIR=/opt/likewise/bin
+    IDM_KEY="[HKEY_THIS_MACHINE\\Software\\VMware\\Identity\\Configuration]"
+    VAL_NAME="Hostname"
+
+    # Does value exist?
+    $LW_BIN_DIR/lwregshell list_values $IDM_KEY | grep $VAL_NAME &>/dev/null
+
+    # If value doesn't exist, create it. Otherwise, set it.
+    if [ $? -ne 0 ]; then
+        #Add Value
+        $LW_BIN_DIR/lwregshell add_value $IDM_KEY $VAL_NAME REG_SZ "$ip0"
+    else
+        #Set Value
+        $LW_BIN_DIR/lwregshell set_value $IDM_KEY $VAL_NAME "$ip0"
+    fi
+
+}
+
 function set_network_properties()
 {
     if [ ! -z "$lw_hostname" ]
@@ -98,7 +118,7 @@ function set_network_properties()
         hostnamectl set-hostname $hostname
         hostnamectl set-hostname --static $hostname
 
-            cat > /etc/hosts <<-EOF
+        cat > /etc/hosts <<-EOF
 #Begin /etc/hosts (network card version)
 
 ::1 localhost ipv6-localhost ipv6-loopback
@@ -231,9 +251,16 @@ function configure_lightwave()
     # restart lightwave to pick up new config
     systemctl start lwsmd
 
-    /opt/vmware/bin/configure-lightwave-server --config-file $LIGHTWAVE_CFG_INSTANCE_FILE
+    mkdir -p /var/log/vmware/sso
+    /opt/vmware/bin/configure-lightwave-server --config-file $LIGHTWAVE_CFG_INSTANCE_FILE > /var/log/vmware/sso/configure-lightwave-server.log 2>&1
 
-    rm -rf $LIGHTWAVE_CFG_INSTANCE_FILE
+    set_hostname_registry
+
+    echo "Enabling vmware-idmd to be auto started"
+    systemctl enable vmware-idmd
+
+    echo "Enabling vmware-stsd to be auto started"
+    systemctl enable vmware-stsd
 }
 
 function parse_ovf_env()
@@ -241,7 +268,7 @@ function parse_ovf_env()
     # vm config
     ip0=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ip0']/../@*[local-name()='value'])")
     netmask0=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='netmask0']/../@*[local-name()='value'])")
-    gateway=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='gateway']/../@*[local-name()='value'])")
+    gateway=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='gateway0']/../@*[local-name()='value'])")
     dns=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='DNS']/../@*[local-name()='value'])")
     ntp_servers=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ntp_servers']/../@*[local-name()='value'])")
     enable_ssh=$(xmllint $OVF_ENV_XML_FILE --xpath "string(//*/@*[local-name()='key' and .='enable_ssh']/../@*[local-name()='value'])")

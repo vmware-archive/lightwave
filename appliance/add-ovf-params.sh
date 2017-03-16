@@ -30,7 +30,7 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
         <Label>Netmask</Label> \
         <Description>The netmask for the Lightwave vm network. (default: 255.255.255.0)</Description> \
       </Property> \
-      <Property ovf:key="gateway" ovf:userConfigurable="true" ovf:type="string"> \
+      <Property ovf:key="gateway0" ovf:userConfigurable="true" ovf:type="string"> \
         <Label>Default Gateway</Label> \
         <Description>The default gateway address for the Lightwave vm network. (default: 172.16.127.2)</Description> \
       </Property> \
@@ -60,7 +60,7 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
       </Property> \
       <Property ovf:key="lw_domain" ovf:userConfigurable="true" ovf:type="string"> \
         <Label>Lightwave domain</Label> \
-        <Description>Domain of the Lilghtwave server. (default: photon.vmware.com)</Description> \
+        <Description>Domain of the Lightwave server. (default: photon.vmware.com)</Description> \
       </Property> \
       <Property ovf:key="lw_hostname" ovf:userConfigurable="true" ovf:type="string"> \
         <Label>Lightwave hostname</Label> \
