@@ -149,6 +149,21 @@ vmevent-clean:
 	    cd $(LIGHTWAVE_STAGE_DIR)/x86_64 && $(RM) -f $(VMEVENT_RPMS); \
 	fi
 
+vmsts-c-client-install: $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_C_CLIENT_RPM)
+	$(RPM) -Uvh --force --nodeps $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_C_CLIENT_RPM)
+
+$(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_C_CLIENT_RPM):$(VMSTS_PKGDIR)/$(VMSTS_C_CLIENT_RPM)
+	$(CP) -f $< $@
+
+$(VMSTS_PKGDIR)/$(VMSTS_C_CLIENT_RPM):
+	@cd $(SRCROOT)/vmidentity/build && make -f Makefile.cclient.bootstrap
+
+vmsts-c-client-clean:
+	@cd $(SRCROOT)/vmidentity/build && make -f Makefile.cclient.bootstrap clean
+	@if [ -d $(LIGHTWAVE_STAGE_DIR) ]; then \
+	    cd $(LIGHTWAVE_STAGE_DIR)/x86_64 && $(RM) -f $(VMSTS_C_CLIENT_RPM); \
+	fi
+
 vmdir-client-install: $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDIR_CLIENT_RPM) $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDIR_CLIENT_DEVEL_RPM)
 	$(RPM) -Uvh --force --nodeps $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDIR_CLIENT_RPM) $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMDIR_CLIENT_DEVEL_RPM)
 
@@ -165,7 +180,7 @@ $(VMDIR_PKGDIR)/$(VMDIR_CLIENT_RPM):$(VMDIR_PKGDIR)/$(VMDIR_SERVER_RPM)
 
 $(VMDIR_PKGDIR)/$(VMDIR_CLIENT_DEVEL_RPM):$(VMDIR_PKGDIR)/$(VMDIR_SERVER_RPM)
 
-$(VMDIR_PKGDIR)/$(VMDIR_SERVER_RPM):$(LIGHTWAVE_STAGE_DIR) vmevent-client-install
+$(VMDIR_PKGDIR)/$(VMDIR_SERVER_RPM):$(LIGHTWAVE_STAGE_DIR) vmevent-client-install vmsts-c-client-install
 	@cd $(SRCROOT)/vmdir/build && make -f Makefile.bootstrap
 
 vmdir-clean:
@@ -291,11 +306,6 @@ vmsts-client-install: $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_CLIENT_RPM)
 $(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_CLIENT_RPM):$(VMSTS_PKGDIR)/$(VMSTS_CLIENT_RPM)
 	$(CP) -f $< $@
 
-$(LIGHTWAVE_STAGE_DIR)/x86_64/$(VMSTS_C_CLIENT_RPM):$(VMSTS_PKGDIR)/$(VMSTS_C_CLIENT_RPM)
-
-$(VMSTS_PKGDIR)/$(VMSTS_C_CLIENT_RPM):
-	@cd $(SRCROOT)/vmidentity/build && make -f Makefile.cclient.bootstrap
-
 $(VMSTS_PKGDIR)/$(VMSTS_CLIENT_RPM):$(VMSTS_PKGDIR)/$(VMSTS_SERVER_RPM)
 
 vmsts-clean:
@@ -348,7 +358,7 @@ resources-folder-clean:
 docker-clean:
 	@$(RM) -rf $(LIGHTWAVE_STAGE_DIR)/docker-published
 
-clean: config-clean vmca-clean vmafd-clean vmdns-clean lwraft-clean vmdir-clean vmevent-clean \
+clean: config-clean vmca-clean vmafd-clean vmdns-clean lwraft-clean vmdir-clean vmsts-c-client-clean vmevent-clean \
 		lw-server-clean lw-clients-clean vmsts-clean docker-clean lw-build-clean \
 		properties-clean diagnostics-folder-clean resources-folder-clean \
 		appliance-clean lw-raft-clean
