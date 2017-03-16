@@ -607,6 +607,8 @@ _VmDirWrapUpFirstReplicationCycle(
         BAIL_ON_VMDIR_ERROR(retVal);
     }
 
+    VmDirSetACLMode();
+
     syncDoneCtrlVal.bv_len = VmDirStringLenA(syncDoneCtrlVal.bv_val);
 
     if ((retVal = VmDirReplUpdateCookies( pSchemaCtx, &(syncDoneCtrlVal), pReplAgr )) != LDAP_SUCCESS)

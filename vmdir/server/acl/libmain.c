@@ -266,6 +266,14 @@ cleanup:
     return;
 }
 
+VOID
+VmDirSetACLMode(
+    VOID
+    )
+{
+    bLegacySecurityDescriptorsNeeded = _VmDirIsLegacyACLMode();
+}
+
 static
 BOOLEAN
 _VmDirIsLegacyACLMode(

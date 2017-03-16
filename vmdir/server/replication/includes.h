@@ -57,6 +57,7 @@
 #include <ldaphead.h>
 #include <middlelayer.h>
 #include <replication.h>
+#include <vmacl.h>
 
 #include <structs.h>
 #include <prototypes.h>
@@ -120,6 +121,7 @@
 #include <ldaphead.h>
 #include <middlelayer.h>
 #include <replication.h>
+#include <vmacl.h>
 
 #include <structs.h>
 #include "prototypes.h"

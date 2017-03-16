@@ -317,6 +317,11 @@ VmDirSrvCreateAccessTokenForWellKnowObject(
     PCSTR pszWellknownObjectSid
     );
 
+VOID
+VmDirSetACLMode(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif
