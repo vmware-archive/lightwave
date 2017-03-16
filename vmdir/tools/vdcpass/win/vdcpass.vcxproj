@@ -78,7 +78,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\tools\include;$(SolutionDir)..\server\include;$(SolutionDir)..\thirdparty\likewise-security-sd-win32\lwbase\include;$(SolutionDir)..\thirdparty\openldap\libraries\liblber;$(SolutionDir)..\thirdparty\openldap\include;..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\tools\include;$(SolutionDir)..\server\include;$(LIGHTWAVE_LIKEWISE_ROOT)\include;$(SolutionDir)..\thirdparty\openldap\libraries\liblber;$(SolutionDir)..\thirdparty\openldap\include;..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessToFile>false</PreprocessToFile>
       <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
@@ -109,7 +109,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\tools\include;$(SolutionDir)..\server\include;$(SolutionDir)..\thirdparty\likewise-security-sd-win32\lwbase\include;$(SolutionDir)..\thirdparty\openldap\libraries\liblber;$(SolutionDir)..\thirdparty\openldap\include;..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\tools\include;$(SolutionDir)..\server\include;$(LIGHTWAVE_LIKEWISE_ROOT)\include;$(SolutionDir)..\thirdparty\openldap\libraries\liblber;$(SolutionDir)..\thirdparty\openldap\include;..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>

@@ -71,7 +71,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(IntDir);$(SolutionDir)..\include\public;$(SolutionDir)..\include;$(SolutionDir)..\include\win;$(SolutionDir)..\common\win;$(SolutionDir)..\server;$(SolutionDir)..\server\include;$(SolutionDir)..\thirdparty\likewise-security-sd-win32\lwbase\include\win32;$(SolutionDir)..\thirdparty\likewise-security-sd-win32\lwbase\include;$(SolutionDir)..\thirdparty\openldap\include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(IntDir);$(SolutionDir)..\include\public;$(SolutionDir)..\include;$(SolutionDir)..\include\win;$(SolutionDir)..\common\win;$(SolutionDir)..\server;$(SolutionDir)..\server\include;$(LIGHTWAVE_LIKEWISE_ROOT)\include\win32;$(LIGHTWAVE_LIEKWISE_ROOT)\include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;PACKAGE_NAME;HAVE_DCERPC_WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -89,7 +89,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)$(IntDir);$(SolutionDir)..\include\public;$(SolutionDir)..\include;$(SolutionDir)..\include\win;$(SolutionDir)..\common\win;$(SolutionDir)..\server;$(SolutionDir)..\server\include;$(SolutionDir)..\thirdparty\likewise-security-sd-win32\lwbase\include\win32;$(SolutionDir)..\thirdparty\likewise-security-sd-win32\lwbase\include;$(SolutionDir)..\thirdparty\openldap\include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)$(IntDir);$(SolutionDir)..\include\public;$(SolutionDir)..\include;$(SolutionDir)..\include\win;$(SolutionDir)..\common\win;$(SolutionDir)..\server;$(SolutionDir)..\server\include;$(LIGHTWAVE_LIKEWISE_ROOT)\include\win32;$(LIGHTWAVE_LIKEWISE_ROOT)\include;$(SolutionDir)..\thirdparty\openldap\include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;PACKAGE_NAME;HAVE_DCERPC_WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>

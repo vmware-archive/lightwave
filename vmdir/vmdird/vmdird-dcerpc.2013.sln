@@ -51,8 +51,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libvmdirlogging", "..\commo
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vdcbackup", "..\tools\vdcbackup\win\vdcbackup.vcxproj", "{655F3050-2628-4D2C-87A4-B7C8B9FCC873}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "liblwbase-sd-win32", "..\thirdparty\likewise-security-sd-win32\lwbase\src\win\liblwsec-desc-win32.vcxproj", "{840A2D38-BC4A-442A-BB49-BA7630DEC141}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libsaslvmdirdb", "..\server\saslvmdirdb\win\libsaslvmdirdb.vcxproj", "{897A7680-EE1D-49EB-B471-2993D4B54D7F}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libkdccommon", "..\kdccommon\win\libcommon2008.vcxproj", "{35DEE372-7B4F-4ABD-BD82-50BD145D4DE1}"

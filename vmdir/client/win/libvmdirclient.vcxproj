@@ -183,10 +183,6 @@
       <Project>{4b9e4465-8009-4067-8c91-2bf1a9c8b430}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\..\thirdparty\likewise-security-sd-win32\lwbase\src\win\liblwsec-desc-win32.vcxproj">
-      <Project>{840a2d38-bc4a-442a-bb49-ba7630dec141}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\..\thirdparty\openldap\libraries\liblber\liblber\liblber.vcxproj">
       <Project>{6a7d33dd-889f-4a32-9be2-7e02170b4262}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
