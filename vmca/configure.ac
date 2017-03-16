@@ -657,8 +657,6 @@ AC_CONFIG_FILES([Makefile
                  vmcadb/Makefile
                  certool/Makefile
                  test/Makefile
-                 tools/Makefile
-                 tools/certificate-manager/Makefile
                  python/Makefile
                  jdepends/Makefile
                  java/Makefile
