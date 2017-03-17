@@ -159,7 +159,7 @@ VmDirPluginGroupMemberPreModApplyDelete(
     DWORD   i = 0;
     PVDIR_BERVALUE  pMemberDN = NULL;
     PVDIR_BERVALUE  pGroupDN = NULL;
-    VDIR_OPERATION  groupOp = {0};
+    PVDIR_OPERATION pGroupOp = NULL;
     VDIR_ENTRY_ARRAY    entryArray = {0};
 
     pMemberDN = &pOperation->request.deleteReq.dn;
@@ -176,20 +176,19 @@ VmDirPluginGroupMemberPreModApplyDelete(
     // delete the member from groups
     for (i = 0; i < entryArray.iSize; i++)
     {
-        pGroupDN = &entryArray.pEntry[i].dn;
+        VmDirFreeOperation(pGroupOp);
+        pGroupOp = NULL;
 
-        VmDirFreeOperationContent(&groupOp);
-        dwError = VmDirInitStackOperation(&groupOp,
-                VDIR_OPERATION_TYPE_INTERNAL,
-                LDAP_REQ_MODIFY,
-                NULL);
+        dwError = VmDirExternalOperationCreate(
+                NULL, -1, LDAP_REQ_MODIFY, pOperation->conn, &pGroupOp);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        groupOp.pBEIF = VmDirBackendSelect(NULL);
-        groupOp.reqDn.lberbv = pGroupDN->lberbv;
-        groupOp.request.modifyReq.dn.lberbv = pGroupDN->lberbv;
+        pGroupDN = &entryArray.pEntry[i].dn;
+        pGroupOp->reqDn.lberbv = pGroupDN->lberbv;
+        pGroupOp->request.modifyReq.dn.lberbv = pGroupDN->lberbv;
 
-        dwError = VmDirAppendAMod(&groupOp,
+        dwError = VmDirAppendAMod(
+                pGroupOp,
                 MOD_OP_DELETE,
                 ATTR_MEMBER,
                 ATTR_MEMBER_LEN,
@@ -197,7 +196,7 @@ VmDirPluginGroupMemberPreModApplyDelete(
                 pMemberDN->lberbv.bv_len);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirMLModify(&groupOp);
+        dwError = VmDirMLModify(pGroupOp);
         // Handle possible conflicts gracefully:
         // - The member is already removed from group since search
         // - The group entry is deleted since search
@@ -211,7 +210,7 @@ VmDirPluginGroupMemberPreModApplyDelete(
 
 cleanup:
     VmDirFreeEntryArrayContent(&entryArray);
-    VmDirFreeOperationContent(&groupOp);
+    VmDirFreeOperation(pGroupOp);
     return dwError;
 
 error:
