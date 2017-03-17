@@ -5,6 +5,7 @@ VmDirDemote
 VmDirJoin
 VmDirClientJoin
 VmDirClientLeave
+VmDirCreateComputerAccount
 VmDirSetupTenantInstance
 VmDirForceResetPassword
 VmDirSetPassword

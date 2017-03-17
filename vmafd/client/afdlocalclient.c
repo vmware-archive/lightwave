@@ -1213,6 +1213,74 @@ error:
 }
 
 DWORD
+VmAfdLocalCreateComputerAccount(
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword,
+    PCWSTR pwszMachineName,
+    PCWSTR pwszOrgUnit,
+    PWSTR* ppwszOutPassword
+    )
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMAFD_IPC_CREATE_COMPUTER_ACCOUNT;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    DWORD idx = 0;
+    PWSTR pwszOutPassword = NULL;
+    VMW_TYPE_SPEC input_spec[] = CREATE_COMPUTER_ACCOUNT_INPUT_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = CREATE_COMPUTER_ACCOUNT_OUTPUT_PARAMS;
+
+    noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    input_spec[idx++].data.pWString = (PWSTR) pwszUserName;
+    input_spec[idx++].data.pWString = (PWSTR) pwszPassword;
+    input_spec[idx++].data.pWString = (PWSTR) pwszMachineName;
+    input_spec[idx++].data.pWString = (PWSTR) pwszOrgUnit;
+
+    dwError = VecsLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    input_spec,
+                    output_spec);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (IsNullOrEmptyString(output_spec[1].data.pWString))
+    {
+        dwError = ERROR_NO_DATA;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringW(
+                  output_spec[1].data.pWString,
+                  &pwszOutPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (ppwszOutPassword)
+    {
+        *ppwszOutPassword = pwszOutPassword;
+        pwszOutPassword = NULL;
+    }
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszOutPassword);
+    VmAfdFreeTypeSpecContent(output_spec, noOfArgsOut);
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalCreateComputerAccount failed. Error(%u)", dwError);
+
+    goto cleanup;
+}
+
+DWORD
 VmAfdLocalJoinAD(
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,

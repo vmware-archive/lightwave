@@ -4503,6 +4503,125 @@ error:
 }
 
 DWORD
+VmAfdIpcCreateComputerAccount(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    )
+{
+    DWORD dwError = 0;
+    UINT32 uResult = 0;
+    UINT32 apiType = VMAFD_IPC_CREATE_COMPUTER_ACCOUNT;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    PBYTE pResponse = NULL;
+    DWORD dwResponseSize = 0;
+
+    PWSTR pwszUserName = NULL;
+    PWSTR pwszPassword = NULL;
+    PWSTR pwszMachineName = NULL;
+    PWSTR pwszOrgUnit = NULL;
+    PWSTR pwszOutPassword = NULL;
+    int idx = 0;
+
+    VMW_TYPE_SPEC input_spec[] = CREATE_COMPUTER_ACCOUNT_INPUT_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = CREATE_COMPUTER_ACCOUNT_OUTPUT_PARAMS;
+
+    VmAfdLog (VMAFD_DEBUG_DEBUG, "Entering %s", __FUNCTION__);
+
+    if (!pConnectionContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    //
+    // Unmarshall the request buffer to the format
+    // that the API actually has
+    //
+    noOfArgsIn = sizeof (input_spec) / sizeof (VMW_TYPE_SPEC);
+    noOfArgsOut = sizeof (output_spec) / sizeof (VMW_TYPE_SPEC);
+    dwError = VmAfdUnMarshal (
+                        apiType,
+                        VER1_INPUT,
+                        noOfArgsIn,
+                        pRequest,
+                        dwRequestSize,
+                        input_spec
+                        );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+    pwszUserName    = input_spec[idx++].data.pWString;
+    pwszPassword    = input_spec[idx++].data.pWString;
+    pwszMachineName = input_spec[idx++].data.pWString;
+    pwszOrgUnit     = input_spec[idx++].data.pWString;
+
+    if (IsNullOrEmptyString(pwszMachineName))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    if (!VmAfdIsRootSecurityContext(pConnectionContext))
+    {
+        VmAfdLog (VMAFD_DEBUG_ANY, "%s: Access Denied", __FUNCTION__);
+        dwError = ERROR_ACCESS_DENIED;
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+
+    uResult = VmAfSrvCreateComputerAccount(
+                      pwszUserName,
+                      pwszPassword,
+                      pwszMachineName,
+                      pwszOrgUnit,
+                      &pwszOutPassword);
+    LOG_URESULT_ERROR(uResult);
+
+    // Allocate a buffer, marshall the response
+    //
+    output_spec[0].data.pUint32 = &uResult;
+    output_spec[1].data.pWString = pwszOutPassword;
+
+    dwError = VecsMarshalResponse(
+                            apiType,
+                            output_spec,
+                            noOfArgsOut,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+    BAIL_ON_VMAFD_ERROR (dwError);
+
+cleanup:
+    *ppResponse = pResponse;
+    *pdwResponseSize = dwResponseSize;
+
+    VMAFD_SAFE_FREE_MEMORY(pwszOutPassword);
+    VmAfdFreeTypeSpecContent (input_spec, noOfArgsIn);
+    VmAfdLog (VMAFD_DEBUG_DEBUG, "End of %s", __FUNCTION__);
+    return dwError;
+
+error:
+    VmAfdLog (
+              VMAFD_DEBUG_ERROR,
+              "ERROR! %s failed. Exiting with error : [%d]",
+               __FUNCTION__, dwError
+             );
+
+    VmAfdHandleError(
+            apiType,
+            dwError,
+            output_spec,
+            noOfArgsOut,
+            &pResponse,
+            &dwResponseSize
+            );
+    dwError = 0;
+    goto cleanup;
+}
+
+DWORD
 VmAfdIpcJoinAD(
     PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
     PBYTE pRequest,

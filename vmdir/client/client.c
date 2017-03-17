@@ -1116,7 +1116,10 @@ VmDirClientJoin(
                 pszUserName,
                 pszPassword,
                 pszOrgUnit ? pszOrgUnit : VMDIR_COMPUTERS_RDN_VAL,
-                pszMachineName);
+                pszMachineName,
+                TRUE,
+                NULL,
+                NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (iCnt = 0; iCnt < sizeof(pszServiceTable)/sizeof(pszServiceTable[0]); iCnt++)
@@ -1240,6 +1243,94 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirClientLeave failed. Error(%u)", dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmDirCreateComputerAccount(
+    PCSTR pszServerName,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszMachineName,
+    PCSTR pszOrgUnit,
+    PSTR* ppszOutPassword)
+{
+    DWORD dwError = 0;
+    PSTR  pszDomainName = NULL;
+    LDAP* pLd = NULL;
+    PBYTE pByteOutPassword = NULL;
+    DWORD dwOutPasswordSize = 0;
+    PSTR pszOutPassword = NULL;
+
+    if (IsNullOrEmptyString(pszServerName) ||
+        IsNullOrEmptyString(pszUserName) ||
+        IsNullOrEmptyString(pszPassword) ||
+        IsNullOrEmptyString(pszMachineName))
+    {
+        dwError =  VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirGetDomainName(pszServerName, &pszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirConnectLDAPServer(
+                &pLd,
+                pszServerName,
+                pszDomainName,
+                pszUserName,
+                pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapCreateComputerOUContainer(
+                pLd,
+                pszDomainName,
+                pszOrgUnit ? pszOrgUnit : VMDIR_COMPUTERS_RDN_VAL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapSetupComputerAccount(
+                pLd,
+                pszDomainName,
+                pszServerName,
+                pszUserName,
+                pszPassword,
+                pszOrgUnit ? pszOrgUnit : VMDIR_COMPUTERS_RDN_VAL,
+                pszMachineName,
+                FALSE,
+                &pByteOutPassword,
+                &dwOutPasswordSize);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateAndCopyMemory(
+                pByteOutPassword,
+                dwOutPasswordSize + 1,
+                (PVOID*)&pszOutPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+   if (ppszOutPassword)
+   {
+       *ppszOutPassword = pszOutPassword;
+       pszOutPassword = NULL;
+   }
+
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s (%s)(%s)(%s) passed",
+                                        __FUNCTION__,
+                                        VDIR_SAFE_STRING(pszServerName),
+                                        VDIR_SAFE_STRING(pszUserName),
+                                        VDIR_SAFE_STRING(pszMachineName) );
+
+cleanup:
+
+    VmDirLdapUnbind(&pLd);
+    VMDIR_SAFE_FREE_MEMORY(pByteOutPassword);
+    VMDIR_SAFE_FREE_STRINGA(pszOutPassword);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainName);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirCreateComputerAccount failed. Error(%u)", dwError);
 
     goto cleanup;
 }

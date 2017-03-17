@@ -273,7 +273,10 @@ VmDirLdapSetupComputerAccount(
     PCSTR pszUsername,
     PCSTR pszPassword,
     PCSTR pszComputerOU,
-    PCSTR pszComputerHostName
+    PCSTR pszComputerHostName,
+    BOOLEAN bStoreInRegistry,
+    PBYTE* ppByteOutPassword,
+    PDWORD pdwOutPasswordSize
     );
 
 DWORD

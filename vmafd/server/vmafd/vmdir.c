@@ -1186,6 +1186,93 @@ error:
 }
 
 DWORD
+VmAfSrvCreateComputerAccount(
+    PCWSTR            pwszUserName,       /* IN            */
+    PCWSTR            pwszPassword,       /* IN            */
+    PCWSTR            pwszMachineName,    /* IN            */
+    PCWSTR            pwszOrgUnit,        /* IN   OPTIONAL */
+    PWSTR*            ppwszOutPassword    /* OUT           */
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszUserName = NULL;
+    PSTR pszPassword = NULL;
+    PSTR pszMachineName = NULL;
+    PSTR pszOrgUnit = NULL;
+    PWSTR pwszDCName = NULL;
+    PSTR pszDCName = NULL;
+    PWSTR pwszOutPassword = NULL;
+    PSTR pszOutPassword = NULL;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(pwszUserName, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(pwszPassword, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(pwszMachineName, dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszUserName, &pszUserName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszPassword, &pszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszMachineName, &pszMachineName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (pwszOrgUnit)
+    {
+        dwError = VmAfdAllocateStringAFromW(pwszOrgUnit, &pszOrgUnit);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfSrvGetDCName(&pwszDCName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszDCName, &pszDCName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmDirCreateComputerAccount(
+                  pszDCName,
+                  pszUserName,
+                  pszPassword,
+                  pszMachineName,
+                  pszOrgUnit,
+                  &pszOutPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszOutPassword, &pwszOutPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (ppwszOutPassword)
+    {
+        *ppwszOutPassword = pwszOutPassword;
+        pwszOutPassword = NULL;
+    }
+
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s: created computer account.",
+             __FUNCTION__);
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pwszOutPassword);
+    VMAFD_SAFE_FREE_MEMORY(pwszDCName);
+    VMAFD_SAFE_FREE_STRINGA(pszOutPassword);
+    VMAFD_SAFE_FREE_STRINGA(pszUserName);
+    VMAFD_SAFE_FREE_STRINGA(pszPassword);
+    VMAFD_SAFE_FREE_STRINGA(pszDCName);
+    VMAFD_SAFE_FREE_STRINGA(pszMachineName);
+    VMAFD_SAFE_FREE_STRINGA(pszOrgUnit);
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "%s: Failed to create computer account. Error(%u)",
+             __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
+DWORD
 VmAfSrvForceReplication(
     PWSTR pwszServerName         /* IN               */
     )
@@ -1785,7 +1872,7 @@ VmAfSrvSetDNSRecords(
     }
 
     dwError = VmAfdAppendDomain(pszMachineName, pszDomain, &pszName);
-    VmAfdLog(VMAFD_DEBUG_ERROR, "%s: DNS namer %s (%u)",
+    VmAfdLog(VMAFD_DEBUG_ERROR, "%s: DNS name %s (%u)",
                  __FUNCTION__, pszName, dwError);
     BAIL_ON_VMAFD_ERROR(dwError);
 

@@ -214,6 +214,16 @@ VmDirClientLeave(
     );
 
 DWORD
+VmDirCreateComputerAccount(
+    PCSTR pszServerName,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszMachineName,
+    PCSTR pszOrgUnit,
+    PSTR* ppszOutPassword
+    );
+
+DWORD
 VmDirSetupTenantInstance(
     PCSTR pszDomainName,
     PCSTR pszUsername,

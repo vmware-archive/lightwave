@@ -421,8 +421,26 @@ DWORD
 VmAfdLeaveVmDirW(
     PCWSTR pwszServerName,  /* IN     OPTIONAL */
     PCWSTR pwszUserName,    /* IN              */
-    PCWSTR pszPassword,      /* IN              */
+    PCWSTR pszPassword,     /* IN              */
     DWORD dwLeaveFlags      /* IN              */
+    );
+
+DWORD
+VmAfdCreateComputerAccountA(
+    PCSTR pszUserName,        /* IN              */
+    PCSTR pszPassword,        /* IN              */
+    PCSTR pszMachineName,     /* IN              */
+    PCSTR pszOrgUnit,         /* IN     OPTIONAL */
+    PSTR* ppszOutPassword     /* OUT             */
+    );
+
+DWORD
+VmAfdCreateComputerAccountW(
+    PCWSTR pwszUserName,      /* IN              */
+    PCWSTR pwszPassword,      /* IN              */
+    PCWSTR pwszMachineName,   /* IN              */
+    PCWSTR pwszOrgUnit,       /* IN     OPTIONAL */
+    PWSTR* ppwszOutPassword   /* OUT             */
     );
 
 DWORD
@@ -731,6 +749,7 @@ VmAfdChangePNIDW(
 #define VmAfdDemoteVmDir                VmAfdDemoteVmDirW
 #define VmAfdJoinVmDir                  VmAfdJoinVmDirW
 #define VmAfdLeaveVmDir                 VmAfdLeaveVmDirW
+#define VmAfdCreateComputerAccount      VmAfdCreateComputerAccountW
 #define VmAfdJoinAD                     VmAfdJoinADW
 #define VmAfdLeaveAD                    VmAfdLeaveADW
 #define VmAfdQueryAD                    VmAfdQueryADW
@@ -765,6 +784,7 @@ VmAfdChangePNIDW(
 #define VmAfdDemoteVmDir                VmAfdDemoteVmDirA
 #define VmAfdJoinVmDir                  VmAfdJoinVmDirA
 #define VmAfdLeaveVmDir                 VmAfdLeaveVmDirA
+#define VmAfdCreateComputerAccount      VmAfdCreateComputerAccountA
 #define VmAfdJoinAD                     VmAfdJoinADA
 #define VmAfdLeaveAD                    VmAfdLeaveADA
 #define VmAfdQueryAD                    VmAfdQueryADA

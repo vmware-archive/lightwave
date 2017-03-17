@@ -334,6 +334,24 @@ public class VmAfClientAdapter extends NativeAdapter
             );
 
         int
+        VmAfdCreateComputerAccountA(
+            String pszUserName,              /* IN              */
+            String pszPassword,              /* IN              */
+            String pszMachineName,           /* IN              */
+            String pszOrgUnit,               /* IN              */
+            PointerByReference ppszOutPassword /* OUT             */
+            );
+
+        int
+        VmAfdCreateComputerAccountW(
+            WString pwszUserName,             /* IN              */
+            WString pwszPassword,             /* IN              */
+            WString pwszMachineName,          /* IN              */
+            WString pwszOrgUnit,              /* IN              */
+            PointerByReference ppwszOutPassword /* OUT             */
+            );
+
+        int
         VmAfdQueryADA(
             String pszServerName,                     /* IN              */
             PointerByReference ppszComputer,          /*    OUT          */
@@ -884,6 +902,41 @@ public class VmAfClientAdapter extends NativeAdapter
         if (errCode != 0)
         {
             throw new VmAfClientNativeException(errCode);
+        }
+    }
+
+    public static String
+    createComputerAccount(
+              String pszUserName,              /* IN              */
+              String pszPassword,              /* IN              */
+              String pszMachineName,           /* IN              */
+              String pszOrgUnit)               /* IN              */
+    {
+        PointerByReference ppszOutPassword = new PointerByReference();
+
+        try
+        {
+            int errCode = VmAfClientLibrary.INSTANCE.VmAfdCreateComputerAccountA(
+                              pszUserName,
+                              pszPassword,
+                              pszMachineName,
+                              pszOrgUnit,
+                              ppszOutPassword);
+            if (errCode != 0)
+            {
+                throw new VmAfClientNativeException(errCode);
+            }
+
+            return ppszOutPassword.getValue().getString(0);
+        }
+        finally
+        {
+            Pointer val = ppszOutPassword.getValue();
+
+            if (val != Pointer.NULL)
+            {
+                VmAfClientLibrary.INSTANCE.VmAfdFreeMemory(val);
+            }
         }
     }
 

@@ -310,6 +310,15 @@ VmAfdLocalLeaveVmDir(
 );
 
 DWORD
+VmAfdLocalCreateComputerAccount(
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword,
+    PCWSTR pwszMachineName,
+    PCWSTR pwszOrgUnit,
+    PWSTR* ppwszOutPassword
+);
+
+DWORD
 VmAfdLocalJoinAD(
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,

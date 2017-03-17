@@ -1761,7 +1761,10 @@ VmDirLdapSetupComputerAccount(
     PCSTR pszUsername,
     PCSTR pszPassword,
     PCSTR pszComputerOU,
-    PCSTR pszComputerHostName       // Self host name
+    PCSTR pszComputerHostName,      // Self host name
+    BOOLEAN  bStoreInRegistry,
+    PBYTE* ppByteOutPassword,
+    PDWORD pdwOutPasswordSize
     )
 {
     DWORD       dwError = 0;
@@ -1959,14 +1962,27 @@ VmDirLdapSetupComputerAccount(
     dwError = _VmDirLdapSetupAccountMembership( pLd, pszDomainDN, VMDIR_DCCLIENT_GROUP_NAME, pszComputerDN );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // Store Computer account info in registry.
-    dwError = VmDirConfigSetDCAccountInfo(
-                    pszComputerHostName,
-                    pszComputerDN,
-                    pByteAccountPasswd,
-                    dwAccountPasswdSize,
-                    pszMachineGUID);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (bStoreInRegistry)
+    {
+        // Store Computer account info in registry.
+        dwError = VmDirConfigSetDCAccountInfo(
+                        pszComputerHostName,
+                        pszComputerDN,
+                        pByteAccountPasswd,
+                        dwAccountPasswdSize,
+                        pszMachineGUID);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (ppByteOutPassword)
+    {
+        *ppByteOutPassword = pByteAccountPasswd;
+        pByteAccountPasswd = NULL;
+    }
+    if (pdwOutPasswordSize)
+    {
+        *pdwOutPasswordSize = dwAccountPasswdSize;
+    }
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszComputerDN);

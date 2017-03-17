@@ -193,6 +193,15 @@ VmAfSrvLeaveVmDir(
     );
 
 DWORD
+VmAfSrvCreateComputerAccount(
+    PCWSTR   pwszUserName,      /* IN            */
+    PCWSTR   pwszPassword,      /* IN            */
+    PCWSTR   pwszMachineName,   /* IN            */
+    PCWSTR   pwszOrgUnit,       /* IN   OPTIONAL */
+    PWSTR*   pszOutPassword     /* OUT           */
+    );
+
+DWORD
 VmAfSrvJoinAD(
     PWSTR    pwszUserName,       /* IN              */
     PWSTR    pwszPassword,       /* IN              */
