@@ -120,7 +120,6 @@
     <ClCompile Include="..\delete.c" />
     <ClCompile Include="..\filter.c" />
     <ClCompile Include="..\globals.c" />
-    <ClCompile Include="includes.c" />
     <ClCompile Include="..\modify.c" />
     <ClCompile Include="..\openssl.c" />
     <ClCompile Include="..\operation.c" />

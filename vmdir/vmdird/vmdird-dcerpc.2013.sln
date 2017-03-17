@@ -5,8 +5,6 @@ VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmdb", "..\thirdparty\openldap\libraries\mdb\libmdb\libmdb.vcxproj", "{5798A1C5-F942-40C5-BCEF-0BC9F1736C11}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmidl", "..\thirdparty\openldap\libraries\mdb\libmidl\libmidl.vcxproj", "{878CE166-8166-494F-8C7E-DB84E71BDA86}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libcommon", "..\common\win\libcommon.vcxproj", "{E528219E-4329-48A5-8A40-B845D8ECA100}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libbackend", "..\server\backend\win\libbackend.vcxproj", "{67D51DD7-1E62-4B24-B9BE-DCE6BE35563F}"

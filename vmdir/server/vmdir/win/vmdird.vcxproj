@@ -216,10 +216,6 @@
       <Project>{5798a1c5-f942-40c5-bcef-0bc9f1736c11}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\thirdparty\openldap\libraries\mdb\libmidl\libmidl.vcxproj">
-      <Project>{878ce166-8166-494f-8c7e-db84e71bda86}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\..\..\version\win\version.vcxproj">
       <Project>{07080b1c-2a38-11e3-8065-000c294915dd}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
