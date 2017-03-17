@@ -18,9 +18,6 @@
     <ClCompile Include="..\firstreplcycle.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="includes.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\libmain.c">
       <Filter>Source Files</Filter>
     </ClCompile>

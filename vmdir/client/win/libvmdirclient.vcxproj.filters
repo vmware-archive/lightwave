@@ -27,9 +27,6 @@
     <ClCompile Include="..\groups.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="includes.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\ldaputil.c">
       <Filter>Source Files</Filter>
     </ClCompile>

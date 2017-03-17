@@ -115,7 +115,6 @@
   <ItemGroup>
     <ClCompile Include="..\api.c" />
     <ClCompile Include="..\globals.c" />
-    <ClCompile Include="includes.c" />
     <ClCompile Include="..\indexcfg.c" />
     <ClCompile Include="..\indexingtask.c" />
     <ClCompile Include="..\indexingthr.c" />

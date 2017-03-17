@@ -110,7 +110,6 @@
     <ClInclude Include="..\structs.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="includes.c" />
     <ClCompile Include="..\memory.c" />
     <ClCompile Include="parseargs.c" />
     <ClCompile Include="security-sd.c" />

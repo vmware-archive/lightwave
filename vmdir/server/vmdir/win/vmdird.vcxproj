@@ -135,7 +135,6 @@
     <ClCompile Include="..\auth.c" />
     <ClCompile Include="..\heartbeat.c" />
     <ClCompile Include="..\globals.c" />
-    <ClCompile Include="includes.c" />
     <ClCompile Include="..\index.c" />
     <ClCompile Include="..\init.c" />
     <ClCompile Include="..\instance.c" />

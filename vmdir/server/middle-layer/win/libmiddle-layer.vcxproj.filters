@@ -36,9 +36,6 @@
     <ClCompile Include="..\group.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="includes.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\index.c">
       <Filter>Source Files</Filter>
     </ClCompile>

@@ -119,7 +119,6 @@
   <ItemGroup>
     <ClCompile Include="..\acl.c" />
     <ClCompile Include="..\globals.c" />
-    <ClCompile Include="includes.c" />
     <ClCompile Include="..\legacy_checks.c" />
     <ClCompile Include="..\libmain.c" />
     <ClCompile Include="..\objectsid.c" />

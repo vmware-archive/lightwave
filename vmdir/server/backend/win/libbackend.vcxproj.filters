@@ -21,9 +21,6 @@
     <ClCompile Include="..\globals.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="includes.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\util.c">
       <Filter>Source Files</Filter>
     </ClCompile>

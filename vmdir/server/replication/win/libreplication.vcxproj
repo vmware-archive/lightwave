@@ -114,7 +114,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\firstreplcycle.c" />
-    <ClCompile Include="includes.c" />
     <ClCompile Include="..\libmain.c" />
     <ClCompile Include="..\replentry.c" />
     <ClCompile Include="..\thread.c" />

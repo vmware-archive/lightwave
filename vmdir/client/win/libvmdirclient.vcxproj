@@ -135,7 +135,6 @@
     <ClCompile Include="..\client.c" />
     <ClCompile Include="..\globals.c" />
     <ClCompile Include="..\groups.c" />
-    <ClCompile Include="includes.c" />
     <ClCompile Include="..\ldaputil.c" />
     <ClCompile Include="libmain.c" />
     <ClCompile Include="..\pnid.c" />

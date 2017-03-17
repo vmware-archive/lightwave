@@ -131,7 +131,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="includes.c" />
     <ClCompile Include="..\main.c" />
     <ClCompile Include="..\parseargs.c" />
   </ItemGroup>

@@ -115,7 +115,6 @@
   <ItemGroup>
     <ClCompile Include="..\backend.c" />
     <ClCompile Include="..\globals.c" />
-    <ClCompile Include="includes.c" />
     <ClCompile Include="..\util.c" />
   </ItemGroup>
   <ItemGroup>

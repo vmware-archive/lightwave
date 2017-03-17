@@ -26,9 +26,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="includes.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\memory.c">
       <Filter>Source Files</Filter>
     </ClCompile>

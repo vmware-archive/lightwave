@@ -110,7 +110,6 @@
   <ItemGroup>
     <ClCompile Include="..\directory.c" />
     <ClCompile Include="..\globals.c" />
-    <ClCompile Include="includes.c" />
     <ClCompile Include="..\init.c" />
     <ClCompile Include="..\kdcmain.c" />
     <ClCompile Include="..\networking.c" />

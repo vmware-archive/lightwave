@@ -119,7 +119,6 @@
     <ClCompile Include="..\globals.c" />
     <ClCompile Include="..\head.c" />
     <ClCompile Include="..\idmap.c" />
-    <ClCompile Include="includes.c" />
     <ClCompile Include="..\instance.c" />
     <ClCompile Include="..\libmain.c" />
     <ClCompile Include="..\matchingrule.c" />
