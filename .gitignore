@@ -1,105 +1,90 @@
-tools/win/VMDirSnapIn/VMDirSnapIn.userprefs
-tools/mac/VMCASnapIn/LightwaveCA.userprefs
-tools/mac/VMPSCHighAvailabilitySnapIn/Lightwave PSC Site Management.userprefs
-tools/mac/VMRestSsoSnapIn/Lightwave SSO.userprefs
-vmdir/dotnet/VMDIR.Client/bin
-vmdir/dotnet/VMDIR.Client/obj
-vmafd/dotnet/VMAFD.Client/bin
-vmafd/dotnet/VMAFD.Client/obj
-tools/win/VMwareMMCIDP.UI.Common/obj
-tools/mac/VMPSCHighAvailabilitySnapIn/LightwavePSCHighAvailability/obj
-tools/common/VMCertStore.Common/obj/
-mmc/
-ls/common/VMCertStore.Common/obj/
-tools/common/VMDir.Common/obj/
-tools/common/VMRestSso.Common/RestSsoAdminSnapIn.Core/obj/
-tools/common/VMRestSso.Common/RestSsoAdminSnapIn.Data/obj/
-tools/common/VMRestSso.Common/RestSsoAdminSnapIn.Core/Web/HttpWebRequestManager.cs.bak
-tools/common/VMRestSso.Common/RestSsoAdminSnapIn.Dto/obj/
-tools/common/VMRestSso.Common/RestSsoAdminSnapIn.Service/obj/
-tools/common/x64/
-tools/interop/
-tools/mac/VMCASnapIn/obj/
-tools/mac/VMCertStoreSnapIn/VMCertStoreSnapIn/obj/
-tools/mac/VMDirSnapIn/Lightwave Directory.userprefs
-tools/mac/VMDirSnapIn/VMDirSnapIn/obj/
-tools/mac/VMCertStoreSnapIn/LightwaveCertStore.userprefs
-tools/mac/VMRestSsoSnapIn/VMRestSsoSnapIn/obj/
-tools/mac/VmIdentity.UI.Common/obj/
-tools/mac/x64/
-tools/mmc/
-vmdir/interop/csharp/VmDirInterop/SuperLoggingTest/bin/
-vmdir/interop/csharp/VmDirInterop/VmDirInterop.userprefs
-vmdir/interop/csharp/VmDirInterop/VmDirInterop/bin/
-tools/common/VMCA.Client/obj/
-tools/common/VMCA.Common/obj/
-tools/common/VMCertStore.Client/obj/
-tools/common/VMIdentity.CommonUtils/obj/
-tools/common/VMPSCHighAvailability.Common/obj/
-tools/win/VMCASnapIn/VMCASnapIn.v12.suo
-tools/win/VMCASnapIn/VMCASnapIn/obj/
-tools/win/VMCertStoreSnapIn/VMCertStoreSnapIn.v12.suo
-tools/win/VMCertStoreSnapIn/VMCertStoreSnapIn/obj/
-tools/win/VMDirSnapIn/VMDirSnapIn.v12.suo
-tools/win/VMDirSnapIn/VMDirSnapIn/obj/
-tools/win/VMIdentityToolsInstaller/VMIdentityToolsInstaller.v12.suo
-tools/win/VMPscHighAvailabilitySnapIn/VMPscHighAvailabilitySnapIn.v12.suo
-tools/win/VMIdentityToolsInstaller/VMIdentityToolsInstaller/obj/
-tools/win/VMPscHighAvailabilitySnapIn/VMPscHighAvailabilitySnapIn/obj/
-tools/win/VMRestSsoAdminSnapIn/RestSsoAdminSnapIn.v12.suo
-tools/win/VMRestSsoAdminSnapIn/RestSsoAdminSnapIn/obj/
-tools/win/x64/
-tools/common/VMRestSso.Common/RestSsoAdminSnapIn.Dto/RestSsoAdminSnapIn.Dto.csproj.user
-tools/win/VMIdentityToolsPrerequisite/VMIdentityToolsPrerequisite/bin/
-tools/win/VMIdentityToolsPrerequisite/VMIdentityToolsPrerequisite/obj/
-tools/win/VMPscHighAvailabilitySnapIn/VMPscHighAvailabilitySnapIn/VMPscHighAvailabilitySnapIn.csproj.user
-*.DS_Store
 *.user
-tools/win/wininstaller/VMIdentityTools_Installer/obj
-tools/win/wininstaller/VMIdentityTools_Prerequisite/obj
-tools/win/wininstaller/VMIdentityTools_Standalone/obj
-vmdir/interop/csharp/VmDirInterop/LdapTest/bin
-vmdir/interop/csharp/VmDirInterop/LdapTest/obj
-vmdir/interop/csharp/VmDirInterop/Samples/bin
-vmdir/interop/csharp/VmDirInterop/Samples/obj
-vmdir/interop/csharp/VmDirInterop/SuperLoggingTest/obj
-vmdir/interop/csharp/VmDirInterop/VmDirInterop/obj
-tools/common/VMIdentity.CommonUtils/VMIdentity.CommonUtils.dll.config
-tools/common/VMDNS.Common/obj
-tools/win/VMDNSSnapIn/VMDNSSnapIn/obj
-tools/win/VMDirSchemaSnapIn/VMDirSchemaSnapIn/obj
-tools/win/logs
-tools/x64
-config/m4/
-vmevent/m4/
-vmdns/m4/
-vmafd/m4/
-vmdir/m4/
-vmca/m4/
-vmca/include/config.h.in
-vmidentity/lightwaveui/target
-vmidentity/sso-config/Makefile.in
-tools/win/wininstaller/wininstaller.v12.suo
-*/m4
 */**/Makefile.in
+*/**/autom4te.cache/*
+*/**/compile
+*/**/config.guess
+*/**/config.h.in*
 */**/config.log
 */**/config.status
-*/**/config.guess
 */**/config.sub
-*/**/config.h.in*
-*/**/autom4te.cache/*
+*/**/depcomp
+*/**/configure
+!*/**/configure/
 */**/install-sh
 */**/ltmain.sh
-*/**/configure
-*/**/depcomp
-*/**/compile
 */**/missing
-*/build/rpmbuild
-*/build/libtool
 */build/Makefile
-stage/*
+*/build/libtool
+*/build/rpmbuild
+*/m4
 *~
-*/lw-lwraft/rpmbuild/*
-lw-raft/rpmbuild/*
-vmidentity/rest/core/server/${sys:vmware.log.dir}
-vmidentity/service/target/
+stage/*
+build/*
+
+# Created by https://www.gitignore.io/api/macos,windows,linux
+
+### Linux ###
+*~
+
+# temporary files which can be created if a process still has a handle open of a deleted file
+.fuse_hidden*
+
+# KDE directory preferences
+.directory
+
+# Linux trash folder which might appear on any partition or disk
+.Trash-*
+
+# .nfs files are created when an open file is removed but is still being accessed
+.nfs*
+
+### macOS ###
+*.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+### Windows ###
+# Windows thumbnail cache files
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
+
+# End of https://www.gitignore.io/api/macos,windows,linux
