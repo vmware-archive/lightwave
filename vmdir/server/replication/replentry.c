@@ -745,8 +745,12 @@ ReplFixUpEntryDn(
 
     if (entryArray.iSize != 1)
     {
-        retVal = VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION;
-        BAIL_ON_VMDIR_ERROR(retVal);
+        // object guid not found - entry missing or object GUID mismatch
+        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+                "%s got no result from object GUID lookup."
+                "Entry (%s) missing or object GUID mismatch",
+                __FUNCTION__, pEntry->dn.lberbv_val );
+        goto cleanup;
     }
 
     if (VmDirStringCompareA(entryArray.pEntry[0].dn.lberbv_val, pEntry->dn.lberbv_val, FALSE) == 0)

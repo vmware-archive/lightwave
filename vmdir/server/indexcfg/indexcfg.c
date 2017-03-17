@@ -150,6 +150,7 @@ cleanup:
     {
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
+    VmDirBackendCtxContentFree(&beCtx);
     VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
     return dwError;
 
@@ -236,6 +237,7 @@ cleanup:
     {
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
+    VmDirBackendCtxContentFree(&beCtx);
     VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
     return dwError;
 

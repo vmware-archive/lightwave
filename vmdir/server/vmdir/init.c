@@ -793,7 +793,7 @@ _VmDirCheckPartnerDomainFunctionalLevel(
     DWORD dwError = 0;
     DWORD dwDfl = 0;
     LDAP* pPartnerLd = NULL;
-    PSTR pszDCAccount = NULL;
+    PSTR pszLocalServer = NULL;
     PSTR *ppszServerInfo = NULL;
     PSTR pszDomainName = NULL;
     size_t dwInfoCount = 0;
@@ -814,9 +814,8 @@ _VmDirCheckPartnerDomainFunctionalLevel(
         goto cleanup;
     }
 
-    // Read DC account for host
-    dwError = VmDirRegReadDCAccount(&pszDCAccount);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    // Get local server name (use global instead of reg to support upgrade from 5.5)
+    pszLocalServer = BERVAL_NORM_VAL(gVmdirServerGlobals.bvServerObjName);
 
     // Get domain (needed to retrieve DFL)
     dwError = VmDirDomainDNToName(
@@ -828,7 +827,7 @@ _VmDirCheckPartnerDomainFunctionalLevel(
     //  to compare the local cached DFL with the domain's level
     for (i=0; i<dwInfoCount; i++)
     {
-        if (VmDirStringCompareA(ppszServerInfo[i], pszDCAccount, FALSE) == 0)
+        if (VmDirStringCompareA(ppszServerInfo[i], pszLocalServer, FALSE) == 0)
         {
             //Don't try to query self.
             continue;
@@ -900,7 +899,6 @@ cleanup:
     }
 
     _VmDirFreeCountedStringArray(ppszServerInfo, dwInfoCount);
-    VMDIR_SAFE_FREE_MEMORY(pszDCAccount);
     VMDIR_SAFE_FREE_MEMORY(pszDomainName);
     return dwError;
 

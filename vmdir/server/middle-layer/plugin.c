@@ -778,7 +778,7 @@ _VmDirPluginSchemaLibUpdatePreModify(
     DWORD dwRtn = 0;
     PVDIR_MODIFICATION pMod = NULL;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         pMod = pOperation->request.modifyReq.mods;
         for (; pMod; pMod = pMod->next)
@@ -1421,7 +1421,7 @@ _VmDirPluginSchemaEntryPreAdd(
     PVDIR_ATTRIBUTE pCnAttr = NULL;
     PSTR    pszSchemaIdGuid = NULL;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         // lDAPDisplayName attribute takes cn as default
         if (!VmDirFindAttrByName(pEntry, ATTR_LDAP_DISPLAYNAME))
@@ -1481,7 +1481,7 @@ _VmDirPluginSchemaLibUpdatePreAdd(
 {
     DWORD   dwRtn = 0;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         dwRtn = VmDirSchemaCheck(pEntry);
         BAIL_ON_VMDIR_ERROR(dwRtn);
@@ -1817,7 +1817,7 @@ _VmDirPluginSchemaLibUpdatePostModifyCommit(
 {
     DWORD   dwRtn = 0;
 
-    if (pOperation->bSchemaWriteOp)
+    if (pOperation->dwSchemaWriteOp)
     {
         dwRtn = VmDirSchemaLibUpdate(dwPriorResult);
     }

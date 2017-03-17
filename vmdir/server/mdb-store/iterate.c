@@ -293,6 +293,7 @@ VmDirMDBParentIdIndexIteratorInit(
     *ppIterator = pIterator;
 
 cleanup:
+    VmDirIndexCfgRelease(pIndexCfg);
     return dwError;
 
 error:

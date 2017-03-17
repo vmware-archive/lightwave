@@ -607,7 +607,7 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       strongConsistencyWriteCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
-    BOOLEAN             bSchemaWriteOp;  // this operation is schema modification
+    DWORD               dwSchemaWriteOp; // this operation is schema modification
 
     ///////////////////////////////////////////////////////////////////////////
     // fields valid for both INTERNAL and EXTERNAL operations

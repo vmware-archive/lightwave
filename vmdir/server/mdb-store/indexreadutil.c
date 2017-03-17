@@ -421,6 +421,7 @@ VmDirMDBGetAttrValueMetaData(
     } while (TRUE);
 
 cleanup:
+    VmDirIndexCfgRelease(pIndexCfg);
     if (pCursor != NULL)
     {
         mdb_cursor_close(pCursor);
@@ -530,6 +531,7 @@ VmDirMDBGetAllAttrValueMetaData(
     } while (TRUE);
 
 cleanup:
+    VmDirIndexCfgRelease(pIndexCfg);
     if (pCursor != NULL)
     {
         mdb_cursor_close(pCursor);

@@ -817,6 +817,7 @@ VmDirMdbUpdateAttrValueMetaData(
     }
 
 cleanup:
+    VmDirIndexCfgRelease(pIndexCfg);
     VmDirFreeBerval(pAVmeta);
     VmDirFreeAttrValueMetaDataContent(valueMetaData);
     return dwError;
@@ -926,6 +927,7 @@ VmDirMdbDeleteAllAttrValueMetaData(
     }
 
 cleanup:
+    VmDirIndexCfgRelease(pIndexCfg);
     VmDirFreeBerval(pAVmeta);
     VmDirFreeAttrValueMetaDataContent(&valueMetaData);
     return dwError;

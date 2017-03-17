@@ -126,6 +126,7 @@ cleanup:
     {
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
+    VmDirBackendCtxContentFree(&beCtx);
     VmDirStringListFree(pStringList);
     return dwError;
 
@@ -206,6 +207,7 @@ cleanup:
     {
         beCtx.pBE->pfnBETxnAbort(&beCtx);
     }
+    VmDirBackendCtxContentFree(&beCtx);
     VmDirStringListFree(pMapStrList);
     return dwError;
 
