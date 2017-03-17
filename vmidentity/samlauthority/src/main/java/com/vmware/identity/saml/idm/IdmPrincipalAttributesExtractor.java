@@ -58,7 +58,6 @@ public final class IdmPrincipalAttributesExtractor implements
     */
    public IdmPrincipalAttributesExtractor(String tenantName,
       CasIdmClient idmClient) {
-	  System.out.println("initialize");
       assert tenantName != null;
       assert idmClient != null;
 

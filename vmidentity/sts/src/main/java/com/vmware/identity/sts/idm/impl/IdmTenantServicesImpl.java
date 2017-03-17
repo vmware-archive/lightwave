@@ -14,9 +14,7 @@
 package com.vmware.identity.sts.idm.impl;
 
 import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
-import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsContext;
-import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.IIdmServiceContext;
 import com.vmware.identity.idm.IdmServiceContextFactory;
 import com.vmware.identity.idm.client.CasIdmClient;
@@ -32,7 +30,6 @@ import com.vmware.identity.sts.idm.SystemException;
  * Insert your comment for IdmTenantServicesImpl here
  */
 final class IdmTenantServicesImpl implements IdmTenantServices {
-   private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(IdmTenantServicesImpl.class);
 
    private final CasIdmClient idmClient;
 
@@ -100,7 +97,6 @@ final class IdmTenantServicesImpl implements IdmTenantServices {
             IDiagnosticsContext context = DiagnosticsContextFactory.getCurrentDiagnosticsContext();
             if( context != null )
             {
-                logger.info("COID:" + context.getCorrelationId());
                 serviceContext = IdmServiceContextFactory.getIdmServiceContext(context.getCorrelationId());
             }
             return serviceContext;
