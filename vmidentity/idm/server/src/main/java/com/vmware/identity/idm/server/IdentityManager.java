@@ -334,6 +334,8 @@ public class IdentityManager implements IIdentityManager {
     public static final String WELLKNOWN_SOLUTIONUSERS_GROUP_DESCRIPTION = "Well-known solution users' group, which contains all solution users as members.";
     public static final String WELLKNOWN_CONFIGURATIONUSERS_GROUP_NAME = "SystemConfiguration.Administrators";
     public static final String WELLKNOWN_CONFIGURATIONUSERS_GROUP_DESCRIPTION = "Well-known configuration users' group which contains all configuration users as members.";
+    public static final String WELLKNOWN_ACT_AS_USERS_GROUP_NAME = "ActAsUsers";
+    public static final String WELLKNOWN_ACT_AS_USERS_GROUP_DESCRIPTION = "Well-known act-as users' group which contains all solution users that are allowed to act on behalf of person users.";
     public static final String WELLKNOWN_EXTERNALIDP_USERS_GROUP_NAME =  "ExternalIDPUsers";
     public static final String WELLKNOWN_EXTERNALIDP_USERS_GROUP_DESCRIPTION = "Well-known external IDP users' group, which registers external IDP users as guests.";
 
@@ -438,6 +440,8 @@ public class IdentityManager implements IIdentityManager {
 
        //create registration group for external IDP users
        ensureWellKnownExternalIDPUsersGroupExist(tenantName);
+
+       ensureWellKnownActAsUsersGroupExist(tenantName);
 
        // Make sure we create ServicePrincipal containers to place solution users
        _configStore.ensureSPContainerExist(tenantName);
@@ -7476,6 +7480,14 @@ public class IdentityManager implements IIdentityManager {
        ensureWellKnownGroupExist(tenantName,
              WELLKNOWN_CONFIGURATIONUSERS_GROUP_NAME,
              WELLKNOWN_CONFIGURATIONUSERS_GROUP_DESCRIPTION);
+    }
+
+    private void ensureWellKnownActAsUsersGroupExist(String tenantName)
+       throws Exception {
+
+       ensureWellKnownGroupExist(tenantName,
+             WELLKNOWN_ACT_AS_USERS_GROUP_NAME,
+             WELLKNOWN_ACT_AS_USERS_GROUP_DESCRIPTION);
     }
 
     private void EnsureWellKnownSolutionUsersGroupExist(String tenantName)

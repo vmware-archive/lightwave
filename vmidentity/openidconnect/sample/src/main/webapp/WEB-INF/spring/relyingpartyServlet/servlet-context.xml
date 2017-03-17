@@ -22,9 +22,9 @@
         <beans:property name="rpListeningPort"  value="8443" />
         <beans:property name="regInfoDir"       value="/root/oidcRegInfo" />
         <beans:property name="clientPrefix"     value="oidc-client-" />
-        <beans:property name="adminUsername"    value="Administrator@vsphere.local" />
-        <beans:property name="adminPassword"    value="Admin!23" />
-        <beans:property name="tenant"           value="vsphere.local" />
+        <beans:property name="adminUsername"    value="Administrator@lw-testdom.com" />
+        <beans:property name="adminPassword"    value="Ca$hc0w1" />
+        <beans:property name="tenant"           value="lw-testdom.com" />
         <beans:property name="rpHaEnabled"      value="false" />
         <beans:property name="rpVecsEnabled"    value="false" />
     </beans:bean>
