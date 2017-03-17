@@ -458,13 +458,13 @@ public class ServerUtils
 
         if( ServerUtils.isNullOrEmpty(dn) == false )
         {
-            String[] parts = dn.toUpperCase().split(",");
+            String[] parts = dn.split(",");
 
             int iPart = 0;
 
             for (String part : parts)
             {
-                if (part.startsWith(dcPrefix))
+                if (part.toUpperCase().startsWith(dcPrefix))
                 {
                     if (iPart++ > 0)
                     {
@@ -476,7 +476,7 @@ public class ServerUtils
             }
         }
 
-        return sb.toString().toLowerCase();
+        return sb.toString();
     }
 
     public static String getStringValue( LdapValue[] value )
