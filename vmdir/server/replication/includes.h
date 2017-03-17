@@ -79,9 +79,6 @@
 #include <WinSock2.h>
 #include <stdint.h>
 #include <stdlib.h>
-#if !defined(HAVE_DCERPC_WIN32)
-#include <rpc.h>
-#endif
 #include <assert.h>
 #include <stddef.h>
 #include <tchar.h>

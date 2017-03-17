@@ -99,12 +99,7 @@
 #include <tchar.h>
 #include <errno.h>
 #include <sys/stat.h>
-#if !defined(HAVE_DCERPC_WIN32)
-#include <winsvc.h>
-#include <rpc.h>
-#else
 #include <dce/rpc.h>
-#endif
 #include <assert.h>
 #include <Ws2tcpip.h>
 #include <Sddl.h>
