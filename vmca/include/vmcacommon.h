@@ -616,6 +616,11 @@ VMCAOpenFilePath(
     FILE** fp
     );
 
+DWORD
+VMCACopyFile(
+    PCSTR pszSrc,
+    PCSTR pszDest
+    );
 
 DWORD
 VMCARestrictDirectoryAccess(

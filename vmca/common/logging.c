@@ -377,6 +377,7 @@ VMCALog(
     va_start( va, fmt );
     msgsize = vsnprintf(logMessage, VMCA_MAX_MSG_SIZE, fmt, va );
     if ((msgsize > 0) && (msgsize < VMCA_MAX_MSG_SIZE-2)) {
+        logMessage[msgsize++] = '\n';
         logMessage[msgsize] = '\0';
     } else {
         logMessage[VMCA_MAX_MSG_SIZE-1] = '\0';
