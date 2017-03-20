@@ -1267,6 +1267,15 @@ VmAfdIpcLeaveVmDir(
     );
 
 DWORD
+VmAfdIpcCreateComputerAccount(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+DWORD
 VmAfdIpcJoinAD(
     PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
     PBYTE pRequest,

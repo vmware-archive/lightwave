@@ -62,7 +62,7 @@ Python files included in vmafd
 
 %build
 
-export CFLAGS="-Wno-pointer-sign -Wno-unused-but-set-variable -Wno-implicit-function-declaration -Wno-address"
+export CFLAGS="-Wall -Werror -Wno-pointer-sign -Wno-unused-but-set-variable -Wno-address"
 cd build
 autoreconf -mif .. &&
 ../configure --prefix=%{_prefix} \
