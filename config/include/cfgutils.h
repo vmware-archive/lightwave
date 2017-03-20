@@ -49,6 +49,7 @@ typedef struct _VMW_IC_SETUP_PARAMS
 {
     PSTR pszHostname;
     PSTR pszMachineAccount;
+    PSTR pszOrgUnit;
 
     PSTR pszDomainName;
     PSTR pszPassword;
@@ -181,6 +182,16 @@ VmwDeployGetHostname(
 BOOLEAN
 VmwDeployHaveAdminRights(
     VOID
+    );
+
+DWORD
+VmwDeployValidateHostname(
+    PCSTR pszHostname
+    );
+
+DWORD
+VmwDeployValidateOrgUnit(
+    PCSTR pszOrgUnit
     );
 
 DWORD

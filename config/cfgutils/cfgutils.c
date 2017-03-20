@@ -155,6 +155,10 @@ VmwDeployFreeSetupParams(
     {
         VmwDeployFreeMemory(pParams->pszMachineAccount);
     }
+    if (pParams->pszOrgUnit)
+    {
+        VmwDeployFreeMemory(pParams->pszOrgUnit);
+    }
     if (pParams->pszDomainName)
     {
         VmwDeployFreeMemory(pParams->pszDomainName);
@@ -506,6 +510,12 @@ VmwDeploySetupClientWithDC(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    if (pParams->pszOrgUnit)
+    {
+        dwError = VmwDeployValidateOrgUnit(pParams->pszOrgUnit);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     dwError = VmwDeployValidatePartnerCredentials(
                     pParams->pszServer,
                     pParams->pszPassword,
@@ -554,7 +564,7 @@ VmwDeploySetupClientWithDC(
                     pParams->pszMachineAccount ?
                             pParams->pszMachineAccount : pParams->pszHostname,
                     pParams->pszDomainName,
-                    NULL /* Org Unit */);
+                    pParams->pszOrgUnit);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     VMW_DEPLOY_LOG_INFO(
@@ -648,6 +658,12 @@ VmwDeploySetupClient(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    if (pParams->pszOrgUnit)
+    {
+        dwError = VmwDeployValidateOrgUnit(pParams->pszOrgUnit);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     VMW_DEPLOY_LOG_INFO(
             "Validating Domain credentials for user [%s@%s]",
             VMW_DEPLOY_SAFE_LOG_STRING(pszUsername),
@@ -695,7 +711,7 @@ VmwDeploySetupClient(
                     pParams->pszPassword,
                     pParams->pszMachineAccount ?
                         pParams->pszMachineAccount : pParams->pszHostname,
-                    NULL, /* Org Unit */
+                    pParams->pszOrgUnit,
                     0     /* Flags    */);
     BAIL_ON_DEPLOY_ERROR(dwError);
 

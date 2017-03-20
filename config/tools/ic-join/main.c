@@ -30,6 +30,7 @@ VmwDeployBuildParams(
     PCSTR pszDomainController,
     PCSTR pszDomain,
     PCSTR pszMachineAccount,
+    PCSTR pszOrgUnit,
     PCSTR pszPassword,
     PCSTR pszSubjectAltName,
     BOOLEAN bDisableAfdListener,
@@ -191,6 +192,7 @@ ParseArgs(
     PSTR  pszDomainController   = NULL;
     PSTR  pszDomain = NULL;
     PSTR  pszMachineAccount = NULL;
+    PSTR  pszOrgUnit = NULL;
     PSTR  pszSubjectAltName = NULL;
     PSTR  pszPassword = NULL;
     BOOLEAN bDisableAfdListener = FALSE;
@@ -201,6 +203,7 @@ ParseArgs(
         PARSE_MODE_DOMAIN,
         PARSE_MODE_PASSWORD,
         PARSE_MODE_MACHINE_ACCOUNT,
+        PARSE_MODE_ORG_UNIT,
         PARSE_MODE_SSL_SUBJECT_ALT_NAME
     } parseMode = PARSE_MODE_OPEN;
     int iArg = 0;
@@ -229,9 +232,13 @@ ParseArgs(
                 {
                     parseMode = PARSE_MODE_MACHINE_ACCOUNT;
                 }
+                else if (!strcmp(pszArg, "--org-unit"))
+                {
+                    parseMode = PARSE_MODE_ORG_UNIT;
+                }
                 else if (!strcmp(pszArg, "--disable-afd-listener"))
                 {
-                        bDisableAfdListener = TRUE;
+                    bDisableAfdListener = TRUE;
                 }
                 else if (!strcmp(pszArg, "--help"))
                 {
@@ -306,6 +313,20 @@ ParseArgs(
 
                 break;
 
+            case PARSE_MODE_ORG_UNIT:
+
+                if (pszOrgUnit)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszOrgUnit = pszArg;
+
+                parseMode = PARSE_MODE_OPEN;
+
+                break;
+
             case PARSE_MODE_SSL_SUBJECT_ALT_NAME:
 
                 if (pszSubjectAltName)
@@ -333,6 +354,7 @@ ParseArgs(
                     pszDomainController,
                     pszDomain,
                     pszMachineAccount,
+                    pszOrgUnit,
                     pszPassword,
                     pszSubjectAltName,
                     bDisableAfdListener,
@@ -363,6 +385,7 @@ VmwDeployBuildParams(
     PCSTR pszDomainController,
     PCSTR pszDomain,
     PCSTR pszMachineAccount,
+    PCSTR pszOrgUnit,
     PCSTR pszPassword,
     PCSTR pszSubjectAltName,
     BOOLEAN bDisableAfdListener,
@@ -406,6 +429,14 @@ VmwDeployBuildParams(
         dwError = VmwDeployAllocateStringA(
                         pszMachineAccount,
                         &pSetupParams->pszMachineAccount);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pszOrgUnit))
+    {
+        dwError = VmwDeployAllocateStringA(
+                        pszOrgUnit,
+                        &pSetupParams->pszOrgUnit);
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
@@ -547,7 +578,8 @@ ShowUsage(
            "Arguments:\n"
            "[--domain-controller <domain controller's hostname or IP Address>]\n"
            "[--domain    <fully qualified domain name. default: vsphere.local>]\n"
-           "[--machine-account-name <preferred computer account name. default: <hostname>\n"
+           "[--machine-account-name <preferred computer account name. default: <hostname>]\n"
+           "[--org-unit <organizational unit. default: Computers]\n"
            "[--disable-afd-listener]\n"
            "[--password  <password to administrator account>]\n"
            "[--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n");
