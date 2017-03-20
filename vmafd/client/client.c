@@ -3012,7 +3012,6 @@ VmAfdCreateComputerAccountA(
     if (ppszOutPassword)
     {
         *ppszOutPassword = pszOutPassword;
-        pszOutPassword = NULL;
     }
 
 cleanup:
@@ -3022,11 +3021,12 @@ cleanup:
     VMAFD_SAFE_FREE_MEMORY(pwszMachineName);
     VMAFD_SAFE_FREE_MEMORY(pwszOrgUnit);
     VMAFD_SAFE_FREE_MEMORY(pwszOutPassword);
-    VMAFD_SAFE_FREE_STRINGA(pszOutPassword);
 
     return dwError;
 
 error:
+
+    VMAFD_SAFE_FREE_STRINGA(pszOutPassword);
 
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdCreateComputerAccountA failed. Error(%u)", dwError);
 
@@ -3064,15 +3064,15 @@ VmAfdCreateComputerAccountW(
     if (ppwszOutPassword)
     {
         *ppwszOutPassword = pwszOutPassword;
-        pwszOutPassword = NULL;
     }
 
 cleanup:
 
-    VMAFD_SAFE_FREE_MEMORY(pwszOutPassword);
     return dwError;
 
 error:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszOutPassword);
 
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdCreateComputerAccountW failed. Error(%u)", dwError);
 

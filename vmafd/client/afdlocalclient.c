@@ -1227,6 +1227,7 @@ VmAfdLocalCreateComputerAccount(
     DWORD noOfArgsOut = 0;
     DWORD idx = 0;
     PWSTR pwszOutPassword = NULL;
+    SIZE_T dwOutPasswordLength = 0;
     VMW_TYPE_SPEC input_spec[] = CREATE_COMPUTER_ACCOUNT_INPUT_PARAMS;
     VMW_TYPE_SPEC output_spec[] = CREATE_COMPUTER_ACCOUNT_OUTPUT_PARAMS;
 
@@ -1260,20 +1261,28 @@ VmAfdLocalCreateComputerAccount(
                   &pwszOutPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    dwError = VmAfdGetStringLengthW(
+                  output_spec[1].data.pWString,
+                  &dwOutPasswordLength);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    memset(output_spec[1].data.pWString, 0,
+           dwOutPasswordLength * sizeof(WCHAR));
+
     if (ppwszOutPassword)
     {
         *ppwszOutPassword = pwszOutPassword;
-        pwszOutPassword = NULL;
     }
 
 cleanup:
 
-    VMAFD_SAFE_FREE_MEMORY(pwszOutPassword);
     VmAfdFreeTypeSpecContent(output_spec, noOfArgsOut);
 
     return dwError;
 
 error:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszOutPassword);
 
     VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdLocalCreateComputerAccount failed. Error(%u)", dwError);
 
