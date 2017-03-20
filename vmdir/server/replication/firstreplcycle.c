@@ -635,6 +635,10 @@ error:
     goto cleanup;
 }
 
+#ifndef VDIR_PSC_VERSION
+#define VDIR_PSC_VERSION "6.7.0"
+#endif
+
 static
 int
 _VmDirPatchDSERoot(

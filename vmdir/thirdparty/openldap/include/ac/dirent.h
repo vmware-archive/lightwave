@@ -22,6 +22,7 @@
 # define NAMLEN(dirent) strlen((dirent)->d_name)
 #elif defined(_MSC_VER)
 #include <windows.h>
+#include <winsock2.h>
 #ifndef MAX_PATH
 #define MAX_PATH	260
 #endif

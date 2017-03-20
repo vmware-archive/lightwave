@@ -78,7 +78,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..;$(SolutionDir)..\thirdparty\heimdal;$(SolutionDir)..\thirdparty\heimdal\asn1;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;$(SolutionDir)..\thirdparty\heimdal;$(SolutionDir)..\thirdparty\heimdal\asn1;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;PACKAGE_NAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessToFile>false</PreprocessToFile>
       <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
@@ -94,8 +94,8 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <Lib>
-      <AdditionalDependencies>libasn1.lib;libasn1db.lib;libkrb5-crypto.lib;ssleay32.lib;liblber.lib;libldap_r.lib;libeay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>liblwbase.lib;libasn1.lib;libasn1db.lib;libkrb5-crypto.lib;ssleay32.lib;liblber.lib;libldap_r.lib;libeay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(OutDir);$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -106,7 +106,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>..;$(SolutionDir)..\thirdparty\heimdal;$(SolutionDir)..\thirdparty\heimdal\asn1;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..;$(SolutionDir)..\thirdparty\heimdal;$(SolutionDir)..\thirdparty\heimdal\asn1;$(SolutionDir)..\thirdparty\heimdal\krb5-crypto;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;PACKAGE_NAME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -118,8 +118,8 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <Lib>
-      <AdditionalDependencies>libasn1.lib;libasn1db.lib;libkrb5-crypto.lib;ssleay32.lib;liblber.lib;libldap_r.lib;libeay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(OutDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>liblwbase.lib;libasn1.lib;libasn1db.lib;libkrb5-crypto.lib;ssleay32.lib;liblber.lib;libldap_r.lib;libeay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(OutDir);$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>

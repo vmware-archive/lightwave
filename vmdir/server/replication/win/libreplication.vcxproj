@@ -78,7 +78,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\server\include;$(SolutionDir)..\thirdparty\openldap\libraries\liblber;$(SolutionDir)..\thirdparty\openldap\include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\server\include;$(SolutionDir)..\thirdparty\openldap\libraries\liblber;$(SolutionDir)..\thirdparty\openldap\include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;..;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessToFile>false</PreprocessToFile>
       <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
@@ -100,7 +100,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\server\include;$(SolutionDir)..\thirdparty\openldap\libraries\liblber;$(SolutionDir)..\thirdparty\openldap\include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\server\include;$(SolutionDir)..\thirdparty\openldap\libraries\liblber;$(SolutionDir)..\thirdparty\openldap\include;$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\include;..;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>

@@ -481,6 +481,10 @@ error:
     return dwError;
 }
 
+#ifndef VDIR_PSC_VERSION
+#define VDIR_PSC_VERSION "6.7.0"
+#endif
+
 static
 DWORD
 _VmDirSrvCreatePersistedDSERoot(VOID)

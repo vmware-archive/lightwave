@@ -78,7 +78,7 @@
     </Midl>
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(OutDir);$(SolutionDir)..\server\include;$(SolutionDir)..\thirdparty\openldap\libraries\liblber;$(SolutionDir)..\thirdparty\openldap\include;$(SolutionDir)..\thirdparty;$(LIGHTWAVE_EVENT_LOG_ROOT)\include;..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutDir);$(SolutionDir)..\server\include;$(SolutionDir)..\thirdparty\openldap\libraries\liblber;$(SolutionDir)..\thirdparty\openldap\include;$(SolutionDir)..\thirdparty;$(LIGHTWAVE_EVENT_LOG_ROOT)\include;..;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessToFile>false</PreprocessToFile>
       <PreprocessSuppressLineNumbers>false</PreprocessSuppressLineNumbers>
@@ -93,7 +93,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>libldap-head.lib;libldap_r.lib;libsasl.lib;libasn1.lib;libasn1db.lib;libkrb5-crypto.lib;liblber.lib;libmdb.lib;libeay32.lib;ssleay32.lib;ws2_32.lib;user32.lib;Gdi32.lib;libcommon.lib;libsrvcommon.lib;libbackend.lib;libindexcfg.lib;libmiddle-layer.lib;libvmdirclient.lib;libreplication.lib;libschema.lib;libvmacl.lib;libmdb-store.lib;libkdcd.lib;libcsrp.lib;krb5_64.lib;Shlwapi.lib;libvmdirlogging.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -108,7 +108,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(OutDir);$(SolutionDir)..\server\include;$(SolutionDir)..\thirdparty\openldap\libraries\liblber;$(SolutionDir)..\thirdparty\openldap\include;$(SolutionDir)..\thirdparty;$(LIGHTWAVE_EVENT_LOG_ROOT)\include;..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(OutDir);$(SolutionDir)..\server\include;$(SolutionDir)..\thirdparty\openldap\libraries\liblber;$(SolutionDir)..\thirdparty\openldap\include;$(SolutionDir)..\thirdparty;$(LIGHTWAVE_EVENT_LOG_ROOT)\include;..;$(LIGHTWAVE_LIKEWISE_ROOT)\$(ConfigurationName)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>

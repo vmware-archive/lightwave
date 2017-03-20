@@ -252,7 +252,7 @@ krb5_string_to_key_derived(krb5_context context,
     krb5_error_code ret;
     struct _krb5_key_data kd;
     size_t keylen;
-    u_char *tmp;
+    unsigned char *tmp;
 
     if(et == NULL) {
 	krb5_heim_set_error_message (context, KRB5_PROG_ETYPE_NOSUPP,

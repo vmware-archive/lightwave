@@ -1520,6 +1520,10 @@ static  _TCHAR  RSA_SERVER_KEY[MAX_PATH];
 
 #endif
 
+#ifndef VDIR_PSC_VERSION
+#define VDIR_PSC_VERSION "6.7.0"
+#endif
+
 /*
  * Setup this Domain Controller account on the partner host
  */
