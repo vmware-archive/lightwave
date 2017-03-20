@@ -266,6 +266,17 @@ VmDirLdapCreateComputerOUContainer(
     );
 
 DWORD
+VmDirLdapConfigureComputerAccount(
+    LDAP* pLd,
+    PCSTR pszHostName,              // Remote host name
+    PCSTR pszDomainName,
+    PCSTR pszUsername,
+    PCSTR pszPassword,
+    PCSTR pszComputerHostName,
+    PCSTR pszComputerOU
+    );
+
+DWORD
 VmDirLdapSetupComputerAccount(
     LDAP* pLd,
     PCSTR pszDomainName,

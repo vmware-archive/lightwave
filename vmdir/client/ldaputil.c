@@ -1754,6 +1754,88 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirLdapConfigureComputerAccount(
+    LDAP* pLd,
+    PCSTR pszHostName,              // Remote host name
+    PCSTR pszDomainName,
+    PCSTR pszUsername,
+    PCSTR pszPassword,
+    PCSTR pszComputerHostName,
+    PCSTR pszComputerOU
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszDomainDN = NULL;
+    PSTR pszComputerDN = NULL;
+    PSTR pszMachineGUID = NULL;
+    PSTR pszExtendedOU = (PSTR)pszComputerOU;
+    PCSTR pszAttrObjectGUID = ATTR_VMW_MACHINE_GUID;
+    DWORD dwAccountPasswdSize = strlen(pszPassword);
+    PSTR pszLowerCaseComputerHostName = NULL;
+
+    dwError = VmDirAllocASCIIUpperToLower(
+                    pszComputerHostName,
+                    &pszLowerCaseComputerHostName );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvCreateDomainDN(pszDomainName, &pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (VmDirStringCompareA(pszComputerOU, VMDIR_COMPUTERS_RDN_VAL, FALSE) != 0)
+    {
+        dwError = VmDirAllocateStringPrintf(
+                    &pszExtendedOU,
+                    "%s,%s=%s",
+                    pszComputerOU,
+                    ATTR_OU,
+                    VMDIR_COMPUTERS_RDN_VAL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateStringPrintf(
+                    &pszComputerDN,
+                    "%s=%s,%s=%s,%s",
+                    ATTR_CN,
+                    pszLowerCaseComputerHostName,
+                    ATTR_OU,
+                    pszExtendedOU,
+                    pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGenerateGUID(&pszMachineGUID);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapModReplaceAttribute(
+                    pLd,
+                    pszComputerDN,
+                    pszAttrObjectGUID,
+                    pszMachineGUID);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirConfigSetDCAccountInfo(
+                    pszComputerHostName,
+                    pszComputerDN,
+                    pszPassword,
+                    dwAccountPasswdSize,
+                    pszMachineGUID);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+
+    VMDIR_SAFE_FREE_STRINGA(pszMachineGUID);
+    VMDIR_SAFE_FREE_STRINGA(pszExtendedOU);
+    VMDIR_SAFE_FREE_STRINGA(pszComputerDN);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainDN);
+    VMDIR_SAFE_FREE_STRINGA(pszLowerCaseComputerHostName);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirLdapConfigureComputerAccount failed. Error(%u)", dwError);
+
+    goto cleanup;
+}
+
 /*
  * Setup this Computer account on the remote host
  */

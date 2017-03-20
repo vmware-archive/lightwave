@@ -681,7 +681,8 @@ VmAfSrvJoinVmDir(
                       pszUserName,
                       pszPassword,
                       pszMachineName,
-                      pszOrgUnit);
+                      pszOrgUnit,
+                      0);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = _CreateKrbConfig(
@@ -793,6 +794,7 @@ VmAfSrvJoinVmDir2(
     PWSTR pwszDCHostname = NULL;
     PWSTR pwszSiteName = NULL;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
+    DWORD dwDirJoinFlags = 0;
 
     BAIL_ON_VMAFD_INVALID_POINTER(pwszUserName, dwError);
     BAIL_ON_VMAFD_INVALID_POINTER(pwszPassword, dwError);
@@ -888,25 +890,32 @@ VmAfSrvJoinVmDir2(
     dwError = VmAfdUpperCaseStringA(pszDefaultRealm);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    dwDirJoinFlags = (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_CLIENT_PREJOINED)) ?
+                            VMDIR_CLIENT_JOIN_FLAGS_PREJOINED : 0;
+
     dwError = VmDirClientJoin(
                       pszDCHostname,
                       pszUserName,
                       pszPassword,
                       pszMachineName,
-                      pszOrgUnit);
+                      pszOrgUnit,
+                      dwDirJoinFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = _CreateKrbConfig(
-                      pszDefaultRealm,
-                      gVmafdGlobals.pszKrb5Config,
-                      gVmafdGlobals.pszKrb5Keytab,
-                      pszDCHostname,
-                      NULL);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    if (!IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_CLIENT_PREJOINED))
+    {
+        dwError = _CreateKrbConfig(
+                        pszDefaultRealm,
+                        gVmafdGlobals.pszKrb5Config,
+                        gVmafdGlobals.pszKrb5Keytab,
+                        pszDCHostname,
+                        NULL);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
 #ifndef _WIN32
-    chmod(gVmafdGlobals.pszKrb5Keytab, 0600);
+        chmod(gVmafdGlobals.pszKrb5Keytab, 0600);
 #endif
+    }
 
     dwError = VmAfSrvSetDomainName(pwszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);

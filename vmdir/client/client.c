@@ -1075,7 +1075,8 @@ VmDirClientJoin(
     PCSTR    pszUserName,
     PCSTR    pszPassword,
     PCSTR    pszMachineName,
-    PCSTR    pszOrgUnit)
+    PCSTR    pszOrgUnit,
+    DWORD    dwFlags)
 {
     DWORD   dwError = 0;
     PSTR    pszDomainName = NULL;
@@ -1103,24 +1104,39 @@ VmDirClientJoin(
                 pszPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLdapCreateComputerOUContainer(
-                pLd,
-                pszDomainName,
-                pszOrgUnit ? pszOrgUnit : VMDIR_COMPUTERS_RDN_VAL);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (!(dwFlags & VMDIR_CLIENT_JOIN_FLAGS_PREJOINED))
+    {
+        dwError = VmDirLdapCreateComputerOUContainer(
+                    pLd,
+                    pszDomainName,
+                    pszOrgUnit ? pszOrgUnit : VMDIR_COMPUTERS_RDN_VAL);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLdapSetupComputerAccount(
-                pLd,
-                pszDomainName,
-                pszServerName,
-                pszUserName,
-                pszPassword,
-                pszOrgUnit ? pszOrgUnit : VMDIR_COMPUTERS_RDN_VAL,
-                pszMachineName,
-                TRUE,
-                NULL,
-                NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = VmDirLdapSetupComputerAccount(
+                    pLd,
+                    pszDomainName,
+                    pszServerName,
+                    pszUserName,
+                    pszPassword,
+                    pszOrgUnit ? pszOrgUnit : VMDIR_COMPUTERS_RDN_VAL,
+                    pszMachineName,
+                    TRUE,
+                    NULL,
+                    NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmDirLdapConfigureComputerAccount(
+                    pLd,
+                    pszDomainName,
+                    pszServerName,
+                    pszUserName,
+                    pszPassword,
+                    pszMachineName,
+                    pszOrgUnit);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     for (iCnt = 0; iCnt < sizeof(pszServiceTable)/sizeof(pszServiceTable[0]); iCnt++)
     {
@@ -1141,20 +1157,24 @@ VmDirClientJoin(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirUpdateKeytabFile(
-                      pszServerName,
-                      pszDomainName,
-                      pszMachineName,
-                      pszUserName,
-                      pszPassword,
-                      FALSE);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (!(dwFlags & VMDIR_CLIENT_JOIN_FLAGS_PREJOINED))
+    {
+        dwError = VmDirUpdateKeytabFile(
+                pszServerName,
+                pszDomainName,
+                pszMachineName,
+                pszUserName,
+                pszPassword,
+                FALSE);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s (%s)(%s)(%s) passed",
                                         __FUNCTION__,
                                         VDIR_SAFE_STRING(pszServerName),
                                         VDIR_SAFE_STRING(pszUserName),
                                         VDIR_SAFE_STRING(pszMachineName) );
+
 cleanup:
 
     VmDirLdapUnbind(&pLd);

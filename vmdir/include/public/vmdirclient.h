@@ -33,7 +33,8 @@ extern "C" {
 #include <ldap.h>
 #include "vmdirtypes.h"
 
-#define VMDIR_MAX_UPN_LEN       512
+#define VMDIR_MAX_UPN_LEN                   512
+#define VMDIR_CLIENT_JOIN_FLAGS_PREJOINED   0x00000001
 
 DWORD
 VmDirConnectionOpen(
@@ -203,8 +204,8 @@ VmDirClientJoin(
     PCSTR    pszUserName,
     PCSTR    pszPassword,
     PCSTR    pszMachineName,
-    PCSTR    pszOrgUnit
-    );
+    PCSTR    pszOrgUnit,
+    DWORD    dwJoinFlags);
 
 DWORD
 VmDirClientLeave(
