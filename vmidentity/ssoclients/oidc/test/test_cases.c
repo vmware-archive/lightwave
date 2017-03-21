@@ -78,7 +78,7 @@ TestPasswordGrantSuccessResponse()
         s_pClient,
         s_pszUsername,
         s_pszPassword,
-        "openid offline_access rs_admin_server",
+        "openid offline_access",
         &pTokenSuccessResponse,
         &pTokenErrorResponse);
     TEST_ASSERT_SUCCESS(e);
@@ -100,7 +100,7 @@ TestPasswordGrantSuccessResponse()
         OidcTokenSuccessResponseGetAccessToken(pTokenSuccessResponse),
         OidcClientGetSigningCertificatePEM(s_pClient),
         "issuer",
-        "rs_admin_server",
+        NULL, // pszResourceServerName
         CLOCK_TOLERANCE_IN_SECONDS);
     TEST_ASSERT_SUCCESS(e);
     TEST_ASSERT_TRUE(OidcAccessTokenGetIssuer(pAccessToken) != NULL);
@@ -108,7 +108,8 @@ TestPasswordGrantSuccessResponse()
 
     OidcAccessTokenGetAudience(pAccessToken, &ppszAudience, &audienceSize);
     TEST_ASSERT_TRUE(ppszAudience != NULL);
-    TEST_ASSERT_TRUE(audienceSize == 2);
+    TEST_ASSERT_TRUE(audienceSize == 1);
+    TEST_ASSERT_EQUAL_STRINGS(s_pszUsername, ppszAudience[0]);
 
     e = OidcAccessTokenGetStringClaim(pAccessToken, "token_class", &pszStringClaim);
     TEST_ASSERT_SUCCESS(e);

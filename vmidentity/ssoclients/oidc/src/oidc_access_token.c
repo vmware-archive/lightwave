@@ -126,8 +126,19 @@ OidcAccessTokenParse(
     BAIL_ON_ERROR(e);
     e = SSOJwtGetStringClaim(p->pJwt, "sub", &p->pszSubject);
     BAIL_ON_ERROR(e);
+
+    // aud claim might be a string or an array of strings
     e = SSOJwtGetStringArrayClaim(p->pJwt, "aud", &p->ppszAudience, &p->audienceSize);
-    BAIL_ON_ERROR(e);
+    if (e != SSOERROR_NONE)
+    {
+        e = SSOMemoryAllocateArray(1, sizeof(PSTRING), (void**) &p->ppszAudience);
+        BAIL_ON_ERROR(e);
+        p->audienceSize = 1;
+
+        e = SSOJwtGetStringClaim(p->pJwt, "aud", &p->ppszAudience[0]);
+        BAIL_ON_ERROR(e);
+    }
+
     e = SSOJwtGetLongClaim(p->pJwt, "iat", &p->issueTime);
     BAIL_ON_ERROR(e);
     e = SSOJwtGetLongClaim(p->pJwt, "exp", &p->expirationTime);
