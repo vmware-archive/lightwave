@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -557,6 +557,9 @@ VmwDeploySetupClientWithDC(
             "Joining system to directory service at [%s]",
             VMW_DEPLOY_SAFE_LOG_STRING(pParams->pszServer));
 
+    pszUsername = (pParams->bUseMachineAccount && pParams->pszMachineAccount)
+                            ? pParams->pszMachineAccount : VMW_ADMIN_NAME;
+
     dwError = VmAfdJoinVmDirA(
                     pParams->pszServer,
                     pszUsername,
@@ -705,6 +708,9 @@ VmwDeploySetupClient(
 
     VMW_DEPLOY_LOG_INFO("Performing domain join operation");
 
+    pszUsername = (pParams->bUseMachineAccount && pParams->pszMachineAccount)
+                            ? pParams->pszMachineAccount : VMW_ADMIN_NAME;
+
     dwError = VmAfdJoinVmDir2A(
                     pParams->pszDomainName,
                     pszUsername,
@@ -712,7 +718,8 @@ VmwDeploySetupClient(
                     pParams->pszMachineAccount ?
                         pParams->pszMachineAccount : pParams->pszHostname,
                     pParams->pszOrgUnit,
-                    0     /* Flags    */);
+                    pParams->bMachinePreJoined ?
+                        VMAFD_JOIN_FLAGS_CLIENT_PREJOINED : 0);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     dwError = VmAfdGetDCNameA(pszHostname, &pszDC);
