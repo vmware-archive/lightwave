@@ -237,7 +237,8 @@ function configure_lightwave()
     \"LIGHTWAVE_DOMAIN\" : \"$lw_domain\", \
     \"LIGHTWAVE_PASSWORD\" : \"$lw_password\", \
     \"IS_FIRST_INSTANCE\" : \"$lw_is_first_instance\", \
-    \"LIGHTWAVE_HOSTNAME\" : \"$lw_hostname\" \
+    \"LIGHTWAVE_HOSTNAME\" : \"$lw_hostname\", \
+    \"SSL_SUBJECT_ALT_NAME\" : \"$ip0\" \
   }"
     content=`cat $LIGHTWAVE_CFG_FILE`
     pystache "$content" "$context" > $LIGHTWAVE_CFG_INSTANCE_FILE
