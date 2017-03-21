@@ -203,7 +203,10 @@ public abstract class BaseLdapProvider implements IIdentityProvider
 	for (URI connectionString : connectionUris) {
 	    PooledLdapConnectionIdentity.Builder builder = new PooledLdapConnectionIdentity.Builder(
 		    connectionString.toString(), authType);
-	    builder.setTenantName(tenantName).setUsername(userName).setPassword(password).setUseGCPort(useGc);
+	    builder.setTenantName(tenantName)
+	           .setUsername(userName)
+	           .setPassword(password)
+	           .setUseGCPort(useGc);
 
 	    boolean isLdaps = connectionString.getScheme().equalsIgnoreCase(LDAPS_SCHEMA);
 	    if (isLdaps) {

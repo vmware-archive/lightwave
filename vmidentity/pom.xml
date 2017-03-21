@@ -35,8 +35,8 @@
     <commons.io.version>2.4</commons.io.version>
     <commons.lang3.version>3.3.2</commons.lang3.version>
     <nimbusds.version>4.12</nimbusds.version>
-    <bouncycastle.version>1.47</bouncycastle.version>
-    <bouncycastle.jdk15.version>1.46</bouncycastle.jdk15.version>
+    <bouncycastle.version>1.50</bouncycastle.version>
+    <bouncycastle.jdk15.version>1.50</bouncycastle.jdk15.version>
     <glassfish.hk2.version>2.3.0-b10</glassfish.hk2.version>
     <glassfish.jersey.version>2.12</glassfish.jersey.version>
     <glassfish.osgi.version>1.0.1</glassfish.osgi.version>

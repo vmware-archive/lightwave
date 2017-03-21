@@ -52,6 +52,7 @@ import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AttributeValuePair;
 import com.vmware.identity.idm.AuthenticationType;
+import com.vmware.identity.idm.ContainerAlreadyExistsException;
 import com.vmware.identity.idm.DuplicateCertificateException;
 import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.GroupDetail;
@@ -145,6 +146,9 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
     private static final String GROUP_PRINC_QUERY_BY_ACCOUNT =
             "(&(sAMAccountName=%s)(objectClass=group))";
+
+    private static final String CONTAINER_QUERY_BY_NAME =
+            "(&(cn=%s)(objectClass=container))";
 
    /**
     * arg1 - userPrincipalName
@@ -244,6 +248,7 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     private static final String ATTR_JIT_USER_ID = "vmwSTSExternalIdpUserId";
     private static final String ATTR_EXTERNAL_IDP_ID = "vmwSTSEntityId";
     private static final String ATTR_NAME_GROUP = "group";
+    private static final String ATTR_NAME_CONTAINER = "container";
     private static final String ATTR_NAME_SERVICE =
             "vmwServicePrincipal";
     private static final String ATTR_NAME_GROUP_NAME = "name";
@@ -5213,27 +5218,10 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 LdapFilterString.encode(attributeValue));
     }
 
-    private String buildQueryUsersByNameFilter(String searchString)
-    {
-        if (ServerUtils.isNullOrEmpty(searchString))
-        {
-            return USER_ALL_QUERY;
-        }
-
-        String escapedSearchString = LdapFilterString.encode(searchString);
-        return String.format(USER_ALL_BY_ACCOUNT_NAME, escapedSearchString);
+    private String buildQueryByContainerName(String containerName) {
+        return String.format(CONTAINER_QUERY_BY_NAME, containerName);
     }
 
-    private String buildQueryGroupsByNameFilter(String searchString)
-    {
-        if (ServerUtils.isNullOrEmpty(searchString))
-        {
-            return GROUP_ALL_QUERY;
-        }
-
-        String escapedSearchString = LdapFilterString.encode(searchString);
-        return String.format(GROUP_ALL_BY_ACCOUNT_NAME, escapedSearchString);
-    }
 
     private boolean existsPrincipal(String accountName, PrincipalId principalName,
             ILdapConnectionEx connection) throws Exception
@@ -6277,8 +6265,65 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         return ATTR_USER_PRINCIPAL_NAME;
     }
 
+    @Override
+    public boolean doesContainerExist(String containerName) throws Exception {
+        try (PooledLdapConnection pooledConnection = borrowConnection()) {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+            String base = String.format("cn=%s,%s", containerName, getDomainDN(getDomain()));
+
+            String[] attributes = { ATTR_NAME_CN };
+
+            String filter = buildQueryByContainerName(containerName);
+            ILdapMessage message = connection.search(base, LdapScope.SCOPE_BASE, filter, attributes, true);
+
+            try {
+                ILdapEntry[] entries = message.getEntries();
+                if (entries == null || entries.length == 0) {
+                    return false;
+                } else {
+                    return true;
+                }
+            } finally {
+                message.close();
+            }
+        } catch (NoSuchObjectLdapException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public void addContainer(String containerName) throws Exception {
+        ValidateUtil.validateNotEmpty(containerName, "containerName");
+
+        try (PooledLdapConnection pooledConnection = borrowConnection()) {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+
+            String domain = getDomain();
+
+            if (domain == null || domain.isEmpty()) {
+                throw new IllegalStateException("No domain name found for identity provider");
+            }
+
+            String dn = String.format("CN=%s,%s", containerName, getDomainDN(domain));
+
+            ArrayList<LdapMod> attributeList = new ArrayList<LdapMod>();
+            LdapMod objectClass = new LdapMod(LdapModOperation.ADD, ATTR_NAME_OBJECTCLASS,
+                    new LdapValue[] { LdapValue.fromString(ATTR_NAME_CONTAINER) });
+            attributeList.add(objectClass);
+
+            LdapMod attrCn = new LdapMod(LdapModOperation.ADD, ATTR_NAME_CN,
+                    new LdapValue[] { LdapValue.fromString(containerName) });
+            attributeList.add(attrCn);
+
+            connection.addObject(dn, attributeList.toArray(new LdapMod[attributeList.size()]));
+        } catch (AlreadyExistsLdapException e) {
+            throw new ContainerAlreadyExistsException(
+                    "Another container with the name '" + containerName + "' already exists");
+        }
+    }
+
     private PooledLdapConnection borrowConnection() throws Exception {
-	return borrowConnection(getStoreDataEx().getConnectionStrings(), getUsername(), getPassword(), getAuthType(), false);
+        return borrowConnection(getStoreDataEx().getConnectionStrings(), getUsername(), getPassword(), getAuthType(), false);
     }
 
 }

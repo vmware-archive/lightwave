@@ -306,17 +306,6 @@ public class DirectoryConfigStore implements IConfigStore {
 	}
     }
 
-    @Override
-    public void ensureSPContainerExist(String tenantName) throws Exception {
-	ValidateUtil.validateNotEmpty(tenantName, "tenantName");
-
-	try (PooledLdapConnection pooledConnection = borrowConnection()) {
-	    ILdapConnectionEx connection = pooledConnection.getConnection();
-	    DirectoryConfigStore.ensureObjectExists(connection, ServerUtils.getDomainDN(tenantName),
-		    ContainerLdapObject.getInstance(), ContainerLdapObject.CONTAINER_SOLUTION_USERS, true);
-	}
-    }
-
     private int getCurrMaxCredIndex(Set<String> credDns) {
 	int currMaxCredIndex = 0;
 
@@ -3859,25 +3848,28 @@ public class DirectoryConfigStore implements IConfigStore {
     }
 
     private PooledLdapConnection borrowConnection() throws Exception {
-	Exception latestEx = null;
-	IdmServerConfig config = IdmServerConfig.getInstance();
-	for (URI connectionString : this._uris) {
-	    PooledLdapConnectionIdentity.Builder builder = new PooledLdapConnectionIdentity.Builder(
-		    connectionString.toString(), config.getDirectoryConfigStoreAuthType());
-	    PooledLdapConnectionIdentity pooledLdapConnectionIdentity = builder
-		    .setUsername(config.getDirectoryConfigStoreUserName())
-		    .setPassword(config.getDirectoryConfigStorePassword()).setUseGCPort(false).build();
+        Exception latestEx = null;
+        IdmServerConfig config = IdmServerConfig.getInstance();
+        for (URI connectionString : this._uris) {
+            PooledLdapConnectionIdentity.Builder builder = new PooledLdapConnectionIdentity.Builder(
+                    connectionString.toString(), config.getDirectoryConfigStoreAuthType());
+            PooledLdapConnectionIdentity pooledLdapConnectionIdentity = builder
+                    .setTenantName(config.getDirectoryConfigStoreDomain())
+                    .setUsername(config.getDirectoryConfigStoreUserName())
+                    .setPassword(config.getDirectoryConfigStorePassword())
+                    .setUseGCPort(false)
+                    .build();
 
-	    try {
-		LdapConnectionPool ldapConnectionPool = LdapConnectionPool.getInstance();
-		ILdapConnectionEx conn = ldapConnectionPool.borrowConnection(pooledLdapConnectionIdentity);
-		return new PooledLdapConnection(conn, pooledLdapConnectionIdentity, ldapConnectionPool);
-	    } catch (Exception e) {
-		logger.error(e);
-		latestEx = e;
-	    }
-	}
-	throw latestEx;
+            try {
+                LdapConnectionPool ldapConnectionPool = LdapConnectionPool.getInstance();
+                ILdapConnectionEx conn = ldapConnectionPool.borrowConnection(pooledLdapConnectionIdentity);
+                return new PooledLdapConnection(conn, pooledLdapConnectionIdentity, ldapConnectionPool);
+            } catch (Exception e) {
+                logger.error(e);
+                latestEx = e;
+            }
+        }
+        throw latestEx;
     }
 
     private String getRootSystemConfigDn(ILdapConnectionEx connection, boolean createIfNotExists) {

@@ -86,6 +86,7 @@ import com.vmware.identity.idm.CertificateRevocationCheckException;
 import com.vmware.identity.idm.CertificateType;
 import com.vmware.identity.idm.ClientCertPolicy;
 import com.vmware.identity.idm.CommonUtil;
+import com.vmware.identity.idm.ContainerAlreadyExistsException;
 import com.vmware.identity.idm.DomainManagerException;
 import com.vmware.identity.idm.DomainTrustsInfo;
 import com.vmware.identity.idm.DomainType;
@@ -338,6 +339,7 @@ public class IdentityManager implements IIdentityManager {
     public static final String WELLKNOWN_ACT_AS_USERS_GROUP_DESCRIPTION = "Well-known act-as users' group which contains all solution users that are allowed to act on behalf of person users.";
     public static final String WELLKNOWN_EXTERNALIDP_USERS_GROUP_NAME =  "ExternalIDPUsers";
     public static final String WELLKNOWN_EXTERNALIDP_USERS_GROUP_DESCRIPTION = "Well-known external IDP users' group, which registers external IDP users as guests.";
+    public static final String WELLKNOWN_CONTAINER_SERVICE_PRINCIPALS = "ServicePrincipals";
 
     /**
      * A singleton IDM instance intend to be used across all other webapps.
@@ -381,7 +383,8 @@ public class IdentityManager implements IIdentityManager {
             String systemTenant = registerServiceProviderAsTenant(); // Set up system tenant
             initializeTenantCache(); // prepare tenant cache
             ensureValidTenant(systemTenant);
-            ensureWellKnownConfigurationUsersGroupExist(systemTenant); // Create 'SystemConfiguration.Administrators' well-known group specific to the system tenant
+            ensureWellKnownGroupExists(systemTenant, WELLKNOWN_CONFIGURATIONUSERS_GROUP_NAME,
+                    WELLKNOWN_CONFIGURATIONUSERS_GROUP_DESCRIPTION);
 
             // Start the Tenant Cache thread
             Thread idmCacheThread = new IdmCachePeriodicChecker();
@@ -431,20 +434,21 @@ public class IdentityManager implements IIdentityManager {
         return smartCardAuthnEnabled;
     }
 
-    private
-    void ensureValidTenant(String tenantName) throws Exception
-    {
-       // create 'SolutionUsers' well-known group
-       // (each solution user is automatically memberof such group upon creation)
-       EnsureWellKnownSolutionUsersGroupExist(tenantName);
+    private void ensureValidTenant(String tenantName) throws Exception {
+        // create 'SolutionUsers' well-known group
+        // (each solution user is automatically member of such group upon creation)
+        ensureWellKnownGroupExists(tenantName, WELLKNOWN_SOLUTIONUSERS_GROUP_NAME,
+                WELLKNOWN_SOLUTIONUSERS_GROUP_DESCRIPTION);
 
-       //create registration group for external IDP users
-       ensureWellKnownExternalIDPUsersGroupExist(tenantName);
+        // create registration group for external IDP users
+        ensureWellKnownGroupExists(tenantName, WELLKNOWN_EXTERNALIDP_USERS_GROUP_NAME,
+                WELLKNOWN_EXTERNALIDP_USERS_GROUP_DESCRIPTION);
 
-       ensureWellKnownActAsUsersGroupExist(tenantName);
+        ensureWellKnownGroupExists(tenantName, WELLKNOWN_ACT_AS_USERS_GROUP_NAME,
+                WELLKNOWN_ACT_AS_USERS_GROUP_DESCRIPTION);
 
-       // Make sure we create ServicePrincipal containers to place solution users
-       _configStore.ensureSPContainerExist(tenantName);
+        // Make sure we create ServicePrincipal containers to place solution users
+        ensureContainerExists(tenantName, WELLKNOWN_CONTAINER_SERVICE_PRINCIPALS);
     }
 
     private
@@ -520,9 +524,25 @@ public class IdentityManager implements IIdentityManager {
                 throw new IllegalArgumentException(errMsg);
             }
 
+            // Need to use the system tenant administrator to delete tenant instances...
+            Collection<IIdentityStoreData> stores = _configStore.getProviders(
+                    getSystemTenant(),
+                    EnumSet.of(DomainType.SYSTEM_DOMAIN),
+                    true);
+
+            if (stores.isEmpty())
+            {
+                logger.error("Unable to retrieve the system domain for system tenant");
+                throw new IllegalStateException("Unable to retrieve system domain for system tenant");
+            }
+
+            IIdentityStoreData systemDomainData = stores.iterator().next();
+            String username = systemDomainData.getExtendedIdentityStoreData().getUserName();
+            String password = systemDomainData.getExtendedIdentityStoreData().getPassword();
+
             unregisterTenant(name);
 
-            deleteTenantDomain(name);
+            Directory.deleteInstance(name, username, password);
 
             _tenantCache.deleteTenant(name);
             ssoHealthStatistics.removeTenantStats(name);
@@ -7372,24 +7392,6 @@ public class IdentityManager implements IIdentityManager {
                 details.getPassword());
     }
 
-    private void deleteTenantDomain(String tenantName) throws Exception
-    {
-        ILdapConnectionEx connection = getSystemDomainConnection();
-
-        try
-        {
-            IdmServerConfig settings = IdmServerConfig.getInstance();
-            connection.deleteObjectTree(
-                    ServerUtils.getDomainDN(
-                            settings.getTenantsSystemDomainName(
-                                    tenantName)));
-        }
-        finally
-        {
-            connection.close();
-        }
-    }
-
     private
     TenantInformation findTenant(String tenantName) throws Exception
     {
@@ -7474,39 +7476,7 @@ public class IdentityManager implements IIdentityManager {
         }
    }
 
-    private void ensureWellKnownConfigurationUsersGroupExist(String tenantName)
-       throws Exception {
-
-       ensureWellKnownGroupExist(tenantName,
-             WELLKNOWN_CONFIGURATIONUSERS_GROUP_NAME,
-             WELLKNOWN_CONFIGURATIONUSERS_GROUP_DESCRIPTION);
-    }
-
-    private void ensureWellKnownActAsUsersGroupExist(String tenantName)
-       throws Exception {
-
-       ensureWellKnownGroupExist(tenantName,
-             WELLKNOWN_ACT_AS_USERS_GROUP_NAME,
-             WELLKNOWN_ACT_AS_USERS_GROUP_DESCRIPTION);
-    }
-
-    private void EnsureWellKnownSolutionUsersGroupExist(String tenantName)
-            throws Exception
-            {
-        ensureWellKnownGroupExist(tenantName,
-                WELLKNOWN_SOLUTIONUSERS_GROUP_NAME,
-                WELLKNOWN_SOLUTIONUSERS_GROUP_DESCRIPTION);
-            }
-
-    private void ensureWellKnownExternalIDPUsersGroupExist(String tenantName)
-            throws Exception
-            {
-        ensureWellKnownGroupExist(tenantName,
-                WELLKNOWN_EXTERNALIDP_USERS_GROUP_NAME,
-                WELLKNOWN_EXTERNALIDP_USERS_GROUP_DESCRIPTION);
-            }
-
-    private void ensureWellKnownGroupExist(String tenantName, String wellknownGroupName, String description) throws Exception
+    private void ensureWellKnownGroupExists(String tenantName, String wellknownGroupName, String description) throws Exception
     {
         try
         {
@@ -7532,12 +7502,25 @@ public class IdentityManager implements IIdentityManager {
         }
         catch (Exception ex)
         {
-            logger.error(
-                    String.format("Failed to create solutinUsers group %s for tenant %s",
-                            wellknownGroupName,
-                            tenantName));
-
+            logger.error("Failed to create group '{}' for tenant '{}'", wellknownGroupName, tenantName, ex);
             throw ex;
+        }
+    }
+
+    private void ensureContainerExists(String tenantName, String containerName) throws Exception {
+        try {
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+
+            ISystemDomainIdentityProvider systemProvider = tenantInfo.findSystemProvider();
+            ServerUtils.validateNotNullSystemIdp(systemProvider, tenantName);
+
+            systemProvider.addContainer(containerName);
+        } catch (ContainerAlreadyExistsException e) {
+            logger.debug("Container '{}' already exists for tenant '{}'", containerName, tenantName);
+        } catch (Exception e) {
+            logger.error("Failed to create container '{}' for tenant '{}'", containerName, tenantName, e);
+            throw e;
         }
     }
 
@@ -7552,11 +7535,8 @@ public class IdentityManager implements IIdentityManager {
      *
      * @param id PrincipalId of the external user
      * @return external IDP user's object id
-
-
      */
     private static String getExternalIdpUserObjectId(PrincipalId id)
-
     {
         return id.getUPN();
     }

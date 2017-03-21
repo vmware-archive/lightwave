@@ -96,8 +96,6 @@ public interface IConfigStore
 
     public void setSystemTenant(String name) throws Exception;
 
-    public void ensureSPContainerExist(String tenantName) throws Exception;
-
     public
     Collection<List<Certificate>>
     getTenantCertChains(String tenantName) throws Exception;

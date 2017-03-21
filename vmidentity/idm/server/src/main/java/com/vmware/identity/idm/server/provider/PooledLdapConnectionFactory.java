@@ -16,60 +16,63 @@ import com.vmware.identity.interop.ldap.LdapScope;
 
 class PooledLdapConnectionFactory implements KeyedPooledObjectFactory<PooledLdapConnectionIdentity, ILdapConnectionEx> {
 
-    private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory
-	    .getLogger(PooledLdapConnectionFactory.class);
+    private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(PooledLdapConnectionFactory.class);
 
     @Override
     public void activateObject(PooledLdapConnectionIdentity identity, PooledObject<ILdapConnectionEx> connection)
-	    throws Exception {
-	// DO nothing
+            throws Exception
+    {
+        // DO nothing
     }
 
     @Override
     public void destroyObject(PooledLdapConnectionIdentity identity, PooledObject<ILdapConnectionEx> connection)
-	    throws Exception {
-	connection.getObject().close();
+            throws Exception
+    {
+        connection.getObject().close();
     }
 
     @Override
-    public PooledObject<ILdapConnectionEx> makeObject(PooledLdapConnectionIdentity identity) throws Exception {
-	Collection<String> connectionStrings = new ArrayList<>();
-	connectionStrings.add(identity.getConnectionString());
-	ILdapConnectionEx connection = ServerUtils.getLdapConnectionByURIs(
-		ServerUtils.toURIObjects(connectionStrings),
-		identity.getUsername(),
-		identity.getPassword(),
-		identity.getAuthType(),
-		identity.isUseGCPort(),
-		new LdapCertificateValidationSettings(identity.getIdsTrustedCertificates(), identity
-			.getTenantTrustedCertificates()));
+    public PooledObject<ILdapConnectionEx> makeObject(PooledLdapConnectionIdentity identity)
+            throws Exception
+    {
+        Collection<String> connectionStrings = new ArrayList<>();
+        connectionStrings.add(identity.getConnectionString());
+        ILdapConnectionEx connection = ServerUtils.getLdapConnectionByURIs(
+                ServerUtils.toURIObjects(connectionStrings),
+                identity.getUsername(),
+                identity.getPassword(),
+                identity.getAuthType(),
+                identity.isUseGCPort(),
+                new LdapCertificateValidationSettings(identity.getIdsTrustedCertificates(),
+                        identity.getTenantTrustedCertificates()));
 
-	logger.info(String.format("New connection created in pool %s", identity.toString()));
-	return new DefaultPooledObject<>(connection);
+        logger.info(String.format("New connection created in pool %s", identity.toString()));
+        return new DefaultPooledObject<>(connection);
     }
 
     @Override
     public void passivateObject(PooledLdapConnectionIdentity identity, PooledObject<ILdapConnectionEx> connection)
-	    throws Exception {
-	// DO nothing
+            throws Exception
+    {
+        // DO nothing
     }
 
     @Override
     public boolean validateObject(PooledLdapConnectionIdentity identity, PooledObject<ILdapConnectionEx> connection) {
+        ILdapConnectionEx ldapConnection = connection.getObject();
+        if (ldapConnection == null) {
+            return false;
+        }
 
-	ILdapConnectionEx ldapConnection = connection.getObject();
-	if (ldapConnection == null)
-	    return false;
-
-	try {
-	    String base = "";
-	    String[] attributes = new String[0];
-	    ldapConnection.search(base, LdapScope.SCOPE_BASE, "objectclass=*", attributes, false);
-
-	    return true;
-	} catch (Exception e) {
-	    logger.error(e);
-	    return false;
-	}
+        try {
+            String base = ServerUtils.getDomainDN(identity.getTenantName());
+            String[] attributes = new String[0];
+            ldapConnection.search(base, LdapScope.SCOPE_BASE, "objectclass=*", attributes, false);
+            return true;
+        } catch (Exception e) {
+            logger.error(e);
+            return false;
+        }
     }
 }

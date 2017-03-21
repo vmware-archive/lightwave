@@ -73,7 +73,7 @@ public class TestGenerator {
     }
 
     public static CertificateDTO generateCertificate(String dn) throws GeneralSecurityException, IOException {
-        return CertificateGenerator.generateCertificate(getKeyPair(), dn);
+        return new CertificateDTO(CertificateGenerator.generateSelfSignedCertificate(getKeyPair(), CertificateGenerator.AlgorithmName.SHA256_WITH_RSA, dn));
     }
 
     public static GroupDTO generateGroup(String name, String domain, String description) {

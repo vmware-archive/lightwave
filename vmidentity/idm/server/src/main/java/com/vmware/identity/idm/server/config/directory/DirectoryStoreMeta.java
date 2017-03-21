@@ -3661,7 +3661,6 @@ final class ContainerLdapObject extends BaseLdapObject<String>
     public static final String CONTAINER_SINGLE_LOGOUT_SERVICES = "SingleLogoutServices";
     public static final String CONTAINER_SIGNATURE_ALGORITHMS_SERVICES = "SignatureAlgorithms";
     public static final String CONTAINER_TRUSTED_CERTIFICATE_CHAINS = "TrustedCertificateChains";
-    public static final String CONTAINER_SOLUTION_USERS = "ServicePrincipals";
     public static final String CONTAINER_OIDC_CLIENTS = "OIDCClients";
     public static final String CONTAINER_RESOURCE_SERVERS = "ResourceServers";
 
