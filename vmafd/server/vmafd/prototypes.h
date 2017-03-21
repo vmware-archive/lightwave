@@ -2341,6 +2341,15 @@ VmAfdInitSourceIpThread(
     PSOURCE_IP_CONTEXT* ppSourceIpContext
     );
 
+DWORD
+VmAfdIpcCreateComputerAccount(
+    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
 #ifdef __cplusplus
 }
 #endif

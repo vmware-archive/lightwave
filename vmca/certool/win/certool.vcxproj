@@ -77,7 +77,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(LIGHTWAVE_BOOST_ROOT)\include;$(SolutionDir)idl\win;$(SolutionDir)include;$(SolutionDir)include\public;$(SolutionDir)include\win;$(LIGHTWAVE_VMAFD_ROOT)\include;$(SolutionDir)\x64\$(Configuration);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(LIGHTWAVE_BOOST_ROOT)\include;$(SolutionDir)idl\win;$(SolutionDir)include;$(SolutionDir)include\public;$(SolutionDir)include\win;$(LIGHTWAVE_VMAFD_ROOT)\win64\include;$(SolutionDir)\x64\$(Configuration);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -103,7 +103,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(LIGHTWAVE_BOOST_ROOT)\include;$(SolutionDir)idl\win;$(SolutionDir)include;$(SolutionDir)include\public;$(SolutionDir)include\win;$(LIGHTWAVE_VMAFD_ROOT)\include;$(SolutionDir)\x64\$(Configuration);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(LIGHTWAVE_BOOST_ROOT)\include;$(SolutionDir)idl\win;$(SolutionDir)include;$(SolutionDir)include\public;$(SolutionDir)include\win;$(LIGHTWAVE_VMAFD_ROOT)\win64\include;$(SolutionDir)\x64\$(Configuration);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>

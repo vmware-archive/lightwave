@@ -99,7 +99,7 @@
       <AdditionalIncludeDirectories>$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;ws2_32.lib;user32.lib;netapi32.lib;Gdi32.lib;libldap_r.lib;liblber.lib;libcommon.lib;dcelib.lib;pthreadVC2.lib;libeay32.lib;ssleay32.lib;libvmdirclient.lib;libvmdnsclient.lib;libvmafdclient.lib;vmeventd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;advapi32.lib;ws2_32.lib;user32.lib;netapi32.lib;Gdi32.lib;libldap_r.lib;liblber.lib;libcommon.lib;dcelib.lib;pthreadVC2.lib;libeay32.lib;ssleay32.lib;libvmdirclient.lib;libvmdnsclient.lib;libvmafdclient.lib;vmeventd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(Configuration);$(LIGHTWAVE_VMDNS_ROOT)\win64\$(Configuration);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -129,7 +129,7 @@
       <AdditionalIncludeDirectories>$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;ws2_32.lib;user32.lib;netapi32.lib;Gdi32.lib;libldap_r.lib;liblber.lib;libcommon.lib;dcelib.lib;pthreadVC2.lib;libeay32.lib;ssleay32.lib;libvecsdb.lib;libvmdirclient.lib;libvmdnsclient.lib;libvmafdclient.lib;vmeventd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;advapi32.lib;ws2_32.lib;user32.lib;netapi32.lib;Gdi32.lib;libldap_r.lib;liblber.lib;libcommon.lib;dcelib.lib;pthreadVC2.lib;libeay32.lib;ssleay32.lib;libvecsdb.lib;libvmdirclient.lib;libvmdnsclient.lib;libvmafdclient.lib;vmeventd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(Configuration);$(LIGHTWAVE_VMDNS_ROOT)\win64\$(Configuration);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>

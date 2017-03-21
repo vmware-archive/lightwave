@@ -96,7 +96,7 @@
       <AdditionalIncludeDirectories>$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;user32.lib;libcommon.lib;ws2_32.lib;pthreadVC2.lib;libvmafdclient.lib;libvmafcfgapi.lib;libvmafcfgwin.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;advapi32.lib;user32.lib;libcommon.lib;ws2_32.lib;pthreadVC2.lib;libvmafdclient.lib;libvmafcfgapi.lib;libvmafcfgwin.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(LIGHTWAVE_VMDNS_ROOT)\win64\$(Configuration);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -125,7 +125,7 @@
       <AdditionalIncludeDirectories>$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;user32.lib;libcommon.lib;ws2_32.lib;pthreadVC2.lib;libvmafdclient.lib;libvmafcfgapi.lib;libvmafcfgwin.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;advapi32.lib;user32.lib;libcommon.lib;ws2_32.lib;pthreadVC2.lib;libvmafdclient.lib;libvmafcfgapi.lib;libvmafcfgwin.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)$(IntDir);$(LIGHTWAVE_VMDNS_ROOT)\win64\$(Configuration);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(TargetDir)vmafd_$(TargetName).pdb</ProgramDatabaseFile>

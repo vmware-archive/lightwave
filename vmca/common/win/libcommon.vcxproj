@@ -90,8 +90,8 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Lib>
-      <AdditionalDependencies>libldap_r.lib;liblber.lib;libeay32.lib;ssleay32.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(Configuration);$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libvmafdclient.lib;libldap_r.lib;liblber.lib;libeay32.lib;ssleay32.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(Configuration);$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;$(LIGHTWAVE_VMAFD_ROOT)\lib64\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -112,8 +112,8 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Lib>
-      <AdditionalDependencies>libldap_r.lib;liblber.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(Configuration);$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libvmafdclient.lib;libldap_r.lib;liblber.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(Configuration);$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;$(LIGHTWAVE_VMAFD_ROOT)\lib64\$(ConfigurationName);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>

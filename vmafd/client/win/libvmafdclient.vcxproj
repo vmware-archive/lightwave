@@ -95,7 +95,7 @@
       <AdditionalIncludeDirectories>$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>libcommon.lib;libvmafdlogging.lib;dcelib.lib;gssapi64.lib;pthreadVC2.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;libcommon.lib;libvmafdlogging.lib;dcelib.lib;gssapi64.lib;pthreadVC2.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(SolutionDir)$(IntDir)$(ProjectName).dll</OutputFile>
       <AdditionalLibraryDirectories>$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(SolutionDir)$(IntDir);$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>libvmafdclient.def</ModuleDefinitionFile>
@@ -125,7 +125,7 @@
       <AdditionalIncludeDirectories>$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>libcommon.lib;libvmafdlogging.lib;dcelib.lib;gssapi64.lib;pthreadVC2.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;libcommon.lib;libvmafdlogging.lib;dcelib.lib;gssapi64.lib;pthreadVC2.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(SolutionDir)$(IntDir)$(ProjectName).dll</OutputFile>
       <AdditionalLibraryDirectories>$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(SolutionDir)$(IntDir);$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>libvmafdclient.def</ModuleDefinitionFile>

@@ -84,7 +84,7 @@
       <AdditionalIncludeDirectories>$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;ws2_32.lib;user32.lib;libldap_r.lib;liblber.lib;Gdi32.lib;libcommon.lib;libvmdirclient.lib;libvmafdclient.lib;dcelib.lib;pthreadVC2.lib;libvmafcfgapi.lib;libvmafcfgwin.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;advapi32.lib;ws2_32.lib;user32.lib;libldap_r.lib;liblber.lib;Gdi32.lib;libcommon.lib;libvmdirclient.lib;libvmafdclient.lib;dcelib.lib;pthreadVC2.lib;libvmafcfgapi.lib;libvmafcfgwin.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(Configuration);$(SolutionDir)$(IntDir);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <TargetMachine>MachineX64</TargetMachine>
@@ -101,7 +101,7 @@
       <AdditionalIncludeDirectories>$(LIGHTWAVE_WINDOWS_SDK_ROOT)\include;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\atlmfc\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>advapi32.lib;ws2_32.lib;user32.lib;libldap_r.lib;liblber.lib;Gdi32.lib;libcommon.lib;dcelib.lib;pthreadVC2.lib;libvmdirclient.lib;libvmafdclient.lib;libvmafcfgapi.lib;libvmafcfgwin.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Psapi.lib;advapi32.lib;ws2_32.lib;user32.lib;libldap_r.lib;liblber.lib;Gdi32.lib;libcommon.lib;dcelib.lib;pthreadVC2.lib;libvmdirclient.lib;libvmafdclient.lib;libvmafcfgapi.lib;libvmafcfgwin.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(LIGHTWAVE_VMDIR_ROOT)\lib64\$(Configuration);$(SolutionDir)$(IntDir);$(LIGHTWAVE_PLATFORM_SDK_ROOT)\$(Configuration)\lib;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\Lib\x64;$(LIGHTWAVE_WINDOWS_SDK_ROOT)\VC\Lib\amd64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <TargetMachine>MachineX64</TargetMachine>
