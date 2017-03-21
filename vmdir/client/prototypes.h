@@ -490,6 +490,7 @@ VmDirSetServerGuidInternal(
 
 DWORD
 VmDirGetComputerAccountDN(
+    LDAP* pLd,
     PCSTR pszDomain,
     PCSTR pszMachineName,
     PSTR* ppszAccountDN

@@ -3289,16 +3289,18 @@ error:
 
 DWORD
 VmDirGetComputerAccountDN(
+    LDAP* pLd,
     PCSTR pszDomain,
     PCSTR pszMachineName,
     PSTR* ppszAccountDN
     )
 {
     DWORD dwError = 0;
-    PSTR  pszDomainDN = NULL;
     PSTR  pszAccountDN = NULL;
+    PSTR  pszUPN = NULL;
 
-    if (IsNullOrEmptyString(pszDomain) ||
+    if (!pLd ||
+        IsNullOrEmptyString(pszDomain) ||
         IsNullOrEmptyString(pszMachineName) ||
         !ppszAccountDN)
     {
@@ -3306,22 +3308,24 @@ VmDirGetComputerAccountDN(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSrvCreateDomainDN(pszDomain, &pszDomainDN);
+    dwError = VmDirAllocateStringPrintf(
+                    &pszUPN,
+                    "%s@%s",
+                    pszMachineName,
+                    pszDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringPrintf(
-                    &pszAccountDN,
-                    "CN=%s,OU=%s,%s",
-                    pszMachineName,
-                    VMDIR_COMPUTERS_RDN_VAL,
-                    pszDomainDN);
+    dwError = VmDirConvertUPNToDN(
+                    pLd,
+                    pszUPN,
+                    &pszAccountDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppszAccountDN = pszAccountDN;
 
 cleanup:
 
-    VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
+    VMDIR_SAFE_FREE_MEMORY(pszUPN);
 
     return dwError;
 
@@ -3356,6 +3360,7 @@ VmDirGetComputerGuidInternal(
     PSTR  pszGUID = NULL;
 
     dwError = VmDirGetComputerAccountDN(
+                pLd,
                 pszDomain,
                 pszMachineName,
                 &pszAccountDN);
@@ -3446,6 +3451,7 @@ VmDirSetComputerGuidInternal(
     PSTR  pszAccountDN = NULL;
 
     dwError = VmDirGetComputerAccountDN(
+                pLd,
                 pszDomain,
                 pszMachineName,
                 &pszAccountDN);
