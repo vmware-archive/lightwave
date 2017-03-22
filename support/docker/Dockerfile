@@ -19,11 +19,11 @@ RUN tdnf update --refresh -y \
         curl-7.51.0 \
         bzip2-1.0.6 && \
     tdnf install -y \
-        apache-tomcat-8.0.37 \
+        apache-tomcat-8.5.8 \
         boost-1.60.0 \
-        commons-daemon-1.0.15-7.ph1.x86_64 \
+        commons-daemon-1.0.15 \
         likewise-open-6.2.11 \
-        openjre-1.8.0.102 \
+        openjre-1.8.0.112 \
         procps-ng-3.3.11 \
         sed-4.2.2 \
         jansson-2.9 \

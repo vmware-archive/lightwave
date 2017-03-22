@@ -23,7 +23,7 @@
     <apache.log4j.version>2.2</apache.log4j.version>
     <slf4j.version>1.7.10</slf4j.version>
     <log4j.12.api.version>2.0.2</log4j.12.api.version>
-    <tomat.coyote.version>7.0.26</tomat.coyote.version>
+    <tomat.coyote.version>8.5.5</tomat.coyote.version>
     <commons.lang.version>2.6</commons.lang.version>
     <commons.logging.version>1.1.1</commons.logging.version>
     <commons.daemon.version>1.0.8</commons.daemon.version>
@@ -50,7 +50,7 @@
     <args4j.version>2.33</args4j.version>
     <opensaml.version>2.5.3</opensaml.version>
     <openws.version>1.4.4</openws.version>
-    <tomcat.catalina.version>7.0.40</tomcat.catalina.version>
+    <tomcat.catalina.version>8.5.8</tomcat.catalina.version>
     <velocity.version>1.5</velocity.version>
     <jackson.version>2.3.2</jackson.version>
     <esapi.version>2.0.1</esapi.version>
