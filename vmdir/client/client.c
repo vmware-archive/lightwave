@@ -1104,7 +1104,16 @@ VmDirClientJoin(
                 pszPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (!(dwFlags & VMDIR_CLIENT_JOIN_FLAGS_PREJOINED))
+    if (dwFlags & VMDIR_CLIENT_JOIN_FLAGS_PREJOINED)
+    {
+        dwError = VmDirLdapConfigureComputerAccount(
+                    pLd,
+                    pszDomainName,
+                    pszPassword,
+                    pszMachineName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
     {
         dwError = VmDirLdapCreateComputerOUContainer(
                     pLd,
@@ -1124,41 +1133,26 @@ VmDirClientJoin(
                     NULL,
                     NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-    {
-        dwError = VmDirLdapConfigureComputerAccount(
-                    pLd,
-                    pszDomainName,
-                    pszServerName,
-                    pszUserName,
-                    pszPassword,
-                    pszMachineName,
-                    pszOrgUnit);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
 
-    for (iCnt = 0; iCnt < sizeof(pszServiceTable)/sizeof(pszServiceTable[0]); iCnt++)
-    {
-        dwError = VmDirLdapSetupServiceAccount(
-                    pLd,
-                    pszDomainName,
-                    pszServerName,
-                    pszUserName,
-                    pszPassword,
-                    pszServiceTable[iCnt],
-                    pszMachineName );
-        if (dwError == LDAP_ALREADY_EXISTS)
+        for (iCnt = 0; iCnt < sizeof(pszServiceTable)/sizeof(pszServiceTable[0]); iCnt++)
         {
-            dwError = LDAP_SUCCESS; // ignore if entry already exists (maybe due to prior client join)
-            VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "_VmDirSetupServiceAccount (%s) return LDAP_ALREADY_EXISTS",
-                                                   pszServiceTable[iCnt] );
+            dwError = VmDirLdapSetupServiceAccount(
+                            pLd,
+                            pszDomainName,
+                            pszServerName,
+                            pszUserName,
+                            pszPassword,
+                            pszServiceTable[iCnt],
+                            pszMachineName );
+            if (dwError == LDAP_ALREADY_EXISTS)
+            {
+                dwError = LDAP_SUCCESS; // ignore if entry already exists (maybe due to prior client join)
+                VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "_VmDirSetupServiceAccount (%s) return LDAP_ALREADY_EXISTS",
+                                                        pszServiceTable[iCnt] );
+            }
+            BAIL_ON_VMDIR_ERROR(dwError);
         }
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
 
-    if (!(dwFlags & VMDIR_CLIENT_JOIN_FLAGS_PREJOINED))
-    {
         dwError = VmDirUpdateKeytabFile(
                 pszServerName,
                 pszDomainName,
