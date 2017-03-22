@@ -220,6 +220,8 @@ extern "C" {
 #define ATTR_VMW_STS_TENANT_KEY_LEN         sizeof(ATTR_VMW_STS_TENANT_KEY)-1
 #define ATTR_SRP_SECRET                     "vmwSRPSecret"
 #define ATTR_SRP_SECRET_LEN                 sizeof(ATTR_SRP_SECRET)-1
+#define ATTR_SRP_SECRET_SHA256              "vmwSRPSecretSha256"
+#define ATTR_SRP_SECRET_SHA256_LEN          sizeof(ATTR_SRP_SECRET_SHA256)-1
 #define ATTR_SITE_GUID                      "siteGUID"
 #define ATTR_SITE_GUID_LEN                  sizeof(ATTR_SITE_GUID)-1
 #define ATTR_VMWITCUSTOMERNUMBER            "vmwitcustomernumber"
@@ -458,7 +460,9 @@ extern "C" {
 
 #define VDIR_SERVER_VERSION             "1.0"
 
+#define GSS_SPNEGO_MECH                 "GSS-SPNEGO"
 #define SASL_MECH                       "GSSAPI SRP"
+#define GSSAPI_MECH                     "GSSAPI"
 
 #define VDIR_LDAP_BOOLEN_SYNTAX_TRUE_STR    "TRUE"
 

@@ -523,6 +523,11 @@ _VmDirSrvCreatePersistedDSERoot(VOID)
             ATTR_PSC_VERSION,                   VDIR_PSC_VERSION,
             ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL,   VMDIR_MAX_DFL_STRING,
             ATTR_SUPPORTED_SASL_MECHANISMS ,    SASL_MECH,
+            ATTR_SUPPORTED_SASL_MECHANISMS ,    GSSAPI_MECH,       /* "GSSAPI"; win32 1 */
+            ATTR_SUPPORTED_SASL_MECHANISMS ,    GSS_SPNEGO_MECH,   /* "GSS-SPNEGO"; win32 2 */
+                                                                   /* "EXTERNAL"; win32 3 */
+                                                                   /* "DIGEST-MD5"; win32 4 */
+            ATTR_SUPPORTED_SASL_MECHANISMS ,    SASL_MECH,         /* "GSSAPI SRP"; win32 not supported */
             NULL
     };
     PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;

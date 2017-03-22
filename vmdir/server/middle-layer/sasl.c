@@ -27,13 +27,24 @@
 
 static PSTR g_pszSASL2Path = NULL;
 
+#if 0
+/* include/public/vmdir.h */
+#define GSS_SPNEGO_MECH                 "GSS-SPNEGO"
+#define SASL_MECH                       "GSSAPI SRP"
+#define GSSAPI_MECH                     "GSSAPI"
+#endif /* #endif */
+
 #define SASL_GSSAPI_MECH "GSSAPI"
 #define SASL_SRP_MECH    "SRP"
+#define SASL_SPNEGO_MECH "GSS-SPNEGO"
 
 // Only support GSSAPI currently.
 // Note, we hard code this in DSE root entry query as well.
 #define SUPPORTED_SASL_BIND_MECHANISM   \
-        { SASL_GSSAPI_MECH, SASL_SRP_MECH, NULL }
+        { SASL_GSSAPI_MECH, \
+          SASL_SPNEGO_MECH, \
+          SASL_SRP_MECH, \
+          NULL }
 
 // Default SASL security layer properties
 static sasl_security_properties_t gSASLSecurityProps =
@@ -242,6 +253,19 @@ VmDirSASLSessionStart(
 
         dwError = LDAP_SUCCESS;
         pSaslBindInfo->saslStatus = SASL_STATUS_DONE;
+
+#if 1 /* TBD:Adam-Return response blob on success if one exists */
+        if (iRespLen > 0)
+        {
+            dwError = VmDirAllocateAndCopyMemory((PVOID)pszRespBlob, iRespLen, &pOutBlob);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            pBervSaslReply->lberbv.bv_val = pOutBlob;
+            pBervSaslReply->lberbv.bv_len = iRespLen;
+            pBervSaslReply->bOwnBvVal = TRUE;
+            pResult->replyInfo.type = REP_SASL;
+        }
+#endif
     }
     else if (dwError == SASL_CONTINUE)
     {
@@ -464,12 +488,30 @@ _VmDirSASLGetCtxProps(
     }
 
     VMDIR_SAFE_FREE_MEMORY( pSaslBindInfo->pszBindUserName );
+#if 1 /*TBD:Adam- Look for @ and assume full UPN was providied if found */
+    if (strchr(pszBindUPN, '@'))
+    {
+        dwError = VmDirAllocateStringPrintf(&pSaslBindInfo->pszBindUserName,
+                                            "%s",
+                                            VDIR_SAFE_STRING(pszBindUPN));
+    }
+    else
+    {
+        dwError = VmDirAllocateStringPrintf(    &pSaslBindInfo->pszBindUserName,
+                                                "%s%s%s",
+                                                VDIR_SAFE_STRING(pszBindUPN),
+                                                pszBindRealm ? "@" : "",
+                                                VDIR_SAFE_STRING(pszBindRealm));
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+#else
     dwError = VmDirAllocateStringPrintf(    &pSaslBindInfo->pszBindUserName,
                                                 "%s%s%s",
                                                 VDIR_SAFE_STRING(pszBindUPN),
                                                 pszBindRealm ? "@" : "",
                                                 VDIR_SAFE_STRING(pszBindRealm));
     BAIL_ON_VMDIR_ERROR(dwError);
+#endif
 
     dwError = sasl_getprop( pSaslBindInfo->pSaslCtx, SASL_SSF, (const void**)&pLocalSaslSSF );
     BAIL_ON_SASL_ERROR(dwError);
