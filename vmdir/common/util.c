@@ -166,7 +166,7 @@ error:
     goto cleanup;
 }
 
-#if defined(HAVE_DCERPC_WIN32)
+#if defined(_WIN32)
 static void uuid_unparse_lower(uuid_t uuid, char *str)
 {
     /*
@@ -215,6 +215,7 @@ int uuid_parse(char *str, uuid_t ret_uuid)
 void
 uuid_generate(uuid_t pGuid)
 {
+    DWORD dwError = 0;
     dce_uuid_t dce_uuid;
     unsigned32 sts = 0;
     unsigned char *uuidstr = NULL;
@@ -237,7 +238,10 @@ uuid_generate(uuid_t pGuid)
     }
 
 error:
-    VMDIR_SAFE_FREE_MEMORY( uuidstr );
+    if (uuidstr != NULL)
+    {
+        rpc_string_free((PBYTE*)&uuidstr, &dwError);
+    }
     return;
 }
 #endif
@@ -255,12 +259,7 @@ VmDirUuidGenerate(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-#if !defined(_WIN32) || defined(HAVE_DCERPC_WIN32)
     uuid_generate(*pGuid);
-#else
-    dwError = UuidCreate( pGuid );
-    BAIL_ON_VMDIR_ERROR(dwError);
-#endif
 
 error:
     return dwError;
@@ -274,17 +273,12 @@ VmDirUuidToStringLower(
 )
 {
     DWORD dwError = ERROR_SUCCESS;
-#ifdef _WIN32
-    PSTR pGuidStr = NULL;
-#endif
 
     if ((pGuid == NULL) || (pStr == NULL) )
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-
-#if !defined(_WIN32) || defined(HAVE_DCERPC_WIN32)
 
     /*
     The uuid_unparse function converts the supplied UUID uu from the binary
@@ -298,36 +292,8 @@ VmDirUuidToStringLower(
     }
 
     uuid_unparse_lower( *pGuid, pStr );
-#else
-    dwError = UuidToStringA( pGuid, (RPC_CSTR*)(&pGuidStr) );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if( sizeOfBuffer < VmDirStringLenA( pGuidStr ) + 1 )
-    {
-        dwError = ERROR_INSUFFICIENT_BUFFER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirStringCpyA( pStr, sizeOfBuffer, pGuidStr );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // ensure lower case string
-    if ( _strlwr_s(pStr, sizeOfBuffer) != 0 )
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-#endif
 
 error:
-
-#if defined(_WIN32) && !defined(HAVE_DCERPC_WIN32)
-    if( pGuidStr != NULL )
-    {
-        RpcStringFreeA((RPC_CSTR*)(&pGuidStr));
-    }
-#endif
 
     return dwError;
 }
