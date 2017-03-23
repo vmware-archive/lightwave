@@ -79,7 +79,7 @@ ShowUsage(
     PVOID pvContext
     )
 {
-    printf("Usage: vdcaclmgr -H <host> -u <user UPN> [-w <password> | -x <password file>] -o <object DN> [-g <username:permissions>] [-d <username:permissions>] [-r] [-v]\n");
+    printf("Usage: vdcaclmgr -H <host> -u <user UPN> [-w <password> | -x <password file>] -b <base DN> -o <object DN> [-g <username:permissions>] [-d <username:permissions>] [-r] [-v]\n");
 }
 
 DWORD

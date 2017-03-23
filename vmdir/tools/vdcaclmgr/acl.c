@@ -333,21 +333,32 @@ _VdcParseSecurityDescriptor(
     //
     pszSecurityDescriptor = pszStringEnd + 2;
 
+    //
+    // Skip any DACL flags.
+    //
+    if (*pszSecurityDescriptor != '(')
+    {
+        pszStringEnd = strchr(pszSecurityDescriptor, '(');
+        if (pszStringEnd == NULL)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+        }
+        pszSecurityDescriptor = pszStringEnd;
+    }
+
     while (*pszSecurityDescriptor)
     {
         PSTR pszAce = NULL;
 
         if (*pszSecurityDescriptor != '(')
         {
-            dwError = VMDIR_ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDIR_ERROR(dwError);
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
         }
 
         pszStringEnd = strchr(pszSecurityDescriptor, ')');
         if (pszStringEnd == NULL)
         {
-            dwError = VMDIR_ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDIR_ERROR(dwError);
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
         }
 
         //
