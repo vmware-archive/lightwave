@@ -72,6 +72,7 @@ package: $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_includedir /opt/vmware/include" \
               --define "_likewise_open_prefix /opt/likewise" \
               --define "_vmevent_prefix /opt/vmware" \
+              --define "_psc_version $(VMDIR_PSC_VERSION)" \
               --define "_version $(VMDIR_MAJOR_VER).$(VMDIR_MINOR_VER).$(VMDIR_RELEASE_VER)" \
               --define "_vmevent_ver $(VMEVENT_MAJOR_VER).$(VMEVENT_MINOR_VER)" \
               --define "_patch $(VMDIR_PATCH_VER)" \

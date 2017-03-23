@@ -44,7 +44,7 @@ VMware Authentication Framework
 
 %package client
 Summary: VMware Authentication Framework Client
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.9, vmware-directory-client >= 6.0
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10, vmware-directory-client >= %{version}
 %description client
 Client libraries to communicate with VMware Authentication Framework Service
 

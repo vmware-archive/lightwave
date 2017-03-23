@@ -610,16 +610,15 @@ AC_SUBST(vmdirlogdir)
 AS_AC_EXPAND(VMDIR_LOG_DIR, $vmdirlogdir)
 AC_DEFINE_UNQUOTED(VMDIR_LOG_DIR, "$VMDIR_LOG_DIR", [Log directory])
 
-vmdir_version=1.0
-AC_ARG_WITH([version],
-    [AC_HELP_STRING([--with-version], [set the version (default: 1.0)])],
+vmdir_psc_version=1.0
+AC_ARG_WITH([psc-version],
+    [AC_HELP_STRING([--with-psc-version], [set the version (default: 1.0)])],
     [
-        vmdir_version="$withval"
+        vmdir_psc_version="$withval"
     ])
-AC_SUBST(vmdir_version)
-AS_AC_EXPAND(VDIR_PSC_VERSION, $vmdir_version)
+AC_SUBST(vmdir_psc_version)
+AS_AC_EXPAND(VDIR_PSC_VERSION, $vmdir_psc_version)
 AC_DEFINE_UNQUOTED(VDIR_PSC_VERSION, "$VDIR_PSC_VERSION", [PSC version])
-
 
 vmdirconfdir="$datadir/config"
 AC_SUBST(vmdirconfdir)

@@ -4,7 +4,7 @@
 
   <groupId>com.vmware.identity</groupId>
   <artifactId>vmware-identity</artifactId>
-  <version>6.7.0</version>
+  <version>1.2.0</version>
   <packaging>pom</packaging>
 
   <name>vmidentity</name>

@@ -60,7 +60,7 @@ VMware Directory Service
 
 %package client
 Summary: VMware Directory Client
-Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.9
+Requires:  coreutils >= 8.22, openssl >= 1.0.2, krb5 >= 1.14, cyrus-sasl >= 2.1, likewise-open >= 6.2.10
 %description client
 Client libraries to communicate with Directory Service
 
@@ -90,6 +90,7 @@ autoreconf -mif ..
     --with-ssocommon=%{_ssocommon_prefix} \
     --enable-server=yes \
     --with-logdir=%{_logdir} \
+    --with-psc-version=%{_psc_version} \
     --with-version=%{_version}
 
 make

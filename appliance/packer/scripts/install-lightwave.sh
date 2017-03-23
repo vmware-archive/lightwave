@@ -32,7 +32,7 @@ tdnf install -y likewise-open-6.2.11
 tdnf install -y boost-1.60.0
 tdnf install -y jaxws-ri
 tdnf install -y procps-ng
-tdnf install -y vmware-lightwave-server-6.7.0
+tdnf install -y vmware-lightwave-server-1.2.0
 
 # open iptables ports
 # EXPOSE 22 53/udp 53 88/udp 88 389 443 636 2012 2014 2020
