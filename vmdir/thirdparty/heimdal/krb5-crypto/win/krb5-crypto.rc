@@ -70,14 +70,14 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "Comments", "VMware third-party Heimdal Kerberos uility DLL"
+            VALUE "Comments", "VMware third-party Heimdal Kerberos utility DLL"
             VALUE "CompanyName", "VMware, Inc."
-            VALUE "FileDescription", "VMware third-party Heimdal Kerberos uility DLL"
+            VALUE "FileDescription", "VMware third-party Heimdal Kerberos utility DLL"
             VALUE "FileVersion", FILE_VERSION_STRING
             VALUE "InternalName", "krb5-crypto.dll"
             VALUE "LegalCopyright", "Copyright (C) 2013-2015 VMware, Inc."
             VALUE "OriginalFilename", "krb5-crypto.dll"
-            VALUE "ProductName", "VMware third-party Heimdal Kerberos uility DLL"
+            VALUE "ProductName", "VMware third-party Heimdal Kerberos utility DLL"
             VALUE "ProductVersion", PRODUCT_VERSION_STRING
         END
     END
