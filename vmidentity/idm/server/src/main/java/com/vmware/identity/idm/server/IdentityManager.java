@@ -393,6 +393,9 @@ public class IdentityManager implements IIdentityManager {
             // Start the CRL Cache thread
             ManageCrlCacheChecker();
 
+            logger.info("Setting thread local system properties...");
+            System.setProperties(new ThreadLocalProperties(System.getProperties()));
+
             logger.info("Identity Manager initialized successfully");
 
         } catch(Exception ex) {
