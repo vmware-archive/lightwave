@@ -50,11 +50,14 @@ public class HostinfoWriter {
     }
 
     public void write() throws HostinfoCreationFailedException {
-        try {
 
-            IRegistryAdapter registryAdpater = RegistryAdapterFactory.getInstance().getRegistryAdapter();
-            IRegistryKey registryRootKey = registryAdpater.openRootKey((int) RegKeyAccess.KEY_WRITE);
-            IRegistryKey vmIdentityRegistryKey = registryAdpater.openKey(registryRootKey, CONFIG_IDENTITY_ROOT_KEY, 0, (int) RegKeyAccess.KEY_ALL_ACCESS);
+        IRegistryAdapter registryAdpater = null;
+        IRegistryKey registryRootKey = null;
+        IRegistryKey vmIdentityRegistryKey = null;
+        try {
+            registryAdpater = RegistryAdapterFactory.getInstance().getRegistryAdapter();
+            registryRootKey = registryAdpater.openRootKey((int) RegKeyAccess.KEY_WRITE);
+            vmIdentityRegistryKey = registryAdpater.openKey(registryRootKey, CONFIG_IDENTITY_ROOT_KEY, 0, (int) RegKeyAccess.KEY_ALL_ACCESS);
             registryAdpater.setStringValue(vmIdentityRegistryKey, HOST_NAME_KEY, this.hostname);
             if (this.hostnameType != null) {
                 registryAdpater.setStringValue(vmIdentityRegistryKey, HOST_NAME_TYPE_KEY, this.hostnameType);
@@ -64,7 +67,15 @@ public class HostinfoWriter {
             }
         } catch (Exception ex) {
             throw new HostinfoCreationFailedException(ex);
+        } finally {
+            if(registryRootKey != null) {
+                registryRootKey.close();
+            }
+            if(vmIdentityRegistryKey != null){
+                vmIdentityRegistryKey.close();
+            }
         }
 
     }
+
 }

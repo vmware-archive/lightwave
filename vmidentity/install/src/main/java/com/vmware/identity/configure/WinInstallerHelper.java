@@ -102,82 +102,110 @@ public class WinInstallerHelper implements InstallerHelper {
         return new String[] { "sc.exe", "start", "VMwareSTS" };
     }
 
-    @Override
+   @Override
     public void configRegistry() {
-        IRegistryAdapter registryAdapter = RegistryAdapterFactory.getInstance()
-                .getRegistryAdapter();
-        IRegistryKey rootKey = registryAdapter
-                .openRootKey((int) RegKeyAccess.KEY_ALL_ACCESS);
+        IRegistryAdapter registryAdapter = null;
+        IRegistryKey rootKey = null;
+        IRegistryKey idmKey = null;
+        IRegistryKey keyJava = null;
+        IRegistryKey keyLog = null;
+        IRegistryKey keyStart = null;
+        IRegistryKey keyStop = null;
+        try {
+            registryAdapter = RegistryAdapterFactory.getInstance()
+                    .getRegistryAdapter();
+            rootKey = registryAdapter
+                    .openRootKey((int) RegKeyAccess.KEY_ALL_ACCESS);
+            String subkey = String
+                    .format("SOFTWARE\\Wow6432Node\\Apache Software Foundation\\Procrun 2.0\\%s\\Parameters",
+                            getIDMServiceName());
 
-        IRegistryKey idmKey;
-        String subkey = String
-                .format("SOFTWARE\\Wow6432Node\\Apache Software Foundation\\Procrun 2.0\\%s\\Parameters",
-                        getIDMServiceName());
+            boolean exists = registryAdapter.doesKeyExist(rootKey, subkey);
 
-        boolean exists = registryAdapter.doesKeyExist(rootKey, subkey);
+            if (exists) {
+                idmKey = registryAdapter.openKey(rootKey, subkey, 0,
+                        (int) RegKeyAccess.KEY_ALL_ACCESS);
+            } else {
+                idmKey = registryAdapter.createKey(rootKey, subkey, null,
+                        (int) RegKeyAccess.KEY_ALL_ACCESS);
+            }
 
-        if (exists) {
-            idmKey = registryAdapter.openKey(rootKey, subkey, 0,
+            String identityInstallPath = getVMIdentityInstallPath();
+            String identityInstallPathCommonLib = InstallerUtils.joinPath(
+                    getSSOHomePath(), "commonlib");
+            // Add Java key
+            String javaHomePath = getJavaHomePath();
+            keyJava = registryAdapter.createKey(idmKey, "Java", null,
                     (int) RegKeyAccess.KEY_ALL_ACCESS);
-        } else {
-            idmKey = registryAdapter.createKey(rootKey, subkey, null,
+            registryAdapter.setStringValue(keyJava, "ClassPath", String
+                    .format("%s\\lib\\*;%s\\lib\\ext\\*;%s\\*;%s\\*", javaHomePath,
+                            javaHomePath, identityInstallPath,
+                            identityInstallPathCommonLib));
+            registryAdapter.setStringValue(keyJava, "JavaHome",
+                    String.format("%s\\", javaHomePath));
+            registryAdapter.setStringValue(keyJava, "Jvm",
+                    String.format("%s\\bin\\server\\jvm.dll", javaHomePath));
+
+            // Define options for 'Java' key
+            Collection<String> options = new ArrayList<String>();
+            options.add(String.format(
+                    "-Dvmware.log.dir=%s",
+                    getLogPaths()));
+            options.add(String.format(
+                    "-Djava.security.policy=%s\\server_policy.txt",
+                    identityInstallPath));
+            options.add(String.format(
+                    "-Dlog4j.configurationFile=file:%s\\log4j2.xml",
+                    identityInstallPath));
+            options.add("-Xmx160m");
+            options.add("-XX:MaxPermSize=160m");
+
+            options.add(String.format("-XX:ErrorFile=%s", getLogPaths()));
+            registryAdapter.setMultiStringValue(keyJava, "Options", options);
+
+            // Add 'Log' key
+            keyLog = registryAdapter.createKey(idmKey, "Log", null,
                     (int) RegKeyAccess.KEY_ALL_ACCESS);
+            registryAdapter.setStringValue(keyLog, "Path", getLogPaths());
+
+            // Add 'Start' key
+            keyStart = registryAdapter.createKey(idmKey, "Start",
+                    null, (int) RegKeyAccess.KEY_ALL_ACCESS);
+            registryAdapter.setStringValue(keyStart, "Mode", "jvm");
+            registryAdapter.setStringValue(keyStart, "Class",
+                    "com.vmware.identity.idm.server.IdmServer");
+            registryAdapter.setStringValue(keyStart, "Method", "startserver");
+
+            // Add 'Stop' key
+            keyStop = registryAdapter.createKey(idmKey, "Stop", null,
+                    (int) RegKeyAccess.KEY_ALL_ACCESS);
+            registryAdapter.setStringValue(keyStop, "Mode", "jvm");
+            registryAdapter.setStringValue(keyStop, "Class",
+                    "com.vmware.identity.idm.server.IdmServer");
+            registryAdapter.setStringValue(keyStop, "Method", "stopserver");
+        } finally {
+            if(rootKey != null){
+                rootKey.close();
+            }
+            if(idmKey != null){
+                idmKey.close();
+            }
+            if(keyJava != null) {
+                keyJava.close();
+            }
+           if(keyLog != null) {
+                keyLog.close();
+            }
+            if(keyStart != null) {
+                keyStart.close();
+            }
+            if(keyStop != null){
+                keyStop.close();
+            }
         }
 
-        String identityInstallPath = getVMIdentityInstallPath();
-        String identityInstallPathCommonLib = InstallerUtils.joinPath(
-                getSSOHomePath(), "commonlib");
-        // Add Java key
-        String javaHomePath = getJavaHomePath();
-        IRegistryKey keyJava = registryAdapter.createKey(idmKey, "Java", null,
-                (int) RegKeyAccess.KEY_ALL_ACCESS);
-        registryAdapter.setStringValue(keyJava, "ClassPath", String
-                .format("%s\\lib\\*;%s\\lib\\ext\\*;%s\\*;%s\\*", javaHomePath,
-                        javaHomePath, identityInstallPath,
-                        identityInstallPathCommonLib));
-        registryAdapter.setStringValue(keyJava, "JavaHome",
-                String.format("%s\\", javaHomePath));
-        registryAdapter.setStringValue(keyJava, "Jvm",
-                String.format("%s\\bin\\server\\jvm.dll", javaHomePath));
-
-        // Define options for 'Java' key
-        Collection<String> options = new ArrayList<String>();
-        options.add(String.format(
-                "-Dvmware.log.dir=%s",
-                getLogPaths()));
-        options.add(String.format(
-                "-Djava.security.policy=%s\\server_policy.txt",
-                identityInstallPath));
-        options.add(String.format(
-                "-Dlog4j.configurationFile=file:%s\\log4j2.xml",
-                identityInstallPath));
-        options.add("-Xmx160m");
-        options.add("-XX:MaxPermSize=160m");
-
-        options.add(String.format("-XX:ErrorFile=%s", getLogPaths()));
-        registryAdapter.setMultiStringValue(keyJava, "Options", options);
-
-        // Add 'Log' key
-        IRegistryKey keyLog = registryAdapter.createKey(idmKey, "Log", null,
-                (int) RegKeyAccess.KEY_ALL_ACCESS);
-        registryAdapter.setStringValue(keyLog, "Path", getLogPaths());
-
-        // Add 'Start' key
-        IRegistryKey keyStart = registryAdapter.createKey(idmKey, "Start",
-                null, (int) RegKeyAccess.KEY_ALL_ACCESS);
-        registryAdapter.setStringValue(keyStart, "Mode", "jvm");
-        registryAdapter.setStringValue(keyStart, "Class",
-                "com.vmware.identity.idm.server.IdmServer");
-        registryAdapter.setStringValue(keyStart, "Method", "startserver");
-
-        // Add 'Stop' key
-        IRegistryKey keyStop = registryAdapter.createKey(idmKey, "Stop", null,
-                (int) RegKeyAccess.KEY_ALL_ACCESS);
-        registryAdapter.setStringValue(keyStop, "Mode", "jvm");
-        registryAdapter.setStringValue(keyStop, "Class",
-                "com.vmware.identity.idm.server.IdmServer");
-        registryAdapter.setStringValue(keyStop, "Method", "stopserver");
     }
+
 
     @Override
     public String getReverseProxyServiceLog() {

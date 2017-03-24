@@ -94,50 +94,61 @@ public class LinuxInstallerHelper implements InstallerHelper {
 
     @Override
     public void configRegistry() {
-        IRegistryAdapter registryAdapter = RegistryAdapterFactory.getInstance()
-                .getRegistryAdapter();
-        IRegistryKey rootKey = registryAdapter
-                .openRootKey((int) RegKeyAccess.KEY_ALL_ACCESS);
-        String subkey = "Software\\VMware\\Identity\\Configuration";
+        IRegistryAdapter registryAdapter = null;
+        IRegistryKey rootKey = null;
+        IRegistryKey configKey = null;
+        try{
+            registryAdapter = RegistryAdapterFactory.getInstance()
+                    .getRegistryAdapter();
+            rootKey = registryAdapter
+                    .openRootKey((int) RegKeyAccess.KEY_ALL_ACCESS);
+            String subkey = "Software\\VMware\\Identity\\Configuration";
 
-        boolean exists = registryAdapter.doesKeyExist(rootKey, subkey);
+            boolean exists = registryAdapter.doesKeyExist(rootKey, subkey);
 
-        IRegistryKey configKey;
+            if (exists) {
+                configKey = registryAdapter.openKey(rootKey, subkey, 0,
+                        (int) RegKeyAccess.KEY_ALL_ACCESS);
+            } else {
+                configKey = registryAdapter.createKey(rootKey, subkey, null,
+                        (int) RegKeyAccess.KEY_ALL_ACCESS);
+            }
 
-        if (exists) {
-            configKey = registryAdapter.openKey(rootKey, subkey, 0,
-                    (int) RegKeyAccess.KEY_ALL_ACCESS);
-        } else {
-            configKey = registryAdapter.createKey(rootKey, subkey, null,
-                    (int) RegKeyAccess.KEY_ALL_ACCESS);
+            registryAdapter.setStringValue(configKey, "ConfigStoreType",
+                    "vmware_directory");
+            registryAdapter.setIntValue(configKey, "Multitenant", 0);
+            registryAdapter.setIntValue(configKey, "SystemDomainSearchTimeout", 0);
+
+            Collection<String> domainAttributes = new ArrayList<String>();
+            domainAttributes
+                    .add("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname:givenName");
+            domainAttributes
+                    .add("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname:sn");
+            domainAttributes
+                    .add("http://rsa.com/schemas/attr-names/2009/01/GroupIdentity:memberOf");
+            domainAttributes
+                    .add("http://vmware.com/schemas/attr-names/2011/07/isSolution:subjectType");
+            domainAttributes
+                    .add("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress:mail");
+            domainAttributes
+                    .add("http://schemas.xmlsoap.org/claims/UPN:userPrincipalName");
+            registryAdapter.setMultiStringValue(configKey,
+                    "SystemDomainAttributesMap", domainAttributes);
+
+            // TODO: get port as config setting
+            registryAdapter.setStringValue(configKey, "StsLocalTcPort", "7444");
+            // TODO: use port from reverse proxy
+            registryAdapter.setStringValue(configKey, "StsTcPort",
+                    Integer.toString(InstallerUtils.REVERSE_PROXY_PORT));
+        } finally {
+                if(rootKey != null) {
+                        rootKey.close();
+                }
+                if(configKey != null){
+                        configKey.close();
+                }
         }
 
-        registryAdapter.setStringValue(configKey, "ConfigStoreType",
-                "vmware_directory");
-        registryAdapter.setIntValue(configKey, "Multitenant", 0);
-        registryAdapter.setIntValue(configKey, "SystemDomainSearchTimeout", 0);
-
-        Collection<String> domainAttributes = new ArrayList<String>();
-        domainAttributes
-                .add("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname:givenName");
-        domainAttributes
-                .add("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname:sn");
-        domainAttributes
-                .add("http://rsa.com/schemas/attr-names/2009/01/GroupIdentity:memberOf");
-        domainAttributes
-                .add("http://vmware.com/schemas/attr-names/2011/07/isSolution:subjectType");
-        domainAttributes
-                .add("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress:mail");
-        domainAttributes
-                .add("http://schemas.xmlsoap.org/claims/UPN:userPrincipalName");
-        registryAdapter.setMultiStringValue(configKey,
-                "SystemDomainAttributesMap", domainAttributes);
-
-        // TODO: get port as config setting
-        registryAdapter.setStringValue(configKey, "StsLocalTcPort", "7444");
-        // TODO: use port from reverse proxy
-        registryAdapter.setStringValue(configKey, "StsTcPort",
-                Integer.toString(InstallerUtils.REVERSE_PROXY_PORT));
     }
 
     @Override
