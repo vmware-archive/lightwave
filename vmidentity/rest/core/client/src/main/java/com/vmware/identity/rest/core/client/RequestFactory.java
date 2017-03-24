@@ -92,7 +92,11 @@ public class RequestFactory {
             .append("access_token=").append(token.getToken())
             .append("&").append("token_type=").append(token.getType().getIdentifier());
 
-        String jsonEntity = ObjectMapperSingleton.getInstance().writer().writeValueAsString(entity);
+        String jsonEntity = null;
+        if (entity != null) {
+            jsonEntity = ObjectMapperSingleton.getInstance().writer().writeValueAsString(entity);
+        }
+
         if (token.getType() == AccessToken.Type.JWT_HOK || token.getType() == AccessToken.Type.SAML_HOK) {
             try {
                 String signedRequest = sign(request, jsonEntity, date, token.getPrivateKey());

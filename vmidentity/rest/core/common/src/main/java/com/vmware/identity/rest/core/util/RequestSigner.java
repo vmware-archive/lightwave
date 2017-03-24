@@ -14,6 +14,7 @@
 package com.vmware.identity.rest.core.util;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
@@ -130,8 +131,31 @@ public class RequestSigner {
         sb.append(md5).append("\n");
         sb.append(mediaType).append("\n");
         sb.append(getHttpFormattedDate(date)).append("\n");
-        sb.append(uri);
+        sb.append(sanitizeURI(uri));
         return sb.toString();
+    }
+
+    /**
+     * Sanitizes the URI for signing purposes. Specifically it removes the
+     * scheme, userInfo, host and port, leaving only the path, query, and
+     * fragment.
+     *
+     * <p>For example:</p>
+     *
+     * <p><code>https://username:password@example.com:443/path/to/data?key=value&key2=value2#frag1</code></p>
+     * becomes:
+     * <p><code>/path/to/data?key=value&key2=value2#frag1</code></p>
+     *
+     * @param uri the URI to sanitize
+     * @return the sanitized URI
+     */
+    public static URI sanitizeURI(URI uri) {
+        try {
+            return new URI(null, null, null, -1, uri.getPath(), uri.getQuery(), uri.getFragment());
+        } catch (URISyntaxException e) {
+            // This should never occur as we're reconstructing a new URI from an existing URI object.
+            throw new IllegalStateException("URI Syntax Exception while sanitizing the URI", e);
+        }
     }
 
     /**
@@ -154,6 +178,10 @@ public class RequestSigner {
      * @return the MD5 hash of the entity.
      */
     public static String computeMD5(String entity) {
+        if (entity == null) {
+            return "";
+        }
+
         MessageDigest md5;
 
         try {

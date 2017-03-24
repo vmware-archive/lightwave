@@ -87,7 +87,7 @@ public class BaseClient implements Closeable{
     /**
      * Constructs a client with a variety of parameters. The {@code host} parameter
      * is loaded into a {@link SimpleHostRetriever} using the default port (-1), assuming that the
-     * connection will be sure.
+     * connection will be secure.
      *
      * @param host the hostname of the remote REST server.
      * @param verifier a {@link HostnameVerifier} for use when verifying the SSL
