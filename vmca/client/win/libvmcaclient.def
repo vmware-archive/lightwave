@@ -99,3 +99,15 @@ EXPORTS
     VMCAGetSignedCertificateForHostA
     VMCAGetSignedCertificateForHostW
     VMCAGetCSRFromCertificate
+    VMCASetServerOptionA
+    VMCASetServerOptionW
+    VMCASetServerOptionHA
+    VMCASetServerOptionHW
+    VMCAUnsetServerOptionA
+    VMCAUnsetServerOptionW
+    VMCAUnsetServerOptionHA
+    VMCAUnsetServerOptionHW
+    VMCAGetServerOptionA
+    VMCAGetServerOptionW
+    VMCAGetServerOptionHA
+    VMCAGetServerOptionHW

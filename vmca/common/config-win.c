@@ -297,7 +297,7 @@ error:
 
 DWORD
 VmwWinCfgSetValue(
-    PVMW_CFG_KEY       pKey,
+    PVMW_CFG_KEY        pKey,
     PCSTR               pszValue,
     DWORD               dwType,
     PBYTE               pValue,

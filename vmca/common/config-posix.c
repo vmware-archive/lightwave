@@ -242,6 +242,38 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmwPosixCfgSetValue(
+    PVMW_CFG_KEY    pKey,
+    PCSTR           pszValue,
+    DWORD           dwType,
+    PBYTE           pValue,
+    DWORD           dwSize
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pKey || IsNullOrEmptyString(pszValue))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = RegSetValueExA(
+                    pKey->pConnection->hConnection,
+                    pKey->hKey,
+                    pszValue,
+                    0,
+                    dwType,
+                    pValue,
+                    dwSize);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+error:
+
+    return dwError;
+}
+
 VOID
 VmwPosixCfgCloseKey(
     PVMW_CFG_KEY pKey

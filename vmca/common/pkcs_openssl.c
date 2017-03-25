@@ -2795,7 +2795,8 @@ VMCAVerifySubjectAltNames(
         }
     }
 
-    if (dwDNSCount > 1)
+    if (dwDNSCount > 1 &&
+        !VMCAConfigIsServerOptionEnabled(VMCA_SERVER_OPT_ALLOW_MULTIPLE_SAN))
     {
         dwError = VMCA_ERROR_INVALID_SAN;
         BAIL_ON_ERROR(dwError);

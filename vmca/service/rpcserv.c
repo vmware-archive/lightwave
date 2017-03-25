@@ -128,6 +128,98 @@ Note: *KRB and shared secret are mutually exclusive; Impossible state.
 */
 
 unsigned int
+RpcVMCASetServerOption(
+    handle_t IDL_handle,
+    unsigned int dwOption
+    )
+{
+    DWORD   dwError = 0;
+    unsigned int    dwCurrentOption = 0;
+    unsigned int    dwNewOption = 0;
+
+    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAConfigGetDword(VMCA_REG_KEY_SERVER_OPTION, &dwCurrentOption);
+    dwError = dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE ? 0: dwError;
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwNewOption = dwCurrentOption | dwOption;
+
+    dwError = VMCAConfigSetDword(VMCA_REG_KEY_SERVER_OPTION, dwNewOption);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+cleanup:
+    VMCA_LOG_DEBUG("Exiting %s, Status = %d", __FUNCTION__, dwError);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+unsigned int
+RpcVMCAUnsetServerOption(
+    handle_t IDL_handle,
+    unsigned int dwOption
+    )
+{
+    DWORD   dwError = 0;
+    unsigned int    dwCurrentOption = 0;
+    unsigned int    dwNewOption = 0;
+
+    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAConfigGetDword(VMCA_REG_KEY_SERVER_OPTION, &dwCurrentOption);
+    dwError = dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE ? 0: dwError;
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwNewOption = dwCurrentOption & ~dwOption;
+
+    dwError = VMCAConfigSetDword(VMCA_REG_KEY_SERVER_OPTION, dwNewOption);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+cleanup:
+    VMCA_LOG_DEBUG("Exiting %s, Status = %d", __FUNCTION__, dwError);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+unsigned int
+RpcVMCAGetServerOption(
+    handle_t IDL_handle,
+    unsigned int *pdwOption
+    )
+{
+    DWORD   dwError = 0;
+    unsigned int    dwOption = 0;
+
+    if (!pdwOption)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAConfigGetDword(VMCA_REG_KEY_SERVER_OPTION, &dwOption);
+    dwError = dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE ? 0: dwError;
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    *pdwOption = dwOption;
+
+cleanup:
+    VMCA_LOG_DEBUG("Exiting %s, Status = %d", __FUNCTION__, dwError);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+unsigned int
 RpcVMCAGetServerVersion(
     handle_t IDL_handle,
     unsigned int *pdwCertLength,
@@ -372,7 +464,7 @@ RpcVMCAGetSignedCertificate(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    dwError = VMCACheckAccess(IDL_handle, FALSE);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAGetSignedCertificate(

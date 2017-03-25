@@ -294,6 +294,7 @@ extern VMCA_LOG_LEVEL VMCALogGetLevel();
 #define VMCA_REG_KEY_LOGLEVEL                "LogLevel"
 #define VMCA_REG_KEY_ENABLEEVENTLOGS         "EnableEventLogs"
 #define VMCA_REG_KEY_ENABLESERVICE           "EnableService"
+#define VMCA_REG_KEY_SERVER_OPTION           "ServerOption"
 
 #define VMCA_RPC_TCP_END_POINT               "2014"
 #define VMCA_NCALRPC_END_POINT               "vmcasvc"
@@ -1363,6 +1364,17 @@ DWORD
 VMCAConfigGetDword(
     PCSTR pcszValueName,
     DWORD* pdwOutput
+    );
+
+DWORD
+VMCAConfigSetDword(
+    PCSTR  pcszValueName,
+    DWORD  dwInput
+    );
+
+BOOLEAN
+VMCAConfigIsServerOptionEnabled(
+    VMCA_SERVER_OPTION  option
     );
 
 DWORD
